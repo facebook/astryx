@@ -1,5 +1,5 @@
 {
-  "name": "@xds/example-nextjs-source",
+  "name": "@astryxdesign/example-nextjs-source",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -9,8 +9,8 @@
   },
   "dependencies": {
     "@stylexjs/stylex": "^0.18.3",
-    "@xds/core": "*",
-    "@xds/theme-default": "*",
+    "@astryxdesign/core": "*",
+    "@astryxdesign/theme-neutral": "*",
     "next": "^15.5.16",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
@@ -24,7 +24,7 @@
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.0",
     "typescript": "^6.0.3",
-    "@xds/build": "*"
+    "@astryxdesign/build": "*"
   },
   "browserslist": [
     "last 1 Chrome version"

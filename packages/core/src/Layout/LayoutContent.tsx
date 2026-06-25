@@ -23,7 +23,7 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {LayoutSlotsContext} from './LayoutSlotsContext';
 import {mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import {
   paddingStyles,
   containerPaddingInlineVarStyles,
@@ -188,7 +188,7 @@ export function LayoutContent({
       role={role}
       aria-label={label}
       {...mergeProps(
-        xdsThemeProps('layout-content'),
+        themeProps('layout-content'),
         stylex.props(
           styles.content,
           // Outer padding on container edges (unless content is full bleed)

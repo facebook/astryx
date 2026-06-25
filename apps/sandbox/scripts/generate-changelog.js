@@ -17,21 +17,18 @@ const OUT_FILE = path.join(OUT_DIR, 'changelogRegistry.ts');
 const GITHUB_REPO = 'facebookexperimental/xds';
 
 const CHANGELOG_SOURCES = [
-  {pkg: '@xds/core', file: 'packages/core/CHANGELOG.md'},
-  {pkg: '@xds/cli', file: 'packages/cli/CHANGELOG.md'},
-  {pkg: '@xds/theme-default', file: 'packages/themes/default/CHANGELOG.md'},
-  {pkg: '@xds/theme-neutral', file: 'packages/themes/neutral/CHANGELOG.md'},
-  {pkg: '@xds/theme-brutalist', file: 'packages/themes/brutalist/CHANGELOG.md'},
-  {pkg: '@xds/theme-matcha', file: 'packages/themes/matcha/CHANGELOG.md'},
-  {pkg: '@xds/theme-daily', file: 'packages/themes/daily/CHANGELOG.md'},
+  {pkg: '@astryxdesign/core', file: 'packages/core/CHANGELOG.md'},
+  {pkg: '@astryxdesign/cli', file: 'packages/cli/CHANGELOG.md'},
+  {pkg: '@astryxdesign/theme-neutral', file: 'packages/themes/neutral/CHANGELOG.md'},
+  {pkg: '@astryxdesign/theme-matcha', file: 'packages/themes/matcha/CHANGELOG.md'},
 ];
 
 const DEPRECATED_SCAN_DIRS = [
-  {pkg: '@xds/core', dir: 'packages/core/src'},
+  {pkg: '@astryxdesign/core', dir: 'packages/core/src'},
 ];
 
 const PEER_DEP_SOURCES = [
-  {pkg: '@xds/core', file: 'packages/core/package.json'},
+  {pkg: '@astryxdesign/core', file: 'packages/core/package.json'},
 ];
 
 // ── Section heading → field mapping ────────────────────────────────────
@@ -65,10 +62,10 @@ function parseChangelog(markdown, pkg) {
       if (inCodeBlock) {
         if (currentVersion && currentSection === 'upgrade') {
           const applyMatch = codeBlockContent.match(
-            /npx xds upgrade --apply --to [\d.]+/,
+            /npx astryx upgrade --apply --to [\d.]+/,
           );
           const dryMatch = codeBlockContent.match(
-            /npx xds upgrade --to [\d.]+/,
+            /npx astryx upgrade --to [\d.]+/,
           );
           if (applyMatch) currentVersion.upgradeCommand = applyMatch[0];
           if (dryMatch) currentVersion.dryRunCommand = dryMatch[0];
@@ -140,10 +137,10 @@ function parseChangelog(markdown, pkg) {
 
     // Upgrade section: extract dry-run and apply commands from prose
     if (currentSection === 'upgrade') {
-      const dryMatch = line.match(/`(npx xds upgrade --to [\d.]+)`/);
+      const dryMatch = line.match(/`(npx astryx upgrade --to [\d.]+)`/);
       if (dryMatch) currentVersion.dryRunCommand = dryMatch[1];
       const applyMatch = line.match(
-        /`(npx xds upgrade --apply --to [\d.]+)`/,
+        /`(npx astryx upgrade --apply --to [\d.]+)`/,
       );
       if (applyMatch) currentVersion.upgradeCommand = applyMatch[1];
       continue;
@@ -159,7 +156,7 @@ function parseChangelog(markdown, pkg) {
 
       // Skip "Updated dependencies" lines from theme changelogs
       if (text.startsWith('Updated dependencies')) continue;
-      if (text.match(/^\s*-?\s*@xds\/\w/)) continue;
+      if (text.match(/^\s*-?\s*@astryxdesign\/\w/)) continue;
 
       const item = parseItem(text, pkg, currentSection === 'codemods');
       const field = currentVersion[currentSection];

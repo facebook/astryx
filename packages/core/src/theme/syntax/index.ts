@@ -23,7 +23,7 @@ export type {
 export {SyntaxTheme, useSyntaxTheme} from './SyntaxTheme';
 export type {UseSyntaxThemeReturn} from './SyntaxTheme';
 
-// Community syntax theme presets (formerly @xds/theme-syntax)
+// Community syntax theme presets (formerly @astryxdesign/theme-syntax)
 export {
   oneDarkPro,
   dracula,

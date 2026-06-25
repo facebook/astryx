@@ -34,7 +34,7 @@ function fixMissingXDSImports(filePath: string, dryRun: boolean): string[] {
   // Find already-imported XDS components
   const importedComponents = new Set<string>();
   const importPattern =
-    /import\s*\{([^}]+)\}\s*from\s*['"]@xds\/core[^'"]*['"]/g;
+    /import\s*\{([^}]+)\}\s*from\s*['"]@astryxdesign\/core[^'"]*['"]/g;
   while ((match = importPattern.exec(code)) !== null) {
     for (const specifier of match[1].split(',')) {
       const name = specifier
@@ -53,7 +53,7 @@ function fixMissingXDSImports(filePath: string, dryRun: boolean): string[] {
   }
 
   if (!dryRun) {
-    const importLine = `import {${missing.sort().join(', ')}} from '@xds/core';\n`;
+    const importLine = `import {${missing.sort().join(', ')}} from '@astryxdesign/core';\n`;
     fs.writeFileSync(filePath, importLine + code);
   }
 

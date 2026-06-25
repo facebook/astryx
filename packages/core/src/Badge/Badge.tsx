@@ -27,7 +27,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Base badge styles
@@ -121,7 +121,7 @@ const variants = stylex.create({
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Badge' {
+ * declare module '@astryxdesign/core/Badge' {
  *   interface BadgeVariantMap {
  *     'premium': true;
  *   }
@@ -173,7 +173,7 @@ export interface BadgeProps extends BaseProps<HTMLSpanElement> {
 /**
  * A badge component for displaying status indicators, counts, or labels.
  *
- * Styles use XDS theme tokens via StyleX.
+ * Styles use Astryx theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
  *
  * @example
@@ -198,7 +198,7 @@ export function Badge({
     <span
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('badge', {variant}),
+        themeProps('badge', {variant}),
         stylex.props(styles.base, variants[variant], xstyle),
         className,
         style,

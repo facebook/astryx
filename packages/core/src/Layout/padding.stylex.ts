@@ -274,7 +274,7 @@ export const paddingBlockStyles = stylex.create({
 });
 
 /**
- * Propagation styles for --xds-section-padding.
+ * Propagation styles for --astryx-section-padding.
  * When a parent section sets explicit padding, this propagates the value
  * through the CSS custom property cascade so nested sections that use
  * useThemeDefault inherit the parent's padding instead of the theme default.

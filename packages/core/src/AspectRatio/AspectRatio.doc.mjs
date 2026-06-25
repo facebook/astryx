@@ -45,7 +45,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-aspect-ratio'},
+      {className: 'astryx-aspect-ratio'},
     ],
   },
 };
@@ -76,7 +76,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-aspect-ratio'},
+      {className: 'astryx-aspect-ratio'},
     ],
   },
 };

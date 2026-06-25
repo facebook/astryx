@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Lightbox, useLightbox} from '@xds/core/Lightbox';
+import {Lightbox, useLightbox} from '@astryxdesign/core/Lightbox';
 
 const meta: Meta<typeof Lightbox> = {
   title: 'Core/Lightbox',

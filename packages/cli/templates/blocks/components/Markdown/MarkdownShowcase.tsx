@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Markdown} from '@xds/core/Markdown';
-import {Center} from '@xds/core/Center';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {Center} from '@astryxdesign/core/Center';
 
 const content = [
   '# Markdown Demo',
@@ -12,7 +12,7 @@ const content = [
   '',
   '## Features',
   '',
-  '- Headings mapped to the XDS type scale',
+  '- Headings mapped to the Astryx type scale',
   '- **Bold**, *italic*, and ~~strikethrough~~ text',
   '- [Links](https://example.com) with external detection',
   '',

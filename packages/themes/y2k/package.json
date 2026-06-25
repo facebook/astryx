@@ -1,19 +1,19 @@
 {
-  "name": "@xds/theme-y2k",
-  "version": "0.0.15",
+  "name": "@astryxdesign/theme-y2k",
+  "version": "0.1.0",
   "displayName": "Y2K Theme",
   "private": false,
   "description": "Hot pinks, lime greens, and Poppins. Bubbly, playful, and unmistakably retro.",
   "author": "Meta Open Source",
   "license": "MIT",
-  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "homepage": "https://github.com/facebook/astryx#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "url": "git+https://github.com/facebook/astryx.git",
     "directory": "packages/themes/y2k"
   },
   "bugs": {
-    "url": "https://github.com/facebookexperimental/xds/issues"
+    "url": "https://github.com/facebook/astryx/issues"
   },
   "keywords": [
     "xds",
@@ -46,17 +46,17 @@
     "src"
   ],
   "scripts": {
-    "build": "xds theme build src/y2kTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
+    "build": "astryx theme build src/y2kTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "dependencies": {
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@xds/core": "0.0.15",
+    "@astryxdesign/core": "0.1.0",
     "react": ">=19"
   },
   "devDependencies": {
-    "@xds/cli": "0.0.15"
+    "@astryxdesign/cli": "0.1.0"
   },
   "module": "./dist/source.mjs"
 }

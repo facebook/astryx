@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {CLI_ROOT, discoverExternalPackages} from '../utils/paths.mjs';
 import {assertWithin, isFilePathArg, PathSafetyError} from '../utils/path-safety.mjs';
-import {XDSError} from './error.mjs';
+import {AstryxError} from './error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {loadConfig} from '../lib/config.mjs';
 
@@ -377,7 +377,7 @@ function extractSkeleton(source) {
 }
 
 /**
- * Fetch a template by ID using the `template.get` hook in xds.config.mjs.
+ * Fetch a template by ID using the `template.get` hook in astryx.config.mjs.
  * @param {string} id
  * @param {object} [options]
  * @param {string} [options.cwd]
@@ -389,9 +389,9 @@ export async function getTemplateById(id, options = {}) {
 
   const getter = config.template?.get;
   if (typeof getter !== 'function') {
-    throw new XDSError(
+    throw new AstryxError(
       'Template fetching by ID is not configured.\n' +
-        'Add a template.get function to xds.config.mjs:\n\n' +
+        'Add a template.get function to astryx.config.mjs:\n\n' +
         '  export default {\n' +
         '    template: {\n' +
         "      get: async (id) => { /* return template source string */ },\n" +
@@ -407,11 +407,11 @@ export async function getTemplateById(id, options = {}) {
     source = await getter(id);
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
-    throw new XDSError(`template.get("${id}") threw an error: ${detail}`, undefined, ERROR_CODES.ERR_TEMPLATE_GET);
+    throw new AstryxError(`template.get("${id}") threw an error: ${detail}`, undefined, ERROR_CODES.ERR_TEMPLATE_GET);
   }
 
   if (source == null) {
-    throw new XDSError(
+    throw new AstryxError(
       `template.get("${id}") returned ${source} — no template found for that ID`,
       undefined,
       ERROR_CODES.ERR_TEMPLATE_GET,
@@ -419,7 +419,7 @@ export async function getTemplateById(id, options = {}) {
   }
 
   if (typeof source !== 'string') {
-    throw new XDSError(
+    throw new AstryxError(
       `template.get("${id}") must return a string, got ${typeof source}`,
       undefined,
       ERROR_CODES.ERR_TEMPLATE_GET,
@@ -427,7 +427,7 @@ export async function getTemplateById(id, options = {}) {
   }
 
   if (source.trim() === '') {
-    throw new XDSError(
+    throw new AstryxError(
       `template.get("${id}") returned an empty string`,
       undefined,
       ERROR_CODES.ERR_TEMPLATE_GET,
@@ -470,7 +470,7 @@ export async function template(name, options = {}) {
 
   const match = templates.find(t => t.dirName === name);
   if (name && !match) {
-    throw new XDSError(
+    throw new AstryxError(
       `Unknown template "${name}"`,
       templates.map(t => ({name: t.dirName, reason: `${t.type} template`})),
       ERROR_CODES.ERR_UNKNOWN_TEMPLATE,
@@ -479,14 +479,14 @@ export async function template(name, options = {}) {
 
   if (skeleton) {
     if (!match) {
-      throw new XDSError(
+      throw new AstryxError(
         'Specify a template name for --skeleton',
         templates.map(t => ({name: t.dirName, reason: `${t.type} template`})),
         ERROR_CODES.ERR_UNKNOWN_TEMPLATE,
       );
     }
     if (!fs.existsSync(match.filePath)) {
-      throw new XDSError(`No source file found for template "${name}"`, undefined, ERROR_CODES.ERR_NO_SOURCE);
+      throw new AstryxError(`No source file found for template "${name}"`, undefined, ERROR_CODES.ERR_NO_SOURCE);
     }
     const src = fs.readFileSync(match.filePath, 'utf-8');
     return {
@@ -501,7 +501,7 @@ export async function template(name, options = {}) {
   }
 
   if (!fs.existsSync(match.filePath)) {
-    throw new XDSError(`No source file found for template "${name}"`, undefined, ERROR_CODES.ERR_NO_SOURCE);
+    throw new AstryxError(`No source file found for template "${name}"`, undefined, ERROR_CODES.ERR_NO_SOURCE);
   }
 
   if (show || !targetPath) {
@@ -528,7 +528,7 @@ export async function template(name, options = {}) {
     });
   } catch (err) {
     if (err instanceof PathSafetyError) {
-      throw new XDSError(err.message, undefined, ERROR_CODES.ERR_PATH_TRAVERSAL);
+      throw new AstryxError(err.message, undefined, ERROR_CODES.ERR_PATH_TRAVERSAL);
     }
     throw err;
   }

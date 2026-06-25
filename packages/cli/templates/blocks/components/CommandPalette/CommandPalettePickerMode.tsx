@@ -3,10 +3,10 @@
 'use client';
 
 import {useState, useMemo} from 'react';
-import {CommandPalette} from '@xds/core/CommandPalette';
-import {Text} from '@xds/core/Text';
-import {Icon} from '@xds/core/Icon';
-import {createStaticSource} from '@xds/core/Typeahead';
+import {CommandPalette} from '@astryxdesign/core/CommandPalette';
+import {Text} from '@astryxdesign/core/Text';
+import {Icon} from '@astryxdesign/core/Icon';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
 
 export default function CommandPalettePickerMode() {
   const [theme, setTheme] = useState('light');

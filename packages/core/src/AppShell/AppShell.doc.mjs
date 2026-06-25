@@ -107,9 +107,9 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-app-shell', visualProps: ['variant']},
-      {className: 'xds-app-shell-header', visualProps: ['variant']},
-      {className: 'xds-app-shell-sidenav', visualProps: ['variant']},
+      {className: 'astryx-app-shell', visualProps: ['variant']},
+      {className: 'astryx-app-shell-header', visualProps: ['variant']},
+      {className: 'astryx-app-shell-sidenav', visualProps: ['variant']},
     ],
   },
 };
@@ -165,13 +165,13 @@ export const docsZh = {
   theming: {
     targets: [
       {
-        className: 'xds-app-shell',
+        className: 'astryx-app-shell',
         visualProps: [
           'variant',
         ],
       },
-      {className: 'xds-app-shell-header', visualProps: ['variant']},
-      {className: 'xds-app-shell-sidenav', visualProps: ['variant']},
+      {className: 'astryx-app-shell-header', visualProps: ['variant']},
+      {className: 'astryx-app-shell-sidenav', visualProps: ['variant']},
     ],
   },
 };

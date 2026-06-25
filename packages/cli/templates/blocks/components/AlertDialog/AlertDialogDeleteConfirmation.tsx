@@ -5,7 +5,7 @@
 import {
   AlertDialog,
   useImperativeAlertDialog,
-} from '@xds/core/AlertDialog';
+} from '@astryxdesign/core/AlertDialog';
 
 // Remove isInline for production — alert dialogs should be modal.
 export default function AlertDialogDeleteConfirmation() {

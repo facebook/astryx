@@ -2,17 +2,17 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {Center} from '@xds/core/Center';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
-import {Icon} from '@xds/core/Icon';
-import {Text} from '@xds/core/Text';
+import {Center} from '@astryxdesign/core/Center';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Text} from '@astryxdesign/core/Text';
 import {CheckCircleIcon} from '@heroicons/react/24/outline';
 import {
   colorVars,
   spacingVars,
   radiusVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   box: {

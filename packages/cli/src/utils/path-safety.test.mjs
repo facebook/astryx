@@ -118,7 +118,7 @@ describe('isFilePathArg', () => {
 
   it('returns false for plain directory names', () => {
     expect(isFilePathArg('out')).toBe(false);
-    expect(isFilePathArg('./components/xds')).toBe(false);
+    expect(isFilePathArg('./components/astryx')).toBe(false);
     expect(isFilePathArg('src/pages')).toBe(false);
   });
 

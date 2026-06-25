@@ -4,4 +4,4 @@
    Separate file because webpack hoists @import content above inline
    CSS, so an inline @layer statement in globals.css would appear
    after reset.css and theme.css content in the output. */
-@layer reset, xds-base, xds-theme, product;
+@layer reset, astryx-base, astryx-theme, product;

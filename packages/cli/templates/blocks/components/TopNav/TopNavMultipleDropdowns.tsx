@@ -7,9 +7,9 @@ import {
   TopNavHeading,
   TopNavItem,
   TopNavMenu,
-} from '@xds/core/TopNav';
-import {NavIcon} from '@xds/core/NavIcon';
-import {Icon} from '@xds/core/Icon';
+} from '@astryxdesign/core/TopNav';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
+import {Icon} from '@astryxdesign/core/Icon';
 import {
   CubeIcon,
   ChartBarIcon,

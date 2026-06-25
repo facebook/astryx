@@ -35,7 +35,7 @@ import {
 } from './ChatContext';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface ChatMessageProps extends BaseProps<HTMLElement> {
   ref?: React.Ref<HTMLElement>;
@@ -221,7 +221,7 @@ export function ChatMessage({
         aria-label={!hasName ? `Message from ${sender}` : undefined}
         aria-labelledby={hasName ? nameId : undefined}
         {...mergeProps(
-          xdsThemeProps('chat-message', {sender, density}),
+          themeProps('chat-message', {sender, density}),
           stylex.props(
             styles.root,
             rootAlignment,

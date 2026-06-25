@@ -31,7 +31,7 @@ import type {BaseProps} from '../BaseProps';
 import {ListContext} from './ListContext';
 import {mergeProps} from '../utils';
 import {Item} from '../Item';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -125,7 +125,7 @@ const styles = stylex.create({
 
 // =============================================================================
 // Marker styles — custom-rendered markers instead of native list-style-type.
-// Uses CSS counters for numbers (same pattern as WWW XDS).
+// Uses CSS counters for numbers (same pattern as WWW Astryx).
 // =============================================================================
 
 const MARKER_DOT_SIZE = 6;
@@ -251,7 +251,7 @@ export function ListItem({
         hasDividers && embeddedStyles.noRadius,
         xstyle,
       ]}
-      {...mergeProps(xdsThemeProps('list-item'), {className, style})}
+      {...mergeProps(themeProps('list-item'), {className, style})}
       {...restProps}
     />
   );

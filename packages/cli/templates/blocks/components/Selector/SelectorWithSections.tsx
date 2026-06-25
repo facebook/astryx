@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Selector} from '@xds/core/Selector';
+import {Selector} from '@astryxdesign/core/Selector';
 
 export default function SelectorWithSections() {
   const [value, setValue] = useState<string | undefined>();

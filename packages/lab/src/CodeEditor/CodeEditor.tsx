@@ -15,7 +15,7 @@
 'use client';
 
 import {useEffect, useLayoutEffect, useRef, useCallback, useState} from 'react';
-import type {BaseProps} from '@xds/core';
+import type {BaseProps} from '@astryxdesign/core';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -25,19 +25,19 @@ import {
   typographyVars,
   typeScaleVars,
   borderVars,
-} from '@xds/core/theme/tokens.stylex';
-import {mergeProps} from '@xds/core/utils';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {mergeProps} from '@astryxdesign/core/utils';
 import {
   tokenize,
   tokenizeAsync,
   SYNC_TOKENIZE_THRESHOLD,
-} from '@xds/core/CodeBlock';
-import type {TokenLine} from '@xds/core/CodeBlock';
-import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
+} from '@astryxdesign/core/CodeBlock';
+import type {TokenLine} from '@astryxdesign/core/CodeBlock';
+import {themeProps} from '../../../core/src/utils/themeProps';
 import {
   ensureHighlightStyles,
   applyHighlightRangesFlat,
-} from '@xds/core/CodeBlock';
+} from '@astryxdesign/core/CodeBlock';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -417,7 +417,7 @@ export function CodeEditor({
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('codeeditor', {size, language}),
+        themeProps('codeeditor', {size, language}),
         stylex.props(styles.root, focused && styles.rootFocused, xstyle),
         className,
         style,

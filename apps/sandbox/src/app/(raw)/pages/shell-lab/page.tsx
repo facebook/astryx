@@ -6,14 +6,14 @@ import {Suspense, useState, useCallback, useEffect, useMemo} from 'react';
 import {useSearchParams} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
 
-import {AppShell} from '@xds/core/AppShell';
-import type {MobileNavConfig} from '@xds/core/AppShell';
+import {AppShell} from '@astryxdesign/core/AppShell';
+import type {MobileNavConfig} from '@astryxdesign/core/AppShell';
 import {
   SideNav,
   SideNavHeading,
   SideNavItem,
   SideNavSection,
-} from '@xds/core/SideNav';
+} from '@astryxdesign/core/SideNav';
 import {
   TopNav,
   TopNavHeading,
@@ -22,19 +22,19 @@ import {
   TopNavMegaMenu,
   TopNavMegaMenuItem,
   TopNavMegaMenuFeaturedCard,
-} from '@xds/core/TopNav';
-import {MobileNav, MobileNavToggle} from '@xds/core/MobileNav';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Switch} from '@xds/core/Switch';
-import {Selector} from '@xds/core/Selector';
-import {Card} from '@xds/core/Card';
-import {Divider} from '@xds/core/Divider';
-import {Badge} from '@xds/core/Badge';
-import {Button} from '@xds/core/Button';
-import {NavIcon} from '@xds/core/NavIcon';
-import {Banner} from '@xds/core/Banner';
-import {NavMenuItem} from '@xds/core/NavMenu';
+} from '@astryxdesign/core/TopNav';
+import {MobileNav, MobileNavToggle} from '@astryxdesign/core/MobileNav';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Switch} from '@astryxdesign/core/Switch';
+import {Selector} from '@astryxdesign/core/Selector';
+import {Card} from '@astryxdesign/core/Card';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
+import {Banner} from '@astryxdesign/core/Banner';
+import {NavMenuItem} from '@astryxdesign/core/NavMenu';
 
 // =============================================================================
 // Configuration types

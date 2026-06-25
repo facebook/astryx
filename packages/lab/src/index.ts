@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @xds/lab — Experimental XDS components
+ * @astryxdesign/lab — Experimental Astryx components
  *
  * Components here are functional but not yet hardened for production.
  * They're available in storybook and sandbox for testing and iteration.
- * Once vetted, components graduate to @xds/core.
+ * Once vetted, components graduate to @astryxdesign/core.
  *
  * This package is never published to npm.
  */
@@ -18,7 +18,7 @@ export {
   tokenizeAsync,
   SYNC_TOKENIZE_THRESHOLD,
   type SyntaxToken,
-} from '@xds/core/CodeBlock';
+} from '@astryxdesign/core/CodeBlock';
 
 // Chat — experimental reasoning display
 export {

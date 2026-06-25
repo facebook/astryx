@@ -29,7 +29,7 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useSideNavCollapse} from './SideNavCollapseContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 // =============================================================================
 // Styles
 // =============================================================================
@@ -187,7 +187,7 @@ export function SideNavSection({
       aria-labelledby={titleId}
       data-testid={testId}
       {...mergeProps(
-        xdsThemeProps('side-nav-section'),
+        themeProps('side-nav-section'),
         stylex.props(styles.root, xstyle),
         className,
         style,

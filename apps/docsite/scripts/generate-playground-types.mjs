@@ -3,10 +3,10 @@
 
 
 /**
- * Generates a JSON bundle of all @xds/core .d.ts files for the playground's
+ * Generates a JSON bundle of all @astryxdesign/core .d.ts files for the playground's
  * Monaco editor. Output: public/playground-types.json
  *
- * Structure: { "@xds/core": { "Button/index.d.ts": "...", ... } }
+ * Structure: { "@astryxdesign/core": { "Button/index.d.ts": "...", ... } }
  *
  * Run: node scripts/generate-playground-types.mjs
  * Also runs as part of the prebuild/predev scripts.
@@ -183,7 +183,7 @@ console.log(
 );
 
 const output = {
-  '@xds/core': xdsTypes,
+  '@astryxdesign/core': xdsTypes,
   react: {'index.d.ts': reactTypes, 'jsx-runtime.d.ts': reactJsxRuntimeTypes},
   '@stylexjs/stylex': {'index.d.ts': stylexTypes},
   '@heroicons/react': heroiconTypes,

@@ -22,25 +22,25 @@ if [ $# -lt 1 ]; then
   echo "Usage: $0 <xds-iteration> [baseline-iteration]"
   echo ""
   echo "Builds and deploys a vibe test report to GitHub Pages."
-  echo "Report URL: https://facebookexperimental.github.io/xds/reports/<xds-iteration>/"
+  echo "Report URL: https://facebook.github.io/astryx/reports/<xds-iteration>/"
   exit 1
 fi
 
-XDS_ITER="$1"
+ASTRYX_ITER="$1"
 BASELINE_ITER="${2:-}"
 
-ARGS="--iteration $XDS_ITER"
+ARGS="--iteration $ASTRYX_ITER"
 if [ -n "$BASELINE_ITER" ]; then
   ARGS="$ARGS --baseline $BASELINE_ITER"
 fi
 
 echo ""
 echo "📊 Publishing vibe test report"
-echo "   XDS iteration:      $XDS_ITER"
+echo "   XDS iteration:      $ASTRYX_ITER"
 if [ -n "$BASELINE_ITER" ]; then
   echo "   Baseline iteration: $BASELINE_ITER"
 fi
-echo "   Deploy to:          reports/$XDS_ITER/"
+echo "   Deploy to:          reports/$ASTRYX_ITER/"
 echo ""
 
 cd "$VIBE_DIR"

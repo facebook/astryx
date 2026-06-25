@@ -4,8 +4,8 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {FormLayout} from '@xds/core/FormLayout';
-import {TextInput} from '@xds/core/TextInput';
+import {FormLayout} from '@astryxdesign/core/FormLayout';
+import {TextInput} from '@astryxdesign/core/TextInput';
 
 const styles = stylex.create({
   layout: {width: '100%', maxWidth: 400},

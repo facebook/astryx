@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file XDS CLI — Commander program setup
+ * @file Astryx CLI — Commander program setup
  *
  * Registers all commands via lazy loading. If one command fails to load
  * (bad import, syntax error), the other commands still work.
@@ -66,7 +66,7 @@ export const JSON_SUPPORTED = new Set([
 ]);
 
 program
-  .name('xds')
+  .name('astryx')
   .description('Design system CLI — components, themes, and tooling')
   .version(pkg.version)
   .option('--zh', 'Output docs in Chinese Simplified')
@@ -125,7 +125,7 @@ program
       // shallow fields (`name`, `version`, `commands` as a string[] of names,
       // `jsonSupported`) that earlier consumers read. The richer, structured
       // surface is embedded under `data.manifest` (and is also available
-      // standalone via `xds manifest --json` as `type: 'manifest'`).
+      // standalone via `astryx manifest --json` as `type: 'manifest'`).
       process.__xdsJsonHandled = true;
       const manifest = buildManifest(program, {
         jsonSupported: JSON_SUPPORTED,
@@ -271,7 +271,7 @@ for (const cmd of commands) {
 
 // Capability manifest — a single, self-describing view of the whole CLI so
 // agents can discover every command, argument, flag, and response type without
-// scraping `--help`. `xds manifest --json` is the dedicated surface; the bare
+// scraping `--help`. `astryx manifest --json` is the dedicated surface; the bare
 // `xds --json` embeds the same payload under data.manifest for convenience.
 program
   .command('manifest')
@@ -293,7 +293,7 @@ program
       console.log(`  ${c.name}${tag}`);
       if (c.description) console.log(`    ${c.description}`);
     }
-    console.log(`\nRun \`xds manifest --json\` for the full structured manifest.\n`);
+    console.log(`\nRun \`astryx manifest --json\` for the full structured manifest.\n`);
   });
 
 // Hidden command used by package.json postinstall scripts

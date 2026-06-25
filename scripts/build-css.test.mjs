@@ -4,7 +4,7 @@
  * @file build-css.test.mjs
  * Integration test for build-css.mjs
  *
- * Validates that xds.css contains expected @media wrappers and
+ * Validates that astryx.css contains expected @media wrappers and
  * prefers-reduced-motion rules.
  */
 
@@ -45,42 +45,42 @@ function extractMediaRules(css) {
   return rules;
 }
 
-describe('build-css xds.css', () => {
-  let xdsCss;
+describe('build-css astryx.css', () => {
+  let astryxCss;
 
   beforeAll(async () => {
     console.log('Running pnpm build...');
     execSync('pnpm build', {cwd: ROOT, stdio: 'pipe', timeout: 120_000});
-    xdsCss = await fs.readFile(path.join(CORE_DIST, 'xds.css'), 'utf8');
+    astryxCss = await fs.readFile(path.join(CORE_DIST, 'astryx.css'), 'utf8');
   }, 180_000);
 
   it('contains @media rules', () => {
-    const mediaRules = extractMediaRules(xdsCss);
+    const mediaRules = extractMediaRules(astryxCss);
     expect(mediaRules.length).toBeGreaterThan(0);
-    console.log(`xds.css has ${mediaRules.length} @media rules`);
+    console.log(`astryx.css has ${mediaRules.length} @media rules`);
   });
 
   it('contains prefers-reduced-motion rules', () => {
-    const mediaRules = extractMediaRules(xdsCss);
+    const mediaRules = extractMediaRules(astryxCss);
     const motionRules = mediaRules.filter(r =>
       r.includes('prefers-reduced-motion'),
     );
     expect(motionRules.length).toBeGreaterThan(0);
-    console.log(`xds.css has ${motionRules.length} prefers-reduced-motion rules`);
+    console.log(`astryx.css has ${motionRules.length} prefers-reduced-motion rules`);
   });
 
   it('no transition-duration:0s rules appear outside @media blocks', () => {
     const zeroTransitionRegex =
       /\.[a-z][a-z0-9_-]+[^{}]*\{[^}]*transition-duration:\s*0s[^}]*\}/g;
-    const matches = [...xdsCss.matchAll(zeroTransitionRegex)];
+    const matches = [...astryxCss.matchAll(zeroTransitionRegex)];
 
     for (const match of matches) {
       const position = match.index;
-      const before = xdsCss.slice(0, position);
+      const before = astryxCss.slice(0, position);
       const mediaStarts = [...before.matchAll(/@media[^{]*\{/g)];
       const isWrapped = mediaStarts.some(m => {
         const mediaStart = m.index;
-        const afterMedia = xdsCss.slice(mediaStart);
+        const afterMedia = astryxCss.slice(mediaStart);
         let depth = 0;
         for (let i = 0; i < afterMedia.length; i++) {
           if (afterMedia[i] === '{') depth++;

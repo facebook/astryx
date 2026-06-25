@@ -12,7 +12,7 @@
 
 import {type CSSProperties, useCallback, useRef, useEffect} from 'react';
 import {createPortal} from 'react-dom';
-import {IconButton} from '@xds/core/IconButton';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {useChart} from './ChartContext';
 import {isBandScale} from './utils';
 import type {ScaleLinear} from 'd3-scale';

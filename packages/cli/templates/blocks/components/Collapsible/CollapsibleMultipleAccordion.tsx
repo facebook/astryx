@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Collapsible, CollapsibleGroup} from '@xds/core/Collapsible';
-import {Card} from '@xds/core/Card';
-import {Text} from '@xds/core/Text';
-import {VStack} from '@xds/core/Layout';
+import {Collapsible, CollapsibleGroup} from '@astryxdesign/core/Collapsible';
+import {Card} from '@astryxdesign/core/Card';
+import {Text} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export default function CollapsibleMultipleAccordion() {
   return (

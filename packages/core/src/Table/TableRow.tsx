@@ -22,7 +22,7 @@ import type {StyleXStyles} from '../theme/types';
 import {tableRowMarker} from './table.stylex';
 import {TableContext} from './TableContext';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /** Props for TableRow — thin `<tr>` wrapper */
 export interface TableRowProps extends BaseProps<HTMLTableRowElement> {
@@ -104,7 +104,7 @@ export function TableRow({
         ref={ref}
         {...props}
         {...mergeProps(
-          xdsThemeProps('table-row'),
+          themeProps('table-row'),
           stylex.props(tableRowMarker, xstyle),
         )}>
         {children}
@@ -137,7 +137,7 @@ export function TableRow({
       ref={ref}
       {...props}
       {...mergeProps(
-        xdsThemeProps('table-row'),
+        themeProps('table-row'),
         stylex.props(tableRowMarker, ...rowStyles),
       )}>
       {children}

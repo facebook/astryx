@@ -29,7 +29,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {ButtonGroupContext} from './ButtonGroupContext';
 import type {ButtonGroupOrientation} from './ButtonGroupContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Props
@@ -145,7 +145,7 @@ export function ButtonGroup({
           aria-disabled={isDisabled || undefined}
           data-testid={testId}
           {...mergeProps(
-            xdsThemeProps('button-group', {size, orientation}),
+            themeProps('button-group', {size, orientation}),
             stylex.props(
               styles.group,
               orientation === 'vertical' && styles.vertical,

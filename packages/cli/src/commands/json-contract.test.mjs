@@ -28,7 +28,7 @@ import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 
 function runCli(args, {cwd} = {}) {
   const res = spawnSync('node', [CLI_BIN, ...args], {
@@ -61,7 +61,7 @@ afterEach(() => {
 });
 
 describe('--json contract: rejects before side effects', () => {
-  it('xds init --json --features agents does not write .claude/CLAUDE.md', () => {
+  it('astryx init --json --features agents does not write .claude/CLAUDE.md', () => {
     const before = fs.readdirSync(tmpDir);
     expect(before).toEqual([]);
 
@@ -84,23 +84,23 @@ describe('--json contract: rejects before side effects', () => {
     expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(false);
   });
 
-  it('xds init --json --all does not write any files', () => {
+  it('astryx init --json --all does not write any files', () => {
     const {status, stdout} = runCli(['init', '--json', '--all'], {cwd: tmpDir});
     expect(status).toBe(1);
     parseJson(stdout); // valid JSON
     expect(fs.readdirSync(tmpDir)).toEqual([]);
   });
 
-  it('xds gap-report setup --json rejects before prompting', () => {
+  it('astryx gap-report setup --json rejects before prompting', () => {
     const {status, stdout} = runCli(['gap-report', 'setup', '--json'], {cwd: tmpDir});
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
     expect(parsed.error).toMatch(/gap-report setup/);
-    // No xds.config.mjs written.
-    expect(fs.existsSync(path.join(tmpDir, 'xds.config.mjs'))).toBe(false);
+    // No astryx.config.mjs written.
+    expect(fs.existsSync(path.join(tmpDir, 'astryx.config.mjs'))).toBe(false);
   });
 
-  it('xds theme --json (parent, no subcommand) rejects without printing help', () => {
+  it('astryx theme --json (parent, no subcommand) rejects without printing help', () => {
     const {status, stdout, stderr} = runCli(['theme', '--json'], {cwd: tmpDir});
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
@@ -110,7 +110,7 @@ describe('--json contract: rejects before side effects', () => {
     expect(stderr).not.toMatch(/Usage:/);
   });
 
-  it('xds postinstall --json rejects (hidden command not on allowlist)', () => {
+  it('astryx postinstall --json rejects (hidden command not on allowlist)', () => {
     const {status, stdout} = runCli(['postinstall', '--json'], {cwd: tmpDir});
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
@@ -127,7 +127,7 @@ describe('--json contract: rejects before side effects', () => {
 });
 
 describe('--json contract: supported commands emit valid envelopes', () => {
-  it('xds --version --json emits { type: "version", data: { version } }', () => {
+  it('astryx --version --json emits { type: "version", data: { version } }', () => {
     const {status, stdout} = runCli(['--version', '--json']);
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
@@ -136,7 +136,7 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(typeof parsed.data.version).toBe('string');
   });
 
-  it('xds --json (no subcommand) emits a help envelope', () => {
+  it('astryx --json (no subcommand) emits a help envelope', () => {
     const {status, stdout} = runCli(['--json']);
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
@@ -145,7 +145,7 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(Array.isArray(parsed.data.jsonSupported)).toBe(true);
   });
 
-  it('xds gap-report --json --list-categories returns a typed envelope', () => {
+  it('astryx gap-report --json --list-categories returns a typed envelope', () => {
     const {status, stdout} = runCli(['gap-report', '--json', '--list-categories'], {cwd: tmpDir});
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
@@ -153,11 +153,11 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(Array.isArray(parsed.data)).toBe(true);
   });
 
-  it('xds gap-report --json without required flags emits a structured error (no clack)', () => {
+  it('astryx gap-report --json without required flags emits a structured error (no clack)', () => {
     // Configure gap-report so it doesn't error on "disabled" — we want to
     // hit the "interactive prompt would start" branch.
     fs.writeFileSync(
-      path.join(tmpDir, 'xds.config.mjs'),
+      path.join(tmpDir, 'astryx.config.mjs'),
       'export default { gapReport: { command: "true" } };\n',
     );
     const {status, stdout} = runCli(['gap-report', '--json'], {cwd: tmpDir});
@@ -168,7 +168,7 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(stdout).not.toMatch(/Which component/);
   });
 
-  it('xds upgrade --json --list returns the codemod list', () => {
+  it('astryx upgrade --json --list returns the codemod list', () => {
     const {status, stdout} = runCli(['upgrade', '--json', '--list'], {cwd: tmpDir});
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
@@ -176,10 +176,17 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(Array.isArray(parsed.data)).toBe(true);
   });
 
-  it('xds upgrade --json (already up to date) emits upgrade.status', () => {
-    // Force a no-op range: from > to.
+  it('astryx upgrade --json (already up to date) emits upgrade.status', () => {
+    // Force a no-op range: from > installed target.
+    const coreDir = path.join(tmpDir, 'node_modules', '@astryxdesign', 'core');
+    fs.mkdirSync(coreDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(coreDir, 'package.json'),
+      JSON.stringify({name: '@astryxdesign/core', version: '0.0.1'}, null, 2),
+    );
+
     const {status, stdout} = runCli(
-      ['upgrade', '--json', '--from', '99.0.0', '--to', '0.0.1'],
+      ['upgrade', '--json', '--from', '99.0.0'],
       {cwd: tmpDir},
     );
     expect(status).toBe(0);
@@ -190,7 +197,7 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(parsed.data.to).toBe('0.0.1');
   });
 
-  it('xds discover --json (no config) includes meta.configured=false', () => {
+  it('astryx discover --json (no config) includes meta.configured=false', () => {
     const {status, stdout} = runCli(['discover', '--json'], {cwd: tmpDir});
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
@@ -199,7 +206,7 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(parsed.meta).toEqual({configured: false});
   });
 
-  it('xds template --json emits a typed envelope', () => {
+  it('astryx template --json emits a typed envelope', () => {
     const {status, stdout} = runCli(['template', '--json'], {cwd: tmpDir});
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
@@ -207,15 +214,15 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(Array.isArray(parsed.data)).toBe(true);
   });
 
-  it('xds docs --json emits a typed envelope', () => {
+  it('astryx docs --json emits a typed envelope', () => {
     const {status, stdout} = runCli(['docs', '--json'], {cwd: tmpDir});
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
     expect(parsed.type).toMatch(/^docs\./);
   });
 
-  it('xds doctor --json emits a doctor envelope with checks + summary', () => {
-    // Run in a bare tmp dir → @xds/core won't resolve → a FAIL → exit 1.
+  it('astryx doctor --json emits a doctor envelope with checks + summary', () => {
+    // Run in a bare tmp dir → @astryxdesign/core won't resolve → a FAIL → exit 1.
     const {status, stdout} = runCli(['doctor', '--json'], {cwd: tmpDir});
     expect(status).toBe(1);
     const parsed = parseJson(stdout);

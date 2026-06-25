@@ -30,7 +30,7 @@ function createProgram() {
 describe('registerDocs', () => {
   it('lists available topics when no topic given', async () => {
     const program = createProgram();
-    await program.parseAsync(['node', 'xds', 'docs']);
+    await program.parseAsync(['node', 'astryx', 'docs']);
 
     const output = console.log.mock.calls.map(c => c[0]).join('\n');
     expect(output).toContain('principles');
@@ -44,7 +44,7 @@ describe('registerDocs', () => {
     });
 
     await expect(
-      program.parseAsync(['node', 'xds', 'docs', 'nonexistent']),
+      program.parseAsync(['node', 'astryx', 'docs', 'nonexistent']),
     ).rejects.toThrow('exit 1');
 
     const errorOutput = console.error.mock.calls.map(c => c[0]).join('\n');
@@ -55,7 +55,7 @@ describe('registerDocs', () => {
 describe('hyphenated doc filenames', () => {
   it('lists hyphenated topics like getting-started', async () => {
     const program = createProgram();
-    await program.parseAsync(['node', 'xds', 'docs']);
+    await program.parseAsync(['node', 'astryx', 'docs']);
 
     const output = console.log.mock.calls.map(c => c[0]).join('\n');
     expect(output).toContain('getting-started');
@@ -63,7 +63,7 @@ describe('hyphenated doc filenames', () => {
 
   it('loads a hyphenated topic by name', async () => {
     const program = createProgram();
-    await program.parseAsync(['node', 'xds', 'docs', 'getting-started']);
+    await program.parseAsync(['node', 'astryx', 'docs', 'getting-started']);
 
     const output = console.log.mock.calls.map(c => c[0]).join('\n');
     expect(output.length).toBeGreaterThan(0);
@@ -82,7 +82,7 @@ describe('hyphenated doc filenames', () => {
 describe('migration docs', () => {
   it('lists the migration topic', async () => {
     const program = createProgram();
-    await program.parseAsync(['node', 'xds', 'docs']);
+    await program.parseAsync(['node', 'astryx', 'docs']);
 
     const output = console.log.mock.calls.map(c => c[0]).join('\n');
     expect(output).toContain('migration');
@@ -91,7 +91,7 @@ describe('migration docs', () => {
 
   it('loads migration docs by topic name', async () => {
     const program = createProgram();
-    await program.parseAsync(['node', 'xds', 'docs', 'migration']);
+    await program.parseAsync(['node', 'astryx', 'docs', 'migration']);
 
     const output = console.log.mock.calls.map(c => c[0]).join('\n');
     expect(output).toContain('Migration Guide');

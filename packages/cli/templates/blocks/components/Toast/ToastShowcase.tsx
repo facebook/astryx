@@ -3,9 +3,9 @@
 // In production, use useToast() hook for proper positioning, stacking, and lifecycle.
 'use client';
 
-import {Toast} from '@xds/core/Toast';
-import {useToast} from '@xds/core/Toast';
-import {Button} from '@xds/core/Button';
+import {Toast} from '@astryxdesign/core/Toast';
+import {useToast} from '@astryxdesign/core/Toast';
+import {Button} from '@astryxdesign/core/Button';
 
 export default function ToastShowcase() {
   const toast = useToast();

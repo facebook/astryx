@@ -14,7 +14,7 @@
  *
  * Kept as a hand-authored component (not an <img>) specifically so the glyph
  * geometry stays identical to the brand asset while the color becomes a
- * single inherited property. @xds/core has no general-purpose image/logo
+ * single inherited property. @astryxdesign/core has no general-purpose image/logo
  * primitive (Thumbnail is attachment chrome; Icon is a glyph registry),
  * so an inline SVG is the right tool here.
  */

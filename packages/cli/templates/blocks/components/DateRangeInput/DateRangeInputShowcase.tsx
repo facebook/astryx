@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {DateRangeInput} from '@xds/core/DateRangeInput';
-import type {DateRange} from '@xds/core/DateRangeInput';
-import type {ISODateString} from '@xds/core/Calendar';
-import {Stack} from '@xds/core/Layout';
+import {DateRangeInput} from '@astryxdesign/core/DateRangeInput';
+import type {DateRange} from '@astryxdesign/core/DateRangeInput';
+import type {ISODateString} from '@astryxdesign/core/Calendar';
+import {Stack} from '@astryxdesign/core/Layout';
 
 function daysAgo(n: number): ISODateString {
   const d = new Date();

@@ -33,7 +33,7 @@ import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {useInteractiveRole} from '../hooks/useInteractiveRole';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -369,7 +369,7 @@ export function Token({
         aria-disabled={isDisabled || undefined}
         {...sharedProps}
         {...mergeProps(
-          xdsThemeProps('token', {color, size}),
+          themeProps('token', {color, size}),
           stylex.props(
             styles.base,
             sizeStyles[size],
@@ -401,7 +401,7 @@ export function Token({
         onClick={isDisabled ? undefined : handleContainerClick}
         {...sharedProps}
         {...mergeProps(
-          xdsThemeProps('token', {color, size}),
+          themeProps('token', {color, size}),
           stylex.props(
             styles.base,
             sizeStyles[size],
@@ -451,7 +451,7 @@ export function Token({
       ref={ref}
       {...sharedProps}
       {...mergeProps(
-        xdsThemeProps('token', {color, size}),
+        themeProps('token', {color, size}),
         stylex.props(
           styles.base,
           sizeStyles[size],

@@ -22,7 +22,7 @@ import {spacingVars} from '../theme/tokens.stylex';
 import type {SpacingStep} from '../utils/types';
 import type {SizeValue} from '../utils/types';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Grid alignment options for align-items and justify-items.
@@ -411,7 +411,7 @@ export function Grid({
     }),
   };
 
-  // For xdsThemeProps, extract numeric columns value for variant tracking
+  // For themeProps, extract numeric columns value for variant tracking
   const columnsVariant =
     typeof columns === 'number'
       ? columns
@@ -423,7 +423,7 @@ export function Grid({
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('grid', {columns: columnsVariant, gap, align, justify}),
+        themeProps('grid', {columns: columnsVariant, gap, align, justify}),
         stylex.props(
           baseStyles.grid,
           gap != null && gapStyles[gap],

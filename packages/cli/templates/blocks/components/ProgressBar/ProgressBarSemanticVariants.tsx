@@ -2,8 +2,8 @@
 
 'use client';
 
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {VStack} from '@xds/core/Layout';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export default function ProgressBarSemanticVariants() {
   return (

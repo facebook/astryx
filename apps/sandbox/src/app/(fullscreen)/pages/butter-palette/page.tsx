@@ -2,9 +2,9 @@
 
 'use client';
 
-import {VStack} from '@xds/core/Layout';
-import {butterTheme} from '@xds/theme-butter/built';
-import {butterPalettes} from '@xds/theme-butter';
+import {VStack} from '@astryxdesign/core/Layout';
+import {butterTheme} from '@astryxdesign/theme-butter/built';
+import {butterPalettes} from '@astryxdesign/theme-butter';
 import {ThemePalettePreview} from '@/components/ThemePalettePreview';
 
 const SARINA = "'Sarina', cursive";

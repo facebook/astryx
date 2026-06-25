@@ -44,7 +44,7 @@ import {MobileNav} from '../MobileNav/MobileNav';
 import {useResizable} from '../Resizable/useResizable';
 import type {ResizableConfig} from '../Resizable/useResizable';
 import {ResizeHandle} from '../Resizable/ResizeHandle';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Constants
@@ -427,7 +427,7 @@ export function SideNav({
       <div
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('side-nav', {mode: 'topbar'}),
+          themeProps('side-nav', {mode: 'topbar'}),
           stylex.props(styles.topbar, xstyle),
           className,
           style,
@@ -503,7 +503,7 @@ export function SideNav({
       aria-label="Side navigation"
       data-testid={testId}
       {...mergeProps(
-        xdsThemeProps('side-nav'),
+        themeProps('side-nav'),
         stylex.props(styles.root, collapsed && styles.rootCollapsed, xstyle),
         className,
         resizableNavStyle,

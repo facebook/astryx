@@ -21,7 +21,7 @@
  *
  * Commands call jsonOut(type, data) for success and jsonError(msg) for
  * errors. Consumer-facing utilities (parseResponse, isError, assertResponse)
- * live in parse.mjs and are exported via @xds/cli/json.
+ * live in parse.mjs and are exported via @astryxdesign/cli/json.
  */
 
 /**
@@ -107,7 +107,7 @@ export function jsonOut(type, data, meta) {
  * shape.
  *
  * The `code` is resolved in priority order: an explicit `code` argument,
- * then a `code` property carried on a thrown Error/XDSError, then the
+ * then a `code` property carried on a thrown Error/AstryxError, then the
  * generic `ERR_UNKNOWN` fallback. It always appears on the envelope so
  * consumers can branch on it unconditionally.
  *

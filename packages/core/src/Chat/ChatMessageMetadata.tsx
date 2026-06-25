@@ -25,7 +25,7 @@ import {Icon} from '../Icon';
 import type {IconName} from '../Icon/globalIconRegistry';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export type ChatMessageStatus =
   | 'sending'
@@ -134,7 +134,7 @@ export function ChatMessageMetadata({
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('chat-message-metadata'),
+        themeProps('chat-message-metadata'),
         stylex.props(
           styles.meta,
           sender === 'user' ? styles.metaUser : styles.metaAssistant,

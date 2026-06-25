@@ -20,7 +20,7 @@ import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {SizeValue} from '../utils/types';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   base: {
@@ -110,7 +110,7 @@ export function Center({
   ...props
 }: CenterProps) {
   const stylexProps = mergeProps(
-    xdsThemeProps('center', {axis}),
+    themeProps('center', {axis}),
     stylex.props(
       isInline ? styles.inline : styles.base,
       (axis === 'both' || axis === 'vertical') && styles.alignItemsCenter,

@@ -42,7 +42,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-statusdot', visualProps: ['variant']},
+      {className: 'astryx-statusdot', visualProps: ['variant']},
     ],
   },
   usage: {
@@ -90,7 +90,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-statusdot', visualProps: ['variant']},
+      {className: 'astryx-statusdot', visualProps: ['variant']},
     ],
   },
   usage: {

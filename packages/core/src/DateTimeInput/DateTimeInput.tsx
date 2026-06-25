@@ -78,7 +78,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
@@ -790,7 +790,7 @@ export function DateTimeInput({
       <div
         {...rest}
         {...mergeProps(
-          xdsThemeProps('date-time-input', {
+          themeProps('date-time-input', {
             size,
             status: status?.type ?? null,
           }),

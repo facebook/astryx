@@ -11,13 +11,14 @@ import {
   Component,
   type ReactNode,
 } from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {getComponent, resolveValue} from './resolveElements';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {Center} from '@xds/core/Center';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Center} from '@astryxdesign/core/Center';
 import {CodeExampleBlock} from '../CodeExampleBlock';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 import {Code} from 'lucide-react';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {
@@ -33,6 +34,17 @@ import type {
 } from '../../generated/componentRegistry';
 
 export type {KnobProp} from './interactiveState';
+
+const styles = stylex.create({
+  card: {
+    width: '100%',
+    position: 'relative',
+  },
+  // Flattens the Card corners when embedded in an already-framed container.
+  flat: {
+    borderRadius: 0,
+  },
+});
 
 class PreviewErrorBoundary extends Component<
   {children: ReactNode; resetKeys: unknown[]},
@@ -193,6 +205,7 @@ export function InteractivePreviewStage({
   missingRequiredProps = [],
   onPropChange,
   canControlOpenState = false,
+  embedded = false,
 }: {
   name: string;
   state: Record<string, unknown>;
@@ -201,6 +214,7 @@ export function InteractivePreviewStage({
   missingRequiredProps?: string[];
   onPropChange?: (propName: string, value: unknown) => void;
   canControlOpenState?: boolean;
+  embedded?: boolean;
 }) {
   const [showCode, setShowCode] = useState(false);
   const Component = getComponent(name);
@@ -242,7 +256,7 @@ export function InteractivePreviewStage({
   if (missingRequiredProps.length > 0) {
     return (
       <ComponentPreviewTheme>
-        <Card variant="muted" padding={0}>
+        <Card variant="muted" padding={0} xstyle={embedded && styles.flat}>
           <Center style={{minHeight: 200, width: '100%'}}>
             <VStack
               gap={1}
@@ -268,7 +282,7 @@ export function InteractivePreviewStage({
   if (!Component) {
     return (
       <ComponentPreviewTheme>
-        <Card variant="muted" padding={0}>
+        <Card variant="muted" padding={0} xstyle={embedded && styles.flat}>
           <Center style={{minHeight: 200, width: '100%'}}>
             <VStack
               gap={1}
@@ -281,7 +295,7 @@ export function InteractivePreviewStage({
                 Interactive preview not available for {name}.
               </Text>
               <Text type="supporting" color="secondary">
-                This component is not part of @xds/core.
+                This component is not part of @astryxdesign/core.
               </Text>
             </VStack>
           </Center>
@@ -297,7 +311,7 @@ export function InteractivePreviewStage({
       <Card
         variant="muted"
         padding={0}
-        style={{width: '100%', position: 'relative'}}>
+        xstyle={[styles.card, embedded && styles.flat]}>
         <div
           style={{
             position: 'absolute',

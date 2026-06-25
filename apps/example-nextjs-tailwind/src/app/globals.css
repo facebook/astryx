@@ -4,25 +4,25 @@
  * Layer order for XDS + Tailwind coexistence.
  *
  * Pre-declare ALL layers upfront so CSS resolves them in the right order.
- * Without this, XDS layers (reset, xds-base, xds-theme) are created after
+ * Without this, XDS layers (reset, astryx-base, astryx-theme) are created after
  * Tailwind's declared layers and end up with higher priority — which means
  * XDS component styles beat Tailwind utilities. That's backwards.
  *
  * Desired priority (lowest → highest):
- *   reset → theme → base → xds-base → xds-theme → components → utilities
+ *   reset → theme → base → astryx-base → astryx-theme → components → utilities
  *
  * - XDS reset is lowest (it uses :where() for zero specificity anyway)
  * - Tailwind preflight (base) sits just above the reset
- * - XDS component styles (xds-base, xds-theme) sit in the middle
+ * - XDS component styles (astryx-base, astryx-theme) sit in the middle
  * - Tailwind utilities win over everything — className="bg-red-500" works
  * - Unlayered consumer CSS always wins over all layers
  */
-@layer reset, theme, base, xds-base, xds-theme, components, utilities;
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
-@import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
-@import "@xds/theme-default/theme.css";
-@import "@xds/core/tailwind-theme.css";
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+@import "@astryxdesign/core/tailwind-theme.css";
 @import "tailwindcss/utilities.css" layer(utilities);

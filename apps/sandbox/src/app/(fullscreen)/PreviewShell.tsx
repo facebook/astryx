@@ -4,18 +4,18 @@
 
 import {useState, useCallback, useEffect, useMemo, useRef} from 'react';
 import {usePathname, useRouter} from 'next/navigation';
-import {Text} from '@xds/core/Text';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {Button} from '@xds/core/Button';
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {CommandPalette} from '@xds/core/CommandPalette';
-import {createStaticSource} from '@xds/core/Typeahead';
+import {Text} from '@astryxdesign/core/Text';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {Button} from '@astryxdesign/core/Button';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {CommandPalette} from '@astryxdesign/core/CommandPalette';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
-import {TreeList} from '@xds/core/TreeList';
-import type {TreeListItemData} from '@xds/core/TreeList';
+} from '@astryxdesign/core/SegmentedControl';
+import {TreeList} from '@astryxdesign/core/TreeList';
+import type {TreeListItemData} from '@astryxdesign/core/TreeList';
 import {categories} from '../sandboxPages';
 import {useThemeControls, SANDBOX_THEMES} from '../providers';
 import {sourceRegistry} from '../../generated/sourceRegistry';
@@ -278,11 +278,11 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
     // Embedded template previews need a full-height chain so page roots sized
     // with min-height:100% (e.g. centered login pages) fill the frame instead of
     // collapsing to content height. The chain is html → body → Theme wrapper
-    // ([data-xds-theme]) → template root. Rendered inline (not in the layout
+    // ([data-astryx-theme]) → template root. Rendered inline (not in the layout
     // <head>) so it applies reliably in the embed context.
     return (
       <>
-        <style>{`html,body{height:100%}body>[data-xds-theme]{height:100%}`}</style>
+        <style>{`html,body{height:100%}body>[data-astryx-theme]{height:100%}`}</style>
         {children}
       </>
     );
@@ -310,7 +310,7 @@ export function PreviewShell({children}: {children: React.ReactNode}) {
       return;
     }
     iframe.contentWindow.postMessage(
-      {type: 'xds-theme-sync', theme: themeName, mode},
+      {type: 'astryx-theme-sync', theme: themeName, mode},
       '*',
     );
   }, [themeName, mode]);

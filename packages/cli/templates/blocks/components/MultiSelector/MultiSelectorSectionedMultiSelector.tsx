@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {MultiSelector} from '@xds/core/MultiSelector';
+import {MultiSelector} from '@astryxdesign/core/MultiSelector';
 
 export default function MultiSelectorSectionedMultiSelector() {
   const [value, setValue] = useState<string[]>([]);

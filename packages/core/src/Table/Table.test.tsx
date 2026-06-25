@@ -623,7 +623,7 @@ describe('Table', () => {
     const table = screen.getByRole('table');
     const wrapper = table.parentElement;
     expect(wrapper).toBeTruthy();
-    expect(wrapper!.className).toContain('xds-table-scroll-wrapper');
+    expect(wrapper!.className).toContain('astryx-table-scroll-wrapper');
   });
 
   it('uses table-layout: auto in children mode', () => {

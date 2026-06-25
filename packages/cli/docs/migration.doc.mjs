@@ -90,16 +90,16 @@ npx astryx component Button --json`,
           type: 'code',
           lang: 'tsx',
           label: 'Root provider with explicit mode',
-          code: `import {Theme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default/built';
+          code: `import {Theme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 import {useState} from 'react';
-import '@xds/theme-default/theme.css';
+import '@astryxdesign/theme-neutral/theme.css';
 
 export function AppRoot({children}: {children: React.ReactNode}) {
   const [mode, setMode] = useState<'system' | 'light' | 'dark'>('system');
 
   return (
-    <Theme theme={defaultTheme} mode={mode}>
+    <Theme theme={neutralTheme} mode={mode}>
       <SettingsContext.Provider value={{mode, setMode}}>
         {children}
       </SettingsContext.Provider>
@@ -115,14 +115,14 @@ export function AppRoot({children}: {children: React.ReactNode}) {
           type: 'code',
           lang: 'css',
           label: 'Tailwind v4 coexistence',
-          code: `@layer reset, theme, base, xds-base, xds-theme, components, utilities;
+          code: `@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
-@import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
-@import "@xds/theme-default/theme.css";
-@import "@xds/core/tailwind-theme.css";
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+@import "@astryxdesign/core/tailwind-theme.css";
 @import "tailwindcss/utilities.css" layer(utilities);`,
         },
       ],

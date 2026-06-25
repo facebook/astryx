@@ -43,7 +43,7 @@ import {mergeProps} from '../utils';
 import {switchScope} from './switch.markers.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
 const SWITCH_WIDTH = 40;
@@ -396,7 +396,7 @@ export function Switch({
       <div
         aria-hidden="true"
         {...mergeProps(
-          xdsThemeProps('switch', {
+          themeProps('switch', {
             checked: isOn ? 'checked' : null,
             disabled: isDisabled ? 'disabled' : null,
           }),
@@ -410,7 +410,7 @@ export function Switch({
         )}>
         <div
           {...mergeProps(
-            xdsThemeProps('switch-thumb', {checked: isOn ? 'checked' : null}),
+            themeProps('switch-thumb', {checked: isOn ? 'checked' : null}),
             stylex.props(styles.thumb, isOn ? styles.thumbOn : styles.thumbOff),
           )}>
           {isBusy && <Spinner size="sm" />}
@@ -444,7 +444,7 @@ export function Switch({
   return (
     <div
       {...mergeProps(
-        xdsThemeProps('switch-field', {
+        themeProps('switch-field', {
           labelPosition: labelPosition !== 'end' ? labelPosition : undefined,
           labelSpacing: labelSpacing !== 'default' ? labelSpacing : undefined,
         }),

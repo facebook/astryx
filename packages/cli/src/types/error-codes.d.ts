@@ -2,7 +2,7 @@
 
 /**
  * Stable, machine-readable error codes carried on every CLI error envelope
- * and every thrown XDSError. Consumers should branch on these — never on the
+ * and every thrown AstryxError. Consumers should branch on these — never on the
  * human-readable `error` string, which can change at any time.
  *
  * Append-only: a code's meaning never changes and codes are never removed.

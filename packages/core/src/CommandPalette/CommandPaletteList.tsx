@@ -19,7 +19,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {spacingVars} from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   list: {
@@ -88,7 +88,7 @@ export function CommandPaletteList({
       role="listbox"
       aria-label={label}
       {...mergeProps(
-        xdsThemeProps('command-palette-list'),
+        themeProps('command-palette-list'),
         stylex.props(styles.list, xstyle),
         className,
         style,

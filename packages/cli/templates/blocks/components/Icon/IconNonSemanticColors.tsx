@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Icon} from '@xds/core/Icon';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Icon} from '@astryxdesign/core/Icon';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const colors = [
   'blue',

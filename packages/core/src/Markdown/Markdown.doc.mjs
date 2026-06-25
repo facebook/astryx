@@ -121,12 +121,12 @@ export const docs = {
   ],
   playground: {
     defaults: {
-      children: '## Getting Started\n\nInstall the package:\n\n```bash\nnpm install @xds/core\n```\n\nThen import and use any component:\n\n```tsx\nimport {Button} from \'@xds/core/Button\';\n```\n\n**Bold**, *italic*, and `inline code` all work.',
+      children: '## Getting Started\n\nInstall the package:\n\n```bash\nnpm install @astryxdesign/core\n```\n\nThen import and use any component:\n\n```tsx\nimport {Button} from \'@astryxdesign/core/Button\';\n```\n\n**Bold**, *italic*, and `inline code` all work.',
     },
   },
   theming: {
     targets: [
-      {className: 'xds-markdown', visualProps: ['density']},
+      {className: 'astryx-markdown', visualProps: ['density']},
     ],
   },
   usage: {
@@ -143,7 +143,7 @@ export const docs = {
     {
       label: 'Inline display',
       code: `
-import {Text} from '@xds/core/Text';
+import {Text} from '@astryxdesign/core/Text';
 
 <Text>
   This description includes{' '}
@@ -164,7 +164,7 @@ import {Text} from '@xds/core/Text';
     {
       label: 'Inline Plugins',
       code: `
-import {Link} from '@xds/core/Link';
+import {Link} from '@astryxdesign/core/Link';
 
 const issuePlugins = [
   {
@@ -289,7 +289,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-markdown', visualProps: ['density']},
+      {className: 'astryx-markdown', visualProps: ['density']},
     ],
   },
   usage: {

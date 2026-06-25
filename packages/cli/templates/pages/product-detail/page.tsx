@@ -8,30 +8,30 @@ import {
   HStack,
   Layout,
   LayoutContent,
-} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Grid} from '@xds/core/Grid';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {NumberInput} from '@xds/core/NumberInput';
-import {Icon} from '@xds/core/Icon';
+} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {Icon} from '@astryxdesign/core/Icon';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
-import {Badge} from '@xds/core/Badge';
-import {Divider} from '@xds/core/Divider';
-import {Collapsible, CollapsibleGroup} from '@xds/core/Collapsible';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {SelectableCard} from '@xds/core/SelectableCard';
+} from '@astryxdesign/core/SegmentedControl';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Collapsible, CollapsibleGroup} from '@astryxdesign/core/Collapsible';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {SelectableCard} from '@astryxdesign/core/SelectableCard';
 import * as stylex from '@stylexjs/stylex';
 
-// Custom CSS here is limited to what XDS components can't express today:
+// Custom CSS here is limited to what Astryx components can't express today:
 // - image fill + corner radius (no Image primitive — #2582)
-// - the sticky info column (no sticky prop on XDS layout primitives — #2613)
+// - the sticky info column (no sticky prop on Astryx layout primitives — #2613)
 const pageStyles = stylex.create({
   // Keeps the info column in view while the gallery scrolls. No sticky prop on
-  // XDS layout primitives.
+  // Astryx layout primitives.
   stickyInfo: {
     position: 'sticky',
     top: 'var(--spacing-8)',
@@ -79,24 +79,15 @@ function StarRating({rating, count}: {rating: number; count: number}) {
 }
 
 // ─── Image URLs ─────────────────────────────────────────────────────────────
-// Light product photography from the xds_oss asset set (ceramics collection)
-// Source: meta assets.file list -s xds_oss -g light-product-{1..5}
 // IMAGES[0] = fallback hero; IMAGES[1..6] = thumbnails (first is selected by default)
 const IMAGES = [
-  // light-product-1 (fallback hero)
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
-  // light-product-1 (thumbnail 1)
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
-  // light-product-2
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-2.png',
-  // light-product-3
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-3.png',
-  // light-product-4
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-4.png',
-  // light-product-5
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-5.png',
-  // light-product-3 (gallery variety)
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-3.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-1.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-1.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-2.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-3.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-4.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-5.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-3.png',
 ];
 
 // ─── Product Data ───────────────────────────────────────────────────────────

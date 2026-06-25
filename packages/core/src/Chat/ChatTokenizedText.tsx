@@ -23,7 +23,7 @@ import {Badge} from '../Badge';
 import type {ChatComposerToken} from './ChatComposerInput';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Styles
@@ -97,7 +97,7 @@ export function ChatTokenizedText({
       <span
         ref={ref}
         {...mergeProps(
-          xdsThemeProps('chat-tokenized-text'),
+          themeProps('chat-tokenized-text'),
           stylex.props(styles.root),
         )}>
         {children ?? ''}
@@ -110,7 +110,7 @@ export function ChatTokenizedText({
     <span
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('chat-tokenized-text'),
+        themeProps('chat-tokenized-text'),
         stylex.props(styles.root),
       )}>
       {parts}

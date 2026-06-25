@@ -3,10 +3,10 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {useLayer} from '@xds/core/Layer';
-import {LayerProvider} from '@xds/core/Layer';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
+import {useLayer} from '@astryxdesign/core/Layer';
+import {LayerProvider} from '@astryxdesign/core/Layer';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
 
 const styles = stylex.create({
   popoverContent: {

@@ -52,7 +52,7 @@ export type {
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -674,7 +674,7 @@ export function FileInput({
         aria-busy={isLoading || undefined}
         {...dragDropProps}
         {...mergeProps(
-          xdsThemeProps('file-input', {mode, status: status?.type ?? null}),
+          themeProps('file-input', {mode, status: status?.type ?? null}),
           stylex.props(
             isDropzone ? styles.dropzone : styles.compact,
             isDropzone && !isDisabled && styles.dropzoneHover,

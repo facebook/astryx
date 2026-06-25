@@ -2,7 +2,7 @@
 
 /**
  * @file tokens.stylex.ts
- * @input XDS design token system
+ * @input Astryx design token system
  * @output CSS custom properties for SVG icon rendering
  * @position Token definitions consumed by SVGIcon and variation presets
  *

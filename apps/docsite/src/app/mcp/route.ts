@@ -214,7 +214,7 @@ const handler = createMcpHandler(
               moduleName: comp.moduleName,
               group: comp.group,
               description: comp.description,
-              import: `import {${comp.moduleName}} from '@xds/core/${comp.name}';`,
+              import: `import {${comp.moduleName}} from '@astryxdesign/core/${comp.name}';`,
               keyProps: comp.props
                 .filter(
                   p =>
@@ -350,7 +350,7 @@ const handler = createMcpHandler(
           const result = {
             name: comp.name,
             moduleName: comp.moduleName,
-            import: `import {${comp.moduleName}} from '@xds/core/${comp.name}';`,
+            import: `import {${comp.moduleName}} from '@astryxdesign/core/${comp.name}';`,
             group: comp.group,
             description: comp.description,
             props: comp.props,
@@ -384,7 +384,7 @@ const handler = createMcpHandler(
                   groupMembers: groupMembers.slice(0, 6).map(m => ({
                     name: m.name,
                     moduleName: m.moduleName,
-                    import: `import {${m.moduleName}} from '@xds/core/${m.name}';`,
+                    import: `import {${m.moduleName}} from '@astryxdesign/core/${m.name}';`,
                     description: m.description.slice(0, 120),
                     ...(m.params
                       ? {
@@ -518,7 +518,7 @@ const handler = createMcpHandler(
                 .map(c => ({
                   name: c.name,
                   moduleName: c.moduleName,
-                  import: `import {${c.moduleName}} from '@xds/core/${c.name}';`,
+                  import: `import {${c.moduleName}} from '@astryxdesign/core/${c.name}';`,
                   description: c.description,
                 }))
             : [];

@@ -16,7 +16,7 @@ import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import {
   colorVars,
   spacingVars,
@@ -84,7 +84,7 @@ export function CommandPaletteGroup({
       role="group"
       aria-label={heading}
       {...mergeProps(
-        xdsThemeProps('command-palette-group'),
+        themeProps('command-palette-group'),
         stylex.props(styles.group, xstyle),
         className,
         style,

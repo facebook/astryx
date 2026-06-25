@@ -18,7 +18,7 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useListFocus} from '../hooks/useListFocus';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import {
   NavHeadingMenuContext,
   useNavHeadingCloseContext,
@@ -120,7 +120,7 @@ export function NavHeadingMenu({
         onKeyDown={handleKeyDown}
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('nav-heading-menu', {size}),
+          themeProps('nav-heading-menu', {size}),
           stylex.props(styles.root, sizeStyles[size], xstyle),
           className,
           inlineStyle,

@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {withXDS} from '@xds/build/next';
+import {withXDS} from '@astryxdesign/build/next';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

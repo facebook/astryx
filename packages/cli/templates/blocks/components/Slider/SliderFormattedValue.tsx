@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Slider} from '@xds/core/Slider';
+import {Slider} from '@astryxdesign/core/Slider';
 
 export default function SliderFormattedValue() {
   const [value, setValue] = useState(72);

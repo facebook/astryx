@@ -151,7 +151,7 @@ function validatePlugin<T extends Record<string, unknown>>(
  * Plugins are sorted into a canonical order (see PLUGIN_ORDER) so that
  * interactions between first-party plugins are deterministic.
  *
- * @param basePlugins - Stable array of built-in plugins (e.g. XDS style plugin)
+ * @param basePlugins - Stable array of built-in plugins (e.g. Astryx style plugin)
  * @param userPlugins - Named plugin record from the consumer
  * @returns Stable array of plugins suitable for BaseTable
  *

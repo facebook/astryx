@@ -48,7 +48,7 @@ import {useTruncation} from './useTruncation';
 import type {LayerPlacement} from '../Layer';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const LazyXDSTooltip = lazy(async () =>
   import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
@@ -254,7 +254,7 @@ export function Text({
       <Component
         ref={mergeRefs(ref, truncation.ref, textRef)}
         {...mergeProps(
-          xdsThemeProps('text', {type, color: resolvedColor}),
+          themeProps('text', {type, color: resolvedColor}),
           stylex.props(
             colorStyles[resolvedColor],
             sizeByTypeStyles[styleType],

@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Selector, SelectorOption} from '@xds/core/Selector';
+import {Selector, SelectorOption} from '@astryxdesign/core/Selector';
 import {UserIcon} from '@heroicons/react/24/outline';
 
 const descriptions: Record<string, string> = {

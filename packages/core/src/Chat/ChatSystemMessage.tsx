@@ -31,7 +31,7 @@ import {
 import {mergeProps} from '../utils';
 import {Divider} from '../Divider';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export type ChatSystemMessageVariant = 'default' | 'divider';
 
@@ -130,7 +130,7 @@ export function ChatSystemMessage({
         role="status"
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('chat-system-message', {variant}),
+          themeProps('chat-system-message', {variant}),
           stylex.props(styles.dividerWrap, xstyle),
           className,
           styleProp,
@@ -146,7 +146,7 @@ export function ChatSystemMessage({
       role="status"
       data-testid={testId}
       {...mergeProps(
-        xdsThemeProps('chat-system-message', {variant}),
+        themeProps('chat-system-message', {variant}),
         stylex.props(styles.root, xstyle),
         className,
         styleProp,

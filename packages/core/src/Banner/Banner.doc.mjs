@@ -104,8 +104,8 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-banner', visualProps: ['container', 'status']},
-      {className: 'xds-banner-icon', visualProps: ['status']},
+      {className: 'astryx-banner', visualProps: ['container', 'status']},
+      {className: 'astryx-banner-icon', visualProps: ['status']},
     ],
     vars: [
       {name: '--_banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)', private: true},
@@ -160,14 +160,14 @@ export const docsZh = {
   theming: {
     targets: [
       {
-        className: 'xds-banner',
+        className: 'astryx-banner',
         visualProps: [
           'container',
           'status',
         ],
       },
       {
-        className: 'xds-banner-icon',
+        className: 'astryx-banner-icon',
         visualProps: [
           'status',
         ],

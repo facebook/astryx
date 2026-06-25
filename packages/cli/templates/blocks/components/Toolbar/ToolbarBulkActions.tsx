@@ -3,13 +3,13 @@
 'use client';
 
 import {useState} from 'react';
-import {Toolbar} from '@xds/core/Toolbar';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {Badge} from '@xds/core/Badge';
-import {Table} from '@xds/core/Table';
-import {useTableSelection, useTableSelectionState} from '@xds/core/Table';
-import {Stack} from '@xds/core/Layout';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Table} from '@astryxdesign/core/Table';
+import {useTableSelection, useTableSelectionState} from '@astryxdesign/core/Table';
+import {Stack} from '@astryxdesign/core/Layout';
 import {TrashIcon, ArchiveBoxIcon} from '@heroicons/react/24/outline';
 
 const DATA = [

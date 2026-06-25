@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {PowerSearch} from '@xds/core/PowerSearch';
-import type {PowerSearchConfig, PowerSearchFilter} from '@xds/core/PowerSearch';
+import {PowerSearch} from '@astryxdesign/core/PowerSearch';
+import type {PowerSearchConfig, PowerSearchFilter} from '@astryxdesign/core/PowerSearch';
 
 const config: PowerSearchConfig = {
   name: 'BasicSearch',

@@ -4,9 +4,9 @@ import {describe, it, expect} from 'vitest';
 import {stripTemplateAssetRefs, template} from './template.mjs';
 
 describe('stripTemplateAssetRefs', () => {
-  it('replaces a lookaside xds_oss image URL with an inline data URI', () => {
+  it('replaces a lookaside astryx image URL with an inline data URI', () => {
     const src =
-      "const hero = 'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-1.png';";
+      "const hero = 'https://lookaside.facebook.com/assets/astryx/colorful-home-horizontal-1.png';";
     const out = stripTemplateAssetRefs(src);
     expect(out).not.toContain('lookaside.facebook.com');
     expect(out).toContain('data:image/svg+xml,');
@@ -14,7 +14,7 @@ describe('stripTemplateAssetRefs', () => {
 
   it('replaces a lookaside block-avatar image URL', () => {
     const src =
-      'src="https://lookaside.facebook.com/assets/xds_oss/avatar-profile-05.jpg"';
+      'src="https://lookaside.facebook.com/assets/astryx/avatar-profile-05.jpg"';
     const out = stripTemplateAssetRefs(src);
     expect(out).not.toContain('lookaside.facebook.com');
     expect(out).toContain('data:image/svg+xml,');
@@ -22,9 +22,9 @@ describe('stripTemplateAssetRefs', () => {
 
   it('replaces every lookaside reference, not just the first', () => {
     const src = [
-      "'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-1.png'",
-      "'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-3.jpg'",
-      "'https://lookaside.facebook.com/assets/xds_oss/moody-scene-horizontal-1.png'",
+      "'https://lookaside.facebook.com/assets/astryx/colorful-home-horizontal-1.png'",
+      "'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-3.png'",
+      "'https://lookaside.facebook.com/assets/astryx/moody-scene-horizontal-1.png'",
     ].join('\n');
     const out = stripTemplateAssetRefs(src);
     expect(out).not.toContain('lookaside.facebook.com');
@@ -33,7 +33,7 @@ describe('stripTemplateAssetRefs', () => {
 
   it('preserves surrounding source structure', () => {
     const src =
-      "const data = [{src: 'https://lookaside.facebook.com/assets/xds_oss/x.png', alt: 'X'}];";
+      "const data = [{src: 'https://lookaside.facebook.com/assets/astryx/x.png', alt: 'X'}];";
     const out = stripTemplateAssetRefs(src);
     expect(out).toContain("alt: 'X'");
     expect(out).toContain('const data = [{src:');

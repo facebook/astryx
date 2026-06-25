@@ -27,7 +27,7 @@ import type {IconType} from '../Icon';
 import {mergeProps} from '../utils';
 import {FormLayoutContext} from '../FormLayout/FormLayoutContext';
 import {Text} from '../Text';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   container: {
@@ -236,7 +236,7 @@ export function Field({
       <div
         ref={ref}
         {...mergeProps(
-          xdsThemeProps('field', {layout: 'horizontal-labels'}),
+          themeProps('field', {layout: 'horizontal-labels'}),
           stylex.props(styles.horizontalLabels, xstyle),
           className,
           style,
@@ -264,7 +264,7 @@ export function Field({
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('field'),
+        themeProps('field'),
         stylex.props(
           styles.container,
           !isLabelHidden && styles.containerGap,

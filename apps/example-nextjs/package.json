@@ -1,15 +1,16 @@
 {
-  "name": "@xds/example-nextjs",
+  "name": "@astryxdesign/example-nextjs",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start"
   },
   "dependencies": {
-    "@xds/core": "*",
-    "@xds/theme-default": "*",
+    "@astryxdesign/core": "*",
+    "@astryxdesign/theme-neutral": "*",
     "next": "^15.5.16",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

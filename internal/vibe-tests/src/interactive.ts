@@ -8,8 +8,8 @@
  * Results are stored in the same format as the automated harness.
  *
  * Usage:
- *   pnpm -F @xds/vibe-tests interactive
- *   pnpm -F @xds/vibe-tests interactive --sample 5
+ *   pnpm -F @astryxdesign/vibe-tests interactive
+ *   pnpm -F @astryxdesign/vibe-tests interactive --sample 5
  */
 
 import * as fs from 'node:fs';
@@ -743,15 +743,15 @@ function installAgentsDocs(): void {
     }
   }
 
-  // Generate fresh AGENTS.md from xds init CLI
+  // Generate fresh AGENTS.md from astryx init CLI
   try {
-    execSync('npx xds init --features agents --agent-docs-path AGENTS.md', {
+    execSync('npx astryx init --features agents --agent-docs-path AGENTS.md', {
       cwd: vibeTestsDir,
       stdio: 'pipe',
     });
-    console.log('✓ Generated AGENTS.md from CLI (xds init)');
+    console.log('✓ Generated AGENTS.md from CLI (astryx init)');
   } catch (_error) {
-    console.warn('⚠ Failed to generate AGENTS.md via xds init');
+    console.warn('⚠ Failed to generate AGENTS.md via astryx init');
   }
 }
 
@@ -779,7 +779,7 @@ function installAstryxDocs(): void {
   // Update the header/branding
   content = content.replace(/\bXDS\b/g, 'Astryx');
   content = content.replace(/`xds /g, '`astryx ');
-  content = content.replace(/npx xds /g, 'npx astryx ');
+  content = content.replace(/npx astryx /g, 'npx astryx ');
   // CSS custom properties: docs should reference the new --astryx-* names
   // (the library still handles --xds-* via inverted fallback, but we don't
   // recommend the legacy names in forward-facing docs)
@@ -991,7 +991,7 @@ function generateSubagentPrompt(
   const personaFraming: Record<string, Record<string, string>> = {
     xds: {
       naive: '', // No special framing - just the natural request
-      experienced: `Use XDS components from @xds/core. `,
+      experienced: `Use XDS components from @astryxdesign/core. `,
       adversarial: `I'm used to Tailwind/baseline patterns but need to use your design system. `,
     },
     baseline: {
@@ -1006,7 +1006,7 @@ function generateSubagentPrompt(
     },
     astryx: {
       naive: '', // No special framing - same library, bare names
-      experienced: `Use Astryx components from @xds/core. `,
+      experienced: `Use Astryx components from @astryxdesign/core. `,
       adversarial: `I'm used to Tailwind/baseline patterns but need to use your design system. `,
     },
   };
@@ -1077,7 +1077,7 @@ For each test, the subagent should:
    (Use individual files to avoid parallel write conflicts)
 
 ### After All Tests Complete
-Run: pnpm -F @xds/vibe-tests aggregate --iteration ${iterationId}
+Run: pnpm -F @astryxdesign/vibe-tests aggregate --iteration ${iterationId}
 
 This will:
 - Read all results from results/ directory

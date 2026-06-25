@@ -36,7 +36,7 @@ import {useCollapsible} from './useCollapsible';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   root: {
@@ -198,7 +198,7 @@ export function Collapsible({
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('collapsible'),
+        themeProps('collapsible'),
         stylex.props(styles.root, xstyle),
         className,
         style,

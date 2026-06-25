@@ -5,7 +5,7 @@
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
+} from '@astryxdesign/core/SegmentedControl';
 
 export default function SegmentedControlShowcase() {
   return (

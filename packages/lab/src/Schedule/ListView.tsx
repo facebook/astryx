@@ -16,8 +16,8 @@ import {
   plainDateIsEqual,
   plainDateToISO,
   type PlainDate,
-} from '@xds/core/utils';
-import {Heading} from '@xds/core/Text';
+} from '@astryxdesign/core/utils';
+import {Heading} from '@astryxdesign/core/Text';
 import {
   enumerateDates,
   eventOccursOnDate,

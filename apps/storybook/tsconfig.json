@@ -2,25 +2,25 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "@xds/core": [
+      "@astryxdesign/core": [
         "../../packages/core/src/index.ts"
       ],
-      "@xds/core/*": [
+      "@astryxdesign/core/*": [
         "../../packages/core/src/*/index.ts",
         "../../packages/core/src/*"
       ],
-      "@xds/theme/*": [
+      "@astryxdesign/theme/*": [
         "../../packages/theme/src/*/index.ts",
         "../../packages/theme/src/*"
       ],
-      "@xds/lab": [
+      "@astryxdesign/lab": [
         "../../packages/lab/src/index.ts"
       ],
-      "@xds/lab/*": [
+      "@astryxdesign/lab/*": [
         "../../packages/lab/src/*/index.ts",
         "../../packages/lab/src/*"
       ],
-      "@xds/build/vite": [
+      "@astryxdesign/build/vite": [
         "../../packages/build/src/vite.ts"
       ]
     }

@@ -19,17 +19,17 @@ import {
   spacingVars,
   typographyVars,
   typeScaleVars,
-} from '@xds/core/theme/tokens.stylex';
-import {Spinner} from '@xds/core/Spinner';
-import {HStack} from '@xds/core/Stack';
-import {Heading, Text} from '@xds/core/Text';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {Spinner} from '@astryxdesign/core/Spinner';
+import {HStack} from '@astryxdesign/core/Stack';
+import {Heading, Text} from '@astryxdesign/core/Text';
 import {
   plainDateFromInstant,
   plainDateIsAfter,
   plainDateIsBefore,
   plainDateToInstant,
   type PlainDate,
-} from '@xds/core/utils';
+} from '@astryxdesign/core/utils';
 import {isDayEvent} from './dateMath';
 import {useScheduleContext} from './context';
 import type {

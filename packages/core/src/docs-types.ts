@@ -47,7 +47,7 @@ export interface PropDoc {
   default?: string;
   /** True if the prop must be provided. Omit (don't set to false) if optional. */
   required?: boolean;
-  /** For ReactNode props: the XDS components this slot typically accepts.
+  /** For ReactNode props: the Astryx components this slot typically accepts.
    *  Each entry is an ElementDescriptor that the playground uses to
    *  create a default instance when the user toggles the slot on.
    *
@@ -76,22 +76,22 @@ export interface PropDoc {
  * A theming target — a stable selector surface that `defineTheme` can target
  * via `@scope` selectors. Each component renders one or more stable `xds-*`
  * class names and reflects visual props/states as `data-*` attributes via
- * `xdsThemeProps()`, so themes and external CSS have an explicit prop-aware selector surface.
+ * `themeProps()`, so themes and external CSS have an explicit prop-aware selector surface.
  *
  * @example
  * ```
- * {className: 'xds-button', visualProps: ['variant', 'size']}
- * {className: 'xds-avatar-status-dot', visualProps: ['variant']}
- * {className: 'xds-card'}
+ * {className: 'astryx-button', visualProps: ['variant', 'size']}
+ * {className: 'astryx-avatar-status-dot', visualProps: ['variant']}
+ * {className: 'astryx-card'}
  * ```
  */
 export interface ThemingTarget {
   /** The stable CSS class name rendered by the component.
-   *  Always starts with `xds-`.
-   *  e.g. `"xds-button"`, `"xds-avatar-status-dot"`, `"xds-card"` */
+   *  Always starts with `astryx-`.
+   *  e.g. `"astryx-button"`, `"astryx-avatar-status-dot"`, `"astryx-card"` */
   className: string;
   /** Visual prop names reflected on this element.
-   *  These are the props passed to `xdsThemeProps()` as the second argument.
+   *  These are the props passed to `themeProps()` as the second argument.
    *  Use these names to derive preferred data selectors: `variant` →
    *  `[data-variant="secondary"]`, `level` → `[data-level="2"]`. Legacy bare
    *  classes are still emitted for compatibility but should not be the primary
@@ -174,7 +174,7 @@ export interface ComponentVar {
    * Private vars are set by the derived var expansion pipeline — theme
    * authors write standard CSS properties instead of setting them directly.
    * The CLI hides private vars from theming output.
-   * `xds theme build` errors if a theme sets a private var directly.
+   * `astryx theme build` errors if a theme sets a private var directly.
    */
   private?: boolean;
 }
@@ -191,12 +191,12 @@ export interface ComponentVar {
  * with the primary/most-used component first.
  */
 export interface ComponentEntry {
-  /** Full export name including XDS prefix. e.g. `"TableRow"`,
+  /** Full export name including Astryx prefix. e.g. `"TableRow"`,
    *  `"DialogHeader"`, `"useTableSelection"` */
   name: string;
   /** Human-readable display name for this subcomponent. Matches the import
    *  name visually with spaces between PascalCase / camelCase words
-   *  (e.g. `"TableRow"` → `"XDS Table Row"`). See `BaseDoc.displayName`. */
+   *  (e.g. `"TableRow"` → `"Astryx Table Row"`). See `BaseDoc.displayName`. */
   displayName: string;
   /** One-sentence description of what this specific component does.
    *  For sub-components, explain the role within the parent composition. */
@@ -402,7 +402,7 @@ export interface PlaygroundConfig {
    *  ```
    */
   wrapper?: {
-    /** Parent component name as exported from `@xds/core`, e.g. `'TabList'`. */
+    /** Parent component name as exported from `@astryxdesign/core`, e.g. `'TabList'`. */
     component: string;
     /** Props for the wrapper. The previewed sub-component becomes its `children`. */
     props?: Record<string, unknown>;
@@ -414,7 +414,7 @@ export interface PlaygroundConfig {
  * Do not use this interface directly — use `ComponentDoc` (the union type).
  */
 interface BaseDoc {
-  /** Directory name without the XDS prefix, PascalCase.
+  /** Directory name without the Astryx prefix, PascalCase.
    *  e.g. `"Button"`, `"Table"`, `"TextInput"`, `"AppShell"` */
   name: string;
   /** Human-readable display name with spaces between words, used by the
@@ -428,13 +428,13 @@ interface BaseDoc {
   /** Search keywords for CLI discovery. Terms a developer might type when
    *  looking for this component: synonyms, related UI concepts, and common
    *  names from other design systems (MUI, Chakra, Radix, shadcn).
-   *  Lowercase only. Used by `xds component <term>` for fuzzy matching.
+   *  Lowercase only. Used by `astryx component <term>` for fuzzy matching.
    *  e.g. `['accordion', 'expand', 'toggle', 'disclosure']` for Collapsible */
   keywords?: string[];
   /** Sub-component names to hide from human-facing UI (CLI listings,
    *  docs catalogs). The components stay public and importable — agents
    *  and tooling can still discover them via source. Use when the
-   *  directory's doc covers a group but some XDS*.tsx files shouldn't
+   *  directory's doc covers a group but some Astryx*.tsx files shouldn't
    *  appear in the catalog. */
   hiddenComponents?: string[];
   /** Hide this entire component from human-facing UI (CLI listings,
@@ -494,7 +494,7 @@ interface BaseDoc {
      *  `--layout-padding-*` tokens instead of emitting raw CSS. */
     container?: boolean;
     /** Selector targets rendered by this component.
-     *  Each entry corresponds to an `xdsThemeProps()` call in the source. */
+     *  Each entry corresponds to an `themeProps()` call in the source. */
     targets: ThemingTarget[];
     /** CSS custom properties exposed for theming. */
     vars?: ComponentVar[];
@@ -535,7 +535,7 @@ export interface SingleComponentDoc extends BaseDoc {
  * the entry's content is emitted from the sub-component's own file, not here.
  */
 export interface ComponentRef {
-  /** Full export name including XDS prefix, e.g. `"ChatComposer"`. Must
+  /** Full export name including Astryx prefix, e.g. `"ChatComposer"`. Must
    *  match the `name` field of the referenced sub-component's own doc. */
   name: string;
 }
@@ -708,7 +708,7 @@ export type TokenPreviewType =
 /**
  * A section within a reference doc. Sections are the primary
  * organizational unit — each becomes an h2 in full output,
- * and can be individually retrieved via `xds docs <topic> <section>`.
+ * and can be individually retrieved via `astryx docs <topic> <section>`.
  */
 export interface ReferenceSection {
   /** Section title, e.g. "Spacing Tokens", "Light/Dark Mode" */
@@ -727,7 +727,7 @@ export interface ReferenceSection {
  * Reference docs cover topics like design tokens, principles, theming,
  * patterns, accessibility, and migration guides. Unlike ComponentDoc,
  * they aren't tied to a specific component — just drop a .doc.mjs file
- * in the docs/ directory and it shows up in `xds docs`.
+ * in the docs/ directory and it shows up in `astryx docs`.
  *
  * Every reference .doc.mjs must export a single `docs` constant:
  *
@@ -783,7 +783,7 @@ export interface ReferenceTranslationDoc {
  * Every template directory under `packages/cli/templates/` has a
  * `template.doc.mjs` that exports a single `doc` constant:
  *
- *   /** @type {import('@xds/core').TemplateDoc} *\/
+ *   /** @type {import('@astryxdesign/core').TemplateDoc} *\/
  *   export const doc = { ... };
  *
  * The CLI and sandbox import these for discovery and display.
@@ -912,7 +912,7 @@ interface BaseTemplateDoc {
 
   /** Boolean opt-out for templates that shouldn't appear on the Templates
    *  overview gallery. The template stays available via the CLI and
-   *  `xds template <name>` — it's only hidden from the browsable gallery.
+   *  `astryx template <name>` — it's only hidden from the browsable gallery.
    *  Use for duplicate/experimental variants. Scaffold templates are
    *  hidden automatically and don't need this flag. */
   isHiddenFromOverview?: boolean;
@@ -957,7 +957,7 @@ export type TemplateDoc = PageTemplateDoc | BlockTemplateDoc;
  * Metadata for a component group that is NOT itself a component.
  *
  * Some groups (e.g. 'Checkbox', 'Layout', 'Tabs') are category labels —
- * they cluster related components but have no corresponding XDS*.tsx file.
+ * they cluster related components but have no corresponding Astryx*.tsx file.
  * This metadata tells the docsite and CLI which component to treat as the
  * canonical entry point for the group.
  *
@@ -1049,12 +1049,12 @@ export interface HookDoc {
   /** Usage documentation — description, best practices. */
   usage: UsageDoc;
   /** Component names this hook is commonly used with.
-   *  Enables cross-referencing: \`xds component Toast\` can mention useToast,
-   *  and \`xds hook useToast\` can link back to Toast. */
+   *  Enables cross-referencing: \`astryx component Toast\` can mention useToast,
+   *  and \`astryx hook useToast\` can link back to Toast. */
   relatedComponents?: string[];
   /** Other hook names this hook is commonly used with. */
   relatedHooks?: string[];
-  /** Import path, e.g. '@xds/core/hooks' or '@xds/core/Toast'. */
+  /** Import path, e.g. '@astryxdesign/core/hooks' or '@astryxdesign/core/Toast'. */
   importPath?: string;
   /** Category for grouping in listings. */
   category?: string;

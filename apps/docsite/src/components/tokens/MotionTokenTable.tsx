@@ -4,9 +4,9 @@
 
 import {useState, useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Table, pixel} from '@xds/core/Table';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Table, pixel} from '@astryxdesign/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 

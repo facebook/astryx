@@ -2,13 +2,13 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState, useRef} from 'react';
-import {useToast, ToastViewport} from '@xds/core/Toast';
-import type {ToastType} from '@xds/core/Toast';
-import {Button} from '@xds/core/Button';
-import {Link} from '@xds/core/Link';
-import {Card} from '@xds/core/Card';
-import {Stack} from '@xds/core/Stack';
-import {Dialog} from '@xds/core/Dialog';
+import {useToast, ToastViewport} from '@astryxdesign/core/Toast';
+import type {ToastType} from '@astryxdesign/core/Toast';
+import {Button} from '@astryxdesign/core/Button';
+import {Link} from '@astryxdesign/core/Link';
+import {Card} from '@astryxdesign/core/Card';
+import {Stack} from '@astryxdesign/core/Stack';
+import {Dialog} from '@astryxdesign/core/Dialog';
 
 const meta: Meta = {
   title: 'Core/Toast',

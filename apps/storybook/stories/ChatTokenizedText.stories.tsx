@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {ChatTokenizedText} from '@xds/core/Chat';
-import {ChatMessage, ChatMessageBubble} from '@xds/core/Chat';
+import {ChatTokenizedText} from '@astryxdesign/core/Chat';
+import {ChatMessage, ChatMessageBubble} from '@astryxdesign/core/Chat';
 
 const meta: Meta<typeof ChatTokenizedText> = {
   title: 'Core/ChatTokenizedText',

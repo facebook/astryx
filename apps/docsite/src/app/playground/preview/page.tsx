@@ -10,8 +10,8 @@ import React, {
   useState,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Theme, defineTheme} from '@xds/core/theme';
-import type {ThemeMode, DefinedTheme} from '@xds/core/theme';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
+import type {ThemeMode, DefinedTheme} from '@astryxdesign/core/theme';
 import {themeByValue, DEFAULT_PLAYGROUND_THEME} from '../previewThemes';
 import {useThemeMode} from '../../providers';
 import {ErrorBoundary, ErrorDisplay} from './ErrorBoundary';

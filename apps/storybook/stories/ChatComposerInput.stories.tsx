@@ -5,11 +5,11 @@ import {
   ChatComposer,
   ChatComposerInput,
   type ChatComposerTrigger,
-} from '@xds/core/Chat';
-import {createStaticSource} from '@xds/core/Typeahead';
-import {Badge} from '@xds/core/Badge';
-import {TypeaheadItem} from '@xds/core/Typeahead';
-import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
+} from '@astryxdesign/core/Chat';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
+import {Badge} from '@astryxdesign/core/Badge';
+import {TypeaheadItem} from '@astryxdesign/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 import {useState} from 'react';
 
 const meta: Meta = {

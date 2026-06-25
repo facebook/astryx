@@ -42,7 +42,7 @@ import {Card} from '../Card/Card';
 import type {CardVariant} from '../Card/Card';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Styles — selection + interaction; Card handles the rest
@@ -329,7 +329,7 @@ export function SelectableCard({
       padding={padding}
       variant={variant}
       {...mergeProps(
-        xdsThemeProps('selectable-card', {
+        themeProps('selectable-card', {
           variant,
           selected: isSelected ? 'true' : 'false',
         }),

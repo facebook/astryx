@@ -366,7 +366,7 @@ export async function runCodemods(
       if (meta.description) {
         log.info(`    ${meta.description}`);
       }
-      log.info(`    Run: xds upgrade --codemod ${name} --path <dir> --apply`);
+      log.info(`    Run: astryx upgrade --codemod ${name} --path <dir> --apply`);
     }
   }
 

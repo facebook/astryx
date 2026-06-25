@@ -30,7 +30,7 @@ export interface LinkContextValue {
 }
 
 /**
- * Context for providing a custom link component to all XDS components.
+ * Context for providing a custom link component to all Astryx components.
  * Defaults to null (components fall back to native `<a>`).
  */
 export const LinkContext = createContext<LinkContextValue | null>(null);

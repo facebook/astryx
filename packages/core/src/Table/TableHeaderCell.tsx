@@ -28,7 +28,7 @@ import type {StyleXStyles} from '../theme/types';
 import {overflowStyles, containerEdgeStyles} from './table.stylex';
 import {useTableContext, mergeXStyle} from './useTableCellStyles';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /** Props for TableHeaderCell — `<th>` wrapper with context-aware styling */
 export interface TableHeaderCellProps extends BaseProps<HTMLTableCellElement> {
@@ -127,7 +127,7 @@ export function TableHeaderCell({
         ref={ref}
         {...props}
         {...mergeProps(
-          xdsThemeProps('table-header-cell'),
+          themeProps('table-header-cell'),
           stylex.props(xstyle),
           incomingClassName,
           incomingStyle,
@@ -158,7 +158,7 @@ export function TableHeaderCell({
       ref={ref}
       {...props}
       {...mergeProps(
-        xdsThemeProps('table-header-cell'),
+        themeProps('table-header-cell'),
         stylex.props(...mergeXStyle(cellStyles, xstyle)),
         incomingClassName,
         incomingStyle,

@@ -2,9 +2,9 @@
 
 'use client';
 
-import {NavIcon} from '@xds/core/NavIcon';
-import {Icon} from '@xds/core/Icon';
-import {HStack} from '@xds/core/Layout';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
+import {Icon} from '@astryxdesign/core/Icon';
+import {HStack} from '@astryxdesign/core/Layout';
 
 export default function NavIconShowcase() {
   return (

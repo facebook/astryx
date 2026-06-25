@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {HoverCard, useHoverCard} from '@xds/core/HoverCard';
-import {Button} from '@xds/core/Button';
-import {VStack, HStack} from '@xds/core/Layout';
+import {HoverCard, useHoverCard} from '@astryxdesign/core/HoverCard';
+import {Button} from '@astryxdesign/core/Button';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
 
 const meta: Meta<typeof HoverCard> = {
   title: 'Core/HoverCard',

@@ -28,7 +28,7 @@ import {Divider} from '../Divider/Divider';
 import {MobileNav} from '../MobileNav/MobileNav';
 import {MobileNavToggle} from '../MobileNav/MobileNavToggle';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Base TopNav styles
@@ -205,7 +205,7 @@ export function TopNav({
         role="navigation"
         aria-label={label}
         {...mergeProps(
-          xdsThemeProps('top-nav', {mode: 'mobile-bar'}),
+          themeProps('top-nav', {mode: 'mobile-bar'}),
           stylex.props(styles.mobileBar, xstyle),
           className,
           style,
@@ -262,7 +262,7 @@ export function TopNav({
       role="navigation"
       aria-label={label}
       {...mergeProps(
-        xdsThemeProps('top-nav'),
+        themeProps('top-nav'),
         stylex.props(
           styles.base,
           hasCenterContent ? styles.baseGrid : styles.baseFlex,

@@ -9,10 +9,10 @@ import {
   TopNavMegaMenu,
   TopNavMegaMenuItem,
   TopNavMegaMenuFeaturedCard,
-} from '@xds/core/TopNav';
-import {NavIcon} from '@xds/core/NavIcon';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
+} from '@astryxdesign/core/TopNav';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
 import {
   CubeIcon,
   ChartBarIcon,
@@ -75,7 +75,7 @@ export default function TopNavMegaMenuBlock() {
               <TopNavMegaMenuFeaturedCard
                 title="What's new in v4.0"
                 description="AI-powered analytics and real-time collaboration."
-                image="https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-1.png"
+                image="https://lookaside.facebook.com/assets/astryx/light-working-horizontal-1.png"
                 imageAlt="Team collaboration"
                 linkLabel="Read the announcement"
                 linkHref="#announcement"

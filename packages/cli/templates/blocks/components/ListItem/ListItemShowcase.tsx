@@ -2,9 +2,9 @@
 
 'use client';
 
-import {List, ListItem} from '@xds/core/List';
-import {Badge} from '@xds/core/Badge';
-import {Icon} from '@xds/core/Icon';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Icon} from '@astryxdesign/core/Icon';
 
 export default function ListItemShowcase() {
   return (

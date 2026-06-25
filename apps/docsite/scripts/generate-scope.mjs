@@ -40,9 +40,8 @@ const components = exportKeys
 
 // Themes — add new themes here as they become available
 const SCOPE_THEMES = [
-  {pkg: '@xds/theme-default', name: 'defaultTheme', subpath: '/built'},
-  {pkg: '@xds/theme-neutral', name: 'neutralTheme', subpath: '/built'},
-  {pkg: '@xds/theme-matcha', name: 'matchaTheme', subpath: '/built'},
+  {pkg: '@astryxdesign/theme-neutral', name: 'neutralTheme', subpath: '/built'},
+  {pkg: '@astryxdesign/theme-matcha', name: 'matchaTheme', subpath: '/built'},
 ];
 
 // Heroicons variants — exposed alongside Lucide so playground snippets
@@ -71,7 +70,7 @@ lines.push('');
 // apply instead of collapsing to the `default` value an inline style would force.
 //
 // create() returns `$$css: true` objects of class names — the same shape the real
-// compiled stylex.props() understands, so `xstyle` passed into @xds/core components
+// compiled stylex.props() understands, so `xstyle` passed into @astryxdesign/core components
 // merges correctly too.
 lines.push(`type PGStyleValue =
   | string
@@ -194,7 +193,7 @@ lines.push('');
 
 // ── Component imports ──────────────────────────────────────────────────
 for (const name of components) {
-  lines.push(`import * as ${name} from '@xds/core/${name}';`);
+  lines.push(`import * as ${name} from '@astryxdesign/core/${name}';`);
 }
 lines.push('');
 
@@ -205,16 +204,16 @@ for (const t of SCOPE_THEMES) {
 lines.push('');
 
 // ── Theme + tokens ──────────────────────────────────────────────────
-lines.push("import {Theme} from '@xds/core/theme';");
-lines.push("import type {DefinedTheme} from '@xds/core/theme';");
+lines.push("import {Theme} from '@astryxdesign/core/theme';");
+lines.push("import type {DefinedTheme} from '@astryxdesign/core/theme';");
 lines.push("import {createElement, type ComponentProps} from 'react';");
-lines.push("import * as xdsTokens from '@xds/core/theme/tokens.stylex';");
+lines.push("import * as xdsTokens from '@astryxdesign/core/theme/tokens.stylex';");
 lines.push('');
 
 // ── Hooks ──────────────────────────────────────────────────────────────
 // camelCase, so the PascalCase component scan skips it — add it explicitly so
 // templates using useMediaQuery etc. render.
-lines.push("import * as Hooks from '@xds/core/hooks';");
+lines.push("import * as Hooks from '@astryxdesign/core/hooks';");
 lines.push('');
 
 // ── Icon libraries ─────────────────────────────────────────────────────
@@ -275,22 +274,22 @@ for (const t of SCOPE_THEMES) {
 }
 
 // Theme (controlled wrapper)
-lines.push("  '@xds/core/theme': {Theme: ControlledTheme},");
+lines.push("  '@astryxdesign/core/theme': {Theme: ControlledTheme},");
 
 // tokens.stylex
-lines.push("  '@xds/core/theme/tokens.stylex': xdsTokens,");
+lines.push("  '@astryxdesign/core/theme/tokens.stylex': xdsTokens,");
 
 // hooks (useMediaQuery, etc.)
-lines.push("  '@xds/core/hooks': Hooks,");
+lines.push("  '@astryxdesign/core/hooks': Hooks,");
 
 // Per-component subpath entries
 for (const name of components) {
-  lines.push(`  '@xds/core/${name}': ${name},`);
+  lines.push(`  '@astryxdesign/core/${name}': ${name},`);
 }
 
 // Barrel export — all components spread
 const spreads = components.map((n) => `    ...${n},`).join('\n');
-lines.push(`  '@xds/core': {
+lines.push(`  '@astryxdesign/core': {
 ${spreads}
   },`);
 

@@ -2,9 +2,9 @@
 
 import {useState, useEffect, useCallback} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Markdown} from '@xds/core/Markdown';
-import type {MarkdownSource} from '@xds/core/Markdown';
-import {Button} from '@xds/core/Button';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import type {MarkdownSource} from '@astryxdesign/core/Markdown';
+import {Button} from '@astryxdesign/core/Button';
 
 const meta: Meta<typeof Markdown> = {
   title: 'Core/MarkdownCitations',

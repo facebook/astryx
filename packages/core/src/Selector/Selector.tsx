@@ -65,7 +65,7 @@ import {mergeProps} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
@@ -107,12 +107,11 @@ const styles = stylex.create({
     lineHeight: 'inherit',
     color: 'inherit',
     cursor: 'pointer',
-    outline: {
-      default: 'none',
-      ':focus-visible': `${borderVars['--border-width']} solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: '0',
-    borderRadius: radiusVars['--radius-element'],
+    // The wrapper (inputWrapperStyles.base) renders the focus ring via
+    // :focus-within when this button is focused, matching TextInput/NumberInput.
+    // The button must not draw its own :focus-visible outline or the two stack
+    // into a doubled ring over the trigger.
+    outline: 'none',
   },
   triggerPlaceholder: {
     color: colorVars['--color-text-secondary'],
@@ -873,7 +872,7 @@ export function Selector<T extends SelectorOptionType>(
         onClick={onTriggerClick}
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('selector', {size, status: status?.type ?? null}),
+          themeProps('selector', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,

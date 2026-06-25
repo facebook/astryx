@@ -2,18 +2,24 @@
 
 'use client';
 
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Card} from '@xds/core/Card';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
-import {Link} from '@xds/core/Link';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Link} from '@astryxdesign/core/Link';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {components} from '../../../generated/componentRegistry';
+import {layout} from '../../../layout.stylex';
+import {ComponentsPreview} from './ComponentsPreview';
+import {CliPreview} from './CliPreview';
+import {ThemesPreview} from './ThemesPreview';
+import {TemplatesPreview} from './TemplatesPreview';
 
-// Count of public @xds/core components (excluding hooks and hidden entries).
+// Count of public @astryxdesign/core components (excluding hooks and hidden entries).
 // Sourced from the generated registry so the number stays accurate as the
 // library grows.
-const CORE_COMPONENT_COUNT = (components['@xds/core'] ?? []).filter(
+const CORE_COMPONENT_COUNT = (components['@astryxdesign/core'] ?? []).filter(
   c => !c.hidden && !c.name.startsWith('use'),
 ).length;
 // Round down to the nearest 10 for marketing copy ("Over X components"
@@ -45,22 +51,20 @@ const styles = stylex.create({
   // direct children of the grid and the 1-col gridTemplateColumns
   // can lay them all out in source order.
   //
-  // Literal pixel values are intentional marketing-section
-  // dimensions, not derivable from the spacing scale:
-  //   • maxWidth 1200 — shared content cap across all three home
-  //     showcases (Features, About, Discover) so they line up.
-  //   • minHeight 720 — keeps the bento tall enough on desktop
-  //     that the dominant "Themes" card has room for its larger
-  //     image composition; below this height the right column
-  //     reads as cramped against the left/middle.
+  // minHeight 720 keeps the bento tall enough on desktop that the
+  // dominant "Themes" card has room for its larger image composition;
+  // below this the right column reads as cramped against the left/middle.
   gridLayout: {
     width: '100%',
-    maxWidth: 1200,
+    maxWidth: layout.contentMaxWidth,
     display: 'grid',
     gap: spacingVars['--spacing-8'],
+    // minmax(0, 1fr) (not 1fr) so a card with wide content — e.g. the Themes
+    // preview's left-bleed — can't blow out its column; all three stay equal.
     gridTemplateColumns: {
       default: '1fr',
-      '@media (min-width: 1024px)': '1fr 1fr 1fr',
+      '@media (min-width: 1024px)':
+        'minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)',
     },
     minHeight: {
       default: 0,
@@ -117,7 +121,7 @@ const styles = stylex.create({
   // All cards use Card padding={0} and apply their own padding
   // via the innerPadding* styles below. This is intentional: Card's
   // `padding={N}` prop wires its `padding-bottom` through a
-  // (0,5,0)-specificity selector (`.xds-card-XXX:not(#\#):not(#\#)
+  // (0,5,0)-specificity selector (`.astryx-card-XXX:not(#\#):not(#\#)
   // :not(#\#):not(#\#)`) which beats any xstyle override at (0,1,0).
   // The CSS variable indirection ALSO doesn't work because the card
   // sets `padding-bottom: var(--spacing-N)` directly (not via the
@@ -127,7 +131,7 @@ const styles = stylex.create({
 
   // All four card variants share the same pastel backdrop, pulled
   // from a marketing-only theme token (defined in astryxTheme.ts as
-  // `--xds-marketing-feature-card-bg`). Sourcing the color from the
+  // `--astryx-marketing-feature-card-bg`). Sourcing the color from the
   // theme keeps the bento palette tunable in one place and avoids
   // baking literal hex values into the component. We do NOT use
   // Card's `variant="blue"` here because that token (--color-
@@ -140,7 +144,7 @@ const styles = stylex.create({
   // is stretched by the grid to match the tallest sibling column.
   cardTall: {
     flex: 1,
-    backgroundColor: 'var(--xds-marketing-feature-card-bg)',
+    backgroundColor: 'var(--astryx-marketing-feature-card-bg)',
     overflow: 'hidden',
   },
   // Regular image card — natural (content) height. Used for an image
@@ -154,7 +158,7 @@ const styles = stylex.create({
   card: {
     height: 'auto',
     overflow: 'hidden',
-    backgroundColor: 'var(--xds-marketing-feature-card-bg)',
+    backgroundColor: 'var(--astryx-marketing-feature-card-bg)',
   },
   // Flex variant of `card` — image card that grows to fill its
   // column's leftover height so a column with a short text-only
@@ -163,14 +167,14 @@ const styles = stylex.create({
   cardFlex: {
     flex: 1,
     overflow: 'hidden',
-    backgroundColor: 'var(--xds-marketing-feature-card-bg)',
+    backgroundColor: 'var(--astryx-marketing-feature-card-bg)',
   },
   // Text-only feature card variant — no image, so overflow hidden
   // keeps the card contour tidy at the rounded corners.
   cardTextOnly: {
     height: 'auto',
     overflow: 'hidden',
-    backgroundColor: 'var(--xds-marketing-feature-card-bg)',
+    backgroundColor: 'var(--astryx-marketing-feature-card-bg)',
   },
   // Padding for image cards: --spacing-10 (40px) on top + sides +
   // 0 on bottom so the image wrapper inside sits flush at the
@@ -276,6 +280,27 @@ const styles = stylex.create({
     maxWidth: '100%',
     overflow: 'hidden',
   },
+  // Inset wrapper for a live preview node. A fixed top gap (not marginTop:auto)
+  // keeps the space under "Explore" consistent across preview cards; any extra
+  // card height falls below the framed preview rather than above it.
+  previewWrap: {
+    paddingTop: spacingVars['--spacing-10'],
+    alignSelf: 'stretch',
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
+  },
+  // Bottom-anchored preview wrapper. marginTop:auto pushes the preview to the
+  // bottom of the card's content column so any extra card height opens up ABOVE
+  // it (used by the Themes card so its store preview sits flush at the bottom).
+  previewWrapBottom: {
+    marginTop: 'auto',
+    paddingTop: spacingVars['--spacing-10'],
+    alignSelf: 'stretch',
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
+  },
   // Default image: full-bleed to the card width (no max-width cap) so
   // it spans edge-to-edge. height:auto preserves natural aspect ratio.
   // display:block kills the inline baseline gap so there's no mystery
@@ -318,6 +343,8 @@ type Feature = {
     src: string;
     alt: string;
   };
+  /** Live, theme-aware preview node rendered in place of an image. */
+  preview?: ReactNode;
 };
 
 // Looked up by slot key in the JSX below so each card's position in
@@ -331,40 +358,39 @@ const features: Record<string, Feature> = {
     description:
       'Accessible and themeable React components with built-in spacing, dark mode, and flexible styling.',
     href: '/components',
-    image: {
-      src: '/feature-components.png',
-      alt: 'Sample XDS components — Badges, radio, checkbox, switch, Secondary and Primary buttons, and a search input',
-    },
+    // Live, theme-aware sampler of real XDS components instead of a
+    // baked PNG — the old /feature-components.png stayed light on the
+    // dark surface; ComponentsPreview re-themes for dark mode.
+    preview: <ComponentsPreview />,
   },
   themes: {
     title: 'Themes that fit your brand',
     description:
       'Fully customizable themes ready for use. Make it yours without starting from scratch.',
     href: '/themes',
-    image: {
-      src: '/feature-brand.png',
-      alt: 'A product landing page styled with the Butter theme, shown alongside the theme\'s color swatches and type sample',
-    },
+    // Live Butter-themed store preview + swatches/"Aa" instead of the old
+    // /feature-brand.png, so it re-themes for dark mode (the PNG stayed light).
+    preview: <ThemesPreview />,
   },
   templates: {
     title: 'Ready to ship templates',
     description:
       'Production-ready templates for common pages, just plug in your content.',
     href: '/templates',
-    image: {
-      src: '/feature-templates.png',
-      alt: 'A scattered collage of ready-to-use page templates — product gallery, code editor, checkout summary, login, product detail, and AI chat',
-    },
+    // Live scaled-down renders of real page templates instead of the baked
+    // /feature-templates.png, so they re-theme for dark mode and stay in sync
+    // with the actual templates.
+    preview: <TemplatesPreview />,
   },
   cli: {
     title: 'A design system that your agent can use',
     description:
       'Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line or MCP.',
     href: '/docs/cli',
-    image: {
-      src: '/feature-cli.png',
-      alt: 'AI prompt input asking "Can you create me a table page" with a send button',
-    },
+    // Live, theme-aware chat composer instead of a baked PNG — the old
+    // /feature-cli.png stayed light on the dark surface; CliPreview
+    // re-themes for dark mode.
+    preview: <CliPreview />,
   },
 };
 
@@ -375,6 +401,7 @@ function FeatureCard({
   insetImage = false,
   centerImage = false,
   smallImage = false,
+  bottomPreview = false,
 }: {
   feature: Feature;
   /**
@@ -414,19 +441,27 @@ function FeatureCard({
    * the full card width.
    */
   smallImage?: boolean;
+  /**
+   * When true, a live preview is pinned to the bottom of the card (extra
+   * card height opens above it) instead of sitting just under "Explore".
+   * Used by the Themes card. Ignored for image cards.
+   */
+  bottomPreview?: boolean;
 }) {
   const hasImage = feature.image != null;
+  const hasPreview = feature.preview != null;
+  const hasMedia = hasImage || hasPreview;
   // Style precedence:
   //   1. isTall   → cardTall (right-column dominant card)
-  //   2. isFlex   → cardFlex (grow-to-fill image card)
-  //   3. hasImage → card     (natural-height image card)
+  //   2. isFlex   → cardFlex (grow-to-fill media card)
+  //   3. hasMedia → card     (natural-height media card)
   //   4. else     → cardTextOnly (shrink-to-content text-only card)
   // Only one of these applies at a time.
   const cardStyle = isTall
     ? styles.cardTall
     : isFlex
       ? styles.cardFlex
-      : hasImage
+      : hasMedia
         ? styles.card
         : styles.cardTextOnly;
 
@@ -440,8 +475,8 @@ function FeatureCard({
         align="start"
         height="100%"
         xstyle={
-          hasImage
-            ? insetImage
+          hasMedia
+            ? insetImage || hasPreview
               ? styles.innerPaddingImageInset
               : styles.innerPaddingImage
             : styles.innerPaddingText
@@ -460,42 +495,57 @@ function FeatureCard({
           xstyle={styles.exploreLink}>
           Explore →
         </Link>
-        {hasImage && feature.image && (
-          // HStack handles the flex+direction+alignment chrome;
-          // marginTop/padding/overflow/sizing live in the xstyle.
-          // No width prop: the wrapper's width is set in the xstyle to
-          // calc(100% + 2×40px) so it can exceed the inset parent and
-          // bleed the image to the card edges (a width="100%" prop here
-          // would win over the xstyle and clamp it back to the inset).
+        {hasPreview ? (
+          // vAlign="center" + hAlign="center" centers the preview in
+          // the card's leftover horizontal space; bottomPreview pins it to the
+          // bottom of the card instead of the fixed top gap.
           <HStack
-            hAlign={isTall || smallImage ? 'center' : 'start'}
+            hAlign="center"
+            vAlign="center"
             xstyle={
-              isTall
-                ? styles.imageWrapTall
-                : insetImage
-                  ? styles.imageWrapInset
-                  : centerImage
-                    ? styles.imageWrapCentered
-                    : styles.imageWrap
+              bottomPreview ? styles.previewWrapBottom : styles.previewWrap
             }>
-            {/* Decorative image — kept as a raw <img> because @xds/core
+            {feature.preview}
+          </HStack>
+        ) : (
+          hasImage &&
+          feature.image && (
+            // HStack handles the flex+direction+alignment chrome;
+            // marginTop/padding/overflow/sizing live in the xstyle.
+            // No width prop: the wrapper's width is set in the xstyle to
+            // calc(100% + 2×40px) so it can exceed the inset parent and
+            // bleed the image to the card edges (a width="100%" prop here
+            // would win over the xstyle and clamp it back to the inset).
+            <HStack
+              hAlign={isTall || smallImage ? 'center' : 'start'}
+              xstyle={
+                isTall
+                  ? styles.imageWrapTall
+                  : insetImage
+                    ? styles.imageWrapInset
+                    : centerImage
+                      ? styles.imageWrapCentered
+                      : styles.imageWrap
+              }>
+              {/* Decorative image — kept as a raw <img> because @astryxdesign/core
                 does not export a dedicated Image primitive (Thumbnail
                 is a chat/attachment chrome, not a fit-to-container
                 marketing image). Sizing + display:block come from the
                 featureImage / featureImageTall / featureImageSmall
                 xstyles below. */}
-            <img
-              src={feature.image.src}
-              alt={feature.image.alt}
-              {...stylex.props(
-                isTall
-                  ? styles.featureImageTall
-                  : smallImage
-                    ? styles.featureImageSmall
-                    : styles.featureImage,
-              )}
-            />
-          </HStack>
+              <img
+                src={feature.image.src}
+                alt={feature.image.alt}
+                {...stylex.props(
+                  isTall
+                    ? styles.featureImageTall
+                    : smallImage
+                      ? styles.featureImageSmall
+                      : styles.featureImage,
+                )}
+              />
+            </HStack>
+          )
         )}
       </VStack>
     </Card>
@@ -563,19 +613,14 @@ export function FeaturesShowcase() {
             owns only the responsive display switch. */}
         <VStack gap={8} width="100%" height="100%" xstyle={styles.column}>
           <HeadingBlock />
-          <FeatureCard feature={features.themes} isFlex centerImage />
+          <FeatureCard feature={features.themes} isFlex bottomPreview />
         </VStack>
         <VStack gap={8} width="100%" height="100%" xstyle={styles.column}>
-          <FeatureCard
-            feature={features.components}
-            isFlex
-            insetImage
-            smallImage
-          />
-          <FeatureCard feature={features.cli} smallImage />
+          <FeatureCard feature={features.components} isFlex insetImage />
+          <FeatureCard feature={features.cli} />
         </VStack>
         <VStack gap={8} width="100%" height="100%" xstyle={styles.column}>
-          <FeatureCard feature={features.templates} isTall />
+          <FeatureCard feature={features.templates} isTall bottomPreview />
         </VStack>
       </div>
     </VStack>

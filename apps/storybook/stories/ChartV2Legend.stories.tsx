@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {ChartV2Legend} from '@xds/lab';
+import {ChartV2Legend} from '@astryxdesign/lab';
 
 const sampleItems = [
   {label: 'Revenue', color: '#3b82f6', type: 'bar'},

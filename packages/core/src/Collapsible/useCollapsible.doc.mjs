@@ -45,7 +45,7 @@ export const docs = {
   },
   relatedComponents: ['Collapsible', 'Card', 'Section'],
   relatedHooks: [],
-  importPath: '@xds/core/Collapsible',
+  importPath: '@astryxdesign/core/Collapsible',
   category: 'interaction',
 };
 

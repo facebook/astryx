@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {IconButton} from '@xds/core/IconButton';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {
   Cog6ToothIcon,
   TrashIcon,

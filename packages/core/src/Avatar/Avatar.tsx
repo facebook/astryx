@@ -27,7 +27,7 @@ import {
 import {AvatarSizeContext} from './AvatarSizeContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -310,7 +310,7 @@ export function Avatar({
         aria-label={accessibleName}
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('avatar', {size: resolvedSize}),
+          themeProps('avatar', {size: resolvedSize}),
           stylex.props(
             styles.wrapper,
             avatarGroup && groupStyles.ring,

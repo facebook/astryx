@@ -5,8 +5,8 @@
 /**
  * @file index.ts
  * @input Imports layout utilities and components
- * @output Exports XDS layout system
- * @position Entry point for @xds/core/Layout
+ * @output Exports Astryx layout system
+ * @position Entry point for @astryxdesign/core/Layout
  *
  * SYNC: When modified, update /packages/core/src/Layout/Layout.doc.mjs
  */
@@ -80,59 +80,3 @@ export type {LayoutArea} from './LayoutAreaContext';
 
 export {LayoutDividerContext} from './LayoutDividerContext';
 export type {LayoutDividerContextValue} from './LayoutDividerContext';
-
-
-// <compat-aliases:start> — generated, do not edit by hand
-// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Bare names above are canonical + module-augmentation targets.
-// These prefixed re-exports reference the SAME values/types and remain
-// augmentable (consumer `declare module` augmentations of XDS* flow through).
-// Regenerate: node scripts/generate-compat-aliases.mjs
-export {
-  Card as XDSCard,
-  EDGE_COMP_ATTR as XDSEDGE_COMP_ATTR,
-  HStack as XDSHStack,
-  Layout as XDSLayout,
-  LayoutAreaContext as XDSLayoutAreaContext,
-  LayoutContent as XDSLayoutContent,
-  LayoutDividerContext as XDSLayoutDividerContext,
-  LayoutFooter as XDSLayoutFooter,
-  LayoutHeader as XDSLayoutHeader,
-  LayoutPanel as XDSLayoutPanel,
-  Section as XDSSection,
-  Stack as XDSStack,
-  StackItem as XDSStackItem,
-  VStack as XDSVStack,
-} from '.';
-export type {
-  CardProps as XDSCardProps,
-  ContainerComponent as XDSContainerComponent,
-  ContainerOptions as XDSContainerOptions,
-  HStackProps as XDSHStackProps,
-  LayoutArea as XDSLayoutArea,
-  LayoutContentProps as XDSLayoutContentProps,
-  LayoutDividerContextValue as XDSLayoutDividerContextValue,
-  LayoutFooterProps as XDSLayoutFooterProps,
-  LayoutHeaderProps as XDSLayoutHeaderProps,
-  LayoutHeight as XDSLayoutHeight,
-  LayoutPanelProps as XDSLayoutPanelProps,
-  LayoutProps as XDSLayoutProps,
-  SectionProps as XDSSectionProps,
-  SectionVariant as XDSSectionVariant,
-  SizeValue as XDSSizeValue,
-  SpacingStep as XDSSpacingStep,
-  SpacingToken as XDSSpacingToken,
-  StackAlignment as XDSStackAlignment,
-  StackCrossAlignment as XDSStackCrossAlignment,
-  StackDirection as XDSStackDirection,
-  StackItemCrossAlignSelf as XDSStackItemCrossAlignSelf,
-  StackItemOptions as XDSStackItemOptions,
-  StackItemProps as XDSStackItemProps,
-  StackItemSize as XDSStackItemSize,
-  StackMainAlignment as XDSStackMainAlignment,
-  StackOptions as XDSStackOptions,
-  StackProps as XDSStackProps,
-  StackWrap as XDSStackWrap,
-  VStackProps as XDSVStackProps,
-} from '.';
-// <compat-aliases:end>

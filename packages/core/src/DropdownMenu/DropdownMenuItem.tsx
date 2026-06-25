@@ -36,7 +36,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {useDropdownMenuContext} from './DropdownMenuContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const menuItemStyles = stylex.create({
   root: {
@@ -161,7 +161,7 @@ export function DropdownMenuItem({
         isDisabled && menuItemStyles.disabled,
         xstyle,
       ]}
-      {...mergeProps(xdsThemeProps('dropdown-menu-item', {size: menuSize}), {
+      {...mergeProps(themeProps('dropdown-menu-item', {size: menuSize}), {
         className,
         style,
       })}

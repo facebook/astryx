@@ -2,9 +2,9 @@
 
 'use client';
 
-import {SyntaxTheme} from '@xds/core/theme';
-import {githubLight} from '@xds/core/theme/syntax';
-import {CodeBlock} from '@xds/core/CodeBlock';
+import {SyntaxTheme} from '@astryxdesign/core/theme';
+import {githubLight} from '@astryxdesign/core/theme/syntax';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 
 const code = `const status = response.ok ? 'success' : 'error';
 console.log({status});`;

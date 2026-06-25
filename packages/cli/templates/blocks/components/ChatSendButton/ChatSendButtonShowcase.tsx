@@ -2,9 +2,9 @@
 
 'use client';
 
-import {ChatSendButton} from '@xds/core/Chat';
-import {Icon} from '@xds/core/Icon';
-import {Stack} from '@xds/core/Layout';
+import {ChatSendButton} from '@astryxdesign/core/Chat';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Stack} from '@astryxdesign/core/Layout';
 import {SparklesIcon} from '@heroicons/react/24/solid';
 
 export default function ChatSendButtonShowcase() {

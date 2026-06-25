@@ -4,16 +4,17 @@
 
 import {useEffect, useRef, type Ref, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Heading, Text} from '@xds/core/Text';
-import {Link} from '@xds/core/Link';
-import {VStack} from '@xds/core/Layout';
-import {Grid} from '@xds/core/Grid';
-import {Button} from '@xds/core/Button';
-import {Theme} from '@xds/core/theme';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Link} from '@astryxdesign/core/Link';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Button} from '@astryxdesign/core/Button';
+import {Theme} from '@astryxdesign/core/theme';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 // Built theme (__built:true) so <XDSTheme> uses the pre-built CSS and skips
 // runtime style injection. Importing the source astryxTheme.ts re-triggers it.
 import {astryxTheme} from '@/themes/astryx';
+import {layout} from '../../layout.stylex';
 import {
   HeroReelProvider,
   HeroReelCards,
@@ -69,7 +70,7 @@ const styles = stylex.create({
       '@media (min-width: 1024px)': 0,
     },
     paddingBlockEnd: spacingVars['--spacing-12'],
-    maxWidth: 800,
+    maxWidth: layout.proseMaxWidth,
     marginInline: 'auto',
     paddingInline: spacingVars['--spacing-6'],
     textAlign: 'center',
@@ -115,10 +116,10 @@ const styles = stylex.create({
     borderTopLeftRadius: 'var(--radius-page)',
     borderTopRightRadius: 'var(--radius-page)',
     backgroundColor: 'var(--color-background-surface)',
-    paddingBlockStart: 'var(--xds-marketing-section-gap)',
+    paddingBlockStart: 'var(--astryx-marketing-section-gap)',
     paddingBlockEnd: spacingVars['--spacing-12'],
     paddingInline: spacingVars['--spacing-6'],
-    gap: 'var(--xds-marketing-section-gap)',
+    gap: 'var(--astryx-marketing-section-gap)',
   },
 });
 

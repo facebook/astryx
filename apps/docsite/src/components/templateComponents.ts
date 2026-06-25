@@ -22,10 +22,6 @@ export const TEMPLATE_COMPONENTS: Record<
   'ai-chat': lazy(
     () => import('../../../../packages/cli/templates/pages/ai-chat/page'),
   ),
-  'ai-chat-artifact': lazy(
-    () =>
-      import('../../../../packages/cli/templates/pages/ai-chat-artifact/page'),
-  ),
   'ai-chat-landing': lazy(
     () =>
       import('../../../../packages/cli/templates/pages/ai-chat-landing/page'),
@@ -136,15 +132,11 @@ export const TEMPLATE_COMPONENTS: Record<
   ),
   'table-page-heatmap-status': lazy(
     () =>
-      import(
-        '../../../../packages/cli/templates/pages/table-page-heatmap-status/page'
-      ),
+      import('../../../../packages/cli/templates/pages/table-page-heatmap-status/page'),
   ),
   'table-page-shoe-store-heatmap': lazy(
     () =>
-      import(
-        '../../../../packages/cli/templates/pages/table-page-shoe-store-heatmap/page'
-      ),
+      import('../../../../packages/cli/templates/pages/table-page-shoe-store-heatmap/page'),
   ),
 };
 

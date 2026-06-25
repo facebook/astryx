@@ -2,12 +2,12 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import React from 'react';
-import {CodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 import {
   SyntaxTheme as SyntaxThemeProvider,
   defineSyntaxTheme,
-} from '@xds/core/theme/syntax';
-import {defineTheme, Theme} from '@xds/core/theme';
+} from '@astryxdesign/core/theme/syntax';
+import {defineTheme, Theme} from '@astryxdesign/core/theme';
 import {
   oneDarkPro,
   dracula,
@@ -22,7 +22,7 @@ import {
   catppuccinLatte,
   tokyoNightLight,
   allSyntaxPresets,
-} from '@xds/core/theme/syntax';
+} from '@astryxdesign/core/theme/syntax';
 
 const sampleCode = [
   "import {useState, useEffect} from 'react';",
@@ -71,7 +71,7 @@ const meta: Meta = {
       description: {
         component:
           'Syntax theme provider for code components. Wraps CodeBlock and CodeEditor ' +
-          'to apply community syntax color themes. 12 presets ship in @xds/core/theme/syntax.',
+          'to apply community syntax color themes. 12 presets ship in @astryxdesign/core/theme/syntax.',
       },
     },
   },

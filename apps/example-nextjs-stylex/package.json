@@ -1,5 +1,5 @@
 {
-  "name": "@xds/example-nextjs-stylex",
+  "name": "@astryxdesign/example-nextjs-stylex",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -9,8 +9,8 @@
   },
   "dependencies": {
     "@stylexjs/stylex": "^0.18.3",
-    "@xds/core": "*",
-    "@xds/theme-default": "*",
+    "@astryxdesign/core": "*",
+    "@astryxdesign/theme-neutral": "*",
     "next": "^15.5.16",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

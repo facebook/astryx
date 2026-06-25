@@ -35,7 +35,7 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   // Base container styles passed to useLayer
@@ -459,7 +459,7 @@ export function useHoverCard(
       return layer.render(
         <div
           {...mergeProps(
-            xdsThemeProps('hovercard'),
+            themeProps('hovercard'),
             stylex.props(styles.content),
           )}
           onMouseEnter={() => {

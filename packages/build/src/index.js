@@ -3,13 +3,13 @@
 "use strict";
 
 /**
- * @xds/postcss-plugin
+ * @astryxdesign/postcss-plugin
  *
- * PostCSS plugin for XDS source builds. Compiles StyleX from both
- * XDS library source and product code in two separate passes with
+ * PostCSS plugin for Astryx source builds. Compiles StyleX from both
+ * Astryx library source and product code in two separate passes with
  * different class name prefixes, then outputs them in separate layers:
  *
- *   reset < xds-base (library, prefix: 'xds') < xds-theme < product (prefix: 'x')
+ *   reset < astryx-base (library, prefix: 'astryx') < astryx-theme < product (prefix: 'x')
  *
  * The separate prefixes ensure atomic classes don't collide between
  * layers, which would break theme overrides.
@@ -24,10 +24,10 @@ const {globSync} = require('fast-glob');
 const isGlob = require('is-glob');
 const globParent = require('glob-parent');
 
-const PLUGIN_NAME = '@xds/postcss-plugin';
+const PLUGIN_NAME = '@astryxdesign/postcss-plugin';
 
-const XDS_LIBRARY_GLOB = 'node_modules/@xds/**/*.{ts,tsx}';
-const XDS_LIBRARY_PATTERNS = ['node_modules/@xds/', 'packages/core/', 'packages/themes/'];
+const LIBRARY_GLOB = 'node_modules/@astryxdesign/**/*.{ts,tsx}';
+const LIBRARY_PATTERNS = ['node_modules/@astryxdesign/', 'packages/core/', 'packages/themes/'];
 const STYLEX_IMPORT_SOURCE = '@stylexjs/stylex';
 
 function parseDependency(fileOrGlob, cwd) {
@@ -78,18 +78,18 @@ function createPlugin() {
     appDir = 'src',
     babelPlugins = [],
     layers = {
-      library: 'xds-base',
+      library: 'astryx-base',
       product: 'product',
     },
     // Class name prefix for library styles (product keeps default 'x')
-    libraryPrefix = 'xds',
+    libraryPrefix = 'astryx',
     extraInclude = [],
-    libraryPatterns = XDS_LIBRARY_PATTERNS,
+    libraryPatterns = LIBRARY_PATTERNS,
     exclude = [],
   }) => {
     const include = [
       `${appDir}/**/*.{js,jsx,ts,tsx}`,
-      XDS_LIBRARY_GLOB,
+      LIBRARY_GLOB,
       ...extraInclude,
     ];
 

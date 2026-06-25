@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Banner} from '@xds/core/Banner';
-import {Button} from '@xds/core/Button';
-import {Stack} from '@xds/core/Layout';
+import {Banner} from '@astryxdesign/core/Banner';
+import {Button} from '@astryxdesign/core/Button';
+import {Stack} from '@astryxdesign/core/Layout';
 
 export default function BannerWithActionButton() {
   return (

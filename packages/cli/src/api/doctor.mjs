@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Health-check engine for `xds doctor`.
+ * @file Health-check engine for `astryx doctor`.
  *
  * Runs a series of diagnostic checks against the user's project and
  * environment, returning a structured report. Each check is a small,
@@ -49,8 +49,8 @@ const _require = createRequire(import.meta.url);
  * @typedef {object} DoctorContext
  * @property {string} cwd - Directory to diagnose.
  * @property {string} nodeVersion - Running Node version.
- * @property {string|null} coreDir - Resolved @xds/core directory, or null.
- * @property {string|null} configPath - Resolved xds.config.mjs path, or null.
+ * @property {string|null} coreDir - Resolved @astryxdesign/core directory, or null.
+ * @property {string|null} configPath - Resolved astryx.config.mjs path, or null.
  * @property {string|null} configTheme - theme value read from config, or null.
  */
 
@@ -98,7 +98,7 @@ function findNodeModules(startDir) {
 }
 
 /**
- * Find every installed @xds/theme-* package under node_modules.
+ * Find every installed @astryxdesign/theme-* package under node_modules.
  * @param {string} cwd
  * @returns {Array<{name: string, version: string|null}>}
  */
@@ -106,7 +106,7 @@ function findThemePackages(cwd) {
   const nm = findNodeModules(cwd);
   const found = [];
   if (!nm) return found;
-  const scopeDir = path.join(nm, '@xds');
+  const scopeDir = path.join(nm, '@astryxdesign');
   if (!fs.existsSync(scopeDir)) return found;
   let entries;
   try {
@@ -117,25 +117,25 @@ function findThemePackages(cwd) {
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     if (!entry.name.startsWith('theme-')) continue;
-    const name = `@xds/${entry.name}`;
+    const name = `@astryxdesign/${entry.name}`;
     found.push({name, version: pkgVersion(path.join(scopeDir, entry.name))});
   }
   return found;
 }
 
 /**
- * Detect whether a theme appears to be wired up via the XDS_THEME env var or
+ * Detect whether a theme appears to be wired up via the ASTRYX_THEME env var or
  * an `xds.theme` field in the nearest package.json. Config-based wiring is
  * handled by the caller (ctx.configTheme). This only inspects static signals.
  * @param {string} cwd
  * @returns {{wired: boolean, source: string|null}}
  */
 function detectThemeWiring(cwd) {
-  if (process.env.XDS_THEME) return {wired: true, source: 'XDS_THEME env var'};
+  if (process.env.ASTRYX_THEME) return {wired: true, source: 'ASTRYX_THEME env var'};
   const nm = findNodeModules(cwd);
   const projectDir = nm ? path.dirname(nm) : cwd;
   const pkg = readPkg(path.join(projectDir, 'package.json'));
-  if (pkg?.xds?.theme) return {wired: true, source: 'package.json xds.theme'};
+  if (pkg?.astryx?.theme) return {wired: true, source: 'package.json astryx.theme'};
   return {wired: false, source: null};
 }
 
@@ -162,7 +162,7 @@ export function checkNodeVersion(ctx) {
 }
 
 /**
- * Check 2 — @xds/core is installed and resolvable from the project.
+ * Check 2 — @astryxdesign/core is installed and resolvable from the project.
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
@@ -171,19 +171,19 @@ export function checkCoreInstalled(ctx) {
   const version = pkgVersion(ctx.coreDir);
   return {
     id: 'core-installed',
-    label: '@xds/core installed',
+    label: '@astryxdesign/core installed',
     status: found ? 'pass' : 'fail',
     message: found
-      ? `@xds/core resolved${version ? ` (v${version})` : ''}.`
-      : '@xds/core could not be resolved from this project.',
+      ? `@astryxdesign/core resolved${version ? ` (v${version})` : ''}.`
+      : '@astryxdesign/core could not be resolved from this project.',
     ...(found
       ? {}
-      : {fix: 'Install the design system: `npm install @xds/core` (or yarn/pnpm/bun).'}),
+      : {fix: 'Install the design system: `npm install @astryxdesign/core` (or yarn/pnpm/bun).'}),
   };
 }
 
 /**
- * Check 3 — installed @xds/core is in step with @xds/cli (major/minor drift).
+ * Check 3 — installed @astryxdesign/core is in step with @astryxdesign/cli (major/minor drift).
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
@@ -195,9 +195,9 @@ export function checkVersionAlignment(ctx) {
   if (!coreVersion || !cliVersion) {
     return {
       id: 'version-alignment',
-      label: '@xds/core <-> @xds/cli alignment',
+      label: '@astryxdesign/core <-> @astryxdesign/cli alignment',
       status: 'info',
-      message: 'Skipped — could not read both @xds/core and @xds/cli versions.',
+      message: 'Skipped — could not read both @astryxdesign/core and @astryxdesign/cli versions.',
     };
   }
 
@@ -207,24 +207,24 @@ export function checkVersionAlignment(ctx) {
 
   return {
     id: 'version-alignment',
-    label: '@xds/core <-> @xds/cli alignment',
+    label: '@astryxdesign/core <-> @astryxdesign/cli alignment',
     status: drift ? 'warn' : 'pass',
     message: drift
-      ? `@xds/core v${coreVersion} drifts from @xds/cli v${cliVersion} (major/minor mismatch).`
-      : `@xds/core v${coreVersion} is in step with @xds/cli v${cliVersion}.`,
+      ? `@astryxdesign/core v${coreVersion} drifts from @astryxdesign/cli v${cliVersion} (major/minor mismatch).`
+      : `@astryxdesign/core v${coreVersion} is in step with @astryxdesign/cli v${cliVersion}.`,
     ...(drift
       ? {
           fix:
             semverCompare(cliVersion, coreVersion) > 0
-              ? `Update @xds/core to ${cliMajor}.${cliMinor}.x to match the CLI.`
-              : `Update @xds/cli to ${coreMajor}.${coreMinor}.x to match @xds/core.`,
+              ? `Update @astryxdesign/core to ${cliMajor}.${cliMinor}.x to match the CLI.`
+              : `Update @astryxdesign/cli to ${coreMajor}.${coreMinor}.x to match @astryxdesign/core.`,
         }
       : {}),
   };
 }
 
 /**
- * Check 4 — at least one @xds/theme-* is installed and a theme is wired.
+ * Check 4 — at least one @astryxdesign/theme-* is installed and a theme is wired.
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
@@ -239,8 +239,8 @@ export function checkThemes(ctx) {
       id: 'themes',
       label: 'Theme packages',
       status: 'warn',
-      message: 'No @xds/theme-* packages are installed.',
-      fix: 'Install a theme, e.g. `npm install @xds/theme-default`, then import its CSS or set xds.theme.',
+      message: 'No @astryxdesign/theme-* packages are installed.',
+      fix: 'Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then import its CSS or set xds.theme.',
     };
   }
 
@@ -251,11 +251,11 @@ export function checkThemes(ctx) {
       label: 'Theme packages',
       status: 'warn',
       message: `Theme package(s) installed (${names}) but no theme appears wired.`,
-      fix: 'Wire a theme via the `xds.theme` field in package.json, the XDS_THEME env var, or your xds.config.mjs.',
+      fix: 'Wire a theme via the `astryx.theme` field in package.json, the ASTRYX_THEME env var, or your astryx.config.mjs.',
     };
   }
 
-  const source = hasConfigTheme ? 'xds.config.mjs theme' : wiring.source;
+  const source = hasConfigTheme ? 'astryx.config.mjs theme' : wiring.source;
   return {
     id: 'themes',
     label: 'Theme packages',
@@ -265,7 +265,7 @@ export function checkThemes(ctx) {
 }
 
 /**
- * Check 5 — xds.config.mjs (if present) loads and has a valid shape.
+ * Check 5 — astryx.config.mjs (if present) loads and has a valid shape.
  * @param {DoctorContext} ctx
  * @returns {Promise<DoctorCheck>}
  */
@@ -273,9 +273,9 @@ export async function checkConfig(ctx) {
   if (!ctx.configPath) {
     return {
       id: 'config',
-      label: 'xds.config.mjs',
+      label: 'astryx.config.mjs',
       status: 'info',
-      message: 'No xds.config.mjs found — using defaults.',
+      message: 'No astryx.config.mjs found — using defaults.',
     };
   }
 
@@ -288,10 +288,10 @@ export async function checkConfig(ctx) {
     if (config !== undefined && (typeof config !== 'object' || config === null)) {
       return {
         id: 'config',
-        label: 'xds.config.mjs',
+        label: 'astryx.config.mjs',
         status: 'fail',
-        message: `xds.config.mjs default export is not an object (got ${typeof config}).`,
-        fix: 'Export a default object from xds.config.mjs, e.g. `export default { theme: "default" };`.',
+        message: `astryx.config.mjs default export is not an object (got ${typeof config}).`,
+        fix: 'Export a default object from astryx.config.mjs, e.g. `export default { theme: "default" };`.',
       };
     }
     // Validate that `packages`, if present, is a string or array of strings.
@@ -303,32 +303,32 @@ export async function checkConfig(ctx) {
       if (bad) {
         return {
           id: 'config',
-          label: 'xds.config.mjs',
+          label: 'astryx.config.mjs',
           status: 'fail',
-          message: 'xds.config.mjs `packages` must be a string or array of strings.',
+          message: 'astryx.config.mjs `packages` must be a string or array of strings.',
           fix: 'Set `packages` to a path string or array of path strings.',
         };
       }
     }
     return {
       id: 'config',
-      label: 'xds.config.mjs',
+      label: 'astryx.config.mjs',
       status: 'pass',
-      message: `xds.config.mjs loaded cleanly (${path.relative(ctx.cwd, ctx.configPath) || ctx.configPath}).`,
+      message: `astryx.config.mjs loaded cleanly (${path.relative(ctx.cwd, ctx.configPath) || ctx.configPath}).`,
     };
   } catch (err) {
     return {
       id: 'config',
-      label: 'xds.config.mjs',
+      label: 'astryx.config.mjs',
       status: 'fail',
-      message: `xds.config.mjs failed to load: ${err.message}`,
-      fix: 'Fix the syntax/runtime error in xds.config.mjs so it imports cleanly.',
+      message: `astryx.config.mjs failed to load: ${err.message}`,
+      fix: 'Fix the syntax/runtime error in astryx.config.mjs so it imports cleanly.',
     };
   }
 }
 
 /**
- * Check 6 — agent docs exist and contain the XDS section markers.
+ * Check 6 — agent docs exist and contain the Astryx section markers.
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
@@ -347,7 +347,7 @@ export function checkAgentDocs(ctx) {
       label: 'AI agent docs',
       status: 'info',
       message: 'No agent docs (CLAUDE.md / AGENTS.md / .cursorrules) found.',
-      fix: 'Generate agent docs with `xds init --features agents`.',
+      fix: 'Generate agent docs with `astryx init --features agents`.',
     };
   }
 
@@ -355,8 +355,8 @@ export function checkAgentDocs(ctx) {
     try {
       const content = fs.readFileSync(path.join(ctx.cwd, rel), 'utf-8');
       return (
-        content.includes('<!-- XDS:START -->') &&
-        content.includes('<!-- XDS:END -->')
+        (content.includes('<!-- ASTRYX:START -->') || content.includes('<!-- XDS:START -->')) &&
+        (content.includes('<!-- ASTRYX:END -->') || content.includes('<!-- XDS:END -->'))
       );
     } catch {
       return false;
@@ -368,8 +368,8 @@ export function checkAgentDocs(ctx) {
       id: 'agent-docs',
       label: 'AI agent docs',
       status: 'warn',
-      message: `Agent docs present (${present.join(', ')}) but no XDS section markers found.`,
-      fix: 'Add the XDS section to your agent docs with `xds init --features agents`.',
+      message: `Agent docs present (${present.join(', ')}) but no Astryx section markers found.`,
+      fix: 'Add the XDS section to your agent docs with `astryx init --features agents`.',
     };
   }
 
@@ -382,7 +382,7 @@ export function checkAgentDocs(ctx) {
 }
 
 /**
- * Check 7 — @xds/core peer dependencies are satisfied by installed packages.
+ * Check 7 — @astryxdesign/core peer dependencies are satisfied by installed packages.
  * @param {DoctorContext} ctx
  * @returns {DoctorCheck}
  */
@@ -390,9 +390,9 @@ export function checkPeerDeps(ctx) {
   if (!ctx.coreDir) {
     return {
       id: 'peer-deps',
-      label: '@xds/core peer dependencies',
+      label: '@astryxdesign/core peer dependencies',
       status: 'info',
-      message: 'Skipped — @xds/core is not installed.',
+      message: 'Skipped — @astryxdesign/core is not installed.',
     };
   }
 
@@ -403,9 +403,9 @@ export function checkPeerDeps(ctx) {
   if (peerNames.length === 0) {
     return {
       id: 'peer-deps',
-      label: '@xds/core peer dependencies',
+      label: '@astryxdesign/core peer dependencies',
       status: 'info',
-      message: '@xds/core declares no peer dependencies.',
+      message: '@astryxdesign/core declares no peer dependencies.',
     };
   }
 
@@ -430,7 +430,7 @@ export function checkPeerDeps(ctx) {
   if (missing.length > 0) {
     return {
       id: 'peer-deps',
-      label: '@xds/core peer dependencies',
+      label: '@astryxdesign/core peer dependencies',
       status: 'warn',
       message: `Missing peer dependencies: ${missing.join(', ')}.`,
       fix: `Install the required peers, e.g. \`npm install ${missing.map(m => m.split('@')[0]).join(' ')}\`.`,
@@ -439,7 +439,7 @@ export function checkPeerDeps(ctx) {
 
   return {
     id: 'peer-deps',
-    label: '@xds/core peer dependencies',
+    label: '@astryxdesign/core peer dependencies',
     status: 'pass',
     message: `All peer dependencies satisfied (${peerNames.join(', ')}).`,
   };
@@ -525,7 +525,7 @@ export async function runChecks(options = {}) {
 
 /**
  * Programmatic API: run the doctor and return the same envelope shape that
- * `xds doctor --json` emits.
+ * `astryx doctor --json` emits.
  *
  * @param {object} [options]
  * @param {string} [options.cwd]

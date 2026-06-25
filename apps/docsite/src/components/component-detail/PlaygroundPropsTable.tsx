@@ -10,19 +10,19 @@
 'use client';
 
 import {createElement, useState} from 'react';
-import {Heading, Text} from '@xds/core/Text';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Divider} from '@xds/core';
-import {Switch} from '@xds/core/Switch';
-import {TextInput} from '@xds/core/TextInput';
-import {NumberInput} from '@xds/core/NumberInput';
-import {Selector} from '@xds/core/Selector';
-import {Icon} from '@xds/core/Icon';
-import {Badge} from '@xds/core/Badge';
-import {IconButton} from '@xds/core/IconButton';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Divider} from '@astryxdesign/core';
+import {Switch} from '@astryxdesign/core/Switch';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {Selector} from '@astryxdesign/core/Selector';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Badge} from '@astryxdesign/core/Badge';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {Minus, Plus} from 'lucide-react';
-import {useMediaQuery} from '@xds/core/hooks';
-import {allSyntaxPresets} from '@xds/core/theme/syntax';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
+import {allSyntaxPresets} from '@astryxdesign/core/theme/syntax';
 import {themeObjectsFull} from '../../generated/themeRegistry';
 import {coerceEnumOption, type PropControlDescriptor} from './parsePropType';
 import type {KnobProp} from './InteractivePreview';
@@ -120,7 +120,7 @@ function getStatusValue(value: unknown): InputStatusOption | 'None' {
 
 function humanizePackageName(pkgName: string): string {
   return pkgName
-    .replace('@xds/theme-', '')
+    .replace('@astryxdesign/theme-', '')
     .split('-')
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
@@ -429,11 +429,18 @@ function InlineControl({
         />
       );
     case 'number':
+      // An optional prop with no default is genuinely unset — show an empty
+      // input (not a fabricated `0`, which misrepresents the live state and,
+      // for size props like maxWidth, has no path back to "unset"). `hasClear`
+      // lets the user return to the original unset render. Required numbers
+      // keep their generated fallback and stay non-clearable.
       return (
         <NumberInput
           label=""
-          value={typeof value === 'number' ? value : 0}
-          onChange={next => onChange(next)}
+          value={typeof value === 'number' ? value : null}
+          placeholder={prop.required ? undefined : 'unset'}
+          hasClear={!prop.required}
+          onChange={(next: number | null) => onChange(next ?? undefined)}
         />
       );
     case 'element':

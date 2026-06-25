@@ -5,8 +5,8 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   AlertDialog,
   useImperativeAlertDialog,
-} from '@xds/core/AlertDialog';
-import {Button} from '@xds/core/Button';
+} from '@astryxdesign/core/AlertDialog';
+import {Button} from '@astryxdesign/core/Button';
 
 const meta: Meta<typeof AlertDialog> = {
   title: 'Core/AlertDialog',

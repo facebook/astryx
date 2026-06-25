@@ -22,10 +22,10 @@ describe('Blockquote', () => {
     expect(element).toHaveTextContent('A quoted statement.');
   });
 
-  it('renders xds-* class name for theme targeting', () => {
+  it('renders astryx-* class name for theme targeting', () => {
     render(<Blockquote data-testid="bq">Quote</Blockquote>);
     const element = screen.getByTestId('bq');
-    expect(element.className).toContain('xds-blockquote');
+    expect(element.className).toContain('astryx-blockquote');
   });
 
   it('renders without cite by default', () => {

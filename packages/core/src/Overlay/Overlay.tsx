@@ -21,7 +21,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import {useOverlay} from './useOverlay';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {overlayScope, overlayContainerStyles} from './overlay.markers.stylex';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import type {BaseProps} from '../BaseProps';
 import type {
   OverlayScrimMode,
@@ -115,7 +115,7 @@ export function Overlay({
     <div
       ref={mergeRefs(ref, overlay.containerRef)}
       {...mergeProps(
-        xdsThemeProps('overlay'),
+        themeProps('overlay'),
         stylex.props(overlayScope, overlayContainerStyles.root, xstyle),
         className,
         style,

@@ -19,7 +19,7 @@ import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, sizeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * NavIcon styles
@@ -79,7 +79,7 @@ export function NavIcon({
     <span
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('navicon'),
+        themeProps('navicon'),
         stylex.props(styles.base, xstyle),
         className,
         style,

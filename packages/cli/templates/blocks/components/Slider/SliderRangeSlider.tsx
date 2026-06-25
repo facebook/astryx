@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Slider} from '@xds/core/Slider';
+import {Slider} from '@astryxdesign/core/Slider';
 
 export default function SliderRangeSlider() {
   const [value, setValue] = useState<[number, number]>([20, 80]);

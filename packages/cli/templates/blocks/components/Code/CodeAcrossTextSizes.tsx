@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Code} from '@xds/core/CodeBlock';
-import {Text} from '@xds/core/Text';
-import {Heading} from '@xds/core/Text';
-import {VStack} from '@xds/core/Stack';
+import {Code} from '@astryxdesign/core/CodeBlock';
+import {Text} from '@astryxdesign/core/Text';
+import {Heading} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Stack';
 
 export default function CodeAcrossTextSizes() {
   return (

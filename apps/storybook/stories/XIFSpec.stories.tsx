@@ -7,9 +7,9 @@ import {
   type SVGIconVariation,
   type SVGIconDef,
   type IconShape,
-} from '@xds/lab';
-import {Stack, Text, Divider} from '@xds/core';
-import {Heading} from '@xds/core/Text';
+} from '@astryxdesign/lab';
+import {Stack, Text, Divider} from '@astryxdesign/core';
+import {Heading} from '@astryxdesign/core/Text';
 import type {
   XIFIcon,
   XIFPath,

@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Badge} from '@xds/core/Badge';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Badge} from '@astryxdesign/core/Badge';
 
 export default function TabListTabsWithBadge() {
   const [value, setValue] = useState('inbox');

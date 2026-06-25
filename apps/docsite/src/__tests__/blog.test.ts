@@ -8,7 +8,7 @@
  * src/lib/blog/posts.mjs (shared with the build-time generator), so these tests
  * exercise the same code path that CI and `yarn generate` use.
  *
- * Run: yarn workspace @xds/docsite test
+ * Run: yarn workspace @astryxdesign/docsite test
  */
 
 import * as fs from 'node:fs';

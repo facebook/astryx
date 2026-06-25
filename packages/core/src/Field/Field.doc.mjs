@@ -16,9 +16,9 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-field'},
-      {className: 'xds-field-label'},
-      {className: 'xds-field-status', visualProps: ['type', 'variant']},
+      {className: 'astryx-field'},
+      {className: 'astryx-field-label'},
+      {className: 'astryx-field-status', visualProps: ['type', 'variant']},
     ],
     vars: [
       {name: '--_field-radius', description: 'Border radius of input fields', default: 'var(--radius-element)', private: true},

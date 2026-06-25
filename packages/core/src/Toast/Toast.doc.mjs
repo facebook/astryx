@@ -62,7 +62,7 @@ export const docs = {
     },
   ],  theming: {
     targets: [
-      {className: 'xds-toast', visualProps: ['type']},
+      {className: 'astryx-toast', visualProps: ['type']},
     ],
   },
 

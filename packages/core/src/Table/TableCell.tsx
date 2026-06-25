@@ -36,7 +36,7 @@ import {
   mergeXStyle,
 } from './useTableCellStyles';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /** Props for TableCell — thin `<td>` wrapper */
 export interface TableCellProps extends BaseProps<HTMLTableCellElement> {
@@ -148,7 +148,7 @@ export function TableCell({
         ref={ref}
         {...props}
         {...mergeProps(
-          xdsThemeProps('table-cell'),
+          themeProps('table-cell'),
           stylex.props(xstyle),
           incomingClassName,
           incomingStyle,
@@ -171,7 +171,7 @@ export function TableCell({
       ref={ref}
       {...props}
       {...mergeProps(
-        xdsThemeProps('table-cell'),
+        themeProps('table-cell'),
         stylex.props(...mergeXStyle(cellStyles, xstyle)),
         incomingClassName,
         incomingStyle,

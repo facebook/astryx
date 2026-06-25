@@ -10,7 +10,7 @@
  * curated theme list/order (REEL_THEMES) and per-theme aurora/wordmark/mode.
  */
 
-import type {DefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@astryxdesign/core/theme';
 import {packages} from '@/generated/packageRegistry';
 import {themeObjects} from '@/generated/themeRegistry';
 // Built theme (__built:true) so the hero reel's <Theme> slide uses pre-built
@@ -18,13 +18,13 @@ import {themeObjects} from '@/generated/themeRegistry';
 import {astryxTheme} from '@/themes/astryx';
 import {BRAND_BLUE} from '@/constants';
 
-// Sentinel for the docsite's local brand theme (not an @xds/theme-* package).
+// Sentinel for the docsite's local brand theme (not an @astryxdesign/theme-* package).
 const ASTRYX = 'astryx';
 
 // Shared XDS asset CDN. The per-theme reel cards pull the same product photos
 // the /themes showcase uses (see themeShowcaseContent.ts) so the hero and the
 // gallery stay in sync.
-const XDS_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+const IMAGE_CDN = 'https://lookaside.facebook.com/assets/astryx';
 
 export interface HeroThemeContent {
   /** Product card (image + title/description + price). */
@@ -70,7 +70,7 @@ export interface HeroAuroraPalette {
 }
 
 export interface HeroThemeSlide {
-  /** Theme package name, e.g. '@xds/theme-matcha'. */
+  /** Theme package name, e.g. '@astryxdesign/theme-matcha'. */
   name: string;
   /** Human-readable label, e.g. 'Matcha'. */
   label: string;
@@ -94,10 +94,10 @@ export interface HeroThemeSlide {
 // The curated reel — these themes, in this order. Edit here to add/remove.
 const REEL_THEMES: ReadonlyArray<string> = [
   ASTRYX,
-  '@xds/theme-matcha',
-  '@xds/theme-butter',
-  '@xds/theme-gothic',
-  '@xds/theme-y2k',
+  '@astryxdesign/theme-matcha',
+  '@astryxdesign/theme-butter',
+  '@astryxdesign/theme-gothic',
+  '@astryxdesign/theme-y2k',
 ];
 
 // Per-theme card content, keyed by theme name (or the ASTRYX sentinel).
@@ -130,7 +130,7 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       member: 'Astryx team',
     },
   },
-  '@xds/theme-neutral': {
+  '@astryxdesign/theme-neutral': {
     product: {
       image: '/neutral/preview-watch.png',
       title: 'Minimalist watch',
@@ -156,20 +156,20 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       member: 'Alex Rivera',
     },
   },
-  '@xds/theme-butter': {
+  '@astryxdesign/theme-butter': {
     product: {
-      image: `${XDS_CDN}/Butter-Croissant.png`,
+      image: `${IMAGE_CDN}/Butter-Croissant.png`,
       title: 'Butter croissant',
       description: 'Flaky, laminated layers baked golden each morning.',
       price: '$6',
     },
     feature: {
-      image: `${XDS_CDN}/Butter-Waffle.png`,
+      image: `${IMAGE_CDN}/Butter-Waffle.png`,
       title: 'Belgian waffle',
       price: '$8',
     },
     mini: {
-      image: `${XDS_CDN}/Butter-Pancake.png`,
+      image: `${IMAGE_CDN}/Butter-Pancake.png`,
       title: 'Buttermilk pancakes',
       description: 'Stacked tall with melting butter.',
     },
@@ -177,20 +177,20 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
     chatPrompt: 'How can I help?',
     reward: {label: 'Loyalty perks', value: 5, total: 9, member: 'Noa Bright'},
   },
-  '@xds/theme-matcha': {
+  '@astryxdesign/theme-matcha': {
     product: {
-      image: `${XDS_CDN}/matcha-product-1.png`,
+      image: `${IMAGE_CDN}/matcha-product-1.png`,
       title: 'Iced matcha latte',
       description: 'Stone-ground ceremonial matcha over cold milk.',
       price: '$6',
     },
     feature: {
-      image: `${XDS_CDN}/matcha-product-2.png`,
+      image: `${IMAGE_CDN}/matcha-product-2.png`,
       title: 'Strawberry matcha',
       price: '$7',
     },
     mini: {
-      image: `${XDS_CDN}/matcha-product-4.png`,
+      image: `${IMAGE_CDN}/matcha-product-4.png`,
       title: 'Ube matcha',
       description: 'Ube and cream matcha.',
     },
@@ -203,20 +203,20 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
       member: 'Lottie Wang',
     },
   },
-  '@xds/theme-gothic': {
+  '@astryxdesign/theme-gothic': {
     product: {
-      image: `${XDS_CDN}/Gothic-1.png`,
+      image: `${IMAGE_CDN}/Gothic-1.png`,
       title: 'Dried sea holly',
       description: 'A single preserved thistle stem with a steely bloom.',
       price: '$24',
     },
     feature: {
-      image: `${XDS_CDN}/Gothic-2.png`,
+      image: `${IMAGE_CDN}/Gothic-2.png`,
       title: 'Garden rose',
       price: '$18',
     },
     mini: {
-      image: `${XDS_CDN}/Gothic-3.png`,
+      image: `${IMAGE_CDN}/Gothic-3.png`,
       title: 'Lilac ranunculus',
       description: 'Layered petals in a soft mauve.',
     },
@@ -224,20 +224,20 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
     chatPrompt: 'How can I help?',
     reward: {label: 'Member rewards', value: 7, total: 8, member: 'Mara Vale'},
   },
-  '@xds/theme-y2k': {
+  '@astryxdesign/theme-y2k': {
     product: {
-      image: `${XDS_CDN}/Y2K-Phone.png`,
+      image: `${IMAGE_CDN}/Y2K-Phone.png`,
       title: 'Holo flip phone',
       description: 'Iridescent clamshell with a rainbow screen.',
       price: '$18',
     },
     feature: {
-      image: `${XDS_CDN}/Y2K-Star.png`,
+      image: `${IMAGE_CDN}/Y2K-Star.png`,
       title: 'Glow star set',
       price: '$12',
     },
     mini: {
-      image: `${XDS_CDN}/Y2K-Butterfly.png`,
+      image: `${IMAGE_CDN}/Y2K-Butterfly.png`,
       title: 'Glitter butterfly',
       description: 'Sparkly stick-on in pastel chrome.',
     },
@@ -249,7 +249,7 @@ const CONTENT_BY_THEME: Record<string, HeroThemeContent> = {
 
 // Fallback content for any theme without a bespoke entry (uses its preview img).
 function fallbackContent(name: string): HeroThemeContent {
-  const slug = name.replace('@xds/theme-', '');
+  const slug = name.replace('@astryxdesign/theme-', '');
   const image = `/theme-${slug}-preview.png`;
   return {
     product: {
@@ -269,11 +269,11 @@ function fallbackContent(name: string): HeroThemeContent {
 // Properly-cased dot labels (package displayNames are sometimes lowercased).
 const LABEL_BY_THEME: Record<string, string> = {
   [ASTRYX]: 'Astryx',
-  '@xds/theme-neutral': 'Neutral',
-  '@xds/theme-butter': 'Butter',
-  '@xds/theme-matcha': 'Matcha',
-  '@xds/theme-gothic': 'Gothic',
-  '@xds/theme-y2k': 'Y2K',
+  '@astryxdesign/theme-neutral': 'Neutral',
+  '@astryxdesign/theme-butter': 'Butter',
+  '@astryxdesign/theme-matcha': 'Matcha',
+  '@astryxdesign/theme-gothic': 'Gothic',
+  '@astryxdesign/theme-y2k': 'Y2K',
 };
 
 function labelFor(name: string): string {
@@ -281,7 +281,7 @@ function labelFor(name: string): string {
     return LABEL_BY_THEME[name];
   }
   const pkg = packages.find(p => p.name === name);
-  const raw = pkg?.displayName ?? name.replace('@xds/theme-', '');
+  const raw = pkg?.displayName ?? name.replace('@astryxdesign/theme-', '');
   return raw.replace(/^Theme:\s*/, '').replace(/\s*Theme$/, '');
 }
 
@@ -313,7 +313,9 @@ function wordmarkColorFor(name: string): string {
 }
 
 // Dark-first themes (rendered in dark mode; hero text/nav go light).
-const DARK_THEMES: ReadonlySet<string> = new Set<string>(['@xds/theme-gothic']);
+const DARK_THEMES: ReadonlySet<string> = new Set<string>([
+  '@astryxdesign/theme-gothic',
+]);
 
 // Per-theme aurora blob palettes (categorical background tokens, on-brand hues).
 const AURORA_BY_THEME: Record<string, HeroAuroraPalette> = {
@@ -322,29 +324,29 @@ const AURORA_BY_THEME: Record<string, HeroAuroraPalette> = {
     center: 'var(--color-background-yellow)',
     right: 'var(--color-background-pink)',
   },
-  '@xds/theme-neutral': {
+  '@astryxdesign/theme-neutral': {
     left: 'var(--color-background-blue)',
     center: 'var(--color-background-gray)',
     right: 'var(--color-background-cyan)',
   },
-  '@xds/theme-butter': {
+  '@astryxdesign/theme-butter': {
     left: 'var(--color-background-yellow)',
     center: 'var(--color-background-yellow)',
     right: 'var(--color-background-orange)',
   },
-  '@xds/theme-matcha': {
+  '@astryxdesign/theme-matcha': {
     left: 'var(--color-background-green)',
     center: 'var(--color-background-cyan)',
     right: 'var(--color-background-yellow)',
   },
   // Gothic (dark mode): use saturated --color-border-* tokens so the blobs glow
   // instead of washing out white (the 20%-alpha background tints would).
-  '@xds/theme-gothic': {
+  '@astryxdesign/theme-gothic': {
     left: 'var(--color-border-purple)',
     center: 'var(--color-border-blue)',
     right: 'var(--color-border-teal)',
   },
-  '@xds/theme-y2k': {
+  '@astryxdesign/theme-y2k': {
     left: 'var(--color-background-pink)',
     center: 'var(--color-background-purple)',
     right: 'var(--color-background-blue)',
@@ -357,6 +359,45 @@ const DEFAULT_AURORA: HeroAuroraPalette = {
   center: 'var(--color-background-purple)',
   right: 'var(--color-background-pink)',
 };
+
+// The custom (web) font families each reel theme paints with — body, heading,
+// and the marketing-scale display family. Listed here so the hero can warm them
+// before the first auto-advance (the @font-face rules ship in the docsite's
+// Google Fonts <link>, but the browser only fetches a family's woff2 once a
+// glyph using it first paints — i.e. when the reel swaps to that slide, which
+// is the visible FOUT first-time visitors hit). System/fallback stacks
+// (-apple-system, Georgia, …) are intentionally omitted: they need no fetch.
+//
+// Keep in sync with the typography.{body,heading} families + display overrides
+// in each theme package (packages/themes/<name>/src/<name>Theme.ts).
+const REEL_FONT_FAMILIES: ReadonlyArray<string> = [
+  // Astryx (docsite brand)
+  'Figtree',
+  // Matcha (DM Sans body + Playwrite US Trad heading)
+  'DM Sans',
+  'Playwrite US Trad',
+  // Butter (Outfit body/heading + Sarina display)
+  'Outfit',
+  'Sarina',
+  // Gothic (Fustat body/heading + Manufacturing Consent display)
+  'Fustat',
+  'Manufacturing Consent',
+  // Y2K (Poppins body/heading + Crimson Text display)
+  'Poppins',
+  'Crimson Text',
+];
+
+/**
+ * `document.fonts.load()` specifiers for the reel's custom families. A short
+ * representative string is enough to pull the right woff2 — the API loads the
+ * whole face that would render those glyphs. We warm a normal and a bold-ish
+ * weight since the cards mix body and heading weights.
+ */
+export const REEL_FONT_SPECIFIERS: ReadonlyArray<string> =
+  REEL_FONT_FAMILIES.flatMap(family => [
+    `400 1rem "${family}"`,
+    `600 1rem "${family}"`,
+  ]);
 
 // Ordered slides from REEL_THEMES; unresolved (uninstalled) themes are skipped.
 export const HERO_THEME_SLIDES: ReadonlyArray<HeroThemeSlide> = REEL_THEMES.map(
@@ -376,3 +417,21 @@ export const HERO_THEME_SLIDES: ReadonlyArray<HeroThemeSlide> = REEL_THEMES.map(
       : null;
   },
 ).filter((s): s is HeroThemeSlide => s !== null);
+
+/**
+ * Every product photo the reel cards reference, deduped and in slide order. The
+ * cards use plain <img> (no next/image priority), so on a fresh visit a slide's
+ * remote CDN photos aren't fetched until that slide renders — they pop in as
+ * the reel advances. The hero warms this list on mount so the images are in the
+ * browser cache before the first auto-advance. Scoped to just the reel's photos
+ * (3 per slide) so it doesn't bloat the rest of the landing page's initial load.
+ */
+export const REEL_IMAGE_SRCS: ReadonlyArray<string> = Array.from(
+  new Set(
+    HERO_THEME_SLIDES.flatMap(slide => [
+      slide.content.product.image,
+      slide.content.feature.image,
+      slide.content.mini.image,
+    ]),
+  ),
+);

@@ -89,7 +89,7 @@ describe('Tokenizer', () => {
       />,
     );
     expect(root).toBeInstanceOf(HTMLDivElement);
-    expect(root).toHaveClass('xds-field');
+    expect(root).toHaveClass('astryx-field');
   });
 
   it('exposes focus control through handleRef', () => {

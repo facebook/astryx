@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Table, proportional, pixel} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
+import {Table, proportional, pixel} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
 
 interface Metric extends Record<string, unknown> {
   id: string;

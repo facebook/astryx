@@ -5,7 +5,7 @@
  * - long-form-doc: guide/foundation topics from docsRegistry, rendered via
  *   ContentBlockRenderer (TokensDocView for live token tables, otherwise
  *   ReferenceDocView).
- * - package: non-theme @xds packages (e.g. @xds/core, @xds/cli), rendered as
+ * - package: non-theme @astryxdesign packages (e.g. @astryxdesign/core, @astryxdesign/cli), rendered as
  *   a README stub via PackageStubPage with install steps and an optional CTA.
  * Theme packages are NOT served here — they live at /themes/<name>.
  */
@@ -29,7 +29,7 @@ const TOKEN_TOPICS = new Set([
 ]);
 
 function slugToPackageName(slug: string): string {
-  return `@xds/${slug}`;
+  return `@astryxdesign/${slug}`;
 }
 
 function isThemePackage(name: string): boolean {
@@ -40,7 +40,7 @@ function getInstallSteps(pkgName: string): InstallStep[] {
   if (pkgName.endsWith('/cli')) {
     return [
       {label: 'Install the CLI', code: `npm install -D ${pkgName}`},
-      {label: 'Run a command', code: `npx xds component --list`},
+      {label: 'Run a command', code: `npx astryx component --list`},
     ];
   }
   return [
@@ -53,7 +53,7 @@ function getInstallSteps(pkgName: string): InstallStep[] {
   ];
 }
 
-/** Sections to remove from the @xds/core README on the package page. */
+/** Sections to remove from the @astryxdesign/core README on the package page. */
 const CORE_STRIP_SECTIONS = ['Quick Start', 'Resources', 'XDS CLI'];
 
 export function generateStaticParams() {
@@ -61,7 +61,7 @@ export function generateStaticParams() {
     ...docTopics.map(d => ({topic: d.topic})),
     ...packages
       .filter(p => !isThemePackage(p.name))
-      .map(p => ({topic: p.name.replace('@xds/', '')})),
+      .map(p => ({topic: p.name.replace('@astryxdesign/', '')})),
   ];
 }
 
@@ -99,7 +99,7 @@ export default async function DocPage({
     notFound();
   }
 
-  const isComponentPkg = pkg.name === '@xds/core';
+  const isComponentPkg = pkg.name === '@astryxdesign/core';
 
   return (
     <PackageStubPage

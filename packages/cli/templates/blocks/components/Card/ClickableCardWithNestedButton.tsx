@@ -2,10 +2,10 @@
 
 'use client';
 
-import {ClickableCard} from '@xds/core/ClickableCard';
-import {Stack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
 
 export default function ClickableCardWithNestedButton() {
   return (

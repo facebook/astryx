@@ -10,9 +10,9 @@ import {
   TopNavMegaMenu,
   TopNavMegaMenuItem,
   TopNavMegaMenuFeaturedCard,
-} from '@xds/core/TopNav';
-import {NavIcon} from '@xds/core/NavIcon';
-import {Button} from '@xds/core/Button';
+} from '@astryxdesign/core/TopNav';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
+import {Button} from '@astryxdesign/core/Button';
 import {
   CubeIcon,
   ChartBarIcon,

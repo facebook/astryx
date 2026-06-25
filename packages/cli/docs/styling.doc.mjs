@@ -22,9 +22,8 @@ export const docs = {
           type: 'table',
           headers: ['Approach', 'Use for', 'Example'],
           rows: [
-            ['xstyle prop', 'Overriding a specific component', 'xstyle={styles.override}'],
+            ['StyleX', 'Component-specific overrides, reusable styles, pseudo-classes, and typed tokens', 'const styles = stylex.create(...); <Button xstyle={styles.save} />'],
             ['Tailwind utilities', 'Layout, wrappers, and utility styling', 'className="flex gap-3 p-4"'],
-            ['stylex.create', 'Reusable styles, pseudo-classes, typed tokens', 'stylex.create({ card: { ... } })'],
             ['className', 'Integrating with external CSS or Tailwind on components', 'className="my-card shadow-lg"'],
             ['Styling-library token aliases', 'Keeping Panda, Chakra, MUI, Emotion, styled-components, UnoCSS, CSS Modules, or Sass in sync with the system', "colors.surface = 'var(--color-background-surface)'"],
           ],
@@ -98,14 +97,14 @@ const overrides = stylex.create({
           type: 'code',
           lang: 'css',
           label: 'globals.css: import the bridge',
-          code: `@layer reset, theme, base, xds-base, xds-theme, components, utilities;
+          code: `@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
-@import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
-@import "@xds/theme-default/theme.css";
-@import "@xds/core/tailwind-theme.css";
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+@import "@astryxdesign/core/tailwind-theme.css";
 @import "tailwindcss/utilities.css" layer(utilities);`,
         },
         {
@@ -232,20 +231,20 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'When external CSS needs to target an XDS component by prop or state, combine the stable component class with reflected data attributes. The component class identifies the component (`.xds-button`, `.xds-card`); data attributes identify the axis and value (`data-variant`, `data-size`, `data-level`, etc.). This is the preferred selector surface for new CSS because it is explicit and collision-resistant.',
+          text: 'When external CSS needs to target an XDS component by prop or state, combine the stable component class with reflected data attributes. The component class identifies the component (`.astryx-button`, `.astryx-card`); data attributes identify the axis and value (`data-variant`, `data-size`, `data-level`, etc.). This is the preferred selector surface for new CSS because it is explicit and collision-resistant.',
         },
         {
           type: 'code',
           lang: 'css',
-          code: `.my-app .xds-button[data-variant="primary"] {
+          code: `.my-app .astryx-button[data-variant="primary"] {
   /* primary buttons in this app context */
 }
 
-.my-app .xds-button[data-variant="primary"][data-size="sm"] {
+.my-app .astryx-button[data-variant="primary"][data-size="sm"] {
   /* small primary buttons */
 }
 
-.my-app .xds-heading[data-level="2"] {
+.my-app .astryx-heading[data-level="2"] {
   /* level 2 headings; numeric values stay literal in data attrs */
 }`,
         },
@@ -274,19 +273,19 @@ const overrides = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'XDS still emits legacy bare prop/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` for compatibility with existing apps and built themes. Do not write new CSS against these bare classes. The stable base component classes (`.xds-button`, `.xds-card`, etc.) are not deprecated; only the unprefixed prop/state classes are the legacy surface.',
+          text: 'XDS still emits legacy bare prop/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` for compatibility with existing apps and built themes. Do not write new CSS against these bare classes. The stable base component classes (`.astryx-button`, `.astryx-card`, etc.) are not deprecated; only the unprefixed prop/state classes are the legacy surface.',
         },
         {
           type: 'code',
           lang: 'css',
           code: `/* Deprecated compatibility selector — avoid in new CSS */
-.my-app .xds-button.primary {
-  /* use .xds-button[data-variant="primary"] instead */
+.my-app .astryx-button.primary {
+  /* use .astryx-button[data-variant="primary"] instead */
 }
 
 /* Deprecated compatibility selector — avoid in new CSS */
-.my-app .xds-heading.level-2 {
-  /* use .xds-heading[data-level="2"] instead */
+.my-app .astryx-heading.level-2 {
+  /* use .astryx-heading[data-level="2"] instead */
 }`,
         },
       ],
@@ -319,7 +318,7 @@ const styles = stylex.create({
           type: 'code',
           lang: 'tsx',
           label: 'Using typed token imports in stylex.create',
-          code: `import {colorVars, spacingVars, radiusVars} from '@xds/core/theme/tokens.stylex';
+          code: `import {colorVars, spacingVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   highlight: {

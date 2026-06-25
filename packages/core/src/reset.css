@@ -1,11 +1,11 @@
 /* Copyright (c) Meta Platforms, Inc. and affiliates. */
 
 /**
- * XDS Reset Stylesheet
+ * Astryx Reset Stylesheet
  *
  * An opinionated CSS reset that provides a clean, predictable base for
- * XDS applications. Built on the same principles as Tailwind Preflight
- * and modern-normalize, adapted for the XDS design system.
+ * Astryx applications. Built on the same principles as Tailwind Preflight
+ * and modern-normalize, adapted for the Astryx design system.
  *
  * This reset:
  * - Normalizes cross-browser inconsistencies
@@ -18,15 +18,15 @@
  * Usage:
  *
  * 1. Import directly (global reset):
- *    import '@xds/core/reset.css';
+ *    import '@astryxdesign/core/reset.css';
  *
  * 2. Combine with base styles and theme:
- *    import '@xds/core/reset.css';        // @layer reset  — clean slate
- *    import '@xds/core/xds.css';           // @layer xds-base — component styles
- *    import '@xds/theme-default/theme.css'; // @layer xds-theme — theme overrides
+ *    import '@astryxdesign/core/reset.css';        // @layer reset  — clean slate
+ *    import '@astryxdesign/core/astryx.css';        // @layer astryx-base — component styles
+ *    import '@astryxdesign/theme-neutral/theme.css'; // @layer astryx-theme — theme overrides
  *
- * Layer order: reset → xds-base → xds-theme
- * Consumer styles (unlayered) always override all XDS layers.
+ * Layer order: reset → astryx-base → astryx-theme
+ * Consumer styles (unlayered) always override all Astryx layers.
  * The reset has the lowest priority and can be overridden by any other layer.
  *
  * Similar to:
@@ -248,7 +248,7 @@
 
   /*
    * Normalize placeholder opacity (Firefox renders at reduced opacity)
-   * and set a sensible default color using the XDS text-placeholder token.
+   * and set a sensible default color using the Astryx text-placeholder token.
    */
   :where(input::placeholder, textarea::placeholder) {
     opacity: 1;
@@ -398,11 +398,11 @@
    * Token overrides (text/icon/accent) are theme-level (generateOnMediaCSS).
    * Dual-prefix (astryx + legacy xds) during the compat window.
    */
-  :where([data-astryx-media="dark"], [data-xds-media="dark"]) {
+  :where([data-astryx-media="dark"]) {
     color-scheme: dark;
   }
 
-  :where([data-astryx-media="light"], [data-xds-media="light"]) {
+  :where([data-astryx-media="light"]) {
     color-scheme: light;
   }
 }

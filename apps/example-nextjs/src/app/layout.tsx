@@ -7,7 +7,7 @@ import {Providers} from './providers';
 export const metadata: Metadata = {
   title: 'XDS Example — Next.js (Dist)',
   description:
-    'Reference example for consuming @xds/core as a pre-built dist package',
+    'Reference example for consuming @astryxdesign/core as a pre-built dist package',
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {

@@ -24,7 +24,7 @@ import type {InputStatus} from '../Field/types';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Size of the radio controls, matching CheckboxInput sizes.
@@ -224,7 +224,7 @@ export function RadioList({
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-required={isRequired || undefined}
         {...mergeProps(
-          xdsThemeProps('radio-list', {orientation, size}),
+          themeProps('radio-list', {orientation, size}),
           stylex.props(
             styles.radiogroup,
             orientation === 'vertical' ? styles.vertical : styles.horizontal,

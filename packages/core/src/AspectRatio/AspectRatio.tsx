@@ -19,7 +19,7 @@ import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * The shape of the aspect ratio container.
@@ -123,7 +123,7 @@ export function AspectRatio({
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('aspect-ratio', {shape}),
+        themeProps('aspect-ratio', {shape}),
         stylex.props(
           styles.container,
           shape === 'ellipse' && styles.ellipse,

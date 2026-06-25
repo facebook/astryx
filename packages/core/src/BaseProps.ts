@@ -3,7 +3,7 @@
 /**
  * @file BaseProps.ts
  * @input None (pure type definitions)
- * @output Exports BaseProps — the shared base interface for all XDS components
+ * @output Exports BaseProps — the shared base interface for all Astryx components
  * @position Type foundation; extended by all component prop interfaces
  *
  * Keeps: event handlers, aria-*, role, tabIndex, hidden, draggable, inert,
@@ -15,7 +15,7 @@ import type React from 'react';
 import type {StyleXStyles} from '@stylexjs/stylex';
 
 /**
- * Base props shared by all XDS components.
+ * Base props shared by all Astryx components.
  *
  * Omits props that are footguns, deprecated, or irrelevant to component APIs.
  * Components that genuinely need an omitted prop can declare it explicitly.
@@ -90,6 +90,6 @@ export interface BaseProps<T extends HTMLElement = HTMLElement> extends Omit<
   xstyle?: StyleXStyles;
 
   /** Allow data-* attributes for telemetry, testing, integration hooks, and
-   * XDS component prop/state reflection (for example data-variant/data-size). */
+   * Astryx component prop/state reflection (for example data-variant/data-size). */
   [key: `data-${string}`]: string | undefined;
 }

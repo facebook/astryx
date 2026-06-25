@@ -3,8 +3,8 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 import {CodeExampleBlock} from '../CodeExampleBlock';
 
 const styles = stylex.create({
@@ -31,6 +31,7 @@ export function CodeBlockRenderer({
         code={code}
         language={lang}
         hasCopyButton
+        isWrapped
         xstyle={styles.root}
       />
     </VStack>

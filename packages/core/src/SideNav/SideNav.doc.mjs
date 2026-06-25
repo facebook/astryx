@@ -19,10 +19,10 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-side-nav', visualProps: ['mode']},
-      {className: 'xds-side-nav-heading'},
-      {className: 'xds-side-nav-item'},
-      {className: 'xds-side-nav-section'},
+      {className: 'astryx-side-nav', visualProps: ['mode']},
+      {className: 'astryx-side-nav-heading'},
+      {className: 'astryx-side-nav-item'},
+      {className: 'astryx-side-nav-section'},
     ],
   },
   description: 'Container with five zones: header, topContent, children (scrollable), footer, and footerIcons. Supports collapsible mode.',

@@ -9,8 +9,8 @@ import {
   ChatMessageBubble,
   ChatComposer,
   ChatTokenizedText,
-} from '@xds/core/Chat';
-import {VStack} from '@xds/core/Stack';
+} from '@astryxdesign/core/Chat';
+import {VStack} from '@astryxdesign/core/Stack';
 
 const TOKENS = [{value: '/review', label: '/review', variant: 'blue' as const}];
 

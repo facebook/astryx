@@ -10,8 +10,8 @@
  */
 
 import {useMemo, type ReactNode} from 'react';
-import {DropdownMenu, DropdownMenuItem} from '@xds/core/DropdownMenu';
-import {Icon} from '@xds/core/Icon';
+import {DropdownMenu, DropdownMenuItem} from '@astryxdesign/core/DropdownMenu';
+import {Icon} from '@astryxdesign/core/Icon';
 import {useScheduleContext} from '../context';
 import type {
   ScheduleHeaderContent,

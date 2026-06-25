@@ -2,18 +2,18 @@
 
 'use client';
 
-import {List, ListItem} from '@xds/core/List';
+import {List, ListItem} from '@astryxdesign/core/List';
 
 export default function ListOrderedSteps() {
   return (
     <List listStyle="decimal">
       <ListItem
         label="Install the package"
-        description="npm install @xds/core"
+        description="npm install @astryxdesign/core"
       />
       <ListItem
         label="Import components"
-        description="import { List } from '@xds/core'"
+        description="import { List } from '@astryxdesign/core'"
       />
       <ListItem
         label="Start building"

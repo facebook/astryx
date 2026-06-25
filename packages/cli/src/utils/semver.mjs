@@ -3,7 +3,7 @@
 /**
  * @file Minimal semver utilities for the CLI.
  *
- * We deliberately avoid pulling in `semver` from npm — XDS releases follow a
+ * We deliberately avoid pulling in `semver` from npm — Astryx releases follow a
  * strict `MAJOR.MINOR.PATCH[-prerelease]` shape and the CLI runs in consumer
  * sandboxes where a smaller dependency surface is preferred.
  */

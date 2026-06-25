@@ -50,7 +50,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // Re-export status types for convenience
 export type {
@@ -664,7 +664,7 @@ export function Tokenizer<T extends SearchableItem>({
       onBlurCapture={handleBlurCapture}
       data-testid={testId}
       {...mergeProps(
-        xdsThemeProps('tokenizer', {size, status: status?.type}),
+        themeProps('tokenizer', {size, status: status?.type}),
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,
@@ -749,7 +749,7 @@ export function Tokenizer<T extends SearchableItem>({
           ref={placeholderRef}
           onClick={handleWrapperClick}
           {...mergeProps(
-            xdsThemeProps('tokenizer', {size, status: status?.type}),
+            themeProps('tokenizer', {size, status: status?.type}),
             stylex.props(
               inputWrapperStyles.base,
               styles.wrapper,

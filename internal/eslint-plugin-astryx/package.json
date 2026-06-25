@@ -1,0 +1,12 @@
+{
+  "name": "@astryx/eslint-plugin",
+  "version": "0.0.1",
+  "private": true,
+  "main": "index.js",
+  "type": "module",
+  "description": "ESLint plugin for Astryx design system token enforcement",
+  "keywords": ["eslint", "eslint-plugin", "xds", "design-system", "stylex"],
+  "peerDependencies": {
+    "eslint": ">=9.0.0"
+  }
+}

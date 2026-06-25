@@ -145,8 +145,8 @@ const FILE_EXTENSIONS = new Set([
 /**
  * Heuristic: does this CLI argument look like a file path (vs a directory)?
  *
- * Used by `xds template <name> <path>` so that
- *   `xds template blank ./foo.tsx`
+ * Used by `astryx template <name> <path>` so that
+ *   `astryx template blank ./foo.tsx`
  * writes to `./foo.tsx` as a file, not `./foo.tsx/page.tsx` (the old bug).
  *
  * Returns true when the basename has a known source/asset extension.

@@ -27,12 +27,12 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
             Runs before paint so the toolbar is never visible in embed contexts. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{if(window.self!==window.top)document.documentElement.classList.add('xds-embed')}catch(e){document.documentElement.classList.add('xds-embed')}`,
+            __html: `try{if(window.self!==window.top)document.documentElement.classList.add('astryx-embed')}catch(e){document.documentElement.classList.add('astryx-embed')}`,
           }}
         />
         <style
           dangerouslySetInnerHTML={{
-            __html: `html.xds-embed [data-preview-shell]{display:none!important}`,
+            __html: `html.astryx-embed [data-preview-shell]{display:none!important}`,
           }}
         />
       </head>

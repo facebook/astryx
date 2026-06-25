@@ -24,7 +24,7 @@ import {
 } from '../theme/tokens.stylex';
 import {useCommandPaletteContext} from './CommandPaletteContext';
 import {useDialogContext} from '../Dialog/DialogContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const HOVER_HOVER = '@media (hover: hover)';
 
@@ -194,7 +194,7 @@ export function CommandPaletteItem({
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       {...mergeProps(
-        xdsThemeProps('command-palette-item'),
+        themeProps('command-palette-item'),
         stylex.props(
           styles.item,
           !isDisabled && styles.itemHover,

@@ -29,7 +29,7 @@ import {
 } from '../theme/tokens.stylex';
 import type {InputStatusType} from '../Field/types';
 import {useEntryAnimation} from '../hooks/useEntryAnimation';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   base: {
@@ -74,7 +74,7 @@ const colorStyles = stylex.create({
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/FieldStatus' {
+ * declare module '@astryxdesign/core/FieldStatus' {
  *   interface FieldStatusVariantMap {
  *     'inline': true;
  *   }
@@ -147,7 +147,7 @@ export function FieldStatus({
       aria-live={type === 'error' ? 'assertive' : 'polite'}
       {...rest}
       {...mergeProps(
-        xdsThemeProps('field-status', {type, variant}),
+        themeProps('field-status', {type, variant}),
         stylex.props(
           styles.base,
           entryStyle,

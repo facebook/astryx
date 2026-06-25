@@ -42,7 +42,7 @@ import {
 import {getKey, mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -684,7 +684,7 @@ export const BaseTypeahead = function BaseTypeahead<
           role="listbox"
           aria-label="Search results"
           {...mergeProps(
-            xdsThemeProps('typeahead-dropdown'),
+            themeProps('typeahead-dropdown'),
             stylex.props(styles.dropdown),
           )}>
           {results.length === 0 && hasSearched ? (

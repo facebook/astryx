@@ -3,30 +3,27 @@
 "use strict";
 
 /**
- * @xds/build/next
+ * @astryxdesign/build/next
  *
- * Next.js configuration helper for XDS source builds.
+ * Next.js configuration helper for Astryx source builds.
  *
  * Usage in next.config.mjs:
- *   import {withXDS} from '@xds/build/next';
+ *   import {withXDS} from '@astryxdesign/build/next';
  *   export default withXDS({
  *     // your normal next config
  *   });
  */
 
 /**
- * Wraps a Next.js config to enable XDS source builds.
- * - Adds transpilePackages for @xds/* packages
+ * Wraps a Next.js config to enable Astryx source builds.
+ * - Adds transpilePackages for @astryxdesign/* packages
  * - Sets conditionNames to resolve source exports
  */
 function withXDS(nextConfig = {}) {
   const xdsPackages = [
-    '@xds/core',
-    '@xds/theme-default',
-    '@xds/theme-neutral',
-    '@xds/theme-brutalist',
-    '@xds/theme-daily',
-    '@xds/lab',
+    '@astryxdesign/core',
+    '@astryxdesign/theme-neutral',
+    '@astryxdesign/lab',
   ];
 
   const existingTranspile = nextConfig.transpilePackages || [];
@@ -47,11 +44,11 @@ function withXDS(nextConfig = {}) {
       ];
 
       // Preserve the symlinked node_modules path so Next.js's
-      // transpilePackages matcher recognizes @xds/* packages under
+      // transpilePackages matcher recognizes @astryxdesign/* packages under
       // pnpm's symlinked layout. Without this, webpack dereferences
       // the symlink to packages/<name>/... which doesn't contain
-      // "node_modules/@xds" and transpilation is silently skipped,
-      // breaking subpath imports like '@xds/core/AlertDialog'.
+      // "node_modules/@astryxdesign" and transpilation is silently skipped,
+      // breaking subpath imports like '@astryxdesign/core/AlertDialog'.
       config.resolve.symlinks = false;
 
       // Call user's webpack config if provided

@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {HoverCard} from '@xds/core/HoverCard';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {HoverCard} from '@astryxdesign/core/HoverCard';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const styles = stylex.create({
   content: {maxWidth: 200},

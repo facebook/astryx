@@ -2,16 +2,15 @@
 
 'use client';
 
-import {MediaTheme} from '@xds/core/theme';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Button} from '@xds/core/Button';
-import {Section} from '@xds/core/Section';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {MediaTheme} from '@astryxdesign/core/theme';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Button} from '@astryxdesign/core/Button';
+import {Section} from '@astryxdesign/core/Section';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
-// light-home-square-1 from xds_oss asset set
 const BRIGHT_ROOM_IMAGE_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/light-home-square-1.png';
+  'https://lookaside.facebook.com/assets/astryx/light-home-square-1.png';
 
 export default function MediaThemeLightScrim() {
   return (

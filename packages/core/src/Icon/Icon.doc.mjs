@@ -29,7 +29,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-icon', visualProps: ['color', 'size']},
+      {className: 'astryx-icon', visualProps: ['color', 'size']},
     ],
   },
   usage: {
@@ -74,7 +74,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-icon', visualProps: ['color', 'size']},
+      {className: 'astryx-icon', visualProps: ['color', 'size']},
     ],
   },
   usage: {

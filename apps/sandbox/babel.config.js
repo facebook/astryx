@@ -2,10 +2,10 @@
 
 /* global module, __dirname */
 const path = require('path');
-const {babel} = require('@xds/build');
+const {babel} = require('@astryxdesign/build');
 
 // Use the dist build pattern: library files keep default 'x' prefix (matching
-// the pre-built xds.css), product files use 'p' prefix to avoid collisions.
+// the pre-built astryx.css), product files use 'p' prefix to avoid collisions.
 module.exports = babel(path.resolve(__dirname, '../..'), {
   libraryPrefix: 'x',
   classNamePrefix: 'p',

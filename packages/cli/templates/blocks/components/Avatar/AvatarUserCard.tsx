@@ -2,11 +2,11 @@
 
 'use client';
 
-import {Avatar, AvatarStatusDot} from '@xds/core/Avatar';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Avatar, AvatarStatusDot} from '@astryxdesign/core/Avatar';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
-const CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+const CDN = 'https://lookaside.facebook.com/assets/astryx';
 
 const USERS = [
   {

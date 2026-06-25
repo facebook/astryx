@@ -19,7 +19,7 @@ describe('formatFull sub-component rendering', () => {
     expect(out).toContain('### XDSRadioListItem');
     expect(out).not.toContain('undefined');
     // Points the reader at the sub-component's own docs instead of a blank.
-    expect(out).toContain('xds component XDSRadioListItem');
+    expect(out).toContain('astryx component XDSRadioListItem');
   });
 
   it('renders a full props table for a sub-component that has inline props', () => {
@@ -48,6 +48,6 @@ describe('formatFull sub-component rendering', () => {
     expect(out).toContain('| `label` |');
     expect(out).not.toContain('undefined');
     // With real props, it should NOT emit the "see docs" pointer.
-    expect(out).not.toContain('xds component XDSButtonGroup');
+    expect(out).not.toContain('astryx component XDSButtonGroup');
   });
 });

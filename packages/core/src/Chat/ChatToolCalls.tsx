@@ -35,7 +35,7 @@ import {getKey, mergeProps} from '../utils';
 import {Badge} from '../Badge';
 import {Icon, type IconName} from '../Icon';
 import {Spinner} from '../Spinner';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -518,7 +518,7 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
       <div
         ref={ref}
         {...mergeProps(
-          xdsThemeProps('chat-tool-calls'),
+          themeProps('chat-tool-calls'),
           stylex.props(styles.root, xstyle),
           className,
           style,
@@ -537,7 +537,7 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('chat-tool-calls'),
+        themeProps('chat-tool-calls'),
         stylex.props(styles.root, xstyle),
         className,
         style,

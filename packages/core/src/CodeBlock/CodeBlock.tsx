@@ -42,7 +42,7 @@ import {
 import type {SyntaxToken, TokenLine} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -776,7 +776,7 @@ export function CodeBlock({
     <pre
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('codeblock', {size, language, container}),
+        themeProps('codeblock', {size, language, container}),
         stylex.props(
           styles.root,
           dynamicStyles.width(widthProp),

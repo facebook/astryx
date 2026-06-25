@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Path resolution utilities for XDS CLI
+ * @file Path resolution utilities for Astryx CLI
  *
  * Finds packages/core, project root, and CLI package root.
  */
@@ -12,12 +12,12 @@ import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Root of the @xds/cli package */
+/** Root of the @astryxdesign/cli package */
 export const CLI_ROOT = path.resolve(__dirname, '..', '..');
 
 /**
  * Find packages/core directory by walking up from startDir.
- * Also checks node_modules/@xds/core for installed usage.
+ * Also checks node_modules/@astryxdesign/core for installed usage.
  */
 export function findCoreDir(startDir = process.cwd()) {
   let dir = startDir;
@@ -28,7 +28,7 @@ export function findCoreDir(startDir = process.cwd()) {
       return candidate;
     }
 
-    const nodeModules = path.join(dir, 'node_modules', '@xds', 'core');
+    const nodeModules = path.join(dir, 'node_modules', '@astryxdesign', 'core');
     if (fs.existsSync(nodeModules)) {
       return nodeModules;
     }
@@ -70,10 +70,10 @@ export function findProjectRoot(startDir = process.cwd()) {
 }
 
 /**
- * Discover external XDS-compatible packages from node_modules.
- * Scans for packages with an "xds" field in their package.json:
+ * Discover external Astryx-compatible packages from node_modules.
+ * Scans for packages with an "astryx" field in their package.json:
  *
- *   { "xds": { "docs": "./src", "category": "Common", "blocks": "./blocks/components" } }
+ *   { "astryx": { "docs": "./src", "category": "Common", "blocks": "./blocks/components" } }
  *
  * Returns array of { name, category, docsDir, blocksDir }.
  */
@@ -117,14 +117,14 @@ export function discoverExternalPackages(startDir = process.cwd()) {
 
       try {
         const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
-        if (pkg.name === '@xds/core') continue;
-        if (pkg.xds && pkg.xds.docs) {
+        if (pkg.name === '@astryxdesign/core') continue;
+        if (pkg.astryx && pkg.astryx.docs) {
           externals.push({
             name: pkg.name,
-            category: pkg.xds.category || pkg.name,
-            docsDir: path.resolve(fullPath, pkg.xds.docs),
-            blocksDir: pkg.xds.blocks
-              ? path.resolve(fullPath, pkg.xds.blocks)
+            category: pkg.astryx.category || pkg.name,
+            docsDir: path.resolve(fullPath, pkg.astryx.docs),
+            blocksDir: pkg.astryx.blocks
+              ? path.resolve(fullPath, pkg.astryx.blocks)
               : null,
           });
         }
@@ -140,7 +140,7 @@ export function discoverExternalPackages(startDir = process.cwd()) {
 
 /**
  * List available component directories in packages/core/src.
- * Returns directory names that contain XDS*.tsx files.
+ * Returns directory names that contain Astryx*.tsx files.
  */
 export function listComponents(coreDir) {
   const srcDir = path.join(coreDir, 'src');

@@ -8,7 +8,7 @@ import {loadConfig} from '../lib/config.mjs';
 import {scanAllPackages, findComponentInPackages} from '../lib/package-scanner.mjs';
 import {loadDocs} from '../lib/component-loader.mjs';
 import {levenshteinDistance} from '../lib/string-utils.mjs';
-import {XDSError} from './error.mjs';
+import {AstryxError} from './error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 function validateDocs(docs) {
@@ -66,7 +66,7 @@ export async function discover(query, options = {}) {
 
     const pkg = packages.find(p => p.name === query);
     if (!pkg) {
-      throw new XDSError(
+      throw new AstryxError(
         `Package "${query}" not found`,
         packages.map(p => ({name: p.name, reason: 'available package'})),
         ERROR_CODES.ERR_UNKNOWN_PACKAGE,
@@ -116,19 +116,19 @@ export async function discover(query, options = {}) {
     .slice(0, 5);
 
   if (fuzzyMatches.length > 0) {
-    throw new XDSError(
+    throw new AstryxError(
       `"${query}" not found`,
       fuzzyMatches.map(m => ({name: m.pkg.name + '/' + m.comp, reason: 'similar name'})),
       ERROR_CODES.ERR_NOT_FOUND,
     );
   }
 
-  throw new XDSError(`"${query}" not found in any package`, undefined, ERROR_CODES.ERR_NOT_FOUND);
+  throw new AstryxError(`"${query}" not found in any package`, undefined, ERROR_CODES.ERR_NOT_FOUND);
 }
 
 async function resolveComponentDocs(packages, compName, pkgName, {lang, zh}) {
   const pkg = packages.find(p => p.name === pkgName);
-  if (!pkg) throw new XDSError(`Package "${pkgName}" not found`, undefined, ERROR_CODES.ERR_UNKNOWN_PACKAGE);
+  if (!pkg) throw new AstryxError(`Package "${pkgName}" not found`, undefined, ERROR_CODES.ERR_UNKNOWN_PACKAGE);
 
   const result = findComponentInPackages([pkg], compName);
   if (!result) {
@@ -142,7 +142,7 @@ async function resolveComponentDocs(packages, compName, pkgName, {lang, zh}) {
         .sort((a, b) => a.distance - b.distance)
         .slice(0, 5)
         .map(m => m.name);
-    throw new XDSError(
+    throw new AstryxError(
       `Component "${compName}" not found in ${pkgName}`,
       suggestions.map(s => ({name: s, reason: 'similar name'})),
       ERROR_CODES.ERR_UNKNOWN_COMPONENT,
@@ -157,9 +157,9 @@ async function loadAndValidate(result, {lang, zh}) {
   try {
     docs = await loadDocs(result.docPath, {zh, lang});
   } catch (e) {
-    throw new XDSError(`Failed to load docs for ${result.componentName}: ${e.message}`, undefined, ERROR_CODES.ERR_INVALID_DOC);
+    throw new AstryxError(`Failed to load docs for ${result.componentName}: ${e.message}`, undefined, ERROR_CODES.ERR_INVALID_DOC);
   }
   const err = validateDocs(docs);
-  if (err) throw new XDSError(`Invalid docs for ${result.componentName}: ${err}`, undefined, ERROR_CODES.ERR_INVALID_DOC);
+  if (err) throw new AstryxError(`Invalid docs for ${result.componentName}: ${err}`, undefined, ERROR_CODES.ERR_INVALID_DOC);
   return {type: 'discover.detail.doc', data: docs};
 }

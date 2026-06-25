@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {RadioList, RadioListItem} from '@xds/core/RadioList';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
 
 export default function RadioListHorizontalLayout() {
   const [value, setValue] = useState('md');

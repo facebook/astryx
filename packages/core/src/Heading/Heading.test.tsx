@@ -189,14 +189,14 @@ describe('Heading', () => {
     });
   });
 
-  it('renders xds-* classes and data attributes for theme targeting', () => {
+  it('renders astryx-* classes and data attributes for theme targeting', () => {
     render(
       <Heading level={2} color="secondary">
         Themed Heading
       </Heading>,
     );
     const element = screen.getByText('Themed Heading');
-    expect(element.className).toContain('xds-heading');
+    expect(element.className).toContain('astryx-heading');
     expect(element.className).toContain('level-2');
     expect(element.className).toContain('secondary');
     expect(element).toHaveAttribute('data-level', '2');

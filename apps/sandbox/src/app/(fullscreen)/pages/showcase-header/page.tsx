@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Heading, Text} from '@xds/core/Text';
-import {Badge} from '@xds/core/Badge';
-import {StatusDot} from '@xds/core/StatusDot';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
 
 const styles = stylex.create({
   container: {

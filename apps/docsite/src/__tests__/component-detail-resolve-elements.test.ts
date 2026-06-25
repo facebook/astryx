@@ -4,7 +4,7 @@ import {isValidElement, type ReactElement} from 'react';
 import {describe, expect, it, vi} from 'vitest';
 import {resolveValue} from '../components/component-detail/resolveElements';
 
-vi.mock('@xds/core', () => ({
+vi.mock('@astryxdesign/core', () => ({
   Badge: () => null,
   Icon: () => null,
   SideNavItem: () => null,

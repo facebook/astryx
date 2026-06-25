@@ -2,13 +2,13 @@
 
 'use client';
 
-import {MoreMenu} from '@xds/core/MoreMenu';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {Toolbar} from '@xds/core/Toolbar';
-import {Heading} from '@xds/core/Text';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
+import {MoreMenu} from '@astryxdesign/core/MoreMenu';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {Heading} from '@astryxdesign/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
 import {
   ArrowLeftIcon,
   ArrowDownTrayIcon,

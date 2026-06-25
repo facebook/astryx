@@ -34,7 +34,7 @@ export const docs = {
   ],
   theming: {
     container: true,
-    targets: [{className: 'xds-selectable-card', visualProps: ['selected']}],
+    targets: [{className: 'astryx-selectable-card', visualProps: ['selected']}],
   },
 };
 

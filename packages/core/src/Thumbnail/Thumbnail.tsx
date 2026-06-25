@@ -39,7 +39,7 @@ import {MediaTheme} from '../theme/MediaTheme';
 import {useImageMode} from '../hooks/useImageMode';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /** Sample the region behind the remove button (20px button, 4px inset, in 64px container). */
 const BUTTON_REGION = {x: 0.5, y: 0.06, width: 0.44, height: 0.44};
@@ -298,7 +298,7 @@ export function Thumbnail({
       data-testid={testId}
       aria-label={accessibleName}
       {...mergeProps(
-        xdsThemeProps('thumbnail'),
+        themeProps('thumbnail'),
         stylex.props(styles.root, isDisabled && styles.disabled, xstyle),
         className,
         style,

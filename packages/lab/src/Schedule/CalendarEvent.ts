@@ -11,8 +11,8 @@ import {
   plainDateFromISO,
   type ISODateString,
   type PlainDate,
-} from '@xds/core/utils';
-import type {TokenColor} from '@xds/core/Token';
+} from '@astryxdesign/core/utils';
+import type {TokenColor} from '@astryxdesign/core/Token';
 import type {Instant} from './types';
 
 const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;

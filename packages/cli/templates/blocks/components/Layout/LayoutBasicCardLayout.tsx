@@ -9,10 +9,10 @@ import {
   LayoutFooter,
   HStack,
   VStack,
-} from '@xds/core/Layout';
-import {Card} from '@xds/core/Card';
-import {Button} from '@xds/core/Button';
-import {Heading, Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Layout';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {Heading, Text} from '@astryxdesign/core/Text';
 
 export default function LayoutBasicCardLayout() {
   return (

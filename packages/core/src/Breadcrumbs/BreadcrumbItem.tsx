@@ -30,7 +30,7 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Props
@@ -231,7 +231,7 @@ export function BreadcrumbItem({
       <li
         ref={mergeRefs(ref, liRef)}
         {...mergeProps(
-          xdsThemeProps('breadcrumb-item'),
+          themeProps('breadcrumb-item'),
           stylex.props(
             itemStyles.root,
             isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,
@@ -265,7 +265,7 @@ export function BreadcrumbItem({
     <li
       ref={mergeRefs(ref, liRef)}
       {...mergeProps(
-        xdsThemeProps('breadcrumb-item'),
+        themeProps('breadcrumb-item'),
         stylex.props(
           itemStyles.root,
           isSupporting ? itemStyles.supportingSize : itemStyles.defaultSize,

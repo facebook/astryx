@@ -28,7 +28,7 @@
  *   — these get `isIconOnly: true` since they pass props internally
  * - Removing redundant `children` that duplicate `label` on icon+text buttons
  *
- * Run on demand: `xds upgrade --from 0.0.11 --to 0.0.12 --codemod add-is-icon-only`
+ * Run on demand: `astryx upgrade --from 0.0.11 --to 0.0.12 --codemod add-is-icon-only`
  */
 
 const TARGET_COMPONENTS = new Set([

@@ -8,7 +8,7 @@ import {fileURLToPath} from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const XDS_LIBRARY_PATTERN = 'node_modules/@xds/';
+const LIBRARY_PATTERN = 'node_modules/@astryxdesign/';
 const STYLEX_CSS_PATH = '/virtual:stylex.css';
 
 /**
@@ -24,12 +24,12 @@ export const LIGHTNINGCSS_TARGETS = {
 
 /**
  * Legacy options shape — kept for backward compatibility.
- * Prefer the zero-config form: xdsStylex()
+ * Prefer the zero-config form: astryxStylex()
  */
-export interface XDSVitePluginLegacyOptions {
+export interface AstryxVitePluginLegacyOptions {
   stylexOptions: Parameters<typeof stylex.vite>[0];
   libraryPattern?: string;
-  /** StyleX atomic class-name prefix for XDS library styles. @default 'xds' */
+  /** StyleX atomic class-name prefix for Astryx library styles. @default 'astryx' */
   stylexPrefix?: string;
   layers?: {
     library?: string;
@@ -37,7 +37,7 @@ export interface XDSVitePluginLegacyOptions {
   };
 }
 
-export interface XDSVitePluginOptions {
+export interface AstryxVitePluginOptions {
   /**
    * Whether to enable dev mode for StyleX.
    * @default process.env.NODE_ENV !== 'production'
@@ -51,8 +51,8 @@ export interface XDSVitePluginOptions {
   rootDir?: string;
 
   /**
-   * Pattern to identify XDS library files vs product files.
-   * @default 'node_modules/@xds/'
+   * Pattern to identify Astryx library files vs product files.
+   * @default 'node_modules/@astryxdesign/'
    */
   libraryPattern?: string;
 
@@ -60,7 +60,7 @@ export interface XDSVitePluginOptions {
    * CSS layer names for the split output.
    */
   layers?: {
-    /** Layer name for XDS library styles @default 'xds-base' */
+    /** Layer name for Astryx library styles @default 'astryx-base' */
     library?: string;
     /** Layer name for product styles @default 'product' */
     product?: string;
@@ -75,15 +75,15 @@ export interface XDSVitePluginOptions {
   lightningcssTargets?: Record<string, number>;
 
   /**
-   * StyleX atomic class-name prefix for XDS *library* styles. The product
+   * StyleX atomic class-name prefix for Astryx *library* styles. The product
    * build uses a distinct prefix so library and product atoms never collide
    * across layers.
    *
-   * Configurable to support the XDS-prefix migration (P2380608025): a consumer
+   * Configurable to support the Astryx-prefix migration (P2380608025): a consumer
    * can rebrand the library atom prefix to `astryx` before the final cutover.
    * Defaults to `xds` so existing consumers are unaffected.
    *
-   * @default 'xds'
+   * @default 'astryx'
    */
   stylexPrefix?: string;
 
@@ -94,41 +94,41 @@ export interface XDSVitePluginOptions {
 }
 
 /**
- * XDS Vite plugin for source builds.
+ * Astryx Vite plugin for source builds.
  *
- * Provides sensible defaults for StyleX compilation with XDS.
+ * Provides sensible defaults for StyleX compilation with Astryx.
  * Just spread into your plugins array:
  *
- *   plugins: [...xdsStylex(), react()]
+ *   plugins: [...astryxStylex(), react()]
  *
  * Handles:
  * - StyleX compilation with correct settings
- * - CSS layer ordering (reset < xds-base < xds-theme < product)
- * - resolve.alias for @xds/core source
- * - optimizeDeps.exclude to prevent Vite pre-bundling XDS
+ * - CSS layer ordering (reset < astryx-base < astryx-theme < product)
+ * - resolve.alias for @astryxdesign/core source
+ * - optimizeDeps.exclude to prevent Vite pre-bundling Astryx
  *
  * @param options — optional overrides
  */
-export function xdsStylex(
-  options: XDSVitePluginOptions | XDSVitePluginLegacyOptions = {},
+export function astryxStylex(
+  options: AstryxVitePluginOptions | AstryxVitePluginLegacyOptions = {},
 ): Plugin[] {
-  // Detect legacy API: xdsStylex({stylexOptions: {...}})
+  // Detect legacy API: astryxStylex({stylexOptions: {...}})
   if ('stylexOptions' in options && options.stylexOptions) {
-    return xdsStylexLegacy(options as XDSVitePluginLegacyOptions);
+    return astryxStylexLegacy(options as AstryxVitePluginLegacyOptions);
   }
 
-  const opts = options as XDSVitePluginOptions;
+  const opts = options as AstryxVitePluginOptions;
   const {
     dev = process.env.NODE_ENV !== 'production',
     rootDir = process.cwd(),
-    libraryPattern = XDS_LIBRARY_PATTERN,
+    libraryPattern = LIBRARY_PATTERN,
     layers = {},
     lightningcssTargets,
-    stylexPrefix = 'xds',
+    stylexPrefix = 'astryx',
     stylexOverrides = {},
   } = opts;
 
-  const libraryLayer = layers.library ?? 'xds-base';
+  const libraryLayer = layers.library ?? 'astryx-base';
   const productLayer = layers.product ?? 'product';
 
   // Build StyleX options with sensible defaults
@@ -148,7 +148,7 @@ export function xdsStylex(
 
   // Inject our babel wrapper as a user plugin — it runs before the
   // unplugin's hardcoded StyleX instance and handles prefix routing.
-  const xdsBabelPlugin = path.resolve(__dirname, 'babel.js');
+  const astryxBabelPlugin = path.resolve(__dirname, 'babel.js');
 
   const basePlugin = stylex.vite({
     ...(stylexOptions as any),
@@ -156,7 +156,7 @@ export function xdsStylex(
     babelConfig: {
       plugins: [
         [
-          xdsBabelPlugin,
+          astryxBabelPlugin,
           {
             ...stylexOptions,
             libraryPrefix: stylexPrefix,
@@ -169,12 +169,12 @@ export function xdsStylex(
 
   // Layer order declaration plugin
   const layerOrderPlugin: Plugin = {
-    name: 'xds-css-layer-order',
+    name: 'astryx-css-layer-order',
     transformIndexHtml() {
       return [
         {
           tag: 'style',
-          children: `@layer reset, ${libraryLayer}, xds-theme, ${productLayer};`,
+          children: `@layer reset, ${libraryLayer}, astryx-theme, ${productLayer};`,
           injectTo: 'head-prepend',
         },
       ];
@@ -183,33 +183,33 @@ export function xdsStylex(
 
   // Config plugin — injects resolve.alias and optimizeDeps
   const configPlugin: Plugin = {
-    name: 'xds-config',
+    name: 'astryx-config',
     config(): UserConfig {
-      // Discover all @xds/* packages to exclude from pre-bundling.
-      // XDS ships as source that must be compiled by StyleX — pre-bundling
+      // Discover all @astryxdesign/* packages to exclude from pre-bundling.
+      // Astryx ships as source that must be compiled by StyleX — pre-bundling
       // strips stylex.create/defineVars calls and causes runtime errors.
-      let xdsPackages: string[] = ['@xds/core'];
+      let xdsPackages: string[] = ['@astryxdesign/core'];
       try {
         const fs = require('fs');
-        const xdsDir = path.resolve(rootDir, 'node_modules/@xds');
+        const xdsDir = path.resolve(rootDir, 'node_modules/@astryxdesign');
         if (fs.existsSync(xdsDir)) {
           xdsPackages = fs
             .readdirSync(xdsDir)
             .filter((name: string) => !name.startsWith('.'))
-            .map((name: string) => `@xds/${name}`);
+            .map((name: string) => `@astryxdesign/${name}`);
         }
       } catch {
-        // Fallback to just @xds/core if discovery fails
+        // Fallback to just @astryxdesign/core if discovery fails
       }
 
       return {
         resolve: {
           alias: {
-            '@xds/core/theme/tokens.stylex': path.resolve(
+            '@astryxdesign/core/theme/tokens.stylex': path.resolve(
               rootDir,
-              'node_modules/@xds/core/src/theme/tokens.stylex.ts',
+              'node_modules/@astryxdesign/core/src/theme/tokens.stylex.ts',
             ),
-            '@xds/core': path.resolve(rootDir, 'node_modules/@xds/core/src'),
+            '@astryxdesign/core': path.resolve(rootDir, 'node_modules/@astryxdesign/core/src'),
           },
         },
         optimizeDeps: {
@@ -221,7 +221,7 @@ export function xdsStylex(
 
   // Split-layer interceptor plugin (dev server only)
   const splitLayerPlugin: Plugin = {
-    name: 'xds-split-layers',
+    name: 'astryx-split-layers',
     configureServer(server) {
       let stylexPlugin: any = null;
 
@@ -299,21 +299,21 @@ export function xdsStylex(
 }
 
 /**
- * Legacy implementation — handles the old xdsStylex({stylexOptions: {...}}) API.
+ * Legacy implementation — handles the old astryxStylex({stylexOptions: {...}}) API.
  * Used by Storybook and other existing configs.
  */
-function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
+function astryxStylexLegacy(options: AstryxVitePluginLegacyOptions): Plugin[] {
   const {
     stylexOptions,
-    libraryPattern = XDS_LIBRARY_PATTERN,
-    stylexPrefix = 'xds',
+    libraryPattern = LIBRARY_PATTERN,
+    stylexPrefix = 'astryx',
     layers = {},
   } = options;
 
-  const libraryLayer = layers.library ?? 'xds-base';
+  const libraryLayer = layers.library ?? 'astryx-base';
   const productLayer = layers.product ?? 'product';
 
-  const xdsBabelPlugin = path.resolve(__dirname, 'babel.js');
+  const astryxBabelPlugin = path.resolve(__dirname, 'babel.js');
   const existingPlugins = (stylexOptions as any).babelConfig?.plugins ?? [];
 
   const basePlugin = stylex.vite({
@@ -323,7 +323,7 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
       ...(stylexOptions as any).babelConfig,
       plugins: [
         [
-          xdsBabelPlugin,
+          astryxBabelPlugin,
           {
             ...(stylexOptions as any),
             libraryPrefix: stylexPrefix,
@@ -336,12 +336,12 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
   });
 
   const layerOrderPlugin: Plugin = {
-    name: 'xds-css-layer-order',
+    name: 'astryx-css-layer-order',
     transformIndexHtml() {
       return [
         {
           tag: 'style',
-          children: `@layer reset, ${libraryLayer}, xds-theme, ${productLayer};`,
+          children: `@layer reset, ${libraryLayer}, astryx-theme, ${productLayer};`,
           injectTo: 'head-prepend',
         },
       ];
@@ -349,7 +349,7 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
   };
 
   const splitLayerPlugin: Plugin = {
-    name: 'xds-split-layers',
+    name: 'astryx-split-layers',
     configureServer(server) {
       let stylexPlugin: any = null;
 

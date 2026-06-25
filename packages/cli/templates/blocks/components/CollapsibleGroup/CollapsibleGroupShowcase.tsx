@@ -2,11 +2,11 @@
 
 'use client';
 
-import {Collapsible, CollapsibleGroup} from '@xds/core/Collapsible';
-import {Card} from '@xds/core/Card';
-import {VStack} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Text} from '@xds/core/Text';
+import {Collapsible, CollapsibleGroup} from '@astryxdesign/core/Collapsible';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function CollapsibleGroupShowcase() {
   return (

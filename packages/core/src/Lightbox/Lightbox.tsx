@@ -32,7 +32,7 @@ import {useScrollLock} from '../hooks/useScrollLock';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Media type for lightbox items.
@@ -478,7 +478,7 @@ export function Lightbox({
       }}
       aria-label={currentItem.alt || 'Media viewer'}
       {...mergeProps(
-        xdsThemeProps('lightbox'),
+        themeProps('lightbox'),
         stylex.props(styles.dialog, xstyle),
         className,
         style,

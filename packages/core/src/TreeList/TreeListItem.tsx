@@ -29,7 +29,7 @@ import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity} from './TreeListTypes';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Styles
@@ -411,7 +411,7 @@ export function TreeListItem({
       <div {...stylex.props(styles.rowWrapper)}>
         <div
           {...mergeProps(
-            xdsThemeProps('tree-list-item', {
+            themeProps('tree-list-item', {
               density,
               selected: isSelected ? 'selected' : null,
               disabled: isDisabled ? 'disabled' : null,

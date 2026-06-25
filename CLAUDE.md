@@ -18,7 +18,7 @@ Tests how well AGENTS.md helps LLMs generate correct XDS component code.
 
 **How to execute:**
 
-1. Run `pnpm -F @xds/vibe-tests interactive --sample <count>` to set up iteration
+1. Run `pnpm -F @astryxdesign/vibe-tests interactive --sample <count>` to set up iteration
 2. Spawn parallel subagents (one per test prompt) to:
    - Read the task file from `results/<iteration>/tasks/{promptId}.json`
    - Generate code for the prompt using XDS components (AGENTS.md auto-injected)
@@ -26,7 +26,7 @@ Tests how well AGENTS.md helps LLMs generate correct XDS component code.
    - Write `.tsx` result to `results/<iteration>/results/{promptId}.tsx`
    - Write `.json` metadata to `results/<iteration>/results/{promptId}.json`
 3. Trigger `gh workflow run vibe-screenshots.yml` to build previews and capture screenshots
-4. Run `pnpm -F @xds/vibe-tests aggregate --iteration <id>` to see results
+4. Run `pnpm -F @astryxdesign/vibe-tests aggregate --iteration <id>` to see results
 
 **Degradation mode (--degradation):**
 Tests context retention across 10-turn conversations with filler, distractor, and recovery turns.
@@ -119,7 +119,7 @@ Documentation lives in two places:
 <!-- XDS-CLI:START -->
 
 XDS CLI|Run from repo root. Load agent docs before any component work.
-XDS="node packages/cli/bin/xds.mjs"
+XDS="node packages/cli/bin/astryx.mjs"
 BOOTSTRAP (run every branch, <500ms):
 $XDS help # discover all commands and options
 $XDS docs # list available doc topics
@@ -137,7 +137,7 @@ $XDS upgrade --apply # run version migration codemods
 OPTIONS: --detail compact|brief less output | --dense token-efficient | --zh Chinese
 RULE: always run bootstrap on each branch — docs reflect the branch's actual API
 RULE: always run $XDS component <Name> --dense before modifying a component
-RULE: after @xds/core bump, always run $XDS upgrade --apply
+RULE: after @astryxdesign/core bump, always run $XDS upgrade --apply
 RULE: when swizzling, always use --gap to report missing capabilities
 
 <!-- XDS-CLI:END -->

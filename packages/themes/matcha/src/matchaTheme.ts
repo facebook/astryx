@@ -8,7 +8,7 @@
  * Uses Playwrite US Trad for headings and DM Sans for body text.
  */
 
-import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {matchaIconRegistry} from './icons';
 
 /** Matcha syntax palette — earthy greens and warm tones. */

@@ -23,7 +23,7 @@ import {BaseTable} from './BaseTable';
 import {TableContext} from './TableContext';
 import {useBaseTablePlugins} from './useBaseTablePlugins';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import type {
   BaseTableProps,
   TableVerticalAlign,
@@ -135,7 +135,7 @@ function TableScrollWrapper({children}: {children: React.ReactNode}) {
   return (
     <div
       {...mergeProps(
-        xdsThemeProps('table-scroll-wrapper'),
+        themeProps('table-scroll-wrapper'),
         stylex.props(
           scrollWrapperStyles.base,
           scrollWrapperStyles.containerBleed,
@@ -156,7 +156,7 @@ function buildTableStylePlugin<
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
       const existingClass = props.htmlProps.className ?? '';
-      const tableClass = xdsThemeProps('table').className;
+      const tableClass = themeProps('table').className;
       return {
         ...props,
         htmlProps: {

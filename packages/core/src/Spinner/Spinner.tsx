@@ -23,7 +23,7 @@ import {useTheme} from '../theme/useTheme';
 import type {BaseProps} from '../BaseProps';
 import {Text} from '../Text/Text';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Constants
@@ -261,7 +261,7 @@ export function Spinner({
       data-testid={hasLabel ? undefined : testId}
       {...(hasLabel ? {} : restProps)}
       {...mergeProps(
-        hasLabel ? '' : xdsThemeProps('spinner', {size, shade}),
+        hasLabel ? '' : themeProps('spinner', {size, shade}),
         stylex.props(styles.spinner, !hasLabel && xstyle),
         hasLabel ? undefined : className,
         {...(hasLabel ? {} : style), width: frameSize, height: frameSize},
@@ -280,7 +280,7 @@ export function Spinner({
       data-testid={testId}
       {...restProps}
       {...mergeProps(
-        xdsThemeProps('spinner', {size, shade}),
+        themeProps('spinner', {size, shade}),
         stylex.props(styles.wrapper, xstyle),
         className,
         style,

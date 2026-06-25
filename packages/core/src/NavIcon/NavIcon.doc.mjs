@@ -22,7 +22,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-navicon'},
+      {className: 'astryx-navicon'},
     ],
   },
   usage: {
@@ -51,7 +51,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-navicon'},
+      {className: 'astryx-navicon'},
     ],
   },
   usage: {

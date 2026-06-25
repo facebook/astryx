@@ -7,7 +7,7 @@
  */
 
 import {useMemo} from 'react';
-import {useTheme} from '@xds/core/theme';
+import {useTheme} from '@astryxdesign/core/theme';
 import {getChartColorsFromResolver} from './getChartColors';
 import type {ChartColorsAPI} from './getChartColors';
 

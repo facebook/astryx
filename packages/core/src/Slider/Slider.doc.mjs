@@ -134,9 +134,9 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-slider', visualProps: ['orientation'], states: ['disabled']},
-      {className: 'xds-slider-track', visualProps: ['orientation']},
-      {className: 'xds-slider-thumb', visualProps: ['orientation'], states: ['disabled']},
+      {className: 'astryx-slider', visualProps: ['orientation'], states: ['disabled']},
+      {className: 'astryx-slider-track', visualProps: ['orientation']},
+      {className: 'astryx-slider-thumb', visualProps: ['orientation'], states: ['disabled']},
     ],
   },
   usage: {
@@ -276,9 +276,9 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-slider', visualProps: ['orientation'], states: ['disabled']},
-      {className: 'xds-slider-track', visualProps: ['orientation']},
-      {className: 'xds-slider-thumb', visualProps: ['orientation'], states: ['disabled']},
+      {className: 'astryx-slider', visualProps: ['orientation'], states: ['disabled']},
+      {className: 'astryx-slider-track', visualProps: ['orientation']},
+      {className: 'astryx-slider-thumb', visualProps: ['orientation'], states: ['disabled']},
     ],
   },
   usage: {

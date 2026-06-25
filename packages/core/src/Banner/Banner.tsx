@@ -10,8 +10,8 @@
  *
  * Visual structure:
  * - Root container: layout-only wrapper (flex column), no visual styling, no theme target
- * - Header area (xdsThemeProps 'banner'): colored status background with icon, title, description, actions, dismiss
- * - Content area (xdsThemeProps 'banner-content'): collapsible card background for additional content (children)
+ * - Header area (themeProps 'banner'): colored status background with icon, title, description, actions, dismiss
+ * - Content area (themeProps 'banner-content'): collapsible card background for additional content (children)
  * - No left border accent — color is expressed through the full header background
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
  * - When children are provided, a collapse/expand toggle button appears in the end area
@@ -42,7 +42,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -54,7 +54,7 @@ import {xdsThemeProps} from '../utils/xdsThemeProps';
  * Theme packages can add custom statuses via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Banner' {
+ * declare module '@astryxdesign/core/Banner' {
  *   interface BannerStatusMap {
  *     'neutral': true;
  *   }
@@ -80,7 +80,7 @@ export type BannerStatus = keyof BannerStatusMap;
  * Theme packages can add custom container types via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Banner' {
+ * declare module '@astryxdesign/core/Banner' {
  *   interface BannerContainerMap {
  *     'floating': true;
  *   }
@@ -417,7 +417,7 @@ export function Banner({
       {/* Header: colored status background — primary theme target ('banner') */}
       <div
         {...mergeProps(
-          xdsThemeProps('banner', {container, status}),
+          themeProps('banner', {container, status}),
           stylex.props(
             styles.header,
             isSingleLine && styles.headerCentered,
@@ -430,7 +430,7 @@ export function Banner({
         )}>
         <div
           {...mergeProps(
-            xdsThemeProps('banner-icon', {status}),
+            themeProps('banner-icon', {status}),
             stylex.props(styles.iconWrapper),
           )}
           aria-hidden="true">
@@ -491,7 +491,7 @@ export function Banner({
       {showContent && (
         <div
           {...mergeProps(
-            xdsThemeProps('banner-content', {container, status}),
+            themeProps('banner-content', {container, status}),
             stylex.props(styles.contentArea, isCard && styles.contentAreaCard),
           )}>
           {children}

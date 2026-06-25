@@ -4,14 +4,14 @@ Example Next.js app using XDS pre-built dist CSS alongside Tailwind CSS v4. No S
 
 ## How it works
 
-XDS ships pre-compiled CSS (`xds.css`) with all component styles as atomic classes in CSS cascade layers. Tailwind handles layout, spacing, and custom styling via utility classes. Both systems coexist through explicit layer ordering.
+XDS ships pre-compiled CSS (`astryx.css`) with all component styles as atomic classes in CSS cascade layers. Tailwind handles layout, spacing, and custom styling via utility classes. Both systems coexist through explicit layer ordering.
 
 ## CSS Layer Order
 
 The key to coexistence is declaring **all** layers upfront in `globals.css`:
 
 ```css
-@layer reset, theme, base, xds-base, xds-theme, components, utilities;
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
 ```
 
 This gives the correct priority (lowest → highest):
@@ -21,8 +21,8 @@ This gives the correct priority (lowest → highest):
 | `reset` | XDS | CSS reset (`:where()` selectors, zero specificity) |
 | `theme` | Tailwind | Theme variables (colors, fonts, spacing) |
 | `base` | Tailwind | Preflight reset (element-level normalization) |
-| `xds-base` | XDS | Component styles (buttons, cards, inputs, etc.) |
-| `xds-theme` | XDS | Theme overrides (typography, color mappings) |
+| `astryx-base` | XDS | Component styles (buttons, cards, inputs, etc.) |
+| `astryx-theme` | XDS | Theme overrides (typography, color mappings) |
 | `components` | Tailwind | Component classes (if any) |
 | `utilities` | Tailwind | Utility classes: **wins over all layers** |
 | *(unlayered)* | Consumer | Your custom CSS: highest priority |
@@ -46,7 +46,7 @@ Without this declaration, XDS layers are created *after* Tailwind's declared lay
 
 ### XDS Tailwind Bridge (recommended)
 
-Import `@xds/core/tailwind-theme.css` to register XDS tokens as Tailwind theme variables. This maps all XDS design tokens to native Tailwind utilities, with no `var()` needed:
+Import `@astryxdesign/core/tailwind-theme.css` to register XDS tokens as Tailwind theme variables. This maps all XDS design tokens to native Tailwind utilities, with no `var()` needed:
 
 ```tsx
 // Before (verbose arbitrary values):
@@ -76,7 +76,7 @@ If you need a token the bridge doesn't cover, you can still use Tailwind's brack
 
 ### Tailwind overrides on XDS components
 
-All XDS components accept `className`. Tailwind utilities in the `utilities` layer override XDS component styles in `xds-base`:
+All XDS components accept `className`. Tailwind utilities in the `utilities` layer override XDS component styles in `astryx-base`:
 
 ```tsx
 <Button label="Custom" variant="primary" className="rounded-full shadow-xl" />

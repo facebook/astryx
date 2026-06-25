@@ -3,8 +3,8 @@
 /**
  * Merge xds-* props, stylex.props result, and optional consumer className/style.
  *
- * stylex.props() returns { className, style }. This merges the XDS stable
- * class name plus any data-attribute reflection from `xdsThemeProps()` with the
+ * stylex.props() returns { className, style }. This merges the Astryx stable
+ * class name plus any data-attribute reflection from `themeProps()` with the
  * StyleX class name so both StyleX styles and the theme-targeting surface are
  * applied.
  *
@@ -13,9 +13,9 @@
  *
  * @example
  * ```tsx
- * // Root element with xdsThemeProps
+ * // Root element with themeProps
  * <div {...mergeProps(
- *   xdsThemeProps('button', { variant }),
+ *   themeProps('button', { variant }),
  *   stylex.props(styles.base, variants[variant]),
  *   className,
  *   style,
@@ -66,7 +66,7 @@ export function mergeProps(
   style?: React.CSSProperties,
 ): PropsObject {
   // Disambiguate: first arg is string → (xdsClass, stylexResult, className?, style?)
-  // first arg is object → merge arbitrary props (supports xdsThemeProps + data attrs).
+  // first arg is object → merge arbitrary props (supports themeProps + data attrs).
   if (typeof xdsClassOrStylexResult === 'string') {
     const xdsClass = xdsClassOrStylexResult;
     const stylexResult = (stylexResultOrClassName as PropsObject) ?? {

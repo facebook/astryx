@@ -21,11 +21,11 @@
 
 import {type CSSProperties, type SVGProps, useId} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '@xds/core/theme/tokens.stylex';
-import {mergeProps} from '@xds/core/utils';
+import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {mergeProps} from '@astryxdesign/core/utils';
 import {iconVars} from './tokens.stylex';
 import {variations, opticalSize} from './variations.stylex';
-import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
+import {themeProps} from '../../../core/src/utils/themeProps';
 
 // =============================================================================
 // Types
@@ -368,7 +368,7 @@ export function SVGIcon({
       viewBox={viewBox}
       aria-hidden="true"
       {...mergeProps(
-        xdsThemeProps('svg-icon', {variation, size, color}),
+        themeProps('svg-icon', {variation, size, color}),
         stylex.props(
           styles.root,
           colorStyles[color],

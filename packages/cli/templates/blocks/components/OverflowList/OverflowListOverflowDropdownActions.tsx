@@ -3,10 +3,10 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {OverflowList} from '@xds/core/OverflowList';
-import {Button} from '@xds/core/Button';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {Card} from '@xds/core/Card';
+import {OverflowList} from '@astryxdesign/core/OverflowList';
+import {Button} from '@astryxdesign/core/Button';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {Card} from '@astryxdesign/core/Card';
 
 const actions = ['Save', 'Edit', 'Duplicate', 'Share', 'Archive', 'Delete'];
 

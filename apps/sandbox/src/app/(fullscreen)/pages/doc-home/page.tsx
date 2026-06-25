@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {Heading, Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {TextArea} from '@xds/core/TextArea';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {TextArea} from '@astryxdesign/core/TextArea';
 import {categories} from '../../../sandboxPages';
 import DocTopNav from '../doc-nav/DocTopNav';
 

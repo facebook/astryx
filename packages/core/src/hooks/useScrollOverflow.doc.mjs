@@ -39,7 +39,7 @@ export const docs = {
   },
   relatedComponents: ['Carousel'],
   relatedHooks: ['useOverflow'],
-  importPath: '@xds/core/hooks',
+  importPath: '@astryxdesign/core/hooks',
   category: 'layout',
 };
 

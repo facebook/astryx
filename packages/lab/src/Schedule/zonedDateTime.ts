@@ -12,7 +12,7 @@ import {
   plainDateFromInstant,
   plainDateToInstant,
   type PlainDate,
-} from '@xds/core/utils';
+} from '@astryxdesign/core/utils';
 import type {Instant, ScheduleRange, ScheduleDate} from './types';
 
 export interface ZonedDateTime {

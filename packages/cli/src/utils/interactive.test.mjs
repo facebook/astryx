@@ -40,7 +40,7 @@ describe('requireInteractive', () => {
     });
     expect(() =>
       requireInteractive(
-        {command: 'init', hint: '`xds init --all`'},
+        {command: 'init', hint: '`astryx init --all`'},
         {stdinTTY: true, stdoutTTY: true, ci: false},
       ),
     ).not.toThrow();
@@ -56,13 +56,13 @@ describe('requireInteractive', () => {
     const err = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() =>
       requireInteractive(
-        {command: 'theme', hint: '`xds theme <preset>`'},
+        {command: 'theme', hint: '`astryx theme <preset>`'},
         {stdinTTY: false, stdoutTTY: false, ci: false},
       ),
     ).toThrow('__exit__');
     expect(exit).toHaveBeenCalledWith(1);
     const output = err.mock.calls.map(c => c.join(' ')).join('\n');
     expect(output).toMatch(/requires a TTY/i);
-    expect(output).toMatch(/xds theme <preset>/);
+    expect(output).toMatch(/astryx theme <preset>/);
   });
 });

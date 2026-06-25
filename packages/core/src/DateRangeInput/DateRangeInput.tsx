@@ -52,7 +52,7 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export type {DateRange} from '../Calendar';
 
@@ -490,7 +490,7 @@ export function DateRangeInput({
         ref={popover.triggerRef}
         {...rest}
         {...mergeProps(
-          xdsThemeProps('date-range-input', {
+          themeProps('date-range-input', {
             size,
             status: status?.type ?? null,
           }),

@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {DateInput} from '@xds/core/DateInput';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {DateInput} from '@astryxdesign/core/DateInput';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 type DateString =
   `${number}${number}${number}${number}-${number}${number}-${number}${number}`;

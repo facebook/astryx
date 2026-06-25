@@ -1064,7 +1064,7 @@ export const docs = {
           "type": "code",
           "lang": "tsx",
           "label": "Using token imports",
-          "code": "import * as stylex from '@stylexjs/stylex';\nimport {colorVars, spacingVars, sizeVars, radiusVars} from '@xds/core';\n\nconst styles = stylex.create({\n  card: {\n    padding: spacingVars['--spacing-4'],\n    backgroundColor: colorVars['--color-background-surface'],\n    borderRadius: radiusVars['--radius-container'],\n  },\n  button: {\n    height: sizeVars['--size-element-md'],\n  },\n});"
+          "code": "import * as stylex from '@stylexjs/stylex';\nimport {colorVars, spacingVars, sizeVars, radiusVars} from '@astryxdesign/core';\n\nconst styles = stylex.create({\n  card: {\n    padding: spacingVars['--spacing-4'],\n    backgroundColor: colorVars['--color-background-surface'],\n    borderRadius: radiusVars['--radius-container'],\n  },\n  button: {\n    height: sizeVars['--size-element-md'],\n  },\n});"
         },
         {
           "type": "prose",

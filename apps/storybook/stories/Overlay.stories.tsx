@@ -3,19 +3,19 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import React, {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Overlay, useOverlay} from '@xds/core/Overlay';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Card} from '@xds/core/Card';
-import {Button} from '@xds/core/Button';
-import {Heading, Text} from '@xds/core/Text';
-import {VStack, Layout, LayoutContent} from '@xds/core/Layout';
-import {Spinner} from '@xds/core/Spinner';
-import {Grid} from '@xds/core/Grid';
+import {Overlay, useOverlay} from '@astryxdesign/core/Overlay';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {VStack, Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {Spinner} from '@astryxdesign/core/Spinner';
+import {Grid} from '@astryxdesign/core/Grid';
 import {
   colorVars,
   spacingVars,
   typographyVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   pageWrapper: {

@@ -9,23 +9,23 @@ import {
   Layout,
   LayoutContent,
   LayoutHeader,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {IconButton} from '@xds/core/IconButton';
-import {Icon} from '@xds/core/Icon';
-import {Badge} from '@xds/core/Badge';
-import {Link} from '@xds/core/Link';
-import {Thumbnail} from '@xds/core/Thumbnail';
-import {Table, proportional, pixel} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Link} from '@astryxdesign/core/Link';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
+import {Table, proportional, pixel} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
 import {
   ChartV2 as Chart,
   ChartGrid,
   ChartAxis,
   area,
   line,
-} from '@xds/lab';
+} from '@astryxdesign/lab';
 import {
   FunnelIcon,
   ArrowDownTrayIcon,
@@ -52,37 +52,37 @@ const PRODUCTS = [
   {
     name: 'Ceremonial Matcha Latte',
     category: 'Matcha' as ProductCategory,
-    image: 'https://lookaside.facebook.com/assets/xds_oss/matcha-product-1.png',
+    image: 'https://lookaside.facebook.com/assets/astryx/matcha-product-1.png',
     price: 6,
   },
   {
     name: 'Oat Milk Cappuccino',
     category: 'Coffee' as ProductCategory,
-    image: 'https://lookaside.facebook.com/assets/xds_oss/matcha-product-2.png',
+    image: 'https://lookaside.facebook.com/assets/astryx/matcha-product-2.png',
     price: 5,
   },
   {
     name: 'Jasmine Green Tea',
     category: 'Tea' as ProductCategory,
-    image: 'https://lookaside.facebook.com/assets/xds_oss/matcha-product-3.png',
+    image: 'https://lookaside.facebook.com/assets/astryx/matcha-product-3.png',
     price: 4,
   },
   {
     name: 'Mango Matcha Smoothie',
     category: 'Smoothie' as ProductCategory,
-    image: 'https://lookaside.facebook.com/assets/xds_oss/matcha-product-4.png',
+    image: 'https://lookaside.facebook.com/assets/astryx/matcha-product-4.png',
     price: 8,
   },
   {
     name: 'Hojicha Latte',
     category: 'Specialty' as ProductCategory,
-    image: 'https://lookaside.facebook.com/assets/xds_oss/matcha-product-5.png',
+    image: 'https://lookaside.facebook.com/assets/astryx/matcha-product-5.png',
     price: 7,
   },
   {
     name: 'Iced Yuzu Matcha',
     category: 'Matcha' as ProductCategory,
-    image: 'https://lookaside.facebook.com/assets/xds_oss/matcha-product-6.png',
+    image: 'https://lookaside.facebook.com/assets/astryx/matcha-product-6.png',
     price: 7,
   },
 ];

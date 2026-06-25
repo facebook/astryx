@@ -22,26 +22,3 @@ export type {TabMenuProps, TabMenuOption} from './TabMenu';
 
 export {useTabListContext} from './TabListContext';
 export type {TabListSize, TabListLayout} from './TabListContext';
-
-
-// <compat-aliases:start> — generated, do not edit by hand
-// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Bare names above are canonical + module-augmentation targets.
-// These prefixed re-exports reference the SAME values/types and remain
-// augmentable (consumer `declare module` augmentations of XDS* flow through).
-// Regenerate: node scripts/generate-compat-aliases.mjs
-export {
-  Tab as XDSTab,
-  TabList as XDSTabList,
-  TabMenu as XDSTabMenu,
-  useTabListContext as useXDSTabListContext,
-} from '.';
-export type {
-  TabListLayout as XDSTabListLayout,
-  TabListProps as XDSTabListProps,
-  TabListSize as XDSTabListSize,
-  TabMenuOption as XDSTabMenuOption,
-  TabMenuProps as XDSTabMenuProps,
-  TabProps as XDSTabProps,
-} from '.';
-// <compat-aliases:end>

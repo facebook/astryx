@@ -68,7 +68,7 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // Sentinel value for the select-all item in keyboard navigation
 const SELECT_ALL_VALUE = '__xds_select_all__';
@@ -1124,7 +1124,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         onClick={onTriggerClick}
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('multi-selector', {size, status: status?.type ?? null}),
+          themeProps('multi-selector', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.triggerContainer,

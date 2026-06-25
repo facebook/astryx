@@ -2,9 +2,9 @@
 
 'use client';
 
-import {SyntaxTheme} from '@xds/core/theme';
-import {dracula} from '@xds/core/theme/syntax';
-import {CodeBlock} from '@xds/core/CodeBlock';
+import {SyntaxTheme} from '@astryxdesign/core/theme';
+import {dracula} from '@astryxdesign/core/theme/syntax';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 
 const code = `function greet(name: string) {
   return \`Hello, \${name}!\`;

@@ -191,10 +191,10 @@ describe('Text', () => {
     });
   });
 
-  it('renders xds-* class names for theme targeting', () => {
+  it('renders astryx-* class names for theme targeting', () => {
     render(<Text type="body">Themed Text</Text>);
     const element = screen.getByText('Themed Text');
-    expect(element.className).toContain('xds-text');
+    expect(element.className).toContain('astryx-text');
     expect(element.className).toContain('body');
   });
 });
@@ -204,7 +204,7 @@ describe('Text custom types', () => {
     render(<Text type={'hero' as TextType}>Custom</Text>);
     const el = screen.getByText('Custom');
     expect(el).toBeInTheDocument();
-    expect(el.className).toContain('xds-text');
+    expect(el.className).toContain('astryx-text');
     expect(el.className).toContain('hero');
   });
 

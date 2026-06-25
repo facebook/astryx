@@ -31,7 +31,7 @@ import type {InputStatus} from '../Field/types';
 import {List} from '../List/List';
 import type {ListDensity} from '../List/ListContext';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import {
   CheckboxListContext,
   type CheckboxListContextValue,
@@ -224,7 +224,7 @@ export function CheckboxList({
       statusVariant="detached"
       width={width}
       xstyle={xstyle}
-      {...mergeProps(xdsThemeProps('checkbox-list'), {className, style})}>
+      {...mergeProps(themeProps('checkbox-list'), {className, style})}>
       <CheckboxListContext value={contextValue}>
         <List density={density} hasDividers={hasDividers}>
           {children}

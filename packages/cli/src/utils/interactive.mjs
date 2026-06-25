@@ -14,7 +14,7 @@
  * Two entry points, for two situations:
  *
  *   - `requireInteractive()` — for commands whose prompt IS the work
- *     (e.g. `xds init`, `xds theme`). With no TTY there is nothing to do, so
+ *     (e.g. `astryx init`, `astryx theme`). With no TTY there is nothing to do, so
  *     fail fast (exit 1) with actionable, non-interactive guidance.
  *
  *   - `isInteractive()` — for commands with an OPTIONAL secondary prompt
@@ -52,7 +52,7 @@ export function isInteractive({
  * @param {object} options
  * @param {string} options.command - Command name for the message, e.g. 'init'.
  * @param {string} options.hint - Concrete non-interactive invocation, e.g.
- *   '`pnpm xds init --all` or `--features agents,theme,template`'.
+ *   '`pnpm astryx init --all` or `--features agents,theme,template`'.
  * @param {boolean} [options.json=false] - When true, the command does not
  *   support --json; we still exit 1 but skip the human-formatted guidance.
  * @param {object} [env] - Forwarded to isInteractive (test hook).

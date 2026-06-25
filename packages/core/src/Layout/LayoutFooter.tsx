@@ -23,7 +23,7 @@ import {LayoutDividerContext} from './LayoutDividerContext';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import {
   paddingStyles,
   containerPaddingInlineVarStyles,
@@ -159,7 +159,7 @@ export function LayoutFooter({
       aria-label={label}
       data-divider={resolvedHasDivider || undefined}
       {...mergeProps(
-        xdsThemeProps('layout-footer'),
+        themeProps('layout-footer'),
         stylex.props(
           styles.footer,
           dynamicStyles.sizing(height ?? null),

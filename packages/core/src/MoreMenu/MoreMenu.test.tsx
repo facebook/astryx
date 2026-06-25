@@ -192,9 +192,9 @@ describe('MoreMenu', () => {
     expect(button.tagName).toBe('BUTTON');
   });
 
-  it('renders xds-more-menu class on dropdown panel for theme targeting', () => {
+  it('renders astryx-more-menu class on dropdown panel for theme targeting', () => {
     render(<MoreMenu items={defaultItems} />);
     const menu = screen.getByRole('menu', {hidden: true});
-    expect(menu.className).toContain('xds-more-menu');
+    expect(menu.className).toContain('astryx-more-menu');
   });
 });

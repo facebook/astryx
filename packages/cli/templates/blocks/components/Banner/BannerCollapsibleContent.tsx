@@ -2,11 +2,11 @@
 
 'use client';
 
-import {Banner} from '@xds/core/Banner';
-import {Button} from '@xds/core/Button';
-import {List, ListItem} from '@xds/core/List';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Banner} from '@astryxdesign/core/Banner';
+import {Button} from '@astryxdesign/core/Button';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function BannerCollapsibleContent() {
   return (

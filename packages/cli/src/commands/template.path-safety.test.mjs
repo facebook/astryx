@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Path-traversal regression tests for `xds template <name> <path>`.
+ * @file Path-traversal regression tests for `astryx template <name> <path>`.
  *
  * Drives the template API directly (it owns destination resolution +
  * path-safety enforcement). Spawning the CLI bin is unnecessary because

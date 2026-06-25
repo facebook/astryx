@@ -9,7 +9,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {ToggleButton} from './ToggleButton';
@@ -71,11 +71,7 @@ describe('ToggleButton', () => {
 
   it('sets aria-pressed=true when pressed', () => {
     render(
-      <ToggleButton
-        label="Bold"
-        isPressed={true}
-        onPressedChange={() => {}}
-      />,
+      <ToggleButton label="Bold" isPressed={true} onPressedChange={() => {}} />,
     );
     expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'true');
   });
@@ -195,6 +191,152 @@ describe('ToggleButton', () => {
       />,
     );
     expect(screen.getByTestId('bold-toggle')).toBeInTheDocument();
+  });
+
+  it('shows the optimistic pressed state immediately, before any spinner', async () => {
+    const user = userEvent.setup();
+    let resolveAction: (() => void) | undefined;
+    const pressedChangeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          resolveAction = resolve;
+        }),
+    );
+
+    render(
+      <ToggleButton
+        label="Favorite"
+        isPressed={false}
+        onPressedChange={() => {}}
+        pressedChangeAction={pressedChangeAction}
+      />,
+    );
+
+    const button = screen.getByRole('button', {name: 'Favorite'});
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(button);
+
+    // The optimistic state flips immediately. The spinner is debounced, so the
+    // button is not disabled or aria-busy yet — it stays interruptible.
+    expect(pressedChangeAction).toHaveBeenCalledWith(true);
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    expect(button).not.toBeDisabled();
+    expect(button).not.toHaveAttribute('aria-busy', 'true');
+
+    // Settle the action so the pending transition doesn't leak into later tests.
+    await act(async () => {
+      resolveAction?.();
+      await Promise.resolve();
+    });
+  });
+
+  it('shows a loading spinner once the action stays pending past the delay', async () => {
+    const user = userEvent.setup();
+    let resolveAction: (() => void) | undefined;
+    const pressedChangeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          resolveAction = resolve;
+        }),
+    );
+
+    render(
+      <ToggleButton
+        label="Favorite"
+        isPressed={false}
+        onPressedChange={() => {}}
+        pressedChangeAction={pressedChangeAction}
+      />,
+    );
+
+    const button = screen.getByRole('button', {name: 'Favorite'});
+    await user.click(button);
+
+    // The optimistic state shows immediately; the spinner is debounced and
+    // appears only after the action stays pending past the delay window.
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    await waitFor(() => expect(button).toBeDisabled());
+    expect(button).toHaveAttribute('aria-busy', 'true');
+
+    await act(async () => {
+      resolveAction?.();
+      await Promise.resolve();
+    });
+    expect(button).not.toBeDisabled();
+    expect(button).not.toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('interrupts an in-flight action on re-click (true -> false -> true)', async () => {
+    // Each click interrupts the previous transition. The actions are resolved
+    // at the end so the pending transition doesn't leak into later tests.
+    const resolvers: (() => void)[] = [];
+    const pressedChangeAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          resolvers.push(resolve);
+        }),
+    );
+
+    render(
+      <ToggleButton
+        label="Favorite"
+        isPressed={false}
+        onPressedChange={() => {}}
+        pressedChangeAction={pressedChangeAction}
+      />,
+    );
+
+    const button = screen.getByRole('button', {name: 'Favorite'});
+
+    // Each click derives the next state from the optimistic (in-progress)
+    // value, so rapid clicks toggle rather than being dropped. fireEvent keeps
+    // the clicks within the spinner debounce window so the button stays
+    // interruptible.
+    await act(async () => {
+      fireEvent.click(button);
+    });
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+    await act(async () => {
+      fireEvent.click(button);
+    });
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+    await act(async () => {
+      fireEvent.click(button);
+    });
+    expect(button).toHaveAttribute('aria-pressed', 'true');
+
+    expect(pressedChangeAction).toHaveBeenCalledTimes(3);
+    expect(pressedChangeAction).toHaveBeenNthCalledWith(1, true);
+    expect(pressedChangeAction).toHaveBeenNthCalledWith(2, false);
+    expect(pressedChangeAction).toHaveBeenNthCalledWith(3, true);
+
+    await act(async () => {
+      resolvers.forEach(resolve => resolve());
+      await Promise.resolve();
+    });
+  });
+
+  it('supports a synchronous pressedChangeAction', async () => {
+    const user = userEvent.setup();
+    // A sync handler (e.g. a router navigation) with no returned promise.
+    const pressedChangeAction = vi.fn((_next: boolean) => {});
+    const onPressedChange = vi.fn();
+
+    render(
+      <ToggleButton
+        label="Favorite"
+        isPressed={false}
+        onPressedChange={onPressedChange}
+        pressedChangeAction={pressedChangeAction}
+      />,
+    );
+
+    const button = screen.getByRole('button', {name: 'Favorite'});
+    await user.click(button);
+
+    expect(onPressedChange).toHaveBeenCalledWith(true);
+    expect(pressedChangeAction).toHaveBeenCalledWith(true);
   });
 });
 

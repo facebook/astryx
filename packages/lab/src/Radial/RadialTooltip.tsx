@@ -5,7 +5,7 @@
  * @output Hover tooltip for radial charts (pie/donut/spider)
  * @position Child of RadialChart; reads geometry from radial context
  *
- * Uses the XDS Layer system for top-layer rendering.
+ * Uses the Astryx Layer system for top-layer rendering.
  * Hit-tests pointer position against slices (pie/donut) or axis proximity (spider).
  * Portals the popover div outside the SVG into the chart container.
  */
@@ -14,7 +14,7 @@
 
 import {useState, useCallback, useRef, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
-import {useLayer} from '@xds/core/Layer';
+import {useLayer} from '@astryxdesign/core/Layer';
 import {useRadial} from './RadialContext';
 
 export interface RadialTooltipDatum {

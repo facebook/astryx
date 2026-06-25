@@ -3,11 +3,11 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Overlay} from '@xds/core/Overlay';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Button} from '@xds/core/Button';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Overlay} from '@astryxdesign/core/Overlay';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Button} from '@astryxdesign/core/Button';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const styles = stylex.create({
   frame: {
@@ -40,7 +40,7 @@ export default function OverlayShowcase() {
       }>
       <AspectRatio ratio={16 / 9} xstyle={styles.frame}>
         <img
-          src="https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png"
+          src="https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png"
           alt="Abstract landscape"
           {...stylex.props(styles.image)}
         />

@@ -32,7 +32,7 @@ import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {InteractiveRoleContext} from '../InteractiveRoleContext/InteractiveRoleContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Helpers
@@ -472,7 +472,7 @@ export function Popover({
           <div
             data-testid={testId}
             {...mergeProps(
-              xdsThemeProps('popover'),
+              themeProps('popover'),
               stylex.props(styles.contentPadding, xstyle),
               className,
               style,
@@ -508,7 +508,7 @@ export function Popover({
           <div
             data-testid={testId}
             {...mergeProps(
-              xdsThemeProps('popover'),
+              themeProps('popover'),
               stylex.props(styles.contentPadding, xstyle),
               className,
               style,
@@ -537,7 +537,7 @@ export function Popover({
         <div
           data-testid={testId}
           {...mergeProps(
-            xdsThemeProps('popover'),
+            themeProps('popover'),
             stylex.props(styles.contentPadding, xstyle),
             className,
             style,

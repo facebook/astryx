@@ -73,7 +73,7 @@ export const docs = {
   },
   relatedComponents: ['ClickableCard', 'SelectableCard'],
   relatedHooks: ['useInputContainer'],
-  importPath: '@xds/core/hooks',
+  importPath: '@astryxdesign/core/hooks',
   category: 'interaction',
 };
 

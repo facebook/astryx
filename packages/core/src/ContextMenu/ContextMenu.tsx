@@ -53,7 +53,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import type {
   DropdownMenuOption,
   DropdownMenuItemData,
@@ -297,7 +297,7 @@ export function ContextMenu({
           role="menu"
           onKeyDown={listKeyDown}
           {...mergeProps(
-            xdsThemeProps('context-menu'),
+            themeProps('context-menu'),
             stylex.props(styles.menu, xstyle),
             className,
             style,

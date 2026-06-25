@@ -106,7 +106,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-popover'},
+      {className: 'astryx-popover'},
     ],
     vars: [
       {name: '--_popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)', private: true},
@@ -224,7 +224,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-popover'},
+      {className: 'astryx-popover'},
     ],
     vars: [
       {name: '--_popover-radius', description: 'Border radius of the popover', default: 'var(--radius-element)', private: true},

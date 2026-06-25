@@ -26,7 +26,7 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Extensible variant map for Divider.
@@ -34,7 +34,7 @@ import {xdsThemeProps} from '../utils/xdsThemeProps';
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Divider' {
+ * declare module '@astryxdesign/core/Divider' {
  *   interface DividerVariantMap {
  *     'accent': true;
  *   }
@@ -171,7 +171,7 @@ const fullBleedStyles = stylex.create({
  * Divider component for visual separation of content.
  *
  * Provides horizontal and vertical dividers with optional labels.
- * Uses XDS design tokens for colors and spacing.
+ * Uses Astryx design tokens for colors and spacing.
  *
  * @example
  * ```
@@ -197,7 +197,7 @@ export function Divider({
       role="separator"
       aria-orientation={orientation}
       {...mergeProps(
-        xdsThemeProps('divider', {variant, orientation}),
+        themeProps('divider', {variant, orientation}),
         stylex.props(
           isHorizontal ? baseStyles.horizontal : baseStyles.vertical,
           isFullBleed &&

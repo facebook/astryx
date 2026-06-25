@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Path-safety regression tests for `xds theme build`.
+ * @file Path-safety regression tests for `astryx theme build`.
  *
  * Covers:
  *   - Theme name with `..` segments cannot escape the output directory.
@@ -19,7 +19,7 @@ import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 
 function runCli(args, cwd) {
   try {
@@ -43,7 +43,7 @@ function writeTheme(dir, name) {
   fs.mkdirSync(dir, {recursive: true});
   const file = path.join(dir, 'theme.mjs');
   // Plain object literal so the legacy regex+eval path can parse it
-  // without needing jiti / TS, and without depending on @xds/core being
+  // without needing jiti / TS, and without depending on @astryxdesign/core being
   // built. The eval path explicitly supports this shape.
   fs.writeFileSync(
     file,

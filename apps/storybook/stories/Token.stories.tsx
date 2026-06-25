@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Token, type TokenColor} from '@xds/core/Token';
+import {Token, type TokenColor} from '@astryxdesign/core/Token';
 
 const meta: Meta<typeof Token> = {
   title: 'Core/Token',

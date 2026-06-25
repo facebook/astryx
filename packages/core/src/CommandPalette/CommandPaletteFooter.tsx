@@ -23,7 +23,7 @@ import {
   typographyVars,
 } from '../theme/tokens.stylex';
 import {Kbd} from '../Kbd';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   footer: {
@@ -89,7 +89,7 @@ export function CommandPaletteFooter({
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('command-palette-footer'),
+        themeProps('command-palette-footer'),
         stylex.props(styles.footer, xstyle),
         className,
         style,

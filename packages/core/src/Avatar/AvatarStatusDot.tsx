@@ -21,7 +21,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars} from '../theme/tokens.stylex';
 import {AvatarSizeContext} from './AvatarSizeContext';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Resolves the status dot size, border width, and icon size based on the
@@ -59,7 +59,7 @@ function resolveStatusDotSize(avatarSize: number): {
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Avatar' {
+ * declare module '@astryxdesign/core/Avatar' {
  *   interface AvatarStatusDotVariantMap {
  *     'away': true;
  *   }
@@ -196,7 +196,7 @@ export function AvatarStatusDot({
       ref={ref}
       {...(label ? {role: 'img', 'aria-label': label} : undefined)}
       {...mergeProps(
-        xdsThemeProps('avatar-status-dot', {variant}),
+        themeProps('avatar-status-dot', {variant}),
         stylex.props(
           styles.dot,
           variantStyleMap[variant],

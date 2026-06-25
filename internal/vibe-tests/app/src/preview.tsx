@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import React, {Suspense, lazy} from 'react';
-import {XDSTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme/default';
-import '@xds/core/reset.css';
+import {XDSTheme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme/neutral';
+import '@astryxdesign/core/reset.css';
 import '../tailwind.css';
 
 const params = new URLSearchParams(window.location.search);
@@ -24,7 +24,7 @@ export default function Preview({theme}: {theme: string}) {
   }
 
   return (
-    <XDSTheme theme={defaultTheme} mode={theme === 'dark' ? 'dark' : 'light'}>
+    <XDSTheme theme={neutralTheme} mode={theme === 'dark' ? 'dark' : 'light'}>
       <Suspense fallback={<div>Loading...</div>}>
         <Component />
       </Suspense>

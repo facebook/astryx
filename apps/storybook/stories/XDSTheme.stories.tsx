@@ -2,12 +2,12 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as React from 'react';
-import {Theme, defineTheme, useTheme} from '@xds/core/theme';
-import {Card} from '@xds/core/Card';
-import {Stack} from '@xds/core/Stack';
-import {Heading} from '@xds/core/Text';
-import {Badge} from '@xds/core/Badge';
-import {defaultTheme} from '@xds/theme-default';
+import {Theme, defineTheme, useTheme} from '@astryxdesign/core/theme';
+import {Card} from '@astryxdesign/core/Card';
+import {Stack} from '@astryxdesign/core/Stack';
+import {Heading} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 // =============================================================================
 // Sample data for the chart
@@ -340,7 +340,7 @@ export default meta;
  */
 export const BarChart: StoryObj = {
   render: () => (
-    <Theme theme={defaultTheme} mode="light">
+    <Theme theme={neutralTheme} mode="light">
       <Stack direction="vertical" gap={4}>
         <Heading level={3}>Weekly Activity</Heading>
         <Card>
@@ -357,7 +357,7 @@ export const BarChart: StoryObj = {
  */
 export const BarChartDark: StoryObj = {
   render: () => (
-    <Theme theme={defaultTheme} mode="dark">
+    <Theme theme={neutralTheme} mode="dark">
       <Stack direction="vertical" gap={4}>
         <Heading level={3}>Weekly Activity</Heading>
         <Card>
@@ -374,7 +374,7 @@ export const BarChartDark: StoryObj = {
  */
 export const GroupedChart: StoryObj = {
   render: () => (
-    <Theme theme={defaultTheme} mode="light">
+    <Theme theme={neutralTheme} mode="light">
       <Stack direction="vertical" gap={4}>
         <Heading level={3}>Quarterly Metrics</Heading>
         <Card>
@@ -392,7 +392,7 @@ export const GroupedChart: StoryObj = {
 export const ThemeComparison: StoryObj = {
   render: () => (
     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
-      <Theme theme={defaultTheme} mode="light">
+      <Theme theme={neutralTheme} mode="light">
         <Stack direction="vertical" gap={2}>
           <Heading level={4}>Default Theme</Heading>
           <Card>
@@ -420,7 +420,7 @@ export const TokenInspectorStory: StoryObj = {
   name: 'Token Inspector',
   render: () => (
     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
-      <Theme theme={defaultTheme} mode="light">
+      <Theme theme={neutralTheme} mode="light">
         <TokenInspector />
       </Theme>
       <Theme theme={oceanTheme} mode="dark">

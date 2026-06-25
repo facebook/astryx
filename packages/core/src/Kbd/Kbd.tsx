@@ -17,7 +17,7 @@ import React, {useSyncExternalStore} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import {
   colorVars,
   spacingVars,
@@ -167,7 +167,7 @@ export function Kbd({
       ref={ref}
       {...rest}
       {...mergeProps(
-        xdsThemeProps('kbd'),
+        themeProps('kbd'),
         stylex.props(styles.wrapper, xstyle),
         className,
         style,

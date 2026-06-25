@@ -131,7 +131,7 @@ export type {
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 interface NumberInputPropsBase extends Omit<
   BaseProps,
@@ -526,7 +526,7 @@ export function NumberInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        xdsThemeProps('number-input', {size, status: status?.type ?? null}),
+        themeProps('number-input', {size, status: status?.type ?? null}),
         stylex.props(
           inputWrapperStyles.base,
           styles.wrapper,

@@ -6,13 +6,13 @@ import {createRoot} from 'react-dom/client';
 /**
  * Report entry point — no StyleX build dependency.
  *
- * Imports pre-compiled CSS from @xds/core dist and the default theme.
+ * Imports pre-compiled CSS from @astryxdesign/core dist and the default theme.
  * Report components use plain CSS classes (report.css) instead of stylex.create.
  *
- * The xds.css and theme.css paths are resolved by Vite aliases in
+ * The astryx.css and theme.css paths are resolved by Vite aliases in
  * vite.config.report.ts.
  */
-import '@xds/core/reset.css';
+import '@astryxdesign/core/reset.css';
 import 'xds-css';
 import 'xds-theme-css';
 

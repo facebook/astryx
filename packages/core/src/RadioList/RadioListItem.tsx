@@ -32,7 +32,7 @@ import {RadioListContext} from './RadioList';
 import {mergeProps} from '../utils';
 import {radioScope} from './radio.markers.stylex';
 import {Item} from '../Item';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   container: {
@@ -259,7 +259,7 @@ export function RadioListItem({
       <div
         aria-hidden="true"
         {...mergeProps(
-          xdsThemeProps('radio', {
+          themeProps('radio', {
             size,
             checked: isChecked ? 'checked' : null,
             disabled: isDisabled ? 'disabled' : null,
@@ -275,7 +275,7 @@ export function RadioListItem({
         {isChecked && (
           <div
             {...mergeProps(
-              xdsThemeProps('radio-dot', {size}),
+              themeProps('radio-dot', {size}),
               stylex.props(styles.innerDot, dotSizeStyles[size]),
             )}
           />
@@ -299,7 +299,7 @@ export function RadioListItem({
       ref={ref}
       data-testid={dataTestId}
       {...mergeProps(
-        xdsThemeProps('radio-list-item'),
+        themeProps('radio-list-item'),
         stylex.props(styles.container, !isDisabled && radioScope),
       )}>
       <Item

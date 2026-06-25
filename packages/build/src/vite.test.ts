@@ -3,19 +3,17 @@
 /**
  * @file vite.test.ts
  * @description Verifies CSS layer-order injection in the XDS Vite plugin.
- *   The theme layer name is intentionally NOT configurable — it stays
- *   `xds-theme` for the whole compatibility window and is rebranded only at
- *   the final cutover (XDS-prefix migration P2380608025), so consumers never
- *   have to touch their `@layer` order line until then.
+ *   The library layer name is configurable (default `astryx-base`); the
+ *   theme layer name is fixed at `astryx-theme`.
  */
 
 import {describe, it, expect} from 'vitest';
-import {xdsStylex} from './vite';
+import {astryxStylex} from './vite';
 
 /** Pull the injected `@layer ...;` order statement out of the plugin set. */
-function getLayerOrder(plugins: ReturnType<typeof xdsStylex>): string {
-  const layerPlugin = plugins.find(p => p.name === 'xds-css-layer-order');
-  expect(layerPlugin, 'xds-css-layer-order plugin should exist').toBeTruthy();
+function getLayerOrder(plugins: ReturnType<typeof astryxStylex>): string {
+  const layerPlugin = plugins.find(p => p.name === 'astryx-css-layer-order');
+  expect(layerPlugin, 'astryx-css-layer-order plugin should exist').toBeTruthy();
   const transform = (layerPlugin as any).transformIndexHtml;
   const tags =
     typeof transform === 'function' ? transform() : transform.handler();
@@ -24,24 +22,24 @@ function getLayerOrder(plugins: ReturnType<typeof xdsStylex>): string {
   return styleTag.children as string;
 }
 
-describe('xdsStylex layer order (modern API)', () => {
-  it('uses the xds-* layer names (theme layer is xds-theme)', () => {
-    const order = getLayerOrder(xdsStylex());
-    expect(order).toBe('@layer reset, xds-base, xds-theme, product;');
+describe('astryxStylex layer order (modern API)', () => {
+  it('uses the astryx-* layer names (theme layer is astryx-theme)', () => {
+    const order = getLayerOrder(astryxStylex());
+    expect(order).toBe('@layer reset, astryx-base, astryx-theme, product;');
   });
 
   it('honors configured library and product layer names', () => {
     const order = getLayerOrder(
-      xdsStylex({layers: {library: 'astryx-base', product: 'app'}}),
+      astryxStylex({layers: {library: 'custom-base', product: 'app'}}),
     );
-    // The theme layer stays xds-theme regardless of other layer config.
-    expect(order).toBe('@layer reset, astryx-base, xds-theme, app;');
+    // The theme layer stays astryx-theme regardless of other layer config.
+    expect(order).toBe('@layer reset, custom-base, astryx-theme, app;');
   });
 });
 
-describe('xdsStylex layer order (legacy API)', () => {
-  it('uses the xds-* layer names (theme layer is xds-theme)', () => {
-    const order = getLayerOrder(xdsStylex({stylexOptions: {}}));
-    expect(order).toBe('@layer reset, xds-base, xds-theme, product;');
+describe('astryxStylex layer order (legacy API)', () => {
+  it('uses the astryx-* layer names (theme layer is astryx-theme)', () => {
+    const order = getLayerOrder(astryxStylex({stylexOptions: {}}));
+    expect(order).toBe('@layer reset, astryx-base, astryx-theme, product;');
   });
 });

@@ -27,7 +27,7 @@ import {useTopNavSlot} from './TopNavContext';
 import {useTopNavRenderMode} from './TopNavRenderContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import {
   colorVars,
   spacingVars,
@@ -423,7 +423,7 @@ export function TopNavMenu({
         {...popover.triggerProps}
         {...triggerProps}
         {...mergeProps(
-          xdsThemeProps('top-nav-menu'),
+          themeProps('top-nav-menu'),
           stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
         )}>
         {label}

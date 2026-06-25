@@ -40,9 +40,9 @@ import {
   radiusVars,
   shadowVars,
   spacingVars,
-} from '@xds/core/theme/tokens.stylex';
-import {Text} from '@xds/core';
-import {VStack, HStack} from '@xds/core';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {Text} from '@astryxdesign/core';
+import {VStack, HStack} from '@astryxdesign/core';
 import {useChartV2} from './ChartV2Context';
 import {ChartSwatch, swatchVariantForType} from './ChartSwatch';
 import {

@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {RadioList, RadioListItem} from '@xds/core/RadioList';
-import {Text} from '@xds/core/Text';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function RadioListPricingTier() {
   const [value, setValue] = useState('');

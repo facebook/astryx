@@ -62,7 +62,7 @@ describe('AvatarGroup', () => {
     );
 
     const group = screen.getByRole('group');
-    expect(group.className).toContain('xds-avatar-group');
+    expect(group.className).toContain('astryx-avatar-group');
     expect(group.className).toContain('medium');
   });
 

@@ -15,8 +15,8 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-heading', visualProps: ['level', 'color']},
-      {className: 'xds-text', visualProps: ['type', 'color']},
+      {className: 'astryx-heading', visualProps: ['level', 'color']},
+      {className: 'astryx-text', visualProps: ['type', 'color']},
     ],
   },
   description: 'Semantic body text component that renders text with type-based styling from the theme, with optional truncation, decoration, and layout props.',

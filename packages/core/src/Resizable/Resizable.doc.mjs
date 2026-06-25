@@ -46,8 +46,8 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-resize-handle', visualProps: ['direction']},
-      {className: 'xds-resize-handle-pill'},
+      {className: 'astryx-resize-handle', visualProps: ['direction']},
+      {className: 'astryx-resize-handle-pill'},
     ],
   },
   components: [

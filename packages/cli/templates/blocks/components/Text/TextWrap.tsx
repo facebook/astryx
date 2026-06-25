@@ -2,7 +2,7 @@
 
 'use client';
 
-import {Text} from '@xds/core/Text';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function TextWrap() {
   return (

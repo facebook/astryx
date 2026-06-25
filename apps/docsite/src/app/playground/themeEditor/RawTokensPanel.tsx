@@ -5,10 +5,10 @@
 import {useState} from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Text} from '@xds/core/Text';
-import {VStack} from '@xds/core/Stack';
-import {TextInput} from '@xds/core/TextInput';
-import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
+import {Text} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Stack';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
 import {
   PaletteOutline16Icon,
   FourRectangleGridOutline16Icon,
@@ -30,7 +30,7 @@ import {
   shadowDefaults,
   durationDefaults,
   easeDefaults,
-} from '@xds/core/theme';
+} from '@astryxdesign/core/theme';
 import {ColorSwatch} from './ColorSwatch';
 import {TokenRow} from './TokenRow';
 import {COLOR_CATEGORIES, TYPOGRAPHY_CATEGORIES} from './constants';

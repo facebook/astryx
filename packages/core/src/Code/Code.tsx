@@ -25,7 +25,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   base: {
@@ -74,7 +74,7 @@ export function Code({
     <code
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('code'),
+        themeProps('code'),
         stylex.props(styles.base, xstyle),
         className,
         style,

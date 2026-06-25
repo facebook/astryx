@@ -25,7 +25,7 @@ import * as path from 'node:path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../..');
-const CLI = path.join(ROOT, 'packages/cli/bin/xds.mjs');
+const CLI = path.join(ROOT, 'packages/cli/bin/astryx.mjs');
 
 let passed = 0;
 let failed = 0;
@@ -167,7 +167,7 @@ function checkJson(label, args, {expectError = false, expectType = null} = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Auto-discover components from xds component --list (text mode)
+// 1. Auto-discover components from astryx component --list (text mode)
 // ---------------------------------------------------------------------------
 const listResult = run(['component', '--list']);
 const componentNames = listResult.stdout
@@ -181,7 +181,7 @@ console.log(`\ndiscovered ${componentNames.length} components`);
 const sampleComponent = componentNames.includes('Button') ? 'Button' : componentNames[0];
 
 // ---------------------------------------------------------------------------
-// 2. Auto-discover doc topics from xds docs (text mode)
+// 2. Auto-discover doc topics from astryx docs (text mode)
 // ---------------------------------------------------------------------------
 const docsResult = run(['docs']);
 const docTopics = docsResult.stdout

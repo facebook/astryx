@@ -2,9 +2,9 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {DateRangeInput} from '@xds/core/DateRangeInput';
-import type {DateRange} from '@xds/core/DateRangeInput';
-import type {ISODateString} from '@xds/core/Calendar';
+import {DateRangeInput} from '@astryxdesign/core/DateRangeInput';
+import type {DateRange} from '@astryxdesign/core/DateRangeInput';
+import type {ISODateString} from '@astryxdesign/core/Calendar';
 
 function daysAgo(n: number): ISODateString {
   const d = new Date();

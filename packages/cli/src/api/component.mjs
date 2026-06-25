@@ -3,7 +3,7 @@
 /**
  * @file Programmatic API for the component command.
  *
- * Returns the same typed envelope { type, data } that `xds --json component` outputs.
+ * Returns the same typed envelope { type, data } that `astryx --json component` outputs.
  * The CLI command handler is a thin wrapper around this function.
  */
 
@@ -20,7 +20,7 @@ import {
 } from '../lib/component-discovery.mjs';
 import {loadDocs} from '../lib/component-loader.mjs';
 import {searchComponents} from '../lib/string-utils.mjs';
-import {XDSError} from './error.mjs';
+import {AstryxError} from './error.mjs';
 import {findShowcase, findRelatedBlocks} from './template.mjs';
 
 /**
@@ -76,7 +76,7 @@ export async function component(name, options = {}) {
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new XDSError('Could not find @xds/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
+    throw new AstryxError('Could not find @astryxdesign/core package', undefined, ERROR_CODES.ERR_CORE_NOT_FOUND);
   }
 
   // ── List mode ──────────────────────────────────────────────────
@@ -89,7 +89,7 @@ export async function component(name, options = {}) {
         ([key]) => key.toLowerCase() === category.toLowerCase(),
       );
       if (!match) {
-        throw new XDSError(
+        throw new AstryxError(
           `Unknown category "${category}"`,
           Object.keys(components).map(k => ({name: k, reason: 'valid category'})),
           ERROR_CODES.ERR_UNKNOWN_CATEGORY,
@@ -218,13 +218,13 @@ export async function component(name, options = {}) {
   if (packageScope) {
     const ext = resolveExternalPackage(packageScope, cwd);
     if (!ext) {
-      throw new XDSError(`External package "${packageScope}" not found`, undefined, ERROR_CODES.ERR_UNKNOWN_PACKAGE);
+      throw new AstryxError(`External package "${packageScope}" not found`, undefined, ERROR_CODES.ERR_UNKNOWN_PACKAGE);
     }
 
     if (showcase) {
       const match = await findShowcase(dirName, cwd, {package: packageScope});
       if (!match) {
-        throw new XDSError(`No showcase found for "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
+        throw new AstryxError(`No showcase found for "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
       }
       return {
         type: 'component.detail.showcase',
@@ -246,13 +246,13 @@ export async function component(name, options = {}) {
       }
       return {type: 'component.detail', data: docs};
     }
-    throw new XDSError(`No component "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
+    throw new AstryxError(`No component "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
   }
 
   if (source) {
     const sourcePath = findComponentSource(coreDir, dirName);
     if (!sourcePath) {
-      throw new XDSError(`Source for "${name}" not found`, undefined, ERROR_CODES.ERR_NO_SOURCE);
+      throw new AstryxError(`Source for "${name}" not found`, undefined, ERROR_CODES.ERR_NO_SOURCE);
     }
     return {type: 'component.detail.source', data: {component: dirName, source: fs.readFileSync(sourcePath, 'utf-8')}};
   }
@@ -260,7 +260,7 @@ export async function component(name, options = {}) {
   if (showcase) {
     const match = await findShowcase(dirName, cwd);
     if (!match) {
-      throw new XDSError(`No showcase found for "${name}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
+      throw new AstryxError(`No showcase found for "${name}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
     }
     return {
       type: 'component.detail.showcase',
@@ -303,19 +303,19 @@ export async function component(name, options = {}) {
         const threshold = Math.max(topScore - 20, 1);
         const candidates = results.filter(r => r.score >= threshold).slice(0, 5);
         if (candidates.length < 2) candidates.push(...results.slice(candidates.length, 2));
-        throw new XDSError(
+        throw new AstryxError(
           `No component named "${name}"`,
           candidates.map(c => ({name: c.name, reason: c.reason})),
           ERROR_CODES.ERR_UNKNOWN_COMPONENT,
         );
       }
     } else {
-      throw new XDSError(`No component named "${name}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
+      throw new AstryxError(`No component named "${name}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
     }
   }
 
   if (!readmePath || !readmePath.endsWith('.doc.mjs')) {
-    throw new XDSError(`No .doc.mjs found for "${resolvedName}". The component needs a typed doc file.`, undefined, ERROR_CODES.ERR_NO_DOC);
+    throw new AstryxError(`No .doc.mjs found for "${resolvedName}". The component needs a typed doc file.`, undefined, ERROR_CODES.ERR_NO_DOC);
   }
 
   const docs = await loadDocs(readmePath, {zh, dense, lang});

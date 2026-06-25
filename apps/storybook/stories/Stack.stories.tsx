@@ -2,13 +2,13 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {Stack, StackItem} from '@xds/core/Layout';
+import {Stack, StackItem} from '@astryxdesign/core/Layout';
 import {
   colorVars,
   spacingVars,
   radiusVars,
   typographyVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   box: {

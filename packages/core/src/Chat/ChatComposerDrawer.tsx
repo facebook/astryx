@@ -29,7 +29,7 @@ import {
 import {Badge} from '../Badge';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface ChatComposerDrawerProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -250,7 +250,7 @@ export function ChatComposerDrawer({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsThemeProps('chat-composer-drawer', {
+        themeProps('chat-composer-drawer', {
           collapsed: isCollapsed ? 'collapsed' : null,
         }),
         stylex.props(styles.root, xstyle),

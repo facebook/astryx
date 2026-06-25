@@ -100,7 +100,7 @@ describe('Divider', () => {
     expect(screen.getByText('Vertical')).toBeInTheDocument();
   });
 
-  it('renders xds-* class names for theme targeting', () => {
+  it('renders astryx-* class names for theme targeting', () => {
     render(
       <Divider
         variant="strong"
@@ -109,7 +109,7 @@ describe('Divider', () => {
       />,
     );
     const root = screen.getByTestId('divider');
-    expect(root.className).toContain('xds-divider');
+    expect(root.className).toContain('astryx-divider');
     expect(root.className).toContain('strong');
     expect(root.className).toContain('vertical');
   });

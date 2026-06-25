@@ -53,7 +53,7 @@ Each sub-agent must:
 
 1. **Read the task file** at `results/<iteration>/tasks/<promptId>.json` (on the `xds` node)
 2. **Read the target-specific agent doc:**
-   - XDS → `AGENTS.md` (generated) + run `npx xds component --brief-all` for component catalog
+   - XDS → `AGENTS.md` (generated) + run `npx astryx component --brief-all` for component catalog
    - Baseline → `AGENTS.baseline.md` + read `.baseline-docs/`
    - HTML → `AGENTS.html.md` (no design system docs needed)
 3. **Generate a React component** as a `.tsx` file responding to the prompt
@@ -131,7 +131,7 @@ pnpm aggregate --iteration <xds-id>
 pnpm report:deploy --iteration <xds-id> --baseline <baseline-id> --html <html-id>
 ```
 
-Report URL: `https://facebookexperimental.github.io/xds/reports/<xds-id>/`
+Report URL: `https://facebook.github.io/astryx/reports/<xds-id>/`
 
 ### Step 7: Post results
 

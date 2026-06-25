@@ -39,7 +39,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps, groupItems} from '../utils';
 import type {SearchableItem} from '../Typeahead/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import type {
   ChatComposerTrigger,
   ChatComposerToken,
@@ -684,7 +684,7 @@ export function useTriggerMenu(
         role="listbox"
         aria-label={trigger?.menuLabel ?? 'Suggestions'}
         {...mergeProps(
-          xdsThemeProps('trigger-menu'),
+          themeProps('trigger-menu'),
           stylex.props(styles.dropdown),
         )}>
         {listContent}

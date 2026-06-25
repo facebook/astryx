@@ -11,16 +11,16 @@
  * than importing it.
  */
 
-export const DEFAULT_CODE = `import {Card} from '@xds/core/Card';
+export const DEFAULT_CODE = `import {Card} from '@astryxdesign/core/Card';
 import {
   Layout,
   LayoutHeader,
   LayoutContent,
   LayoutFooter,
   HStack,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
 
 export default function Example() {
   return (

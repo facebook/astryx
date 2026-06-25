@@ -26,7 +26,7 @@ import {
   type ListMarkerStyle,
 } from './ListContext';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export {
   type ListDensity,
@@ -170,7 +170,7 @@ export function List({
       {...(isOrdered && start != null && start !== 1 ? {start} : {})}
       {...(listStyle === 'none' && !isOrdered ? {role: 'list'} : {})}
       {...mergeProps(
-        xdsThemeProps('list', {density, listStyle}),
+        themeProps('list', {density, listStyle}),
         stylex.props(
           styles.list,
           hasDividers && styles.withDividers,

@@ -24,7 +24,7 @@ import type {TabListSize} from './TabListContext';
 import {useSize} from '../SizeContext/SizeContext';
 import {mergeProps} from '../utils';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface TabListProps extends Omit<
   BaseProps<HTMLElement>,
@@ -125,7 +125,7 @@ export function TabList({
         {...{[EDGE_COMP_ATTR]: ''}}
         {...restProps}
         {...mergeProps(
-          xdsThemeProps('tab-list', {size}),
+          themeProps('tab-list', {size}),
           stylex.props(
             styles.nav,
             layout === 'fill' && styles.fill,

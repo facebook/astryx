@@ -26,7 +26,7 @@ import {
 } from './stack.stylex';
 import type {SizeValue} from '../utils/types';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Alignment values accepted by Stack.
@@ -233,7 +233,7 @@ export function Stack({
     {
       ref: ref as Ref<Element>,
       ...mergeProps(
-        xdsThemeProps('stack', {direction, gap, wrap}),
+        themeProps('stack', {direction, gap, wrap}),
         stylexProps,
         className,
         {...style, ...sizingStyle},

@@ -21,7 +21,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @xds/core, @xds/theme-default, and @xds/cli in this project. Run `npx astryx init` to set up agent docs. Read the generated files to learn the conventions.',
+          code: 'Install @astryxdesign/core, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project. Run `npx astryx init` to set up agent docs. Read the generated files to learn the conventions.',
         },
       ],
     },
@@ -36,7 +36,7 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npm install @xds/core @xds/theme-default @xds/cli`,
+          code: `npm install @astryxdesign/core @astryxdesign/theme-neutral @astryxdesign/cli`,
         },
         {
           type: 'prose',
@@ -61,13 +61,13 @@ export const docs = {
           type: 'code',
           lang: 'css',
           label: 'globals.css',
-          code: `@import '@xds/core/reset.css';
-@import '@xds/core/xds.css';
-@import '@xds/theme-default/theme.css';`,
+          code: `@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
+@import '@astryxdesign/theme-neutral/theme.css';`,
         },
         {
           type: 'prose',
-          text: 'Available themes: @xds/theme-default (blue accent), @xds/theme-neutral (grayscale), @xds/theme-brutalist (zero radius, monospace). See `npx astryx docs theme` for the full theming guide.',
+          text: 'Available themes: @astryxdesign/theme-neutral (muted minimal, a good starting point), @astryxdesign/theme-butter, @astryxdesign/theme-chocolate, @astryxdesign/theme-gothic (dark-only), @astryxdesign/theme-matcha, @astryxdesign/theme-stone, and @astryxdesign/theme-y2k. See `npx astryx docs theme` for the full theming guide.',
         },
       ],
     },
@@ -82,13 +82,13 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'app/page.tsx',
-          code: `import {Button} from '@xds/core/Button';
-import {VStack} from '@xds/core/Layout';
+          code: `import {Button} from '@astryxdesign/core/Button';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export default function Page() {
   return (
     <VStack gap={2}>
-      <Button label="Hello XDS" onClick={() => alert('Hi!')} />
+      <Button label="Hello Astryx" onClick={() => alert('Hi!')} />
     </VStack>
   );
 }`,
@@ -96,11 +96,11 @@ export default function Page() {
       ],
     },
     {
-      title: 'Customize with xstyle',
+      title: 'Customize with StyleX',
       content: [
         {
           type: 'prose',
-          text: 'Every component accepts an `xstyle` prop for StyleX style overrides created via `stylex.create()`.',
+          text: 'Astryx components support various styling solutions, from plain CSS and `className` to Tailwind and CSS-in-JS. See the [styling docs](/docs/styling) for the full guide. Astryx also has a deep integration with [StyleX](https://stylexjs.com/), an atomic CSS-in-JS library: create styles with `stylex.create()` and pass them to components with the `xstyle` prop.',
         },
         {
           type: 'code',
@@ -127,19 +127,19 @@ const overrides = stylex.create({
           type: 'table',
           headers: ['Example', 'Stack', 'Path'],
           rows: [
-            ['Next.js', 'Next.js + theme CSS', 'apps/example-nextjs'],
-            ['Next.js + StyleX', 'Next.js + StyleX for custom styles', 'apps/example-nextjs-stylex'],
-            ['Next.js + Tailwind', 'Next.js + Tailwind bridge', 'apps/example-nextjs-tailwind'],
-            ['Next.js Source', 'Next.js importing from source', 'apps/example-nextjs-source'],
-            ['Vite', 'Vite', 'apps/example-vite'],
+            ['Next.js', 'Next.js + theme CSS', '[apps/example-nextjs](https://github.com/facebook/astryx/tree/main/apps/example-nextjs)'],
+            ['Next.js + StyleX', 'Next.js + StyleX for custom styles', '[apps/example-nextjs-stylex](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-stylex)'],
+            ['Next.js + Tailwind', 'Next.js + Tailwind bridge', '[apps/example-nextjs-tailwind](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-tailwind)'],
+            ['Next.js Source', 'Next.js importing from source', '[apps/example-nextjs-source](https://github.com/facebook/astryx/tree/main/apps/example-nextjs-source)'],
+            ['Vite', 'Vite', '[apps/example-vite](https://github.com/facebook/astryx/tree/main/apps/example-vite)'],
           ],
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Clone and run an example',
-          code: `git clone https://github.com/facebookexperimental/xds.git
-cd xds/apps/example-nextjs
+          code: `git clone https://github.com/facebook/astryx.git
+cd astryx/apps/example-nextjs
 pnpm install
 pnpm dev`,
         },
@@ -157,7 +157,7 @@ pnpm dev`,
           lang: 'json',
           label: 'package.json',
           code: `"scripts": {
-  "xds": "node node_modules/@xds/cli/bin/xds.mjs"
+  "astryx": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
 }`,
         },
         {

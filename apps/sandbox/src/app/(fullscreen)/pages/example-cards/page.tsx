@@ -5,29 +5,29 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
-import {VStack, HStack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Heading, Text} from '@xds/core/Text';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Heading, Text} from '@astryxdesign/core/Text';
 import {useThemeControls} from '../../../providers';
-import type {ThemeMode} from '@xds/core/theme';
-import {Badge} from '@xds/core/Badge';
-import {Card} from '@xds/core/Card';
-import {Avatar} from '@xds/core/Avatar';
-import {Divider} from '@xds/core/Divider';
-import {TextInput} from '@xds/core/TextInput';
-import {Switch} from '@xds/core/Switch';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {RadioList, RadioListItem} from '@xds/core/RadioList';
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {Spinner} from '@xds/core/Spinner';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Icon} from '@xds/core/Icon';
-import {Link} from '@xds/core/Link';
-import {StatusDot} from '@xds/core/StatusDot';
-import {Selector} from '@xds/core/Selector';
-import {Slider} from '@xds/core/Slider';
-import {Calendar} from '@xds/core/Calendar';
-import {Token} from '@xds/core/Token';
+import type {ThemeMode} from '@astryxdesign/core/theme';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Card} from '@astryxdesign/core/Card';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Divider} from '@astryxdesign/core/Divider';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Switch} from '@astryxdesign/core/Switch';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {Spinner} from '@astryxdesign/core/Spinner';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Link} from '@astryxdesign/core/Link';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
+import {Selector} from '@astryxdesign/core/Selector';
+import {Slider} from '@astryxdesign/core/Slider';
+import {Calendar} from '@astryxdesign/core/Calendar';
+import {Token} from '@astryxdesign/core/Token';
 
 const styles = stylex.create({
   row: {
@@ -109,12 +109,9 @@ export default function ExampleCardsPage() {
   const {themeName, setThemeName, mode, setMode} = useThemeControls();
 
   const themeOptions = [
-    'Default',
     'Neutral',
-    'Brutalist',
     'Meta',
     'WhatsApp',
-    'Daily',
     'Stone',
     'Gothic',
     'Chocolate',

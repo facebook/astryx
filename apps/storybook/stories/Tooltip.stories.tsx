@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Tooltip, useTooltip} from '@xds/core/Tooltip';
-import {Button} from '@xds/core/Button';
-import {HStack} from '@xds/core/Layout';
+import {Tooltip, useTooltip} from '@astryxdesign/core/Tooltip';
+import {Button} from '@astryxdesign/core/Button';
+import {HStack} from '@astryxdesign/core/Layout';
 
 const meta: Meta<typeof Tooltip> = {
   title: 'Core/Tooltip',

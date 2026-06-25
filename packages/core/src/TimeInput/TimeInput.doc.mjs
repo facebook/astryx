@@ -165,7 +165,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-time-input', visualProps: ['size', 'status']},
     ],
   },
 };
@@ -200,7 +200,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-time-input', visualProps: ['size', 'status']},
+      {className: 'astryx-time-input', visualProps: ['size', 'status']},
     ],
   },
   usage: {

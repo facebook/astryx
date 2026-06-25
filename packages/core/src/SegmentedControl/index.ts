@@ -21,22 +21,3 @@ export type {
   SegmentedControlSize,
   SegmentedControlLayout,
 } from './SegmentedControlContext';
-
-
-// <compat-aliases:start> — generated, do not edit by hand
-// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Bare names above are canonical + module-augmentation targets.
-// These prefixed re-exports reference the SAME values/types and remain
-// augmentable (consumer `declare module` augmentations of XDS* flow through).
-// Regenerate: node scripts/generate-compat-aliases.mjs
-export {
-  SegmentedControl as XDSSegmentedControl,
-  SegmentedControlItem as XDSSegmentedControlItem,
-} from '.';
-export type {
-  SegmentedControlItemProps as XDSSegmentedControlItemProps,
-  SegmentedControlLayout as XDSSegmentedControlLayout,
-  SegmentedControlProps as XDSSegmentedControlProps,
-  SegmentedControlSize as XDSSegmentedControlSize,
-} from '.';
-// <compat-aliases:end>

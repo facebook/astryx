@@ -83,7 +83,7 @@ export const docs = {
   },
   relatedComponents: ['Resizable', 'AppShell', 'Layout', 'SideNav'],
   relatedHooks: ['useCollapsible'],
-  importPath: '@xds/core/Resizable',
+  importPath: '@astryxdesign/core/Resizable',
   category: 'layout',
 };
 

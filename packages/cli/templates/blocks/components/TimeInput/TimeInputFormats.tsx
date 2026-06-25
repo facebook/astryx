@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {TimeInput} from '@xds/core/TimeInput';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {TimeInput} from '@astryxdesign/core/TimeInput';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function TimeInputFormats() {
   const [time24h, setTime24h] = useState('14:30');

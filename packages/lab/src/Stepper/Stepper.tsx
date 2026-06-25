@@ -19,9 +19,9 @@
 import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
-import {mergeProps} from '@xds/core/utils';
-import type {BaseProps} from '@xds/core';
-import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
+import {mergeProps} from '@astryxdesign/core/utils';
+import type {BaseProps} from '@astryxdesign/core';
+import {themeProps} from '../../../core/src/utils/themeProps';
 import {
   StepperContext,
   type StepperOrientation,
@@ -137,7 +137,7 @@ export function Stepper({
         aria-label={label}
         {...rest}
         {...mergeProps(
-          xdsThemeProps('stepper', {orientation}),
+          themeProps('stepper', {orientation}),
           stylex.props(
             styles.root,
             orientation === 'horizontal' ? styles.horizontal : styles.vertical,

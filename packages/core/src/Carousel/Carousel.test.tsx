@@ -47,14 +47,14 @@ describe('Carousel', () => {
     expect(screen.getByTestId('my-carousel')).toBeInTheDocument();
   });
 
-  it('has correct xds class name', () => {
+  it('has correct astryx class name', () => {
     render(
       <Carousel data-testid="cls-test">
         <div>Item</div>
       </Carousel>,
     );
     const el = screen.getByTestId('cls-test');
-    expect(el.className).toContain('xds-carousel');
+    expect(el.className).toContain('astryx-carousel');
   });
 
   it('does not render button layer when hasButtons={false}', () => {

@@ -8,13 +8,13 @@ import {
   ChatMessageBubble,
   ChatMessageMetadata,
   ChatSystemMessage,
-} from '@xds/core/Chat';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Avatar} from '@xds/core/Avatar';
-import {Markdown} from '@xds/core/Markdown';
-import {CodeBlock} from '@xds/core/CodeBlock';
-import {Timestamp} from '@xds/core/Timestamp';
-import {Token} from '@xds/core/Token';
+} from '@astryxdesign/core/Chat';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
+import {Token} from '@astryxdesign/core/Token';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

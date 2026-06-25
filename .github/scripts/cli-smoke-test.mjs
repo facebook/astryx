@@ -4,12 +4,12 @@
 /**
  * CLI smoke test — auto-discovers every command and checks for output + clean exit.
  *
- * Nothing is hardcoded. Components are discovered from `xds component --list`,
- * doc topics from `xds docs`, and detail levels from `xds --help`.
+ * Nothing is hardcoded. Components are discovered from `astryx component --list`,
+ * doc topics from `astryx docs`, and detail levels from `xds --help`.
  *
  * Catches regressions like:
- *   - xds component <name> crashing on bad imports
- *   - xds docs returning empty content
+ *   - astryx component <name> crashing on bad imports
+ *   - astryx docs returning empty content
  *   - any command exiting non-zero
  *
  * Usage:
@@ -25,7 +25,7 @@ import * as path from 'node:path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '../..');
-const CLI = path.join(ROOT, 'packages/cli/bin/xds.mjs');
+const CLI = path.join(ROOT, 'packages/cli/bin/astryx.mjs');
 
 let passed = 0;
 let failed = 0;
@@ -86,10 +86,10 @@ const DETAIL_LEVELS = detailMatch
 console.log(`detail levels: ${DETAIL_LEVELS.join(', ')}`);
 
 // ---------------------------------------------------------------------------
-// 2. Discover components from xds component --list
+// 2. Discover components from astryx component --list
 // ---------------------------------------------------------------------------
 console.log('\ncomponent listing');
-check('xds component --list', ['component', '--list']);
+check('astryx component --list', ['component', '--list']);
 
 const listResult = run(['component', '--list']);
 const componentNames = listResult.stdout
@@ -115,7 +115,7 @@ const categories = listResult.stdout
 console.log(`discovered ${categories.length} categories: ${categories.join(', ')}`);
 
 // ---------------------------------------------------------------------------
-// 4. Discover doc topics from xds docs
+// 4. Discover doc topics from astryx docs
 // ---------------------------------------------------------------------------
 const docsResult = run(['docs']);
 const docTopics = docsResult.stdout
@@ -131,34 +131,34 @@ console.log(`discovered ${docTopics.length} doc topics: ${docTopics.join(', ')}`
 
 // component --list with each detail level
 for (const detail of DETAIL_LEVELS) {
-  check(`xds component --list --detail ${detail}`, ['component', '--list', '--detail', detail]);
+  check(`astryx component --list --detail ${detail}`, ['component', '--list', '--detail', detail]);
 }
 
 // component --category for each category
 console.log(`\ncomponent --category (${categories.length} categories)`);
 for (const cat of categories) {
-  check(`xds component --category ${cat}`, ['component', '--category', cat]);
+  check(`astryx component --category ${cat}`, ['component', '--category', cat]);
 }
 
 // component docs: every component x every detail level
 console.log(`\ncomponent docs (${componentNames.length} components x ${DETAIL_LEVELS.length} detail levels)`);
 for (const name of componentNames) {
   for (const detail of DETAIL_LEVELS) {
-    check(`xds component ${name} --detail ${detail}`, ['component', name, '--detail', detail]);
+    check(`astryx component ${name} --detail ${detail}`, ['component', name, '--detail', detail]);
   }
 }
 
 // component --props for every component
 console.log(`\ncomponent --props (${componentNames.length} components)`);
 for (const name of componentNames) {
-  check(`xds component ${name} --props`, ['component', name, '--props']);
+  check(`astryx component ${name} --props`, ['component', name, '--props']);
 }
 
 // docs for each topic
 console.log('\ndocs');
-check('xds docs (no args)', ['docs']);
+check('astryx docs (no args)', ['docs']);
 for (const topic of docTopics) {
-  check(`xds docs ${topic}`, ['docs', topic]);
+  check(`astryx docs ${topic}`, ['docs', topic]);
 }
 
 // ---------------------------------------------------------------------------

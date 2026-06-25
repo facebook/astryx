@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSTable} from '@xds/core/Table';
-import {XDSStatusDot} from '@xds/core/StatusDot';
-import {XDSHStack} from '@xds/core/Stack';
-import {XDSText} from '@xds/core/Text';
-import type {XDSTableColumn} from '@xds/core/Table';
+import {XDSTable} from '@astryxdesign/core/Table';
+import {XDSStatusDot} from '@astryxdesign/core/StatusDot';
+import {XDSHStack} from '@astryxdesign/core/Stack';
+import {XDSText} from '@astryxdesign/core/Text';
+import type {XDSTableColumn} from '@astryxdesign/core/Table';
 import type {UniversalScore} from './types';
 import {
   ALL_DIMENSIONS,

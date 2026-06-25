@@ -2,9 +2,9 @@
 
 'use client';
 
-import {ClickableCard} from '@xds/core/ClickableCard';
-import {Stack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
 
 export default function ClickableCardShowcase() {
   return (

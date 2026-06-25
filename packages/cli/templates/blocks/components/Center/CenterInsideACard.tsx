@@ -2,11 +2,11 @@
 
 'use client';
 
-import {Center} from '@xds/core/Center';
-import {Card} from '@xds/core/Card';
-import {Stack} from '@xds/core/Layout';
-import {Icon} from '@xds/core/Icon';
-import {Text} from '@xds/core/Text';
+import {Center} from '@astryxdesign/core/Center';
+import {Card} from '@astryxdesign/core/Card';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Text} from '@astryxdesign/core/Text';
 import {InboxIcon} from '@heroicons/react/24/outline';
 
 export default function CenterInsideACard() {

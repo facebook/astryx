@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {useMediaQuery} from '@xds/core/hooks';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {
   Layout,
   LayoutHeader,
@@ -14,21 +14,21 @@ import {
   StackItem,
   Card,
   Section,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Badge} from '@xds/core/Badge';
-import {Avatar} from '@xds/core/Avatar';
-import {Button} from '@xds/core/Button';
-import {TabList, Tab, TabMenu} from '@xds/core/TabList';
-import {Divider} from '@xds/core/Divider';
-import {Link} from '@xds/core/Link';
-import {List, ListItem} from '@xds/core/List';
-import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
-import {ProgressBar} from '@xds/core/ProgressBar';
-import {Collapsible} from '@xds/core/Collapsible';
-import {Icon} from '@xds/core/Icon';
-import {Thumbnail} from '@xds/core/Thumbnail';
-import {Dialog, DialogHeader} from '@xds/core/Dialog';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Button} from '@astryxdesign/core/Button';
+import {TabList, Tab, TabMenu} from '@astryxdesign/core/TabList';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Link} from '@astryxdesign/core/Link';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
+import {Collapsible} from '@astryxdesign/core/Collapsible';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {
   CalendarIcon,
   FlagIcon,
@@ -63,14 +63,12 @@ const pageStyles = stylex.create({
 });
 
 // ─── Product data ───────────────────────────────────────────────────────────
-// Light product photography from the xds_oss asset set (ceramics collection)
-// Source: meta assets.file list -s xds_oss -g light-product-{1..5}
 const PRODUCT_IMAGES = [
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png',
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-2.png',
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-3.png',
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-4.png',
-  'https://lookaside.facebook.com/assets/xds_oss/light-product-5.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-1.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-2.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-3.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-4.png',
+  'https://lookaside.facebook.com/assets/astryx/light-product-5.png',
 ];
 
 const PRODUCTS = [
@@ -615,7 +613,7 @@ export default function DetailPage2Template() {
         end={!isNarrow && showSidePanel ? <RightPanel /> : undefined}
       />
       {/* Mobile: the side panel content opens as a full-screen dialog. (A
-          side drawer/sheet would be more idiomatic, but XDS has no Drawer
+          side drawer/sheet would be more idiomatic, but Astryx has no Drawer
           component yet — #2575 — so we use the fullscreen Dialog variant.) */}
       <Dialog
         variant="fullscreen"

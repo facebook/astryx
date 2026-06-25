@@ -68,7 +68,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-thumbnail'},
+      {className: 'astryx-thumbnail'},
     ],
   },
   usage: {

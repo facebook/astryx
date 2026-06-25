@@ -36,7 +36,7 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {mergeProps} from '../utils';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface TabProps extends BaseProps<HTMLButtonElement> {
   /**
@@ -261,7 +261,7 @@ export function Tab({
     [EDGE_COMP_ATTR]: '',
     'aria-current': isSelected ? ('page' as const) : undefined,
     ...mergeProps(
-      xdsThemeProps('tab', {
+      themeProps('tab', {
         selected: isSelected ? 'selected' : null,
       }),
       stylex.props(
@@ -287,7 +287,7 @@ export function Tab({
   const indicatorElement = (
     <span
       {...mergeProps(
-        xdsThemeProps('tab-indicator', {
+        themeProps('tab-indicator', {
           selected: isSelected ? 'selected' : null,
         }),
         stylex.props(

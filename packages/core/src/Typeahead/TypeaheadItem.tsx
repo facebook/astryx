@@ -22,7 +22,7 @@ import {
 import type {SearchableItem} from './types';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -142,7 +142,7 @@ export function TypeaheadItem<T extends SearchableItem>({
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('typeahead-item'),
+        themeProps('typeahead-item'),
         stylex.props(styles.container, isDisabled && styles.disabled),
       )}>
       {icon}

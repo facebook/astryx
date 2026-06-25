@@ -3,7 +3,7 @@
 /**
  * @file index.ts
  * @input Schedule implementation and public schedule types
- * @output Public exports for @xds/lab Schedule
+ * @output Public exports for @astryxdesign/lab Schedule
  * @position Component entry point; re-exported by packages/lab/src/index.ts
  */
 

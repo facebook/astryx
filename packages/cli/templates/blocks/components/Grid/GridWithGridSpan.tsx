@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Grid, GridSpan} from '@xds/core/Grid';
-import {Card} from '@xds/core/Card';
-import {VStack} from '@xds/core/Stack';
-import {Text} from '@xds/core/Text';
+import {Grid, GridSpan} from '@astryxdesign/core/Grid';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function GridWithGridSpan() {
   return (
@@ -17,7 +17,7 @@ export default function GridWithGridSpan() {
               Featured Release
             </Text>
             <Text type="supporting" display="block">
-              XDS 4.0 is now available with new layout primitives, refreshed
+              Astryx 4.0 is now available with new layout primitives, refreshed
               tokens, and improved theming support across the system.
             </Text>
           </VStack>
@@ -86,7 +86,7 @@ export default function GridWithGridSpan() {
               Community Showcase
             </Text>
             <Text type="supporting" display="block">
-              See how teams are building with XDS across the organization
+              See how teams are building with Astryx across the organization
             </Text>
           </VStack>
         </Card>

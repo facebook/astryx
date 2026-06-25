@@ -3,22 +3,22 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Table, pixel} from '@xds/core/Table';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Table, pixel, proportional} from '@astryxdesign/core/Table';
 import type {TokenTableProps} from './types';
 import {resolveToken, getTokensByPrefix} from './helpers';
 
 const styles = stylex.create({
   radiusBox: {
-    width: 32,
-    height: 32,
+    width: 96,
+    height: 96,
     backgroundColor: 'var(--color-accent-muted)',
     border: '2px solid var(--color-accent)',
     flexShrink: 0,
   },
   borderLine: {
-    width: 32,
+    width: 96,
     height: 0,
     borderBottomStyle: 'solid',
     borderBottomColor: 'var(--color-border-emphasized)',
@@ -41,16 +41,22 @@ export function RadiusTokenTable({theme}: TokenTableProps) {
         {
           key: 'value',
           header: 'Value',
+          width: pixel(200),
           renderCell: (item: Record<string, unknown>) => (
-            <HStack gap={2} vAlign="center">
-              <div
-                {...stylex.props(styles.radiusBox)}
-                style={{borderRadius: item.value as string}}
-              />
-              <Text type="code" color="secondary">
-                {item.value as string}
-              </Text>
-            </HStack>
+            <Text type="code" color="secondary">
+              {item.value as string}
+            </Text>
+          ),
+        },
+        {
+          key: 'example',
+          header: 'Example',
+          width: proportional(1, {minWidth: 120}),
+          renderCell: (item: Record<string, unknown>) => (
+            <div
+              {...stylex.props(styles.radiusBox)}
+              style={{borderRadius: item.value as string}}
+            />
           ),
         },
       ]}
@@ -80,16 +86,22 @@ export function BorderTokenTable({theme}: TokenTableProps) {
         {
           key: 'value',
           header: 'Value',
+          width: pixel(200),
           renderCell: (item: Record<string, unknown>) => (
-            <HStack gap={2} vAlign="center">
-              <div
-                {...stylex.props(styles.borderLine)}
-                style={{borderBottomWidth: item.value as string}}
-              />
-              <Text type="code" color="secondary">
-                {item.value as string}
-              </Text>
-            </HStack>
+            <Text type="code" color="secondary">
+              {item.value as string}
+            </Text>
+          ),
+        },
+        {
+          key: 'example',
+          header: 'Example',
+          width: proportional(1, {minWidth: 120}),
+          renderCell: (item: Record<string, unknown>) => (
+            <div
+              {...stylex.props(styles.borderLine)}
+              style={{borderBottomWidth: item.value as string}}
+            />
           ),
         },
       ]}

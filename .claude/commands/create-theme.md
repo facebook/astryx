@@ -23,7 +23,7 @@ packages/themes/{themeName}/
 
 ```json
 {
-  "name": "@xds/theme-{themeName}",
+  "name": "@astryxdesign/theme-{themeName}",
   "version": "0.0.1",
   "private": false,
   "description": "{Description} theme for XDS",
@@ -40,10 +40,10 @@ packages/themes/{themeName}/
     "build:theme": "xds build-theme src/index.ts -o dist/theme.css"
   },
   "peerDependencies": {
-    "@xds/core": "*"
+    "@astryxdesign/core": "*"
   },
   "devDependencies": {
-    "@xds/cli": "*"
+    "@astryxdesign/cli": "*"
   }
 }
 ```
@@ -51,7 +51,7 @@ packages/themes/{themeName}/
 ### Theme File (src/index.ts)
 
 ```tsx
-import {defineTheme} from '@xds/core/theme';
+import {defineTheme} from '@astryxdesign/core/theme';
 
 export const {themeName}Theme = defineTheme({
   name: '{themeName}',
@@ -132,11 +132,11 @@ export const {themeName}Theme = defineTheme({
 Component overrides generate scoped CSS:
 
 ```css
-@scope ([data-xds-theme="{themeName}"]) to ([data-xds-theme]) {
-  .xds-button.secondary {
+@scope ([data-astryx-theme="{themeName}"]) to ([data-astryx-theme]) {
+  .astryx-button.secondary {
     background-color: ...;
   }
-  .xds-heading.level-1 {
+  .astryx-heading.level-1 {
     font-size: var(--font-size-2xl);
   }
 }
@@ -145,19 +145,19 @@ Component overrides generate scoped CSS:
 ### Distribution
 
 - **Unbuilt**: `XDSTheme` generates CSS and injects `<style>` at runtime
-- **Built**: `npx xds theme build` pre-compiles to a CSS file
+- **Built**: `npx astryx theme build` pre-compiles to a CSS file
 
 ## Extending an Existing Theme
 
 Use `extends` to derive from another theme — inherits tokens, components, icons, fonts. Only specify overrides.
 
 ```tsx
-import {defineTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default';
+import {defineTheme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 export const brandTheme = defineTheme({
   name: 'brand',
-  extends: defaultTheme,
+  extends: neutralTheme,
   icons: myIcons, // swap icons
   tokens: {
     '--color-accent': ['#7B61FF', '#9B85FF'], // override accent
@@ -171,9 +171,9 @@ Child values win. Tokens and components are deep-merged; scale configs (typograp
 
 See existing themes for examples:
 
-- `packages/themes/default/src/defaultTheme.ts` — Complete reference theme
-- `packages/themes/neutral/src/neutralTheme.ts` — Grayscale theme with Geist font
-- `packages/themes/brutalist/src/index.ts` — Minimal showcase theme
+- `packages/themes/neutral/src/neutralTheme.ts` — Grayscale reference theme with Geist font
+- `packages/themes/stone/src/stoneTheme.ts` — Warm neutral theme with component overrides
+- `packages/themes/y2k/src/y2kTheme.ts` — Showcase theme with bold component overrides
 
 ## After Creation
 

@@ -84,7 +84,7 @@ describe('Button', () => {
       const {container, unmount} = render(
         <Button label="Submit" variant={variant} isLoading />,
       );
-      const spinner = container.querySelector('.xds-spinner');
+      const spinner = container.querySelector('.astryx-spinner');
       expect(spinner).not.toBeNull();
       expect(spinner).toHaveAttribute('data-shade', 'inherit');
       unmount();
@@ -207,10 +207,10 @@ describe('Button', () => {
     expect(button).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('renders xds-* classes and data attributes for theme targeting', () => {
+  it('renders astryx-* classes and data attributes for theme targeting', () => {
     render(<Button label="Test" variant="secondary" size="sm" />);
     const button = screen.getByRole('button');
-    expect(button.className).toContain('xds-button');
+    expect(button.className).toContain('astryx-button');
     expect(button.className).toContain('secondary');
     expect(button.className).toContain('sm');
     expect(button).toHaveAttribute('data-variant', 'secondary');

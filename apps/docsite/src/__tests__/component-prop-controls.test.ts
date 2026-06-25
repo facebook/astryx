@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {getIconRegistry} from '@xds/core/Icon';
+import {getIconRegistry} from '@astryxdesign/core/Icon';
 import {describe, expect, it} from 'vitest';
 import {
   coerceDefault,

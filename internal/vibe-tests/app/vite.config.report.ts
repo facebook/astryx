@@ -12,8 +12,8 @@ const repoRoot = path.resolve(__dirname, '../../..');
 /**
  * Vite config for building reports ONLY — no StyleX plugin required.
  *
- * Reports use pre-compiled CSS from @xds/core/dist/xds.css and
- * @xds/theme-default/dist/theme.css. XDS component JS is loaded from
+ * Reports use pre-compiled CSS from @astryxdesign/core/dist/astryx.css and
+ * @astryxdesign/theme-neutral/dist/theme.css. XDS component JS is loaded from
  * the built dist (which has stylex.create already compiled away by tsup).
  * Report-specific styles live in plain CSS (report.css).
  *
@@ -59,38 +59,38 @@ export default defineConfig({
       // Pre-compiled CSS — no StyleX build needed
       {
         find: 'xds-css',
-        replacement: path.resolve(repoRoot, 'packages/core/dist/xds.css'),
+        replacement: path.resolve(repoRoot, 'packages/core/dist/astryx.css'),
       },
       {
         find: 'xds-theme-css',
         replacement: path.resolve(
           repoRoot,
-          'packages/themes/default/dist/theme.css',
+          'packages/themes/neutral/dist/theme.css',
         ),
       },
       // Core CSS files live in src/
       {
-        find: /^@xds\/core\/(.+\.css)$/,
+        find: /^@astryxdesign\/core\/(.+\.css)$/,
         replacement: path.resolve(repoRoot, 'packages/core/src/$1'),
       },
       // Core subpath imports → dist (bypasses "source" condition in exports map)
       {
-        find: /^@xds\/core\/(.+)$/,
+        find: /^@astryxdesign\/core\/(.+)$/,
         replacement: path.resolve(repoRoot, 'packages/core/dist/$1/index.mjs'),
       },
       // Core root import
       {
-        find: '@xds/core',
+        find: '@astryxdesign/core',
         replacement: path.resolve(repoRoot, 'packages/core/dist/index.mjs'),
       },
       // Theme: resolve to source (no StyleX usage, just defineTheme + icons).
       {
-        find: '@xds/theme-default',
-        replacement: path.resolve(repoRoot, 'packages/themes/default/src/source.ts'),
+        find: '@astryxdesign/theme-neutral',
+        replacement: path.resolve(repoRoot, 'packages/themes/neutral/src/source.ts'),
       },
       {
-        find: '@xds/theme/default',
-        replacement: path.resolve(repoRoot, 'packages/themes/default/src/source.ts'),
+        find: '@astryxdesign/theme/neutral',
+        replacement: path.resolve(repoRoot, 'packages/themes/neutral/src/source.ts'),
       },
     ],
   },

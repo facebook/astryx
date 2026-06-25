@@ -4,27 +4,24 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Section} from '@xds/core/Section';
-import {Grid} from '@xds/core/Grid';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Token} from '@xds/core/Token';
-import {TextArea} from '@xds/core/TextArea';
-import {Link} from '@xds/core/Link';
-import {Divider} from '@xds/core/Divider';
-import {Card} from '@xds/core/Card';
-import {Selector} from '@xds/core/Selector';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Section} from '@astryxdesign/core/Section';
+import {Grid} from '@astryxdesign/core/Grid';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Token} from '@astryxdesign/core/Token';
+import {TextArea} from '@astryxdesign/core/TextArea';
+import {Link} from '@astryxdesign/core/Link';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Card} from '@astryxdesign/core/Card';
+import {Selector} from '@astryxdesign/core/Selector';
+import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const ILLUSTRATION_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/illustration-horizontal-1.png';
-
-// ─────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────
+  'https://lookaside.facebook.com/assets/astryx/light-working-vertical-2.png';
 
 const INQUIRY_REASONS = [
   'New business',
@@ -51,13 +48,9 @@ const CONTACT_COLUMNS = [
   {label: 'Press & partnerships', email: 'press@company.com'},
 ];
 
-// ─────────────────────────────────────────────────────────────
-// Styles
-// ─────────────────────────────────────────────────────────────
-
-// The only custom styling is fitting the illustration inside its AspectRatio
-// box without distortion (contain, not cover — it's line art, don't crop it).
-// No objectFit prop on AspectRatio, and there's no Image primitive (#2582).
+// AspectRatio has no objectFit/radius prop and there's no Image primitive
+// (#2582), so the cover photo is styled directly. overflow:hidden masks the
+// cover crop to the rounded corners.
 const styles = stylex.create({
   page: {
     minHeight: '100%',
@@ -65,13 +58,11 @@ const styles = stylex.create({
   illustrationImg: {
     width: '100%',
     height: '100%',
-    objectFit: 'contain',
+    objectFit: 'cover',
+    borderRadius: radiusVars['--radius-container'],
+    overflow: 'hidden',
   },
 });
-
-// ─────────────────────────────────────────────────────────────
-// Page
-// ─────────────────────────────────────────────────────────────
 
 /**
  * Form (Two-column) — marketing contact form template.
@@ -105,15 +96,10 @@ export default function FormTwoColumnPage() {
 
   return (
     <Center xstyle={styles.page}>
-      <Section
-        maxWidth={1100}
-        width="100%"
-        padding={10}
-        variant="transparent">
+      <Section maxWidth={1100} width="100%" padding={10} variant="transparent">
         <VStack gap={10}>
-          {/* ── Top: two-column, stacks to one column below ~520px ── */}
+          {/* Two-column; stacks to one column below ~520px. */}
           <Grid columns={{minWidth: 320}} align="center" gap={10}>
-            {/* Left: headline + description + illustration */}
             <VStack gap={6}>
               <VStack gap={3}>
                 <Text type="display-1" as="h1">
@@ -127,13 +113,12 @@ export default function FormTwoColumnPage() {
               <AspectRatio ratio={4 / 3}>
                 <img
                   src={ILLUSTRATION_URL}
-                  alt="Person with a laptop and a lightbulb idea"
+                  alt="Two people working at a desk"
                   {...stylex.props(styles.illustrationImg)}
                 />
               </AspectRatio>
             </VStack>
 
-            {/* Right: form on a card */}
             <Card padding={8}>
               <VStack gap={4}>
                 <Text type="label">Your details</Text>
@@ -188,9 +173,7 @@ export default function FormTwoColumnPage() {
                 </Grid>
 
                 <VStack gap={2}>
-                  <Text type="label">
-                    What are you reaching out about?
-                  </Text>
+                  <Text type="label">What are you reaching out about?</Text>
                   <HStack gap={2} wrap="wrap">
                     {INQUIRY_REASONS.map(reason => (
                       <Token
@@ -238,7 +221,7 @@ export default function FormTwoColumnPage() {
             </Card>
           </Grid>
 
-          {/* ── Bottom: contact strip (stacks below ~440px) ── */}
+          {/* Contact strip; stacks below ~440px. */}
           <VStack gap={6}>
             <Divider />
             <Grid columns={{minWidth: 200}} gap={6}>

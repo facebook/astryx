@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {EmptyState} from '@xds/core/EmptyState';
-import {Button} from '@xds/core/Button';
+import {EmptyState} from '@astryxdesign/core/EmptyState';
+import {Button} from '@astryxdesign/core/Button';
 
 const meta: Meta<typeof EmptyState> = {
   title: 'Core/EmptyState',

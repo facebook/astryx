@@ -24,7 +24,7 @@ import {spacingVars} from '../theme/tokens.stylex';
 import type {ButtonSize} from '../Button';
 import {mergeProps} from '../utils';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Context
@@ -231,7 +231,7 @@ export function ToggleButtonGroup(
         aria-label={label}
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('toggle-button-group'),
+          themeProps('toggle-button-group'),
           stylex.props(
             styles.group,
             orientation === 'vertical' && styles.vertical,

@@ -2,7 +2,7 @@
 
 'use client';
 
-import {List, ListItem} from '@xds/core/List';
+import {List, ListItem} from '@astryxdesign/core/List';
 
 export default function ListShowcase() {
   return (

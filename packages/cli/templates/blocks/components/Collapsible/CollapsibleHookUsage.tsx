@@ -3,11 +3,11 @@
 'use client';
 
 import {useId} from 'react';
-import {useCollapsible} from '@xds/core/Collapsible';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {useCollapsible} from '@astryxdesign/core/Collapsible';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function CollapsibleHookUsage() {
   const detailsId = useId();

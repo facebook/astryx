@@ -14,7 +14,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {renderIconSlot, type IconType} from '../Icon';
 import {Item} from '../Item';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const embeddedStyles = stylex.create({
   root: {
@@ -111,7 +111,7 @@ export function SelectorOption({
       description={description}
       endContent={endContent}
       xstyle={[embeddedStyles.root, xstyle]}
-      {...mergeProps(xdsThemeProps('selector-option'), {className, style})}
+      {...mergeProps(themeProps('selector-option'), {className, style})}
     />
   );
 }

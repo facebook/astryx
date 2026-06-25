@@ -63,7 +63,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   icon: {
@@ -535,7 +535,7 @@ export function TimeInput({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          xdsThemeProps('time-input', {size, status: status?.type ?? null}),
+          themeProps('time-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             sizeStyles[size],

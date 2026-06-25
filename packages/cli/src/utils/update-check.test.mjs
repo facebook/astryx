@@ -16,28 +16,28 @@ const originalEnv = {};
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-update-check-'));
   // Save and clear env
-  originalEnv.XDS_LATEST_VERSION = process.env.XDS_LATEST_VERSION;
-  delete process.env.XDS_LATEST_VERSION;
+  originalEnv.ASTRYX_LATEST_VERSION = process.env.ASTRYX_LATEST_VERSION;
+  delete process.env.ASTRYX_LATEST_VERSION;
 });
 
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
   // Restore env
-  if (originalEnv.XDS_LATEST_VERSION !== undefined) {
-    process.env.XDS_LATEST_VERSION = originalEnv.XDS_LATEST_VERSION;
+  if (originalEnv.ASTRYX_LATEST_VERSION !== undefined) {
+    process.env.ASTRYX_LATEST_VERSION = originalEnv.ASTRYX_LATEST_VERSION;
   } else {
-    delete process.env.XDS_LATEST_VERSION;
+    delete process.env.ASTRYX_LATEST_VERSION;
   }
 });
 
 describe('getLatestVersion', () => {
-  it('reads from XDS_LATEST_VERSION env var', () => {
-    process.env.XDS_LATEST_VERSION = '0.0.8';
+  it('reads from ASTRYX_LATEST_VERSION env var', () => {
+    process.env.ASTRYX_LATEST_VERSION = '0.0.8';
     expect(getLatestVersion(tmpDir)).toBe('0.0.8');
   });
 
   it('ignores invalid env var values', () => {
-    process.env.XDS_LATEST_VERSION = 'not-a-version';
+    process.env.ASTRYX_LATEST_VERSION = 'not-a-version';
     expect(getLatestVersion(tmpDir)).toBeNull();
   });
 
@@ -46,7 +46,7 @@ describe('getLatestVersion', () => {
     fs.writeFileSync(versionFilePath, '0.0.9\n');
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
-      JSON.stringify({xds: {versionFile: './LATEST_VERSION'}}),
+      JSON.stringify({astryx: {versionFile: './LATEST_VERSION'}}),
     );
 
     expect(getLatestVersion(tmpDir)).toBe('0.0.9');
@@ -63,18 +63,18 @@ describe('getLatestVersion', () => {
   it('returns null when versionFile path does not exist', () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
-      JSON.stringify({xds: {versionFile: './missing/LATEST_VERSION'}}),
+      JSON.stringify({astryx: {versionFile: './missing/LATEST_VERSION'}}),
     );
     expect(getLatestVersion(tmpDir)).toBeNull();
   });
 
   it('env var takes priority over versionFile', () => {
-    process.env.XDS_LATEST_VERSION = '1.0.0';
+    process.env.ASTRYX_LATEST_VERSION = '1.0.0';
     const versionFilePath = path.join(tmpDir, 'LATEST_VERSION');
     fs.writeFileSync(versionFilePath, '0.0.9\n');
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
-      JSON.stringify({xds: {versionFile: './LATEST_VERSION'}}),
+      JSON.stringify({astryx: {versionFile: './LATEST_VERSION'}}),
     );
 
     expect(getLatestVersion(tmpDir)).toBe('1.0.0');
@@ -82,10 +82,10 @@ describe('getLatestVersion', () => {
 });
 
 describe('getInstalledVersion', () => {
-  it('reads @xds/core version from dependencies', () => {
+  it('reads @astryxdesign/core version from dependencies', () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
-      JSON.stringify({dependencies: {'@xds/core': '^0.0.7'}}),
+      JSON.stringify({dependencies: {'@astryxdesign/core': '^0.0.7'}}),
     );
     expect(getInstalledVersion(tmpDir)).toBe('0.0.7');
   });
@@ -93,12 +93,12 @@ describe('getInstalledVersion', () => {
   it('strips semver range prefix', () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
-      JSON.stringify({dependencies: {'@xds/core': '~0.0.5'}}),
+      JSON.stringify({dependencies: {'@astryxdesign/core': '~0.0.5'}}),
     );
     expect(getInstalledVersion(tmpDir)).toBe('0.0.5');
   });
 
-  it('returns null when @xds/core is not a dependency', () => {
+  it('returns null when @astryxdesign/core is not a dependency', () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
       JSON.stringify({dependencies: {react: '^19.0.0'}}),
@@ -109,23 +109,23 @@ describe('getInstalledVersion', () => {
 
 describe('checkForUpdate', () => {
   it('returns hint when newer version is available', () => {
-    process.env.XDS_LATEST_VERSION = '0.0.8';
+    process.env.ASTRYX_LATEST_VERSION = '0.0.8';
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
-      JSON.stringify({dependencies: {'@xds/core': '^0.0.7'}}),
+      JSON.stringify({dependencies: {'@astryxdesign/core': '^0.0.7'}}),
     );
 
     const hint = checkForUpdate(tmpDir);
     expect(hint).toContain('0.0.8');
-    expect(hint).toContain('xds upgrade --apply --to 0.0.8');
+    expect(hint).toContain('astryx upgrade --apply --to 0.0.8');
     expect(hint).toContain('FYI');
   });
 
   it('returns null when up to date', () => {
-    process.env.XDS_LATEST_VERSION = '0.0.7';
+    process.env.ASTRYX_LATEST_VERSION = '0.0.7';
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
-      JSON.stringify({dependencies: {'@xds/core': '^0.0.7'}}),
+      JSON.stringify({dependencies: {'@astryxdesign/core': '^0.0.7'}}),
     );
 
     expect(checkForUpdate(tmpDir)).toBeNull();
@@ -134,7 +134,7 @@ describe('checkForUpdate', () => {
   it('returns null when no latest version is known', () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
-      JSON.stringify({dependencies: {'@xds/core': '^0.0.7'}}),
+      JSON.stringify({dependencies: {'@astryxdesign/core': '^0.0.7'}}),
     );
 
     expect(checkForUpdate(tmpDir)).toBeNull();
@@ -146,13 +146,13 @@ describe('checkForUpdate', () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
       JSON.stringify({
-        dependencies: {'@xds/core': '^0.0.7'},
-        xds: {versionFile: './LATEST_VERSION'},
+        dependencies: {'@astryxdesign/core': '^0.0.7'},
+        astryx: {versionFile: './LATEST_VERSION'},
       }),
     );
 
     checkForUpdate(tmpDir);
-    expect(process.env.XDS_LATEST_VERSION).toBe('0.0.8');
+    expect(process.env.ASTRYX_LATEST_VERSION).toBe('0.0.8');
   });
 
   it('reads from versionFile and produces hint', () => {
@@ -161,8 +161,8 @@ describe('checkForUpdate', () => {
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
       JSON.stringify({
-        dependencies: {'@xds/core': '^0.0.7'},
-        xds: {versionFile: './LATEST_VERSION'},
+        dependencies: {'@astryxdesign/core': '^0.0.7'},
+        astryx: {versionFile: './LATEST_VERSION'},
       }),
     );
 
@@ -175,10 +175,10 @@ describe('checkForUpdate', () => {
     // Regression: with string compare, '0.0.20' > '0.0.5' is false because
     // '2' < '5' lexicographically. Users on 0.0.5 would never be told that
     // 0.0.20 is available.
-    process.env.XDS_LATEST_VERSION = '0.0.20';
+    process.env.ASTRYX_LATEST_VERSION = '0.0.20';
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
-      JSON.stringify({dependencies: {'@xds/core': '^0.0.5'}}),
+      JSON.stringify({dependencies: {'@astryxdesign/core': '^0.0.5'}}),
     );
 
     const hint = checkForUpdate(tmpDir);
@@ -188,10 +188,10 @@ describe('checkForUpdate', () => {
   it('does not suggest an upgrade when latest < installed (semver)', () => {
     // The mirror-image bug: '0.0.9' > '0.0.10' is true under string compare,
     // so a stale env hint of 0.0.9 would falsely claim it's "newer" than 0.0.10.
-    process.env.XDS_LATEST_VERSION = '0.0.9';
+    process.env.ASTRYX_LATEST_VERSION = '0.0.9';
     fs.writeFileSync(
       path.join(tmpDir, 'package.json'),
-      JSON.stringify({dependencies: {'@xds/core': '^0.0.10'}}),
+      JSON.stringify({dependencies: {'@astryxdesign/core': '^0.0.10'}}),
     );
 
     expect(checkForUpdate(tmpDir)).toBeNull();

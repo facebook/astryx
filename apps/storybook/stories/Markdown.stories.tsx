@@ -2,10 +2,10 @@
 
 import {useState, useEffect, useCallback} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Markdown} from '@xds/core/Markdown';
-import {Button} from '@xds/core/Button';
-import {Link} from '@xds/core/Link';
-import {Text} from '@xds/core/Text';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {Button} from '@astryxdesign/core/Button';
+import {Link} from '@astryxdesign/core/Link';
+import {Text} from '@astryxdesign/core/Text';
 
 const meta: Meta<typeof Markdown> = {
   title: 'Core/Markdown',

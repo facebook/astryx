@@ -19,22 +19,3 @@ export type {
   TextInputStatus,
   TextInputStatusType,
 } from './TextInput';
-
-
-// <compat-aliases:start> — generated, do not edit by hand
-// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Bare names above are canonical + module-augmentation targets.
-// These prefixed re-exports reference the SAME values/types and remain
-// augmentable (consumer `declare module` augmentations of XDS* flow through).
-// Regenerate: node scripts/generate-compat-aliases.mjs
-export {
-  TextInput as XDSTextInput,
-} from '.';
-export type {
-  TextInputProps as XDSTextInputProps,
-  TextInputSize as XDSTextInputSize,
-  TextInputStatus as XDSTextInputStatus,
-  TextInputStatusType as XDSTextInputStatusType,
-  TextInputType as XDSTextInputType,
-} from '.';
-// <compat-aliases:end>

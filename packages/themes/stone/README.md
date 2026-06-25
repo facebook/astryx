@@ -1,11 +1,11 @@
-# @xds/theme-stone
+# @astryxdesign/theme-stone
 
 Warm stone and slate theme with earthy neutral tones. Uses Montserrat for headings, Figtree for body text, and [Lucide](https://lucide.dev) icons.
 
 ## Install
 
 ```bash
-npm install @xds/theme-stone
+npm install @astryxdesign/theme-stone
 ```
 
 ## Usage
@@ -13,8 +13,8 @@ npm install @xds/theme-stone
 Wrap your app with `XDSTheme` and pass the theme:
 
 ```tsx
-import {XDSTheme} from '@xds/core/theme';
-import {stoneTheme} from '@xds/theme-stone/built';
+import {XDSTheme} from '@astryxdesign/core/theme';
+import {stoneTheme} from '@astryxdesign/theme-stone/built';
 
 function App() {
   return <XDSTheme theme={stoneTheme}>{/* your app */}</XDSTheme>;
@@ -25,18 +25,18 @@ function App() {
 
 | Path                         | Use case                                               |
 | ---------------------------- | ------------------------------------------------------ |
-| `@xds/theme-stone`           | Source build (StyleX compilation via `@xds/build`)     |
-| `@xds/theme-stone/built`     | Pre-built dist (Tailwind, plain CSS, or no build step) |
-| `@xds/theme-stone/theme.css` | Pre-built CSS file (import in your stylesheet)         |
+| `@astryxdesign/theme-stone`           | Source build (StyleX compilation via `@astryxdesign/build`)     |
+| `@astryxdesign/theme-stone/built`     | Pre-built dist (Tailwind, plain CSS, or no build step) |
+| `@astryxdesign/theme-stone/theme.css` | Pre-built CSS file (import in your stylesheet)         |
 
-If you're using `@xds/build` for StyleX source compilation, import from the bare path. Otherwise, use `/built`.
+If you're using `@astryxdesign/build` for StyleX source compilation, import from the bare path. Otherwise, use `/built`.
 
 ### CSS import
 
 Add the theme CSS to your stylesheet:
 
 ```css
-@import '@xds/theme-stone/theme.css';
+@import '@astryxdesign/theme-stone/theme.css';
 ```
 
 ## Fonts

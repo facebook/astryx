@@ -2,9 +2,9 @@
 
 'use client';
 
-import {List, ListItem} from '@xds/core/List';
-import {Avatar} from '@xds/core/Avatar';
-import {Badge} from '@xds/core/Badge';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Badge} from '@astryxdesign/core/Badge';
 
 export default function ListMessageList() {
   return (

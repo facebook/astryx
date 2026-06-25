@@ -2,8 +2,8 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
 import {
   Layout,
   LayoutHeader,
@@ -13,19 +13,19 @@ import {
   container,
   HStack,
   VStack,
-} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
+} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
 import {
   colorVars,
   spacingVars,
   typographyVars,
   radiusVars,
   shadowVars,
-} from '@xds/core/theme/tokens.stylex';
-import {AppShell} from '@xds/core/AppShell';
-import {Theme} from '@xds/core';
-import {defaultTheme} from '@xds/theme-default';
-import {neutralTheme} from '@xds/theme-neutral';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {AppShell} from '@astryxdesign/core/AppShell';
+import {Theme} from '@astryxdesign/core';
+import {stoneTheme} from '@astryxdesign/theme-stone';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 const styles = stylex.create({
   // Story wrapper styles
@@ -739,26 +739,25 @@ export const ContentOnly: Story = {
 };
 
 export const ThemedLayout: Story = {
-  name: 'Themed Layout (Neutral vs Default)',
+  name: 'Themed Layout (Neutral vs Stone)',
   render: () => (
     <HStack gap={6} xstyle={styles.storySection}>
       <VStack gap={3}>
         <p {...stylex.props(styles.sectionLabel)}>
-          Default Theme (16px padding)
+          Stone Theme
         </p>
-        <Theme theme={defaultTheme}>
+        <Theme theme={stoneTheme}>
           <Card width={400}>
             <Layout
               header={
                 <LayoutHeader hasDivider>
-                  <h3 {...stylex.props(styles.heading)}>Default Theme</h3>
+                  <h3 {...stylex.props(styles.heading)}>Stone Theme</h3>
                 </LayoutHeader>
               }
               content={
                 <LayoutContent>
                   <p {...stylex.props(styles.bodyText)}>
-                    This card uses the default theme with 16px padding around
-                    the layout areas.
+                    This card uses the stone theme around the layout areas.
                   </p>
                 </LayoutContent>
               }
@@ -781,7 +780,7 @@ export const ThemedLayout: Story = {
 
       <VStack gap={3}>
         <p {...stylex.props(styles.sectionLabel)}>
-          Neutral Theme (12px padding)
+          Neutral Theme
         </p>
         <Theme theme={neutralTheme}>
           <Card width={400}>
@@ -794,8 +793,7 @@ export const ThemedLayout: Story = {
               content={
                 <LayoutContent>
                   <p {...stylex.props(styles.bodyText)}>
-                    This card uses the neutral theme with 12px padding around
-                    the layout areas.
+                    This card uses the neutral theme around the layout areas.
                   </p>
                 </LayoutContent>
               }

@@ -3,17 +3,17 @@
 'use client';
 
 import {useState} from 'react';
-import {Dialog, DialogHeader} from '@xds/core/Dialog';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {
   Layout,
   LayoutContent,
   LayoutFooter,
   HStack,
   VStack,
-} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
-import {Card} from '@xds/core/Card';
+} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
+import {Card} from '@astryxdesign/core/Card';
 
 const SECTIONS = [
   {

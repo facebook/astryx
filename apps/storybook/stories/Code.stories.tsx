@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Code} from '@xds/core/CodeBlock';
-import {Text} from '@xds/core/Text';
-import {Stack} from '@xds/core/Stack';
-import {Link} from '@xds/core/Link';
+import {Code} from '@astryxdesign/core/CodeBlock';
+import {Text} from '@astryxdesign/core/Text';
+import {Stack} from '@astryxdesign/core/Stack';
+import {Link} from '@astryxdesign/core/Link';
 
 const meta: Meta<typeof Code> = {
   title: 'Core/Code',
@@ -44,7 +44,7 @@ export const InstructionalParagraph: Story = {
   render: () => (
     <Stack gap={3}>
       <Text type="body">
-        Install the package with <Code>npm install @xds/core</Code>, then
+        Install the package with <Code>npm install @astryxdesign/core</Code>, then
         import the component:
       </Text>
       <Text type="body">

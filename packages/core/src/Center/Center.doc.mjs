@@ -46,7 +46,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-center', visualProps: ['axis']},
+      {className: 'astryx-center', visualProps: ['axis']},
     ],
   },
   usage: {
@@ -97,7 +97,7 @@ export const docsZh = {
   theming: {
     targets: [
       {
-        className: 'xds-center',
+        className: 'astryx-center',
         visualProps: [
           'axis',
         ],

@@ -4,20 +4,20 @@
 
 import {useState, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Layout, LayoutContent} from '@xds/core/Layout';
-import {Toolbar} from '@xds/core/Toolbar';
-import {List, ListItem} from '@xds/core/List';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Icon} from '@xds/core/Icon';
-import {IconButton} from '@xds/core/IconButton';
-import {Section} from '@xds/core/Section';
-import {Avatar} from '@xds/core/Avatar';
-import {MetadataList, MetadataListItem} from '@xds/core/MetadataList';
+import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
+import {List, ListItem} from '@astryxdesign/core/List';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Icon} from '@astryxdesign/core/Icon';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Section} from '@astryxdesign/core/Section';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {MetadataList, MetadataListItem} from '@astryxdesign/core/MetadataList';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
+} from '@astryxdesign/core/SegmentedControl';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -187,19 +187,19 @@ const FILESYSTEM: FileSystemItem[] = [
     ],
   },
   {
-    id: 'xds',
-    name: 'xds',
+    id: 'astryx',
+    name: 'astryx',
     type: 'folder',
     children: [
-      {id: 'xds-readme', name: 'README.md', type: 'file'},
-      {id: 'xds-pkg', name: 'package.json', type: 'file'},
+      {id: 'astryx-readme', name: 'README.md', type: 'file'},
+      {id: 'astryx-pkg', name: 'package.json', type: 'file'},
       {
-        id: 'xds-packages',
+        id: 'astryx-packages',
         name: 'packages',
         type: 'folder',
         children: [
           {
-            id: 'xds-core',
+            id: 'astryx-core',
             name: 'core',
             type: 'folder',
             children: [
@@ -216,7 +216,7 @@ const FILESYSTEM: FileSystemItem[] = [
             ],
           },
           {
-            id: 'xds-cli',
+            id: 'astryx-cli',
             name: 'cli',
             type: 'folder',
             children: [{id: 'cli-index', name: 'index.ts', type: 'file'}],
@@ -224,7 +224,7 @@ const FILESYSTEM: FileSystemItem[] = [
         ],
       },
       {
-        id: 'xds-apps',
+        id: 'astryx-apps',
         name: 'apps',
         type: 'folder',
         children: [

@@ -8,10 +8,10 @@ import {
   ChatComposer,
   ChatComposerInput,
   useChatDictation,
-} from '@xds/core/Chat';
-import type {ChatComposerInputHandle} from '@xds/core/Chat';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Chat';
+import type {ChatComposerInputHandle} from '@astryxdesign/core/Chat';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ChatDictationButtonShowcase() {
   const inputRef = useRef<ChatComposerInputHandle>(null);

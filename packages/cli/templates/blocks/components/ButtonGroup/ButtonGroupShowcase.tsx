@@ -2,11 +2,11 @@
 
 'use client';
 
-import {ButtonGroup} from '@xds/core/ButtonGroup';
-import {Button} from '@xds/core/Button';
-import {IconButton} from '@xds/core/IconButton';
-import {Stack} from '@xds/core/Layout';
-import {Icon} from '@xds/core/Icon';
+import {ButtonGroup} from '@astryxdesign/core/ButtonGroup';
+import {Button} from '@astryxdesign/core/Button';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Icon} from '@astryxdesign/core/Icon';
 import {
   ClipboardDocumentIcon,
   ScissorsIcon,

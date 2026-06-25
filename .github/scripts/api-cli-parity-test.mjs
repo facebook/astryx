@@ -19,7 +19,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const CLI = path.join(ROOT, 'packages/cli/bin/xds.mjs');
+const CLI = path.join(ROOT, 'packages/cli/bin/astryx.mjs');
 const skipBaseline = process.argv.includes('--no-baseline');
 const baselineRef = process.argv.includes('--baseline')
   ? process.argv[process.argv.indexOf('--baseline') + 1]
@@ -278,7 +278,7 @@ if (!skipBaseline) {
     if (!fs.existsSync(path.join(wt, 'node_modules'))) {
       execSync('pnpm install --frozen-lockfile 2>/dev/null || true', {cwd: wt, timeout: 60_000});
     }
-    const oldCli = path.join(wt, 'packages/cli/bin/xds.mjs');
+    const oldCli = path.join(wt, 'packages/cli/bin/astryx.mjs');
     for (const r of results) {
       const old = spawnSync(process.execPath, [oldCli, '--json', ...r.cli], {
         cwd: wt, encoding: 'utf8', timeout: 30_000,

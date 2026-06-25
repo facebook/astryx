@@ -1,16 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
-import {Theme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default/built';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Badge} from '@xds/core/Badge';
-import {Card} from '@xds/core/Card';
-import {Divider} from '@xds/core/Divider';
-import {Avatar} from '@xds/core/Avatar';
+import {Theme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Card} from '@astryxdesign/core/Card';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Avatar} from '@astryxdesign/core/Avatar';
 
 /**
  * XDS + Vite + Tailwind Example
@@ -26,7 +26,7 @@ export default function App() {
   const [name, setName] = useState('');
 
   return (
-    <Theme theme={defaultTheme}>
+    <Theme theme={neutralTheme}>
       <main className="min-h-screen bg-body p-8">
         <div className="mx-auto max-w-3xl">
           <VStack gap={8}>
@@ -48,7 +48,7 @@ export default function App() {
               <Text type="supporting" color="secondary">
                 XDS tokens available as Tailwind utilities via{' '}
                 <code className="rounded-sm bg-muted px-1 py-0.5 text-xs">
-                  @xds/core/tailwind-theme.css
+                  @astryxdesign/core/tailwind-theme.css
                 </code>
               </Text>
 

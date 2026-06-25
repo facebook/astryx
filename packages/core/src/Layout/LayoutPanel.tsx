@@ -25,7 +25,7 @@ import {LayoutSlotsContext} from './LayoutSlotsContext';
 import {mergeProps} from '../utils';
 import type {SpacingStep} from '../utils/types';
 import type {ResizableProps} from '../Resizable/useResizable';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import {
   paddingStyles,
   containerPaddingInlineVarStyles,
@@ -256,7 +256,7 @@ export function LayoutPanel({
       role={role}
       aria-label={label}
       {...mergeProps(
-        xdsThemeProps('layout-panel'),
+        themeProps('layout-panel'),
         stylex.props(
           styles.panel,
           dynamicStyles.sizing(effectiveWidth ?? null),

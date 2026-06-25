@@ -3,10 +3,10 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {HStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Table, pixel} from '@xds/core/Table';
-import {useMediaQuery} from '@xds/core/hooks';
+import {HStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Table, pixel} from '@astryxdesign/core/Table';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import type {TokenTableProps} from './types';
 import {
   useResolveTokenForMode,
@@ -19,23 +19,24 @@ const styles = stylex.create({
     width: 28,
     height: 28,
     borderRadius: 'var(--radius-element)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     flexShrink: 0,
-    border: '1px solid var(--color-border)',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-gray)',
   },
   swatchInner: {
-    width: 20,
-    height: 20,
-    borderRadius: 'var(--radius-inner)',
+    width: '100%',
+    height: '100%',
   },
   swatch: {
     width: 28,
     height: 28,
     borderRadius: 'var(--radius-element)',
     flexShrink: 0,
-    border: '1px solid var(--color-border)',
+    borderWidth: 1,
+    borderStyle: 'solid',
+    borderColor: 'var(--color-border-gray)',
   },
 });
 
@@ -48,7 +49,10 @@ function ContextSwatch({
 }) {
   return (
     <div
-      style={{backgroundColor: surface === 'light' ? '#FFFFFF' : '#1C1C1E'}}
+      style={{
+        backgroundColor: surface === 'light' ? '#FFFFFF' : '#1C1C1E',
+        colorScheme: surface,
+      }}
       {...stylex.props(styles.surface)}>
       <div
         {...stylex.props(styles.swatchInner)}

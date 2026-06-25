@@ -2,9 +2,9 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {CheckboxList, CheckboxListItem} from '@xds/core/CheckboxList';
-import {List} from '@xds/core/List';
-import {Card} from '@xds/core/Card';
+import {CheckboxList, CheckboxListItem} from '@astryxdesign/core/CheckboxList';
+import {List} from '@astryxdesign/core/List';
+import {Card} from '@astryxdesign/core/Card';
 
 const meta: Meta<typeof CheckboxList> = {
   title: 'Core/CheckboxList',

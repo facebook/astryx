@@ -26,20 +26,20 @@ import {
   useTransition,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Icon} from '@xds/core/Icon';
-import {Text, Heading} from '@xds/core/Text';
-import {Code} from '@xds/core/Code';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Code} from '@astryxdesign/core/Code';
 import {
   VStack,
   HStack,
   Layout,
   LayoutHeader,
   LayoutContent,
-} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Skeleton} from '@xds/core/Skeleton';
-import {Dialog} from '@xds/core/Dialog';
-import {Tooltip} from '@xds/core/Tooltip';
+} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {Dialog} from '@astryxdesign/core/Dialog';
+import {Tooltip} from '@astryxdesign/core/Tooltip';
 import {TemplatePreviewSurface} from './TemplatePreviewSurface';
 import {buildPlaygroundHref} from './playgroundLink';
 import {trackCopy, trackOpenPlayground, trackNavigate} from '../lib/analytics';
@@ -81,6 +81,10 @@ const styles = stylex.create({
   headerRow: {
     width: '100%',
     position: 'relative' as const,
+  },
+  dialogHeader: {
+    boxSizing: 'border-box',
+    paddingInlineStart: '8px',
   },
   closeButton: {
     position: 'absolute' as const,
@@ -161,7 +165,7 @@ function TemplatePreviewHeader({
 
   const copyButton = (
     <HStack gap={2} vAlign="center">
-      <Code>{`npx xds template ${item.slug}`}</Code>
+      <Code>{`npx astryx template ${item.slug}`}</Code>
       <Button
         variant="ghost"
         isIconOnly
@@ -287,7 +291,7 @@ export function TemplatePreviewDialog({
     return null;
   }
 
-  const useCommand = `npx xds template ${current.slug} ./src/app/${current.slug}`;
+  const useCommand = `npx astryx template ${current.slug} ./src/app/${current.slug}`;
   const handleCopyCmd = useCallback(() => {
     navigator.clipboard.writeText(useCommand).then(() => {
       setCmdCopied(true);
@@ -315,7 +319,7 @@ export function TemplatePreviewDialog({
       <Layout
         height="fill"
         header={
-          <LayoutHeader xstyle={styles.headerRow}>
+          <LayoutHeader xstyle={styles.dialogHeader}>
             <TemplatePreviewHeader
               item={current}
               isFullscreen={isFullscreen}

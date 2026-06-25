@@ -27,23 +27,3 @@ export {
   resetIcons,
 } from './globalIconRegistry';
 export type {IconName, IconRegistry} from './globalIconRegistry';
-
-
-// <compat-aliases:start> — generated, do not edit by hand
-// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Bare names above are canonical + module-augmentation targets.
-// These prefixed re-exports reference the SAME values/types and remain
-// augmentable (consumer `declare module` augmentations of XDS* flow through).
-// Regenerate: node scripts/generate-compat-aliases.mjs
-export {
-  Icon as XDSIcon,
-} from '.';
-export type {
-  IconColor as XDSIconColor,
-  IconName as XDSIconName,
-  IconProps as XDSIconProps,
-  IconRegistry as XDSIconRegistry,
-  IconSize as XDSIconSize,
-  IconType as XDSIconType,
-} from '.';
-// <compat-aliases:end>

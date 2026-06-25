@@ -21,8 +21,8 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-grid', visualProps: ['align', 'columns', 'gap', 'justify']},
-      {className: 'xds-grid-span'},
+      {className: 'astryx-grid', visualProps: ['align', 'columns', 'gap', 'justify']},
+      {className: 'astryx-grid-span'},
     ],
   },
   description: 'Grid container with fixed or responsive columns.',

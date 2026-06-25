@@ -1,15 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file docs command — Print XDS reference docs
+ * @file docs command — Print Astryx reference docs
  *
  * Auto-discovers .doc.mjs files from the docs/ directory.
  * Supports --detail (full|compact|brief) and --lang (en|zh|dense).
  *
  * Usage:
- *   xds docs                          List available topics
- *   xds docs <topic>                  Print full doc
- *   xds docs <topic> <section>        Print one section
+ *   astryx docs                          List available topics
+ *   astryx docs <topic>                  Print full doc
+ *   astryx docs <topic> <section>        Print one section
  */
 
 import {getRunPrefix} from '../utils/package-manager.mjs';
@@ -130,8 +130,8 @@ export function registerDocs(program) {
           for (const entry of result.data) {
             humanLog(`  ${entry.topic.padEnd(14)} ${entry.description}`);
           }
-          humanLog(`\nUsage: ${run} xds docs <topic>`);
-          humanLog(`       ${run} xds docs <topic> <section>\n`);
+          humanLog(`\nUsage: ${run} astryx docs <topic>`);
+          humanLog(`       ${run} astryx docs <topic> <section>\n`);
           break;
         }
 

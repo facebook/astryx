@@ -31,8 +31,8 @@ describe('findCoreDir', () => {
     expect(findCoreDir(nested)).toBe(coreDir);
   });
 
-  it('finds node_modules/@xds/core fallback', () => {
-    const nmCore = path.join(tmpDir, 'node_modules', '@xds', 'core');
+  it('finds node_modules/@astryxdesign/core fallback', () => {
+    const nmCore = path.join(tmpDir, 'node_modules', '@astryxdesign', 'core');
     fs.mkdirSync(nmCore, {recursive: true});
 
     expect(findCoreDir(tmpDir)).toBe(nmCore);
@@ -67,7 +67,7 @@ describe('findProjectRoot', () => {
 });
 
 describe('discoverExternalPackages', () => {
-  it('finds packages with an "xds" field in package.json', () => {
+  it('finds packages with an "astryx" field in package.json', () => {
     const nm = path.join(tmpDir, 'node_modules');
     const extDir = path.join(nm, 'xds-charts');
     fs.mkdirSync(extDir, {recursive: true});
@@ -75,7 +75,7 @@ describe('discoverExternalPackages', () => {
       path.join(extDir, 'package.json'),
       JSON.stringify({
         name: 'xds-charts',
-        xds: {docs: './src', category: 'Data Viz'},
+        astryx: {docs: './src', category: 'Data Viz'},
       }),
     );
 
@@ -98,7 +98,7 @@ describe('discoverExternalPackages', () => {
       path.join(scopedDir, 'package.json'),
       JSON.stringify({
         name: '@acme/xds-widgets',
-        xds: {docs: './lib', category: 'Widgets'},
+        astryx: {docs: './lib', category: 'Widgets'},
       }),
     );
 
@@ -113,15 +113,15 @@ describe('discoverExternalPackages', () => {
     ]);
   });
 
-  it('skips @xds/core', () => {
+  it('skips @astryxdesign/core', () => {
     const nm = path.join(tmpDir, 'node_modules');
-    const coreDir = path.join(nm, '@xds', 'core');
+    const coreDir = path.join(nm, '@astryxdesign', 'core');
     fs.mkdirSync(coreDir, {recursive: true});
     fs.writeFileSync(
       path.join(coreDir, 'package.json'),
       JSON.stringify({
-        name: '@xds/core',
-        xds: {docs: './src'},
+        name: '@astryxdesign/core',
+        astryx: {docs: './src'},
       }),
     );
 
@@ -129,7 +129,7 @@ describe('discoverExternalPackages', () => {
     expect(result).toEqual([]);
   });
 
-  it('skips packages without "xds" field', () => {
+  it('skips packages without "astryx" field', () => {
     const nm = path.join(tmpDir, 'node_modules');
     const extDir = path.join(nm, 'some-lib');
     fs.mkdirSync(extDir, {recursive: true});
@@ -150,7 +150,7 @@ describe('discoverExternalPackages', () => {
       path.join(extDir, 'package.json'),
       JSON.stringify({
         name: 'my-components',
-        xds: {docs: './docs'},
+        astryx: {docs: './docs'},
       }),
     );
 
@@ -171,7 +171,7 @@ describe('discoverExternalPackages', () => {
       path.join(extDir, 'package.json'),
       JSON.stringify({
         name: 'xds-ext',
-        xds: {docs: './src'},
+        astryx: {docs: './src'},
       }),
     );
 

@@ -4,13 +4,14 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Markdown} from '@xds/core/Markdown';
-import {Text, Heading} from '@xds/core/Text';
-import {VStack} from '@xds/core/Layout';
-import {Section} from '@xds/core/Section';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Carousel} from '@xds/core/Carousel';
+import {Markdown} from '@astryxdesign/core/Markdown';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Section} from '@astryxdesign/core/Section';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Carousel} from '@astryxdesign/core/Carousel';
 import {GITHUB_REPO} from '../constants';
+import {layout} from '../layout.stylex';
 
 function linkifyPRs(markdown: string): string {
   return markdown.replace(/(?<!\[)#(\d+)/g, `[#$1](${GITHUB_REPO}/pull/$1)`);
@@ -71,7 +72,7 @@ export function ChangelogView({
   const active = changelogs.find(c => c.pkg === activeTab);
 
   return (
-    <Section maxWidth={800} padding={6} xstyle={styles.section}>
+    <Section maxWidth={layout.proseMaxWidth} padding={6} xstyle={styles.section}>
       <VStack gap={8}>
         <VStack gap={4}>
           <Heading level={1} type="display-1">

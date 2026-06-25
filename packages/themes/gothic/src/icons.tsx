@@ -2,16 +2,16 @@
 
 /**
  * @file icons.tsx
- * @input Uses lucide-react icon components, XDSIconRegistry type
+ * @input Uses lucide-react icon components, IconRegistry type
  * @output Exports gothicIconRegistry for the neutral theme
  * @position Icon configuration for the neutral theme; consumed by index.ts
  *
  * Maps semantic icon names to Lucide icon components.
- * These icons are bundled with the theme, not with @xds/core.
+ * These icons are bundled with the theme, not with @astryxdesign/core.
  */
 
 import React from 'react';
-import type {XDSIconRegistry} from '@xds/core/Icon';
+import type {IconRegistry} from '@astryxdesign/core/Icon';
 
 import {
   X,
@@ -47,7 +47,7 @@ const iconProps = {
   'aria-hidden': true as const,
 };
 
-export const gothicIconRegistry: XDSIconRegistry = {
+export const gothicIconRegistry: IconRegistry = {
   close: <X {...iconProps} />,
   chevronDown: <ChevronDown {...iconProps} />,
   chevronLeft: <ChevronLeft {...iconProps} />,

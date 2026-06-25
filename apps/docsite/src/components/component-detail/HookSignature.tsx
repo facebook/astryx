@@ -2,13 +2,13 @@
 
 'use client';
 
-import {Heading, Text} from '@xds/core/Text';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Section} from '@xds/core/Section';
-import {Table, pixel} from '@xds/core/Table';
-import {Badge} from '@xds/core/Badge';
-import {Divider} from '@xds/core';
-import {useMediaQuery} from '@xds/core/hooks';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Section} from '@astryxdesign/core/Section';
+import {Table, pixel} from '@astryxdesign/core/Table';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Divider} from '@astryxdesign/core';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import type {
   HookParamDoc,
   HookReturnDoc,

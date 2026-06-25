@@ -2,13 +2,13 @@
 
 'use client';
 
-import {Center} from '@xds/core/Center';
-import {Markdown} from '@xds/core/Markdown';
+import {Center} from '@astryxdesign/core/Center';
+import {Markdown} from '@astryxdesign/core/Markdown';
 
 const content = [
   '# Markdown Demo',
   '',
-  'Renders **markdown** with *XDS* styling.',
+  'Renders **markdown** with *Astryx* styling.',
   '',
   '## Features',
   '',

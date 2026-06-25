@@ -1,4 +1,4 @@
-# @xds/vega
+# @astryxdesign/vega
 
 XDS Vega wrapper: chart and data visualization components.
 
@@ -14,14 +14,14 @@ Renders [Vega](https://vega.github.io/vega/) and [Vega-Lite](https://vega.github
 | `tsconfig.json` | Config | TypeScript compiler config (extends root) |
 | `tsup.config.ts` | Config | Build config: CJS + ESM + `.d.ts` outputs |
 | `src/index.ts` | Barrel | Public API surface |
-| `src/XDSVegaChart.tsx` | Component | Inspects `$schema`, compiles or renders, owns View lifecycle |
+| `src/VegaChart.tsx` | Component | Inspects `$schema`, compiles or renders, owns View lifecycle |
 | `src/schema.ts` | Utility | Parses and validates Vega/Vega-Lite `$schema` URLs |
 | `src/types.ts` | Types | Shared TypeScript types for this package |
 
 ## Installation
 
 ```bash
-pnpm add @xds/vega vega vega-lite
+pnpm add @astryxdesign/vega vega vega-lite
 ```
 
 ## Usage
@@ -29,9 +29,9 @@ pnpm add @xds/vega vega vega-lite
 ### Vega-Lite spec (compiled automatically)
 
 ```tsx
-import {XDSVegaChart} from '@xds/vega';
+import {VegaChart} from '@astryxdesign/vega';
 
-<XDSVegaChart
+<VegaChart
   spec={{
     $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
     mark: 'bar',
@@ -47,7 +47,7 @@ import {XDSVegaChart} from '@xds/vega';
 ### Vega spec (rendered directly, no compilation)
 
 ```tsx
-<XDSVegaChart
+<VegaChart
   spec={{
     $schema: 'https://vega.github.io/schema/vega/v5.json',
     marks: [...],
@@ -58,7 +58,7 @@ import {XDSVegaChart} from '@xds/vega';
 ### Full configuration
 
 ```tsx
-<XDSVegaChart
+<VegaChart
   spec={spec}
   parseConfig={{background: '#1a1a1a'}}
   parseOptions={{ast: true}}
@@ -80,7 +80,7 @@ import {XDSVegaChart} from '@xds/vega';
 
 ## API
 
-### `<XDSVegaChart>`
+### `<VegaChart>`
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
@@ -129,7 +129,7 @@ import {XDSVegaChart} from '@xds/vega';
 To update data dynamically after render, use `onReady` to get the live View and drive it yourself:
 
 ```tsx
-<XDSVegaChart
+<VegaChart
   spec={spec}
   data={{table: [{category: 'A', value: 28}, {category: 'B', value: 55}]}}
   onReady={view => {
@@ -148,7 +148,7 @@ Parses and validates a Vega `$schema` URL. Returns:
 
 ## Schema validation
 
-`XDSVegaChart` validates `spec.$schema` before doing any work. It will call `onError` (and render nothing) if:
+`VegaChart` validates `spec.$schema` before doing any work. It will call `onError` (and render nothing) if:
 
 - `$schema` is missing or not a string
 - The URL doesn't match the expected format (`schema/{library}/{version}.json`)
@@ -157,5 +157,5 @@ Parses and validates a Vega `$schema` URL. Returns:
 ## Build
 
 ```bash
-pnpm -F @xds/vega build
+pnpm -F @astryxdesign/vega build
 ```

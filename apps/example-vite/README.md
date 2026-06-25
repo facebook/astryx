@@ -1,6 +1,6 @@
 # XDS Example: Vite
 
-Reference application for consuming **@xds/core** as a source distribution in a Vite + React project.
+Reference application for consuming **@astryxdesign/core** as a source distribution in a Vite + React project.
 
 XDS ships as raw TypeScript + StyleX source. Consumers compile it at the application level; there's no pre-built CSS or JS bundle. This example shows the complete setup using `@stylexjs/unplugin`, which handles both StyleX compilation and CSS extraction in a single Vite plugin.
 
@@ -18,7 +18,7 @@ XDS ships as raw TypeScript + StyleX source. Consumers compile it at the applica
 ### 1. Install dependencies
 
 ```bash
-npm install @stylexjs/stylex @xds/core @xds/theme-default react react-dom
+npm install @stylexjs/stylex @astryxdesign/core @astryxdesign/theme-neutral react react-dom
 npm install --save-dev @stylexjs/unplugin @vitejs/plugin-react typescript \
   @types/react @types/react-dom vite
 ```
@@ -61,7 +61,7 @@ export default defineConfig({
   plugins: [
     // Declare CSS layer order so theme overrides beat component base styles.
     {
-      name: 'xds-css-layer-order',
+      name: 'astryx-css-layer-order',
       transformIndexHtml() {
         return [
           {
@@ -93,23 +93,23 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@xds/core/theme/tokens.stylex': path.resolve(
+      '@astryxdesign/core/theme/tokens.stylex': path.resolve(
         __dirname,
-        'node_modules/@xds/core/src/theme/tokens.stylex.ts',
+        'node_modules/@astryxdesign/core/src/theme/tokens.stylex.ts',
       ),
-      '@xds/core': path.resolve(__dirname, 'node_modules/@xds/core/src'),
+      '@astryxdesign/core': path.resolve(__dirname, 'node_modules/@astryxdesign/core/src'),
     },
   },
   // Prevent Vite from pre-bundling XDS with esbuild. XDS ships as source
   // that must be compiled by the StyleX plugin — pre-bundling strips the
   // stylex.create/defineVars calls and causes a runtime error.
   optimizeDeps: {
-    exclude: ['@xds/core', '@xds/theme-default'],
+    exclude: ['@astryxdesign/core', '@astryxdesign/theme-neutral'],
   },
 });
 ```
 
-> **Important:** The `lightningcssOptions.targets` config is required; the StyleX unplugin's internal lightningcss defaults to `browserslist('>= 1%')` which includes Chrome 112, a browser that doesn't support `light-dark()`. Without explicit targets, all theming colors silently break. The `resolve.alias` points `@xds/core` to source so Vite compiles from TypeScript. Plugin order matters: `stylex.vite()` must come before `react()`.
+> **Important:** The `lightningcssOptions.targets` config is required; the StyleX unplugin's internal lightningcss defaults to `browserslist('>= 1%')` which includes Chrome 112, a browser that doesn't support `light-dark()`. Without explicit targets, all theming colors silently break. The `resolve.alias` points `@astryxdesign/core` to source so Vite compiles from TypeScript. Plugin order matters: `stylex.vite()` must come before `react()`.
 
 ### 4. CSS entry point
 
@@ -124,8 +124,8 @@ export default defineConfig({
 Import it in `src/main.tsx`, along with the base reset and theme CSS:
 
 ```tsx
-import '@xds/core/reset.css';
-import '@xds/theme-default/theme.css';
+import '@astryxdesign/core/reset.css';
+import '@astryxdesign/theme-neutral/theme.css';
 import './index.css';
 ```
 
@@ -140,11 +140,11 @@ The CSS import order matters:
 Wrap your app with `Theme` and the default theme:
 
 ```tsx
-import {Theme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default';
+import {Theme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 export default function App() {
-  return <Theme theme={defaultTheme}>{/* your app */}</Theme>;
+  return <Theme theme={neutralTheme}>{/* your app */}</Theme>;
 }
 ```
 
@@ -168,20 +168,20 @@ npm run preview
 | Issue                         | Symptom                                     | Fix                                                                          |
 | ----------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
 | Missing `lightningcssOptions` | Colors broken: `light-dark()` gets lowered | Add `lightningcssOptions: { targets: lightningcssTargets }` to StyleX plugin |
-| Vite pre-bundles XDS          | `Unexpected stylex.defineVars at runtime`   | Add `optimizeDeps: { exclude: ['@xds/core', '@xds/theme-default'] }`         |
-| Missing resolve aliases       | Module not found errors for `@xds/core`     | Add `resolve.alias` pointing to source directory                             |
+| Vite pre-bundles XDS          | `Unexpected stylex.defineVars at runtime`   | Add `optimizeDeps: { exclude: ['@astryxdesign/core', '@astryxdesign/theme-neutral'] }`         |
+| Missing resolve aliases       | Module not found errors for `@astryxdesign/core`     | Add `resolve.alias` pointing to source directory                             |
 | Missing CSS entry point       | StyleX has no CSS asset to append to        | Create a minimal `index.css` and import it in `main.tsx`                     |
 | Plugin order                  | Styles not extracted or HMR broken          | `stylex.vite()` must come before `react()` in the plugins array              |
 | Duplicate React types         | JSX component type errors in monorepo       | Known monorepo issue with `@types/react` hoisting; doesn't affect runtime    |
 
 ## Testing outside the monorepo
 
-This example lives in the XDS monorepo for convenience, but it should be representative of a real app consuming `@xds/core` from npm. Monorepo workspace symlinks can silently bypass issues that external consumers hit (Vite dep pre-bundling, missing dependencies, wrong resolve paths).
+This example lives in the XDS monorepo for convenience, but it should be representative of a real app consuming `@astryxdesign/core` from npm. Monorepo workspace symlinks can silently bypass issues that external consumers hit (Vite dep pre-bundling, missing dependencies, wrong resolve paths).
 
-**Before merging changes to this example, test it as an external consumer.** See the [Testing Example Apps](https://github.com/facebookexperimental/xds/wiki/Testing-Example-Apps) wiki page for the full procedure.
+**Before merging changes to this example, test it as an external consumer.** See the [Testing Example Apps](https://github.com/facebook/astryx/wiki/Testing-Example-Apps) wiki page for the full procedure.
 
 ## Related
 
-- [Issue #145: Example apps for source distribution consumers](https://github.com/facebookexperimental/xds/issues/145)
+- [Issue #145: Example apps for source distribution consumers](https://github.com/facebook/astryx/issues/145)
 - [StyleX Vite React example](https://github.com/facebook/stylex/tree/main/examples/example-vite-react)
 - [XDS Example: Next.js](../example-nextjs/)

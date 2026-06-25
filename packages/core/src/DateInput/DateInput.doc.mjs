@@ -127,7 +127,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-date-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-input', visualProps: ['size', 'status']},
     ],
   },
   usage: {
@@ -201,7 +201,7 @@ export const docsZh = {
   theming: {
     targets: [
       {
-        className: 'xds-date-input',
+        className: 'astryx-date-input',
         visualProps: [
           'size',
           'status',

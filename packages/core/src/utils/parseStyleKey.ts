@@ -6,11 +6,11 @@
  * Used by both defineTheme (CSS generation) and components (class name rendering)
  * to ensure the same convention is applied consistently.
  *
- * <!-- SYNC: packages/core/src/utils/xdsThemeProps.ts -->
+ * <!-- SYNC: packages/core/src/utils/themeProps.ts -->
  *
  * Emits the legacy class-selector suffix used by defineTheme/component override
  * generation today. Components also reflect the same prop values as data
- * attributes via `xdsThemeProps()` (`variant:secondary` renders both `.secondary`
+ * attributes via `themeProps()` (`variant:secondary` renders both `.secondary`
  * and `[data-variant="secondary"]` in the DOM), but generated theme CSS still
  * uses these class selectors until the selector contract migrates fully.
  *

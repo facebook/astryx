@@ -4,11 +4,11 @@
 
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Tokenizer} from '@xds/core/Tokenizer';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Tokenizer} from '@astryxdesign/core/Tokenizer';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
-import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 
 const styles = stylex.create({
   fixed: {width: 400},

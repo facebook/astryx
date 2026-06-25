@@ -1,18 +1,18 @@
 {
-  "name": "@xds/cli",
-  "version": "0.0.15",
+  "name": "@astryxdesign/cli",
+  "version": "0.1.0",
   "displayName": "CLI",
   "description": "Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line.",
   "author": "Meta Open Source",
   "license": "MIT",
-  "homepage": "https://github.com/facebookexperimental/xds#readme",
+  "homepage": "https://github.com/facebook/astryx#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/facebookexperimental/xds.git",
+    "url": "git+https://github.com/facebook/astryx.git",
     "directory": "packages/cli"
   },
   "bugs": {
-    "url": "https://github.com/facebookexperimental/xds/issues"
+    "url": "https://github.com/facebook/astryx/issues"
   },
   "keywords": [
     "xds",
@@ -26,11 +26,11 @@
   ],
   "type": "module",
   "bin": {
-    "xds": "./bin/xds.mjs",
-    "astryx": "./bin/xds.mjs"
+    "astryx": "./bin/astryx.mjs",
+    "cli": "./bin/astryx.mjs"
   },
   "exports": {
-    ".": "./bin/xds.mjs",
+    ".": "./bin/astryx.mjs",
     "./json": {
       "types": "./src/types/index.d.ts",
       "import": "./src/lib/parse.mjs"
@@ -48,39 +48,35 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "xds": "node bin/xds.mjs",
+    "astryx": "node bin/astryx.mjs",
     "typecheck:template-docs": "tsc --project tsconfig.template-docs.json",
     "typecheck:json-api": "tsc --project tsconfig.json-api.json && tsc --project tsconfig.api-contract.json"
   },
   "dependencies": {
     "@clack/prompts": "^1.5.1",
     "commander": "^12.1.0",
-    "jiti": "^2.7.0"
+    "jiti": "^2.7.0",
+    "jscodeshift": "^17.3.0"
   },
   "peerDependencies": {
-    "@xds/core": "*",
-    "@xds/lab": "*",
-    "@xds/theme-default": "*",
-    "@xds/theme-neutral": "*"
+    "@astryxdesign/core": "*",
+    "@astryxdesign/lab": "*",
+    "@astryxdesign/theme-neutral": "*"
   },
   "peerDependenciesMeta": {
-    "@xds/core": {
+    "@astryxdesign/core": {
       "optional": true
     },
-    "@xds/lab": {
+    "@astryxdesign/lab": {
       "optional": true
     },
-    "@xds/theme-default": {
-      "optional": true
-    },
-    "@xds/theme-neutral": {
+    "@astryxdesign/theme-neutral": {
       "optional": true
     }
   },
   "devDependencies": {
-    "@xds/core": "*",
-    "@xds/lab": "*",
-    "@xds/theme-default": "*",
-    "@xds/theme-neutral": "*"
+    "@astryxdesign/core": "*",
+    "@astryxdesign/lab": "*",
+    "@astryxdesign/theme-neutral": "*"
   }
 }

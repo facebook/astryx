@@ -6,7 +6,7 @@ import {useState} from 'react';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
+} from '@astryxdesign/core/SegmentedControl';
 
 const GridIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">

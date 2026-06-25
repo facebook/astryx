@@ -17,11 +17,11 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-layout', visualProps: ['height']},
-      {className: 'xds-layout-content'},
-      {className: 'xds-layout-footer'},
-      {className: 'xds-layout-header'},
-      {className: 'xds-layout-panel'},
+      {className: 'astryx-layout', visualProps: ['height']},
+      {className: 'astryx-layout-content'},
+      {className: 'astryx-layout-footer'},
+      {className: 'astryx-layout-header'},
+      {className: 'astryx-layout-panel'},
     ],
   },
   description: 'Page shell with header, sidebar(s), content, and footer slots for building full app layouts.',

@@ -18,7 +18,7 @@
  * - /packages/core/src/Collapsible/index.ts (exports)
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
  *
- * NOTE: Public hooks use the `useXDS` prefix per XDS naming conventions.
+ * NOTE: Public hooks use the `useXDS` prefix per Astryx naming conventions.
  */
 
 import {useState, use} from 'react';

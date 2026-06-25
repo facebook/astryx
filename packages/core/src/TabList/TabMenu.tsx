@@ -37,7 +37,7 @@ import type {TabListSize} from './TabListContext';
 import {tabScope} from './tab.markers.stylex';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface TabMenuOption {
   value: string;
@@ -308,7 +308,7 @@ export function TabMenu({
         aria-controls={menuId}
         onClick={handleToggle}
         {...mergeProps(
-          xdsThemeProps('tab-menu'),
+          themeProps('tab-menu'),
           stylex.props(
             styles.trigger,
             sizeStyles[size],
@@ -340,7 +340,7 @@ export function TabMenu({
         {hasSelectedOption && (
           <span
             {...mergeProps(
-              xdsThemeProps('tab-indicator', {selected: 'selected'}),
+              themeProps('tab-indicator', {selected: 'selected'}),
               stylex.props(styles.indicator, styles.indicatorSelected),
             )}
           />
@@ -354,7 +354,7 @@ export function TabMenu({
           aria-label={label}
           onKeyDown={handleListKeyDown}
           {...mergeProps(
-            xdsThemeProps('tab-menu-dropdown'),
+            themeProps('tab-menu-dropdown'),
             stylex.props(styles.dropdown),
           )}>
           <span role="presentation" {...stylex.props(styles.menuHeading)}>
@@ -376,7 +376,7 @@ export function TabMenu({
                   }
                 }}
                 {...mergeProps(
-                  xdsThemeProps('tab-menu-item'),
+                  themeProps('tab-menu-item'),
                   stylex.props(
                     styles.menuItem,
                     isSelected && styles.menuItemSelected,

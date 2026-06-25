@@ -17,7 +17,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-item', visualProps: ['density', 'align']},
+      {className: 'astryx-item', visualProps: ['density', 'align']},
     ],
   },
   components: [

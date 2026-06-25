@@ -4,13 +4,13 @@
  * @file Theme resolution — resolve a theme from config or environment
  *
  * Resolution sources (in priority order):
- * 1. XDS_THEME environment variable
+ * 1. ASTRYX_THEME environment variable
  * 2. xds.theme field in package.json
  *
  * Resolution strategy for the value:
  * - Starts with `.` or `/` → file path relative to cwd
  * - Starts with `@` → npm package (require/import)
- * - Otherwise → try `@xds/theme-{name}`, then try as bare package name
+ * - Otherwise → try `@astryxdesign/theme-{name}`, then try as bare package name
  *
  * Returns the theme object's `variants` and `fonts` if available,
  * or null if no theme is configured or found.
@@ -77,14 +77,14 @@ function extractTheme(mod) {
 }
 
 /**
- * Resolve the active XDS theme from config and environment.
+ * Resolve the active Astryx theme from config and environment.
  *
  * @param {string} [cwd] - Working directory (defaults to process.cwd())
  * @returns {{ variants?: Record<string, string[]>, fonts?: Record<string, string>, name?: string } | null}
  */
 export function resolveTheme(cwd = process.cwd()) {
   // 1. Determine theme specifier
-  let specifier = process.env.XDS_THEME || null;
+  let specifier = process.env.ASTRYX_THEME || null;
 
   if (!specifier) {
     // Read from package.json
@@ -92,7 +92,7 @@ export function resolveTheme(cwd = process.cwd()) {
     if (fs.existsSync(pkgPath)) {
       try {
         const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-        specifier = pkg.xds?.theme || null;
+        specifier = pkg.astryx?.theme || null;
       } catch {
         // Ignore parse errors
       }
@@ -121,13 +121,13 @@ export function resolveTheme(cwd = process.cwd()) {
       return null;
     }
   } else {
-    // Convention: try @xds/theme-{name} first, then bare package
-    mod = tryLoadModule(`@xds/theme-${specifier}`, cwd);
+    // Convention: try @astryxdesign/theme-{name} first, then bare package
+    mod = tryLoadModule(`@astryxdesign/theme-${specifier}`, cwd);
     if (!mod) {
       mod = tryLoadModule(specifier, cwd);
     }
     if (!mod) {
-      console.warn(`⚠ theme: could not resolve "${specifier}" (tried @xds/theme-${specifier} and ${specifier})`);
+      console.warn(`⚠ theme: could not resolve "${specifier}" (tried @astryxdesign/theme-${specifier} and ${specifier})`);
       return null;
     }
   }

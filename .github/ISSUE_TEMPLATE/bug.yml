@@ -30,7 +30,7 @@ body:
     id: version
     attributes:
       label: XDS Version
-      placeholder: "@xds/core@0.x.x"
+      placeholder: "@astryxdesign/core@0.x.x"
     validations:
       required: true
 

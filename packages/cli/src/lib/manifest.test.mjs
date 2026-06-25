@@ -10,7 +10,7 @@
  *      JSON-supported command must declare its response types, and every
  *      response-type key must map to a real command.
  *   2. SHAPE — each command entry carries the required fields, global options
- *      are described once, and the bare `xds --json` / `xds manifest --json`
+ *      are described once, and the bare `xds --json` / `astryx manifest --json`
  *      surfaces emit valid, enriched JSON.
  */
 
@@ -22,7 +22,7 @@ import {program, JSON_SUPPORTED} from '../index.mjs';
 import {buildManifest, RESPONSE_TYPES} from './manifest.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 
 const manifest = buildManifest(program, {jsonSupported: JSON_SUPPORTED, version: '0.0.0-test'});
 
@@ -94,7 +94,7 @@ describe('manifest: drift guards', () => {
 
 describe('manifest: shape', () => {
   it('has top-level metadata', () => {
-    expect(manifest.name).toBe('xds');
+    expect(manifest.name).toBe('astryx');
     expect(manifest.apiVersion).toBe(1);
     expect(typeof manifest.description).toBe('string');
     expect(Array.isArray(manifest.commands)).toBe(true);
@@ -144,13 +144,13 @@ function runCli(args) {
 }
 
 describe('manifest: e2e', () => {
-  it('xds manifest --json emits a valid manifest envelope', () => {
+  it('astryx manifest --json emits a valid manifest envelope', () => {
     const {status, stdout} = runCli(['manifest', '--json']);
     expect(status).toBe(0);
     const parsed = JSON.parse(stdout);
     expect(parsed.apiVersion).toBe(1);
     expect(parsed.type).toBe('manifest');
-    expect(parsed.data.name).toBe('xds');
+    expect(parsed.data.name).toBe('astryx');
     const names = parsed.data.commands.map((c) => c.name);
     expect(names).toContain('component');
     expect(names).toContain('theme');
@@ -163,7 +163,7 @@ describe('manifest: e2e', () => {
     const parsed = JSON.parse(stdout);
     // Back-compat: still type:'help' with name/version/commands(names)/jsonSupported
     expect(parsed.type).toBe('help');
-    expect(parsed.data.name).toBe('xds');
+    expect(parsed.data.name).toBe('astryx');
     expect(Array.isArray(parsed.data.commands)).toBe(true);
     expect(parsed.data.commands.every((c) => typeof c === 'string')).toBe(true);
     expect(parsed.data.commands).toContain('component');

@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
 
 export default function DropdownMenuShowcase() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

@@ -28,9 +28,9 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-stepper', visualProps: ['orientation']},
-      {className: 'xds-step', visualProps: ['progress', 'status']},
-      {className: 'xds-step-bar'},
+      {className: 'astryx-stepper', visualProps: ['orientation']},
+      {className: 'astryx-step', visualProps: ['progress', 'status']},
+      {className: 'astryx-step-bar'},
     ],
   },
   components: [
@@ -224,9 +224,9 @@ export const docsZh = {
   },
   theming: {
     targets: [
-      {className: 'xds-stepper', visualProps: ['orientation']},
-      {className: 'xds-step', visualProps: ['progress', 'status']},
-      {className: 'xds-step-bar'},
+      {className: 'astryx-stepper', visualProps: ['orientation']},
+      {className: 'astryx-step', visualProps: ['progress', 'status']},
+      {className: 'astryx-step-bar'},
     ],
   },
   components: [

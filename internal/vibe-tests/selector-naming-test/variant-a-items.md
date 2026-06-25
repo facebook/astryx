@@ -5,7 +5,7 @@ A dropdown selector for choosing from a list of items. Supports simple strings, 
 ## Import
 
 ```tsx
-import {XDSSelector, XDSSelectorItem} from '@xds/core';
+import {XDSSelector, XDSSelectorItem} from '@astryxdesign/core';
 ```
 
 ## Basic Usage

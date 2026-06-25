@@ -13,7 +13,7 @@
  * Tooltip, and other components that render on inverted surfaces.
  *
  * How it works:
- * 1. Sets `data-xds-media="dark|light"` — the theme's generated CSS
+ * 1. Sets `data-astryx-media="dark|light"` — the theme's generated CSS
  *    targets this to apply token overrides (including color-scheme).
  * 2. Parent theme's component overrides pass through — structural
  *    styling (border-radius, font-weight, etc.) is preserved.
@@ -36,7 +36,7 @@
 import * as React from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from './tokens.stylex';
-import {dataAttr, legacyDataAttr} from '../naming';
+import {dataAttr} from '../naming';
 
 const styles = stylex.create({
   root: {
@@ -59,7 +59,7 @@ export interface MediaThemeProps {
 /**
  * Inverted surface theming context.
  *
- * Wraps children with `data-xds-media` — the theme's CSS targets this
+ * Wraps children with `data-astryx-media` — the theme's CSS targets this
  * attribute to apply inverted tokens. Parent component overrides flow
  * through unchanged; only tokens change for the surface context.
  */
@@ -67,12 +67,9 @@ export function MediaTheme({
   mode,
   children,
 }: MediaThemeProps): React.ReactElement {
-  // Dual-emit new (astryx) + legacy (xds) media attrs during the compat
-  // window (XDS-prefix migration P2380608025); generated theme CSS and
-  // reset.css match either form.
   return (
     <div
-      {...{[legacyDataAttr('media')]: mode, [dataAttr('media')]: mode}}
+      {...{[dataAttr('media')]: mode}}
       {...stylex.props(styles.root)}
     >
       {children}

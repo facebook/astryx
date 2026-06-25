@@ -34,7 +34,7 @@ import {useTopNavRenderMode} from './TopNavRenderContext';
 import {navItemStyles, type NavItemSize} from '../NavItem/navItemStyles.stylex';
 import {mergeProps} from '../utils';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * NavItem styles with hover/selected states
@@ -216,7 +216,7 @@ export function TopNavItem({
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
         {...mergeProps(
-          xdsThemeProps('top-nav-item', {
+          themeProps('top-nav-item', {
             mode: 'drawer',
             selected: isSelected ? 'selected' : null,
           }),
@@ -251,7 +251,7 @@ export function TopNavItem({
       aria-disabled={isDisabled || undefined}
       tabIndex={isDisabled ? -1 : undefined}
       {...mergeProps(
-        xdsThemeProps('top-nav-item', {
+        themeProps('top-nav-item', {
           selected: isSelected ? 'selected' : null,
         }),
         stylex.props(

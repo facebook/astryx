@@ -26,7 +26,7 @@ import {
 } from '../theme/tokens.stylex';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Tooltip} from '../Tooltip';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   label: {
@@ -158,7 +158,7 @@ export function FieldLabel({
         ref={ref}
         htmlFor={inputID}
         {...mergeProps(
-          xdsThemeProps('field-label'),
+          themeProps('field-label'),
           stylex.props(
             styles.label,
             isDisabled && styles.labelDisabled,

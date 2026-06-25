@@ -62,7 +62,7 @@ export const docs = {
   theming: {
     container: true,
     targets: [
-      {className: 'xds-section', visualProps: ['variant']},
+      {className: 'astryx-section', visualProps: ['variant']},
     ],
     derived: [
       {property: 'padding', expand: 'container'},
@@ -139,7 +139,7 @@ export const docsZh = {
   theming: {
     container: true,
     targets: [
-      {className: 'xds-section', visualProps: ['variant']},
+      {className: 'astryx-section', visualProps: ['variant']},
     ],
     derived: [
       {property: 'padding', expand: 'container'},

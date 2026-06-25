@@ -28,7 +28,7 @@ import {SizeProvider, useSize} from '../SizeContext/SizeContext';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {InputGroupContext} from './InputGroupContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export type InputGroupSize = 'sm' | 'md' | 'lg';
 
@@ -189,7 +189,7 @@ export function InputGroup({
             data-testid={testId}
             {...rest}
             {...mergeProps(
-              xdsThemeProps('input-group', {
+              themeProps('input-group', {
                 size,
                 status: status?.type ?? null,
               }),

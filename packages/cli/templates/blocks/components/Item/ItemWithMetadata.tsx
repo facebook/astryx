@@ -2,11 +2,11 @@
 
 'use client';
 
-import {Badge} from '@xds/core/Badge';
-import {Icon} from '@xds/core/Icon';
-import {Item} from '@xds/core/Item';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Item} from '@astryxdesign/core/Item';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ItemWithMetadata() {
   return (

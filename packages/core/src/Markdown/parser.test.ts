@@ -262,6 +262,65 @@ describe('parseMarkdown', () => {
     }
   });
 
+  it('parses an ordered list using the ) delimiter (CommonMark 5.2)', () => {
+    const result = parseMarkdown('1) First\n2) Second\n3) Third');
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(result[0].ordered).toBe(true);
+      expect(result[0].start).toBe(1);
+      expect(result[0].items).toHaveLength(3);
+    }
+  });
+
+  it('parses a ) ordered list with a custom start number', () => {
+    const result = parseMarkdown('3) three\n4) four');
+    expect(result[0].type).toBe('list');
+    if (result[0].type === 'list') {
+      expect(result[0].ordered).toBe(true);
+      expect(result[0].start).toBe(3);
+      expect(result[0].items).toHaveLength(2);
+    }
+  });
+
+  it('starts a new list when the ordered delimiter changes', () => {
+    // CommonMark: changing the marker delimiter (. -> )) begins a new list.
+    const result = parseMarkdown('1. First\n2) Second');
+    const lists = result.filter(b => b.type === 'list');
+    expect(lists).toHaveLength(2);
+    if (lists[0].type === 'list' && lists[1].type === 'list') {
+      expect(lists[0].items).toHaveLength(1);
+      expect(lists[1].items).toHaveLength(1);
+      expect(lists[1].start).toBe(2);
+    }
+  });
+
+  it('only lets a marker value of 1 interrupt a paragraph', () => {
+    // CommonMark 5.2: an ordered list interrupts a paragraph only when it
+    // starts at 1 (for either delimiter). A `2)`/`2.` line is lazy paragraph
+    // text.
+    const two = parseMarkdown('Intro\n2) second step');
+    expect(two).toHaveLength(1);
+    expect(two[0].type).toBe('paragraph');
+
+    const one = parseMarkdown('Intro\n1) first step');
+    expect(one.map(b => b.type)).toEqual(['paragraph', 'list']);
+  });
+
+  it('treats a zero-padded value-1 marker as interrupting a paragraph', () => {
+    // The interruption rule is by numeric value, so `01.` / `001)` (value 1)
+    // still start a list, while `0)` (value 0) does not.
+    expect(parseMarkdown('Intro\n01. first').map(b => b.type)).toEqual([
+      'paragraph',
+      'list',
+    ]);
+    expect(parseMarkdown('Intro\n001) first').map(b => b.type)).toEqual([
+      'paragraph',
+      'list',
+    ]);
+    expect(parseMarkdown('Intro\n0) zero')).toHaveLength(1);
+  });
+
   it('joins blank-line-separated same-style items into one loose list', () => {
     // CommonMark §5.3 loose-list: blank lines between items of the same
     // style/indent still form a single list. LLM output very commonly uses

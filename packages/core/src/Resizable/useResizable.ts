@@ -85,7 +85,7 @@ export interface ResizableRegion {
 
 export interface ResizableProps {
   _size: number;
-  // eslint-disable-next-line @xds/boolean-prop-naming
+  // eslint-disable-next-line @astryx/boolean-prop-naming
   _isCollapsed: boolean;
   _onResizeStart: () => void;
   _onResizeMove: (delta: number) => void;
@@ -95,7 +95,7 @@ export interface ResizableProps {
   _snaps: number[];
   _collapsedSize: number;
   /** Whether the region supports collapsing. */
-  // eslint-disable-next-line @xds/boolean-prop-naming
+  // eslint-disable-next-line @astryx/boolean-prop-naming
   _collapsible: boolean;
   _isResizableProps: true;
 }
@@ -107,10 +107,6 @@ export interface ResizableProps {
 const DEFAULT_MIN = 50;
 const DEFAULT_COLLAPSED_SIZE = 40;
 const STORAGE_PREFIX = 'astryx-resizable:';
-// Legacy key prefix read during the compat window so persisted panel sizes
-// survive the xds -> astryx rename. Read-only fallback; we always write the
-// new prefix. Removed at final cutover.
-const LEGACY_STORAGE_PREFIX = 'xds-resizable:';
 
 // =============================================================================
 // Helpers
@@ -147,9 +143,7 @@ function loadPersistedSize(key: string): number | null {
     return null;
   }
   try {
-    const raw =
-      localStorage.getItem(STORAGE_PREFIX + key) ??
-      localStorage.getItem(LEGACY_STORAGE_PREFIX + key);
+    const raw = localStorage.getItem(STORAGE_PREFIX + key);
     if (raw != null) {
       const parsed = JSON.parse(raw);
       if (typeof parsed === 'number') {

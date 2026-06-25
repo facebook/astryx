@@ -21,7 +21,7 @@ module.exports = {
         plugins: babelConfig.plugins,
       },
       useCSSLayers: {
-        before: ['reset', 'xds-base', 'xds-theme'],
+        before: ['reset', 'astryx-base', 'astryx-theme'],
       },
     },
     autoprefixer: {},

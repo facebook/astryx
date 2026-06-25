@@ -2,10 +2,10 @@
 
 'use client';
 
-import {CodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 
 const code = `{
-  "name": "@xds/core",
+  "name": "@astryxdesign/core",
   "version": "0.0.5",
   "dependencies": {
     "@stylexjs/stylex": "^0.17.5",

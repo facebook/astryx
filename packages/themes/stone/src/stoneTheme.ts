@@ -8,7 +8,7 @@
  * Montserrat for headings, Figtree for body, JetBrains Mono for code.
  */
 
-import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {stoneIconRegistry} from './icons';
 
 /**
@@ -285,7 +285,7 @@ export const stoneTheme = defineTheme({
     },
 
     // StyleX paints the banner surface from @layer priority4 (above
-    // @layer xds-theme), so a direct backgroundColor override loses the
+    // @layer astryx-theme), so a direct backgroundColor override loses the
     // cascade. Redefine the muted token instead so StyleX's var() resolves
     // to the categorical bg in our scope.
     banner: {

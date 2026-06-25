@@ -44,7 +44,7 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export type {
   InputStatus as TypeaheadStatus,
@@ -376,7 +376,7 @@ export function Typeahead<T extends SearchableItem>({
         onClick={handleWrapperClick}
         onBlur={handleBlur}
         {...mergeProps(
-          xdsThemeProps('typeahead', {size, status: status?.type}),
+          themeProps('typeahead', {size, status: status?.type}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

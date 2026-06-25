@@ -119,7 +119,7 @@ import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export type TextInputType = 'text' | 'password' | 'email';
 
@@ -340,7 +340,7 @@ export function TextInput({
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
-        xdsThemeProps('text-input', {size, status: status?.type ?? null}),
+        themeProps('text-input', {size, status: status?.type ?? null}),
         stylex.props(
           inputWrapperStyles.base,
           sizeStyles[size],

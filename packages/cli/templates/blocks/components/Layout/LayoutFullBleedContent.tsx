@@ -8,11 +8,11 @@ import {
   LayoutContent,
   LayoutFooter,
   HStack,
-} from '@xds/core/Layout';
-import {Card} from '@xds/core/Card';
-import {Button} from '@xds/core/Button';
-import {Section} from '@xds/core/Section';
-import {Heading, Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Layout';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {Section} from '@astryxdesign/core/Section';
+import {Heading, Text} from '@astryxdesign/core/Text';
 
 export default function LayoutFullBleedContent() {
   return (

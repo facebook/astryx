@@ -5,24 +5,24 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {ShieldCheckIcon} from '@heroicons/react/24/outline';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Text} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {Section} from '@xds/core/Section';
-import {Link} from '@xds/core/Link';
-import {Divider} from '@xds/core/Divider';
-import {Icon} from '@xds/core/Icon';
-import {Avatar} from '@xds/core/Avatar';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Text} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Section} from '@astryxdesign/core/Section';
+import {Link} from '@astryxdesign/core/Link';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 // ---------------------------------------------------------------------------
 // Styles
 // ---------------------------------------------------------------------------
 
-const BG_URL = 'https://lookaside.facebook.com/assets/xds_oss/building.jpg';
+const BG_URL = 'https://lookaside.facebook.com/assets/astryx/building.png';
 
 const styles = stylex.create({
   page: {

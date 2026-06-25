@@ -137,15 +137,15 @@ describe('defineTheme with onDark/onLight', () => {
 });
 
 describe('generateOnMediaCSS', () => {
-  it('emits @scope with [data-xds-media] token rules', () => {
+  it('emits @scope with [data-astryx-media] token rules', () => {
     const theme = defineTheme({name: 'test'});
     const css = generateOnMediaCSS(theme);
     expect(css).toContain(
-      '@scope ([data-astryx-theme="test"], [data-xds-theme="test"])',
+      '@scope ([data-astryx-theme="test"])',
     );
     // Same scope boundary as main theme
-    expect(css).toContain('to ([data-astryx-theme], [data-xds-theme])');
-    expect(css).toContain('[data-xds-media="dark"]');
+    expect(css).toContain('to ([data-astryx-theme])');
+    expect(css).toContain('[data-astryx-media="dark"]');
     expect(css).toContain('color-scheme: dark');
     expect(css).toContain('var(--color-on-dark)');
   });
@@ -153,7 +153,7 @@ describe('generateOnMediaCSS', () => {
   it('emits light media rules', () => {
     const theme = defineTheme({name: 'test'});
     const css = generateOnMediaCSS(theme);
-    expect(css).toContain('[data-xds-media="light"]');
+    expect(css).toContain('[data-astryx-media="light"]');
     expect(css).toContain('color-scheme: light');
   });
 
@@ -172,7 +172,7 @@ describe('generateOnMediaCSS', () => {
     });
     const css = generateOnMediaCSS(theme);
     expect(css).toContain(
-      ':is([data-astryx-media="dark"], [data-xds-media="dark"]) :is(.astryx-button.secondary, .xds-button.secondary)',
+      ':is([data-astryx-media="dark"]) :is(.astryx-button.secondary)',
     );
     expect(css).toContain(
       'background-color: color-mix(in srgb, white 20%, transparent)',
@@ -195,7 +195,7 @@ describe('generateOnMediaCSS', () => {
     });
     const css = generateOnMediaCSS(theme);
     expect(css).toContain(
-      ':is([data-astryx-media="dark"], [data-xds-media="dark"]) :is(.astryx-button, .xds-button):hover',
+      ':is([data-astryx-media="dark"]) :is(.astryx-button):hover',
     );
     expect(css).toContain('color: rgba(255,255,255,0.8)');
   });
@@ -204,7 +204,7 @@ describe('generateOnMediaCSS', () => {
 describe('reset.css baseline media rules', () => {
   /**
    * Validates that reset.css provides the minimum baseline for
-   * MediaTheme: a color-scheme flip on [data-xds-media].
+   * MediaTheme: a color-scheme flip on [data-astryx-media].
    *
    * Token overrides (text-primary, icon-primary, accent) are a
    * theme-level concern — themes handle those via generateOnMediaCSS.
@@ -220,17 +220,17 @@ describe('reset.css baseline media rules', () => {
     );
   });
 
-  it('flips color-scheme on [data-xds-media="dark"]', () => {
+  it('flips color-scheme on [data-astryx-media="dark"]', () => {
     const darkMatch = resetCSS.match(
-      /:where\(\[data-astryx-media="dark"\], \[data-xds-media="dark"\]\)\s*\{([^}]+)\}/,
+      /:where\(\[data-astryx-media="dark"\]\)\s*\{([^}]+)\}/,
     );
     expect(darkMatch).not.toBeNull();
     expect(darkMatch![1]).toContain('color-scheme: dark');
   });
 
-  it('flips color-scheme on [data-xds-media="light"]', () => {
+  it('flips color-scheme on [data-astryx-media="light"]', () => {
     const lightMatch = resetCSS.match(
-      /:where\(\[data-astryx-media="light"\], \[data-xds-media="light"\]\)\s*\{([^}]+)\}/,
+      /:where\(\[data-astryx-media="light"\]\)\s*\{([^}]+)\}/,
     );
     expect(lightMatch).not.toBeNull();
     expect(lightMatch![1]).toContain('color-scheme: light');
@@ -238,7 +238,7 @@ describe('reset.css baseline media rules', () => {
 
   it('does NOT include token overrides at baseline level', () => {
     const darkMatch = resetCSS.match(
-      /:where\(\[data-astryx-media="dark"\], \[data-xds-media="dark"\]\)\s*\{([^}]+)\}/,
+      /:where\(\[data-astryx-media="dark"\]\)\s*\{([^}]+)\}/,
     );
     expect(darkMatch![1]).not.toContain('--color-text-primary');
     expect(darkMatch![1]).not.toContain('--color-icon-primary');

@@ -24,7 +24,7 @@ import {getIcon} from '../Icon/globalIconRegistry';
 import {useChatComposerContext} from './ChatContext';
 
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -105,7 +105,7 @@ export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
       isIconOnly
       isDisabled={!isStopShown && isDisabled}
       onClick={isStopShown ? onStop : handleSend}
-      {...xdsThemeProps('chat-send-button')}
+      {...themeProps('chat-send-button')}
       xstyle={[styles.root, xstyle]}
     />
   );

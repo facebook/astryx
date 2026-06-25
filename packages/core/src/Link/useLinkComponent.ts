@@ -6,7 +6,7 @@
  * @file useLinkComponent.ts
  * @input React use, useMemo, createElement, forwardRef, LinkContext, LinkComponentType
  * @output Exports useLinkComponent hook
- * @position Hook for resolving the link component in XDS components
+ * @position Hook for resolving the link component in Astryx components
  *
  * Resolution order: per-component `as` prop > LinkProvider context > native `<a>`.
  *

@@ -10,21 +10,22 @@ import {useCallback, useMemo, useState} from 'react';
 import type {CSSProperties} from 'react';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
-import {useAppShellMobile} from '@xds/core/AppShell';
-import {Text, Heading} from '@xds/core/Text';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Section} from '@xds/core/Section';
-import {ClickableCard} from '@xds/core/ClickableCard';
-import {Grid} from '@xds/core/Grid';
-import {Button} from '@xds/core/Button';
-import {Overlay} from '@xds/core/Overlay';
-import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
+import {useAppShellMobile} from '@astryxdesign/core/AppShell';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Section} from '@astryxdesign/core/Section';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Button} from '@astryxdesign/core/Button';
+import {Overlay} from '@astryxdesign/core/Overlay';
+import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
 import {templates} from '../../../generated/templateRegistry';
 import {TemplateThumbnail} from '../../../components/TemplateThumbnail';
 import {buildPlaygroundHref} from '../../../components/playgroundLink';
 import {TemplatePreviewDialog} from '../../../components/TemplatePreviewDialog';
 import type {TemplatePreviewItem} from '../../../components/TemplatePreviewDialog';
 import {trackOpenPlayground, trackView} from '../../../lib/analytics';
+import {layout} from '../../../layout.stylex';
 
 const CARD_STYLE: CSSProperties & {'--color-overlay': string} = {
   '--color-overlay':
@@ -198,7 +199,7 @@ export default function TemplatesPage() {
   );
 
   return (
-    <Section maxWidth={1200} padding={6} style={{marginInline: 'auto'}}>
+    <Section maxWidth={layout.contentMaxWidth} padding={6} style={{marginInline: 'auto'}}>
       <VStack gap={10}>
         {/* Header */}
         <VStack gap={6} align="stretch">

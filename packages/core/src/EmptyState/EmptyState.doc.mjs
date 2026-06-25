@@ -65,7 +65,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-empty-state'},
+      {className: 'astryx-empty-state'},
     ],
   },
   usage: {
@@ -140,7 +140,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-empty-state'},
+      {className: 'astryx-empty-state'},
     ],
   },
   usage: {

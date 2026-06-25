@@ -29,7 +29,7 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useLinkComponent} from '../Link/useLinkComponent';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Styles
@@ -138,7 +138,7 @@ export function TopNavMegaMenuFeaturedCard({
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('top-nav-mega-menu-featured-card'),
+        themeProps('top-nav-mega-menu-featured-card'),
         stylex.props(styles.root),
       )}>
       {image && (

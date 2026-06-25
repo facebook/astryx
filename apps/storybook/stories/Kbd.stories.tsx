@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Kbd} from '@xds/core/Kbd';
-import {Text} from '@xds/core/Text';
+import {Kbd} from '@astryxdesign/core/Kbd';
+import {Text} from '@astryxdesign/core/Text';
 
 const meta: Meta<typeof Kbd> = {
   title: 'Core/Kbd',

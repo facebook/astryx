@@ -50,7 +50,7 @@ import type {BaseProps} from '../BaseProps';
 import {navItemStyles} from '../NavItem/navItemStyles.stylex';
 import {useTopNavSlot} from './TopNavContext';
 import {useTopNavRenderMode} from './TopNavRenderContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Styles
@@ -440,7 +440,7 @@ function DefaultMegaMenu({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         {...mergeProps(
-          xdsThemeProps('top-nav-mega-menu'),
+          themeProps('top-nav-mega-menu'),
           stylex.props(styles.trigger, popover.isOpen && styles.triggerOpen),
         )}>
         {label}
@@ -506,7 +506,7 @@ function DrawerMegaMenu({
         aria-expanded={isExpanded}
         aria-controls={`${menuId}-items`}
         {...mergeProps(
-          xdsThemeProps('top-nav-mega-menu', {mode: 'drawer'}),
+          themeProps('top-nav-mega-menu', {mode: 'drawer'}),
           stylex.props(navItemStyles.item, styles.drawerHeader),
         )}>
         {label}

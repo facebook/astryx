@@ -2,7 +2,7 @@
 
 'use client';
 
-import {ChatMessageList, ChatSystemMessage} from '@xds/core/Chat';
+import {ChatMessageList, ChatSystemMessage} from '@astryxdesign/core/Chat';
 
 export default function ChatSystemMessageShowcase() {
   return (

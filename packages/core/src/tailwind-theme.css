@@ -14,14 +14,14 @@
  *   - core CSS and a theme CSS file loaded before Tailwind utilities
  *
  * Usage:
- *   @layer reset, theme, base, xds-base, xds-theme, components, utilities;
+ *   @layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
  *
  *   @import "tailwindcss/theme.css" layer(theme);
  *   @import "tailwindcss/preflight.css" layer(base);
- *   @import "@xds/core/reset.css";
- *   @import "@xds/core/xds.css";
- *   @import "@xds/theme-default/theme.css";
- *   @import "@xds/core/tailwind-theme.css";
+ *   @import "@astryxdesign/core/reset.css";
+ *   @import "@astryxdesign/core/astryx.css";
+ *   @import "@astryxdesign/theme-neutral/theme.css";
+ *   @import "@astryxdesign/core/tailwind-theme.css";
  *   @import "tailwindcss/utilities.css" layer(utilities);
  *
  * @position infrastructure — sits between system tokens and Tailwind utility generation
@@ -30,7 +30,7 @@
 /*
  * `@theme inline` registers theme variables that Tailwind uses to generate
  * utility classes, WITHOUT emitting CSS declarations. The actual values come
- * from the system CSS custom properties (set by xds.css / theme packages).
+ * from the system CSS custom properties (set by astryx.css / theme packages).
  *
  * This means theme switching just works — when system tokens change (e.g. dark
  * mode, custom theme), Tailwind utilities automatically resolve to the new

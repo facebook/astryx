@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {SelectableCard} from '@xds/core/SelectableCard';
-import {Stack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
+import {SelectableCard} from '@astryxdesign/core/SelectableCard';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
 
 const plans = [
   {id: 'basic', name: 'Basic', price: '$9/mo', desc: 'For individuals'},

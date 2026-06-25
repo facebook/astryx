@@ -34,7 +34,7 @@ import {mergeProps} from '../utils';
 import {Spinner} from '../Spinner';
 import type {BaseProps} from '../BaseProps';
 import type {SpacingStep} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface ChatMessageListProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -255,7 +255,7 @@ export function ChatMessageList({
         tabIndex={0}
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('chat-message-list', {density}),
+          themeProps('chat-message-list', {density}),
           stylex.props(styles.root, xstyle),
           className,
           style,

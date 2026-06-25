@@ -2,13 +2,13 @@
 
 'use client';
 
-import {VStack, Layout, LayoutContent} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Grid} from '@xds/core/Grid';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Card} from '@xds/core/Card';
-import {Icon} from '@xds/core/Icon';
+import {VStack, Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Grid} from '@astryxdesign/core/Grid';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Card} from '@astryxdesign/core/Card';
+import {Icon} from '@astryxdesign/core/Icon';
 import {ArrowRightIcon} from '@heroicons/react/24/outline';
 import * as stylex from '@stylexjs/stylex';
 
@@ -42,7 +42,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
     image:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
+      'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png',
   },
   {
     id: 2,
@@ -51,7 +51,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 80.0,
     image:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-vertical-1.jpg',
+      'https://lookaside.facebook.com/assets/astryx/illustrative-vertical-1.png',
   },
   {
     id: 3,
@@ -60,7 +60,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
     image:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-3.jpg',
+      'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-3.png',
   },
   {
     id: 4,
@@ -69,7 +69,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
     image:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-4.jpg',
+      'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-4.png',
   },
   {
     id: 5,
@@ -78,7 +78,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 60.0,
     image:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-5.jpg',
+      'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-5.png',
   },
   {
     id: 6,
@@ -87,7 +87,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 80.0,
     image:
-      'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-2.jpg',
+      'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-2.png',
   },
 ];
 

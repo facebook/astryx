@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Path-traversal regression tests for `xds swizzle --output`.
+ * @file Path-traversal regression tests for `astryx swizzle --output`.
  *
  * Spawns the CLI bin with a fake monorepo as cwd and asserts that
  * `--output ../escaped` is rejected with a clear error AND that no
@@ -16,15 +16,15 @@ import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 
 // Build a minimal fake monorepo: <root>/project/ contains a
-// node_modules/@xds/core/src/Button so findCoreDir succeeds, and
+// node_modules/@astryxdesign/core/src/Button so findCoreDir succeeds, and
 // <root>/outside/ is the would-be traversal target.
 function buildFakeRepo(tmpDir) {
   const project = path.join(tmpDir, 'project');
   const outside = path.join(tmpDir, 'outside');
-  const core = path.join(project, 'node_modules', '@xds', 'core');
+  const core = path.join(project, 'node_modules', '@astryxdesign', 'core');
   const buttonDir = path.join(core, 'src', 'Button');
   fs.mkdirSync(buttonDir, {recursive: true});
   fs.mkdirSync(outside, {recursive: true});
@@ -34,7 +34,7 @@ function buildFakeRepo(tmpDir) {
   );
   // Make findCoreDir's heuristic (or its node_modules branch) succeed by
   // also creating packages/core symlink-style structure if needed:
-  fs.writeFileSync(path.join(core, 'package.json'), '{"name":"@xds/core"}');
+  fs.writeFileSync(path.join(core, 'package.json'), '{"name":"@astryxdesign/core"}');
   return {project, outside};
 }
 
@@ -98,7 +98,7 @@ describe('swizzle path safety', () => {
 
   it('requires --overwrite in non-interactive mode when files already exist', () => {
     const {project} = buildFakeRepo(tmpDir);
-    const outDir = path.join(project, 'components', 'xds', 'Button');
+    const outDir = path.join(project, 'components', 'astryx', 'Button');
     fs.mkdirSync(outDir, {recursive: true});
     const existingPath = path.join(outDir, 'Button.tsx');
     fs.writeFileSync(existingPath, '// my customizations\n');

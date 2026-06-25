@@ -71,7 +71,7 @@ export interface ContextRenderProps {
   xstyle?: StyleXStyles;
   /**
    * Additional CSS class name(s) for the popover container.
-   * Use with xdsThemeProps() for theme targeting when reflecting visual props.
+   * Use with themeProps() for theme targeting when reflecting visual props.
    */
   className?: string;
   /**
@@ -93,7 +93,7 @@ export interface FixedRenderProps {
   xstyle?: StyleXStyles;
   /**
    * Additional CSS class name(s) for the popover container.
-   * Use with xdsThemeProps() for theme targeting when reflecting visual props.
+   * Use with themeProps() for theme targeting when reflecting visual props.
    */
   className?: string;
   /**

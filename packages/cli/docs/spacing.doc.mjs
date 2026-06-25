@@ -48,7 +48,7 @@ export const docs = {
 <Stack gap={4}>{/* 16px gap */}</Stack>
 
 // Via StyleX tokens (custom layouts)
-import {spacingVars} from '@xds/core';
+import {spacingVars} from '@astryxdesign/core';
 
 const styles = stylex.create({
   custom: {

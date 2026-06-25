@@ -80,7 +80,7 @@ export const docs = {
   },
   relatedComponents: ['OverflowList', 'Breadcrumb'],
   relatedHooks: ['useScrollOverflow'],
-  importPath: '@xds/core/hooks',
+  importPath: '@astryxdesign/core/hooks',
   category: 'layout',
 };
 

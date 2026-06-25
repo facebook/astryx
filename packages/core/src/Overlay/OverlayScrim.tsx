@@ -23,7 +23,7 @@ import {
 import {MediaTheme} from '../theme/MediaTheme';
 import {mergeProps} from '../utils';
 import {overlayScope} from './overlay.markers.stylex';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types (re-exported from index.ts for consumers)
@@ -276,7 +276,7 @@ export function OverlayScrim({
   return (
     <div
       {...mergeProps(
-        xdsThemeProps('overlay-scrim', {position}),
+        themeProps('overlay-scrim', {position}),
         stylex.props(
           styles.base,
           positionMap[position],

@@ -42,7 +42,7 @@ import type {LinkComponentType} from './types';
 import {mergeProps} from '../utils';
 import {computeTargetAndRel} from './computeTargetAndRel';
 import {useInteractiveRole} from '../hooks/useInteractiveRole';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Base link styles
@@ -318,7 +318,7 @@ export function Link({
         tabIndex={isDisabled ? -1 : undefined}
         disabled={isDisabled}
         {...mergeProps(
-          xdsThemeProps('link', {color}),
+          themeProps('link', {color}),
           stylex.props(
             styles.base,
             styles.buttonReset,
@@ -347,7 +347,7 @@ export function Link({
         aria-disabled={isDisabled || undefined}
         tabIndex={isDisabled ? -1 : undefined}
         {...mergeProps(
-          xdsThemeProps('link', {color}),
+          themeProps('link', {color}),
           stylex.props(
             styles.base,
             linkColorStyles[color],

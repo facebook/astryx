@@ -24,10 +24,10 @@
  * thin brand layer of primary + accent + body on top of the design system.
  */
 
-import {defineTheme, type XDSTokenValue} from '@xds/core/theme';
+import {defineTheme, type TokenValue} from '@astryxdesign/core/theme';
 
 // Relative import (not the `@/` alias) because this theme file is also loaded
-// in isolation by the `xds theme build` CLI via jiti, which does not resolve
+// in isolation by the `astryx theme build` CLI via jiti, which does not resolve
 // the `@/*` tsconfig path alias.
 import {BRAND_BLUE} from '../constants';
 
@@ -104,7 +104,7 @@ export const astryxTheme = defineTheme({
     // Not a core XDS token, so it's spread in with a cast to allow the extra
     // key while keeping the standard tokens above type-checked. Exposed to the
     // UI as var(--color-brand).
-    ...({'--color-brand': BRAND_BLUE} as Record<string, XDSTokenValue>),
+    ...({'--color-brand': BRAND_BLUE} as Record<string, TokenValue>),
   },
 
   typography: {

@@ -32,7 +32,7 @@ import {
 } from '../Layout/padding.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Extensible variant map for Section.
@@ -40,7 +40,7 @@ import {xdsThemeProps} from '../utils/xdsThemeProps';
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Section' {
+ * declare module '@astryxdesign/core/Section' {
  *   interface SectionVariantMap {
  *     'elevated': true;
  *   }
@@ -268,7 +268,7 @@ export function Section({
       {...props}>
       <div
         {...mergeProps(
-          xdsThemeProps('section', {variant}),
+          themeProps('section', {variant}),
           stylex.props(
             nestedStyles.inner,
             ...container(

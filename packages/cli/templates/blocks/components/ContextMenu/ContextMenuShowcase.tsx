@@ -2,7 +2,7 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {ContextMenu} from '@xds/core/ContextMenu';
+import {ContextMenu} from '@astryxdesign/core/ContextMenu';
 
 const styles = stylex.create({
   area: {

@@ -7,11 +7,11 @@
  * @position Playground — single source of truth for selectable themes.
  *
  * Derived entirely from the docsite's generated registries, so any official
- * @xds/theme-* package installed on the docsite automatically shows up in the
+ * @astryxdesign/theme-* package installed on the docsite automatically shows up in the
  * playground theme selector (and resolves in the preview) with no code change.
  */
 
-import type {DefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@astryxdesign/core/theme';
 import {themeObjectsFull} from '../../generated/themeRegistry';
 import {packages} from '../../generated/packageRegistry';
 
@@ -28,9 +28,9 @@ const displayNameByPackage = new Map(
   packages.map(p => [p.name, p.displayName]),
 );
 
-/** "@xds/theme-default" → "default" */
+/** "@astryxdesign/theme-neutral" → "neutral" */
 function toShortName(packageName: string): string {
-  return packageName.replace(/^@xds\/theme-/, '');
+  return packageName.replace(/^@astryxdesign\/theme-/, '');
 }
 
 /**

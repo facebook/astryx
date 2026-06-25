@@ -8,31 +8,31 @@ import {
   HStack,
   Layout,
   LayoutContent,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {Grid} from '@xds/core/Grid';
-import {AspectRatio} from '@xds/core/AspectRatio';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Grid} from '@astryxdesign/core/Grid';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 const IMAGES = [
   {
-    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-home-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/colorful-home-horizontal-1.png',
     alt: 'Colorful home interior with vibrant decor',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/colorful-lifestyle-horizontal-1.png',
     alt: 'Colorful lifestyle portrait with natural lighting',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/xds_oss/colorful-lifestyle-horizontal-2.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/colorful-lifestyle-horizontal-2.png',
     alt: 'Colorful lifestyle scene with warm tones',
   },
 ];
 
 // NOTE: The only custom styling here is image fill + corner radius. It exists
-// because XDS has no image primitive — AspectRatio exposes no objectFit or
+// because Astryx has no image primitive — AspectRatio exposes no objectFit or
 // radius props and there's no Image. Tracked in issue #2582; replace these
 // with component props once it lands.
 const styles = stylex.create({

@@ -23,18 +23,18 @@
  */
 
 import {useEffect, useMemo, useReducer, useRef, useState} from 'react';
-import type {DefinedTheme} from '@xds/core/theme';
+import type {DefinedTheme} from '@astryxdesign/core/theme';
 
 // XDS components — used in the editor popover, export dialog, and the
 // row trigger so the audit drawer's interactive surfaces stay
 // consistent with the rest of XDS instead of a hand-rolled clone of
 // each one.
-import {Popover} from '@xds/core/Popover';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Button} from '@xds/core/Button';
-import {TextInput} from '@xds/core/TextInput';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Popover} from '@astryxdesign/core/Popover';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Button} from '@astryxdesign/core/Button';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 import {TONE_STEPS, type Mode, type RampSeed, type ToneStep} from './colorMath';
 import {

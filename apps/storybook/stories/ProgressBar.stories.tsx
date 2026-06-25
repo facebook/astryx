@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {ProgressBar} from '@xds/core/ProgressBar';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
 
 const meta: Meta<typeof ProgressBar> = {
   title: 'Core/ProgressBar',

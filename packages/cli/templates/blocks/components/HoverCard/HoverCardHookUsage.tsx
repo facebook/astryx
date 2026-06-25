@@ -2,11 +2,11 @@
 
 'use client';
 
-import {useHoverCard} from '@xds/core/HoverCard';
-import {Button} from '@xds/core/Button';
-import {Center} from '@xds/core/Center';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {useHoverCard} from '@astryxdesign/core/HoverCard';
+import {Button} from '@astryxdesign/core/Button';
+import {Center} from '@astryxdesign/core/Center';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function HoverCardHookUsage() {
   const hoverCard = useHoverCard({

@@ -1,5 +1,9 @@
 # @xds/theme-gothic
 
+# 0.1.0
+
+---
+
 # 0.0.15
 
 #### Changes

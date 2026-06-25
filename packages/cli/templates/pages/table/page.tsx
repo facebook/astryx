@@ -3,13 +3,13 @@
 'use client';
 
 import {useState} from 'react';
-import {Layout, LayoutHeader, LayoutContent} from '@xds/core';
-import {Text} from '@xds/core';
-import {Button} from '@xds/core';
-import {HStack} from '@xds/core';
-import {Table} from '@xds/core';
-import {Badge} from '@xds/core';
-import type {TableColumn} from '@xds/core';
+import {Layout, LayoutHeader, LayoutContent} from '@astryxdesign/core';
+import {Text} from '@astryxdesign/core';
+import {Button} from '@astryxdesign/core';
+import {HStack} from '@astryxdesign/core';
+import {Table} from '@astryxdesign/core';
+import {Badge} from '@astryxdesign/core';
+import type {TableColumn} from '@astryxdesign/core';
 
 type Item = {
   id: string;

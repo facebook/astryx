@@ -3,7 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {TextArea} from '@xds/core/TextArea';
+import {TextArea} from '@astryxdesign/core/TextArea';
 
 export default function TextAreaCharacterCount() {
   const [value, setValue] = useState(

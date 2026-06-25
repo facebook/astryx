@@ -39,7 +39,7 @@ import type {CardVariant} from '../Card/Card';
 import {useClickableContainer} from '../hooks/useClickableContainer';
 import type {BaseProps} from '../BaseProps';
 import {useLinkComponent} from '../Link/useLinkComponent';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Styles — only the interactive layer, Card handles everything else
@@ -256,7 +256,7 @@ export function ClickableCard({
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
-      {...mergeProps(xdsThemeProps('clickable-card', {variant}), {
+      {...mergeProps(themeProps('clickable-card', {variant}), {
         className: classNameProp,
         style,
       })}

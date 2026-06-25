@@ -15,12 +15,12 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-tab-list', visualProps: ['size']},
-      {className: 'xds-tab', states: ['selected']},
-      {className: 'xds-tab-indicator', states: ['selected']},
-      {className: 'xds-tab-menu'},
-      {className: 'xds-tab-menu-dropdown'},
-      {className: 'xds-tab-menu-item'},
+      {className: 'astryx-tab-list', visualProps: ['size']},
+      {className: 'astryx-tab', states: ['selected']},
+      {className: 'astryx-tab-indicator', states: ['selected']},
+      {className: 'astryx-tab-menu'},
+      {className: 'astryx-tab-menu-dropdown'},
+      {className: 'astryx-tab-menu-item'},
     ],
   },
   description: 'Nav wrapper that provides TabListContext (value, onChange, size) to Tab and TabMenu children.',

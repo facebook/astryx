@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
-import {XDSCard} from '@xds/core/Card';
-import {XDSVStack} from '@xds/core/Stack';
-import {XDSText} from '@xds/core/Text';
+import {XDSCard} from '@astryxdesign/core/Card';
+import {XDSVStack} from '@astryxdesign/core/Stack';
+import {XDSText} from '@astryxdesign/core/Text';
 import './report.css';
 
 interface ScreenshotGalleryProps {

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {StorybookConfig} from '@storybook/react-vite';
-import {xdsStylex} from '@xds/build/vite';
+import {astryxStylex} from '@astryxdesign/build/vite';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
@@ -58,7 +58,7 @@ const config: StorybookConfig = {
       },
       plugins: [
         {
-          name: 'xds-color-scheme',
+          name: 'astryx-color-scheme',
           transformIndexHtml() {
             return [
               {
@@ -70,23 +70,25 @@ const config: StorybookConfig = {
           },
         },
         ...filteredPlugins,
-        ...xdsStylex({
+        ...astryxStylex({
           stylexOptions: {
             dev: false,
             styleResolution: 'application-order',
             aliases: {
-              '@xds/core/*': [path.join(rootDir, 'packages/core/src/*')],
-              '@xds/core': [path.join(rootDir, 'packages/core/src')],
-              '@xds/lab/*': [path.join(rootDir, 'packages/lab/src/*')],
-              '@xds/lab': [path.join(rootDir, 'packages/lab/src')],
-              '@xds/theme-default/*': [
-                path.join(rootDir, 'packages/themes/default/src/*'),
+              '@astryxdesign/core/*': [
+                path.join(rootDir, 'packages/core/src/*'),
               ],
-              '@xds/theme-neutral/*': [
+              '@astryxdesign/core': [path.join(rootDir, 'packages/core/src')],
+              '@astryxdesign/lab/*': [path.join(rootDir, 'packages/lab/src/*')],
+              '@astryxdesign/lab': [path.join(rootDir, 'packages/lab/src')],
+              '@astryxdesign/theme-neutral/*': [
                 path.join(rootDir, 'packages/themes/neutral/src/*'),
               ],
-              '@xds/theme-brutalist/*': [
-                path.join(rootDir, 'packages/themes/brutalist/src/*'),
+              '@astryxdesign/theme-stone/*': [
+                path.join(rootDir, 'packages/themes/stone/src/*'),
+              ],
+              '@astryxdesign/theme-y2k/*': [
+                path.join(rootDir, 'packages/themes/y2k/src/*'),
               ],
             },
             unstable_moduleResolution: {
@@ -104,21 +106,21 @@ const config: StorybookConfig = {
         ...config.resolve,
         alias: {
           ...config.resolve?.alias,
-          '@xds/core': path.resolve(rootDir, 'packages/core/src'),
-          '@xds/lab': path.resolve(rootDir, 'packages/lab/src'),
-          '@xds/theme-default': path.resolve(
-            rootDir,
-            'packages/themes/default/src/source.ts',
-          ),
-          '@xds/theme-neutral': path.resolve(
+          '@astryxdesign/core': path.resolve(rootDir, 'packages/core/src'),
+          '@astryxdesign/lab': path.resolve(rootDir, 'packages/lab/src'),
+          '@astryxdesign/theme-neutral': path.resolve(
             rootDir,
             'packages/themes/neutral/src/source.ts',
           ),
-          '@xds/theme-brutalist': path.resolve(
+          '@astryxdesign/theme-stone': path.resolve(
             rootDir,
-            'packages/themes/brutalist/src/source.ts',
+            'packages/themes/stone/src/source.ts',
           ),
-          '@xds/vega': path.resolve(rootDir, 'packages/vega/src'),
+          '@astryxdesign/theme-y2k': path.resolve(
+            rootDir,
+            'packages/themes/y2k/src/source.ts',
+          ),
+          '@astryxdesign/vega': path.resolve(rootDir, 'packages/vega/src'),
         },
       },
       css: {

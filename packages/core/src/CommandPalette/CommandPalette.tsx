@@ -236,7 +236,7 @@ function ItemRenderer<T extends SearchableItem>({
  * Command palette root component.
  *
  * Uses `searchSource` for all search logic — same interface as Typeahead.
- * For static lists, use `createStaticSource` from `@xds/core/Typeahead`.
+ * For static lists, use `createStaticSource` from `@astryxdesign/core/Typeahead`.
  *
  * Keyboard navigation is handled by `useCombobox` from Selector,
  * ensuring consistent arrow key, Home/End, Enter, and Escape behavior

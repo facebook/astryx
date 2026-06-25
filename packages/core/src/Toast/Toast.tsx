@@ -21,7 +21,7 @@ import {mergeProps} from '../utils';
 import {useTheme} from '../theme';
 import {MediaTheme} from '../theme/MediaTheme';
 import type {ToastType, ToastDismissReason} from './types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   root: {
@@ -187,7 +187,7 @@ export function Toast({
       onFocusCapture={pauseTimer}
       onBlurCapture={resumeTimer}
       {...mergeProps(
-        xdsThemeProps('toast', {type}),
+        themeProps('toast', {type}),
         stylex.props(
           styles.root,
           isError ? styles.variantError : styles.variantDefault,

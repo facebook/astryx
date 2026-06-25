@@ -24,7 +24,7 @@ import {
 import {mergeProps} from '../utils';
 import {useAvatarGroup} from './AvatarGroupContext';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const BORDER_WIDTH = 2;
 const OVERFLOW_FONT_RATIO = 0.35;
@@ -148,7 +148,7 @@ export function AvatarGroupOverflow({
         onClick={onClick}
         aria-label={label}
         {...mergeProps(
-          xdsThemeProps('avatar-group-overflow'),
+          themeProps('avatar-group-overflow'),
           stylex.props(
             styles.base,
             styles.button,
@@ -171,7 +171,7 @@ export function AvatarGroupOverflow({
       ref={ref}
       aria-label={label}
       {...mergeProps(
-        xdsThemeProps('avatar-group-overflow'),
+        themeProps('avatar-group-overflow'),
         stylex.props(
           styles.base,
           styles.overlap,

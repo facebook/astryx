@@ -9,9 +9,9 @@ import {
   RadialSlice,
   ChartLegend,
   useChartColors,
-} from '@xds/lab';
-import {Stack} from '@xds/core';
-import {Heading} from '@xds/core/Text';
+} from '@astryxdesign/lab';
+import {Stack} from '@astryxdesign/core';
+import {Heading} from '@astryxdesign/core/Text';
 
 const meta: Meta = {
   title: 'Lab/RadialChart',

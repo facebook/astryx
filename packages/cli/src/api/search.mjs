@@ -42,7 +42,7 @@ import {
 import {discoverHooks, findHookDoc} from '../lib/hook-discovery.mjs';
 import {levenshteinDistance} from '../lib/string-utils.mjs';
 import {discoverTemplates} from './template.mjs';
-import {XDSError} from './error.mjs';
+import {AstryxError} from './error.mjs';
 
 const DOCS_DIR = path.join(CLI_ROOT, 'docs');
 
@@ -180,7 +180,7 @@ async function gatherHooks(coreDir) {
     const docPath = findHookDoc(coreDir, hookName);
     let keywords = [];
     let description = '';
-    let importPath = '@xds/core/hooks';
+    let importPath = '@astryxdesign/core/hooks';
     if (docPath) {
       const doc = await loadModuleDoc(docPath);
       if (doc) {
@@ -272,26 +272,26 @@ function toResult(c, score, reason) {
       return {
         ...base,
         import: c._import,
-        command: `xds component ${c.name}`,
+        command: `astryx component ${c.name}`,
       };
     case 'hook':
       return {
         ...base,
         import: c._import,
-        command: `xds hook ${c.name}`,
+        command: `astryx hook ${c.name}`,
       };
     case 'doc':
       return {
         ...base,
         title: c._title,
-        command: `xds docs ${c.name}`,
+        command: `astryx docs ${c.name}`,
       };
     case 'template':
       return {
         ...base,
         displayName: c._displayName,
         kind: c._kind,
-        command: `xds template ${c.name}`,
+        command: `astryx template ${c.name}`,
       };
     default:
       return base;
@@ -312,13 +312,13 @@ export async function search(query, options = {}) {
   const {cwd = process.cwd(), type, limit = 20} = options;
 
   if (!query || !String(query).trim()) {
-    throw new XDSError('A search query is required', [
-      {name: 'xds search button', reason: 'example'},
+    throw new AstryxError('A search query is required', [
+      {name: 'astryx search button', reason: 'example'},
     ]);
   }
 
   if (type && !SEARCH_DOMAINS.includes(type)) {
-    throw new XDSError(
+    throw new AstryxError(
       `Unknown --type "${type}"`,
       SEARCH_DOMAINS.map(d => ({name: d, reason: 'valid type'})),
     );
@@ -328,7 +328,7 @@ export async function search(query, options = {}) {
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
-    throw new XDSError('Could not find @xds/core package');
+    throw new AstryxError('Could not find @astryxdesign/core package');
   }
 
   // Gather candidates from each requested domain in parallel.

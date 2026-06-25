@@ -2,10 +2,10 @@
 
 'use client';
 
-import {useTheme} from '@xds/core/theme';
-import {Card} from '@xds/core/Card';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {useTheme} from '@astryxdesign/core/theme';
+import {Card} from '@astryxdesign/core/Card';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function UseThemeHookUsage() {
   const {name, mode, token} = useTheme();

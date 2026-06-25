@@ -7,11 +7,11 @@ import {
   ChatComposer,
   ChatComposerInput,
   type ChatComposerTrigger,
-} from '@xds/core/Chat';
-import {createStaticSource} from '@xds/core/Typeahead';
-import type {SearchableItem} from '@xds/core/Typeahead';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Chat';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
+import type {SearchableItem} from '@astryxdesign/core/Typeahead';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const USERS: SearchableItem[] = [
   {id: 'cindy', label: 'Cindy Zhang'},

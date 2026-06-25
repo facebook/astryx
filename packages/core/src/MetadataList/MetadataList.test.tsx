@@ -135,7 +135,7 @@ describe('MetadataListItem', () => {
     );
 
     // In stacked mode, dt and dd are inside a wrapper div
-    const wrapper = container.querySelector('.xds-metadata-list-item');
+    const wrapper = container.querySelector('.astryx-metadata-list-item');
     expect(wrapper).toBeInTheDocument();
     expect(wrapper?.querySelector('dt')).toBeInTheDocument();
     expect(wrapper?.querySelector('dd')).toBeInTheDocument();

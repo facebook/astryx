@@ -103,8 +103,8 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-pagination', visualProps: ['size', 'variant']},
-      {className: 'xds-pagination-dot', visualProps: ['size'], states: ['active']},
+      {className: 'astryx-pagination', visualProps: ['size', 'variant']},
+      {className: 'astryx-pagination-dot', visualProps: ['size'], states: ['active']},
     ],
   },
   playground: {
@@ -231,8 +231,8 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-pagination', visualProps: ['size', 'variant']},
-      {className: 'xds-pagination-dot', visualProps: ['size'], states: ['active']},
+      {className: 'astryx-pagination', visualProps: ['size', 'variant']},
+      {className: 'astryx-pagination-dot', visualProps: ['size'], states: ['active']},
     ],
   },
   usage: {

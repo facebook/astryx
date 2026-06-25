@@ -71,8 +71,8 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-progressbar', visualProps: ['variant']},
-      {className: 'xds-progressbar-fill', visualProps: ['variant']},
+      {className: 'astryx-progressbar', visualProps: ['variant']},
+      {className: 'astryx-progressbar-fill', visualProps: ['variant']},
     ],
   },
   usage: {
@@ -157,8 +157,8 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-progressbar', visualProps: ['variant']},
-      {className: 'xds-progressbar-fill', visualProps: ['variant']},
+      {className: 'astryx-progressbar', visualProps: ['variant']},
+      {className: 'astryx-progressbar-fill', visualProps: ['variant']},
     ],
   },
   usage: {

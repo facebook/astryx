@@ -7,10 +7,10 @@ import {
   ChatMessage,
   ChatMessageBubble,
   ChatMessageMetadata,
-} from '@xds/core/Chat';
-import {Avatar} from '@xds/core/Avatar';
-import {Timestamp} from '@xds/core/Timestamp';
-import {Text} from '@xds/core/Text';
+} from '@astryxdesign/core/Chat';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Timestamp} from '@astryxdesign/core/Timestamp';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ChatMessageMultiBubble() {
   return (

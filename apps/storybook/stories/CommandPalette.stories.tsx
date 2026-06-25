@@ -13,12 +13,12 @@ import {
   CommandPalette,
   CommandPaletteInput,
   CommandPaletteFooter,
-} from '@xds/core/CommandPalette';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {createStaticSource} from '@xds/core/Typeahead';
-import type {SearchSource, SearchableItem} from '@xds/core/Typeahead';
-import type {IconName} from '@xds/core/Icon';
+} from '@astryxdesign/core/CommandPalette';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
+import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
+import type {IconName} from '@astryxdesign/core/Icon';
 
 const meta: Meta<typeof CommandPalette> = {
   title: 'Core/CommandPalette',

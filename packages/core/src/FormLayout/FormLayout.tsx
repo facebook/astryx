@@ -24,7 +24,7 @@ import {
   type FormLayoutDirection,
 } from './FormLayoutContext';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Responsive breakpoint for horizontal-labels collapse
@@ -68,7 +68,7 @@ export interface FormLayoutProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLDivElement>;
   /**
-   * Form fields to arrange. Accepts XDS inputs (TextInput, Selector, etc.)
+   * Form fields to arrange. Accepts Astryx inputs (TextInput, Selector, etc.)
    * and Field-wrapped custom controls.
    */
   children?: ReactNode;
@@ -125,7 +125,7 @@ export function FormLayout({
       <div
         ref={ref}
         {...mergeProps(
-          xdsThemeProps('form-layout', {direction}),
+          themeProps('form-layout', {direction}),
           stylex.props(
             styles.base,
             direction === 'horizontal' && styles.horizontal,

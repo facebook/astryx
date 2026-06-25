@@ -3,10 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import {ToggleButton, ToggleButtonGroup} from '@xds/core/ToggleButton';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Icon} from '@xds/core/Icon';
+import {ToggleButton, ToggleButtonGroup} from '@astryxdesign/core/ToggleButton';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Icon} from '@astryxdesign/core/Icon';
 import {ListBulletIcon, Squares2X2Icon, TableCellsIcon} from '@heroicons/react/24/outline';
 import {BoldIcon, ItalicIcon, UnderlineIcon, StrikethroughIcon} from '@heroicons/react/24/outline';
 

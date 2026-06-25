@@ -3,7 +3,7 @@
 'use client';
 
 /**
- * XDS Theme System
+ * Astryx Theme System
  *
  * Exports:
  * - Theme: Provider component that applies theme
@@ -11,8 +11,8 @@
  * - Token exports for direct use in StyleX
  *
  * Themes are in separate packages:
- *   import { defaultTheme } from '@xds/theme-default';
- *   import { neutralTheme } from '@xds/theme-neutral';
+ *   import { neutralTheme } from '@astryxdesign/theme-neutral';
+ *   import { neutralTheme } from '@astryxdesign/theme-neutral';
  */
 
 export {Theme} from './Theme';
@@ -135,14 +135,14 @@ export type {
 export {useTheme, ThemeContext} from './useTheme';
 export type {UseThemeReturn, ThemeContextValue} from './useTheme';
 export {
-  resolveXDSThemeToken,
-  resolveXDSThemeTokens,
-  xdsTokenVar,
-  xdsTokenVars,
+  resolveThemeToken,
+  resolveThemeTokens,
+  tokenVar,
+  tokenVars,
 } from './tokens';
 export type {
-  ResolveXDSThemeTokenOptions,
-  ResolveXDSThemeTokensOptions,
+  ResolveThemeTokenOptions,
+  ResolveThemeTokensOptions,
   ResolvedThemeMode,
 } from './tokens';
 
@@ -159,79 +159,3 @@ export type {
   TypographyRole,
   FontWeight,
 } from './types';
-
-
-// <compat-aliases:start> — generated, do not edit by hand
-// Legacy XDS-prefixed compatibility aliases (XDS-prefix migration P2380608025).
-// Bare names above are canonical + module-augmentation targets.
-// These prefixed re-exports reference the SAME values/types and remain
-// augmentable (consumer `declare module` augmentations of XDS* flow through).
-// Regenerate: node scripts/generate-compat-aliases.mjs
-export {
-  MediaTheme as XDSMediaTheme,
-  SyntaxTheme as XDSSyntaxTheme,
-  Theme as XDSTheme,
-  ThemeContext as XDSThemeContext,
-  useSyntaxTheme as useXDSSyntaxTheme,
-  useTheme as useXDSTheme,
-} from '.';
-export type {
-  BorderVarName as XDSBorderVarName,
-  BuiltinTextType as XDSBuiltinTextType,
-  ColorScaleConfig as XDSColorScaleConfig,
-  ColorScaleTokens as XDSColorScaleTokens,
-  ColorVarName as XDSColorVarName,
-  ComponentStyleMap as XDSComponentStyleMap,
-  CoreTokenName as XDSCoreTokenName,
-  CustomTextTypes as XDSCustomTextTypes,
-  DataTokenName as XDSDataTokenName,
-  DefineThemeInput as XDSDefineThemeInput,
-  DefinedTheme as XDSDefinedTheme,
-  DomainTokenName as XDSDomainTokenName,
-  DurationVarName as XDSDurationVarName,
-  EaseVarName as XDSEaseVarName,
-  FontWeight as XDSFontWeight,
-  FontWeightVarName as XDSFontWeightVarName,
-  HeadingTag as XDSHeadingTag,
-  MediaThemeProps as XDSMediaThemeProps,
-  MotionScaleConfig as XDSMotionScaleConfig,
-  MotionScaleTokens as XDSMotionScaleTokens,
-  RadiusScaleConfig as XDSRadiusScaleConfig,
-  RadiusScaleTokens as XDSRadiusScaleTokens,
-  RadiusVarName as XDSRadiusVarName,
-  ResolveXDSThemeTokenOptions as XDSResolveXDSThemeTokenOptions,
-  ResolveXDSThemeTokensOptions as XDSResolveXDSThemeTokensOptions,
-  ResolvedThemeMode as XDSResolvedThemeMode,
-  ShadowVarName as XDSShadowVarName,
-  SizeVarName as XDSSizeVarName,
-  SpacingVarName as XDSSpacingVarName,
-  StyleOverrides as XDSStyleOverrides,
-  SyntaxThemeDefinition as XDSSyntaxThemeDefinition,
-  SyntaxThemeInput as XDSSyntaxThemeInput,
-  SyntaxThemeTokenInput as XDSSyntaxThemeTokenInput,
-  SyntaxThemeTokenKey as XDSSyntaxThemeTokenKey,
-  SyntaxThemeTokenMap as XDSSyntaxThemeTokenMap,
-  SyntaxTokenName as XDSSyntaxTokenName,
-  SyntaxTokenValue as XDSSyntaxTokenValue,
-  TextColor as XDSTextColor,
-  TextSize as XDSTextSize,
-  TextSizeVarName as XDSTextSizeVarName,
-  TextType as XDSTextType,
-  TextWeight as XDSTextWeight,
-  ThemeCSSOutput as XDSThemeCSSOutput,
-  ThemeContextValue as XDSThemeContextValue,
-  ThemeMode as XDSThemeMode,
-  ThemeRulesSplit as XDSThemeRulesSplit,
-  TokenName as XDSTokenName,
-  TokenValue as XDSTokenValue,
-  TransitionVarName as XDSTransitionVarName,
-  TypeScaleConfig as XDSTypeScaleConfig,
-  TypeScaleTokens as XDSTypeScaleTokens,
-  TypeScaleVarName as XDSTypeScaleVarName,
-  TypographyConfig as XDSTypographyConfig,
-  TypographyRole as XDSTypographyRole,
-  TypographyVarName as XDSTypographyVarName,
-  UseSyntaxThemeReturn as XDSUseSyntaxThemeReturn,
-  UseThemeReturn as XDSUseThemeReturn,
-} from '.';
-// <compat-aliases:end>

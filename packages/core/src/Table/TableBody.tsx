@@ -6,7 +6,7 @@ import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface TableBodyProps extends BaseProps<HTMLTableSectionElement> {
   ref?: React.Ref<HTMLTableSectionElement>;
@@ -17,7 +17,7 @@ export function TableBody({ref, children, xstyle}: TableBodyProps) {
   return (
     <tbody
       ref={ref}
-      {...mergeProps(xdsThemeProps('table-body'), stylex.props(xstyle))}>
+      {...mergeProps(themeProps('table-body'), stylex.props(xstyle))}>
       {children}
     </tbody>
   );

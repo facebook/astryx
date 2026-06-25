@@ -2,17 +2,17 @@
 
 'use client';
 
-import {VStack, Layout, LayoutContent} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {AspectRatio} from '@xds/core/AspectRatio';
+import {VStack, Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import * as stylex from '@stylexjs/stylex';
 
 // ─── Styles ────────────────────────────────────────────────────────────────
 // The masonry needs a responsive column count AND a hero that spans 2 columns
 // on desktop but goes full-width on mobile. Grid forces grid-template-columns
 // inline, so a responsive span can't be expressed through its props — this is a
-// @container grid (the sanctioned XDS pattern for container-responsive layout).
-// Image fill + radius are also custom because XDS has no image primitive (#2582).
+// @container grid (the sanctioned Astryx pattern for container-responsive layout).
+// Image fill + radius are also custom because Astryx has no image primitive (#2582).
 
 const styles = stylex.create({
   // Named inline-size container on the page column so the grid responds to the
@@ -61,23 +61,23 @@ interface GalleryImage {
 // All landscape photos so the uniform 3:2 / 3:1 tiles crop cleanly.
 const IMAGES: GalleryImage[] = [
   {
-    src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
+    src: 'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png',
     title: 'Going places',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-home-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/light-home-horizontal-1.png',
     title: 'Making memories',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-lifestyle-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/light-lifestyle-horizontal-1.png',
     title: 'Being free',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-working-horizontal-2.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/light-working-horizontal-2.png',
     title: 'Getting it done',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
     title: 'Finding calm',
   },
 ];

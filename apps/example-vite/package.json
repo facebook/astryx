@@ -1,5 +1,5 @@
 {
-  "name": "@xds/example-vite",
+  "name": "@astryxdesign/example-vite",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "@stylexjs/stylex": "^0.18.3",
-    "@xds/core": "*",
-    "@xds/theme-default": "*",
+    "@astryxdesign/core": "*",
+    "@astryxdesign/theme-neutral": "*",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "unplugin": "^3.0.0"
@@ -23,7 +23,7 @@
     "@vitejs/plugin-react": "^4.3.0",
     "typescript": "^6.0.3",
     "vite": "^6.4.2",
-    "@xds/build": "*"
+    "@astryxdesign/build": "*"
   },
   "browserslist": [
     "last 1 Chrome version"

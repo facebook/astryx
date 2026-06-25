@@ -27,7 +27,7 @@ import {Text} from '../Text/Text';
 import {Button, type ButtonVariant} from '../Button';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface AlertDialogProps extends BaseProps<HTMLDialogElement> {
   ref?: React.Ref<HTMLDialogElement>;
@@ -151,7 +151,7 @@ export function AlertDialog({
       role="alertdialog"
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
-      {...mergeProps(xdsThemeProps('alert-dialog'), {className, style})}
+      {...mergeProps(themeProps('alert-dialog'), {className, style})}
       xstyle={xstyle}
       data-testid={testId}>
       <Layout

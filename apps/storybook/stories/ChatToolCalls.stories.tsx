@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {ChatToolCalls, type ChatToolCallItem} from '@xds/core/Chat';
+import {ChatToolCalls, type ChatToolCallItem} from '@astryxdesign/core/Chat';
 import {useState, useCallback} from 'react';
-import {CodeBlock} from '@xds/core/CodeBlock';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 
 const meta: Meta<typeof ChatToolCalls> = {
   title: 'Core/ChatToolCalls',

@@ -43,7 +43,7 @@ import {TableBody} from './TableBody';
 import {mergeProps} from '../utils';
 import {EmptyState} from '../EmptyState';
 import {Text} from '../Text';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   table: {
@@ -452,7 +452,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
       ref={ref}
       {...tableRenderProps.htmlProps}
       {...mergeProps(
-        xdsThemeProps('base-table'),
+        themeProps('base-table'),
         stylex.props(...tableRenderProps.styles),
         tableRenderProps.htmlProps.className,
       )}

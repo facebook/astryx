@@ -28,7 +28,7 @@ import {colorVars} from '../theme/tokens.stylex';
 import {getIcon} from './globalIconRegistry';
 import type {IconName} from './globalIconRegistry';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Styles
@@ -241,7 +241,7 @@ export function Icon({
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
-        xdsThemeProps('icon', {size, color}),
+        themeProps('icon', {size, color}),
         stylex.props(styles.root, colorStyles[color], sizeStyles[size]),
       )}
       {...props}
@@ -283,7 +283,7 @@ function IconFromRegistry({
     <span
       {...(spanProps as React.HTMLAttributes<HTMLSpanElement>)}
       {...mergeProps(
-        xdsThemeProps('icon', {size, color}),
+        themeProps('icon', {size, color}),
         stylex.props(styles.span, colorStyles[color], spanSizeStyles[size]),
       )}
       aria-hidden="true">

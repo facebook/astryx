@@ -24,7 +24,7 @@ import {resolveSize, type AvatarSize} from '../Avatar';
 import * as stylex from '@stylexjs/stylex';
 import {mergeProps} from '../utils';
 import {AvatarGroupContext} from './AvatarGroupContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const OVERLAP_RATIO = 0.25;
 
@@ -99,7 +99,7 @@ export function AvatarGroup({
         aria-label={ariaLabel}
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('avatar-group', {size}),
+          themeProps('avatar-group', {size}),
           stylex.props(styles.root, xstyle),
           className,
           style,

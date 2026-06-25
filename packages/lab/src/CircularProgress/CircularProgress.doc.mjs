@@ -57,9 +57,9 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-circular-progress', visualProps: ['variant', 'size']},
-      {className: 'xds-circular-progress-track'},
-      {className: 'xds-circular-progress-fill', visualProps: ['variant']},
+      {className: 'astryx-circular-progress', visualProps: ['variant', 'size']},
+      {className: 'astryx-circular-progress-track'},
+      {className: 'astryx-circular-progress-fill', visualProps: ['variant']},
     ],
   },
   usage: {
@@ -128,9 +128,9 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-circular-progress', visualProps: ['variant', 'size']},
-      {className: 'xds-circular-progress-track'},
-      {className: 'xds-circular-progress-fill', visualProps: ['variant']},
+      {className: 'astryx-circular-progress', visualProps: ['variant', 'size']},
+      {className: 'astryx-circular-progress-track'},
+      {className: 'astryx-circular-progress-fill', visualProps: ['variant']},
     ],
   },
   usage: {

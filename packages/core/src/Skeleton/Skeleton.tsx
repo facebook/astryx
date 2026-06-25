@@ -19,7 +19,7 @@ import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, durationVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Animation Timing Constants
@@ -182,7 +182,7 @@ export function Skeleton({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsThemeProps('skeleton'),
+        themeProps('skeleton'),
         stylex.props(
           styles.root,
           styles.animate,

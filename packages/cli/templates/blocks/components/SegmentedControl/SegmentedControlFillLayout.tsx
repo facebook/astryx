@@ -6,7 +6,7 @@ import {useState} from 'react';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
+} from '@astryxdesign/core/SegmentedControl';
 
 export default function SegmentedControlFillLayout() {
   const [value, setValue] = useState('weekly');

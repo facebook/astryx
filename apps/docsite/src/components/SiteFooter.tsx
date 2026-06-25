@@ -3,21 +3,31 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Text} from '@xds/core/Text';
-import {Link} from '@xds/core/Link';
-import {Button} from '@xds/core/Button';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Grid, GridSpan} from '@xds/core/Grid';
-import {Divider} from '@xds/core/Divider';
-import {Section} from '@xds/core/Section';
-import {useAppShellMobile} from '@xds/core/AppShell';
-import {GITHUB_REPO} from '../constants';
+import {Text} from '@astryxdesign/core/Text';
+import {Link} from '@astryxdesign/core/Link';
+import {Button} from '@astryxdesign/core/Button';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Grid, GridSpan} from '@astryxdesign/core/Grid';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Section} from '@astryxdesign/core/Section';
+import {useAppShellMobile} from '@astryxdesign/core/AppShell';
+import {
+  GITHUB_REPO,
+  DISCORD_URL,
+  FACEBOOK_URL,
+  INSTAGRAM_URL,
+  THREADS_URL,
+  X_URL,
+} from '../constants';
 import {
   AstryxLogo,
   GitHubLogo,
   ThreadsLogo,
   XLogo,
+  InstagramLogo,
+  FacebookLogo,
   MetaOpenSourceLogo,
+  DiscordLogo,
 } from './logos';
 
 const styles = stylex.create({
@@ -50,14 +60,14 @@ const FOOTER_LINKS: ReadonlyArray<{
   label: string;
   href: string;
 }> = [
-  {label: 'Docs', href: '/docs'},
-  {label: 'Changelog', href: '/changelog'},
-  {label: 'Community', href: '/community'},
-  {label: 'Blog', href: '/blog'},
+  {label: 'Docs', href: '/docs/getting-started'},
   {label: 'Components', href: '/components'},
   {label: 'Templates', href: '/templates'},
   {label: 'Themes', href: '/themes'},
   {label: 'Playground', href: '/playground'},
+  {label: 'Blog', href: '/blog'},
+  {label: 'Community', href: '/community'},
+  {label: 'Changelog', href: '/changelog'},
 ];
 
 const SOCIAL_LINKS: ReadonlyArray<{
@@ -66,8 +76,11 @@ const SOCIAL_LINKS: ReadonlyArray<{
   Icon: (props: React.SVGProps<SVGSVGElement>) => React.ReactElement;
 }> = [
   {label: 'GitHub', href: GITHUB_REPO, Icon: GitHubLogo},
-  {label: 'Threads', href: 'https://www.threads.net', Icon: ThreadsLogo},
-  {label: 'X', href: 'https://x.com', Icon: XLogo},
+  {label: 'Discord', href: DISCORD_URL, Icon: DiscordLogo},
+  {label: 'Facebook', href: FACEBOOK_URL, Icon: FacebookLogo},
+  {label: 'Instagram', href: INSTAGRAM_URL, Icon: InstagramLogo},
+  {label: 'Threads', href: THREADS_URL, Icon: ThreadsLogo},
+  {label: 'X', href: X_URL, Icon: XLogo},
 ];
 
 const LEGAL_LINKS: ReadonlyArray<{label: string; href: string}> = [

@@ -30,7 +30,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-blockquote', visualProps: []},
+      {className: 'astryx-blockquote', visualProps: []},
     ],
   },
   usage: {
@@ -68,7 +68,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-blockquote', visualProps: []},
+      {className: 'astryx-blockquote', visualProps: []},
     ],
   },
   usage: {

@@ -7,7 +7,7 @@ import * as os from 'node:os';
 import {component} from '../api/component.mjs';
 
 // These tests create a minimal monorepo fixture with:
-// - packages/core (symlinked to real @xds/core for loadDocs compatibility)
+// - packages/core (symlinked to real @astryxdesign/core for loadDocs compatibility)
 // - node_modules/@test/ext with a Button + ProfileCard component (external package)
 //
 // This tests the --package option for disambiguating overlapping component names.
@@ -46,7 +46,7 @@ export const doc = {
 
   fs.writeFileSync(path.join(extDir, 'package.json'), JSON.stringify({
     name: '@test/ext',
-    xds: {docs: './src', category: 'Common', blocks: './blocks/components'},
+    astryx: {docs: './src', category: 'Common', blocks: './blocks/components'},
   }));
   fs.writeFileSync(path.join(extSrc, 'Button', 'Button.doc.mjs'), `
 export const docs = {

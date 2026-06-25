@@ -2,10 +2,10 @@
 
 'use client';
 
-import {EmptyState} from '@xds/core/EmptyState';
-import {Button} from '@xds/core/Button';
-import {HStack} from '@xds/core/Layout';
-import {Icon} from '@xds/core/Icon';
+import {EmptyState} from '@astryxdesign/core/EmptyState';
+import {Button} from '@astryxdesign/core/Button';
+import {HStack} from '@astryxdesign/core/Layout';
+import {Icon} from '@astryxdesign/core/Icon';
 import {InboxIcon} from '@heroicons/react/24/outline';
 
 export default function EmptyStateCompact() {

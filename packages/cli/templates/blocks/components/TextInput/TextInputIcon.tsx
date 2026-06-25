@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {TextInput} from '@xds/core/TextInput';
-import {Stack} from '@xds/core/Layout';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Stack} from '@astryxdesign/core/Layout';
 import {
   EnvelopeIcon,
   LockClosedIcon,

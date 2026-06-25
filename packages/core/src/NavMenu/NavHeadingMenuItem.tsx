@@ -27,7 +27,7 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useNavHeadingMenuContext} from './NavMenuContext';
 import {useLinkComponent} from '../Link/useLinkComponent';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   root: {
@@ -151,7 +151,7 @@ export function NavHeadingMenuItem({
       onClick={handleClick}
       data-testid={testId}
       {...mergeProps(
-        xdsThemeProps('nav-heading-menu-item', {size}),
+        themeProps('nav-heading-menu-item', {size}),
         stylex.props(
           styles.root,
           sizeStyles[size],

@@ -2,12 +2,12 @@
 
 /**
  * @file vegaLiteConfig.ts
- * @input XDS theme tokens via useXDSTheme
- * @output Predefined Vega-Lite Config object for XDS-themed charts
- * @position Utility module; consumed by XDSVegaChart and exported standalone
+ * @input Astryx theme tokens via useTheme
+ * @output Predefined Vega-Lite Config object for Astryx-themed charts
+ * @position Utility module; consumed by VegaChart and exported standalone
  *
- * Ported from the internal XDS data-viz config — structural config only.
- * Colors are wired through XDS data tokens (see domainTokens/dataTokens.ts).
+ * Ported from the internal Astryx data-viz config — structural config only.
+ * Colors are wired through Astryx data tokens (see domainTokens/dataTokens.ts).
  *
  * SYNC: When modified, update this header and /packages/lab/src/VegaChart/README.md
  */
@@ -49,7 +49,7 @@ type TokenResolver = (name: string) => string;
 // ---------------------------------------------------------------------------
 
 /**
- * Build a Vega-Lite `Config` object themed with XDS tokens.
+ * Build a Vega-Lite `Config` object themed with Astryx tokens.
  *
  * Call this inside a component that has access to `useXDSTheme()`:
  *
@@ -60,7 +60,7 @@ type TokenResolver = (name: string) => string;
  *
  * The returned config sets axis styles, legend layout, line/point mark
  * defaults, title typography, and view chrome — everything except color
- * scales (which are set via `range` using the XDS data-viz tokens).
+ * scales (which are set via `range` using the Astryx data-viz tokens).
  */
 export function buildVegaLiteConfig(token: TokenResolver): VegaLiteConfig {
   return {

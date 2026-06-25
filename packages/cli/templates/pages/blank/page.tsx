@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Layout, LayoutContent} from '@xds/core';
-import {Text} from '@xds/core';
+import {Layout, LayoutContent} from '@astryxdesign/core';
+import {Text} from '@astryxdesign/core';
 
 export default function Page() {
   return (

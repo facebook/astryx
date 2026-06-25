@@ -155,7 +155,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-number-input', visualProps: ['size', 'status']},
+      {className: 'astryx-number-input', visualProps: ['size', 'status']},
     ],
   },
   usage: {
@@ -328,7 +328,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-number-input', visualProps: ['size', 'status']},
+      {className: 'astryx-number-input', visualProps: ['size', 'status']},
     ],
   },
   usage: {

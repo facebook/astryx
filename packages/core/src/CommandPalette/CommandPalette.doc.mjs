@@ -138,11 +138,11 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-command-palette-footer'},
-      {className: 'xds-command-palette-group'},
-      {className: 'xds-command-palette-input'},
-      {className: 'xds-command-palette-item'},
-      {className: 'xds-command-palette-list'},
+      {className: 'astryx-command-palette-footer'},
+      {className: 'astryx-command-palette-group'},
+      {className: 'astryx-command-palette-input'},
+      {className: 'astryx-command-palette-item'},
+      {className: 'astryx-command-palette-list'},
     ],
   },
   usage: {

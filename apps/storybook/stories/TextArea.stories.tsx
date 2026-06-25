@@ -2,8 +2,8 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {TextArea} from '@xds/core/TextArea';
-import {TextInput} from '@xds/core/TextInput';
+import {TextArea} from '@astryxdesign/core/TextArea';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {
   DocumentTextIcon,
   ChatBubbleLeftIcon,

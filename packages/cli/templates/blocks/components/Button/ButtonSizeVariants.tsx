@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Button} from '@xds/core/Button';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const SIZES = [
   {size: 'sm' as const, label: 'Small'},

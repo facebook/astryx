@@ -41,7 +41,7 @@ import type {InputStatus} from '../Field/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -661,7 +661,7 @@ export function Slider({ref, ...props}: SliderProps) {
         aria-describedby={ariaDescribedBy}
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
         {...mergeProps(
-          xdsThemeProps('slider-thumb', {
+          themeProps('slider-thumb', {
             orientation,
             disabled: isDisabled ? 'disabled' : null,
           }),
@@ -751,7 +751,7 @@ export function Slider({ref, ...props}: SliderProps) {
       style={style}>
       <div
         {...mergeProps(
-          xdsThemeProps('slider', {
+          themeProps('slider', {
             orientation,
             disabled: isDisabled ? 'disabled' : null,
           }),
@@ -775,7 +775,7 @@ export function Slider({ref, ...props}: SliderProps) {
           <div
             aria-hidden="true"
             {...mergeProps(
-              xdsThemeProps('slider-track', {orientation}),
+              themeProps('slider-track', {orientation}),
               stylex.props(
                 styles.track,
                 isHorizontal ? styles.trackHorizontal : styles.trackVertical,

@@ -2,17 +2,16 @@
 
 'use client';
 
-import {MediaTheme} from '@xds/core/theme';
-import {Section} from '@xds/core/Section';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {Badge} from '@xds/core/Badge';
-import {Icon} from '@xds/core/Icon';
+import {MediaTheme} from '@astryxdesign/core/theme';
+import {Section} from '@astryxdesign/core/Section';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Icon} from '@astryxdesign/core/Icon';
 
-// light-scene-horizontal-1 from xds_oss asset set
 const SHOWCASE_IMAGE_URL =
-  'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png';
+  'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png';
 
 export default function MediaThemeShowcase() {
   return (

@@ -10,10 +10,10 @@
  */
 
 import {useMemo, type ReactNode} from 'react';
-import {Button} from '@xds/core/Button';
-import {ButtonGroup} from '@xds/core/ButtonGroup';
-import {Icon} from '@xds/core/Icon';
-import {IconButton} from '@xds/core/IconButton';
+import {Button} from '@astryxdesign/core/Button';
+import {ButtonGroup} from '@astryxdesign/core/ButtonGroup';
+import {Icon} from '@astryxdesign/core/Icon';
+import {IconButton} from '@astryxdesign/core/IconButton';
 import {useScheduleContext} from '../context';
 import type {
   ScheduleHeaderContent,

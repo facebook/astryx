@@ -136,7 +136,7 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Heading for document structure',
-          code: `import {Heading} from '@xds/core';
+          code: `import {Heading} from '@astryxdesign/core';
 
 // Heading levels map to semantic tokens: level 1 → --text-heading-1-*
 <Heading level={1}>Page Title</Heading>
@@ -156,7 +156,7 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Text for body, label, and display text',
-          code: `import {Text} from '@xds/core';
+          code: `import {Text} from '@astryxdesign/core';
 
 <Text type="body">Body text at the base scale.</Text>
 <Text type="large">Emphasized body text.</Text>
@@ -171,7 +171,7 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Customizing the type scale via defineTheme',
-          code: `import {defineTheme} from '@xds/core';
+          code: `import {defineTheme} from '@astryxdesign/core';
 
 // Adjust the entire ramp holistically with base and ratio
 const editorialTheme = defineTheme({

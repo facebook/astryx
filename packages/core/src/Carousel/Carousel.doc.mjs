@@ -48,7 +48,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-carousel'},
+      {className: 'astryx-carousel'},
     ],
   },
 };

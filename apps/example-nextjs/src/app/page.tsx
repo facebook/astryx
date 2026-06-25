@@ -2,14 +2,16 @@
 
 'use client';
 
-import {VStack, HStack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text, Heading} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Badge} from '@xds/core/Badge';
-import {Divider} from '@xds/core';
+import {useState} from 'react';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Divider} from '@astryxdesign/core';
 
 export default function Home() {
+  const [email, setEmail] = useState('');
   return (
     <main
       style={{
@@ -26,7 +28,7 @@ export default function Home() {
             <Text type="body" color="secondary">
               This example consumes{' '}
               <Text type="body" weight="bold">
-                @xds/core
+                @astryxdesign/core
               </Text>{' '}
               
               as a pre-built dist package: no StyleX build plugin needed. Plain
@@ -65,7 +67,12 @@ export default function Home() {
           {/* Text Input */}
           <VStack gap={3}>
             <Heading level={2}>Text Input</Heading>
-            <TextInput label="Email address" placeholder="you@example.com" />
+            <TextInput
+              label="Email address"
+              placeholder="you@example.com"
+              value={email}
+              onChange={setEmail}
+            />
           </VStack>
 
           <Divider />

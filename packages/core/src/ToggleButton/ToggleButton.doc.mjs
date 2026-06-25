@@ -16,7 +16,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-toggle-button-group'},
+      {className: 'astryx-toggle-button-group'},
     ],
   },
   description: 'A button that toggles between pressed and unpressed states. Thin wrapper over Button with controlled toggle pattern, icon swap, and font weight emphasis.',
@@ -39,8 +39,8 @@ export const docs = {
     },
     {
       name: 'pressedChangeAction',
-      type: '(isPressed: boolean) => Promise<void>',
-      description: 'Async action handler for API-backed toggles. Shows loading spinner while pending.',
+      type: '(isPressed: boolean) => void | Promise<void>',
+      description: 'Action handler for API- or navigation-backed toggles, run in a transition. Shows an optimistic pressed state immediately and a (debounced) spinner while pending; interruptible by re-clicks.',
     },
     {
       name: 'size',

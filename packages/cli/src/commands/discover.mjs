@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file discover command — find external XDS packages and components
+ * @file discover command — find external Astryx packages and components
  *
  * Usage:
- *   xds discover                           List all packages
- *   xds discover @scope/name               List components in a package
- *   xds discover @scope/name/Component     Show docs for a component
- *   xds discover searchterm                Search across all packages
+ *   astryx discover                           List all packages
+ *   astryx discover @scope/name               List components in a package
+ *   astryx discover @scope/name/Component     Show docs for a component
+ *   astryx discover searchterm                Search across all packages
  */
 
 import {loadConfig} from '../lib/config.mjs';
@@ -50,7 +50,7 @@ export function registerDiscover(program) {
             if (config.packages.length === 0) {
               humanLog('No package directories configured.');
               humanLog('');
-              humanLog('Add a packages field to xds.config.mjs:');
+              humanLog('Add a packages field to astryx.config.mjs:');
               humanLog('');
               humanLog('  export default {');
               humanLog("    packages: ['/path/to/your/libs'],");
@@ -58,10 +58,10 @@ export function registerDiscover(program) {
             } else {
               humanLog('No external packages found.');
               humanLog('');
-              humanLog('Packages opt in by adding an "xds" field to package.json:');
+              humanLog('Packages opt in by adding an "astryx" field to package.json:');
               humanLog('');
               humanLog('  {');
-              humanLog('    "xds": {');
+              humanLog('    "astryx": {');
               humanLog('      "docs": "./src",');
               humanLog('      "category": "Common"');
               humanLog('    }');
@@ -91,9 +91,9 @@ export function registerDiscover(program) {
               humanLog('');
             }
             humanLog('Usage:');
-            humanLog('  xds discover <package>            Browse a package');
-            humanLog('  xds discover <package>/Component  View component docs');
-            humanLog('  xds discover <search>             Search all packages');
+            humanLog('  astryx discover <package>            Browse a package');
+            humanLog('  astryx discover <package>/Component  View component docs');
+            humanLog('  astryx discover <search>             Search all packages');
             humanLog('');
           }
           break;
@@ -110,7 +110,7 @@ export function registerDiscover(program) {
           humanLog('');
           for (const comp of result.data.components) humanLog('  ' + comp);
           humanLog('');
-          humanLog('Usage: xds discover ' + result.data.name + '/<ComponentName>');
+          humanLog('Usage: astryx discover ' + result.data.name + '/<ComponentName>');
           humanLog('');
           break;
         }
@@ -133,7 +133,7 @@ export function registerDiscover(program) {
           humanLog('Found ' + result.data.matches.length + ' matches for "' + result.data.query + '":');
           humanLog('');
           for (const m of result.data.matches) {
-            humanLog('  xds discover ' + m.package + '/' + m.component);
+            humanLog('  astryx discover ' + m.package + '/' + m.component);
           }
           humanLog('');
           break;

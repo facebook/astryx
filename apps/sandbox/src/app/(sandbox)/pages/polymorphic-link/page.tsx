@@ -9,14 +9,14 @@ import {
   type ReactNode,
 } from 'react';
 
-import {VStack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Divider} from '@xds/core';
-import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
-import {SideNav, SideNavItem} from '@xds/core/SideNav';
-import {Breadcrumbs, BreadcrumbItem} from '@xds/core/Breadcrumbs';
-import {TabList, Tab} from '@xds/core/TabList';
-import {Link, LinkProvider} from '@xds/core/Link';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Divider} from '@astryxdesign/core';
+import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
+import {SideNav, SideNavItem} from '@astryxdesign/core/SideNav';
+import {Breadcrumbs, BreadcrumbItem} from '@astryxdesign/core/Breadcrumbs';
+import {TabList, Tab} from '@astryxdesign/core/TabList';
+import {Link, LinkProvider} from '@astryxdesign/core/Link';
 import * as stylex from '@stylexjs/stylex';
 
 // =============================================================================

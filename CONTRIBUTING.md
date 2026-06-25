@@ -1,13 +1,13 @@
-# Contributing to XDS
+# Contributing to Astryx
 
-For the full contribution process — what we accept, how to propose new components, and how API decisions are made — read the **[Contributing wiki](https://github.com/facebookexperimental/xds/wiki/Contributing)**.
+For the full contribution process — what we accept, how to propose new components, and how API decisions are made — read the **[Contributing wiki](https://github.com/facebook/astryx/wiki/Contributing)**.
 
 Key pages:
 
-- **[API Conventions](https://github.com/facebookexperimental/xds/wiki/API-Conventions)** — naming, prop patterns, composition rules (read before submitting an RFC)
-- **[Specification Protocol](https://github.com/facebookexperimental/xds/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
-- **[API Arbitration](https://github.com/facebookexperimental/xds/wiki/API-Arbitration)** — how we resolve API design questions
-- **[Contributing with AI](https://github.com/facebookexperimental/xds/wiki/Contributing-with-AI-Assistants)** — safe zones, spec protocol, and working with AI tools
+- **[API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)** — naming, prop patterns, composition rules (read before submitting an RFC)
+- **[Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
+- **[API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)** — how we resolve API design questions
+- **[Contributing with AI](https://github.com/facebook/astryx/wiki/Contributing-with-AI-Assistants)** — safe zones, spec protocol, and working with AI tools
 
 This file covers local development setup.
 
@@ -32,7 +32,7 @@ Download and install from https://nodejs.org
 
 ### pnpm
 
-XDS uses [pnpm](https://pnpm.io/) as its package manager (declared in
+Astryx uses [pnpm](https://pnpm.io/) as its package manager (declared in
 the `packageManager` field of `package.json`). The easiest way to install
 it is via [Corepack](https://nodejs.org/api/corepack.html), which ships
 with Node.js:
@@ -41,7 +41,7 @@ with Node.js:
 corepack enable
 ```
 
-This makes the `pnpm` command available with the exact version XDS pins.
+This makes the `pnpm` command available with the exact version Astryx pins.
 Alternatively, install pnpm directly:
 
 ```bash
@@ -69,14 +69,14 @@ pnpm --version   # 10.x.x
 
 ```bash
 # Clone the repo
-git clone https://github.com/facebookexperimental/xds.git
-cd xds
+git clone https://github.com/facebook/astryx.git
+cd astryx
 
 # Install dependencies
 pnpm install
 
 # Build core package first (required for Storybook)
-pnpm -F @xds/core build
+pnpm -F @astryxdesign/core build
 
 # Start Storybook for component development
 cd apps/storybook
@@ -94,7 +94,7 @@ Storybook loads pre-built packages from `dist/` folders, so you need to build pa
 pnpm build
 
 # Or build just core
-pnpm -F @xds/core build
+pnpm -F @astryxdesign/core build
 ```
 
 **Start Storybook:**
@@ -110,11 +110,11 @@ Storybook will open at http://localhost:6006 with:
 - **Mode switcher** - Toggle between Light and Dark modes
 - **Component stories** - Interactive component examples
 
-**If you make changes to `@xds/core`:**
+**If you make changes to `@astryxdesign/core`:**
 
 ```bash
 # Rebuild core package
-pnpm -F @xds/core build
+pnpm -F @astryxdesign/core build
 
 # Restart Storybook to see changes
 cd apps/storybook
@@ -124,14 +124,14 @@ pnpm dev
 ## Project Structure
 
 ```
-xds/
+astryx/
 ├── apps/
 │   ├── storybook/      # Component playground (localhost:6006)
 │   └── sandbox/        # Development testing
 │
 ├── packages/
 │   ├── core/           # Core components (Button, Input, etc.)
-│   ├── cli/            # CLI tooling (npx xds)
+│   ├── cli/            # CLI tooling (npx astryx)
 │   ├── lab/            # Experimental components (not yet stable)
 │   └── themes/         # Theme presets (default, neutral, daily, and more)
 │
@@ -268,7 +268,7 @@ pnpm test
 pnpm test:watch
 
 # Specific package
-pnpm -F @xds/core test
+pnpm -F @astryxdesign/core test
 
 # With coverage
 pnpm test:coverage
@@ -289,7 +289,7 @@ src/Button/
 
 ## Versioning & Releases
 
-We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin XDS layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.
+We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin Astryx layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.
 
 ### Adding a Changeset
 
@@ -310,7 +310,7 @@ It writes a normal `.changeset/<id>.md` — commit it with your PR. The body loo
 
 ```md
 ---
-'@xds/core': patch
+'@astryxdesign/core': patch
 ---
 
 [fix] Spinner inherits the variant foreground on themed buttons (#2717)
@@ -385,7 +385,7 @@ and doesn't need network to use.
 **"Failed to fetch dynamically imported module"**
 
 - Cause: Core package not built or out of date
-- Fix: `pnpm -F @xds/core build` then restart Storybook
+- Fix: `pnpm -F @astryxdesign/core build` then restart Storybook
 
 **"React is not defined"**
 
@@ -399,7 +399,7 @@ and doesn't need network to use.
 
 **Changes not appearing in Storybook**
 
-- Rebuild the package: `pnpm -F @xds/core build`
+- Rebuild the package: `pnpm -F @astryxdesign/core build`
 - Hard refresh browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
 - Clear Storybook cache: Remove `apps/storybook/node_modules/.cache`
 

@@ -51,7 +51,7 @@ export const docs = {
   },
   relatedComponents: ['Markdown'],
   relatedHooks: [],
-  importPath: '@xds/core/hooks',
+  importPath: '@astryxdesign/core/hooks',
   category: 'streaming',
 };
 

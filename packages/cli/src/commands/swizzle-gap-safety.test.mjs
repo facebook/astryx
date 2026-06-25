@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * End-to-end safety tests for `xds swizzle --gap` and `xds gap-report`.
+ * End-to-end safety tests for `astryx swizzle --gap` and `xds gap-report`.
  *
  * Critical: these tests must NEVER actually invoke `gh issue create`. We
  * defend in depth:
  *
  *   1. We spawn the CLI in a non-TTY pipe → triggers the dry-run gate.
- *   2. We set XDS_GAP_REPORT=off as an extra belt-and-suspenders for tests
+ *   2. We set ASTRYX_GAP_REPORT=off as an extra belt-and-suspenders for tests
  *      that would otherwise risk filing.
  *   3. We unset GH_TOKEN so that any unexpected `gh` invocation fails fast.
  *   4. We put a sabotaged `gh` shim earlier on PATH that blocks real
@@ -28,7 +28,7 @@ import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const cliBin = path.resolve(__dirname, '../../bin/xds.mjs');
+const cliBin = path.resolve(__dirname, '../../bin/astryx.mjs');
 const repoRoot = path.resolve(__dirname, '../../../..');
 
 let shimDir;
@@ -133,7 +133,7 @@ describe('gap-report: dry-run by default in non-interactive mode', () => {
     expect(parsed.data.wouldFile).toBe(true);
   });
 
-  it('XDS_GAP_REPORT=off → no gh call, even with --commit flag', () => {
+  it('ASTRYX_GAP_REPORT=off → no gh call, even with --commit flag', () => {
     const r = runXds(
       [
         'gap-report',
@@ -145,7 +145,7 @@ describe('gap-report: dry-run by default in non-interactive mode', () => {
         'should be disabled',
         '--commit',
       ],
-      {env: {XDS_GAP_REPORT: 'off'}},
+      {env: {ASTRYX_GAP_REPORT: 'off'}},
     );
     // Should exit 0 with a "disabled" message; never calls gh.
     expect(r.ghWasCalled).toBe(false);
@@ -168,7 +168,7 @@ describe('gap-report: dry-run by default in non-interactive mode', () => {
         'commit flag should engage filing',
         '--commit',
       ],
-      {env: {XDS_GAP_REPORT: ''}}, // re-enable feature; shim will block real call
+      {env: {ASTRYX_GAP_REPORT: ''}}, // re-enable feature; shim will block real call
     );
     expect(r.ghWasCalled).toBe(true);
     expect(r.ghCallArgs).toContain('issue');
@@ -182,7 +182,7 @@ describe('swizzle --gap respects safety gates', () => {
   // traversal are rejected (see swizzle.path-safety.test.mjs). These gap
   // tests only care about the gh-call / status gates, so they write into a
   // *relative* output dir created under the repo root (a valid, in-root
-  // target) and clean it up afterward. The CLI still resolves @xds/core via
+  // target) and clean it up afterward. The CLI still resolves @astryxdesign/core via
   // findCoreDir walking up from the cwd.
   let swizzleOutDir;
   beforeEach(() => {
@@ -246,13 +246,13 @@ describe('swizzle --gap respects safety gates', () => {
         '--no-report',
         '--commit',
       ],
-      {env: {XDS_GAP_REPORT: ''}},
+      {env: {ASTRYX_GAP_REPORT: ''}},
     );
     expect(r.ghWasCalled).toBe(false);
     expect(r.status).toBe(0);
   });
 
-  it('swizzle --gap with XDS_GAP_REPORT=off → no gh call', () => {
+  it('swizzle --gap with ASTRYX_GAP_REPORT=off → no gh call', () => {
     const r = runXds(
       [
         'swizzle',
@@ -265,7 +265,7 @@ describe('swizzle --gap respects safety gates', () => {
         'other',
         '--commit',
       ],
-      {env: {XDS_GAP_REPORT: 'off'}},
+      {env: {ASTRYX_GAP_REPORT: 'off'}},
     );
     expect(r.ghWasCalled).toBe(false);
     expect(r.status).toBe(0);

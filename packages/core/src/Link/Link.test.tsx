@@ -282,14 +282,14 @@ describe('Link', () => {
     expect(link).not.toHaveAttribute('data-another-link');
   });
 
-  it('renders xds-* class names for theme targeting', () => {
+  it('renders astryx-* class names for theme targeting', () => {
     render(
       <Link href="/test" color="secondary">
         Themed Link
       </Link>,
     );
     const link = screen.getByRole('link', {name: 'Themed Link'});
-    expect(link.className).toContain('xds-link');
+    expect(link.className).toContain('astryx-link');
     expect(link.className).toContain('secondary');
   });
 });

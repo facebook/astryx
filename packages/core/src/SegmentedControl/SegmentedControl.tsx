@@ -26,7 +26,7 @@ import type {
 import {mergeProps, mergeRefs} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface SegmentedControlProps extends Omit<
   BaseProps<HTMLDivElement>,
@@ -206,7 +206,7 @@ export function SegmentedControl({
         aria-disabled={isDisabled || undefined}
         onKeyDown={handleKeyDown}
         {...mergeProps(
-          xdsThemeProps('segmented-control', {size}),
+          themeProps('segmented-control', {size}),
           stylex.props(
             styles.container,
             sizeStyles[size],

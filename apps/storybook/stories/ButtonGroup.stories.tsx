@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {ButtonGroup} from '@xds/core/ButtonGroup';
-import {Button} from '@xds/core/Button';
-import {IconButton} from '@xds/core/IconButton';
-import {Icon} from '@xds/core/Icon';
+import {ButtonGroup} from '@astryxdesign/core/ButtonGroup';
+import {Button} from '@astryxdesign/core/Button';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {Icon} from '@astryxdesign/core/Icon';
 import {
   ClipboardDocumentIcon,
   ScissorsIcon,

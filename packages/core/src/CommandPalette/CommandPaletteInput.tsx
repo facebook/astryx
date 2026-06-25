@@ -26,7 +26,7 @@ import {
 import {useCommandPaletteContext} from './CommandPaletteContext';
 import {useDialogContext} from '../Dialog/DialogContext';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   wrapper: {
@@ -193,7 +193,7 @@ export function CommandPaletteInput({
   return (
     <div
       {...mergeProps(
-        xdsThemeProps('command-palette-input'),
+        themeProps('command-palette-input'),
         stylex.props(styles.wrapper, xstyle),
       )}>
       <span {...stylex.props(styles.icon)}>

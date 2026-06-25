@@ -48,7 +48,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useSize} from '../SizeContext/SizeContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
@@ -385,7 +385,7 @@ export function TextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          xdsThemeProps('textarea', {size, status: status?.type ?? null}),
+          themeProps('textarea', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,

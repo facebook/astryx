@@ -50,7 +50,7 @@ import {useInternalConfig} from './useInternalConfig';
 import {usePowerSearchSource} from './usePowerSearchSource';
 import {formatFilterValue} from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import type {
   PowerSearchConfig,
   PowerSearchFilter,
@@ -966,7 +966,7 @@ export function PowerSearch({
     <>
       <div
         ref={mergeRefs(ref, popover.triggerRef as React.Ref<HTMLDivElement>)}
-        {...xdsThemeProps('power-search')}>
+        {...themeProps('power-search')}>
         <Tokenizer
           handleRef={tokenizerRef}
           label={label}

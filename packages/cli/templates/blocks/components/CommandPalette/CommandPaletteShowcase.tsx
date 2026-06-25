@@ -3,8 +3,8 @@
 'use client';
 
 import {useMemo} from 'react';
-import {CommandPalette} from '@xds/core/CommandPalette';
-import {createStaticSource} from '@xds/core/Typeahead';
+import {CommandPalette} from '@astryxdesign/core/CommandPalette';
+import {createStaticSource} from '@astryxdesign/core/Typeahead';
 
 // Remove isInline for production — command palettes should be modal.
 export default function CommandPaletteShowcase() {

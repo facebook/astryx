@@ -3,15 +3,15 @@
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
-import {Carousel} from '@xds/core/Carousel';
-import {Thumbnail} from '@xds/core/Thumbnail';
-import {Card} from '@xds/core/Card';
+import {Carousel} from '@astryxdesign/core/Carousel';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
+import {Card} from '@astryxdesign/core/Card';
 import {
   colorVars,
   spacingVars,
   typographyVars,
   radiusVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   pageWrapper: {

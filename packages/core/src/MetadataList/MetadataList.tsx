@@ -30,7 +30,7 @@ import {
 } from './MetadataListContext';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -260,7 +260,7 @@ export function MetadataList({
         ref={ref}
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('metadata-list', {
+          themeProps('metadata-list', {
             columns: String(columns),
             orientation,
           }),

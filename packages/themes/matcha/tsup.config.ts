@@ -6,6 +6,6 @@ export default defineConfig({
   entry: ['src/source.ts', 'src/icons.tsx'],
   format: ['cjs', 'esm'],
   dts: false,
-  clean: false, // Don't clean — xds theme build already put theme files in dist/
-  external: ['@xds/core', 'react', 'lucide-react'],
+  clean: false, // Don't clean — astryx theme build already put theme files in dist/
+  external: ['@astryxdesign/core', 'react', 'lucide-react'],
 });

@@ -129,10 +129,10 @@ if [ -n "$ITER_ID" ]; then
   mkdir -p "results/$ITER_ID/results"
 
   cat > "results/$ITER_ID/results/$PROMPT_ID.tsx" << 'FIXTURE'
-import {XDSCard} from '@xds/core';
-import {XDSText} from '@xds/core';
-import {XDSHeading} from '@xds/core';
-import {XDSVStack} from '@xds/core';
+import {XDSCard} from '@astryxdesign/core';
+import {XDSText} from '@astryxdesign/core';
+import {XDSHeading} from '@astryxdesign/core';
+import {XDSVStack} from '@astryxdesign/core';
 
 export default function MetricsCard() {
   return (
@@ -303,7 +303,7 @@ if [ -n "$ITER_ID" ] && [ -n "${ITER_ID2:-}" ]; then
     PASS=$((PASS + 1))
   else
     # Check if this is the known vite theme alias bug (pre-existing, not our fault)
-    if echo "$REPORT_OUTPUT" | grep -q "EISDIR\|themes/default/src"; then
+    if echo "$REPORT_OUTPUT" | grep -q "EISDIR\|themes/neutral/src"; then
       echo -e "  ${YELLOW}⊘${NC} pnpm report:build skipped (known vite theme alias issue — not related to scoring)"
       SKIP=$((SKIP + 1))
     else

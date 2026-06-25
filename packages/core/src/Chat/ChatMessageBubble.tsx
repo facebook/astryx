@@ -37,7 +37,7 @@ import {
 import {useChatMessageContext} from './ChatContext';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export type ChatMessageBubbleVariant = 'filled' | 'ghost';
 
@@ -277,7 +277,7 @@ export function ChatMessageBubble({
         ref={ref}
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('chat-message-bubble', {sender, variant, density}),
+          themeProps('chat-message-bubble', {sender, variant, density}),
           stylex.props(
             styles.content,
             density === 'compact' && styles.radiusCompact,

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Blockquote} from '@xds/core/Blockquote';
-import {Stack} from '@xds/core/Layout';
+import {Blockquote} from '@astryxdesign/core/Blockquote';
+import {Stack} from '@astryxdesign/core/Layout';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

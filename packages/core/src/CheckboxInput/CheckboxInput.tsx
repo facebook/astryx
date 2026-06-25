@@ -46,7 +46,7 @@ import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
 import {mergeProps, mergeRefs} from '../utils';
 import {checkboxScope} from './checkbox.markers.stylex';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   container: {
@@ -401,7 +401,7 @@ export function CheckboxInput({
   return (
     <div
       {...mergeProps(
-        xdsThemeProps('checkbox-input', {size}),
+        themeProps('checkbox-input', {size}),
         stylex.props(width != null && dynamicWidthStyles.width(width), xstyle),
         className,
         style,
@@ -450,7 +450,7 @@ export function CheckboxInput({
           <div
             aria-hidden="true"
             {...mergeProps(
-              xdsThemeProps('checkbox', {
+              themeProps('checkbox', {
                 size,
                 checked: isChecked
                   ? 'checked'

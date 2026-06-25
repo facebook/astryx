@@ -9,7 +9,7 @@
  * @position Concrete schedule view; exported as createScheduleWeeklyView
  */
 
-import {plainDateAddDays, plainDateSetStartOfWeek} from '@xds/core/utils';
+import {plainDateAddDays, plainDateSetStartOfWeek} from '@astryxdesign/core/utils';
 import {enumerateDates, getScheduleRangeFromDates} from './dateMath';
 import {useScheduleContext} from './context';
 import {

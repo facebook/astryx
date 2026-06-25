@@ -23,39 +23,39 @@ import {
   Wallet,
   User,
 } from 'lucide-react';
-import {Text, Heading} from '@xds/core/Text';
-import {VStack, HStack} from '@xds/core/Layout';
-import {useAppShellMobile} from '@xds/core/AppShell';
-import {Grid, GridSpan} from '@xds/core/Grid';
-import {Card} from '@xds/core/Card';
-import {Button} from '@xds/core/Button';
-import {Link} from '@xds/core/Link';
-import {Badge} from '@xds/core/Badge';
-import {Banner} from '@xds/core/Banner';
-import {Divider} from '@xds/core/Divider';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {Item} from '@xds/core/Item';
-import {Table, proportional, pixel} from '@xds/core/Table';
-import {TextInput} from '@xds/core/TextInput';
-import {Selector} from '@xds/core/Selector';
-import {RadioList, RadioListItem} from '@xds/core/RadioList';
-import {SelectableCard} from '@xds/core/SelectableCard';
-import {MoreMenu} from '@xds/core/MoreMenu';
-import {Center} from '@xds/core/Center';
-import {Section} from '@xds/core/Section';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {NumberInput} from '@xds/core/NumberInput';
-import {OverflowList} from '@xds/core/OverflowList';
-import {TopNav, TopNavHeading, TopNavItem} from '@xds/core/TopNav';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {useAppShellMobile} from '@astryxdesign/core/AppShell';
+import {Grid, GridSpan} from '@astryxdesign/core/Grid';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {Link} from '@astryxdesign/core/Link';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Banner} from '@astryxdesign/core/Banner';
+import {Divider} from '@astryxdesign/core/Divider';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {Item} from '@astryxdesign/core/Item';
+import {Table, proportional, pixel} from '@astryxdesign/core/Table';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Selector} from '@astryxdesign/core/Selector';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
+import {SelectableCard} from '@astryxdesign/core/SelectableCard';
+import {MoreMenu} from '@astryxdesign/core/MoreMenu';
+import {Center} from '@astryxdesign/core/Center';
+import {Section} from '@astryxdesign/core/Section';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {OverflowList} from '@astryxdesign/core/OverflowList';
+import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
 import {
   ChatComposer,
   ChatMessage,
   ChatMessageBubble,
   ChatMessageList,
   ChatSystemMessage,
-} from '@xds/core/Chat';
+} from '@astryxdesign/core/Chat';
 
-// Styles passed to XDS components via their `xstyle` prop. These are
+// Styles passed to Astryx components via their `xstyle` prop. These are
 // applied by the components themselves, so they work in compiled builds
 // and in the live playground preview alike.
 const styles = stylex.create({
@@ -290,9 +290,9 @@ const DEFAULT_PRODUCTS: ProductSpec[] = [
   },
 ];
 
-// Neutral product photos, served from the shared xds_oss asset CDN so the
+// Neutral product photos, served from the shared astryx asset CDN so the
 // scaffolded template renders real imagery without needing local public assets.
-const NEUTRAL_CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+const NEUTRAL_CDN = 'https://lookaside.facebook.com/assets/astryx';
 const DEFAULT_IMAGES: Record<string, string> = {
   watch: `${NEUTRAL_CDN}/Neutral-Watch.png`,
   headphones: `${NEUTRAL_CDN}/Neutral-Headphones.png`,

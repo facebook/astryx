@@ -27,7 +27,7 @@ import {stackItem} from '../Stack/stackItem.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SpacingStep} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import {
   layoutPaddingOuterXVarStyles,
   layoutPaddingOuterYVarStyles,
@@ -258,7 +258,7 @@ export function Layout({
       <div
         ref={ref}
         {...mergeProps(
-          xdsThemeProps('layout', {height}),
+          themeProps('layout', {height}),
           stylex.props(
             styles.layoutOuter,
             isFill ? styles.fill : styles.auto,

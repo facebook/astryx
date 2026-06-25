@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Spinner} from '@xds/core/Spinner';
-import {HStack} from '@xds/core/Layout';
+import {Spinner} from '@astryxdesign/core/Spinner';
+import {HStack} from '@astryxdesign/core/Layout';
 
 export default function SpinnerOnMedia() {
   return (

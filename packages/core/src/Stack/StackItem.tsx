@@ -21,7 +21,7 @@ import {
   type StackItemSize,
 } from './stackItem.stylex';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface StackItemProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
@@ -110,7 +110,7 @@ export function StackItem({
     {
       ref: ref as Ref<Element>,
       ...mergeProps(
-        xdsThemeProps('stack-item', {size}),
+        themeProps('stack-item', {size}),
         stylexProps,
         className,
         style,

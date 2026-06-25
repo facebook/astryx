@@ -24,7 +24,7 @@ import * as stylex from '@stylexjs/stylex';
 import {mergeProps, mergeRefs} from '../utils';
 import {useOverflow} from '../hooks/useOverflow';
 import {spacingVars} from '../theme/tokens.stylex';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   container: {
@@ -246,7 +246,7 @@ export function OverflowList({
       <div
         ref={mergeRefs(ref, containerRef)}
         {...mergeProps(
-          xdsThemeProps('overflow-list'),
+          themeProps('overflow-list'),
           stylex.props(
             styles.container,
             gapStyles[gap],

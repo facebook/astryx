@@ -48,7 +48,7 @@ import {Heading} from '../Heading/Heading';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Styles
@@ -399,7 +399,7 @@ export function MobileNav({
       onClick={handleDialogClick}
       onCancel={handleCancel}
       {...mergeProps(
-        xdsThemeProps('mobile-nav', {side: resolvedSide}),
+        themeProps('mobile-nav', {side: resolvedSide}),
         stylex.props(
           styles.dialog,
           isOpen && styles.open,

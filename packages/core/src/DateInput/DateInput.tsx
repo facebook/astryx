@@ -135,7 +135,7 @@ export type {
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface DateInputProps extends Omit<
   BaseProps,
@@ -516,7 +516,7 @@ export function DateInput({
         ref={popover.triggerRef}
         {...rest}
         {...mergeProps(
-          xdsThemeProps('date-input', {size, status: status?.type ?? null}),
+          themeProps('date-input', {size, status: status?.type ?? null}),
           stylex.props(
             inputWrapperStyles.base,
             sizeStyles[size],

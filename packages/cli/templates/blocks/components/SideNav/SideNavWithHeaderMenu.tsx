@@ -8,9 +8,9 @@ import {
   SideNavHeading,
   SideNavItem,
   SideNavSection,
-} from '@xds/core/SideNav';
-import {ListItem} from '@xds/core/List';
-import {NavIcon} from '@xds/core/NavIcon';
+} from '@astryxdesign/core/SideNav';
+import {ListItem} from '@astryxdesign/core/List';
+import {NavIcon} from '@astryxdesign/core/NavIcon';
 
 function HomeIcon(props: ComponentProps<'svg'>) {
   return (

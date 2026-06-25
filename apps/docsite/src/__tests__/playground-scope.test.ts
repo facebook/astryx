@@ -4,14 +4,14 @@
  * @file Playground scope coverage test.
  *
  * Validates that the generated playground scope includes every public
- * component exported from @xds/core/package.json, plus the expected
+ * component exported from @astryxdesign/core/package.json, plus the expected
  * non-component scope entries (themes, icons, stylex, react, next/image).
  *
  * This test reads the generated file as text (rather than importing it)
- * because the scope imports @xds/core/* which requires a prior build step.
+ * because the scope imports @astryxdesign/core/* which requires a prior build step.
  * Instead we verify the generator produced the correct import/scope lines.
  *
- * Run: pnpm -F @xds/docsite test
+ * Run: pnpm -F @astryxdesign/docsite test
  */
 
 import * as fs from 'node:fs';
@@ -67,23 +67,23 @@ describe('playground-scope', () => {
 
   // ── Component coverage ─────────────────────────────────────────────────
 
-  it('imports every PascalCase component from @xds/core', () => {
+  it('imports every PascalCase component from @astryxdesign/core', () => {
     const missing = expectedComponents.filter(
       name =>
-        !scopeContent.includes(`import * as ${name} from '@xds/core/${name}';`),
+        !scopeContent.includes(`import * as ${name} from '@astryxdesign/core/${name}';`),
     );
     expect(missing).toEqual([]);
   });
 
   it('has a scope entry for every component', () => {
     const missing = expectedComponents.filter(
-      name => !scopeContent.includes(`'@xds/core/${name}': ${name},`),
+      name => !scopeContent.includes(`'@astryxdesign/core/${name}': ${name},`),
     );
     expect(missing).toEqual([]);
   });
 
-  it('has a barrel @xds/core entry that spreads all components', () => {
-    expect(scopeContent).toContain("'@xds/core': {");
+  it('has a barrel @astryxdesign/core entry that spreads all components', () => {
+    expect(scopeContent).toContain("'@astryxdesign/core': {");
     const missing = expectedComponents.filter(
       name => !scopeContent.includes(`...${name},`),
     );
@@ -93,7 +93,7 @@ describe('playground-scope', () => {
   it('component count matches core exports', () => {
     const importLines = scopeContent
       .split('\n')
-      .filter(l => l.match(/^import \* as \w+ from '@xds\/core\/[A-Z]/));
+      .filter(l => l.match(/^import \* as \w+ from '@astryxdesign\/core\/[A-Z]/));
     expect(importLines.length).toBe(expectedComponents.length);
   });
 
@@ -115,18 +115,16 @@ describe('playground-scope', () => {
   });
 
   it('includes all theme entries (bare and /built subpath)', () => {
-    expect(scopeContent).toContain("'@xds/theme-default':");
-    expect(scopeContent).toContain("'@xds/theme-default/built':");
-    expect(scopeContent).toContain("'@xds/theme-neutral':");
-    expect(scopeContent).toContain("'@xds/theme-neutral/built':");
-    expect(scopeContent).toContain("'@xds/theme-matcha':");
-    expect(scopeContent).toContain("'@xds/theme-matcha/built':");
+    expect(scopeContent).toContain("'@astryxdesign/theme-neutral':");
+    expect(scopeContent).toContain("'@astryxdesign/theme-neutral/built':");
+    expect(scopeContent).toContain("'@astryxdesign/theme-matcha':");
+    expect(scopeContent).toContain("'@astryxdesign/theme-matcha/built':");
   });
 
   it('includes Theme controlled wrapper and tokens', () => {
-    expect(scopeContent).toContain("'@xds/core/theme': {Theme:");
+    expect(scopeContent).toContain("'@astryxdesign/core/theme': {Theme:");
     expect(scopeContent).toContain(
-      "'@xds/core/theme/tokens.stylex': xdsTokens,",
+      "'@astryxdesign/core/theme/tokens.stylex': xdsTokens,",
     );
     expect(scopeContent).toContain('ControlledTheme');
     expect(scopeContent).toContain('SCOPE_THEMES');

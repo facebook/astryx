@@ -30,7 +30,7 @@ import {
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Variant type
@@ -262,7 +262,7 @@ export function Card({
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('card', {variant}),
+        themeProps('card', {variant}),
         stylex.props(
           styles.card,
           variantStyles[variant],

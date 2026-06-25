@@ -3,18 +3,15 @@
 'use client';
 
 import {useState, createContext, useContext, useEffect} from 'react';
-import {Theme} from '@xds/core/theme';
-import {LayerProvider} from '@xds/core/Layer';
-import {defaultTheme} from '@xds/theme-default/built';
-import {neutralTheme} from '@xds/theme-neutral/built';
-import {brutalistTheme} from '@xds/theme-brutalist/built';
-import {matchaTheme} from '@xds/theme-matcha/built';
-import {dailyTheme} from '@xds/theme-daily/built';
-import {stoneTheme} from '@xds/theme-stone/built';
-import {gothicTheme} from '@xds/theme-gothic/built';
-import {chocolateTheme} from '@xds/theme-chocolate/built';
-import {y2kTheme} from '@xds/theme-y2k/built';
-import type {DefinedTheme, ThemeMode} from '@xds/core/theme';
+import {Theme} from '@astryxdesign/core/theme';
+import {LayerProvider} from '@astryxdesign/core/Layer';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+import {matchaTheme} from '@astryxdesign/theme-matcha/built';
+import {stoneTheme} from '@astryxdesign/theme-stone/built';
+import {gothicTheme} from '@astryxdesign/theme-gothic/built';
+import {chocolateTheme} from '@astryxdesign/theme-chocolate/built';
+import {y2kTheme} from '@astryxdesign/theme-y2k/built';
+import type {DefinedTheme, ThemeMode} from '@astryxdesign/core/theme';
 
 /**
  * Ordered list of available themes — single source of truth.
@@ -28,11 +25,8 @@ export const SANDBOX_THEMES: ReadonlyArray<{
   label: string;
   theme: DefinedTheme;
 }> = [
-  {id: 'default', label: 'Default', theme: defaultTheme},
   {id: 'neutral', label: 'Neutral', theme: neutralTheme},
-  {id: 'brutalist', label: 'Brutalist', theme: brutalistTheme},
   {id: 'matcha', label: 'Matcha', theme: matchaTheme},
-  {id: 'daily', label: 'Daily', theme: dailyTheme},
   {id: 'stone', label: 'Stone', theme: stoneTheme},
   {id: 'gothic', label: 'Gothic', theme: gothicTheme},
   {id: 'chocolate', label: 'Chocolate', theme: chocolateTheme},
@@ -51,7 +45,7 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue>({
-  themeName: 'default',
+  themeName: 'neutral',
   setThemeName: () => {},
   mode: 'light',
   setMode: () => {},
@@ -59,8 +53,8 @@ const ThemeContext = createContext<ThemeContextValue>({
 
 export const useThemeControls = () => useContext(ThemeContext);
 
-const THEME_STORAGE_KEY = 'xds-sandbox-theme';
-const MODE_STORAGE_KEY = 'xds-sandbox-mode';
+const THEME_STORAGE_KEY = 'astryx-sandbox-theme';
+const MODE_STORAGE_KEY = 'astryx-sandbox-mode';
 
 /**
  * Reads theme/mode from URL search params when rendered inside an embed iframe.
@@ -77,7 +71,7 @@ function getEmbedThemeParams(): {
   isEmbed: boolean;
 } {
   if (typeof window === 'undefined') {
-    return {initialTheme: 'default', initialMode: 'light', isEmbed: false};
+    return {initialTheme: 'neutral', initialMode: 'light', isEmbed: false};
   }
   const params = new URLSearchParams(window.location.search);
   const isEmbed = params.get('embed') === '1';
@@ -86,7 +80,7 @@ function getEmbedThemeParams(): {
 
   return {
     initialTheme:
-      isEmbed && paramTheme && paramTheme in themes ? paramTheme : 'default',
+      isEmbed && paramTheme && paramTheme in themes ? paramTheme : 'neutral',
     initialMode:
       isEmbed && (paramMode === 'light' || paramMode === 'dark')
         ? (paramMode as ThemeMode)
@@ -155,7 +149,7 @@ export function Providers({children}: {children: React.ReactNode}) {
       return;
     }
     const handler = (event: MessageEvent) => {
-      if (event.data?.type === 'xds-theme-sync') {
+      if (event.data?.type === 'astryx-theme-sync') {
         const {theme: newTheme, mode: newMode} = event.data;
         if (newTheme && newTheme in themes) {
           setThemeName(newTheme);
@@ -174,7 +168,7 @@ export function Providers({children}: {children: React.ReactNode}) {
     document.documentElement.style.setProperty('color-scheme', mode);
   }, [mode]);
 
-  const theme = themes[themeName] || defaultTheme;
+  const theme = themes[themeName] || neutralTheme;
 
   return (
     <ThemeContext.Provider value={{themeName, setThemeName, mode, setMode}}>

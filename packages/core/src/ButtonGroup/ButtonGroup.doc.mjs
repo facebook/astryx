@@ -15,7 +15,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-button-group'},
+      {className: 'astryx-button-group'},
     ],
   },
   components: [

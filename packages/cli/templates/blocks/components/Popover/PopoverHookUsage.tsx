@@ -2,12 +2,12 @@
 
 'use client';
 
-import {usePopover} from '@xds/core/Popover';
-import {Button} from '@xds/core/Button';
-import {Card} from '@xds/core/Card';
-import {Center} from '@xds/core/Center';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {usePopover} from '@astryxdesign/core/Popover';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Center} from '@astryxdesign/core/Center';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function PopoverHookUsage() {
   const popover = usePopover({dialogLabel: 'Quick actions'});

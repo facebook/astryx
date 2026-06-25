@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import React from 'react';
-import type {XDSIconRegistry} from '@xds/core/Icon';
+import type {IconRegistry} from '@astryxdesign/core/Icon';
 
 import {
   X,
@@ -37,7 +37,7 @@ const iconProps = {
   'aria-hidden': true as const,
 };
 
-export const y2kIconRegistry: XDSIconRegistry = {
+export const y2kIconRegistry: IconRegistry = {
   close: <X {...iconProps} />,
   chevronDown: <ChevronDown {...iconProps} />,
   chevronLeft: <ChevronLeft {...iconProps} />,

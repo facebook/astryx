@@ -9,11 +9,11 @@
  * next.
  *
  * Usage:
- *   xds search button                 Ranked results across all domains
- *   xds search modal --type component Filter to a single domain
- *   xds search forms --limit 5        Cap the result count
- *   xds search button --detail        Verbose (include import / reason)
- *   xds search button --json          Typed JSON envelope
+ *   astryx search button                 Ranked results across all domains
+ *   astryx search modal --type component Filter to a single domain
+ *   astryx search forms --limit 5        Cap the result count
+ *   astryx search button --detail        Verbose (include import / reason)
+ *   astryx search button --json          Typed JSON envelope
  */
 
 import {getRunPrefix} from '../utils/package-manager.mjs';
@@ -71,7 +71,7 @@ export function registerSearch(program) {
         humanLog('');
         humanLog(`No results for "${q}".`);
         humanLog('');
-        humanLog(`Try a broader term, or browse: ${run} xds component --list`);
+        humanLog(`Try a broader term, or browse: ${run} astryx component --list`);
         humanLog('');
         return;
       }

@@ -30,7 +30,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {computeTargetAndRel} from '../Link/computeTargetAndRel';
 import {useLinkComponent} from '../Link/useLinkComponent';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -474,7 +474,7 @@ export function Item({
       aria-disabled={isDisabled || undefined}
       {...restProps}
       {...mergeProps(
-        xdsThemeProps('item', {density, align}),
+        themeProps('item', {density, align}),
         stylex.props(
           styles.root,
           densityStyles[density],

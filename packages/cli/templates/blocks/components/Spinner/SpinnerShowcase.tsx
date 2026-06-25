@@ -2,7 +2,7 @@
 
 'use client';
 
-import {Spinner} from '@xds/core/Spinner';
+import {Spinner} from '@astryxdesign/core/Spinner';
 
 export default function SpinnerShowcase() {
   return <Spinner size="lg" />;

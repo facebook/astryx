@@ -6,7 +6,7 @@ import {resolve} from 'path';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   webpack: (config) => {
-    // Force ESM resolution for @xds/core — the CJS dist has a bug where
+    // Force ESM resolution for @astryxdesign/core — the CJS dist has a bug where
     // "use client" appears after Object.defineProperty(exports, "__esModule").
     config.resolve.conditionNames = ['import', 'module', 'require', 'default'];
 
@@ -17,7 +17,7 @@ const nextConfig = {
       .filter((d) => d.isDirectory())
       .map((d) => d.name);
     for (const t of themes) {
-      config.resolve.alias[`@xds/theme-${t}/theme.css`] =
+      config.resolve.alias[`@astryxdesign/theme-${t}/theme.css`] =
         resolve(themesDir, t, 'dist/theme.css');
     }
 

@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Layout, LayoutContent, VStack} from '@xds/core/Layout';
-import {Card} from '@xds/core/Card';
-import {Heading, Text} from '@xds/core/Text';
+import {Layout, LayoutContent, VStack} from '@astryxdesign/core/Layout';
+import {Card} from '@astryxdesign/core/Card';
+import {Heading, Text} from '@astryxdesign/core/Text';
 
 export default function LayoutContentOnlyLayout() {
   return (

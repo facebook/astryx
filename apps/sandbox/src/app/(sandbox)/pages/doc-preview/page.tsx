@@ -4,16 +4,16 @@
 
 import { useState, useEffect } from "react";
 import * as stylex from "@stylexjs/stylex";
-import { HStack } from "@xds/core/Layout";
-import { Text } from "@xds/core/Text";
+import { HStack } from "@astryxdesign/core/Layout";
+import { Text } from "@astryxdesign/core/Text";
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from "@xds/core/SegmentedControl";
-import { Spinner } from "@xds/core/Spinner";
-import type { ReferenceDoc } from "@xds/core";
+} from "@astryxdesign/core/SegmentedControl";
+import { Spinner } from "@astryxdesign/core/Spinner";
+import type { ReferenceDoc } from "@astryxdesign/core";
 import { DocPreview } from "./DocPreview";
-import { ThemeContext } from "@xds/core/theme";
+import { ThemeContext } from "@astryxdesign/core/theme";
 import { useContext } from "react";
 
 const styles = stylex.create({

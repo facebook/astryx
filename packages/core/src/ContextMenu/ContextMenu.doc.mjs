@@ -10,7 +10,7 @@ export const docs = {
   keywords: ["contextmenu","right-click","menu","popover","actions","context"],
   theming: {
     targets: [
-      {className: 'xds-context-menu'},
+      {className: 'astryx-context-menu'},
     ],
     vars: [
       {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-container)', private: true},

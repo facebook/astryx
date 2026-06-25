@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Programmatic API types for @xds/cli/api.
+ * Programmatic API types for @astryxdesign/cli/api.
  *
  * Every function returns the same { type, data } envelope as `xds --json`.
- * Errors throw XDSError.
+ * Errors throw AstryxError.
  */
 
 import type {
@@ -47,7 +47,7 @@ import type {ErrorCode} from './error-codes';
 import type {DoctorResponse} from './doctor';
 
 /** Structured API error with a stable machine-readable code. */
-export declare class XDSError extends Error {
+export declare class AstryxError extends Error {
   /** Stable error code; consumers branch on this, never the message. */
   code: ErrorCode;
   suggestions?: Array<{name: string; reason: string}>;

@@ -3,8 +3,8 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {ChatComposer} from '@xds/core/Chat';
-import {Stack} from '@xds/core/Layout';
+import {ChatComposer} from '@astryxdesign/core/Chat';
+import {Stack} from '@astryxdesign/core/Layout';
 
 const styles = stylex.create({
   root: {

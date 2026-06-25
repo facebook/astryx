@@ -6,9 +6,9 @@ import {useState} from 'react';
 import {
   SegmentedControl,
   SegmentedControlItem,
-} from '@xds/core/SegmentedControl';
-import {Center} from '@xds/core/Center';
-import {Icon} from '@xds/core/Icon';
+} from '@astryxdesign/core/SegmentedControl';
+import {Center} from '@astryxdesign/core/Center';
+import {Icon} from '@astryxdesign/core/Icon';
 
 export default function SegmentedControlItemShowcase() {
   const [view, setView] = useState('board');

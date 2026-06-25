@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Collapsible} from '@xds/core/Collapsible';
-import {Divider} from '@xds/core/Divider';
-import {Text} from '@xds/core/Text';
-import {VStack} from '@xds/core/Layout';
+import {Collapsible} from '@astryxdesign/core/Collapsible';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Text} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
 
 export default function CollapsibleWithoutCard() {
   return (

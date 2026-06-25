@@ -5,9 +5,9 @@
 import {useState, useMemo} from 'react';
 import {usePathname} from 'next/navigation';
 import {Search} from 'lucide-react';
-import {AppShell} from '@xds/core/AppShell';
-import {SideNav, SideNavItem, SideNavSection} from '@xds/core/SideNav';
-import {TextInput} from '@xds/core/TextInput';
+import {AppShell} from '@astryxdesign/core/AppShell';
+import {SideNav, SideNavItem, SideNavSection} from '@astryxdesign/core/SideNav';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import {SharedTopNav} from './SharedTopNav';
 import type {ComponentEntry} from '../generated/componentRegistry';
 import type {PackageMeta} from '../generated/packageRegistry';
@@ -102,6 +102,18 @@ export function DocsShell({
   // navigation.
   const isOnComponentsRoute = pathname.startsWith('/components');
 
+  const componentSearch = (
+    <TextInput
+      label="Search components"
+      isLabelHidden
+      value={componentQuery}
+      onChange={setComponentQuery}
+      placeholder="Search components…"
+      startIcon={Search}
+      hasClear
+    />
+  );
+
   return (
     <AppShell
       variant="surface"
@@ -109,7 +121,7 @@ export function DocsShell({
       mobileNav={{defaultIsMobile}}
       topNav={<SharedTopNav />}
       sideNav={
-        <SideNav>
+        <SideNav topContent={isOnComponentsRoute ? componentSearch : undefined}>
           {!isOnComponentsRoute && (
             <>
               {/* Getting Started */}
@@ -167,9 +179,9 @@ export function DocsShell({
                     <SideNavItem
                       key={p.name}
                       label={p.name}
-                      href={`/docs/${p.name.replace('@xds/', '')}`}
+                      href={`/docs/${p.name.replace('@astryxdesign/', '')}`}
                       isSelected={
-                        pathname === `/docs/${p.name.replace('@xds/', '')}`
+                        pathname === `/docs/${p.name.replace('@astryxdesign/', '')}`
                       }
                     />
                   ))}
@@ -182,16 +194,6 @@ export function DocsShell({
           {isOnComponentsRoute && (
             <>
               <SideNavSection title="Components" isHeaderHidden>
-                <TextInput
-                  label="Search components"
-                  isLabelHidden
-                  value={componentQuery}
-                  onChange={setComponentQuery}
-                  placeholder="Search components…"
-                  startIcon={Search}
-                  hasClear
-                  style={{marginBottom: 'var(--spacing-3)'}}
-                />
                 {!q && (
                   <SideNavItem
                     label="Overview"

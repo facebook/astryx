@@ -10,9 +10,9 @@ import {
   LayoutPanel,
   Card,
   HStack,
-} from '@xds/core/Layout';
-import {Center} from '@xds/core/Center';
-import {Button} from '@xds/core/Button';
+} from '@astryxdesign/core/Layout';
+import {Center} from '@astryxdesign/core/Center';
+import {Button} from '@astryxdesign/core/Button';
 
 export default function LayoutFooterShowcase() {
   return (

@@ -2,9 +2,9 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {TabList, Tab, TabMenu} from '@xds/core/TabList';
-import {Carousel} from '@xds/core/Carousel';
-import {Button} from '@xds/core/Button';
+import {TabList, Tab, TabMenu} from '@astryxdesign/core/TabList';
+import {Carousel} from '@astryxdesign/core/Carousel';
+import {Button} from '@astryxdesign/core/Button';
 import {PlusIcon, FunnelIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof TabList> = {

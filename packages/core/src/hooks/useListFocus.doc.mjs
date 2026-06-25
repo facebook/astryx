@@ -78,7 +78,7 @@ export const docs = {
   },
   relatedComponents: ['TabMenu', 'Toolbar'],
   relatedHooks: ['useGridFocus', 'useFocusTrap'],
-  importPath: '@xds/core/hooks',
+  importPath: '@astryxdesign/core/hooks',
   category: 'focus',
 };
 

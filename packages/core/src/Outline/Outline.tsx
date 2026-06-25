@@ -4,7 +4,7 @@
 
 /**
  * @file Outline.tsx
- * @input Uses React, StyleX, XDS link provider integration, Outline hooks/types
+ * @input Uses React, StyleX, Astryx link provider integration, Outline hooks/types
  * @output Exports Outline component and OutlineProps type
  * @position Core implementation; consumed by index.ts
  *
@@ -36,7 +36,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useScrollSpy} from './useScrollSpy';
 import type {OutlineItem} from './types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export type {OutlineItem} from './types';
 
@@ -217,8 +217,9 @@ function getIndentStyle(level: number) {
  * indentation based on each heading level. Features a sliding indicator
  * track that animates to the active item.
  *
- * When `activeId` is omitted, it observes heading elements by id and marks
- * the topmost visible heading active.
+ * When `activeId` is omitted, it tracks scroll position and marks the last
+ * heading whose top has passed its activation line (its scroll-margin-top)
+ * active — defaulting to the first item at the top and the last at the bottom.
  *
  * @example
  * ```
@@ -246,7 +247,12 @@ export function Outline({
 }: OutlineProps) {
   const rootRef = useRef<HTMLElement | null>(null);
   const LinkComponent = useLinkComponent();
-  const [resolvedActiveId, setActiveId] = useScrollSpy({
+  const isControlled = activeId !== undefined;
+  const {
+    activeId: resolvedActiveId,
+    setActiveId,
+    lockActiveId,
+  } = useScrollSpy({
     activeId,
     items,
     onActiveIdChange,
@@ -256,8 +262,9 @@ export function Outline({
   const handleClick =
     (id: string) => (event: React.MouseEvent<HTMLElement>) => {
       const target = document.getElementById(id);
-      setActiveId(id);
 
+      // Let the browser handle modified clicks (open in new tab, etc.) and
+      // missing targets without touching the active state.
       if (
         target == null ||
         event.defaultPrevented ||
@@ -271,6 +278,18 @@ export function Outline({
 
       event.preventDefault();
       window.history.pushState(null, '', `#${id}`);
+
+      // Move the indicator to the clicked item in a single step. Controlled
+      // consumers own the active state (notify only); uncontrolled mode pins
+      // the active id and suppresses scroll-spy until the next manual scroll,
+      // so the click is honored — even for short/last sections — and the
+      // indicator doesn't chase the smooth scroll through other sections.
+      if (isControlled) {
+        setActiveId(id);
+      } else {
+        lockActiveId(id);
+      }
+
       target.scrollIntoView({behavior: 'smooth', block: 'start'});
     };
 
@@ -281,7 +300,7 @@ export function Outline({
       aria-label={label}
       data-testid={testId}
       {...mergeProps(
-        xdsThemeProps('outline', {density}),
+        themeProps('outline', {density}),
         stylex.props(styles.root, xstyle),
         className,
         style,
@@ -297,7 +316,7 @@ export function Outline({
                 aria-current={isActive ? 'true' : undefined}
                 onClick={handleClick(item.id)}
                 {...mergeProps(
-                  xdsThemeProps('outline-item', {
+                  themeProps('outline-item', {
                     active: isActive ? 'active' : null,
                     level: item.level,
                   }),
@@ -323,7 +342,7 @@ export function Outline({
       </div>
       <span
         {...mergeProps(
-          xdsThemeProps('outline-indicator'),
+          themeProps('outline-indicator'),
           stylex.props(styles.indicator),
         )}
         aria-hidden="true"

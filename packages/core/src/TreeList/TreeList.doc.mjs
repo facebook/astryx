@@ -24,8 +24,8 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-tree-list', visualProps: ['density']},
-      {className: 'xds-tree-list-item', states: ['selected', 'disabled']},
+      {className: 'astryx-tree-list', visualProps: ['density']},
+      {className: 'astryx-tree-list-item', states: ['selected', 'disabled']},
     ],
   },
   components: [
@@ -88,8 +88,8 @@ export const docsZh = {
   group: 'TreeList',
   theming: {
     targets: [
-      {className: 'xds-tree-list', visualProps: ['density']},
-      {className: 'xds-tree-list-item', states: ['selected', 'disabled']},
+      {className: 'astryx-tree-list', visualProps: ['density']},
+      {className: 'astryx-tree-list-item', states: ['selected', 'disabled']},
     ],
   },
   components: [

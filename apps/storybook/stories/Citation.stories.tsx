@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Citation} from '@xds/core/Citation';
+import {Citation} from '@astryxdesign/core/Citation';
 
 const meta: Meta<typeof Citation> = {
   title: 'Core/Citation',

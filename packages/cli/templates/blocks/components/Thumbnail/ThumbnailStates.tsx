@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Thumbnail} from '@xds/core/Thumbnail';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ThumbnailStates() {
   return (
@@ -28,7 +28,7 @@ export default function ThumbnailStates() {
           </Stack>
           <Stack direction="vertical" gap={1} hAlign="center">
             <Thumbnail
-              src="https://lookaside.facebook.com/assets/xds_oss/moody-home-vertical-1.png"
+              src="https://lookaside.facebook.com/assets/astryx/moody-home-vertical-1.png"
               alt="Mountain landscape"
               isLoading
               label="landscape.jpg"
@@ -39,7 +39,7 @@ export default function ThumbnailStates() {
           </Stack>
           <Stack direction="vertical" gap={1} hAlign="center">
             <Thumbnail
-              src="https://lookaside.facebook.com/assets/xds_oss/moody-home-vertical-1.png"
+              src="https://lookaside.facebook.com/assets/astryx/moody-home-vertical-1.png"
               alt="Mountain landscape"
               label="landscape.jpg"
             />

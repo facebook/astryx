@@ -3,32 +3,32 @@
 "use strict";
 
 /**
- * @xds/build
+ * @astryxdesign/build
  *
- * Unified build configuration for XDS source builds.
+ * Unified build configuration for Astryx source builds.
  * 
  * Usage:
  *   // babel.config.js
- *   const {babel} = require('@xds/build');
+ *   const {babel} = require('@astryxdesign/build');
  *   module.exports = babel(__dirname);
  * 
  *   // postcss.config.js
- *   const {postcss} = require('@xds/build');
+ *   const {postcss} = require('@astryxdesign/build');
  *   module.exports = postcss(__dirname);
  */
 
 const path = require('node:path');
 
 /**
- * Resolve XDS package aliases from a root directory.
- * Handles both npm installs (node_modules/@xds/core) and
+ * Resolve Astryx package aliases from a root directory.
+ * Handles both npm installs (node_modules/@astryxdesign/core) and
  * monorepo layouts (packages/core).
  */
 function resolveAliases(rootDir) {
-  const coreDir = path.join(rootDir, 'node_modules/@xds/core');
+  const coreDir = path.join(rootDir, 'node_modules/@astryxdesign/core');
   return {
-    '@xds/core/*': [path.join(coreDir, '*')],
-    '@xds/core': [coreDir],
+    '@astryxdesign/core/*': [path.join(coreDir, '*')],
+    '@astryxdesign/core': [coreDir],
   };
 }
 
@@ -50,7 +50,7 @@ function stylexOptions(rootDir, overrides = {}) {
 }
 
 /**
- * Generate a complete babel.config.js for XDS source builds.
+ * Generate a complete babel.config.js for Astryx source builds.
  * 
  * @param {string} rootDir — __dirname of the project root
  * @param {object} [overrides] — extra StyleX options to merge
@@ -66,7 +66,7 @@ function babel(rootDir, overrides = {}) {
 }
 
 /**
- * Generate a complete postcss.config.js for XDS source builds.
+ * Generate a complete postcss.config.js for Astryx source builds.
  * 
  * @param {string} rootDir — __dirname of the project root
  * @param {object} [overrides] — extra options (appDir, extraInclude, etc.)

@@ -28,7 +28,7 @@ import {
   type LayerPlacement,
 } from '../Layer/useLayer';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 import {
   colorVars,
   radiusVars,
@@ -430,7 +430,7 @@ export function useTooltip(
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
         xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
-        className: xdsThemeProps('tooltip').className,
+        className: themeProps('tooltip').className,
       };
 
       return layer.render(

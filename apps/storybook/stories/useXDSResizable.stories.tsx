@@ -6,9 +6,9 @@ import {
   colorVars,
   radiusVars,
   spacingVars,
-} from '@xds/core/theme/tokens.stylex';
-import {useResizable, ResizeHandle} from '@xds/core/Resizable';
-import {Layout, LayoutContent, LayoutPanel} from '@xds/core/Layout';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
+import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
 
 const s = stylex.create({
   shell: {

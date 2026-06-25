@@ -6,7 +6,7 @@
  * @position Child of Chart; reads scales from context
  *
  * Combines tooltip content and crosshair display into one component.
- * Uses the XDS Layer system (Popover API) so the tooltip renders above
+ * Uses the Astryx Layer system (Popover API) so the tooltip renders above
  * all other content — portaled to the chart container div (outside SVG).
  */
 
@@ -14,7 +14,7 @@
 
 import {useState, useCallback, useRef, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
-import {useLayer} from '@xds/core/Layer';
+import {useLayer} from '@astryxdesign/core/Layer';
 import {useChart} from './ChartContext';
 import {xPixel} from './utils';
 import type {DataPoint} from './types';

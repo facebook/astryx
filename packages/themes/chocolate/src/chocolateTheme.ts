@@ -8,7 +8,7 @@
  * Uses Fraunces for headings and Albert Sans for body text.
  */
 
-import {defineTheme, defineSyntaxTheme} from '@xds/core/theme';
+import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {chocolateIconRegistry} from './icons';
 
 /** Chocolate syntax palette — warm browns and amber tones. */

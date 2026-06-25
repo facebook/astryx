@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Avatar} from '@xds/core/Avatar';
-import {Stack} from '@xds/core/Layout';
+import {Avatar} from '@astryxdesign/core/Avatar';
+import {Stack} from '@astryxdesign/core/Layout';
 
-const CDN = 'https://lookaside.facebook.com/assets/xds_oss';
+const CDN = 'https://lookaside.facebook.com/assets/astryx';
 
 export default function AvatarWithImage() {
   return (

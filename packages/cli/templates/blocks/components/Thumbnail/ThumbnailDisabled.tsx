@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Thumbnail} from '@xds/core/Thumbnail';
-import {Stack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function ThumbnailDisabled() {
   return (
@@ -15,7 +15,7 @@ export default function ThumbnailDisabled() {
         </Text>
         <Stack direction="horizontal" gap={3} vAlign="center">
           <Thumbnail
-            src="https://lookaside.facebook.com/assets/xds_oss/moody-scene-vertical-2.png"
+            src="https://lookaside.facebook.com/assets/astryx/moody-scene-vertical-2.png"
             alt="Bright landscape"
             label="landscape.jpg"
             onRemove={() => {}}
@@ -29,7 +29,7 @@ export default function ThumbnailDisabled() {
         </Text>
         <Stack direction="horizontal" gap={3} vAlign="center">
           <Thumbnail
-            src="https://lookaside.facebook.com/assets/xds_oss/moody-scene-vertical-2.png"
+            src="https://lookaside.facebook.com/assets/astryx/moody-scene-vertical-2.png"
             alt="Bright landscape"
             label="landscape.jpg"
             onRemove={() => {}}

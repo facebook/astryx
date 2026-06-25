@@ -7,7 +7,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 
-// This file contains intentional violations to test the XDS ESLint plugin
+// This file contains intentional violations to test the Astryx ESLint plugin
 
 const badStyles = stylex.create({
   // VIOLATION: hardcoded fontSize (should use textSizeVars)

@@ -78,7 +78,7 @@ function ld(light: string, dark: string): string {
 }
 
 /**
- * Expand a color scale config into XDS color token overrides.
+ * Expand a color scale config into Astryx color token overrides.
  *
  * Only generates tokens that meaningfully derive from the accent color.
  * Tokens that are convention-bound (status colors, categorical hues,

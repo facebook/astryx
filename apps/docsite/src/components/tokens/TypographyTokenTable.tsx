@@ -3,11 +3,11 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {Table, proportional, pixel} from '@xds/core/Table';
-import type {TextType} from '@xds/core';
-import type {HeadingLevel} from '@xds/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {Table, proportional, pixel} from '@astryxdesign/core/Table';
+import type {TextType} from '@astryxdesign/core';
+import type {HeadingLevel} from '@astryxdesign/core/Text';
 import type {TokenTableProps} from './types';
 import {resolveToken} from './helpers';
 

@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {Typeahead} from '@xds/core/Typeahead';
-import type {SearchableItem, SearchSource} from '@xds/core/Typeahead';
-import {Center} from '@xds/core/Center';
+import {Typeahead} from '@astryxdesign/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
+import {Center} from '@astryxdesign/core/Center';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 const items: SearchableItem[] = [

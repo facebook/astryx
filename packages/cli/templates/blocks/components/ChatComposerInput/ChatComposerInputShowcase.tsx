@@ -2,8 +2,8 @@
 
 'use client';
 
-import {ChatComposer, ChatComposerInput} from '@xds/core/Chat';
-import {Stack} from '@xds/core/Layout';
+import {ChatComposer, ChatComposerInput} from '@astryxdesign/core/Chat';
+import {Stack} from '@astryxdesign/core/Layout';
 
 export default function ChatComposerInputShowcase() {
   return (
@@ -11,7 +11,7 @@ export default function ChatComposerInputShowcase() {
       <ChatComposer
         onSubmit={() => {}}
         input={
-          <ChatComposerInput placeholder="Ask me anything about XDS..." />
+          <ChatComposerInput placeholder="Ask me anything about Astryx..." />
         }
       />
     </Stack>

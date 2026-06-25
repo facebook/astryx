@@ -3,17 +3,17 @@
 /**
  * @file build-css.mjs
  * Post-build script that extracts StyleX CSS from compiled source files
- * and outputs a combined xds.css wrapped in @layer xds-base.
+ * and outputs a combined astryx.css wrapped in @layer astryx-base.
  *
  * Usage: node scripts/build-css.mjs
  *
  * This script:
  * 1. Runs Babel with the StyleX plugin over all source files
  * 2. Collects all StyleX rules
- * 3. Outputs a combined xds.css with all rules in @layer xds-base
+ * 3. Outputs a combined astryx.css with all rules in @layer astryx-base
  *
  * Dist consumers import the full stylesheet:
- *   import '@xds/core/xds.css';
+ *   import '@astryxdesign/core/astryx.css';
  */
 
 import {transformAsync} from '@babel/core';
@@ -98,21 +98,13 @@ async function main() {
 
   const combinedCSS = stylexBabelPlugin.processStylexRules(allRules, false);
 
-  const combinedPath = path.resolve(CORE_DIST, 'xds.css');
-  const combinedFileContents = `/* XDS Pre-compiled StyleX CSS — all components */\n/* Auto-generated. Do not edit manually. */\n\n@layer xds-base {\n${combinedCSS
+  const astryxPath = path.resolve(CORE_DIST, 'astryx.css');
+  const combinedFileContents = `/* Astryx Pre-compiled StyleX CSS — all components */\n/* Auto-generated. Do not edit manually. */\n\n@layer astryx-base {\n${combinedCSS
     .split('\n')
     .map(line => '  ' + line)
     .join('\n')}\n}\n`;
-  await fs.writeFile(combinedPath, combinedFileContents, 'utf8');
-  console.log(`xds.css: ${(combinedCSS.length / 1024).toFixed(1)} KB`);
-
-  // Emit a sibling astryx.css with identical content (XDS-prefix migration
-  // P2380608025). Gives consumers a forward-named import path
-  // ('@xds/core/astryx.css') during the compat window; the layer name stays
-  // xds-base until the final cutover (P10). Both files are kept in lockstep.
-  const astryxPath = path.resolve(CORE_DIST, 'astryx.css');
   await fs.writeFile(astryxPath, combinedFileContents, 'utf8');
-  console.log(`astryx.css: ${(combinedCSS.length / 1024).toFixed(1)} KB (sibling of xds.css)`);
+  console.log(`astryx.css: ${(combinedCSS.length / 1024).toFixed(1)} KB`);
 }
 
 main().catch(err => {

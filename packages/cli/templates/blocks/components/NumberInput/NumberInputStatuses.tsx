@@ -3,8 +3,8 @@
 'use client';
 
 import {useState} from 'react';
-import {NumberInput} from '@xds/core/NumberInput';
-import {VStack} from '@xds/core/Stack';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {VStack} from '@astryxdesign/core/Stack';
 
 export default function NumberInputStatuses() {
   const [error, setError] = useState<number | null>(-5);

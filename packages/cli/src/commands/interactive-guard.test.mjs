@@ -20,7 +20,7 @@ import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI = path.resolve(__dirname, '..', '..', 'bin', 'xds.mjs');
+const CLI = path.resolve(__dirname, '..', '..', 'bin', 'astryx.mjs');
 
 let tmpDir;
 

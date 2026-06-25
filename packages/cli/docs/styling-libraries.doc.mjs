@@ -20,7 +20,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Use CSS variables for ordinary DOM styling because they inherit through the tree, follow `data-theme` color mode, respect nested `data-xds-theme` scopes, and update when themes switch. Use token resolver APIs only for non-CSS consumers such as SVG attribute values, canvas, chart configuration, color calculations, or static config generation.',
+          text: 'Use CSS variables for ordinary DOM styling because they inherit through the tree, follow `data-theme` color mode, respect nested `data-astryx-theme` scopes, and update when themes switch. Use token resolver APIs only for non-CSS consumers such as SVG attribute values, canvas, chart configuration, color calculations, or static config generation.',
         },
         {
           type: 'prose',
@@ -53,12 +53,12 @@ export const docs = {
             [
               'Tailwind bridge',
               'You want utility classes backed by active system tokens',
-              '`@xds/core/tailwind-theme.css`',
+              '`@astryxdesign/core/tailwind-theme.css`',
             ],
             [
               'Token resolver APIs',
               'JavaScript needs token values for charts, canvas, SVG, or config objects',
-              "`resolveXDSThemeToken(theme, '--color-data-categorical-blue', {mode})`",
+              "`resolveThemeToken(theme, '--color-data-categorical-blue', {mode})`",
             ],
           ],
         },
@@ -73,7 +73,7 @@ export const docs = {
           style: 'do',
           items: [
             'Map by semantic intent: text, surface, border, accent, status, radius, spacing, typography.',
-            'Let the system own color mode. The root Theme syncs `data-theme="light|dark"` and `data-xds-theme` to `<html>` for portals and first-level theme scope.',
+            'Let the system own color mode. The root Theme syncs `data-theme="light|dark"` and `data-astryx-theme` to `<html>` for portals and first-level theme scope.',
             'Prefer CSS variables for runtime theme switching and nested themes.',
           ],
         },
@@ -120,14 +120,14 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'For StyleX styles, prefer the typed token exports from `@xds/core/theme/tokens.stylex`. They provide autocomplete and catch token-name typos while still resolving through the same system CSS variables at runtime.',
+          text: 'For StyleX styles, prefer the typed token exports from `@astryxdesign/core/theme/tokens.stylex`. They provide autocomplete and catch token-name typos while still resolving through the same system CSS variables at runtime.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Typed token imports',
           code: `import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars, radiusVars} from '@xds/core/theme/tokens.stylex';
+import {colorVars, spacingVars, radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const styles = stylex.create({
   panel: {
@@ -150,20 +150,20 @@ const styles = stylex.create({
       content: [
         {
           type: 'prose',
-          text: 'The Tailwind v4 bridge at `@xds/core/tailwind-theme.css` maps Tailwind theme variables to system CSS variables with `@theme inline`, so utility classes like `text-primary`, `bg-surface`, `border-border`, `rounded-lg`, and `shadow-md` stay in sync with the active theme.',
+          text: 'The Tailwind v4 bridge at `@astryxdesign/core/tailwind-theme.css` maps Tailwind theme variables to system CSS variables with `@theme inline`, so utility classes like `text-primary`, `bg-surface`, `border-border`, `rounded-lg`, and `shadow-md` stay in sync with the active theme.',
         },
         {
           type: 'code',
           lang: 'css',
           label: 'globals.css',
-          code: `@layer reset, theme, base, xds-base, xds-theme, components, utilities;
+          code: `@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/preflight.css" layer(base);
-@import "@xds/core/reset.css";
-@import "@xds/core/xds.css";
-@import "@xds/theme-default/theme.css";
-@import "@xds/core/tailwind-theme.css";
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+@import "@astryxdesign/core/tailwind-theme.css";
 @import "tailwindcss/utilities.css" layer(utilities);`,
         },
         {
@@ -367,16 +367,16 @@ tokens: {
       content: [
         {
           type: 'prose',
-          text: 'Use `resolveXDSThemeTokens()` or `resolveXDSThemeToken()` when code outside React needs token values for a known theme and mode. Use `useTheme()` inside client components when the values should come from the nearest Theme and active mode.',
+          text: 'Use `resolveThemeTokens()` or `resolveThemeToken()` when code outside React needs token values for a known theme and mode. Use `useTheme()` inside client components when the values should come from the nearest Theme and active mode.',
         },
         {
           type: 'code',
           lang: 'ts',
           label: 'Resolve tokens without React context',
-          code: `import {resolveXDSThemeTokens} from '@xds/core/theme/tokens';
-import {defaultTheme} from '@xds/theme-default';
+          code: `import {resolveThemeTokens} from '@astryxdesign/core/theme/tokens';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
-const tokens = resolveXDSThemeTokens(defaultTheme, {mode: 'light'});
+const tokens = resolveThemeTokens(neutralTheme, {mode: 'light'});
 
 const chartOptions = {
   textColor: tokens['--color-text-primary'],
@@ -396,7 +396,7 @@ const chartOptions = {
           code: `'use client';
 
 import {useMemo} from 'react';
-import {useTheme} from '@xds/core/theme';
+import {useTheme} from '@astryxdesign/core/theme';
 
 function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
   const {mode, tokens} = useTheme();

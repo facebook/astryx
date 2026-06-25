@@ -2,8 +2,8 @@
 
 'use client';
 
-import {TreeList} from '@xds/core/TreeList';
-import {Icon} from '@xds/core/Icon';
+import {TreeList} from '@astryxdesign/core/TreeList';
+import {Icon} from '@astryxdesign/core/Icon';
 import {Cog6ToothIcon, ChevronRightIcon} from '@heroicons/react/24/outline';
 
 export default function TreeListInteractiveSettings() {

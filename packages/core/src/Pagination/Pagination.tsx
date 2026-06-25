@@ -36,7 +36,7 @@ import {Selector} from '../Selector';
 import {Text} from '../Text';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -48,7 +48,7 @@ import {xdsThemeProps} from '../utils/xdsThemeProps';
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Pagination' {
+ * declare module '@astryxdesign/core/Pagination' {
  *   interface PaginationVariantMap {
  *     'progress': true;
  *   }
@@ -145,7 +145,7 @@ export interface PaginationProps extends Omit<
    */
   label?: string;
 
-  // --- Standard XDS ---
+  // --- Standard Astryx ---
   /** Test ID for automated testing. */
   'data-testid'?: string;
 }
@@ -507,7 +507,7 @@ export function Pagination({
                 onClick={() => handlePageChange(i + 1)}
                 disabled={isDisabled}
                 {...mergeProps(
-                  xdsThemeProps('pagination-dot', {
+                  themeProps('pagination-dot', {
                     active: i + 1 === page ? 'active' : null,
                     size,
                   }),
@@ -536,7 +536,7 @@ export function Pagination({
       aria-label={label}
       data-testid={testId}
       {...mergeProps(
-        xdsThemeProps('pagination', {variant, size}),
+        themeProps('pagination', {variant, size}),
         stylex.props(styles.root, xstyle),
         className,
         style,

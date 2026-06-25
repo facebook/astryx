@@ -2,7 +2,7 @@
 
 'use client';
 
-import {ProgressBar} from '@xds/core/ProgressBar';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
 
 export default function ProgressBarWithValueLabel() {
   return (

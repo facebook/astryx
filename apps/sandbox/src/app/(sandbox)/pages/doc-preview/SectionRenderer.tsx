@@ -4,9 +4,9 @@
 
 import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {VStack} from '@xds/core/Layout';
-import {Heading} from '@xds/core/Text';
-import type {ReferenceSection, ContentBlock} from '@xds/core';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Heading} from '@astryxdesign/core/Text';
+import type {ReferenceSection, ContentBlock} from '@astryxdesign/core';
 import {ContentBlockRenderer} from './content-blocks';
 
 const styles = stylex.create({

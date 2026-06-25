@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Regression test for prose output of `xds theme build`.
+ * @file Regression test for prose output of `astryx theme build`.
  *
- * `xds theme build` has a single CSS-generation path — @xds/core's generator,
+ * `astryx theme build` has a single CSS-generation path — @astryxdesign/core's generator,
  * the same one the <Theme> runtime uses (generateThemeCSS). It always emits
  * prose element defaults (h1–h6, p, small, code, hr) so unstyled HTML inherits
  * the theme's typography, exactly like the runtime. There is intentionally no
@@ -12,12 +12,12 @@
  *
  * Covers:
  *   - prose defaults ship in `@layer reset` (zero-specificity :where()), NOT
- *     `@layer xds-theme`, so component/Markdown StyleX always wins;
+ *     `@layer astryx-theme`, so component/Markdown StyleX always wins;
  *   - no raw element margins are emitted (reset.css zeroes them and the
  *     components own block spacing — see the docsite Markdown regression);
  *   - paragraphs use the body font, not the heading font.
  *
- * Building `xds theme build` requires a compiled @xds/core (there is no in-CLI
+ * Building `astryx theme build` requires a compiled @astryxdesign/core (there is no in-CLI
  * fallback generator), so this suite builds core once in beforeAll — mirroring
  * scripts/build-css.test.mjs — to stay self-sufficient regardless of CI job
  * ordering.
@@ -31,7 +31,7 @@ import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/xds.mjs');
+const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 const CORE_THEME_ENTRY = path.join(
   REPO_ROOT,
@@ -68,11 +68,11 @@ function writeTheme(dir, name) {
   return file;
 }
 
-// `xds theme build` imports the compiled @xds/core/theme entry. Build core
+// `astryx theme build` imports the compiled @astryxdesign/core/theme entry. Build core
 // once if it isn't already present so the suite works in any CI job.
 beforeAll(() => {
   if (!fs.existsSync(CORE_THEME_ENTRY)) {
-    execFileSync('pnpm', ['-F', '@xds/core', 'build'], {
+    execFileSync('pnpm', ['-F', '@astryxdesign/core', 'build'], {
       cwd: REPO_ROOT,
       stdio: 'pipe',
       timeout: 180_000,
@@ -106,7 +106,7 @@ describe('theme build prose output', () => {
     const css = fs.readFileSync(cssPath, 'utf-8');
 
     // Prose defaults are zero-specificity :where() rules in @layer reset,
-    // NOT @layer xds-theme, so Markdown/component StyleX always wins.
+    // NOT @layer astryx-theme, so Markdown/component StyleX always wins.
     expect(css).toMatch(/@layer reset/);
     expect(css).toMatch(/:where\(h1, h2, h3, h4, h5, h6\)/);
     // Paragraphs use the body font (regression: they used the heading font).
@@ -114,14 +114,14 @@ describe('theme build prose output', () => {
     // No raw element margins — reset.css + component StyleX own spacing.
     const proseBlock = css.slice(
       css.indexOf('@layer reset'),
-      css.indexOf('@layer xds-theme'),
+      css.indexOf('@layer astryx-theme'),
     );
     expect(proseBlock).not.toMatch(/margin/);
 
     // Layer placement: prose (reset) must come before component overrides
-    // (xds-theme) so the cascade resolves correctly.
+    // (astryx-theme) so the cascade resolves correctly.
     const resetIndex = css.indexOf('@layer reset');
-    const themeIndex = css.indexOf('@layer xds-theme');
+    const themeIndex = css.indexOf('@layer astryx-theme');
     expect(resetIndex).toBeGreaterThanOrEqual(0);
     expect(themeIndex).toBeGreaterThan(resetIndex);
     expect(css.indexOf(':where(p)')).toBeLessThan(themeIndex);

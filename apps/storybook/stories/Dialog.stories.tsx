@@ -2,16 +2,16 @@
 
 import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Dialog, DialogHeader} from '@xds/core/Dialog';
+import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {
   Layout,
   LayoutContent,
   LayoutFooter,
   HStack,
-} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
+} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

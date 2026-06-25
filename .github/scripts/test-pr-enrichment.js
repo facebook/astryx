@@ -99,7 +99,7 @@ const mockA11y = {
           totalNodes: 3,
           stories: ['Default', 'WithSeconds'],
           nodes: [
-            { html: '<input type="text" class="xds-time-input">', target: ['.xds-time-input'] },
+            { html: '<input type="text" class="astryx-time-input">', target: ['.astryx-time-input'] },
           ],
         },
         {
@@ -113,7 +113,7 @@ const mockA11y = {
           totalNodes: 2,
           stories: ['Disabled'],
           nodes: [
-            { html: '<span class="xds-time-label">Hours</span>', target: ['.xds-time-label'] },
+            { html: '<span class="astryx-time-label">Hours</span>', target: ['.astryx-time-label'] },
           ],
         },
       ],
@@ -133,7 +133,7 @@ const mockA11y = {
           totalNodes: 5,
           stories: ['IconOnly', 'Loading', 'Minimal'],
           nodes: [
-            { html: '<button class="xds-button">', target: ['.xds-button'] },
+            { html: '<button class="astryx-button">', target: ['.astryx-button'] },
           ],
         },
       ],
@@ -219,7 +219,7 @@ const a11ySection = buildA11ySection(a11yReport);
 let bundleSection = '### Bundle Size Summary\n\n';
 bundleSection += `| Package | Size (ESM) | Size (CJS) | Gzipped |\n`;
 bundleSection += `|---------|------------|------------|----------|\n`;
-bundleSection += `| @xds/core | ${analysis.totalBundle?.esmSize || 'N/A'} | ${analysis.totalBundle?.cjsSize || 'N/A'} | ${analysis.totalBundle?.gzipSize || 'N/A'} |\n\n`;
+bundleSection += `| @astryxdesign/core | ${analysis.totalBundle?.esmSize || 'N/A'} | ${analysis.totalBundle?.cjsSize || 'N/A'} | ${analysis.totalBundle?.gzipSize || 'N/A'} |\n\n`;
 
 if (analysis.bundleDelta) {
   const delta = analysis.bundleDelta;

@@ -3,8 +3,8 @@
 /**
  * @file init command — Interactive initialization wizard + feature installer
  *
- * Interactive: `xds init` walks through all features
- * Non-interactive: `xds init --features agents,theme,template`
+ * Interactive: `astryx init` walks through all features
+ * Non-interactive: `astryx init --features agents,theme,template`
  * Re-runnable: safe to run multiple times, idempotent
  *
  * Features:
@@ -67,7 +67,7 @@ function runAgents(targetDir, {interactive = true, agent, agentDocsPath} = {}) {
       process.exitCode = 1;
       return;
     }
-    const msg = `Could not install agent docs. Try again with \`${run} xds init --features agents\`.`;
+    const msg = `Could not install agent docs. Try again with \`${run} astryx init --features agents\`.`;
     if (interactive) {
       p.log.warning(msg);
     } else {
@@ -80,14 +80,14 @@ function runAgents(targetDir, {interactive = true, agent, agentDocsPath} = {}) {
 
 async function runTheme({interactive = true} = {}) {
   if (!interactive) {
-    humanLog(`✓ Theme scaffolding requires interactive mode. Run \`${run} xds theme\` instead.`);
+    humanLog(`✓ Theme scaffolding requires interactive mode. Run \`${run} astryx theme\` instead.`);
     return;
   }
 
   p.note(
     'Create a custom theme with your brand colors.\n' +
-    `Run \`${run} xds theme\` for the full theme wizard.\n` +
-    `Run \`${run} xds theme --list\` to see existing themes.`,
+    `Run \`${run} astryx theme\` for the full theme wizard.\n` +
+    `Run \`${run} astryx theme --list\` to see existing themes.`,
     'Themes',
   );
 }
@@ -100,7 +100,7 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
 
   if (!interactive) {
     if (!templateName) {
-      humanLog(`✓ Available templates: ${templates.join(', ')}. Use ${run} xds template <name> [path].`);
+      humanLog(`✓ Available templates: ${templates.join(', ')}. Use ${run} astryx template <name> [path].`);
       return;
     }
 
@@ -202,7 +202,7 @@ export function registerInit(program) {
       // with actionable guidance via the shared interactivity contract.
       requireInteractive({
         command: 'init',
-        hint: `\`${run} xds init --all\` or \`--features agents,theme,template\``,
+        hint: `\`${run} astryx init --all\` or \`--features agents,theme,template\``,
       });
 
       p.intro('Welcome to the design system');
@@ -229,7 +229,7 @@ export function registerInit(program) {
 
       // Feature: swizzle awareness
       p.note(
-        `You can customize any component with:\n  ${run} xds swizzle XDSButton\n  ${run} xds swizzle --list`,
+        `You can customize any component with:\n  ${run} astryx swizzle Button\n  ${run} astryx swizzle --list`,
         'Component Customization',
       );
 
@@ -244,11 +244,11 @@ export function registerInit(program) {
 
       humanLog('');
       humanLog('  Next steps:');
-      humanLog("    1. Import components: import { Button } from '@xds/core'");
+      humanLog("    1. Import components: import { Button } from '@astryxdesign/core'");
       humanLog('    2. Optionally add a theme:');
-      humanLog("       import { defaultTheme } from '@xds/theme-default'");
-      humanLog('       <Theme theme={defaultTheme}>...</Theme>');
-      humanLog(`    3. ${run} xds --help for all commands`);
+      humanLog("       import { neutralTheme } from '@astryxdesign/theme-neutral'");
+      humanLog('       <Theme theme={neutralTheme}>...</Theme>');
+      humanLog(`    3. ${run} astryx --help for all commands`);
       humanLog('');
     });
 }

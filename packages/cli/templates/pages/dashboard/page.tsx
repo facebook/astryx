@@ -7,11 +7,11 @@ import {
   HStack,
   Layout,
   LayoutContent,
-} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Card} from '@xds/core/Card';
-import {Button} from '@xds/core/Button';
-import {ProgressBar} from '@xds/core/ProgressBar';
+} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
 import {
   BarChart,
   Bar,
@@ -23,12 +23,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import {Grid} from '@xds/core/Grid';
-import {Table, proportional, pixel} from '@xds/core/Table';
-import type {TableColumn} from '@xds/core/Table';
-import {Divider} from '@xds/core/Divider';
-import {Link} from '@xds/core/Link';
-import {Icon} from '@xds/core/Icon';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Table, proportional, pixel} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Link} from '@astryxdesign/core/Link';
+import {Icon} from '@astryxdesign/core/Icon';
 
 // ============= ICONS =============
 
@@ -443,7 +443,7 @@ const topEventsColumns: TableColumn<EventRow>[] = [
 
 // ============= CHART COMPONENTS =============
 
-// Chart line colors via XDS design tokens (CSS custom properties)
+// Chart line colors via Astryx design tokens (CSS custom properties)
 const chartColors = {
   allUsers: 'var(--color-data-categorical-blue, #0171E3)',
   desktop: 'var(--color-data-categorical-orange, #EB6E00)',

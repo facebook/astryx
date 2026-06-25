@@ -124,12 +124,6 @@ export const categories: SandboxCategory[] = [
           'Neutral theme — pure grayscale spine, OKLCH categorical palette, vivid T60 semantic badges, soft T90 categorical pastels, Figtree typography',
       },
       {
-        name: 'Daily Palette',
-        href: '/pages/daily-palette/',
-        description:
-          'Daily theme — warm earthy cream tones, PT Serif headings, Figtree body, pill-shaped buttons',
-      },
-      {
         name: 'Stone Palette',
         href: '/pages/stone-palette/',
         description:

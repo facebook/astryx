@@ -2,9 +2,9 @@
 
 'use client';
 
-import {ChatComposer, ChatComposerDrawer} from '@xds/core/Chat';
-import {Token} from '@xds/core/Token';
-import {Stack} from '@xds/core/Layout';
+import {ChatComposer, ChatComposerDrawer} from '@astryxdesign/core/Chat';
+import {Token} from '@astryxdesign/core/Token';
+import {Stack} from '@astryxdesign/core/Layout';
 
 export default function ChatComposerDrawerCollapsible() {
   return (

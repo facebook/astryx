@@ -2,7 +2,7 @@
 
 'use client';
 
-import {TopNavMegaMenuFeaturedCard} from '@xds/core/TopNav';
+import {TopNavMegaMenuFeaturedCard} from '@astryxdesign/core/TopNav';
 
 export default function TopNavMegaMenuFeaturedCardShowcase() {
   return (

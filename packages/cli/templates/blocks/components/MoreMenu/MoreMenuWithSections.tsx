@@ -2,7 +2,7 @@
 
 'use client';
 
-import {MoreMenu} from '@xds/core/MoreMenu';
+import {MoreMenu} from '@astryxdesign/core/MoreMenu';
 import {
   PencilIcon,
   DocumentDuplicateIcon,

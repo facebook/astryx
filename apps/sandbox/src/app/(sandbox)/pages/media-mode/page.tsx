@@ -3,12 +3,12 @@
 'use client';
 
 import {useState} from 'react';
-import {Heading, Text} from '@xds/core/Text';
-import {VStack, HStack} from '@xds/core/Layout';
-import {Button} from '@xds/core/Button';
-import {Icon} from '@xds/core/Icon';
-import {MediaTheme} from '@xds/core/theme';
-import {Divider} from '@xds/core';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {VStack, HStack} from '@astryxdesign/core/Layout';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
+import {MediaTheme} from '@astryxdesign/core/theme';
+import {Divider} from '@astryxdesign/core';
 import {useImageModeTest, type Algorithm} from './useImageModeTest';
 
 // =============================================================================

@@ -9,8 +9,8 @@ import {
   ChatMessageBubble,
   ChatSystemMessage,
   ChatComposer,
-} from '@xds/core/Chat';
-import {Markdown} from '@xds/core/Markdown';
+} from '@astryxdesign/core/Chat';
+import {Markdown} from '@astryxdesign/core/Markdown';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

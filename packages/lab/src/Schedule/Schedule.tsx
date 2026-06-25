@@ -16,14 +16,14 @@
 
 import {Suspense, useCallback, useMemo, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {BaseProps} from '@xds/core';
-import {mergeProps, plainDateFromInstant} from '@xds/core/utils';
+import type {BaseProps} from '@astryxdesign/core';
+import {mergeProps, plainDateFromInstant} from '@astryxdesign/core/utils';
 import {eventOverlapsRange, getBrowserTimezoneID, sortEvents} from './dateMath';
 import {ScheduleContext} from './context';
 import {defaultSchedulePlugins} from './plugins';
 import {styles} from './shared';
 import {createZonedDateTime} from './zonedDateTime';
-import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
+import {themeProps} from '../../../core/src/utils/themeProps';
 import type {
   CalendarEvent,
   Instant,
@@ -265,7 +265,7 @@ export function Schedule({
     <div
       {...rest}
       {...mergeProps(
-        xdsThemeProps('schedule'),
+        themeProps('schedule'),
         stylex.props(styles.root, xstyle),
         className,
         style,

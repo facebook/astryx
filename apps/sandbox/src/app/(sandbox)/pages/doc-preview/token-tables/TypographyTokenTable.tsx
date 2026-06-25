@@ -3,9 +3,9 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Table, proportional} from '@xds/core/Table';
-import type {TextType} from '@xds/core';
-import type {HeadingLevel} from '@xds/core/Text';
+import {Table, proportional} from '@astryxdesign/core/Table';
+import type {TextType} from '@astryxdesign/core';
+import type {HeadingLevel} from '@astryxdesign/core/Text';
 import type {TokenTableProps} from './types';
 import {resolveToken} from './helpers';
 

@@ -3,10 +3,10 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {HStack, VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
-import {radiusVars} from '@xds/core/theme/tokens.stylex';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
+import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const s = stylex.create({
   // Fixed height with auto width lets the aspect ratio drive the width,
@@ -27,19 +27,19 @@ const items = [
   {
     ratio: 1,
     label: '1 : 1',
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-home-square-1.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/light-home-square-1.png',
     alt: '1:1 square',
   },
   {
     ratio: 4 / 3,
     label: '4 : 3',
-    src: 'https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg',
+    src: 'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png',
     alt: '4:3 standard',
   },
   {
     ratio: 16 / 9,
     label: '16 : 9',
-    src: 'https://lookaside.facebook.com/assets/xds_oss/light-scene-horizontal-1.png',
+    src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
     alt: '16:9 widescreen',
   },
 ];

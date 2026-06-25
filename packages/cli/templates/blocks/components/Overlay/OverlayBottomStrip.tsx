@@ -3,11 +3,11 @@
 'use client';
 
 import * as stylex from '@stylexjs/stylex';
-import {Overlay} from '@xds/core/Overlay';
-import {AspectRatio} from '@xds/core/AspectRatio';
-import {Badge} from '@xds/core/Badge';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {Overlay} from '@astryxdesign/core/Overlay';
+import {AspectRatio} from '@astryxdesign/core/AspectRatio';
+import {Badge} from '@astryxdesign/core/Badge';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 const styles = stylex.create({
   frame: {
@@ -41,7 +41,7 @@ export default function OverlayBottomStrip() {
       }>
       <AspectRatio ratio={16 / 9} xstyle={styles.frame}>
         <img
-          src="https://lookaside.facebook.com/assets/xds_oss/illustrative-horizontal-1.jpg"
+          src="https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png"
           alt="Product highlight preview"
           {...stylex.props(styles.image)}
         />

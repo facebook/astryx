@@ -3,9 +3,9 @@
 'use client';
 
 import {useState} from 'react';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {VStack} from '@xds/core/Layout';
-import {Text} from '@xds/core/Text';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function DropdownMenuWithSections() {
   const [lastAction, setLastAction] = useState<string | null>(null);

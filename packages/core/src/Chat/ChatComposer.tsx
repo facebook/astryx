@@ -48,7 +48,7 @@ import {Icon} from '../Icon';
 import {ChatComposerInput} from './ChatComposerInput';
 import {ChatComposerContext} from './ChatContext';
 import {ChatSendButton} from './ChatSendButton';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -384,7 +384,7 @@ export function ChatComposer(props: ChatComposerProps) {
       <div
         ref={ref}
         {...mergeProps(
-          xdsThemeProps('chat-composer', {density}),
+          themeProps('chat-composer', {density}),
           stylex.props(styles.root, isDisabled && styles.rootDisabled),
           className,
           style,

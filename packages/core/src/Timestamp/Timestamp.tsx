@@ -27,7 +27,7 @@ import type {
 } from '../theme/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const LazyXDSTooltip = lazy(async () =>
   import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
@@ -379,7 +379,7 @@ export function Timestamp({
   const showTooltip = hasTooltip && effectiveFormat === 'relative';
 
   const timestampProps = mergeProps(
-    xdsThemeProps('timestamp', {format: effectiveFormat}),
+    themeProps('timestamp', {format: effectiveFormat}),
     {className, style},
   );
 

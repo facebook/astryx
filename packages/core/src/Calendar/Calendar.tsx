@@ -72,7 +72,7 @@ import {
 
 export type {ISODateString, DayOfWeek, DateRange} from '../utils/dateTypes';
 import type {ISODateString, DayOfWeek, DateRange} from '../utils/dateTypes';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /** Imperative handle for Calendar handleRef */
 
@@ -398,7 +398,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('calendar', {mode}),
+        themeProps('calendar', {mode}),
         stylex.props(calendarStyles.calendar, xstyle),
         className,
         style,
@@ -874,7 +874,7 @@ function DayCell({
         onMouseEnter={() => !state.effectivelyDisabled && onDayHover(date)}
         onMouseLeave={() => onDayHover(null)}
         {...mergeProps(
-          xdsThemeProps('calendar-day', {
+          themeProps('calendar-day', {
             selected: endpoint ? 'selected' : null,
             today: state.isToday ? 'today' : null,
             disabled: state.effectivelyDisabled ? 'disabled' : null,

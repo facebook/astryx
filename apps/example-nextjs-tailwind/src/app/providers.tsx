@@ -3,13 +3,13 @@
 'use client';
 
 import Link from 'next/link';
-import {Theme} from '@xds/core/theme';
-import {LinkProvider} from '@xds/core/Link';
-import {defaultTheme} from '@xds/theme-default/built';
+import {Theme} from '@astryxdesign/core/theme';
+import {LinkProvider} from '@astryxdesign/core/Link';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 
 export function Providers({children}: {children: React.ReactNode}) {
   return (
-    <Theme theme={defaultTheme}>
+    <Theme theme={neutralTheme}>
       <LinkProvider component={Link}>{children}</LinkProvider>
     </Theme>
   );

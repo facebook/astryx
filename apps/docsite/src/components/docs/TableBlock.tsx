@@ -2,10 +2,10 @@
 
 'use client';
 
-import {Text} from '@xds/core/Text';
-import {Table} from '@xds/core/Table';
-import {Card} from '@xds/core/Card';
-import {renderInlineCode} from './renderInlineCode';
+import {Text} from '@astryxdesign/core/Text';
+import {Table} from '@astryxdesign/core/Table';
+import {Card} from '@astryxdesign/core/Card';
+import {renderInlineMarkdown} from './inlineMarkdown';
 
 export function TableBlock({
   headers,
@@ -26,7 +26,7 @@ export function TableBlock({
     key: h,
     header: h,
     renderCell: (item: Record<string, unknown>) => (
-      <Text>{renderInlineCode(item[h] as string)}</Text>
+      <Text>{renderInlineMarkdown(item[h] as string)}</Text>
     ),
   }));
 

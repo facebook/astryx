@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * XDS Type Definitions
+ * Astryx Type Definitions
  *
- * Shared types used across XDS components.
+ * Shared types used across Astryx components.
  */
 
 // =============================================================================
@@ -25,7 +25,7 @@ export type FontWeight =
  * A typography role declaration (body, heading, or code).
  *
  * Fonts must be loaded by the consumer (e.g. via a <link> tag in <head>
- * or an @import in CSS). XDS does not handle font loading — it only
+ * or an @import in CSS). Astryx does not handle font loading — it only
  * sets the font-family token so the font is used once available.
  *
  * @example
@@ -116,7 +116,7 @@ export type BuiltinTextType =
  *
  * To add type-safe custom types, use module augmentation:
  * ```ts
- * declare module '@xds/core/theme' {
+ * declare module '@astryxdesign/core/theme' {
  *   interface CustomTextTypes {
  *     hero: true;
  *     caption: true;
@@ -124,7 +124,7 @@ export type BuiltinTextType =
  * }
  * ```
  *
- * `xds theme build` generates these augmentations automatically when it
+ * `astryx theme build` generates these augmentations automatically when it
  * detects new `type:*` values in a theme's component overrides.
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type

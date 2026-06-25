@@ -1,18 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file GitHub utilities for XDS CLI
+ * @file GitHub utilities for Astryx CLI
  *
  * Shared helpers for interacting with the GitHub CLI (`gh`).
  * Used by gap-report and swizzle commands.
  *
- * Gap reporting can be configured via xds.config.mjs:
+ * Gap reporting can be configured via astryx.config.mjs:
  *   gapReport: false                                — disable entirely
  *   gapReport: { command: './scripts/report-gap.sh' } — run custom script (receives JSON on stdin)
  *
  * Or via environment variable:
- *   XDS_GAP_REPORT=off                              — disable entirely
- *   XDS_GAP_REPORT=./scripts/report-gap.sh          — run custom script
+ *   ASTRYX_GAP_REPORT=off                              — disable entirely
+ *   ASTRYX_GAP_REPORT=./scripts/report-gap.sh          — run custom script
  */
 
 import {execFileSync} from 'node:child_process';
@@ -37,7 +37,7 @@ export const GAP_CATEGORIES = [
 /**
  * Load gap report configuration.
  *
- * Priority: env var > xds.config.mjs > default (GitHub issue)
+ * Priority: env var > astryx.config.mjs > default (GitHub issue)
  *
  * Returns { enabled: boolean, command?: string }
  *   - enabled: false → gap reporting disabled
@@ -46,7 +46,7 @@ export const GAP_CATEGORIES = [
  */
 export function loadGapReportConfig() {
   // 1. Check environment variable
-  const envVar = process.env.XDS_GAP_REPORT;
+  const envVar = process.env.ASTRYX_GAP_REPORT;
   if (envVar) {
     if (envVar === 'off' || envVar === 'false' || envVar === '0') {
       return {enabled: false};
@@ -55,8 +55,8 @@ export function loadGapReportConfig() {
     return {enabled: true, command: envVar};
   }
 
-  // 2. Check xds.config.mjs
-  const configPath = path.join(process.cwd(), 'xds.config.mjs');
+  // 2. Check astryx.config.mjs
+  const configPath = path.join(process.cwd(), 'astryx.config.mjs');
   if (fs.existsSync(configPath)) {
     try {
       const content = fs.readFileSync(configPath, 'utf-8');

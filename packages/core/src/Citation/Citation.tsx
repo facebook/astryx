@@ -27,7 +27,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface CitationSource {
   title?: string;
@@ -173,7 +173,7 @@ export function Citation({
         data-testid={testId}
         {...linkProps}
         {...mergeProps(
-          xdsThemeProps('citation', {variant}),
+          themeProps('citation', {variant}),
           stylex.props(
             styles.number,
             href != null && styles.numberHover,
@@ -196,7 +196,7 @@ export function Citation({
       data-testid={testId}
       {...linkProps}
       {...mergeProps(
-        xdsThemeProps('citation', {variant}),
+        themeProps('citation', {variant}),
         stylex.props(
           styles.label,
           icon != null && styles.labelWithIcon,

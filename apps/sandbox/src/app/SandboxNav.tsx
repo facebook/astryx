@@ -5,11 +5,11 @@
 import * as stylex from '@stylexjs/stylex';
 import {usePathname} from 'next/navigation';
 import Link from 'next/link';
-import {SideNav, SideNavItem, SideNavSection} from '@xds/core/SideNav';
-import {DropdownMenu} from '@xds/core/DropdownMenu';
-import {Text} from '@xds/core/Text';
+import {SideNav, SideNavItem, SideNavSection} from '@astryxdesign/core/SideNav';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {Text} from '@astryxdesign/core/Text';
 import {useThemeControls, SANDBOX_THEMES} from './providers';
-import type {ThemeMode} from '@xds/core/theme';
+import type {ThemeMode} from '@astryxdesign/core/theme';
 import {categories} from './sandboxPages';
 import {
   HomeIcon,
@@ -21,7 +21,7 @@ import {
   AppWindowIcon,
   BlocksIcon,
 } from './icons';
-import {spacingVars, colorVars} from '@xds/core/theme/tokens.stylex';
+import {spacingVars, colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const categoryIcons: Record<
   string,

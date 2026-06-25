@@ -2,9 +2,9 @@
 
 'use client';
 
-import {HStack, VStack} from '@xds/core/Layout';
-import {Badge} from '@xds/core/Badge';
-import {Text} from '@xds/core/Text';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Text} from '@astryxdesign/core/Text';
 
 export default function VStackShowcase() {
   return (

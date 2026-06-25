@@ -9,7 +9,7 @@
  */
 
 import {useState, useEffect} from 'react';
-import type {ImageSampleRegion} from '@xds/core/hooks';
+import type {ImageSampleRegion} from '@astryxdesign/core/hooks';
 
 export type Algorithm = 'gamma' | 'wcag' | 'apca';
 

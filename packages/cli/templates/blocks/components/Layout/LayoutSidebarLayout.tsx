@@ -10,11 +10,11 @@ import {
   LayoutPanel,
   HStack,
   VStack,
-} from '@xds/core/Layout';
-import {Card} from '@xds/core/Card';
-import {Button} from '@xds/core/Button';
-import {Heading, Text} from '@xds/core/Text';
-import {List, ListItem} from '@xds/core/List';
+} from '@astryxdesign/core/Layout';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {List, ListItem} from '@astryxdesign/core/List';
 
 export default function LayoutSidebarLayout() {
   return (

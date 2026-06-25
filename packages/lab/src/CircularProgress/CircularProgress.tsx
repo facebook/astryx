@@ -26,10 +26,10 @@ import {
   fontWeightVars,
   spacingVars,
   typeScaleVars,
-} from '@xds/core/theme/tokens.stylex';
-import {mergeProps} from '@xds/core/utils';
-import type {BaseProps} from '@xds/core';
-import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {mergeProps} from '@astryxdesign/core/utils';
+import type {BaseProps} from '@astryxdesign/core';
+import {themeProps} from '../../../core/src/utils/themeProps';
 
 /**
  * Extensible variant map for CircularProgress.
@@ -37,7 +37,7 @@ import {xdsThemeProps} from '../../../core/src/utils/xdsThemeProps';
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/CircularProgress' {
+ * declare module '@astryxdesign/core/CircularProgress' {
  *   interface CircularProgressVariantMap {
  *     'brand': true;
  *   }
@@ -299,7 +299,7 @@ export function CircularProgress({
     <div
       ref={ref}
       {...mergeProps(
-        xdsThemeProps('circular-progress', {variant, size}),
+        themeProps('circular-progress', {variant, size}),
         stylex.props(styles.root, showLabel && styles.rootWithLabel, xstyle),
         className,
         style,
@@ -327,7 +327,7 @@ export function CircularProgress({
           )}>
           <circle
             {...mergeProps(
-              xdsThemeProps('circular-progress-track'),
+              themeProps('circular-progress-track'),
               stylex.props(styles.track, trackVariantStyles[variant]),
             )}
             cx={center}
@@ -338,7 +338,7 @@ export function CircularProgress({
           {isIndeterminate ? (
             <circle
               {...mergeProps(
-                xdsThemeProps('circular-progress-fill', {variant}),
+                themeProps('circular-progress-fill', {variant}),
                 stylex.props(styles.fillIndeterminate, variantStyles[variant]),
               )}
               cx={center}
@@ -349,7 +349,7 @@ export function CircularProgress({
           ) : (
             <circle
               {...mergeProps(
-                xdsThemeProps('circular-progress-fill', {variant}),
+                themeProps('circular-progress-fill', {variant}),
                 stylex.props(styles.fill, variantStyles[variant]),
               )}
               cx={center}

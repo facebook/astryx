@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {CLI_ROOT} from '../utils/paths.mjs';
-import {XDSError} from './error.mjs';
+import {AstryxError} from './error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 const DOCS_DIR = path.join(CLI_ROOT, 'docs');
@@ -136,7 +136,7 @@ export async function docs(topic, section, options = {}) {
 
   const normalized = topic.toLowerCase();
   if (!topics[normalized]) {
-    throw new XDSError(
+    throw new AstryxError(
       `Unknown topic "${topic}"`,
       Object.keys(topics).map(t => ({name: t, reason: 'available topic'})),
       ERROR_CODES.ERR_UNKNOWN_TOPIC,
@@ -149,7 +149,7 @@ export async function docs(topic, section, options = {}) {
     const normalizedSection = section.toLowerCase();
     const match = docsData.sections.find(s => s.title.toLowerCase().includes(normalizedSection));
     if (!match) {
-      throw new XDSError(
+      throw new AstryxError(
         `Section "${section}" not found in "${topic}"`,
         docsData.sections.map(s => ({name: s.title, reason: 'available section'})),
         ERROR_CODES.ERR_UNKNOWN_SECTION,

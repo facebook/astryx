@@ -113,7 +113,7 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Applying motion tokens',
-          code: `import {durationVars, easeVars} from '@xds/core';
+          code: `import {durationVars, easeVars} from '@astryxdesign/core';
 
 const styles = stylex.create({
   fadeIn: {

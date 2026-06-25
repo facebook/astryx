@@ -8,20 +8,21 @@
 
 import {Fragment, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Text} from '@xds/core/Text';
-import {Heading} from '@xds/core/Text';
-import {VStack} from '@xds/core/Layout';
-import {Section} from '@xds/core/Section';
-import {Grid} from '@xds/core/Grid';
-import {ClickableCard} from '@xds/core/ClickableCard';
-import {Divider} from '@xds/core/Divider';
-import {Button} from '@xds/core/Button';
-import {Popover} from '@xds/core/Popover';
-import {Card} from '@xds/core/Card';
+import {Text} from '@astryxdesign/core/Text';
+import {Heading} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Section} from '@astryxdesign/core/Section';
+import {Grid} from '@astryxdesign/core/Grid';
+import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Button} from '@astryxdesign/core/Button';
+import {Popover} from '@astryxdesign/core/Popover';
+import {Card} from '@astryxdesign/core/Card';
 import {CodeExampleBlock} from '../../../components/CodeExampleBlock';
 import {components as componentRegistry} from '../../../generated/componentRegistry';
 import {blocks} from '../../../generated/blockRegistry';
 import {ShowcaseThumbnail} from '../../../components/ShowcaseThumbnail';
+import {layout} from '../../../layout.stylex';
 
 /**
  * Category display order for the overview page.
@@ -76,7 +77,7 @@ interface CategoryItem {
 export default function ComponentsGalleryPage() {
   /** All categorized components (excluding hidden, hooks, and utilities) */
   const categorizedItems = useMemo(() => {
-    const coreComponents = componentRegistry['@xds/core'] ?? [];
+    const coreComponents = componentRegistry['@astryxdesign/core'] ?? [];
     const items: CategoryItem[] = [];
 
     for (const comp of coreComponents) {
@@ -130,7 +131,7 @@ export default function ComponentsGalleryPage() {
   }, [categorizedItems]);
 
   return (
-    <Section maxWidth={1200} padding={6} xstyle={styles.section}>
+    <Section maxWidth={layout.contentMaxWidth} padding={6} xstyle={styles.section}>
       <VStack gap={10}>
         <VStack gap={4} hAlign="center">
           <VStack gap={2} style={{alignItems: 'center'}}>
@@ -152,7 +153,7 @@ export default function ComponentsGalleryPage() {
                   </Text>
                   <Card padding={0}>
                     <CodeExampleBlock
-                      code="npm install @xds/core"
+                      code="npm install @astryxdesign/core"
                       language="bash"
                       hasCopyButton
                     />
@@ -164,7 +165,7 @@ export default function ComponentsGalleryPage() {
                   </Text>
                   <Card padding={0}>
                     <CodeExampleBlock
-                      code="import {...} from '@xds/core/ComponentName';"
+                      code="import {...} from '@astryxdesign/core/ComponentName';"
                       language="typescript"
                       hasCopyButton
                     />

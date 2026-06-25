@@ -2,11 +2,11 @@
 
 'use client';
 
-import {HoverCard} from '@xds/core/HoverCard';
-import {Button} from '@xds/core/Button';
-import {Stack} from '@xds/core/Layout';
-import {Text, Heading} from '@xds/core/Text';
-import {Avatar} from '@xds/core/Avatar';
+import {HoverCard} from '@astryxdesign/core/HoverCard';
+import {Button} from '@astryxdesign/core/Button';
+import {Stack} from '@astryxdesign/core/Layout';
+import {Text, Heading} from '@astryxdesign/core/Text';
+import {Avatar} from '@astryxdesign/core/Avatar';
 import * as stylex from '@stylexjs/stylex';
 
 const styles = stylex.create({

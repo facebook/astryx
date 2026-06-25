@@ -3,7 +3,7 @@
 /**
  * Search command JSON responses.
  *
- * `xds search <query>` returns a single ranked, typed result set spanning all
+ * `astryx search <query>` returns a single ranked, typed result set spanning all
  * content domains — components, hooks, docs topics, and templates. Scoring is
  * keyword + fuzzy ranking (not semantic / embeddings).
  *
@@ -31,7 +31,7 @@ export interface SearchResultEntry {
   reason: string;
   /** One-line description, when available. */
   description: string;
-  /** Follow-up command to act on this result (e.g. `xds component Button`). */
+  /** Follow-up command to act on this result (e.g. `astryx component Button`). */
   command: string;
   /** Import path — present for component and hook results. */
   import?: string;

@@ -11,27 +11,27 @@ import {
   StackItem,
   Layout,
   LayoutContent,
-} from '@xds/core/Layout';
-import {Grid} from '@xds/core/Grid';
-import {Button} from '@xds/core/Button';
-import {Text} from '@xds/core/Text';
-import {TextInput} from '@xds/core/TextInput';
-import {Selector} from '@xds/core/Selector';
-import {CheckboxInput} from '@xds/core/CheckboxInput';
-import {RadioList, RadioListItem} from '@xds/core/RadioList';
-import {Link} from '@xds/core/Link';
-import {TextArea} from '@xds/core/TextArea';
-import {Divider} from '@xds/core/Divider';
-import {Banner} from '@xds/core/Banner';
-import {Card} from '@xds/core/Card';
-import {Collapsible} from '@xds/core/Collapsible';
-import {Badge} from '@xds/core/Badge';
-import {NumberInput} from '@xds/core/NumberInput';
-import {useMediaQuery} from '@xds/core/hooks';
-import {Section} from '@xds/core/Section';
-import {Center} from '@xds/core/Center';
-import {Thumbnail} from '@xds/core/Thumbnail';
-import {Icon} from '@xds/core/Icon';
+} from '@astryxdesign/core/Layout';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Button} from '@astryxdesign/core/Button';
+import {Text} from '@astryxdesign/core/Text';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Selector} from '@astryxdesign/core/Selector';
+import {CheckboxInput} from '@astryxdesign/core/CheckboxInput';
+import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
+import {Link} from '@astryxdesign/core/Link';
+import {TextArea} from '@astryxdesign/core/TextArea';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Banner} from '@astryxdesign/core/Banner';
+import {Card} from '@astryxdesign/core/Card';
+import {Collapsible} from '@astryxdesign/core/Collapsible';
+import {Badge} from '@astryxdesign/core/Badge';
+import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
+import {Section} from '@astryxdesign/core/Section';
+import {Center} from '@astryxdesign/core/Center';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
+import {Icon} from '@astryxdesign/core/Icon';
 import {ShieldCheckIcon} from '@heroicons/react/24/outline';
 import {LockClosedIcon} from '@heroicons/react/24/outline';
 import {CheckCircleIcon} from '@heroicons/react/24/outline';
@@ -41,7 +41,7 @@ import {
   spacingVars,
   radiusVars,
   borderVars,
-} from '@xds/core/theme/tokens.stylex';
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -117,9 +117,9 @@ const US_STATES = [
 // Product photos from the local template-assets set (committed to the
 // docsite; the CLI swaps these for an inline placeholder on scaffold).
 const ITEM_IMAGES: Record<string, {src: string}> = {
-  '1': {src: 'https://lookaside.facebook.com/assets/xds_oss/light-product-1.png'},
-  '2': {src: 'https://lookaside.facebook.com/assets/xds_oss/light-product-4.png'},
-  '3': {src: 'https://lookaside.facebook.com/assets/xds_oss/light-product-5.png'},
+  '1': {src: 'https://lookaside.facebook.com/assets/astryx/light-product-1.png'},
+  '2': {src: 'https://lookaside.facebook.com/assets/astryx/light-product-4.png'},
+  '3': {src: 'https://lookaside.facebook.com/assets/astryx/light-product-5.png'},
 };
 
 const ORDER_ITEMS = [

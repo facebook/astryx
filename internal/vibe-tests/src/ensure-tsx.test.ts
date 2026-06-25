@@ -20,8 +20,8 @@ describe('ensureTsxFiles', () => {
     fs.writeFileSync(
       path.join(dir, 'cwm-1.json'),
       JSON.stringify([
-        {response: 'import {XDSButton} from "@xds/core";', trajectoryDepth: 0},
-        {response: 'import {XDSCard} from "@xds/core";', trajectoryDepth: 1},
+        {response: 'import {XDSButton} from "@astryxdesign/core";', trajectoryDepth: 0},
+        {response: 'import {XDSCard} from "@astryxdesign/core";', trajectoryDepth: 1},
       ]),
     );
     fs.writeFileSync(

@@ -7,8 +7,8 @@
  *
  * Applies theme tokens and sets color-scheme for light-dark() to work.
  * Themes are created with `defineTheme()` and applied via CSS:
- * - Token overrides set as CSS custom properties on [data-xds-theme]
- * - Component overrides scoped via @scope'd CSS selectors on the stable XDS
+ * - Token overrides set as CSS custom properties on [data-astryx-theme]
+ * - Component overrides scoped via @scope'd CSS selectors on the stable Astryx
  *   selector surface (`.xds-*` classes today; components also emit `data-*`
  *   prop reflections for the data-attribute selector migration)
  *
@@ -16,7 +16,7 @@
  * automatically syncs attributes to `document.documentElement`:
  * - `data-theme` — drives `color-scheme` via reset.css rules, ensuring browser
  *   chrome (scrollbars, native form controls, date pickers) reflects the mode.
- * - `data-xds-theme` — enables @scope'd theme CSS to reach elements rendered
+ * - `data-astryx-theme` — enables @scope'd theme CSS to reach elements rendered
  *   outside the Theme wrapper (portals, toast fallback viewports).
  *
  * For RSC / SSR, set `data-theme` on `<html>` in your root server layout
@@ -43,7 +43,7 @@ import type {ThemeMode} from './types';
 import {colorVars, typographyVars} from './tokens.stylex';
 import {registerIcons} from '../Icon/globalIconRegistry';
 import {generateThemeCSS, type DefinedTheme} from './defineTheme';
-import {dataAttr, legacyDataAttr} from '../naming';
+import {dataAttr} from '../naming';
 import {ThemeContext} from './useTheme';
 
 /**
@@ -102,7 +102,7 @@ const warnedThemes = new Set<string>();
 
 /**
  * Hook to inject theme CSS into the document.
- * Built themes (from `xds theme build`) skip injection — their CSS
+ * Built themes (from `astryx theme build`) skip injection — their CSS
  * is in a separate file imported by the consumer.
  */
 function useThemeStyleInjection(theme: DefinedTheme): void {
@@ -123,11 +123,11 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
     if (!warnedThemes.has(theme.name)) {
       warnedThemes.add(theme.name);
       console.warn(
-        `[XDS] Theme "${theme.name}" is using runtime style injection. ` +
+        `[Astryx] Theme "${theme.name}" is using runtime style injection. ` +
           `For better performance, use the pre-built theme:\n\n` +
-          `  import {${theme.name}Theme} from '@xds/theme-${theme.name}/built';\n` +
-          `  import '@xds/theme-${theme.name}/theme.css';\n\n` +
-          `For custom themes, run \`npx xds theme build <file>\` to generate ` +
+          `  import {${theme.name}Theme} from '@astryxdesign/theme-${theme.name}/built';\n` +
+          `  import '@astryxdesign/theme-${theme.name}/theme.css';\n\n` +
+          `For custom themes, run \`npx astryx theme build <file>\` to generate ` +
           `the built artifacts.`,
       );
     }
@@ -141,21 +141,19 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
     // the theme region. Any class-based style (StyleX, .xds-*) wins.
     if (prose) {
       const proseStyle = document.createElement('style');
-      proseStyle.setAttribute(legacyDataAttr('theme-prose'), theme.name);
       proseStyle.setAttribute(dataAttr('theme-prose'), theme.name);
       proseStyle.setAttribute(dataAttr('id'), id);
       proseStyle.textContent = `@layer reset {\n${prose}\n}`;
       document.head.appendChild(proseStyle);
     }
 
-    // Component overrides go into @layer xds-theme — above StyleX layers
+    // Component overrides go into @layer astryx-theme — above StyleX layers
     // so themes can intentionally restyle components.
     if (component) {
       const compStyle = document.createElement('style');
-      compStyle.setAttribute(legacyDataAttr('theme'), theme.name);
       compStyle.setAttribute(dataAttr('theme'), theme.name);
       compStyle.setAttribute(dataAttr('id'), id);
-      compStyle.textContent = `@layer xds-theme {\n${component}\n}`;
+      compStyle.textContent = `@layer astryx-theme {\n${component}\n}`;
       document.head.appendChild(compStyle);
     }
 
@@ -188,7 +186,7 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
  * Syncs two attributes:
  * - `data-theme` (light/dark) — reset.css maps this to color-scheme, controlling
  *   browser chrome (scrollbars, native form controls, date pickers).
- * - `data-xds-theme` (theme name) — enables @scope'd theme CSS to reach elements
+ * - `data-astryx-theme` (theme name) — enables @scope'd theme CSS to reach elements
  *   outside the Theme wrapper (e.g. toast fallback viewports, portals).
  *
  * - 'light' | 'dark' → sets data-theme="light" | "dark"
@@ -215,15 +213,11 @@ function useRootThemeSync(
     }
 
     // Sync theme name so @scope rules reach portals/fallback viewports.
-    // Dual-emit new (astryx) + legacy (xds) attrs during the compat window
-    // (XDS-prefix migration P2380608025); generated theme CSS matches either.
     document.documentElement.setAttribute(dataAttr('theme'), themeName);
-    document.documentElement.setAttribute(legacyDataAttr('theme'), themeName);
 
     return () => {
       document.documentElement.removeAttribute('data-theme');
       document.documentElement.removeAttribute(dataAttr('theme'));
-      document.documentElement.removeAttribute(legacyDataAttr('theme'));
     };
   }, [isNested, mode, themeName]);
 }
@@ -235,13 +229,13 @@ function useRootThemeSync(
 /**
  * Theme provider component
  *
- * Sets data-xds-theme attribute so @scope'd CSS takes effect.
+ * Sets data-astryx-theme attribute so @scope'd CSS takes effect.
  * Component overrides are pure CSS scoped under the theme attribute —
  * components render with stable `.xds-*` classes plus `data-*` prop
  * reflections and don't need context.
  *
  * When this is the root Theme (no parent Theme in the tree),
- * it syncs `data-theme` and `data-xds-theme` to `<html>` so browser
+ * it syncs `data-theme` and `data-astryx-theme` to `<html>` so browser
  * chrome reflects the active mode and @scope'd CSS reaches portals.
  * Nested Theme instances skip the sync.
  */
@@ -277,7 +271,7 @@ export function Theme({
       <ThemeNestingContext value={true}>
         <div
           {...stylex.props(wrapperStyles.base, colorSchemeStyle)}
-          data-xds-theme={theme.name}
+          data-astryx-theme={theme.name}
           data-theme={mode === 'system' ? undefined : mode}>
           {children}
         </div>

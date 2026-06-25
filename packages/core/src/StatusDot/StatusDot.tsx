@@ -21,7 +21,7 @@ import {colorVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {Tooltip} from '../Tooltip/Tooltip';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Pulse animation keyframes
@@ -83,7 +83,7 @@ const variants = stylex.create({
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/StatusDot' {
+ * declare module '@astryxdesign/core/StatusDot' {
  *   interface StatusDotVariantMap {
  *     'critical': true;
  *   }
@@ -132,7 +132,7 @@ export interface StatusDotProps extends BaseProps<HTMLSpanElement> {
  * A small colored dot indicator for status display (online/offline, severity, etc).
  *
  * Fixed 8px size. Renders as a non-focusable `<span>` with `role="img"` and
- * `aria-label` for accessibility. Styles use XDS theme tokens via StyleX.
+ * `aria-label` for accessibility. Styles use Astryx theme tokens via StyleX.
  * Wrap your app in `<Theme>` to apply a theme.
  *
  * @example
@@ -160,7 +160,7 @@ export function StatusDot({
       role="img"
       aria-label={label}
       {...mergeProps(
-        xdsThemeProps('statusdot', {variant}),
+        themeProps('statusdot', {variant}),
         stylex.props(
           styles.base,
           variants[variant],

@@ -2,7 +2,7 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {MultiSelector} from '@xds/core/MultiSelector';
+import {MultiSelector} from '@astryxdesign/core/MultiSelector';
 
 const meta: Meta<typeof MultiSelector> = {
   title: 'Core/MultiSelector',

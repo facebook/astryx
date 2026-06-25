@@ -2,9 +2,9 @@
 
 'use client';
 
-import {Card} from '@xds/core/Card';
-import {VStack} from '@xds/core/Layout';
-import {Heading, Text} from '@xds/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Heading, Text} from '@astryxdesign/core/Text';
 
 export default function HeadingCardGrid() {
   return (

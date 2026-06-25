@@ -126,7 +126,7 @@ describe('PowerSearch', () => {
       />,
     );
     expect(root).toBeInstanceOf(HTMLDivElement);
-    expect(root).toHaveClass('xds-power-search');
+    expect(root).toHaveClass('astryx-power-search');
   });
 
   it('exposes typeahead focus through handleRef', () => {

@@ -27,7 +27,7 @@ import {
 import {MetadataListContext} from './MetadataListContext';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -166,7 +166,7 @@ export function MetadataListItem({
         ref={ref}
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('metadata-list-item'),
+          themeProps('metadata-list-item'),
           stylex.props(styles.stackedWrapper, xstyle),
           className,
           style,
@@ -184,7 +184,7 @@ export function MetadataListItem({
         ref={ref}
         data-testid={testId ? `${testId}-label` : undefined}
         {...mergeProps(
-          xdsThemeProps('metadata-list-item'),
+          themeProps('metadata-list-item'),
           stylex.props(styles.label, xstyle),
           className,
           style,

@@ -28,7 +28,7 @@ import {Section} from '../Section/Section';
 import {useListFocus} from '../hooks/useListFocus';
 import {SizeProvider} from '../SizeContext/SizeContext';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Map SpacingStep values to spacingVars keys.
@@ -257,7 +257,7 @@ export function Toolbar({
           aria-orientation={orientation}
           onKeyDown={handleKeyDown}
           {...mergeProps(
-            xdsThemeProps('toolbar', {size}),
+            themeProps('toolbar', {size}),
             stylex.props(
               hasCenterContent ? styles.baseGrid : styles.baseFlex,
               orientation === 'vertical' && styles.vertical,

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {Text} from '@xds/core/Text';
-import {Table} from '@xds/core/Table';
+import {Text} from '@astryxdesign/core/Text';
+import {Table} from '@astryxdesign/core/Table';
 
 /**
  * Generic table renderer for ContentBlock type='table'.

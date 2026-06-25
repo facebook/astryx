@@ -33,7 +33,7 @@ import {useScrollOverflow} from '../hooks/useScrollOverflow';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps, mergeRefs} from '../utils';
 import type {SpacingStep} from '../utils/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 export interface CarouselProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -98,10 +98,10 @@ const styles = stylex.create({
     alignItems: 'center',
     overflowX: 'auto',
     overflowY: 'hidden',
-    /* eslint-disable @xds/no-hardcoded-styles -- 1px bleed for tab indicator; no token at this size */
+    /* eslint-disable @astryx/no-hardcoded-styles -- 1px bleed for tab indicator; no token at this size */
     paddingBottom: '1px',
     marginBottom: '-1px',
-    /* eslint-enable @xds/no-hardcoded-styles */
+    /* eslint-enable @astryx/no-hardcoded-styles */
     overscrollBehaviorX: 'contain',
     scrollBehavior: {
       default: 'smooth',
@@ -325,7 +325,7 @@ export function Carousel({
       aria-label={ariaLabel}
       aria-roledescription="carousel"
       {...mergeProps(
-        xdsThemeProps('carousel'),
+        themeProps('carousel'),
         stylex.props(styles.root, xstyle),
         className,
         style,

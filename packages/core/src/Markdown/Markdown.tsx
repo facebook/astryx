@@ -6,7 +6,7 @@
  * @file Markdown.tsx
  * @input Markdown string, parser AST types
  * @output Exports Markdown component and MarkdownProps
- * @position Core implementation; renders markdown as XDS components
+ * @position Core implementation; renders markdown as Astryx components
  */
 
 import {useMemo, useRef} from 'react';
@@ -55,7 +55,7 @@ import {
   trimStreamingArtifacts,
 } from './parser';
 import type {BlockNode, InlineNode, IncrementalState} from './parser';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 type SyncReactNode = Exclude<React.ReactNode, Promise<unknown>>;
 
@@ -399,10 +399,7 @@ const styles = stylex.create({
   },
   link: {
     color: colorVars['--color-text-accent'],
-    textDecoration: {
-      default: 'none',
-      ':hover': {'@media (hover: hover)': 'underline'},
-    },
+    textDecoration: 'underline',
   },
 });
 
@@ -1521,7 +1518,7 @@ function renderBlock(
 // ---------------------------------------------------------------------------
 
 /**
- * Renders a markdown string as XDS components. Supports streaming with
+ * Renders a markdown string as Astryx components. Supports streaming with
  * smooth fade-in animation via isStreaming.
  *
  * @example
@@ -1652,7 +1649,7 @@ export function Markdown({
         ref={ref}
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('markdown', {density}),
+          themeProps('markdown', {density}),
           stylex.props(styles.root, styles.inlineRoot, xstyle),
           className,
           style,
@@ -1685,7 +1682,7 @@ export function Markdown({
       ref={ref as React.Ref<HTMLDivElement>}
       data-testid={testId}
       {...mergeProps(
-        xdsThemeProps('markdown', {density}),
+        themeProps('markdown', {density}),
         stylex.props(styles.root, xstyle),
         className,
         style,

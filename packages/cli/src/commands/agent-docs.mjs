@@ -31,8 +31,11 @@ const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';
 const CLAUDE_DIR_MD = path.join('.claude', 'CLAUDE.md');
 
-const XDS_MARKER_START = '<!-- XDS:START -->';
-const XDS_MARKER_END = '<!-- XDS:END -->';
+const MARKER_START = '<!-- ASTRYX:START -->';
+const MARKER_END = '<!-- ASTRYX:END -->';
+// Legacy markers — read during migration so the script finds existing XDS blocks
+const LEGACY_MARKER_START = '<!-- XDS:START -->';
+const LEGACY_MARKER_END = '<!-- XDS:END -->';
 
 /**
  * Agent tool presets — maps tool names to their file search paths.
@@ -99,7 +102,7 @@ export function resolveAgentPaths(targetDir, agent) {
  */
 export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix()} = {}) {
   const run = `${runPrefix} astryx`;
-  const lines = [XDS_MARKER_START];
+  const lines = [MARKER_START];
 
   // Component count from live discovery
   let componentCount = '90+';
@@ -176,14 +179,14 @@ export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPre
 
   lines.push(`${run} swizzle <Name>            eject source (--gap to report why)`);
   lines.push(`${run} upgrade --apply            codemods after version bump`);
-  lines.push(`after @xds/core bump, always run ${run} upgrade --apply`);
-  lines.push(XDS_MARKER_END);
+  lines.push(`after @astryxdesign/core bump, always run ${run} upgrade --apply`);
+  lines.push(MARKER_END);
 
   return lines.join('\n');
 }
 
 /**
- * Get XDS version from core package.
+ * Get Astryx version from core package.
  */
 export function getXdsVersion(coreDir) {
   if (coreDir) {
@@ -199,7 +202,7 @@ export function getXdsVersion(coreDir) {
 }
 
 /**
- * Inject or update XDS section in a file using XDS markers.
+ * Inject or update Astryx section in a file using Astryx markers.
  * If the file has existing markers, replaces the content between them.
  * If the file exists without markers, appends the block (unless onlyReplace is true).
  * If createIfMissing is true and the file doesn't exist, creates it with a header.
@@ -209,7 +212,7 @@ export function getXdsVersion(coreDir) {
  * @param {object} [options]
  * @param {boolean} [options.createIfMissing] - Create the file if it doesn't exist
  * @param {string} [options.header] - Header for newly created files
- * @param {boolean} [options.onlyReplace] - Only write if XDS markers already exist (skip files without markers)
+ * @param {boolean} [options.onlyReplace] - Only write if Astryx markers already exist (skip files without markers)
  * @returns {boolean} Whether the file was written
  */
 export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = false, header = '', onlyReplace = false} = {}) {
@@ -218,16 +221,23 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
   if (fs.existsSync(filePath)) {
     content = fs.readFileSync(filePath, 'utf-8');
 
-    const startIdx = content.indexOf(XDS_MARKER_START);
-    const endIdx = content.indexOf(XDS_MARKER_END);
+    // Find existing section — try new markers first, fall back to legacy XDS markers
+    let startIdx = content.indexOf(MARKER_START);
+    let endIdx = content.indexOf(MARKER_END);
+    let markerEndLength = MARKER_END.length;
+    if (startIdx === -1) {
+      startIdx = content.indexOf(LEGACY_MARKER_START);
+      endIdx = content.indexOf(LEGACY_MARKER_END);
+      markerEndLength = LEGACY_MARKER_END.length;
+    }
 
     if (startIdx !== -1 && endIdx !== -1) {
       content =
         content.slice(0, startIdx) +
         compressedIndex +
-        content.slice(endIdx + XDS_MARKER_END.length);
+        content.slice(endIdx + markerEndLength);
     } else if (onlyReplace) {
-      // File exists but has no XDS markers — skip it
+      // File exists but has no Astryx markers — skip it
       return false;
     } else {
       content = content.trimEnd() + '\n\n' + compressedIndex + '\n';
@@ -243,7 +253,7 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
 }
 
 /**
- * Inject or update XDS section in AGENTS.md.
+ * Inject or update Astryx section in AGENTS.md.
  * Always creates the file if it doesn't exist.
  */
 export function injectAgentsMd(targetDir, version) {
@@ -256,7 +266,7 @@ export function injectAgentsMd(targetDir, version) {
 }
 
 /**
- * Inject or update XDS section in CLAUDE.md.
+ * Inject or update Astryx section in CLAUDE.md.
  * Only injects if CLAUDE.md already exists.
  *
  * @returns {boolean} Whether the file was written
@@ -268,22 +278,29 @@ export function injectClaudeMd(targetDir, version) {
 }
 
 /**
- * Remove XDS section from a file.
+ * Remove Astryx section from a file.
  * If the file becomes empty (only boilerplate header remains), deletes it.
  *
- * @returns {boolean} Whether the XDS section was found and removed
+ * @returns {boolean} Whether the Astryx section was found and removed
  */
 export function removeXdsBlock(filePath, {deleteIfEmpty = false} = {}) {
   if (!fs.existsSync(filePath)) return false;
 
   let content = fs.readFileSync(filePath, 'utf-8');
-  const startIdx = content.indexOf(XDS_MARKER_START);
-  const endIdx = content.indexOf(XDS_MARKER_END);
+  // Find existing section — try new markers first, fall back to legacy
+  let startIdx = content.indexOf(MARKER_START);
+  let endIdx = content.indexOf(MARKER_END);
+  let markerEndLen = MARKER_END.length;
+  if (startIdx === -1) {
+    startIdx = content.indexOf(LEGACY_MARKER_START);
+    endIdx = content.indexOf(LEGACY_MARKER_END);
+    markerEndLen = LEGACY_MARKER_END.length;
+  }
 
   if (startIdx === -1 || endIdx === -1) return false;
 
   const before = content.slice(0, startIdx).trimEnd();
-  const after = content.slice(endIdx + XDS_MARKER_END.length).trimStart();
+  const after = content.slice(endIdx + markerEndLen).trimStart();
   content = before + (after ? '\n\n' + after : '') + '\n';
 
   if (deleteIfEmpty) {
@@ -299,7 +316,7 @@ export function removeXdsBlock(filePath, {deleteIfEmpty = false} = {}) {
 }
 
 /**
- * Remove XDS section from all known agent doc files.
+ * Remove Astryx section from all known agent doc files.
  */
 export function removeAgentDocs(targetDir) {
   const allPaths = discoverAgentDocs(targetDir);
@@ -332,7 +349,7 @@ export function removeAgentDocs(targetDir) {
  * @param {string} [options.lang]
  * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'all'
  * @param {string[]} [options.paths] - Explicit paths (overrides agent/auto-detect)
- * @param {boolean} [options.onlyReplace] - Only update files that already have XDS markers (for upgrades)
+ * @param {boolean} [options.onlyReplace] - Only update files that already have Astryx markers (for upgrades)
  * @returns {string[]} List of files written
  */
 export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false} = {}) {

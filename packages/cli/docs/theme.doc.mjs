@@ -18,12 +18,12 @@ export const docs = {
           type: 'code',
           lang: 'tsx',
           label: 'Basic theme setup (runtime injection)',
-          code: `import {Theme} from '@xds/core';
-import {defaultTheme} from '@xds/theme-default';
+          code: `import {Theme} from '@astryxdesign/core';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 function App() {
   return (
-    <Theme theme={defaultTheme}>
+    <Theme theme={neutralTheme}>
       <YourApp />
     </Theme>
   );
@@ -33,13 +33,13 @@ function App() {
           type: 'code',
           lang: 'tsx',
           label: 'Optimized setup (pre-built CSS)',
-          code: `import {Theme} from '@xds/core';
-import {defaultTheme} from '@xds/theme-default/built';
-import '@xds/theme-default/theme.css';
+          code: `import {Theme} from '@astryxdesign/core';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+import '@astryxdesign/theme-neutral/theme.css';
 
 function App() {
   return (
-    <Theme theme={defaultTheme}>
+    <Theme theme={neutralTheme}>
       <YourApp />
     </Theme>
   );
@@ -60,25 +60,45 @@ function App() {
           headers: ['Theme', 'Import', 'Description'],
           rows: [
             [
-              'Default',
-              "import {defaultTheme} from '@xds/theme-default'",
-              'Blue accent, system fonts, light/dark',
-            ],
-            [
               'Neutral',
-              "import {neutralTheme} from '@xds/theme-neutral'",
-              'Grayscale, shadcn-inspired',
+              "import {neutralTheme} from '@astryxdesign/theme-neutral'",
+              'Muted, minimal aesthetic with system fonts. A good starting point.',
             ],
             [
-              'Brutalist',
-              "import {brutalistTheme} from '@xds/theme-brutalist'",
-              'Zero radius, monospace, heavy borders',
+              'Butter',
+              "import {butterTheme} from '@astryxdesign/theme-butter'",
+              'Golden, buttery surfaces with blue accents; Sarina + Outfit type.',
+            ],
+            [
+              'Chocolate',
+              "import {chocolateTheme} from '@astryxdesign/theme-chocolate'",
+              'Warm brown tones and cozy beige; Fraunces + Albert Sans type.',
+            ],
+            [
+              'Gothic',
+              "import {gothicTheme} from '@astryxdesign/theme-gothic'",
+              'Dark-only atmospheric theme; deep blue-gray surfaces, distressed display type.',
+            ],
+            [
+              'Matcha',
+              "import {matchaTheme} from '@astryxdesign/theme-matcha'",
+              'Earthy green theme with Figtree typography.',
+            ],
+            [
+              'Stone',
+              "import {stoneTheme} from '@astryxdesign/theme-stone'",
+              'Warm stone and slate tones; Montserrat + Figtree type.',
+            ],
+            [
+              'Y2K',
+              "import {y2kTheme} from '@astryxdesign/theme-y2k'",
+              'Playful Y2K pop; periwinkle body, holographic accents, Poppins + Crimson Text.',
             ],
           ],
         },
         {
           type: 'prose',
-          text: 'All theme packages export from two subpaths:\n- `@xds/theme-{name}`: source theme (runtime injection)\n- `@xds/theme-{name}/built`: pre-built theme (pair with `theme.css`)',
+          text: 'All theme packages export from two subpaths:\n- `@astryxdesign/theme-{name}`: source theme (runtime injection)\n- `@astryxdesign/theme-{name}/built`: pre-built theme (pair with `theme.css`)',
         },
       ],
     },
@@ -130,7 +150,7 @@ function App() {
           type: 'code',
           lang: 'tsx',
           label: 'defineTheme with scale configs',
-          code: `import {defineTheme} from '@xds/core/theme';
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
 
 const myTheme = defineTheme({
   name: 'my-theme',
@@ -194,14 +214,14 @@ const myTheme = defineTheme({
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Extending the default theme',
-          code: `import {defineTheme} from '@xds/core/theme';
-import {defaultTheme} from '@xds/theme-default';
+          label: 'Extending the neutral theme',
+          code: `import {defineTheme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 import {myIcons} from './icons';
 
 const brandTheme = defineTheme({
   name: 'brand',
-  extends: defaultTheme,
+  extends: neutralTheme,
   icons: myIcons,
   tokens: {
     '--color-accent': ['#7B61FF', '#9B85FF'],
@@ -392,8 +412,8 @@ import './themes/ocean.css';
           rows: [
             [
               'Import (published theme)',
-              "@xds/theme-{name}",
-              "@xds/theme-{name}/built + theme.css",
+              "@astryxdesign/theme-{name}",
+              "@astryxdesign/theme-{name}/built + theme.css",
             ],
             [
               'Import (custom theme)',
@@ -502,21 +522,21 @@ import './themes/ocean.css';
       content: [
         {
           type: 'prose',
-          text: 'Use `xdsTokenVar()` when a non-StyleX styling library wants a CSS variable reference, and `resolveXDSThemeTokens()` when JavaScript needs token values for a specific theme and mode without React context.',
+          text: 'Use `tokenVar()` when a non-StyleX styling library wants a CSS variable reference, and `resolveThemeTokens()` when JavaScript needs token values for a specific theme and mode without React context.',
         },
         {
           type: 'code',
           lang: 'ts',
           label: 'CSS var references for styling-library configs',
-          code: `import {xdsTokenVar, xdsTokenVars} from '@xds/core/theme/tokens';
+          code: `import {tokenVar, tokenVars} from '@astryxdesign/core/theme/tokens';
 
 const pandaOrEmotionTheme = {
   colors: {
-    text: xdsTokenVar('--color-text-primary'),
-    surface: xdsTokenVars['--color-background-surface'],
+    text: tokenVar('--color-text-primary'),
+    surface: tokenVars['--color-background-surface'],
   },
   spacing: {
-    4: xdsTokenVars['--spacing-4'],
+    4: tokenVars['--spacing-4'],
   },
 };`,
         },
@@ -524,10 +544,10 @@ const pandaOrEmotionTheme = {
           type: 'code',
           lang: 'ts',
           label: 'Resolve token values without a hook',
-          code: `import {resolveXDSThemeTokens} from '@xds/core/theme/tokens';
-import {defaultTheme} from '@xds/theme-default';
+          code: `import {resolveThemeTokens} from '@astryxdesign/core/theme/tokens';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
-const lightTokens = resolveXDSThemeTokens(defaultTheme, {mode: 'light'});
+const lightTokens = resolveThemeTokens(neutralTheme, {mode: 'light'});
 const chartTheme = {
   textColor: lightTokens['--color-text-primary'],
   seriesColor: lightTokens['--color-data-categorical-blue'],
@@ -535,7 +555,7 @@ const chartTheme = {
         },
         {
           type: 'prose',
-          text: 'The `@xds/core/theme/tokens` subpath is server-safe and does not require React. The main `@xds/core/theme` barrel also re-exports these helpers for client code that already imports theme APIs.',
+          text: 'The `@astryxdesign/core/theme/tokens` subpath is server-safe and does not require React. The main `@astryxdesign/core/theme` barrel also re-exports these helpers for client code that already imports theme APIs.',
         },
       ],
     },
@@ -545,14 +565,14 @@ const chartTheme = {
       content: [
         {
           type: 'prose',
-          text: '`useTheme()` uses the same token resolution as `resolveXDSThemeTokens()`, but reads the nearest Theme and effective color mode from React context and media query state. Use it inside client components for SVG, canvas, charts, maps, and third-party configuration objects that need token values in JavaScript instead of `var(...)` references.',
+          text: '`useTheme()` uses the same token resolution as `resolveThemeTokens()`, but reads the nearest Theme and effective color mode from React context and media query state. Use it inside client components for SVG, canvas, charts, maps, and third-party configuration objects that need token values in JavaScript instead of `var(...)` references.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Access resolved token values in React',
           code: `import {useMemo} from 'react';
-import {useTheme} from '@xds/core/theme';
+import {useTheme} from '@astryxdesign/core/theme';
 
 function ChartConfig() {
   const {mode, tokens} = useTheme();

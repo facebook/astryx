@@ -25,7 +25,7 @@ import {useSize} from '../SizeContext/SizeContext';
 import type {DropdownMenuOption} from '../DropdownMenu';
 import type {ButtonVariant, ButtonSize} from '../Button';
 import type {BaseProps} from '../BaseProps';
-import {stableClassName, legacyStableClassName} from '../naming';
+import {stableClassName} from '../naming';
 
 export interface MoreMenuProps extends Pick<
   BaseProps,
@@ -130,8 +130,8 @@ export function MoreMenu({
     <DropdownMenu
       className={
         classNameProp
-          ? `${stableClassName('more-menu')} ${legacyStableClassName('more-menu')} ${classNameProp}`
-          : `${stableClassName('more-menu')} ${legacyStableClassName('more-menu')}`
+          ? `${stableClassName('more-menu')} ${classNameProp}`
+          : stableClassName('more-menu')
       }
       xstyle={xstyle}
       style={style}

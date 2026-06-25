@@ -21,11 +21,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-    /* Monorepo: resolve @xds packages to source */
+    /* Monorepo: resolve @astryxdesign packages to source */
     "paths": {
-      "@xds/core/*": ["../../packages/core/src/*"],
-      "@xds/core": ["../../packages/core/src"],
-      "@xds/theme/*": ["../../packages/theme/src/*"]
+      "@astryxdesign/core/*": ["../../packages/core/src/*"],
+      "@astryxdesign/core": ["../../packages/core/src"],
+      "@astryxdesign/theme/*": ["../../packages/theme/src/*"]
     }
   },
   "include": ["src"]

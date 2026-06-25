@@ -4,21 +4,22 @@
 
 import {useEffect, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {VStack} from '@xds/core/Layout';
-import {Grid} from '@xds/core/Grid';
-import {Card} from '@xds/core/Card';
-import {Heading, Text} from '@xds/core/Text';
-import {Button} from '@xds/core/Button';
-import {spacingVars} from '@xds/core/theme/tokens.stylex';
+import {VStack} from '@astryxdesign/core/Layout';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Card} from '@astryxdesign/core/Card';
+import {Heading, Text} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {AstryxLogo} from '../../../components/logos';
 import {components} from '../../../generated/componentRegistry';
+import {layout} from '../../../layout.stylex';
 
-// Count of public @xds/core components (excluding hooks and hidden entries),
+// Count of public @astryxdesign/core components (excluding hooks and hidden entries),
 // rounded down to the nearest 10 for marketing copy. Sourced from the
 // generated registry so the number stays accurate as the library grows.
 const CORE_COMPONENT_COUNT_ROUNDED =
   Math.floor(
-    (components['@xds/core'] ?? []).filter(
+    (components['@astryxdesign/core'] ?? []).filter(
       c => !c.hidden && !c.name.startsWith('use'),
     ).length / 10,
   ) * 10;
@@ -29,15 +30,12 @@ const styles = stylex.create({
     overflowX: 'clip',
   },
   // The "stage" hosts the absolutely-positioned floating preview
-  // images + the centered CTA card. maxWidth: 1200 matches the
-  // shared marketing-section cap used by FeaturesShowcase and
-  // AboutShowcase so all three sections line up vertically inside
-  // showcaseOverlay; the value isn't on the spacing scale, it's a
-  // marketing page measure intentionally kept as a literal.
+  // images + the centered CTA card, capped so all three home
+  // showcases line up vertically inside showcaseOverlay.
   stage: {
     position: 'relative',
     width: '100%',
-    maxWidth: 1200,
+    maxWidth: layout.contentMaxWidth,
     overflow: 'hidden',
     borderRadius: 'var(--radius-container)',
     isolation: 'isolate',
@@ -52,12 +50,20 @@ const styles = stylex.create({
     // --color-background-muted theme-wide would also recolor code blocks,
     // table rows, sliders, etc. that rely on the default subtle muted tint.
     '--color-background-muted': 'var(--color-background-body)',
-    // 96px / 80px — beyond --spacing-12 (48px), so expressed as
-    // calc() over spacing tokens (2× spacing-12, 2× spacing-10)
-    // rather than as literals so the rhythm scales with any
-    // future spacing-scale theme override.
-    paddingBlock: `calc(${spacingVars['--spacing-12']} * 2)`,
-    paddingInline: `calc(${spacingVars['--spacing-10']} * 2)`,
+    // Roomy on desktop (96px / 80px — beyond --spacing-12, so expressed as
+    // calc() over spacing tokens so the rhythm scales with any future
+    // spacing-scale theme override), but tightened on narrow screens where
+    // the doubled inline padding (160px total) crushed the content into a
+    // thin column. Mobile uses the standard spacing scale; the generous
+    // composition padding only kicks in once there's room for it.
+    paddingBlock: {
+      default: spacingVars['--spacing-10'],
+      '@media (min-width: 768px)': `calc(${spacingVars['--spacing-12']} * 2)`,
+    },
+    paddingInline: {
+      default: spacingVars['--spacing-6'],
+      '@media (min-width: 768px)': `calc(${spacingVars['--spacing-10']} * 2)`,
+    },
   },
   // Each floating image is positioned absolutely against the stage,
   // anchored to one of the four card corners (slightly outside them).
@@ -218,7 +224,7 @@ export function DiscoverShowcase() {
           them. */}
       <div ref={stageRef} {...stylex.props(styles.stage)}>
         {/* Floating decorative preview images. Kept as raw <img>s
-            because @xds/core does not export a general-purpose
+            because @astryxdesign/core does not export a general-purpose
             image component (Thumbnail is chat-attachment chrome
             with built-in remove buttons; Icon is a glyph
             registry). aria-hidden + empty alt keep them out of the

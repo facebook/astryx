@@ -52,7 +52,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps, mergeRefs, isRenderable} from '../utils';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 const HasActivity = typeof React.Activity !== 'undefined';
 const ActivityWrapper = HasActivity
@@ -105,7 +105,7 @@ export type AppShellBreakpoint = 'sm' | 'md' | 'lg' | 'none';
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/AppShell' {
+ * declare module '@astryxdesign/core/AppShell' {
  *   interface AppShellVariantMap {
  *     'glass': true;
  *   }
@@ -667,7 +667,7 @@ export function AppShell({
       <div
         ref={headerRef}
         {...mergeProps(
-          xdsThemeProps('app-shell-header', {variant}),
+          themeProps('app-shell-header', {variant}),
           stylex.props(navAreaStyle, isAuto && styles.headerSticky),
         )}>
         {headerInner}
@@ -687,7 +687,7 @@ export function AppShell({
       padding={0}
       hasDivider={navHasDividers}
       isScrollable={isFill}
-      {...xdsThemeProps('app-shell-sidenav', {variant})}
+      {...themeProps('app-shell-sidenav', {variant})}
       xstyle={[
         navAreaStyle,
         isAuto && stickyBgStyle,
@@ -748,7 +748,7 @@ export function AppShell({
     shouldShowAutoToggle && !hasTopNav && hasSideNav ? (
       <div
         {...mergeProps(
-          xdsThemeProps('app-shell-header', {variant}),
+          themeProps('app-shell-header', {variant}),
           stylex.props(navAreaStyle, isAuto && styles.headerSticky),
         )}>
         <LayoutHeader padding={0} hasDivider={navHasDividers}>
@@ -771,7 +771,7 @@ export function AppShell({
         ref={mergeRefs(ref, shellRef)}
         data-testid={dataTestId}
         {...mergeProps(
-          xdsThemeProps('app-shell', {variant}),
+          themeProps('app-shell', {variant}),
           stylex.props(
             styles.root,
             variant === 'wash'

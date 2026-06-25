@@ -53,7 +53,7 @@ import {
 import {getIcon} from '../Icon/globalIconRegistry';
 import {useSideNavRenderMode} from './SideNavRenderContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Styles
@@ -482,7 +482,7 @@ export function SideNavItem({
 
     // Shared collapsed item styles — used by trigger, link, and button
     const collapsedItemStyles = mergeProps(
-      xdsThemeProps('side-nav-item', {
+      themeProps('side-nav-item', {
         size,
         selected: isSelected ? 'selected' : null,
       }),
@@ -583,7 +583,7 @@ export function SideNavItem({
   );
 
   const navItemStyleProps = mergeProps(
-    xdsThemeProps('side-nav-item', {
+    themeProps('side-nav-item', {
       size,
       selected: isSelected ? 'selected' : null,
     }),

@@ -2,8 +2,8 @@
 
 'use client';
 
-import {ChatToolCalls} from '@xds/core/Chat';
-import {Stack} from '@xds/core/Layout';
+import {ChatToolCalls} from '@astryxdesign/core/Chat';
+import {Stack} from '@astryxdesign/core/Layout';
 
 export default function ChatToolCallsSimple() {
   return (

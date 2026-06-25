@@ -122,7 +122,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'xds-file-input', visualProps: ['mode', 'status']},
+      {className: 'astryx-file-input', visualProps: ['mode', 'status']},
     ],
   },
   usage: {
@@ -236,7 +236,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'xds-file-input', visualProps: ['mode', 'status']},
+      {className: 'astryx-file-input', visualProps: ['mode', 'status']},
     ],
   },
   usage: {

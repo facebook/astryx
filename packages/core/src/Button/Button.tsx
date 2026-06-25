@@ -41,7 +41,7 @@ import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 /**
  * Base button styles
@@ -258,7 +258,7 @@ const variants = stylex.create({
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@xds/core/Button' {
+ * declare module '@astryxdesign/core/Button' {
  *   interface ButtonVariantMap {
  *     'primary-muted': true;
  *   }
@@ -464,7 +464,7 @@ const groupStyles = stylex.create({
 /**
  * A versatile button component with multiple variants.
  *
- * Styles use XDS theme tokens via StyleX.
+ * Styles use Astryx theme tokens via StyleX.
  * Wrap your app in <Theme> to apply a theme.
  * Themes can provide component-level variant overrides via theme.components.button.variants
  *
@@ -588,7 +588,7 @@ export function Button({
   );
 
   const sharedMergedProps = mergeProps(
-    xdsThemeProps('button', {variant, size}),
+    themeProps('button', {variant, size}),
     sharedStylexProps,
     className,
     style,

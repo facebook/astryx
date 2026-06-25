@@ -22,7 +22,7 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {TreeListItem} from './TreeListItem';
 import type {TreeListItemData, TreeListDensity} from './TreeListTypes';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -216,7 +216,7 @@ export function TreeList({
       ref={ref}
       data-testid={testId}
       {...mergeProps(
-        xdsThemeProps('tree-list', {density}),
+        themeProps('tree-list', {density}),
         stylex.props(styles.root, xstyle),
         className,
         style,

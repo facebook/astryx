@@ -31,7 +31,7 @@ import {useChatStreamScroll} from './useChatStreamScroll';
 import {useChatNewMessages} from './useChatNewMessages';
 import {ChatLayoutScrollButton} from './ChatLayoutScrollButton';
 import {ChatLayoutContext} from './ChatContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Types
@@ -330,7 +330,7 @@ export function ChatLayout({
         ref={mergeRefs(ref, rootRef)}
         data-testid={testId}
         {...mergeProps(
-          xdsThemeProps('chat-layout', {density}),
+          themeProps('chat-layout', {density}),
           stylex.props(
             styles.root,
             isSelfScrolling && styles.rootScrollable,

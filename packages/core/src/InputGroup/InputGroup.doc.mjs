@@ -11,7 +11,7 @@ export const docs = {
   keywords: ["inputgroup","addon","prefix","suffix","connected","grouped","input"],
   theming: {
     targets: [
-      {className: 'xds-input-group', visualProps: ['size', 'status']},
+      {className: 'astryx-input-group', visualProps: ['size', 'status']},
     ],
   },
   description: 'Groups an input with prefix/suffix addons in a visually connected container with shared border and focus ring.',

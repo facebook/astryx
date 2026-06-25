@@ -33,7 +33,7 @@ import {useTopNavRenderMode} from './TopNavRenderContext';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
-import {xdsThemeProps} from '../utils/xdsThemeProps';
+import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
 // Styles
@@ -221,7 +221,7 @@ export function TopNavMegaMenuItem({
         onClick={handleDrawerClick}
         {...elementProps}
         {...mergeProps(
-          xdsThemeProps('top-nav-mega-menu-item', {mode: 'drawer'}),
+          themeProps('top-nav-mega-menu-item', {mode: 'drawer'}),
           stylex.props(navItemStyles.item, styles.drawerItem),
         )}>
         {icon && <div {...stylex.props(styles.drawerItemIcon)}>{icon}</div>}
@@ -248,7 +248,7 @@ export function TopNavMegaMenuItem({
       onClick={onClick}
       tabIndex={tabIndex}
       {...mergeProps(
-        xdsThemeProps('top-nav-mega-menu-item'),
+        themeProps('top-nav-mega-menu-item'),
         stylex.props(styles.desktop),
       )}>
       {icon && <div {...stylex.props(styles.desktopIcon)}>{icon}</div>}

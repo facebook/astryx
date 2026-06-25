@@ -29,8 +29,8 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'xds-breadcrumb-item'},
-      {className: 'xds-breadcrumbs', visualProps: ['variant']},
+      {className: 'astryx-breadcrumb-item'},
+      {className: 'astryx-breadcrumbs', visualProps: ['variant']},
     ],
   },
   description: 'Navigation container that renders a <nav> with an ordered list of breadcrumb items.',
