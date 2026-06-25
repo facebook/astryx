@@ -71,9 +71,9 @@ export function createAgentProject(target, iterDir, promptId) {
     const cliLink = path.join(projectDir, 'node_modules', '@astryxdesign', 'cli');
     fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'cli'), cliLink, 'dir');
 
-    // Symlink node_modules/@astryxdesign/theme-default → packages/themes/default
-    const themeDefaultLink = path.join(projectDir, 'node_modules', '@astryxdesign', 'theme-default');
-    fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'themes', 'default'), themeDefaultLink, 'dir');
+    // Symlink node_modules/@astryxdesign/theme-neutral → packages/themes/neutral
+    const themeNeutralLink = path.join(projectDir, 'node_modules', '@astryxdesign', 'theme-neutral');
+    fs.symlinkSync(path.join(REPO_ROOT, 'packages', 'themes', 'neutral'), themeNeutralLink, 'dir');
 
     // Symlink node_modules/.bin/astryx → cli bin so npx astryx works
     const binDir = path.join(projectDir, 'node_modules', '.bin');

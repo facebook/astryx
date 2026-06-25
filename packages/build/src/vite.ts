@@ -24,9 +24,9 @@ export const LIGHTNINGCSS_TARGETS = {
 
 /**
  * Legacy options shape — kept for backward compatibility.
- * Prefer the zero-config form: xdsStylex()
+ * Prefer the zero-config form: astryxStylex()
  */
-export interface XDSVitePluginLegacyOptions {
+export interface AstryxVitePluginLegacyOptions {
   stylexOptions: Parameters<typeof stylex.vite>[0];
   libraryPattern?: string;
   /** StyleX atomic class-name prefix for Astryx library styles. @default 'astryx' */
@@ -37,7 +37,7 @@ export interface XDSVitePluginLegacyOptions {
   };
 }
 
-export interface XDSVitePluginOptions {
+export interface AstryxVitePluginOptions {
   /**
    * Whether to enable dev mode for StyleX.
    * @default process.env.NODE_ENV !== 'production'
@@ -99,7 +99,7 @@ export interface XDSVitePluginOptions {
  * Provides sensible defaults for StyleX compilation with Astryx.
  * Just spread into your plugins array:
  *
- *   plugins: [...xdsStylex(), react()]
+ *   plugins: [...astryxStylex(), react()]
  *
  * Handles:
  * - StyleX compilation with correct settings
@@ -109,15 +109,15 @@ export interface XDSVitePluginOptions {
  *
  * @param options — optional overrides
  */
-export function xdsStylex(
-  options: XDSVitePluginOptions | XDSVitePluginLegacyOptions = {},
+export function astryxStylex(
+  options: AstryxVitePluginOptions | AstryxVitePluginLegacyOptions = {},
 ): Plugin[] {
-  // Detect legacy API: xdsStylex({stylexOptions: {...}})
+  // Detect legacy API: astryxStylex({stylexOptions: {...}})
   if ('stylexOptions' in options && options.stylexOptions) {
-    return xdsStylexLegacy(options as XDSVitePluginLegacyOptions);
+    return astryxStylexLegacy(options as AstryxVitePluginLegacyOptions);
   }
 
-  const opts = options as XDSVitePluginOptions;
+  const opts = options as AstryxVitePluginOptions;
   const {
     dev = process.env.NODE_ENV !== 'production',
     rootDir = process.cwd(),
@@ -148,7 +148,7 @@ export function xdsStylex(
 
   // Inject our babel wrapper as a user plugin — it runs before the
   // unplugin's hardcoded StyleX instance and handles prefix routing.
-  const xdsBabelPlugin = path.resolve(__dirname, 'babel.js');
+  const astryxBabelPlugin = path.resolve(__dirname, 'babel.js');
 
   const basePlugin = stylex.vite({
     ...(stylexOptions as any),
@@ -156,7 +156,7 @@ export function xdsStylex(
     babelConfig: {
       plugins: [
         [
-          xdsBabelPlugin,
+          astryxBabelPlugin,
           {
             ...stylexOptions,
             libraryPrefix: stylexPrefix,
@@ -169,7 +169,7 @@ export function xdsStylex(
 
   // Layer order declaration plugin
   const layerOrderPlugin: Plugin = {
-    name: 'xds-css-layer-order',
+    name: 'astryx-css-layer-order',
     transformIndexHtml() {
       return [
         {
@@ -183,7 +183,7 @@ export function xdsStylex(
 
   // Config plugin — injects resolve.alias and optimizeDeps
   const configPlugin: Plugin = {
-    name: 'xds-config',
+    name: 'astryx-config',
     config(): UserConfig {
       // Discover all @astryxdesign/* packages to exclude from pre-bundling.
       // Astryx ships as source that must be compiled by StyleX — pre-bundling
@@ -221,7 +221,7 @@ export function xdsStylex(
 
   // Split-layer interceptor plugin (dev server only)
   const splitLayerPlugin: Plugin = {
-    name: 'xds-split-layers',
+    name: 'astryx-split-layers',
     configureServer(server) {
       let stylexPlugin: any = null;
 
@@ -299,10 +299,10 @@ export function xdsStylex(
 }
 
 /**
- * Legacy implementation — handles the old xdsStylex({stylexOptions: {...}}) API.
+ * Legacy implementation — handles the old astryxStylex({stylexOptions: {...}}) API.
  * Used by Storybook and other existing configs.
  */
-function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
+function astryxStylexLegacy(options: AstryxVitePluginLegacyOptions): Plugin[] {
   const {
     stylexOptions,
     libraryPattern = LIBRARY_PATTERN,
@@ -313,7 +313,7 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
   const libraryLayer = layers.library ?? 'astryx-base';
   const productLayer = layers.product ?? 'product';
 
-  const xdsBabelPlugin = path.resolve(__dirname, 'babel.js');
+  const astryxBabelPlugin = path.resolve(__dirname, 'babel.js');
   const existingPlugins = (stylexOptions as any).babelConfig?.plugins ?? [];
 
   const basePlugin = stylex.vite({
@@ -323,7 +323,7 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
       ...(stylexOptions as any).babelConfig,
       plugins: [
         [
-          xdsBabelPlugin,
+          astryxBabelPlugin,
           {
             ...(stylexOptions as any),
             libraryPrefix: stylexPrefix,
@@ -336,7 +336,7 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
   });
 
   const layerOrderPlugin: Plugin = {
-    name: 'xds-css-layer-order',
+    name: 'astryx-css-layer-order',
     transformIndexHtml() {
       return [
         {
@@ -349,7 +349,7 @@ function xdsStylexLegacy(options: XDSVitePluginLegacyOptions): Plugin[] {
   };
 
   const splitLayerPlugin: Plugin = {
-    name: 'xds-split-layers',
+    name: 'astryx-split-layers',
     configureServer(server) {
       let stylexPlugin: any = null;
 

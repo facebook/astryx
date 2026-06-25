@@ -70,7 +70,7 @@ pnpm --version   # 10.x.x
 ```bash
 # Clone the repo
 git clone https://github.com/facebook/astryx.git
-cd xds
+cd astryx
 
 # Install dependencies
 pnpm install
@@ -124,14 +124,14 @@ pnpm dev
 ## Project Structure
 
 ```
-xds/
+astryx/
 ├── apps/
 │   ├── storybook/      # Component playground (localhost:6006)
 │   └── sandbox/        # Development testing
 │
 ├── packages/
 │   ├── core/           # Core components (Button, Input, etc.)
-│   ├── cli/            # CLI tooling (npx xds)
+│   ├── cli/            # CLI tooling (npx astryx)
 │   ├── lab/            # Experimental components (not yet stable)
 │   └── themes/         # Theme presets (default, neutral, daily, and more)
 │

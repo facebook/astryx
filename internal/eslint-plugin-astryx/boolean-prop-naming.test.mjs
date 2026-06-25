@@ -26,7 +26,7 @@ describe('boolean-prop-naming', () => {
         // ✅ Correct "is" prefix
         {
           code: `
-            interface XDSButtonProps {
+            interface ButtonProps {
               isDisabled?: boolean;
             }
           `,
@@ -34,7 +34,7 @@ describe('boolean-prop-naming', () => {
         // ✅ Correct "has" prefix
         {
           code: `
-            interface XDSTextInputProps {
+            interface TextInputProps {
               hasAutoFocus?: boolean;
             }
           `,
@@ -42,7 +42,7 @@ describe('boolean-prop-naming', () => {
         // ✅ Correct "initialIs" prefix
         {
           code: `
-            interface XDSDialogProps {
+            interface DialogProps {
               initialIsOpen?: boolean;
             }
           `,
@@ -50,7 +50,7 @@ describe('boolean-prop-naming', () => {
         // ✅ Correct "initialHas" prefix
         {
           code: `
-            interface XDSSelectorProps {
+            interface SelectorProps {
               initialHasSelection?: boolean;
             }
           `,
@@ -58,7 +58,7 @@ describe('boolean-prop-naming', () => {
         // ✅ Correct "defaultIs" prefix
         {
           code: `
-            interface XDSCollapsibleProps {
+            interface CollapsibleProps {
               defaultIsOpen?: boolean;
             }
           `,
@@ -66,7 +66,7 @@ describe('boolean-prop-naming', () => {
         // ✅ Correct "defaultHas" prefix
         {
           code: `
-            interface XDSSelectorProps {
+            interface SelectorProps {
               defaultHasSelection?: boolean;
             }
           `,
@@ -74,7 +74,7 @@ describe('boolean-prop-naming', () => {
         // ✅ Correct "defaultIs" prefix — expanded
         {
           code: `
-            interface XDSBannerProps {
+            interface BannerProps {
               defaultIsExpanded?: boolean;
             }
           `,
@@ -82,7 +82,7 @@ describe('boolean-prop-naming', () => {
         // ✅ Non-boolean prop — should be ignored
         {
           code: `
-            interface XDSButtonProps {
+            interface ButtonProps {
               label: string;
               size?: 'sm' | 'md' | 'lg';
             }
@@ -108,7 +108,7 @@ describe('boolean-prop-naming', () => {
         // ✅ Union type with boolean — should be ignored (not purely boolean)
         {
           code: `
-            interface XDSHeadingProps {
+            interface HeadingProps {
               truncateTooltip?: boolean | string;
             }
           `,
@@ -116,7 +116,7 @@ describe('boolean-prop-naming', () => {
         // ✅ aria-* props — excluded
         {
           code: `
-            interface XDSButtonProps {
+            interface ButtonProps {
               'aria-pressed'?: boolean;
             }
           `,
@@ -124,7 +124,7 @@ describe('boolean-prop-naming', () => {
         // ✅ data-* props — excluded
         {
           code: `
-            interface XDSButtonProps {
+            interface ButtonProps {
               'data-active'?: boolean;
             }
           `,
@@ -132,7 +132,7 @@ describe('boolean-prop-naming', () => {
         // ✅ value prop — excluded (controlled component pattern)
         {
           code: `
-            interface XDSSwitchProps {
+            interface SwitchProps {
               value: boolean;
             }
           `,
@@ -140,7 +140,7 @@ describe('boolean-prop-naming', () => {
         // ✅ defaultValue prop — excluded
         {
           code: `
-            interface XDSToggleProps {
+            interface ToggleProps {
               defaultValue?: boolean;
             }
           `,
@@ -148,7 +148,7 @@ describe('boolean-prop-naming', () => {
         // ✅ Type alias with Props suffix — correct naming
         {
           code: `
-            type XDSCardProps = {
+            type CardProps = {
               isFullBleed?: boolean;
             };
           `,
@@ -156,7 +156,7 @@ describe('boolean-prop-naming', () => {
         // ✅ Multiple valid props
         {
           code: `
-            interface XDSFieldProps {
+            interface FieldProps {
               isLabelHidden?: boolean;
               isOptional?: boolean;
               isRequired?: boolean;
@@ -171,7 +171,7 @@ describe('boolean-prop-naming', () => {
         // ❌ Missing prefix — should suggest "isDisabled"
         {
           code: `
-            interface XDSButtonProps {
+            interface ButtonProps {
               disabled?: boolean;
             }
           `,
@@ -180,7 +180,7 @@ describe('boolean-prop-naming', () => {
               messageId: 'invalidBooleanPropName',
               data: {
                 name: 'disabled',
-                interfaceName: 'XDSButtonProps',
+                interfaceName: 'ButtonProps',
                 suggestion: 'isDisabled',
               },
             },
@@ -189,7 +189,7 @@ describe('boolean-prop-naming', () => {
         // ❌ Missing prefix — should suggest "isLoading"
         {
           code: `
-            interface XDSButtonProps {
+            interface ButtonProps {
               loading?: boolean;
             }
           `,
@@ -198,7 +198,7 @@ describe('boolean-prop-naming', () => {
               messageId: 'invalidBooleanPropName',
               data: {
                 name: 'loading',
-                interfaceName: 'XDSButtonProps',
+                interfaceName: 'ButtonProps',
                 suggestion: 'isLoading',
               },
             },
@@ -207,7 +207,7 @@ describe('boolean-prop-naming', () => {
         // ❌ Missing prefix — should suggest "isInline"
         {
           code: `
-            interface XDSCenterProps {
+            interface CenterProps {
               inline?: boolean;
             }
           `,
@@ -216,7 +216,7 @@ describe('boolean-prop-naming', () => {
               messageId: 'invalidBooleanPropName',
               data: {
                 name: 'inline',
-                interfaceName: 'XDSCenterProps',
+                interfaceName: 'CenterProps',
                 suggestion: 'isInline',
               },
             },
@@ -225,7 +225,7 @@ describe('boolean-prop-naming', () => {
         // ❌ Missing prefix — should suggest "isStandalone"
         {
           code: `
-            interface XDSLinkProps {
+            interface LinkProps {
               standalone?: boolean;
             }
           `,
@@ -234,7 +234,7 @@ describe('boolean-prop-naming', () => {
               messageId: 'invalidBooleanPropName',
               data: {
                 name: 'standalone',
-                interfaceName: 'XDSLinkProps',
+                interfaceName: 'LinkProps',
                 suggestion: 'isStandalone',
               },
             },
@@ -243,7 +243,7 @@ describe('boolean-prop-naming', () => {
         // ❌ Missing prefix in type alias
         {
           code: `
-            type XDSTableProps = {
+            type TableProps = {
               striped?: boolean;
             };
           `,
@@ -252,7 +252,7 @@ describe('boolean-prop-naming', () => {
               messageId: 'invalidBooleanPropName',
               data: {
                 name: 'striped',
-                interfaceName: 'XDSTableProps',
+                interfaceName: 'TableProps',
                 suggestion: 'isStriped',
               },
             },
@@ -261,7 +261,7 @@ describe('boolean-prop-naming', () => {
         // ❌ "required" should suggest "isRequired"
         {
           code: `
-            interface XDSFieldProps {
+            interface FieldProps {
               required?: boolean;
             }
           `,
@@ -270,7 +270,7 @@ describe('boolean-prop-naming', () => {
               messageId: 'invalidBooleanPropName',
               data: {
                 name: 'required',
-                interfaceName: 'XDSFieldProps',
+                interfaceName: 'FieldProps',
                 suggestion: 'isRequired',
               },
             },
@@ -279,7 +279,7 @@ describe('boolean-prop-naming', () => {
         // ❌ "checked" should suggest "isChecked"
         {
           code: `
-            interface XDSCheckboxProps {
+            interface CheckboxProps {
               checked?: boolean;
             }
           `,
@@ -288,7 +288,7 @@ describe('boolean-prop-naming', () => {
               messageId: 'invalidBooleanPropName',
               data: {
                 name: 'checked',
-                interfaceName: 'XDSCheckboxProps',
+                interfaceName: 'CheckboxProps',
                 suggestion: 'isChecked',
               },
             },
@@ -297,7 +297,7 @@ describe('boolean-prop-naming', () => {
         // ❌ Multiple violations in one interface
         {
           code: `
-            interface XDSTableProps {
+            interface TableProps {
               striped?: boolean;
               hover?: boolean;
             }
@@ -307,7 +307,7 @@ describe('boolean-prop-naming', () => {
               messageId: 'invalidBooleanPropName',
               data: {
                 name: 'striped',
-                interfaceName: 'XDSTableProps',
+                interfaceName: 'TableProps',
                 suggestion: 'isStriped',
               },
             },
@@ -315,7 +315,7 @@ describe('boolean-prop-naming', () => {
               messageId: 'invalidBooleanPropName',
               data: {
                 name: 'hover',
-                interfaceName: 'XDSTableProps',
+                interfaceName: 'TableProps',
                 suggestion: 'hasHover',
               },
             },
@@ -324,7 +324,7 @@ describe('boolean-prop-naming', () => {
         // ❌ Unknown prop gets generic "is" prefix suggestion
         {
           code: `
-            interface XDSWidgetProps {
+            interface WidgetProps {
               active?: boolean;
             }
           `,
@@ -333,7 +333,7 @@ describe('boolean-prop-naming', () => {
               messageId: 'invalidBooleanPropName',
               data: {
                 name: 'active',
-                interfaceName: 'XDSWidgetProps',
+                interfaceName: 'WidgetProps',
                 suggestion: 'isActive',
               },
             },

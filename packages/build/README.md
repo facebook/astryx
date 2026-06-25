@@ -100,7 +100,7 @@ module.exports = {
 
 ```js
 const nextConfig = {
-  transpilePackages: ['@astryxdesign/core', '@astryxdesign/theme-default'],
+  transpilePackages: ['@astryxdesign/core', '@astryxdesign/theme-neutral'],
   webpack: config => {
     // Resolve to source TypeScript instead of dist
     config.resolve.conditionNames = ['source', 'import', 'require', 'default'];
@@ -124,7 +124,7 @@ export default nextConfig;
 ```css
 @import './layers.css';
 @import '@astryxdesign/core/reset.css';
-@import '@astryxdesign/theme-default/theme.css';
+@import '@astryxdesign/theme-neutral/theme.css';
 
 @stylex;
 ```
@@ -144,12 +144,12 @@ export default nextConfig;
 ## Vite Setup
 
 ```ts
-import {xdsStylex} from '@astryxdesign/build/vite';
+import {astryxStylex} from '@astryxdesign/build/vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [
-    ...xdsStylex({
+    ...astryxStylex({
       stylexOptions: {
         dev: process.env.NODE_ENV === 'development',
         runtimeInjection: false,
@@ -168,7 +168,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['@astryxdesign/core', '@astryxdesign/theme-default'],
+    exclude: ['@astryxdesign/core', '@astryxdesign/theme-neutral'],
   },
 });
 ```

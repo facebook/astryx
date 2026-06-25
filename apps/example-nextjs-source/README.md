@@ -34,7 +34,7 @@ Theme sits between them in `@layer astryx-theme`, so:
 ### 1. Install
 
 ```bash
-npm install @stylexjs/stylex @astryxdesign/core @astryxdesign/theme-default next react react-dom
+npm install @stylexjs/stylex @astryxdesign/core @astryxdesign/theme-neutral next react react-dom
 npm install -D @astryxdesign/build @stylexjs/babel-plugin @babel/core autoprefixer typescript
 ```
 
@@ -99,7 +99,7 @@ module.exports = {
 
 ```js
 const nextConfig = {
-  transpilePackages: ['@astryxdesign/core', '@astryxdesign/theme-default'],
+  transpilePackages: ['@astryxdesign/core', '@astryxdesign/theme-neutral'],
   webpack: config => {
     config.resolve.conditionNames = ['source', 'import', 'require', 'default'];
     return config;
@@ -122,7 +122,7 @@ export default nextConfig;
 ```css
 @import './layers.css';
 @import '@astryxdesign/core/reset.css';
-@import '@astryxdesign/theme-default/theme.css';
+@import '@astryxdesign/theme-neutral/theme.css';
 
 @stylex;
 ```

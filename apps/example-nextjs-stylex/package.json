@@ -10,7 +10,7 @@
   "dependencies": {
     "@stylexjs/stylex": "^0.18.3",
     "@astryxdesign/core": "*",
-    "@astryxdesign/theme-default": "*",
+    "@astryxdesign/theme-neutral": "*",
     "next": "^15.5.16",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

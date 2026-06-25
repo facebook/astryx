@@ -89,10 +89,10 @@ A test file with intentional violations is provided:
 
 ```bash
 # Human mode - shows warnings
-pnpm lint packages/core/src/Badge/XDSBadge.test-violations.tsx
+pnpm lint packages/core/src/Badge/Badge.test-violations.tsx
 
 # Strict mode - shows errors
-pnpm lint:strict packages/core/src/Badge/XDSBadge.test-violations.tsx
+pnpm lint:strict packages/core/src/Badge/Badge.test-violations.tsx
 ```
 
 Expected output in strict mode:
@@ -156,9 +156,9 @@ Allowed hooks: `useId`, `useMemo`, `useCallback`, `useContext` (read-only).
 **Bad:**
 
 ```tsx
-// In XDSBadge.tsx
+// In Badge.tsx
 import {useState} from 'react';
-export function XDSBadge() {
+export function Badge() {
   const [x, setX] = useState(0); // ❌ Presentational components must not remember things
   return <span>{x}</span>;
 }
@@ -167,9 +167,9 @@ export function XDSBadge() {
 **Good:**
 
 ```tsx
-// In XDSBadge.tsx
+// In Badge.tsx
 import {useId, useContext} from 'react';
-export function XDSBadge({label}) {
+export function Badge({label}) {
   const id = useId(); // ✅ useId is RSC-compatible
   const theme = useContext(ThemeContext); // ✅ Reading context is fine
   return <span id={id}>{label}</span>;
@@ -178,7 +178,7 @@ export function XDSBadge({label}) {
 
 **What to do when you need state/effects:**
 
-- Move the behavior to a wrapper component (e.g. `XDSTextTruncation` wraps `XDSText`)
+- Move the behavior to a wrapper component (e.g. `TextTruncation` wraps `Text`)
 - Make state controlled via props (consumer owns the state)
 - If the component legitimately needs client behavior, remove it from the presentational list
 

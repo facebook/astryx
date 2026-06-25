@@ -5,11 +5,8 @@
 import {useState, createContext, useContext, useEffect} from 'react';
 import {Theme} from '@astryxdesign/core/theme';
 import {LayerProvider} from '@astryxdesign/core/Layer';
-import {defaultTheme} from '@astryxdesign/theme-default/built';
 import {neutralTheme} from '@astryxdesign/theme-neutral/built';
-import {brutalistTheme} from '@astryxdesign/theme-brutalist/built';
 import {matchaTheme} from '@astryxdesign/theme-matcha/built';
-import {dailyTheme} from '@astryxdesign/theme-daily/built';
 import {stoneTheme} from '@astryxdesign/theme-stone/built';
 import {gothicTheme} from '@astryxdesign/theme-gothic/built';
 import {chocolateTheme} from '@astryxdesign/theme-chocolate/built';
@@ -28,11 +25,8 @@ export const SANDBOX_THEMES: ReadonlyArray<{
   label: string;
   theme: DefinedTheme;
 }> = [
-  {id: 'default', label: 'Default', theme: defaultTheme},
   {id: 'neutral', label: 'Neutral', theme: neutralTheme},
-  {id: 'brutalist', label: 'Brutalist', theme: brutalistTheme},
   {id: 'matcha', label: 'Matcha', theme: matchaTheme},
-  {id: 'daily', label: 'Daily', theme: dailyTheme},
   {id: 'stone', label: 'Stone', theme: stoneTheme},
   {id: 'gothic', label: 'Gothic', theme: gothicTheme},
   {id: 'chocolate', label: 'Chocolate', theme: chocolateTheme},
@@ -51,7 +45,7 @@ type ThemeContextValue = {
 };
 
 const ThemeContext = createContext<ThemeContextValue>({
-  themeName: 'default',
+  themeName: 'neutral',
   setThemeName: () => {},
   mode: 'light',
   setMode: () => {},
@@ -77,7 +71,7 @@ function getEmbedThemeParams(): {
   isEmbed: boolean;
 } {
   if (typeof window === 'undefined') {
-    return {initialTheme: 'default', initialMode: 'light', isEmbed: false};
+    return {initialTheme: 'neutral', initialMode: 'light', isEmbed: false};
   }
   const params = new URLSearchParams(window.location.search);
   const isEmbed = params.get('embed') === '1';
@@ -86,7 +80,7 @@ function getEmbedThemeParams(): {
 
   return {
     initialTheme:
-      isEmbed && paramTheme && paramTheme in themes ? paramTheme : 'default',
+      isEmbed && paramTheme && paramTheme in themes ? paramTheme : 'neutral',
     initialMode:
       isEmbed && (paramMode === 'light' || paramMode === 'dark')
         ? (paramMode as ThemeMode)
@@ -174,7 +168,7 @@ export function Providers({children}: {children: React.ReactNode}) {
     document.documentElement.style.setProperty('color-scheme', mode);
   }, [mode]);
 
-  const theme = themes[themeName] || defaultTheme;
+  const theme = themes[themeName] || neutralTheme;
 
   return (
     <ThemeContext.Provider value={{themeName, setThemeName, mode, setMode}}>

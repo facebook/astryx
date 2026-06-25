@@ -15,23 +15,27 @@ import {dirname, join} from 'path';
  * different type shape (SVG, provider, overlay).
  */
 export const COMPONENT_RULE_ALLOWED = new Set([
-  // XDSBaseProps is the base type itself
-  'XDSBaseProps',
+  // BaseProps is the base type itself
+  'BaseProps',
   // SVG components extend SVGProps, not HTMLAttributes
-  'XDSIconProps',
-  'XDSSVGIconProps',
+  'IconProps',
+  'SVGIconProps',
   // Overlay/layer components — no meaningful root DOM element
-  'XDSTooltipProps',
-  'XDSPopoverProps',
-  'XDSHoverCardProps',
-  'XDSOverlayProps',
+  'TooltipProps',
+  'PopoverProps',
+  'HoverCardProps',
+  'OverlayProps',
   // System-managed, not directly rendered by consumers
-  'XDSToastProps',
-  'XDSToastViewportProps',
+  'ToastProps',
+  'ToastViewportProps',
   // Provider components — render no DOM element
-  'XDSLayerProviderProps',
-  'XDSLinkProviderProps',
-  'XDSMediaThemeProps',
+  'LayerProviderProps',
+  'LinkProviderProps',
+  'MediaThemeProps',
+  // Hook return-value / editor-config prop bags — not DOM-component props
+  'OverlayContainerProps',
+  'PowerSearchEditorProps',
+  'ResizableProps',
 ]);
 
 const barrelCache = new Map();

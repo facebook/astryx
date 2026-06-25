@@ -20,6 +20,8 @@ const styles = stylex.create({
     width: '100%',
     maxWidth: 360,
     marginInline: 'auto',
+    // Decorative preview — never interactive.
+    pointerEvents: 'none',
   },
   controlsRow: {
     rowGap: spacingVars['--spacing-3'],
@@ -38,7 +40,7 @@ export function ComponentsPreview() {
   const [search, setSearch] = useState('');
 
   return (
-    <VStack gap={4} align="stretch" xstyle={styles.root}>
+    <VStack gap={4} align="stretch" xstyle={styles.root} inert>
       <HStack
         gap={2}
         hAlign="evenly"

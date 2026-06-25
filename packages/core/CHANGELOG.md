@@ -1,5 +1,74 @@
 # @xds/core
 
+# 0.1.0
+
+#### Breaking Changes
+
+- Rename theme-token helpers off the XDS name
+  The `@xds/core/theme` token helpers are renamed: `resolveXDSThemeTokens` ->
+  `resolveThemeTokens`, `resolveXDSThemeToken` -> `resolveThemeToken`,
+  `xdsTokenVar` -> `tokenVar`, `xdsTokenVars` -> `tokenVars`, and the option types
+  `ResolveXDSThemeToken(s)Options` -> `ResolveThemeToken(s)Options`. Update imports
+  from `@xds/core/theme` / `@xds/core/theme/tokens`. Part of removing `xds` naming
+  from the public API.
+- Remove the XDS-prefix compatibility layer — astryx is now the only public surface
+  This release erases all `xds` naming from the public API; there is no compatibility
+  window. Consumers must migrate (we own all consumers pre-OSS):
+- Remove the daily, brutalist, and default themes; neutral is the new baseline
+  Three theme packages are removed from the repo and will no longer be published:
+
+#### New Features
+
+- Underline links by default in the Markdown component
+  Markdown links now render with a persistent underline instead of only underlining on hover, making links clearly distinguishable from surrounding text and improving accessibility. The accent color is unchanged.
+
+#### Fixes
+
+- Markdown: parse ordered lists using the `)` marker delimiter, not just `.` (#2994)
+  CommonMark 5.2 allows an ordered-list marker to end in `.` or `)` (e.g. `1)`), but the parser only matched `\d+\. `, so `1) First` lists rendered as literal paragraph text. Lists now capture their delimiter — a `.` → `)` change starts a new list, including across streamed chunks — and paragraph interruption follows CommonMark (only a marker value of 1, including zero-padded like `01.`, may interrupt).
+
+#### Other Changes
+
+- **Component names:** the `XDS*` aliases are gone — use bare names (`Button` not
+  `XDSButton`, `useTheme` not `useXDSTheme`, `ButtonProps` not `XDSButtonProps`). The
+  `drop-xds-prefix-imports` codemod automates this.
+- **CSS classes:** components emit only `.astryx-*` (the dual `.xds-*` class is gone).
+  Update custom CSS selectors `.xds-button` -> `.astryx-button` (prop/state value classes
+  like `.primary`/`.sm` are unchanged).
+- **data attributes:** only `data-astryx-theme` / `data-astryx-media` are written; update
+  custom selectors and SSR root attributes off `data-xds-*`.
+- **CSS layers:** `@layer xds-base` / `xds-theme` are renamed to `astryx-base` /
+  `astryx-theme`; update your `@layer` order line and any PostCSS `layersBefore` config.
+  `@astryxdesign/build`'s default library layer is now `astryx-base`.
+- **Pre-compiled stylesheet:** the `@astryxdesign/core/xds.css` export is removed — import
+  `@astryxdesign/core/astryx.css`.
+- **CSS custom properties:** the `--xds-*` padding fallback is gone; set `--astryx-*`.
+- **CLI config key:** `@astryxdesign/cli` reads the package.json `"astryx"` field (was `"xds"`).
+  Rename the block; a stale `"xds"` key silently drops the package from discovery.
+- `@astryxdesign/theme-daily`
+- `@astryxdesign/theme-brutalist`
+- `@astryxdesign/theme-default`
+- import {defaultTheme} from '@astryxdesign/theme-default/built';
+  - import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+- <Theme theme={defaultTheme}>...</Theme>
+  - <Theme theme={neutralTheme}>...</Theme>
+  ```
+
+  ```
+- Rename the npm package scope from `@xds/*` to `@astryxdesign/*`
+  All published packages move to the new `@astryxdesign` scope (e.g. `@xds/core` → `@astryxdesign/core`), along with the workspace lockfile, build/runtime scope-directory scans, and docsite slug derivation. Consumers must update their imports and dependency names. The internal ESLint plugin namespace (`@xds/*` rules) is intentionally untouched and tracked separately. Existing `@xds/*` codemods continue to target the old scope so projects still on `@xds/*` can migrate.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @ejhammond
+- @kentonquatman
+- @lexs
+
+---
+
 # 0.0.15
 
 This release makes **bare component names canonical**: `Button`, `Stack`, `useTheme`, etc. are now first-class, and the `XDS*` / `useXDS*` names become compatibility aliases. Existing prefixed code keeps working through the alias layer — migrate when you're ready with the codemod below. It also lands several prop/component renames for cross-component consistency, each with its own codemod.

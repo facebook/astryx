@@ -60,14 +60,6 @@ export default defineConfig({
         'packages/core/src/theme/tokens.stylex.ts',
       ),
       '@astryxdesign/core': path.resolve(repoRoot, 'packages/core/src'),
-      '@astryxdesign/theme-default': path.resolve(
-        repoRoot,
-        'packages/themes/default/src/source.ts',
-      ),
-      '@astryxdesign/theme/default': path.resolve(
-        repoRoot,
-        'packages/themes/default/src/source.ts',
-      ),
       '@astryxdesign/theme-neutral': path.resolve(
         repoRoot,
         'packages/themes/neutral/src',

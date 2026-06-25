@@ -2,9 +2,8 @@
 
 'use client';
 
-import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Send, Check} from 'lucide-react';
+import {Send} from 'lucide-react';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Text} from '@astryxdesign/core/Text';
@@ -20,6 +19,8 @@ const styles = stylex.create({
     width: '100%',
     maxWidth: 360,
     marginInline: 'auto',
+    // Decorative preview — never interactive.
+    pointerEvents: 'none',
   },
   helper: {
     paddingInlineStart: spacingVars['--spacing-3'],
@@ -46,10 +47,8 @@ const styles = stylex.create({
 });
 
 export function CliPreview() {
-  const [sent, setSent] = useState(false);
-
   return (
-    <VStack gap={3} align="stretch" xstyle={styles.root}>
+    <VStack gap={3} align="stretch" xstyle={styles.root} inert>
       <Text type="supporting" color="secondary" xstyle={styles.helper}>
         How can i help you today?
       </Text>
@@ -59,13 +58,9 @@ export function CliPreview() {
           Can you create me a table page
         </Text>
         <IconButton
-          label={sent ? 'Message sent' : 'Send message'}
-          icon={sent ? <Check size={16} /> : <Send size={16} />}
+          label="Send message"
+          icon={<Send size={16} />}
           size="md"
-          onClick={() => {
-            setSent(true);
-            window.setTimeout(() => setSent(false), 600);
-          }}
           xstyle={styles.sendButton}
         />
       </HStack>

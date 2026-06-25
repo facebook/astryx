@@ -11,7 +11,7 @@
  * - Token exports for direct use in StyleX
  *
  * Themes are in separate packages:
- *   import { defaultTheme } from '@astryxdesign/theme-default';
+ *   import { neutralTheme } from '@astryxdesign/theme-neutral';
  *   import { neutralTheme } from '@astryxdesign/theme-neutral';
  */
 

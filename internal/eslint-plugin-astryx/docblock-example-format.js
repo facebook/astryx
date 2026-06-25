@@ -7,13 +7,13 @@
  * Valid:
  *   @example
  *   ```
- *   <XDSButton label="Click" />
+ *   <Button label="Click" />
  *   ```
  *
  * Invalid:
- *   @example <XDSButton label="Click" />
+ *   @example <Button label="Click" />
  *   @example
- *   <XDSButton label="Click" />
+ *   <Button label="Click" />
  */
 
 /**

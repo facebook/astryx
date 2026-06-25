@@ -51,9 +51,7 @@ npx astryx gap-report                   # report a missing capability
 | Package                                                                                               | Description                                                   |
 | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | [`@astryxdesign/cli`](https://github.com/facebook/astryx/tree/main/packages/cli)                      | CLI tooling: component docs, templates, scaffolding, codemods |
-| [`@astryxdesign/theme-default`](https://github.com/facebook/astryx/tree/main/packages/themes/default) | Default theme (Heroicons)                                     |
 | [`@astryxdesign/theme-neutral`](https://github.com/facebook/astryx/tree/main/packages/themes/neutral) | Muted, minimal theme (Lucide icons)                           |
-| [`@astryxdesign/theme-daily`](https://github.com/facebook/astryx/tree/main/packages/themes/daily)     | Warm, productivity-focused theme (Lucide icons)               |
 
 ## Resources
 
@@ -67,7 +65,7 @@ npx astryx gap-report                   # report a missing capability
 Install XDS and a theme:
 
 ```bash
-npm install @astryxdesign/core @astryxdesign/theme-default
+npm install @astryxdesign/core @astryxdesign/theme-neutral
 ```
 
 Then pick your setup below based on your framework and styling approach.
@@ -85,7 +83,7 @@ No build plugins needed; XDS ships pre-built CSS that works alongside Tailwind.
 @import 'tailwindcss/preflight.css' layer(base);
 @import '@astryxdesign/core/reset.css';
 @import '@astryxdesign/core/astryx.css';
-@import '@astryxdesign/theme-default/theme.css';
+@import '@astryxdesign/theme-neutral/theme.css';
 @import '@astryxdesign/core/tailwind-theme.css';
 @import 'tailwindcss/utilities.css' layer(utilities);
 ```
@@ -122,11 +120,11 @@ Spacing references `var(--spacing-1)` as the base unit, so `p-4` = 16px, matchin
 import Link from 'next/link';
 import {Theme} from '@astryxdesign/core/theme';
 import {LinkProvider} from '@astryxdesign/core/Link';
-import {defaultTheme} from '@astryxdesign/theme-default/built';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 
 export function Providers({children}: {children: React.ReactNode}) {
   return (
-    <Theme theme={defaultTheme}>
+    <Theme theme={neutralTheme}>
       <LinkProvider component={Link}>{children}</LinkProvider>
     </Theme>
   );
@@ -165,7 +163,7 @@ export default function Page() {
 Use the pre-built dist alongside StyleX for your own styles.
 
 ```bash
-npm install @astryxdesign/core @astryxdesign/theme-default
+npm install @astryxdesign/core @astryxdesign/theme-neutral
 ```
 
 **`src/app/globals.css`**
@@ -173,15 +171,15 @@ npm install @astryxdesign/core @astryxdesign/theme-default
 ```css
 @import '@astryxdesign/core/reset.css';
 @import '@astryxdesign/core/astryx.css';
-@import '@astryxdesign/theme-default/theme.css';
+@import '@astryxdesign/theme-neutral/theme.css';
 ```
 
-Providers and layout are the same as the Tailwind example (use `@astryxdesign/theme-default/built`).
+Providers and layout are the same as the Tailwind example (use `@astryxdesign/theme-neutral/built`).
 
 ### Vite
 
 ```bash
-npm install @astryxdesign/core @astryxdesign/theme-default
+npm install @astryxdesign/core @astryxdesign/theme-neutral
 ```
 
 Same CSS imports and providers as above. No build plugins needed; XDS ships pre-built.

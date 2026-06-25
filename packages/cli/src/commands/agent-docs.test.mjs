@@ -32,8 +32,8 @@ describe('generateCompressedIndex', () => {
   it('includes the version number', () => {
     const result = generateCompressedIndex('1.2.3');
     expect(result).toContain('Astryx v1.2.3');
-    expect(result).toContain('<!-- XDS:START -->');
-    expect(result).toContain('<!-- XDS:END -->');
+    expect(result).toContain('<!-- ASTRYX:START -->');
+    expect(result).toContain('<!-- ASTRYX:END -->');
   });
 
   it('includes theme nudge rule', () => {
@@ -82,19 +82,19 @@ describe('injectXdsBlock', () => {
     const filePath = path.join(tmpDir, 'test.md');
     fs.writeFileSync(filePath, '# Existing content\n');
 
-    const result = injectXdsBlock(filePath, '<!-- XDS:START -->\nnew\n<!-- XDS:END -->');
+    const result = injectXdsBlock(filePath, '<!-- ASTRYX:START -->\nnew\n<!-- ASTRYX:END -->');
 
     expect(result).toBe(true);
     const content = fs.readFileSync(filePath, 'utf-8');
     expect(content).toContain('# Existing content');
-    expect(content).toContain('<!-- XDS:START -->');
+    expect(content).toContain('<!-- ASTRYX:START -->');
   });
 
   it('replaces existing markers', () => {
     const filePath = path.join(tmpDir, 'test.md');
     fs.writeFileSync(filePath, 'before\n<!-- XDS:START -->\nold\n<!-- XDS:END -->\nafter\n');
 
-    injectXdsBlock(filePath, '<!-- XDS:START -->\nnew\n<!-- XDS:END -->');
+    injectXdsBlock(filePath, '<!-- ASTRYX:START -->\nnew\n<!-- ASTRYX:END -->');
 
     const content = fs.readFileSync(filePath, 'utf-8');
     expect(content).toContain('new');
@@ -106,7 +106,7 @@ describe('injectXdsBlock', () => {
   it('returns false and does not create file when createIfMissing is false', () => {
     const filePath = path.join(tmpDir, 'nonexistent.md');
 
-    const result = injectXdsBlock(filePath, '<!-- XDS:START -->\ncontent\n<!-- XDS:END -->');
+    const result = injectXdsBlock(filePath, '<!-- ASTRYX:START -->\ncontent\n<!-- ASTRYX:END -->');
 
     expect(result).toBe(false);
     expect(fs.existsSync(filePath)).toBe(false);
@@ -116,11 +116,11 @@ describe('injectXdsBlock', () => {
     const filePath = path.join(tmpDir, 'test.md');
     fs.writeFileSync(filePath, '# Existing content\n\nNo XDS markers here.\n');
 
-    const result = injectXdsBlock(filePath, '<!-- XDS:START -->\nnew\n<!-- XDS:END -->', {onlyReplace: true});
+    const result = injectXdsBlock(filePath, '<!-- ASTRYX:START -->\nnew\n<!-- ASTRYX:END -->', {onlyReplace: true});
 
     expect(result).toBe(false);
     const content = fs.readFileSync(filePath, 'utf-8');
-    expect(content).not.toContain('<!-- XDS:START -->');
+    expect(content).not.toContain('<!-- ASTRYX:START -->');
     expect(content).toBe('# Existing content\n\nNo XDS markers here.\n');
   });
 
@@ -128,7 +128,7 @@ describe('injectXdsBlock', () => {
     const filePath = path.join(tmpDir, 'test.md');
     fs.writeFileSync(filePath, 'before\n<!-- XDS:START -->\nold\n<!-- XDS:END -->\nafter\n');
 
-    const result = injectXdsBlock(filePath, '<!-- XDS:START -->\nnew\n<!-- XDS:END -->', {onlyReplace: true});
+    const result = injectXdsBlock(filePath, '<!-- ASTRYX:START -->\nnew\n<!-- ASTRYX:END -->', {onlyReplace: true});
 
     expect(result).toBe(true);
     const content = fs.readFileSync(filePath, 'utf-8');
@@ -139,7 +139,7 @@ describe('injectXdsBlock', () => {
   it('creates file when createIfMissing is true', () => {
     const filePath = path.join(tmpDir, 'new.md');
 
-    const result = injectXdsBlock(filePath, '<!-- XDS:START -->\ncontent\n<!-- XDS:END -->', {
+    const result = injectXdsBlock(filePath, '<!-- ASTRYX:START -->\ncontent\n<!-- ASTRYX:END -->', {
       createIfMissing: true,
       header: '# Header',
     });
@@ -147,7 +147,7 @@ describe('injectXdsBlock', () => {
     expect(result).toBe(true);
     const content = fs.readFileSync(filePath, 'utf-8');
     expect(content).toContain('# Header');
-    expect(content).toContain('<!-- XDS:START -->');
+    expect(content).toContain('<!-- ASTRYX:START -->');
   });
 });
 
@@ -157,9 +157,9 @@ describe('injectAgentsMd', () => {
 
     const content = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
     expect(content).toContain('# AGENTS.md');
-    expect(content).toContain('<!-- XDS:START -->');
+    expect(content).toContain('<!-- ASTRYX:START -->');
     expect(content).toContain('Astryx v1.0.0');
-    expect(content).toContain('<!-- XDS:END -->');
+    expect(content).toContain('<!-- ASTRYX:END -->');
   });
 
   it('updates existing AGENTS.md by replacing XDS markers', () => {
@@ -195,7 +195,7 @@ Existing agent docs.
 
     const content = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
     expect(content).toContain('Existing agent docs.');
-    expect(content).toContain('<!-- XDS:START -->');
+    expect(content).toContain('<!-- ASTRYX:START -->');
     expect(content).toContain('Astryx v1.0.0');
   });
 });
@@ -210,7 +210,7 @@ describe('injectClaudeMd', () => {
     const content = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
     expect(content).toContain('# Claude Config');
     expect(content).toContain('Existing rules.');
-    expect(content).toContain('<!-- XDS:START -->');
+    expect(content).toContain('<!-- ASTRYX:START -->');
     expect(content).toContain('Astryx v1.0.0');
   });
 
@@ -322,7 +322,7 @@ describe('installAgentDocs', () => {
     expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(false);
     const content = fs.readFileSync(path.join(tmpDir, '.claude', 'CLAUDE.md'), 'utf-8');
-    expect(content).toContain('<!-- XDS:START -->');
+    expect(content).toContain('<!-- ASTRYX:START -->');
   });
 
   it('injects into CLAUDE.md at root when it exists', () => {
@@ -334,7 +334,7 @@ describe('installAgentDocs', () => {
     expect(written).toEqual(['CLAUDE.md']);
     expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(false);
     const claudeContent = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
-    expect(claudeContent).toContain('<!-- XDS:START -->');
+    expect(claudeContent).toContain('<!-- ASTRYX:START -->');
     expect(claudeContent).toContain('Project rules.');
   });
 
@@ -349,8 +349,8 @@ describe('installAgentDocs', () => {
     expect(written).toContain('CLAUDE.md');
     const agentsContent = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
     const claudeContent = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
-    expect(agentsContent).toContain('<!-- XDS:START -->');
-    expect(claudeContent).toContain('<!-- XDS:START -->');
+    expect(agentsContent).toContain('<!-- ASTRYX:START -->');
+    expect(claudeContent).toContain('<!-- ASTRYX:START -->');
   });
 
   it('updates existing .claude/CLAUDE.md', () => {
@@ -363,7 +363,7 @@ describe('installAgentDocs', () => {
     expect(written).toEqual(['.claude/CLAUDE.md']);
     const content = fs.readFileSync(path.join(tmpDir, '.claude', 'CLAUDE.md'), 'utf-8');
     expect(content).toContain('Existing content.');
-    expect(content).toContain('<!-- XDS:START -->');
+    expect(content).toContain('<!-- ASTRYX:START -->');
   });
 
   it('respects --agent claude preset: finds existing CLAUDE.md', () => {
@@ -410,7 +410,7 @@ describe('installAgentDocs', () => {
 
     expect(written).toEqual([]);
     const content = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
-    expect(content).not.toContain('<!-- XDS:START -->');
+    expect(content).not.toContain('<!-- ASTRYX:START -->');
     expect(content).toBe('# Claude\n\nProject rules only.\n');
   });
 

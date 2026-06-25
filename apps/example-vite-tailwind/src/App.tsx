@@ -2,7 +2,7 @@
 
 import {useState} from 'react';
 import {Theme} from '@astryxdesign/core/theme';
-import {defaultTheme} from '@astryxdesign/theme-default/built';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Button} from '@astryxdesign/core/Button';
 import {Text, Heading} from '@astryxdesign/core/Text';
@@ -26,7 +26,7 @@ export default function App() {
   const [name, setName] = useState('');
 
   return (
-    <Theme theme={defaultTheme}>
+    <Theme theme={neutralTheme}>
       <main className="min-h-screen bg-body p-8">
         <div className="mx-auto max-w-3xl">
           <VStack gap={8}>

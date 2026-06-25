@@ -612,7 +612,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
     return packages
       .filter(
         p =>
-          p.name.startsWith('@astryxdesign/theme-') && p.name !== '@astryxdesign/theme-default',
+          p.name.startsWith('@astryxdesign/theme-'),
       )
       .sort((a, b) => {
         const ai = THEME_ORDER.indexOf(a.name);

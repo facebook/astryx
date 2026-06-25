@@ -19,11 +19,7 @@ import {Card} from '@astryxdesign/core/Card';
 import {Selector} from '@astryxdesign/core/Selector';
 
 const ILLUSTRATION_URL =
-  'https://lookaside.facebook.com/assets/astryx/illustration-horizontal-1.png';
-
-// ─────────────────────────────────────────────────────────────
-// Constants
-// ─────────────────────────────────────────────────────────────
+  'https://lookaside.facebook.com/assets/astryx/light-working-vertical-2.png';
 
 const INQUIRY_REASONS = [
   'New business',
@@ -50,25 +46,19 @@ const CONTACT_COLUMNS = [
   {label: 'Press & partnerships', email: 'press@company.com'},
 ];
 
-// ─────────────────────────────────────────────────────────────
-// Styles
-// ─────────────────────────────────────────────────────────────
-
-// The only custom styling is fitting the illustration inside its AspectRatio
-// box without distortion (contain, not cover — it's line art, don't crop it).
-// No objectFit prop on AspectRatio, and there's no Image primitive (#2582).
+// AspectRatio has no objectFit/radius prop and there's no Image primitive
+// (#2582), so the cover photo is styled directly. overflow:hidden masks the
+// cover crop to the rounded corners.
 const pageStyle: CSSProperties = {
   minHeight: '100%',
 };
 const illustrationImg: CSSProperties = {
   width: '100%',
   height: '100%',
-  objectFit: 'contain',
+  objectFit: 'cover',
+  borderRadius: 'var(--radius-container)',
+  overflow: 'hidden',
 };
-
-// ─────────────────────────────────────────────────────────────
-// Page
-// ─────────────────────────────────────────────────────────────
 
 /**
  * Form (Two-column) — marketing contact form template.
@@ -102,15 +92,10 @@ export default function FormTwoColumnPage() {
 
   return (
     <Center style={pageStyle}>
-      <Section
-        maxWidth={1100}
-        width="100%"
-        padding={10}
-        variant="transparent">
+      <Section maxWidth={1100} width="100%" padding={10} variant="transparent">
         <VStack gap={10}>
-          {/* ── Top: two-column, stacks to one column below ~520px ── */}
+          {/* Two-column; stacks to one column below ~520px. */}
           <Grid columns={{minWidth: 320}} align="center" gap={10}>
-            {/* Left: headline + description + illustration */}
             <VStack gap={6}>
               <VStack gap={3}>
                 <Text type="display-1" as="h1">
@@ -124,13 +109,12 @@ export default function FormTwoColumnPage() {
               <AspectRatio ratio={4 / 3}>
                 <img
                   src={ILLUSTRATION_URL}
-                  alt="Person with a laptop and a lightbulb idea"
+                  alt="Two people working at a desk"
                   style={illustrationImg}
                 />
               </AspectRatio>
             </VStack>
 
-            {/* Right: form on a card */}
             <Card padding={8}>
               <VStack gap={4}>
                 <Text type="label">Your details</Text>
@@ -185,9 +169,7 @@ export default function FormTwoColumnPage() {
                 </Grid>
 
                 <VStack gap={2}>
-                  <Text type="label">
-                    What are you reaching out about?
-                  </Text>
+                  <Text type="label">What are you reaching out about?</Text>
                   <HStack gap={2} wrap="wrap">
                     {INQUIRY_REASONS.map(reason => (
                       <Token
@@ -235,7 +217,7 @@ export default function FormTwoColumnPage() {
             </Card>
           </Grid>
 
-          {/* ── Bottom: contact strip (stacks below ~440px) ── */}
+          {/* Contact strip; stacks below ~440px. */}
           <VStack gap={6}>
             <Divider />
             <Grid columns={{minWidth: 200}} gap={6}>

@@ -2,10 +2,10 @@
 
 /**
  * @file require-ref-prop.js
- * @description ESLint rule enforcing that publicly exported Astryx component props
+ * @description ESLint rule enforcing that publicly exported component props
  * interfaces declare a `ref` property.
  *
- * Every Astryx component should expose ref forwarding so consumers can access
+ * Every component should expose ref forwarding so consumers can access
  * the underlying DOM element. In React 19, ref is a regular prop — components
  * just need `ref?: React.Ref<T>` in their props interface.
  *
@@ -32,9 +32,8 @@ function inheritsRef(node) {
 
     if (
       expr.type === 'Identifier' &&
-      expr.name.startsWith('Astryx') &&
       expr.name.endsWith('Props') &&
-      expr.name !== 'XDSBaseProps'
+      expr.name !== 'BaseProps'
     ) {
       return true;
     }
@@ -47,9 +46,8 @@ function inheritsRef(node) {
       if (typeParams && typeParams.length >= 2) {
         const innerName = typeParams[0]?.typeName?.name;
         if (
-          innerName?.startsWith('Astryx') &&
           innerName?.endsWith('Props') &&
-          innerName !== 'XDSBaseProps'
+          innerName !== 'BaseProps'
         ) {
           if (!isRefOmitted(typeParams[1])) {
             return true;
@@ -79,7 +77,7 @@ const rule = {
     type: 'problem',
     docs: {
       description:
-        'Require publicly exported Astryx*Props interfaces to declare a ref property',
+        'Require publicly exported *Props interfaces to declare a ref property',
       category: 'Best Practices',
       recommended: true,
     },
@@ -114,7 +112,9 @@ const rule = {
         const name = node.id?.name;
         if (!name) return;
 
-        if (!name.startsWith('Astryx') || !name.endsWith('Props')) return;
+        if (!name.endsWith('Props')) return;
+        // Render-callback prop bags (e.g. TableRenderProps) are not component props.
+        if (name.endsWith('RenderProps')) return;
 
         const parent = node.parent;
         const isExported =

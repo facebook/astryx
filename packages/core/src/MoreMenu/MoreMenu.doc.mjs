@@ -54,12 +54,6 @@ export const docs = {
       default: 'true',
     },
     {
-      name: 'children',
-      type: '(item: DropdownMenuItemData) => ReactNode',
-      description:
-        'Custom render function for items. Only called for selectable items (not dividers/sections).',
-    },
-    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -140,12 +134,6 @@ export const docsZh = {
       default: 'true',
     },
     {
-      name: 'children',
-      type: '(item: DropdownMenuItemData) => ReactNode',
-      description:
-        '自定义项目渲染函数。仅对可选择的项目调用（不包括分割线/分组）。',
-    },
-    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -189,7 +177,6 @@ export const docsDense = {
     icon: 'Override default three-dot icon. Accepts any ReactNode.',
     isDisabled: 'Whether menu trigger disabled.',
     hasAutoFocus: 'Auto-focus first item on open; false for showcases.',
-    children: 'Custom render function for selectable items (not dividers/sections).',
     xstyle:
       'StyleX styles for layout customization (margins, positioning, sizing). Must be stylex.create() value.',
   },

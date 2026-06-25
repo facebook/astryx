@@ -3,31 +3,32 @@
 /**
  * @file upgrade command — Full version-to-version upgrade pipeline
  *
- * `astryx upgrade` detects the consumer's @astryxdesign/core version, bumps all
- * @astryxdesign/* dependencies, installs them, and runs codemods to migrate
- * breaking API changes.
+ * `astryx upgrade` runs codemods that migrate source code from a previous
+ * Astryx version to the currently installed version.
+ *
+ * Consumers should bump/install their Astryx packages first, then run:
+ *   astryx upgrade --from <old-version> --path <source-dir> --apply
  *
  * Pipeline (--apply):
- *   1. Detect current version from package.json (or --from)
- *   2. Bump all @astryxdesign/* deps in package.json to --to version
- *   3. Run package manager install (yarn/npm/pnpm/bun)
- *   4. Run codemods for the version range
- *   5. Refresh agent docs (AGENTS.md / CLAUDE.md) if present
+ *   1. Read installed @astryxdesign/core (or legacy @xds/core) version
+ *   2. Run codemods for --from → installed version
+ *   3. Refresh agent docs (AGENTS.md / CLAUDE.md) if present
  *
  * Options:
+ *   --from <version>     Previous version before the dependency upgrade
  *   --apply              Write changes to disk (default: dry-run)
- *   --from <version>     Previous version (overrides package.json detection)
- *   --to <version>       Target version (default: latest in registry)
- *   --force              Run codemods even if versions appear up to date
- *   --codemod <name>     Run a specific transform only (skips version check)
- *   --codemod-only       Skip version bump + install, run codemods only
+ *   --force              Run codemods even when from >= installed version
+ *   --codemod <name>     Run a specific transform only
+ *   --integration <spec> Load an explicit integration package or file
  *   --path <dir>         Source directory (default: ./src)
  *   --install-deps       Auto-install jscodeshift without prompting (for CI/LLM)
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {execSync} from 'node:child_process';
+import {pathToFileURL} from 'node:url';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
 import * as p from '@clack/prompts';
 import {ensureJscodeshift} from '../codemods/ensure-jscodeshift.mjs';
 import {
@@ -36,89 +37,185 @@ import {
 } from '../codemods/registry.mjs';
 import {runCodemods} from '../codemods/runner.mjs';
 import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
-import {detectPackageManager, getRunPrefix} from '../utils/package-manager.mjs';
-import {isValidSemver, semverGte} from '../utils/semver.mjs';
+import {getRunPrefix} from '../utils/package-manager.mjs';
+import {isValidSemver, semverGte, semverGt} from '../utils/semver.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
-/**
- * Detect the installed @astryxdesign/core version from the consumer's package.json.
- * @returns {string|null}
- */
-function detectCurrentVersion() {
-  const pkgPath = path.resolve(process.cwd(), 'package.json');
-  try {
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-    const deps = {
-      ...pkg.peerDependencies,
-      ...pkg.dependencies,
-      ...pkg.devDependencies,
-    };
-    const version = deps['@astryxdesign/core'];
-    if (!version) return null;
-    // Strip semver range chars (^, ~, >=, etc.)
-    return version.replace(/^[^\d]*/, '');
-  } catch {
-    return null;
-  }
-}
+const execFileAsync = promisify(execFile);
 
 /**
- * Bump all @astryxdesign/* dependencies in the consumer's package.json to the target version.
- * Preserves the existing semver range prefix (^, ~, etc.).
- *
- * @param {string} targetVersion - Version to bump to (e.g. '0.0.5')
- * @returns {{bumped: string[], pkgPath: string}|null} List of bumped package names, or null if no package.json
+ * Detect the installed target version from node_modules.
+ * @returns {{version: string, packageName: string}|null}
  */
-function bumpXdsDeps(targetVersion) {
-  const pkgPath = path.resolve(process.cwd(), 'package.json');
-  if (!fs.existsSync(pkgPath)) return null;
-
-  const raw = fs.readFileSync(pkgPath, 'utf-8');
-  const pkg = JSON.parse(raw);
-  const bumped = [];
-
-  for (const depField of ['dependencies', 'devDependencies']) {
-    const deps = pkg[depField];
-    if (!deps) continue;
-
-    for (const name of Object.keys(deps)) {
-      if (!name.startsWith('@astryxdesign/')) continue;
-
-      const current = deps[name];
-      // Preserve range prefix (^, ~, >=, etc.)
-      const prefix = current.match(/^([^\d]*)/)?.[1] ?? '^';
-      const newRange = `${prefix}${targetVersion}`;
-
-      if (current !== newRange) {
-        deps[name] = newRange;
-        bumped.push(name);
-      }
+function detectInstalledTargetVersion() {
+  for (const packageName of ['@astryxdesign/core', '@xds/core']) {
+    const pkgPath = path.resolve(
+      process.cwd(),
+      'node_modules',
+      ...packageName.split('/'),
+      'package.json',
+    );
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      if (pkg.version) return {version: pkg.version, packageName};
+    } catch {
+      // Missing or unreadable package.json — try the next supported package name.
     }
   }
-
-  if (bumped.length === 0) return {bumped: [], pkgPath};
-
-  // Write back with same formatting (detect indent from original)
-  const indent = raw.match(/^(\s+)"/m)?.[1] ?? '  ';
-  fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, indent) + '\n');
-  return {bumped, pkgPath};
+  return null;
 }
 
-/**
- * Get the install command for the detected package manager.
- * @param {boolean} force — pass --force to bust stale lockfile resolutions
- * @returns {string}
- */
-function getInstallCommand(force = false) {
-  const pm = detectPackageManager();
-  const forceFlag = force ? ' --force' : '';
-  switch (pm) {
-    case 'yarn': return `yarn install${forceFlag}`;
-    case 'pnpm': return `pnpm install${force ? ' --force' : ''}`;
-    case 'bun': return `bun install${force ? ' --force' : ''}`;
-    case 'npm':
-    default: return `npm install${force ? ' --force' : ''}`;
+
+function isPathSpec(spec) {
+  return (
+    spec.startsWith('.') ||
+    spec.startsWith('/') ||
+    spec.endsWith('.mjs') ||
+    spec.endsWith('.js')
+  );
+}
+
+function resolvePackageDir(packageName) {
+  const parts = packageName.split('/');
+  return path.resolve(process.cwd(), 'node_modules', ...parts);
+}
+
+function resolveIntegrationFile(spec) {
+  if (isPathSpec(spec)) {
+    return path.resolve(process.cwd(), spec);
+  }
+
+  const packageDir = resolvePackageDir(spec);
+  const pkgPath = path.join(packageDir, 'package.json');
+  let pkg;
+  try {
+    pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+  } catch {
+    throw new Error(
+      `Could not find installed integration package "${spec}" at ${pkgPath}. Install it first or pass a direct integration file path.`,
+    );
+  }
+
+  const manifestPath = pkg.astryx?.integration ?? pkg.xds?.integration;
+  if (!manifestPath) {
+    throw new Error(
+      `Package "${spec}" does not declare astryx.integration (or legacy xds.integration) in package.json.`,
+    );
+  }
+  return path.resolve(packageDir, manifestPath);
+}
+
+async function loadIntegrations(specs) {
+  const integrations = [];
+  for (const spec of specs) {
+    const file = resolveIntegrationFile(spec);
+    const mod = await import(pathToFileURL(file).href);
+    const integration = mod.default ?? mod.integration ?? mod;
+    if (!integration || typeof integration !== 'object') {
+      throw new Error(`Integration ${spec} did not export an object.`);
+    }
+    const integrationDir = path.dirname(file);
+    if (Array.isArray(integration.codemods)) {
+      for (const codemod of integration.codemods) {
+        if (typeof codemod.transform === 'string') {
+          const transformPath = path.resolve(integrationDir, codemod.transform);
+          const transformMod = await import(pathToFileURL(transformPath).href);
+          codemod.transform =
+            transformMod.default ?? transformMod.transform ?? transformMod;
+        }
+      }
+    }
+    integrations.push({
+      ...integration,
+      __file: file,
+      __dir: integrationDir,
+      __spec: spec,
+    });
+  }
+  return integrations;
+}
+
+function normalizeIntegrationTransforms(integration, from, to) {
+  const transforms = [];
+  for (const entry of integration.codemods ?? []) {
+    const entryFrom = entry.from ?? '0.0.0';
+    const entryTo = entry.to ?? to;
+    if (semverGte(from, entryTo) || semverGt(entryFrom, to)) continue;
+    if (!entry.name)
+      throw new Error(
+        `Integration ${integration.name ?? integration.__spec} has a codemod without a name.`,
+      );
+    if (!entry.transform)
+      throw new Error(`Integration codemod ${entry.name} is missing transform.`);
+    const directTransform =
+      typeof entry.transform === 'function' ? entry.transform : null;
+    if (!directTransform)
+      throw new Error(
+        `Integration codemod ${entry.name} did not resolve to a function.`,
+      );
+    transforms.push({
+      name: entry.name,
+      meta: {
+        title: entry.title ?? `${integration.name ?? integration.__spec}: ${entry.name}`,
+        description: entry.description ?? '',
+        pr: entry.pr,
+        fileExtensions: entry.fileExtensions,
+      },
+      optional: !!entry.optional,
+      transform: directTransform,
+    });
+  }
+  return transforms.length ? [{version: to, transforms}] : [];
+}
+
+function uniqueFiles(files) {
+  return [...new Set((files ?? []).filter(Boolean))];
+}
+
+async function runPostCodemodHooks(integrations, context, silent) {
+  const hooks = integrations.flatMap(integration =>
+    (integration.postCodemod ?? []).map(hook => ({integration, hook})),
+  );
+  if (hooks.length === 0) return;
+
+  const log = silent
+    ? {info() {}, warn() {}, success() {}, error() {}}
+    : p.log;
+
+  const run = async (command, args, options = {}) => {
+    await execFileAsync(command, args, {
+      cwd: options.cwd ?? context.packageDir,
+      timeout: options.timeoutMs ?? 300_000,
+      stdio: 'pipe',
+      encoding: 'utf-8',
+      env: {...process.env, ...(options.env ?? {})},
+    });
+  };
+
+  const ctx = {...context, run};
+  for (const {integration, hook} of hooks) {
+    const label = `${integration.name ?? integration.__spec}:${hook.name ?? 'postCodemod'}`;
+    try {
+      if (typeof hook.run === 'function') {
+        await hook.run(ctx);
+      } else if (typeof hook.command === 'function') {
+        const cmd = await hook.command(ctx);
+        if (cmd) {
+          await run(cmd.command, cmd.args ?? [], {
+            cwd: cmd.cwd,
+            timeoutMs: cmd.timeoutMs,
+            env: cmd.env,
+          });
+        }
+      } else {
+        log.warn(`Integration hook ${label} has no run() or command() function; skipping.`);
+        continue;
+      }
+      log.success(`Post-codemod hook ${label} completed.`);
+    } catch (err) {
+      log.warn(`Post-codemod hook ${label} failed: ${err.message}`);
+    }
   }
 }
 
@@ -129,14 +226,16 @@ export function registerUpgrade(program) {
   program
     .command('upgrade')
     .description('Run codemods to migrate between versions')
+    .option('--from <version>', 'Previous version before the dependency upgrade')
     .option('--apply', 'Write changes to disk (default: dry-run)', false)
-    .option('--from <version>', 'Previous version (overrides package.json detection)')
-    .option('--to <version>', 'Target version', latestVersion)
-    .option('--force', 'Run codemods even if versions appear up to date', false)
+    .option('--force', 'Run codemods even if --from is newer than the installed version', false)
     .option('--codemod <name>', 'Run a specific transform only')
-    .option('--codemod-only', 'Skip version bump and install, run codemods only', false)
-    .option('--skip-install', 'Skip package manager install after bumping deps', false)
-    .option('--force-install', 'Pass --force to package manager install (busts stale lockfile resolutions)', false)
+    .option(
+      '--integration <package-or-file>',
+      'Explicit integration package name or integration file path (repeatable)',
+      (value, previous) => [...(previous ?? []), value],
+      [],
+    )
     .option('--path <dir>', 'Source directory to scan', './src')
     .option('--install-deps', 'Auto-install jscodeshift without prompting', false)
     .option('--list', 'List available codemods', false)
@@ -144,18 +243,17 @@ export function registerUpgrade(program) {
       const json = program.opts().json || false;
       if (!json) p.intro('Upgrade');
 
-      // Validate --to / --from upfront so callers don't silently accept
-      // typos like `--to bogus` (which used to flow through getTransformsBetween
-      // and just emit "no codemods available").
-      if (options.to !== undefined && !isValidSemver(options.to)) {
-        const msg = `Invalid --to value: "${options.to}". Expected a semver string like 0.0.10.`;
-        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_VERSION);
+      if (!options.list && !options.from) {
+        const msg = 'Missing required --from. Install the target version first, then run `astryx upgrade --from <old-version>`.';
+        if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
         return;
       }
-      if (options.from !== undefined && !isValidSemver(options.from)) {
+
+      // Validate --from upfront so callers don't silently accept typos.
+      if (!options.list && !isValidSemver(options.from)) {
         const msg = `Invalid --from value: "${options.from}". Expected a semver string like 0.0.5.`;
         if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_VERSION);
         p.log.error(msg);
@@ -184,60 +282,66 @@ export function registerUpgrade(program) {
         return;
       }
 
-      // When --codemod is specified, skip version detection entirely —
-      // the user asked for a specific transform, just run it.
-      const skipVersionCheck = !!options.codemod;
-
-      // --codemod-only skips version bump + install but still uses --from/--to
-      // for codemod resolution. Useful for canary testing or running codemods
-      // independently of dependency changes.
-      const skipBump = options.codemodOnly || skipVersionCheck;
-
-      // Detect current version (--from overrides package.json)
-      const currentVersion = options.from ?? detectCurrentVersion();
-      if (!currentVersion && !skipVersionCheck) {
-        const msg = 'Could not detect @astryxdesign/core version. Make sure package.json is in the current directory, or use --from <version>.';
+      const currentVersion = options.from;
+      const installed = detectInstalledTargetVersion();
+      if (!installed) {
+        const msg = 'Could not find installed @astryxdesign/core (or legacy @xds/core). Install the target version first, then rerun `astryx upgrade --from <old-version>`.';
         if (json) return jsonError(msg, undefined, ERROR_CODES.ERR_VERSION_DETECT);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
         return;
       }
+      const targetVersion = installed.version;
 
-      const targetVersion = options.to;
+      if (!json) {
+        p.log.info(`From version: ${currentVersion}`);
+        p.log.info(`Installed target: ${targetVersion} (${installed.packageName})`);
+      }
 
-      if (!skipVersionCheck) {
-        if (!json) {
-          p.log.info(`Current version: ${currentVersion}`);
-          p.log.info(`Target version:  ${targetVersion}`);
+      let integrations;
+      try {
+        integrations = await loadIntegrations(options.integration ?? []);
+      } catch (err) {
+        if (json) return jsonError(err.message, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
+        p.log.error(err.message);
+        p.outro('Aborted');
+        process.exitCode = 1;
+        return;
+      }
+      if (!json && integrations.length > 0) {
+        p.log.info(
+          `Integrations: ${integrations.map(i => i.name ?? i.__spec).join(', ')}`,
+        );
+      }
+
+      if (!options.force && semverGte(currentVersion, targetVersion)) {
+        if (json) {
+          return jsonOut('upgrade.status', {
+            status: 'up_to_date',
+            from: currentVersion,
+            to: targetVersion,
+          });
         }
-
-        if (!options.force && semverGte(currentVersion, targetVersion)) {
-          if (json) {
-            return jsonOut('upgrade.status', {
-              status: 'up_to_date',
-              from: currentVersion,
-              to: targetVersion,
-            });
-          }
-          p.log.success('Already up to date — no codemods to run.');
-          p.log.info('Use --force to run codemods anyway, or --from <version> to specify the previous version.');
-          p.outro('Done');
-          return;
-        }
+        p.log.success('Already up to date — no codemods to run.');
+        p.log.info('Use --force to run codemods anyway.');
+        p.outro('Done');
+        return;
       }
 
       // Resolve transforms
-      const versionManifests = await getTransformsBetween(
-        skipVersionCheck ? '0.0.0' : currentVersion,
-        targetVersion,
-      );
+      const versionManifests = [
+        ...(await getTransformsBetween(currentVersion, targetVersion)),
+        ...integrations.flatMap(integration =>
+          normalizeIntegrationTransforms(integration, currentVersion, targetVersion),
+        ),
+      ];
 
       if (versionManifests.length === 0) {
         if (json) {
           return jsonOut('upgrade.status', {
             status: 'no_codemods',
-            from: skipVersionCheck ? null : currentVersion,
+            from: currentVersion,
             to: targetVersion,
           });
         }
@@ -279,29 +383,7 @@ export function registerUpgrade(program) {
         }
       }
 
-      const receipt = {from: currentVersion, to: targetVersion, codemods: totalTransforms, depsUpdated: [], agentDocsRefreshed: false};
-
-      // Bump @astryxdesign/* deps and install before running codemods
-      if (options.apply && !skipBump) {
-        const result = bumpXdsDeps(targetVersion);
-        if (result && result.bumped.length > 0) {
-          receipt.depsUpdated = result.bumped;
-          if (!json) p.log.info(`Bumped ${result.bumped.join(', ')} → ${targetVersion}`);
-
-          const installCmd = getInstallCommand(options.forceInstall);
-          if (options.skipInstall) {
-            if (!json) p.log.info('Skipping install (--skip-install). Run your package manager manually.');
-          } else {
-            if (!json) p.log.step(`Running ${installCmd}...`);
-            try {
-              execSync(installCmd, {stdio: 'inherit', cwd: process.cwd()});
-              if (!json) p.log.success('Dependencies installed.');
-            } catch {
-              if (!json) p.log.warn('Install failed — codemods will still run against existing code.');
-            }
-          }
-        }
-      }
+      const receipt = {from: currentVersion, to: targetVersion, codemods: totalTransforms, integrations: integrations.map(i => i.name ?? i.__spec), agentDocsRefreshed: false};
 
       // Ensure jscodeshift is available
       const ready = await ensureJscodeshift({installDeps: options.installDeps, silent: json});
@@ -319,6 +401,29 @@ export function registerUpgrade(program) {
         codemod: options.codemod,
         silent: json,
       });
+
+      if (options.apply && integrations.length > 0) {
+        const codemodDir = path.resolve(options.path);
+        const absoluteChangedFiles = uniqueFiles(codemodResult?.writtenFiles ?? []);
+        const changedFiles = absoluteChangedFiles.map(file =>
+          path.relative(process.cwd(), file),
+        );
+        const packageChangedFiles = absoluteChangedFiles
+          .filter(file => file.startsWith(process.cwd() + path.sep))
+          .map(file => path.relative(process.cwd(), file));
+        await runPostCodemodHooks(
+          integrations,
+          {
+            packageDir: process.cwd(),
+            codemodDir,
+            changedFiles,
+            absoluteChangedFiles,
+            packageChangedFiles,
+            apply: options.apply,
+          },
+          json,
+        );
+      }
 
       // Refresh agent docs if any exist (AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, etc.)
       // Always update after --apply; also update during dry-run if files exist,

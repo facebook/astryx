@@ -10,7 +10,7 @@ import {XDSTabList} from '@astryxdesign/core/TabList';
 import {XDSTab} from '@astryxdesign/core/TabList';
 import {XDSCard} from '@astryxdesign/core/Card';
 import {XDSButton} from '@astryxdesign/core/Button';
-import {defaultTheme} from '@astryxdesign/theme-default';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 import type {ReportData} from './types';
 import {ALL_DIMENSIONS, DIMENSION_LABELS} from './utils';
 import {ScoreCard} from './ScoreCard';
@@ -181,7 +181,7 @@ export function Report() {
 
   if (!data) {
     return (
-      <XDSTheme theme={defaultTheme} mode={themeMode}>
+      <XDSTheme theme={neutralTheme} mode={themeMode}>
         <div className="report-root">
           <div className="report-container">
             <div className="report-emptyState">
@@ -202,7 +202,7 @@ export function Report() {
   const {universal, comparison, screenshots} = data;
 
   return (
-    <XDSTheme theme={defaultTheme} mode={themeMode}>
+    <XDSTheme theme={neutralTheme} mode={themeMode}>
       <div className="report-root">
         <div className="report-container">
           <XDSVStack gap={5}>

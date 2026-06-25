@@ -165,12 +165,12 @@ function createEntryFile(
 import {createRoot} from 'react-dom/client';
 import '@astryxdesign/core/reset.css';${tailwindImport}
 import {XDSTheme} from '@astryxdesign/core/theme';
-import {defaultTheme} from '@astryxdesign/theme/default';
+import {neutralTheme} from '@astryxdesign/theme/neutral';
 import Component from '${componentPath.replace(/\\/g, '/')}';
 
 function App() {
   return (
-    <XDSTheme theme={defaultTheme} mode="light">
+    <XDSTheme theme={neutralTheme} mode="light">
       <Component />
     </XDSTheme>
   );
@@ -382,9 +382,6 @@ import {viteSingleFile} from 'vite-plugin-singlefile';`;
         .replace(/\\/g, '/')}',
       '@astryxdesign/core': '${path
         .resolve(REPO_ROOT, 'packages/core/src')
-        .replace(/\\/g, '/')}',
-      '@astryxdesign/theme/default': '${path
-        .resolve(REPO_ROOT, 'packages/themes/default/src/source.ts')
         .replace(/\\/g, '/')}',
       '@astryxdesign/theme/neutral': '${path
         .resolve(REPO_ROOT, 'packages/themes/neutral/src/source.ts')

@@ -23,7 +23,7 @@
  * 2. Combine with base styles and theme:
  *    import '@astryxdesign/core/reset.css';        // @layer reset  — clean slate
  *    import '@astryxdesign/core/astryx.css';        // @layer astryx-base — component styles
- *    import '@astryxdesign/theme-default/theme.css'; // @layer astryx-theme — theme overrides
+ *    import '@astryxdesign/theme-neutral/theme.css'; // @layer astryx-theme — theme overrides
  *
  * Layer order: reset → astryx-base → astryx-theme
  * Consumer styles (unlayered) always override all Astryx layers.

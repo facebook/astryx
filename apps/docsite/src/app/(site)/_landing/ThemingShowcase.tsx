@@ -34,7 +34,7 @@ const THEME_ORDER: ReadonlyArray<string> = [
 ];
 
 const themePackages = packages
-  .filter(p => p.name.includes('theme-') && p.name !== '@astryxdesign/theme-default')
+  .filter(p => p.name.includes('theme-'))
   .sort((a, b) => {
     const ai = THEME_ORDER.indexOf(a.name);
     const bi = THEME_ORDER.indexOf(b.name);

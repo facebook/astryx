@@ -1,0 +1,89 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Publish the stable @astryxdesign/* packages to the public npm registry
+# (`latest` dist-tag), via npm OIDC trusted publishing — no NPM_TOKEN.
+#
+# Manually dispatched (Actions → Release → Run workflow). The release flow is:
+#   1. Land the changesets "Version Packages" PR on main (`pnpm version-packages`
+#      → PR → merge). This bumps versions; it never touches the registry.
+#   2. Run this workflow to publish the bumped versions.
+#
+# Why a separate workflow (not a job in deploy.yml):
+#   - deploy.yml uses the `pages-deploy` concurrency group, which cancels queued
+#     runs on a busy main — that repeatedly starved the npm publish. This
+#     workflow has its own non-cancelling concurrency, so a release never gets
+#     dropped.
+#   - It checks out the exact ref being released and publishes per package, so
+#     the published tarball matches the released commit and carries provenance.
+#
+# Publishing is version-gated and idempotent: any package whose version is
+# already on the registry is skipped, so re-running (or a `dry-run` first) is
+# safe. Provenance requires a PUBLIC repo (facebook/astryx is public).
+name: Release
+run-name: Release (${{ github.sha }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Build and resolve what would publish, but do not publish'
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm OIDC trusted publishing + provenance
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24 # bundles npm >= 11.5.1, required for OIDC publishing
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Publish changed packages
+        env:
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          set -eu
+          published=0
+          for pkg_dir in packages/* packages/themes/*; do
+            [ -f "$pkg_dir/package.json" ] || continue
+            IS_PUBLISHABLE=$(node -p "const p=require('./$pkg_dir/package.json'); !p.private && p.name?.startsWith('@astryxdesign/') ? 'yes' : 'no'")
+            [ "$IS_PUBLISHABLE" = "yes" ] || continue
+            NAME=$(node -p "require('./$pkg_dir/package.json').name")
+            VERSION=$(node -p "require('./$pkg_dir/package.json').version")
+            if npm view "$NAME@$VERSION" version --registry https://registry.npmjs.org >/dev/null 2>&1; then
+              echo "Skipping $NAME@$VERSION (already on registry)"
+              continue
+            fi
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "[dry-run] Would publish $NAME@$VERSION"
+              continue
+            fi
+            echo "Publishing $NAME@$VERSION"
+            pnpm publish "./$pkg_dir" --tag latest --provenance --access public --no-git-checks
+            published=$((published + 1))
+          done
+          echo "Published $published package(s)."

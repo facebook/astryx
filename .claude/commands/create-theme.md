@@ -153,11 +153,11 @@ Use `extends` to derive from another theme — inherits tokens, components, icon
 
 ```tsx
 import {defineTheme} from '@astryxdesign/core/theme';
-import {defaultTheme} from '@astryxdesign/theme-default';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 export const brandTheme = defineTheme({
   name: 'brand',
-  extends: defaultTheme,
+  extends: neutralTheme,
   icons: myIcons, // swap icons
   tokens: {
     '--color-accent': ['#7B61FF', '#9B85FF'], // override accent
@@ -171,9 +171,9 @@ Child values win. Tokens and components are deep-merged; scale configs (typograp
 
 See existing themes for examples:
 
-- `packages/themes/default/src/defaultTheme.ts` — Complete reference theme
-- `packages/themes/neutral/src/neutralTheme.ts` — Grayscale theme with Geist font
-- `packages/themes/brutalist/src/index.ts` — Minimal showcase theme
+- `packages/themes/neutral/src/neutralTheme.ts` — Grayscale reference theme with Geist font
+- `packages/themes/stone/src/stoneTheme.ts` — Warm neutral theme with component overrides
+- `packages/themes/y2k/src/y2kTheme.ts` — Showcase theme with bold component overrides
 
 ## After Creation
 

@@ -177,9 +177,16 @@ describe('--json contract: supported commands emit valid envelopes', () => {
   });
 
   it('astryx upgrade --json (already up to date) emits upgrade.status', () => {
-    // Force a no-op range: from > to.
+    // Force a no-op range: from > installed target.
+    const coreDir = path.join(tmpDir, 'node_modules', '@astryxdesign', 'core');
+    fs.mkdirSync(coreDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(coreDir, 'package.json'),
+      JSON.stringify({name: '@astryxdesign/core', version: '0.0.1'}, null, 2),
+    );
+
     const {status, stdout} = runCli(
-      ['upgrade', '--json', '--from', '99.0.0', '--to', '0.0.1'],
+      ['upgrade', '--json', '--from', '99.0.0'],
       {cwd: tmpDir},
     );
     expect(status).toBe(0);

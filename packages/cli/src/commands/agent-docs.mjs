@@ -31,8 +31,11 @@ const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';
 const CLAUDE_DIR_MD = path.join('.claude', 'CLAUDE.md');
 
-const XDS_MARKER_START = '<!-- XDS:START -->';
-const XDS_MARKER_END = '<!-- XDS:END -->';
+const MARKER_START = '<!-- ASTRYX:START -->';
+const MARKER_END = '<!-- ASTRYX:END -->';
+// Legacy markers — read during migration so the script finds existing XDS blocks
+const LEGACY_MARKER_START = '<!-- XDS:START -->';
+const LEGACY_MARKER_END = '<!-- XDS:END -->';
 
 /**
  * Agent tool presets — maps tool names to their file search paths.
@@ -99,7 +102,7 @@ export function resolveAgentPaths(targetDir, agent) {
  */
 export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix()} = {}) {
   const run = `${runPrefix} astryx`;
-  const lines = [XDS_MARKER_START];
+  const lines = [MARKER_START];
 
   // Component count from live discovery
   let componentCount = '90+';
@@ -177,7 +180,7 @@ export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPre
   lines.push(`${run} swizzle <Name>            eject source (--gap to report why)`);
   lines.push(`${run} upgrade --apply            codemods after version bump`);
   lines.push(`after @astryxdesign/core bump, always run ${run} upgrade --apply`);
-  lines.push(XDS_MARKER_END);
+  lines.push(MARKER_END);
 
   return lines.join('\n');
 }
@@ -218,14 +221,21 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
   if (fs.existsSync(filePath)) {
     content = fs.readFileSync(filePath, 'utf-8');
 
-    const startIdx = content.indexOf(XDS_MARKER_START);
-    const endIdx = content.indexOf(XDS_MARKER_END);
+    // Find existing section — try new markers first, fall back to legacy XDS markers
+    let startIdx = content.indexOf(MARKER_START);
+    let endIdx = content.indexOf(MARKER_END);
+    let markerEndLength = MARKER_END.length;
+    if (startIdx === -1) {
+      startIdx = content.indexOf(LEGACY_MARKER_START);
+      endIdx = content.indexOf(LEGACY_MARKER_END);
+      markerEndLength = LEGACY_MARKER_END.length;
+    }
 
     if (startIdx !== -1 && endIdx !== -1) {
       content =
         content.slice(0, startIdx) +
         compressedIndex +
-        content.slice(endIdx + XDS_MARKER_END.length);
+        content.slice(endIdx + markerEndLength);
     } else if (onlyReplace) {
       // File exists but has no Astryx markers — skip it
       return false;
@@ -277,13 +287,20 @@ export function removeXdsBlock(filePath, {deleteIfEmpty = false} = {}) {
   if (!fs.existsSync(filePath)) return false;
 
   let content = fs.readFileSync(filePath, 'utf-8');
-  const startIdx = content.indexOf(XDS_MARKER_START);
-  const endIdx = content.indexOf(XDS_MARKER_END);
+  // Find existing section — try new markers first, fall back to legacy
+  let startIdx = content.indexOf(MARKER_START);
+  let endIdx = content.indexOf(MARKER_END);
+  let markerEndLen = MARKER_END.length;
+  if (startIdx === -1) {
+    startIdx = content.indexOf(LEGACY_MARKER_START);
+    endIdx = content.indexOf(LEGACY_MARKER_END);
+    markerEndLen = LEGACY_MARKER_END.length;
+  }
 
   if (startIdx === -1 || endIdx === -1) return false;
 
   const before = content.slice(0, startIdx).trimEnd();
-  const after = content.slice(endIdx + XDS_MARKER_END.length).trimStart();
+  const after = content.slice(endIdx + markerEndLen).trimStart();
   content = before + (after ? '\n\n' + after : '') + '\n';
 
   if (deleteIfEmpty) {

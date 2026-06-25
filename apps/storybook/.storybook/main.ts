@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {StorybookConfig} from '@storybook/react-vite';
-import {xdsStylex} from '@astryxdesign/build/vite';
+import {astryxStylex} from '@astryxdesign/build/vite';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
@@ -58,7 +58,7 @@ const config: StorybookConfig = {
       },
       plugins: [
         {
-          name: 'xds-color-scheme',
+          name: 'astryx-color-scheme',
           transformIndexHtml() {
             return [
               {
@@ -70,23 +70,25 @@ const config: StorybookConfig = {
           },
         },
         ...filteredPlugins,
-        ...xdsStylex({
+        ...astryxStylex({
           stylexOptions: {
             dev: false,
             styleResolution: 'application-order',
             aliases: {
-              '@astryxdesign/core/*': [path.join(rootDir, 'packages/core/src/*')],
+              '@astryxdesign/core/*': [
+                path.join(rootDir, 'packages/core/src/*'),
+              ],
               '@astryxdesign/core': [path.join(rootDir, 'packages/core/src')],
               '@astryxdesign/lab/*': [path.join(rootDir, 'packages/lab/src/*')],
               '@astryxdesign/lab': [path.join(rootDir, 'packages/lab/src')],
-              '@astryxdesign/theme-default/*': [
-                path.join(rootDir, 'packages/themes/default/src/*'),
-              ],
               '@astryxdesign/theme-neutral/*': [
                 path.join(rootDir, 'packages/themes/neutral/src/*'),
               ],
-              '@astryxdesign/theme-brutalist/*': [
-                path.join(rootDir, 'packages/themes/brutalist/src/*'),
+              '@astryxdesign/theme-stone/*': [
+                path.join(rootDir, 'packages/themes/stone/src/*'),
+              ],
+              '@astryxdesign/theme-y2k/*': [
+                path.join(rootDir, 'packages/themes/y2k/src/*'),
               ],
             },
             unstable_moduleResolution: {
@@ -106,17 +108,17 @@ const config: StorybookConfig = {
           ...config.resolve?.alias,
           '@astryxdesign/core': path.resolve(rootDir, 'packages/core/src'),
           '@astryxdesign/lab': path.resolve(rootDir, 'packages/lab/src'),
-          '@astryxdesign/theme-default': path.resolve(
-            rootDir,
-            'packages/themes/default/src/source.ts',
-          ),
           '@astryxdesign/theme-neutral': path.resolve(
             rootDir,
             'packages/themes/neutral/src/source.ts',
           ),
-          '@astryxdesign/theme-brutalist': path.resolve(
+          '@astryxdesign/theme-stone': path.resolve(
             rootDir,
-            'packages/themes/brutalist/src/source.ts',
+            'packages/themes/stone/src/source.ts',
+          ),
+          '@astryxdesign/theme-y2k': path.resolve(
+            rootDir,
+            'packages/themes/y2k/src/source.ts',
           ),
           '@astryxdesign/vega': path.resolve(rootDir, 'packages/vega/src'),
         },

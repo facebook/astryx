@@ -246,9 +246,9 @@ export function registerInit(program) {
       humanLog('  Next steps:');
       humanLog("    1. Import components: import { Button } from '@astryxdesign/core'");
       humanLog('    2. Optionally add a theme:');
-      humanLog("       import { defaultTheme } from '@astryxdesign/theme-default'");
-      humanLog('       <Theme theme={defaultTheme}>...</Theme>');
-      humanLog(`    3. ${run} xds --help for all commands`);
+      humanLog("       import { neutralTheme } from '@astryxdesign/theme-neutral'");
+      humanLog('       <Theme theme={neutralTheme}>...</Theme>');
+      humanLog(`    3. ${run} astryx --help for all commands`);
       humanLog('');
     });
 }

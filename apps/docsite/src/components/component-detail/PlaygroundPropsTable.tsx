@@ -429,11 +429,18 @@ function InlineControl({
         />
       );
     case 'number':
+      // An optional prop with no default is genuinely unset — show an empty
+      // input (not a fabricated `0`, which misrepresents the live state and,
+      // for size props like maxWidth, has no path back to "unset"). `hasClear`
+      // lets the user return to the original unset render. Required numbers
+      // keep their generated fallback and stay non-clearable.
       return (
         <NumberInput
           label=""
-          value={typeof value === 'number' ? value : 0}
-          onChange={next => onChange(next)}
+          value={typeof value === 'number' ? value : null}
+          placeholder={prop.required ? undefined : 'unset'}
+          hasClear={!prop.required}
+          onChange={(next: number | null) => onChange(next ?? undefined)}
         />
       );
     case 'element':

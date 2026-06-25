@@ -4,8 +4,8 @@
 
 import {Card} from '@astryxdesign/core/Card';
 import {VStack} from '@astryxdesign/core/Layout';
-import {Heading} from '@astryxdesign/core/Text';
 import {useTheme} from '@astryxdesign/core/theme';
+import {AnchorHeading} from './AnchorHeading';
 import {
   ColorTokenTable,
   SpacingTokenTable,
@@ -80,19 +80,21 @@ const TOPIC_SECTION_OVERRIDES: Record<
 
 function TokenSection({
   section,
+  id,
   Table,
   theme,
 }: {
   section: DocSection;
+  id: string;
   Table: TableComponent;
   theme: TokenTableProps['theme'];
 }) {
   const prose = section.content.filter(block => block.type !== 'table');
   return (
     <VStack gap={4}>
-      <Heading level={3} type="display-3">
+      <AnchorHeading id={id} level={3} type="display-3">
         {section.title}
-      </Heading>
+      </AnchorHeading>
       {prose.map((block, i) => (
         <ContentBlockRenderer key={i} block={block} />
       ))}
@@ -123,11 +125,11 @@ export function TokensDocView({
 
   const sectionOverrides: Record<
     string,
-    (section: DocSection) => React.ReactNode
+    (section: DocSection, id: string) => React.ReactNode
   > = {};
   for (const [sectionTitle, Table] of Object.entries(overrideMap)) {
-    sectionOverrides[sectionTitle] = (section: DocSection) => (
-      <TokenSection section={section} Table={Table} theme={theme} />
+    sectionOverrides[sectionTitle] = (section: DocSection, id: string) => (
+      <TokenSection section={section} id={id} Table={Table} theme={theme} />
     );
   }
 

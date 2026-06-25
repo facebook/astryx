@@ -2,10 +2,10 @@
 
 /**
  * @file require-base-props.js
- * @description ESLint rule enforcing that publicly exported Astryx component props
- * interfaces extend XDSBaseProps (directly or via Omit/Pick).
+ * @description ESLint rule enforcing that publicly exported component props
+ * interfaces extend BaseProps (directly or via Omit/Pick).
  *
- * XDSBaseProps provides the standard surface area every Astryx component should
+ * BaseProps provides the standard surface area every component should
  * support: xstyle overrides, data-* attributes, aria-* attributes, event
  * handlers, and a curated subset of HTML attributes with footguns removed.
  *
@@ -15,7 +15,7 @@
 
 import {COMPONENT_RULE_ALLOWED, isPubliclyExported} from './shared.js';
 
-function hasXDSBasePropsInHeritage(node) {
+function hasBasePropsInHeritage(node) {
   if (!node.extends || node.extends.length === 0) {
     return false;
   }
@@ -23,7 +23,7 @@ function hasXDSBasePropsInHeritage(node) {
   for (const heritage of node.extends) {
     const expr = heritage.expression;
 
-    if (expr.type === 'Identifier' && expr.name === 'XDSBaseProps') {
+    if (expr.type === 'Identifier' && expr.name === 'BaseProps') {
       return true;
     }
 
@@ -37,8 +37,8 @@ function hasXDSBasePropsInHeritage(node) {
         if (firstParam.type === 'TSTypeReference') {
           const innerName = firstParam.typeName?.name;
           if (
-            innerName === 'XDSBaseProps' ||
-            (innerName?.startsWith('Astryx') && innerName?.endsWith('Props'))
+            innerName === 'BaseProps' ||
+            innerName?.endsWith('Props')
           ) {
             return true;
           }
@@ -48,7 +48,6 @@ function hasXDSBasePropsInHeritage(node) {
 
     if (
       expr.type === 'Identifier' &&
-      expr.name.startsWith('Astryx') &&
       expr.name.endsWith('Props')
     ) {
       return true;
@@ -63,13 +62,13 @@ const rule = {
     type: 'problem',
     docs: {
       description:
-        'Require publicly exported Astryx*Props interfaces to extend XDSBaseProps',
+        'Require publicly exported *Props interfaces to extend BaseProps',
       category: 'Best Practices',
       recommended: true,
     },
     messages: {
       missingBaseProps:
-        '"{{name}}" should extend XDSBaseProps to inherit xstyle, data-*, aria-*, and standard HTML attribute support.',
+        '"{{name}}" should extend BaseProps to inherit xstyle, data-*, aria-*, and standard HTML attribute support.',
     },
     schema: [
       {
@@ -98,7 +97,10 @@ const rule = {
         const name = node.id?.name;
         if (!name) return;
 
-        if (!name.startsWith('Astryx') || !name.endsWith('Props')) return;
+        if (!name.endsWith('Props')) return;
+        // Render-callback prop bags (e.g. TableRenderProps) end in 'Props' but
+        // are not component props — they describe render-function arguments.
+        if (name.endsWith('RenderProps')) return;
 
         const parent = node.parent;
         const isExported =
@@ -110,7 +112,7 @@ const rule = {
 
         if (!isPubliclyExported(name, context.filename)) return;
 
-        if (hasXDSBasePropsInHeritage(node)) return;
+        if (hasBasePropsInHeritage(node)) return;
 
         context.report({
           node: node.id,

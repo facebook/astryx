@@ -216,8 +216,8 @@ export function getChartColorsFromResolver(
  *
  * @example
  * ```
- * import { defaultTheme } from '@astryxdesign/theme-default';
- * const colors = getChartColors(defaultTheme, 'light');
+ * import { neutralTheme } from '@astryxdesign/theme-neutral';
+ * const colors = getChartColors(neutralTheme, 'light');
  * colors.categorical(5)
  * ```
  */

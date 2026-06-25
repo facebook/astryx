@@ -13,7 +13,7 @@ const repoRoot = path.resolve(__dirname, '../../..');
  * Vite config for building reports ONLY — no StyleX plugin required.
  *
  * Reports use pre-compiled CSS from @astryxdesign/core/dist/astryx.css and
- * @astryxdesign/theme-default/dist/theme.css. XDS component JS is loaded from
+ * @astryxdesign/theme-neutral/dist/theme.css. XDS component JS is loaded from
  * the built dist (which has stylex.create already compiled away by tsup).
  * Report-specific styles live in plain CSS (report.css).
  *
@@ -65,7 +65,7 @@ export default defineConfig({
         find: 'xds-theme-css',
         replacement: path.resolve(
           repoRoot,
-          'packages/themes/default/dist/theme.css',
+          'packages/themes/neutral/dist/theme.css',
         ),
       },
       // Core CSS files live in src/
@@ -85,12 +85,12 @@ export default defineConfig({
       },
       // Theme: resolve to source (no StyleX usage, just defineTheme + icons).
       {
-        find: '@astryxdesign/theme-default',
-        replacement: path.resolve(repoRoot, 'packages/themes/default/src/source.ts'),
+        find: '@astryxdesign/theme-neutral',
+        replacement: path.resolve(repoRoot, 'packages/themes/neutral/src/source.ts'),
       },
       {
-        find: '@astryxdesign/theme/default',
-        replacement: path.resolve(repoRoot, 'packages/themes/default/src/source.ts'),
+        find: '@astryxdesign/theme/neutral',
+        replacement: path.resolve(repoRoot, 'packages/themes/neutral/src/source.ts'),
       },
     ],
   },

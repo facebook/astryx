@@ -38,7 +38,7 @@ Product-level StyleX styles always win over XDS component defaults without needi
 ### 1. Install dependencies
 
 ```bash
-npm install @stylexjs/stylex @astryxdesign/core @astryxdesign/theme-default next react react-dom
+npm install @stylexjs/stylex @astryxdesign/core @astryxdesign/theme-neutral next react react-dom
 npm install --save-dev @stylexjs/babel-plugin @stylexjs/postcss-plugin \
   @babel/preset-react @babel/preset-typescript typescript @types/react @types/react-dom
 ```
@@ -105,7 +105,7 @@ module.exports = {
 ```css
 @import '@astryxdesign/core/reset.css';
 @import '@astryxdesign/core/astryx.css';
-@import '@astryxdesign/theme-default/theme.css';
+@import '@astryxdesign/theme-neutral/theme.css';
 
 @stylex;
 ```
@@ -117,11 +117,11 @@ module.exports = {
 import Link from 'next/link';
 import {Theme} from '@astryxdesign/core/theme';
 import {LinkProvider} from '@astryxdesign/core/Link';
-import {defaultTheme} from '@astryxdesign/theme-default/built';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 
 export function Providers({children}) {
   return (
-    <Theme theme={defaultTheme}>
+    <Theme theme={neutralTheme}>
       <LinkProvider component={Link}>{children}</LinkProvider>
     </Theme>
   );

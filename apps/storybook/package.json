@@ -10,9 +10,9 @@
   "dependencies": {
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
-    "@astryxdesign/theme-brutalist": "*",
-    "@astryxdesign/theme-default": "*",
     "@astryxdesign/theme-neutral": "*",
+    "@astryxdesign/theme-stone": "*",
+    "@astryxdesign/theme-y2k": "*",
     "@astryxdesign/vega": "*",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

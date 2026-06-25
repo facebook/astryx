@@ -106,14 +106,14 @@ describe('doctor — individual checks', () => {
   });
 
   it('themes: WARN when theme installed but not wired', () => {
-    installPkg('@astryxdesign/theme-default', '0.0.14');
+    installPkg('@astryxdesign/theme-neutral', '0.0.14');
     const res = checkThemes({cwd: tmpDir, configTheme: null});
     expect(res.status).toBe('warn');
-    expect(res.message).toContain('@astryxdesign/theme-default');
+    expect(res.message).toContain('@astryxdesign/theme-neutral');
   });
 
   it('themes: PASS when theme installed and wired via config', () => {
-    installPkg('@astryxdesign/theme-default', '0.0.14');
+    installPkg('@astryxdesign/theme-neutral', '0.0.14');
     const res = checkThemes({cwd: tmpDir, configTheme: 'default'});
     expect(res.status).toBe('pass');
   });

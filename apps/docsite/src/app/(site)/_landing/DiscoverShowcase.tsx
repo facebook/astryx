@@ -50,12 +50,20 @@ const styles = stylex.create({
     // --color-background-muted theme-wide would also recolor code blocks,
     // table rows, sliders, etc. that rely on the default subtle muted tint.
     '--color-background-muted': 'var(--color-background-body)',
-    // 96px / 80px — beyond --spacing-12 (48px), so expressed as
-    // calc() over spacing tokens (2× spacing-12, 2× spacing-10)
-    // rather than as literals so the rhythm scales with any
-    // future spacing-scale theme override.
-    paddingBlock: `calc(${spacingVars['--spacing-12']} * 2)`,
-    paddingInline: `calc(${spacingVars['--spacing-10']} * 2)`,
+    // Roomy on desktop (96px / 80px — beyond --spacing-12, so expressed as
+    // calc() over spacing tokens so the rhythm scales with any future
+    // spacing-scale theme override), but tightened on narrow screens where
+    // the doubled inline padding (160px total) crushed the content into a
+    // thin column. Mobile uses the standard spacing scale; the generous
+    // composition padding only kicks in once there's room for it.
+    paddingBlock: {
+      default: spacingVars['--spacing-10'],
+      '@media (min-width: 768px)': `calc(${spacingVars['--spacing-12']} * 2)`,
+    },
+    paddingInline: {
+      default: spacingVars['--spacing-6'],
+      '@media (min-width: 768px)': `calc(${spacingVars['--spacing-10']} * 2)`,
+    },
   },
   // Each floating image is positioned absolutely against the stage,
   // anchored to one of the four card corners (slightly outside them).

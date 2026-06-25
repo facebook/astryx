@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Theme} from '@astryxdesign/core/theme';
-import {defaultTheme} from '@astryxdesign/theme-default/built';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Button} from '@astryxdesign/core/Button';
 import {Text, Heading} from '@astryxdesign/core/Text';
@@ -50,7 +50,7 @@ export default function App() {
   const [email, setEmail] = useState('');
 
   return (
-    <Theme theme={defaultTheme}>
+    <Theme theme={neutralTheme}>
       <main {...stylex.props(styles.main)}>
         <div {...stylex.props(styles.container)}>
           <VStack gap={6}>

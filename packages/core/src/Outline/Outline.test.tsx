@@ -37,7 +37,13 @@ describe('parseOutlineFromMarkdown', () => {
       parseOutlineFromMarkdown(
         '## **Install** `@astryxdesign/core`\n\n```\n# Not a heading\n```',
       ),
-    ).toEqual([{id: 'install-astryxdesign-core', label: 'Install @astryxdesign/core', level: 2}]);
+    ).toEqual([
+      {
+        id: 'install-astryxdesign-core',
+        label: 'Install @astryxdesign/core',
+        level: 2,
+      },
+    ]);
   });
 
   it('deduplicates generated ids', () => {
@@ -87,7 +93,7 @@ describe('Outline', () => {
     ).not.toHaveAttribute('aria-current');
   });
 
-  it('smooth-scrolls and reports active id on click', async () => {
+  it('smooth-scrolls and defers the indicator until the scroll settles when uncontrolled', async () => {
     const user = userEvent.setup();
     const target = document.createElement('h2');
     target.id = 'install';
@@ -101,6 +107,47 @@ describe('Outline', () => {
       behavior: 'smooth',
       block: 'start',
     });
+    // Uncontrolled: the indicator is deferred during the programmatic scroll,
+    // so it has not moved to the clicked item yet.
+    expect(
+      screen.getByRole('link', {name: 'Installation'}),
+    ).not.toHaveAttribute('aria-current', 'true');
+
+    // When the scroll settles, the indicator lands on the clicked item.
+    act(() => {
+      window.dispatchEvent(new Event('scrollend'));
+    });
+    expect(onActiveIdChange).toHaveBeenCalledWith('install');
+    expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+
+    document.body.removeChild(target);
+  });
+
+  it('reports active id on click when controlled', async () => {
+    const user = userEvent.setup();
+    const target = document.createElement('h2');
+    target.id = 'install';
+    document.body.appendChild(target);
+    const onActiveIdChange = vi.fn();
+
+    render(
+      <Outline
+        items={items}
+        activeId="intro"
+        onActiveIdChange={onActiveIdChange}
+      />,
+    );
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+
+    expect(target.scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start',
+    });
+    // Controlled: there is no built-in scroll-spy, so the consumer owns the
+    // active state and must be notified on click.
     expect(onActiveIdChange).toHaveBeenCalledWith('install');
 
     document.body.removeChild(target);
@@ -122,11 +169,7 @@ describe('Outline', () => {
 
   it('renders with density="compact"', () => {
     render(
-      <Outline
-        items={items}
-        density="compact"
-        data-testid="outline-compact"
-      />,
+      <Outline items={items} density="compact" data-testid="outline-compact" />,
     );
     expect(screen.getByTestId('outline-compact').className).toContain(
       'compact',
@@ -201,50 +244,45 @@ describe('Outline', () => {
     ).not.toHaveAttribute('aria-current');
   });
 
-  it('updates uncontrolled active id from IntersectionObserver', () => {
-    let observerCallback: IntersectionObserverCallback | undefined;
-
-    class MockIntersectionObserver {
-      observe = vi.fn();
-      disconnect = vi.fn();
-
-      constructor(callback: IntersectionObserverCallback) {
-        observerCallback = callback;
-      }
-    }
-
-    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
-
+  it('updates uncontrolled active id from scroll position', () => {
     const intro = document.createElement('h2');
     intro.id = 'intro';
+    const install = document.createElement('h3');
+    install.id = 'install';
     const api = document.createElement('h3');
     api.id = 'api';
-    document.body.append(intro, api);
+    document.body.append(intro, install, api);
 
-    const onActiveIdChange = vi.fn();
-    render(<Outline items={items} onActiveIdChange={onActiveIdChange} />);
-
-    const entry: IntersectionObserverEntry = {
-      target: api,
-      isIntersecting: true,
-      boundingClientRect: {top: 12} as DOMRectReadOnly,
-      intersectionRatio: 1,
-      intersectionRect: {} as DOMRectReadOnly,
-      rootBounds: null,
-      time: 0,
-    };
-
-    act(() => {
-      observerCallback?.([entry], {} as IntersectionObserver);
+    // Not at the bottom of the page.
+    Object.defineProperty(document.documentElement, 'scrollHeight', {
+      value: 4000,
+      configurable: true,
     });
 
-    expect(screen.getByRole('link', {name: 'API'})).toHaveAttribute(
+    // intro + install have scrolled above the activation line (top <= 0);
+    // api is still below it, so install is the last passed heading.
+    vi.spyOn(intro, 'getBoundingClientRect').mockReturnValue({
+      top: -200,
+    } as DOMRect);
+    vi.spyOn(install, 'getBoundingClientRect').mockReturnValue({
+      top: -10,
+    } as DOMRect);
+    vi.spyOn(api, 'getBoundingClientRect').mockReturnValue({
+      top: 400,
+    } as DOMRect);
+
+    const onActiveIdChange = vi.fn();
+    // The hook resolves the active id from scroll position on mount.
+    render(<Outline items={items} onActiveIdChange={onActiveIdChange} />);
+
+    expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
       'aria-current',
       'true',
     );
-    expect(onActiveIdChange).toHaveBeenCalledWith('api');
+    expect(onActiveIdChange).toHaveBeenCalledWith('install');
 
     document.body.removeChild(intro);
+    document.body.removeChild(install);
     document.body.removeChild(api);
   });
 });

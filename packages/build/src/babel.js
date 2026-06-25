@@ -18,7 +18,7 @@ const LIBRARY_PATTERNS = [
   'node_modules/@astryxdesign/',
 ];
 
-module.exports = function xdsBabelPlugin(api, options) {
+module.exports = function astryxBabelPlugin(api, options) {
   const stylexPlugin = require('@stylexjs/babel-plugin');
 
   const {
@@ -100,7 +100,7 @@ module.exports = function xdsBabelPlugin(api, options) {
   }
 
   return {
-    name: 'xds-babel-plugin',
+    name: 'astryx-babel-plugin',
     visitor,
   };
 };

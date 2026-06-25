@@ -3,7 +3,7 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import '@astryxdesign/core/reset.css';
-import '@astryxdesign/theme-default/theme.css';
+import '@astryxdesign/theme-neutral/theme.css';
 import './index.css';
 import App from './App';
 

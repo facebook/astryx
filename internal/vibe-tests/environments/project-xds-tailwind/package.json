@@ -3,7 +3,7 @@
   "private": true,
   "dependencies": {
     "@astryxdesign/core": "*",
-    "@astryxdesign/theme-default": "*",
+    "@astryxdesign/theme-neutral": "*",
     "react": "^19",
     "react-dom": "^19",
     "tailwindcss": "^4"

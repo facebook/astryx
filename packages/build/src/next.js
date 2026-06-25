@@ -22,10 +22,7 @@
 function withXDS(nextConfig = {}) {
   const xdsPackages = [
     '@astryxdesign/core',
-    '@astryxdesign/theme-default',
     '@astryxdesign/theme-neutral',
-    '@astryxdesign/theme-brutalist',
-    '@astryxdesign/theme-daily',
     '@astryxdesign/lab',
   ];
 

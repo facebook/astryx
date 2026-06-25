@@ -6,7 +6,6 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {Command} from 'commander';
 import {registerUpgrade} from './upgrade.mjs';
-import {latestVersion} from '../codemods/registry.mjs';
 
 let tmpDir;
 let originalCwd;
@@ -53,11 +52,26 @@ function createProgram() {
   return program;
 }
 
-function writePkg(deps) {
+function writePkg(deps = {}) {
   fs.writeFileSync(
     path.join(tmpDir, 'package.json'),
     JSON.stringify({name: 'fixture', dependencies: deps}, null, 2),
   );
+}
+
+function writeInstalledCore(version, packageName = '@astryxdesign/core') {
+  const parts = packageName.split('/');
+  const dir = path.join(tmpDir, 'node_modules', ...parts);
+  fs.mkdirSync(dir, {recursive: true});
+  fs.writeFileSync(
+    path.join(dir, 'package.json'),
+    JSON.stringify({name: packageName, version}, null, 2),
+  );
+}
+
+function writeSourceFile() {
+  fs.mkdirSync(path.join(tmpDir, 'src'), {recursive: true});
+  fs.writeFileSync(path.join(tmpDir, 'src', 'index.ts'), 'const x = 1;\n');
 }
 
 /** Run a command and capture the parsed JSON response (last printed JSON line). */
@@ -83,53 +97,53 @@ async function runJson(args) {
 }
 
 describe('upgrade gate (semver comparison)', () => {
-  it('does NOT block an upgrade from 0.0.9 to 0.0.10 (regression)', async () => {
+  it('does NOT block an upgrade from 0.0.9 to installed 0.0.10 (regression)', async () => {
     // The original bug: string compare said '0.0.9' >= '0.0.10', so the
     // gate told users "Already up to date" without --force.
-    writePkg({'@astryxdesign/core': '^0.0.9'});
+    writePkg();
+    writeInstalledCore('0.0.10');
+    writeSourceFile();
 
-    const result = await runJson(['--json', 'upgrade', '--to', '0.0.10', '--codemod-only']);
-    // Either a real run or "no codemods available" — but never the
-    // up-to-date short-circuit (which has no `type` field).
+    const result = await runJson(['--json', 'upgrade', '--from', '0.0.9', '--path', 'src']);
     expect(result).not.toBeNull();
-    // The receipt or "no codemods" path should not look like the
-    // up-to-date short-circuit (which would return without printing JSON).
     expect(result.type === 'upgrade.run' || result.error || logCalls.some(l => l.includes('No codemods'))).toBeTruthy();
   });
 
-  it('blocks when current >= target by semver (e.g. 0.0.10 → 0.0.9)', async () => {
-    writePkg({'@astryxdesign/core': '^0.0.10'});
+  it('blocks when --from >= installed target by semver (e.g. 0.0.10 → 0.0.9)', async () => {
+    writePkg();
+    writeInstalledCore('0.0.9');
     const program = createProgram();
-    await program.parseAsync(['node', 'astryx', 'upgrade', '--to', '0.0.9']);
+    await program.parseAsync(['node', 'astryx', 'upgrade', '--from', '0.0.10']);
     const output = stdoutCalls.join('') + logCalls.join('\n');
     expect(output).toMatch(/up to date|Already/i);
   });
 });
 
-describe('upgrade --to validation', () => {
-  it('rejects bogus --to values with a structured error', async () => {
-    writePkg({'@astryxdesign/core': '^0.0.5'});
-    const result = await runJson(['--json', 'upgrade', '--to', 'bogus']);
+describe('upgrade argument validation', () => {
+  it('requires --from for upgrade runs', async () => {
+    writePkg();
+    writeInstalledCore('0.0.15');
+    const result = await runJson(['--json', 'upgrade']);
     expect(result).not.toBeNull();
-    expect(result.error).toMatch(/Invalid --to/);
+    expect(result.error).toMatch(/Missing required --from/);
     expect(exitCode).toBe(1);
   });
 
   it('rejects bogus --from values', async () => {
-    writePkg({'@astryxdesign/core': '^0.0.5'});
-    const result = await runJson(['--json', 'upgrade', '--from', 'not-a-version', '--to', '0.0.5']);
+    writePkg();
+    writeInstalledCore('0.0.15');
+    const result = await runJson(['--json', 'upgrade', '--from', 'not-a-version']);
     expect(result).not.toBeNull();
     expect(result.error).toMatch(/Invalid --from/);
     expect(exitCode).toBe(1);
   });
 
-  it('accepts a valid semver --to', async () => {
-    writePkg({'@astryxdesign/core': '^0.0.5'});
-    // Don't actually run codemods — codemod-only + a target with no
-    // matching transforms is enough to confirm validation passed.
-    const result = await runJson(['--json', 'upgrade', '--to', latestVersion, '--codemod-only']);
-    // No "Invalid --to" error means validation passed.
-    expect(result?.error || '').not.toMatch(/Invalid --to/);
+  it('detects the installed target version from @astryxdesign/core', async () => {
+    writePkg();
+    writeInstalledCore('0.0.15');
+    writeSourceFile();
+    const result = await runJson(['--json', 'upgrade', '--from', '0.0.14', '--path', 'src']);
+    expect(result?.error || '').not.toMatch(/Could not find installed/);
   });
 });
 

@@ -18,7 +18,7 @@ XDS ships as raw TypeScript + StyleX source. Consumers compile it at the applica
 ### 1. Install dependencies
 
 ```bash
-npm install @stylexjs/stylex @astryxdesign/core @astryxdesign/theme-default react react-dom
+npm install @stylexjs/stylex @astryxdesign/core @astryxdesign/theme-neutral react react-dom
 npm install --save-dev @stylexjs/unplugin @vitejs/plugin-react typescript \
   @types/react @types/react-dom vite
 ```
@@ -61,7 +61,7 @@ export default defineConfig({
   plugins: [
     // Declare CSS layer order so theme overrides beat component base styles.
     {
-      name: 'xds-css-layer-order',
+      name: 'astryx-css-layer-order',
       transformIndexHtml() {
         return [
           {
@@ -104,7 +104,7 @@ export default defineConfig({
   // that must be compiled by the StyleX plugin — pre-bundling strips the
   // stylex.create/defineVars calls and causes a runtime error.
   optimizeDeps: {
-    exclude: ['@astryxdesign/core', '@astryxdesign/theme-default'],
+    exclude: ['@astryxdesign/core', '@astryxdesign/theme-neutral'],
   },
 });
 ```
@@ -125,7 +125,7 @@ Import it in `src/main.tsx`, along with the base reset and theme CSS:
 
 ```tsx
 import '@astryxdesign/core/reset.css';
-import '@astryxdesign/theme-default/theme.css';
+import '@astryxdesign/theme-neutral/theme.css';
 import './index.css';
 ```
 
@@ -141,10 +141,10 @@ Wrap your app with `Theme` and the default theme:
 
 ```tsx
 import {Theme} from '@astryxdesign/core/theme';
-import {defaultTheme} from '@astryxdesign/theme-default';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 export default function App() {
-  return <Theme theme={defaultTheme}>{/* your app */}</Theme>;
+  return <Theme theme={neutralTheme}>{/* your app */}</Theme>;
 }
 ```
 
@@ -168,7 +168,7 @@ npm run preview
 | Issue                         | Symptom                                     | Fix                                                                          |
 | ----------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
 | Missing `lightningcssOptions` | Colors broken: `light-dark()` gets lowered | Add `lightningcssOptions: { targets: lightningcssTargets }` to StyleX plugin |
-| Vite pre-bundles XDS          | `Unexpected stylex.defineVars at runtime`   | Add `optimizeDeps: { exclude: ['@astryxdesign/core', '@astryxdesign/theme-default'] }`         |
+| Vite pre-bundles XDS          | `Unexpected stylex.defineVars at runtime`   | Add `optimizeDeps: { exclude: ['@astryxdesign/core', '@astryxdesign/theme-neutral'] }`         |
 | Missing resolve aliases       | Module not found errors for `@astryxdesign/core`     | Add `resolve.alias` pointing to source directory                             |
 | Missing CSS entry point       | StyleX has no CSS asset to append to        | Create a minimal `index.css` and import it in `main.tsx`                     |
 | Plugin order                  | Styles not extracted or HMR broken          | `stylex.vite()` must come before `react()` in the plugins array              |

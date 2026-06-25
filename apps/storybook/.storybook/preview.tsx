@@ -3,9 +3,9 @@
 import type {Preview, Decorator} from '@storybook/react';
 import * as React from 'react';
 import {Theme, LayerProvider} from '@astryxdesign/core';
-import {defaultTheme} from '@astryxdesign/theme-default';
 import {neutralTheme} from '@astryxdesign/theme-neutral';
-import {brutalistTheme} from '@astryxdesign/theme-brutalist';
+import {stoneTheme} from '@astryxdesign/theme-stone';
+import {y2kTheme} from '@astryxdesign/theme-y2k';
 // Import the base reset stylesheet
 import '@astryxdesign/core/reset.css';
 
@@ -13,9 +13,9 @@ import '@astryxdesign/core/reset.css';
  * Map of available themes
  */
 const themes = {
-  default: defaultTheme,
   neutral: neutralTheme,
-  brutalist: brutalistTheme,
+  stone: stoneTheme,
+  y2k: y2kTheme,
 };
 
 /**
@@ -29,7 +29,7 @@ const themes = {
  */
 const withTheme: Decorator = (Story, context) => {
   // Get theme selection from toolbar
-  const themeKey = (context.globals?.xdsTheme || 'default') as string;
+  const themeKey = (context.globals?.xdsTheme || 'neutral') as string;
   const mode = context.globals?.colorMode === 'dark' ? 'dark' : 'light';
 
   // Sync color-scheme to the document root so light-dark() works
@@ -52,7 +52,7 @@ const withTheme: Decorator = (Story, context) => {
     );
   }
 
-  const theme = themes[themeKey as keyof typeof themes] || defaultTheme;
+  const theme = themes[themeKey as keyof typeof themes] || neutralTheme;
 
   return (
     <Theme theme={theme} mode={mode}>
@@ -90,9 +90,9 @@ const preview: Preview = {
         icon: 'paintbrush',
         items: [
           {value: 'none', title: 'None (base tokens)', icon: 'close'},
-          {value: 'default', title: 'Default', icon: 'circlehollow'},
           {value: 'neutral', title: 'Neutral', icon: 'circle'},
-          {value: 'brutalist', title: 'Brutalist', icon: 'lightning'},
+          {value: 'stone', title: 'Stone', icon: 'circlehollow'},
+          {value: 'y2k', title: 'Y2K', icon: 'lightning'},
         ],
         dynamicTitle: true,
       },
@@ -111,7 +111,7 @@ const preview: Preview = {
     },
   },
   initialGlobals: {
-    xdsTheme: 'default',
+    xdsTheme: 'neutral',
     colorMode: 'light',
   },
   decorators: [withTheme],

@@ -3,11 +3,8 @@
 @import "./layers.css";
 @import "@astryxdesign/core/reset.css";
 @import "@astryxdesign/core/astryx.css";
-@import "@astryxdesign/theme-default/theme.css";
 @import "@astryxdesign/theme-neutral/theme.css";
-@import "@astryxdesign/theme-brutalist/theme.css";
 @import "@astryxdesign/theme-matcha/theme.css";
-@import "@astryxdesign/theme-daily/theme.css";
 @import "@astryxdesign/theme-stone/theme.css";
 @import "@astryxdesign/theme-gothic/theme.css";
 @import "@astryxdesign/theme-chocolate/theme.css";

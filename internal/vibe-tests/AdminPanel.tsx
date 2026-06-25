@@ -4,7 +4,7 @@
 
 import {useState} from 'react';
 import {XDSTheme} from '@astryxdesign/core';
-import {defaultTheme} from '@astryxdesign/theme/default';
+import {neutralTheme} from '@astryxdesign/theme/neutral';
 import {XDSAppShell} from '@astryxdesign/core/AppShell';
 import {XDSTopNav, XDSTopNavHeading} from '@astryxdesign/core/TopNav';
 import {
@@ -40,7 +40,7 @@ export default function AdminPanel() {
   const [isSideNavCollapsed, setIsSideNavCollapsed] = useState(false);
 
   return (
-    <XDSTheme theme={defaultTheme}>
+    <XDSTheme theme={neutralTheme}>
       <XDSAppShell
         topNav={
           <XDSTopNav

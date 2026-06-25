@@ -113,7 +113,7 @@ function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
 
   const commit = (
     kind: 'boolean' | 'string' | 'number' | 'enum',
-    value: string | number | boolean,
+    value: string | number | boolean | null,
   ) => {
     let next: string;
     if (kind === 'boolean') {
@@ -133,30 +133,45 @@ function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
               code,
               instance,
               prop.name,
-              formatAttr(prop.name, 'string', value),
+              formatAttr(prop.name, 'string', String(value)),
             );
     } else if (kind === 'number') {
-      next = setAttribute(
-        code,
-        instance,
-        prop.name,
-        formatAttr(prop.name, 'number', value),
-      );
+      // A cleared number returns the prop to unset rather than writing a
+      // literal (e.g. maxWidth={0}, which collapses sizing props).
+      next =
+        value == null
+          ? removeAttribute(code, instance, prop.name)
+          : setAttribute(
+              code,
+              instance,
+              prop.name,
+              formatAttr(prop.name, 'number', value),
+            );
     } else {
-      const numeric =
-        typeof value === 'number' || NUMERIC_RE.test(String(value));
-      const attrKind =
-        typeof value === 'boolean' ? 'boolean' : numeric ? 'number' : 'string';
-      next = setAttribute(
-        code,
-        instance,
-        prop.name,
-        formatAttr(
+      // Enum commits always carry a concrete option value; treat a null (only
+      // emitted by the number control) as clearing the attribute.
+      if (value == null) {
+        next = removeAttribute(code, instance, prop.name);
+      } else {
+        const numeric =
+          typeof value === 'number' || NUMERIC_RE.test(String(value));
+        const attrKind =
+          typeof value === 'boolean'
+            ? 'boolean'
+            : numeric
+              ? 'number'
+              : 'string';
+        next = setAttribute(
+          code,
+          instance,
           prop.name,
-          attrKind,
-          numeric && typeof value !== 'number' ? Number(value) : value,
-        ),
-      );
+          formatAttr(
+            prop.name,
+            attrKind,
+            numeric && typeof value !== 'number' ? Number(value) : value,
+          ),
+        );
+      }
     }
     onCodeChange(next);
   };
@@ -208,13 +223,18 @@ function PropRow({prop, instance, code, onCodeChange}: PropRowProps) {
     );
   } else {
     const def = coerceDefault(prop.default, control) as number | undefined;
-    const value = typeof attr?.value === 'number' ? attr.value : (def ?? 0);
+    // Reflect the actual source state: a prop that isn't set in code (and has
+    // no default) is unset, not `0`. Showing a real `0` here would let a size
+    // prop like maxWidth render `max-width: 0` with no way back to unset.
+    const value = typeof attr?.value === 'number' ? attr.value : (def ?? null);
     controlEl = (
       <NumberInput
         label={prop.name}
         isLabelHidden
         value={value}
-        onChange={next => commit('number', next)}
+        placeholder={prop.required ? undefined : 'unset'}
+        hasClear={!prop.required}
+        onChange={(next: number | null) => commit('number', next)}
         xstyle={s.inputControl}
       />
     );

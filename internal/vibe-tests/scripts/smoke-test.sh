@@ -303,7 +303,7 @@ if [ -n "$ITER_ID" ] && [ -n "${ITER_ID2:-}" ]; then
     PASS=$((PASS + 1))
   else
     # Check if this is the known vite theme alias bug (pre-existing, not our fault)
-    if echo "$REPORT_OUTPUT" | grep -q "EISDIR\|themes/default/src"; then
+    if echo "$REPORT_OUTPUT" | grep -q "EISDIR\|themes/neutral/src"; then
       echo -e "  ${YELLOW}⊘${NC} pnpm report:build skipped (known vite theme alias issue — not related to scoring)"
       SKIP=$((SKIP + 1))
     else

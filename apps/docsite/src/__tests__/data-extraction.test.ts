@@ -96,10 +96,10 @@ describe('packageRegistry', () => {
     const names = packages.map(p => p.name);
     expect(names).toContain('@astryxdesign/core');
     expect(names).toContain('@astryxdesign/cli');
-    expect(names).toContain('@astryxdesign/theme-default');
     expect(names).toContain('@astryxdesign/theme-neutral');
     expect(names).toContain('@astryxdesign/theme-gothic');
     expect(names).toContain('@astryxdesign/theme-stone');
+    expect(names).not.toContain('@astryxdesign/theme-default');
     expect(names).not.toContain('@astryxdesign/theme-brutalist');
     expect(names).not.toContain('@astryxdesign/theme-chocolate');
     expect(names).not.toContain('@astryxdesign/theme-daily');

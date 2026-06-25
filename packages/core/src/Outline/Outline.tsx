@@ -217,8 +217,9 @@ function getIndentStyle(level: number) {
  * indentation based on each heading level. Features a sliding indicator
  * track that animates to the active item.
  *
- * When `activeId` is omitted, it observes heading elements by id and marks
- * the topmost visible heading active.
+ * When `activeId` is omitted, it tracks scroll position and marks the last
+ * heading whose top has passed its activation line (its scroll-margin-top)
+ * active — defaulting to the first item at the top and the last at the bottom.
  *
  * @example
  * ```
@@ -246,7 +247,12 @@ export function Outline({
 }: OutlineProps) {
   const rootRef = useRef<HTMLElement | null>(null);
   const LinkComponent = useLinkComponent();
-  const [resolvedActiveId, setActiveId] = useScrollSpy({
+  const isControlled = activeId !== undefined;
+  const {
+    activeId: resolvedActiveId,
+    setActiveId,
+    lockActiveId,
+  } = useScrollSpy({
     activeId,
     items,
     onActiveIdChange,
@@ -256,8 +262,9 @@ export function Outline({
   const handleClick =
     (id: string) => (event: React.MouseEvent<HTMLElement>) => {
       const target = document.getElementById(id);
-      setActiveId(id);
 
+      // Let the browser handle modified clicks (open in new tab, etc.) and
+      // missing targets without touching the active state.
       if (
         target == null ||
         event.defaultPrevented ||
@@ -271,6 +278,18 @@ export function Outline({
 
       event.preventDefault();
       window.history.pushState(null, '', `#${id}`);
+
+      // Move the indicator to the clicked item in a single step. Controlled
+      // consumers own the active state (notify only); uncontrolled mode pins
+      // the active id and suppresses scroll-spy until the next manual scroll,
+      // so the click is honored — even for short/last sections — and the
+      // indicator doesn't chase the smooth scroll through other sections.
+      if (isControlled) {
+        setActiveId(id);
+      } else {
+        lockActiveId(id);
+      }
+
       target.scrollIntoView({behavior: 'smooth', block: 'start'});
     };
 

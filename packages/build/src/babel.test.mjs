@@ -13,7 +13,7 @@ import {createRequire} from 'node:module';
 
 const require = createRequire(import.meta.url);
 const babel = require('@babel/core');
-const xdsBabelPlugin = require('./babel.js');
+const astryxBabelPlugin = require('./babel.js');
 
 const SOURCE = `
 import * as stylex from '@stylexjs/stylex';
@@ -36,7 +36,7 @@ function transformLibraryFile(libraryPrefix) {
     configFile: false,
     plugins: [
       [
-        xdsBabelPlugin,
+        astryxBabelPlugin,
         {
           ...(libraryPrefix ? {libraryPrefix} : {}),
           unstable_moduleResolution: {type: 'commonJS', rootDir: process.cwd()},

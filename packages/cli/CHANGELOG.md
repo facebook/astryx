@@ -1,5 +1,93 @@
 # @xds/cli
 
+# 0.1.0
+
+#### Breaking Changes
+
+- Read project config from `astryx.config.mjs` (was `xds.config.mjs`)
+  The CLI now resolves its optional project config from `astryx.config.mjs`
+  instead of `xds.config.mjs` — a hard cut, no fallback. Consumers with an
+  `xds.config.mjs` must rename it to `astryx.config.mjs` (the config shape and
+  all fields are unchanged). Part of removing `xds` naming from the public API.
+- Rename the CLI command/bin from `xds` to `astryx`
+  The CLI binary is now `astryx` (was `xds`); `bin/xds.mjs` is renamed to
+  `bin/astryx.mjs`, the dual `xds`+`astryx` bin entries collapse to a single
+  `astryx`, and the program/manifest name is `astryx`. Invoke the CLI as
+  `npx astryx <command>` (e.g. `npx astryx component Button`). The swizzle
+  default output dir moves from `./components/xds` to `./components/astryx`.
+  Consumers using `npx xds`, an `xds` npm-script alias, or the `xds` MCP server
+  name should switch to `astryx`. Part of removing `xds` naming from the public API.
+- Rename the exported `XDSError` class to `AstryxError`
+  The CLI's programmatic API error class is renamed `XDSError` -> `AstryxError`
+  (exported from `@xds/cli` + declared in its types). Consumers that catch or
+  reference `XDSError` from the CLI's API should switch to `AstryxError`. Part of
+  removing `xds` naming from the public API.
+- Remove the XDS-prefix compatibility layer — astryx is now the only public surface
+  This release erases all `xds` naming from the public API; there is no compatibility
+  window. Consumers must migrate (we own all consumers pre-OSS):
+- Remove the daily, brutalist, and default themes; neutral is the new baseline
+  Three theme packages are removed from the repo and will no longer be published:
+
+#### Fixes
+
+- `theme build` generates valid bare type imports (IconRegistry/DefinedTheme)
+  `astryx theme build` emitted `.d.ts` files importing `XDSIconRegistry` /
+  `XDSDefinedTheme` from `@xds/core`, but those aliases were removed — the
+  generated types failed to resolve. Generate `IconRegistry` / `DefinedTheme`
+  (the bare names `@xds/core` now exports) instead.
+
+#### Documentation
+
+- Update CLI theme docs to the current theme set
+  Refreshes the `astryx docs theme`, `getting-started`, `styling`,
+  `styling-libraries`, and `migration` reference docs to reflect the published
+  themes: `neutral`, `butter`, `chocolate`, `gothic`, `matcha`, `stone`, and
+  `y2k`. The removed `theme-default`, `theme-brutalist`, and `theme-daily`
+  packages are dropped from the docs, and install/import examples now use
+  `@astryxdesign/theme-neutral` as the recommended starting theme.
+
+#### Other Changes
+
+- **Component names:** the `XDS*` aliases are gone — use bare names (`Button` not
+  `XDSButton`, `useTheme` not `useXDSTheme`, `ButtonProps` not `XDSButtonProps`). The
+  `drop-xds-prefix-imports` codemod automates this.
+- **CSS classes:** components emit only `.astryx-*` (the dual `.xds-*` class is gone).
+  Update custom CSS selectors `.xds-button` -> `.astryx-button` (prop/state value classes
+  like `.primary`/`.sm` are unchanged).
+- **data attributes:** only `data-astryx-theme` / `data-astryx-media` are written; update
+  custom selectors and SSR root attributes off `data-xds-*`.
+- **CSS layers:** `@layer xds-base` / `xds-theme` are renamed to `astryx-base` /
+  `astryx-theme`; update your `@layer` order line and any PostCSS `layersBefore` config.
+  `@astryxdesign/build`'s default library layer is now `astryx-base`.
+- **Pre-compiled stylesheet:** the `@astryxdesign/core/xds.css` export is removed — import
+  `@astryxdesign/core/astryx.css`.
+- **CSS custom properties:** the `--xds-*` padding fallback is gone; set `--astryx-*`.
+- **CLI config key:** `@astryxdesign/cli` reads the package.json `"astryx"` field (was `"xds"`).
+  Rename the block; a stale `"xds"` key silently drops the package from discovery.
+- `@astryxdesign/theme-daily`
+- `@astryxdesign/theme-brutalist`
+- `@astryxdesign/theme-default`
+- import {defaultTheme} from '@astryxdesign/theme-default/built';
+  - import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+- <Theme theme={defaultTheme}>...</Theme>
+  - <Theme theme={neutralTheme}>...</Theme>
+  ```
+
+  ```
+- Remove the internal `drop-xds-meta-prefix` codemod from the OSS repo (#2970)
+  This codemod has been moved to its own package's tooling, where it belongs. It was registered as an optional, version-independent transform and is not part of any standard upgrade path, so removing it does not affect the public `0.0.13 → 0.0.15` migration.
+- Rename the npm package scope from `@xds/*` to `@astryxdesign/*`
+  All published packages move to the new `@astryxdesign` scope (e.g. `@xds/core` → `@astryxdesign/core`), along with the workspace lockfile, build/runtime scope-directory scans, and docsite slug derivation. Consumers must update their imports and dependency names. The internal ESLint plugin namespace (`@xds/*` rules) is intentionally untouched and tracked separately. Existing `@xds/*` codemods continue to target the old scope so projects still on `@xds/*` can migrate.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @ejhammond
+
+---
+
 # 0.0.15
 
 #### Breaking Changes

@@ -2,6 +2,6 @@
 
 @import "./layers.css";
 @import "@astryxdesign/core/reset.css";
-@import "@astryxdesign/theme-default/theme.css";
+@import "@astryxdesign/theme-neutral/theme.css";
 
 @stylex;

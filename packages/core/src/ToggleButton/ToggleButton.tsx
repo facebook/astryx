@@ -20,7 +20,14 @@
  * - /packages/cli/templates/blocks/components/ToggleButton/ (showcase blocks)
  */
 
-import React, {useCallback, type ReactNode} from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useOptimistic,
+  useState,
+  useTransition,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
 
@@ -28,6 +35,37 @@ import {Button, type ButtonSize} from '../Button';
 import {useToggleButtonGroup} from './ToggleButtonGroup';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+
+// =============================================================================
+// Constants & helpers
+// =============================================================================
+
+/**
+ * The spinner only appears once the action has been pending for this long.
+ * A fast action shows the optimistic pressed state immediately with no spinner
+ * flash, and rapid re-clicks can interrupt the in-flight action before the
+ * button locks behind the spinner.
+ */
+const PENDING_SPINNER_DELAY_MS = 150;
+
+/**
+ * Returns `true` only once `active` has stayed `true` for `delayMs`.
+ * Used to debounce the loading spinner so the optimistic state shows first.
+ */
+function useDelayed(active: boolean, delayMs: number): boolean {
+  const [delayed, setDelayed] = useState(false);
+  useEffect(() => {
+    if (!active) {
+      return undefined;
+    }
+    const timer = setTimeout(() => setDelayed(true), delayMs);
+    return () => {
+      clearTimeout(timer);
+      setDelayed(false);
+    };
+  }, [active, delayMs]);
+  return active && delayed;
+}
 
 // =============================================================================
 // Styles
@@ -91,8 +129,15 @@ export interface ToggleButtonProps extends BaseProps<HTMLButtonElement> {
   onPressedChange?: (isPressed: boolean) => void;
 
   /**
-   * Async action handler for API-backed toggles.
-   * The button shows a loading spinner while the promise is pending.
+   * Action handler for API- or navigation-backed toggles, run inside a
+   * transition. The button shows a loading spinner while the action is
+   * pending — whether it returns a promise or synchronously triggers a
+   * suspending update (e.g. a router navigation that suspends on data).
+   *
+   * Because it runs in a transition, the toggle is *interruptible*: clicking
+   * again while an action is pending starts a new transition with the next
+   * optimistic state, so the action reflects the latest intent rather than
+   * being dropped.
    *
    * @example
    * ```
@@ -106,7 +151,7 @@ export interface ToggleButtonProps extends BaseProps<HTMLButtonElement> {
    * />
    * ```
    */
-  pressedChangeAction?: (isPressed: boolean) => Promise<void>;
+  pressedChangeAction?: (isPressed: boolean) => void | Promise<void>;
 
   /**
    * The size of the toggle button.
@@ -218,46 +263,64 @@ export function ToggleButton({
   style,
   ...props
 }: ToggleButtonProps): ReactNode {
-  // Read group context if inside a group
   const group = useToggleButtonGroup();
 
-  // Resolve state from group or props
-  const isPressed =
+  const committedPressed =
     group && value != null
       ? group.selectedValues.has(value)
       : (isPressedProp ?? false);
   const size = sizeProp ?? group?.size ?? 'md';
   const isDisabled = group?.isDisabled ?? isDisabledProp;
 
+  // Track the pressed state optimistically. While an action is pending, the
+  // button reflects the intended (optimistic) state immediately, and a click
+  // mid-flight derives its next state from this value — so rapid toggles read
+  // true -> false -> true rather than stalling on the last committed value.
+  const [optimisticPressed, setOptimisticPressed] =
+    useOptimistic(committedPressed);
+  const isPressed = optimisticPressed;
+
   const resolvedIcon = isPressed && pressedIcon ? pressedIcon : icon;
 
+  // Run the toggle inside a transition. The action is interruptible: clicking
+  // again while it is pending starts a fresh transition with the next
+  // optimistic state instead of being dropped, so there is no re-entry guard.
+  // Both onPressedChange and pressedChangeAction run inside the transition,
+  // which means a synchronous-but-suspending handler (e.g. a router navigation
+  // that suspends on data) also drives the pending state — not just promises.
+  const [isPending, startTransition] = useTransition();
+  // Debounce the spinner so a fast action shows the optimistic state without a
+  // spinner flash, and rapid re-clicks can interrupt before the button locks.
+  const showSpinner = useDelayed(isPending, PENDING_SPINNER_DELAY_MS);
+  const isLoadingState = isLoading || showSpinner;
+
   const handleClick = useCallback(() => {
-    if (isDisabled || isLoading) {
+    if (isDisabled) {
       return;
     }
 
     if (group && value != null) {
-      // Delegate to group context
+      // Group mode delegates selection to the group; no async-action path.
       group.toggle(value);
-    } else if (onPressedChangeProp) {
-      // Standalone toggle
-      const newState = !isPressed;
-      onPressedChangeProp(newState);
-      if (pressedChangeAction) {
-        void pressedChangeAction(newState);
-      }
+      return;
     }
+
+    const newState = !optimisticPressed;
+    startTransition(async () => {
+      setOptimisticPressed(newState);
+      onPressedChangeProp?.(newState);
+      await pressedChangeAction?.(newState);
+    });
   }, [
     isDisabled,
-    isLoading,
     group,
     value,
+    optimisticPressed,
     onPressedChangeProp,
     pressedChangeAction,
-    isPressed,
+    setOptimisticPressed,
   ]);
 
-  // Label with font weight shift and width reservation
   // isIconOnly prop is the source of truth for icon-only rendering.
   const labelContent =
     children != null ? (
@@ -289,7 +352,7 @@ export function ToggleButton({
       variant="ghost"
       size={size}
       isDisabled={isDisabled}
-      isLoading={isLoading}
+      isLoading={isLoadingState}
       isIconOnly={isIconOnly}
       aria-pressed={isPressed}
       icon={resolvedIcon}

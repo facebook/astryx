@@ -115,8 +115,6 @@ describe('playground-scope', () => {
   });
 
   it('includes all theme entries (bare and /built subpath)', () => {
-    expect(scopeContent).toContain("'@astryxdesign/theme-default':");
-    expect(scopeContent).toContain("'@astryxdesign/theme-default/built':");
     expect(scopeContent).toContain("'@astryxdesign/theme-neutral':");
     expect(scopeContent).toContain("'@astryxdesign/theme-neutral/built':");
     expect(scopeContent).toContain("'@astryxdesign/theme-matcha':");

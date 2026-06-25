@@ -13,6 +13,8 @@ import {components} from '../../../generated/componentRegistry';
 import {layout} from '../../../layout.stylex';
 import {ComponentsPreview} from './ComponentsPreview';
 import {CliPreview} from './CliPreview';
+import {ThemesPreview} from './ThemesPreview';
+import {TemplatesPreview} from './TemplatesPreview';
 
 // Count of public @astryxdesign/core components (excluding hooks and hidden entries).
 // Sourced from the generated registry so the number stays accurate as the
@@ -57,9 +59,12 @@ const styles = stylex.create({
     maxWidth: layout.contentMaxWidth,
     display: 'grid',
     gap: spacingVars['--spacing-8'],
+    // minmax(0, 1fr) (not 1fr) so a card with wide content — e.g. the Themes
+    // preview's left-bleed — can't blow out its column; all three stay equal.
     gridTemplateColumns: {
       default: '1fr',
-      '@media (min-width: 1024px)': '1fr 1fr 1fr',
+      '@media (min-width: 1024px)':
+        'minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)',
     },
     minHeight: {
       default: 0,
@@ -275,8 +280,20 @@ const styles = stylex.create({
     maxWidth: '100%',
     overflow: 'hidden',
   },
-  // Inset wrapper for a live preview node, pinned to the card's bottom.
+  // Inset wrapper for a live preview node. A fixed top gap (not marginTop:auto)
+  // keeps the space under "Explore" consistent across preview cards; any extra
+  // card height falls below the framed preview rather than above it.
   previewWrap: {
+    paddingTop: spacingVars['--spacing-10'],
+    alignSelf: 'stretch',
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
+  },
+  // Bottom-anchored preview wrapper. marginTop:auto pushes the preview to the
+  // bottom of the card's content column so any extra card height opens up ABOVE
+  // it (used by the Themes card so its store preview sits flush at the bottom).
+  previewWrapBottom: {
     marginTop: 'auto',
     paddingTop: spacingVars['--spacing-10'],
     alignSelf: 'stretch',
@@ -351,20 +368,19 @@ const features: Record<string, Feature> = {
     description:
       'Fully customizable themes ready for use. Make it yours without starting from scratch.',
     href: '/themes',
-    image: {
-      src: '/feature-brand.png',
-      alt: "A product landing page styled with the Butter theme, shown alongside the theme's color swatches and type sample",
-    },
+    // Live Butter-themed store preview + swatches/"Aa" instead of the old
+    // /feature-brand.png, so it re-themes for dark mode (the PNG stayed light).
+    preview: <ThemesPreview />,
   },
   templates: {
     title: 'Ready to ship templates',
     description:
       'Production-ready templates for common pages, just plug in your content.',
     href: '/templates',
-    image: {
-      src: '/feature-templates.png',
-      alt: 'A scattered collage of ready-to-use page templates — product gallery, code editor, checkout summary, login, product detail, and AI chat',
-    },
+    // Live scaled-down renders of real page templates instead of the baked
+    // /feature-templates.png, so they re-theme for dark mode and stay in sync
+    // with the actual templates.
+    preview: <TemplatesPreview />,
   },
   cli: {
     title: 'A design system that your agent can use',
@@ -385,6 +401,7 @@ function FeatureCard({
   insetImage = false,
   centerImage = false,
   smallImage = false,
+  bottomPreview = false,
 }: {
   feature: Feature;
   /**
@@ -424,6 +441,12 @@ function FeatureCard({
    * the full card width.
    */
   smallImage?: boolean;
+  /**
+   * When true, a live preview is pinned to the bottom of the card (extra
+   * card height opens above it) instead of sitting just under "Explore".
+   * Used by the Themes card. Ignored for image cards.
+   */
+  bottomPreview?: boolean;
 }) {
   const hasImage = feature.image != null;
   const hasPreview = feature.preview != null;
@@ -474,8 +497,14 @@ function FeatureCard({
         </Link>
         {hasPreview ? (
           // vAlign="center" + hAlign="center" centers the preview in
-          // the card's leftover vertical+horizontal space.
-          <HStack hAlign="center" vAlign="center" xstyle={styles.previewWrap}>
+          // the card's leftover horizontal space; bottomPreview pins it to the
+          // bottom of the card instead of the fixed top gap.
+          <HStack
+            hAlign="center"
+            vAlign="center"
+            xstyle={
+              bottomPreview ? styles.previewWrapBottom : styles.previewWrap
+            }>
             {feature.preview}
           </HStack>
         ) : (
@@ -584,14 +613,14 @@ export function FeaturesShowcase() {
             owns only the responsive display switch. */}
         <VStack gap={8} width="100%" height="100%" xstyle={styles.column}>
           <HeadingBlock />
-          <FeatureCard feature={features.themes} isFlex centerImage />
+          <FeatureCard feature={features.themes} isFlex bottomPreview />
         </VStack>
         <VStack gap={8} width="100%" height="100%" xstyle={styles.column}>
           <FeatureCard feature={features.components} isFlex insetImage />
           <FeatureCard feature={features.cli} />
         </VStack>
         <VStack gap={8} width="100%" height="100%" xstyle={styles.column}>
-          <FeatureCard feature={features.templates} isTall />
+          <FeatureCard feature={features.templates} isTall bottomPreview />
         </VStack>
       </div>
     </VStack>

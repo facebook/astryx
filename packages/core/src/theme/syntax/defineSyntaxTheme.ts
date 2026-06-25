@@ -134,7 +134,7 @@ export function defineSyntaxTheme(input: SyntaxThemeInput): SyntaxThemeDefinitio
   const missing = ALL_SYNTAX_KEYS.filter(key => !(key in input.tokens));
   if (missing.length > 0) {
     console.warn(
-      '[XDS] defineSyntaxTheme("' + input.name + '"): missing tokens: ' +
+      '[Astryx] defineSyntaxTheme("' + input.name + '"): missing tokens: ' +
         missing.join(', ') + '. All 14 syntax tokens are required.',
     );
   }

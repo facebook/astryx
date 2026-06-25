@@ -4,7 +4,7 @@
  * @file Detect the project's package manager from lockfiles.
  *
  * Returns the correct command prefix for running package binaries
- * (e.g. 'npx xds', 'yarn xds', 'pnpm exec xds').
+ * (e.g. 'npx astryx', 'yarn astryx', 'pnpm exec astryx').
  */
 
 import * as fs from 'node:fs';

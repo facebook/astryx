@@ -109,12 +109,9 @@ export default function ExampleCardsPage() {
   const {themeName, setThemeName, mode, setMode} = useThemeControls();
 
   const themeOptions = [
-    'Default',
     'Neutral',
-    'Brutalist',
     'Meta',
     'WhatsApp',
-    'Daily',
     'Stone',
     'Gothic',
     'Chocolate',

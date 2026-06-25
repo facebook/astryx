@@ -4,29 +4,29 @@
  * @file no-hardcoded-anchor.js
  * @description Disallow hardcoded `<a>` elements in Astryx core components.
  *
- * Components that render links should use `useXDSLinkComponent()` to resolve
+ * Components that render links should use `useLinkComponent()` to resolve
  * the link element, allowing consumers to swap in their framework's router
- * (Next.js Link, React Router Link, etc.) via `XDSLinkProvider`.
+ * (Next.js Link, React Router Link, etc.) via `LinkProvider`.
  *
  * This rule catches `<a>` JSX elements and suggests using the link provider
  * pattern instead. It allows `<a>` in a few known cases:
  * - Test files (*.test.tsx)
- * - The Link infrastructure itself (XDSLink.tsx, XDSLinkProvider.tsx)
+ * - The Link infrastructure itself (Link.tsx, LinkProvider.tsx)
  * - In-page anchors (href starting with #)
  *
  * Bad:
  *   <a href={href} className={styles.link}>{children}</a>
  *
  * Good:
- *   const LinkComponent = useXDSLinkComponent();
+ *   const LinkComponent = useLinkComponent();
  *   <LinkComponent href={href} className={styles.link}>{children}</LinkComponent>
  */
 
 const ALLOWED_FILES = [
-  'XDSLink.tsx',
-  'XDSLinkProvider.tsx',
-  'XDSLinkContext.ts',
-  'useXDSLinkComponent.ts',
+  'Link.tsx',
+  'LinkProvider.tsx',
+  'LinkContext.ts',
+  'useLinkComponent.ts',
   'types.ts',
 ];
 
@@ -35,15 +35,15 @@ const rule = {
     type: 'suggestion',
     docs: {
       description:
-        'Disallow hardcoded <a> elements — use useXDSLinkComponent() for router integration',
+        'Disallow hardcoded <a> elements — use useLinkComponent() for router integration',
       category: 'Best Practices',
       recommended: true,
     },
     messages: {
       hardcodedAnchor:
-        'Hardcoded <a> element. Use `useXDSLinkComponent()` to resolve the link component, ' +
-        'so consumers can swap in their framework router via XDSLinkProvider. ' +
-        'See: packages/core/src/Link/useXDSLinkComponent.ts',
+        'Hardcoded <a> element. Use `useLinkComponent()` to resolve the link component, ' +
+        'so consumers can swap in their framework router via LinkProvider. ' +
+        'See: packages/core/src/Link/useLinkComponent.ts',
     },
     schema: [],
   },

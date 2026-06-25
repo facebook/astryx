@@ -21,24 +21,24 @@
  * It never remembers, watches, or coordinates on its own.
  */
 const PRESENTATIONAL_COMPONENTS = new Set([
-  'XDSAspectRatio',
-  'XDSBadge',
-  'XDSCard',
-  'XDSCenter',
-  'XDSDivider',
-  'XDSEmptyState',
-  'XDSField',
-  'XDSFormLayout',
-  'XDSGrid',
-  'XDSLayout',
-  'XDSLink',
-  'XDSNavIcon',
-  'XDSProgressBar',
-  'XDSSection',
-  'XDSSkeleton',
-  'XDSStack',
-  'XDSStatusDot',
-  'XDSToken',
+  'AspectRatio',
+  'Badge',
+  'Card',
+  'Center',
+  'Divider',
+  'EmptyState',
+  'Field',
+  'FormLayout',
+  'Grid',
+  'Layout',
+  'Link',
+  'NavIcon',
+  'ProgressBar',
+  'Section',
+  'Skeleton',
+  'Stack',
+  'StatusDot',
+  'Token',
 ]);
 
 /**
@@ -106,7 +106,7 @@ const presentationalComponentRule = {
         'Move state to the consumer or a wrapper component.',
       watches:
         "'{{name}}' makes {{component}} observe the environment. Presentational components must not watch things. " +
-        'Move observation to a wrapper component (e.g. Astryx{{shortName}}Wrapper).',
+        'Move observation to a wrapper component (e.g. {{shortName}}Wrapper).',
       coordinates:
         "'{{name}}' makes {{component}} coordinate its children. Presentational components must not boss children around. ' +" +
         'Move coordination to a dedicated compound component.',
@@ -121,7 +121,7 @@ const presentationalComponentRule = {
     }
 
     const componentName = getFileStem(filename);
-    const shortName = componentName.replace(/^Astryx/, '');
+    const shortName = componentName;
 
     function report(node, name, category) {
       context.report({

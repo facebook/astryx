@@ -19,7 +19,7 @@ import {Text, Heading} from '@astryxdesign/core/Text';
 import {Theme} from '@astryxdesign/core/theme';
 import type {DefinedTheme} from '@astryxdesign/core/theme';
 import {LayerProvider} from '@astryxdesign/core/Layer';
-import {defaultTheme} from '@astryxdesign/theme-default/built';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 
 import {ThemeAuditDrawer, useThemeAudit} from './themePreview/ThemeAuditDrawer';
 import {
@@ -1400,7 +1400,7 @@ export function ThemePalettePreview({
           neutral default theme so it always looks the same across all 5
           palette pages. Position-fixed elements inside the drawer
           attach to the viewport, not this wrapper. */}
-      <Theme theme={defaultTheme} mode="light">
+      <Theme theme={neutralTheme} mode="light">
         <LayerProvider>
           <ThemeAuditDrawer
             audit={audit}

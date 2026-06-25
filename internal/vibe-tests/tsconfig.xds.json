@@ -9,7 +9,7 @@
     "paths": {
       "@astryxdesign/core": ["../../packages/core/src"],
       "@astryxdesign/core/*": ["../../packages/core/src/*"],
-      "@astryxdesign/theme/default": ["../../packages/themes/default/src/source.ts"],
+      "@astryxdesign/theme/neutral": ["../../packages/themes/neutral/src/source.ts"],
       "@stylexjs/stylex": ["../../node_modules/@stylexjs/stylex"]
     }
   },

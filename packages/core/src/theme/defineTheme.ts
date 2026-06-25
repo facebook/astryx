@@ -173,11 +173,11 @@ export interface DefineThemeInput {
    *
    * @example
    * ```tsx
-   * import {defaultTheme} from '@astryxdesign/theme-default';
+   * import {neutralTheme} from '@astryxdesign/theme-neutral';
    *
    * const myTheme = defineTheme({
    *   name: 'my-brand',
-   *   extends: defaultTheme,
+   *   extends: neutralTheme,
    *   icons: myIcons,
    *   tokens: { '--color-accent': '#FF0000' },
    * });

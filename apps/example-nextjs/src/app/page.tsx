@@ -2,6 +2,7 @@
 
 'use client';
 
+import {useState} from 'react';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Button} from '@astryxdesign/core/Button';
 import {Text, Heading} from '@astryxdesign/core/Text';
@@ -10,6 +11,7 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Divider} from '@astryxdesign/core';
 
 export default function Home() {
+  const [email, setEmail] = useState('');
   return (
     <main
       style={{
@@ -65,7 +67,12 @@ export default function Home() {
           {/* Text Input */}
           <VStack gap={3}>
             <Heading level={2}>Text Input</Heading>
-            <TextInput label="Email address" placeholder="you@example.com" />
+            <TextInput
+              label="Email address"
+              placeholder="you@example.com"
+              value={email}
+              onChange={setEmail}
+            />
           </VStack>
 
           <Divider />

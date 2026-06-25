@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/cli",
-  "version": "0.0.15",
+  "version": "0.1.0",
   "displayName": "CLI",
   "description": "Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line.",
   "author": "Meta Open Source",
@@ -55,12 +55,12 @@
   "dependencies": {
     "@clack/prompts": "^1.5.1",
     "commander": "^12.1.0",
-    "jiti": "^2.7.0"
+    "jiti": "^2.7.0",
+    "jscodeshift": "^17.3.0"
   },
   "peerDependencies": {
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
-    "@astryxdesign/theme-default": "*",
     "@astryxdesign/theme-neutral": "*"
   },
   "peerDependenciesMeta": {
@@ -70,9 +70,6 @@
     "@astryxdesign/lab": {
       "optional": true
     },
-    "@astryxdesign/theme-default": {
-      "optional": true
-    },
     "@astryxdesign/theme-neutral": {
       "optional": true
     }
@@ -80,7 +77,6 @@
   "devDependencies": {
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
-    "@astryxdesign/theme-default": "*",
     "@astryxdesign/theme-neutral": "*"
   }
 }

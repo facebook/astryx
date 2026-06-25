@@ -24,7 +24,7 @@ import {
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {AppShell} from '@astryxdesign/core/AppShell';
 import {Theme} from '@astryxdesign/core';
-import {defaultTheme} from '@astryxdesign/theme-default';
+import {stoneTheme} from '@astryxdesign/theme-stone';
 import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 const styles = stylex.create({
@@ -739,26 +739,25 @@ export const ContentOnly: Story = {
 };
 
 export const ThemedLayout: Story = {
-  name: 'Themed Layout (Neutral vs Default)',
+  name: 'Themed Layout (Neutral vs Stone)',
   render: () => (
     <HStack gap={6} xstyle={styles.storySection}>
       <VStack gap={3}>
         <p {...stylex.props(styles.sectionLabel)}>
-          Default Theme (16px padding)
+          Stone Theme
         </p>
-        <Theme theme={defaultTheme}>
+        <Theme theme={stoneTheme}>
           <Card width={400}>
             <Layout
               header={
                 <LayoutHeader hasDivider>
-                  <h3 {...stylex.props(styles.heading)}>Default Theme</h3>
+                  <h3 {...stylex.props(styles.heading)}>Stone Theme</h3>
                 </LayoutHeader>
               }
               content={
                 <LayoutContent>
                   <p {...stylex.props(styles.bodyText)}>
-                    This card uses the default theme with 16px padding around
-                    the layout areas.
+                    This card uses the stone theme around the layout areas.
                   </p>
                 </LayoutContent>
               }
@@ -781,7 +780,7 @@ export const ThemedLayout: Story = {
 
       <VStack gap={3}>
         <p {...stylex.props(styles.sectionLabel)}>
-          Neutral Theme (12px padding)
+          Neutral Theme
         </p>
         <Theme theme={neutralTheme}>
           <Card width={400}>
@@ -794,8 +793,7 @@ export const ThemedLayout: Story = {
               content={
                 <LayoutContent>
                   <p {...stylex.props(styles.bodyText)}>
-                    This card uses the neutral theme with 12px padding around
-                    the layout areas.
+                    This card uses the neutral theme around the layout areas.
                   </p>
                 </LayoutContent>
               }

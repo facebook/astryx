@@ -28,7 +28,7 @@ const displayNameByPackage = new Map(
   packages.map(p => [p.name, p.displayName]),
 );
 
-/** "@astryxdesign/theme-default" → "default" */
+/** "@astryxdesign/theme-neutral" → "neutral" */
 function toShortName(packageName: string): string {
   return packageName.replace(/^@astryxdesign\/theme-/, '');
 }

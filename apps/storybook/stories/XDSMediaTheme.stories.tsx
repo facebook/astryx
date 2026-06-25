@@ -10,9 +10,8 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Stack} from '@astryxdesign/core/Stack';
 import {Theme} from '@astryxdesign/core/theme';
-import {defaultTheme} from '@astryxdesign/theme-default';
 import {neutralTheme} from '@astryxdesign/theme-neutral';
-import {brutalistTheme} from '@astryxdesign/theme-brutalist';
+import {y2kTheme} from '@astryxdesign/theme-y2k';
 import {Card} from '@astryxdesign/core/Card';
 
 // =============================================================================
@@ -89,7 +88,7 @@ export const OnDark: StoryObj = {
 
 function OnLightDemo() {
   return (
-    <Theme theme={defaultTheme} mode="dark">
+    <Theme theme={neutralTheme} mode="dark">
       <div
         style={{
           padding: 16,
@@ -221,19 +220,20 @@ export const ToastExample: StoryObj = {
 // =============================================================================
 
 /**
- * This is the key demo: themes with component overrides (brutalist has pill
- * buttons, uppercase text, thick borders on cards/ghost buttons). Inside
- * MediaTheme, those component overrides STILL apply — structural styling
- * is preserved. Only the color tokens change for the inverted surface.
+ * This is the key demo: themes with component overrides (y2k has sharp
+ * square buttons with visible borders, bordered secondary/destructive
+ * variants, and pill-shaped badges). Inside MediaTheme, those component
+ * overrides STILL apply — structural styling is preserved. Only the color
+ * tokens change for the inverted surface.
  */
 
 function ComponentOverrideBoundaryDemo() {
   return (
-    <Theme theme={brutalistTheme}>
+    <Theme theme={y2kTheme}>
       <Stack gap={4}>
         <Text weight="semibold">
-          Brutalist theme, notice the component overrides: pill buttons,
-          uppercase text, thick card borders, bordered ghost buttons.
+          Y2K theme, notice the component overrides: square buttons with
+          visible borders, bordered button variants, pill-shaped badges.
         </Text>
 
         {/* Normal surface — themed component overrides apply */}
@@ -288,7 +288,7 @@ export const ComponentOverrideBoundary: StoryObj = {
     docs: {
       description: {
         story:
-          'Shows component overrides flowing through to the media context. Brutalist theme applies bold component overrides (pill buttons, uppercase, thick borders); these are preserved inside MediaTheme. Only the color tokens change for the inverted surface.',
+          'Shows component overrides flowing through to the media context. Y2K theme applies bold component overrides (square bordered buttons, pill badges); these are preserved inside MediaTheme. Only the color tokens change for the inverted surface.',
       },
     },
   },
@@ -302,9 +302,8 @@ function ThemedDemo() {
   return (
     <Stack gap={4}>
       {[
-        {theme: defaultTheme, label: 'Default Theme'},
         {theme: neutralTheme, label: 'Neutral Theme'},
-        {theme: brutalistTheme, label: 'Brutalist Theme'},
+        {theme: y2kTheme, label: 'Y2K Theme'},
       ].map(({theme, label}) => (
         <Theme key={label} theme={theme}>
           <Stack gap={2}>

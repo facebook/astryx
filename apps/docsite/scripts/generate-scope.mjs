@@ -40,7 +40,6 @@ const components = exportKeys
 
 // Themes — add new themes here as they become available
 const SCOPE_THEMES = [
-  {pkg: '@astryxdesign/theme-default', name: 'defaultTheme', subpath: '/built'},
   {pkg: '@astryxdesign/theme-neutral', name: 'neutralTheme', subpath: '/built'},
   {pkg: '@astryxdesign/theme-matcha', name: 'matchaTheme', subpath: '/built'},
 ];

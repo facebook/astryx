@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "pnpm -F @astryxdesign/build build && pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/vega build && pnpm -F @astryxdesign/theme-default build && pnpm -F @astryxdesign/theme-neutral build && pnpm -F @astryxdesign/theme-brutalist build && pnpm -F @astryxdesign/theme-daily build && pnpm -F @astryxdesign/theme-matcha build && pnpm -F @astryxdesign/theme-stone build && pnpm -F @astryxdesign/theme-gothic build && pnpm -F @astryxdesign/theme-chocolate build && pnpm -F @astryxdesign/theme-y2k build && pnpm -F @astryxdesign/theme-butter build",
+    "build": "pnpm -F @astryxdesign/build build && pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/vega build && pnpm -F @astryxdesign/theme-neutral build && pnpm -F @astryxdesign/theme-matcha build && pnpm -F @astryxdesign/theme-stone build && pnpm -F @astryxdesign/theme-gothic build && pnpm -F @astryxdesign/theme-chocolate build && pnpm -F @astryxdesign/theme-y2k build && pnpm -F @astryxdesign/theme-butter build",
     "dev": "pnpm -F @astryxdesign/storybook dev",
     "test": "vitest run",
     "test:watch": "vitest",

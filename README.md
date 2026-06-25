@@ -27,15 +27,15 @@ Quick install:
 
 ```bash
 # pnpm
-pnpm add @astryxdesign/core @astryxdesign/theme-default
+pnpm add @astryxdesign/core @astryxdesign/theme-neutral
 pnpm add -D @astryxdesign/cli
 
 # npm
-npm install @astryxdesign/core @astryxdesign/theme-default
+npm install @astryxdesign/core @astryxdesign/theme-neutral
 npm install -D @astryxdesign/cli
 
 # yarn
-yarn add @astryxdesign/core @astryxdesign/theme-default
+yarn add @astryxdesign/core @astryxdesign/theme-neutral
 yarn add -D @astryxdesign/cli
 ```
 
@@ -58,10 +58,9 @@ Then follow the [setup guide](packages/core/README.md#quick-start) to import sty
 | [`@astryxdesign/core`](packages/core)      | Components, theme system, and utilities                                                                                       | [README](packages/core/README.md)  |
 | [`@astryxdesign/cli`](packages/cli)        | CLI tooling: component docs, templates, scaffolding, themes, and codemods                                                     | [README](packages/cli/README.md)   |
 | [`@astryxdesign/build`](packages/build)    | Build plugins for StyleX source builds                                                                                        | [README](packages/build/README.md) |
-| [`@astryxdesign/vega`](packages/vega)      | Vega/Vega-Lite chart wrapper                                                                                                  | [README](packages/vega/README.md)  |
 | [`@astryxdesign/theme-*`](packages/themes) | Ten ready-made, fully customizable themes (default, neutral, daily, butter, chocolate, matcha, stone, gothic, brutalist, y2k) | [README](packages/themes)          |
 
-> `@astryxdesign/lab` hosts experimental components for testing in Storybook and the sandbox; it is not published.
+> `@astryxdesign/lab` (experimental components) and `@astryxdesign/vega` (Vega/Vega-Lite chart wrapper) are used internally for Storybook and the sandbox; they are not yet published to npm.
 
 ## Features
 
@@ -95,7 +94,7 @@ Battle-tested design solutions for common interactions and workflows: table page
 | Directory   | Purpose                                                     |
 | ----------- | ----------------------------------------------------------- |
 | `apps/`     | Example apps, the docsite, and Storybook                    |
-| `packages/` | Published packages: core, cli, build, vega, themes          |
+| `packages/` | Published packages: core, cli, build, themes                |
 | `internal/` | Internal tooling: test utilities, eslint plugin, vibe tests |
 
 ## Contributing

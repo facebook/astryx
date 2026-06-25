@@ -228,7 +228,7 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Document outline/table-of-contents nav with sliding indicator track. Flat items array {id,label,level}; anchor links; density variant (default/compact); uncontrolled scroll-spy via IntersectionObserver topmost-visible-heading; controlled with activeId; smooth-scroll on click.',
+    'Document outline/table-of-contents nav with sliding indicator track. Flat items array {id,label,level}; anchor links; density variant (default/compact); uncontrolled scroll-spy by scroll position (last heading past its scroll-margin-top line; first item at top, last at bottom); controlled with activeId; smooth-scroll on click that pins the active item until the next manual scroll.',
   usage: {
     description:
       'A table-of-contents sidebar for documentation pages, help centers, wikis, and long settings pages. Use it for navigation within a single page, not for app routes.',

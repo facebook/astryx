@@ -9,7 +9,7 @@ No StyleX build plugin needed; XDS ships pre-compiled CSS and JS. This is the si
 ### 1. Install dependencies
 
 ```bash
-npm install @astryxdesign/core @astryxdesign/theme-default next react react-dom
+npm install @astryxdesign/core @astryxdesign/theme-neutral next react react-dom
 npm install --save-dev @types/react @types/react-dom typescript
 ```
 
@@ -20,7 +20,7 @@ In `src/app/globals.css`, import the reset, component styles, and theme:
 ```css
 @import '@astryxdesign/core/reset.css';
 @import '@astryxdesign/core/astryx.css';
-@import '@astryxdesign/theme-default/theme.css';
+@import '@astryxdesign/theme-neutral/theme.css';
 ```
 
 The CSS import order matters:
@@ -43,11 +43,11 @@ import './globals.css';
 import Link from 'next/link';
 import {Theme} from '@astryxdesign/core/theme';
 import {LinkProvider} from '@astryxdesign/core/Link';
-import {defaultTheme} from '@astryxdesign/theme-default/built';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
 
 export function Providers({children}) {
   return (
-    <Theme theme={defaultTheme}>
+    <Theme theme={neutralTheme}>
       <LinkProvider component={Link}>{children}</LinkProvider>
     </Theme>
   );

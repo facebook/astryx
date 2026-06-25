@@ -82,6 +82,10 @@ const styles = stylex.create({
     width: '100%',
     position: 'relative' as const,
   },
+  dialogHeader: {
+    boxSizing: 'border-box',
+    paddingInlineStart: '8px',
+  },
   closeButton: {
     position: 'absolute' as const,
     top: 0,
@@ -315,7 +319,7 @@ export function TemplatePreviewDialog({
       <Layout
         height="fill"
         header={
-          <LayoutHeader xstyle={styles.headerRow}>
+          <LayoutHeader xstyle={styles.dialogHeader}>
             <TemplatePreviewHeader
               item={current}
               isFullscreen={isFullscreen}

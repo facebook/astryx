@@ -2,7 +2,7 @@
 
 /**
  * @file boolean-prop-naming.js
- * @description ESLint rule enforcing Astryx boolean prop naming conventions.
+ * @description ESLint rule enforcing boolean prop naming conventions.
  *
  * Boolean props in *Props interfaces/types must use:
  *   - `is` prefix for state/condition booleans (isDisabled, isRequired, isLoading)
@@ -103,7 +103,7 @@ function isPureBooleanType(typeAnnotation) {
 function getEnclosingPropsName(node) {
   let current = node.parent;
   while (current) {
-    // Interface declaration: `interface XDSButtonProps { ... }`
+    // Interface declaration: `interface ButtonProps { ... }`
     if (current.type === 'TSInterfaceDeclaration') {
       const name = current.id?.name;
       if (name && name.endsWith('Props')) {
@@ -111,7 +111,7 @@ function getEnclosingPropsName(node) {
       }
       return null;
     }
-    // Type alias: `type XDSButtonProps = { ... }`
+    // Type alias: `type ButtonProps = { ... }`
     if (current.type === 'TSTypeAliasDeclaration') {
       const name = current.id?.name;
       if (name && name.endsWith('Props')) {
@@ -129,7 +129,7 @@ const booleanPropNamingRule = {
     type: 'suggestion',
     docs: {
       description:
-        'Enforce Astryx boolean prop naming conventions (is/has prefix)',
+        'Enforce boolean prop naming conventions (is/has prefix)',
       category: 'Best Practices',
       recommended: true,
     },
