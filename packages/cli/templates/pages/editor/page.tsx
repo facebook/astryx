@@ -2,9 +2,7 @@
 
 'use client';
 
-import {useState, useCallback} from 'react';
-import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {useState, useCallback, type CSSProperties} from 'react';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
@@ -307,42 +305,32 @@ function defaultProps(type: BlockType): Record<string, unknown> {
 // the responsive canvas max-width, a selection ring on the active block card,
 // and the circular icon chip's surface.
 
-const editorStyles = stylex.create({
-  // Fill the window. Layout height="fill" is height:100%, which only resolves
-  // against a definite height — and the host's <html>/<body> don't set one, so
-  // the layout anchors a definite viewport height itself. No background; the
-  // host owns the page surface.
-  page: {height: '100dvh'},
-  // Pin the panel to a fixed 320px on desktop (so it doesn't resize to its
-  // content when switching tabs) and full width on mobile, where it moves into
-  // the header slot. LayoutPanel width is a single fixed value with no
-  // responsive form, and this xstyle wins over the width prop.
-  panelWidth: {
-    width: {default: 320, '@media (max-width: 768px)': '100%'},
-    flexShrink: 0,
-  },
-  // Canvas reflows to the chosen viewport width; VStack has no maxWidth prop.
-  canvas: (maxWidth: number) => ({
-    maxWidth,
-    width: '100%',
-    marginInline: 'auto',
-  }),
-  clickable: {
-    cursor: 'pointer',
-  },
-  // Selection ring on the active block — Card has no `isSelected` state.
-  selectedCard: {
-    outline: '2px solid',
-    outlineColor: colorVars['--color-border-blue'],
-    outlineOffset: -2,
-  },
-  // Circular muted chip behind the CTA icon — Center handles the centering
-  // and sizing; only the surface (radius + fill) needs custom CSS.
-  iconCircle: {
-    borderRadius: '50%',
-    backgroundColor: colorVars['--color-background-muted'],
-  },
+// Fill the window. Layout height="fill" is height:100%, which only resolves
+// against a definite height — and the host's <html>/<body> don't set one, so
+// the layout anchors a definite viewport height itself. No background; the
+// host owns the page surface.
+const pageStyle: CSSProperties = {height: '100dvh'};
+// Canvas reflows to the chosen viewport width; VStack has no maxWidth prop.
+const canvasStyle = (maxWidth: number): CSSProperties => ({
+  maxWidth,
+  width: '100%',
+  marginInline: 'auto',
 });
+const clickable: CSSProperties = {
+  cursor: 'pointer',
+};
+// Selection ring on the active block — Card has no `isSelected` state.
+const selectedCard: CSSProperties = {
+  outline: '2px solid',
+  outlineColor: 'var(--color-border-blue)',
+  outlineOffset: -2,
+};
+// Circular muted chip behind the CTA icon — Center handles the centering
+// and sizing; only the surface (radius + fill) needs custom CSS.
+const iconCircle: CSSProperties = {
+  borderRadius: '50%',
+  backgroundColor: 'var(--color-background-muted)',
+};
 
 // ---------------------------------------------------------------------------
 // Properties Form
@@ -477,15 +465,15 @@ function BlockPreview({
   onSelect: () => void;
 }) {
   const {type, props} = block;
-  const cardXstyle = [
-    editorStyles.clickable,
-    isSelected && editorStyles.selectedCard,
-  ];
+  const cardStyle: CSSProperties = {
+    ...clickable,
+    ...(isSelected ? selectedCard : null),
+  };
 
   switch (type) {
     case 'hero':
       return (
-        <Card padding={6} xstyle={cardXstyle} onClick={onSelect}>
+        <Card padding={6} style={cardStyle} onClick={onSelect}>
           <VStack gap={4}>
             <Heading level={2}>
               {(props.heading as string) || 'Hero Heading'}
@@ -503,7 +491,7 @@ function BlockPreview({
     case 'text':
       if (props.heading) {
         return (
-          <Card padding={6} xstyle={cardXstyle} onClick={onSelect}>
+          <Card padding={6} style={cardStyle} onClick={onSelect}>
             <EmptyState
               title={props.heading as string}
               description={props.description as string}
@@ -521,7 +509,7 @@ function BlockPreview({
         );
       }
       return (
-        <Card xstyle={cardXstyle} onClick={onSelect}>
+        <Card style={cardStyle} onClick={onSelect}>
           <Text type="body">
             {(props.content as string) || 'Text content goes here'}
           </Text>
@@ -530,7 +518,7 @@ function BlockPreview({
 
     case 'image':
       return (
-        <Card xstyle={cardXstyle} onClick={onSelect}>
+        <Card style={cardStyle} onClick={onSelect}>
           <EmptyState
             title="Image Block"
             description="Drop an image or enter a URL"
@@ -542,7 +530,7 @@ function BlockPreview({
 
     case 'button':
       return (
-        <Card padding={6} xstyle={cardXstyle} onClick={onSelect}>
+        <Card padding={6} style={cardStyle} onClick={onSelect}>
           <Center>
             <Button
               label={(props.label as string) || 'Button'}
@@ -559,7 +547,7 @@ function BlockPreview({
     case 'features': {
       const items = (props.items as Transaction[]) || [];
       return (
-        <Card padding={6} xstyle={cardXstyle} onClick={onSelect}>
+        <Card padding={6} style={cardStyle} onClick={onSelect}>
           <VStack gap={4}>
             <HStack gap={3} vAlign="start" hAlign="between">
               <VStack gap={1}>
@@ -589,7 +577,7 @@ function BlockPreview({
       const cardItems =
         (props.cards as Array<{title: string; description: string}>) || [];
       return (
-        <Card xstyle={cardXstyle} onClick={onSelect}>
+        <Card style={cardStyle} onClick={onSelect}>
           <VStack gap={4}>
             <Heading level={3}>Cards</Heading>
             <Divider />
@@ -609,9 +597,9 @@ function BlockPreview({
 
     case 'cta':
       return (
-        <Card padding={6} xstyle={cardXstyle} onClick={onSelect}>
+        <Card padding={6} style={cardStyle} onClick={onSelect}>
           <HStack gap={4} vAlign="start">
-            <Center width={40} height={40} xstyle={editorStyles.iconCircle}>
+            <Center width={40} height={40} style={iconCircle}>
               <Icon icon={LockClosedIcon} color="secondary" />
             </Center>
             <VStack gap={1}>
@@ -828,7 +816,7 @@ export default function EditorPage() {
     <LayoutPanel
       hasDivider={!isMobile}
       padding={0}
-      xstyle={editorStyles.panelWidth}>
+      style={{width: isMobile ? '100%' : 320, flexShrink: 0}}>
       <VStack gap={4}>
         {/* Panel Header */}
         <Section variant="transparent" padding={4}>
@@ -919,7 +907,7 @@ export default function EditorPage() {
   return (
     <>
       <Layout
-        xstyle={editorStyles.page}
+        style={pageStyle}
         height="fill"
         header={isMobile ? sidebar : undefined}
         start={isMobile ? undefined : sidebar}
@@ -927,7 +915,7 @@ export default function EditorPage() {
           <LayoutContent padding={8}>
             <VStack
               gap={4}
-              xstyle={editorStyles.canvas(VIEWPORT_MAX[viewport])}>
+              style={canvasStyle(VIEWPORT_MAX[viewport])}>
               {blocks.length > 0 ? (
                 blocks.map(block => (
                   <BlockPreview

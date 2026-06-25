@@ -13,6 +13,7 @@ import {pathToFileURL} from 'node:url';
 
 const DEFAULTS = {
   packages: [],
+  integrations: [],
 };
 
 /**
@@ -46,6 +47,7 @@ export async function loadConfig(startDir = process.cwd()) {
       ...DEFAULTS,
       ...config,
       packages: normalizePackages(config.packages, path.dirname(configPath)),
+      integrations: normalizeIntegrations(config.integrations),
     };
   } catch {
     return {...DEFAULTS};
@@ -71,4 +73,14 @@ function normalizePackages(packages, configDir) {
     result.push(resolved);
   }
   return result;
+}
+
+/**
+ * Normalize integration specs to a string array. Integrations are package names
+ * or manifest paths consumed by `astryx upgrade --integration`.
+ */
+function normalizeIntegrations(integrations) {
+  if (!integrations) return [];
+  const arr = Array.isArray(integrations) ? integrations : [integrations];
+  return arr.filter(value => typeof value === 'string' && value !== '');
 }

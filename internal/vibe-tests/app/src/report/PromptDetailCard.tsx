@@ -1,13 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSCard} from '@astryxdesign/core/Card';
-import {XDSVStack} from '@astryxdesign/core/Stack';
-import {XDSText} from '@astryxdesign/core/Text';
-import {XDSHeading} from '@astryxdesign/core/Text';
-import {XDSStatusDot} from '@astryxdesign/core/StatusDot';
-import {XDSBadge} from '@astryxdesign/core/Badge';
-import {XDSButton} from '@astryxdesign/core/Button';
-import {XDSDivider} from '@astryxdesign/core/Divider';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
+import {Heading} from '@astryxdesign/core/Text';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Button} from '@astryxdesign/core/Button';
+import {Divider} from '@astryxdesign/core/Divider';
 import type {UniversalScore} from './types';
 import {
   ALL_DIMENSIONS,
@@ -20,14 +20,14 @@ import './report.css';
 function ScoreItem({label, score}: {label: string; score: number}) {
   return (
     <div className="report-promptDetail-scoreItem">
-      <XDSStatusDot
+      <StatusDot
         variant={scoreToStatusVariant(score)}
         label={`${label}: ${score}`}
         size="sm"
       />
-      <XDSText type="supporting">
+      <Text type="supporting">
         {label} {score}
-      </XDSText>
+      </Text>
     </div>
   );
 }
@@ -35,8 +35,8 @@ function ScoreItem({label, score}: {label: string; score: number}) {
 function ScoreSummary({label, score}: {label: string; score: UniversalScore}) {
   return (
     <div className="report-promptDetail-scoreBlock">
-      <XDSVStack gap={2}>
-        <XDSText type="label">{label}</XDSText>
+      <VStack gap={2}>
+        <Text type="label">{label}</Text>
         <div className="report-promptDetail-scoreGrid">
           {ALL_DIMENSIONS.filter(dim => score[dim] != null).map(dim => (
             <ScoreItem
@@ -47,7 +47,7 @@ function ScoreSummary({label, score}: {label: string; score: UniversalScore}) {
           ))}
           <ScoreItem label="Overall" score={computeOverall(score)} />
         </div>
-      </XDSVStack>
+      </VStack>
     </div>
   );
 }
@@ -62,14 +62,14 @@ function Findings({score}: {score: UniversalScore}) {
   );
 
   if (allFindings.length === 0) {
-    return <XDSText type="supporting">No issues found.</XDSText>;
+    return <Text type="supporting">No issues found.</Text>;
   }
 
   return (
     <div className="report-promptDetail-findingsGrid">
       {allFindings.map((f, i) => (
         <>
-          <XDSBadge
+          <Badge
             key={`badge-${i}`}
             variant={
               f.severity === 'critical'
@@ -80,9 +80,9 @@ function Findings({score}: {score: UniversalScore}) {
             }
             label={f.severity ?? 'info'}
           />
-          <XDSText key={`text-${i}`} type="body">
+          <Text key={`text-${i}`} type="body">
             <strong>{f.dimension}</strong> — {f.detail}
-          </XDSText>
+          </Text>
         </>
       ))}
     </div>
@@ -93,7 +93,7 @@ interface PromptDetailCardProps {
   promptId: string;
   /** The actual prompt text shown to the agent */
   promptText?: string;
-  xdsScore?: UniversalScore;
+  astryxScore?: UniversalScore;
   baselineScore?: UniversalScore;
   htmlScore?: UniversalScore;
   xdsTailwindScore?: UniversalScore;
@@ -102,14 +102,14 @@ interface PromptDetailCardProps {
   hasHtmlCode: boolean;
   hasXdsTailwindCode: boolean;
   onViewCode: (target: 'xds' | 'baseline' | 'html' | 'xds-tailwind') => void;
-  /** Relative preview URLs keyed by target (e.g. { xds: "previews/sd-1/xds.html" }) */
+  /** Relative preview URLs keyed by target (e.g. { astryx: "previews/sd-1/astryx.html" }) */
   previewUrls?: Record<string, string>;
 }
 
 export function PromptDetailCard({
   promptId,
   promptText,
-  xdsScore,
+  astryxScore,
   baselineScore,
   htmlScore,
   xdsTailwindScore,
@@ -121,7 +121,7 @@ export function PromptDetailCard({
   previewUrls,
 }: PromptDetailCardProps) {
   const hasAnyPreview =
-    previewUrls?.xds ||
+    previewUrls?.astryx ||
     previewUrls?.baseline ||
     previewUrls?.html ||
     previewUrls?.['xds-tailwind'];
@@ -130,7 +130,7 @@ export function PromptDetailCard({
 
   // Count how many score blocks we have
   const scoreCount = [
-    xdsScore,
+    astryxScore,
     baselineScore,
     htmlScore,
     xdsTailwindScore,
@@ -145,29 +145,29 @@ export function PromptDetailCard({
           : 'report-promptDetail-scoresRowSingle';
 
   return (
-    <XDSCard>
+    <Card>
       <div className="report-promptDetail-card">
-        <XDSVStack gap={3}>
+        <VStack gap={3}>
           {/* Header: prompt ID, prompt text, and buttons */}
           <div className="report-promptDetail-header">
-            <XDSHeading level={4}>{promptId}</XDSHeading>
+            <Heading level={4}>{promptId}</Heading>
             {promptText && (
-              <XDSText type="body" className="report-promptDetail-promptText">
+              <Text type="body" className="report-promptDetail-promptText">
                 {promptText}
-              </XDSText>
+              </Text>
             )}
             {(hasAnyPreview || hasAnyCode) && (
               <div className="report-promptDetail-buttonRow">
-                {previewUrls?.xds && (
-                  <XDSButton
+                {previewUrls?.astryx && (
+                  <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => window.open(previewUrls.xds, '_blank')}
-                    label="XDS Preview"
+                    onClick={() => window.open(previewUrls.astryx, '_blank')}
+                    label="Astryx Preview"
                   />
                 )}
                 {previewUrls?.baseline && (
-                  <XDSButton
+                  <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => window.open(previewUrls.baseline, '_blank')}
@@ -175,7 +175,7 @@ export function PromptDetailCard({
                   />
                 )}
                 {previewUrls?.html && (
-                  <XDSButton
+                  <Button
                     variant="secondary"
                     size="sm"
                     onClick={() => window.open(previewUrls.html, '_blank')}
@@ -183,7 +183,7 @@ export function PromptDetailCard({
                   />
                 )}
                 {previewUrls?.['xds-tailwind'] && (
-                  <XDSButton
+                  <Button
                     variant="secondary"
                     size="sm"
                     onClick={() =>
@@ -193,15 +193,15 @@ export function PromptDetailCard({
                   />
                 )}
                 {hasXdsCode && (
-                  <XDSButton
+                  <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onViewCode('xds')}
-                    label="XDS Code"
+                    onClick={() => onViewCode('astryx')}
+                    label="Astryx Code"
                   />
                 )}
                 {hasBaselineCode && (
-                  <XDSButton
+                  <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onViewCode('baseline')}
@@ -209,7 +209,7 @@ export function PromptDetailCard({
                   />
                 )}
                 {hasHtmlCode && (
-                  <XDSButton
+                  <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onViewCode('html')}
@@ -217,7 +217,7 @@ export function PromptDetailCard({
                   />
                 )}
                 {hasXdsTailwindCode && (
-                  <XDSButton
+                  <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => onViewCode('xds-tailwind')}
@@ -229,9 +229,9 @@ export function PromptDetailCard({
           </div>
 
           {/* Score summaries in constrained grid */}
-          {(xdsScore || baselineScore || htmlScore || xdsTailwindScore) && (
+          {(astryxScore || baselineScore || htmlScore || xdsTailwindScore) && (
             <div className={scoresClassName}>
-              {xdsScore && <ScoreSummary label="XDS" score={xdsScore} />}
+              {astryxScore && <ScoreSummary label="Astryx" score={astryxScore} />}
               {baselineScore && (
                 <ScoreSummary label="Baseline" score={baselineScore} />
               )}
@@ -243,24 +243,24 @@ export function PromptDetailCard({
           )}
 
           {/* Findings */}
-          {xdsScore && (
+          {astryxScore && (
             <>
-              <XDSDivider />
+              <Divider />
               <div className="report-promptDetail-section">
                 <div className="report-promptDetail-sectionLabel">
-                  <XDSText type="label">XDS Findings</XDSText>
+                  <Text type="label">Astryx Findings</Text>
                 </div>
-                <Findings score={xdsScore} />
+                <Findings score={astryxScore} />
               </div>
             </>
           )}
 
           {baselineScore && (
             <>
-              <XDSDivider />
+              <Divider />
               <div className="report-promptDetail-section">
                 <div className="report-promptDetail-sectionLabel">
-                  <XDSText type="label">Baseline Findings</XDSText>
+                  <Text type="label">Baseline Findings</Text>
                 </div>
                 <Findings score={baselineScore} />
               </div>
@@ -269,10 +269,10 @@ export function PromptDetailCard({
 
           {htmlScore && (
             <>
-              <XDSDivider />
+              <Divider />
               <div className="report-promptDetail-section">
                 <div className="report-promptDetail-sectionLabel">
-                  <XDSText type="label">HTML Findings</XDSText>
+                  <Text type="label">HTML Findings</Text>
                 </div>
                 <Findings score={htmlScore} />
               </div>
@@ -281,17 +281,17 @@ export function PromptDetailCard({
 
           {xdsTailwindScore && (
             <>
-              <XDSDivider />
+              <Divider />
               <div className="report-promptDetail-section">
                 <div className="report-promptDetail-sectionLabel">
-                  <XDSText type="label">XDS+TW Findings</XDSText>
+                  <Text type="label">XDS+TW Findings</Text>
                 </div>
                 <Findings score={xdsTailwindScore} />
               </div>
             </>
           )}
-        </XDSVStack>
+        </VStack>
       </div>
-    </XDSCard>
+    </Card>
   );
 }

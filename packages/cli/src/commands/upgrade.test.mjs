@@ -14,7 +14,7 @@ let stdoutCalls;
 let exitCode;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-upgrade-test-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-upgrade-test-'));
   originalCwd = process.cwd();
   process.chdir(tmpDir);
   logCalls = [];

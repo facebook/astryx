@@ -262,7 +262,7 @@ export const ManyColumns: Story = {
 
 // --- Business Funnel: blue main flow, gray exits ---
 
-// oklch approximations of XDS data tokens:
+// oklch approximations of Astryx data tokens:
 // blue categorical: #0171E3 ≈ oklch(0.55 0.19 255)
 // blue-3: #2694FE ≈ oklch(0.65 0.17 250)
 // gray-4: #5D6C7B ≈ oklch(0.50 0.02 240)

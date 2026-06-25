@@ -65,7 +65,7 @@ export const docs = {
 }
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-pkg-test-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-pkg-test-'));
   createFixture();
 });
 

@@ -2,7 +2,7 @@
   "name": "@astryxdesign/vega",
   "version": "0.0.14",
   "private": true,
-  "description": "XDS Vega wrapper — chart and data visualization components",
+  "description": "XDS Vega wrapper \u2014 chart and data visualization components",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
@@ -15,7 +15,7 @@
     "url": "https://github.com/facebook/astryx/issues"
   },
   "keywords": [
-    "xds",
+    "astryx",
     "vega",
     "charts",
     "data-visualization",

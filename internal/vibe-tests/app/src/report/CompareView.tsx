@@ -1,12 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSCard} from '@astryxdesign/core/Card';
-import {XDSVStack} from '@astryxdesign/core/Stack';
-import {XDSText} from '@astryxdesign/core/Text';
-import {XDSHeading} from '@astryxdesign/core/Text';
-import {XDSBadge} from '@astryxdesign/core/Badge';
-import {XDSTable} from '@astryxdesign/core/Table';
-import type {XDSTableColumn} from '@astryxdesign/core/Table';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
+import {Heading} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+import {Table} from '@astryxdesign/core/Table';
+import type {TableColumn} from '@astryxdesign/core/Table';
 import type {
   UniversalComparison,
   UniversalDimension,
@@ -29,7 +29,7 @@ interface CompareViewProps {
 interface DimRow extends Record<string, unknown> {
   id: string;
   dimension: string;
-  xdsScore: number;
+  astryxScore: number;
   baselineScore: number;
   htmlScore?: number;
   xdsTailwindScore?: number;
@@ -40,7 +40,7 @@ interface DimRow extends Record<string, unknown> {
 interface CatRow extends Record<string, unknown> {
   id: string;
   category: string;
-  xdsOverall: number;
+  astryxOverall: number;
   baselineOverall: number;
   htmlOverall?: number;
   xdsTailwindOverall?: number;
@@ -50,7 +50,7 @@ interface CatRow extends Record<string, unknown> {
 interface CostRow extends Record<string, unknown> {
   id: string;
   metric: string;
-  xds: string;
+  astryx: string;
   baseline: string;
   html?: string;
   xdsTailwind?: string;
@@ -58,14 +58,14 @@ interface CostRow extends Record<string, unknown> {
 }
 
 function costWinner(
-  xdsVal: number,
+  astryxVal: number,
   baseVal: number,
   lowerIsBetter: boolean,
   htmlVal?: number,
   twVal?: number,
 ): WinnerType {
   const entries: [WinnerType, number][] = [
-    ['xds', xdsVal],
+    ['astryx', astryxVal],
     ['baseline', baseVal],
   ];
   if (htmlVal != null) {
@@ -89,7 +89,7 @@ function winnerBadgeVariant(
   w: string,
 ): 'success' | 'error' | 'warning' | 'neutral' | 'info' {
   switch (w) {
-    case 'xds':
+    case 'astryx':
       return 'success';
     case 'baseline':
       return 'error';
@@ -104,8 +104,8 @@ function winnerBadgeVariant(
 
 function winnerLabel(w: string): string {
   switch (w) {
-    case 'xds':
-      return 'XDS';
+    case 'astryx':
+      return 'Astryx';
     case 'baseline':
       return 'Baseline';
     case 'html':
@@ -128,12 +128,12 @@ function deltaClassName(delta: number): string {
 }
 
 function CostComparisonSection({
-  xdsCost,
+  astryxCost,
   baselineCost,
   htmlCost,
   xdsTailwindCost,
 }: {
-  xdsCost: CostMetrics;
+  astryxCost: CostMetrics;
   baselineCost: CostMetrics;
   htmlCost?: CostMetrics;
   xdsTailwindCost?: CostMetrics;
@@ -141,7 +141,7 @@ function CostComparisonSection({
   const isThreeWay = !!htmlCost;
   const isFourWay = !!xdsTailwindCost;
   const hasDuration =
-    xdsCost.avgDurationMs > 0 || baselineCost.avgDurationMs > 0;
+    astryxCost.avgDurationMs > 0 || baselineCost.avgDurationMs > 0;
 
   const costData: CostRow[] = [
     ...(hasDuration
@@ -149,7 +149,7 @@ function CostComparisonSection({
           {
             id: 'duration',
             metric: 'Avg Duration',
-            xds: `${(xdsCost.avgDurationMs / 1000).toFixed(1)}s`,
+            astryx: `${(astryxCost.avgDurationMs / 1000).toFixed(1)}s`,
             baseline: `${(baselineCost.avgDurationMs / 1000).toFixed(1)}s`,
             ...(isThreeWay
               ? {html: `${((htmlCost?.avgDurationMs ?? 0) / 1000).toFixed(1)}s`}
@@ -160,7 +160,7 @@ function CostComparisonSection({
                 }
               : {}),
             winner: costWinner(
-              xdsCost.avgDurationMs,
+              astryxCost.avgDurationMs,
               baselineCost.avgDurationMs,
               true,
               htmlCost?.avgDurationMs,
@@ -172,7 +172,7 @@ function CostComparisonSection({
     {
       id: 'input-tokens',
       metric: 'Input Tokens',
-      xds: `~${xdsCost.estimatedInputTokens.toLocaleString()}`,
+      astryx: `~${astryxCost.estimatedInputTokens.toLocaleString()}`,
       baseline: `~${baselineCost.estimatedInputTokens.toLocaleString()}`,
       ...(isThreeWay
         ? {html: `~${htmlCost?.estimatedInputTokens.toLocaleString()}`}
@@ -183,7 +183,7 @@ function CostComparisonSection({
           }
         : {}),
       winner: costWinner(
-        xdsCost.estimatedInputTokens,
+        astryxCost.estimatedInputTokens,
         baselineCost.estimatedInputTokens,
         true,
         htmlCost?.estimatedInputTokens,
@@ -193,7 +193,7 @@ function CostComparisonSection({
     {
       id: 'output-tokens',
       metric: 'Output Tokens',
-      xds: `~${xdsCost.estimatedOutputTokens.toLocaleString()}`,
+      astryx: `~${astryxCost.estimatedOutputTokens.toLocaleString()}`,
       baseline: `~${baselineCost.estimatedOutputTokens.toLocaleString()}`,
       ...(isThreeWay
         ? {html: `~${htmlCost?.estimatedOutputTokens.toLocaleString()}`}
@@ -204,7 +204,7 @@ function CostComparisonSection({
           }
         : {}),
       winner: costWinner(
-        xdsCost.estimatedOutputTokens,
+        astryxCost.estimatedOutputTokens,
         baselineCost.estimatedOutputTokens,
         true,
         htmlCost?.estimatedOutputTokens,
@@ -214,7 +214,7 @@ function CostComparisonSection({
     {
       id: 'total-tokens',
       metric: 'Total Tokens',
-      xds: `~${(xdsCost.estimatedInputTokens + xdsCost.estimatedOutputTokens).toLocaleString()}`,
+      astryx: `~${(astryxCost.estimatedInputTokens + astryxCost.estimatedOutputTokens).toLocaleString()}`,
       baseline: `~${(baselineCost.estimatedInputTokens + baselineCost.estimatedOutputTokens).toLocaleString()}`,
       ...(isThreeWay
         ? {
@@ -227,7 +227,7 @@ function CostComparisonSection({
           }
         : {}),
       winner: costWinner(
-        xdsCost.estimatedInputTokens + xdsCost.estimatedOutputTokens,
+        astryxCost.estimatedInputTokens + astryxCost.estimatedOutputTokens,
         baselineCost.estimatedInputTokens + baselineCost.estimatedOutputTokens,
         true,
         htmlCost
@@ -242,14 +242,14 @@ function CostComparisonSection({
     {
       id: 'output-lines',
       metric: 'Avg Output Lines',
-      xds: String(xdsCost.avgOutputLines),
+      astryx: String(astryxCost.avgOutputLines),
       baseline: String(baselineCost.avgOutputLines),
       ...(isThreeWay ? {html: String(htmlCost?.avgOutputLines)} : {}),
       ...(isFourWay
         ? {xdsTailwind: String(xdsTailwindCost?.avgOutputLines)}
         : {}),
       winner: costWinner(
-        xdsCost.avgOutputLines,
+        astryxCost.avgOutputLines,
         baselineCost.avgOutputLines,
         true,
         htmlCost?.avgOutputLines,
@@ -259,7 +259,7 @@ function CostComparisonSection({
     {
       id: 'docs-read',
       metric: 'Avg Docs Read',
-      xds: String(xdsCost.avgDocsRead),
+      astryx: String(astryxCost.avgDocsRead),
       baseline: String(baselineCost.avgDocsRead),
       ...(isThreeWay ? {html: String(htmlCost?.avgDocsRead)} : {}),
       ...(isFourWay ? {xdsTailwind: String(xdsTailwindCost?.avgDocsRead)} : {}),
@@ -267,17 +267,17 @@ function CostComparisonSection({
     },
   ];
 
-  const costColumns: XDSTableColumn<CostRow>[] = [
+  const costColumns: TableColumn<CostRow>[] = [
     {key: 'metric', header: 'Metric'},
     {
-      key: 'xds',
-      header: 'XDS',
-      renderCell: row => <XDSText type="body">{row.xds}</XDSText>,
+      key: 'astryx',
+      header: 'Astryx',
+      renderCell: row => <Text type="body">{row.astryx}</Text>,
     },
     {
       key: 'baseline',
       header: 'Baseline',
-      renderCell: row => <XDSText type="body">{row.baseline}</XDSText>,
+      renderCell: row => <Text type="body">{row.baseline}</Text>,
     },
     ...(isThreeWay
       ? [
@@ -285,9 +285,9 @@ function CostComparisonSection({
             key: 'html' as const,
             header: 'HTML',
             renderCell: (row: CostRow) => (
-              <XDSText type="body">{row.html ?? '—'}</XDSText>
+              <Text type="body">{row.html ?? '—'}</Text>
             ),
-          } satisfies XDSTableColumn<CostRow>,
+          } satisfies TableColumn<CostRow>,
         ]
       : []),
     ...(isFourWay
@@ -296,16 +296,16 @@ function CostComparisonSection({
             key: 'xdsTailwind' as const,
             header: 'XDS+TW',
             renderCell: (row: CostRow) => (
-              <XDSText type="body">{row.xdsTailwind ?? '—'}</XDSText>
+              <Text type="body">{row.xdsTailwind ?? '—'}</Text>
             ),
-          } satisfies XDSTableColumn<CostRow>,
+          } satisfies TableColumn<CostRow>,
         ]
       : []),
     {
       key: 'winner',
       header: 'Lower Cost',
       renderCell: row => (
-        <XDSBadge
+        <Badge
           variant={winnerBadgeVariant(row.winner)}
           label={row.winner === 'tie' ? '—' : winnerLabel(row.winner)}
         />
@@ -314,7 +314,7 @@ function CostComparisonSection({
   ];
 
   return (
-    <XDSTable<CostRow>
+    <Table<CostRow>
       data={costData}
       columns={costColumns}
       idKey="id"
@@ -329,15 +329,15 @@ export function CompareView({comparison}: CompareViewProps) {
   const isThreeWay = !!html;
   const isFourWay = !!xdsTailwind;
 
-  let xdsWins = 0;
+  let astryxWins = 0;
   let baselineWins = 0;
   let htmlWins = 0;
   let xdsTailwindWins = 0;
   let ties = 0;
   for (const dim of ALL_DIMENSIONS) {
     const w = winners[dim];
-    if (w === 'xds') {
-      xdsWins++;
+    if (w === 'astryx') {
+      astryxWins++;
     } else if (w === 'baseline') {
       baselineWins++;
     } else if (w === 'html') {
@@ -350,32 +350,32 @@ export function CompareView({comparison}: CompareViewProps) {
   }
 
   const dimData: DimRow[] = ALL_DIMENSIONS.filter(
-    dim => xds.averages[dim] != null || baseline.averages[dim] != null,
+    dim => astryx.averages[dim] != null || baseline.averages[dim] != null,
   ).map(dim => ({
     id: dim,
     dimension: DIMENSION_LABELS[dim],
-    xdsScore: xds.averages[dim] ?? 0,
+    astryxScore: astryx.averages[dim] ?? 0,
     baselineScore: baseline.averages[dim] ?? 0,
     ...(isThreeWay ? {htmlScore: html?.averages[dim] ?? 0} : {}),
     ...(isFourWay ? {xdsTailwindScore: xdsTailwind?.averages[dim] ?? 0} : {}),
-    delta: (xds.averages[dim] ?? 0) - (baseline.averages[dim] ?? 0),
+    delta: (astryx.averages[dim] ?? 0) - (baseline.averages[dim] ?? 0),
     winner: winners[dim],
   }));
 
-  const dimColumns: XDSTableColumn<DimRow>[] = [
+  const dimColumns: TableColumn<DimRow>[] = [
     {key: 'dimension', header: 'Dimension'},
     {
-      key: 'xdsScore',
-      header: 'XDS',
+      key: 'astryxScore',
+      header: 'Astryx',
       renderCell: row => (
-        <XDSText type="body">{formatScore(row.xdsScore)}</XDSText>
+        <Text type="body">{formatScore(row.astryxScore)}</Text>
       ),
     },
     {
       key: 'baselineScore',
       header: 'Baseline',
       renderCell: row => (
-        <XDSText type="body">{formatScore(row.baselineScore)}</XDSText>
+        <Text type="body">{formatScore(row.baselineScore)}</Text>
       ),
     },
     ...(isThreeWay
@@ -384,11 +384,11 @@ export function CompareView({comparison}: CompareViewProps) {
             key: 'htmlScore' as const,
             header: 'HTML',
             renderCell: (row: DimRow) => (
-              <XDSText type="body">
+              <Text type="body">
                 {row.htmlScore != null ? formatScore(row.htmlScore) : '—'}
-              </XDSText>
+              </Text>
             ),
-          } satisfies XDSTableColumn<DimRow>,
+          } satisfies TableColumn<DimRow>,
         ]
       : []),
     ...(isFourWay
@@ -397,30 +397,30 @@ export function CompareView({comparison}: CompareViewProps) {
             key: 'xdsTailwindScore' as const,
             header: 'XDS+TW',
             renderCell: (row: DimRow) => (
-              <XDSText type="body">
+              <Text type="body">
                 {row.xdsTailwindScore != null
                   ? formatScore(row.xdsTailwindScore)
                   : '—'}
-              </XDSText>
+              </Text>
             ),
-          } satisfies XDSTableColumn<DimRow>,
+          } satisfies TableColumn<DimRow>,
         ]
       : []),
     {
       key: 'delta',
-      header: 'Delta (XDS−Base)',
+      header: 'Delta (Astryx−Base)',
       renderCell: row => (
-        <XDSText type="body" className={deltaClassName(row.delta)}>
+        <Text type="body" className={deltaClassName(row.delta)}>
           {row.delta > 0 ? '+' : ''}
           {formatScore(row.delta)}
-        </XDSText>
+        </Text>
       ),
     },
     {
       key: 'winner',
       header: 'Winner',
       renderCell: row => (
-        <XDSBadge
+        <Badge
           variant={winnerBadgeVariant(row.winner)}
           label={winnerLabel(row.winner)}
         />
@@ -429,14 +429,14 @@ export function CompareView({comparison}: CompareViewProps) {
   ];
 
   const allCategories = new Set([
-    ...Object.keys(xds.byCategory),
+    ...Object.keys(astryx.byCategory),
     ...Object.keys(baseline.byCategory),
     ...(html ? Object.keys(html.byCategory) : []),
     ...(xdsTailwind ? Object.keys(xdsTailwind.byCategory) : []),
   ]);
 
   const catData: CatRow[] = [...allCategories].map(cat => {
-    const xdsCat = xds.byCategory[cat] ?? {};
+    const astryxCat = astryx.byCategory[cat] ?? {};
     const baseCat = baseline.byCategory[cat] ?? {};
     const htmlInit = {};
     const htmlCat =
@@ -445,9 +445,9 @@ export function CompareView({comparison}: CompareViewProps) {
     const twCat =
       xdsTailwind?.byCategory[cat] ??
       (twInit as Record<UniversalDimension, number>);
-    const xdsAvg =
+    const astryxAvg =
       CODE_DIMENSIONS.reduce(
-        (s, d) => s + ((xdsCat[d as UniversalDimension] as number) ?? 0),
+        (s, d) => s + ((astryxCat[d as UniversalDimension] as number) ?? 0),
         0,
       ) / CODE_DIMENSIONS.length;
     const baseAvg =
@@ -470,28 +470,28 @@ export function CompareView({comparison}: CompareViewProps) {
     return {
       id: cat,
       category: cat,
-      xdsOverall: xdsAvg,
+      astryxOverall: astryxAvg,
       baselineOverall: baseAvg,
       ...(htmlAvg != null ? {htmlOverall: htmlAvg} : {}),
       ...(twAvg != null ? {xdsTailwindOverall: twAvg} : {}),
-      delta: xdsAvg - baseAvg,
+      delta: astryxAvg - baseAvg,
     };
   });
 
-  const catColumns: XDSTableColumn<CatRow>[] = [
+  const catColumns: TableColumn<CatRow>[] = [
     {key: 'category', header: 'Category'},
     {
-      key: 'xdsOverall',
-      header: 'XDS',
+      key: 'astryxOverall',
+      header: 'Astryx',
       renderCell: row => (
-        <XDSText type="body">{formatScore(row.xdsOverall)}</XDSText>
+        <Text type="body">{formatScore(row.astryxOverall)}</Text>
       ),
     },
     {
       key: 'baselineOverall',
       header: 'Baseline',
       renderCell: row => (
-        <XDSText type="body">{formatScore(row.baselineOverall)}</XDSText>
+        <Text type="body">{formatScore(row.baselineOverall)}</Text>
       ),
     },
     ...(isThreeWay
@@ -500,11 +500,11 @@ export function CompareView({comparison}: CompareViewProps) {
             key: 'htmlOverall' as const,
             header: 'HTML',
             renderCell: (row: CatRow) => (
-              <XDSText type="body">
+              <Text type="body">
                 {row.htmlOverall != null ? formatScore(row.htmlOverall) : '—'}
-              </XDSText>
+              </Text>
             ),
-          } satisfies XDSTableColumn<CatRow>,
+          } satisfies TableColumn<CatRow>,
         ]
       : []),
     ...(isFourWay
@@ -513,23 +513,23 @@ export function CompareView({comparison}: CompareViewProps) {
             key: 'xdsTailwindOverall' as const,
             header: 'XDS+TW',
             renderCell: (row: CatRow) => (
-              <XDSText type="body">
+              <Text type="body">
                 {row.xdsTailwindOverall != null
                   ? formatScore(row.xdsTailwindOverall)
                   : '—'}
-              </XDSText>
+              </Text>
             ),
-          } satisfies XDSTableColumn<CatRow>,
+          } satisfies TableColumn<CatRow>,
         ]
       : []),
     {
       key: 'delta',
-      header: 'Delta (XDS−Base)',
+      header: 'Delta (Astryx−Base)',
       renderCell: row => (
-        <XDSText type="body" className={deltaClassName(row.delta)}>
+        <Text type="body" className={deltaClassName(row.delta)}>
           {row.delta > 0 ? '+' : ''}
           {formatScore(row.delta)}
-        </XDSText>
+        </Text>
       ),
     },
   ];
@@ -544,99 +544,99 @@ export function CompareView({comparison}: CompareViewProps) {
         : 'report-compare-summaryGrid';
 
   return (
-    <XDSVStack gap={4}>
+    <VStack gap={4}>
       <div className={summaryGridClass}>
-        <XDSCard>
+        <Card>
           <div className="report-compare-winCard">
-            <XDSVStack gap={2}>
-              <XDSText type="label">XDS Wins</XDSText>
-              <XDSHeading level={2}>
-                <span className="report-color-positive">{xdsWins}</span>
-              </XDSHeading>
-            </XDSVStack>
+            <VStack gap={2}>
+              <Text type="label">Astryx Wins</Text>
+              <Heading level={2}>
+                <span className="report-color-positive">{astryxWins}</span>
+              </Heading>
+            </VStack>
           </div>
-        </XDSCard>
-        <XDSCard>
+        </Card>
+        <Card>
           <div className="report-compare-winCard">
-            <XDSVStack gap={2}>
-              <XDSText type="label">Baseline Wins</XDSText>
-              <XDSHeading level={2}>
+            <VStack gap={2}>
+              <Text type="label">Baseline Wins</Text>
+              <Heading level={2}>
                 <span className="report-color-negative">{baselineWins}</span>
-              </XDSHeading>
-            </XDSVStack>
+              </Heading>
+            </VStack>
           </div>
-        </XDSCard>
+        </Card>
         {isThreeWay && (
-          <XDSCard>
+          <Card>
             <div className="report-compare-winCard">
-              <XDSVStack gap={2}>
-                <XDSText type="label">HTML Wins</XDSText>
-                <XDSHeading level={2}>
+              <VStack gap={2}>
+                <Text type="label">HTML Wins</Text>
+                <Heading level={2}>
                   <span className="report-color-warning">{htmlWins}</span>
-                </XDSHeading>
-              </XDSVStack>
+                </Heading>
+              </VStack>
             </div>
-          </XDSCard>
+          </Card>
         )}
         {isFourWay && (
-          <XDSCard>
+          <Card>
             <div className="report-compare-winCard">
-              <XDSVStack gap={2}>
-                <XDSText type="label">XDS+TW Wins</XDSText>
-                <XDSHeading level={2}>
+              <VStack gap={2}>
+                <Text type="label">XDS+TW Wins</Text>
+                <Heading level={2}>
                   <span className="report-color-info">{xdsTailwindWins}</span>
-                </XDSHeading>
-              </XDSVStack>
+                </Heading>
+              </VStack>
             </div>
-          </XDSCard>
+          </Card>
         )}
-        <XDSCard>
+        <Card>
           <div className="report-compare-winCard">
-            <XDSVStack gap={2}>
-              <XDSText type="label">Ties</XDSText>
-              <XDSHeading level={2}>
+            <VStack gap={2}>
+              <Text type="label">Ties</Text>
+              <Heading level={2}>
                 <span className="report-color-neutral">{ties}</span>
-              </XDSHeading>
-            </XDSVStack>
+              </Heading>
+            </VStack>
           </div>
-        </XDSCard>
+        </Card>
       </div>
 
-      <XDSVStack gap={3}>
-        <XDSHeading level={3}>Dimension Comparison</XDSHeading>
-        <XDSTable<DimRow>
+      <VStack gap={3}>
+        <Heading level={3}>Dimension Comparison</Heading>
+        <Table<DimRow>
           data={dimData}
           columns={dimColumns}
           idKey="id"
           density="balanced"
           dividers="rows"
         />
-      </XDSVStack>
+      </VStack>
 
       {catData.length > 0 && (
-        <XDSVStack gap={3}>
-          <XDSHeading level={3}>Category Breakdown</XDSHeading>
-          <XDSTable<CatRow>
+        <VStack gap={3}>
+          <Heading level={3}>Category Breakdown</Heading>
+          <Table<CatRow>
             data={catData}
             columns={catColumns}
             idKey="id"
             density="balanced"
             dividers="rows"
           />
-        </XDSVStack>
+        </VStack>
       )}
 
-      {xds.cost && baseline.cost && (
-        <XDSVStack gap={3}>
-          <XDSHeading level={3}>Cost Comparison</XDSHeading>
+      {astryx.cost && baseline.cost && (
+        <VStack gap={3}>
+          <Heading level={3}>Cost Comparison</Heading>
           <CostComparisonSection
-            xdsCost={xds.cost}
+            astryxCost={astryx.cost}
             baselineCost={baseline.cost}
             htmlCost={html?.cost}
             xdsTailwindCost={xdsTailwind?.cost}
           />
-        </XDSVStack>
+        </VStack>
       )}
-    </XDSVStack>
+    </VStack>
   );
 }

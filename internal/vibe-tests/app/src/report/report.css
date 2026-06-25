@@ -4,7 +4,7 @@
  * Report-specific styles.
  *
  * Plain CSS replacement for StyleX styles previously used in report components.
- * Uses XDS CSS custom properties (defined in astryx.css) directly.
+ * Uses Astryx CSS custom properties (defined in astryx.css) directly.
  */
 
 /* === CodeModal === */

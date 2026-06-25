@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "displayName": "Chocolate Theme",
   "private": false,
-  "description": "Warm chocolate theme for Astryx — rich brown palette with Fraunces headings, Albert Sans body, and Lucide icons",
+  "description": "Warm chocolate theme for Astryx \u2014 rich brown palette with Fraunces headings, Albert Sans body, and Lucide icons",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
@@ -16,7 +16,7 @@
     "url": "https://github.com/facebook/astryx/issues"
   },
   "keywords": [
-    "xds",
+    "astryx",
     "theme",
     "design-system",
     "lucide",

@@ -100,7 +100,15 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
 
   if (!interactive) {
     if (!templateName) {
-      humanLog(`✓ Available templates: ${templates.join(', ')}. Use ${run} astryx template <name> [path].`);
+      // Point agents at the build workflow rather than dumping page-template
+      // names — `build` surfaces pages AND blocks AND components for an idea,
+      // and `build` with no args is the full how-to-build playbook.
+      humanLog('✓ To build UI, use these commands:');
+      humanLog('');
+      humanLog(`    ${run} astryx build "<what you're building>"   build a page — kit: closest template + blocks + components`);
+      humanLog(`    ${run} astryx build                            the how-to-build workflow (read this first)`);
+      humanLog(`    ${run} astryx search <query>                   find anything — components, docs, templates, blocks`);
+      humanLog('');
       return;
     }
 

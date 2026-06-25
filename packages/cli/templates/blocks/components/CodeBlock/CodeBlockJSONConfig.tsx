@@ -8,7 +8,7 @@ const code = `{
   "name": "@astryxdesign/core",
   "version": "0.0.5",
   "dependencies": {
-    "@stylexjs/stylex": "^0.17.5",
+    "@astryxdesign/theme-neutral": "^0.1.0",
     "react": "^19.0.0"
   },
   "scripts": {

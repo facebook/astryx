@@ -169,7 +169,7 @@ const meta: Meta<typeof Layout> = {
     docs: {
       description: {
         component: `
-The XDS Layout System provides a structured way to build page and component layouts.
+The Astryx Layout System provides a structured way to build page and component layouts.
 
 **Components:**
 - \`Card\` - Card container with shadow

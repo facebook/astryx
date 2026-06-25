@@ -2,23 +2,20 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
 import {OverflowList} from '@astryxdesign/core/OverflowList';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Card} from '@astryxdesign/core/Card';
 
-const styles = stylex.create({
-  resizable: {
-    resize: 'horizontal',
-    overflow: 'hidden',
-    minWidth: 80,
-    width: 300,
-  },
-});
-
 export default function OverflowListOverflowBadges() {
   return (
-    <Card padding={2} xstyle={styles.resizable}>
+    <Card
+      padding={2}
+      style={{
+        resize: 'horizontal',
+        overflow: 'hidden',
+        minWidth: 80,
+        width: 300,
+      }}>
       <OverflowList
         gap={1}
         overflowRenderer={overflowItems => (

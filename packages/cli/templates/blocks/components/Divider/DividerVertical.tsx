@@ -2,19 +2,17 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
+import type {CSSProperties} from 'react';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Card} from '@astryxdesign/core/Card';
 import {Section} from '@astryxdesign/core/Section';
 import {HStack, VStack, StackItem} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
-const styles = stylex.create({
-  dividerFill: {
-    alignSelf: 'stretch',
-    height: 'auto',
-  },
-});
+const dividerFill: CSSProperties = {
+  alignSelf: 'stretch',
+  height: 'auto',
+};
 
 export default function DividerVertical() {
   return (
@@ -30,7 +28,7 @@ export default function DividerVertical() {
               </Text>
             </VStack>
           </StackItem>
-          <Divider orientation="vertical" xstyle={styles.dividerFill} />
+          <Divider orientation="vertical" style={dividerFill} />
           <StackItem size="fill">
             <VStack gap={1}>
               <Text type="label">Users</Text>
@@ -40,7 +38,7 @@ export default function DividerVertical() {
               </Text>
             </VStack>
           </StackItem>
-          <Divider orientation="vertical" xstyle={styles.dividerFill} />
+          <Divider orientation="vertical" style={dividerFill} />
           <StackItem size="fill">
             <VStack gap={1}>
               <Text type="label">Conversion</Text>

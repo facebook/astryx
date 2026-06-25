@@ -32,7 +32,9 @@ import {
 
 const styles = stylex.create({
   siteFooter: {
-    paddingTop: 'calc(var(--spacing-12) * 2)',
+    // Match the section rhythm above (responsive); fall back off the home page.
+    paddingTop:
+      'var(--astryx-marketing-section-gap, calc(var(--spacing-12) * 2))',
   },
   astryxLogo: {
     height: 18,

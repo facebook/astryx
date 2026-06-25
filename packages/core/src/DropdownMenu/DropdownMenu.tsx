@@ -37,7 +37,7 @@ import {Button, type ButtonProps} from '../Button';
 import {Icon} from '../Icon';
 import type {IconType} from '../Icon';
 
-import {renderXDSDropdownItems} from './renderXDSDropdownItems';
+import {renderDropdownItems} from './renderDropdownItems';
 import {
   DropdownMenuContext,
   type DropdownMenuContextValue,
@@ -366,7 +366,7 @@ export function DropdownMenu({
 
   // Resolve menu content: data-driven items become components
   const menuContent =
-    props.items !== undefined ? renderXDSDropdownItems(items) : children;
+    props.items !== undefined ? renderDropdownItems(items) : children;
 
   return (
     <>

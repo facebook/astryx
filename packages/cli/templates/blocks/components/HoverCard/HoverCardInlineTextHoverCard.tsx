@@ -2,21 +2,19 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
+import type {CSSProperties} from 'react';
 import {HoverCard} from '@astryxdesign/core/HoverCard';
 import {VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
-const styles = stylex.create({
-  content: {maxWidth: 200},
-});
+const content: CSSProperties = {maxWidth: 200};
 
 export default function HoverCardInlineTextHoverCard() {
   return (
     <Text type="body">The component uses a{' '}
       <HoverCard
         content={
-          <VStack gap={1} xstyle={styles.content}>
+          <VStack gap={1} style={content}>
             <Text type="label">Focus trap</Text>
             <Text type="body" color="secondary">
               A pattern that keeps keyboard focus inside a container, preventing
@@ -30,7 +28,7 @@ export default function HoverCardInlineTextHoverCard() {
       </HoverCard>{' '}to keep keyboard navigation inside the{' '}
       <HoverCard
         content={
-          <VStack gap={1} xstyle={styles.content}>
+          <VStack gap={1} style={content}>
             <Text type="label">Modal dialog</Text>
             <Text type="body" color="secondary">
               An overlay that blocks interaction with the rest of the page until

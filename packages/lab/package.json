@@ -2,7 +2,7 @@
   "name": "@astryxdesign/lab",
   "version": "0.1.0",
   "private": true,
-  "description": "Experimental XDS components — not published, available in storybook and sandbox for testing",
+  "description": "Experimental XDS components \u2014 not published, available in storybook and sandbox for testing",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
@@ -15,7 +15,7 @@
     "url": "https://github.com/facebook/astryx/issues"
   },
   "keywords": [
-    "xds",
+    "astryx",
     "lab",
     "experimental",
     "design-system"

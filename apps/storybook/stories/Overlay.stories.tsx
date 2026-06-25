@@ -251,7 +251,7 @@ export const VideoThumbnail: Story = {
             <Text weight="bold" size="lg">
               ▶
             </Text>
-            <Text weight="bold">Introduction to XDS</Text>
+            <Text weight="bold">Introduction to Astryx</Text>
           </VStack>
         }>
         <AspectRatio ratio={16 / 9}>

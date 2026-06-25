@@ -2,7 +2,7 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
+import type {CSSProperties} from 'react';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
@@ -10,18 +10,15 @@ import {ClickableCard} from '@astryxdesign/core/ClickableCard';
 import {HStack, VStack, StackItem} from '@astryxdesign/core/Stack';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Grid} from '@astryxdesign/core/Grid';
-import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
-const styles = stylex.create({
-  previewCard: {
-    borderRadius: radiusVars['--radius-element'],
-  },
-  // Negative margin offsets each card's 8px padding so the grid content stays
-  // visually aligned while giving every card a padded hover/click target.
-  cardGrid: {
-    margin: -8,
-  },
-});
+const previewCard: CSSProperties = {
+  borderRadius: 'var(--radius-element)',
+};
+// Negative margin offsets each card's 8px padding so the grid content stays
+// visually aligned while giving every card a padded hover/click target.
+const cardGrid: CSSProperties = {
+  margin: -8,
+};
 
 // ---------------------------------------------------------------------------
 // Data
@@ -241,7 +238,7 @@ export default function DocumentationOverviewPage() {
                 <Grid
                   columns={{minWidth: 260}}
                   gap={2}
-                  xstyle={styles.cardGrid}>
+                  style={cardGrid}>
                   {category.items.map(item => (
                     <ClickableCard
                       key={item.key}
@@ -254,7 +251,7 @@ export default function DocumentationOverviewPage() {
                           variant="muted"
                           padding={0}
                           minHeight={160}
-                          xstyle={styles.previewCard}
+                          style={previewCard}
                         />
                         <VStack gap={0.5}>
                           <Text type="body" weight="bold">

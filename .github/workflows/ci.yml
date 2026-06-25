@@ -277,8 +277,14 @@ jobs:
   # Uses a per-PR concurrency group so multiple PRs deploy in parallel.
   # Instead of peaceiris/actions-gh-pages (which can conflict with main's
   # force-push), we do a manual git push with retry-on-conflict.
+  # Fork PRs run with a read-only GITHUB_TOKEN, so the `git push origin gh-pages`
+  # below would 403. Skip on forks (neutral, not failing). A maintainer can deploy
+  # a trusted fork PR's preview manually via the Re-deploy Preview workflow.
   deploy-preview:
-    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
+    if: >-
+      github.event_name == 'pull_request' &&
+      needs.check-scope.outputs.docsite_only != 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     needs: [build, check-scope]
     runs-on: ubuntu-latest
     permissions:
@@ -344,8 +350,14 @@ jobs:
 
   # Post PR comment with preview links + analysis as soon as build finishes
   # Does NOT wait for test or a11y — those update the comment later
+  # Posting a comment needs `pull-requests: write`, which fork PRs don't get
+  # (their GITHUB_TOKEN is read-only). Skip on forks so the check stays neutral
+  # instead of failing. The analysis artifact is still uploaded by `build`.
   pr-comment:
-    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
+    if: >-
+      github.event_name == 'pull_request' &&
+      needs.check-scope.outputs.docsite_only != 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     needs: [build, check-scope]
     runs-on: ubuntu-latest
     permissions:
@@ -467,10 +479,15 @@ jobs:
           path: a11y-report.json
           retention-days: 1
 
-  # Update PR comment with a11y results once they're ready
+  # Update PR comment with a11y results once they're ready.
+  # Skipped on fork PRs for the same read-only-token reason as pr-comment.
   pr-comment-update:
     needs: [build, check-components, pr-a11y]
-    if: always() && github.event_name == 'pull_request' && needs.build.result == 'success' && needs.check-components.outputs.has_components == 'true'
+    if: >-
+      always() && github.event_name == 'pull_request' &&
+      needs.build.result == 'success' &&
+      needs.check-components.outputs.has_components == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read

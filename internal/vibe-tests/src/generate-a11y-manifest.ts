@@ -580,16 +580,16 @@ async function main(): Promise<void> {
 
   // Generate XDS manifest
   console.log('📦 Parsing XDS component README files...');
-  const xdsManifest = generateXDSManifest();
-  const xdsJsonPath = path.join(MANIFESTS_DIR, 'xds.json');
-  const xdsMdPath = path.join(MANIFESTS_DIR, 'xds.md');
-  fs.writeFileSync(xdsJsonPath, JSON.stringify(xdsManifest, null, 2));
-  fs.writeFileSync(xdsMdPath, formatManifestAsMarkdown(xdsManifest, 'XDS'));
+  const astryxManifest = generateXDSManifest();
+  const astryxJsonPath = path.join(MANIFESTS_DIR, 'astryx.json');
+  const astryxMdPath = path.join(MANIFESTS_DIR, 'astryx.md');
+  fs.writeFileSync(astryxJsonPath, JSON.stringify(astryxManifest, null, 2));
+  fs.writeFileSync(astryxMdPath, formatManifestAsMarkdown(astryxManifest, 'Astryx'));
   console.log(
-    `  ✓ Found ${Object.keys(xdsManifest.components).length} components with a11y info`,
+    `  ✓ Found ${Object.keys(astryxManifest.components).length} components with a11y info`,
   );
-  console.log(`  ✓ Written to ${xdsJsonPath}`);
-  console.log(`  ✓ Markdown: ${xdsMdPath}`);
+  console.log(`  ✓ Written to ${astryxJsonPath}`);
+  console.log(`  ✓ Markdown: ${astryxMdPath}`);
 
   // Generate baseline manifest
   console.log('\n📦 Generating baseline (Radix/shadcn) manifest...');

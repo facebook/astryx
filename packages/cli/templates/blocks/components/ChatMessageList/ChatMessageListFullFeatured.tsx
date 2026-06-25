@@ -15,18 +15,10 @@ import {Markdown} from '@astryxdesign/core/Markdown';
 import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 import {Timestamp} from '@astryxdesign/core/Timestamp';
 import {Token} from '@astryxdesign/core/Token';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  container: {
-    maxWidth: 500,
-    justifyContent: 'center',
-  },
-});
 
 export default function ChatMessageListFullFeatured() {
   return (
-    <VStack xstyle={styles.container}>
+    <VStack style={{maxWidth: 500, justifyContent: 'center'}}>
       <ChatMessageList>
         <ChatSystemMessage variant="divider">Today</ChatSystemMessage>
 

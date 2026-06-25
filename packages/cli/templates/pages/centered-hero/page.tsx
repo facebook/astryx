@@ -2,7 +2,7 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
+import type {CSSProperties} from 'react';
 import {
   VStack,
   HStack,
@@ -19,18 +19,16 @@ import {ArrowRightIcon} from '@heroicons/react/20/solid';
 const IMAGE_URL =
   'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png';
 
-const styles = stylex.create({
-  heroImage: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  heroFrame: {
-    maxWidth: 1200,
-    marginInline: 'auto',
-    borderRadius: 'var(--radius-page)',
-  },
-});
+const heroImage: CSSProperties = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+};
+const heroFrame: CSSProperties = {
+  maxWidth: 1200,
+  marginInline: 'auto',
+  borderRadius: 'var(--radius-page)',
+};
 
 export default function CenteredHero() {
   return (
@@ -68,9 +66,9 @@ export default function CenteredHero() {
               </HStack>
             </VStack>
             <Section variant="transparent" padding={0}>
-              <AspectRatio ratio={16 / 9} xstyle={styles.heroFrame}>
+              <AspectRatio ratio={16 / 9} style={heroFrame}>
                 <img
-                  {...stylex.props(styles.heroImage)}
+                  style={heroImage}
                   src={IMAGE_URL}
                   alt="A bright, colorful lifestyle scene"
                 />

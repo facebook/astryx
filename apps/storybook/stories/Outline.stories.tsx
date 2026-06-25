@@ -48,7 +48,7 @@ const outlineItems: OutlineItem[] = [
 const markdownContent = [
   '## Overview',
   '',
-  'XDS gives teams a consistent foundation for internal product surfaces.',
+  'Astryx gives teams a consistent foundation for internal product surfaces.',
   '',
   '## Installation',
   '',
@@ -123,7 +123,7 @@ export const WithDocument: Story = {
         <section>
           <h2 id="overview">Overview</h2>
           <p>
-            XDS components provide consistent interaction, styling, and theme
+            Astryx components provide consistent interaction, styling, and theme
             behavior for internal tools.
           </p>
         </section>
@@ -147,8 +147,8 @@ export const WithDocument: Story = {
           </p>
           <h3 id="component-overrides">Component overrides</h3>
           <p>
-            Component overrides target the stable XDS selector surface emitted
-            by each component: xds-* classes plus data-* prop reflections.
+            Component overrides target the stable Astryx selector surface emitted
+            by each component: astryx-* classes plus data-* prop reflections.
           </p>
         </section>
         <section>

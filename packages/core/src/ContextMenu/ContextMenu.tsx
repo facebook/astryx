@@ -36,7 +36,7 @@ import React, {
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useLayer} from '../Layer/useLayer';
-import {renderXDSDropdownItems} from '../DropdownMenu/renderXDSDropdownItems';
+import {renderDropdownItems} from '../DropdownMenu/renderDropdownItems';
 import {
   DropdownMenuContext,
   type DropdownMenuContextValue,
@@ -278,7 +278,7 @@ export function ContextMenu({
   );
 
   const resolvedMenuContent =
-    props.items !== undefined ? renderXDSDropdownItems(items) : menuContent;
+    props.items !== undefined ? renderDropdownItems(items) : menuContent;
 
   return (
     <>

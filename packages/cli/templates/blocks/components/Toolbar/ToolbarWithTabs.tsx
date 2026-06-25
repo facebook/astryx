@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useState} from 'react';
+import {useState, type CSSProperties} from 'react';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
@@ -10,21 +10,18 @@ import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {Card} from '@astryxdesign/core/Card';
 import {Section} from '@astryxdesign/core/Section';
 import {PlusIcon} from '@heroicons/react/24/outline';
-import * as stylex from '@stylexjs/stylex';
 
-const styles = stylex.create({
-  card: {
-    width: '100%',
-    maxWidth: 500,
-    height: '100%',
-    marginTop: 200,
-  },
-});
+const card: CSSProperties = {
+  width: '100%',
+  maxWidth: 500,
+  height: '100%',
+  marginTop: 200,
+};
 
 export default function ToolbarWithTabs() {
   const [tab, setTab] = useState('overview');
   return (
-    <Card xstyle={styles.card}>
+    <Card style={card}>
       <Toolbar
         label="Section navigation"
         dividers={['bottom']}

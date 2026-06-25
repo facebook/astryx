@@ -4,7 +4,7 @@
  * Demonstrates the auto-scroll behavior difference between streaming text
  * and discrete block additions (tool calls, custom elements).
  *
- * Issue: https://github.com/facebookexperimental/xds/issues/2282
+ * Issue: https://github.com/facebook/astryx/issues/2282
  *
  * The auto-scroll system (useChatStreamScroll + useChatNewMessages)
  * relies on ResizeObserver detecting content height changes. This story
@@ -114,7 +114,7 @@ const TOOL_CALLS_SEQUENCE: ChatToolCallItem[][] = [
       target: 'packages/core/src/Chat/useChatStreamScroll.ts',
       status: 'complete',
       duration: '42ms',
-      node: 'xds',
+      node: 'astryx',
     },
   ],
   [
@@ -124,7 +124,7 @@ const TOOL_CALLS_SEQUENCE: ChatToolCallItem[][] = [
       target: 'yarn test --filter Chat',
       status: 'complete',
       duration: '4.2s',
-      node: 'xds',
+      node: 'astryx',
     },
   ],
   [
@@ -134,7 +134,7 @@ const TOOL_CALLS_SEQUENCE: ChatToolCallItem[][] = [
       target: 'ChatLayout.tsx',
       status: 'complete',
       duration: '95ms',
-      node: 'xds',
+      node: 'astryx',
       additions: 12,
       deletions: 3,
       resultDetail: (
@@ -152,7 +152,7 @@ const TOOL_CALLS_SEQUENCE: ChatToolCallItem[][] = [
       target: 'yarn test',
       status: 'complete',
       duration: '8.1s',
-      node: 'xds',
+      node: 'astryx',
       resultDetail: (
         <CodeBlock
           code={`$ yarn test\n✓ 142 tests passed (18 suites)\n\nTest Suites: 18 passed, 18 total\nTests:       142 passed, 142 total\nTime:        8.1s`}
@@ -168,7 +168,7 @@ const TOOL_CALLS_SEQUENCE: ChatToolCallItem[][] = [
       target: 'packages/core/src/Chat/useChatNewMessages.ts',
       status: 'complete',
       duration: '38ms',
-      node: 'xds',
+      node: 'astryx',
     },
   ],
 ];
@@ -471,7 +471,7 @@ export const RapidToolCalls: StoryObj = {
                 name: toolNames[idx] ?? 'read',
                 target: targets[idx],
                 status: 'running',
-                node: 'xds',
+                node: 'astryx',
               },
             ],
           },
@@ -491,7 +491,7 @@ export const RapidToolCalls: StoryObj = {
                         target: targets[idx],
                         status: 'complete' as const,
                         duration: `${(Math.random() * 3 + 0.1).toFixed(1)}s`,
-                        node: 'xds',
+                        node: 'astryx',
                       },
                     ],
                   }
@@ -633,7 +633,7 @@ export const MixedStreamAndTools: StoryObj = {
                     name: 'edit',
                     target: 'Button.tsx',
                     status: 'running',
-                    node: 'xds',
+                    node: 'astryx',
                   },
                 ],
               },
@@ -652,7 +652,7 @@ export const MixedStreamAndTools: StoryObj = {
                             target: 'Button.tsx',
                             status: 'complete',
                             duration: '92ms',
-                            node: 'xds',
+                            node: 'astryx',
                             additions: 4,
                             deletions: 2,
                             resultDetail: (
@@ -683,7 +683,7 @@ export const MixedStreamAndTools: StoryObj = {
                         name: 'bash',
                         target: 'yarn test --filter Button',
                         status: 'running',
-                        node: 'xds',
+                        node: 'astryx',
                       },
                     ],
                   },
@@ -702,7 +702,7 @@ export const MixedStreamAndTools: StoryObj = {
                                 target: 'yarn test --filter Button',
                                 status: 'complete',
                                 duration: '3.8s',
-                                node: 'xds',
+                                node: 'astryx',
                                 resultDetail: (
                                   <CodeBlock
                                     code={`✓ 24 tests passed\n\nTest Suites: 3 passed, 3 total\nTests:       24 passed, 24 total`}

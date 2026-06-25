@@ -2,8 +2,7 @@
 
 'use client';
 
-import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useState, type CSSProperties} from 'react';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Center} from '@astryxdesign/core/Center';
 import {Section} from '@astryxdesign/core/Section';
@@ -18,7 +17,6 @@ import {Link} from '@astryxdesign/core/Link';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Card} from '@astryxdesign/core/Card';
 import {Selector} from '@astryxdesign/core/Selector';
-import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
 
 const ILLUSTRATION_URL =
   'https://lookaside.facebook.com/assets/astryx/light-working-vertical-2.png';
@@ -51,18 +49,16 @@ const CONTACT_COLUMNS = [
 // AspectRatio has no objectFit/radius prop and there's no Image primitive
 // (#2582), so the cover photo is styled directly. overflow:hidden masks the
 // cover crop to the rounded corners.
-const styles = stylex.create({
-  page: {
-    minHeight: '100%',
-  },
-  illustrationImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    borderRadius: radiusVars['--radius-container'],
-    overflow: 'hidden',
-  },
-});
+const pageStyle: CSSProperties = {
+  minHeight: '100%',
+};
+const illustrationImg: CSSProperties = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  borderRadius: 'var(--radius-container)',
+  overflow: 'hidden',
+};
 
 /**
  * Form (Two-column) — marketing contact form template.
@@ -95,7 +91,7 @@ export default function FormTwoColumnPage() {
   const handleSubmit = () => setSubmitted(true);
 
   return (
-    <Center xstyle={styles.page}>
+    <Center style={pageStyle}>
       <Section maxWidth={1100} width="100%" padding={10} variant="transparent">
         <VStack gap={10}>
           {/* Two-column; stacks to one column below ~520px. */}
@@ -114,7 +110,7 @@ export default function FormTwoColumnPage() {
                 <img
                   src={ILLUSTRATION_URL}
                   alt="Two people working at a desk"
-                  {...stylex.props(styles.illustrationImg)}
+                  style={illustrationImg}
                 />
               </AspectRatio>
             </VStack>

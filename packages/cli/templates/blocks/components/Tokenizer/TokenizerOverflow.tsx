@@ -3,15 +3,10 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {Tokenizer} from '@astryxdesign/core/Tokenizer';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
-
-const styles = stylex.create({
-  fixed: {width: 400, maxWidth: 400},
-});
 
 const users: SearchableItem[] = [
   {id: '1', label: 'Alice Johnson'},
@@ -45,7 +40,7 @@ export default function TokenizerOverflow() {
           value={inlineValue}
           onChange={items => setInlineValue(items)}
           tokenOverflowBehavior="unfocusedInline"
-          xstyle={styles.fixed}
+          style={{width: 400, maxWidth: 400}}
         />
       </Stack>
       <Stack direction="vertical" gap={1}>
@@ -59,7 +54,7 @@ export default function TokenizerOverflow() {
           value={layerValue}
           onChange={items => setLayerValue(items)}
           tokenOverflowBehavior="unfocusedLayer"
-          xstyle={styles.fixed}
+          style={{width: 400, maxWidth: 400}}
         />
       </Stack>
     </Stack>

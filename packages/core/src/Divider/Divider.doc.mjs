@@ -108,7 +108,7 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'visual separator w/ optional label, using XDS design tokens',
+  description: 'visual separator w/ optional label, using Astryx design tokens',
   usage: {
     description: 'A visual separator that divides content into distinct sections. Use to create clear boundaries between groups of related content, or to demarcate interactive regions within a layout.',
     bestPractices: [

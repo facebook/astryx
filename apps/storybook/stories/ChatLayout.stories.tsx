@@ -142,7 +142,7 @@ const SEED_MESSAGES: Message[] = [
         target: 'Button.tsx',
         status: 'complete',
         duration: '45ms',
-        node: 'xds',
+        node: 'astryx',
       },
       {
         key: '2',
@@ -150,7 +150,7 @@ const SEED_MESSAGES: Message[] = [
         target: 'Button.tsx',
         status: 'complete',
         duration: '120ms',
-        node: 'xds',
+        node: 'astryx',
         additions: 8,
         deletions: 2,
         resultDetail: (
@@ -166,7 +166,7 @@ const SEED_MESSAGES: Message[] = [
         target: 'yarn test',
         status: 'complete',
         duration: '6.1s',
-        node: 'xds',
+        node: 'astryx',
         resultDetail: (
           <CodeBlock
             code={`$ yarn test\n✓ 24 tests passed (3 suites)`}
@@ -369,7 +369,7 @@ export const FullAIChat: StoryObj = {
                 target: 'Card.tsx',
                 status: 'complete',
                 duration: '35ms',
-                node: 'xds',
+                node: 'astryx',
               },
               {
                 key: 'e1',
@@ -377,7 +377,7 @@ export const FullAIChat: StoryObj = {
                 target: 'Card.tsx',
                 status: 'complete',
                 duration: '90ms',
-                node: 'xds',
+                node: 'astryx',
                 additions: 1,
                 deletions: 1,
               },
@@ -387,7 +387,7 @@ export const FullAIChat: StoryObj = {
                 target: 'yarn test --filter Card',
                 status: 'complete',
                 duration: '3.2s',
-                node: 'xds',
+                node: 'astryx',
               },
             ],
           );

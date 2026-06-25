@@ -705,7 +705,7 @@ You are writing React components using ONLY:
 
 ### Rules
 
-1. Do NOT import any component library (no shadcn, no MUI, no XDS, no Radix)
+1. Do NOT import any component library (no shadcn, no MUI, no Astryx, no Radix)
 2. Do NOT use Tailwind CSS or any CSS framework
 3. Do NOT use CSS modules, styled-components, or CSS-in-JS libraries
 4. Use inline \`style={{}}\` for ALL styling
@@ -755,46 +755,12 @@ function installAgentsDocs(): void {
   }
 }
 
-/**
- * Install AGENTS.md for the Astryx (unprefixed) target.
- * Same as XDS docs but with bare component names (Button not XDSButton).
- * This validates that agents perform equally well with unprefixed names.
- */
-function installAstryxDocs(): void {
-  // First generate the standard XDS AGENTS.md
-  installAgentsDocs();
-
-  const vibeTestsDir = path.join(__dirname, '..');
-  const agentsMdPath = path.join(vibeTestsDir, 'AGENTS.md');
-
-  if (!fs.existsSync(agentsMdPath)) return;
-
-  // Post-process: strip XDS prefix from component/hook names
-  let content = fs.readFileSync(agentsMdPath, 'utf-8');
-
-  // XDSButton -> Button, XDSCard -> Card, etc. (PascalCase after XDS)
-  content = content.replace(/\bXDS([A-Z][a-zA-Z]*)/g, '$1');
-  // useXDSTheme -> useTheme, useXDSToast -> useToast
-  content = content.replace(/\buseXDS([A-Z][a-zA-Z]*)/g, 'use$1');
-  // Update the header/branding
-  content = content.replace(/\bXDS\b/g, 'Astryx');
-  content = content.replace(/`xds /g, '`astryx ');
-  content = content.replace(/npx astryx /g, 'npx astryx ');
-  // CSS custom properties: docs should reference the new --astryx-* names
-  // (the library still handles --xds-* via inverted fallback, but we don't
-  // recommend the legacy names in forward-facing docs)
-  content = content.replace(/--xds-/g, '--astryx-');
-
-  fs.writeFileSync(agentsMdPath, content);
-  console.log('✓ Post-processed AGENTS.md for Astryx (bare component names)');
-}
-
 interface InteractiveConfig {
   sample?: number;
   holdout?: boolean;
   persona: 'naive' | 'experienced' | 'adversarial';
   degradation?: boolean; // Enable degradation curve testing
-  target: 'xds' | 'baseline' | 'html' | 'astryx'; // Target design system
+  target: 'astryx' | 'baseline' | 'html'; // Target design system
 }
 
 interface AgentTask {
@@ -805,7 +771,7 @@ interface AgentTask {
   followUps?: string[]; // Follow-up prompts for iterative degradation testing
   persona: string;
   degradation?: boolean; // Run multi-turn degradation test
-  target: string; // Target design system (xds, baseline)
+  target: string; // Target design system (astryx, baseline)
 }
 
 /**
@@ -824,11 +790,11 @@ Reference Tailwind, baseline, Bootstrap patterns in your request.`,
   // Always use AGENTS.md - Claude Code auto-injects it from cwd
   const skillDocSection = `## Component Documentation
 
-XDS documentation is auto-loaded via AGENTS.md.`;
+Astryx documentation is auto-loaded via AGENTS.md.`;
 
   return `# Vibe Test Task
 
-You are running a vibeability test for the XDS component library.
+You are running a vibeability test for the Astryx component library.
 
 ## Your Role
 ${personaInstructions[task.persona as keyof typeof personaInstructions]}
@@ -843,14 +809,14 @@ Expected Components: ${task.expectedComponents.join(', ')}
 ## Instructions
 
 1. **Generate a response** to the prompt as if you were an AI assistant helping a developer.
-   Write working React/TSX code using XDS components.
+   Write working React/TSX code using Astryx components.
 
 2. **Self-evaluate** your response against these criteria:
    - Did you use the expected components (or reasonable alternatives)?
    - Did you hallucinate any props that don't exist?
    - Did you use redundant CSS for things components already handle?
    - Did you use acceptable supplemental CSS for gaps?
-   - **CSS Variables**: Did you use valid XDS design tokens?
+   - **CSS Variables**: Did you use valid Astryx design tokens?
 
 3. **Output JSON** in this exact format:
 \`\`\`json
@@ -858,7 +824,7 @@ Expected Components: ${task.expectedComponents.join(', ')}
   "response": "Your full code response here...",
   "evaluation": {
     "success": true/false,
-    "componentsUsed": ["XDSCard", "XDSButton", ...],
+    "componentsUsed": ["Card", "Button", ...],
     "componentsExpected": ${JSON.stringify(task.expectedComponents)},
     "escapeHatches": [
       {
@@ -989,7 +955,7 @@ function generateSubagentPrompt(
 
   // Persona-specific framing to simulate different user types
   const personaFraming: Record<string, Record<string, string>> = {
-    xds: {
+    astryx: {
       naive: '', // No special framing - just the natural request
       experienced: `Use XDS components from @astryxdesign/core. `,
       adversarial: `I'm used to Tailwind/baseline patterns but need to use your design system. `,
@@ -1103,8 +1069,8 @@ async function main() {
   const targetIndex = args.indexOf('--target');
   const target =
     targetIndex !== -1
-      ? (args[targetIndex + 1] as 'xds' | 'baseline' | 'html' | 'astryx')
-      : 'xds';
+      ? (args[targetIndex + 1] as 'astryx' | 'baseline' | 'html')
+      : 'astryx';
   const promptsIndex = args.indexOf('--prompts');
   const promptIds =
     promptsIndex !== -1 ? args[promptsIndex + 1].split(',') : undefined;
@@ -1125,10 +1091,8 @@ async function main() {
   };
 
   // Install target-specific documentation for retrieval-led approach
-  if (target === 'xds') {
+  if (target === 'astryx') {
     installAgentsDocs();
-  } else if (target === 'astryx') {
-    installAstryxDocs();
   } else if (target === 'baseline') {
     installBaselineDocs();
   } else if (target === 'html') {
@@ -1191,7 +1155,7 @@ async function main() {
     console.log(`Skill doc: ${skillDocOverride}`);
   }
   console.log(
-    `Mode: ${target === 'xds' || target === 'astryx' ? 'AGENTS.md' : target === 'baseline' ? 'AGENTS.baseline.md' : 'AGENTS.html.md'} (retrieval-led)`,
+    `Mode: ${target === 'astryx' ? 'AGENTS.md' : target === 'baseline' ? 'AGENTS.baseline.md' : 'AGENTS.html.md'} (retrieval-led)`,
   );
   console.log(
     `Protocol: ${degradation ? 'Degradation (10-turn curve)' : 'One-shot'}`,

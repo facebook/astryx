@@ -11,21 +11,19 @@ import {
   ChatComposer,
 } from '@astryxdesign/core/Chat';
 import {Markdown} from '@astryxdesign/core/Markdown';
-import * as stylex from '@stylexjs/stylex';
+import type {CSSProperties} from 'react';
 
-const styles = stylex.create({
-  panel: {
-    width: 450,
-    height: 600,
-    borderRadius: 8,
-    overflow: 'hidden',
-    border: '1px solid var(--color-border)',
-  },
-});
+const panel: CSSProperties = {
+  width: 450,
+  height: 600,
+  borderRadius: 8,
+  overflow: 'hidden',
+  border: '1px solid var(--color-border)',
+};
 
 export default function ChatLayoutPanelChat() {
   return (
-    <div {...stylex.props(styles.panel)}>
+    <div style={panel}>
       <ChatLayout
         composer={
           <ChatComposer onSubmit={() => {}} placeholder="Ask something..." />

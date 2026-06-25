@@ -10,11 +10,11 @@ import {Text} from '@astryxdesign/core/Text';
 
 const styles = stylex.create({
   popoverContent: {
-    backgroundColor: 'var(--xds-color-surface-raised)',
+    backgroundColor: 'var(--color-background-surface)',
     borderRadius: 8,
     padding: 16,
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    border: '1px solid var(--xds-color-border-default)',
+    border: '1px solid var(--color-border-default)',
   },
   demoArea: {
     display: 'flex',
@@ -120,7 +120,7 @@ function FixedModeDemo() {
       style={{
         position: 'relative',
         minHeight: 300,
-        border: '1px dashed var(--xds-color-border-default)',
+        border: '1px dashed var(--color-border-default)',
         borderRadius: 8,
         cursor: 'crosshair',
       }}

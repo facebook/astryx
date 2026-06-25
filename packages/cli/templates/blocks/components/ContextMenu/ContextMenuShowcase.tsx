@@ -1,21 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
 import {ContextMenu} from '@astryxdesign/core/ContextMenu';
-
-const styles = stylex.create({
-  area: {
-    padding: '48px',
-    borderWidth: '2px',
-    borderStyle: 'dashed',
-    borderColor: '#d1d5db',
-    borderRadius: '8px',
-    textAlign: 'center',
-    color: '#6b7280',
-    userSelect: 'none',
-  },
-});
 
 export default function ContextMenuShowcase() {
   return (
@@ -25,7 +11,19 @@ export default function ContextMenuShowcase() {
         {label: 'Copy', onClick: () => {}},
         {label: 'Paste', onClick: () => {}},
       ]}>
-      <div {...stylex.props(styles.area)}>Right-click this area</div>
+      <div
+        style={{
+          padding: '48px',
+          borderWidth: '2px',
+          borderStyle: 'dashed',
+          borderColor: '#d1d5db',
+          borderRadius: '8px',
+          textAlign: 'center',
+          color: '#6b7280',
+          userSelect: 'none',
+        }}>
+        Right-click this area
+      </div>
     </ContextMenu>
   );
 }

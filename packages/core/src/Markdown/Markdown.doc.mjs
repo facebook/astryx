@@ -131,7 +131,7 @@ export const docs = {
   },
   usage: {
     description:
-      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
+      'Renders a markdown string as Astryx-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
@@ -294,7 +294,7 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
+      'Renders a markdown string as Astryx-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },
@@ -306,10 +306,10 @@ export const docsZh = {
 
 export const docsDense = {
   description:
-    'Renders markdown string as XDS-styled components. Use for user-generated content, AI responses, docs. Headings, lists, tables, code, citations w/ consistent styling.',
+    'Renders markdown string as Astryx-styled components. Use for user-generated content, AI responses, docs. Headings, lists, tables, code, citations w/ consistent styling.',
   usage: {
     description:
-      'Renders a markdown string as XDS-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
+      'Renders a markdown string as Astryx-styled components. Use Markdown for user-generated content, AI responses, and documentation; it handles headings, lists, tables, code blocks, and citations with consistent styling.',
     bestPractices: [
       { guidance: true, description: 'Set headingLevelStart to match the page hierarchy, e.g. start at 3 if the markdown sits inside an h2 section.' },
       { guidance: true, description: 'Use contentWidth to keep prose at a readable line length in wide layouts.' },

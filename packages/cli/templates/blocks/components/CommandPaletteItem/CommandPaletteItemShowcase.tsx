@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useMemo} from 'react';
+import {useMemo, type CSSProperties} from 'react';
 import {
   CommandPalette,
   CommandPaletteList,
@@ -14,13 +14,10 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import {Stack} from '@astryxdesign/core/Layout';
 import type {SearchableItem} from '@astryxdesign/core/Typeahead';
-import * as stylex from '@stylexjs/stylex';
 
-const styles = stylex.create({
-  itemLabel: {
-    flexGrow: 1,
-  },
-});
+const itemLabel: CSSProperties = {
+  flexGrow: 1,
+};
 
 type CommandItem = SearchableItem<{shortcut?: string}>;
 
@@ -48,7 +45,7 @@ export default function CommandPaletteItemShowcase() {
           searchSource={source}
           renderItem={(item: CommandItem) => (
             <>
-              <Text type="body" xstyle={styles.itemLabel}>
+              <Text type="body" style={itemLabel}>
                 {item.label}
               </Text>
               {item.auxiliaryData?.shortcut && (
@@ -65,18 +62,18 @@ export default function CommandPaletteItemShowcase() {
         <CommandPaletteList>
           <CommandPaletteItem value="home" onSelect={() => {}}>
             <Icon icon="externalLink" size="sm" />
-            <Text type="body" xstyle={styles.itemLabel}>Home</Text>
+            <Text type="body" style={itemLabel}>Home</Text>
           </CommandPaletteItem>
           <CommandPaletteItem value="search" isHighlighted onSelect={() => {}}>
             <Icon icon="search" size="sm" />
-            <Text type="body" xstyle={styles.itemLabel}>Search (highlighted)</Text>
+            <Text type="body" style={itemLabel}>Search (highlighted)</Text>
           </CommandPaletteItem>
           <CommandPaletteItem value="selected" isSelected onSelect={() => {}}>
             <Icon icon="check" size="sm" />
-            <Text type="body" xstyle={styles.itemLabel}>Selected item</Text>
+            <Text type="body" style={itemLabel}>Selected item</Text>
           </CommandPaletteItem>
           <CommandPaletteItem value="disabled" isDisabled>
-            <Text type="body" xstyle={styles.itemLabel}>Disabled item</Text>
+            <Text type="body" style={itemLabel}>Disabled item</Text>
           </CommandPaletteItem>
         </CommandPaletteList>
       </Stack>

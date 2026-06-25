@@ -59,6 +59,13 @@ const styles = stylex.create({
       default: 'grid',
       '@media (min-width: 1024px)': 'none',
     },
+    // Scale the collage down on mobile. `zoom` (not transform:scale) so the
+    // laid-out box shrinks too — no reserved empty space below.
+    zoom: {
+      default: 0.8,
+      '@media (min-width: 768px)': 0.9,
+      '@media (min-width: 1024px)': 1,
+    },
     gridTemplateColumns: {
       default: '1fr 1fr',
       '@media (min-width: 768px)': '1fr 1fr minmax(0, 240px)',
@@ -93,7 +100,11 @@ const styles = stylex.create({
     },
     width: '100vw',
     marginInline: 'calc(50% - 50vw)',
-    marginBlockStart: 'var(--hero-gap)',
+    // --hero-gap (96px) is too cavernous on phones; full gap returns at ≥768px.
+    marginBlockStart: {
+      default: 'var(--spacing-10)',
+      '@media (min-width: 768px)': 'var(--hero-gap)',
+    },
   },
   gaProduct: {
     gridArea: 'product',

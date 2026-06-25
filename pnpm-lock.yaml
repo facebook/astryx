@@ -367,9 +367,6 @@ importers:
       react-dom:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
-      unplugin:
-        specifier: ^3.0.0
-        version: 3.0.0
     devDependencies:
       '@astryxdesign/build':
         specifier: '*'

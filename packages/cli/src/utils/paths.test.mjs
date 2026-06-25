@@ -9,7 +9,7 @@ import {findCoreDir, findProjectRoot, listComponents, discoverExternalPackages} 
 let tmpDir;
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'xds-paths-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-paths-test-'));
 }
 
 beforeEach(() => {
@@ -69,12 +69,12 @@ describe('findProjectRoot', () => {
 describe('discoverExternalPackages', () => {
   it('finds packages with an "astryx" field in package.json', () => {
     const nm = path.join(tmpDir, 'node_modules');
-    const extDir = path.join(nm, 'xds-charts');
+    const extDir = path.join(nm, 'astryx-charts');
     fs.mkdirSync(extDir, {recursive: true});
     fs.writeFileSync(
       path.join(extDir, 'package.json'),
       JSON.stringify({
-        name: 'xds-charts',
+        name: 'astryx-charts',
         astryx: {docs: './src', category: 'Data Viz'},
       }),
     );
@@ -82,7 +82,7 @@ describe('discoverExternalPackages', () => {
     const result = discoverExternalPackages(tmpDir);
     expect(result).toEqual([
       {
-        name: 'xds-charts',
+        name: 'astryx-charts',
         category: 'Data Viz',
         docsDir: path.join(extDir, 'src'),
         blocksDir: null,
@@ -92,7 +92,7 @@ describe('discoverExternalPackages', () => {
 
   it('handles scoped packages (@org/pkg)', () => {
     const nm = path.join(tmpDir, 'node_modules');
-    const scopedDir = path.join(nm, '@acme', 'xds-widgets');
+    const scopedDir = path.join(nm, '@acme', 'astryx-widgets');
     fs.mkdirSync(scopedDir, {recursive: true});
     fs.writeFileSync(
       path.join(scopedDir, 'package.json'),
@@ -165,12 +165,12 @@ describe('discoverExternalPackages', () => {
 
   it('walks up directories to find node_modules', () => {
     const nm = path.join(tmpDir, 'node_modules');
-    const extDir = path.join(nm, 'xds-ext');
+    const extDir = path.join(nm, 'astryx-ext');
     fs.mkdirSync(extDir, {recursive: true});
     fs.writeFileSync(
       path.join(extDir, 'package.json'),
       JSON.stringify({
-        name: 'xds-ext',
+        name: 'astryx-ext',
         astryx: {docs: './src'},
       }),
     );
@@ -180,7 +180,7 @@ describe('discoverExternalPackages', () => {
 
     const result = discoverExternalPackages(nested);
     expect(result).toHaveLength(1);
-    expect(result[0].name).toBe('xds-ext');
+    expect(result[0].name).toBe('astryx-ext');
   });
 
   it('handles invalid JSON in package.json gracefully', () => {

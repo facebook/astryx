@@ -56,6 +56,7 @@
  *   | 'ERR_UNKNOWN_AGENT'
  *   | 'ERR_UNKNOWN_FEATURE'
  *   | 'ERR_UNKNOWN_CODEMOD'
+   | 'ERR_CODEMOD_FAILED'
  *   | 'ERR_NOT_FOUND'
  *   | 'ERR_NO_DOC'
  *   | 'ERR_NO_SHOWCASE'
@@ -129,6 +130,8 @@ export const ERROR_CODES = Object.freeze({
   ERR_UNKNOWN_FEATURE: 'ERR_UNKNOWN_FEATURE',
   /** A `--codemod` value did not match any registered codemod (upgrade). */
   ERR_UNKNOWN_CODEMOD: 'ERR_UNKNOWN_CODEMOD',
+  /** One or more codemods failed during an upgrade run. */
+  ERR_CODEMOD_FAILED: 'ERR_CODEMOD_FAILED',
   /** A generic discover/lookup query matched nothing in any package. */
   ERR_NOT_FOUND: 'ERR_NOT_FOUND',
 

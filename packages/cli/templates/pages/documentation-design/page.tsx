@@ -2,8 +2,7 @@
 
 'use client';
 
-import {useCallback, useState, useMemo} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useCallback, useState, useMemo, type CSSProperties} from 'react';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {Button} from '@astryxdesign/core/Button';
 import {IconButton} from '@astryxdesign/core/IconButton';
@@ -32,15 +31,13 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline';
 
-const styles = stylex.create({
-  tabListFlush: {marginInlineStart: '-12px'},
-  outlinePanel: {
-    position: 'sticky',
-    top: 24,
-    alignSelf: 'start',
-    paddingBlockStart: 120,
-  },
-});
+const tabListFlush: CSSProperties = {marginInlineStart: '-12px'};
+const outlinePanel: CSSProperties = {
+  position: 'sticky',
+  top: 24,
+  alignSelf: 'start',
+  paddingBlockStart: 120,
+};
 
 const COMPONENT_OUTLINE_ITEMS: OutlineItem[] = [
   {id: 'usage', label: 'Usage', level: 2},
@@ -585,7 +582,7 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
             isScrollable={false}
             label="On this page"
             role="complementary"
-            xstyle={styles.outlinePanel}>
+            style={outlinePanel}>
             <Outline
               items={COMPONENT_OUTLINE_ITEMS}
               onActiveIdChange={setActiveId}
@@ -725,7 +722,7 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
                             }))
                           }
                           size="sm"
-                          xstyle={styles.tabListFlush}>
+                          style={tabListFlush}>
                           <Tab value="description" label="Description" />
                           <Tab value="code" label="Code" />
                         </TabList>

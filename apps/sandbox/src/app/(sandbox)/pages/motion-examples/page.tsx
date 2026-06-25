@@ -584,7 +584,7 @@ export default function MotionExamplesPage() {
       <VStack gap={2}>
         <Heading level={1}>Motion Examples</Heading>
         <Text type="body" color="secondary">
-          How XDS components apply duration and easing tokens. Each section
+          How Astryx components apply duration and easing tokens. Each section
           calls out which tokens drive the motion so you can see the scale in
           action.
         </Text>

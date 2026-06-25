@@ -36,7 +36,7 @@ let markerFile;
 let baseEnv;
 
 beforeAll(() => {
-  shimDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-gh-shim-'));
+  shimDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-gh-shim-'));
   markerFile = path.join(shimDir, 'gh-issue-create-was-called.marker');
 
   // Sabotaged `gh` shim. Records ONLY `gh issue create` invocations to the

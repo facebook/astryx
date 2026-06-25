@@ -15,11 +15,23 @@
  * than the default seed.
  */
 
+import type {Metadata} from 'next';
 import {notFound} from 'next/navigation';
 import {Section} from '@astryxdesign/core/Section';
 import {packages} from '../../../generated/packageRegistry';
 import {themeObjects} from '../../../generated/themeRegistry';
 import {ThemePackagePage} from '../../../components/ThemePackagePage';
+import {pageMetadata} from '../../../lib/pageMetadata';
+
+// Static canonical metadata for /themes. The page also accepts a `?theme=`
+// param to preselect the picker, but every variant is the same surface, so the
+// canonical stays the bare /themes path to avoid duplicate-URL dilution.
+export const metadata: Metadata = pageMetadata({
+  title: 'Themes',
+  description:
+    'Browse and preview every Astryx theme and see how design tokens, type, and components restyle across the gallery.',
+  path: '/themes',
+});
 
 // Default seed for the page — the picker opens with this theme
 // selected on first visit. Neutral is the most restrained / brand-

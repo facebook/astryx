@@ -1,10 +1,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSTable} from '@astryxdesign/core/Table';
-import {XDSStatusDot} from '@astryxdesign/core/StatusDot';
-import {XDSHStack} from '@astryxdesign/core/Stack';
-import {XDSText} from '@astryxdesign/core/Text';
-import type {XDSTableColumn} from '@astryxdesign/core/Table';
+import {Table} from '@astryxdesign/core/Table';
+import {StatusDot} from '@astryxdesign/core/StatusDot';
+import {HStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
+import type {TableColumn} from '@astryxdesign/core/Table';
 import type {UniversalScore} from './types';
 import {
   ALL_DIMENSIONS,
@@ -32,14 +32,14 @@ interface RowData extends Record<string, unknown> {
 
 function ScoreCell({score}: {score: number}) {
   return (
-    <XDSHStack gap={1} hAlign="center">
-      <XDSStatusDot
+    <HStack gap={1} hAlign="center">
+      <StatusDot
         variant={scoreToStatusVariant(score)}
         label={`Score: ${formatScore(score)}`}
         size="sm"
       />
-      <XDSText type="body">{formatScore(score)}</XDSText>
-    </XDSHStack>
+      <Text type="body">{formatScore(score)}</Text>
+    </HStack>
   );
 }
 
@@ -56,14 +56,14 @@ export function DimensionTable({byPrompt}: DimensionTableProps) {
     overall: computeOverall(score),
   }));
 
-  const columns: XDSTableColumn<RowData>[] = [
+  const columns: TableColumn<RowData>[] = [
     {
       key: 'promptId',
       header: 'Prompt',
-      renderCell: row => <XDSText type="body">{row.promptId}</XDSText>,
+      renderCell: row => <Text type="body">{row.promptId}</Text>,
     },
     ...ALL_DIMENSIONS.map(
-      (dim): XDSTableColumn<RowData> => ({
+      (dim): TableColumn<RowData> => ({
         key: dim,
         header: DIMENSION_LABELS[dim],
         renderCell: row => <ScoreCell score={row[dim] as number} />,
@@ -77,7 +77,7 @@ export function DimensionTable({byPrompt}: DimensionTableProps) {
   ];
 
   return (
-    <XDSTable<RowData>
+    <Table<RowData>
       data={data}
       columns={columns}
       idKey="id"

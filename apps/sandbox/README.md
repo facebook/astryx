@@ -1,6 +1,6 @@
 # /apps/sandbox
 
-XDS component sandbox for designer exploration and vibe testing. Deployed alongside Storybook on every PR.
+Astryx component sandbox for designer exploration and vibe testing. Deployed alongside Storybook on every PR.
 
 <!-- SYNC: When files in this directory change, update this document. -->
 
@@ -12,7 +12,7 @@ Before writing any code, install dependencies:
 npm install
 ```
 
-This automatically generates `AGENTS.md` with the XDS component index via `astryx init --features agents`. **Read `AGENTS.md` for all XDS component documentation**: it contains CLI commands to browse components, tokens, themes, and design rules.
+This automatically generates `AGENTS.md` with the Astryx component index via `astryx init --features agents`. **Read `AGENTS.md` for all Astryx component documentation**: it contains CLI commands to browse components, tokens, themes, and design rules.
 
 If `AGENTS.md` is missing, regenerate it:
 

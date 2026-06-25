@@ -49,6 +49,11 @@ const PRIMARY_MUTED =
 // to the UI here as the custom CSS variable --color-brand (see the token block
 // below), so consumers can reference the brand blue via var(--color-brand).
 
+// Custom (non-core) token. Typed const, not an inline cast, per lint rule.
+const customTokens: Record<string, TokenValue> = {
+  '--color-brand': BRAND_BLUE,
+};
+
 export const astryxTheme = defineTheme({
   name: 'astryx',
 
@@ -100,11 +105,7 @@ export const astryxTheme = defineTheme({
     '--radius-container': '16px',
     '--radius-page': '32px',
 
-    // --- Custom brand color token ---
-    // Not a core XDS token, so it's spread in with a cast to allow the extra
-    // key while keeping the standard tokens above type-checked. Exposed to the
-    // UI as var(--color-brand).
-    ...({'--color-brand': BRAND_BLUE} as Record<string, TokenValue>),
+    ...customTokens,
   },
 
   typography: {
@@ -138,6 +139,39 @@ export const astryxTheme = defineTheme({
         },
         ':active': {
           backgroundColor: 'var(--color-overlay-pressed)',
+        },
+      },
+    },
+    // Hero carousel dots: outlined rings + a filled active pill (overrides the
+    // core `dots` solid circles). --color-accent flips to light ink on dark
+    // slides, so the dots stay legible in both modes.
+    'pagination-dot': {
+      base: {
+        // 10px is off-scale on purpose (no token between 8px and 12px).
+        width: '10px',
+        height: '10px',
+        backgroundColor: 'transparent',
+        borderWidth: '2px',
+        borderStyle: 'solid',
+        // Translucent accent (not a static gray) so it tracks the theme ink.
+        borderColor: 'color-mix(in srgb, var(--color-accent) 60%, transparent)',
+        boxSizing: 'border-box',
+        transitionProperty: 'width, background-color, border-color',
+        transitionDuration: 'var(--duration-fast)',
+        transitionTimingFunction: 'var(--ease-standard)',
+        ':hover': {
+          backgroundColor: 'var(--color-accent-muted)',
+        },
+      },
+      active: {
+        width: 'var(--spacing-7)',
+        backgroundColor: 'var(--color-accent)',
+        borderColor: 'var(--color-accent)',
+        borderRadius: 'var(--radius-full)',
+        // Re-assert the solid fill so the active pill ignores the base ring's
+        // muted hover.
+        ':hover': {
+          backgroundColor: 'var(--color-accent)',
         },
       },
     },

@@ -124,10 +124,24 @@ export function parseDateInput(input: string): PlainDate | null {
     return parseNumericDate(+first, +second, currentYear);
   }
 
-  // 6. Fall back to native Date parsing for other formats
+  // 6. Fall back to native Date parsing for other formats.
+  //
+  // Skip bare numeric input (e.g. "0", "1", "01", "2026"). These are
+  // in-progress values a user is still typing, not complete dates. Native
+  // `Date` parsing coerces them into arbitrary dates ("0" -> year 2000 in V8,
+  // year 0 in some engines), which is both surprising and — when the year
+  // resolves to 0 — produces an out-of-range date that throws downstream.
+  // Treat them as not-yet-a-valid-date instead.
+  if (/^\d+$/.test(trimmed)) {
+    return null;
+  }
+
   const parsed = new Date(trimmed);
   if (!isNaN(parsed.getTime())) {
-    return plainDateFromDate(parsed);
+    const fromDate = plainDateFromDate(parsed);
+    // Validate the result so we never return an out-of-range date (e.g. a
+    // year of 0), which would throw when later re-parsed.
+    return tryCreatePlainDate(fromDate.year, fromDate.month, fromDate.day);
   }
 
   return null;

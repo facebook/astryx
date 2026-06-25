@@ -51,7 +51,7 @@ function LinkifyDemo({
         style={{
           padding: 16,
           borderRadius: 8,
-          background: 'var(--xds-color-bg-secondary, #f5f5f5)',
+          background: 'var(--color-background-muted, #f5f5f5)',
           minHeight: 40,
         }}>
         <Text type="body">{nodes}</Text>
@@ -177,7 +177,7 @@ export const Interactive: Story = {
           style={{
             padding: 16,
             borderRadius: 8,
-            background: 'var(--xds-color-bg-secondary, #f5f5f5)',
+            background: 'var(--color-background-muted, #f5f5f5)',
             minHeight: 40,
           }}>
           <Text type="body">{nodes}</Text>

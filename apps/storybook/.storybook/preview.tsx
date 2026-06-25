@@ -19,7 +19,7 @@ const themes = {
 };
 
 /**
- * Decorator that wraps all stories in the XDS Theme provider.
+ * Decorator that wraps all stories in the Astryx Theme provider.
  *
  * Sets `color-scheme` on the document root so that CSS `light-dark()`
  * resolves correctly at every level of the page — not just inside the
@@ -29,7 +29,7 @@ const themes = {
  */
 const withTheme: Decorator = (Story, context) => {
   // Get theme selection from toolbar
-  const themeKey = (context.globals?.xdsTheme || 'neutral') as string;
+  const themeKey = (context.globals?.astryxTheme || 'neutral') as string;
   const mode = context.globals?.colorMode === 'dark' ? 'dark' : 'light';
 
   // Sync color-scheme to the document root so light-dark() works
@@ -83,8 +83,8 @@ const preview: Preview = {
     layout: 'fullscreen',
   },
   globalTypes: {
-    xdsTheme: {
-      description: 'XDS Theme',
+    astryxTheme: {
+      description: 'Astryx Theme',
       toolbar: {
         title: 'Theme',
         icon: 'paintbrush',
@@ -111,7 +111,7 @@ const preview: Preview = {
     },
   },
   initialGlobals: {
-    xdsTheme: 'neutral',
+    astryxTheme: 'neutral',
     colorMode: 'light',
   },
   decorators: [withTheme],

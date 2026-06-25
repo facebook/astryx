@@ -53,7 +53,7 @@ function parseJson(stdout) {
 let tmpDir;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-json-contract-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-json-contract-'));
 });
 
 afterEach(() => {

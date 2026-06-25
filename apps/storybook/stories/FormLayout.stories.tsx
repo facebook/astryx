@@ -106,7 +106,7 @@ export const HorizontalLabels: Story = {
   },
 };
 
-// ─── Mixed: XDS inputs + Field-wrapped custom controls ─────────────────
+// ─── Mixed: Astryx inputs + Field-wrapped custom controls ─────────────────
 
 const checkboxStyles = stylex.create({
   group: {

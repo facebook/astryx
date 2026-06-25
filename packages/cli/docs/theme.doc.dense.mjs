@@ -5,8 +5,8 @@
 export const docsDense = {
   description: 'Theme provider, custom themes, light/dark, component overrides',
   sections: [
-    { title: 'Quick Start', content: [null, null, { type: 'prose', text: 'default import = runtime injection. /built import = pre-compiled CSS (pair with theme.css).' }] },
-    { title: 'Themes', content: [null, { type: 'prose', text: 'published: neutral (start here), butter, chocolate, gothic (dark-only), matcha, stone, y2k. @astryxdesign/theme-{name} = source (runtime). @astryxdesign/theme-{name}/built = optimized (+ theme.css).' }] },
+    { title: 'Quick Start', content: [null, null, null, null, { type: 'prose', text: 'default import = runtime injection. /built import = pre-compiled CSS (pair with theme.css).' }] },
+    { title: 'Themes', content: [null, null, { type: 'prose', text: 'published: neutral (start here), butter, chocolate, gothic (dark-only), matcha, stone, y2k. @astryxdesign/theme-{name} = source (runtime). @astryxdesign/theme-{name}/built = optimized (+ theme.css).' }] },
     { title: 'Props', content: [null] },
     { title: 'Custom Theme', content: [{ type: 'prose', text: 'CLI wizard or manual defineTheme. only override tokens that differ.' }, null] },
     { title: 'defineTheme', content: [{ type: 'prose', text: 'scale configs (color, typography, radius, motion) + explicit token overrides + component overrides. color derives full palette from accent hex via HCT.' }, null, null] },

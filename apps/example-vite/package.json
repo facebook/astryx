@@ -13,8 +13,7 @@
     "@astryxdesign/core": "*",
     "@astryxdesign/theme-neutral": "*",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "unplugin": "^3.0.0"
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@stylexjs/unplugin": "^0.19.0",

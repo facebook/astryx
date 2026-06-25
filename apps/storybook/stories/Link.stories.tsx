@@ -130,7 +130,7 @@ export const InlineWithText: Story = {
   render: () => (
     <Text type="body">
       Read the <Link href="/docs">documentation</Link> for more
-      information about using XDS components.
+      information about using Astryx components.
     </Text>
   ),
 };

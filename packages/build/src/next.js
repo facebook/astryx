@@ -8,8 +8,8 @@
  * Next.js configuration helper for Astryx source builds.
  *
  * Usage in next.config.mjs:
- *   import {withXDS} from '@astryxdesign/build/next';
- *   export default withXDS({
+ *   import {withAstryx} from '@astryxdesign/build/next';
+ *   export default withAstryx({
  *     // your normal next config
  *   });
  */
@@ -19,15 +19,15 @@
  * - Adds transpilePackages for @astryxdesign/* packages
  * - Sets conditionNames to resolve source exports
  */
-function withXDS(nextConfig = {}) {
-  const xdsPackages = [
+function withAstryx(nextConfig = {}) {
+  const astryxPackages = [
     '@astryxdesign/core',
     '@astryxdesign/theme-neutral',
     '@astryxdesign/lab',
   ];
 
   const existingTranspile = nextConfig.transpilePackages || [];
-  const merged = Array.from(new Set([...existingTranspile, ...xdsPackages]));
+  const merged = Array.from(new Set([...existingTranspile, ...astryxPackages]));
 
   const existingWebpack = nextConfig.webpack;
 
@@ -60,4 +60,4 @@ function withXDS(nextConfig = {}) {
   };
 }
 
-module.exports = {withXDS};
+module.exports = {withAstryx};

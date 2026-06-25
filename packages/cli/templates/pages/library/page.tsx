@@ -2,8 +2,7 @@
 
 'use client';
 
-import {useState, useMemo} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useState, useMemo, type CSSProperties} from 'react';
 import {Layout, LayoutHeader, LayoutContent} from '@astryxdesign/core/Layout';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Card} from '@astryxdesign/core/Card';
@@ -320,21 +319,19 @@ const ITEMS: LibraryItem[] = [
   },
 ];
 
-const styles = stylex.create({
-  thumbnailWrapper: {
-    position: 'relative',
-    aspectRatio: '16/9',
-    overflow: 'clip',
-    flexShrink: 0,
-  },
-  thumbnailImage: {
-    position: 'absolute',
-    inset: 0,
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-});
+const thumbnailWrapper: CSSProperties = {
+  position: 'relative',
+  aspectRatio: '16/9',
+  overflow: 'clip',
+  flexShrink: 0,
+};
+const thumbnailImage: CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+};
 
 // =============================================================================
 // Side Nav
@@ -343,12 +340,8 @@ const styles = stylex.create({
 function LibraryCard({item}: {item: LibraryItem}) {
   return (
     <Card padding={0}>
-      <div {...stylex.props(styles.thumbnailWrapper)}>
-        <img
-          src={item.imageUrl}
-          alt={item.name}
-          {...stylex.props(styles.thumbnailImage)}
-        />
+      <div style={thumbnailWrapper}>
+        <img src={item.imageUrl} alt={item.name} style={thumbnailImage} />
       </div>
       <Section variant="transparent" padding={4}>
         <VStack gap={1}>

@@ -78,7 +78,7 @@ export const SpecExamples: StoryObj = {
     <Stack direction="vertical" gap={3}>
       <Heading level={3}>XIF Spec Examples</Heading>
       <Text type="supporting">
-        Icons defined using the XDS Icon Format specification. Each demonstrates
+        Icons defined using the Astryx Icon Format specification. Each demonstrates
         a different capability: stroke-only, two-layer knockout, composable
         slots, animation declarations, personality overrides, and bold geometry
         overrides.

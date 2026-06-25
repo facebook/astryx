@@ -13,7 +13,7 @@ import {
 
 let tmpDir;
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-path-safety-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-path-safety-'));
 });
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});

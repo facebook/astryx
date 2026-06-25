@@ -12,7 +12,7 @@ import * as os from 'node:os';
 let tmpDir;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-template-test-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-template-test-'));
 });
 
 afterEach(() => {

@@ -3,16 +3,11 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {Tokenizer} from '@astryxdesign/core/Tokenizer';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
-
-const styles = stylex.create({
-  fixed: {width: 400},
-});
 
 const users: SearchableItem[] = [
   {id: '1', label: 'Alice Johnson'},
@@ -43,7 +38,7 @@ export default function TokenizerIcon() {
         value={value}
         onChange={items => setValue(items)}
         startIcon={MagnifyingGlassIcon}
-        xstyle={styles.fixed}
+        style={{width: 400}}
       />
     </Stack>
   );

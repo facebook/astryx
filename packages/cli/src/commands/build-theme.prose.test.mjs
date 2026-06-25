@@ -82,7 +82,7 @@ beforeAll(() => {
 
 let tmpDir;
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-build-theme-prose-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-build-theme-prose-'));
 });
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});

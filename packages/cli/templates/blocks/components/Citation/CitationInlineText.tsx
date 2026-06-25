@@ -25,12 +25,12 @@ export default function CitationInlineText() {
         .
       </Text>
       <Text type="body">
-        StyleX compiles atomic CSS at build time for optimal performance
+        TypeScript adds static types to JavaScript for safer refactoring
         <Citation
           source={{
-            title: 'StyleX Documentation',
-            url: 'https://stylexjs.com',
-            icon: 'https://stylexjs.com/img/favicon.ico',
+            title: 'TypeScript Documentation',
+            url: 'https://www.typescriptlang.org',
+            icon: 'https://www.typescriptlang.org/favicon-32x32.png',
           }}
           number={3}
           variant="label"

@@ -3,20 +3,15 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {FormLayout} from '@astryxdesign/core/FormLayout';
 import {TextInput} from '@astryxdesign/core/TextInput';
-
-const styles = stylex.create({
-  layout: {width: '100%', maxWidth: 400},
-});
 
 export default function FormLayoutHorizontal() {
   const [first, setFirst] = useState('Jordan');
   const [last, setLast] = useState('Rivera');
 
   return (
-    <FormLayout direction="horizontal" xstyle={styles.layout}>
+    <FormLayout direction="horizontal" style={{width: '100%', maxWidth: 400}}>
       <TextInput label="First Name" value={first} onChange={setFirst} />
       <TextInput label="Last Name" value={last} onChange={setLast} />
     </FormLayout>

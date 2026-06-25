@@ -43,13 +43,15 @@ html {
      as a single related group. */
   --astryx-marketing-feature-card-bg: light-dark(#e6f0ff, #1a2333);
 
-  /* Marketing-section vertical rhythm. The XDS spacing scale tops out at
-     --spacing-12 = 48px, which is fine for in-app density but too tight
-     for a landing-page section break. Used for the gap between major
-     home-page sections (hero ↔ features ↔ about ↔ discover) and the
-     page's first paddingBlockStart so the rhythm reads as deliberate
-     marketing pacing rather than a maxed-out spacing step. */
+  /* Spacing between major home-page sections (the XDS scale tops out at 48px,
+     too tight for a section break). Shrinks on mobile (below). */
   --astryx-marketing-section-gap: 100px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --astryx-marketing-section-gap: var(--spacing-12, 48px);
+  }
 }
 
 /* AppShell sets a sticky top nav but its main content area sits at the same

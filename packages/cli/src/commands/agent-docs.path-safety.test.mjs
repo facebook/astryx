@@ -20,7 +20,7 @@ import {PathSafetyError} from '../utils/path-safety.mjs';
 
 let tmpDir;
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-agent-docs-paths-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-agent-docs-paths-'));
 });
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});

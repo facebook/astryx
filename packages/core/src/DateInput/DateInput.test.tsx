@@ -21,19 +21,13 @@ describe('DateInput', () => {
 
   it('renders with placeholder', () => {
     render(
-      <DateInput
-        label="Date"
-        onChange={() => {}}
-        placeholder="Pick a date"
-      />,
+      <DateInput label="Date" onChange={() => {}} placeholder="Pick a date" />,
     );
     expect(screen.getByPlaceholderText('Pick a date')).toBeInTheDocument();
   });
 
   it('displays formatted date when value is provided', () => {
-    render(
-      <DateInput label="Date" value="2026-01-25" onChange={() => {}} />,
-    );
+    render(<DateInput label="Date" value="2026-01-25" onChange={() => {}} />);
     expect(screen.getByDisplayValue('January 25, 2026')).toBeInTheDocument();
   });
 
@@ -118,9 +112,7 @@ describe('DateInput', () => {
 
   it('reverts to previous value on blur when input is invalid', async () => {
     const onChange = vi.fn();
-    render(
-      <DateInput label="Date" value="2026-01-25" onChange={onChange} />,
-    );
+    render(<DateInput label="Date" value="2026-01-25" onChange={onChange} />);
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, {target: {value: 'not a date'}});
@@ -299,9 +291,7 @@ describe('DateInput', () => {
   // --- P1: Tab order: calendar button first, then input ---
 
   it('renders calendar button before input in DOM order', () => {
-    const {container} = render(
-      <DateInput label="Date" onChange={() => {}} />,
-    );
+    const {container} = render(<DateInput label="Date" onChange={() => {}} />);
     const input = container.querySelector('input');
     const button = container.querySelector('button');
     // Calendar button should come before input in the DOM
@@ -389,9 +379,7 @@ describe('DateInput', () => {
 
   it('calls onChange with undefined when input is cleared and blurred', () => {
     const onChange = vi.fn();
-    render(
-      <DateInput label="Date" value="2026-01-25" onChange={onChange} />,
-    );
+    render(<DateInput label="Date" value="2026-01-25" onChange={onChange} />);
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, {target: {value: ''}});
@@ -476,9 +464,7 @@ describe('DateInput', () => {
     });
 
     it('does not show clear button when hasClear is false', () => {
-      render(
-        <DateInput label="Date" value="2026-01-15" onChange={() => {}} />,
-      );
+      render(<DateInput label="Date" value="2026-01-15" onChange={() => {}} />);
       expect(
         screen.queryByRole('button', {name: 'Clear Date'}),
       ).not.toBeInTheDocument();
@@ -511,6 +497,68 @@ describe('DateInput', () => {
       );
       fireEvent.click(screen.getByRole('button', {name: 'Clear Date'}));
       expect(onChange).toHaveBeenCalledWith(undefined);
+    });
+  });
+
+  // --- Regression: in-progress / leading-zero input must not crash ---
+
+  describe('incomplete typed input', () => {
+    it('does not crash or fire onChange when first digit typed is 0', () => {
+      const onChange = vi.fn();
+      render(<DateInput label="Date" onChange={onChange} />);
+
+      const input = screen.getByRole('combobox');
+      // Typing a leading "0" (e.g. starting "01" for January) must be treated
+      // as incomplete input, not coerced into an (invalid) date that crashes.
+      expect(() =>
+        fireEvent.change(input, {target: {value: '0'}}),
+      ).not.toThrow();
+
+      expect(onChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('0');
+    });
+
+    it('does not crash or fire onChange when first digit typed is 1', () => {
+      const onChange = vi.fn();
+      render(<DateInput label="Date" onChange={onChange} />);
+
+      const input = screen.getByRole('combobox');
+      expect(() =>
+        fireEvent.change(input, {target: {value: '1'}}),
+      ).not.toThrow();
+
+      expect(onChange).not.toHaveBeenCalled();
+      expect(input).toHaveValue('1');
+    });
+
+    it('does not crash while progressively typing a numeric date', () => {
+      const onChange = vi.fn();
+      render(<DateInput label="Date" onChange={onChange} />);
+
+      const input = screen.getByRole('combobox');
+      // Simulate keystroke-by-keystroke entry of "01/15/2026". The leading
+      // single-digit keystrokes must not crash (the original bug).
+      for (const partial of ['0', '01', '01/', '01/1', '01/15', '01/15/']) {
+        expect(() =>
+          fireEvent.change(input, {target: {value: partial}}),
+        ).not.toThrow();
+      }
+
+      // Completing the date commits it without error.
+      expect(() =>
+        fireEvent.change(input, {target: {value: '01/15/2026'}}),
+      ).not.toThrow();
+      expect(onChange).toHaveBeenCalledWith('2026-01-15');
+    });
+
+    it('does not crash on blur after typing an incomplete value', () => {
+      const onChange = vi.fn();
+      render(<DateInput label="Date" onChange={onChange} />);
+
+      const input = screen.getByRole('combobox');
+      fireEvent.change(input, {target: {value: '0'}});
+      expect(() => fireEvent.blur(input)).not.toThrow();
+      expect(onChange).not.toHaveBeenCalled();
     });
   });
 

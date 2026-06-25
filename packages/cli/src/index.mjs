@@ -249,6 +249,7 @@ const commands = [
   {name: 'hook', path: './commands/hook/index.mjs', register: 'registerHook'},
   {name: 'discover', path: './commands/discover.mjs', register: 'registerDiscover'},
   {name: 'search', path: './commands/search.mjs', register: 'registerSearch'},
+  {name: 'build', path: './commands/build.mjs', register: 'registerBuild'},
   {name: 'doctor', path: './commands/doctor.mjs', register: 'registerDoctor'},
 ];
 

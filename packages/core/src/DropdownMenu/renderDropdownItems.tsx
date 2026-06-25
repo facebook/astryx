@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file renderXDSDropdownItems.tsx
+ * @file renderDropdownItems.tsx
  * @output Converts data-driven menu items into DropdownMenuItem components
  * @position Utility; used by DropdownMenu to unify data-driven and compound paths
  */
@@ -49,7 +49,7 @@ function getSectionKey(section: DropdownMenuSection, index: number): string {
  * Converts data-driven items into DropdownMenuItem components,
  * so both modes share the same rendering and keyboard navigation path.
  */
-export function renderXDSDropdownItems(
+export function renderDropdownItems(
   items: DropdownMenuOption[],
 ): ReactNode {
   const elements: ReactNode[] = [];

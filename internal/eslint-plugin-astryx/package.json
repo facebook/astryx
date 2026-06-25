@@ -5,7 +5,13 @@
   "main": "index.js",
   "type": "module",
   "description": "ESLint plugin for Astryx design system token enforcement",
-  "keywords": ["eslint", "eslint-plugin", "xds", "design-system", "stylex"],
+  "keywords": [
+    "eslint",
+    "eslint-plugin",
+    "astryx",
+    "design-system",
+    "stylex"
+  ],
   "peerDependencies": {
     "eslint": ">=9.0.0"
   }

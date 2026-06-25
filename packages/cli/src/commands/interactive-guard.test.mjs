@@ -35,7 +35,7 @@ function runCli(args) {
 }
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-interactive-guard-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-interactive-guard-'));
 });
 
 afterEach(() => {

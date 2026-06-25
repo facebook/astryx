@@ -881,7 +881,7 @@ export default function DocumentationPage() {
             padding: '16px 24px 8px',
             flexShrink: 0,
           }}>
-          <span style={{fontWeight: 700, fontSize: 18}}>XDS</span>
+          <span style={{fontWeight: 700, fontSize: 18}}>Astryx</span>
         </div>
 
         {/* Nav */}
@@ -952,15 +952,15 @@ export default function DocumentationPage() {
               }}>
               <div style={{flex: 1, minWidth: 0}}>
                 <Text type="supporting" color="secondary">
-                  XDS Design System
+                  Astryx Design System
                 </Text>
                 <div style={{marginTop: 8}}>
                   <Text type="display-1">Web overview</Text>
                 </div>
                 <div style={{marginTop: 16}}>
                   <Text type="large" color="secondary">
-                    XDS Web React is an open-source UI library created by the
-                    XDS Design Team to help developers quickly build beautiful,
+                    Astryx Web React is an open-source UI library created by the
+                    Astryx Design Team to help developers quickly build beautiful,
                     accessible products.
                   </Text>
                 </div>

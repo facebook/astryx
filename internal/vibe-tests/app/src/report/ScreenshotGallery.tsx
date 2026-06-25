@@ -1,9 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
-import {XDSCard} from '@astryxdesign/core/Card';
-import {XDSVStack} from '@astryxdesign/core/Stack';
-import {XDSText} from '@astryxdesign/core/Text';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
 import './report.css';
 
 interface ScreenshotGalleryProps {
@@ -51,8 +51,8 @@ export function ScreenshotGallery({screenshots}: ScreenshotGalleryProps) {
     <>
       <div className="report-gallery-grid">
         {items.map(item => (
-          <XDSCard key={item.filename}>
-            <XDSVStack gap={0}>
+          <Card key={item.filename}>
+            <VStack gap={0}>
               <img
                 className="report-gallery-image"
                 src={item.src}
@@ -60,16 +60,16 @@ export function ScreenshotGallery({screenshots}: ScreenshotGalleryProps) {
                 onClick={() => setEnlarged(item.src)}
               />
               <div className="report-gallery-cardContent">
-                <XDSVStack gap={1}>
-                  <XDSText type="label">{item.promptId}</XDSText>
+                <VStack gap={1}>
+                  <Text type="label">{item.promptId}</Text>
                   <div className="report-gallery-meta">
-                    <XDSText type="supporting">{item.viewport}</XDSText>
-                    <XDSText type="supporting">{item.theme}</XDSText>
+                    <Text type="supporting">{item.viewport}</Text>
+                    <Text type="supporting">{item.theme}</Text>
                   </div>
-                </XDSVStack>
+                </VStack>
               </div>
-            </XDSVStack>
-          </XDSCard>
+            </VStack>
+          </Card>
         ))}
       </div>
       {enlarged && (

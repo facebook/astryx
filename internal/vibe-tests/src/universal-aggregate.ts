@@ -72,7 +72,7 @@ async function main() {
   }
 
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-  const target = (manifest.config?.target || 'xds') as string;
+  const target = (manifest.config?.target || 'astryx') as string;
   const promptMap = new Map<string, string>(
     (manifest.prompts || []).map((p: {id: string; category: string}) => [
       p.id,

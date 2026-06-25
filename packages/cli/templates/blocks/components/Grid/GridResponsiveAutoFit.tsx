@@ -2,20 +2,12 @@
 
 'use client';
 
-import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {Grid} from '@astryxdesign/core/Grid';
 import {Card} from '@astryxdesign/core/Card';
 import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
 import {useResizable, ResizeHandle} from '@astryxdesign/core/Resizable';
 import {VStack} from '@astryxdesign/core/Stack';
 import {Text} from '@astryxdesign/core/Text';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  panel: {
-    padding: spacingVars['--spacing-4'],
-  },
-});
 
 const teams = [
   {name: 'Design Systems', members: 8},
@@ -47,7 +39,7 @@ export default function GridResponsiveAutoFit() {
             <LayoutPanel
               width={gridPanel.size}
               hasDivider={false}
-              xstyle={styles.panel}>
+              style={{padding: 'var(--spacing-4)'}}>
               <Grid
                 columns={{minWidth: 180, repeat: 'fit'}}
                 gap={4}

@@ -6,6 +6,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {
   generateCompressedIndex,
+  detectStylingSystem,
   getXdsVersion,
   installAgentDocs,
   injectAgentsMd,
@@ -20,7 +21,7 @@ import {
 let tmpDir;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-agent-docs-test-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-agent-docs-test-'));
 });
 
 afterEach(() => {
@@ -39,28 +40,83 @@ describe('generateCompressedIndex', () => {
   it('includes theme nudge rule', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).toMatch(/astryx theme/);
-    expect(result).toMatch(/never override --astryx-color/);
+    expect(result).toMatch(/never override --color-/);
+  });
+
+  it('defaults to the CSS-variable styling path (no compiler)', () => {
+    const result = generateCompressedIndex('1.0.0');
+    expect(result).toMatch(/style\/className with tokens/);
+    expect(result).toMatch(/var\(--color-\*/);
+    // Must NOT push xstyle when no StyleX compiler is present.
+    expect(result).not.toMatch(/xstyle prop/);
+  });
+
+  it('recommends xstyle when StyleX is configured', () => {
+    const result = generateCompressedIndex('1.0.0', {stylingSystem: 'stylex'});
+    expect(result).toMatch(/xstyle prop \/ StyleX tokens/);
+  });
+
+  it('recommends Tailwind utilities when Tailwind is configured', () => {
+    const result = generateCompressedIndex('1.0.0', {stylingSystem: 'tailwind'});
+    expect(result).toMatch(/Tailwind utilities backed by tokens/);
+    expect(result).toMatch(/tailwind-theme\.css/);
   });
 
   it('includes upgrade command and migration rule', () => {
     const result = generateCompressedIndex('1.0.0');
-    expect(result).toContain('astryx upgrade');
-    expect(result).toContain('astryx upgrade --apply');
-    expect(result).toMatch(/always run .+ astryx upgrade --apply/);
+    expect(result).toContain('upgrade --apply');
+    expect(result).toMatch(/after any @astryxdesign\/core bump/);
   });
 
-  it('uses custom runPrefix when provided', () => {
+  it('states the runPrefix once in the CLI header', () => {
     const result = generateCompressedIndex('1.0.0', {runPrefix: 'yarn'});
-    expect(result).toContain('yarn astryx component <Name>');
-    expect(result).toContain('yarn astryx upgrade --apply');
-    expect(result).toContain('after @astryxdesign/core bump, always run yarn astryx upgrade --apply');
+    expect(result).toContain('yarn astryx <cmd>');
     expect(result).not.toContain('npx astryx');
   });
 
   it('uses pnpm exec prefix', () => {
     const result = generateCompressedIndex('1.0.0', {runPrefix: 'pnpm exec'});
-    expect(result).toContain('pnpm exec astryx component <Name>');
+    expect(result).toContain('pnpm exec astryx <cmd>');
     expect(result).not.toContain('npx astryx');
+  });
+});
+
+describe('detectStylingSystem', () => {
+  function writePkg(deps) {
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({name: 'x', devDependencies: deps}),
+    );
+  }
+
+  it('defaults to css when no package.json', () => {
+    expect(detectStylingSystem(tmpDir)).toBe('css');
+  });
+
+  it('returns css for a plain project', () => {
+    writePkg({react: '19.0.0', vite: '6.0.0'});
+    expect(detectStylingSystem(tmpDir)).toBe('css');
+  });
+
+  it('detects stylex when the compiler plugin is present', () => {
+    writePkg({'@stylexjs/babel-plugin': '0.0.1'});
+    expect(detectStylingSystem(tmpDir)).toBe('stylex');
+  });
+
+  it('detects tailwind when tailwindcss is present', () => {
+    writePkg({tailwindcss: '4.0.0'});
+    expect(detectStylingSystem(tmpDir)).toBe('tailwind');
+  });
+
+  it('does NOT treat the StyleX runtime alone as a compiler', () => {
+    // Only the runtime, no compiler plugin → must stay on the safe css path.
+    writePkg({'@stylexjs/stylex': '0.0.1'});
+    expect(detectStylingSystem(tmpDir)).toBe('css');
+  });
+
+  it('prefers stylex over tailwind when both are configured', () => {
+    writePkg({'@stylexjs/babel-plugin': '0.0.1', tailwindcss: '4.0.0'});
+    expect(detectStylingSystem(tmpDir)).toBe('stylex');
   });
 });
 

@@ -9,19 +9,10 @@ import {Heading} from '@astryxdesign/core/Text';
 import {Card} from '@astryxdesign/core/Card';
 import {Section} from '@astryxdesign/core/Section';
 import {FunnelIcon, PlusIcon} from '@heroicons/react/24/outline';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  card: {
-    width: 500,
-    height: '100%',
-    marginTop: 260,
-  },
-});
 
 export default function ToolbarCardHeader() {
   return (
-    <Card xstyle={styles.card}>
+    <Card style={{width: 500, height: '100%', marginTop: 260}}>
       <Toolbar
         label="User list actions"
         size="sm"

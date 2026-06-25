@@ -1,11 +1,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSCard} from '@astryxdesign/core/Card';
-import {XDSVStack} from '@astryxdesign/core/Stack';
-import {XDSHStack} from '@astryxdesign/core/Stack';
-import {XDSText} from '@astryxdesign/core/Text';
-import {XDSHeading} from '@astryxdesign/core/Text';
-import {XDSProgressBar} from '@astryxdesign/core/ProgressBar';
+import {Card} from '@astryxdesign/core/Card';
+import {VStack} from '@astryxdesign/core/Stack';
+import {HStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
+import {Heading} from '@astryxdesign/core/Text';
+import {ProgressBar} from '@astryxdesign/core/ProgressBar';
 import {formatScore, scoreToProgressVariant} from './utils';
 import './report.css';
 
@@ -35,21 +35,21 @@ export function ScoreCard({
   const delta = compareScore != null ? score - compareScore : undefined;
 
   return (
-    <XDSCard>
+    <Card>
       <div className="report-scoreCard-card">
-        <XDSVStack gap={2}>
-          <XDSText type="label">{label}</XDSText>
-          <XDSHStack gap={2} hAlign="center">
-            <XDSHeading level={2}>{formatScore(score)}</XDSHeading>
+        <VStack gap={2}>
+          <Text type="label">{label}</Text>
+          <HStack gap={2} hAlign="center">
+            <Heading level={2}>{formatScore(score)}</Heading>
             {delta != null && (
-              <XDSText type="supporting" className={deltaClassName(delta)}>
+              <Text type="supporting" className={deltaClassName(delta)}>
                 {delta > 0 ? '+' : ''}
                 {formatScore(delta)}
                 {compareLabel ? ` vs ${compareLabel}` : ''}
-              </XDSText>
+              </Text>
             )}
-          </XDSHStack>
-          <XDSProgressBar
+          </HStack>
+          <ProgressBar
             label={label}
             isLabelHidden
             value={score}
@@ -57,8 +57,8 @@ export function ScoreCard({
             variant={scoreToProgressVariant(score)}
             size="sm"
           />
-        </XDSVStack>
+        </VStack>
       </div>
-    </XDSCard>
+    </Card>
   );
 }

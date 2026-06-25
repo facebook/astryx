@@ -6,16 +6,6 @@ import {Carousel} from '@astryxdesign/core/Carousel';
 import {Card} from '@astryxdesign/core/Card';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Text, Heading} from '@astryxdesign/core/Text';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  root: {
-    maxWidth: 500,
-  },
-  card: {
-    minWidth: 200,
-  },
-});
 
 const ITEMS = [
   {title: 'Design', body: 'Create wireframes and prototypes.'},
@@ -32,9 +22,9 @@ export default function CarouselShowcase() {
       hasSnap
       hasButtons={false}
       aria-label="Workflow steps"
-      xstyle={styles.root}>
+      style={{maxWidth: 500}}>
       {ITEMS.map(item => (
-        <Card key={item.title} padding={3} xstyle={styles.card}>
+        <Card key={item.title} padding={3} style={{minWidth: 200}}>
           <Stack direction="vertical" gap={1}>
             <Heading level={5}>{item.title}</Heading>
             <Text type="supporting" color="secondary">

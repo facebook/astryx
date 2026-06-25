@@ -320,5 +320,31 @@ describe('parseDateInput', () => {
     it('rejects mixed separators', () => {
       expect(parseDateInput('1/25.2026')).toBeNull();
     });
+
+    it('treats a single typed digit as incomplete, not a date', () => {
+      // A user starting to type a month (e.g. "0" or "1" for January) should
+      // not produce a date. Native Date parsing would otherwise coerce these
+      // into arbitrary dates (and a year of 0 in some engines).
+      expect(parseDateInput('0')).toBeNull();
+      expect(parseDateInput('1')).toBeNull();
+    });
+
+    it('treats bare numeric input as incomplete, not a date', () => {
+      expect(parseDateInput('00')).toBeNull();
+      expect(parseDateInput('01')).toBeNull();
+      expect(parseDateInput('12')).toBeNull();
+      expect(parseDateInput('2026')).toBeNull();
+    });
+
+    it('never returns an out-of-range date for partial input', () => {
+      // Regression: partial input must never yield a date with year < 1,
+      // which would throw when later re-parsed and crash the page.
+      for (const input of ['0', '1', '01', '00', '9', '99']) {
+        const result = parseDateInput(input);
+        if (result !== null) {
+          expect(result.year).toBeGreaterThanOrEqual(1);
+        }
+      }
+    });
   });
 });

@@ -192,7 +192,7 @@ describe('discoverPosts (temp fixtures)', () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-blog-'));
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-blog-'));
   });
 
   afterEach(() => {

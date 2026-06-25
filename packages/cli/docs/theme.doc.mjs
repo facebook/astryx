@@ -16,6 +16,12 @@ export const docs = {
       content: [
         {
           type: 'code',
+          lang: 'bash',
+          label: 'Install a theme package',
+          code: 'npm install @astryxdesign/theme-neutral',
+        },
+        {
+          type: 'code',
           lang: 'tsx',
           label: 'Basic theme setup (runtime injection)',
           code: `import {Theme} from '@astryxdesign/core';
@@ -47,6 +53,10 @@ function App() {
         },
         {
           type: 'prose',
+          text: 'Each theme ships as its own npm package. Install the one you want, then wrap your app in `<Theme>` — the same pattern works for every theme; just swap the package and import name.',
+        },
+        {
+          type: 'prose',
           text: 'The default import uses runtime style injection, which works everywhere with no build step. The `/built` import skips injection and relies on the pre-compiled CSS file for better performance and SSR support.',
         },
       ],
@@ -55,6 +65,10 @@ function App() {
       title: 'Available Themes',
   category: 'guide',
       content: [
+        {
+          type: 'prose',
+          text: 'Install the theme package you want with `npm install @astryxdesign/theme-{name}`, then import its theme object as shown below.',
+        },
         {
           type: 'table',
           headers: ['Theme', 'Import', 'Description'],

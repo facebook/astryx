@@ -59,7 +59,7 @@ export default function ShowcaseHeaderPage() {
         </div>
 
         <div {...stylex.props(styles.titleRow)}>
-          <Heading level={1}>XDS</Heading>
+          <Heading level={1}>Astryx</Heading>
           <div {...stylex.props(styles.connector)} />
           <Heading level={1}>Astryx</Heading>
         </div>

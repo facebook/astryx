@@ -2,7 +2,6 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
 import {HoverCard} from '@astryxdesign/core/HoverCard';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Button} from '@astryxdesign/core/Button';
@@ -11,18 +10,13 @@ import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {CalendarIcon} from '@heroicons/react/24/outline';
 
-const styles = stylex.create({
-  avatar: {flexShrink: 0},
-  content: {maxWidth: 280},
-});
-
 export default function HoverCardProfileHoverCard() {
   return (
     <HoverCard
       placement="below"
       content={
-        <HStack gap={3} vAlign="start" xstyle={styles.content}>
-          <Avatar name="Jane Doe" size={48} xstyle={styles.avatar} />
+        <HStack gap={3} vAlign="start" style={{maxWidth: 280}}>
+          <Avatar name="Jane Doe" size={48} style={{flexShrink: 0}} />
           <VStack gap={1}>
             <Heading level={3}>@janedoe</Heading>
             <Text type="body" color="secondary">

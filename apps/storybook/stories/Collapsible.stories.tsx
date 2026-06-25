@@ -85,9 +85,9 @@ export const MultipleMode: Story = {
     <CollapsibleGroup type="multiple" defaultValue={['faq1', 'faq3']}>
       <VStack gap={2}>
         <Card>
-          <Collapsible trigger="What is XDS?" value="faq1">
+          <Collapsible trigger="What is Astryx?" value="faq1">
             <p {...stylex.props(styles.text)}>
-              XDS is a design system for building internal tools and products.
+              Astryx is a design system for building internal tools and products.
             </p>
           </Collapsible>
         </Card>
@@ -101,7 +101,7 @@ export const MultipleMode: Story = {
         <Card>
           <Collapsible trigger="Is it open source?" value="faq3">
             <p {...stylex.props(styles.text)}>
-              Yes! XDS is open source and available on GitHub.
+              Yes! Astryx is open source and available on GitHub.
             </p>
           </Collapsible>
         </Card>

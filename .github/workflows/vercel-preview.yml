@@ -26,6 +26,12 @@ concurrency:
 
 jobs:
   deploy-preview:
+    # Fork PRs don't receive repository secrets, so VERCEL_TOKEN/ORG/PROJECT are
+    # empty and `vercel pull` fails. Their GITHUB_TOKEN is also read-only, so the
+    # PR comment can't post either. Skip on forks (neutral, not failing); the
+    # Vercel GitHub App still posts its own "authorize this preview" comment, and
+    # a maintainer can authorize the deploy from the Vercel dashboard.
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read

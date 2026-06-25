@@ -13,7 +13,7 @@ import {
   typographyVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 
-// A minimal native input styled to match XDS aesthetics —
+// A minimal native input styled to match Astryx aesthetics —
 // demonstrating that Field wraps any custom or native input.
 const inputStyles = stylex.create({
   root: {

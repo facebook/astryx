@@ -2,7 +2,6 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
 import {OverflowList} from '@astryxdesign/core/OverflowList';
 import {Button} from '@astryxdesign/core/Button';
 import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
@@ -10,19 +9,17 @@ import {Card} from '@astryxdesign/core/Card';
 
 const actions = ['Save', 'Edit', 'Duplicate', 'Share', 'Archive', 'Delete'];
 
-const styles = stylex.create({
-  resizable: {
-    resize: 'horizontal',
-    overflow: 'hidden',
-    minWidth: 100,
-    width: 350,
-    maxWidth: '100%',
-  },
-});
-
 export default function OverflowListOverflowDropdownActions() {
   return (
-    <Card padding={2} xstyle={styles.resizable}>
+    <Card
+      padding={2}
+      style={{
+        resize: 'horizontal',
+        overflow: 'hidden',
+        minWidth: 100,
+        width: 350,
+        maxWidth: '100%',
+      }}>
       <OverflowList
         gap={2}
         overflowRenderer={overflowItems => (

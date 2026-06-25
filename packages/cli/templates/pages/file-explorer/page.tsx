@@ -2,8 +2,7 @@
 
 'use client';
 
-import {useState, useMemo} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useState, useMemo, type CSSProperties} from 'react';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
 import {List, ListItem} from '@astryxdesign/core/List';
@@ -145,10 +144,10 @@ const FILESYSTEM: FileSystemItem[] = [
         children: [{id: 'react-index', name: 'index.js', type: 'file'}],
       },
       {
-        id: 'stylex',
-        name: '@stylexjs',
+        id: 'react-dom',
+        name: 'react-dom',
         type: 'folder',
-        children: [{id: 'stylex-index', name: 'stylex.js', type: 'file'}],
+        children: [{id: 'react-dom-index', name: 'index.js', type: 'file'}],
       },
     ],
   },
@@ -260,13 +259,11 @@ const FILESYSTEM: FileSystemItem[] = [
   },
 ];
 
-const styles = stylex.create({
-  page: {height: '100dvh'},
-  columnRow: {overflowX: 'auto', overflowY: 'hidden'},
-  scrollable: {overflowY: 'auto'},
-  fixedColumn: {flexShrink: 0},
-  detailColumn: {flexGrow: 1, flexShrink: 0, flexBasis: 320},
-});
+const page: CSSProperties = {height: '100dvh'};
+const columnRow: CSSProperties = {overflowX: 'auto', overflowY: 'hidden'};
+const scrollable: CSSProperties = {overflowY: 'auto'};
+const fixedColumn: CSSProperties = {flexShrink: 0};
+const detailColumn: CSSProperties = {flexGrow: 1, flexShrink: 0, flexBasis: 320};
 
 function findItem(items: FileSystemItem[], id: string): FileSystemItem | null {
   for (const item of items) {
@@ -348,7 +345,7 @@ export default function FileExplorerPage() {
 
   return (
     <Layout
-      xstyle={styles.page}
+      style={page}
       height="fill"
       header={
         <Toolbar
@@ -448,7 +445,7 @@ export default function FileExplorerPage() {
       }
       content={
         <LayoutContent padding={0} isScrollable={false}>
-          <HStack height="100%" xstyle={styles.columnRow}>
+          <HStack height="100%" style={columnRow}>
             {columns.map((col, colIndex) => {
               const showDivider =
                 colIndex < columns.length - 1 || selectedFile != null;
@@ -459,7 +456,7 @@ export default function FileExplorerPage() {
                   padding={2}
                   variant="transparent"
                   dividers={showDivider ? ['end'] : undefined}
-                  xstyle={[styles.scrollable, styles.fixedColumn]}>
+                  style={{...scrollable, ...fixedColumn}}>
                   <List density="compact" hasDividers={false}>
                     {col.items.map(item => {
                       const isSelected = col.selectedId === item.id;
@@ -506,7 +503,7 @@ export default function FileExplorerPage() {
               <Section
                 padding={6}
                 variant="transparent"
-                xstyle={[styles.scrollable, styles.detailColumn]}>
+                style={{...scrollable, ...detailColumn}}>
                 <VStack gap={4} hAlign="center">
                   <Avatar name={selectedFile.name} size={96} />
                   <VStack gap={1} hAlign="center">

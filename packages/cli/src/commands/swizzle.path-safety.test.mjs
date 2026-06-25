@@ -58,7 +58,7 @@ function runCli(args, cwd) {
 
 let tmpDir;
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-swizzle-paths-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-swizzle-paths-'));
 });
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});

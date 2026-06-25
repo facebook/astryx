@@ -1,18 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {XDSDialog} from '@astryxdesign/core/Dialog';
-import {XDSVStack} from '@astryxdesign/core/Stack';
-import {XDSText} from '@astryxdesign/core/Text';
-import {XDSHeading} from '@astryxdesign/core/Text';
-import {XDSButton} from '@astryxdesign/core/Button';
-import {XDSIcon} from '@astryxdesign/core/Icon';
+import {Dialog} from '@astryxdesign/core/Dialog';
+import {VStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
+import {Heading} from '@astryxdesign/core/Text';
+import {Button} from '@astryxdesign/core/Button';
+import {Icon} from '@astryxdesign/core/Icon';
 import './report.css';
 
 interface CodeModalProps {
   isOpen: boolean;
   onHide: () => void;
   promptId: string;
-  target: 'xds' | 'baseline' | 'html';
+  target: 'astryx' | 'baseline' | 'html';
   code: string;
 }
 
@@ -24,34 +24,34 @@ export function CodeModal({
   code,
 }: CodeModalProps) {
   const targetLabel =
-    target === 'xds' ? 'XDS' : target === 'baseline' ? 'Baseline' : 'HTML';
+    target === 'astryx' ? 'Astryx' : target === 'baseline' ? 'Baseline' : 'HTML';
   const lineCount = code.split('\n').length;
 
   return (
-    <XDSDialog
+    <Dialog
       isOpen={isOpen}
       onHide={onHide}
       purpose="info"
       width={800}
       aria-label={`${targetLabel} code for ${promptId}`}>
       <div className="report-codeModal-header">
-        <XDSVStack gap={1}>
-          <XDSHeading level={3}>
+        <VStack gap={1}>
+          <Heading level={3}>
             {promptId} — {targetLabel}
-          </XDSHeading>
-          <XDSText type="supporting">{lineCount} lines</XDSText>
-        </XDSVStack>
-        <XDSButton
+          </Heading>
+          <Text type="supporting">{lineCount} lines</Text>
+        </VStack>
+        <Button
           variant="ghost"
           label="Close"
           tooltip="Close"
-          icon={<XDSIcon icon="close" color="inherit" />}
+          icon={<Icon icon="close" color="inherit" />}
           onClick={onHide}
         />
       </div>
       <div className="report-codeModal-content">
         <div className="report-codeModal-codeBlock">{code}</div>
       </div>
-    </XDSDialog>
+    </Dialog>
   );
 }

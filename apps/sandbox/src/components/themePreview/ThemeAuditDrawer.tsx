@@ -25,9 +25,9 @@
 import {useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import type {DefinedTheme} from '@astryxdesign/core/theme';
 
-// XDS components — used in the editor popover, export dialog, and the
+// Astryx components — used in the editor popover, export dialog, and the
 // row trigger so the audit drawer's interactive surfaces stay
-// consistent with the rest of XDS instead of a hand-rolled clone of
+// consistent with the rest of Astryx instead of a hand-rolled clone of
 // each one.
 import {Popover} from '@astryxdesign/core/Popover';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
@@ -343,7 +343,7 @@ const S = {
   // present (even when default === current) so the row geometry is
   // consistent and you can sanity-check the original value at a glance.
   //
-  // When the token has no XDS default (theme-only addition), the caller
+  // When the token has no Astryx default (theme-only addition), the caller
   // passes `transparent` and we lay a faint diagonal-stripe pattern on
   // top so the empty slot reads as "no default exists" rather than a
   // glitched render.
@@ -492,7 +492,7 @@ export function ThemeAuditDrawer({
   };
 
   // Pre-bucket tokens into the docsite categories. We pass the *union*
-  // of every color token the audit knows about (theme-defined + XDS
+  // of every color token the audit knows about (theme-defined + Astryx
   // defaults) so anything not covered by the curated categories falls
   // into the trailing "Other Colors" / "Syntax Highlighting" buckets
   // instead of being silently hidden.
@@ -699,7 +699,7 @@ function ColorRow({
     ? composeAlphaHex(activeHexBase, activeAlpha)
     : '';
 
-  // Resolve the XDS-default value for this token in the active mode.
+  // Resolve the Astryx-default value for this token in the active mode.
   // Always rendered as the leftmost square so the row geometry is
   // consistent across the table, even when default === current. The
   // default's own alpha is layered back on so the comparison swatch
@@ -763,8 +763,8 @@ function ColorRow({
           style={S.originalSwatch(defaultHexWithAlpha ?? 'transparent')}
           title={
             defaultHexWithAlpha
-              ? `Original (XDS default): ${formatHexWithAlpha(defaultHexBase ?? '#000000', defaultAlpha)}`
-              : 'No XDS default — token added by theme'
+              ? `Original (Astryx default): ${formatHexWithAlpha(defaultHexBase ?? '#000000', defaultAlpha)}`
+              : 'No Astryx default — token added by theme'
           }
           aria-label={
             defaultHexWithAlpha

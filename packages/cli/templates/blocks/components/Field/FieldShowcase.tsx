@@ -6,13 +6,6 @@ import {useState} from 'react';
 import {Field} from '@astryxdesign/core/Field';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Stack} from '@astryxdesign/core/Layout';
-import * as stylex from '@stylexjs/stylex';
-
-const styles = stylex.create({
-  root: {
-    width: 320,
-  },
-});
 
 export default function FieldShowcase() {
   const [email, setEmail] = useState('');
@@ -23,7 +16,7 @@ export default function FieldShowcase() {
       : undefined;
 
   return (
-    <Stack direction="vertical" gap={3} xstyle={styles.root}>
+    <Stack direction="vertical" gap={3} style={{width: 320}}>
       <Field
         label="Email"
         inputID="field-email"

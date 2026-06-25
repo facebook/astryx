@@ -299,7 +299,7 @@ const weatherHeatmapSpec: AnySpec = {
 };
 
 // ---------------------------------------------------------------------------
-// Themed wrapper — resolves XDS tokens into a Vega-Lite config
+// Themed wrapper — resolves Astryx tokens into a Vega-Lite config
 // ---------------------------------------------------------------------------
 
 function ThemedVegaChart(props: React.ComponentProps<typeof VegaChart>) {

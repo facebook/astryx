@@ -51,12 +51,12 @@ function parseArgs(): {iteration: string; prompt?: string} {
 
 function generatePreviewCode(
   componentPath: string,
-  target: 'xds' | 'baseline' | 'xds-tailwind',
+  target: 'astryx' | 'baseline' | 'xds-tailwind',
 ): string {
   const relPath = path.relative(path.join(APP_DIR, 'src'), componentPath);
   const importPath = relPath.replace(/\.tsx$/, '').replace(/\\/g, '/');
 
-  if (target === 'xds' || target === 'xds-tailwind') {
+  if (target === 'astryx' || target === 'xds-tailwind') {
     // XDS+Tailwind uses the same XDS wrapper but also imports Tailwind CSS
     const tailwindImport =
       target === 'xds-tailwind' ? `\nimport '../tailwind.css';` : '';
@@ -108,7 +108,7 @@ async function main() {
     prompts: Array<{id: string; category: string}>;
   }>(manifestPath);
 
-  const target = manifest.config.target as 'xds' | 'baseline' | 'xds-tailwind';
+  const target = manifest.config.target as 'astryx' | 'baseline' | 'xds-tailwind';
 
   // Determine which prompts to screenshot
   let promptIds = manifest.prompts.map(p => p.id);

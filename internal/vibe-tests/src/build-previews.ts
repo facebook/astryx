@@ -154,7 +154,7 @@ function createEntryFile(
   const entryPath = path.join(tmpDir, 'entry.tsx');
 
   // For XDS and XDS+Tailwind targets, wrap in theme provider and import reset
-  if (target === 'xds' || target === 'xds-tailwind') {
+  if (target === 'astryx' || target === 'xds-tailwind') {
     const tailwindImport =
       target === 'xds-tailwind'
         ? `\nimport '${path.join(REPO_ROOT, 'packages/core/src/tailwind-theme.css').replace(/\\/g, '/')}';`
@@ -296,7 +296,7 @@ function createViteConfig(tmpDir: string, target: string): string {
   // type casts). We use a pre-transform plugin to strip TypeScript type
   // assertions before StyleX processes the file.
   const plugins =
-    target === 'xds' || target === 'xds-tailwind'
+    target === 'astryx' || target === 'xds-tailwind'
       ? `
     {
       name: 'stylex-inline-vars',
@@ -368,7 +368,7 @@ function createViteConfig(tmpDir: string, target: string): string {
     viteSingleFile(),`;
 
   const imports =
-    target === 'xds' || target === 'xds-tailwind'
+    target === 'astryx' || target === 'xds-tailwind'
       ? `import stylex from '@stylexjs/unplugin';
 import react from '@vitejs/plugin-react';
 import {viteSingleFile} from 'vite-plugin-singlefile';`
@@ -389,7 +389,7 @@ import {viteSingleFile} from 'vite-plugin-singlefile';`;
     },`;
 
   const aliases =
-    target === 'xds' || target === 'xds-tailwind'
+    target === 'astryx' || target === 'xds-tailwind'
       ? xdsAliases
       : target === 'baseline'
         ? `
@@ -533,10 +533,9 @@ type BuildErrors = Record<string, TscResult>;
  */
 function getTsconfigForTarget(target: string): string {
   switch (target) {
-    case 'xds':
     case 'xds-tailwind':
     case 'astryx':
-      return path.join(VIBE_DIR, 'tsconfig.xds.json');
+      return path.join(VIBE_DIR, 'tsconfig.astryx.json');
     case 'baseline':
       return path.join(VIBE_DIR, 'tsconfig.baseline.json');
     default:
@@ -699,7 +698,7 @@ async function main() {
     }
 
     const iterManifest = readJson<{config?: {target?: string}}>(manifestPath);
-    const target = iterManifest.config?.target ?? 'xds';
+    const target = iterManifest.config?.target ?? 'astryx';
     const codeDir = path.join(iterDir, 'results');
 
     if (!fs.existsSync(codeDir)) {
@@ -733,7 +732,7 @@ async function main() {
       console.log(`  📄 ${promptId} (${target})...`);
 
       // Auto-fix missing XDS imports before building
-      if (target === 'xds' || target === 'xds-tailwind') {
+      if (target === 'astryx' || target === 'xds-tailwind') {
         const autoImported = fixMissingXDSImports(componentPath);
         if (autoImported.length > 0) {
           console.log(`  ⚡ Auto-imported: ${autoImported.join(', ')}`);
@@ -748,7 +747,7 @@ async function main() {
       const ok = buildPreview(componentPath, target, promptId, previewPath);
       if (ok) {
         // Post-build validation: ensure no unresolved XDS references
-        if (target === 'xds' || target === 'xds-tailwind') {
+        if (target === 'astryx' || target === 'xds-tailwind') {
           const unresolved = validatePreviewHtml(previewPath);
           if (unresolved.length > 0) {
             console.error(

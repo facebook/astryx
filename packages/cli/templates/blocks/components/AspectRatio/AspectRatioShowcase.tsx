@@ -2,26 +2,9 @@
 
 'use client';
 
-import * as stylex from '@stylexjs/stylex';
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
-import {radiusVars} from '@astryxdesign/core/theme/tokens.stylex';
-
-const s = stylex.create({
-  // Fixed height with auto width lets the aspect ratio drive the width,
-  // so all three containers share the same height but differ in width.
-  ratioBox: {
-    height: 120,
-    width: 'auto',
-    borderRadius: radiusVars['--radius-container'],
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-});
 
 const items = [
   {
@@ -49,8 +32,18 @@ export default function AspectRatioShowcase() {
     <HStack gap={4} vAlign="start">
       {items.map(({ratio, label, src, alt}) => (
         <VStack key={label} gap={2} hAlign="center">
-          <AspectRatio ratio={ratio} xstyle={s.ratioBox}>
-            <img src={src} alt={alt} {...stylex.props(s.image)} />
+          <AspectRatio
+            ratio={ratio}
+            style={{
+              height: 120,
+              width: 'auto',
+              borderRadius: 'var(--radius-container)',
+            }}>
+            <img
+              src={src}
+              alt={alt}
+              style={{width: '100%', height: '100%', objectFit: 'cover'}}
+            />
           </AspectRatio>
           <Text type="supporting" color="secondary">
             {label}

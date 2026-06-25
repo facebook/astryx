@@ -21,10 +21,12 @@
  */
 
 import type {ReactNode} from 'react';
+import type {Metadata} from 'next';
 import {FileText, Scale} from 'lucide-react';
 import {NavSurfaceMode} from './NavSurfaceMode';
 import {TemplatesPreview} from '../_landing/TemplatesPreview';
 import {ThemesPreview} from '../_landing/ThemesPreview';
+import {pageMetadata} from '../../../lib/pageMetadata';
 import * as stylex from '@stylexjs/stylex';
 import {Card} from '@astryxdesign/core/Card';
 import {ClickableCard} from '@astryxdesign/core/ClickableCard';
@@ -722,6 +724,13 @@ async function fetchContributors(): Promise<Contributor[]> {
 // =============================================================================
 // Page
 // =============================================================================
+
+export const metadata: Metadata = pageMetadata({
+  title: 'Community',
+  description:
+    'Join the Astryx community: contribute on GitHub, follow updates, and meet the people building the design system.',
+  path: '/community',
+});
 
 export default async function CommunityPage() {
   const contributors = await fetchContributors();

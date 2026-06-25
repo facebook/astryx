@@ -2,14 +2,12 @@
 
 'use client';
 
-import {useState, useMemo} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useState, useMemo, type CSSProperties} from 'react';
 
 import {Layout, LayoutContent, LayoutPanel} from '@astryxdesign/core/Layout';
 import {ResizeHandle, useResizable} from '@astryxdesign/core/Resizable';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {CodeBlock} from '@astryxdesign/core/CodeBlock';
-import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {Stack, StackItem} from '@astryxdesign/core/Layout';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
@@ -30,7 +28,7 @@ import {
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
-const styles = stylex.create({
+const styles: Record<string, CSSProperties> = {
   contentFill: {
     height: '100%',
   },
@@ -40,16 +38,16 @@ const styles = stylex.create({
     display: 'grid',
   },
   tabListPadding: {
-    paddingTop: spacingVars['--spacing-2'],
+    paddingTop: 'var(--spacing-2)',
   },
   metadataCompact: {
-    gap: `${spacingVars['--spacing-1']} ${spacingVars['--spacing-3']}`,
+    gap: 'var(--spacing-1) var(--spacing-3)',
   },
   historyTimelineDot: {
     width: 8,
     height: 8,
     borderRadius: '50%',
-    backgroundColor: colorVars['--color-border-emphasized'],
+    backgroundColor: 'var(--color-border-emphasized)',
     marginTop: 6,
     flexShrink: 0,
   },
@@ -75,26 +73,23 @@ const styles = stylex.create({
     height: '100%',
     overflow: 'hidden',
   },
-});
+};
 
 const EDITOR_CODE = `import {useState, useCallback} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {Button} from '@astryxdesign/core/Button';
 import {Text} from '@astryxdesign/core/Text';
 
-const styles = stylex.create({
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    padding: 16,
-  },
-  counter: {
-    fontSize: 48,
-    fontWeight: 700,
-    fontVariantNumeric: 'tabular-nums',
-  },
-});
+const containerStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 8,
+  padding: 16,
+};
+const counterStyle = {
+  fontSize: 48,
+  fontWeight: 700,
+  fontVariantNumeric: 'tabular-nums',
+};
 
 export default function Counter() {
   const [count, setCount] = useState(0);
@@ -108,9 +103,9 @@ export default function Counter() {
   }, []);
 
   return (
-    <div {...stylex.props(styles.container)}>
+    <div style={containerStyle}>
       <Text type="label">Counter</Text>
-      <span {...stylex.props(styles.counter)}>
+      <span style={counterStyle}>
         {count}
       </span>
       <Button label="Increment" onClick={increment} />
@@ -172,7 +167,7 @@ function buildFileTree(
           label: label('styles'),
           startContent: <Icon icon={FolderIcon} size="xsm" />,
           isExpanded: true,
-          children: [file('tokens.stylex.ts'), file('theme.ts')],
+          children: [file('tokens.ts'), file('theme.ts')],
         },
       ],
     },
@@ -196,7 +191,7 @@ const PROPERTIES = [
 const HISTORY_ITEMS = [
   {label: 'Opened Counter.tsx', time: '2 min ago'},
   {label: 'Opened Layout.tsx', time: '6 min ago'},
-  {label: 'Viewed tokens.stylex.ts', time: '11 min ago'},
+  {label: 'Viewed tokens.ts', time: '11 min ago'},
 ];
 
 export default function ResizableWorkspacePage() {
@@ -248,7 +243,7 @@ export default function ResizableWorkspacePage() {
                       padding={0}>
                       <Stack
                         direction="vertical"
-                        xstyle={styles.fileExplorer}
+                        style={styles.fileExplorer}
                         gap={2}>
                         <TextInput
                           label="Search files"
@@ -278,8 +273,8 @@ export default function ResizableWorkspacePage() {
                   height="fill"
                   content={
                     <LayoutContent padding={0}>
-                      <Stack direction="vertical" xstyle={styles.contentFill}>
-                        <StackItem size="fill" xstyle={styles.editorArea}>
+                      <Stack direction="vertical" style={styles.contentFill}>
+                        <StackItem size="fill" style={styles.editorArea}>
                           <CodeBlock
                             code={EDITOR_CODE}
                             language="typescript"
@@ -314,13 +309,13 @@ export default function ResizableWorkspacePage() {
                             }}>
                             <Stack
                               direction="vertical"
-                              xstyle={styles.contentFill}>
+                              style={styles.contentFill}>
                               <TabList
                                 value={activeTermTab}
                                 onChange={val => setActiveTermTab(val)}
                                 size="sm"
                                 hasDivider={false}
-                                xstyle={styles.tabListPadding}>
+                                style={styles.tabListPadding}>
                                 <Tab label="Terminal" value="terminal" />
                                 <Tab label="Problems" value="problems" />
                                 <Tab label="Output" value="output" />
@@ -328,7 +323,7 @@ export default function ResizableWorkspacePage() {
                               </TabList>
                               <StackItem
                                 size="fill"
-                                xstyle={styles.terminalWrapper}>
+                                style={styles.terminalWrapper}>
                                 <CodeBlock
                                   code={TERMINAL_OUTPUT}
                                   language="bash"
@@ -369,7 +364,7 @@ export default function ResizableWorkspacePage() {
                             <Stack
                               direction="vertical"
                               gap={3}
-                              xstyle={styles.propertiesPanel}>
+                              style={styles.propertiesPanel}>
                               <SegmentedControl
                                 label="Properties panel sections"
                                 value={activePropertiesTab}
@@ -389,7 +384,7 @@ export default function ResizableWorkspacePage() {
                                 <Stack
                                   direction="vertical"
                                   gap={3}
-                                  xstyle={styles.propertiesContent}>
+                                  style={styles.propertiesContent}>
                                   <Stack direction="vertical" gap={1}>
                                     <Heading level={3} maxLines={1}>
                                       {activeFile}
@@ -401,7 +396,7 @@ export default function ResizableWorkspacePage() {
                                       src/components/{activeFile}
                                     </Text>
                                   </Stack>
-                                  <MetadataList xstyle={styles.metadataCompact}>
+                                  <MetadataList style={styles.metadataCompact}>
                                     {PROPERTIES.map(prop => (
                                       <MetadataListItem
                                         key={prop.label}
@@ -413,7 +408,7 @@ export default function ResizableWorkspacePage() {
                                   <Stack
                                     direction="vertical"
                                     gap={2}
-                                    xstyle={styles.propertyActions}>
+                                    style={styles.propertyActions}>
                                     <Button
                                       label="Format Document"
                                       size="sm"
@@ -448,9 +443,7 @@ export default function ResizableWorkspacePage() {
                                         }
                                         startContent={
                                           <span
-                                            {...stylex.props(
-                                              styles.historyTimelineDot,
-                                            )}
+                                            style={styles.historyTimelineDot}
                                           />
                                         }
                                       />

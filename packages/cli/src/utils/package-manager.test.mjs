@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 function makeTmpDir() {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-pm-test-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-pm-test-'));
   return tmpDir;
 }
 

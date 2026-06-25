@@ -2,9 +2,8 @@
 
 'use client';
 
-import {useState} from 'react';
+import {useState, type CSSProperties} from 'react';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
-import * as stylex from '@stylexjs/stylex';
 import {
   VStack,
   HStack,
@@ -28,11 +27,6 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Center} from '@astryxdesign/core/Center';
 import {
-  colorVars,
-  radiusVars,
-  spacingVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {
   UserIcon,
   LockClosedIcon,
   ShieldCheckIcon,
@@ -49,29 +43,27 @@ import {
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 
-const styles = stylex.create({
-  // Anchor the page to the viewport height so the sidebar + content fill the
-  // screen. Layout height="fill" is min-height:100% which collapses when the
-  // host container is content-sized; Layout has no viewport-height prop.
-  fillViewport: {
-    minHeight: '100dvh',
-  },
-  iconBox: {
-    borderRadius: radiusVars['--radius-container'],
-    backgroundColor: colorVars['--color-background-surface'],
-    flexShrink: 0,
-  },
-  rowPadding: {
-    paddingBlock: spacingVars['--spacing-4'],
-  },
-  sideNavPadding: {
-    paddingBlock: spacingVars['--spacing-4'],
-    paddingInline: spacingVars['--spacing-3'],
-  },
-  sideNavHeading: {
-    marginInline: spacingVars['--spacing-4'],
-  },
-});
+// Anchor the page to the viewport height so the sidebar + content fill the
+// screen. Layout height="fill" is min-height:100% which collapses when the
+// host container is content-sized; Layout has no viewport-height prop.
+const fillViewport: CSSProperties = {
+  minHeight: '100dvh',
+};
+const iconBox: CSSProperties = {
+  borderRadius: 'var(--radius-container)',
+  backgroundColor: 'var(--color-background-surface)',
+  flexShrink: 0,
+};
+const rowPadding: CSSProperties = {
+  paddingBlock: 'var(--spacing-4)',
+};
+const sideNavPadding: CSSProperties = {
+  paddingBlock: 'var(--spacing-4)',
+  paddingInline: 'var(--spacing-3)',
+};
+const sideNavHeading: CSSProperties = {
+  marginInline: 'var(--spacing-4)',
+};
 
 const NAV_ITEMS = [
   {label: 'Personal information', icon: UserIcon},
@@ -129,7 +121,7 @@ const DEVICE_ROWS: {
 function InfoRowItem({label, value, action}: InfoRow) {
   return (
     <>
-      <HStack hAlign="between" vAlign="start" xstyle={styles.rowPadding}>
+      <HStack hAlign="between" vAlign="start" style={rowPadding}>
         <VStack gap={0}>
           <Text type="body" weight="semibold" display="block">
             {label}
@@ -167,7 +159,7 @@ function ExpandableRow({
   return (
     <>
       {isExpanded ? (
-        <VStack gap={4} xstyle={styles.rowPadding}>
+        <VStack gap={4} style={rowPadding}>
           <Text type="body" weight="semibold" display="block">
             {label}
           </Text>
@@ -178,7 +170,7 @@ function ExpandableRow({
           </HStack>
         </VStack>
       ) : (
-        <HStack hAlign="between" vAlign="start" xstyle={styles.rowPadding}>
+        <HStack hAlign="between" vAlign="start" style={rowPadding}>
           <VStack gap={0}>
             <Text type="body" weight="semibold" display="block">
               {label}
@@ -263,8 +255,8 @@ export default function SettingsSecurityTemplate() {
   };
 
   const navList = (
-    <VStack gap={4} xstyle={styles.sideNavPadding}>
-      <Heading level={2} xstyle={styles.sideNavHeading}>
+    <VStack gap={4} style={sideNavPadding}>
+      <Heading level={2} style={sideNavHeading}>
         Account settings
       </Heading>
       <List density="spacious">
@@ -299,7 +291,7 @@ export default function SettingsSecurityTemplate() {
     return (
       <Layout
         height="fill"
-        xstyle={styles.fillViewport}
+        style={fillViewport}
         content={<LayoutContent padding={2}>{navList}</LayoutContent>}
       />
     );
@@ -309,7 +301,7 @@ export default function SettingsSecurityTemplate() {
     <Layout
       height="fill"
       contentWidth={1200}
-      xstyle={styles.fillViewport}
+      style={fillViewport}
       start={
         isNarrow ? undefined : (
           <LayoutPanel hasDivider padding={0}>
@@ -385,7 +377,7 @@ export default function SettingsSecurityTemplate() {
                           key={i}
                           gap={3}
                           vAlign="start"
-                          xstyle={styles.rowPadding}>
+                          style={rowPadding}>
                           <Icon icon={ComputerDesktopIcon} />
                           <StackItem size="fill">
                             <VStack gap={0}>
@@ -419,7 +411,7 @@ export default function SettingsSecurityTemplate() {
                       <HStack
                         hAlign="between"
                         vAlign="start"
-                        xstyle={styles.rowPadding}>
+                        style={rowPadding}>
                         <VStack gap={0}>
                           <Text
                             type="body"
@@ -459,7 +451,7 @@ export default function SettingsSecurityTemplate() {
                         <Center
                           width={48}
                           height={48}
-                          xstyle={styles.iconBox}>
+                          style={iconBox}>
                           <Icon icon={LockClosedIcon} />
                         </Center>
                         <VStack gap={1}>
@@ -659,7 +651,7 @@ export default function SettingsSecurityTemplate() {
                 <Card padding={4}>
                   <VStack gap={4}>
                     <HStack gap={3} vAlign="start">
-                      <Center width={48} height={48} xstyle={styles.iconBox}>
+                      <Center width={48} height={48} style={iconBox}>
                         <Icon icon={LockClosedIcon} />
                       </Center>
                       <VStack gap={0}>
@@ -677,7 +669,7 @@ export default function SettingsSecurityTemplate() {
                     </HStack>
                     <Divider />
                     <HStack gap={3} vAlign="start">
-                      <Center width={48} height={48} xstyle={styles.iconBox}>
+                      <Center width={48} height={48} style={iconBox}>
                         <Icon icon={PencilSquareIcon} />
                       </Center>
                       <VStack gap={0}>
@@ -697,7 +689,7 @@ export default function SettingsSecurityTemplate() {
                     </HStack>
                     <Divider />
                     <HStack gap={3} vAlign="start">
-                      <Center width={48} height={48} xstyle={styles.iconBox}>
+                      <Center width={48} height={48} style={iconBox}>
                         <Icon icon={ShareIcon} />
                       </Center>
                       <VStack gap={0}>
@@ -725,7 +717,7 @@ export default function SettingsSecurityTemplate() {
                 <VStack gap={8}>
                   <VStack gap={0}>
                     <Heading level={3}>Messages</Heading>
-                    <VStack xstyle={styles.rowPadding}>
+                    <VStack style={rowPadding}>
                       <Switch
                         label="Show people when I've read their messages."
                         value={readReceipts}
@@ -737,7 +729,7 @@ export default function SettingsSecurityTemplate() {
                     <HStack
                       hAlign="between"
                       vAlign="center"
-                      xstyle={styles.rowPadding}>
+                      style={rowPadding}>
                       <Text type="body" weight="semibold">
                         Blocked people
                       </Text>
@@ -748,7 +740,7 @@ export default function SettingsSecurityTemplate() {
 
                   <VStack gap={0}>
                     <Heading level={3}>Listings</Heading>
-                    <VStack xstyle={styles.rowPadding}>
+                    <VStack style={rowPadding}>
                       <Switch
                         label="Include my listing(s) in search engines"
                         description="Turning this on means search engines, like Google, will display your listing page(s) in search results."
@@ -833,7 +825,7 @@ export default function SettingsSecurityTemplate() {
                         <Center
                           width={48}
                           height={48}
-                          xstyle={styles.iconBox}>
+                          style={iconBox}>
                           <Icon icon={ShieldCheckIcon} />
                         </Center>
                         <VStack gap={1}>

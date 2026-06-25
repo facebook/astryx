@@ -26,7 +26,7 @@ let logCalls;
 let exitCode;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-doctor-test-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-doctor-test-'));
   logCalls = [];
   exitCode = undefined;
   vi.spyOn(console, 'log').mockImplementation((...args) => {

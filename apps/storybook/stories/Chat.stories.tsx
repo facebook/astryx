@@ -518,7 +518,7 @@ export const MultiBubble: StoryObj = {
                 status="delivered"
               />
             }>
-            Link: github.com/xds/pull/1180
+            Link: github.com/facebook/astryx/pull/1180
           </ChatMessageBubble>
         </ChatMessage>
         <ChatMessage

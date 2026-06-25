@@ -51,7 +51,7 @@ export const MultiColumn: Story = {
       <MetadataListItem label="Tags">
         <span style={{display: 'flex', gap: 4}}>
           <Token label="component" />
-          <Token label="xds" />
+          <Token label="astryx" />
         </span>
       </MetadataListItem>
       <MetadataListItem label="Priority">Tier 1</MetadataListItem>
@@ -93,7 +93,7 @@ export const StackedLabelsSingleColumn: Story = {
       <MetadataListItem label="Tags">
         <span style={{display: 'flex', gap: 4}}>
           <Token label="component" />
-          <Token label="xds" />
+          <Token label="astryx" />
         </span>
       </MetadataListItem>
     </MetadataList>
@@ -165,7 +165,7 @@ export const WithIcons: Story = {
         icon={<Icon icon={TagIcon} size="sm" />}>
         <span style={{display: 'flex', gap: 4}}>
           <Token label="component" />
-          <Token label="xds" />
+          <Token label="astryx" />
         </span>
       </MetadataListItem>
     </MetadataList>

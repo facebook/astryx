@@ -54,7 +54,7 @@ function writeTheme(dir, name) {
 
 let tmpDir;
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-build-theme-paths-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-build-theme-paths-'));
 });
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});

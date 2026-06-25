@@ -17,7 +17,7 @@ let tmpDir;
 let templateApi;
 
 beforeEach(async () => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-template-paths-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-template-paths-'));
   templateApi = (await import('../api/template.mjs')).template;
 });
 afterEach(() => {

@@ -34,7 +34,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @astryxdesign/cli and run `npx astryx agent-docs` to set up your XDS context. Read the generated file.',
+          code: 'Install @astryxdesign/cli and run `npx astryx agent-docs` to set up your Astryx context. Read the generated file.',
         },
         {
           type: 'prose',
@@ -103,7 +103,7 @@ npx astryx agent-docs --agent-docs-path ~/.cursor/rules/xds.mdc`,
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: `Before writing any XDS code, check your knowledge:
+          code: `Before writing any Astryx code, check your knowledge:
 
 1. What is the correct import path for Button?
 2. How do you make an Dialog non-dismissible?
@@ -165,7 +165,7 @@ npx astryx docs tokens --dense`,
       content: [
         {
           type: 'prose',
-          text: 'XDS ships a Model Context Protocol (MCP) server that any MCP-compatible AI tool can connect to. Instead of manually pasting CLI output, the AI can query the XDS design system directly, searching for components, reading full documentation, and pulling code examples on demand.',
+          text: 'Astryx ships a Model Context Protocol (MCP) server that any MCP-compatible AI tool can connect to. Instead of manually pasting CLI output, the AI can query the Astryx design system directly, searching for components, reading full documentation, and pulling code examples on demand.',
         },
         {
           type: 'prose',

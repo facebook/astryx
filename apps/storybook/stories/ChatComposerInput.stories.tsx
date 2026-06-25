@@ -128,7 +128,7 @@ export const CustomPlaceholder: Story = {
     <ChatComposer
       onSubmit={v => alert(v)}
       input={
-        <ChatComposerInput placeholder="Ask me anything about XDS..." />
+        <ChatComposerInput placeholder="Ask me anything about Astryx..." />
       }
     />
   ),

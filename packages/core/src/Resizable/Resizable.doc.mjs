@@ -27,7 +27,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use useResizable() with existing XDS layout components. ' +
+          'Use useResizable() with existing Astryx layout components. ' +
           'Pass the returned props to the resizable prop on LayoutPanel or SideNav.',
       },
       {
@@ -195,7 +195,7 @@ export const docsDense = {
     description:
       'Hook-based resizable panel system. useResizable() manages size state; ResizeHandle provides interactive pill-grip separator. Pass resize props to existing layout components via their resizable prop.',
     bestPractices: [
-      {guidance: true, description: 'Use useResizable() w/ existing XDS layout components. Pass returned props to resizable prop on LayoutPanel or SideNav.'},
+      {guidance: true, description: 'Use useResizable() w/ existing Astryx layout components. Pass returned props to resizable prop on LayoutPanel or SideNav.'},
       {guidance: true, description: 'Provide accessible label on each ResizeHandle when multiple handles exist (e.g. "Resize sidebar", "Resize terminal").'},
       {guidance: false, description: 'Wrap panels in extra container components for resize. Hook-first architecture avoids extra DOM; use it directly on existing components.'},
     ],

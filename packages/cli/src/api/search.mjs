@@ -41,13 +41,183 @@ import {
 } from '../lib/component-discovery.mjs';
 import {discoverHooks, findHookDoc} from '../lib/hook-discovery.mjs';
 import {levenshteinDistance} from '../lib/string-utils.mjs';
-import {discoverTemplates} from './template.mjs';
+import {discoverTemplates, extractComponents} from './template.mjs';
 import {AstryxError} from './error.mjs';
 
 const DOCS_DIR = path.join(CLI_ROOT, 'docs');
 
+/**
+ * Synonym / intent map: product-language terms an agent is likely to type,
+ * expanded to the catalog's vocabulary so oblique queries still rank. Keys and
+ * values are matched bidirectionally (typing any value also pulls in the key
+ * and its siblings). Lowercase, single words or short phrases.
+ */
+const SYNONYMS = {
+  dashboard: ['overview', 'analytics', 'kpi', 'kpis', 'metrics', 'stats', 'reporting', 'insights', 'control'],
+  login: ['signin', 'auth', 'authentication', 'sso', 'credentials', 'account'],
+  signup: ['register', 'registration', 'onboarding'],
+  payment: ['checkout', 'billing', 'card', 'pay', 'purchase', 'order'],
+  pricing: ['plans', 'plan', 'tiers', 'tier', 'subscription', 'subscriptions'],
+  chat: ['messaging', 'message', 'messages', 'conversation', 'inbox', 'dm'],
+  settings: ['preferences', 'config', 'configuration', 'account'],
+  calendar: ['schedule', 'scheduling', 'events', 'event', 'month', 'agenda'],
+  table: ['list', 'rows', 'records', 'grid', 'spreadsheet', 'datatable'],
+  gallery: ['photos', 'photo', 'images', 'image', 'pictures'],
+  hero: ['banner', 'splash', 'headline', 'landing'],
+  form: ['fields', 'input', 'inputs', 'survey'],
+  profile: ['bio', 'avatar', 'user'],
+  documentation: ['docs', 'reference', 'guide', 'api'],
+  navigation: ['nav', 'menu', 'sidebar'],
+};
+
+// Flatten into a token -> Set(expansions) lookup (bidirectional).
+const SYNONYM_INDEX = (() => {
+  const idx = new Map();
+  const add = (a, b) => {
+    if (!idx.has(a)) idx.set(a, new Set());
+    idx.get(a).add(b);
+  };
+  for (const [key, vals] of Object.entries(SYNONYMS)) {
+    for (const v of vals) {
+      add(key, v);
+      add(v, key);
+      for (const v2 of vals) if (v2 !== v) add(v, v2);
+    }
+  }
+  return idx;
+})();
+
+/**
+ * Light stemmer: strips common English suffixes so "charts"/"charting" and
+ * "chart" share a root. Deliberately crude (no Porter) — good enough to bridge
+ * plural/gerund gaps without a dependency.
+ * @param {string} w
+ * @returns {string}
+ */
+export function stem(w) {
+  let s = w;
+  for (const suf of ['ing', 'ed', 'ies', 'es', 's']) {
+    if (s.length > suf.length + 2 && s.endsWith(suf)) {
+      s = suf === 'ies' ? s.slice(0, -3) + 'y' : s.slice(0, -suf.length);
+      break;
+    }
+  }
+  return s;
+}
+
+
 /** Valid domain filters for `--type`. */
 export const SEARCH_DOMAINS = ['component', 'hook', 'doc', 'template'];
+
+/**
+ * Filler words stripped from multi-word queries so natural-language phrasing
+ * ("a page where you can see business stats") ranks on its content words.
+ */
+const STOPWORDS = new Set([
+  'a', 'an', 'the', 'of', 'for', 'to', 'with', 'and', 'or', 'in', 'on', 'at',
+  'by', 'that', 'this', 'my', 'your', 'our', 'their', 'is', 'are', 'be', 'it',
+  'its', 'as', 'from', 'page', 'screen', 'app', 'application', 'view', 'where',
+  'you', 'can', 'some', 'like', 'just', 'basically', 'kinda', 'want', 'wants',
+  'need', 'needs', 'something', 'thing', 'things', 'build', 'make', 'create',
+  'i', 'me', 'we', 'us', 'so', 'up', 'out', 'over', 'side', 'one', 'big',
+]);
+
+/**
+ * Split a query into meaningful content tokens (lowercased, stopwords + very
+ * short words removed). Empty for single-word queries (callers fall back to
+ * whole-phrase scoring).
+ * @param {string} term - Already-lowercased query.
+ * @returns {string[]}
+ */
+export function tokenizeQuery(term) {
+  return term
+    .split(/\s+/)
+    // Strip only leading/trailing punctuation; keep joined identifiers intact
+    // (e.g. "foo_bar" stays one token) so gibberish stays gibberish.
+    .map(t => t.replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, ''))
+    .filter(t => t.length >= 2 && !STOPWORDS.has(t));
+}
+
+/**
+ * Score a candidate against a query, handling multi-word natural language.
+ * Tries the whole phrase (so exact/near matches still win) AND a per-token
+ * pass (so "data table with filters" matches `table-page` via table+filter),
+ * and returns whichever is stronger.
+ *
+ * @param {string} term - Lowercased full query.
+ * @param {string[]} tokens - Content tokens from tokenizeQuery(term).
+ * @param {object} candidate
+ * @returns {{score: number, reason: string} | null}
+ */
+/**
+ * Minimum per-token score (in the multi-word pass) to count as a real match.
+ * 50 = a genuine name/keyword/description hit; below that is loose Levenshtein
+ * fuzz that would otherwise turn gibberish queries into noise.
+ */
+const MIN_TOKEN_SCORE = 50;
+
+/**
+ * Best score for a token against a candidate, fanning out through synonyms
+ * (synonym hits are discounted so a direct hit always wins).
+ * @returns {{score: number, reason: string} | null}
+ */
+function bestForToken(tok, candidate) {
+  let best = scoreCandidate(tok, candidate);
+  const syns = SYNONYM_INDEX.get(tok);
+  if (syns) {
+    for (const s of syns) {
+      const h = scoreCandidate(s, candidate);
+      if (h) {
+        const score = Math.round(h.score * 0.85);
+        if (!best || score > best.score) best = {score, reason: `${h.reason} (~${tok})`};
+      }
+    }
+  }
+  return best;
+}
+
+export function scoreQuery(term, tokens, candidate) {
+  const full = scoreCandidate(term, candidate);
+
+  // 0–1 content tokens: keep whole-phrase fuzzy matching (typo tolerance for
+  // single words), but if stopwords left exactly one DIFFERENT token (e.g.
+  // "pricing page" → "pricing"), score that token too and take the stronger.
+  if (tokens.length <= 1) {
+    const single = tokens.length === 1 ? bestForToken(tokens[0], candidate) : null;
+    if (full && (!single || full.score >= single.score)) return full;
+    return single;
+  }
+
+  // Multi-word natural language: score each content token, counting only
+  // strong hits, then reward coverage so candidates matching more terms win.
+  let sum = 0;
+  let matched = 0;
+  const hitTerms = [];
+  for (const tok of tokens) {
+    const h = bestForToken(tok, candidate);
+    if (h && h.score >= MIN_TOKEN_SCORE) {
+      sum += h.score;
+      matched++;
+      hitTerms.push(tok);
+    }
+  }
+  if (matched === 0) return full;
+
+  // Reward the AVERAGE strength of the concepts that matched (not divided by
+  // total query length — that penalizes verbose / low-fidelity prompts), plus
+  // a bonus per additional matched concept and a coverage term. A candidate
+  // that matches several of the query's concepts beats one matching a single
+  // incidental word.
+  const avgMatched = sum / matched;
+  const coverage = matched / tokens.length;
+  const tokenScore = Math.round(avgMatched + Math.min(matched - 1, 3) * 12 + coverage * 15);
+
+  if (full && full.score >= tokenScore) return full;
+  return {
+    score: tokenScore,
+    reason: `matches ${matched}/${tokens.length} terms: ${hitTerms.join(', ')}`,
+  };
+}
 
 /**
  * Score a single candidate against the search term across name, keywords,
@@ -107,10 +277,13 @@ export function scoreCandidate(term, {name, keywords = [], description = '', pro
     else if (dist === 2) consider(30, `keyword "${kw}" (distance ${dist})`);
   }
 
-  // ── Prose / description signals (whole-word boundary) ───────────
+  // ── Prose / description signals (stem-tolerant whole word) ──────
+  // Match the term's stem as a whole word, tolerating plural/gerund suffixes
+  // so "chart" matches "charts" and "filter" matches "filtering".
   if (term.length >= 3) {
-    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const re = new RegExp(`\\b${escaped}\\b`);
+    const root = stem(term);
+    const escaped = root.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`\\b${escaped}(s|es|ing|ed|ies)?\\b`);
     if (description && re.test(description.toLowerCase())) {
       consider(50, `description mentions "${term}"`);
     } else {
@@ -240,14 +413,30 @@ async function gatherTemplates(cwd) {
   } catch {
     return [];
   }
-  return templates.map(t => ({
-    domain: 'template',
-    name: t.dirName,
-    keywords: Array.isArray(t.componentsUsed) ? t.componentsUsed : [],
-    description: t.description || '',
-    _displayName: t.name,
-    _kind: t.type, // 'page' | 'block'
-  }));
+  return templates.map(t => {
+    // Blocks ship componentsUsed; page templates don't, so derive them from the
+    // source. Category words (e.g. "Dashboard - Analytics") are strong intent
+    // signal for pages, which otherwise only index on name + description.
+    let keywords = Array.isArray(t.componentsUsed) ? [...t.componentsUsed] : [];
+    if (t.type === 'page') {
+      if (t.filePath) {
+        try {
+          keywords = keywords.concat(extractComponents(t.filePath));
+        } catch {
+          // Best-effort: skip keyword enrichment if the source can't be read.
+        }
+      }
+      if (t.category) keywords = keywords.concat(t.category.split(/[^A-Za-z0-9]+/).filter(Boolean));
+    }
+    return {
+      domain: 'template',
+      name: t.dirName,
+      keywords,
+      description: t.description || '',
+      _displayName: t.name,
+      _kind: t.type, // 'page' | 'block'
+    };
+  });
 }
 
 /**
@@ -325,6 +514,7 @@ export async function search(query, options = {}) {
   }
 
   const term = String(query).trim().toLowerCase();
+  const tokens = tokenizeQuery(term);
 
   const coreDir = findCoreDir(cwd);
   if (!coreDir) {
@@ -342,9 +532,13 @@ export async function search(query, options = {}) {
 
   const all = [...components, ...hooks, ...docTopics, ...templates];
 
+  // Score every candidate on its own merits. The consumer groups results by
+  // role (page / block / component) and takes the top of each, so there's no
+  // cross-role competition to engineer — a target page only needs to be the
+  // strongest PAGE, not outrank every component.
   const scored = [];
   for (const candidate of all) {
-    const hit = scoreCandidate(term, candidate);
+    const hit = scoreQuery(term, tokens, candidate);
     if (hit) scored.push(toResult(candidate, hit.score, hit.reason));
   }
 

@@ -90,6 +90,12 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     paddingInline: spacingVars['--spacing-2'],
   },
+  // When a label is shown, the icon sits on the leading edge and the text on
+  // the trailing edge. Symmetric padding leaves the text cramped against the
+  // pill's rounded edge, so give the trailing side extra breathing room.
+  buttonWithLabel: {
+    paddingInlineEnd: spacingVars['--spacing-3'],
+  },
 });
 
 // =============================================================================
@@ -130,7 +136,7 @@ export function ChatLayoutScrollButton({
           variant="ghost"
           size="md"
           onClick={onClick}
-          xstyle={styles.button}>
+          xstyle={[styles.button, label ? styles.buttonWithLabel : null]}>
           {label ?? undefined}
         </Button>
       </div>

@@ -353,7 +353,7 @@ export default function DocDocsPage() {
                 letterSpacing: '-0.03em',
                 color: 'var(--color-text-primary, #1a1a1a)',
               }}>
-              XDS
+              Astryx
             </span>
             <span
               style={{

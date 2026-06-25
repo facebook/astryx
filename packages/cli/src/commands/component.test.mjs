@@ -18,7 +18,7 @@ import {
 let tmpDir;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xds-component-test-'));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-component-test-'));
 });
 
 afterEach(() => {

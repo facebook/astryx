@@ -219,7 +219,7 @@ export const SearchResults: Story = {
         startContent={<Icon icon={MagnifyingGlassIcon} size="sm" />}
         label={
           <>
-            XDS <b>Button</b> Component
+            Astryx <b>Button</b> Component
           </>
         }
         description="Primary interactive element for triggering actions..."
@@ -230,7 +230,7 @@ export const SearchResults: Story = {
         startContent={<Icon icon={MagnifyingGlassIcon} size="sm" />}
         label={
           <>
-            XDS <b>Button</b>Group
+            Astryx <b>Button</b>Group
           </>
         }
         description="Groups related buttons into a single connected control..."

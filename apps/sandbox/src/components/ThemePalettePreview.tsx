@@ -300,7 +300,7 @@ export interface CoreSwatch {
 }
 
 export interface ThemePalettePreviewProps {
-  /** The XDS theme object */
+  /** The Astryx theme object */
   theme: DefinedTheme;
   /** Theme display name for the page title */
   title: string;

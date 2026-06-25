@@ -41,7 +41,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Smooths bursty streamed text into a steady character-by-character reveal using requestAnimationFrame. Decouples arrival rate from display rate. Advances on word and syntax boundaries to avoid slicing mid-markdown or mid-word, preventing visual glitches with markdown renderers. Animation timing derives from XDS motion tokens via useTheme when available, with sensible fallbacks outside a theme provider. Snaps to full text when isStreaming becomes false.',
+      'Smooths bursty streamed text into a steady character-by-character reveal using requestAnimationFrame. Decouples arrival rate from display rate. Advances on word and syntax boundaries to avoid slicing mid-markdown or mid-word, preventing visual glitches with markdown renderers. Animation timing derives from Astryx motion tokens via useTheme when available, with sensible fallbacks outside a theme provider. Snaps to full text when isStreaming becomes false.',
     bestPractices: [
       { guidance: true, description: 'Pass the accumulated text (not individual chunks) as targetText; the hook handles incremental reveal internally.' },
       { guidance: true, description: 'Set isStreaming to false when the stream completes to snap to the final text.' },
@@ -58,7 +58,7 @@ export const docs = {
 /** @type {import('../docs-types').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Smooths bursty streamed text into steady character-by-character reveal using requestAnimationFrame. Decouples arrival rate from display rate. Advances on word + syntax boundaries to avoid slicing mid-markdown / mid-word, preventing visual glitches w/ markdown renderers. Animation timing derives from XDS motion tokens via useTheme when available, w/ sensible fallbacks outside theme provider. Snaps to full text when isStreaming becomes false.',
+    'Smooths bursty streamed text into steady character-by-character reveal using requestAnimationFrame. Decouples arrival rate from display rate. Advances on word + syntax boundaries to avoid slicing mid-markdown / mid-word, preventing visual glitches w/ markdown renderers. Animation timing derives from Astryx motion tokens via useTheme when available, w/ sensible fallbacks outside theme provider. Snaps to full text when isStreaming becomes false.',
   paramDescriptions: {
     targetText: 'full target text to reveal. As new chunks arrive, update this value w/ accumulated text.',
     isStreaming: 'whether text currently being streamed. When false, hook returns full targetText immediately.',
@@ -70,7 +70,7 @@ export const docsDense = {
   },
   usage: {
     description:
-      'Smooths bursty streamed text into steady character-by-character reveal using requestAnimationFrame. Decouples arrival rate from display rate. Advances on word + syntax boundaries to avoid slicing mid-markdown / mid-word, preventing visual glitches w/ markdown renderers. Animation timing derives from XDS motion tokens via useTheme when available, w/ sensible fallbacks outside theme provider. Snaps to full text when isStreaming becomes false.',
+      'Smooths bursty streamed text into steady character-by-character reveal using requestAnimationFrame. Decouples arrival rate from display rate. Advances on word + syntax boundaries to avoid slicing mid-markdown / mid-word, preventing visual glitches w/ markdown renderers. Animation timing derives from Astryx motion tokens via useTheme when available, w/ sensible fallbacks outside theme provider. Snaps to full text when isStreaming becomes false.',
     bestPractices: [
       { guidance: true, description: 'Pass accumulated text (not individual chunks) as targetText; hook handles incremental reveal internally.' },
       { guidance: true, description: 'Set isStreaming to false when stream completes to snap to final text.' },

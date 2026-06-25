@@ -1,15 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {useState} from 'react';
-import {XDSTheme} from '@astryxdesign/core/theme';
-import {XDSVStack} from '@astryxdesign/core/Stack';
-import {XDSHStack} from '@astryxdesign/core/Stack';
-import {XDSText} from '@astryxdesign/core/Text';
-import {XDSHeading} from '@astryxdesign/core/Text';
-import {XDSTabList} from '@astryxdesign/core/TabList';
-import {XDSTab} from '@astryxdesign/core/TabList';
-import {XDSCard} from '@astryxdesign/core/Card';
-import {XDSButton} from '@astryxdesign/core/Button';
+import {Theme} from '@astryxdesign/core/theme';
+import {VStack} from '@astryxdesign/core/Stack';
+import {HStack} from '@astryxdesign/core/Stack';
+import {Text} from '@astryxdesign/core/Text';
+import {Heading} from '@astryxdesign/core/Text';
+import {TabList} from '@astryxdesign/core/TabList';
+import {Tab} from '@astryxdesign/core/TabList';
+import {Card} from '@astryxdesign/core/Card';
+import {Button} from '@astryxdesign/core/Button';
 import {neutralTheme} from '@astryxdesign/theme-neutral';
 import type {ReportData} from './types';
 import {ALL_DIMENSIONS, DIMENSION_LABELS} from './utils';
@@ -24,10 +24,10 @@ import './report.css';
 function MetricValue({label, value}: {label: string; value: string}) {
   return (
     <div className="report-metricItem">
-      <XDSVStack gap={1}>
-        <XDSText type="label">{label}</XDSText>
-        <XDSHeading level={3}>{value}</XDSHeading>
-      </XDSVStack>
+      <VStack gap={1}>
+        <Text type="label">{label}</Text>
+        <Heading level={3}>{value}</Heading>
+      </VStack>
     </div>
   );
 }
@@ -59,10 +59,10 @@ function EfficiencyMetricsCard({
     metrics.length;
 
   return (
-    <XDSCard>
+    <Card>
       <div className="report-metricsCard">
-        <XDSVStack gap={2}>
-          <XDSHeading level={4}>Efficiency Metrics</XDSHeading>
+        <VStack gap={2}>
+          <Heading level={4}>Efficiency Metrics</Heading>
           <div className="report-metricsGrid">
             <MetricValue
               label="Decisions / Element"
@@ -81,9 +81,9 @@ function EfficiencyMetricsCard({
               value={`${(avgBoilerplate * 100).toFixed(1)}%`}
             />
           </div>
-        </XDSVStack>
+        </VStack>
       </div>
-    </XDSCard>
+    </Card>
   );
 }
 
@@ -108,10 +108,10 @@ function MaintainabilityMetricsCard({
   const darkModeCount = metrics.filter(m => m?.darkModeSupport).length;
 
   return (
-    <XDSCard>
+    <Card>
       <div className="report-metricsCard">
-        <XDSVStack gap={2}>
-          <XDSHeading level={4}>Maintainability Metrics</XDSHeading>
+        <VStack gap={2}>
+          <Heading level={4}>Maintainability Metrics</Heading>
           <div className="report-metricsGrid">
             <MetricValue
               label="Semantic Ratio"
@@ -123,9 +123,9 @@ function MaintainabilityMetricsCard({
               value={`${darkModeCount}/${entries.length}`}
             />
           </div>
-        </XDSVStack>
+        </VStack>
       </div>
-    </XDSCard>
+    </Card>
   );
 }
 
@@ -135,10 +135,10 @@ function CostMetricsCard({cost}: {cost: ReportData['universal']['cost']}) {
   }
 
   return (
-    <XDSCard>
+    <Card>
       <div className="report-metricsCard">
-        <XDSVStack gap={2}>
-          <XDSHeading level={4}>Cost</XDSHeading>
+        <VStack gap={2}>
+          <Heading level={4}>Cost</Heading>
           <div className="report-metricsGrid">
             {cost.avgDurationMs > 0 && (
               <MetricValue
@@ -160,9 +160,9 @@ function CostMetricsCard({cost}: {cost: ReportData['universal']['cost']}) {
               value={`~${cost.estimatedOutputTokens.toLocaleString()}`}
             />
           </div>
-        </XDSVStack>
+        </VStack>
       </div>
-    </XDSCard>
+    </Card>
   );
 }
 
@@ -181,68 +181,68 @@ export function Report() {
 
   if (!data) {
     return (
-      <XDSTheme theme={neutralTheme} mode={themeMode}>
+      <Theme theme={neutralTheme} mode={themeMode}>
         <div className="report-root">
           <div className="report-container">
             <div className="report-emptyState">
-              <XDSVStack gap={4}>
-                <XDSHeading level={2}>No Report Data</XDSHeading>
-                <XDSText type="body">
+              <VStack gap={4}>
+                <Heading level={2}>No Report Data</Heading>
+                <Text type="body">
                   No report data found. Run the vibe test harness to generate a
                   report.
-                </XDSText>
-              </XDSVStack>
+                </Text>
+              </VStack>
             </div>
           </div>
         </div>
-      </XDSTheme>
+      </Theme>
     );
   }
 
   const {universal, comparison, screenshots} = data;
 
   return (
-    <XDSTheme theme={neutralTheme} mode={themeMode}>
+    <Theme theme={neutralTheme} mode={themeMode}>
       <div className="report-root">
         <div className="report-container">
-          <XDSVStack gap={5}>
+          <VStack gap={5}>
             {/* Header */}
             <div className="report-header">
-              <XDSHStack gap={4} hAlign="between" vAlign="center">
-                <XDSVStack gap={1}>
-                  <XDSHeading level={1}>Vibe Test Report</XDSHeading>
+              <HStack gap={4} hAlign="between" vAlign="center">
+                <VStack gap={1}>
+                  <Heading level={1}>Vibe Test Report</Heading>
                   {data.target && (
-                    <XDSText type="supporting">Target: {data.target}</XDSText>
+                    <Text type="supporting">Target: {data.target}</Text>
                   )}
                   {data.iterationId && (
-                    <XDSText type="supporting">
+                    <Text type="supporting">
                       Iteration: {data.iterationId}
-                    </XDSText>
+                    </Text>
                   )}
-                </XDSVStack>
-                <XDSButton
+                </VStack>
+                <Button
                   variant="secondary"
                   onClick={() =>
                     setThemeMode(m => (m === 'light' ? 'dark' : 'light'))
                   }
                   label={themeMode === 'light' ? '🌙 Dark' : '☀️ Light'}
                 />
-              </XDSHStack>
+              </HStack>
             </div>
 
             {/* Tabs */}
-            <XDSTabList value={activeTab} onChange={setActiveTab} hasDivider>
-              <XDSTab value="overview" label="Overview" />
-              <XDSTab value="byPrompt" label="By Prompt" />
+            <TabList value={activeTab} onChange={setActiveTab} hasDivider>
+              <Tab value="overview" label="Overview" />
+              <Tab value="byPrompt" label="By Prompt" />
               {hasScreenshots && (
-                <XDSTab value="screenshots" label="Screenshots" />
+                <Tab value="screenshots" label="Screenshots" />
               )}
-            </XDSTabList>
+            </TabList>
 
             {/* Tab Content */}
             <div className="report-tabContent">
               {activeTab === 'overview' && (
-                <XDSVStack gap={4}>
+                <VStack gap={4}>
                   {/* Overall score */}
                   <ScoreCard
                     label="Overall Score"
@@ -268,8 +268,8 @@ export function Report() {
                   )}
 
                   {/* Dimension scores grid */}
-                  <XDSVStack gap={3}>
-                    <XDSHeading level={3}>Dimensions</XDSHeading>
+                  <VStack gap={3}>
+                    <Heading level={3}>Dimensions</Heading>
                     <div className="report-scoreGrid">
                       {ALL_DIMENSIONS.filter(
                         dim => universal.averages[dim] != null,
@@ -283,7 +283,7 @@ export function Report() {
                         />
                       ))}
                     </div>
-                  </XDSVStack>
+                  </VStack>
 
                   {/* Sub-metrics */}
                   <EfficiencyMetricsCard byPrompt={universal.byPrompt} />
@@ -292,10 +292,10 @@ export function Report() {
 
                   {/* Comparison view */}
                   {comparison && (
-                    <XDSVStack gap={3}>
-                      <XDSHeading level={3}>
+                    <VStack gap={3}>
+                      <Heading level={3}>
                         {[
-                          'XDS',
+                          'Astryx',
                           'Baseline',
                           comparison.html ? 'HTML' : null,
                           comparison.xdsTailwind ? 'XDS+TW' : null,
@@ -303,26 +303,26 @@ export function Report() {
                           .filter(Boolean)
                           .join(' vs ')}{' '}
                         Comparison
-                      </XDSHeading>
+                      </Heading>
                       <CompareView comparison={comparison} />
-                    </XDSVStack>
+                    </VStack>
                   )}
-                </XDSVStack>
+                </VStack>
               )}
 
               {activeTab === 'byPrompt' && (
-                <XDSVStack gap={4}>
+                <VStack gap={4}>
                   <DimensionTable byPrompt={universal.byPrompt} />
 
                   {/* Per-prompt detail cards */}
-                  <XDSVStack gap={3}>
-                    <XDSHeading level={3}>Prompt Details</XDSHeading>
+                  <VStack gap={3}>
+                    <Heading level={3}>Prompt Details</Heading>
                     {Object.keys(universal.byPrompt).map(promptId => (
                       <PromptDetailCard
                         key={promptId}
                         promptId={promptId}
                         promptText={data.prompts?.[promptId]}
-                        xdsScore={universal.byPrompt[promptId]}
+                        astryxScore={universal.byPrompt[promptId]}
                         baselineScore={comparison?.baseline.byPrompt[promptId]}
                         htmlScore={comparison?.html?.byPrompt[promptId]}
                         xdsTailwindScore={
@@ -338,15 +338,15 @@ export function Report() {
                         previewUrls={data.previews?.[promptId]}
                       />
                     ))}
-                  </XDSVStack>
-                </XDSVStack>
+                  </VStack>
+                </VStack>
               )}
 
               {/* Code modal */}
               {codeModal &&
                 (() => {
                   const code =
-                    codeModal.target === 'xds'
+                    codeModal.target === 'astryx'
                       ? data.sourceCode?.[codeModal.promptId]
                       : codeModal.target === 'baseline'
                         ? data.baselineSourceCode?.[codeModal.promptId]
@@ -368,9 +368,9 @@ export function Report() {
                 <ScreenshotGallery screenshots={screenshots} />
               )}
             </div>
-          </XDSVStack>
+          </VStack>
         </div>
       </div>
-    </XDSTheme>
+    </Theme>
   );
 }

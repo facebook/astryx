@@ -44,17 +44,22 @@ const config: StorybookConfig = {
       ...config,
       build: {
         ...config.build,
-        // Storybook's generated story chunks use hook tuple destructuring.
-        // esbuild 0.28 cannot downlevel those chunks for Vite's default
-        // Safari 14 baseline, so match the modern preview CSS targets.
+        // esbuild will not downlevel syntax such as destructuring — target modern
+        // browsers only.
         target: viteBuildTargets,
       },
       optimizeDeps: {
         ...config.optimizeDeps,
         // Vite waits for all module transforms to finish before committing
-        // pre-bundled deps. The StyleX Babel plugin stalls on some XDS core
+        // pre-bundled deps. The StyleX Babel plugin stalls on some Astryx core
         // components, so the crawl never completes and deps are never served.
         holdUntilCrawlEnd: false,
+        esbuildOptions: {
+          ...config.optimizeDeps?.esbuildOptions,
+          // esbuild will not downlevel syntax such as destructuring — target modern
+          // browsers only.
+          target: viteBuildTargets,
+        },
       },
       plugins: [
         {

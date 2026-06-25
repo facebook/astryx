@@ -38,7 +38,7 @@ const SAMPLE_MD = [
   '',
   '## Features',
   '',
-  '- Headings mapped to XDS type scale',
+  '- Headings mapped to Astryx type scale',
   '- **Bold**, *italic*, and ~~strikethrough~~ text',
   '- [Links](https://example.com) with external detection',
   '- Inline `code` and fenced code blocks',

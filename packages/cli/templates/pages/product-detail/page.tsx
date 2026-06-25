@@ -24,36 +24,34 @@ import {Divider} from '@astryxdesign/core/Divider';
 import {Collapsible, CollapsibleGroup} from '@astryxdesign/core/Collapsible';
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import {SelectableCard} from '@astryxdesign/core/SelectableCard';
-import * as stylex from '@stylexjs/stylex';
+import type {CSSProperties} from 'react';
 
 // Custom CSS here is limited to what Astryx components can't express today:
 // - image fill + corner radius (no Image primitive — #2582)
 // - the sticky info column (no sticky prop on Astryx layout primitives — #2613)
-const pageStyles = stylex.create({
-  // Keeps the info column in view while the gallery scrolls. No sticky prop on
-  // Astryx layout primitives.
-  stickyInfo: {
-    position: 'sticky',
-    top: 'var(--spacing-8)',
-    alignSelf: 'start',
-  },
-  // Fills the AspectRatio box + rounds corners. No objectFit/radius props on
-  // AspectRatio (#2582).
-  heroImage: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    borderRadius: 'var(--radius-container)',
-  },
-  // Fills the thumbnail card. Corner radius + selection ring come from
-  // SelectableCard; the image only needs to fill and cover (#2582).
-  thumbImage: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    display: 'block',
-  },
-});
+// Keeps the info column in view while the gallery scrolls. No sticky prop on
+// Astryx layout primitives.
+const stickyInfo: CSSProperties = {
+  position: 'sticky',
+  top: 'var(--spacing-8)',
+  alignSelf: 'start',
+};
+// Fills the AspectRatio box + rounds corners. No objectFit/radius props on
+// AspectRatio (#2582).
+const heroImage: CSSProperties = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  borderRadius: 'var(--radius-container)',
+};
+// Fills the thumbnail card. Corner radius + selection ring come from
+// SelectableCard; the image only needs to fill and cover (#2582).
+const thumbImage: CSSProperties = {
+  width: '100%',
+  height: '100%',
+  objectFit: 'cover',
+  display: 'block',
+};
 
 import {MinusIcon, PlusIcon, StarIcon} from '@heroicons/react/24/outline';
 import {StarIcon as StarIconSolid} from '@heroicons/react/24/solid';
@@ -133,11 +131,7 @@ function ImageGallery({
   return (
     <VStack gap={3}>
       <AspectRatio ratio={4 / 5}>
-        <img
-          {...stylex.props(pageStyles.heroImage)}
-          src={heroSrc}
-          alt={PRODUCT.name}
-        />
+        <img style={heroImage} src={heroSrc} alt={PRODUCT.name} />
       </AspectRatio>
       <Grid columns={3} gap={2}>
         {thumbnails.map((src, i) => (
@@ -151,7 +145,7 @@ function ImageGallery({
               width="100%"
               height="100%">
               <img
-                {...stylex.props(pageStyles.thumbImage)}
+                style={thumbImage}
                 src={src}
                 alt={`Product image ${i + 1}`}
               />
@@ -301,7 +295,7 @@ export default function ProductDetailTemplate() {
               selected={selectedThumb}
               onSelect={setSelectedThumb}
             />
-            <VStack gap={0} xstyle={pageStyles.stickyInfo}>
+            <VStack gap={0} style={stickyInfo}>
               <ProductInfo />
             </VStack>
           </Grid>

@@ -94,13 +94,54 @@ export function resolveAgentPaths(targetDir, agent) {
 }
 
 /**
+ * Detect which styling system the consumer project has wired up, so the agent
+ * docs recommend a path that actually compiles in THIS project.
+ *
+ * `xstyle`/StyleX needs the StyleX compiler (the `@stylexjs/stylex` runtime
+ * alone throws at runtime → blank page); Tailwind utilities need Tailwind.
+ * Recommending either when it isn't configured yields unstyled or blank output.
+ * Plain CSS variables (via `style`/`className`) always work, so they're the
+ * safe default. Precedence: stylex (compiler wired) → tailwind → css.
+ *
+ * @param {string} targetDir
+ * @returns {'stylex' | 'tailwind' | 'css'}
+ */
+export function detectStylingSystem(targetDir) {
+  try {
+    const pkgPath = path.join(targetDir, 'package.json');
+    if (!fs.existsSync(pkgPath)) return 'css';
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    const deps = {...pkg.dependencies, ...pkg.devDependencies};
+    // Key off a StyleX *compiler* plugin — the runtime alone won't render.
+    const stylexCompilers = [
+      '@stylexjs/babel-plugin',
+      'vite-plugin-stylex',
+      'unplugin-stylex',
+      '@stylexswc/unplugin',
+      '@stylexswc/nextjs-plugin',
+      'stylex-webpack',
+    ];
+    if (stylexCompilers.some(d => d in deps)) return 'stylex';
+    if ('tailwindcss' in deps) return 'tailwind';
+    return 'css';
+  } catch {
+    // Best-effort: default to the universally-safe CSS-variable path.
+    return 'css';
+  }
+}
+
+/**
  * Generate the agent cheat sheet from live CLI metadata.
  *
  * Structured as: workflow (behavioral) → rules (error prevention) → CLI reference.
  * Templates are positioned first in the workflow to teach agents the
  * "look at reference code" reflex before writing any UI.
+ *
+ * `stylingSystem` tailors the custom-styling guidance to what the project has
+ * configured (see {@link detectStylingSystem}) so the agent never reaches for a
+ * styling path that isn't compiled here.
  */
-export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix()} = {}) {
+export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix(), stylingSystem = 'css'} = {}) {
   const run = `${runPrefix} astryx`;
   const lines = [MARKER_START];
 
@@ -117,69 +158,57 @@ export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPre
     }
   }
 
-  // Header
-  lines.push(`Astryx v${version} — ${componentCount} components`);
+  // Header — state the CLI prefix once; commands below are shown as `astryx <cmd>`.
+  lines.push(`Astryx v${version} · ${componentCount} components`);
+  lines.push(`CLI: run every command as \`${run} <cmd>\` (shown below as \`astryx ...\`).`);
   lines.push('');
 
-  // Behavioral workflow — templates first, then component lookup
-  lines.push('Before writing any UI code:');
-  lines.push(`1. \`${run} template --list\` — find a related page pattern`);
-  lines.push(`2. \`${run} template <name> --skeleton\` — study layout structure (gap, padding, nesting)`);
-  lines.push(`3. \`${run} component <Name>\` — read props + examples for EVERY component you use`);
-  lines.push('');
-  lines.push('Templates are reference code — read them for composition patterns, not just scaffolding.');
-  lines.push('Full pages → dashboard (uses AppShell). Forms → contact-form. Tables → data-table. Settings → settings-sidebar.');
+  // Required setup — components ship precompiled CSS; without these imports
+  // everything renders unstyled. Theme is optional (a default ships in astryx.css).
+  lines.push('SETUP (once, in your app entry e.g. main.tsx) — without these, components render unstyled:');
+  lines.push('  import "@astryxdesign/core/reset.css";');
+  lines.push('  import "@astryxdesign/core/astryx.css";');
   lines.push('');
 
-  // Rules — inline, compact, prevents the top error categories
-  lines.push('No <div> anywhere — not for layout, not for wrappers, not for spacing. Use components.');
-  lines.push('Full-page shells → AppShell (not Layout). Sidebar nav → SideNav (not List).');
-  lines.push('No style={{}} — use the xstyle prop on components for custom styling.');
-  lines.push('If a component prop does what you need, use it — never replicate with CSS/stylex.');
-  lines.push(`No magic values — run \`${run} docs tokens\` for spacing/color/radius.`);
-  lines.push(`To change accent/brand colors: \`${run} theme\` — never override --astryx-color-* in :root.`);
+  // Workflow — `build` is the front door; discover before writing UI.
+  lines.push("WORKFLOW — discover, don't guess. Before writing UI:");
+  lines.push('1. `astryx build "<idea>"` — START HERE: returns a kit (closest [page] + [block]s + [component]s). No args = full playbook.');
+  lines.push('2. `astryx template <name> [--skeleton]` — scaffold the [page]/[block]s it named, or study their layout. Templates are reference code.');
+  lines.push('3. `astryx component <Name>` — props + examples for every component you use.');
   lines.push('');
 
-  // CLI quick reference
-  lines.push(`${run} component --list         ${componentCount} components by category`);
-  lines.push(`${run} component <Name>         props, types, examples`);
+  // Rules — the top error-preventers.
+  lines.push('RULES:');
+  lines.push('- No <div> — components do all layout/spacing. Full page → AppShell; sidebar nav → SideNav.');
+  // Styling guidance tailored to the project's configured system — never
+  // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
+  // utilities need Tailwind). Tokens are always the source of truth.
+  if (stylingSystem === 'stylex') {
+    lines.push('- Custom styling: component props first; else the xstyle prop / StyleX tokens (@astryxdesign/core/theme/tokens.stylex). No raw hex/px.');
+  } else if (stylingSystem === 'tailwind') {
+    lines.push('- Custom styling: component props first; else Tailwind utilities backed by tokens (bg-surface, text-primary, rounded-lg) via tailwind-theme.css. No raw hex/px.');
+  } else {
+    lines.push("- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)");
+  }
+  lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent via `astryx theme` — never override --color-* in :root.');
+  lines.push('');
 
-  // Doc topics from live discovery
+  // Command reference — build/template/component are covered in WORKFLOW above.
+  lines.push('MORE CLI:');
+  lines.push('  search "<query>"   find any component / hook / doc / template / block');
+  lines.push(`  component --list   ${componentCount} components by category`);
+  lines.push('  template --list    page + block recipes');
   const docsDir = path.join(CLI_ROOT, 'docs');
   if (fs.existsSync(docsDir)) {
-    for (const file of fs.readdirSync(docsDir).sort()) {
-      const match = file.match(/^(\w+)\.doc\.mjs$/);
-      if (!match) continue;
-      const topic = match[1];
-      let desc = topic;
-      try {
-        const fileContent = fs.readFileSync(path.join(docsDir, file), 'utf-8');
-        const descMatch = fileContent.match(/description:\s*['"](.+?)['"]/);
-        if (descMatch) desc = descMatch[1];
-      } catch {
-        // Best-effort: fall back to the topic name if the file is unreadable.
-      }
-      if (desc.length > 50) desc = desc.slice(0, 47) + '...';
-      lines.push(`${run} docs ${topic.padEnd(20)} ${desc}`);
-    }
-  }
-
-  // Templates
-  const templatesDir = path.join(CLI_ROOT, 'templates');
-  if (fs.existsSync(templatesDir)) {
-    const templates = fs.readdirSync(templatesDir, {withFileTypes: true})
-      .filter(e => e.isDirectory())
-      .map(e => e.name)
+    const topics = fs.readdirSync(docsDir)
+      .map(f => f.match(/^(\w+)\.doc\.mjs$/))
+      .filter(Boolean)
+      .map(m => m[1])
       .sort();
-    if (templates.length > 0) {
-      lines.push(`${run} template --list           page recipes with component lists`);
-      lines.push(`${run} template <name> [path]     scaffold from template`);
-    }
+    if (topics.length > 0) lines.push(`  docs <topic>       ${topics.join(', ')}`);
   }
-
-  lines.push(`${run} swizzle <Name>            eject source (--gap to report why)`);
-  lines.push(`${run} upgrade --apply            codemods after version bump`);
-  lines.push(`after @astryxdesign/core bump, always run ${run} upgrade --apply`);
+  lines.push('  swizzle <Name>     eject component source (--gap reports why)');
+  lines.push('  upgrade --apply    run after any @astryxdesign/core bump');
   lines.push(MARKER_END);
 
   return lines.join('\n');
@@ -258,7 +287,10 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
  */
 export function injectAgentsMd(targetDir, version) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
-  const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir)});
+  const compressedIndex = generateCompressedIndex(version, {
+    coreDir: findCoreDir(targetDir),
+    stylingSystem: detectStylingSystem(targetDir),
+  });
   injectXdsBlock(agentsPath, compressedIndex, {
     createIfMissing: true,
     header: `# AGENTS.md\n\nProject-specific guidance for AI coding agents.`,
@@ -273,7 +305,10 @@ export function injectAgentsMd(targetDir, version) {
  */
 export function injectClaudeMd(targetDir, version) {
   const claudePath = path.join(targetDir, CLAUDE_MD);
-  const compressedIndex = generateCompressedIndex(version, {coreDir: findCoreDir(targetDir)});
+  const compressedIndex = generateCompressedIndex(version, {
+    coreDir: findCoreDir(targetDir),
+    stylingSystem: detectStylingSystem(targetDir),
+  });
   return injectXdsBlock(claudePath, compressedIndex);
 }
 
@@ -356,7 +391,8 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
   const runPrefix = getRunPrefix(targetDir);
-  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, runPrefix});
+  const stylingSystem = detectStylingSystem(targetDir);
+  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, runPrefix, stylingSystem});
   const written = [];
 
   // Explicit paths override everything

@@ -2,8 +2,7 @@
 
 'use client';
 
-import {useCallback, useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
+import {useCallback, useState, type CSSProperties} from 'react';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
@@ -39,14 +38,12 @@ const OUTLINE_OPTIONS = OUTLINE_ITEMS.map(item => ({
   label: item.label,
 }));
 
-const styles = stylex.create({
-  outlinePanel: {
-    position: 'sticky',
-    top: 24,
-    alignSelf: 'start',
-    paddingBlockStart: 120,
-  },
-});
+const outlinePanel: CSSProperties = {
+  position: 'sticky',
+  top: 24,
+  alignSelf: 'start',
+  paddingBlockStart: 120,
+};
 
 export default function TechnicalDocumentationPage() {
   const [activeId, setActiveId] = useState<string | undefined>(
@@ -73,7 +70,7 @@ export default function TechnicalDocumentationPage() {
             isScrollable={false}
             label="On this page"
             role="complementary"
-            xstyle={styles.outlinePanel}>
+            style={outlinePanel}>
             <Outline items={OUTLINE_ITEMS} onActiveIdChange={setActiveId} />
           </LayoutPanel>
         )
@@ -178,15 +175,17 @@ export default function TechnicalDocumentationPage() {
               </VStack>
               <VStack gap={2}>
                 <Text type="body" weight="bold">
-                  Step 2: Add the StyleX compiler
+                  Step 2: Import the precompiled styles
                 </Text>
                 <Text type="body" color="secondary">
-                  Astryx uses StyleX for styling. Add the compiler plugin to
-                  your build configuration.
+                  Astryx ships precompiled CSS, so there is no build plugin to
+                  configure. Import the reset and component stylesheets once at
+                  your app entry point.
                 </Text>
                 <CodeBlock
-                  code="npm install @stylexjs/babel-plugin"
-                  language="bash"
+                  code={`import '@astryxdesign/core/reset.css';
+import '@astryxdesign/core/astryx.css';`}
+                  language="tsx"
                   width="100%"
                 />
               </VStack>

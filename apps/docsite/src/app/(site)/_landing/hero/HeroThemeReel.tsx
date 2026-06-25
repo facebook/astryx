@@ -20,8 +20,10 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
+  type TouchEvent as ReactTouchEvent,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Theme} from '@astryxdesign/core/theme';
@@ -201,6 +203,10 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     borderWidth: 0,
   },
+  // pan-y so a horizontal swipe goes to our handler, not page side-pan.
+  swipeArea: {
+    touchAction: 'pan-y',
+  },
 });
 
 // Dynamic per-theme values via stylex.create functions (no inline styles).
@@ -232,6 +238,45 @@ export function HeroReelProvider({children}: {children: ReactNode}) {
         return;
       }
       setIndex(((next % count) + count) % count);
+    },
+    [slides.length],
+  );
+
+  // Touch swipe (mobile): swipe left → next theme, right → previous.
+  const touchStart = useRef<{x: number; y: number} | null>(null);
+  const SWIPE_THRESHOLD_PX = 45;
+  const onTouchStart = useCallback((e: ReactTouchEvent) => {
+    const t = e.touches[0];
+    if (!t) {
+      return;
+    }
+    touchStart.current = {x: t.clientX, y: t.clientY};
+    // Touch devices have no hover, so pause auto-advance while the finger is down.
+    setPaused(true);
+  }, []);
+  const onTouchEnd = useCallback(
+    (e: ReactTouchEvent) => {
+      setPaused(false);
+      const start = touchStart.current;
+      touchStart.current = null;
+      if (!start || slides.length <= 1) {
+        return;
+      }
+      const t = e.changedTouches[0];
+      if (!t) {
+        return;
+      }
+      const dx = t.clientX - start.x;
+      const dy = t.clientY - start.y;
+      // Only a mostly-horizontal gesture counts, so vertical scroll isn't a swipe.
+      if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) <= Math.abs(dy)) {
+        return;
+      }
+      setIndex(i => {
+        const count = slides.length;
+        const next = dx < 0 ? i + 1 : i - 1;
+        return ((next % count) + count) % count;
+      });
     },
     [slides.length],
   );
@@ -301,10 +346,13 @@ export function HeroReelProvider({children}: {children: ReactNode}) {
   return (
     <HeroReelContext value={value}>
       <div
+        {...stylex.props(styles.swipeArea)}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocusCapture={() => setPaused(true)}
-        onBlurCapture={() => setPaused(false)}>
+        onBlurCapture={() => setPaused(false)}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}>
         {children}
       </div>
     </HeroReelContext>

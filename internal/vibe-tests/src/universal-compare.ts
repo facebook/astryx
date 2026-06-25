@@ -5,11 +5,11 @@
  * @file Universal Compare — side-by-side comparison of two or three iterations
  *
  * Usage:
- *   tsx src/universal-compare.ts --xds abc123 --baseline def456
- *   tsx src/universal-compare.ts --xds abc123 --baseline def456 --html ghi789
- *   tsx src/universal-compare.ts --xds abc123 --baseline def456 --html ghi789 --xds-tailwind jkl012
- *   tsx src/universal-compare.ts --xds abc123 --baseline def456 --json
- *   tsx src/universal-compare.ts --xds abc123 --baseline def456 --html ghi789 --markdown
+ *   tsx src/universal-compare.ts --astryx abc123 --baseline def456
+ *   tsx src/universal-compare.ts --astryx abc123 --baseline def456 --html ghi789
+ *   tsx src/universal-compare.ts --astryx abc123 --baseline def456 --html ghi789 --astryx-tailwind jkl012
+ *   tsx src/universal-compare.ts --astryx abc123 --baseline def456 --json
+ *   tsx src/universal-compare.ts --astryx abc123 --baseline def456 --html ghi789 --markdown
  */
 
 import * as fs from 'node:fs';
@@ -57,20 +57,20 @@ function loadOrGenerate(iterationId: string): UniversalAggregate {
 type WinnerType = TargetName | 'tie';
 
 function winner(
-  xdsVal: number,
+  astryxVal: number,
   baseVal: number,
   htmlVal?: number,
   xdsTailwindVal?: number,
 ): WinnerType {
   const entries: [TargetName, number][] = [
-    ['xds', xdsVal],
+    ['astryx', astryxVal],
     ['baseline', baseVal],
   ];
   if (htmlVal != null) {
     entries.push(['html', htmlVal]);
   }
   if (xdsTailwindVal != null) {
-    entries.push(['xds-tailwind', xdsTailwindVal]);
+    entries.push(['astryx-tailwind', xdsTailwindVal]);
   }
 
   const max = Math.max(...entries.map(([, v]) => v));
@@ -83,13 +83,13 @@ function winner(
 
 function winnerIcon(w: WinnerType): string {
   switch (w) {
-    case 'xds':
-      return '🟢 XDS';
+    case 'astryx':
+      return '🟢 Astryx';
     case 'baseline':
       return '🔵 Base';
     case 'html':
       return '🟡 HTML';
-    case 'xds-tailwind':
+    case 'astryx-tailwind':
       return '🟣 XDS+TW';
     case 'tie':
       return '⚪ Tie';
@@ -97,7 +97,7 @@ function winnerIcon(w: WinnerType): string {
 }
 
 function parseArgs(): {
-  xds: string;
+  astryx: string;
   baseline: string;
   html?: string;
   xdsTailwind?: string;
@@ -105,7 +105,7 @@ function parseArgs(): {
   markdown: boolean;
 } {
   const args = process.argv.slice(2);
-  let xds = '';
+  let astryx = '';
   let baseline = '';
   let html: string | undefined;
   let xdsTailwind: string | undefined;
@@ -113,13 +113,13 @@ function parseArgs(): {
   let markdown = false;
 
   for (let i = 0; i < args.length; i++) {
-    if ((args[i] === '--xds' || args[i] === '-x') && args[i + 1]) {
-      xds = args[++i];
+    if ((args[i] === '--astryx' || args[i] === '-x') && args[i + 1]) {
+      astryx = args[++i];
     } else if ((args[i] === '--baseline' || args[i] === '-b') && args[i + 1]) {
       baseline = args[++i];
     } else if (args[i] === '--html' && args[i + 1]) {
       html = args[++i];
-    } else if (args[i] === '--xds-tailwind' && args[i + 1]) {
+    } else if (args[i] === '--astryx-tailwind' && args[i + 1]) {
       xdsTailwind = args[++i];
     } else if (args[i] === '--json') {
       json = true;
@@ -128,14 +128,14 @@ function parseArgs(): {
     }
   }
 
-  if (!xds || !baseline) {
+  if (!astryx || !baseline) {
     console.error(
-      'Usage: tsx src/universal-compare.ts --xds <id> --baseline <id> [--html <id>] [--xds-tailwind <id>] [--json] [--markdown]',
+      'Usage: tsx src/universal-compare.ts --astryx <id> --baseline <id> [--html <id>] [--astryx-tailwind <id>] [--json] [--markdown]',
     );
     process.exit(1);
   }
 
-  return {xds, baseline, html, xdsTailwind, json, markdown};
+  return {astryx, baseline, html, xdsTailwind, json, markdown};
 }
 
 /**
@@ -144,15 +144,15 @@ function parseArgs(): {
  */
 function toMarkdown(opts: {
   comparison: UniversalComparison;
-  xdsId: string;
+  astryxId: string;
   baselineId: string;
   htmlId?: string;
   xdsTailwindId?: string;
   byPrompt: UniversalComparison['byPrompt'];
 }): string {
-  const {comparison, xdsId, baselineId, htmlId, xdsTailwindId, byPrompt} = opts;
+  const {comparison, astryxId, baselineId, htmlId, xdsTailwindId, byPrompt} = opts;
   const {
-    xds,
+    astryx,
     baseline,
     html: htmlData,
     xdsTailwind: twData,
@@ -176,8 +176,8 @@ function toMarkdown(opts: {
     'maintainability',
   ];
 
-  const xdsRow = dimOrder.map(d => xds.averages[d]).join(' | ');
-  lines.push(`| **XDS** | \`${xdsId}\` | ${xds.overall} | ${xdsRow} |`);
+  const astryxRow = dimOrder.map(d => astryx.averages[d]).join(' | ');
+  lines.push(`| **Astryx** | \`${astryxId}\` | ${astryx.overall} | ${astryxRow} |`);
 
   const baseRow = dimOrder.map(d => baseline.averages[d]).join(' | ');
   lines.push(
@@ -209,19 +209,19 @@ function toMarkdown(opts: {
     let twWins = 0;
     let ties = 0;
     for (const [, data] of promptEntries) {
-      if (data.winner === 'xds') {
+      if (data.winner === 'astryx') {
         xWins++;
       } else if (data.winner === 'baseline') {
         bWins++;
       } else if (data.winner === 'html') {
         hWins++;
-      } else if (data.winner === 'xds-tailwind') {
+      } else if (data.winner === 'astryx-tailwind') {
         twWins++;
       } else {
         ties++;
       }
     }
-    const parts = [`XDS ${xWins}`, `Baseline ${bWins}`];
+    const parts = [`Astryx ${xWins}`, `Baseline ${bWins}`];
     if (htmlData) {
       parts.push(`HTML ${hWins}`);
     }
@@ -237,7 +237,7 @@ function toMarkdown(opts: {
 
   // Dark mode
   const dmParts = [
-    `XDS ${xds.darkModeRate}%`,
+    `Astryx ${astryx.darkModeRate}%`,
     `Baseline ${baseline.darkModeRate}%`,
   ];
   if (htmlData) {
@@ -254,10 +254,10 @@ function toMarkdown(opts: {
   for (const d of dimensions) {
     const w = winners[d];
     const iconMap: Record<string, string> = {
-      xds: '🟢',
+      astryx: '🟢',
       baseline: '🔵',
       html: '🟡',
-      'xds-tailwind': '🟣',
+      'astryx-tailwind': '🟣',
       tie: '⚪',
     };
     const icon = iconMap[w] ?? '⚪';
@@ -270,7 +270,7 @@ function toMarkdown(opts: {
 
 async function main() {
   const {
-    xds: xdsId,
+    astryx: astryxId,
     baseline: baselineId,
     html: htmlId,
     xdsTailwind: xdsTailwindId,
@@ -278,7 +278,7 @@ async function main() {
     markdown,
   } = parseArgs();
 
-  const xds = loadOrGenerate(xdsId);
+  const astryx = loadOrGenerate(astryxId);
   const baseline = loadOrGenerate(baselineId);
   const htmlData = htmlId ? loadOrGenerate(htmlId) : undefined;
   const twData = xdsTailwindId ? loadOrGenerate(xdsTailwindId) : undefined;
@@ -292,7 +292,7 @@ async function main() {
   const winners = winnersInit as Record<UniversalDimension, WinnerType>;
   for (const d of dimensions) {
     winners[d] = winner(
-      xds.averages[d],
+      astryx.averages[d],
       baseline.averages[d],
       htmlData?.averages[d],
       twData?.averages[d],
@@ -301,7 +301,7 @@ async function main() {
 
   // Per-prompt comparison
   const allPromptIds = new Set([
-    ...Object.keys(xds.byPrompt),
+    ...Object.keys(astryx.byPrompt),
     ...Object.keys(baseline.byPrompt),
     ...(htmlData ? Object.keys(htmlData.byPrompt) : []),
     ...(twData ? Object.keys(twData.byPrompt) : []),
@@ -309,18 +309,18 @@ async function main() {
 
   const byPrompt: UniversalComparison['byPrompt'] = {};
   for (const promptId of allPromptIds) {
-    const xdsScore = xds.byPrompt[promptId];
+    const astryxScore = astryx.byPrompt[promptId];
     const baselineScore = baseline.byPrompt[promptId];
     const htmlScore = htmlData?.byPrompt[promptId];
     const twScore = twData?.byPrompt[promptId];
-    if (xdsScore && baselineScore) {
+    if (astryxScore && baselineScore) {
       byPrompt[promptId] = {
-        xds: xdsScore,
+        astryx: astryxScore,
         baseline: baselineScore,
         ...(htmlScore ? {html: htmlScore} : {}),
         ...(twScore ? {xdsTailwind: twScore} : {}),
         winner: winner(
-          getAverageScore(xdsScore),
+          getAverageScore(astryxScore),
           getAverageScore(baselineScore),
           htmlScore ? getAverageScore(htmlScore) : undefined,
           twScore ? getAverageScore(twScore) : undefined,
@@ -330,7 +330,7 @@ async function main() {
   }
 
   const comparison: UniversalComparison = {
-    xds,
+    astryx,
     baseline,
     ...(htmlData ? {html: htmlData} : {}),
     ...(twData ? {xdsTailwind: twData} : {}),
@@ -339,7 +339,7 @@ async function main() {
   };
 
   // Save — include all IDs in filename for uniqueness
-  const idParts = [xdsId, baselineId];
+  const idParts = [astryxId, baselineId];
   if (htmlId) {
     idParts.push(htmlId);
   }
@@ -359,7 +359,7 @@ async function main() {
     console.log(
       toMarkdown({
         comparison,
-        xdsId,
+        astryxId,
         baselineId,
         htmlId,
         xdsTailwindId,
@@ -370,7 +370,7 @@ async function main() {
   }
 
   // --- Print report ---
-  const targetNames = ['XDS', 'Baseline'];
+  const targetNames = ['Astryx', 'Baseline'];
   if (isThreeWay) {
     targetNames.push('HTML');
   }
@@ -383,9 +383,9 @@ async function main() {
   console.log('═'.repeat(title.length + 2));
 
   // Build a generic table for any number of targets
-  type TargetEntry = {label: string; data: typeof xds};
+  type TargetEntry = {label: string; data: typeof astryx};
   const targets: TargetEntry[] = [
-    {label: 'XDS', data: xds},
+    {label: 'Astryx', data: astryx},
     {label: 'Baseline', data: baseline},
   ];
   if (isThreeWay && htmlData != null) {
@@ -408,7 +408,7 @@ async function main() {
   }
   // Overall row
   const overallWinner = winner(
-    xds.overall,
+    astryx.overall,
     baseline.overall,
     htmlData?.overall,
     twData?.overall,
@@ -501,7 +501,7 @@ async function main() {
   }
 
   // Cost comparison
-  if (xds.cost && baseline.cost) {
+  if (astryx.cost && baseline.cost) {
     console.log(`\n💰 Cost:`);
     const costTargets = targets.filter(t => t.data.cost);
     const hasDuration = costTargets.some(
@@ -540,13 +540,13 @@ async function main() {
     }
     winCounts['Tie'] = 0;
     for (const [, data] of promptEntries) {
-      if (data.winner === 'xds') {
-        winCounts['XDS']++;
+      if (data.winner === 'astryx') {
+        winCounts['Astryx']++;
       } else if (data.winner === 'baseline') {
         winCounts['Baseline']++;
       } else if (data.winner === 'html') {
         winCounts['HTML']++;
-      } else if (data.winner === 'xds-tailwind') {
+      } else if (data.winner === 'astryx-tailwind') {
         winCounts['XDS+TW']++;
       } else {
         winCounts['Tie']++;

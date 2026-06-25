@@ -13,7 +13,7 @@
  *
  * Usage (from setup-nightly.mjs):
  *   import {createAgentProject} from './setup-environment.mjs';
- *   const projectDir = createAgentProject('xds', iterDir, 'fwc-1');
+ *   const projectDir = createAgentProject('astryx', iterDir, 'fwc-1');
  */
 
 import * as fs from 'node:fs';
@@ -38,7 +38,7 @@ function copyFile(src, dest) {
  * Create an isolated project directory for a single agent.
  * Returns the absolute path to the project directory.
  *
- * @param {'xds' | 'xds-tailwind' | 'baseline' | 'html'} target
+ * @param {'astryx' | 'xds-tailwind' | 'baseline' | 'html'} target
  * @param {string} iterDir - The iteration results directory
  * @param {string} promptId - The prompt ID (used to name the clone)
  */
@@ -47,7 +47,7 @@ export function createAgentProject(target, iterDir, promptId) {
   ensureDir(projectDir);
 
   const templateMap = {
-    xds: 'project-xds',
+    astryx: 'project-astryx',
     'xds-tailwind': 'project-xds-tailwind',
     baseline: 'project-baseline',
     html: 'project-html',
@@ -61,7 +61,7 @@ export function createAgentProject(target, iterDir, promptId) {
     copyFile(path.join(templateDir, file), path.join(projectDir, file));
   }
 
-  if (target === 'xds' || target === 'xds-tailwind') {
+  if (target === 'astryx' || target === 'xds-tailwind') {
     // Symlink node_modules/@astryxdesign/core → packages/core
     const coreLink = path.join(projectDir, 'node_modules', '@astryxdesign', 'core');
     ensureDir(path.dirname(coreLink));

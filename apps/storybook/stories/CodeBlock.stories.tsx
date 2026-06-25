@@ -157,7 +157,7 @@ export const HTML: Story = {
   <body>
     <main id="app">
       <h1>Hello, World!</h1>
-      <p class="subtitle">Welcome to XDS.</p>
+      <p class="subtitle">Welcome to Astryx.</p>
     </main>
     <script src="app.js"></script>
   </body>
