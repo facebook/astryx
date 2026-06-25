@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {usePathname} from 'next/navigation';
 import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
 import {Button} from '@astryxdesign/core/Button';
@@ -39,6 +39,27 @@ export function SharedTopNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const pathname = usePathname();
   const {mode, toggleMode} = useThemeMode();
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return;
+      }
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        !event.shiftKey &&
+        !event.altKey &&
+        event.key.toLowerCase() === 'k'
+      ) {
+        event.preventDefault();
+        trackSearch({target: 'open'});
+        setIsSearchOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   // Determine active nav item
   const getActiveItem = () => {

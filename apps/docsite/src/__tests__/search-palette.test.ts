@@ -65,4 +65,14 @@ describe('SearchPalette data', () => {
       '/components/DropdownMenu',
     );
   });
+
+  it('finds AppShell when searching for app shell with a space', () => {
+    const items = buildItems();
+    const appShell = items.find(item => item.id === '/components/AppShell');
+    expect(appShell?.label).toBe('App Shell');
+
+    expect(searchItems('app shell').map(item => item.id)).toContain(
+      '/components/AppShell',
+    );
+  });
 });

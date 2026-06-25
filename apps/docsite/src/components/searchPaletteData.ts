@@ -29,8 +29,19 @@ function uniqueKeywords(keywords: Array<string | null | undefined>): string[] {
   return [...new Set(keywords.filter((kw): kw is string => Boolean(kw)))];
 }
 
+function splitWords(value: string): string {
+  return value.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ');
+}
+
 export function getSearchItemKeywords(item: SearchItem): string[] {
-  return [item.auxiliaryData.group, ...item.auxiliaryData.keywords];
+  return [
+    item.auxiliaryData.group,
+    splitWords(item.label),
+    ...item.auxiliaryData.keywords.flatMap(keyword => [
+      keyword,
+      splitWords(keyword),
+    ]),
+  ];
 }
 
 export function buildSearchPaletteItems({
@@ -73,7 +84,9 @@ export function buildSearchPaletteItems({
     // Neutral as the default seed; users browse to the specific
     // theme they want via the sidebar picker.
     items.push({
-      id: isTheme ? '/themes' : `/docs/${pkg.name.replace('@astryxdesign/', '')}`,
+      id: isTheme
+        ? '/themes'
+        : `/docs/${pkg.name.replace('@astryxdesign/', '')}`,
       label: pkg.displayName,
       auxiliaryData: {
         group: 'Package',
