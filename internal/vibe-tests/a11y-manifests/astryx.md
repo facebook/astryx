@@ -1,4 +1,4 @@
-# XDS Accessibility Manifest
+# Astryx Accessibility Manifest
 
 **Source:** packages/core/src/\*/README.md
 **Generated:** 2026-02-05T18:03:04.596Z

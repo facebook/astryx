@@ -536,7 +536,7 @@ function getTsconfigForTarget(target: string): string {
     case 'xds':
     case 'xds-tailwind':
     case 'astryx':
-      return path.join(VIBE_DIR, 'tsconfig.xds.json');
+      return path.join(VIBE_DIR, 'tsconfig.astryx.json');
     case 'baseline':
       return path.join(VIBE_DIR, 'tsconfig.baseline.json');
     default:

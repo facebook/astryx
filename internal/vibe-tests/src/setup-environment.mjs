@@ -47,7 +47,7 @@ export function createAgentProject(target, iterDir, promptId) {
   ensureDir(projectDir);
 
   const templateMap = {
-    xds: 'project-xds',
+    astryx: 'project-astryx',
     'xds-tailwind': 'project-xds-tailwind',
     baseline: 'project-baseline',
     html: 'project-html',
