@@ -234,7 +234,7 @@ export function AppRoot({children}: {children: React.ReactNode}) {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: `We are migrating this existing Tailwind/shadcn app to XDS incrementally.
+          code: `We are migrating this existing Tailwind/shadcn app to Astryx incrementally.
 
 First run:
 - npx astryx docs migration --dense
@@ -242,7 +242,7 @@ First run:
 - npx astryx docs styling --dense
 - npx astryx template AppShellTopNavWithSideNav --skeleton
 
-Then migrate one route or shell surface at a time. Keep business logic and routing intact. Replace shadcn/Radix/Tailwind primitives with XDS components, remove hardcoded colors, verify light and dark mode, and take screenshots before moving to the next surface.`,
+Then migrate one route or shell surface at a time. Keep business logic and routing intact. Replace shadcn/Radix/Tailwind primitives with Astryx components, remove hardcoded colors, verify light and dark mode, and take screenshots before moving to the next surface.`,
         },
       ],
     },

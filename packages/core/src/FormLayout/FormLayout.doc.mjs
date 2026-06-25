@@ -20,7 +20,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'Form fields to arrange. Accepts XDS inputs (TextInput, Selector, etc.) and Field-wrapped custom controls.',
+        'Form fields to arrange. Accepts Astryx inputs (TextInput, Selector, etc.) and Field-wrapped custom controls.',
     },
     {
       name: 'xstyle',
@@ -68,7 +68,7 @@ export const docsZh = {
       name: 'children',
       type: 'ReactNode',
       description:
-        '要排列的表单字段。接受 XDS 输入组件（TextInput、Selector 等）和 Field 包装的自定义控件。',
+        '要排列的表单字段。接受 Astryx 输入组件（TextInput、Selector 等）和 Field 包装的自定义控件。',
     },
     {
       name: 'xstyle',
@@ -122,7 +122,7 @@ export const docsDense = {
   },
   propDescriptions: {
     direction: 'Field arrangement. Vertical stacks top-to-bottom, horizontal arranges left-to-right w/ equal flex-grow, horizontal-labels uses CSS Grid w/ labels left of inputs (collapses <=480px).',
-    children: 'Form fields to arrange. Accepts XDS inputs + Field-wrapped custom controls.',
+    children: 'Form fields to arrange. Accepts Astryx inputs + Field-wrapped custom controls.',
     xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
   },
 };

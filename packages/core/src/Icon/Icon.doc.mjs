@@ -17,7 +17,7 @@ export const docs = {
     {
       name: 'color',
       type: "'primary' | 'secondary' | 'tertiary' | 'disabled' | 'accent' | 'success' | 'error' | 'warning' | 'inherit'",
-      description: 'Color variant mapped to XDS icon color tokens.',
+      description: 'Color variant mapped to Astryx icon color tokens.',
       default: "'inherit'",
     },
     {
@@ -62,7 +62,7 @@ export const docsZh = {
     {
       name: 'color',
       type: "'primary' | 'secondary' | 'tertiary' | 'disabled' | 'accent' | 'success' | 'error' | 'warning' | 'inherit'",
-      description: '映射到 XDS 图标颜色令牌的颜色变体。',
+      description: '映射到 Astryx 图标颜色令牌的颜色变体。',
       default: "'inherit'",
     },
     {
@@ -96,7 +96,7 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Renders icons w/ XDS design system colors + sizes. Supports direct SVG icon components + semantic icon names that adapt to active theme.',
+    'Renders icons w/ Astryx design system colors + sizes. Supports direct SVG icon components + semantic icon names that adapt to active theme.',
   usage: {
     description: 'Icons are small visual symbols that represent actions, objects, or concepts. They improve scannability and reinforce meaning alongside text. Supports both direct SVG components and semantic icon names that adapt to the active theme.',
     bestPractices: [
@@ -113,7 +113,7 @@ export const docsDense = {
   },
   propDescriptions: {
     icon: 'Semantic icon name or SVG component. Valid names: close, chevronDown, chevronLeft, chevronRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone. For others, pass an SVG component.',
-    color: 'Color variant mapped to XDS icon color tokens.',
+    color: 'Color variant mapped to Astryx icon color tokens.',
     size: 'Icon size.',
   },
 };

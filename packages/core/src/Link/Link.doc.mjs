@@ -99,7 +99,7 @@ export const docs = {
       isHiddenFromOverview: true,
       displayName: 'Link Provider',
       description:
-        'Provider that sets the default link component for all XDS link-rendering components in the subtree. ' +
+        'Provider that sets the default link component for all Astryx link-rendering components in the subtree. ' +
         'Wrap your app root to replace native <a> elements with your framework router (Next.js Link, React Router Link, etc.).',
       props: [
         {
@@ -226,7 +226,7 @@ export const docsZh = {
       isHiddenFromOverview: true,
       displayName: 'Link Provider',
       description:
-        '为子树中所有 XDS 链接组件设置默认链接组件的 Provider。',
+        '为子树中所有 Astryx 链接组件设置默认链接组件的 Provider。',
       props: [
         {
           name: 'component',
@@ -310,7 +310,7 @@ export const docsDense = {
       isHiddenFromOverview: true,
       displayName: 'Link Provider',
       description:
-        'Provider setting default link component for all XDS links in subtree.',
+        'Provider setting default link component for all Astryx links in subtree.',
       propDescriptions: {
         component: 'Component for all link elements',
         children: 'Subtree',

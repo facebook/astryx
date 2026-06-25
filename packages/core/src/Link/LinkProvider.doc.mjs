@@ -10,7 +10,7 @@ export const docs = {
   isHiddenFromOverview: true,
   keywords: ['link', 'provider', 'router', 'nextjs', 'client-side-routing'],
   usage: {
-    description: 'Wraps your app to replace the default <a> tag with a framework-specific link component (e.g. Next.js Link) for client-side routing across all XDS components.',
+    description: 'Wraps your app to replace the default <a> tag with a framework-specific link component (e.g. Next.js Link) for client-side routing across all Astryx components.',
   },
   props: [
     {name: 'component', type: 'LinkComponentType', required: true, description: 'Link component to use for all link elements in the subtree (e.g. Next.js Link).'},
@@ -20,9 +20,9 @@ export const docs = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Wraps app to replace default <a> tag w/ framework-specific link component (e.g. Next.js Link) for client-side routing across all XDS components.',
+  description: 'Wraps app to replace default <a> tag w/ framework-specific link component (e.g. Next.js Link) for client-side routing across all Astryx components.',
   usage: {
-    description: 'Wraps app to replace default <a> tag w/ framework-specific link component (e.g. Next.js Link) for client-side routing across all XDS components.',
+    description: 'Wraps app to replace default <a> tag w/ framework-specific link component (e.g. Next.js Link) for client-side routing across all Astryx components.',
   },
   propDescriptions: {
     component: 'link component for all link elements in subtree (e.g. Next.js Link)',

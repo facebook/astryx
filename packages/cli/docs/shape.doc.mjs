@@ -44,7 +44,7 @@ export const docs = {
           type: 'code',
           lang: 'css',
           label: 'Concentric radius formula',
-          code: `/* Automatic in XDS Card */
+          code: `/* Automatic in Astryx Card */
 --card-concentric-radius: max(0px, calc(var(--_card-radius) - var(--card-padding)));`,
         },
       ],

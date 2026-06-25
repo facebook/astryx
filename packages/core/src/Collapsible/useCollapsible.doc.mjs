@@ -38,7 +38,7 @@ export const docs = {
   usage: {
     description: 'Reusable hook that encapsulates the collapsible state machine. Supports three modes: group-controlled (inside CollapsibleGroup), controlled (isOpen + onOpenChange), and uncontrolled (self-managed with defaultIsOpen). Used internally by Card and Section.',
     bestPractices: [
-      {guidance: true, description: 'Use the hook directly when building custom collapsible components that need XDS collapsible behavior without Collapsible wrapper.'},
+      {guidance: true, description: 'Use the hook directly when building custom collapsible components that need Astryx collapsible behavior without Collapsible wrapper.'},
       {guidance: true, description: 'For accordion behavior, wrap items in CollapsibleGroup and pass unique value props.'},
       {guidance: false, description: 'Implement your own open/close state when useCollapsible already provides it; the hook handles group coordination automatically.'},
     ],
@@ -64,7 +64,7 @@ export const docsDense = {
   usage: {
     description: 'Encapsulates collapsible state machine. 3 modes: group-controlled (inside CollapsibleGroup), controlled (isOpen + onOpenChange), uncontrolled (self-managed w/ defaultIsOpen). Used internally by Card + Section.',
     bestPractices: [
-      {guidance: true, description: 'Use directly when building custom collapsible components needing XDS collapsible behavior w/o Collapsible wrapper.'},
+      {guidance: true, description: 'Use directly when building custom collapsible components needing Astryx collapsible behavior w/o Collapsible wrapper.'},
       {guidance: true, description: 'For accordion behavior, wrap items in CollapsibleGroup + pass unique value props.'},
       {guidance: false, description: 'Implement your own open/close state when useCollapsible already provides it; hook handles group coordination automatically.'},
     ],

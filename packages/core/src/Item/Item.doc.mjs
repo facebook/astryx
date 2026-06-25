@@ -51,7 +51,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'A single, flexible item primitive that unifies the "start content + label + description + end content" pattern across XDS. Use it wherever you need a structured row: dropdown menus, selectors, contact lists, notifications, file browsers, and activity feeds.',
+      'A single, flexible item primitive that unifies the "start content + label + description + end content" pattern across Astryx. Use it wherever you need a structured row: dropdown menus, selectors, contact lists, notifications, file browsers, and activity feeds.',
     bestPractices: [
       {guidance: true, description: 'Use named slots (startContent, label, description, endContent) for the common layout. These cover the 80% case.'},
       {guidance: true, description: 'Use density="compact" for menus and dense lists, "balanced" for standard rows, and "spacious" for roomier layouts.'},
@@ -104,7 +104,7 @@ export const docsZh = {
   ],
   usage: {
     description:
-      '通用项目原语，统一 XDS 中 "起始内容 + 标签 + 描述 + 结束内容" 的布局模式。适用于下拉菜单、选择器、联系人列表、通知、文件浏览器和活动流等场景。',
+      '通用项目原语，统一 Astryx 中 "起始内容 + 标签 + 描述 + 结束内容" 的布局模式。适用于下拉菜单、选择器、联系人列表、通知、文件浏览器和活动流等场景。',
     bestPractices: [
       {guidance: true, description: '使用命名插槽（startContent、label、description、endContent）处理常见布局。'},
       {guidance: true, description: '菜单和密集列表使用 density="compact"，标准行使用 "balanced"，宽松布局使用 "spacious"。'},
