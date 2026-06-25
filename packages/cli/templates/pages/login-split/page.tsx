@@ -35,7 +35,7 @@ const COLUMN_MIN_WIDTH = 240;
 // minHeight:100% fills the host so the centered card never leaves an unpainted
 // band; padding keeps it off the surface edges.
 const pageStyle: CSSProperties = {
-  minHeight: '100%',
+  minHeight: '100dvh',
   backgroundColor: 'var(--color-background-body)',
   padding: 'var(--spacing-6)',
 };

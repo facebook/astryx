@@ -15,7 +15,7 @@ import {CubeIcon} from '@heroicons/react/24/outline';
 
 // Standalone auth page paints its own body background (no host shell).
 const pageStyle: CSSProperties = {
-  minHeight: '100%',
+  minHeight: '100dvh',
   backgroundColor: 'var(--color-background-body)',
   padding: 'var(--spacing-6)',
 };

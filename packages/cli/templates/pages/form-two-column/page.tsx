@@ -50,7 +50,7 @@ const CONTACT_COLUMNS = [
 // (#2582), so the cover photo is styled directly. overflow:hidden masks the
 // cover crop to the rounded corners.
 const pageStyle: CSSProperties = {
-  minHeight: '100%',
+  minHeight: '100dvh',
 };
 const illustrationImg: CSSProperties = {
   width: '100%',

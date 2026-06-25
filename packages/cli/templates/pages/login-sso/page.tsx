@@ -23,7 +23,7 @@ import {Avatar} from '@astryxdesign/core/Avatar';
 const BG_URL = 'https://lookaside.facebook.com/assets/astryx/building.png';
 
 const pageStyle: CSSProperties = {
-  minHeight: '100%',
+  minHeight: '100dvh',
   backgroundImage: `url(${BG_URL})`,
   backgroundSize: 'cover',
   backgroundPosition: 'center',

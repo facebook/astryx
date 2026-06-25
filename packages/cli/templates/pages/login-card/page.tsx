@@ -56,7 +56,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 // Standalone auth page paints its own body background (no host shell).
 const pageStyle: CSSProperties = {
-  minHeight: '100%',
+  minHeight: '100dvh',
   backgroundColor: 'var(--color-background-body)',
   padding: 'var(--spacing-6)',
 };

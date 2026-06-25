@@ -324,7 +324,7 @@ export function ThemeShowcaseStore({
   return (
     <div
       style={{
-        minHeight: '100%',
+        minHeight: '100dvh',
         backgroundColor: 'var(--color-background-body)',
       }}>
       <StorePreview images={images} products={products} isMobile={isMobile} />
