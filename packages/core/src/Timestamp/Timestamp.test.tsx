@@ -49,11 +49,7 @@ describe('Timestamp', () => {
 
   it('renders date format', () => {
     render(
-      <Timestamp
-        value="2026-02-19T17:00:00Z"
-        format="date"
-        data-testid="ts"
-      />,
+      <Timestamp value="2026-02-19T17:00:00Z" format="date" data-testid="ts" />,
     );
     const el = screen.getByTestId('ts');
     expect(el.textContent).toContain('2026');
@@ -77,11 +73,7 @@ describe('Timestamp', () => {
 
   it('renders time format', () => {
     render(
-      <Timestamp
-        value="2026-02-19T17:00:00Z"
-        format="time"
-        data-testid="ts"
-      />,
+      <Timestamp value="2026-02-19T17:00:00Z" format="time" data-testid="ts" />,
     );
     const el = screen.getByTestId('ts');
     // Should contain time but not year
@@ -210,11 +202,7 @@ describe('Timestamp', () => {
   it('forwards ref', () => {
     const ref = {current: null as HTMLTimeElement | null};
     render(
-      <Timestamp
-        ref={ref}
-        value="2026-03-25T10:00:00Z"
-        format="date_time"
-      />,
+      <Timestamp ref={ref} value="2026-03-25T10:00:00Z" format="date_time" />,
     );
     expect(ref.current).toBeInstanceOf(HTMLTimeElement);
   });
@@ -238,6 +226,20 @@ describe('Timestamp', () => {
     const oneHourFromNow = Date.now() / 1000 + 3600;
     render(<Timestamp value={oneHourFromNow} format="relative" />);
     expect(screen.getByText('in 1 hour')).toBeInTheDocument();
+  });
+
+  it('renders "just now" for a value a few seconds in the future (clock skew)', () => {
+    // Simulates the value's clock being slightly ahead of our reference clock,
+    // e.g. when a timestamp is set to "right now" while the displayed `now` lags.
+    const fiveSecondsFromNow = Date.now() / 1000 + 5;
+    render(<Timestamp value={fiveSecondsFromNow} format="relative" />);
+    expect(screen.getByText('just now')).toBeInTheDocument();
+  });
+
+  it('still renders a genuine near-future time beyond the skew tolerance', () => {
+    const fortyFiveSecondsFromNow = Date.now() / 1000 + 45;
+    render(<Timestamp value={fortyFiveSecondsFromNow} format="relative" />);
+    expect(screen.getByText('in a few seconds')).toBeInTheDocument();
   });
 
   // --- Long-ago relative ---

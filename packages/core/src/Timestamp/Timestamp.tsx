@@ -19,12 +19,7 @@
 import {useEffect, useRef, useState, lazy, Suspense} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
-import type {
-  TextType,
-  TextSize,
-  TextColor,
-  TextWeight,
-} from '../theme/types';
+import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -135,6 +130,16 @@ const DAY = 86400;
 const MONTH = 30 * DAY;
 const YEAR = 365 * DAY;
 
+/**
+ * Tolerance (in seconds) for treating a "future" timestamp as the present.
+ * A value only a handful of seconds ahead of our reference clock is virtually
+ * always clock skew — the displayed `now` lagging the real clock, or the value
+ * being produced on a slightly faster clock — not a genuine future event.
+ * These render as "just now" instead of a confusing "in a few seconds" for
+ * what is effectively the current time.
+ */
+const CLOCK_SKEW_TOLERANCE = 30;
+
 /** Default auto threshold: 7 days in seconds */
 const DEFAULT_AUTO_THRESHOLD = 7 * DAY;
 
@@ -153,6 +158,10 @@ function getRelativeTimeString(date: Date, now: Date): string {
   if (diffSeconds < 0) {
     // Future dates
     const absDiff = Math.abs(diffSeconds);
+    if (absDiff <= CLOCK_SKEW_TOLERANCE) {
+      // Effectively "now" — small skew between the value and our clock.
+      return 'just now';
+    }
     if (absDiff < MINUTE) {
       return 'in a few seconds';
     }
