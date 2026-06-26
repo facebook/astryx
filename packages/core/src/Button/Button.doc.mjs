@@ -79,12 +79,6 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'isInterruptible',
-      type: 'boolean',
-      description: 'Keep the button clickable while loading: the spinner and aria-busy still show, but the button is not disabled, so clicks keep landing and can interrupt the in-flight action.',
-      default: 'false',
-    },
-    {
       name: 'isDisabled',
       type: 'boolean',
       description: 'Disables the button. When a tooltip is present, uses aria-disabled instead of native disabled so the button stays focusable.',

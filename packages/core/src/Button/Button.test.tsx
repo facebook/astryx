@@ -71,20 +71,6 @@ describe('Button', () => {
     expect(button).toBeDisabled();
   });
 
-  it('stays clickable while loading when isInterruptible is set', async () => {
-    const user = userEvent.setup();
-    const handleClick = vi.fn();
-    render(
-      <Button label="Submit" isLoading isInterruptible onClick={handleClick} />,
-    );
-    const button = screen.getByRole('button');
-    // Loading affordance still shows, but the button is not disabled.
-    expect(button).toHaveAttribute('aria-busy', 'true');
-    expect(button).not.toBeDisabled();
-    await user.click(button);
-    expect(handleClick).toHaveBeenCalledTimes(1);
-  });
-
   it('sets aria-busy synchronously while clickAction is pending', async () => {
     // The spinner reveal is visually delayed (CSS animation-delay), but the
     // loading DOM state — aria-busy and disabled — must not be delayed.

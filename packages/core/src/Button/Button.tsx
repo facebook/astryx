@@ -15,7 +15,7 @@
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  * - /packages/cli/templates/blocks/components/Button/ (showcase blocks)
  *
- * Last synced props: label, variant, size, isDisabled, isLoading, isInterruptible, clickAction, icon, isIconOnly, children, tooltip, endContent, href, as, target, rel
+ * Last synced props: label, variant, size, isDisabled, isLoading, clickAction, icon, isIconOnly, children, tooltip, endContent, href, as, target, rel
  */
 
 import {useRef, useTransition, type ReactNode} from 'react';
@@ -321,14 +321,6 @@ export interface ButtonProps extends BaseProps<HTMLButtonElement> {
    */
   isLoading?: boolean;
   /**
-   * Keep the button interactive while loading. The loading state still renders
-   * the spinner and `aria-busy`, but does not disable the button — so clicks
-   * keep landing. Use for interruptible actions (e.g. a toggle whose action can
-   * be re-triggered before the previous one settles).
-   * @default false
-   */
-  isInterruptible?: boolean;
-  /**
    * Click handler. For async actions that should show a loading state,
    * use `clickAction` instead.
    */
@@ -398,10 +390,10 @@ const contentHide = stylex.keyframes({
   to: {color: 'transparent'},
 });
 
-// Hold the loading swap for a short delay so a fast action (e.g. clickAction
-// or an interruptible toggle) that settles within the delay never flashes a
-// spinner. The spinner fade-in and the content hide share the same delay so
-// the button never shows an empty frame in between. Reduced motion is instant.
+// Hold the loading swap for a short delay so a fast action (e.g. clickAction)
+// that settles within the delay never flashes a spinner. The spinner fade-in
+// and the content hide share the same delay so the button never shows an empty
+// frame in between. Reduced motion is instant.
 const SPINNER_DELAY = durationVars['--duration-medium-min'];
 
 const loadingStyles = stylex.create({
@@ -537,7 +529,6 @@ export function Button({
   type = 'button',
   isDisabled = false,
   isLoading = false,
-  isInterruptible = false,
   clickAction,
   icon,
   isIconOnly = false,
@@ -563,15 +554,12 @@ export function Button({
   const actionInFlightRef = useRef(false);
   const isLoadingState = isLoading || isPending;
   // Delay the spinner reveal for action-driven loading (clickAction's own
-  // transition, or an interruptible caller like ToggleButton) so a fast action
-  // does not flash a spinner. Explicit isLoading-only stays immediate, since
-  // the consumer is deliberately showing it.
-  const delaySpinner = isPending || isInterruptible;
+  // transition) so a fast action that settles within the delay does not flash
+  // a spinner. Explicit isLoading-only stays immediate, since the consumer is
+  // deliberately showing it.
+  const delaySpinner = isPending;
   const groupDisabled = buttonGroup?.isDisabled ?? false;
-  // When interruptible, the loading state drives the spinner and aria-busy but
-  // not disabled, so clicks keep landing and can interrupt the in-flight action.
-  const buttonDisabled =
-    isDisabled || groupDisabled || (isLoadingState && !isInterruptible);
+  const buttonDisabled = isDisabled || groupDisabled || isLoadingState;
   // isIconOnly prop is the source of truth for icon-only rendering.
   // When false (default), label is always rendered as visible text.
 
