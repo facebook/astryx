@@ -19,12 +19,7 @@
 import {useEffect, useRef, useState, lazy, Suspense} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
-import type {
-  TextType,
-  TextSize,
-  TextColor,
-  TextWeight,
-} from '../theme/types';
+import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -150,6 +145,15 @@ function parseValue(value: string | number): Date {
 function getRelativeTimeString(date: Date, now: Date): string {
   const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
 
+  // Treat values at (or a hair before/after) the present as "just now". The
+  // internal `now` reference is captured at render time, so it can lag the
+  // real clock; a value equal to "right now" can land a fraction of a second
+  // in the future and round to a small negative delta. Without this clamp,
+  // such values fall into the future branch and render "in a few seconds".
+  if (Math.abs(diffSeconds) < 10) {
+    return 'just now';
+  }
+
   if (diffSeconds < 0) {
     // Future dates
     const absDiff = Math.abs(diffSeconds);
@@ -176,9 +180,6 @@ function getRelativeTimeString(date: Date, now: Date): string {
     return `in ${years} ${years === 1 ? 'year' : 'years'}`;
   }
 
-  if (diffSeconds < 10) {
-    return 'just now';
-  }
   if (diffSeconds < MINUTE) {
     return `${diffSeconds} seconds ago`;
   }
