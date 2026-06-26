@@ -10,6 +10,7 @@
  */
 import {buildSync} from 'esbuild';
 import {readFileSync, writeFileSync} from 'fs';
+import {execSync} from 'node:child_process';
 
 buildSync({
   entryPoints: ['src/vite.ts'],
@@ -39,3 +40,8 @@ content = content.replaceAll(
 writeFileSync('dist/vite.mjs', content);
 
 console.log('Built dist/vite.mjs');
+
+// Emit TypeScript declarations for the ./vite export. esbuild cannot generate
+// them, so run tsc (declaration-only) — the same pattern the theme packages use.
+execSync('tsc --project tsconfig.build.json', {stdio: 'inherit'});
+console.log('Built dist/vite.d.ts');

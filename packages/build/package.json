@@ -25,7 +25,10 @@
     ".": "./src/config.js",
     "./babel": "./src/babel.js",
     "./postcss": "./src/index.js",
-    "./vite": "./dist/vite.mjs",
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.mjs"
+    },
     "./next": "./src/next.js"
   },
   "files": [
