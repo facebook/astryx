@@ -184,6 +184,17 @@ const stickyStyles = stylex.create({
     position: 'sticky',
     // Pinned cells must be opaque so scrolling content doesn't show through.
     backgroundColor: colorVars['--color-background-surface'],
+    // Clip the background to the padding box so it doesn't paint over the
+    // cell's (translucent, collapsed) bottom/right divider border. Sticky cells
+    // sit above regular cells, so without this the opaque background would hide
+    // the row divider on the pinned column.
+    backgroundClip: 'padding-box',
+    // Default table cells are `overflow: hidden` (for text truncation), which
+    // would clip the shadow ::after that bleeds past the pinned edge. Sticky
+    // cells opt back into visible overflow so the shadow can render outside.
+    // Text truncation on sticky columns still works because the cell width is
+    // fixed and the inner content wraps/ellipsizes within it.
+    overflow: 'visible',
   },
   headerCell: {
     // Header cells stack above body cells; both stack above non-sticky cells.
@@ -194,12 +205,22 @@ const stickyStyles = stylex.create({
   },
 });
 
-// border-collapse: collapse tables (Astryx Table uses table-layout: fixed +
-// border-collapse: collapse) do NOT paint box-shadow on cells in Chromium, so
-// the drop shadow is painted by a ::after pseudo-element just outside the
-// pinned edge. Its opacity reads a CSS variable inherited from the scroll
-// container, which the layout ref toggles between 0 and 1 on scroll.
+// A soft drop shadow over the scrolling region, matching the EPS sticky-column
+// treatment. `border-collapse: collapse` tables (Astryx Table uses
+// table-layout: fixed + border-collapse: collapse) do NOT paint `box-shadow`
+// on the cells themselves in Chromium, so the shadow is cast by a ::after strip
+// positioned just outside the pinned edge, filled with a soft gradient that
+// fades from a shadow tint to transparent over the scrolled content. Sticky
+// cells set `overflow: visible` (above) so this strip isn't clipped. Its
+// opacity reads a CSS variable inherited from the scroll container, which the
+// layout ref toggles between 0 and 1 on scroll so the shadow only shows when
+// there is hidden content behind that edge.
+const SHADOW_WIDTH = '6px';
+// A subtle tint that fades to transparent. --color-shadow is only ~10% alpha,
+// which reads too faintly here, so use a slightly stronger but still soft tint.
+const SHADOW_TINT = 'light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.32))';
 const shadowStyles = stylex.create({
+  // start-pinned: shadow falls to the right (inline-end), over scrolled content
   start: {
     '::after': {
       content: '""',
@@ -207,15 +228,15 @@ const shadowStyles = stylex.create({
       top: 0,
       bottom: 0,
       insetInlineEnd: 0,
-      width: '16px',
+      width: SHADOW_WIDTH,
       transform: 'translateX(100%)',
       pointerEvents: 'none',
       transition: 'opacity 150ms ease',
       opacity: `var(${SHADOW_VAR_START}, 0)`,
-      background:
-        `linear-gradient(to right, ${colorVars['--color-shadow']}, transparent)`,
+      backgroundImage: `linear-gradient(to right, ${SHADOW_TINT}, transparent)`,
     },
   },
+  // end-pinned: shadow falls to the left (inline-start), over scrolled content
   end: {
     '::after': {
       content: '""',
@@ -223,13 +244,12 @@ const shadowStyles = stylex.create({
       top: 0,
       bottom: 0,
       insetInlineStart: 0,
-      width: '16px',
+      width: SHADOW_WIDTH,
       transform: 'translateX(-100%)',
       pointerEvents: 'none',
       transition: 'opacity 150ms ease',
       opacity: `var(${SHADOW_VAR_END}, 0)`,
-      background:
-        `linear-gradient(to left, ${colorVars['--color-shadow']}, transparent)`,
+      backgroundImage: `linear-gradient(to left, ${SHADOW_TINT}, transparent)`,
     },
   },
 });
@@ -291,9 +311,7 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
     };
     el.addEventListener('scroll', update, {passive: true});
     const resizeObserver =
-      typeof ResizeObserver !== 'undefined'
-        ? new ResizeObserver(update)
-        : null;
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
     resizeObserver?.observe(el);
     update();
     detachRef.current = () => {
