@@ -3,7 +3,6 @@
 'use client';
 
 import {useState} from 'react';
-import * as stylex from '@stylexjs/stylex';
 import {AppShell} from '@astryxdesign/core/AppShell';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Layout, LayoutContent, LayoutFooter} from '@astryxdesign/core/Layout';
@@ -32,12 +31,6 @@ import {
   BuildingOffice2Icon,
   CodeBracketIcon,
 } from '@heroicons/react/24/outline';
-
-// Cancels the SideNavItem nested-children indent (paddingInlineStart: --spacing-6)
-// so collapsed conversations align flush with their workspace.
-const styles = stylex.create({
-  flushNested: {marginInlineStart: 'calc(-1 * var(--spacing-6))'},
-});
 
 type Conversation = {
   label: string;
@@ -200,7 +193,7 @@ export default function ShellAIChat() {
                 label={workspace.name}
                 icon={workspace.icon}
                 collapsible={{defaultIsCollapsed: false}}>
-                <VStack gap={0.5} xstyle={styles.flushNested}>
+                <VStack gap={0.5}>
                   {workspace.chats.map(chat => (
                     <ConversationItem
                       key={chat.label}
