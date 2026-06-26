@@ -15,7 +15,7 @@
 
 import {useCallback, useMemo, useRef, type CSSProperties} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '../../../theme/tokens.stylex';
+import {colorVars, durationVars, easeVars} from '../../../theme/tokens.stylex';
 import type {
   TableColumn,
   TablePlugin,
@@ -182,8 +182,35 @@ const SHADOW_VAR_END = '--table-sticky-shadow-end';
 const stickyStyles = stylex.create({
   cell: {
     position: 'sticky',
-    // Pinned cells must be opaque so scrolling content doesn't show through.
-    backgroundColor: colorVars['--color-background-surface'],
+    isolation: 'isolate',
+    // Opaque base so scrolled content doesn't show through the pinned column.
+    // A sticky cell can't introspect what's actually behind the table, so the
+    // backdrop is a CSS variable — `--table-sticky-background` — that defaults
+    // to the card token (tables most commonly sit inside a Card / surface; in
+    // the default theme card === surface). Consumers whose table sits on a
+    // different backdrop (page body, a tinted card, a bare surface in a theme
+    // where surface !== card, etc.) override the variable on the table or any
+    // ancestor: style={{'--table-sticky-background': 'var(--color-background-body)'}}.
+    backgroundColor: `var(--table-sticky-background, ${colorVars['--color-background-card']})`,
+    // The striped/hover overlay rides a ::before layer at z-index -1, which
+    // paints ABOVE the cell's opaque base but BELOW the cell text. Rather than
+    // re-derive striping/hover (the plugin can't know whether the table is
+    // striped or hoverable), it consumes `--table-row-overlay` — an inheritable
+    // variable TableRow sets to its exact current overlay color (or unset when
+    // the row has none). So the pinned column mirrors the row precisely:
+    // striped only when the table is, hover only when hover is enabled. The
+    // overlay transitions background-color in lockstep with the row.
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      zIndex: -1,
+      pointerEvents: 'none',
+      backgroundColor: 'var(--table-row-overlay, transparent)',
+      transitionProperty: 'background-color',
+      transitionDuration: durationVars['--duration-fast'],
+      transitionTimingFunction: easeVars['--ease-standard'],
+    },
     // Clip the background to the padding box so it doesn't paint over the
     // cell's (translucent, collapsed) bottom/right divider border. Sticky cells
     // sit above regular cells, so without this the opaque background would hide
