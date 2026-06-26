@@ -18,7 +18,7 @@ import type {IconType} from '@astryxdesign/core/Icon';
 import {MoreMenu} from '@astryxdesign/core/MoreMenu';
 import {StatusDot} from '@astryxdesign/core/StatusDot';
 import type {StatusDotVariant} from '@astryxdesign/core/StatusDot';
-import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {Card} from '@astryxdesign/core/Card';
 import {Stack, VStack, HStack} from '@astryxdesign/core/Stack';
 import {
   SparklesIcon,
@@ -108,10 +108,10 @@ const WORKSPACES: Workspace[] = [
 const SELECTED_CHAT = 'StyleX migration notes';
 
 const MESSAGES = [
-  {role: 'user', lines: [280, 180]},
-  {role: 'assistant', lines: [560, 520, 420, 300]},
-  {role: 'user', lines: [200]},
-  {role: 'assistant', lines: [540, 580, 360]},
+  {role: 'assistant', width: '78%', height: 104},
+  {role: 'user', width: '48%', height: 48},
+  {role: 'assistant', width: '64%', height: 132},
+  {role: 'user', width: '38%', height: 40},
 ];
 
 function ConversationItem({
@@ -214,50 +214,25 @@ export default function ShellAIChat() {
         contentWidth={768}
         content={
           <LayoutContent padding={6}>
-            <VStack gap={8}>
-              {MESSAGES.map((message, mi) =>
-                message.role === 'assistant' ? (
-                  <HStack key={mi} gap={3} vAlign="start">
-                    <Skeleton
-                      width={32}
-                      height={32}
-                      radius="rounded"
-                      index={0}
-                    />
-                    <VStack gap={2}>
-                      {message.lines.map((width, li) => (
-                        <Skeleton
-                          key={li}
-                          width={width}
-                          height={14}
-                          radius={2}
-                          index={li}
-                        />
-                      ))}
-                    </VStack>
-                  </HStack>
-                ) : (
-                  <HStack key={mi} hAlign="end">
-                    <VStack gap={2} hAlign="end">
-                      {message.lines.map((width, li) => (
-                        <Skeleton
-                          key={li}
-                          width={width}
-                          height={14}
-                          radius={2}
-                          index={li}
-                        />
-                      ))}
-                    </VStack>
-                  </HStack>
-                ),
-              )}
+            <VStack gap={5}>
+              {MESSAGES.map((message, mi) => (
+                <HStack
+                  key={mi}
+                  hAlign={message.role === 'assistant' ? 'start' : 'end'}>
+                  <Card
+                    variant="muted"
+                    padding={0}
+                    width={message.width}
+                    height={message.height}
+                  />
+                </HStack>
+              ))}
             </VStack>
           </LayoutContent>
         }
         footer={
           <LayoutFooter>
-            <Skeleton width="100%" height={56} radius={4} index={0} />
+            <Card variant="muted" padding={0} width="100%" height={56} />
           </LayoutFooter>
         }
       />

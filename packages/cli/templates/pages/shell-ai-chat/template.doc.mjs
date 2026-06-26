@@ -6,7 +6,7 @@ export const doc = {
   name: 'AI Chat Shell',
   displayName: 'AI Chat Shell',
   description:
-    'An AI chat shell with a collapsible, resizable SideNav — new chat, search, library, and workspace-grouped conversations with status dots — over a skeleton conversation and composer.',
+    'An AI chat shell with a collapsible, resizable SideNav — new chat, search, library, and workspace-grouped conversations with status dots — over static grey-card conversation and composer placeholders.',
   isReady: true,
   category: 'Shell - Left Sidebar',
 };
