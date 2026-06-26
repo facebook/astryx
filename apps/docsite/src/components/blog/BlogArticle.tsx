@@ -17,6 +17,7 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Breadcrumbs, BreadcrumbItem} from '@astryxdesign/core/Breadcrumbs';
 import {Divider} from '@astryxdesign/core/Divider';
 import {ClickableCard} from '@astryxdesign/core/ClickableCard';
+import {typeScaleVars} from '@astryxdesign/core/theme/tokens.stylex';
 import type {BlogPost} from '../../lib/blog/schema';
 import {POST_TYPE_LABELS} from '../../lib/blog/schema';
 import {AuthorByline} from './AuthorByline';
@@ -25,6 +26,13 @@ import {layout} from '../../layout.stylex';
 const styles = stylex.create({
   section: {
     marginInline: 'auto',
+    // Match the docs article body treatment (16px / 1.75) from DocPageLayout.
+    // The post body renders via Markdown, whose root reads these tokens;
+    // re-assigning them here scopes the larger/airier body to the blog
+    // article only. The title (display-1) and subtitle/description (large)
+    // use different tokens, so they're unaffected.
+    [typeScaleVars['--text-body-size']]: '1rem', // 16px
+    [typeScaleVars['--text-body-leading']]: '1.75', // 28px line box
   },
   cover: {
     borderRadius: 'var(--radius-container)',
