@@ -222,7 +222,10 @@ const styles = stylex.create({
   },
   endSection: {
     position: 'absolute',
-    insetInlineEnd: `calc(${spacingVars['--spacing-1']} - 1px)`,
+    // Match the field's inline padding (inputWrapperStyles.base uses
+    // spacing-2) so end content (clear button, resultCount) lines up with
+    // the text/start-icon inset instead of hugging the border at ~3px.
+    insetInlineEnd: spacingVars['--spacing-2'],
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
