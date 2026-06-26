@@ -49,7 +49,7 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
   value: string | number;
   /**
    * Display format.
-   * - `'relative'`: "2 hours ago", "yesterday", "just now"
+   * - `'relative'`: "2 hours ago", "yesterday", "now"
    * - `'auto'`: Relative for recent times, `date_time` for older
    * - `'date'`: "Mar 21, 2025"
    * - `'date_time'`: "Mar 21, 2025, 2:51 PM"
@@ -145,13 +145,13 @@ function parseValue(value: string | number): Date {
 function getRelativeTimeString(date: Date, now: Date): string {
   const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
 
-  // Treat values at (or a hair before/after) the present as "just now". The
+  // Treat values at (or a hair before/after) the present as "now". The
   // internal `now` reference is captured at render time, so it can lag the
   // real clock; a value equal to "right now" can land a fraction of a second
   // in the future and round to a small negative delta. Without this clamp,
   // such values fall into the future branch and render "in a few seconds".
   if (Math.abs(diffSeconds) < 10) {
-    return 'just now';
+    return 'now';
   }
 
   if (diffSeconds < 0) {

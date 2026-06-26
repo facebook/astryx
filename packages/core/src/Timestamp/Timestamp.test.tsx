@@ -33,30 +33,30 @@ describe('Timestamp', () => {
     expect(screen.getByText('2 hours ago')).toBeInTheDocument();
   });
 
-  it('renders "just now" for very recent times', () => {
+  it('renders "now" for very recent times', () => {
     const fiveSecondsAgo = Date.now() / 1000 - 5;
     render(<Timestamp value={fiveSecondsAgo} format="relative" />);
-    expect(screen.getByText('just now')).toBeInTheDocument();
+    expect(screen.getByText('now')).toBeInTheDocument();
   });
 
-  it('renders "just now" for the current instant (not a future phrase)', () => {
+  it('renders "now" for the current instant (not a future phrase)', () => {
     // A value equal to "right now". Because the internal `now` baseline is
     // captured at render time, it can lag the value by a fraction of a second,
     // producing a tiny negative delta that must not be treated as the future.
     render(<Timestamp value={Date.now() / 1000} format="relative" />);
     expect(screen.queryByText(/^in /)).not.toBeInTheDocument();
-    expect(screen.getByText('just now')).toBeInTheDocument();
+    expect(screen.getByText('now')).toBeInTheDocument();
   });
 
-  it('renders "just now" for a value a hair in the future (clock skew)', () => {
+  it('renders "now" for a value a hair in the future (clock skew)', () => {
     // Real-world clock / captured-now skew can make a current-ish value land a
     // fraction of a second in the future relative to the component's internal
-    // `now`. This must read as the present ("just now"), never "in a few
+    // `now`. This must read as the present ("now"), never "in a few
     // seconds". Regression test for the right-now -> future-phrase bug.
     const aHairInTheFuture = Date.now() / 1000 + 0.6;
     render(<Timestamp value={aHairInTheFuture} format="relative" />);
     expect(screen.queryByText(/^in /)).not.toBeInTheDocument();
-    expect(screen.getByText('just now')).toBeInTheDocument();
+    expect(screen.getByText('now')).toBeInTheDocument();
   });
 
   it('renders "yesterday" for times ~1 day ago', () => {
@@ -209,7 +209,7 @@ describe('Timestamp', () => {
   it('live updates relative time', () => {
     const now = Date.now() / 1000;
     render(<Timestamp value={now - 5} format="relative" isLive />);
-    expect(screen.getByText('just now')).toBeInTheDocument();
+    expect(screen.getByText('now')).toBeInTheDocument();
 
     act(() => {
       vi.advanceTimersByTime(30_000);
