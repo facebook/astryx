@@ -275,6 +275,65 @@ const STRUCTURAL = new Set([
   'FormLayout', 'Center',
 ]);
 
+const SPATIAL_PROPS = [
+  'padding', 'contentPadding', 'gap', 'rowGap', 'columnGap',
+  'columns', 'minChildWidth', 'hasDivider', 'defaultHasDividers',
+  'variant', 'density', 'role', 'height', 'width', 'maxWidth',
+];
+
+/**
+ * Copy allowlisted layout props verbatim from a JSX opening-tag fragment.
+ * Uses quote/brace matching so object literals and spaced strings stay intact.
+ *
+ * @param {string} tagText
+ * @returns {string[]}
+ */
+function extractSpatialAttrs(tagText) {
+  const attrs = [];
+  for (const name of SPATIAL_PROPS) {
+    const eqMatch = tagText.match(new RegExp(`\\b${name}\\s*=\\s*`));
+    if (eqMatch) {
+      const start = eqMatch.index;
+      let i = eqMatch.index + eqMatch[0].length;
+      const rest = tagText.slice(i);
+
+      if (rest[0] === '"' || rest[0] === "'") {
+        const q = rest[0];
+        i += 1;
+        while (i < tagText.length && tagText[i] !== q) {
+          if (tagText[i] === '\\') i += 1;
+          i += 1;
+        }
+        if (i < tagText.length) i += 1;
+      } else if (rest[0] === '{') {
+        let depth = 0;
+        while (i < tagText.length) {
+          if (tagText[i] === '{') depth += 1;
+          else if (tagText[i] === '}') {
+            depth -= 1;
+            if (depth === 0) {
+              i += 1;
+              break;
+            }
+          }
+          i += 1;
+        }
+      } else {
+        const bare = rest.match(/^[^\s/>]+/);
+        i += bare ? bare[0].length : 0;
+      }
+
+      attrs.push(tagText.slice(start, i).trim());
+      continue;
+    }
+
+    if (new RegExp(`\\b${name}(?=[\\s/>])`).test(tagText)) {
+      attrs.push(name);
+    }
+  }
+  return attrs;
+}
+
 function extractSkeleton(source) {
   const lines = source.split('\n');
   const out = [];
@@ -309,16 +368,7 @@ function extractSkeleton(source) {
         if (lines[j].includes('>')) break;
       }
 
-      const props = [];
-      const propRegex = /\b(padding|contentPadding|gap|rowGap|columnGap|columns|minChildWidth|hasDivider|defaultHasDividers|variant|density|role|height|width|maxWidth)\s*[=]\s*\{?\s*['"]?([^}'"\s,/>]+)/g;
-      let m;
-      while ((m = propRegex.exec(tagText)) !== null) {
-        const val = m[2];
-        if (val === 'true') props.push(m[1]);
-        else if (/^\d+$/.test(val)) props.push(`${m[1]}={${val}}`);
-        else props.push(`${m[1]}="${val}"`);
-      }
-
+      const props = extractSpatialAttrs(tagText);
       const hasSpatialProps = props.length > 0;
       const propStr = hasSpatialProps ? ' ' + props.join(' ') : '';
       const isVStack = comp === 'VStack' || comp === 'HStack';

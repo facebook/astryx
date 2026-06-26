@@ -74,5 +74,9 @@ describe('template --skeleton component extraction (prefix-agnostic)', () => {
     expect(result.data.skeleton.trim().length).toBeGreaterThan(0);
     expect(result.data.skeleton).toMatch(/<[A-Z]\w+/);
     expect(result.data.skeleton).not.toContain('<XDS');
+
+    // Object-literal layout props must be copied verbatim, not truncated.
+    expect(result.data.skeleton).toContain('columns={{minWidth:');
+    expect(result.data.skeleton).not.toContain('columns="{minWidth:');
   });
 });
