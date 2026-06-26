@@ -35,10 +35,11 @@ export function MarkdownText({
   if (paragraphs.length === 1) {
     return (
       <Text
+        as="p"
         type={type}
         color={color}
         weight={weight}
-        display={display}
+        display={display ?? 'block'}
         style={style}>
         <Markdown display="inline">{paragraphs[0]}</Markdown>
       </Text>
