@@ -80,19 +80,25 @@ const columns = [
   {key: 'status', header: 'Status', width: pixel(140)},
 ];
 
-export default function TableStickyColumnsTable() {
+export default function StickyColumnsHookUsage() {
   const stickyColumns = useTableStickyColumns<Employee>({
     startKeys: ['name'],
     endKeys: ['status'],
   });
 
   return (
-    <Table
-      data={employees}
-      columns={columns}
-      idKey="id"
-      hasHover
-      plugins={{stickyColumns}}
-    />
+    // Constrain the width so the Table's own horizontal scroll container is
+    // narrower than its columns — that scroll container is what sticky columns
+    // pin against. Without a width cap the table renders full-width and never
+    // scrolls internally, so nothing sticks.
+    <div style={{width: 560, maxWidth: '100%'}}>
+      <Table
+        data={employees}
+        columns={columns}
+        idKey="id"
+        hasHover
+        plugins={{stickyColumns}}
+      />
+    </div>
   );
 }
