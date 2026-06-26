@@ -3,16 +3,16 @@
 name: "RFC: Component or Feature Proposal"
 description: Propose a new component, feature, or significant API change for XDS.
 title: "[RFC] "
-labels: ["rfc"]
+labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
         ## Before you submit
 
-        An RFC is a **problem statement and demand signal** — not a design proposal we evaluate as-written. Read the [contributing guide](https://github.com/facebookexperimental/xds/wiki/Contributing) before submitting.
+        An RFC is a **problem statement and demand signal** — not a design proposal we evaluate as-written. Read the [contributing guide](https://github.com/facebook/astryx/wiki/Contributing) before submitting.
 
-        After acceptance, either of us drives the [specification protocol](https://github.com/facebookexperimental/xds/wiki/Component-Specification-Protocol) — you can front-load research and API exploration in this RFC at your own risk if we haven't responded yet.
+        After acceptance, either of us drives the [specification protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol) — you can front-load research and API exploration in this RFC at your own risk if we haven't responded yet.
 
         **Response time:** We aim to respond within 1 week — either accepting, requesting more information, or declining with rationale.
 
@@ -91,9 +91,9 @@ body:
     attributes:
       label: Pre-submission Checklist
       options:
-        - label: I have read the [Contributing guide](https://github.com/facebookexperimental/xds/wiki/Contributing)
+        - label: I have read the [Contributing guide](https://github.com/facebook/astryx/wiki/Contributing)
           required: true
-        - label: I have read the [API Conventions](https://github.com/facebookexperimental/xds/wiki/API-Conventions)
+        - label: I have read the [API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)
           required: true
         - label: I have checked that existing XDS components cannot compose to solve this
           required: true
