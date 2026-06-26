@@ -18,7 +18,7 @@ import type {IconType} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Button} from '@astryxdesign/core/Button';
 import {Badge} from '@astryxdesign/core/Badge';
-import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {Card} from '@astryxdesign/core/Card';
 import {Grid} from '@astryxdesign/core/Grid';
 import {Stack, VStack} from '@astryxdesign/core/Stack';
 import {
@@ -203,16 +203,16 @@ export default function ShellCommerce() {
         />
       }>
       <VStack gap={10} xstyle={styles.contentMax}>
-        <Skeleton width="100%" height={360} radius={4} index={0} />
+        <Card variant="muted" padding={0} width="100%" height={360} />
 
         {[0, 1, 2].map(section => (
           <VStack key={section} gap={4}>
-            <Skeleton width={200} height={24} radius={2} index={0} />
+            <Card variant="muted" padding={0} width={200} height={24} />
             <Grid minChildWidth={160} gap={4}>
-              {CATEGORY_TILES.map((tile, i) => (
+              {CATEGORY_TILES.map(tile => (
                 <VStack key={tile} gap={2}>
-                  <Skeleton width="100%" height={120} radius={3} index={i} />
-                  <Skeleton width="60%" height={14} radius={2} index={i} />
+                  <Card variant="muted" padding={0} width="100%" height={120} />
+                  <Card variant="muted" padding={0} width="60%" height={14} />
                 </VStack>
               ))}
             </Grid>
