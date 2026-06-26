@@ -43,14 +43,14 @@ export const docs = {
           type: 'number',
           description:
             'Drawer width in pixels. Capped at 85vw to prevent overflow on small screens.',
-          default: '280',
+          default: '320',
         },
         {
           name: 'side',
-          type: "'start' | 'end'",
+          type: "'start' | 'end' | 'auto'",
           description:
-            'Which side the drawer slides from. Start is left in LTR, right in RTL.',
-          default: "'start'",
+            'Which side the drawer slides from. Start is left in LTR, right in RTL. Auto picks a side based on the trigger position.',
+          default: "'auto'",
         },
       ],
     },
@@ -124,14 +124,14 @@ export const docsZh = {
       type: 'number',
       description:
         '抽屉宽度（像素）。上限为 85vw 以防止在小屏幕上溢出。',
-      default: '280',
+      default: '320',
     },
     {
       name: 'side',
-      type: "'start' | 'end'",
+      type: "'start' | 'end' | 'auto'",
       description:
-        '抽屉滑出的方向。在 LTR 布局中 start 为左侧，在 RTL 布局中为右侧。',
-      default: "'start'",
+        '抽屉滑出的方向。在 LTR 布局中 start 为左侧，在 RTL 布局中为右侧。auto 根据触发元素的位置自动选择方向。',
+      default: "'auto'",
     },
   ],
   theming: {

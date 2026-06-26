@@ -147,7 +147,7 @@ export const docs = {
           type: 'boolean',
           description:
             'Show the pill grip at rest instead of only on hover. Use when discoverability is important.',
-          default: 'false',
+          default: 'true',
         },
         {
           name: 'pillPlacement',

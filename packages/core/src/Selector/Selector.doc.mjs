@@ -84,11 +84,13 @@ export const docs = {
       name: 'isDisabled',
       type: 'boolean',
       description: 'Disables the selector.',
+      default: 'false',
     },
     {
       name: 'isLabelHidden',
       type: 'boolean',
       description: 'Visually hides the label while keeping it accessible.',
+      default: 'false',
     },
     {
       name: 'description',
@@ -99,11 +101,13 @@ export const docs = {
       name: 'isOptional',
       type: 'boolean',
       description: 'Marks the field as optional.',
+      default: 'false',
     },
     {
       name: 'isRequired',
       type: 'boolean',
       description: 'Marks the field as required.',
+      default: 'false',
     },
     {
       name: 'status',

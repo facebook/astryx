@@ -30,7 +30,6 @@ export const docs = {
       name: 'index',
       type: 'number',
       description: 'Current index in gallery mode (when media is an array).',
-      default: '0',
     },
     {
       name: 'onIndexChange',
@@ -94,7 +93,6 @@ export const docsZh = {
       name: 'index',
       type: 'number',
       description: '画廊模式中当前索引。',
-      default: '0',
     },
     {
       name: 'onIndexChange',

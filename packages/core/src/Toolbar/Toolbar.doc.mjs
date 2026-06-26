@@ -58,7 +58,7 @@ export const docs = {
           name: 'gap',
           type: 'SpacingStep',
           description: 'Gap between items within each slot.',
-          default: '2',
+          default: '1',
         },
         {
           name: 'orientation',
