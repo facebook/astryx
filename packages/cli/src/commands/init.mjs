@@ -29,6 +29,37 @@ import {requireInteractive} from '../utils/interactive.mjs';
 const VALID_FEATURES = ['agents', 'theme', 'template'];
 const run = getRunPrefix();
 
+/**
+ * Build the "Next steps" lines printed at the end of `astryx init`.
+ *
+ * Theme guidance must match the runtime recommendation emitted by core's
+ * <Theme> component (packages/core/src/theme/Theme.tsx): the pre-built theme
+ * path (`/built` import + `theme.css`) plus the base CSS import, so users
+ * don't end up with an unstyled app or the slower runtime style-injection
+ * path. See https://github.com/facebook/astryx/issues/3080.
+ *
+ * Exported for testing.
+ *
+ * @param {string} runPrefix package-manager run prefix (e.g. `npx`)
+ * @returns {string[]} ordered list of human-facing lines
+ */
+export function getNextSteps(runPrefix) {
+  return [
+    '',
+    '  Next steps:',
+    "    1. Import base styles: import '@astryxdesign/core/reset.css'",
+    "       and import '@astryxdesign/core/astryx.css'",
+    "    2. Import components: import { Button } from '@astryxdesign/core'",
+    '    3. Optionally add a theme (use the pre-built path for performance):',
+    "       import { neutralTheme } from '@astryxdesign/theme-neutral/built'",
+    "       import '@astryxdesign/theme-neutral/theme.css'",
+    '       <Theme theme={neutralTheme}>...</Theme>',
+    `       For custom themes, run \`${runPrefix} astryx theme build <file>\` to generate the built artifacts.`,
+    `    4. ${runPrefix} astryx --help for all commands`,
+    '',
+  ];
+}
+
 function isCancel(value) {
   if (p.isCancel(value)) {
     p.cancel('Setup cancelled.');
@@ -250,13 +281,8 @@ export function registerInit(program) {
       // Outro
       p.outro('Design system initialized!');
 
-      humanLog('');
-      humanLog('  Next steps:');
-      humanLog("    1. Import components: import { Button } from '@astryxdesign/core'");
-      humanLog('    2. Optionally add a theme:');
-      humanLog("       import { neutralTheme } from '@astryxdesign/theme-neutral'");
-      humanLog('       <Theme theme={neutralTheme}>...</Theme>');
-      humanLog(`    3. ${run} astryx --help for all commands`);
-      humanLog('');
+      for (const line of getNextSteps(run)) {
+        humanLog(line);
+      }
     });
 }
