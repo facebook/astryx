@@ -79,7 +79,7 @@ export interface AstryxVitePluginOptions {
    * build uses a distinct prefix so library and product atoms never collide
    * across layers.
    *
-   * Configurable to support the Astryx-prefix migration (P2380608025): a consumer
+   * Configurable to support the Astryx-prefix migration: a consumer
    * can rebrand the library atom prefix to `astryx` before the final cutover.
    * Defaults to `xds` so existing consumers are unaffected.
    *
