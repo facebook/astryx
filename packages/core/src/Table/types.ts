@@ -306,16 +306,20 @@ export interface BodyCellRenderProps {
 }
 
 /**
- * Props passed through the plugin pipeline for the layout region — the wrapper
- * around the `<table>` element (the horizontal scroll container). Lets plugins
- * attach a `ref` to the scrollable element (e.g. for scroll-aware sticky-column
- * shadows or virtualization) and inject chrome before/after the table.
+ * Props passed through the plugin pipeline for the scroll-wrapper region — the
+ * `<div>` wrapping the `<table>` element (the horizontal scroll container, see
+ * the `scrollWrapper` prop on `BaseTableProps`). Lets plugins attach a `ref` to
+ * the scrollable element (e.g. for scroll-aware sticky-column shadows or
+ * virtualization) and inject chrome before/after the table.
+ *
+ * Named after `scrollWrapper` (not "layout") to avoid ambiguity: it transforms
+ * the wrapper element, not the internal header/body/footer layout of `<table>`.
  *
  * Runs after `transformTable`/cell transforms but inside `transformTableContext`,
  * so plugin chrome added here stays within any context providers but wraps the
  * scroll area.
  */
-export interface LayoutRenderProps {
+export interface ScrollWrapperRenderProps {
   /**
    * HTML attributes applied to the scroll container `<div>`, including an
    * optional `ref`. Plugins compose refs by reading the existing `ref` and
@@ -347,7 +351,7 @@ export interface LayoutRenderProps {
  * 4. `transformHeaderCell` — transform each `<th>` props
  * 5. `transformBodyRow` — transform each body `<tr>` props
  * 6. `transformBodyCell` — transform each body `<td>` props
- * 7. `transformLayout` — transform the scroll-container wrapper around the table
+ * 7. `transformScrollWrapper` — transform the scroll-container wrapper around the table
  * 8. `transformTableContext` — wrap the table output in context providers
  */
 export interface TablePlugin<
@@ -395,11 +399,14 @@ export interface TablePlugin<
     columns: ReadonlyArray<TableColumn<T>>,
   ) => BodyCellRenderProps;
   /**
-   * Transform the layout region — the scroll container wrapping the `<table>`.
-   * Use to attach a `ref` to the scrollable element (scroll-aware shadows,
-   * virtualization) or to inject chrome before/after the table.
+   * Transform the scroll-wrapper region — the `<div>` wrapping the `<table>`
+   * (see the `scrollWrapper` prop). Use to attach a `ref` to the scrollable
+   * element (scroll-aware shadows, virtualization) or to inject chrome
+   * before/after the table.
    */
-  transformLayout?: (props: LayoutRenderProps) => LayoutRenderProps;
+  transformScrollWrapper?: (
+    props: ScrollWrapperRenderProps,
+  ) => ScrollWrapperRenderProps;
   /** Wrap the table output in context providers */
   transformTableContext?: (children: ReactNode) => ReactNode;
 }
@@ -466,7 +473,7 @@ export interface BaseTableProps<
    * stays outside the scrollable area.
    *
    * Receives `htmlProps` (including an optional `ref`) and `styles` produced
-   * by the plugin `transformLayout` pipeline, plus `beforeTable`/`afterTable`
+   * by the plugin `transformScrollWrapper` pipeline, plus `beforeTable`/`afterTable`
    * chrome. The wrapper must spread `htmlProps` (and apply `styles`) onto its
    * scroll-container element so plugins can attach refs / scroll listeners.
    */

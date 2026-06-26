@@ -54,7 +54,7 @@ export type {
   HeaderCellRenderProps,
   BodyRowRenderProps,
   BodyCellRenderProps,
-  LayoutRenderProps,
+  ScrollWrapperRenderProps,
   BaseTableProps,
 } from './types';
 export type {

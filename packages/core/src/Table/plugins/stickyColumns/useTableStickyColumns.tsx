@@ -21,7 +21,7 @@ import type {
   TablePlugin,
   HeaderCellRenderProps,
   BodyCellRenderProps,
-  LayoutRenderProps,
+  ScrollWrapperRenderProps,
 } from '../../types';
 import {DEFAULT_MIN_COLUMN_WIDTH} from '../../columnUtils';
 
@@ -381,8 +381,10 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
         };
       },
 
-      transformLayout(props: LayoutRenderProps): LayoutRenderProps {
-        // No pinned edges → nothing to gate; leave the layout untouched.
+      transformScrollWrapper(
+        props: ScrollWrapperRenderProps,
+      ): ScrollWrapperRenderProps {
+        // No pinned edges → nothing to gate; leave the wrapper untouched.
         if (!stateRef.current.hasStart && !stateRef.current.hasEnd) {
           return props;
         }
