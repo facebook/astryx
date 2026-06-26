@@ -45,6 +45,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.0",
     "@vitest/coverage-v8": "^2.1.0",
+    "esbuild": "^0.28.1",
     "eslint": "^10.5.0",
     "eslint-plugin-react-compiler": "19.1.0-rc.2",
     "husky": "^9.1.7",

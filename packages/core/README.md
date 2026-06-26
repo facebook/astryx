@@ -183,3 +183,71 @@ npm install @astryxdesign/core @astryxdesign/theme-neutral
 ```
 
 Same CSS imports and providers as above. No build plugins needed; XDS ships pre-built.
+
+### No build step (CDN)
+
+For prototypes, embeds, or pages without a bundler, load the components straight
+from a public CDN. Two delivery options ship in the published package:
+
+**1. UMD global (`<script>` tag).** A single pre-bundled file exposes every export
+on `window.Astryx`. React and ReactDOM are peer dependencies — load them yourself.
+Pair it with the precompiled stylesheet.
+
+```html
+<!doctype html>
+<html data-astryx-theme="neutral">
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core/src/reset.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@astryxdesign/core/dist/astryx.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script
+      crossorigin
+      src="https://unpkg.com/react@19/umd/react.production.min.js"></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@astryxdesign/core/dist/astryx.umd.js"></script>
+    <script>
+      const {Button, Card} = window.Astryx;
+      const e = React.createElement;
+      ReactDOM.createRoot(document.getElementById('root')).render(
+        e(Card, null, e(Button, {variant: 'primary'}, 'Hello from a CDN')),
+      );
+    </script>
+  </body>
+</html>
+```
+
+**2. ES modules (no UMD, no globals).** Use [esm.sh](https://esm.sh), which rewrites
+bare imports to browser-resolvable URLs. An import map keeps a single React instance.
+
+```html
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/@astryxdesign/core/dist/astryx.css" />
+<script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@19",
+      "react-dom/client": "https://esm.sh/react-dom@19/client",
+      "@astryxdesign/core": "https://esm.sh/@astryxdesign/core?external=react,react-dom"
+    }
+  }
+</script>
+<script type="module">
+  import {createRoot} from 'react-dom/client';
+  import {Button} from '@astryxdesign/core';
+  // ...render as usual
+</script>
+```
+
+> Pin a version in production (e.g. `@astryxdesign/core@0.1.1`) — unversioned CDN URLs
+> resolve to the latest release and are cached aggressively. The raw ESM entry
+> (`dist/index.js`) uses bare `react` imports and will **not** run from a plain
+> `<script src>`; use the UMD global or esm.sh as shown above.
