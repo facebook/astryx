@@ -65,6 +65,12 @@ export const docs = {
       description: 'Text wrapping behavior.',
     },
     {
+      name: 'justify',
+      type: "'start' | 'center' | 'end'",
+      description: 'Text alignment (justification). Uses logical values (start/end) for i18n/RTL compatibility.',
+      default: "'start'",
+    },
+    {
       name: 'hasCapsize',
       type: 'boolean',
       description: 'Enable optical alignment using text-box-trim. Forces block display.',
@@ -146,6 +152,12 @@ export const docsZh = {
       description: '文本换行行为。',
     },
     {
+      name: 'justify',
+      type: "'start' | 'center' | 'end'",
+      description: '文本对齐（两端对齐）。使用逻辑值（start/end）以兼容 i18n/RTL。',
+      default: "'start'",
+    },
+    {
       name: 'hasCapsize',
       type: 'boolean',
       description: '使用 text-box-trim 启用光学对齐。强制块级显示。',
@@ -180,6 +192,7 @@ export const docsDense = {
     hasTruncateTooltip: "Tooltip for truncated text; true=default position, false=disabled, or a placement ('above' | 'below' | 'start' | 'end').",
     wordBreak: "Word break behavior; defaults 'break-all' for single-line, 'break-word' otherwise.",
     textWrap: 'Text wrapping behavior.',
+    justify: "Text alignment (justification); logical values 'start' | 'center' | 'end' for RTL.",
     hasCapsize: 'Optical alignment via text-box-trim; forces block display.',
     hasStrikethrough: 'Strikethrough text decoration.',
     id: 'HTML id attribute.',
