@@ -94,6 +94,39 @@ describe('component detail preview state', () => {
     expect(getMissingRequiredProps(knobs, state)).toEqual(['config']);
   });
 
+  it('seeds OverflowList children from playground defaults so the preview is not empty', () => {
+    const knobs = pickPrimaryProps('OverflowList', [
+      prop({name: 'children', type: 'ReactNode', required: true}),
+      prop({
+        name: 'overflowRenderer',
+        type: '(overflowItems: OverflowItem[]) => ReactNode',
+      }),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {
+        children: [
+          {
+            __element: 'Button',
+            props: {label: 'Overview', variant: 'secondary'},
+          },
+          {
+            __element: 'Button',
+            props: {label: 'Activity', variant: 'secondary'},
+          },
+          {
+            __element: 'Button',
+            props: {label: 'Settings', variant: 'secondary'},
+          },
+        ],
+      },
+    });
+
+    expect(Array.isArray(state.children)).toBe(true);
+    expect((state.children as unknown[]).length).toBe(3);
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
   it('wires controlled open previews back to their isOpen prop', () => {
     const onPropChange = vi.fn();
     const runtimeState = buildRuntimePreviewState(
