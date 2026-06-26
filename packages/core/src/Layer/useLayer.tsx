@@ -271,6 +271,40 @@ function getPositionArea(
 }
 
 /**
+ * CSS `anchor-name` is a comma-separated list, so multiple layers can anchor to
+ * the same element (e.g. several TopNavMegaMenus anchored to one <nav>). These
+ * helpers add/remove a single layer's anchor id without clobbering the others —
+ * overwriting the whole property would break every sibling layer's positioning.
+ */
+function readAnchorNames(el: HTMLElement): string[] {
+  const value =
+    (el.style as unknown as Record<string, string>).anchorName ?? '';
+  return value
+    .split(',')
+    .map(name => name.trim())
+    .filter(Boolean);
+}
+
+function writeAnchorNames(el: HTMLElement, names: string[]): void {
+  (el.style as unknown as Record<string, string>).anchorName = names.join(', ');
+}
+
+function addAnchorName(el: HTMLElement, name: string): void {
+  const names = readAnchorNames(el);
+  if (!names.includes(name)) {
+    names.push(name);
+    writeAnchorNames(el, names);
+  }
+}
+
+function removeAnchorName(el: HTMLElement, name: string): void {
+  writeAnchorNames(
+    el,
+    readAnchorNames(el).filter(existing => existing !== name),
+  );
+}
+
+/**
  * Core layer hook that handles popover behavior and positioning.
  *
  * Supports two positioning modes with type-safe render props:
@@ -324,16 +358,14 @@ export function useLayer(
   const ref: RefCallback<HTMLElement> | undefined =
     mode === 'context'
       ? (el: HTMLElement | null) => {
-          // Cleanup previous element
-          if (triggerRef.current) {
-            (
-              triggerRef.current.style as unknown as Record<string, string>
-            ).anchorName = '';
+          // Remove only THIS layer's anchor name from the previous element so
+          // other layers sharing the same trigger keep their anchors.
+          if (triggerRef.current && triggerRef.current !== el) {
+            removeAnchorName(triggerRef.current, anchorId);
           }
 
           if (el) {
-            (el.style as unknown as Record<string, string>).anchorName =
-              anchorId;
+            addAnchorName(el, anchorId);
           }
 
           triggerRef.current = el;
