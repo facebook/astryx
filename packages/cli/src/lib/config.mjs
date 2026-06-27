@@ -10,6 +10,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {loadIntegrations} from './integrations.mjs';
+import {validateConfig} from './config-schema.mjs';
 
 const DEFAULTS = {
   packages: [],
@@ -40,18 +42,30 @@ export async function loadConfig(startDir = process.cwd()) {
   const configPath = findConfigPath(startDir);
   if (!configPath) return {...DEFAULTS};
 
+  let rawConfig;
   try {
     const mod = await import(pathToFileURL(configPath).href);
-    const config = mod.default || {};
-    return {
-      ...DEFAULTS,
-      ...config,
-      packages: normalizePackages(config.packages, path.dirname(configPath)),
-      integrations: normalizeIntegrations(config.integrations),
-    };
+    rawConfig = mod.default || {};
   } catch {
     return {...DEFAULTS};
   }
+
+  const config = validateConfig(rawConfig);
+  const configDir = path.dirname(configPath);
+  const integrationSpecs = normalizeIntegrations(config.integrations);
+  const loadedIntegrations = await loadIntegrations(integrationSpecs, {
+    cwd: configDir,
+  });
+  return {
+    ...DEFAULTS,
+    ...config,
+    packages: normalizePackages(config.packages, configDir),
+    integrations: integrationSpecs,
+    loadedIntegrations,
+    gapReport:
+      config.gapReport ?? firstDefined(loadedIntegrations, 'gapReport'),
+    template: mergeTemplateConfig(config.template, loadedIntegrations),
+  };
 }
 
 /**
@@ -83,4 +97,17 @@ function normalizeIntegrations(integrations) {
   if (!integrations) return [];
   const arr = Array.isArray(integrations) ? integrations : [integrations];
   return arr.filter(value => typeof value === 'string' && value !== '');
+}
+
+function firstDefined(integrations, key) {
+  for (const integration of integrations) {
+    if (integration[key] !== undefined) return integration[key];
+  }
+  return undefined;
+}
+
+function mergeTemplateConfig(template, integrations) {
+  if (template?.get) return template;
+  const integrationTemplate = firstDefined(integrations, 'template');
+  return integrationTemplate ?? template;
 }

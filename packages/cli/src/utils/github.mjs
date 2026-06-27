@@ -16,8 +16,8 @@
  */
 
 import {execFileSync} from 'node:child_process';
-import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {loadConfig} from '../lib/config.mjs';
 
 /** Default target repository for gap report issues. */
 const DEFAULT_REPO = 'facebookexperimental/xds';
@@ -44,7 +44,7 @@ export const GAP_CATEGORIES = [
  *   - command: string → run this script instead of creating a GitHub issue
  *   - neither → default behavior (GitHub issue to facebookexperimental/xds)
  */
-export function loadGapReportConfig() {
+export async function loadGapReportConfig() {
   // 1. Check environment variable
   const envVar = process.env.ASTRYX_GAP_REPORT;
   if (envVar) {
@@ -55,27 +55,12 @@ export function loadGapReportConfig() {
     return {enabled: true, command: envVar};
   }
 
-  // 2. Check astryx.config.mjs
-  const configPath = path.join(process.cwd(), 'astryx.config.mjs');
-  if (fs.existsSync(configPath)) {
-    try {
-      const content = fs.readFileSync(configPath, 'utf-8');
-      const match = content.match(/gapReport\s*:\s*(.+?)[\s,}]/s);
-      if (match) {
-        const value = match[1].trim();
-        if (value === 'false') {
-          return {enabled: false};
-        }
-        // Look for command property in object literal
-        const cmdMatch = content.match(
-          /gapReport\s*:\s*\{[^}]*command\s*:\s*['"](.+?)['"]/s,
-        );
-        if (cmdMatch) {
-          return {enabled: true, command: cmdMatch[1]};
-        }
-      }
-    } catch {
-      // Config parse error — fall through to defaults
+  // 2. Check astryx.config.mjs + integration manifests
+  const config = await loadConfig(process.cwd());
+  if (config.gapReport !== undefined) {
+    if (config.gapReport === false) return {enabled: false};
+    if (config.gapReport?.command) {
+      return {enabled: true, command: config.gapReport.command};
     }
   }
 
@@ -172,14 +157,14 @@ function runCustomCommand(command, report) {
  *   repo: string,
  * }}
  */
-export function buildGapReportPreview({
+export async function buildGapReportPreview({
   component,
   category,
   intention,
   detail,
   source = 'cli',
 }) {
-  const config = loadGapReportConfig();
+  const config = await loadGapReportConfig();
   const categoryLabel =
     GAP_CATEGORIES.find(c => c.value === category)?.label ?? category;
 
@@ -238,8 +223,8 @@ export function buildGapReportPreview({
  * @param {string} [opts.source]   Who filed it: "interactive", "llm-auto", "cli"
  * @returns {string|null} URL of the created issue (or custom command output), null if disabled
  */
-export function createGapReport(opts) {
-  const preview = buildGapReportPreview(opts);
+export async function createGapReport(opts) {
+  const preview = await buildGapReportPreview(opts);
 
   if (!preview.enabled) {
     return null;

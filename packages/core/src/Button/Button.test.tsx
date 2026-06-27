@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Button} from './Button';
 import {Badge} from '../Badge/Badge';
@@ -228,11 +228,7 @@ describe('Button', () => {
       order.push('clickAction');
     });
     render(
-      <Button
-        label="Test"
-        onClick={handleClick}
-        clickAction={handleAction}
-      />,
+      <Button label="Test" onClick={handleClick} clickAction={handleAction} />,
     );
 
     await user.click(screen.getByRole('button'));
@@ -246,16 +242,35 @@ describe('Button', () => {
     const handleClick = vi.fn((e: React.MouseEvent) => e.preventDefault());
     const handleAction = vi.fn();
     render(
-      <Button
-        label="Test"
-        onClick={handleClick}
-        clickAction={handleAction}
-      />,
+      <Button label="Test" onClick={handleClick} clickAction={handleAction} />,
     );
 
     await user.click(screen.getByRole('button'));
     expect(handleClick).toHaveBeenCalledTimes(1);
     expect(handleAction).not.toHaveBeenCalled();
+  });
+
+  it('fires clickAction once on a fast double-click (no double-submit)', async () => {
+    let resolveAction: (() => void) | undefined;
+    const handleAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          resolveAction = resolve;
+        }),
+    );
+    render(<Button label="Pay" clickAction={handleAction} />);
+
+    const button = screen.getByRole('button');
+    await act(async () => {
+      fireEvent.click(button);
+      fireEvent.click(button);
+    });
+    expect(handleAction).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveAction?.();
+      await Promise.resolve();
+    });
   });
 
   // type/name/value/form props

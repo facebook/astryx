@@ -15,7 +15,11 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
 import {findCoreDir, listComponents} from '../utils/paths.mjs';
-import {assertWithin, PathSafetyError, isNonInteractive} from '../utils/path-safety.mjs';
+import {
+  assertWithin,
+  PathSafetyError,
+  isNonInteractive,
+} from '../utils/path-safety.mjs';
 import {isInteractive} from '../utils/interactive.mjs';
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
@@ -104,7 +108,9 @@ export function registerSwizzle(program) {
         }
         humanLog(`\nUsage: astryx swizzle <component>\n`);
         humanLog('Example: astryx swizzle Button');
-        humanLog('         astryx swizzle XDSButton  (XDS prefix also works)\n');
+        humanLog(
+          '         astryx swizzle XDSButton  (XDS prefix also works)\n',
+        );
         return;
       }
 
@@ -112,10 +118,10 @@ export function registerSwizzle(program) {
       const componentDir = path.join(coreDir, 'src', dirName);
 
       if (!fs.existsSync(componentDir)) {
-        cliError(
-          `Component "${component}" not found.`,
-          {suggestions: components.slice(0, 10).map((n) => ({name: n})), code: ERROR_CODES.ERR_UNKNOWN_COMPONENT},
-        );
+        cliError(`Component "${component}" not found.`, {
+          suggestions: components.slice(0, 10).map(n => ({name: n})),
+          code: ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+        });
         return;
       }
 
@@ -196,11 +202,16 @@ export function registerSwizzle(program) {
       }
 
       const relOutput = path.relative(process.cwd(), outputDir);
-      const copiedFiles = files.filter(f => !f.includes('.test.') && f !== 'README.md' && fs.statSync(path.join(componentDir, f)).isFile());
+      const copiedFiles = files.filter(
+        f =>
+          !f.includes('.test.') &&
+          f !== 'README.md' &&
+          fs.statSync(path.join(componentDir, f)).isFile(),
+      );
 
       // --- Gap reporting ---
 
-      const gapConfig = loadGapReportConfig();
+      const gapConfig = await loadGapReportConfig();
       let gapReportUrl = null;
       let gapDryRunPreview = null;
 
@@ -224,7 +235,7 @@ export function registerSwizzle(program) {
           json,
         });
 
-        const preview = buildGapReportPreview(previewArgs);
+        const preview = await buildGapReportPreview(previewArgs);
 
         if (!willFile) {
           // Dry-run: do NOT call gh. Surface what would have been filed.
@@ -239,10 +250,12 @@ export function registerSwizzle(program) {
           };
         } else if (gapConfig.command || checkGhCli()) {
           try {
-            gapReportUrl = createGapReport(previewArgs);
+            gapReportUrl = await createGapReport(previewArgs);
           } catch (err) {
             if (!json)
-              console.error(`Warning: Could not file gap report: ${err.message}`);
+              console.error(
+                `Warning: Could not file gap report: ${err.message}`,
+              );
           }
         }
       }
@@ -259,17 +272,23 @@ export function registerSwizzle(program) {
             gapReportSuppressed: reportingSuppressed || !gapConfig.enabled,
           });
         humanLog(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
-        humanLog('Relative imports have been rewritten to use @astryxdesign/core.');
+        humanLog(
+          'Relative imports have been rewritten to use @astryxdesign/core.',
+        );
         humanLog('You can now customize the component source freely.\n');
         if (gapReportUrl) {
           humanLog(`✓ Gap report filed: ${gapReportUrl}\n`);
         } else if (gapDryRunPreview) {
-          humanLog(formatPreview(buildGapReportPreview({
-            component: dirName,
-            category: options.gapCategory || 'other',
-            intention: options.gap,
-            source: 'llm-auto',
-          })));
+          humanLog(
+            formatPreview(
+              await buildGapReportPreview({
+                component: dirName,
+                category: options.gapCategory || 'other',
+                intention: options.gap,
+                source: 'llm-auto',
+              }),
+            ),
+          );
           humanLog(
             '\n[dry-run] No gap report was filed. Re-run with --commit to file.',
           );
@@ -283,10 +302,18 @@ export function registerSwizzle(program) {
         return;
       }
 
-      if (json) return jsonOut('swizzle.copy', {component: dirName, outputDir: relOutput, filesCopied: copied, files: copiedFiles.map(f => f)});
+      if (json)
+        return jsonOut('swizzle.copy', {
+          component: dirName,
+          outputDir: relOutput,
+          filesCopied: copied,
+          files: copiedFiles.map(f => f),
+        });
 
       humanLog(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
-      humanLog('Relative imports have been rewritten to use @astryxdesign/core.');
+      humanLog(
+        'Relative imports have been rewritten to use @astryxdesign/core.',
+      );
       humanLog('You can now customize the component source freely.\n');
 
       if (reportingSuppressed || !gapConfig.enabled) {
@@ -330,7 +357,8 @@ export function registerSwizzle(program) {
           placeholder:
             'e.g. "Need a compact variant for use in dense data tables"',
           validate: val => {
-            if (!val.trim()) return 'Please describe what you were trying to do';
+            if (!val.trim())
+              return 'Please describe what you were trying to do';
           },
         }),
       );
@@ -350,7 +378,7 @@ export function registerSwizzle(program) {
         source: 'interactive',
       };
 
-      const preview = buildGapReportPreview(previewArgs);
+      const preview = await buildGapReportPreview(previewArgs);
 
       p.note(
         `${preview.mode === 'github' ? `Repo: ${preview.repo}` : `Custom command: ${preview.command}`}\n\n` +
@@ -378,7 +406,7 @@ export function registerSwizzle(program) {
       s.start('Filing gap report');
 
       try {
-        const url = createGapReport(previewArgs);
+        const url = await createGapReport(previewArgs);
         s.stop('Gap report filed');
         humanLog(`✓ ${url}\n`);
       } catch (err) {

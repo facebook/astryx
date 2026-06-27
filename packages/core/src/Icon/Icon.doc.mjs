@@ -7,6 +7,14 @@ export const docs = {
   displayName: 'Icon',
   category: 'Content',
   keywords: ["icon","svg","glyph","symbol","pictogram","graphic","vector"],
+  playground: {
+    // `icon` is required and its type can't be auto-generated, so the
+    // properties-tab preview showed "Missing: icon". Seed a valid semantic
+    // icon name so the interactive preview renders.
+    defaults: {
+      icon: 'search',
+    },
+  },
   props: [
     {
       name: 'icon',

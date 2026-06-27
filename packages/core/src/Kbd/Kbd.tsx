@@ -45,7 +45,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-neutral'],
     borderBottomWidth: '2px',
     borderBottomStyle: 'solid',
-    borderBottomColor: colorVars['--color-border'],
+    borderBottomColor: colorVars['--color-border-emphasized'],
     color: colorVars['--color-text-secondary'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -146,14 +146,7 @@ export interface KbdProps extends BaseProps<HTMLSpanElement> {
  * <Kbd keys="mod+k" />
  * ```
  */
-export function Kbd({
-  keys,
-  ref,
-  xstyle,
-  className,
-  style,
-  ...rest
-}: KbdProps) {
+export function Kbd({keys, ref, xstyle, className, style, ...rest}: KbdProps) {
   const isMac = useSyncExternalStore(
     subscribeToPlatformChanges,
     detectMac,

@@ -26,7 +26,6 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import * as p from '@clack/prompts';
@@ -38,6 +37,7 @@ import {getRunPrefix} from '../utils/package-manager.mjs';
 import {isValidSemver, semverGte, semverGt} from '../utils/semver.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
 import {loadConfig} from '../lib/config.mjs';
+import {loadIntegrations} from '../lib/integrations.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -62,75 +62,6 @@ function detectInstalledTargetVersion() {
     }
   }
   return null;
-}
-
-function isPathSpec(spec) {
-  return (
-    spec.startsWith('.') ||
-    spec.startsWith('/') ||
-    spec.endsWith('.mjs') ||
-    spec.endsWith('.js')
-  );
-}
-
-function resolvePackageDir(packageName) {
-  const parts = packageName.split('/');
-  return path.resolve(process.cwd(), 'node_modules', ...parts);
-}
-
-function resolveIntegrationFile(spec) {
-  if (isPathSpec(spec)) {
-    return path.resolve(process.cwd(), spec);
-  }
-
-  const packageDir = resolvePackageDir(spec);
-  const pkgPath = path.join(packageDir, 'package.json');
-  let pkg;
-  try {
-    pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-  } catch {
-    throw new Error(
-      `Could not find installed integration package "${spec}" at ${pkgPath}. Install it first or pass a direct integration file path.`,
-    );
-  }
-
-  const manifestPath = pkg.astryx?.integration ?? pkg.xds?.integration;
-  if (!manifestPath) {
-    throw new Error(
-      `Package "${spec}" does not declare astryx.integration (or legacy xds.integration) in package.json.`,
-    );
-  }
-  return path.resolve(packageDir, manifestPath);
-}
-
-async function loadIntegrations(specs) {
-  const integrations = [];
-  for (const spec of specs) {
-    const file = resolveIntegrationFile(spec);
-    const mod = await import(pathToFileURL(file).href);
-    const integration = mod.default ?? mod.integration ?? mod;
-    if (!integration || typeof integration !== 'object') {
-      throw new Error(`Integration ${spec} did not export an object.`);
-    }
-    const integrationDir = path.dirname(file);
-    if (Array.isArray(integration.codemods)) {
-      for (const codemod of integration.codemods) {
-        if (typeof codemod.transform === 'string') {
-          const transformPath = path.resolve(integrationDir, codemod.transform);
-          const transformMod = await import(pathToFileURL(transformPath).href);
-          codemod.transform =
-            transformMod.default ?? transformMod.transform ?? transformMod;
-        }
-      }
-    }
-    integrations.push({
-      ...integration,
-      __file: file,
-      __dir: integrationDir,
-      __spec: spec,
-    });
-  }
-  return integrations;
 }
 
 function normalizeIntegrationTransforms(integration, from, to) {
