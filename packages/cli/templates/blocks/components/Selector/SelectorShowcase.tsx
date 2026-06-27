@@ -2,16 +2,19 @@
 
 'use client';
 
+import {useState} from 'react';
 import {Selector} from '@astryxdesign/core/Selector';
 
 export default function SelectorShowcase() {
+  const [value, setValue] = useState<string | undefined>();
   return (
     <Selector
       style={{width: 300}}
       label="Fruit"
       options={['Apple', 'Banana', 'Orange', 'Mango', 'Pineapple']}
       placeholder="Select a fruit..."
-      onChange={() => {}}
+      value={value}
+      onChange={setValue}
     />
   );
 }
