@@ -16,14 +16,8 @@ export function PlaygroundButton({
 }: PlaygroundButtonProps) {
   const href = buildPlaygroundHref(source);
 
-  return (
-    <Button
-      label={label}
-      variant="secondary"
-      size="sm"
-      onClick={() => {
-        window.location.href = href;
-      }}
-    />
-  );
+  // Render a real anchor (Button renders as <a> when given href) so
+  // right-click / Cmd-click / middle-click "open in new tab" work, instead
+  // of an onClick that hard-navigates the current tab.
+  return <Button label={label} variant="secondary" size="sm" href={href} />;
 }

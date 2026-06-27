@@ -513,6 +513,8 @@ export function Button({
   const buttonGroup = useButtonGroup();
 
   const [isPending, startTransition] = useTransition();
+  // clickAction is fire-once (submit/save/pay), so a same-tick double-click must
+  // dedupe — which neither isPending nor useOptimistic do. Hence the ref guard.
   const actionInFlightRef = useRef(false);
   const isLoadingState = isLoading || isPending;
   const groupDisabled = buttonGroup?.isDisabled ?? false;

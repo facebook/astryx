@@ -7,7 +7,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {CLI_ROOT, discoverExternalPackages} from '../utils/paths.mjs';
-import {assertWithin, isFilePathArg, PathSafetyError} from '../utils/path-safety.mjs';
+import {
+  assertWithin,
+  isFilePathArg,
+  PathSafetyError,
+} from '../utils/path-safety.mjs';
 import {AstryxError} from './error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {loadConfig} from '../lib/config.mjs';
@@ -23,7 +27,7 @@ const BLOCKS_DIR = path.join(TEMPLATES_DIR, 'blocks');
  * or not. Mirrors apps/docsite/public/template-assets/placeholder.svg.
  */
 const PLACEHOLDER_IMAGE =
-  "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E";
+  'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%20preserveAspectRatio%3D%22xMidYMid%20slice%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%23f5f6f8%22%2F%3E%3Cg%20transform%3D%22translate%28200%20150%29%22%20fill%3D%22none%22%20stroke%3D%22%23c2cad6%22%20stroke-width%3D%225%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Crect%20x%3D%22-44%22%20y%3D%22-44%22%20width%3D%2288%22%20height%3D%2288%22%20rx%3D%2216%22%2F%3E%3Ccircle%20cx%3D%2218%22%20cy%3D%22-18%22%20r%3D%222.5%22%20fill%3D%22%23c2cad6%22%20stroke%3D%22none%22%2F%3E%3Cpath%20d%3D%22M-34%2030%20L-8%200%20L10%2018%20L20%208%20L34%2024%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E';
 
 /**
  * Demo-image sources to strip from scaffolded projects — Meta's lookaside CDN
@@ -60,9 +64,12 @@ export {discoverAll as discoverTemplates};
 export function listTemplates() {
   const all = [];
   if (fs.existsSync(PAGES_DIR)) {
-    all.push(...fs.readdirSync(PAGES_DIR, {withFileTypes: true})
-      .filter(e => e.isDirectory())
-      .map(e => e.name));
+    all.push(
+      ...fs
+        .readdirSync(PAGES_DIR, {withFileTypes: true})
+        .filter(e => e.isDirectory())
+        .map(e => e.name),
+    );
   }
   return all.sort();
 }
@@ -83,7 +90,8 @@ function findDocFiles(dir, pattern) {
 
 async function discoverPages() {
   if (!fs.existsSync(PAGES_DIR)) return [];
-  const dirs = fs.readdirSync(PAGES_DIR, {withFileTypes: true})
+  const dirs = fs
+    .readdirSync(PAGES_DIR, {withFileTypes: true})
     .filter(e => e.isDirectory());
 
   const templates = [];
@@ -138,7 +146,11 @@ async function discoverBlocks() {
  * @param {string} [cwd]
  */
 async function discoverExternalBlocks(cwd = process.cwd()) {
-  const externals = discoverExternalPackages(cwd);
+  const config = await loadConfig(cwd);
+  const integrationPackages = (config.loadedIntegrations ?? [])
+    .map(integration => integration.package)
+    .filter(Boolean);
+  const externals = [...discoverExternalPackages(cwd), ...integrationPackages];
   const blocks = [];
 
   for (const ext of externals) {
@@ -193,9 +205,7 @@ async function discoverAll() {
 export async function findRelatedBlocks(componentName, cwd) {
   const blocks = await discoverAllBlocks(cwd);
   return blocks.filter(b =>
-    b.componentsUsed.some(c =>
-      c.toLowerCase() === componentName.toLowerCase(),
-    ),
+    b.componentsUsed.some(c => c.toLowerCase() === componentName.toLowerCase()),
   );
 }
 
@@ -218,7 +228,7 @@ export async function findShowcase(componentName, cwd, options) {
     return true;
   });
 
-  const toResult = (b) => ({
+  const toResult = b => ({
     name: b.name,
     aspectRatio: b.aspectRatio,
     filePath: b.filePath,
@@ -242,8 +252,14 @@ export async function findShowcase(componentName, cwd, options) {
 }
 
 const UBIQUITOUS = new Set([
-  'Text', 'Heading', 'Button', 'HStack', 'VStack', 'Link',
-  'StackItem', 'Icon',
+  'Text',
+  'Heading',
+  'Button',
+  'HStack',
+  'VStack',
+  'Link',
+  'StackItem',
+  'Icon',
 ]);
 
 export function extractComponents(pagePath) {
@@ -259,26 +275,60 @@ export function extractComponents(pagePath) {
   while ((m = tagRegex.exec(src)) !== null) {
     matches.push(m[2]);
   }
-  return [...new Set(
-    matches
-      .filter(n => !['Theme', 'ThemeProvider'].includes(n))
-      .filter(n => !UBIQUITOUS.has(n))
-      .map(n => n.replace(/(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/, ''))
-      .filter(Boolean),
-  )].sort();
+  return [
+    ...new Set(
+      matches
+        .filter(n => !['Theme', 'ThemeProvider'].includes(n))
+        .filter(n => !UBIQUITOUS.has(n))
+        .map(n =>
+          n.replace(
+            /(Item|Section|Header|Content|Footer|Panel|Heading|CollapseButton|Column|Sortable|Selection|Group|Source)$/,
+            '',
+          ),
+        )
+        .filter(Boolean),
+    ),
+  ].sort();
 }
 
 const STRUCTURAL = new Set([
-  'AppShell', 'Layout', 'LayoutHeader', 'LayoutContent', 'LayoutPanel',
-  'LayoutFooter', 'Card', 'Section', 'Grid', 'GridSpan', 'List',
-  'Table', 'TabList', 'Toolbar', 'SideNav', 'TopNav', 'Dialog',
-  'FormLayout', 'Center',
+  'AppShell',
+  'Layout',
+  'LayoutHeader',
+  'LayoutContent',
+  'LayoutPanel',
+  'LayoutFooter',
+  'Card',
+  'Section',
+  'Grid',
+  'GridSpan',
+  'List',
+  'Table',
+  'TabList',
+  'Toolbar',
+  'SideNav',
+  'TopNav',
+  'Dialog',
+  'FormLayout',
+  'Center',
 ]);
 
 const SPATIAL_PROPS = [
-  'padding', 'contentPadding', 'gap', 'rowGap', 'columnGap',
-  'columns', 'minChildWidth', 'hasDivider', 'defaultHasDividers',
-  'variant', 'density', 'role', 'height', 'width', 'maxWidth',
+  'padding',
+  'contentPadding',
+  'gap',
+  'rowGap',
+  'columnGap',
+  'columns',
+  'minChildWidth',
+  'hasDivider',
+  'defaultHasDividers',
+  'variant',
+  'density',
+  'role',
+  'height',
+  'width',
+  'maxWidth',
 ];
 
 /**
@@ -346,11 +396,18 @@ function extractSkeleton(source) {
   for (let i = 0; i < lines.length; i++) {
     const t = lines[i].trim();
 
-    if (t.match(/^export\s+default\s+function/)) { inDefaultExport = true; continue; }
-    if (inDefaultExport && t.match(/^return\s*\(/)) { capturing = true; continue; }
+    if (t.match(/^export\s+default\s+function/)) {
+      inDefaultExport = true;
+      continue;
+    }
+    if (inDefaultExport && t.match(/^return\s*\(/)) {
+      capturing = true;
+      continue;
+    }
     if (!capturing) continue;
     if (out.length >= MAX_LINES) {
-      if (!out[out.length - 1]?.includes('...')) out.push('  '.repeat(depth) + '...');
+      if (!out[out.length - 1]?.includes('...'))
+        out.push('  '.repeat(depth) + '...');
       continue;
     }
 
@@ -372,7 +429,9 @@ function extractSkeleton(source) {
       const hasSpatialProps = props.length > 0;
       const propStr = hasSpatialProps ? ' ' + props.join(' ') : '';
       const isVStack = comp === 'VStack' || comp === 'HStack';
-      const isSelfClosing = tagText.match(new RegExp('<' + tagName + '[^>]*/>', 's'));
+      const isSelfClosing = tagText.match(
+        new RegExp('<' + tagName + '[^>]*/>', 's'),
+      );
 
       if (isVStack && !hasSpatialProps) continue;
 
@@ -399,13 +458,18 @@ function extractSkeleton(source) {
       continue;
     }
 
-    const slotMatch = t.match(/^(header|content|footer|start|end|sideNav|topNav)\s*=\s*\{/);
+    const slotMatch = t.match(
+      /^(header|content|footer|start|end|sideNav|topNav)\s*=\s*\{/,
+    );
     if (slotMatch) {
       out.push('  '.repeat(depth) + `/* ${slotMatch[1]}: */`);
       continue;
     }
 
-    if (t.startsWith('<div') && (t.includes('padding') || t.includes('maxWidth') || t.includes('gap:'))) {
+    if (
+      t.startsWith('<div') &&
+      (t.includes('padding') || t.includes('maxWidth') || t.includes('gap:'))
+    ) {
       const styleProps = [];
       const divText = lines.slice(i, Math.min(i + 5, lines.length)).join(' ');
       const pp = divText.match(/padding[^:]*:\s*['"]?([^'"},)]+)/);
@@ -445,7 +509,7 @@ export async function getTemplateById(id, options = {}) {
         'Add a template.get function to astryx.config.mjs:\n\n' +
         '  export default {\n' +
         '    template: {\n' +
-        "      get: async (id) => { /* return template source string */ },\n" +
+        '      get: async (id) => { /* return template source string */ },\n' +
         '    },\n' +
         '  };',
       undefined,
@@ -458,7 +522,11 @@ export async function getTemplateById(id, options = {}) {
     source = await getter(id);
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
-    throw new AstryxError(`template.get("${id}") threw an error: ${detail}`, undefined, ERROR_CODES.ERR_TEMPLATE_GET);
+    throw new AstryxError(
+      `template.get("${id}") threw an error: ${detail}`,
+      undefined,
+      ERROR_CODES.ERR_TEMPLATE_GET,
+    );
   }
 
   if (source == null) {
@@ -500,7 +568,14 @@ export async function getTemplateById(id, options = {}) {
  * @returns {Promise<{type: string, data: unknown}>}
  */
 export async function template(name, options = {}) {
-  const {list = false, skeleton = false, show = false, targetPath, type, cwd = process.cwd()} = options;
+  const {
+    list = false,
+    skeleton = false,
+    show = false,
+    targetPath,
+    type,
+    cwd = process.cwd(),
+  } = options;
   const templates = await discoverAll();
 
   if (list || (!name && !skeleton)) {
@@ -537,7 +612,11 @@ export async function template(name, options = {}) {
       );
     }
     if (!fs.existsSync(match.filePath)) {
-      throw new AstryxError(`No source file found for template "${name}"`, undefined, ERROR_CODES.ERR_NO_SOURCE);
+      throw new AstryxError(
+        `No source file found for template "${name}"`,
+        undefined,
+        ERROR_CODES.ERR_NO_SOURCE,
+      );
     }
     const src = fs.readFileSync(match.filePath, 'utf-8');
     return {
@@ -552,7 +631,11 @@ export async function template(name, options = {}) {
   }
 
   if (!fs.existsSync(match.filePath)) {
-    throw new AstryxError(`No source file found for template "${name}"`, undefined, ERROR_CODES.ERR_NO_SOURCE);
+    throw new AstryxError(
+      `No source file found for template "${name}"`,
+      undefined,
+      ERROR_CODES.ERR_NO_SOURCE,
+    );
   }
 
   if (show || !targetPath) {
@@ -579,7 +662,11 @@ export async function template(name, options = {}) {
     });
   } catch (err) {
     if (err instanceof PathSafetyError) {
-      throw new AstryxError(err.message, undefined, ERROR_CODES.ERR_PATH_TRAVERSAL);
+      throw new AstryxError(
+        err.message,
+        undefined,
+        ERROR_CODES.ERR_PATH_TRAVERSAL,
+      );
     }
     throw err;
   }
@@ -596,9 +683,8 @@ export async function template(name, options = {}) {
     outputFilePath = resolvedTarget;
   } else {
     outputDir = resolvedTarget;
-    outputFileName = match.type === 'block'
-      ? path.basename(match.filePath)
-      : 'page.tsx';
+    outputFileName =
+      match.type === 'block' ? path.basename(match.filePath) : 'page.tsx';
     outputFilePath = path.join(outputDir, outputFileName);
   }
 
@@ -613,6 +699,11 @@ export async function template(name, options = {}) {
   const relOutput = path.relative(cwd, outputDir) || '.';
   return {
     type: 'template.copy',
-    data: {template: name, outputDir: relOutput, fileName: outputFileName, filesCopied: 1},
+    data: {
+      template: name,
+      outputDir: relOutput,
+      fileName: outputFileName,
+      filesCopied: 1,
+    },
   };
 }

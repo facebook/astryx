@@ -94,6 +94,43 @@ describe('component detail preview state', () => {
     expect(getMissingRequiredProps(knobs, state)).toEqual(['config']);
   });
 
+  it("satisfies Icon's required, non-generatable icon prop via playground defaults", () => {
+    const knobs = pickPrimaryProps('Icon', [
+      prop({
+        name: 'icon',
+        type: 'IconName | ComponentType<SVGProps>',
+        required: true,
+      }),
+    ]);
+
+    // Without a playground default the required icon prop cannot be generated.
+    expect(getMissingRequiredProps(knobs, buildInitialState(knobs))).toEqual([
+      'icon',
+    ]);
+
+    // The doc's playground default seeds a valid semantic name.
+    const state = buildInitialState(knobs, {defaults: {icon: 'search'}});
+    expect(state.icon).toBe('search');
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
+  it('gives Skeleton concrete preview dimensions via playground defaults', () => {
+    const knobs = pickPrimaryProps('Skeleton', [
+      prop({name: 'width', type: 'number | string', default: "'100%'"}),
+      prop({name: 'height', type: 'number | string', default: "'100%'"}),
+    ]);
+
+    // Doc defaults alone would render at 100% (collapses in the centered preview).
+    expect(buildInitialState(knobs).width).toBe('100%');
+
+    // Playground defaults override with visible pixel dimensions.
+    const state = buildInitialState(knobs, {
+      defaults: {width: 200, height: 24},
+    });
+    expect(state.width).toBe(200);
+    expect(state.height).toBe(24);
+  });
+
   it('wires controlled open previews back to their isOpen prop', () => {
     const onPropChange = vi.fn();
     const runtimeState = buildRuntimePreviewState(

@@ -107,9 +107,12 @@ export function ExampleBlock({entry, componentName}: ExampleBlockProps) {
                 label="Open in Playground"
                 variant="ghost"
                 size="sm"
+                // Real anchor (Button renders <a> with href) so right-click /
+                // Cmd-click / middle-click "open in new tab" work. onClick stays
+                // for analytics; the href handles navigation natively.
+                href={buildPlaygroundHref(entry.source)}
                 onClick={() => {
                   trackOpenPlayground({page: 'components', item: entry.name});
-                  window.location.href = buildPlaygroundHref(entry.source);
                 }}
               />
             )}
