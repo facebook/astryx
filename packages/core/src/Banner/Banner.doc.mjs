@@ -88,6 +88,13 @@ export const docs = {
         'Content rendered in the card-background area below the colored header.',
     },
     {
+      name: 'defaultIsExpanded',
+      type: 'boolean',
+      description:
+        'Whether the content area (children) starts expanded. Only relevant when children are provided.',
+      default: 'false',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -150,6 +157,7 @@ export const docsZh = {
     {name: 'endContent', type: 'ReactNode', description: '渲染在头部区域末端对齐的操作内容，通常是按钮或链接。'},
     {name: 'container', type: "'card' | 'section'", description: '视觉变体：card 带圆角；section 无圆角全宽，适用于页面级场景。', default: "'card'"},
     {name: 'children', type: 'ReactNode', description: '渲染在彩色头部下方卡片背景区域的内容。'},
+    {name: 'defaultIsExpanded', type: 'boolean', description: '内容区域（children）是否初始展开。仅在提供 children 时相关。', default: 'false'},
     {
       name: 'xstyle',
       type: 'StyleXStyles',
