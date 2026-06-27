@@ -1,0 +1,235 @@
+{
+  "cwm-3": {
+    "target": "xds",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "dd-1": {
+    "target": "xds",
+    "errors": [
+      {
+        "line": 2,
+        "message": "Cannot find module '@astryxdesign/core/Table' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 3,
+        "message": "Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 4,
+        "message": "Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 22,
+        "message": "Cannot find name 'TextInput'.",
+        "code": "TS2304"
+      }
+    ],
+    "errorCount": 4,
+    "buildSuccess": false
+  },
+  "fwc-7": {
+    "target": "xds",
+    "errors": [
+      {
+        "line": 2,
+        "message": "Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 3,
+        "message": "Cannot find module '@astryxdesign/core/Slider' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 4,
+        "message": "Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+        "code": "TS2307"
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  },
+  "io-1": {
+    "target": "xds",
+    "errors": [
+      {
+        "line": 2,
+        "message": "Cannot find module '@astryxdesign/core/TextInput' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 3,
+        "message": "Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 4,
+        "message": "Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+        "code": "TS2307"
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  },
+  "ps-4": {
+    "target": "xds",
+    "errors": [
+      {
+        "line": 2,
+        "message": "Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 3,
+        "message": "Cannot find module '@astryxdesign/core/Breadcrumbs' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 4,
+        "message": "Cannot find module '@astryxdesign/core/AppShell' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 5,
+        "message": "Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 19,
+        "message": "Cannot find name 'IconButton'.",
+        "code": "TS2304"
+      }
+    ],
+    "errorCount": 5,
+    "buildSuccess": false
+  },
+  "rc-1": {
+    "target": "xds",
+    "errors": [
+      {
+        "line": 2,
+        "message": "Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 3,
+        "message": "Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 17,
+        "message": "Cannot find name 'IconButton'.",
+        "code": "TS2304"
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  },
+  "sd-2": {
+    "target": "xds",
+    "errors": [
+      {
+        "line": 2,
+        "message": "Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 3,
+        "message": "Cannot find module '@astryxdesign/core/Spinner' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 4,
+        "message": "Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+        "code": "TS2307"
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  },
+  "tc-7": {
+    "target": "xds",
+    "errors": [
+      {
+        "line": 2,
+        "message": "Cannot find module '@astryxdesign/core/AppShell' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 3,
+        "message": "Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 4,
+        "message": "Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 16,
+        "message": "Cannot find name 'Card'.",
+        "code": "TS2304"
+      },
+      {
+        "line": 16,
+        "message": "Cannot find name 'Card'.",
+        "code": "TS2304"
+      },
+      {
+        "line": 17,
+        "message": "Cannot find name 'Theme'.",
+        "code": "TS2304"
+      },
+      {
+        "line": 18,
+        "message": "Cannot find name 'Card'.",
+        "code": "TS2304"
+      },
+      {
+        "line": 18,
+        "message": "Cannot find name 'Card'.",
+        "code": "TS2304"
+      },
+      {
+        "line": 19,
+        "message": "Cannot find name 'Theme'.",
+        "code": "TS2304"
+      }
+    ],
+    "errorCount": 9,
+    "buildSuccess": false
+  },
+  "ty-7": {
+    "target": "xds",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "wd-3": {
+    "target": "xds",
+    "errors": [
+      {
+        "line": 2,
+        "message": "Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 3,
+        "message": "Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 4,
+        "message": "Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+        "code": "TS2307"
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  }
+}

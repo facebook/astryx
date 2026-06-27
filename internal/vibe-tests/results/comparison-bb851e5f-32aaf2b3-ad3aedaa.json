@@ -1,0 +1,3870 @@
+{
+  "astryx": {
+    "averages": {
+      "correctness": 54,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 84,
+      "maintainability": 100
+    },
+    "overall": 88,
+    "byPrompt": {
+      "cwm-3": {
+        "correctness": {
+          "score": 100,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 19
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 20
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 20
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 82,
+          "findings": [],
+          "metrics": {
+            "totalLines": 25,
+            "codeLines": 22,
+            "stylingLines": 4,
+            "boilerplateLines": 6,
+            "logicLines": 12,
+            "stylingRatio": 0.18181818181818182,
+            "boilerplateRatio": 0.2727272727272727,
+            "decisionsPerElement": 1.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 12,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 6
+          }
+        }
+      },
+      "dd-1": {
+        "correctness": {
+          "score": 40,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Table' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'TextInput'.",
+              "line": 22
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 86,
+          "findings": [],
+          "metrics": {
+            "totalLines": 28,
+            "codeLines": 25,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 16,
+            "stylingRatio": 0.16,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 15,
+            "stylingDecisionCount": 10,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 0,
+            "avgStateSpread": 9
+          }
+        }
+      },
+      "fwc-7": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 21
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Slider' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 4
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 84,
+          "findings": [],
+          "metrics": {
+            "totalLines": 25,
+            "codeLines": 22,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 13,
+            "stylingRatio": 0.18181818181818182,
+            "boilerplateRatio": 0.22727272727272727,
+            "decisionsPerElement": 1.5,
+            "elementCount": 8,
+            "stylingDecisionCount": 12,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 7
+          }
+        }
+      },
+      "io-1": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/TextInput' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 87,
+          "findings": [],
+          "metrics": {
+            "totalLines": 31,
+            "codeLines": 28,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 19,
+            "stylingRatio": 0.14285714285714285,
+            "boilerplateRatio": 0.17857142857142858,
+            "decisionsPerElement": 2.8,
+            "elementCount": 4,
+            "stylingDecisionCount": 11,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 12
+          }
+        }
+      },
+      "ps-4": {
+        "correctness": {
+          "score": 25,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 19
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Breadcrumbs' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/AppShell' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'IconButton'.",
+              "line": 19
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 82,
+          "findings": [],
+          "metrics": {
+            "totalLines": 25,
+            "codeLines": 22,
+            "stylingLines": 4,
+            "boilerplateLines": 6,
+            "logicLines": 12,
+            "stylingRatio": 0.18181818181818182,
+            "boilerplateRatio": 0.2727272727272727,
+            "decisionsPerElement": 1.6,
+            "elementCount": 8,
+            "stylingDecisionCount": 13,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 3,
+            "avgStateSpread": 7
+          }
+        }
+      },
+      "rc-1": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 17
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'IconButton'.",
+              "line": 17
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 84,
+          "findings": [],
+          "metrics": {
+            "totalLines": 23,
+            "codeLines": 20,
+            "stylingLines": 4,
+            "boilerplateLines": 4,
+            "logicLines": 12,
+            "stylingRatio": 0.2,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 1.6,
+            "elementCount": 8,
+            "stylingDecisionCount": 13,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 3,
+            "avgStateSpread": 7
+          }
+        }
+      },
+      "sd-2": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 18
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Spinner' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 82,
+          "findings": [],
+          "metrics": {
+            "totalLines": 24,
+            "codeLines": 21,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 12,
+            "stylingRatio": 0.19047619047619047,
+            "boilerplateRatio": 0.23809523809523808,
+            "decisionsPerElement": 3.3,
+            "elementCount": 3,
+            "stylingDecisionCount": 10,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 0,
+            "avgStateSpread": 6
+          }
+        }
+      },
+      "tc-7": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/AppShell' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'Card'.",
+              "line": 16
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'Card'.",
+              "line": 16
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'Theme'.",
+              "line": 17
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'Card'.",
+              "line": 18
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'Card'.",
+              "line": 18
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'Theme'.",
+              "line": 19
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 83,
+          "findings": [],
+          "metrics": {
+            "totalLines": 24,
+            "codeLines": 21,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 12,
+            "stylingRatio": 0.19047619047619047,
+            "boilerplateRatio": 0.23809523809523808,
+            "decisionsPerElement": 1.3,
+            "elementCount": 8,
+            "stylingDecisionCount": 10,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "ty-7": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 87,
+          "findings": [],
+          "metrics": {
+            "totalLines": 31,
+            "codeLines": 28,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 19,
+            "stylingRatio": 0.14285714285714285,
+            "boilerplateRatio": 0.17857142857142858,
+            "decisionsPerElement": 2.8,
+            "elementCount": 4,
+            "stylingDecisionCount": 11,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 12
+          }
+        }
+      },
+      "wd-3": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 24
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 25
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 87,
+          "findings": [],
+          "metrics": {
+            "totalLines": 30,
+            "codeLines": 27,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 18,
+            "stylingRatio": 0.14814814814814814,
+            "boilerplateRatio": 0.18518518518518517,
+            "decisionsPerElement": 0.9,
+            "elementCount": 12,
+            "stylingDecisionCount": 11,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 12
+          }
+        }
+      }
+    },
+    "byCategory": {
+      "clone-with-modification": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 97,
+        "efficiency": 82,
+        "maintainability": 100
+      },
+      "data-display": {
+        "correctness": 40,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 86,
+        "maintainability": 100
+      },
+      "feature-with-constraint": {
+        "correctness": 55,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 84,
+        "maintainability": 100
+      },
+      "integration-oriented": {
+        "correctness": 55,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 87,
+        "maintainability": 100
+      },
+      "page-setup": {
+        "correctness": 25,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 82,
+        "maintainability": 100
+      },
+      "responsive-context": {
+        "correctness": 55,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 84,
+        "maintainability": 100
+      },
+      "state-driven": {
+        "correctness": 55,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 82,
+        "maintainability": 100
+      },
+      "theme-customization": {
+        "correctness": 0,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 83,
+        "maintainability": 100
+      },
+      "typography": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 87,
+        "maintainability": 100
+      },
+      "workflow-description": {
+        "correctness": 55,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 87,
+        "maintainability": 100
+      }
+    },
+    "darkModeRate": 0,
+    "cost": {
+      "totalDurationMs": 2947390,
+      "avgDurationMs": 294739,
+      "avgOutputChars": 1152,
+      "avgOutputLines": 27,
+      "avgDocsRead": 3.1,
+      "estimatedInputTokens": 23125,
+      "estimatedOutputTokens": 2882,
+      "byPrompt": {
+        "cwm-3": {
+          "durationMs": 290293,
+          "outputChars": 1058,
+          "outputLines": 25,
+          "docsRead": [
+            "Icon",
+            "AppShell",
+            "Text",
+            "Button"
+          ],
+          "estimatedInputTokens": 2875,
+          "estimatedOutputTokens": 265
+        },
+        "dd-1": {
+          "durationMs": 291434,
+          "outputChars": 1690,
+          "outputLines": 28,
+          "docsRead": [
+            "Table",
+            "Button",
+            "Text"
+          ],
+          "estimatedInputTokens": 2250,
+          "estimatedOutputTokens": 423
+        },
+        "fwc-7": {
+          "durationMs": 292304,
+          "outputChars": 1012,
+          "outputLines": 25,
+          "docsRead": [
+            "Text",
+            "Slider",
+            "Button"
+          ],
+          "estimatedInputTokens": 2250,
+          "estimatedOutputTokens": 253
+        },
+        "io-1": {
+          "durationMs": 293115,
+          "outputChars": 1370,
+          "outputLines": 31,
+          "docsRead": [
+            "TextInput",
+            "Button",
+            "Text"
+          ],
+          "estimatedInputTokens": 2250,
+          "estimatedOutputTokens": 343
+        },
+        "ps-4": {
+          "durationMs": 294439,
+          "outputChars": 1053,
+          "outputLines": 25,
+          "docsRead": [
+            "Button",
+            "Breadcrumbs",
+            "AppShell",
+            "Text"
+          ],
+          "estimatedInputTokens": 2875,
+          "estimatedOutputTokens": 263
+        },
+        "rc-1": {
+          "durationMs": 295443,
+          "outputChars": 939,
+          "outputLines": 23,
+          "docsRead": [
+            "Button",
+            "Text"
+          ],
+          "estimatedInputTokens": 1625,
+          "estimatedOutputTokens": 235
+        },
+        "sd-2": {
+          "durationMs": 296336,
+          "outputChars": 986,
+          "outputLines": 24,
+          "docsRead": [
+            "Button",
+            "Spinner",
+            "Text"
+          ],
+          "estimatedInputTokens": 2250,
+          "estimatedOutputTokens": 247
+        },
+        "tc-7": {
+          "durationMs": 297161,
+          "outputChars": 814,
+          "outputLines": 24,
+          "docsRead": [
+            "AppShell",
+            "Button",
+            "Text"
+          ],
+          "estimatedInputTokens": 2250,
+          "estimatedOutputTokens": 204
+        },
+        "ty-7": {
+          "durationMs": 298018,
+          "outputChars": 1370,
+          "outputLines": 31,
+          "docsRead": [
+            "TextInput",
+            "Button",
+            "Text"
+          ],
+          "estimatedInputTokens": 2250,
+          "estimatedOutputTokens": 343
+        },
+        "wd-3": {
+          "durationMs": 298847,
+          "outputChars": 1224,
+          "outputLines": 30,
+          "docsRead": [
+            "Button",
+            "Card",
+            "Text"
+          ],
+          "estimatedInputTokens": 2250,
+          "estimatedOutputTokens": 306
+        }
+      }
+    }
+  },
+  "baseline": {
+    "averages": {
+      "correctness": 96,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 79,
+      "maintainability": 100
+    },
+    "overall": 95,
+    "byPrompt": {
+      "cwm-3": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 80,
+          "findings": [],
+          "metrics": {
+            "totalLines": 12,
+            "codeLines": 10,
+            "stylingLines": 3,
+            "boilerplateLines": 2,
+            "logicLines": 5,
+            "stylingRatio": 0.3,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "dd-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 13,
+            "codeLines": 11,
+            "stylingLines": 3,
+            "boilerplateLines": 3,
+            "logicLines": 5,
+            "stylingRatio": 0.2727272727272727,
+            "boilerplateRatio": 0.2727272727272727,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "fwc-7": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 80,
+          "findings": [],
+          "metrics": {
+            "totalLines": 12,
+            "codeLines": 10,
+            "stylingLines": 3,
+            "boilerplateLines": 2,
+            "logicLines": 5,
+            "stylingRatio": 0.3,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "io-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 77,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 3,
+            "boilerplateLines": 4,
+            "logicLines": 5,
+            "stylingRatio": 0.25,
+            "boilerplateRatio": 0.3333333333333333,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "ps-4": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+              "line": 9
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+              "line": 9
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+              "line": 9
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 13,
+            "codeLines": 11,
+            "stylingLines": 3,
+            "boilerplateLines": 3,
+            "logicLines": 5,
+            "stylingRatio": 0.2727272727272727,
+            "boilerplateRatio": 0.2727272727272727,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "rc-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 80,
+          "findings": [],
+          "metrics": {
+            "totalLines": 12,
+            "codeLines": 10,
+            "stylingLines": 3,
+            "boilerplateLines": 2,
+            "logicLines": 5,
+            "stylingRatio": 0.3,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "sd-2": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 13,
+            "codeLines": 11,
+            "stylingLines": 3,
+            "boilerplateLines": 3,
+            "logicLines": 5,
+            "stylingRatio": 0.2727272727272727,
+            "boilerplateRatio": 0.2727272727272727,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "tc-7": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 80,
+          "findings": [],
+          "metrics": {
+            "totalLines": 12,
+            "codeLines": 10,
+            "stylingLines": 3,
+            "boilerplateLines": 2,
+            "logicLines": 5,
+            "stylingRatio": 0.3,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "ty-7": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 77,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 3,
+            "boilerplateLines": 4,
+            "logicLines": 5,
+            "stylingRatio": 0.25,
+            "boilerplateRatio": 0.3333333333333333,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "wd-3": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 80,
+          "findings": [],
+          "metrics": {
+            "totalLines": 12,
+            "codeLines": 10,
+            "stylingLines": 3,
+            "boilerplateLines": 2,
+            "logicLines": 5,
+            "stylingRatio": 0.3,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      }
+    },
+    "byCategory": {
+      "clone-with-modification": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 80,
+        "maintainability": 100
+      },
+      "data-display": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 100
+      },
+      "feature-with-constraint": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 80,
+        "maintainability": 100
+      },
+      "integration-oriented": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 77,
+        "maintainability": 100
+      },
+      "page-setup": {
+        "correctness": 55,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 100
+      },
+      "responsive-context": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 80,
+        "maintainability": 100
+      },
+      "state-driven": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 100
+      },
+      "theme-customization": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 80,
+        "maintainability": 100
+      },
+      "typography": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 77,
+        "maintainability": 100
+      },
+      "workflow-description": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 80,
+        "maintainability": 100
+      }
+    },
+    "darkModeRate": 0,
+    "cost": {
+      "totalDurationMs": 3085772,
+      "avgDurationMs": 308577,
+      "avgOutputChars": 515,
+      "avgOutputLines": 13,
+      "avgDocsRead": 5,
+      "estimatedInputTokens": 35000,
+      "estimatedOutputTokens": 1290,
+      "byPrompt": {
+        "cwm-3": {
+          "durationMs": 308374,
+          "outputChars": 438,
+          "outputLines": 12,
+          "docsRead": [
+            "avatar",
+            "badge",
+            "button",
+            "card",
+            "checkbox"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 110
+        },
+        "dd-1": {
+          "durationMs": 308424,
+          "outputChars": 529,
+          "outputLines": 13,
+          "docsRead": [
+            "avatar",
+            "badge",
+            "button",
+            "card",
+            "checkbox"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 132
+        },
+        "fwc-7": {
+          "durationMs": 308467,
+          "outputChars": 518,
+          "outputLines": 12,
+          "docsRead": [
+            "avatar",
+            "badge",
+            "button",
+            "card",
+            "checkbox"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 130
+        },
+        "io-1": {
+          "durationMs": 308508,
+          "outputChars": 524,
+          "outputLines": 14,
+          "docsRead": [
+            "avatar",
+            "badge",
+            "button",
+            "card",
+            "checkbox"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 131
+        },
+        "ps-4": {
+          "durationMs": 308552,
+          "outputChars": 607,
+          "outputLines": 13,
+          "docsRead": [
+            "avatar",
+            "badge",
+            "button",
+            "card",
+            "checkbox"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 152
+        },
+        "rc-1": {
+          "durationMs": 308598,
+          "outputChars": 427,
+          "outputLines": 12,
+          "docsRead": [
+            "avatar",
+            "badge",
+            "button",
+            "card",
+            "checkbox"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 107
+        },
+        "sd-2": {
+          "durationMs": 308647,
+          "outputChars": 502,
+          "outputLines": 13,
+          "docsRead": [
+            "avatar",
+            "badge",
+            "button",
+            "card",
+            "checkbox"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 126
+        },
+        "tc-7": {
+          "durationMs": 308690,
+          "outputChars": 529,
+          "outputLines": 12,
+          "docsRead": [
+            "avatar",
+            "badge",
+            "button",
+            "card",
+            "checkbox"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 132
+        },
+        "ty-7": {
+          "durationMs": 308734,
+          "outputChars": 623,
+          "outputLines": 14,
+          "docsRead": [
+            "avatar",
+            "badge",
+            "button",
+            "card",
+            "checkbox"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 156
+        },
+        "wd-3": {
+          "durationMs": 308778,
+          "outputChars": 456,
+          "outputLines": 12,
+          "docsRead": [
+            "avatar",
+            "badge",
+            "button",
+            "card",
+            "checkbox"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 114
+        }
+      }
+    }
+  },
+  "html": {
+    "averages": {
+      "correctness": 96,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 78,
+      "maintainability": 37
+    },
+    "overall": 82,
+    "byPrompt": {
+      "cwm-3": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "dd-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "fwc-7": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "io-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "ps-4": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+              "line": 8
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "rc-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "sd-2": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "tc-7": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "ty-7": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "wd-3": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      }
+    },
+    "byCategory": {
+      "clone-with-modification": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 37
+      },
+      "data-display": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 37
+      },
+      "feature-with-constraint": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 37
+      },
+      "integration-oriented": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 37
+      },
+      "page-setup": {
+        "correctness": 55,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 37
+      },
+      "responsive-context": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 37
+      },
+      "state-driven": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 37
+      },
+      "theme-customization": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 37
+      },
+      "typography": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 37
+      },
+      "workflow-description": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 37
+      }
+    },
+    "darkModeRate": 0,
+    "cost": {
+      "totalDurationMs": 3090052,
+      "avgDurationMs": 309005,
+      "avgOutputChars": 672,
+      "avgOutputLines": 14,
+      "avgDocsRead": 0,
+      "estimatedInputTokens": 3750,
+      "estimatedOutputTokens": 1681,
+      "byPrompt": {
+        "cwm-3": {
+          "durationMs": 308819,
+          "outputChars": 632,
+          "outputLines": 14,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 158
+        },
+        "dd-1": {
+          "durationMs": 308860,
+          "outputChars": 622,
+          "outputLines": 14,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 156
+        },
+        "fwc-7": {
+          "durationMs": 308900,
+          "outputChars": 712,
+          "outputLines": 14,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 178
+        },
+        "io-1": {
+          "durationMs": 308942,
+          "outputChars": 628,
+          "outputLines": 14,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 157
+        },
+        "ps-4": {
+          "durationMs": 308987,
+          "outputChars": 754,
+          "outputLines": 14,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 189
+        },
+        "rc-1": {
+          "durationMs": 309026,
+          "outputChars": 621,
+          "outputLines": 14,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 155
+        },
+        "sd-2": {
+          "durationMs": 309065,
+          "outputChars": 649,
+          "outputLines": 14,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 162
+        },
+        "tc-7": {
+          "durationMs": 309108,
+          "outputChars": 723,
+          "outputLines": 14,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 181
+        },
+        "ty-7": {
+          "durationMs": 309147,
+          "outputChars": 727,
+          "outputLines": 14,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 182
+        },
+        "wd-3": {
+          "durationMs": 309198,
+          "outputChars": 650,
+          "outputLines": 14,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 163
+        }
+      }
+    }
+  },
+  "winners": {
+    "correctness": "tie",
+    "accessibility": "tie",
+    "codeQuality": "tie",
+    "efficiency": "astryx",
+    "maintainability": "tie"
+  },
+  "byPrompt": {
+    "cwm-3": {
+      "astryx": {
+        "correctness": {
+          "score": 100,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 19
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 20
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 20
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 82,
+          "findings": [],
+          "metrics": {
+            "totalLines": 25,
+            "codeLines": 22,
+            "stylingLines": 4,
+            "boilerplateLines": 6,
+            "logicLines": 12,
+            "stylingRatio": 0.18181818181818182,
+            "boilerplateRatio": 0.2727272727272727,
+            "decisionsPerElement": 1.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 12,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 6
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 80,
+          "findings": [],
+          "metrics": {
+            "totalLines": 12,
+            "codeLines": 10,
+            "stylingLines": 3,
+            "boilerplateLines": 2,
+            "logicLines": 5,
+            "stylingRatio": 0.3,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "tie"
+    },
+    "dd-1": {
+      "astryx": {
+        "correctness": {
+          "score": 40,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Table' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'TextInput'.",
+              "line": 22
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 86,
+          "findings": [],
+          "metrics": {
+            "totalLines": 28,
+            "codeLines": 25,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 16,
+            "stylingRatio": 0.16,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 15,
+            "stylingDecisionCount": 10,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 0,
+            "avgStateSpread": 9
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 13,
+            "codeLines": 11,
+            "stylingLines": 3,
+            "boilerplateLines": 3,
+            "logicLines": 5,
+            "stylingRatio": 0.2727272727272727,
+            "boilerplateRatio": 0.2727272727272727,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "fwc-7": {
+      "astryx": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 21
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Slider' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 4
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 84,
+          "findings": [],
+          "metrics": {
+            "totalLines": 25,
+            "codeLines": 22,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 13,
+            "stylingRatio": 0.18181818181818182,
+            "boilerplateRatio": 0.22727272727272727,
+            "decisionsPerElement": 1.5,
+            "elementCount": 8,
+            "stylingDecisionCount": 12,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 7
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 80,
+          "findings": [],
+          "metrics": {
+            "totalLines": 12,
+            "codeLines": 10,
+            "stylingLines": 3,
+            "boilerplateLines": 2,
+            "logicLines": 5,
+            "stylingRatio": 0.3,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "io-1": {
+      "astryx": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/TextInput' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 87,
+          "findings": [],
+          "metrics": {
+            "totalLines": 31,
+            "codeLines": 28,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 19,
+            "stylingRatio": 0.14285714285714285,
+            "boilerplateRatio": 0.17857142857142858,
+            "decisionsPerElement": 2.8,
+            "elementCount": 4,
+            "stylingDecisionCount": 11,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 12
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 77,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 3,
+            "boilerplateLines": 4,
+            "logicLines": 5,
+            "stylingRatio": 0.25,
+            "boilerplateRatio": 0.3333333333333333,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "ps-4": {
+      "astryx": {
+        "correctness": {
+          "score": 25,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 19
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Breadcrumbs' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/AppShell' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'IconButton'.",
+              "line": 19
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 82,
+          "findings": [],
+          "metrics": {
+            "totalLines": 25,
+            "codeLines": 22,
+            "stylingLines": 4,
+            "boilerplateLines": 6,
+            "logicLines": 12,
+            "stylingRatio": 0.18181818181818182,
+            "boilerplateRatio": 0.2727272727272727,
+            "decisionsPerElement": 1.6,
+            "elementCount": 8,
+            "stylingDecisionCount": 13,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 3,
+            "avgStateSpread": 7
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+              "line": 9
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+              "line": 9
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+              "line": 9
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 13,
+            "codeLines": 11,
+            "stylingLines": 3,
+            "boilerplateLines": 3,
+            "logicLines": 5,
+            "stylingRatio": 0.2727272727272727,
+            "boilerplateRatio": 0.2727272727272727,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS1382: Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+              "line": 8
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "rc-1": {
+      "astryx": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 17
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'IconButton'.",
+              "line": 17
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 84,
+          "findings": [],
+          "metrics": {
+            "totalLines": 23,
+            "codeLines": 20,
+            "stylingLines": 4,
+            "boilerplateLines": 4,
+            "logicLines": 12,
+            "stylingRatio": 0.2,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 1.6,
+            "elementCount": 8,
+            "stylingDecisionCount": 13,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 3,
+            "avgStateSpread": 7
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 80,
+          "findings": [],
+          "metrics": {
+            "totalLines": 12,
+            "codeLines": 10,
+            "stylingLines": 3,
+            "boilerplateLines": 2,
+            "logicLines": 5,
+            "stylingRatio": 0.3,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "sd-2": {
+      "astryx": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 18
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Spinner' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 82,
+          "findings": [],
+          "metrics": {
+            "totalLines": 24,
+            "codeLines": 21,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 12,
+            "stylingRatio": 0.19047619047619047,
+            "boilerplateRatio": 0.23809523809523808,
+            "decisionsPerElement": 3.3,
+            "elementCount": 3,
+            "stylingDecisionCount": 10,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 0,
+            "avgStateSpread": 6
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 13,
+            "codeLines": 11,
+            "stylingLines": 3,
+            "boilerplateLines": 3,
+            "logicLines": 5,
+            "stylingRatio": 0.2727272727272727,
+            "boilerplateRatio": 0.2727272727272727,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "tc-7": {
+      "astryx": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/AppShell' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'Card'.",
+              "line": 16
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'Card'.",
+              "line": 16
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'Theme'.",
+              "line": 17
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'Card'.",
+              "line": 18
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'Card'.",
+              "line": 18
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2304: Cannot find name 'Theme'.",
+              "line": 19
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 83,
+          "findings": [],
+          "metrics": {
+            "totalLines": 24,
+            "codeLines": 21,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 12,
+            "stylingRatio": 0.19047619047619047,
+            "boilerplateRatio": 0.23809523809523808,
+            "decisionsPerElement": 1.3,
+            "elementCount": 8,
+            "stylingDecisionCount": 10,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 80,
+          "findings": [],
+          "metrics": {
+            "totalLines": 12,
+            "codeLines": 10,
+            "stylingLines": 3,
+            "boilerplateLines": 2,
+            "logicLines": 5,
+            "stylingRatio": 0.3,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "ty-7": {
+      "astryx": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 87,
+          "findings": [],
+          "metrics": {
+            "totalLines": 31,
+            "codeLines": 28,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 19,
+            "stylingRatio": 0.14285714285714285,
+            "boilerplateRatio": 0.17857142857142858,
+            "decisionsPerElement": 2.8,
+            "elementCount": 4,
+            "stylingDecisionCount": 11,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 12
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 77,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 3,
+            "boilerplateLines": 4,
+            "logicLines": 5,
+            "stylingRatio": 0.25,
+            "boilerplateRatio": 0.3333333333333333,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "astryx"
+    },
+    "wd-3": {
+      "astryx": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 24
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 25
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 87,
+          "findings": [],
+          "metrics": {
+            "totalLines": 30,
+            "codeLines": 27,
+            "stylingLines": 4,
+            "boilerplateLines": 5,
+            "logicLines": 18,
+            "stylingRatio": 0.14814814814814814,
+            "boilerplateRatio": 0.18518518518518517,
+            "decisionsPerElement": 0.9,
+            "elementCount": 12,
+            "stylingDecisionCount": 11,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 12
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 80,
+          "findings": [],
+          "metrics": {
+            "totalLines": 12,
+            "codeLines": 10,
+            "stylingLines": 3,
+            "boilerplateLines": 2,
+            "logicLines": 5,
+            "stylingRatio": 0.3,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 7,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 14,
+            "codeLines": 12,
+            "stylingLines": 5,
+            "boilerplateLines": 1,
+            "logicLines": 6,
+            "stylingRatio": 0.4166666666666667,
+            "boilerplateRatio": 0.08333333333333333,
+            "decisionsPerElement": 3.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "baseline"
+    }
+  }
+}

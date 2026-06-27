@@ -1,0 +1,78 @@
+{
+  "cwm-3": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "dd-1": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "fwc-7": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "io-1": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ps-4": {
+    "target": "html",
+    "errors": [
+      {
+        "line": 8,
+        "message": "Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+        "code": "TS1382"
+      },
+      {
+        "line": 8,
+        "message": "Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+        "code": "TS1382"
+      },
+      {
+        "line": 8,
+        "message": "Unexpected token. Did you mean `{'>'}` or `&gt;`?",
+        "code": "TS1382"
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  },
+  "rc-1": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "sd-2": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "tc-7": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ty-7": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "wd-3": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  }
+}
