@@ -7,15 +7,6 @@ export const docs = {
   displayName: 'Skeleton',
   category: 'Feedback & Status',
   keywords: ["skeleton","placeholder","loading","shimmer","pulse","loader","bone","ghost","preloader"],
-  playground: {
-    // width/height default to '100%', which collapses to nothing inside the
-    // centered properties-tab preview. Give the preview concrete dimensions
-    // so the skeleton is actually visible.
-    defaults: {
-      width: 200,
-      height: 24,
-    },
-  },
   props: [
     {
       name: 'width',
