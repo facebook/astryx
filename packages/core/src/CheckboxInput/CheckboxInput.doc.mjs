@@ -64,6 +64,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        'Whether the checkbox is read-only. Displays the current state at full opacity but prevents interaction. Unlike `isDisabled`, read-only checkboxes are not visually dimmed.',
+      default: 'false',
+    },
+    {
       name: 'isOptional',
       type: 'boolean',
       description: 'Whether the field is optional. Mutually exclusive with isRequired.',
@@ -156,6 +163,7 @@ export const docsZh = {
     },
     {name: 'isLoading', type: 'boolean', description: '复选框是否处于加载状态。显示旋转器并阻止交互。', default: 'false'},
     {name: 'isDisabled', type: 'boolean', description: '复选框是否禁用。', default: 'false'},
+    {name: 'isReadOnly', type: 'boolean', description: '复选框是否为只读。以完整不透明度显示当前状态但阻止交互。与 isDisabled 不同，只读复选框不会变暗。', default: 'false'},
     {name: 'isOptional', type: 'boolean', description: '字段是否可选。与 isRequired 互斥。', default: 'false'},
     {name: 'isRequired', type: 'boolean', description: '复选框是否必填。与 isOptional 互斥。', default: 'false'},
     {name: 'size', type: "'sm' | 'md'", description: '复选框尺寸。sm 用于紧凑布局，md 为默认。', default: "'md'"},
