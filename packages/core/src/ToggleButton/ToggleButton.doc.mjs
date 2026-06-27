@@ -75,6 +75,12 @@ export const docs = {
       ],
     },
     {
+      name: 'isIconOnly',
+      type: 'boolean',
+      description: 'When true, renders as a square icon-only button with `label` as the aria-label and an automatic tooltip from the label.',
+      default: 'false',
+    },
+    {
       name: 'pressedIcon',
       type: 'ReactNode',
       description: 'Icon shown when pressed. Falls back to icon if not provided.',
