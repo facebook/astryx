@@ -16,7 +16,6 @@
 import {useCallback, useMemo, useRef, type CSSProperties} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../../../theme/tokens.stylex';
-import {tableRowMarker} from '../../table.stylex';
 import type {
   TableColumn,
   TablePlugin,
@@ -184,16 +183,14 @@ const stickyStyles = stylex.create({
     // The backdrop can't be introspected, so it's an overridable variable
     // defaulting to the card token (tables usually sit in a Card/surface).
     backgroundColor: `var(--table-sticky-background, ${colorVars['--color-background-card']})`,
-    // Replay the row's hover overlay on top of the opaque base via a gradient
-    // layer, so the pinned column highlights with the rest of the row. A
-    // transparent-gradient default keeps the transition smooth (gradient ->
-    // gradient interpolates; none -> gradient snaps).
-    backgroundImage: {
-      default: 'linear-gradient(transparent, transparent)',
-      [stylex.when.ancestor(':hover', tableRowMarker)]: {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-    },
+    // Replay the row's overlay (stripe and/or hover) on top of the opaque base
+    // via a gradient layer, so the pinned column matches the rest of the row.
+    // The color comes from `--table-row-overlay`, which TableRow sets to its
+    // current overlay (or unset) — so the pinned cell mirrors the row exactly:
+    // striped only when the table is striped, hover only when hover is enabled,
+    // never a phantom stripe. Defaults to a transparent gradient so the
+    // transition interpolates smoothly (none -> gradient would snap).
+    backgroundImage: `linear-gradient(var(--table-row-overlay, transparent), var(--table-row-overlay, transparent))`,
     transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],

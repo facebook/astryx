@@ -42,12 +42,25 @@ const stripedRowStyles = stylex.create({
       default: null,
       ':nth-child(even)': colorVars['--color-background-muted'],
     },
+    // Publish the row's current overlay color as an inheritable variable so
+    // pinned/sticky cells (which paint an opaque background over the otherwise
+    // transparent row) can replay the exact same striping. Unset on odd rows.
+    '--table-row-overlay': {
+      default: null,
+      ':nth-child(even)': colorVars['--color-background-muted'],
+    },
   },
 });
 
 const hoverRowStyles = stylex.create({
   row: {
     backgroundColor: {
+      default: null,
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+    },
+    '--table-row-overlay': {
       default: null,
       ':hover': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
@@ -62,6 +75,13 @@ const hoverRowStyles = stylex.create({
 const stripedHoverRowStyles = stylex.create({
   row: {
     backgroundColor: {
+      default: null,
+      ':nth-child(even)': colorVars['--color-background-muted'],
+      ':hover': {
+        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+      },
+    },
+    '--table-row-overlay': {
       default: null,
       ':nth-child(even)': colorVars['--color-background-muted'],
       ':hover': {
