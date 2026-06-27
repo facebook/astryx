@@ -83,6 +83,12 @@ export const docs = {
       description: 'Text wrapping behavior.',
     },
     {
+      name: 'justify',
+      type: "'start' | 'center' | 'end'",
+      description: 'Text alignment (justification). Uses logical values (start/end) for i18n/RTL compatibility.',
+      default: "'start'",
+    },
+    {
       name: 'hasCapsize',
       type: 'boolean',
       description: 'Enable optical alignment using text-box-trim. Forces block display.',
