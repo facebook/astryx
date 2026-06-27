@@ -16,7 +16,7 @@
  * 14-token architecture validated against 11 community code themes.
  * All themes map cleanly to these 14 slots.
  *
- * @see https://github.com/facebookexperimental/xds/issues/1148
+ * @see https://github.com/facebook/astryx/issues/1148
  */
 
 export const syntaxTokenDefaults = {

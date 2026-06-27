@@ -8,10 +8,13 @@
  * All original themes are MIT licensed. Only color values are extracted.
  * See THIRD_PARTY_LICENSES.md for full attribution.
  *
- * @see https://github.com/facebookexperimental/xds/issues/1148
+ * @see https://github.com/facebook/astryx/issues/1148
  */
 
-import {defineSyntaxTheme, type SyntaxThemeDefinition} from './defineSyntaxTheme';
+import {
+  defineSyntaxTheme,
+  type SyntaxThemeDefinition,
+} from './defineSyntaxTheme';
 
 /** One Dark Pro (Binaryify) — MIT */
 export const oneDarkPro: SyntaxThemeDefinition = defineSyntaxTheme({

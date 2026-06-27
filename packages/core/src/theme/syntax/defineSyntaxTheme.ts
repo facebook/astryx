@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-"use strict";
+'use strict';
 
 /**
  * @file defineSyntaxTheme.ts
@@ -8,7 +8,7 @@
  * @output defineSyntaxTheme, SyntaxTheme, syntaxThemeStyle
  * @position Syntax theme definition API; consumed by presets, SyntaxTheme, defineTheme
  *
- * @see https://github.com/facebookexperimental/xds/issues/1148
+ * @see https://github.com/facebook/astryx/issues/1148
  */
 
 import {syntaxTokenDefaults, type SyntaxTokenName} from './tokens';
@@ -41,7 +41,10 @@ export type SyntaxThemeTokenKey =
 export type SyntaxTokenValue = string | [light: string, dark: string];
 
 /** Token map for defineSyntaxTheme input — values can be strings or tuples. */
-export type SyntaxThemeTokenInput = Record<SyntaxThemeTokenKey, SyntaxTokenValue>;
+export type SyntaxThemeTokenInput = Record<
+  SyntaxThemeTokenKey,
+  SyntaxTokenValue
+>;
 
 /** Resolved token map — all values are CSS strings (tuples resolved to light-dark()). */
 export type SyntaxThemeTokenMap = Record<SyntaxThemeTokenKey, string>;
@@ -73,8 +76,9 @@ function toCSSProperty(key: SyntaxThemeTokenKey): SyntaxTokenName {
 }
 
 /** All valid human-readable token keys, derived from the defaults. */
-export const ALL_SYNTAX_KEYS: SyntaxThemeTokenKey[] = Object.keys(syntaxTokenDefaults)
-  .map(k => k.replace(CSS_PREFIX, '') as SyntaxThemeTokenKey);
+export const ALL_SYNTAX_KEYS: SyntaxThemeTokenKey[] = Object.keys(
+  syntaxTokenDefaults,
+).map(k => k.replace(CSS_PREFIX, '') as SyntaxThemeTokenKey);
 
 // =============================================================================
 // Helpers
@@ -130,12 +134,17 @@ export function resolveSyntaxTokenForMode(
  *   },
  * });
  */
-export function defineSyntaxTheme(input: SyntaxThemeInput): SyntaxThemeDefinition {
+export function defineSyntaxTheme(
+  input: SyntaxThemeInput,
+): SyntaxThemeDefinition {
   const missing = ALL_SYNTAX_KEYS.filter(key => !(key in input.tokens));
   if (missing.length > 0) {
     console.warn(
-      '[Astryx] defineSyntaxTheme("' + input.name + '"): missing tokens: ' +
-        missing.join(', ') + '. All 14 syntax tokens are required.',
+      '[Astryx] defineSyntaxTheme("' +
+        input.name +
+        '"): missing tokens: ' +
+        missing.join(', ') +
+        '. All 14 syntax tokens are required.',
     );
   }
 
@@ -169,7 +178,7 @@ export function syntaxThemeStyle(
 
 /** Convert a syntax theme to CSS declarations (no selector wrapper). */
 export function syntaxThemeToCSS(theme: SyntaxThemeDefinition): string {
-  return ALL_SYNTAX_KEYS
-    .map(key => toCSSProperty(key) + ': ' + theme.tokens[key] + ';')
-    .join('\n  ');
+  return ALL_SYNTAX_KEYS.map(
+    key => toCSSProperty(key) + ': ' + theme.tokens[key] + ';',
+  ).join('\n  ');
 }

@@ -95,7 +95,7 @@ const STATIC_EXPORTS = {
  * Server Components. Each entry points to a `utils.ts` file that
  * re-exports only the server-safe subset of a component's utilities.
  *
- * See: https://github.com/facebookexperimental/xds/issues/1977
+ * See: https://github.com/facebook/astryx/issues/1977
  */
 const UTIL_SUBPATH_DIRS = [
   'Calendar',
