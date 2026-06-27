@@ -23,6 +23,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {addAnchorName, removeAnchorName} from './anchorName';
 import {typographyVars} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -268,40 +269,6 @@ function getPositionArea(
     return `${cssPlacement} span-top`;
   }
   return `${cssPlacement} center`;
-}
-
-/**
- * CSS `anchor-name` is a comma-separated list, so multiple layers can anchor to
- * the same element (e.g. several TopNavMegaMenus anchored to one <nav>). These
- * helpers add/remove a single layer's anchor id without clobbering the others —
- * overwriting the whole property would break every sibling layer's positioning.
- */
-function readAnchorNames(el: HTMLElement): string[] {
-  const value =
-    (el.style as unknown as Record<string, string>).anchorName ?? '';
-  return value
-    .split(',')
-    .map(name => name.trim())
-    .filter(Boolean);
-}
-
-function writeAnchorNames(el: HTMLElement, names: string[]): void {
-  (el.style as unknown as Record<string, string>).anchorName = names.join(', ');
-}
-
-function addAnchorName(el: HTMLElement, name: string): void {
-  const names = readAnchorNames(el);
-  if (!names.includes(name)) {
-    names.push(name);
-    writeAnchorNames(el, names);
-  }
-}
-
-function removeAnchorName(el: HTMLElement, name: string): void {
-  writeAnchorNames(
-    el,
-    readAnchorNames(el).filter(existing => existing !== name),
-  );
 }
 
 /**
