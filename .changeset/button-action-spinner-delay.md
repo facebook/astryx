@@ -2,5 +2,5 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] ToggleButton: pass the click event to `onPressedChange` so `event.preventDefault()` opts out of `pressedChangeAction`. The async toggle now runs through Button's `clickAction`.
+[feat] Button: add `isInterruptible` to keep the button clickable while a `clickAction` is pending — the spinner and `aria-busy` still show, but the button is not disabled or deduped, so a re-click interrupts the in-flight action. ToggleButton's async toggle now runs through this path, staying interruptible.
 @cixzhang

@@ -243,6 +243,13 @@ export function ToggleButton({
     useOptimistic(committedPressed);
   const isPressed = optimisticPressed;
 
+  // Next state derives from the *optimistic* value, not the committed one, so a
+  // re-click while an action is pending reads the in-flight intent and toggles
+  // (true -> false -> true) rather than recomputing from the stale committed
+  // state. handleClick and clickAction share this so the callback and the
+  // optimistic update always agree within a single click.
+  const nextPressed = !isPressed;
+
   const resolvedIcon = isPressed && pressedIcon ? pressedIcon : icon;
 
   // Synchronous part of the toggle. Button calls onClick before clickAction and
@@ -258,20 +265,21 @@ export function ToggleButton({
       event.preventDefault();
       return;
     }
-    onPressedChangeProp?.(!committedPressed, event);
+    onPressedChangeProp?.(nextPressed, event);
   };
 
   // Async part of the toggle, run inside Button's transition (so the optimistic
   // update is valid and Button's isPending drives the pending spinner). Skipped
   // automatically by Button when handleClick called preventDefault, and never
-  // wired in group mode (where there is no async action).
+  // wired in group mode (where there is no async action). Button is rendered
+  // interruptible, so it stays clickable while pending and a re-click starts a
+  // fresh transition that interrupts the previous one.
   const clickAction =
     group && value != null
       ? undefined
       : async () => {
-          const newState = !committedPressed;
-          setOptimisticPressed(newState);
-          await pressedChangeAction?.(newState);
+          setOptimisticPressed(nextPressed);
+          await pressedChangeAction?.(nextPressed);
         };
 
   // isIconOnly prop is the source of truth for icon-only rendering.
@@ -306,6 +314,7 @@ export function ToggleButton({
       size={size}
       isDisabled={isDisabled}
       isLoading={isLoading}
+      isInterruptible
       isIconOnly={isIconOnly}
       aria-pressed={isPressed}
       icon={resolvedIcon}
