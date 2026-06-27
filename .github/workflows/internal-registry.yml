@@ -21,5 +21,5 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: facebook/lexical/.github/actions/internal-registry/dependency-check@internal-registry-dependency-check-v1
