@@ -62,6 +62,13 @@ export const docs = {
       default: "'none'",
     },
     {
+      name: 'start',
+      type: 'number',
+      description:
+        "Starting number for ordered lists (listStyle='decimal'). Sets the CSS counter to begin at this value.",
+      default: '1',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
