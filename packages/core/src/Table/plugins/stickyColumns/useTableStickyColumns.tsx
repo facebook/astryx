@@ -16,6 +16,7 @@
 import {useCallback, useMemo, useRef, type CSSProperties} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../../../theme/tokens.stylex';
+import {tableRowMarker} from '../../table.stylex';
 import type {
   TableColumn,
   TablePlugin,
@@ -169,58 +170,37 @@ function resolveStickySide(
 // Styles
 // =============================================================================
 
-// CSS variables toggled on the scroll container by the layout ref. The cell
-// ::after shadows read these, so each edge's shadow only shows when there is
-// horizontally-scrolled content hidden behind that edge. We use CSS variables
-// (not stylex.when.ancestor) because StyleX ancestor selectors support pseudo-
-// classes only, not attribute/className matching — a CSS variable inherited
-// from the scroll container is the supported way to gate descendant styles on
-// container scroll state.
+// Scroll-state CSS variables set on the scroll container by the layout ref;
+// the cell ::after shadows read them so each edge's shadow only shows when
+// content is hidden behind it. (A variable, not stylex.when.ancestor, because
+// StyleX ancestor selectors are pseudo-class only — not scroll state.)
 const SHADOW_VAR_START = '--table-sticky-shadow-start';
 const SHADOW_VAR_END = '--table-sticky-shadow-end';
 
 const stickyStyles = stylex.create({
   cell: {
     position: 'sticky',
-    isolation: 'isolate',
     // Opaque base so scrolled content doesn't show through the pinned column.
-    // A sticky cell can't introspect what's actually behind the table, so the
-    // backdrop is a CSS variable — `--table-sticky-background` — that defaults
-    // to the card token (tables most commonly sit inside a Card / surface; in
-    // the default theme card === surface). Consumers whose table sits on a
-    // different backdrop (page body, a tinted card, a bare surface in a theme
-    // where surface !== card, etc.) override the variable on the table or any
-    // ancestor: style={{'--table-sticky-background': 'var(--color-background-body)'}}.
+    // The backdrop can't be introspected, so it's an overridable variable
+    // defaulting to the card token (tables usually sit in a Card/surface).
     backgroundColor: `var(--table-sticky-background, ${colorVars['--color-background-card']})`,
-    // The striped/hover overlay rides a ::before layer at z-index -1, which
-    // paints ABOVE the cell's opaque base but BELOW the cell text. Rather than
-    // re-derive striping/hover (the plugin can't know whether the table is
-    // striped or hoverable), it consumes `--table-row-overlay` — an inheritable
-    // variable TableRow sets to its exact current overlay color (or unset when
-    // the row has none). So the pinned column mirrors the row precisely:
-    // striped only when the table is, hover only when hover is enabled. The
-    // overlay transitions background-color in lockstep with the row.
-    '::before': {
-      content: '""',
-      position: 'absolute',
-      inset: 0,
-      zIndex: -1,
-      pointerEvents: 'none',
-      backgroundColor: 'var(--table-row-overlay, transparent)',
-      transitionProperty: 'background-color',
-      transitionDuration: durationVars['--duration-fast'],
-      transitionTimingFunction: easeVars['--ease-standard'],
+    // Replay the row's hover overlay on top of the opaque base via a gradient
+    // layer, so the pinned column highlights with the rest of the row. A
+    // transparent-gradient default keeps the transition smooth (gradient ->
+    // gradient interpolates; none -> gradient snaps).
+    backgroundImage: {
+      default: 'linear-gradient(transparent, transparent)',
+      [stylex.when.ancestor(':hover', tableRowMarker)]: {
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
+      },
     },
-    // Clip the background to the padding box so it doesn't paint over the
-    // cell's (translucent, collapsed) bottom/right divider border. Sticky cells
-    // sit above regular cells, so without this the opaque background would hide
-    // the row divider on the pinned column.
+    transitionProperty: 'background-image',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    // padding-box keeps the opaque base off the cell's collapsed divider border.
     backgroundClip: 'padding-box',
-    // Default table cells are `overflow: hidden` (for text truncation), which
-    // would clip the shadow ::after that bleeds past the pinned edge. Sticky
-    // cells opt back into visible overflow so the shadow can render outside.
-    // Text truncation on sticky columns still works because the cell width is
-    // fixed and the inner content wraps/ellipsizes within it.
+    // Cells are overflow:hidden for truncation; sticky cells need visible
+    // overflow so the shadow ::after can bleed past the pinned edge.
     overflow: 'visible',
   },
   headerCell: {
@@ -232,19 +212,12 @@ const stickyStyles = stylex.create({
   },
 });
 
-// A soft drop shadow over the scrolling region, matching the EPS sticky-column
-// treatment. `border-collapse: collapse` tables (Astryx Table uses
-// table-layout: fixed + border-collapse: collapse) do NOT paint `box-shadow`
-// on the cells themselves in Chromium, so the shadow is cast by a ::after strip
-// positioned just outside the pinned edge, filled with a soft gradient that
-// fades from a shadow tint to transparent over the scrolled content. Sticky
-// cells set `overflow: visible` (above) so this strip isn't clipped. Its
-// opacity reads a CSS variable inherited from the scroll container, which the
-// layout ref toggles between 0 and 1 on scroll so the shadow only shows when
-// there is hidden content behind that edge.
+// Soft drop shadow over the scrolling region (matches the EPS sticky treatment).
+// border-collapse tables don't paint box-shadow on cells in Chromium, so it's a
+// ::after gradient strip just past the pinned edge (visible thanks to the cell's
+// overflow: visible). Opacity is gated by the scroll-state variable above.
 const SHADOW_WIDTH = '6px';
-// A subtle tint that fades to transparent. --color-shadow is only ~10% alpha,
-// which reads too faintly here, so use a slightly stronger but still soft tint.
+// --color-shadow is only ~10% alpha (too faint here); use a slightly stronger soft tint.
 const SHADOW_TINT = 'light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.32))';
 const shadowStyles = stylex.create({
   // start-pinned: shadow falls to the right (inline-end), over scrolled content

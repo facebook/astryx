@@ -42,25 +42,12 @@ const stripedRowStyles = stylex.create({
       default: null,
       ':nth-child(even)': colorVars['--color-background-muted'],
     },
-    // Mirror the row's overlay into an inheritable variable so sticky/pinned
-    // cells (which paint their own opaque background over the transparent row)
-    // can replay the exact same striping. Unset when not an even row.
-    '--table-row-overlay': {
-      default: null,
-      ':nth-child(even)': colorVars['--color-background-muted'],
-    },
   },
 });
 
 const hoverRowStyles = stylex.create({
   row: {
     backgroundColor: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-    },
-    '--table-row-overlay': {
       default: null,
       ':hover': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
@@ -75,13 +62,6 @@ const hoverRowStyles = stylex.create({
 const stripedHoverRowStyles = stylex.create({
   row: {
     backgroundColor: {
-      default: null,
-      ':nth-child(even)': colorVars['--color-background-muted'],
-      ':hover': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
-      },
-    },
-    '--table-row-overlay': {
       default: null,
       ':nth-child(even)': colorVars['--color-background-muted'],
       ':hover': {
@@ -110,7 +90,12 @@ const stripedHoverRowStyles = stylex.create({
  * </Table>
  * ```
  */
-export function TableRow({children, xstyle, ref, ...props}: TableRowProps) {
+export function TableRow({
+  children,
+  xstyle,
+  ref,
+  ...props
+}: TableRowProps) {
   const ctx = use(TableContext);
 
   if (!ctx) {
