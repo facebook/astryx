@@ -7,7 +7,7 @@ import {Text} from '@astryxdesign/core/Text';
 import {Table, pixel, type TableColumn} from '@astryxdesign/core/Table';
 import {Card} from '@astryxdesign/core/Card';
 import {HStack} from '@astryxdesign/core/Layout';
-import {Icon} from '@astryxdesign/core/Icon';
+import {Icon, getIconRegistry} from '@astryxdesign/core/Icon';
 import type {IconName} from '@astryxdesign/core/Icon';
 import {renderInlineMarkdown} from './inlineMarkdown';
 
@@ -17,37 +17,12 @@ const styles = stylex.create({
   iconNameText: {minWidth: 0},
 });
 
-const SEMANTIC_ICON_NAMES = new Set<IconName>([
-  'close',
-  'chevronDown',
-  'chevronLeft',
-  'chevronRight',
-  'check',
-  'success',
-  'error',
-  'warning',
-  'info',
-  'calendar',
-  'clock',
-  'externalLink',
-  'menu',
-  'moreHorizontal',
-  'search',
-  'arrowUp',
-  'arrowDown',
-  'arrowsUpDown',
-  'funnel',
-  'eyeSlash',
-  'viewColumns',
-  'copy',
-  'checkDouble',
-  'wrench',
-  'stop',
-  'microphone',
-]);
+const semanticIconNames = new Set<IconName>(
+  Object.keys(getIconRegistry()) as IconName[],
+);
 
 function isIconName(value: string): value is IconName {
-  return SEMANTIC_ICON_NAMES.has(value as IconName);
+  return semanticIconNames.has(value as IconName);
 }
 
 function renderCellContent(value: string, header: string) {
