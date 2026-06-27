@@ -137,7 +137,6 @@ function ConversationItem({
         label={label}
         href="#"
         isSelected={isSelected}
-        icon={<StatusDot variant={status} label={statusLabel} />}
         endContent={
           showMenu ? (
             <MoreMenu
@@ -152,7 +151,9 @@ function ConversationItem({
                 {label: 'Delete', onClick: () => {}},
               ]}
             />
-          ) : undefined
+          ) : (
+            <StatusDot variant={status} label={statusLabel} />
+          )
         }
       />
     </Stack>
