@@ -72,6 +72,18 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'verticalAlign',
+      type: "'middle' | 'top' | 'bottom'",
+      description: 'Vertical alignment for body row cells. Controls `vertical-align` on the `<td>` elements.',
+      default: "'middle'",
+    },
+    {
+      name: 'textOverflow',
+      type: "'wrap' | 'truncate'",
+      description: "How body cell text behaves when it exceeds the column width. 'wrap' lets text wrap and the row grow taller; 'truncate' clips with an ellipsis (default-rendered cells show a tooltip on hover when truncated). Header cells always truncate.",
+      default: "'wrap'",
+    },
+    {
       name: 'plugins',
       type: 'Record<string, TablePlugin<T>>',
       description: 'Named plugins that extend table behavior via the transform pipeline. Converted to an ordered array internally.',
