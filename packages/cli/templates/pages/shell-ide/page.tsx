@@ -19,7 +19,7 @@ import {Text} from '@astryxdesign/core/Text';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Button} from '@astryxdesign/core/Button';
 import {TextInput} from '@astryxdesign/core/TextInput';
-import {Skeleton} from '@astryxdesign/core/Skeleton';
+import {Card} from '@astryxdesign/core/Card';
 import {Stack, VStack, HStack} from '@astryxdesign/core/Stack';
 import {
   PlayIcon,
@@ -263,13 +263,13 @@ export default function ShellIDE() {
           header={
             <LayoutHeader hasDivider padding={6}>
               <HStack gap={2}>
-                {EDITOR_TABS.map((tab, i) => (
-                  <Skeleton
+                {EDITOR_TABS.map(tab => (
+                  <Card
                     key={tab}
+                    variant="muted"
+                    padding={0}
                     width={132}
                     height={36}
-                    radius={2}
-                    index={i}
                   />
                 ))}
               </HStack>
@@ -280,21 +280,26 @@ export default function ShellIDE() {
               <VStack gap={2}>
                 {CODE_LINES.map((width, i) =>
                   width === '0%' ? (
-                    <Skeleton
+                    <Card
                       key={i}
+                      variant="muted"
+                      padding={0}
                       width={1}
                       height={14}
-                      radius={2}
-                      index={i}
                     />
                   ) : (
                     <HStack key={i} gap={3} vAlign="center">
-                      <Skeleton width={20} height={14} radius={2} index={i} />
-                      <Skeleton
+                      <Card
+                        variant="muted"
+                        padding={0}
+                        width={20}
+                        height={14}
+                      />
+                      <Card
+                        variant="muted"
+                        padding={0}
                         width={width}
                         height={14}
-                        radius={2}
-                        index={i}
                       />
                     </HStack>
                   ),
