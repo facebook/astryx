@@ -337,8 +337,7 @@ describe('componentRegistry', () => {
     // rather than by a name prefix.
     const hooks = core.filter(
       c =>
-        /^use[A-Z]/.test(c.name) &&
-        (exampleRegistry[c.name]?.length ?? 0) > 0,
+        /^use[A-Z]/.test(c.name) && (exampleRegistry[c.name]?.length ?? 0) > 0,
     );
     expect(hooks.length).toBeGreaterThan(15);
     expect(hooks.map(h => h.name)).toContain('useTheme');
@@ -666,7 +665,9 @@ describe('themeRegistry', () => {
   });
 
   it('has no entries for non-theme packages', () => {
-    const nonTheme = packages.filter(p => !p.name.startsWith('@astryxdesign/theme-'));
+    const nonTheme = packages.filter(
+      p => !p.name.startsWith('@astryxdesign/theme-'),
+    );
     for (const pkg of nonTheme) {
       expect(registrySource).not.toContain(`'${pkg.name}':`);
     }
@@ -807,5 +808,70 @@ describe('exampleRegistry', () => {
       .flat()
       .reduce((max, e) => Math.max(max, e.description.length), 0);
     expect(longest).toBeGreaterThan(200);
+  });
+});
+
+// ── Block example title convention (Component — Variant) ─────────────────
+// Example block `displayName`s should read like "Component — Variant" using an
+// em-dash separator, not leak PascalCase/export-name wording. The Card example
+// titles previously rendered as "Clickable Card With Nested Button" and
+// "Selectable Card Multi".
+describe('block example title convention', () => {
+  const blocksDir = fileURLToPath(
+    new URL('../../../../packages/cli/templates/blocks', import.meta.url),
+  );
+
+  function displayNameOf(relPath: string): string | null {
+    const content = fs.readFileSync(`${blocksDir}/${relPath}`, 'utf-8');
+    const m = content.match(/displayName:\s*['"]([^'"]+)['"]/);
+    return m ? m[1] : null;
+  }
+
+  it('Card example titles use the em-dash variant convention', () => {
+    expect(
+      displayNameOf('components/Card/ClickableCardWithNestedButton.doc.mjs'),
+    ).toBe('Clickable Card — Nested Button');
+    expect(displayNameOf('components/Card/SelectableCardMulti.doc.mjs')).toBe(
+      'Selectable Card — Multi-select',
+    );
+  });
+});
+
+// ── Playground defaults for Card components (BB-006 / #2008) ──────────────
+// ClickableCard and SelectableCard playgrounds rendered empty because their
+// docs carried no `playground.defaults`. Defaults must flow into the generated
+// registry so previews demonstrate realistic card layouts.
+describe('Card playground defaults', () => {
+  function coreComponent(name: string) {
+    return Object.values(components)
+      .flat()
+      .find(c => c.name === name);
+  }
+
+  it('ClickableCard has playground defaults with label, href, and body content', () => {
+    const entry = coreComponent('ClickableCard');
+    expect(entry).toBeDefined();
+    const defaults = entry!.playground?.defaults as
+      | Record<string, unknown>
+      | undefined;
+    expect(defaults).toBeDefined();
+    expect(typeof defaults!.label).toBe('string');
+    expect(defaults!.href).toBeDefined();
+    // children is a resolved element descriptor, not empty.
+    expect(defaults!.children).toBeTruthy();
+    expect(typeof defaults!.children).toBe('object');
+  });
+
+  it('SelectableCard has playground defaults with label, selection state, and body content', () => {
+    const entry = coreComponent('SelectableCard');
+    expect(entry).toBeDefined();
+    const defaults = entry!.playground?.defaults as
+      | Record<string, unknown>
+      | undefined;
+    expect(defaults).toBeDefined();
+    expect(typeof defaults!.label).toBe('string');
+    expect(typeof defaults!.isSelected).toBe('boolean');
+    expect(defaults!.children).toBeTruthy();
+    expect(typeof defaults!.children).toBe('object');
   });
 });

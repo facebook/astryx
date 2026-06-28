@@ -5,7 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'SelectableCard',
   name: 'SelectableCardMulti',
-  displayName: 'Selectable Card Multi',
+  displayName: 'Selectable Card — Multi-select',
   description:
     'Multi-select tag picker using color variant selectable cards with color-matched selection borders.',
   isReady: true,

@@ -36,6 +36,21 @@ export const docs = {
     container: true,
     targets: [{className: 'astryx-selectable-card', visualProps: ['selected']}],
   },
+  playground: {
+    defaults: {
+      label: 'Pro plan',
+      isSelected: true,
+      padding: 4,
+      children: {
+        __element: 'XDSVStack',
+        props: {gap: 1},
+        children: [
+          {__element: 'XDSHeading', props: {level: 3}, children: 'Pro plan'},
+          {__element: 'XDSText', props: {type: 'body'}, children: '$29/month — unlimited projects and priority support.'},
+        ],
+      },
+    },
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
