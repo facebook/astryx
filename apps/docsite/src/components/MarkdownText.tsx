@@ -14,7 +14,6 @@ interface MarkdownTextProps {
   type?: TextProps['type'];
   color?: TextProps['color'];
   weight?: TextProps['weight'];
-  display?: TextProps['display'];
   style?: TextProps['style'];
 }
 
@@ -23,7 +22,6 @@ export function MarkdownText({
   type = 'body',
   color,
   weight,
-  display,
   style,
 }: MarkdownTextProps) {
   const paragraphs = splitMarkdownParagraphs(children);
@@ -35,10 +33,11 @@ export function MarkdownText({
   if (paragraphs.length === 1) {
     return (
       <Text
+        as="p"
         type={type}
         color={color}
         weight={weight}
-        display={display}
+        display="block"
         style={style}>
         <Markdown display="inline">{paragraphs[0]}</Markdown>
       </Text>

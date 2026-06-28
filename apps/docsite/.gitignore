@@ -18,3 +18,4 @@ public/vendor/
 src/themes/astryx.js
 src/themes/astryx.css
 src/themes/astryx.d.ts
+public/xle-tokenizer.mjs

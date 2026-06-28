@@ -131,7 +131,10 @@ export default function ComponentsGalleryPage() {
   }, [categorizedItems]);
 
   return (
-    <Section maxWidth={layout.contentMaxWidth} padding={6} xstyle={styles.section}>
+    <Section
+      maxWidth={layout.contentMaxWidth}
+      padding={6}
+      xstyle={styles.section}>
       <VStack gap={10}>
         <VStack gap={4} hAlign="center">
           <VStack gap={2} style={{alignItems: 'center'}}>
@@ -189,7 +192,7 @@ export default function ComponentsGalleryPage() {
               <VStack gap={4}>
                 <Heading level={2}>{cat}</Heading>
                 <Grid
-                  columns={{minWidth: 240, repeat: 'fill'}}
+                  columns={{minWidth: 300, repeat: 'fill'}}
                   gap={3}
                   rowGap={4}>
                   {items.map(item => (

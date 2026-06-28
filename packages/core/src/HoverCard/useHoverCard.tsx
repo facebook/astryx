@@ -58,8 +58,12 @@ const styles = stylex.create({
     marginInlineStart: spacingVars['--spacing-1'],
     marginInlineEnd: spacingVars['--spacing-1'],
   },
-  // Content wrapper for padding and mouse events
+  // Content wrapper for padding and mouse events.
+  // `display: block` keeps the wrapper a block box even though it renders as a
+  // `span` (the layer uses inline-safe phrasing markup so it is valid inside a
+  // paragraph and produces identical server/client markup).
   content: {
+    display: 'block',
     paddingBlockStart: spacingVars['--spacing-3'],
     paddingBlockEnd: spacingVars['--spacing-3'],
     paddingInlineStart: spacingVars['--spacing-3'],
@@ -234,9 +238,7 @@ function isFocusable(element: HTMLElement): boolean {
  * {hoverCard.renderHoverCard(<ProfileCard user={user} />)}
  * ```
  */
-export function useHoverCard(
-  options: HoverCardOptions = {},
-): HoverCardReturn {
+export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
   const {
     placement = 'above',
     alignment = 'center',
@@ -454,14 +456,14 @@ export function useHoverCard(
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
         xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
+        // Render the layer as inline-safe phrasing markup so HoverCard stays
+        // valid (and hydration-stable) inside inline contexts like a `<p>`.
+        as: 'span' as const,
       };
 
       return layer.render(
-        <div
-          {...mergeProps(
-            themeProps('hovercard'),
-            stylex.props(styles.content),
-          )}
+        <span
+          {...mergeProps(themeProps('hovercard'), stylex.props(styles.content))}
           onMouseEnter={() => {
             isHoveringContentRef.current = true;
             clearTimeouts();
@@ -502,7 +504,7 @@ export function useHoverCard(
             scheduleHide();
           }}>
           {children}
-        </div>,
+        </span>,
         renderProps,
       );
     },

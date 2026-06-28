@@ -2,8 +2,17 @@
 
 'use client';
 
+import {useState} from 'react';
 import {Slider} from '@astryxdesign/core/Slider';
 
 export default function SliderShowcase() {
-  return <Slider label="Volume" value={50} style={{width: 300}} />;
+  const [value, setValue] = useState(50);
+  return (
+    <Slider
+      label="Volume"
+      value={value}
+      onChange={setValue}
+      style={{width: 300}}
+    />
+  );
 }

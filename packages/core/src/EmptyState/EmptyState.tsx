@@ -174,13 +174,17 @@ export function EmptyState({
           title,
         )}
         {description != null && (
-          <p
+          // Rendered as <div> (not <p>): description accepts ReactNode and a
+          // <p> cannot legally contain block children, which causes hydration
+          // mismatches. The StyleX style sets margin: 0, so appearance is
+          // unchanged.
+          <div
             {...stylex.props(
               styles.description,
               isCompact && styles.descriptionCompact,
             )}>
             {description}
-          </p>
+          </div>
         )}
       </div>
       {actions != null && (

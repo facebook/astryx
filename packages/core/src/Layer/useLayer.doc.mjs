@@ -78,7 +78,7 @@ export const docs = {
       name: 'render',
       type: '(children: ReactNode, props: ContextRenderProps | FixedRenderProps) => ReactNode',
       description:
-        'Render function for the popover element. Pass placement/alignment in context mode or x/y in fixed mode.',
+        'Render function for the popover element. Pass placement/alignment in context mode or x/y in fixed mode. In context mode, pass `as: "span"` to render an inline-safe layer (e.g. inside a paragraph). The layer renders inline in the React tree — the Popover API promotes it to the top layer when shown, so it escapes ancestor clipping and stacking without a portal.',
     },
   ],
   usage: {
@@ -94,6 +94,11 @@ export const docs = {
         guidance: true,
         description:
           'Build on higher-level components like Popover, HoverCard, and Tooltip for common overlay patterns.',
+      },
+      {
+        guidance: true,
+        description:
+          'Rely on the Popover API top layer to escape ancestor clipping and stacking — render the layer inline (no portal) so it inherits the trigger\u2019s theme cascade and keeps a natural focus order. Use `as: "span"` when the layer must be valid inside inline contexts like a paragraph.',
       },
       {
         guidance: false,
@@ -125,7 +130,7 @@ export const docsDense = {
     hide: 'hide layer.',
     isOpen: 'whether layer is open.',
     id: 'unique ARIA id.',
-    render: 'renders popover element; pass placement/alignment or x/y.',
+    render: 'renders popover element; pass placement/alignment or x/y. Context mode accepts `as: "span"` for inline-safe layers. Renders inline; the Popover API top layer escapes clipping/stacking without a portal.',
   },
   usage: {
     description:

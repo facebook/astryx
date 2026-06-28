@@ -38,6 +38,14 @@
     "./api": {
       "types": "./src/types/api.d.ts",
       "import": "./src/api/index.mjs"
+    },
+    "./config": {
+      "types": "./src/types/config.d.ts",
+      "import": "./src/config.mjs"
+    },
+    "./xle": {
+      "types": "./src/lib/xle/browser.d.ts",
+      "import": "./src/lib/xle/browser.mjs"
     }
   },
   "files": [
@@ -56,12 +64,14 @@
     "@clack/prompts": "^1.5.1",
     "commander": "^12.1.0",
     "jiti": "^2.7.0",
-    "jscodeshift": "^17.3.0"
+    "jscodeshift": "^17.3.0",
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
-    "@astryxdesign/theme-neutral": "*"
+    "@astryxdesign/theme-neutral": "*",
+    "gpt-tokenizer": "^2.0.0"
   },
   "peerDependenciesMeta": {
     "@astryxdesign/core": {
@@ -77,6 +87,7 @@
   "devDependencies": {
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
-    "@astryxdesign/theme-neutral": "*"
+    "@astryxdesign/theme-neutral": "*",
+    "gpt-tokenizer": "^2.0.0"
   }
 }

@@ -22,9 +22,16 @@ describe('Markdown', () => {
     expect(screen.getByText('Heading 2').tagName).toBe('H2');
   });
 
-  it('renders paragraphs', () => {
+  it('renders paragraphs as block <div> (never <p>) for composition safety', () => {
     render(<Markdown>{'Hello world'}</Markdown>);
-    expect(screen.getByText('Hello world').tagName).toBe('P');
+    // Markdown paragraphs render as <div> so block-level inline content
+    // (images, custom inline components) never trips the phrasing-content
+    // trap that a <p> would impose. role="paragraph" re-exposes the paragraph
+    // role to assistive tech without the <p> hazard. Consumers who want a real
+    // <p> element can pass `components={{paragraph: 'p'}}`.
+    const para = screen.getByText('Hello world');
+    expect(para.tagName).toBe('DIV');
+    expect(para).toHaveAttribute('role', 'paragraph');
   });
 
   it('renders inline display without block wrappers', () => {
@@ -201,9 +208,7 @@ describe('Markdown', () => {
   });
 
   it('shows streaming cursor when isStreaming is true', () => {
-    const {container} = render(
-      <Markdown isStreaming>{'Hello'}</Markdown>,
-    );
+    const {container} = render(<Markdown isStreaming>{'Hello'}</Markdown>);
     // Streaming mode parses incrementally but no cursor element
     expect(container.querySelector('[role="document"]')).toBeInTheDocument();
   });
@@ -243,9 +248,7 @@ describe('Markdown', () => {
 
   it('sanitizes data: URLs in images', () => {
     const {container} = render(
-      <Markdown>
-        {'![xss](data:text/html,<script>alert(1)</script>)'}
-      </Markdown>,
+      <Markdown>{'![xss](data:text/html,<script>alert(1)</script>)'}</Markdown>,
     );
     const img = container.querySelector('img');
     expect(img).toBeNull();
@@ -435,9 +438,7 @@ describe('inlinePlugins', () => {
       },
     };
     const {container} = render(
-      <Markdown inlinePlugins={[plugin]}>
-        {'See TAG:important here'}
-      </Markdown>,
+      <Markdown inlinePlugins={[plugin]}>{'See TAG:important here'}</Markdown>,
     );
     const tag = container.querySelector('[data-testid="tag-match"]');
     expect(tag).toBeInTheDocument();
@@ -446,9 +447,7 @@ describe('inlinePlugins', () => {
 
   it('renders identically when no inlinePlugins are provided', () => {
     const withPlugins = render(
-      <Markdown inlinePlugins={[]}>
-        {'Hello **world** and `code`'}
-      </Markdown>,
+      <Markdown inlinePlugins={[]}>{'Hello **world** and `code`'}</Markdown>,
     );
     const withoutPlugins = render(
       <Markdown>{'Hello **world** and `code`'}</Markdown>,
@@ -481,9 +480,7 @@ describe('inlinePlugins', () => {
 
     it('renders bare https URLs as links when autolink="gfm"', () => {
       const {container} = render(
-        <Markdown autolink="gfm">
-          {'see https://example.com here'}
-        </Markdown>,
+        <Markdown autolink="gfm">{'see https://example.com here'}</Markdown>,
       );
       const link = container.querySelector('a');
       expect(link).not.toBeNull();
@@ -503,9 +500,7 @@ describe('inlinePlugins', () => {
 
     it('renders bare emails with mailto: href', () => {
       const {container} = render(
-        <Markdown autolink="gfm">
-          {'ping user@example.com please'}
-        </Markdown>,
+        <Markdown autolink="gfm">{'ping user@example.com please'}</Markdown>,
       );
       const link = container.querySelector('a');
       expect(link).not.toBeNull();
@@ -515,9 +510,7 @@ describe('inlinePlugins', () => {
 
     it('does not autolink URLs inside code spans', () => {
       const {container} = render(
-        <Markdown autolink="gfm">
-          {'try `https://example.com` here'}
-        </Markdown>,
+        <Markdown autolink="gfm">{'try `https://example.com` here'}</Markdown>,
       );
       expect(container.querySelector('a')).toBeNull();
       expect(container.querySelector('code')).not.toBeNull();
@@ -525,9 +518,7 @@ describe('inlinePlugins', () => {
 
     it('does not autolink URLs inside code blocks', () => {
       const {container} = render(
-        <Markdown autolink="gfm">
-          {'```\nhttps://example.com\n```'}
-        </Markdown>,
+        <Markdown autolink="gfm">{'```\nhttps://example.com\n```'}</Markdown>,
       );
       expect(container.querySelector('a')).toBeNull();
       expect(container.querySelector('pre')).not.toBeNull();

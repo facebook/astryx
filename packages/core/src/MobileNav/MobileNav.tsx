@@ -363,8 +363,21 @@ export function MobileNav({
     return () => {
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
       }
       document.documentElement.style.overflow = '';
+      // Close the native dialog on teardown if it's still open. Inside AppShell
+      // the drawer is mounted in an <Activity> that switches to mode="hidden"
+      // when the drawer closes; React then runs this cleanup (with a stale
+      // isOpen) instead of re-running the effect with isOpen=false, so the
+      // close branch above never fires. If we leave the <dialog> `open` here,
+      // showModal() is skipped on the next open (the dialog is already open in
+      // the hidden tree) and the drawer can never be re-opened. Closing it
+      // unconditionally on teardown keeps the native dialog state in sync so a
+      // subsequent open cleanly calls showModal() again.
+      if (dialog.open) {
+        dialog.close();
+      }
     };
   }, [isOpen, side]);
 

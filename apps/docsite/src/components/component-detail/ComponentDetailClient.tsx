@@ -10,6 +10,7 @@ import {VStack} from '@astryxdesign/core/Layout';
 import {Section} from '@astryxdesign/core/Section';
 import {Card} from '@astryxdesign/core/Card';
 import {Divider} from '@astryxdesign/core';
+import {typeScaleVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {CodeExampleBlock} from '../CodeExampleBlock';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {ShowcasePreview} from './ShowcasePreview';
@@ -32,6 +33,16 @@ import {trackNavigate} from '../../lib/analytics';
 const styles = stylex.create({
   section: {
     marginInline: 'auto',
+  },
+  // Match the docs article body treatment (16px / 1.75) from DocPageLayout,
+  // scoped to the Overview prose only — the dense Properties props table keeps
+  // its compact body size. Live previews in the Overview are isolated inside
+  // ComponentPreviewTheme (a nested Theme that re-declares the type-scale
+  // tokens), so this override never leaks into them. The Usage/Examples
+  // descriptions (large) use different tokens and are unaffected.
+  overviewProse: {
+    [typeScaleVars['--text-body-size']]: '1rem', // 16px
+    [typeScaleVars['--text-body-leading']]: '1.75', // 28px line box
   },
   previewStage: {
     position: 'sticky',
@@ -66,7 +77,7 @@ function OverviewContent({
   const importPath = `import {${comp.moduleName}} from '${importFrom}'`;
 
   return (
-    <VStack gap={8}>
+    <VStack gap={8} xstyle={styles.overviewProse}>
       {hasShowcase && (
         <ComponentPreviewTheme>
           <Card variant="muted" padding={0}>

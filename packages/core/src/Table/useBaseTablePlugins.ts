@@ -87,6 +87,7 @@ const VALID_TRANSFORM_KEYS = new Set([
   'transformHeaderCell',
   'transformBodyRow',
   'transformBodyCell',
+  'transformScrollWrapper',
   'transformTableContext',
 ]);
 

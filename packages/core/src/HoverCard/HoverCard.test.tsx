@@ -10,7 +10,10 @@
  */
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {renderToString} from 'react-dom/server';
+import {hydrateRoot} from 'react-dom/client';
+import {StrictMode} from 'react';
 import {HoverCard} from './HoverCard';
 
 // Store original matches to restore later
@@ -73,6 +76,31 @@ describe('HoverCard', () => {
     expect(paragraph?.querySelector('div')).toBeNull();
   });
 
+  it('renders the floating layer with inline-safe markup (no block elements in a paragraph)', () => {
+    // HoverCard renders its floating layer inline (no portal), so the layer
+    // must be phrasing content to stay valid — and stay put on hydration —
+    // inside a <p>. Assert the layer popover element is a <span> and that the
+    // paragraph contains no <div> descendants at all.
+    const {container} = render(
+      <p>
+        Before{' '}
+        <HoverCard content={<span>Card content</span>}>
+          <a href="#trigger">Trigger</a>
+        </HoverCard>{' '}
+        after
+      </p>,
+    );
+
+    const paragraph = container.querySelector('p');
+    const layer = screen.getByText('Card content').closest('[popover]');
+
+    expect(layer).not.toBeNull();
+    expect(layer?.tagName).toBe('SPAN');
+    // The whole layer subtree lives inside the paragraph with no block boxes.
+    expect(paragraph?.contains(layer as Node)).toBe(true);
+    expect(paragraph?.querySelector('div')).toBeNull();
+  });
+
   it('does not show content initially', () => {
     render(
       <HoverCard content={<span>Card content</span>}>
@@ -84,7 +112,7 @@ describe('HoverCard', () => {
     expect(content).toBeInTheDocument();
   });
 
-  it('applies the theme body font to the portaled layer', () => {
+  it('applies the theme body font to the floating layer', () => {
     render(
       <HoverCard content={<span>Card content</span>}>
         <button type="button">Trigger</button>
@@ -368,6 +396,154 @@ describe('HoverCard', () => {
       // It may be called with false (dismiss), which is expected
       await new Promise(resolve => setTimeout(resolve, 50));
       expect(onOpenChange).not.toHaveBeenCalledWith(true);
+    });
+  });
+
+  describe('SSR / hydration', () => {
+    // Regression coverage for the hydration mismatch (#3107). The floating
+    // layer used to be portaled into document.body behind a
+    // `typeof document !== 'undefined'` gate: the server rendered nothing while
+    // the first client render emitted the portal, so the two trees disagreed.
+    //
+    // The layer is now rendered inline as inline-safe phrasing markup (a
+    // `<span popover>`), identically on the server and the client, so there is
+    // nothing for hydration to mismatch.
+
+    it('renders the floating layer in server markup (no document gate)', () => {
+      const html = renderToString(
+        <HoverCard content={<span>Card content</span>}>
+          <button type="button">Trigger</button>
+        </HoverCard>,
+      );
+
+      // The popover element is present in the server output...
+      expect(html).toContain('popover="manual"');
+      expect(html).toContain('Card content');
+      // ...and it is a <span> (inline-safe), not a <div>.
+      expect(html).toMatch(/<span[^>]*popover="manual"/);
+    });
+
+    it('keeps the floating layer inline-safe in server markup inside a paragraph', () => {
+      const html = renderToString(
+        <p>
+          Before{' '}
+          <HoverCard content={<span>Card content</span>}>
+            <a href="#trigger">Trigger</a>
+          </HoverCard>{' '}
+          after
+        </p>,
+      );
+
+      // No <div> is emitted inside the paragraph — the layer and its wrappers
+      // are all phrasing content, so the server string is valid <p> markup that
+      // the browser parser will not reparent (which would itself desync
+      // hydration).
+      expect(html).not.toContain('<div');
+      expect(html).toMatch(/<span[^>]*popover="manual"/);
+    });
+
+    it('server markup matches the first client render (no hydration mismatch)', async () => {
+      const tree = (
+        <StrictMode>
+          <p>
+            Glossary:{' '}
+            <HoverCard content={<span>Definition</span>}>
+              <a href="#term">term</a>
+            </HoverCard>
+            .
+          </p>
+        </StrictMode>
+      );
+
+      const serverHTML = renderToString(tree);
+
+      const container = document.createElement('div');
+      container.innerHTML = serverHTML;
+      document.body.appendChild(container);
+
+      // Capture any hydration diagnostics. React reports hydration mismatches
+      // both through console.error and through onRecoverableError.
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      const recoverableErrors: unknown[] = [];
+
+      let root: ReturnType<typeof hydrateRoot>;
+      await act(async () => {
+        root = hydrateRoot(container, tree, {
+          onRecoverableError: error => {
+            recoverableErrors.push(error);
+          },
+        });
+      });
+
+      const hydrationErrors = consoleErrorSpy.mock.calls.filter(call =>
+        String(call[0] ?? '')
+          .toLowerCase()
+          .includes('hydrat'),
+      );
+
+      expect(hydrationErrors).toEqual([]);
+      expect(recoverableErrors).toEqual([]);
+
+      await act(async () => {
+        root.unmount();
+      });
+      consoleErrorSpy.mockRestore();
+      container.remove();
+    });
+
+    it('hydrates a default-open hover card without a mismatch', async () => {
+      vi.mocked(HTMLElement.prototype.showPopover).mockClear();
+
+      const tree = (
+        <HoverCard content={<span>Default open</span>} isDefaultOpen>
+          <button type="button">Trigger</button>
+        </HoverCard>
+      );
+
+      const serverHTML = renderToString(tree);
+      // isDefaultOpen must not leak the open state into SSR markup — the open
+      // call happens in an effect after hydration, so the server output is the
+      // same closed markup the first client render produces.
+      expect(serverHTML).toContain('popover="manual"');
+
+      const container = document.createElement('div');
+      container.innerHTML = serverHTML;
+      document.body.appendChild(container);
+
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      const recoverableErrors: unknown[] = [];
+
+      let root: ReturnType<typeof hydrateRoot>;
+      await act(async () => {
+        root = hydrateRoot(container, tree, {
+          onRecoverableError: error => {
+            recoverableErrors.push(error);
+          },
+        });
+      });
+
+      const hydrationErrors = consoleErrorSpy.mock.calls.filter(call =>
+        String(call[0] ?? '')
+          .toLowerCase()
+          .includes('hydrat'),
+      );
+      expect(hydrationErrors).toEqual([]);
+      expect(recoverableErrors).toEqual([]);
+
+      // The card opens after hydration via the mount effect.
+      await waitFor(() => {
+        expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      });
+
+      await act(async () => {
+        root.unmount();
+      });
+      consoleErrorSpy.mockRestore();
+      container.remove();
     });
   });
 });

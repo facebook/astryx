@@ -19,12 +19,7 @@
 import {useEffect, useRef, useState, lazy, Suspense} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
-import type {
-  TextType,
-  TextSize,
-  TextColor,
-  TextWeight,
-} from '../theme/types';
+import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -54,7 +49,7 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
   value: string | number;
   /**
    * Display format.
-   * - `'relative'`: "2 hours ago", "yesterday", "just now"
+   * - `'relative'`: "2 hours ago", "yesterday", "now"
    * - `'auto'`: Relative for recent times, `date_time` for older
    * - `'date'`: "Mar 21, 2025"
    * - `'date_time'`: "Mar 21, 2025, 2:51 PM"
@@ -138,6 +133,18 @@ const YEAR = 365 * DAY;
 /** Default auto threshold: 7 days in seconds */
 const DEFAULT_AUTO_THRESHOLD = 7 * DAY;
 
+/**
+ * Tolerance (in seconds) for treating a *future* timestamp as the present.
+ * A value only a handful of seconds ahead of our reference clock is almost
+ * always clock skew — the displayed `now` lagging the real clock, or the value
+ * being produced on a slightly faster clock — not a genuine future event, so
+ * it reads as "now" rather than a confusing "in a few seconds". The future
+ * side gets a wider window than the past (which only needs to absorb the
+ * sub-second render-time lag) because future drift is far more likely to be
+ * skew than real.
+ */
+const FUTURE_SKEW_TOLERANCE = 30;
+
 function parseValue(value: string | number): Date {
   if (typeof value === 'number') {
     // Heuristic: if the number is less than 1e12, treat as seconds; otherwise ms.
@@ -150,9 +157,25 @@ function parseValue(value: string | number): Date {
 function getRelativeTimeString(date: Date, now: Date): string {
   const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
 
+  // Treat values at (or a hair before/after) the present as "now". The
+  // internal `now` reference is captured at render time, so it can lag the
+  // real clock; a value equal to "right now" can land a fraction of a second
+  // in the future and round to a small negative delta. Without this clamp,
+  // such values fall into the future branch and render "in a few seconds".
+  if (Math.abs(diffSeconds) < 10) {
+    return 'now';
+  }
+
   if (diffSeconds < 0) {
     // Future dates
     const absDiff = Math.abs(diffSeconds);
+    // A value only a few seconds ahead of our clock is almost always skew, not
+    // a genuine future event — render it as the present rather than a
+    // confusing "in a few seconds". Wider than the past window above on
+    // purpose (see FUTURE_SKEW_TOLERANCE).
+    if (absDiff <= FUTURE_SKEW_TOLERANCE) {
+      return 'now';
+    }
     if (absDiff < MINUTE) {
       return 'in a few seconds';
     }
@@ -176,9 +199,6 @@ function getRelativeTimeString(date: Date, now: Date): string {
     return `in ${years} ${years === 1 ? 'year' : 'years'}`;
   }
 
-  if (diffSeconds < 10) {
-    return 'just now';
-  }
   if (diffSeconds < MINUTE) {
     return `${diffSeconds} seconds ago`;
   }

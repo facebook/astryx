@@ -79,6 +79,19 @@ export interface ContextRenderProps {
    * Merged after StyleX and anchor positioning styles.
    */
   style?: React.CSSProperties;
+  /**
+   * HTML tag to render the popover container as.
+   *
+   * Defaults to `'div'`. Pass `'span'` when the layer must render inline-safe
+   * markup — e.g. a `HoverCard` wrapping inline text inside a `<p>`. A `<span>`
+   * is phrasing content, so it stays put in the DOM tree instead of being
+   * reparented out of a paragraph by the HTML parser, which keeps server and
+   * client markup identical. The Popover API and CSS anchor positioning work
+   * the same on either tag.
+   *
+   * @default 'div'
+   */
+  as?: 'div' | 'span';
 }
 
 /**
@@ -369,6 +382,7 @@ export function useLayer(
         xstyle,
         className: extraClassName,
         style: extraStyle,
+        as: Container = 'div',
       } = props || {};
 
       // CSS anchor positioning (dynamic, not in StyleX)
@@ -383,15 +397,18 @@ export function useLayer(
         ? `${extraClassName} ${stylexResult.className ?? ''}`
         : stylexResult.className;
 
+      // Render as the requested tag. A `span` keeps the layer phrasing content
+      // so it is valid (and stays put on hydration) inside inline contexts like
+      // a `<p>`; `div` remains the default for block layers.
       return (
-        <div
+        <Container
           ref={popoverRefCallback}
           id={id}
           popover={lightDismiss ? 'auto' : 'manual'}
           className={combinedClassName}
           style={{...stylexResult.style, ...anchorStyle, ...extraStyle}}>
           {children}
-        </div>
+        </Container>
       );
     },
     [anchorId, id, lightDismiss, popoverRefCallback],

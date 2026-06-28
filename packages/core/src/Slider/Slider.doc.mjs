@@ -11,6 +11,10 @@ export const docs = {
     defaults: {
       label: 'Volume',
       value: 50,
+      // Give the properties-tab preview a defined width so the track has room
+      // to render and stays draggable/interactive (the slider track grows to
+      // fill its container, which can collapse without an explicit width).
+      width: 300,
     },
   },
   props: [

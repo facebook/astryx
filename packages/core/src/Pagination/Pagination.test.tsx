@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen, within, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Pagination, generatePageRange} from './Pagination';
 
@@ -347,6 +347,140 @@ describe('Pagination', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // changeAction (interruptible, optimistic)
+  // ---------------------------------------------------------------------------
+
+  describe('changeAction', () => {
+    it('fires onChange then changeAction with the new page', async () => {
+      const user = userEvent.setup();
+      const order: string[] = [];
+      const onChange = vi.fn(() => order.push('onChange'));
+      const changeAction = vi.fn(() => {
+        order.push('changeAction');
+      });
+      render(
+        <Pagination
+          page={1}
+          onChange={onChange}
+          changeAction={changeAction}
+          totalPages={5}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Go to next page'}));
+      expect(onChange).toHaveBeenCalledWith(2);
+      expect(changeAction).toHaveBeenCalledWith(2);
+      expect(order).toEqual(['onChange', 'changeAction']);
+    });
+
+    it('shows the optimistic page while changeAction is pending', async () => {
+      const user = userEvent.setup();
+      let resolveAction: (() => void) | undefined;
+      const changeAction = vi.fn(
+        async () =>
+          new Promise<void>(resolve => {
+            resolveAction = resolve;
+          }),
+      );
+      render(
+        <Pagination
+          page={1}
+          onChange={() => {}}
+          changeAction={changeAction}
+          totalPages={5}
+          variant="compact"
+        />,
+      );
+
+      // The committed `page` prop stays at 1, but the indicator optimistically
+      // reflects the page being navigated to.
+      await user.click(screen.getByRole('button', {name: 'Go to next page'}));
+      expect(changeAction).toHaveBeenCalledWith(2);
+      expect(screen.getByText('Page 2 of 5')).toBeInTheDocument();
+
+      await act(async () => {
+        resolveAction?.();
+        await Promise.resolve();
+      });
+    });
+
+    it('interrupts an in-flight action on rapid next clicks', async () => {
+      // Each click derives its target from the optimistic page, so clicking
+      // next twice before the action settles advances 1 -> 2 -> 3 instead of
+      // being dropped by a re-entry guard.
+      const resolvers: (() => void)[] = [];
+      const changeAction = vi.fn(
+        async () =>
+          new Promise<void>(resolve => {
+            resolvers.push(resolve);
+          }),
+      );
+      render(
+        <Pagination
+          page={1}
+          onChange={() => {}}
+          changeAction={changeAction}
+          totalPages={5}
+          variant="compact"
+        />,
+      );
+
+      const next = screen.getByRole('button', {name: 'Go to next page'});
+      await act(async () => {
+        fireEvent.click(next);
+      });
+      expect(screen.getByText('Page 2 of 5')).toBeInTheDocument();
+      await act(async () => {
+        fireEvent.click(next);
+      });
+      expect(screen.getByText('Page 3 of 5')).toBeInTheDocument();
+
+      expect(changeAction).toHaveBeenCalledTimes(2);
+      expect(changeAction).toHaveBeenNthCalledWith(1, 2);
+      expect(changeAction).toHaveBeenNthCalledWith(2, 3);
+
+      await act(async () => {
+        resolvers.forEach(resolve => resolve());
+        await Promise.resolve();
+      });
+    });
+
+    it('supports a synchronous changeAction', async () => {
+      const user = userEvent.setup();
+      const changeAction = vi.fn((_page: number) => {});
+      const onChange = vi.fn();
+      render(
+        <Pagination
+          page={2}
+          onChange={onChange}
+          changeAction={changeAction}
+          totalPages={5}
+        />,
+      );
+      await user.click(
+        screen.getByRole('button', {name: 'Go to previous page'}),
+      );
+      expect(onChange).toHaveBeenCalledWith(1);
+      expect(changeAction).toHaveBeenCalledWith(1);
+    });
+
+    it('does not fire changeAction when disabled', async () => {
+      const user = userEvent.setup();
+      const changeAction = vi.fn();
+      render(
+        <Pagination
+          page={1}
+          onChange={() => {}}
+          changeAction={changeAction}
+          totalPages={5}
+          isDisabled
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Go to next page'}));
+      expect(changeAction).not.toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Boundary states
   // ---------------------------------------------------------------------------
 
@@ -459,12 +593,7 @@ describe('Pagination', () => {
   describe('disabled state', () => {
     it('disables all page buttons when isDisabled', () => {
       render(
-        <Pagination
-          page={3}
-          onChange={() => {}}
-          totalPages={5}
-          isDisabled
-        />,
+        <Pagination page={3} onChange={() => {}} totalPages={5} isDisabled />,
       );
       expect(
         screen.getByRole('button', {name: 'Go to previous page'}),
@@ -480,12 +609,7 @@ describe('Pagination', () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       render(
-        <Pagination
-          page={3}
-          onChange={onChange}
-          totalPages={5}
-          isDisabled
-        />,
+        <Pagination page={3} onChange={onChange} totalPages={5} isDisabled />,
       );
       // Disabled buttons can't be clicked
       await user.click(screen.getByRole('button', {name: 'Go to page 1'}));

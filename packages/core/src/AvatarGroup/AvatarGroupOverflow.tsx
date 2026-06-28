@@ -132,6 +132,7 @@ export function AvatarGroupOverflow({
   xstyle,
   className,
   style,
+  ...rest
 }: AvatarGroupOverflowProps): ReactNode {
   const group = useAvatarGroup();
   const numericSize = group?.numericSize ?? 36;
@@ -147,6 +148,7 @@ export function AvatarGroupOverflow({
         type="button"
         onClick={onClick}
         aria-label={label}
+        {...rest}
         {...mergeProps(
           themeProps('avatar-group-overflow'),
           stylex.props(
@@ -170,6 +172,7 @@ export function AvatarGroupOverflow({
     <span
       ref={ref}
       aria-label={label}
+      {...rest}
       {...mergeProps(
         themeProps('avatar-group-overflow'),
         stylex.props(

@@ -132,7 +132,7 @@ export function registerGapReport(program) {
     .action(async () => {
       p.intro('Gap report setup');
 
-      const config = loadGapReportConfig();
+      const config = await loadGapReportConfig();
       const currentMode = !config.enabled
         ? 'disabled'
         : config.command
@@ -252,9 +252,14 @@ export function registerGapReport(program) {
         return;
       }
 
-      const config = loadGapReportConfig();
+      const config = await loadGapReportConfig();
       if (!config.enabled) {
-        if (json) return jsonError('Gap reporting is disabled', undefined, ERROR_CODES.ERR_GAP_REPORT_FAILED);
+        if (json)
+          return jsonError(
+            'Gap reporting is disabled',
+            undefined,
+            ERROR_CODES.ERR_GAP_REPORT_FAILED,
+          );
         humanLog(
           `Gap reporting is disabled (ASTRYX_GAP_REPORT=off or astryx.config.mjs).\n` +
             `Run \`${getRunPrefix()} astryx gap-report setup\` to configure.`,
@@ -295,7 +300,7 @@ export function registerGapReport(program) {
           return;
         }
 
-        const preview = buildGapReportPreview({
+        const preview = await buildGapReportPreview({
           component: options.component,
           category: options.category,
           intention: options.reason,
@@ -326,7 +331,7 @@ export function registerGapReport(program) {
         }
 
         try {
-          const url = createGapReport({
+          const url = await createGapReport({
             component: options.component,
             category: options.category,
             intention: options.reason,
@@ -343,7 +348,9 @@ export function registerGapReport(program) {
             humanLog('\nGap reporting is disabled via configuration.\n');
           }
         } catch (err) {
-          cliError(`Filing gap report failed: ${err.message}`, {code: ERROR_CODES.ERR_GAP_REPORT_FAILED});
+          cliError(`Filing gap report failed: ${err.message}`, {
+            code: ERROR_CODES.ERR_GAP_REPORT_FAILED,
+          });
           return;
         }
         return;
@@ -386,7 +393,8 @@ export function registerGapReport(program) {
           placeholder:
             'e.g. "Need a compact variant for use in dense data tables"',
           validate: val => {
-            if (!val.trim()) return 'Please describe what you were trying to do';
+            if (!val.trim())
+              return 'Please describe what you were trying to do';
           },
         }),
       );
@@ -406,7 +414,7 @@ export function registerGapReport(program) {
         source: 'interactive',
       };
 
-      const preview = buildGapReportPreview(previewArgs);
+      const preview = await buildGapReportPreview(previewArgs);
 
       // Always show the user exactly what would be filed before sending.
       p.note(
@@ -440,7 +448,7 @@ export function registerGapReport(program) {
       s.start('Filing gap report');
 
       try {
-        const url = createGapReport(previewArgs);
+        const url = await createGapReport(previewArgs);
         s.stop(url ? 'Gap report filed' : 'Gap reporting is disabled');
         if (url) {
           p.log.success(url);

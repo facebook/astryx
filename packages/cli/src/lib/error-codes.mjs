@@ -75,6 +75,8 @@
  *   | 'ERR_DEP_MISSING'
  *   | 'ERR_GH_CLI'
  *   | 'ERR_GAP_REPORT_FAILED'
+ *   | 'ERR_LAYOUT_PARSE'
+ *   | 'ERR_LAYOUT_INVALID'
  * )} ErrorCode
  */
 
@@ -180,6 +182,12 @@ export const ERROR_CODES = Object.freeze({
   ERR_GH_CLI: 'ERR_GH_CLI',
   /** Filing a gap report failed at the command/integration boundary. */
   ERR_GAP_REPORT_FAILED: 'ERR_GAP_REPORT_FAILED',
+
+  // ── Layout expressions (XLE/XLO) ─────────────────────────────────
+  /** A layout expression failed to parse (syntax error, with line/col). */
+  ERR_LAYOUT_PARSE: 'ERR_LAYOUT_PARSE',
+  /** A layout expression parsed but failed validation (unknown component/prop/enum/block). */
+  ERR_LAYOUT_INVALID: 'ERR_LAYOUT_INVALID',
 });
 
 /**

@@ -261,6 +261,20 @@ export interface HeaderCellRenderProps {
   overlay?: ReactNode;
   /** Content rendered below the header label row (e.g. inline filter controls). */
   below?: ReactNode;
+  /**
+   * Index of this column within the final, ordered list of rendered columns
+   * (after column injection/reordering by other plugins). Populated by
+   * BaseTable. Optional for backward compatibility with hand-constructed
+   * renders in tests.
+   */
+  columnIndex?: number;
+  /**
+   * The full, final ordered list of columns being rendered (after column
+   * injection/reordering by other plugins). Populated by BaseTable so plugins
+   * can reason about column position — e.g. cumulative sticky offsets. Optional
+   * for backward compatibility.
+   */
+  columns?: ReadonlyArray<TableColumn<Record<string, unknown>>>;
 }
 
 /** Props passed through the plugin pipeline for each body `<tr>` */
@@ -276,6 +290,49 @@ export interface BodyRowRenderProps {
 export interface BodyCellRenderProps {
   htmlProps: TdHTMLAttributes<HTMLTableCellElement>;
   styles: StyleXStyles[];
+  /**
+   * Index of this cell's column within the final ordered column list.
+   * Mirrors the `columnIndex` passed to `transformHeaderCell`. Populated by
+   * BaseTable. Optional for backward compatibility with hand-constructed
+   * renders in tests.
+   */
+  columnIndex?: number;
+  /**
+   * The full, final ordered list of columns being rendered. Populated by
+   * BaseTable so plugins can reason about column position — e.g. cumulative
+   * sticky offsets. Optional for backward compatibility.
+   */
+  columns?: ReadonlyArray<TableColumn<Record<string, unknown>>>;
+}
+
+/**
+ * Props passed through the plugin pipeline for the scroll-wrapper region — the
+ * `<div>` wrapping the `<table>` element (the horizontal scroll container, see
+ * the `scrollWrapper` prop on `BaseTableProps`). Lets plugins attach a `ref` to
+ * the scrollable element (e.g. for scroll-aware sticky-column shadows or
+ * virtualization) and inject chrome before/after the table.
+ *
+ * Named after `scrollWrapper` (not "layout") to avoid ambiguity: it transforms
+ * the wrapper element, not the internal header/body/footer layout of `<table>`.
+ *
+ * Runs after `transformTable`/cell transforms but inside `transformTableContext`,
+ * so plugin chrome added here stays within any context providers but wraps the
+ * scroll area.
+ */
+export interface ScrollWrapperRenderProps {
+  /**
+   * HTML attributes applied to the scroll container `<div>`, including an
+   * optional `ref`. Plugins compose refs by reading the existing `ref` and
+   * merging their own (see `useTableStickyColumns`).
+   */
+  htmlProps: HTMLAttributes<HTMLDivElement> & {
+    ref?: Ref<HTMLDivElement>;
+  };
+  styles: StyleXStyles[];
+  /** Content rendered before the `<table>`, inside the scroll container. */
+  beforeTable?: ReactNode;
+  /** Content rendered after the `<table>`, inside the scroll container. */
+  afterTable?: ReactNode;
 }
 
 // =============================================================================
@@ -294,7 +351,8 @@ export interface BodyCellRenderProps {
  * 4. `transformHeaderCell` — transform each `<th>` props
  * 5. `transformBodyRow` — transform each body `<tr>` props
  * 6. `transformBodyCell` — transform each body `<td>` props
- * 7. `transformTableContext` — wrap the table output in context providers
+ * 7. `transformScrollWrapper` — transform the scroll-container wrapper around the table
+ * 8. `transformTableContext` — wrap the table output in context providers
  */
 export interface TablePlugin<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -309,10 +367,17 @@ export interface TablePlugin<
   transformTable?: (props: TableRenderProps) => TableRenderProps;
   /** Transform the header `<tr>` props */
   transformHeaderRow?: (props: HeaderRowRenderProps) => HeaderRowRenderProps;
-  /** Transform each `<th>` props */
+  /**
+   * Transform each `<th>` props.
+   *
+   * `columnIndex` and the full `columns` list are provided for plugins that
+   * need to reason about column position (e.g. cumulative sticky offsets).
+   */
   transformHeaderCell?: (
     props: HeaderCellRenderProps,
     column: TableColumn<T>,
+    columnIndex: number,
+    columns: ReadonlyArray<TableColumn<T>>,
   ) => HeaderCellRenderProps;
   /** Transform each body `<tr>` props */
   transformBodyRow?: (
@@ -320,12 +385,28 @@ export interface TablePlugin<
     item: T,
     index: number,
   ) => BodyRowRenderProps;
-  /** Transform each body `<td>` props */
+  /**
+   * Transform each body `<td>` props.
+   *
+   * `columnIndex` and the full `columns` list are provided for plugins that
+   * need to reason about column position (e.g. cumulative sticky offsets).
+   */
   transformBodyCell?: (
     props: BodyCellRenderProps,
     column: TableColumn<T>,
     item: T,
+    columnIndex: number,
+    columns: ReadonlyArray<TableColumn<T>>,
   ) => BodyCellRenderProps;
+  /**
+   * Transform the scroll-wrapper region — the `<div>` wrapping the `<table>`
+   * (see the `scrollWrapper` prop). Use to attach a `ref` to the scrollable
+   * element (scroll-aware shadows, virtualization) or to inject chrome
+   * before/after the table.
+   */
+  transformScrollWrapper?: (
+    props: ScrollWrapperRenderProps,
+  ) => ScrollWrapperRenderProps;
   /** Wrap the table output in context providers */
   transformTableContext?: (children: ReactNode) => ReactNode;
 }
@@ -390,8 +471,19 @@ export interface BaseTableProps<
    * plugin `transformTableContext` layer. Used by `Table` to add a
    * horizontal scroll container so plugin chrome (pagination, toolbars)
    * stays outside the scrollable area.
+   *
+   * Receives `htmlProps` (including an optional `ref`) and `styles` produced
+   * by the plugin `transformScrollWrapper` pipeline, plus `beforeTable`/`afterTable`
+   * chrome. The wrapper must spread `htmlProps` (and apply `styles`) onto its
+   * scroll-container element so plugins can attach refs / scroll listeners.
    */
-  scrollWrapper?: ComponentType<{children: ReactNode}>;
+  scrollWrapper?: ComponentType<{
+    children: ReactNode;
+    htmlProps?: HTMLAttributes<HTMLDivElement> & {ref?: Ref<HTMLDivElement>};
+    styles?: StyleXStyles[];
+    beforeTable?: ReactNode;
+    afterTable?: ReactNode;
+  }>;
   /**
    * How default-rendered body cell text behaves when it exceeds column width.
    *

@@ -76,11 +76,22 @@ describe('Banner', () => {
     expect(screen.getByText('This is a description')).toBeInTheDocument();
   });
 
+  it('renders title and description as <div> (never <p>) for composition safety', () => {
+    const {container} = render(
+      <Banner status="info" title="Title" description="Description" />,
+    );
+    // Block content can be nested inside Banner text slots without tripping
+    // the phrasing-content trap that <p> imposes, so neither slot is a <p>.
+    expect(container.querySelector('p')).toBeNull();
+    expect(screen.getByText('Title').tagName).toBe('DIV');
+    expect(screen.getByText('Description').tagName).toBe('DIV');
+  });
+
   it('does not render description when not provided', () => {
-    const {container} = render(<Banner status="info" title="Title Only" />);
-    // Only one <p> for the title, no description
-    const paragraphs = container.querySelectorAll('p');
-    expect(paragraphs).toHaveLength(1);
+    render(<Banner status="info" title="Title Only" />);
+    // Title renders; no description text is present.
+    expect(screen.getByText('Title Only')).toBeInTheDocument();
+    expect(screen.queryByText('This is a description')).not.toBeInTheDocument();
   });
 
   it('renders dismiss button when isDismissable', () => {
@@ -158,9 +169,7 @@ describe('Banner', () => {
   });
 
   it('renders card container by default', () => {
-    const {container} = render(
-      <Banner status="info" title="Card Container" />,
-    );
+    const {container} = render(<Banner status="info" title="Card Container" />);
     const root = container.firstElementChild;
     expect(root).toBeInTheDocument();
   });

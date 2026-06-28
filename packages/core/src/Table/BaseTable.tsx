@@ -26,6 +26,7 @@ import type {
   HeaderCellRenderProps,
   BodyRowRenderProps,
   BodyCellRenderProps,
+  ScrollWrapperRenderProps,
   TableRowComponentProps,
   TableCellComponentProps,
   TableHeaderCellComponentProps,
@@ -152,22 +153,27 @@ function TableRowInner<T extends Record<string, unknown>>({
   CellComponent,
 }: TableRowProps<T>): ReactElement {
   // Build cells first
-  const cells = columns.map(col => {
+  const cells = columns.map((col, columnIndex) => {
     // Apply column alignment to body cells
     const initialCellHtmlProps: Record<string, unknown> = {};
     if (col.align) {
       initialCellHtmlProps.style = {textAlign: col.align};
     }
 
+    const initialBodyCellRenderProps: BodyCellRenderProps = {
+      htmlProps: initialCellHtmlProps,
+      styles: [],
+      columnIndex,
+      columns: columns as ReadonlyArray<TableColumn<Record<string, unknown>>>,
+    };
     const cellRenderProps = applyPlugins(
       plugins,
       p => p.transformBodyCell,
-      {
-        htmlProps: initialCellHtmlProps,
-        styles: [],
-      } satisfies BodyCellRenderProps,
+      initialBodyCellRenderProps,
       col,
       item,
+      columnIndex,
+      columns,
     );
 
     const isDefaultRenderer = !col.renderCell;
@@ -313,8 +319,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
   // Use stable empty array when no plugins provided
   const plugins = pluginsProp ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
 
-  const RowComponent =
-    TableRow as React.ComponentType<TableRowComponentProps>;
+  const RowComponent = TableRow as React.ComponentType<TableRowComponentProps>;
   const CellComponent =
     TableCell as React.ComponentType<TableCellComponentProps>;
   const HeaderCellComponent =
@@ -354,7 +359,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
   } satisfies TableRenderProps);
 
   // --- Plugin pipeline: header cells ---
-  const headerCells = resolvedColumns.map(col => {
+  const headerCells = resolvedColumns.map((col, columnIndex) => {
     const headerContent = col.header ?? col.key;
 
     // Build initial htmlProps with column alignment if specified
@@ -365,15 +370,22 @@ function BaseTableInner<T extends Record<string, unknown>>({
       initialHeaderHtmlProps.style = {textAlign: col.align};
     }
 
+    const initialHeaderRenderProps: HeaderCellRenderProps = {
+      htmlProps: initialHeaderHtmlProps,
+      styles: [],
+      content: headerContent,
+      columnIndex,
+      columns: resolvedColumns as ReadonlyArray<
+        TableColumn<Record<string, unknown>>
+      >,
+    };
     const cellRenderProps = applyPlugins(
       plugins,
       p => p.transformHeaderCell,
-      {
-        htmlProps: initialHeaderHtmlProps,
-        styles: [],
-        content: headerContent,
-      } satisfies HeaderCellRenderProps,
+      initialHeaderRenderProps,
       col,
+      columnIndex,
+      resolvedColumns,
     );
 
     // Apply pre-computed column width styles on the <th>.
@@ -497,9 +509,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
                 emptyState !== false && (
                   <tr>
                     <td colSpan={resolvedColumns.length}>
-                      {emptyState ?? (
-                        <EmptyState title="No data" isCompact />
-                      )}
+                      {emptyState ?? <EmptyState title="No data" isCompact />}
                     </td>
                   </tr>
                 )}
@@ -513,8 +523,29 @@ function BaseTableInner<T extends Record<string, unknown>>({
   // when columns exceed the container width. This wrapper sits between
   // the <table> and transformTableContext, so plugin chrome (pagination,
   // toolbars) renders outside the scroll area.
+  //
+  // Before rendering the wrapper, run the plugin `transformScrollWrapper`
+  // pipeline so plugins can attach a ref to the scroll container (scroll-aware
+  // sticky shadows, virtualization) and inject before/after chrome.
   if (ScrollWrapper) {
-    tableElement = <ScrollWrapper>{tableElement}</ScrollWrapper>;
+    const scrollWrapperRenderProps = applyPlugins(
+      plugins,
+      p => p.transformScrollWrapper,
+      {
+        htmlProps: {},
+        styles: [],
+      } satisfies ScrollWrapperRenderProps,
+    );
+
+    tableElement = (
+      <ScrollWrapper
+        htmlProps={scrollWrapperRenderProps.htmlProps}
+        styles={scrollWrapperRenderProps.styles}
+        beforeTable={scrollWrapperRenderProps.beforeTable}
+        afterTable={scrollWrapperRenderProps.afterTable}>
+        {tableElement}
+      </ScrollWrapper>
+    );
   }
 
   // Apply transformTableContext from each plugin.
@@ -527,10 +558,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
       try {
         tableElement = plugin.transformTableContext(tableElement);
       } catch (error) {
-        console.error(
-          '[Table] Plugin threw in transformTableContext:',
-          error,
-        );
+        console.error('[Table] Plugin threw in transformTableContext:', error);
       }
     }
   }
@@ -556,9 +584,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
  * />
  * ```
  */
-export const BaseTable = BaseTableInner as <
-  T extends Record<string, unknown>,
->(
+export const BaseTable = BaseTableInner as <T extends Record<string, unknown>>(
   props: BaseTableProps<T> & {ref?: Ref<HTMLTableElement>},
 ) => ReactElement;
 

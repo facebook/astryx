@@ -79,6 +79,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isInterruptible',
+      type: 'boolean',
+      description: 'Keep the button clickable while a clickAction is pending: the spinner and aria-busy still show, but the button is not disabled and the action is not deduped, so a re-click lands and interrupts the in-flight action with a fresh one.',
+      default: 'false',
+    },
+    {
       name: 'isDisabled',
       type: 'boolean',
       description: 'Disables the button. When a tooltip is present, uses aria-disabled instead of native disabled so the button stays focusable.',

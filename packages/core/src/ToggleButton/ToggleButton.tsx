@@ -20,14 +20,7 @@
  * - /packages/cli/templates/blocks/components/ToggleButton/ (showcase blocks)
  */
 
-import React, {
-  useCallback,
-  useEffect,
-  useOptimistic,
-  useState,
-  useTransition,
-  type ReactNode,
-} from 'react';
+import React, {useOptimistic, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, fontWeightVars} from '../theme/tokens.stylex';
 
@@ -35,37 +28,6 @@ import {Button, type ButtonSize} from '../Button';
 import {useToggleButtonGroup} from './ToggleButtonGroup';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-
-// =============================================================================
-// Constants & helpers
-// =============================================================================
-
-/**
- * The spinner only appears once the action has been pending for this long.
- * A fast action shows the optimistic pressed state immediately with no spinner
- * flash, and rapid re-clicks can interrupt the in-flight action before the
- * button locks behind the spinner.
- */
-const PENDING_SPINNER_DELAY_MS = 150;
-
-/**
- * Returns `true` only once `active` has stayed `true` for `delayMs`.
- * Used to debounce the loading spinner so the optimistic state shows first.
- */
-function useDelayed(active: boolean, delayMs: number): boolean {
-  const [delayed, setDelayed] = useState(false);
-  useEffect(() => {
-    if (!active) {
-      return undefined;
-    }
-    const timer = setTimeout(() => setDelayed(true), delayMs);
-    return () => {
-      clearTimeout(timer);
-      setDelayed(false);
-    };
-  }, [active, delayMs]);
-  return active && delayed;
-}
 
 // =============================================================================
 // Styles
@@ -122,22 +84,23 @@ export interface ToggleButtonProps extends BaseProps<HTMLButtonElement> {
   isPressed?: boolean;
 
   /**
-   * Called when the pressed state should change.
+   * Called when the pressed state should change. Receives the next pressed
+   * state and the originating click event. Call `event.preventDefault()` to
+   * opt out of running `pressedChangeAction` (e.g. to handle the toggle
+   * entirely in this callback).
    * When used inside ToggleButtonGroup, this is handled by the group
    * and this prop is ignored.
    */
-  onPressedChange?: (isPressed: boolean) => void;
+  onPressedChange?: (
+    isPressed: boolean,
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => void;
 
   /**
    * Action handler for API- or navigation-backed toggles, run inside a
-   * transition. The button shows a loading spinner while the action is
-   * pending — whether it returns a promise or synchronously triggers a
+   * transition by Button. The button shows a loading spinner while the action
+   * is pending — whether it returns a promise or synchronously triggers a
    * suspending update (e.g. a router navigation that suspends on data).
-   *
-   * Because it runs in a transition, the toggle is *interruptible*: clicking
-   * again while an action is pending starts a new transition with the next
-   * optimistic state, so the action reflects the latest intent rather than
-   * being dropped.
    *
    * @example
    * ```
@@ -272,54 +235,52 @@ export function ToggleButton({
   const size = sizeProp ?? group?.size ?? 'md';
   const isDisabled = group?.isDisabled ?? isDisabledProp;
 
-  // Track the pressed state optimistically. While an action is pending, the
-  // button reflects the intended (optimistic) state immediately, and a click
-  // mid-flight derives its next state from this value — so rapid toggles read
-  // true -> false -> true rather than stalling on the last committed value.
+  // Track the pressed state optimistically so the button reflects the intended
+  // state immediately while an async action is pending. The optimistic update
+  // is applied inside Button's clickAction transition (below), satisfying
+  // React's "useOptimistic must run in a transition" rule.
   const [optimisticPressed, setOptimisticPressed] =
     useOptimistic(committedPressed);
   const isPressed = optimisticPressed;
 
+  // Next state derives from the *optimistic* value, not the committed one, so a
+  // re-click while an action is pending reads the in-flight intent and toggles
+  // (true -> false -> true) rather than recomputing from the stale committed
+  // state. handleClick and clickAction share this so the callback and the
+  // optimistic update always agree within a single click.
+  const nextPressed = !isPressed;
+
   const resolvedIcon = isPressed && pressedIcon ? pressedIcon : icon;
 
-  // Run the toggle inside a transition. The action is interruptible: clicking
-  // again while it is pending starts a fresh transition with the next
-  // optimistic state instead of being dropped, so there is no re-entry guard.
-  // Both onPressedChange and pressedChangeAction run inside the transition,
-  // which means a synchronous-but-suspending handler (e.g. a router navigation
-  // that suspends on data) also drives the pending state — not just promises.
-  const [isPending, startTransition] = useTransition();
-  // Debounce the spinner so a fast action shows the optimistic state without a
-  // spinner flash, and rapid re-clicks can interrupt before the button locks.
-  const showSpinner = useDelayed(isPending, PENDING_SPINNER_DELAY_MS);
-  const isLoadingState = isLoading || showSpinner;
-
-  const handleClick = useCallback(() => {
+  // Synchronous part of the toggle. Button calls onClick before clickAction and
+  // skips clickAction when the event is defaultPrevented, so calling
+  // preventDefault() inside onPressedChange opts out of pressedChangeAction.
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     if (isDisabled) {
       return;
     }
-
     if (group && value != null) {
       // Group mode delegates selection to the group; no async-action path.
       group.toggle(value);
+      event.preventDefault();
       return;
     }
+    onPressedChangeProp?.(nextPressed, event);
+  };
 
-    const newState = !optimisticPressed;
-    startTransition(async () => {
-      setOptimisticPressed(newState);
-      onPressedChangeProp?.(newState);
-      await pressedChangeAction?.(newState);
-    });
-  }, [
-    isDisabled,
-    group,
-    value,
-    optimisticPressed,
-    onPressedChangeProp,
-    pressedChangeAction,
-    setOptimisticPressed,
-  ]);
+  // Async part of the toggle, run inside Button's transition (so the optimistic
+  // update is valid and Button's isPending drives the pending spinner). Skipped
+  // automatically by Button when handleClick called preventDefault, and never
+  // wired in group mode (where there is no async action). Button is rendered
+  // interruptible, so it stays clickable while pending and a re-click starts a
+  // fresh transition that interrupts the previous one.
+  const clickAction =
+    group && value != null
+      ? undefined
+      : async () => {
+          setOptimisticPressed(nextPressed);
+          await pressedChangeAction?.(nextPressed);
+        };
 
   // isIconOnly prop is the source of truth for icon-only rendering.
   const labelContent =
@@ -352,7 +313,8 @@ export function ToggleButton({
       variant="ghost"
       size={size}
       isDisabled={isDisabled}
-      isLoading={isLoadingState}
+      isLoading={isLoading}
+      isInterruptible
       isIconOnly={isIconOnly}
       aria-pressed={isPressed}
       icon={resolvedIcon}
@@ -363,6 +325,7 @@ export function ToggleButton({
       xstyle={[isPressed ? pressedStyles.background : undefined, xstyle]}
       style={style}
       onClick={handleClick}
+      clickAction={clickAction}
       {...props}>
       {labelContent}
     </Button>

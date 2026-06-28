@@ -24,9 +24,7 @@ describe('Slider', () => {
   });
 
   it('range thumbs have correct aria-labels', () => {
-    render(
-      <Slider label="Price range" value={[20, 80] as [number, number]} />,
-    );
+    render(<Slider label="Price range" value={[20, 80] as [number, number]} />);
     const sliders = screen.getAllByRole('slider');
     expect(sliders[0]).toHaveAttribute(
       'aria-label',
@@ -172,12 +170,7 @@ describe('Slider', () => {
   it('does not fire onChange on keyboard when disabled', () => {
     const handleChange = vi.fn();
     render(
-      <Slider
-        label="Volume"
-        value={50}
-        onChange={handleChange}
-        isDisabled
-      />,
+      <Slider label="Volume" value={50} onChange={handleChange} isDisabled />,
     );
     const slider = screen.getByRole('slider');
     fireEvent.keyDown(slider, {key: 'ArrowRight'});
@@ -297,13 +290,7 @@ describe('Slider', () => {
 
   it('focuses closest thumb on track click', () => {
     render(
-      <Slider
-        label="Volume"
-        value={50}
-        min={0}
-        max={100}
-        onChange={vi.fn()}
-      />,
+      <Slider label="Volume" value={50} min={0} max={100} onChange={vi.fn()} />,
     );
     const slider = screen.getByRole('slider');
     const trackContainer = slider.parentElement!;

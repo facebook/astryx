@@ -68,6 +68,7 @@ import {
   Maximize2,
   RotateCw,
   Crosshair,
+  Wand2,
 } from 'lucide-react';
 import githubLight from './codeEditorThemes/github-light.json';
 import githubDark from './codeEditorThemes/github-dark.json';
@@ -81,6 +82,7 @@ import {templates} from '../../generated/templateRegistry';
 import {PreviewStage, type Viewport} from './PreviewStage';
 import {ConfirmDialog} from './ConfirmDialog';
 import {AstryxIcon} from '../../components/logos';
+import {XLEPanel} from './XLEPanel';
 import {annotateInstanceIds} from './propertyEditor/componentInstances';
 import {trackCopy} from '../../lib/analytics';
 import {ThemeEditor} from './themeEditor/ThemeEditor';
@@ -132,7 +134,7 @@ function updateURL(code: string) {
   window.history.replaceState(null, '', `#code=${compressed}`);
 }
 
-type LeftView = 'code' | 'theme';
+type LeftView = 'code' | 'theme' | 'layout';
 type MobileTopTab = 'preview' | 'code' | 'theme';
 type BuildStatus = 'idle' | 'building' | 'finished' | 'error';
 const MOBILE_BREAKPOINT_QUERY = '(max-width: 768px)';
@@ -762,6 +764,15 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
             setMobileTab('theme');
           }}
         />
+        <SideNavItem
+          label="Layout DSL"
+          icon={Wand2}
+          isSelected={activeView === 'layout'}
+          onClick={() => {
+            setActiveView('layout');
+            setMobileTab('code');
+          }}
+        />
       </SideNavSection>
     </SideNav>
   );
@@ -836,6 +847,9 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
                 initialTheme={editorInitialTheme}
                 onThemeChange={postCustomTheme}
               />
+            </VStack>
+            <VStack xstyle={[s.pane, activeView !== 'layout' && s.hidden]}>
+              <XLEPanel onApplyCode={setCode} />
             </VStack>
           </VStack>
         </VStack>

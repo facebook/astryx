@@ -53,6 +53,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^2.1.0
         version: 2.1.9(vitest@2.1.9(@types/node@25.9.3)(jiti@2.7.0)(jsdom@27.4.0)(lightningcss@1.32.0)(tsx@4.22.4))
+      esbuild:
+        specifier: '>=0.28.1'
+        version: 0.28.1
       eslint:
         specifier: ^10.5.0
         version: 10.5.0(jiti@2.7.0)
@@ -186,6 +189,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.0
         version: 10.5.0(postcss@8.5.15)
+      gpt-tokenizer:
+        specifier: ^2.0.0
+        version: 2.9.0
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -715,6 +721,9 @@ importers:
       jscodeshift:
         specifier: ^17.3.0
         version: 17.3.0
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@astryxdesign/core':
         specifier: '*'
@@ -725,6 +734,9 @@ importers:
       '@astryxdesign/theme-neutral':
         specifier: '*'
         version: link:../themes/neutral
+      gpt-tokenizer:
+        specifier: ^2.0.0
+        version: 2.9.0
 
   packages/core:
     dependencies:
@@ -4362,6 +4374,9 @@ packages:
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
+
+  gpt-tokenizer@2.9.0:
+    resolution: {integrity: sha512-YSpexBL/k4bfliAzMrRqn3M6+it02LutVyhVpDeMKrC/O9+pCe/5s8U2hYKa2vFLD5/vHhsKc8sOn/qGqII8Kg==}
 
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
@@ -9618,6 +9633,8 @@ snapshots:
       slash: 3.0.0
 
   gopd@1.2.0: {}
+
+  gpt-tokenizer@2.9.0: {}
 
   graceful-fs@4.2.11: {}
 

@@ -44,6 +44,11 @@ const styles = stylex.create({
     position: 'relative',
     width: '100%',
     zIndex: 1,
+    marginInline: 'auto',
+    maxWidth: {
+      default: 'calc(100% - var(--spacing-8))',
+      '@media (min-width: 960px)': '100%',
+    },
     // Locally retint the `muted` surface to the page body color so this CTA
     // card blends into the body (reads as a content group shaped by padding +
     // corners, not a colored surface). Scoped to this card only — overriding
@@ -65,20 +70,18 @@ const styles = stylex.create({
       '@media (min-width: 768px)': `calc(${spacingVars['--spacing-10']} * 2)`,
     },
   },
-  // Each floating image is positioned absolutely against the stage,
-  // anchored to one of the four card corners (slightly outside them).
-  // The transform is animated from a centered "clumped" pose to the
-  // resting pose with rotation when the section scrolls into view.
-  //
-  // width: 260 is a literal preview card size — these are decorative
-  // marketing thumbnails tuned for the desktop composition, not a
-  // size scale value. The 960px desktop-on breakpoint is a one-off
-  // marketing cutoff (the spread-out poses overflow tighter
-  // viewports awkwardly), not the standard 1024px breakpoint used
-  // by FeaturesShowcase/AboutShowcase.
+  // Each floating image is positioned against the stage. Mobile keeps the
+  // cards visible as a small collage tucked behind the CTA card; desktop spreads
+  // them to the stage corners. width:260 is the desktop art-directed thumbnail
+  // size; mobile uses viewport clamps so the stack stays inside the rounded
+  // stage instead of forcing horizontal overflow.
   floatingImage: {
     position: 'absolute',
-    width: 260,
+    width: {
+      default: 'clamp(132px, 43vw, 188px)',
+      '@media (min-width: 768px)': 'clamp(176px, 28vw, 236px)',
+      '@media (min-width: 960px)': 260,
+    },
     height: 'auto',
     borderRadius: 'var(--radius-container)',
     boxShadow: 'var(--shadow-high)',
@@ -87,10 +90,7 @@ const styles = stylex.create({
     transitionDuration: 'var(--duration-slow-max)',
     transitionTimingFunction: 'var(--ease-standard)',
     zIndex: 2,
-    display: {
-      default: 'none',
-      '@media (min-width: 960px)': 'block',
-    },
+    display: 'block',
   },
   // Starting "clumped" pose — all four images near the center of the
   // card but with slight offsets and rotations so they fan out as an
@@ -128,23 +128,53 @@ const styles = stylex.create({
   // spacing-scale values. Negative spacing tokens don't exist in
   // the scale, so even non-bleed offsets here would be literals.
   floatTopLeftEnd: {
-    top: -64,
-    left: -64,
-    transform: 'rotate(-7deg)',
+    top: {
+      default: spacingVars['--spacing-3'],
+      '@media (min-width: 960px)': -64,
+    },
+    left: {
+      default: `calc(-1 * ${spacingVars['--spacing-8']})`,
+      '@media (min-width: 960px)': -64,
+    },
+    transform: {
+      default: 'rotate(-8deg)',
+      '@media (min-width: 960px)': 'rotate(-7deg)',
+    },
   },
   floatTopRightEnd: {
-    top: -64,
-    right: -64,
-    transform: 'rotate(7deg)',
+    top: {
+      default: spacingVars['--spacing-3'],
+      '@media (min-width: 960px)': -64,
+    },
+    right: {
+      default: `calc(-1 * ${spacingVars['--spacing-8']})`,
+      '@media (min-width: 960px)': -64,
+    },
+    transform: {
+      default: 'rotate(8deg)',
+      '@media (min-width: 960px)': 'rotate(7deg)',
+    },
   },
   floatBottomLeftEnd: {
-    bottom: -64,
-    left: -32,
+    bottom: {
+      default: spacingVars['--spacing-3'],
+      '@media (min-width: 960px)': -64,
+    },
+    left: {
+      default: `calc(-1 * ${spacingVars['--spacing-10']})`,
+      '@media (min-width: 960px)': -32,
+    },
     transform: 'rotate(6deg)',
   },
   floatBottomRightEnd: {
-    bottom: -64,
-    right: -32,
+    bottom: {
+      default: spacingVars['--spacing-3'],
+      '@media (min-width: 960px)': -64,
+    },
+    right: {
+      default: `calc(-1 * ${spacingVars['--spacing-10']})`,
+      '@media (min-width: 960px)': -32,
+    },
     transform: 'rotate(-6deg)',
   },
   // Inline wordmark glyph baked into the heading text. Sized by

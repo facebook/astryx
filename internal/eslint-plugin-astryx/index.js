@@ -8,6 +8,7 @@
  * - no-hardcoded-styles: Enforces usage of design tokens instead of hardcoded values in StyleX
  * - boolean-prop-naming: Enforces is/has prefix on boolean props in *Props interfaces
  * - docblock-example-format: Enforces @example blocks use ``` fenced code on a separate line
+ * - no-raw-paragraph: Disallows components from rendering a <p> by default (render <div> so any content composes)
  *
  * Philosophy: Strict for agents (CI), lenient for humans (local dev)
  * - "strict" config: All rules as errors - use in CI/agent environments
@@ -21,6 +22,7 @@ import noStylexNullOverrideRule from './no-stylex-null-override.js';
 import noReactIntrospectionRule from './no-react-introspection.js';
 import noClassnameClobberRule from './no-classname-clobber.js';
 import noHardcodedAnchorRule from './no-hardcoded-anchor.js';
+import noRawParagraphRule from './no-raw-paragraph.js';
 import noBorderShorthandRule from './no-border-shorthand.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
 import copyrightHeaderRule from './copyright-header.js';
@@ -234,6 +236,7 @@ const plugin = {
     'no-react-introspection': noReactIntrospectionRule,
     'no-classname-clobber': noClassnameClobberRule,
     'no-hardcoded-anchor': noHardcodedAnchorRule,
+    'no-raw-paragraph': noRawParagraphRule,
     'no-border-shorthand': noBorderShorthandRule,
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
     'require-base-props': requireBasePropsRule,
@@ -258,6 +261,7 @@ plugin.configs.strict = {
     '@astryx/no-react-introspection': 'error',
     '@astryx/no-classname-clobber': 'error',
     '@astryx/no-hardcoded-anchor': 'error',
+    '@astryx/no-raw-paragraph': 'error',
     '@astryx/no-border-shorthand': 'error',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'error',
@@ -280,6 +284,7 @@ plugin.configs.recommended = {
     '@astryx/no-react-introspection': 'error',
     '@astryx/no-classname-clobber': 'error',
     '@astryx/no-hardcoded-anchor': 'warn',
+    '@astryx/no-raw-paragraph': 'warn',
     '@astryx/no-border-shorthand': 'warn',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'warn',

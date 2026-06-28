@@ -30,6 +30,7 @@ import type {
   TablePlugin,
   TableRenderProps,
 } from './types';
+import type {StyleXStyles} from '../theme/types';
 
 // =============================================================================
 // Table Types
@@ -131,17 +132,37 @@ const scrollWrapperStyles = stylex.create({
   },
 });
 
-function TableScrollWrapper({children}: {children: React.ReactNode}) {
+function TableScrollWrapper({
+  children,
+  htmlProps,
+  styles: pluginStyles,
+  beforeTable,
+  afterTable,
+}: {
+  children: React.ReactNode;
+  htmlProps?: React.HTMLAttributes<HTMLDivElement> & {
+    ref?: React.Ref<HTMLDivElement>;
+  };
+  styles?: StyleXStyles[];
+  beforeTable?: React.ReactNode;
+  afterTable?: React.ReactNode;
+}) {
+  const {ref, ...restHtmlProps} = htmlProps ?? {};
   return (
     <div
+      ref={ref}
+      {...restHtmlProps}
       {...mergeProps(
         themeProps('table-scroll-wrapper'),
         stylex.props(
           scrollWrapperStyles.base,
           scrollWrapperStyles.containerBleed,
+          ...(pluginStyles ?? []),
         ),
       )}>
+      {beforeTable}
       {children}
+      {afterTable}
     </div>
   );
 }

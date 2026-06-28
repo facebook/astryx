@@ -15,7 +15,7 @@
  * - /apps/storybook/stories/Button.stories.tsx (storybook stories)
  * - /packages/cli/templates/blocks/components/Button/ (showcase blocks)
  *
- * Last synced props: label, variant, size, isDisabled, isLoading, clickAction, icon, isIconOnly, children, tooltip, endContent, href, as, target, rel
+ * Last synced props: label, variant, size, isDisabled, isLoading, isInterruptible, clickAction, icon, isIconOnly, children, tooltip, endContent, href, as, target, rel
  */
 
 import {useRef, useTransition, type ReactNode} from 'react';
@@ -321,6 +321,16 @@ export interface ButtonProps extends BaseProps<HTMLButtonElement> {
    */
   isLoading?: boolean;
   /**
+   * Keep the button interactive while a `clickAction` is pending. The loading
+   * state still renders the spinner and `aria-busy`, but the button is not
+   * disabled and the in-flight action is not deduped — so a re-click lands and
+   * interrupts the previous action with a fresh one. Use for interruptible
+   * actions (e.g. a toggle whose action can be re-triggered before the previous
+   * one settles), not fire-once actions (submit/save/pay).
+   * @default false
+   */
+  isInterruptible?: boolean;
+  /**
    * Click handler. For async actions that should show a loading state,
    * use `clickAction` instead.
    */
@@ -380,12 +390,39 @@ export interface ButtonProps extends BaseProps<HTMLButtonElement> {
   rel?: string;
 }
 
+const spinnerReveal = stylex.keyframes({
+  from: {opacity: 0},
+  to: {opacity: 1},
+});
+
+const contentHide = stylex.keyframes({
+  from: {color: 'inherit'},
+  to: {color: 'transparent'},
+});
+
+// Hold the loading swap for a short delay so a fast action (e.g. clickAction)
+// that settles within the delay never flashes a spinner. The spinner fade-in
+// and the content hide share the same delay so the button never shows an empty
+// frame in between. Reduced motion is instant.
+const SPINNER_DELAY = durationVars['--duration-medium-min'];
+
 const loadingStyles = stylex.create({
   // Hide the button's own content while the spinner overlay is shown. Applied
   // to the content wrapper (not the button) so the button keeps its variant
   // foreground color, which the spinner inherits via shade="inherit" (#2717).
   hiddenContent: {
     color: 'transparent',
+  },
+  // Delayed variant: keep content visible, then hide it in lockstep with the
+  // spinner reveal once the delay elapses.
+  hiddenContentDelayed: {
+    animationName: contentHide,
+    animationDuration: '1ms',
+    animationFillMode: 'forwards',
+    animationDelay: {
+      default: SPINNER_DELAY,
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
   },
   spinnerOverlay: {
     position: 'absolute',
@@ -395,6 +432,15 @@ const loadingStyles = stylex.create({
     bottom: 0,
     display: 'grid',
     placeItems: 'center',
+  },
+  spinnerDelayed: {
+    animationName: spinnerReveal,
+    animationDuration: durationVars['--duration-fast'],
+    animationFillMode: 'backwards',
+    animationDelay: {
+      default: SPINNER_DELAY,
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
   },
 });
 
@@ -493,6 +539,7 @@ export function Button({
   type = 'button',
   isDisabled = false,
   isLoading = false,
+  isInterruptible = false,
   clickAction,
   icon,
   isIconOnly = false,
@@ -513,10 +560,23 @@ export function Button({
   const buttonGroup = useButtonGroup();
 
   const [isPending, startTransition] = useTransition();
+  // clickAction is normally fire-once (submit/save/pay), so a same-tick
+  // double-click must dedupe — which neither isPending nor useOptimistic do.
+  // Hence the ref guard. Interruptible callers (e.g. ToggleButton) opt out so a
+  // re-click can land and interrupt the in-flight action with a fresh one.
   const actionInFlightRef = useRef(false);
   const isLoadingState = isLoading || isPending;
+  // Delay the spinner reveal for action-driven loading (clickAction's own
+  // transition) so a fast action that settles within the delay does not flash
+  // a spinner. Interruptible loading is delayed too, so rapid re-clicks settle
+  // before any spinner shows. Explicit isLoading-only stays immediate, since
+  // the consumer is deliberately showing it.
+  const delaySpinner = isPending || isInterruptible;
   const groupDisabled = buttonGroup?.isDisabled ?? false;
-  const buttonDisabled = isDisabled || groupDisabled || isLoadingState;
+  // When interruptible, the loading state drives the spinner and aria-busy but
+  // not disabled, so clicks keep landing and can interrupt the in-flight action.
+  const buttonDisabled =
+    isDisabled || groupDisabled || (isLoadingState && !isInterruptible);
   // isIconOnly prop is the source of truth for icon-only rendering.
   // When false (default), label is always rendered as visible text.
 
@@ -531,7 +591,9 @@ export function Button({
   const useAriaDisabled = tooltip != null && buttonDisabled;
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (buttonDisabled || actionInFlightRef.current) {
+    // The ref guard dedupes fire-once actions. Interruptible callers skip it so
+    // a re-click while pending starts a fresh action that interrupts the prior.
+    if (buttonDisabled || (actionInFlightRef.current && !isInterruptible)) {
       e.preventDefault();
       return;
     }
@@ -598,7 +660,10 @@ export function Button({
     <>
       {isLoadingState && (
         <span
-          {...stylex.props(loadingStyles.spinnerOverlay)}
+          {...stylex.props(
+            loadingStyles.spinnerOverlay,
+            delaySpinner && loadingStyles.spinnerDelayed,
+          )}
           aria-hidden="true">
           <Spinner size="sm" shade="inherit" />
         </span>
@@ -606,7 +671,10 @@ export function Button({
       <span
         {...stylex.props(
           styles.contentWrapper,
-          isLoadingState && loadingStyles.hiddenContent,
+          isLoadingState &&
+            (delaySpinner
+              ? loadingStyles.hiddenContentDelayed
+              : loadingStyles.hiddenContent),
         )}
         aria-hidden={isLoadingState || undefined}>
         {icon && (

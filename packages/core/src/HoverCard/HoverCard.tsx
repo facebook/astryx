@@ -4,9 +4,9 @@
 
 /**
  * @file HoverCard.tsx
- * @input Uses React, ReactDOM createPortal, useHoverCard hook
+ * @input Uses React, useHoverCard hook
  * @output Exports HoverCard component for hover/focus triggered layers
- * @position Layer component; uses inline-safe trigger wrapper and portals floating layer
+ * @position Layer component; uses inline-safe trigger wrapper and renders the floating layer inline
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/HoverCard/HoverCard.test.tsx
@@ -15,13 +15,7 @@
  * - /packages/cli/templates/blocks/components/HoverCard/ (showcase blocks)
  */
 
-import React, {
-  useCallback,
-  useRef,
-  type ReactElement,
-  type ReactNode,
-} from 'react';
-import {createPortal} from 'react-dom';
+import {useCallback, useRef, type ReactElement, type ReactNode} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {useHoverCard, type HoverCardFocusTrigger} from './useHoverCard';
@@ -245,13 +239,23 @@ export function HoverCard({
     };
   }, [textOnly, hoverCard.ref, hoverCard.describedBy]);
 
-  const renderedHoverCard =
-    typeof document !== 'undefined'
-      ? createPortal(
-          hoverCard.renderHoverCard(content, {xstyle, className, style}),
-          document.body,
-        )
-      : null;
+  // Render the floating layer inline, in the same place on the server and the
+  // client. The layer is a `popover` element opened via the Popover API, so the
+  // browser promotes it to the top layer when shown — that already escapes
+  // ancestor clipping, stacking, and transform containing-block traps, and CSS
+  // anchor positioning resolves the trigger reference regardless of where the
+  // element sits in the DOM, so no portal is needed to "escape" layout.
+  //
+  // The layer renders as inline-safe phrasing markup (a `<span>`, see
+  // useHoverCard), which stays put inside a `<p>` instead of being reparented
+  // by the HTML parser. That keeps the server markup and the first client
+  // render identical, so there is no hydration mismatch — and it preserves the
+  // inline-safety guarantee (no block elements injected into a paragraph).
+  const renderedHoverCard = hoverCard.renderHoverCard(content, {
+    xstyle,
+    className,
+    style,
+  });
 
   // For text-only children: use inline span with ref on wrapper
   if (textOnly) {

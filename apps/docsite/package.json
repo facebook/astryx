@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build:theme": "astryx theme build src/themes/astryxTheme.ts --out src/themes/astryx.css",
-    "generate": "pnpm build:theme && node scripts/generate-data.mjs && node scripts/generate-scope.mjs && node scripts/generate-playground-types.mjs && node scripts/copy-vendor.mjs",
+    "generate": "pnpm build:theme && node scripts/generate-data.mjs && node scripts/generate-scope.mjs && node scripts/generate-xle-registry.mjs && node scripts/generate-xle-tokenizer.mjs && node scripts/generate-playground-types.mjs && node scripts/copy-vendor.mjs",
     "dev": "pnpm generate && next dev",
     "build": "pnpm generate && next build",
     "start": "next start",
@@ -45,6 +45,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.0",
+    "gpt-tokenizer": "^2.0.0",
     "typescript": "^6.0.3",
     "vitest": "^3.2.1"
   },

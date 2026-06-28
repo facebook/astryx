@@ -15,7 +15,11 @@ export function scanDirectory(scanDir) {
     const pkgPath = path.join(scanDir, entry.name, 'package.json');
     if (!fs.existsSync(pkgPath)) continue;
     let pkg;
-    try { pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')); } catch { continue; }
+    try {
+      pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    } catch {
+      continue;
+    }
     if (!pkg.astryx || !pkg.astryx.docs) continue;
     const pkgDir = path.join(scanDir, entry.name);
     const docsDir = path.resolve(pkgDir, pkg.astryx.docs);
@@ -36,9 +40,18 @@ export function scanDirectory(scanDir) {
   return packages;
 }
 
-export function scanAllPackages(packageDirs) {
+export function scanAllPackages(packageDirs, explicitPackages = []) {
   const all = [];
   const seen = new Set();
+
+  for (const pkg of explicitPackages) {
+    if (!pkg || seen.has(pkg.name)) continue;
+    const components = discoverDocComponents(pkg.docsDir);
+    if (components.length === 0) continue;
+    seen.add(pkg.name);
+    all.push({...pkg, components});
+  }
+
   for (const dir of packageDirs) {
     for (const pkg of scanDirectory(dir)) {
       if (seen.has(pkg.name)) continue;
@@ -54,12 +67,17 @@ function discoverDocComponents(docsDir) {
   const components = [];
   function walk(dir) {
     let entries;
-    try { entries = fs.readdirSync(dir, {withFileTypes: true}); } catch { return; }
+    try {
+      entries = fs.readdirSync(dir, {withFileTypes: true});
+    } catch {
+      return;
+    }
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) walk(full);
-      else if (entry.name.endsWith('.doc.mjs')) components.push(entry.name.replace('.doc.mjs', ''));
+      else if (entry.name.endsWith('.doc.mjs'))
+        components.push(entry.name.replace('.doc.mjs', ''));
     }
   }
   walk(docsDir);
@@ -81,12 +99,18 @@ function findDocFile(docsDir, name) {
   const target = name + '.doc.mjs';
   function walk(dir) {
     let entries;
-    try { entries = fs.readdirSync(dir, {withFileTypes: true}); } catch { return null; }
+    try {
+      entries = fs.readdirSync(dir, {withFileTypes: true});
+    } catch {
+      return null;
+    }
     for (const entry of entries) {
       if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) { const f = walk(full); if (f) return f; }
-      else if (entry.name === target) return full;
+      if (entry.isDirectory()) {
+        const f = walk(full);
+        if (f) return f;
+      } else if (entry.name === target) return full;
     }
     return null;
   }

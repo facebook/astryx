@@ -2,78 +2,72 @@
 
 # Astryx
 
-An open source design system that's fully customizable and agent ready.
+An open source design system that's fully customizable and built for how we build now — by people and the agents working alongside them.
 
 > **Currently in Beta** · Built on [React](https://react.dev) and [StyleX](https://stylexjs.com)
 
 ## Overview
 
-Astryx is an open source design system born from years of building internal tools at scale in Meta's monorepo. It has grown inside Meta over the last eight years and powers over 13,000 apps, shaped by the engineers, designers, and product teams who depend on it every day.
+Astryx is an open source design system that grew inside Meta over the last eight years, where it became the most-used and largest design system in the company — powering 13,000+ apps and shaped by the engineers, designers, and product teams who depend on it every day.
 
-It provides the foundations, components, templates, and themes that work together to deliver consistent, accessible interfaces — and it's designed so both humans and AI agents can build with the same tooling.
+It ships 150+ accessible components, brand-level theming, dark mode, ready-to-ship templates, and a CLI as one cohesive system. You import pre-built CSS and use typed React components — no build plugin, no styling library to adopt — and both people and AI assistants build with the same tooling.
 
 **What makes Astryx different:**
 
-- **Open internals:** All primitives are exported and composable, not hidden. Compose at any level and build exactly what you need.
-- **Automatic spacing:** Context-aware spacing compensation eliminates "double padding" issues so layouts stay clean without manual fixups.
-- **Themeable:** First-class theming with a CSS variable cascade. Ten ready-made themes, all fully customizable.
-- **Agent ready:** JSDoc annotations with composition hints, plus a CLI and MCP server so agents can scaffold, browse, and document using the same API you do.
+- **Open internals.** Components are built to be composed at any level, not locked behind a closed top-level API. The building blocks you'd reach for are exported directly, and when you need to go deeper, swizzle ejects a component's full source into your project to own.
+- **No styling lock-in.** Astryx authors its styles with StyleX, but that's invisible to consumers. Override with `className` using Tailwind, CSS modules, or plain CSS — whatever your project already uses.
+- **Customize without wrapping.** A theme is a set of CSS custom property overrides, so a designer can make Astryx unmistakably theirs without forking or wrapping component source.
+- **Built for people and agents.** The API, docs, and CLI are designed together so a person and an AI assistant build the same way, from the same reference.
 
 ## Getting Started
 
-For full setup instructions, see the **[@astryxdesign/core README](packages/core/README.md)**.
-
-Quick install:
+Install Astryx and a theme:
 
 ```bash
-# pnpm
-pnpm add @astryxdesign/core @astryxdesign/theme-neutral
-pnpm add -D @astryxdesign/cli
-
 # npm
 npm install @astryxdesign/core @astryxdesign/theme-neutral
 npm install -D @astryxdesign/cli
+
+# pnpm
+pnpm add @astryxdesign/core @astryxdesign/theme-neutral
+pnpm add -D @astryxdesign/cli
 
 # yarn
 yarn add @astryxdesign/core @astryxdesign/theme-neutral
 yarn add -D @astryxdesign/cli
 ```
 
-For reliable CLI access, add this script to your `package.json`:
+The simplest setup is a few CSS imports plus a theme provider — no build plugin, no PostCSS or Babel config. See the **[@astryxdesign/core README](packages/core/README.md#quick-start)** for the full guide (Next.js, Tailwind, Vite, and CDN).
+
+For reliable CLI access, add a script to your `package.json`:
 
 ```json
 "scripts": {
-  "xds": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
+  "astryx": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
 }
 ```
 
-Then use the CLI as `npm run xds -- component --list`. This avoids path errors when AI assistants or new developers invoke the CLI directly.
-
-Then follow the [setup guide](packages/core/README.md#quick-start) to import styles, configure the theme provider, and start using components.
+Then use it as `npm run astryx -- component --list`. This avoids path errors when AI assistants or new developers invoke the CLI directly.
 
 ## Packages
 
-| Package                           | Description                                                                                                                   | README                             |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| [`@astryxdesign/core`](packages/core)      | Components, theme system, and utilities                                                                                       | [README](packages/core/README.md)  |
-| [`@astryxdesign/cli`](packages/cli)        | CLI tooling: component docs, templates, scaffolding, themes, and codemods                                                     | [README](packages/cli/README.md)   |
-| [`@astryxdesign/build`](packages/build)    | Build plugins for StyleX source builds                                                                                        | [README](packages/build/README.md) |
-| [`@astryxdesign/theme-*`](packages/themes) | Ten ready-made, fully customizable themes (default, neutral, daily, butter, chocolate, matcha, stone, gothic, brutalist, y2k) | [README](packages/themes)          |
+| Package                                    | Description                                                                                          | README                             |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| [`@astryxdesign/core`](packages/core)      | Components, theme system, and utilities                                                              | [README](packages/core/README.md)  |
+| [`@astryxdesign/cli`](packages/cli)        | CLI tooling: component docs, templates, scaffolding, themes, and codemods                            | [README](packages/cli/README.md)   |
+| [`@astryxdesign/build`](packages/build)    | Build plugins for StyleX source builds                                                               | [README](packages/build/README.md) |
+| [`@astryxdesign/theme-*`](packages/themes) | Seven ready-made, fully customizable themes (neutral, butter, chocolate, matcha, stone, gothic, y2k) | [README](packages/themes)          |
 
 > `@astryxdesign/lab` (experimental components) and `@astryxdesign/vega` (Vega/Vega-Lite chart wrapper) are used internally for Storybook and the sandbox; they are not yet published to npm.
 
-## Features
+## Principles
 
-- **Over 90 components** — accessible, themeable React components with built-in spacing, dark mode, and flexible styling.
-- **Themes that fit your brand** — fully customizable themes ready for use. Make it yours without starting from scratch.
-- **Ready to ship templates** — production-ready templates for common pages; just plug in your content.
-- **A design system your agent can use** — scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line or MCP.
+These are the promises Astryx makes to the people building on it.
 
-## Philosophy
-
-- **Design for speed:** Foundations you can trust, speed you can feel. Teams stop reinventing the basics and start shipping the ideas that matter.
-- **Built by the people who use it:** The system gets sharper when we put it to work in the real world. Using it in context strengthens the whole system for everyone.
-- **Ready for what's next:** Opinionated foundations paired with flexible patterns so your system keeps pace, no matter how the craft evolves.
+- **Guidance over enforcement.** Components give you capability rather than guardrails that fight you. Design opinions live in docs and examples — if you pass a value, the component renders it.
+- **Strong, documented conventions.** Every component follows the same naming, prop, and composition rules, and every one is thoroughly documented — so once you've learned a few, the rest feel familiar, and both people and AI can predict how an unfamiliar component behaves.
+- **One system for humans and AI.** The API, conventions, docs, and CLI are designed together so people and AI assistants build the same way. Every change that made Astryx easier for AI made it easier for people too.
+- **Earned by measurement.** We test conventions rather than assert them, hold the results loosely, and revisit them when a new situation proves them wrong.
 
 ## Architecture
 
@@ -83,7 +77,7 @@ The building blocks for visually cohesive and accessible interfaces: typography,
 
 ### Components
 
-A library of 90+ reusable UI building blocks with full TypeScript support.
+A library of 150+ reusable UI building blocks with full TypeScript support.
 
 ### Patterns
 

@@ -12,6 +12,7 @@
     "src/lib/json.mjs",
     "src/lib/manifest.mjs",
     "src/lib/parse.mjs",
+    "src/config.mjs",
     "../core/src/docs-types.ts"
   ]
 }

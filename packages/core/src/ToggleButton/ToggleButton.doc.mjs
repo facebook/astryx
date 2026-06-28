@@ -34,13 +34,13 @@ export const docs = {
     },
     {
       name: 'onPressedChange',
-      type: '(isPressed: boolean) => void',
-      description: 'Called when pressed state should change. Ignored when inside a group.',
+      type: '(isPressed: boolean, event: MouseEvent) => void',
+      description: 'Called when pressed state should change. Receives the next state and the click event; call event.preventDefault() to skip pressedChangeAction. Ignored when inside a group.',
     },
     {
       name: 'pressedChangeAction',
       type: '(isPressed: boolean) => void | Promise<void>',
-      description: 'Action handler for API- or navigation-backed toggles, run in a transition. Shows an optimistic pressed state immediately and a (debounced) spinner while pending; interruptible by re-clicks.',
+      description: 'Action handler for API- or navigation-backed toggles, run in a transition. Shows an optimistic pressed state immediately and a spinner while pending; the button stays interruptible by re-clicks.',
     },
     {
       name: 'size',

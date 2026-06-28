@@ -45,11 +45,13 @@ describe('EmptyState', () => {
       />,
     );
     expect(screen.getByText('Try adjusting your search.')).toBeInTheDocument();
+    // Description renders as <div> (never <p>) so block content composes safely.
+    expect(screen.getByText('Try adjusting your search.').tagName).toBe('DIV');
   });
 
   it('does not render description when not provided', () => {
-    const {container} = render(<EmptyState title="No results" />);
-    expect(container.querySelector('p')).not.toBeInTheDocument();
+    render(<EmptyState title="No results" />);
+    expect(screen.queryByText('Try adjusting your search.')).toBeNull();
   });
 
   it('renders with icon', () => {

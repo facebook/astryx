@@ -33,7 +33,17 @@ export const docs = {
         'Index for staggered animation timing. For element at index n, animation starts at DELAY_TIME + (STAGGER_TIME × n).',
       default: '0',
     },
-  ],  theming: {
+  ],
+  playground: {
+    // Skeleton width/height default to '100%', which collapses to a zero-size
+    // (invisible) element in the properties-tab preview. Give the example
+    // explicit pixel dimensions so the shimmer placeholder is visible.
+    defaults: {
+      width: 320,
+      height: 80,
+    },
+  },
+  theming: {
     targets: [
       {className: 'astryx-skeleton'},
     ],

@@ -20,7 +20,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout maintenance scripts
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: main
 

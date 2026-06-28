@@ -159,7 +159,7 @@ const styles = stylex.create({
   },
   track: {
     position: 'absolute',
-    backgroundColor: colorVars['--color-background-muted'],
+    backgroundColor: colorVars['--color-track'],
     borderRadius: radiusVars['--radius-full'],
   },
   trackHorizontal: {

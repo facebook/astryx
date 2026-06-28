@@ -3,6 +3,7 @@
 'use client';
 
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import type {AnchorHTMLAttributes} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePathname, useRouter} from 'next/navigation';
@@ -15,6 +16,7 @@ import {Theme} from '@astryxdesign/core/theme';
 import type {DefinedTheme} from '@astryxdesign/core/theme';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
+import {LinkProvider} from '@astryxdesign/core/Link';
 import {SelectableCard} from '@astryxdesign/core/SelectableCard';
 import {Selector} from '@astryxdesign/core/Selector';
 import {Divider} from '@astryxdesign/core/Divider';
@@ -86,6 +88,23 @@ function packageNameToSlug(packageName: string): string {
 // enough horizontal room for the themed preview's product grid.
 const SIDEBAR_QUERY = '(max-width: 900px)';
 const SIDEBAR_BREAKPOINT = `@media ${SIDEBAR_QUERY}`;
+
+// Inert anchor for the showcase preview — preventDefaults clicks so demo
+// href="#" links don't scroll the docsite to the top.
+function PreviewAnchor({
+  onClick,
+  ...props
+}: AnchorHTMLAttributes<HTMLAnchorElement>) {
+  return (
+    <a
+      {...props}
+      onClick={e => {
+        e.preventDefault();
+        onClick?.(e);
+      }}
+    />
+  );
+}
 
 // Fixed sidebar width — compact enough that the right pane gets the
 // lion's share of horizontal space, wide enough to fit the longest
@@ -468,8 +487,14 @@ const PICKER_OVERRIDES: Record<
     surface: styles.surfaceGothic,
     label: styles.labelAccent,
   },
-  '@astryxdesign/theme-y2k': {surface: styles.surfaceY2k, label: styles.labelAccent},
-  '@astryxdesign/theme-stone': {surface: styles.surfaceStone, label: styles.labelAccent},
+  '@astryxdesign/theme-y2k': {
+    surface: styles.surfaceY2k,
+    label: styles.labelAccent,
+  },
+  '@astryxdesign/theme-stone': {
+    surface: styles.surfaceStone,
+    label: styles.labelAccent,
+  },
   '@astryxdesign/theme-neutral': {
     surface: styles.surfaceNeutral,
     label: styles.labelAccent,
@@ -610,10 +635,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
   // the mobile dropdown. Order matches the /themes overview gallery.
   const themePackages = useMemo(() => {
     return packages
-      .filter(
-        p =>
-          p.name.startsWith('@astryxdesign/theme-'),
-      )
+      .filter(p => p.name.startsWith('@astryxdesign/theme-'))
       .sort((a, b) => {
         const ai = THEME_ORDER.indexOf(a.name);
         const bi = THEME_ORDER.indexOf(b.name);
@@ -946,17 +968,21 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             the selected theme, wrapped in a bordered, rounded card so
             it reads as a contained app surface against the docsite
             chrome. overflow:hidden (showcaseCard) clips the template's
-            own backgrounds (top nav, sections) to the card's radius. */}
+            own backgrounds (top nav, sections) to the card's radius.
+            LinkProvider keeps demo href="#" clicks from scrolling the
+            page to the top (see PreviewAnchor). */}
         <div {...stylex.props(styles.showcaseBlock)}>
           <Card padding={0} xstyle={styles.showcaseCard}>
             <Theme theme={selectedTheme} mode={mode}>
-              {/* Bespoke per-theme content (e.g. Matcha's café menu); falls
-                  back to the template's neutral defaults when undefined. */}
-              <ThemeShowcaseStore
-                {...getThemeShowcaseContent(
-                  selectedPkgName.replace('@astryxdesign/theme-', ''),
-                )}
-              />
+              <LinkProvider component={PreviewAnchor}>
+                {/* Bespoke per-theme content (e.g. Matcha's café menu); falls
+                    back to the template's neutral defaults when undefined. */}
+                <ThemeShowcaseStore
+                  {...getThemeShowcaseContent(
+                    selectedPkgName.replace('@astryxdesign/theme-', ''),
+                  )}
+                />
+              </LinkProvider>
             </Theme>
           </Card>
         </div>

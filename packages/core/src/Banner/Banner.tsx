@@ -16,6 +16,13 @@
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
  * - When children are provided, a collapse/expand toggle button appears in the end area
  *
+ * Title and description render as <div> (not <p>): they accept arbitrary
+ * ReactNode content, and <p> cannot legally contain block-level children
+ * (the HTML parser reparents them, desyncing SSR markup from the hydrated
+ * DOM). Using <div> keeps these slots composable with any content. Their
+ * StyleX styles set margin: 0 and explicit typography, so the rendered
+ * appearance is identical to the previous <p>.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Banner/Banner.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Banner/Banner.test.tsx (tests for new/changed behavior)
@@ -441,9 +448,9 @@ export function Banner({
           )}
         </div>
         <div {...stylex.props(styles.headerContent)}>
-          <p {...stylex.props(styles.title)}>{title}</p>
+          <div {...stylex.props(styles.title)}>{title}</div>
           {description != null && (
-            <p {...stylex.props(styles.description)}>{description}</p>
+            <div {...stylex.props(styles.description)}>{description}</div>
           )}
         </div>
         {showEndArea && (
