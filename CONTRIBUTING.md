@@ -341,6 +341,18 @@ pnpm version-packages   # changeset version + scripts/format-changelogs.mjs
 
 `format-changelogs.mjs` rewrites each just-bumped package CHANGELOG into the doc-site format (h1 version, `#### <Category>` sections in canonical order, and a `#### Contributors` section aggregated from the changeset `@handle`s). It's idempotent and has a `--check` mode for CI drift detection.
 
+## Finding Something to Work On
+
+Labels signal what's open for contribution:
+
+- **`good first issue`** / **`help wanted`** — ready to be picked up; start here.
+- **`discussion`** — still being shaped and **not ready for contribution**. The problem is
+  recorded but the solution isn't decided. Please don't start work on a fix until it's triaged
+  out of `discussion`. Comments and ideas are welcome.
+
+For **pull requests**, use GitHub's native **Draft** state to signal "not ready to review/merge
+yet" — open the PR as a draft and mark it ready for review when it's done.
+
 ## Pull Request Guidelines
 
 1. Create a feature branch from `main`
