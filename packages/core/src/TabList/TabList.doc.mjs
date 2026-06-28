@@ -44,6 +44,12 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'layout',
+      type: "'hug' | 'fill'",
+      description: "Layout mode for tab sizing. 'hug': each tab hugs its content width. 'fill': tabs stretch equally to fill the container width.",
+      default: "'hug'",
+    },
+    {
       name: 'hasDivider',
       type: 'boolean',
       description: 'Whether to show a bottom border divider under the tab list.',
