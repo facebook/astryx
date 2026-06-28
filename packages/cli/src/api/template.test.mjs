@@ -1,5 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {describe, it, expect} from 'vitest';
 import {stripTemplateAssetRefs, template} from './template.mjs';
 
@@ -77,4 +80,43 @@ describe('template --skeleton component extraction (prefix-agnostic)', () => {
 
     expect(result.data.skeleton).toContain('columns={{minWidth: 200}}');
   });
+});
+
+describe('Thumbnail block examples use CORS-safe demo media (BB-001 / cluster C6)', () => {
+  // Thumbnail's remove-button overlay relies on useImageMode, which FETCHES the
+  // image (`fetch(src, {mode: 'cors'})` → createImageBitmap → OffscreenCanvas
+  // getImageData) to sample pixels for APCA contrast. A cross-origin CDN URL
+  // without `Access-Control-Allow-Origin` cannot be fetched/sampled, so contrast
+  // detection fails silently and logs CORS errors in hosted previews. These
+  // image-backed examples must therefore use a self-contained, same-origin,
+  // samplable source (a data: URI) rather than a cross-origin lookaside URL.
+  const THUMBNAIL_BLOCK_DIR = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '..',
+    '..',
+    'templates',
+    'blocks',
+    'components',
+    'Thumbnail',
+  );
+  const IMAGE_BACKED_EXAMPLES = [
+    'ThumbnailShowcase.tsx',
+    'ThumbnailDisabled.tsx',
+    'ThumbnailRemovable.tsx',
+    'ThumbnailStates.tsx',
+    'ThumbnailGallery.tsx',
+  ];
+
+  for (const file of IMAGE_BACKED_EXAMPLES) {
+    it(`${file} avoids cross-origin lookaside media and uses a samplable data URI`, () => {
+      const source = fs.readFileSync(
+        path.join(THUMBNAIL_BLOCK_DIR, file),
+        'utf-8',
+      );
+      // No cross-origin CDN URL that useImageMode cannot CORS-sample.
+      expect(source).not.toContain('lookaside.facebook.com');
+      // Uses a self-contained, same-origin image the canvas can sample.
+      expect(source).toContain('data:image/');
+    });
+  }
 });
