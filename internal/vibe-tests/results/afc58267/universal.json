@@ -1,0 +1,1332 @@
+{
+  "averages": {
+    "correctness": 36,
+    "accessibility": 98,
+    "codeQuality": 98,
+    "efficiency": 89,
+    "maintainability": 98
+  },
+  "overall": 84,
+  "byPrompt": {
+    "cwm-1": {
+      "correctness": {
+        "score": 55,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ value: \"monthly\" | \"annual\"; onChange: (v: string) => void; options: { value: string; label: string; }[]; }' is not assignable to type 'IntrinsicAttributes & SegmentedControlProps'.",
+            "line": 36
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ children: string; variant: \"info\"; }' is not assignable to type 'IntrinsicAttributes & BadgeProps'.",
+            "line": 44
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'icon' is missing in type '{ name: string; size: \"sm\"; }' but required in type 'IconProps'.",
+            "line": 54
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 97,
+        "findings": [
+          {
+            "rule": "heading-skip",
+            "severity": "minor",
+            "detail": "Heading level skipped: h1 → h3"
+          }
+        ]
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 85,
+        "findings": [],
+        "metrics": {
+          "totalLines": 68,
+          "codeLines": 63,
+          "stylingLines": 8,
+          "boilerplateLines": 15,
+          "logicLines": 40,
+          "stylingRatio": 0.12698412698412698,
+          "boilerplateRatio": 0.23809523809523808,
+          "decisionsPerElement": 1.9,
+          "elementCount": 19,
+          "stylingDecisionCount": 37,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 11,
+          "avgStateSpread": 15
+        }
+      }
+    },
+    "dd-6": {
+      "correctness": {
+        "score": 0,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 28
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 30
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ children: Element; key: string; trigger: Element; }' is not assignable to type 'IntrinsicAttributes & HoverCardProps'.",
+            "line": 34
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 35
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"sm\"' is not assignable to type 'AvatarSize | undefined'.",
+            "line": 36
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ children: string; variant: \"neutral\"; }' is not assignable to type 'IntrinsicAttributes & BadgeProps'.",
+            "line": 38
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 42
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 43
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"lg\"' is not assignable to type 'AvatarSize | undefined'.",
+            "line": 44
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 45
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 51
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 82,
+        "findings": [
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 4 times",
+            "count": 4,
+            "example": "{id: \"_\", name: \"_\", role: \"_\", department: \"_\", email: \"_\", joinedAt: \"_\"},"
+          }
+        ],
+        "metrics": {
+          "totalLines": 63,
+          "codeLines": 59,
+          "stylingLines": 0,
+          "boilerplateLines": 16,
+          "logicLines": 43,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.2711864406779661,
+          "decisionsPerElement": 1.1,
+          "elementCount": 19,
+          "stylingDecisionCount": 21,
+          "duplicateRatio": 0.07
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 20,
+          "avgStateSpread": 0
+        }
+      }
+    },
+    "fwc-10": {
+      "correctness": {
+        "score": 85,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"md\"' is not assignable to type 'AvatarSize | undefined'.",
+            "line": 37
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 92,
+        "findings": [
+          {
+            "rule": "missing-key",
+            "severity": "moderate",
+            "detail": "Array .map() without key prop",
+            "line": 27
+          }
+        ]
+      },
+      "efficiency": {
+        "score": 79,
+        "findings": [
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 4 times",
+            "count": 4,
+            "example": "{id: \"_\", name: \"_\", email: \"_\", role: \"_\"},"
+          }
+        ],
+        "metrics": {
+          "totalLines": 54,
+          "codeLines": 47,
+          "stylingLines": 5,
+          "boilerplateLines": 11,
+          "logicLines": 31,
+          "stylingRatio": 0.10638297872340426,
+          "boilerplateRatio": 0.23404255319148937,
+          "decisionsPerElement": 1.6,
+          "elementCount": 10,
+          "stylingDecisionCount": 16,
+          "duplicateRatio": 0.09
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 6,
+          "avgStateSpread": 11
+        }
+      }
+    },
+    "io-3": {
+      "correctness": {
+        "score": 0,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 54
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'icon' is missing in type '{ name: string; }' but required in type 'IconProps'.",
+            "line": 64
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 68
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 74
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'icon' is missing in type '{ name: string; }' but required in type 'IconProps'.",
+            "line": 75
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"success\"' is not assignable to type 'TextColor | undefined'.",
+            "line": 76
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"error\"' is not assignable to type 'TextColor | undefined'.",
+            "line": 80
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 85,
+        "findings": [
+          {
+            "rule": "input-no-label",
+            "severity": "critical",
+            "detail": "Form input without associated label",
+            "line": 55
+          }
+        ]
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 97,
+        "findings": [],
+        "metrics": {
+          "totalLines": 94,
+          "codeLines": 85,
+          "stylingLines": 0,
+          "boilerplateLines": 7,
+          "logicLines": 78,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.08235294117647059,
+          "decisionsPerElement": 0.6,
+          "elementCount": 16,
+          "stylingDecisionCount": 9,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 83,
+        "findings": [
+          {
+            "rule": "moderate-state-spread",
+            "severity": "minor",
+            "detail": "Average state variable spread: 64 lines"
+          }
+        ],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 9,
+          "avgStateSpread": 64
+        }
+      }
+    },
+    "ps-1": {
+      "correctness": {
+        "score": 0,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2305: Module '\"@astryxdesign/core/NavItem\"' has no exported member 'NavItem'.",
+            "line": 4
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2339: Property 'Header' does not exist on type 'typeof AppShell'.",
+            "line": 17
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 19
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2339: Property 'Header' does not exist on type 'typeof AppShell'.",
+            "line": 23
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2339: Property 'Sidebar' does not exist on type 'typeof AppShell'.",
+            "line": 24
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'icon' is missing in type '{ name: string; }' but required in type 'IconProps'.",
+            "line": 26
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'icon' is missing in type '{ name: string; }' but required in type 'IconProps'.",
+            "line": 29
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'icon' is missing in type '{ name: string; }' but required in type 'IconProps'.",
+            "line": 32
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'icon' is missing in type '{ name: string; }' but required in type 'IconProps'.",
+            "line": 35
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2339: Property 'Sidebar' does not exist on type 'typeof AppShell'.",
+            "line": 39
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2339: Property 'Main' does not exist on type 'typeof AppShell'.",
+            "line": 40
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 41
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 44
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 48
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'value' is missing in type '{ label: string; }' but required in type 'SwitchProps'.",
+            "line": 52
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 55
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'value' is missing in type '{ label: string; }' but required in type 'SwitchProps'.",
+            "line": 59
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 64
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 68
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ label: string; defaultChecked: true; }' is not assignable to type 'IntrinsicAttributes & SwitchProps'.",
+            "line": 72
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 75
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'value' is missing in type '{ label: string; }' but required in type 'SwitchProps'.",
+            "line": 79
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2339: Property 'Main' does not exist on type 'typeof AppShell'.",
+            "line": 84
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 97,
+        "findings": [
+          {
+            "rule": "heading-skip",
+            "severity": "minor",
+            "detail": "Heading level skipped: h1 → h3"
+          }
+        ]
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 94,
+        "findings": [],
+        "metrics": {
+          "totalLines": 88,
+          "codeLines": 86,
+          "stylingLines": 0,
+          "boilerplateLines": 12,
+          "logicLines": 74,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.13953488372093023,
+          "decisionsPerElement": 0.6,
+          "elementCount": 43,
+          "stylingDecisionCount": 25,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 20,
+          "avgStateSpread": 0
+        }
+      }
+    },
+    "rc-1": {
+      "correctness": {
+        "score": 55,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2305: Module '\"@astryxdesign/core/NavItem\"' has no exported member 'NavItem'.",
+            "line": 3
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 22
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 24
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 94,
+        "findings": [
+          {
+            "rule": "index-key",
+            "severity": "minor",
+            "detail": "Array index as key",
+            "line": 27
+          },
+          {
+            "rule": "index-key",
+            "severity": "minor",
+            "detail": "Array index as key",
+            "line": 48
+          }
+        ]
+      },
+      "efficiency": {
+        "score": 87,
+        "findings": [
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 4 times",
+            "count": 4,
+            "example": "{label: \"_\", href: \"_\"},"
+          }
+        ],
+        "metrics": {
+          "totalLines": 64,
+          "codeLines": 60,
+          "stylingLines": 2,
+          "boilerplateLines": 7,
+          "logicLines": 51,
+          "stylingRatio": 0.03333333333333333,
+          "boilerplateRatio": 0.11666666666666667,
+          "decisionsPerElement": 0.6,
+          "elementCount": 11,
+          "stylingDecisionCount": 7,
+          "duplicateRatio": 0.07
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 5,
+          "avgStateSpread": 27
+        }
+      }
+    },
+    "sd-1": {
+      "correctness": {
+        "score": 85,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ children: string; variant: string; title: string; }' is not assignable to type 'IntrinsicAttributes & BannerProps'.",
+            "line": 45
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 85,
+        "findings": [],
+        "metrics": {
+          "totalLines": 74,
+          "codeLines": 66,
+          "stylingLines": 4,
+          "boilerplateLines": 21,
+          "logicLines": 41,
+          "stylingRatio": 0.06060606060606061,
+          "boilerplateRatio": 0.3181818181818182,
+          "decisionsPerElement": 1.4,
+          "elementCount": 22,
+          "stylingDecisionCount": 30,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 92,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 15,
+          "avgStateSpread": 42
+        }
+      }
+    },
+    "tc-9": {
+      "correctness": {
+        "score": 10,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2307: Cannot find module '@astryxdesign/core/ThemeProvider' or its corresponding type declarations.",
+            "line": 1
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 43
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 44
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ children: string; variant: \"info\"; }' is not assignable to type 'IntrinsicAttributes & BadgeProps'.",
+            "line": 46
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 52
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 64
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 96,
+        "findings": [],
+        "metrics": {
+          "totalLines": 81,
+          "codeLines": 74,
+          "stylingLines": 0,
+          "boilerplateLines": 8,
+          "logicLines": 66,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.10810810810810811,
+          "decisionsPerElement": 0.8,
+          "elementCount": 15,
+          "stylingDecisionCount": 12,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 12,
+          "avgStateSpread": 0
+        }
+      }
+    },
+    "ty-4": {
+      "correctness": {
+        "score": 0,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 12
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 16
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'value' is missing in type '{ label: string; }' but required in type 'SwitchProps'.",
+            "line": 31
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 37
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ label: string; defaultChecked: true; }' is not assignable to type 'IntrinsicAttributes & SwitchProps'.",
+            "line": 43
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'value' is missing in type '{ label: string; }' but required in type 'SwitchProps'.",
+            "line": 47
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+            "line": 53
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'value' is missing in type '{ label: string; }' but required in type 'SwitchProps'.",
+            "line": 68
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 95,
+        "findings": [],
+        "metrics": {
+          "totalLines": 75,
+          "codeLines": 70,
+          "stylingLines": 0,
+          "boilerplateLines": 8,
+          "logicLines": 62,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.11428571428571428,
+          "decisionsPerElement": 0.5,
+          "elementCount": 35,
+          "stylingDecisionCount": 17,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 11,
+          "avgStateSpread": 0
+        }
+      }
+    },
+    "wd-5": {
+      "correctness": {
+        "score": 70,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'inputID' is missing in type '{ children: Element; label: string; }' but required in type 'FieldProps'.",
+            "line": 27
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'inputID' is missing in type '{ children: Element; label: string; }' but required in type 'FieldProps'.",
+            "line": 30
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 97,
+        "findings": [
+          {
+            "rule": "console-log",
+            "severity": "minor",
+            "detail": "console.log left in code",
+            "line": 15
+          }
+        ]
+      },
+      "efficiency": {
+        "score": 91,
+        "findings": [],
+        "metrics": {
+          "totalLines": 42,
+          "codeLines": 38,
+          "stylingLines": 2,
+          "boilerplateLines": 7,
+          "logicLines": 29,
+          "stylingRatio": 0.05263157894736842,
+          "boilerplateRatio": 0.18421052631578946,
+          "decisionsPerElement": 0.9,
+          "elementCount": 11,
+          "stylingDecisionCount": 10,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 5,
+          "avgStateSpread": 20
+        }
+      }
+    }
+  },
+  "byCategory": {
+    "clone-with-modification": {
+      "correctness": 55,
+      "accessibility": 97,
+      "codeQuality": 100,
+      "efficiency": 85,
+      "maintainability": 100
+    },
+    "data-display": {
+      "correctness": 0,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 82,
+      "maintainability": 100
+    },
+    "feature-with-constraint": {
+      "correctness": 85,
+      "accessibility": 100,
+      "codeQuality": 92,
+      "efficiency": 79,
+      "maintainability": 100
+    },
+    "integration-oriented": {
+      "correctness": 0,
+      "accessibility": 85,
+      "codeQuality": 100,
+      "efficiency": 97,
+      "maintainability": 83
+    },
+    "page-setup": {
+      "correctness": 0,
+      "accessibility": 97,
+      "codeQuality": 100,
+      "efficiency": 94,
+      "maintainability": 100
+    },
+    "responsive-context": {
+      "correctness": 55,
+      "accessibility": 100,
+      "codeQuality": 94,
+      "efficiency": 87,
+      "maintainability": 100
+    },
+    "state-driven": {
+      "correctness": 85,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 85,
+      "maintainability": 92
+    },
+    "theme-customization": {
+      "correctness": 10,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 96,
+      "maintainability": 100
+    },
+    "typography": {
+      "correctness": 0,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 95,
+      "maintainability": 100
+    },
+    "workflow-description": {
+      "correctness": 70,
+      "accessibility": 100,
+      "codeQuality": 97,
+      "efficiency": 91,
+      "maintainability": 100
+    }
+  },
+  "darkModeRate": 0,
+  "cost": {
+    "totalDurationMs": 4717465,
+    "avgDurationMs": 471747,
+    "avgOutputChars": 2440,
+    "avgOutputLines": 70,
+    "avgDocsRead": 26,
+    "estimatedInputTokens": 166250,
+    "estimatedOutputTokens": 6101,
+    "byPrompt": {
+      "cwm-1": {
+        "durationMs": 471747,
+        "outputChars": 2861,
+        "outputLines": 68,
+        "docsRead": [
+          "Selector",
+          "Avatar",
+          "Dialog",
+          "Button",
+          "Card",
+          "Heading",
+          "Text",
+          "SegmentedControl",
+          "Badge",
+          "Icon",
+          "Spinner",
+          "Banner",
+          "HoverCard",
+          "TopNav",
+          "NavItem",
+          "IconButton",
+          "MobileNav",
+          "ProgressBar",
+          "AppShell",
+          "SideNav",
+          "Switch",
+          "Divider",
+          "TextInput",
+          "TextArea",
+          "Field",
+          "ThemeProvider"
+        ],
+        "estimatedInputTokens": 16625,
+        "estimatedOutputTokens": 715
+      },
+      "dd-6": {
+        "durationMs": 471746,
+        "outputChars": 2572,
+        "outputLines": 63,
+        "docsRead": [
+          "Selector",
+          "Avatar",
+          "Dialog",
+          "Button",
+          "Card",
+          "Heading",
+          "Text",
+          "SegmentedControl",
+          "Badge",
+          "Icon",
+          "Spinner",
+          "Banner",
+          "HoverCard",
+          "TopNav",
+          "NavItem",
+          "IconButton",
+          "MobileNav",
+          "ProgressBar",
+          "AppShell",
+          "SideNav",
+          "Switch",
+          "Divider",
+          "TextInput",
+          "TextArea",
+          "Field",
+          "ThemeProvider"
+        ],
+        "estimatedInputTokens": 16625,
+        "estimatedOutputTokens": 643
+      },
+      "fwc-10": {
+        "durationMs": 471750,
+        "outputChars": 1816,
+        "outputLines": 54,
+        "docsRead": [
+          "Selector",
+          "Avatar",
+          "Dialog",
+          "Button",
+          "Card",
+          "Heading",
+          "Text",
+          "SegmentedControl",
+          "Badge",
+          "Icon",
+          "Spinner",
+          "Banner",
+          "HoverCard",
+          "TopNav",
+          "NavItem",
+          "IconButton",
+          "MobileNav",
+          "ProgressBar",
+          "AppShell",
+          "SideNav",
+          "Switch",
+          "Divider",
+          "TextInput",
+          "TextArea",
+          "Field",
+          "ThemeProvider"
+        ],
+        "estimatedInputTokens": 16625,
+        "estimatedOutputTokens": 454
+      },
+      "io-3": {
+        "durationMs": 471746,
+        "outputChars": 2776,
+        "outputLines": 94,
+        "docsRead": [
+          "Selector",
+          "Avatar",
+          "Dialog",
+          "Button",
+          "Card",
+          "Heading",
+          "Text",
+          "SegmentedControl",
+          "Badge",
+          "Icon",
+          "Spinner",
+          "Banner",
+          "HoverCard",
+          "TopNav",
+          "NavItem",
+          "IconButton",
+          "MobileNav",
+          "ProgressBar",
+          "AppShell",
+          "SideNav",
+          "Switch",
+          "Divider",
+          "TextInput",
+          "TextArea",
+          "Field",
+          "ThemeProvider"
+        ],
+        "estimatedInputTokens": 16625,
+        "estimatedOutputTokens": 694
+      },
+      "ps-1": {
+        "durationMs": 471745,
+        "outputChars": 3478,
+        "outputLines": 88,
+        "docsRead": [
+          "Selector",
+          "Avatar",
+          "Dialog",
+          "Button",
+          "Card",
+          "Heading",
+          "Text",
+          "SegmentedControl",
+          "Badge",
+          "Icon",
+          "Spinner",
+          "Banner",
+          "HoverCard",
+          "TopNav",
+          "NavItem",
+          "IconButton",
+          "MobileNav",
+          "ProgressBar",
+          "AppShell",
+          "SideNav",
+          "Switch",
+          "Divider",
+          "TextInput",
+          "TextArea",
+          "Field",
+          "ThemeProvider"
+        ],
+        "estimatedInputTokens": 16625,
+        "estimatedOutputTokens": 870
+      },
+      "rc-1": {
+        "durationMs": 471746,
+        "outputChars": 1921,
+        "outputLines": 64,
+        "docsRead": [
+          "Selector",
+          "Avatar",
+          "Dialog",
+          "Button",
+          "Card",
+          "Heading",
+          "Text",
+          "SegmentedControl",
+          "Badge",
+          "Icon",
+          "Spinner",
+          "Banner",
+          "HoverCard",
+          "TopNav",
+          "NavItem",
+          "IconButton",
+          "MobileNav",
+          "ProgressBar",
+          "AppShell",
+          "SideNav",
+          "Switch",
+          "Divider",
+          "TextInput",
+          "TextArea",
+          "Field",
+          "ThemeProvider"
+        ],
+        "estimatedInputTokens": 16625,
+        "estimatedOutputTokens": 480
+      },
+      "sd-1": {
+        "durationMs": 471747,
+        "outputChars": 2257,
+        "outputLines": 74,
+        "docsRead": [
+          "Selector",
+          "Avatar",
+          "Dialog",
+          "Button",
+          "Card",
+          "Heading",
+          "Text",
+          "SegmentedControl",
+          "Badge",
+          "Icon",
+          "Spinner",
+          "Banner",
+          "HoverCard",
+          "TopNav",
+          "NavItem",
+          "IconButton",
+          "MobileNav",
+          "ProgressBar",
+          "AppShell",
+          "SideNav",
+          "Switch",
+          "Divider",
+          "TextInput",
+          "TextArea",
+          "Field",
+          "ThemeProvider"
+        ],
+        "estimatedInputTokens": 16625,
+        "estimatedOutputTokens": 564
+      },
+      "tc-9": {
+        "durationMs": 471744,
+        "outputChars": 2301,
+        "outputLines": 81,
+        "docsRead": [
+          "Selector",
+          "Avatar",
+          "Dialog",
+          "Button",
+          "Card",
+          "Heading",
+          "Text",
+          "SegmentedControl",
+          "Badge",
+          "Icon",
+          "Spinner",
+          "Banner",
+          "HoverCard",
+          "TopNav",
+          "NavItem",
+          "IconButton",
+          "MobileNav",
+          "ProgressBar",
+          "AppShell",
+          "SideNav",
+          "Switch",
+          "Divider",
+          "TextInput",
+          "TextArea",
+          "Field",
+          "ThemeProvider"
+        ],
+        "estimatedInputTokens": 16625,
+        "estimatedOutputTokens": 575
+      },
+      "ty-4": {
+        "durationMs": 471745,
+        "outputChars": 2818,
+        "outputLines": 75,
+        "docsRead": [
+          "Selector",
+          "Avatar",
+          "Dialog",
+          "Button",
+          "Card",
+          "Heading",
+          "Text",
+          "SegmentedControl",
+          "Badge",
+          "Icon",
+          "Spinner",
+          "Banner",
+          "HoverCard",
+          "TopNav",
+          "NavItem",
+          "IconButton",
+          "MobileNav",
+          "ProgressBar",
+          "AppShell",
+          "SideNav",
+          "Switch",
+          "Divider",
+          "TextInput",
+          "TextArea",
+          "Field",
+          "ThemeProvider"
+        ],
+        "estimatedInputTokens": 16625,
+        "estimatedOutputTokens": 705
+      },
+      "wd-5": {
+        "durationMs": 471749,
+        "outputChars": 1604,
+        "outputLines": 42,
+        "docsRead": [
+          "Selector",
+          "Avatar",
+          "Dialog",
+          "Button",
+          "Card",
+          "Heading",
+          "Text",
+          "SegmentedControl",
+          "Badge",
+          "Icon",
+          "Spinner",
+          "Banner",
+          "HoverCard",
+          "TopNav",
+          "NavItem",
+          "IconButton",
+          "MobileNav",
+          "ProgressBar",
+          "AppShell",
+          "SideNav",
+          "Switch",
+          "Divider",
+          "TextInput",
+          "TextArea",
+          "Field",
+          "ThemeProvider"
+        ],
+        "estimatedInputTokens": 16625,
+        "estimatedOutputTokens": 401
+      }
+    }
+  }
+}

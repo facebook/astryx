@@ -1,0 +1,5067 @@
+{
+  "astryx": {
+    "averages": {
+      "correctness": 2,
+      "accessibility": 98,
+      "codeQuality": 99,
+      "efficiency": 91,
+      "maintainability": 96
+    },
+    "overall": 77,
+    "byPrompt": {
+      "cwm-1": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/SegmentedControl' or its corresponding type declarations.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Badge' or its corresponding type declarations.",
+              "line": 9
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Divider' or its corresponding type declarations.",
+              "line": 10
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Icon' or its corresponding type declarations.",
+              "line": 11
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS7006: Parameter 'v' implicitly has an 'any' type.",
+              "line": 54
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "heading-skip",
+              "severity": "minor",
+              "detail": "Heading level skipped: h1 → h3"
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "totalLines": 100,
+            "codeLines": 95,
+            "stylingLines": 0,
+            "boilerplateLines": 18,
+            "logicLines": 77,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.18947368421052632,
+            "decisionsPerElement": 0.9,
+            "elementCount": 20,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 15,
+            "avgStateSpread": 30
+          }
+        }
+      },
+      "dd-6": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Avatar' or its corresponding type declarations.",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HoverCard' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Badge' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Divider' or its corresponding type declarations.",
+              "line": 8
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 82,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{id: \"_\", name: \"_\", role: \"_\", department: \"_\", email: \"_\", joinedAt: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 63,
+            "codeLines": 59,
+            "stylingLines": 0,
+            "boilerplateLines": 16,
+            "logicLines": 43,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.2711864406779661,
+            "decisionsPerElement": 1.1,
+            "elementCount": 19,
+            "stylingDecisionCount": 21,
+            "duplicateRatio": 0.07
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 20,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "fwc-10": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Selector' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Avatar' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Divider' or its corresponding type declarations.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Toast' or its corresponding type declarations.",
+              "line": 9
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS7006: Parameter 'value' implicitly has an 'any' type.",
+              "line": 55
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 82,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{id: \"_\", name: \"_\", email: \"_\", role: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 64,
+            "codeLines": 57,
+            "stylingLines": 0,
+            "boilerplateLines": 15,
+            "logicLines": 42,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.2631578947368421,
+            "decisionsPerElement": 0.8,
+            "elementCount": 12,
+            "stylingDecisionCount": 10,
+            "duplicateRatio": 0.07
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 8,
+            "avgStateSpread": 24
+          }
+        }
+      },
+      "io-3": {
+        "correctness": {
+          "score": 10,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/ProgressBar' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Icon' or its corresponding type declarations.",
+              "line": 7
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "input-no-label",
+              "severity": "critical",
+              "detail": "Form input without associated label",
+              "line": 55
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 97,
+          "findings": [],
+          "metrics": {
+            "totalLines": 94,
+            "codeLines": 85,
+            "stylingLines": 0,
+            "boilerplateLines": 7,
+            "logicLines": 78,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.08235294117647059,
+            "decisionsPerElement": 0.6,
+            "elementCount": 16,
+            "stylingDecisionCount": 9,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 83,
+          "findings": [
+            {
+              "rule": "moderate-state-spread",
+              "severity": "minor",
+              "detail": "Average state variable spread: 64 lines"
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 9,
+            "avgStateSpread": 64
+          }
+        }
+      },
+      "ps-1": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/AppShell' or its corresponding type declarations.",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/TopNav' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/SideNav' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/NavItem' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+              "line": 9
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Switch' or its corresponding type declarations.",
+              "line": 10
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Divider' or its corresponding type declarations.",
+              "line": 11
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Icon' or its corresponding type declarations.",
+              "line": 12
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "heading-skip",
+              "severity": "minor",
+              "detail": "Heading level skipped: h1 → h3"
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 94,
+          "findings": [],
+          "metrics": {
+            "totalLines": 88,
+            "codeLines": 86,
+            "stylingLines": 0,
+            "boilerplateLines": 12,
+            "logicLines": 74,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.13953488372093023,
+            "decisionsPerElement": 0.6,
+            "elementCount": 43,
+            "stylingDecisionCount": 25,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 20,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "rc-1": {
+        "correctness": {
+          "score": 10,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/TopNav' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/NavItem' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/IconButton' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/MobileNav' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 7
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 94,
+          "findings": [
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 27
+            },
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 48
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 88,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{label: \"_\", href: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 64,
+            "codeLines": 60,
+            "stylingLines": 0,
+            "boilerplateLines": 7,
+            "logicLines": 53,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.11666666666666667,
+            "decisionsPerElement": 0.5,
+            "elementCount": 11,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0.07
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 5,
+            "avgStateSpread": 27
+          }
+        }
+      },
+      "sd-1": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Spinner' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Banner' or its corresponding type declarations.",
+              "line": 9
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "totalLines": 86,
+            "codeLines": 77,
+            "stylingLines": 0,
+            "boilerplateLines": 15,
+            "logicLines": 62,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.19480519480519481,
+            "decisionsPerElement": 1,
+            "elementCount": 23,
+            "stylingDecisionCount": 24,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 23,
+            "avgStateSpread": 45
+          }
+        }
+      },
+      "tc-9": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/ThemeProvider' or its corresponding type declarations.",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Badge' or its corresponding type declarations.",
+              "line": 8
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 96,
+          "findings": [],
+          "metrics": {
+            "totalLines": 81,
+            "codeLines": 74,
+            "stylingLines": 0,
+            "boilerplateLines": 8,
+            "logicLines": 66,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.10810810810810811,
+            "decisionsPerElement": 0.8,
+            "elementCount": 15,
+            "stylingDecisionCount": 12,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 12,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "ty-4": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Divider' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Switch' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Selector' or its corresponding type declarations.",
+              "line": 8
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 95,
+          "findings": [],
+          "metrics": {
+            "totalLines": 75,
+            "codeLines": 70,
+            "stylingLines": 0,
+            "boilerplateLines": 8,
+            "logicLines": 62,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.11428571428571428,
+            "decisionsPerElement": 0.5,
+            "elementCount": 35,
+            "stylingDecisionCount": 17,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 11,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "wd-5": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Dialog' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Dialog' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/TextInput' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/TextArea' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Field' or its corresponding type declarations.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 9
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "console-log",
+              "severity": "minor",
+              "detail": "console.log left in code",
+              "line": 17
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 95,
+          "findings": [],
+          "metrics": {
+            "totalLines": 72,
+            "codeLines": 68,
+            "stylingLines": 0,
+            "boilerplateLines": 9,
+            "logicLines": 59,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.1323529411764706,
+            "decisionsPerElement": 0.5,
+            "elementCount": 11,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 6,
+            "avgStateSpread": 40
+          }
+        }
+      }
+    },
+    "byCategory": {
+      "clone-with-modification": {
+        "correctness": 0,
+        "accessibility": 97,
+        "codeQuality": 100,
+        "efficiency": 92,
+        "maintainability": 92
+      },
+      "data-display": {
+        "correctness": 0,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 82,
+        "maintainability": 100
+      },
+      "feature-with-constraint": {
+        "correctness": 0,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 82,
+        "maintainability": 100
+      },
+      "integration-oriented": {
+        "correctness": 10,
+        "accessibility": 85,
+        "codeQuality": 100,
+        "efficiency": 97,
+        "maintainability": 83
+      },
+      "page-setup": {
+        "correctness": 0,
+        "accessibility": 97,
+        "codeQuality": 100,
+        "efficiency": 94,
+        "maintainability": 100
+      },
+      "responsive-context": {
+        "correctness": 10,
+        "accessibility": 100,
+        "codeQuality": 94,
+        "efficiency": 88,
+        "maintainability": 100
+      },
+      "state-driven": {
+        "correctness": 0,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 92,
+        "maintainability": 92
+      },
+      "theme-customization": {
+        "correctness": 0,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 96,
+        "maintainability": 100
+      },
+      "typography": {
+        "correctness": 0,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 95,
+        "maintainability": 100
+      },
+      "workflow-description": {
+        "correctness": 0,
+        "accessibility": 100,
+        "codeQuality": 97,
+        "efficiency": 95,
+        "maintainability": 92
+      }
+    },
+    "darkModeRate": 0,
+    "cost": {
+      "totalDurationMs": 4717543,
+      "avgDurationMs": 471754,
+      "avgOutputChars": 2607,
+      "avgOutputLines": 79,
+      "avgDocsRead": 28,
+      "estimatedInputTokens": 178750,
+      "estimatedOutputTokens": 6517,
+      "byPrompt": {
+        "cwm-1": {
+          "durationMs": 471756,
+          "outputChars": 3368,
+          "outputLines": 100,
+          "docsRead": [
+            "Selector",
+            "Avatar",
+            "Dialog",
+            "Button",
+            "Card",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "SegmentedControl",
+            "Badge",
+            "Icon",
+            "Spinner",
+            "Banner",
+            "HoverCard",
+            "TopNav",
+            "NavItem",
+            "IconButton",
+            "MobileNav",
+            "ProgressBar",
+            "AppShell",
+            "SideNav",
+            "Switch",
+            "Divider",
+            "TextInput",
+            "TextArea",
+            "Field",
+            "ThemeProvider"
+          ],
+          "estimatedInputTokens": 17875,
+          "estimatedOutputTokens": 842
+        },
+        "dd-6": {
+          "durationMs": 471755,
+          "outputChars": 2572,
+          "outputLines": 63,
+          "docsRead": [
+            "Selector",
+            "Avatar",
+            "Dialog",
+            "Button",
+            "Card",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "SegmentedControl",
+            "Badge",
+            "Icon",
+            "Spinner",
+            "Banner",
+            "HoverCard",
+            "TopNav",
+            "NavItem",
+            "IconButton",
+            "MobileNav",
+            "ProgressBar",
+            "AppShell",
+            "SideNav",
+            "Switch",
+            "Divider",
+            "TextInput",
+            "TextArea",
+            "Field",
+            "ThemeProvider"
+          ],
+          "estimatedInputTokens": 17875,
+          "estimatedOutputTokens": 643
+        },
+        "fwc-10": {
+          "durationMs": 471757,
+          "outputChars": 2235,
+          "outputLines": 64,
+          "docsRead": [
+            "Selector",
+            "Avatar",
+            "Dialog",
+            "Button",
+            "Card",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "SegmentedControl",
+            "Badge",
+            "Icon",
+            "Spinner",
+            "Banner",
+            "HoverCard",
+            "TopNav",
+            "NavItem",
+            "IconButton",
+            "MobileNav",
+            "ProgressBar",
+            "AppShell",
+            "SideNav",
+            "Switch",
+            "Divider",
+            "TextInput",
+            "TextArea",
+            "Field",
+            "ThemeProvider"
+          ],
+          "estimatedInputTokens": 17875,
+          "estimatedOutputTokens": 559
+        },
+        "io-3": {
+          "durationMs": 471754,
+          "outputChars": 2776,
+          "outputLines": 94,
+          "docsRead": [
+            "Selector",
+            "Avatar",
+            "Dialog",
+            "Button",
+            "Card",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "SegmentedControl",
+            "Badge",
+            "Icon",
+            "Spinner",
+            "Banner",
+            "HoverCard",
+            "TopNav",
+            "NavItem",
+            "IconButton",
+            "MobileNav",
+            "ProgressBar",
+            "AppShell",
+            "SideNav",
+            "Switch",
+            "Divider",
+            "TextInput",
+            "TextArea",
+            "Field",
+            "ThemeProvider"
+          ],
+          "estimatedInputTokens": 17875,
+          "estimatedOutputTokens": 694
+        },
+        "ps-1": {
+          "durationMs": 471753,
+          "outputChars": 3478,
+          "outputLines": 88,
+          "docsRead": [
+            "Selector",
+            "Avatar",
+            "Dialog",
+            "Button",
+            "Card",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "SegmentedControl",
+            "Badge",
+            "Icon",
+            "Spinner",
+            "Banner",
+            "HoverCard",
+            "TopNav",
+            "NavItem",
+            "IconButton",
+            "MobileNav",
+            "ProgressBar",
+            "AppShell",
+            "SideNav",
+            "Switch",
+            "Divider",
+            "TextInput",
+            "TextArea",
+            "Field",
+            "ThemeProvider"
+          ],
+          "estimatedInputTokens": 17875,
+          "estimatedOutputTokens": 870
+        },
+        "rc-1": {
+          "durationMs": 471754,
+          "outputChars": 1921,
+          "outputLines": 64,
+          "docsRead": [
+            "Selector",
+            "Avatar",
+            "Dialog",
+            "Button",
+            "Card",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "SegmentedControl",
+            "Badge",
+            "Icon",
+            "Spinner",
+            "Banner",
+            "HoverCard",
+            "TopNav",
+            "NavItem",
+            "IconButton",
+            "MobileNav",
+            "ProgressBar",
+            "AppShell",
+            "SideNav",
+            "Switch",
+            "Divider",
+            "TextInput",
+            "TextArea",
+            "Field",
+            "ThemeProvider"
+          ],
+          "estimatedInputTokens": 17875,
+          "estimatedOutputTokens": 480
+        },
+        "sd-1": {
+          "durationMs": 471755,
+          "outputChars": 2543,
+          "outputLines": 86,
+          "docsRead": [
+            "Selector",
+            "Avatar",
+            "Dialog",
+            "Button",
+            "Card",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "SegmentedControl",
+            "Badge",
+            "Icon",
+            "Spinner",
+            "Banner",
+            "HoverCard",
+            "TopNav",
+            "NavItem",
+            "IconButton",
+            "MobileNav",
+            "ProgressBar",
+            "AppShell",
+            "SideNav",
+            "Switch",
+            "Divider",
+            "TextInput",
+            "TextArea",
+            "Field",
+            "ThemeProvider"
+          ],
+          "estimatedInputTokens": 17875,
+          "estimatedOutputTokens": 636
+        },
+        "tc-9": {
+          "durationMs": 471751,
+          "outputChars": 2301,
+          "outputLines": 81,
+          "docsRead": [
+            "Selector",
+            "Avatar",
+            "Dialog",
+            "Button",
+            "Card",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "SegmentedControl",
+            "Badge",
+            "Icon",
+            "Spinner",
+            "Banner",
+            "HoverCard",
+            "TopNav",
+            "NavItem",
+            "IconButton",
+            "MobileNav",
+            "ProgressBar",
+            "AppShell",
+            "SideNav",
+            "Switch",
+            "Divider",
+            "TextInput",
+            "TextArea",
+            "Field",
+            "ThemeProvider"
+          ],
+          "estimatedInputTokens": 17875,
+          "estimatedOutputTokens": 575
+        },
+        "ty-4": {
+          "durationMs": 471752,
+          "outputChars": 2818,
+          "outputLines": 75,
+          "docsRead": [
+            "Selector",
+            "Avatar",
+            "Dialog",
+            "Button",
+            "Card",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "SegmentedControl",
+            "Badge",
+            "Icon",
+            "Spinner",
+            "Banner",
+            "HoverCard",
+            "TopNav",
+            "NavItem",
+            "IconButton",
+            "MobileNav",
+            "ProgressBar",
+            "AppShell",
+            "SideNav",
+            "Switch",
+            "Divider",
+            "TextInput",
+            "TextArea",
+            "Field",
+            "ThemeProvider"
+          ],
+          "estimatedInputTokens": 17875,
+          "estimatedOutputTokens": 705
+        },
+        "wd-5": {
+          "durationMs": 471756,
+          "outputChars": 2053,
+          "outputLines": 72,
+          "docsRead": [
+            "Selector",
+            "Avatar",
+            "Dialog",
+            "Button",
+            "Card",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "SegmentedControl",
+            "Badge",
+            "Icon",
+            "Spinner",
+            "Banner",
+            "HoverCard",
+            "TopNav",
+            "NavItem",
+            "IconButton",
+            "MobileNav",
+            "ProgressBar",
+            "AppShell",
+            "SideNav",
+            "Switch",
+            "Divider",
+            "TextInput",
+            "TextArea",
+            "Field",
+            "ThemeProvider"
+          ],
+          "estimatedInputTokens": 17875,
+          "estimatedOutputTokens": 513
+        }
+      }
+    }
+  },
+  "baseline": {
+    "averages": {
+      "correctness": 100,
+      "accessibility": 99,
+      "codeQuality": 97,
+      "efficiency": 83,
+      "maintainability": 95
+    },
+    "overall": 95,
+    "byPrompt": {
+      "cwm-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 83,
+          "findings": [],
+          "metrics": {
+            "totalLines": 70,
+            "codeLines": 65,
+            "stylingLines": 15,
+            "boilerplateLines": 13,
+            "logicLines": 37,
+            "stylingRatio": 0.23076923076923078,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 1.5,
+            "elementCount": 22,
+            "stylingDecisionCount": 34,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 9,
+            "avgStateSpread": 16
+          }
+        }
+      },
+      "dd-6": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 84,
+          "findings": [
+            {
+              "rule": "missing-key",
+              "severity": "moderate",
+              "detail": "Array .map() without key prop",
+              "line": 33
+            },
+            {
+              "rule": "missing-key",
+              "severity": "moderate",
+              "detail": "Array .map() without key prop",
+              "line": 43
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 76,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{id: \"_\", name: \"_\", role: \"_\", department: \"_\", email: \"_\", joinedAt: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 64,
+            "codeLines": 60,
+            "stylingLines": 13,
+            "boilerplateLines": 13,
+            "logicLines": 34,
+            "stylingRatio": 0.21666666666666667,
+            "boilerplateRatio": 0.21666666666666667,
+            "decisionsPerElement": 1.3,
+            "elementCount": 23,
+            "stylingDecisionCount": 31,
+            "duplicateRatio": 0.07
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 10,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "fwc-10": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 92,
+          "findings": [
+            {
+              "rule": "missing-key",
+              "severity": "moderate",
+              "detail": "Array .map() without key prop",
+              "line": 39
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 80,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{id: \"_\", name: \"_\", email: \"_\", role: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 61,
+            "codeLines": 55,
+            "stylingLines": 7,
+            "boilerplateLines": 11,
+            "logicLines": 37,
+            "stylingRatio": 0.12727272727272726,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 17,
+            "stylingDecisionCount": 12,
+            "duplicateRatio": 0.07
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 3,
+            "avgStateSpread": 14
+          }
+        }
+      },
+      "io-3": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "input-no-label",
+              "severity": "critical",
+              "detail": "Form input without associated label",
+              "line": 46
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "totalLines": 72,
+            "codeLines": 67,
+            "stylingLines": 9,
+            "boilerplateLines": 4,
+            "logicLines": 54,
+            "stylingRatio": 0.13432835820895522,
+            "boilerplateRatio": 0.05970149253731343,
+            "decisionsPerElement": 1.4,
+            "elementCount": 16,
+            "stylingDecisionCount": 22,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 8,
+            "avgStateSpread": 49
+          }
+        }
+      },
+      "ps-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 75,
+          "findings": [
+            {
+              "rule": "repeated-classname",
+              "severity": "moderate",
+              "detail": "className pattern repeated 4 times",
+              "count": 4,
+              "example": "flex items-center justify-between"
+            },
+            {
+              "rule": "repeated-classname",
+              "severity": "moderate",
+              "detail": "className pattern repeated 4 times",
+              "count": 4,
+              "example": "text-xs text-muted-foreground"
+            }
+          ],
+          "metrics": {
+            "totalLines": 78,
+            "codeLines": 75,
+            "stylingLines": 24,
+            "boilerplateLines": 5,
+            "logicLines": 46,
+            "stylingRatio": 0.32,
+            "boilerplateRatio": 0.06666666666666667,
+            "decisionsPerElement": 1.5,
+            "elementCount": 40,
+            "stylingDecisionCount": 58,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 15,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "rc-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 94,
+          "findings": [
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 22
+            },
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 37
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 81,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{label: \"_\", href: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 49,
+            "codeLines": 45,
+            "stylingLines": 9,
+            "boilerplateLines": 4,
+            "logicLines": 32,
+            "stylingRatio": 0.2,
+            "boilerplateRatio": 0.08888888888888889,
+            "decisionsPerElement": 2.2,
+            "elementCount": 13,
+            "stylingDecisionCount": 29,
+            "duplicateRatio": 0.09
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 7,
+            "avgStateSpread": 14
+          }
+        }
+      },
+      "sd-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 81,
+          "findings": [
+            {
+              "rule": "repeated-classname",
+              "severity": "moderate",
+              "detail": "className pattern repeated 3 times",
+              "count": 3,
+              "example": "text-xs text-muted-foreground"
+            }
+          ],
+          "metrics": {
+            "totalLines": 84,
+            "codeLines": 75,
+            "stylingLines": 15,
+            "boilerplateLines": 11,
+            "logicLines": 49,
+            "stylingRatio": 0.2,
+            "boilerplateRatio": 0.14666666666666667,
+            "decisionsPerElement": 1.4,
+            "elementCount": 27,
+            "stylingDecisionCount": 39,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 11,
+            "avgStateSpread": 45
+          }
+        }
+      },
+      "tc-9": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 90,
+          "findings": [],
+          "metrics": {
+            "totalLines": 43,
+            "codeLines": 39,
+            "stylingLines": 7,
+            "boilerplateLines": 3,
+            "logicLines": 29,
+            "stylingRatio": 0.1794871794871795,
+            "boilerplateRatio": 0.07692307692307693,
+            "decisionsPerElement": 0.9,
+            "elementCount": 17,
+            "stylingDecisionCount": 15,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 73,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "4 magic values (hardcoded colors, spacing, or typography)",
+              "count": 4
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0.6,
+            "magicValueCount": 4,
+            "semanticValueCount": 6,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "ty-4": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 83,
+          "findings": [
+            {
+              "rule": "repeated-classname",
+              "severity": "moderate",
+              "detail": "className pattern repeated 6 times",
+              "count": 6,
+              "example": "flex items-center justify-between"
+            }
+          ],
+          "metrics": {
+            "totalLines": 81,
+            "codeLines": 76,
+            "stylingLines": 19,
+            "boilerplateLines": 4,
+            "logicLines": 53,
+            "stylingRatio": 0.25,
+            "boilerplateRatio": 0.05263157894736842,
+            "decisionsPerElement": 0.8,
+            "elementCount": 50,
+            "stylingDecisionCount": 42,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 6,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "wd-5": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "console-log",
+              "severity": "minor",
+              "detail": "console.log left in code",
+              "line": 14
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 93,
+          "findings": [],
+          "metrics": {
+            "totalLines": 58,
+            "codeLines": 54,
+            "stylingLines": 3,
+            "boilerplateLines": 6,
+            "logicLines": 45,
+            "stylingRatio": 0.05555555555555555,
+            "boilerplateRatio": 0.1111111111111111,
+            "decisionsPerElement": 0.3,
+            "elementCount": 16,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 32
+          }
+        }
+      }
+    },
+    "byCategory": {
+      "clone-with-modification": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 83,
+        "maintainability": 100
+      },
+      "data-display": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 84,
+        "efficiency": 76,
+        "maintainability": 100
+      },
+      "feature-with-constraint": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 92,
+        "efficiency": 80,
+        "maintainability": 100
+      },
+      "integration-oriented": {
+        "correctness": 100,
+        "accessibility": 85,
+        "codeQuality": 100,
+        "efficiency": 92,
+        "maintainability": 92
+      },
+      "page-setup": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 75,
+        "maintainability": 100
+      },
+      "responsive-context": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 94,
+        "efficiency": 81,
+        "maintainability": 100
+      },
+      "state-driven": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 81,
+        "maintainability": 92
+      },
+      "theme-customization": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 90,
+        "maintainability": 73
+      },
+      "typography": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 83,
+        "maintainability": 100
+      },
+      "workflow-description": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 97,
+        "efficiency": 93,
+        "maintainability": 92
+      }
+    },
+    "darkModeRate": 0,
+    "cost": {
+      "totalDurationMs": 4717421,
+      "avgDurationMs": 471742,
+      "avgOutputChars": 2525,
+      "avgOutputLines": 66,
+      "avgDocsRead": 0,
+      "estimatedInputTokens": 3750,
+      "estimatedOutputTokens": 6314,
+      "byPrompt": {
+        "cwm-1": {
+          "durationMs": 471743,
+          "outputChars": 3037,
+          "outputLines": 70,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 759
+        },
+        "dd-6": {
+          "durationMs": 471742,
+          "outputChars": 2783,
+          "outputLines": 64,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 696
+        },
+        "fwc-10": {
+          "durationMs": 471743,
+          "outputChars": 2223,
+          "outputLines": 61,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 556
+        },
+        "io-3": {
+          "durationMs": 471742,
+          "outputChars": 2535,
+          "outputLines": 72,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 634
+        },
+        "ps-1": {
+          "durationMs": 471741,
+          "outputChars": 3240,
+          "outputLines": 78,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 810
+        },
+        "rc-1": {
+          "durationMs": 471742,
+          "outputChars": 1661,
+          "outputLines": 49,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 415
+        },
+        "sd-1": {
+          "durationMs": 471743,
+          "outputChars": 2612,
+          "outputLines": 84,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 653
+        },
+        "tc-9": {
+          "durationMs": 471741,
+          "outputChars": 2068,
+          "outputLines": 43,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 517
+        },
+        "ty-4": {
+          "durationMs": 471741,
+          "outputChars": 3218,
+          "outputLines": 81,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 805
+        },
+        "wd-5": {
+          "durationMs": 471743,
+          "outputChars": 1877,
+          "outputLines": 58,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 469
+        }
+      }
+    }
+  },
+  "html": {
+    "averages": {
+      "correctness": 100,
+      "accessibility": 98,
+      "codeQuality": 97,
+      "efficiency": 78,
+      "maintainability": 30
+    },
+    "overall": 81,
+    "byPrompt": {
+      "cwm-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "heading-skip",
+              "severity": "minor",
+              "detail": "Heading level skipped: h1 → h3"
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 50,
+            "codeLines": 45,
+            "stylingLines": 15,
+            "boilerplateLines": 8,
+            "logicLines": 22,
+            "stylingRatio": 0.3333333333333333,
+            "boilerplateRatio": 0.17777777777777778,
+            "decisionsPerElement": 3.4,
+            "elementCount": 17,
+            "stylingDecisionCount": 57,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 32,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "15 magic values (hardcoded colors, spacing, or typography)",
+              "count": 15
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 15,
+            "semanticValueCount": 0,
+            "avgStateSpread": 12
+          }
+        }
+      },
+      "dd-6": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 84,
+          "findings": [
+            {
+              "rule": "missing-key",
+              "severity": "moderate",
+              "detail": "Array .map() without key prop",
+              "line": 33
+            },
+            {
+              "rule": "missing-key",
+              "severity": "moderate",
+              "detail": "Array .map() without key prop",
+              "line": 42
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 77,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{id: \"_\", name: \"_\", role: \"_\", department: \"_\", email: \"_\", joinedAt: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 62,
+            "codeLines": 57,
+            "stylingLines": 14,
+            "boilerplateLines": 9,
+            "logicLines": 34,
+            "stylingRatio": 0.24561403508771928,
+            "boilerplateRatio": 0.15789473684210525,
+            "decisionsPerElement": 2.9,
+            "elementCount": 19,
+            "stylingDecisionCount": 56,
+            "duplicateRatio": 0.07
+          }
+        },
+        "maintainability": {
+          "score": 32,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "14 magic values (hardcoded colors, spacing, or typography)",
+              "count": 14
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 14,
+            "semanticValueCount": 0,
+            "avgStateSpread": 18
+          }
+        }
+      },
+      "fwc-10": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 92,
+          "findings": [
+            {
+              "rule": "missing-key",
+              "severity": "moderate",
+              "detail": "Array .map() without key prop",
+              "line": 21
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{id: \"_\", name: \"_\", email: \"_\", role: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 54,
+            "codeLines": 48,
+            "stylingLines": 10,
+            "boilerplateLines": 7,
+            "logicLines": 31,
+            "stylingRatio": 0.20833333333333334,
+            "boilerplateRatio": 0.14583333333333334,
+            "decisionsPerElement": 2.3,
+            "elementCount": 13,
+            "stylingDecisionCount": 30,
+            "duplicateRatio": 0.08
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 11
+          }
+        }
+      },
+      "io-3": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "input-no-label",
+              "severity": "critical",
+              "detail": "Form input without associated label",
+              "line": 34
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 91,
+          "findings": [],
+          "metrics": {
+            "totalLines": 56,
+            "codeLines": 51,
+            "stylingLines": 10,
+            "boilerplateLines": 1,
+            "logicLines": 40,
+            "stylingRatio": 0.19607843137254902,
+            "boilerplateRatio": 0.0196078431372549,
+            "decisionsPerElement": 2.2,
+            "elementCount": 14,
+            "stylingDecisionCount": 31,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 24,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "12 magic values (hardcoded colors, spacing, or typography)",
+              "count": 12
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 12,
+            "semanticValueCount": 0,
+            "avgStateSpread": 39
+          }
+        }
+      },
+      "ps-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "heading-skip",
+              "severity": "minor",
+              "detail": "Heading level skipped: h1 → h3"
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 82,
+          "findings": [],
+          "metrics": {
+            "totalLines": 61,
+            "codeLines": 56,
+            "stylingLines": 24,
+            "boilerplateLines": 1,
+            "logicLines": 31,
+            "stylingRatio": 0.42857142857142855,
+            "boilerplateRatio": 0.017857142857142856,
+            "decisionsPerElement": 2.2,
+            "elementCount": 38,
+            "stylingDecisionCount": 82,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 24,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "23 magic values (hardcoded colors, spacing, or typography)",
+              "count": 23
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 23,
+            "semanticValueCount": 0,
+            "avgStateSpread": 40
+          }
+        }
+      },
+      "rc-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 94,
+          "findings": [
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 19
+            },
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 30
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 79,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{label: \"_\", href: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 43,
+            "codeLines": 39,
+            "stylingLines": 8,
+            "boilerplateLines": 1,
+            "logicLines": 30,
+            "stylingRatio": 0.20512820512820512,
+            "boilerplateRatio": 0.02564102564102564,
+            "decisionsPerElement": 4.1,
+            "elementCount": 9,
+            "stylingDecisionCount": 37,
+            "duplicateRatio": 0.1
+          }
+        },
+        "maintainability": {
+          "score": 32,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "7 magic values (hardcoded colors, spacing, or typography)",
+              "count": 7
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 7,
+            "semanticValueCount": 0,
+            "avgStateSpread": 15
+          }
+        }
+      },
+      "sd-1": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 77,
+          "findings": [],
+          "metrics": {
+            "totalLines": 57,
+            "codeLines": 48,
+            "stylingLines": 13,
+            "boilerplateLines": 15,
+            "logicLines": 20,
+            "stylingRatio": 0.2708333333333333,
+            "boilerplateRatio": 0.3125,
+            "decisionsPerElement": 1.7,
+            "elementCount": 20,
+            "stylingDecisionCount": 33,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 24,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "13 magic values (hardcoded colors, spacing, or typography)",
+              "count": 13
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 13,
+            "semanticValueCount": 0,
+            "avgStateSpread": 37
+          }
+        }
+      },
+      "tc-9": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 84,
+          "findings": [],
+          "metrics": {
+            "totalLines": 35,
+            "codeLines": 32,
+            "stylingLines": 13,
+            "boilerplateLines": 0,
+            "logicLines": 19,
+            "stylingRatio": 0.40625,
+            "boilerplateRatio": 0,
+            "decisionsPerElement": 2.5,
+            "elementCount": 15,
+            "stylingDecisionCount": 38,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 32,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "10 magic values (hardcoded colors, spacing, or typography)",
+              "count": 10
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 10,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "ty-4": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 50,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 3 times",
+              "count": 3,
+              "example": "<hr style={{marginBottom: N}} />"
+            },
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 3 times",
+              "count": 3,
+              "example": "<div style={{display: \"_\", justifyContent: \"_\", alignItems: \"_\", marginBottom: N"
+            },
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 3 times",
+              "count": 3,
+              "example": "<div style={{display: \"_\", justifyContent: \"_\", alignItems: \"_\"}}>"
+            },
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 3 times",
+              "count": 3,
+              "example": "<input type=\"_\" role=\"_\" aria-label=\"_\" />"
+            }
+          ],
+          "metrics": {
+            "totalLines": 54,
+            "codeLines": 50,
+            "stylingLines": 28,
+            "boilerplateLines": 0,
+            "logicLines": 22,
+            "stylingRatio": 0.56,
+            "boilerplateRatio": 0,
+            "decisionsPerElement": 2,
+            "elementCount": 38,
+            "stylingDecisionCount": 77,
+            "duplicateRatio": 0.24
+          }
+        },
+        "maintainability": {
+          "score": 32,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "8 magic values (hardcoded colors, spacing, or typography)",
+              "count": 8
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 8,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "wd-5": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "console-log",
+              "severity": "minor",
+              "detail": "console.log left in code",
+              "line": 9
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 84,
+          "findings": [],
+          "metrics": {
+            "totalLines": 44,
+            "codeLines": 40,
+            "stylingLines": 12,
+            "boilerplateLines": 1,
+            "logicLines": 27,
+            "stylingRatio": 0.3,
+            "boilerplateRatio": 0.025,
+            "decisionsPerElement": 4.1,
+            "elementCount": 14,
+            "stylingDecisionCount": 58,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 32,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "12 magic values (hardcoded colors, spacing, or typography)",
+              "count": 12
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 12,
+            "semanticValueCount": 0,
+            "avgStateSpread": 25
+          }
+        }
+      }
+    },
+    "byCategory": {
+      "clone-with-modification": {
+        "correctness": 100,
+        "accessibility": 97,
+        "codeQuality": 100,
+        "efficiency": 78,
+        "maintainability": 32
+      },
+      "data-display": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 84,
+        "efficiency": 77,
+        "maintainability": 32
+      },
+      "feature-with-constraint": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 92,
+        "efficiency": 78,
+        "maintainability": 37
+      },
+      "integration-oriented": {
+        "correctness": 100,
+        "accessibility": 85,
+        "codeQuality": 100,
+        "efficiency": 91,
+        "maintainability": 24
+      },
+      "page-setup": {
+        "correctness": 100,
+        "accessibility": 97,
+        "codeQuality": 100,
+        "efficiency": 82,
+        "maintainability": 24
+      },
+      "responsive-context": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 94,
+        "efficiency": 79,
+        "maintainability": 32
+      },
+      "state-driven": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 77,
+        "maintainability": 24
+      },
+      "theme-customization": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 84,
+        "maintainability": 32
+      },
+      "typography": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 50,
+        "maintainability": 32
+      },
+      "workflow-description": {
+        "correctness": 100,
+        "accessibility": 100,
+        "codeQuality": 97,
+        "efficiency": 84,
+        "maintainability": 32
+      }
+    },
+    "darkModeRate": 0,
+    "cost": {
+      "totalDurationMs": 4717397,
+      "avgDurationMs": 471740,
+      "avgOutputChars": 2738,
+      "avgOutputLines": 52,
+      "avgDocsRead": 0,
+      "estimatedInputTokens": 3750,
+      "estimatedOutputTokens": 6845,
+      "byPrompt": {
+        "cwm-1": {
+          "durationMs": 471740,
+          "outputChars": 3087,
+          "outputLines": 50,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 772
+        },
+        "dd-6": {
+          "durationMs": 471740,
+          "outputChars": 3140,
+          "outputLines": 62,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 785
+        },
+        "fwc-10": {
+          "durationMs": 471740,
+          "outputChars": 2156,
+          "outputLines": 54,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 539
+        },
+        "io-3": {
+          "durationMs": 471740,
+          "outputChars": 2731,
+          "outputLines": 56,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 683
+        },
+        "ps-1": {
+          "durationMs": 471739,
+          "outputChars": 4236,
+          "outputLines": 61,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 1059
+        },
+        "rc-1": {
+          "durationMs": 471740,
+          "outputChars": 1868,
+          "outputLines": 43,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 467
+        },
+        "sd-1": {
+          "durationMs": 471740,
+          "outputChars": 2199,
+          "outputLines": 57,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 550
+        },
+        "tc-9": {
+          "durationMs": 471739,
+          "outputChars": 2149,
+          "outputLines": 35,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 537
+        },
+        "ty-4": {
+          "durationMs": 471739,
+          "outputChars": 3273,
+          "outputLines": 54,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 818
+        },
+        "wd-5": {
+          "durationMs": 471740,
+          "outputChars": 2538,
+          "outputLines": 44,
+          "docsRead": [],
+          "estimatedInputTokens": 375,
+          "estimatedOutputTokens": 635
+        }
+      }
+    }
+  },
+  "winners": {
+    "correctness": "tie",
+    "accessibility": "baseline",
+    "codeQuality": "astryx",
+    "efficiency": "astryx",
+    "maintainability": "astryx"
+  },
+  "byPrompt": {
+    "cwm-1": {
+      "astryx": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/SegmentedControl' or its corresponding type declarations.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Badge' or its corresponding type declarations.",
+              "line": 9
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Divider' or its corresponding type declarations.",
+              "line": 10
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Icon' or its corresponding type declarations.",
+              "line": 11
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS7006: Parameter 'v' implicitly has an 'any' type.",
+              "line": 54
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "heading-skip",
+              "severity": "minor",
+              "detail": "Heading level skipped: h1 → h3"
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "totalLines": 100,
+            "codeLines": 95,
+            "stylingLines": 0,
+            "boilerplateLines": 18,
+            "logicLines": 77,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.18947368421052632,
+            "decisionsPerElement": 0.9,
+            "elementCount": 20,
+            "stylingDecisionCount": 18,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 15,
+            "avgStateSpread": 30
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 83,
+          "findings": [],
+          "metrics": {
+            "totalLines": 70,
+            "codeLines": 65,
+            "stylingLines": 15,
+            "boilerplateLines": 13,
+            "logicLines": 37,
+            "stylingRatio": 0.23076923076923078,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 1.5,
+            "elementCount": 22,
+            "stylingDecisionCount": 34,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 9,
+            "avgStateSpread": 16
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "heading-skip",
+              "severity": "minor",
+              "detail": "Heading level skipped: h1 → h3"
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [],
+          "metrics": {
+            "totalLines": 50,
+            "codeLines": 45,
+            "stylingLines": 15,
+            "boilerplateLines": 8,
+            "logicLines": 22,
+            "stylingRatio": 0.3333333333333333,
+            "boilerplateRatio": 0.17777777777777778,
+            "decisionsPerElement": 3.4,
+            "elementCount": 17,
+            "stylingDecisionCount": 57,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 32,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "15 magic values (hardcoded colors, spacing, or typography)",
+              "count": 15
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 15,
+            "semanticValueCount": 0,
+            "avgStateSpread": 12
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "dd-6": {
+      "astryx": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Avatar' or its corresponding type declarations.",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HoverCard' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Badge' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Divider' or its corresponding type declarations.",
+              "line": 8
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 82,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{id: \"_\", name: \"_\", role: \"_\", department: \"_\", email: \"_\", joinedAt: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 63,
+            "codeLines": 59,
+            "stylingLines": 0,
+            "boilerplateLines": 16,
+            "logicLines": 43,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.2711864406779661,
+            "decisionsPerElement": 1.1,
+            "elementCount": 19,
+            "stylingDecisionCount": 21,
+            "duplicateRatio": 0.07
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 20,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 84,
+          "findings": [
+            {
+              "rule": "missing-key",
+              "severity": "moderate",
+              "detail": "Array .map() without key prop",
+              "line": 33
+            },
+            {
+              "rule": "missing-key",
+              "severity": "moderate",
+              "detail": "Array .map() without key prop",
+              "line": 43
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 76,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{id: \"_\", name: \"_\", role: \"_\", department: \"_\", email: \"_\", joinedAt: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 64,
+            "codeLines": 60,
+            "stylingLines": 13,
+            "boilerplateLines": 13,
+            "logicLines": 34,
+            "stylingRatio": 0.21666666666666667,
+            "boilerplateRatio": 0.21666666666666667,
+            "decisionsPerElement": 1.3,
+            "elementCount": 23,
+            "stylingDecisionCount": 31,
+            "duplicateRatio": 0.07
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 10,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 84,
+          "findings": [
+            {
+              "rule": "missing-key",
+              "severity": "moderate",
+              "detail": "Array .map() without key prop",
+              "line": 33
+            },
+            {
+              "rule": "missing-key",
+              "severity": "moderate",
+              "detail": "Array .map() without key prop",
+              "line": 42
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 77,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{id: \"_\", name: \"_\", role: \"_\", department: \"_\", email: \"_\", joinedAt: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 62,
+            "codeLines": 57,
+            "stylingLines": 14,
+            "boilerplateLines": 9,
+            "logicLines": 34,
+            "stylingRatio": 0.24561403508771928,
+            "boilerplateRatio": 0.15789473684210525,
+            "decisionsPerElement": 2.9,
+            "elementCount": 19,
+            "stylingDecisionCount": 56,
+            "duplicateRatio": 0.07
+          }
+        },
+        "maintainability": {
+          "score": 32,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "14 magic values (hardcoded colors, spacing, or typography)",
+              "count": 14
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 14,
+            "semanticValueCount": 0,
+            "avgStateSpread": 18
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "fwc-10": {
+      "astryx": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Selector' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Avatar' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Divider' or its corresponding type declarations.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Toast' or its corresponding type declarations.",
+              "line": 9
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS7006: Parameter 'value' implicitly has an 'any' type.",
+              "line": 55
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 82,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{id: \"_\", name: \"_\", email: \"_\", role: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 64,
+            "codeLines": 57,
+            "stylingLines": 0,
+            "boilerplateLines": 15,
+            "logicLines": 42,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.2631578947368421,
+            "decisionsPerElement": 0.8,
+            "elementCount": 12,
+            "stylingDecisionCount": 10,
+            "duplicateRatio": 0.07
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 8,
+            "avgStateSpread": 24
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 92,
+          "findings": [
+            {
+              "rule": "missing-key",
+              "severity": "moderate",
+              "detail": "Array .map() without key prop",
+              "line": 39
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 80,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{id: \"_\", name: \"_\", email: \"_\", role: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 61,
+            "codeLines": 55,
+            "stylingLines": 7,
+            "boilerplateLines": 11,
+            "logicLines": 37,
+            "stylingRatio": 0.12727272727272726,
+            "boilerplateRatio": 0.2,
+            "decisionsPerElement": 0.7,
+            "elementCount": 17,
+            "stylingDecisionCount": 12,
+            "duplicateRatio": 0.07
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 3,
+            "avgStateSpread": 14
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 92,
+          "findings": [
+            {
+              "rule": "missing-key",
+              "severity": "moderate",
+              "detail": "Array .map() without key prop",
+              "line": 21
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 78,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{id: \"_\", name: \"_\", email: \"_\", role: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 54,
+            "codeLines": 48,
+            "stylingLines": 10,
+            "boilerplateLines": 7,
+            "logicLines": 31,
+            "stylingRatio": 0.20833333333333334,
+            "boilerplateRatio": 0.14583333333333334,
+            "decisionsPerElement": 2.3,
+            "elementCount": 13,
+            "stylingDecisionCount": 30,
+            "duplicateRatio": 0.08
+          }
+        },
+        "maintainability": {
+          "score": 37,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "5 magic values (hardcoded colors, spacing, or typography)",
+              "count": 5
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 5,
+            "semanticValueCount": 0,
+            "avgStateSpread": 11
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "io-3": {
+      "astryx": {
+        "correctness": {
+          "score": 10,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/ProgressBar' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Icon' or its corresponding type declarations.",
+              "line": 7
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "input-no-label",
+              "severity": "critical",
+              "detail": "Form input without associated label",
+              "line": 55
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 97,
+          "findings": [],
+          "metrics": {
+            "totalLines": 94,
+            "codeLines": 85,
+            "stylingLines": 0,
+            "boilerplateLines": 7,
+            "logicLines": 78,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.08235294117647059,
+            "decisionsPerElement": 0.6,
+            "elementCount": 16,
+            "stylingDecisionCount": 9,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 83,
+          "findings": [
+            {
+              "rule": "moderate-state-spread",
+              "severity": "minor",
+              "detail": "Average state variable spread: 64 lines"
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 9,
+            "avgStateSpread": 64
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "input-no-label",
+              "severity": "critical",
+              "detail": "Form input without associated label",
+              "line": 46
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "totalLines": 72,
+            "codeLines": 67,
+            "stylingLines": 9,
+            "boilerplateLines": 4,
+            "logicLines": 54,
+            "stylingRatio": 0.13432835820895522,
+            "boilerplateRatio": 0.05970149253731343,
+            "decisionsPerElement": 1.4,
+            "elementCount": 16,
+            "stylingDecisionCount": 22,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 8,
+            "avgStateSpread": 49
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "input-no-label",
+              "severity": "critical",
+              "detail": "Form input without associated label",
+              "line": 34
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 91,
+          "findings": [],
+          "metrics": {
+            "totalLines": 56,
+            "codeLines": 51,
+            "stylingLines": 10,
+            "boilerplateLines": 1,
+            "logicLines": 40,
+            "stylingRatio": 0.19607843137254902,
+            "boilerplateRatio": 0.0196078431372549,
+            "decisionsPerElement": 2.2,
+            "elementCount": 14,
+            "stylingDecisionCount": 31,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 24,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "12 magic values (hardcoded colors, spacing, or typography)",
+              "count": 12
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 12,
+            "semanticValueCount": 0,
+            "avgStateSpread": 39
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "ps-1": {
+      "astryx": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/AppShell' or its corresponding type declarations.",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/TopNav' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/SideNav' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/NavItem' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+              "line": 9
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Switch' or its corresponding type declarations.",
+              "line": 10
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Divider' or its corresponding type declarations.",
+              "line": 11
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Icon' or its corresponding type declarations.",
+              "line": 12
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "heading-skip",
+              "severity": "minor",
+              "detail": "Heading level skipped: h1 → h3"
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 94,
+          "findings": [],
+          "metrics": {
+            "totalLines": 88,
+            "codeLines": 86,
+            "stylingLines": 0,
+            "boilerplateLines": 12,
+            "logicLines": 74,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.13953488372093023,
+            "decisionsPerElement": 0.6,
+            "elementCount": 43,
+            "stylingDecisionCount": 25,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 20,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 75,
+          "findings": [
+            {
+              "rule": "repeated-classname",
+              "severity": "moderate",
+              "detail": "className pattern repeated 4 times",
+              "count": 4,
+              "example": "flex items-center justify-between"
+            },
+            {
+              "rule": "repeated-classname",
+              "severity": "moderate",
+              "detail": "className pattern repeated 4 times",
+              "count": 4,
+              "example": "text-xs text-muted-foreground"
+            }
+          ],
+          "metrics": {
+            "totalLines": 78,
+            "codeLines": 75,
+            "stylingLines": 24,
+            "boilerplateLines": 5,
+            "logicLines": 46,
+            "stylingRatio": 0.32,
+            "boilerplateRatio": 0.06666666666666667,
+            "decisionsPerElement": 1.5,
+            "elementCount": 40,
+            "stylingDecisionCount": 58,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 15,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "heading-skip",
+              "severity": "minor",
+              "detail": "Heading level skipped: h1 → h3"
+            }
+          ]
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 82,
+          "findings": [],
+          "metrics": {
+            "totalLines": 61,
+            "codeLines": 56,
+            "stylingLines": 24,
+            "boilerplateLines": 1,
+            "logicLines": 31,
+            "stylingRatio": 0.42857142857142855,
+            "boilerplateRatio": 0.017857142857142856,
+            "decisionsPerElement": 2.2,
+            "elementCount": 38,
+            "stylingDecisionCount": 82,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 24,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "23 magic values (hardcoded colors, spacing, or typography)",
+              "count": 23
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 23,
+            "semanticValueCount": 0,
+            "avgStateSpread": 40
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "rc-1": {
+      "astryx": {
+        "correctness": {
+          "score": 10,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/TopNav' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/NavItem' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/IconButton' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/MobileNav' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 7
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 94,
+          "findings": [
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 27
+            },
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 48
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 88,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{label: \"_\", href: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 64,
+            "codeLines": 60,
+            "stylingLines": 0,
+            "boilerplateLines": 7,
+            "logicLines": 53,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.11666666666666667,
+            "decisionsPerElement": 0.5,
+            "elementCount": 11,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0.07
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 5,
+            "avgStateSpread": 27
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 94,
+          "findings": [
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 22
+            },
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 37
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 81,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{label: \"_\", href: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 49,
+            "codeLines": 45,
+            "stylingLines": 9,
+            "boilerplateLines": 4,
+            "logicLines": 32,
+            "stylingRatio": 0.2,
+            "boilerplateRatio": 0.08888888888888889,
+            "decisionsPerElement": 2.2,
+            "elementCount": 13,
+            "stylingDecisionCount": 29,
+            "duplicateRatio": 0.09
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 7,
+            "avgStateSpread": 14
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 94,
+          "findings": [
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 19
+            },
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 30
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 79,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 4 times",
+              "count": 4,
+              "example": "{label: \"_\", href: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 43,
+            "codeLines": 39,
+            "stylingLines": 8,
+            "boilerplateLines": 1,
+            "logicLines": 30,
+            "stylingRatio": 0.20512820512820512,
+            "boilerplateRatio": 0.02564102564102564,
+            "decisionsPerElement": 4.1,
+            "elementCount": 9,
+            "stylingDecisionCount": 37,
+            "duplicateRatio": 0.1
+          }
+        },
+        "maintainability": {
+          "score": 32,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "7 magic values (hardcoded colors, spacing, or typography)",
+              "count": 7
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 7,
+            "semanticValueCount": 0,
+            "avgStateSpread": 15
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "sd-1": {
+      "astryx": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Spinner' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Banner' or its corresponding type declarations.",
+              "line": 9
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "totalLines": 86,
+            "codeLines": 77,
+            "stylingLines": 0,
+            "boilerplateLines": 15,
+            "logicLines": 62,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.19480519480519481,
+            "decisionsPerElement": 1,
+            "elementCount": 23,
+            "stylingDecisionCount": 24,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 23,
+            "avgStateSpread": 45
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 81,
+          "findings": [
+            {
+              "rule": "repeated-classname",
+              "severity": "moderate",
+              "detail": "className pattern repeated 3 times",
+              "count": 3,
+              "example": "text-xs text-muted-foreground"
+            }
+          ],
+          "metrics": {
+            "totalLines": 84,
+            "codeLines": 75,
+            "stylingLines": 15,
+            "boilerplateLines": 11,
+            "logicLines": 49,
+            "stylingRatio": 0.2,
+            "boilerplateRatio": 0.14666666666666667,
+            "decisionsPerElement": 1.4,
+            "elementCount": 27,
+            "stylingDecisionCount": 39,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 11,
+            "avgStateSpread": 45
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 77,
+          "findings": [],
+          "metrics": {
+            "totalLines": 57,
+            "codeLines": 48,
+            "stylingLines": 13,
+            "boilerplateLines": 15,
+            "logicLines": 20,
+            "stylingRatio": 0.2708333333333333,
+            "boilerplateRatio": 0.3125,
+            "decisionsPerElement": 1.7,
+            "elementCount": 20,
+            "stylingDecisionCount": 33,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 24,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "13 magic values (hardcoded colors, spacing, or typography)",
+              "count": 13
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 13,
+            "semanticValueCount": 0,
+            "avgStateSpread": 37
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "tc-9": {
+      "astryx": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/ThemeProvider' or its corresponding type declarations.",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Badge' or its corresponding type declarations.",
+              "line": 8
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 96,
+          "findings": [],
+          "metrics": {
+            "totalLines": 81,
+            "codeLines": 74,
+            "stylingLines": 0,
+            "boilerplateLines": 8,
+            "logicLines": 66,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.10810810810810811,
+            "decisionsPerElement": 0.8,
+            "elementCount": 15,
+            "stylingDecisionCount": 12,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 12,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 90,
+          "findings": [],
+          "metrics": {
+            "totalLines": 43,
+            "codeLines": 39,
+            "stylingLines": 7,
+            "boilerplateLines": 3,
+            "logicLines": 29,
+            "stylingRatio": 0.1794871794871795,
+            "boilerplateRatio": 0.07692307692307693,
+            "decisionsPerElement": 0.9,
+            "elementCount": 17,
+            "stylingDecisionCount": 15,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 73,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "4 magic values (hardcoded colors, spacing, or typography)",
+              "count": 4
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0.6,
+            "magicValueCount": 4,
+            "semanticValueCount": 6,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 84,
+          "findings": [],
+          "metrics": {
+            "totalLines": 35,
+            "codeLines": 32,
+            "stylingLines": 13,
+            "boilerplateLines": 0,
+            "logicLines": 19,
+            "stylingRatio": 0.40625,
+            "boilerplateRatio": 0,
+            "decisionsPerElement": 2.5,
+            "elementCount": 15,
+            "stylingDecisionCount": 38,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 32,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "10 magic values (hardcoded colors, spacing, or typography)",
+              "count": 10
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 10,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "ty-4": {
+      "astryx": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Heading' or its corresponding type declarations.",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Text' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Card' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Divider' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Switch' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Selector' or its corresponding type declarations.",
+              "line": 8
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 95,
+          "findings": [],
+          "metrics": {
+            "totalLines": 75,
+            "codeLines": 70,
+            "stylingLines": 0,
+            "boilerplateLines": 8,
+            "logicLines": 62,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.11428571428571428,
+            "decisionsPerElement": 0.5,
+            "elementCount": 35,
+            "stylingDecisionCount": 17,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 11,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 83,
+          "findings": [
+            {
+              "rule": "repeated-classname",
+              "severity": "moderate",
+              "detail": "className pattern repeated 6 times",
+              "count": 6,
+              "example": "flex items-center justify-between"
+            }
+          ],
+          "metrics": {
+            "totalLines": 81,
+            "codeLines": 76,
+            "stylingLines": 19,
+            "boilerplateLines": 4,
+            "logicLines": 53,
+            "stylingRatio": 0.25,
+            "boilerplateRatio": 0.05263157894736842,
+            "decisionsPerElement": 0.8,
+            "elementCount": 50,
+            "stylingDecisionCount": 42,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 6,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 50,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 3 times",
+              "count": 3,
+              "example": "<hr style={{marginBottom: N}} />"
+            },
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 3 times",
+              "count": 3,
+              "example": "<div style={{display: \"_\", justifyContent: \"_\", alignItems: \"_\", marginBottom: N"
+            },
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 3 times",
+              "count": 3,
+              "example": "<div style={{display: \"_\", justifyContent: \"_\", alignItems: \"_\"}}>"
+            },
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 3 times",
+              "count": 3,
+              "example": "<input type=\"_\" role=\"_\" aria-label=\"_\" />"
+            }
+          ],
+          "metrics": {
+            "totalLines": 54,
+            "codeLines": 50,
+            "stylingLines": 28,
+            "boilerplateLines": 0,
+            "logicLines": 22,
+            "stylingRatio": 0.56,
+            "boilerplateRatio": 0,
+            "decisionsPerElement": 2,
+            "elementCount": 38,
+            "stylingDecisionCount": 77,
+            "duplicateRatio": 0.24
+          }
+        },
+        "maintainability": {
+          "score": 32,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "8 magic values (hardcoded colors, spacing, or typography)",
+              "count": 8
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 8,
+            "semanticValueCount": 0,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "baseline"
+    },
+    "wd-5": {
+      "astryx": {
+        "correctness": {
+          "score": 0,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Dialog' or its corresponding type declarations.",
+              "line": 2
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Dialog' or its corresponding type declarations.",
+              "line": 3
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Button' or its corresponding type declarations.",
+              "line": 4
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/TextInput' or its corresponding type declarations.",
+              "line": 5
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/TextArea' or its corresponding type declarations.",
+              "line": 6
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/VStack' or its corresponding type declarations.",
+              "line": 7
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/Field' or its corresponding type declarations.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2307: Cannot find module '@astryxdesign/core/HStack' or its corresponding type declarations.",
+              "line": 9
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "console-log",
+              "severity": "minor",
+              "detail": "console.log left in code",
+              "line": 17
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 95,
+          "findings": [],
+          "metrics": {
+            "totalLines": 72,
+            "codeLines": 68,
+            "stylingLines": 0,
+            "boilerplateLines": 9,
+            "logicLines": 59,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.1323529411764706,
+            "decisionsPerElement": 0.5,
+            "elementCount": 11,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 6,
+            "avgStateSpread": 40
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "console-log",
+              "severity": "minor",
+              "detail": "console.log left in code",
+              "line": 14
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 93,
+          "findings": [],
+          "metrics": {
+            "totalLines": 58,
+            "codeLines": 54,
+            "stylingLines": 3,
+            "boilerplateLines": 6,
+            "logicLines": 45,
+            "stylingRatio": 0.05555555555555555,
+            "boilerplateRatio": 0.1111111111111111,
+            "decisionsPerElement": 0.3,
+            "elementCount": 16,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 32
+          }
+        }
+      },
+      "html": {
+        "correctness": {
+          "score": 100,
+          "findings": []
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 97,
+          "findings": [
+            {
+              "rule": "console-log",
+              "severity": "minor",
+              "detail": "console.log left in code",
+              "line": 9
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 84,
+          "findings": [],
+          "metrics": {
+            "totalLines": 44,
+            "codeLines": 40,
+            "stylingLines": 12,
+            "boilerplateLines": 1,
+            "logicLines": 27,
+            "stylingRatio": 0.3,
+            "boilerplateRatio": 0.025,
+            "decisionsPerElement": 4.1,
+            "elementCount": 14,
+            "stylingDecisionCount": 58,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 32,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "moderate",
+              "detail": "12 magic values (hardcoded colors, spacing, or typography)",
+              "count": 12
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0,
+            "magicValueCount": 12,
+            "semanticValueCount": 0,
+            "avgStateSpread": 25
+          }
+        }
+      },
+      "winner": "baseline"
+    }
+  }
+}

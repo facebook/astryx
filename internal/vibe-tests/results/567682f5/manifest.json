@@ -1,0 +1,121 @@
+{
+  "iterationId": "567682f5",
+  "createdAt": "2026-06-28T11:07:29.629Z",
+  "config": {
+    "target": "baseline",
+    "persona": "naive",
+    "holdout": false,
+    "degradation": false,
+    "cliRetrieval": false
+  },
+  "prompts": [
+    {
+      "id": "fwc-10",
+      "category": "feature-with-constraint",
+      "prompt": "Build a user role assignment form. Show a list of team members with a dropdown selector next to each for their role: Viewer, Editor, Admin. Changes should save automatically.",
+      "expectedComponents": [
+        "XDSSelector",
+        "XDSText",
+        "XDSCard"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "wd-5",
+      "category": "workflow-description",
+      "prompt": "Build a feedback form that opens in a dialog. It should have a title field, a long-form text area for comments, and a submit button. Show a success state after submission.",
+      "expectedComponents": [
+        "XDSDialog",
+        "XDSTextInput",
+        "XDSTextArea",
+        "XDSButton",
+        "XDSLayout"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "cwm-1",
+      "category": "clone-with-modification",
+      "prompt": "Something like Stripe's pricing table but with monthly/annual toggle",
+      "expectedComponents": [
+        "XDSCard",
+        "XDSButton"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "sd-1",
+      "category": "state-driven",
+      "prompt": "Show a dashboard widget with loading → error → data states",
+      "expectedComponents": [
+        "XDSCard",
+        "XDSSkeleton"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "dd-6",
+      "category": "data-display",
+      "prompt": "Create a team members list where hovering over a member's name shows a hover card with their avatar, role, email, and a \"Message\" button.",
+      "expectedComponents": [
+        "XDSHoverCard",
+        "XDSAvatar",
+        "XDSText",
+        "XDSButton"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "rc-1",
+      "category": "responsive-context",
+      "prompt": "Navigation that collapses to hamburger on mobile",
+      "expectedComponents": [
+        "XDSButton",
+        "XDSHStack"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "io-3",
+      "category": "integration-oriented",
+      "prompt": "A file upload button that shows progress and calls an upload endpoint",
+      "expectedComponents": [
+        "XDSButton"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ps-1",
+      "category": "page-setup",
+      "prompt": "Create a new page for a settings dashboard. It should have a header with the app title, a sidebar for navigation, and a main content area. Use the XDS theme system.",
+      "expectedComponents": [
+        "Theme",
+        "XDSLayout",
+        "XDSLayoutHeader",
+        "XDSLayoutContent",
+        "XDSLayoutPanel"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ty-4",
+      "category": "typography",
+      "prompt": "Create a settings page with 3 sections. Each section needs a heading, a brief description, and some form controls. Use different heading levels for the page title vs section titles.",
+      "expectedComponents": [
+        "XDSHeading",
+        "XDSText",
+        "XDSTextInput"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "tc-9",
+      "category": "theme-customization",
+      "prompt": "Create two custom XDS themes that share the same spacing and typography tokens but have different color palettes. The first theme ('ocean') should use blue tones (#0077B6 accent) and the second ('sunset') should use warm orange tones (#E76F51 accent). Keep it DRY — don't duplicate the shared token values.",
+      "expectedComponents": [
+        "XDSTheme"
+      ],
+      "status": "pending"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "completedAt": "2026-06-28T11:15:21.373934Z",
+  "docsRead": [
+    "Selector",
+    "Avatar",
+    "Dialog",
+    "Button",
+    "Card",
+    "Heading",
+    "Text",
+    "VStack",
+    "HStack",
+    "SegmentedControl",
+    "Badge",
+    "Icon",
+    "Spinner",
+    "Banner",
+    "HoverCard",
+    "TopNav",
+    "NavItem",
+    "IconButton",
+    "MobileNav",
+    "ProgressBar",
+    "AppShell",
+    "SideNav",
+    "Switch",
+    "Divider",
+    "TextInput",
+    "TextArea",
+    "Field",
+    "ThemeProvider"
+  ]
+}

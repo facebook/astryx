@@ -1,0 +1,397 @@
+{
+  "cwm-1": {
+    "target": "xds-tailwind",
+    "errors": [
+      {
+        "line": 36,
+        "message": "Type '{ value: \"monthly\" | \"annual\"; onChange: (v: string) => void; options: { value: string; label: string; }[]; }' is not assignable to type 'IntrinsicAttributes & SegmentedControlProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 44,
+        "message": "Type '{ children: string; variant: \"info\"; }' is not assignable to type 'IntrinsicAttributes & BadgeProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 54,
+        "message": "Property 'icon' is missing in type '{ name: string; size: \"sm\"; }' but required in type 'IconProps'.",
+        "code": "TS2741"
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  },
+  "dd-6": {
+    "target": "xds-tailwind",
+    "errors": [
+      {
+        "line": 28,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 30,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 34,
+        "message": "Type '{ children: Element; key: string; trigger: Element; }' is not assignable to type 'IntrinsicAttributes & HoverCardProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 35,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 36,
+        "message": "Type '\"sm\"' is not assignable to type 'AvatarSize | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 38,
+        "message": "Type '{ children: string; variant: \"neutral\"; }' is not assignable to type 'IntrinsicAttributes & BadgeProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 42,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 43,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 44,
+        "message": "Type '\"lg\"' is not assignable to type 'AvatarSize | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 45,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 51,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 11,
+    "buildSuccess": false
+  },
+  "fwc-10": {
+    "target": "xds-tailwind",
+    "errors": [
+      {
+        "line": 37,
+        "message": "Type '\"md\"' is not assignable to type 'AvatarSize | undefined'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "io-3": {
+    "target": "xds-tailwind",
+    "errors": [
+      {
+        "line": 54,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 64,
+        "message": "Property 'icon' is missing in type '{ name: string; }' but required in type 'IconProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 68,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 74,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 75,
+        "message": "Property 'icon' is missing in type '{ name: string; }' but required in type 'IconProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 76,
+        "message": "Type '\"success\"' is not assignable to type 'TextColor | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 80,
+        "message": "Type '\"error\"' is not assignable to type 'TextColor | undefined'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 7,
+    "buildSuccess": false
+  },
+  "ps-1": {
+    "target": "xds-tailwind",
+    "errors": [
+      {
+        "line": 4,
+        "message": "Module '\"@astryxdesign/core/NavItem\"' has no exported member 'NavItem'.",
+        "code": "TS2305"
+      },
+      {
+        "line": 17,
+        "message": "Property 'Header' does not exist on type 'typeof AppShell'.",
+        "code": "TS2339"
+      },
+      {
+        "line": 19,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 23,
+        "message": "Property 'Header' does not exist on type 'typeof AppShell'.",
+        "code": "TS2339"
+      },
+      {
+        "line": 24,
+        "message": "Property 'Sidebar' does not exist on type 'typeof AppShell'.",
+        "code": "TS2339"
+      },
+      {
+        "line": 26,
+        "message": "Property 'icon' is missing in type '{ name: string; }' but required in type 'IconProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 29,
+        "message": "Property 'icon' is missing in type '{ name: string; }' but required in type 'IconProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 32,
+        "message": "Property 'icon' is missing in type '{ name: string; }' but required in type 'IconProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 35,
+        "message": "Property 'icon' is missing in type '{ name: string; }' but required in type 'IconProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 39,
+        "message": "Property 'Sidebar' does not exist on type 'typeof AppShell'.",
+        "code": "TS2339"
+      },
+      {
+        "line": 40,
+        "message": "Property 'Main' does not exist on type 'typeof AppShell'.",
+        "code": "TS2339"
+      },
+      {
+        "line": 41,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 44,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 48,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 52,
+        "message": "Property 'value' is missing in type '{ label: string; }' but required in type 'SwitchProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 55,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 59,
+        "message": "Property 'value' is missing in type '{ label: string; }' but required in type 'SwitchProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 64,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 68,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 72,
+        "message": "Type '{ label: string; defaultChecked: true; }' is not assignable to type 'IntrinsicAttributes & SwitchProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 75,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 79,
+        "message": "Property 'value' is missing in type '{ label: string; }' but required in type 'SwitchProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 84,
+        "message": "Property 'Main' does not exist on type 'typeof AppShell'.",
+        "code": "TS2339"
+      }
+    ],
+    "errorCount": 23,
+    "buildSuccess": false
+  },
+  "rc-1": {
+    "target": "xds-tailwind",
+    "errors": [
+      {
+        "line": 3,
+        "message": "Module '\"@astryxdesign/core/NavItem\"' has no exported member 'NavItem'.",
+        "code": "TS2305"
+      },
+      {
+        "line": 22,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 24,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  },
+  "sd-1": {
+    "target": "xds-tailwind",
+    "errors": [
+      {
+        "line": 45,
+        "message": "Type '{ children: string; variant: string; title: string; }' is not assignable to type 'IntrinsicAttributes & BannerProps'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "tc-9": {
+    "target": "xds-tailwind",
+    "errors": [
+      {
+        "line": 1,
+        "message": "Cannot find module '@astryxdesign/core/ThemeProvider' or its corresponding type declarations.",
+        "code": "TS2307"
+      },
+      {
+        "line": 43,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 44,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 46,
+        "message": "Type '{ children: string; variant: \"info\"; }' is not assignable to type 'IntrinsicAttributes & BadgeProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 52,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 64,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 6,
+    "buildSuccess": false
+  },
+  "ty-4": {
+    "target": "xds-tailwind",
+    "errors": [
+      {
+        "line": 12,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 16,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 31,
+        "message": "Property 'value' is missing in type '{ label: string; }' but required in type 'SwitchProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 37,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 43,
+        "message": "Type '{ label: string; defaultChecked: true; }' is not assignable to type 'IntrinsicAttributes & SwitchProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 47,
+        "message": "Property 'value' is missing in type '{ label: string; }' but required in type 'SwitchProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 53,
+        "message": "Type 'string' is not assignable to type 'SpacingStep | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 68,
+        "message": "Property 'value' is missing in type '{ label: string; }' but required in type 'SwitchProps'.",
+        "code": "TS2741"
+      }
+    ],
+    "errorCount": 8,
+    "buildSuccess": false
+  },
+  "wd-5": {
+    "target": "xds-tailwind",
+    "errors": [
+      {
+        "line": 27,
+        "message": "Property 'inputID' is missing in type '{ children: Element; label: string; }' but required in type 'FieldProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 30,
+        "message": "Property 'inputID' is missing in type '{ children: Element; label: string; }' but required in type 'FieldProps'.",
+        "code": "TS2741"
+      }
+    ],
+    "errorCount": 2,
+    "buildSuccess": false
+  }
+}
