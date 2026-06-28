@@ -75,12 +75,9 @@ function getColumnWidth(col: TableColumn<Record<string, unknown>>): number {
 }
 
 /**
- * Columns pinned to the START edge, keyed by column key → cumulative inline
- * offset in pixels. The pinned block is the CONTIGUOUS run of leading columns
- * from index 0 through the last column whose key is in `startKeys` (inclusive),
- * INCLUDING synthetic columns (selection checkbox, row-index, …) that sit to
- * the start of the user's sticky column. Returns `null` when no start-sticky
- * column is present or column context is unavailable.
+ * Columns pinned to the START edge → cumulative inline offset (px). The pinned
+ * block is the contiguous run from column 0 through the last key in `startKeys`
+ * (inclusive of any synthetic columns before it). `null` if none / no context.
  */
 function computeStartOffsets(
   columns: ReadonlyArray<TableColumn<Record<string, unknown>>> | undefined,
@@ -108,12 +105,9 @@ function computeStartOffsets(
 }
 
 /**
- * Mirror image of {@link computeStartOffsets} — columns pinned to the END edge,
- * keyed by column key → cumulative inline-end offset. The pinned block is the
- * CONTIGUOUS run of trailing columns from the FIRST column whose key is in
- * `endKeys` through the last column (inclusive). Offsets accumulate from the
- * end edge — the last column gets `0`, its neighbor gets that column's width,
- * etc. Returns `null` when no end-sticky column is present.
+ * Mirror of {@link computeStartOffsets} for the END edge — contiguous run from
+ * the first key in `endKeys` through the last column, offsets accumulating from
+ * the end (last column = 0). `null` if none.
  */
 function computeEndOffsets(
   columns: ReadonlyArray<TableColumn<Record<string, unknown>>> | undefined,
@@ -179,25 +173,27 @@ const SHADOW_VAR_END = '--table-sticky-shadow-end';
 const stickyStyles = stylex.create({
   cell: {
     position: 'sticky',
-    // Opaque base so scrolled content doesn't show through the pinned column.
-    // The backdrop can't be introspected, so it's an overridable variable
-    // defaulting to the card token (tables usually sit in a Card/surface).
+    // Opaque base (overridable; defaults to the card token, the common
+    // container) so scrolled content doesn't show through the pinned column.
     backgroundColor: `var(--table-sticky-background, ${colorVars['--color-background-card']})`,
-    // Replay the row's overlay (stripe and/or hover) on top of the opaque base
-    // via a gradient layer, so the pinned column matches the rest of the row.
-    // The color comes from `--table-row-overlay`, which TableRow sets to its
-    // current overlay (or unset) — so the pinned cell mirrors the row exactly:
-    // striped only when the table is striped, hover only when hover is enabled,
-    // never a phantom stripe. Defaults to a transparent gradient so the
-    // transition interpolates smoothly (none -> gradient would snap).
-    backgroundImage: `linear-gradient(var(--table-row-overlay, transparent), var(--table-row-overlay, transparent))`,
-    transitionProperty: 'background-image',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    // padding-box keeps the opaque base off the cell's collapsed divider border.
+    // Replay the row's overlay on a ::before layer (above the base, below text)
+    // so the pinned column mirrors the row's striping/hover exactly via
+    // --table-row-overlay. Transitions background-COLOR (not background-image)
+    // so hover stays smooth at rest, not just when GPU-promoted while scrolled.
+    '::before': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      zIndex: -1,
+      pointerEvents: 'none',
+      backgroundColor: 'var(--table-row-overlay, transparent)',
+      transitionProperty: 'background-color',
+      transitionDuration: durationVars['--duration-fast'],
+      transitionTimingFunction: easeVars['--ease-standard'],
+    },
+    // padding-box keeps the base off the cell's collapsed divider border.
     backgroundClip: 'padding-box',
-    // Cells are overflow:hidden for truncation; sticky cells need visible
-    // overflow so the shadow ::after can bleed past the pinned edge.
+    // Sticky cells need visible overflow so the shadow ::after can bleed out.
     overflow: 'visible',
   },
   headerCell: {
