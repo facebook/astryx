@@ -177,6 +177,17 @@ export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPre
   lines.push('3. `astryx component <Name>` — props + examples for every component you use.');
   lines.push('');
 
+  // Selection ladder — which component to reach for, and how to fall back to a
+  // custom one, so models reuse/compose instead of jamming an ill-fitting
+  // component or hand-rolling raw CSS in an arbitrary place.
+  lines.push('SELECT — choose in this order; only fall back when nothing above fits:');
+  lines.push("1. The app's own components — reuse what already exists in the project's /components.");
+  lines.push('2. Astryx semantic components/patterns — intent-named, higher-level (e.g. Chat, Dialog).');
+  lines.push('3. Astryx primitive/compositional components (Button, Card, Stack, ...).');
+  lines.push('4. Custom composition in /components, built from Astryx primitives — when no single component fits.');
+  lines.push('5. Last resort: custom in /components from CSS token primitives; crib hooks/behavior from the closest Astryx component (`astryx swizzle <Name>`) instead of hand-rolling.');
+  lines.push('');
+
   // Rules — the top error-preventers.
   lines.push('RULES:');
   lines.push('- No <div> — components do all layout/spacing. Full page → AppShell; sidebar nav → SideNav.');
