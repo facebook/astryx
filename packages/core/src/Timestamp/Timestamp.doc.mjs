@@ -7,6 +7,15 @@ export const docs = {
   displayName: 'Timestamp',
   category: 'Content',
   keywords: ['date', 'time', 'datetime', 'relative', 'ago', 'clock', 'format', 'duration'],
+  playground: {
+    // `value` is required but has no semantic default, so the properties-tab
+    // preview fell back to the literal string "value" — which
+    // `new Date("value")` rejects, crashing the preview with "Invalid time
+    // value". Seed a valid ISO 8601 date so the interactive preview renders.
+    defaults: {
+      value: '2026-02-19T17:00:00Z',
+    },
+  },
   props: [
     {
       name: 'value',

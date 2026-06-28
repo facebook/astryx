@@ -114,6 +114,29 @@ describe('component detail preview state', () => {
     expect(getMissingRequiredProps(knobs, state)).toEqual([]);
   });
 
+  it('gives Timestamp a valid date value via playground defaults', () => {
+    const knobs = pickPrimaryProps('Timestamp', [
+      prop({name: 'value', type: 'string | number', required: true}),
+    ]);
+
+    // Without a playground default, the required string `value` falls back to
+    // the prop's own name ("value"), which `new Date("value").toISOString()`
+    // rejects with "Invalid time value" — crashing the preview on load.
+    const fallback = buildInitialState(knobs).value;
+    expect(fallback).toBe('value');
+    expect(() => new Date(fallback as string).toISOString()).toThrow(
+      'Invalid time value',
+    );
+
+    // The doc's playground default seeds a valid date the component can render.
+    const state = buildInitialState(knobs, {
+      defaults: {value: '2026-02-19T17:00:00Z'},
+    });
+    expect(state.value).toBe('2026-02-19T17:00:00Z');
+    expect(() => new Date(state.value as string).toISOString()).not.toThrow();
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
   it('gives Skeleton concrete preview dimensions via playground defaults', () => {
     const knobs = pickPrimaryProps('Skeleton', [
       prop({name: 'width', type: 'number | string', default: "'100%'"}),
