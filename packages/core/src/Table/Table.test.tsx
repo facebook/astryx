@@ -245,6 +245,27 @@ describe('BaseTable', () => {
     expect(screen.getAllByRole('row')).toHaveLength(4);
   });
 
+  it('does not apply hover styling to the header row when hasHover is set', () => {
+    // Use the public Table (provides TableContext); BaseTable alone has no
+    // context, so rows wouldn't pick up hover styling at all.
+    const {container} = render(
+      <Table data={users} columns={columns} hasHover />,
+    );
+    const headerRow = container.querySelector('thead tr');
+    const bodyRow = container.querySelector('tbody tr');
+    expect(headerRow).not.toBeNull();
+    expect(bodyRow).not.toBeNull();
+
+    const headerClasses = new Set(
+      (headerRow?.className ?? '').split(/\s+/).filter(Boolean),
+    );
+    // The body row carries hover-styling class(es) that the header row does not.
+    const bodyOnlyClasses = (bodyRow?.className ?? '')
+      .split(/\s+/)
+      .filter(c => c && !headerClasses.has(c));
+    expect(bodyOnlyClasses.length).toBeGreaterThan(0);
+  });
+
   it('auto-generates columns from data keys when columns omitted', () => {
     render(<BaseTable data={users} />);
     const headers = screen.getAllByRole('columnheader');
@@ -276,11 +297,7 @@ describe('BaseTable', () => {
 
   it('uses idKey function to key rows', () => {
     render(
-      <BaseTable
-        data={users}
-        columns={columns}
-        idKey={item => item.email}
-      />,
+      <BaseTable data={users} columns={columns} idKey={item => item.email} />,
     );
     expect(screen.getAllByRole('row')).toHaveLength(4);
   });
@@ -374,9 +391,7 @@ describe('BaseTable', () => {
           htmlProps: {...props.htmlProps, 'data-testid': 'plugin-table'},
         }),
       };
-      render(
-        <BaseTable data={users} columns={columns} plugins={[plugin]} />,
-      );
+      render(<BaseTable data={users} columns={columns} plugins={[plugin]} />);
       expect(screen.getByTestId('plugin-table')).toBeInTheDocument();
     });
 
@@ -387,9 +402,7 @@ describe('BaseTable', () => {
           htmlProps: {...props.htmlProps, 'data-testid': 'plugin-header-row'},
         }),
       };
-      render(
-        <BaseTable data={users} columns={columns} plugins={[plugin]} />,
-      );
+      render(<BaseTable data={users} columns={columns} plugins={[plugin]} />);
       expect(screen.getByTestId('plugin-header-row')).toBeInTheDocument();
     });
 
@@ -404,9 +417,7 @@ describe('BaseTable', () => {
           };
         },
       };
-      render(
-        <BaseTable data={users} columns={columns} plugins={[plugin]} />,
-      );
+      render(<BaseTable data={users} columns={columns} plugins={[plugin]} />);
       expect(receivedKeys).toEqual(['name', 'age', 'email']);
       const headers = screen.getAllByRole('columnheader');
       expect(headers[0]).toHaveAttribute('data-column', 'name');
@@ -423,9 +434,7 @@ describe('BaseTable', () => {
           };
         },
       };
-      render(
-        <BaseTable data={users} columns={columns} plugins={[plugin]} />,
-      );
+      render(<BaseTable data={users} columns={columns} plugins={[plugin]} />);
       expect(receivedItems).toEqual(['Alice', 'Bob', 'Charlie']);
     });
 
@@ -437,9 +446,7 @@ describe('BaseTable', () => {
           return props;
         },
       };
-      render(
-        <BaseTable data={users} columns={columns} plugins={[plugin]} />,
-      );
+      render(<BaseTable data={users} columns={columns} plugins={[plugin]} />);
       // 3 rows * 3 columns = 9 calls
       expect(calls).toHaveLength(9);
       expect(calls[0]).toEqual({col: 'name', name: 'Alice'});
@@ -746,11 +753,7 @@ describe('Table', () => {
       }),
     };
     render(
-      <Table
-        data={users}
-        columns={columns}
-        plugins={{custom: userPlugin}}
-      />,
+      <Table data={users} columns={columns} plugins={{custom: userPlugin}} />,
     );
     expect(screen.getByTestId('custom-plugin')).toBeInTheDocument();
   });
@@ -767,11 +770,7 @@ describe('Table', () => {
       },
     };
     render(
-      <Table
-        data={users}
-        columns={columns}
-        plugins={{custom: userPlugin}}
-      />,
+      <Table data={users} columns={columns} plugins={{custom: userPlugin}} />,
     );
     expect(screen.getByTestId('after-xds')).toBeInTheDocument();
   });

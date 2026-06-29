@@ -421,6 +421,11 @@ export interface TableRowComponentProps extends HTMLAttributes<HTMLTableRowEleme
   ref?: Ref<HTMLTableRowElement>;
   children: ReactNode;
   xstyle?: StyleXStyles[];
+  /**
+   * Whether this row is the header row. Header rows skip the striped/hover
+   * row styling, which is only meant for body rows.
+   */
+  isHeaderRow?: boolean;
 }
 
 /** Props for cell components used in the components prop */
