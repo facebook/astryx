@@ -78,13 +78,13 @@ describe('findShowcase() priority', () => {
   it('Badge resolves to Badge dir, not a sibling that uses Badge', async () => {
     const result = await findShowcase('Badge');
     expect(result).not.toBeNull();
-    expect(result.filePath).toMatch(/\/Badge\//);
+    expect(result.filePath).toMatch(/[/\\]Badge[/\\]/);
   });
 
   it('Avatar resolves to Avatar dir, not AvatarStatusDot', async () => {
     const result = await findShowcase('Avatar');
     expect(result).not.toBeNull();
-    expect(result.filePath).toMatch(/\/Avatar\//);
+    expect(result.filePath).toMatch(/[/\\]Avatar[/\\]/);
     expect(result.filePath).not.toMatch(/AvatarStatusDot/);
   });
 
@@ -92,7 +92,7 @@ describe('findShowcase() priority', () => {
     const result = await findShowcase('ClickableCard');
     expect(result).not.toBeNull();
     expect(result.name).toBe('ClickableCard');
-    expect(result.filePath).toMatch(/\/Card\//);
+    expect(result.filePath).toMatch(/[/\\]Card[/\\]/);
   });
 
   it('SelectableCard resolves via componentsUsed in Card/', async () => {
@@ -104,7 +104,7 @@ describe('findShowcase() priority', () => {
   it('Stack resolves to Stack dir despite componentsUsed elsewhere', async () => {
     const result = await findShowcase('Stack');
     expect(result).not.toBeNull();
-    expect(result.filePath).toMatch(/\/Stack\//);
+    expect(result.filePath).toMatch(/[/\\]Stack[/\\]/);
   });
 
   it('returns null for nonexistent component', async () => {

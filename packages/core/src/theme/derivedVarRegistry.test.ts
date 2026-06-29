@@ -14,7 +14,7 @@
 
 import {describe, it, expect} from 'vitest';
 import {derivedVarRegistry, getDerivedVars} from './derivedVarRegistry';
-import {readdirSync, readFileSync, existsSync} from 'fs';
+import {readdirSync, readFileSync} from 'fs';
 import {join} from 'path';
 
 const SRC_DIR = join(__dirname, '..');
@@ -151,10 +151,13 @@ function discoverComponents(): ComponentInfo[] {
     }
 
     // Only check component directories (those with a doc file)
-    const docPath = join(dirPath, `${dir}.doc.mjs`);
-    if (!existsSync(docPath)) {
+    // Make the existence check case-sensitive to prevent matching Theme.doc.mjs for the lowercase theme directory on Windows.
+    const docFile = `${dir}.doc.mjs`;
+    const dirFiles = readdirSync(dirPath);
+    if (!dirFiles.includes(docFile)) {
       continue;
     }
+    const docPath = join(dirPath, docFile);
 
     let docVars: string[] = [];
     let docDerived: DerivedDocEntry[] = [];

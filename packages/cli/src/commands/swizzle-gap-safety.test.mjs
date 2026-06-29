@@ -39,12 +39,35 @@ beforeAll(() => {
   shimDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-gh-shim-'));
   markerFile = path.join(shimDir, 'gh-issue-create-was-called.marker');
 
-  // Sabotaged `gh` shim. Records ONLY `gh issue create` invocations to the
-  // marker file, since that's the only command we want to detect as a
-  // "would-have-filed" event. Other subcommands (auth status, label create)
-  // succeed silently so they don't break the gh availability check or the
-  // label-ensure path.
-  const shim = `#!/usr/bin/env node
+  if (process.platform === 'win32') {
+    const csCode = `using System;
+using System.IO;
+class Program {
+  static int Main(string[] args) {
+    bool isIssueCreate = args.Length >= 2 && args[0] == "issue" && args[1] == "create";
+    if (isIssueCreate) {
+      string marker = @"${markerFile}";
+      string argsStr = "[" + string.Join(",", Array.ConvertAll(args, a => "\\"" + a.Replace("\\"", "\\\\\\\"") + "\\"")) + "]";
+      File.AppendAllText(marker, argsStr + "\\n");
+      Console.Error.WriteLine("TEST GUARD: real gh issue create blocked");
+      return 1;
+    }
+    return 0;
+  }
+}
+`;
+    const csPath = path.join(shimDir, 'gh.cs');
+    fs.writeFileSync(csPath, csCode);
+    const compileResult = spawnSync('C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\csc.exe', [
+      '/nologo',
+      `/out:${path.join(shimDir, 'gh.exe')}`,
+      csPath,
+    ]);
+    if (compileResult.status !== 0) {
+      throw new Error(`Failed to compile gh shim executable: ${compileResult.stderr?.toString() || compileResult.stdout?.toString()}`);
+    }
+  } else {
+    const shim = `#!/usr/bin/env node
 import * as fs from 'node:fs';
 const args = process.argv.slice(2);
 const isIssueCreate = args[0] === 'issue' && args[1] === 'create';
@@ -56,16 +79,21 @@ if (isIssueCreate) {
 // Other commands (auth status, label create) succeed silently.
 process.exit(0);
 `;
-  fs.writeFileSync(path.join(shimDir, 'gh'), shim);
-  fs.chmodSync(path.join(shimDir, 'gh'), 0o755);
+    fs.writeFileSync(path.join(shimDir, 'gh'), shim);
+    fs.chmodSync(path.join(shimDir, 'gh'), 0o755);
+  }
 
+  const pathKey = Object.keys(process.env).find(k => k.toLowerCase() === 'path') || 'PATH';
   baseEnv = {
     ...process.env,
-    PATH: `${shimDir}:${process.env.PATH}`,
+    [pathKey]: `${shimDir}${path.delimiter}${process.env[pathKey] || ''}`,
     // Belt-and-suspenders: even if a gate breaks, this disables the feature.
     // For tests that need the feature on, individual cases override this.
     GH_TOKEN: '',
   };
+  if (pathKey !== 'PATH') {
+    baseEnv.PATH = baseEnv[pathKey];
+  }
 });
 
 afterAll(() => {

@@ -333,7 +333,7 @@ export async function component(name, options = {}) {
 
     // Examples: blocks in the component's own directory, or
     // componentsUsed match for sub-components without a directory.
-    const ownDir = allBlocks.filter(b => b.category.split('/').pop() === dirName);
+    const ownDir = allBlocks.filter(b => b.category.split(/[/\\]/).pop() === dirName);
     const examples = ownDir.length > 0
       ? ownDir
       : allBlocks.filter(b => b.componentsUsed?.some(c => c === dirName));

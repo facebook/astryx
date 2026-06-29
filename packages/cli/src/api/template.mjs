@@ -121,7 +121,7 @@ async function discoverBlocks() {
     const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
     if (!fs.existsSync(tsxPath)) continue;
     const doc = await loadDocModule(docPath);
-    const relPath = path.relative(BLOCKS_DIR, path.dirname(docPath));
+    const relPath = path.relative(BLOCKS_DIR, path.dirname(docPath)).replace(/\\/g, '/');
     blocks.push({
       type: 'block',
       dirName: basename,
@@ -161,7 +161,7 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
       const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
       if (!fs.existsSync(tsxPath)) continue;
       const doc = await loadDocModule(docPath);
-      const relPath = path.relative(ext.blocksDir, path.dirname(docPath));
+      const relPath = path.relative(ext.blocksDir, path.dirname(docPath)).replace(/\\/g, '/');
       blocks.push({
         type: 'block',
         dirName: basename,
@@ -237,7 +237,7 @@ export async function findShowcase(componentName, cwd, options) {
 
   // Priority 1: own directory (components/Badge/ for "Badge")
   const dirMatch = showcases.find(b => {
-    const catDir = b.category.split('/').pop()?.toLowerCase();
+    const catDir = b.category.split(/[/\\]/).pop()?.toLowerCase();
     return catDir === lc;
   });
   if (dirMatch) return toResult(dirMatch);
