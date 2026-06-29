@@ -46,8 +46,7 @@ export type ErrorCode =
   | 'ERR_VERSION_DETECT'
   | 'ERR_INVALID_VERSION'
   | 'ERR_DEP_MISSING'
-  | 'ERR_GH_CLI'
-  | 'ERR_GAP_REPORT_FAILED';
+  | 'ERR_GH_CLI';
 
 /** The frozen runtime map of all error codes (keys === values). */
 export declare const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCode>>;

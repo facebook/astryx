@@ -63,7 +63,6 @@ export const RESPONSE_TYPES = {
   'theme list': ['theme.list'],
   'theme add': ['theme.list', 'theme.add'],
   upgrade: ['upgrade.list', 'upgrade.status', 'upgrade.run'],
-  'gap-report': ['gap-report.categories', 'gap-report.dryRun', 'gap-report.file'],
   manifest: ['manifest'],
   doctor: ['doctor'],
   'layout expand': ['layout.expand'],

@@ -18,8 +18,8 @@
  *     fail fast (exit 1) with actionable, non-interactive guidance.
  *
  *   - `isInteractive()` — for commands with an OPTIONAL secondary prompt
- *     (e.g. swizzle's post-copy "report a gap?"). The primary work already
- *     succeeded; callers use this to skip the prompt gracefully.
+ *     that runs after the primary work has already succeeded; callers use
+ *     this to skip the prompt gracefully in non-interactive contexts.
  */
 
 /**

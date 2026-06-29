@@ -7,8 +7,9 @@
  * copies non-test files to the output directory, and rewrites
  * relative imports to use '@astryxdesign/core' package paths.
  *
- * After swizzling, optionally prompts the user to file a gap report
- * explaining why they needed to customize the component.
+ * After swizzling, prints a short maintainer feedback note pointing
+ * users at the issue tracker so they can let the team know what gap
+ * led them to customize the component.
  */
 
 import * as fs from 'node:fs';
@@ -20,18 +21,13 @@ import {
   PathSafetyError,
   isNonInteractive,
 } from '../utils/path-safety.mjs';
-import {isInteractive} from '../utils/interactive.mjs';
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
-import {
-  buildGapReportPreview,
-  checkGhCli,
-  createGapReport,
-  loadGapReportConfig,
-  GAP_CATEGORIES,
-} from '../utils/github.mjs';
-import {shouldActuallyFile, formatPreview} from './gap-report.mjs';
+import {checkGhCli} from '../utils/github.mjs';
+
+/** Default issue tracker for maintainer feedback after swizzling. */
+const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
 
 /**
  * Rewrite relative imports that point outside the component directory
@@ -57,6 +53,29 @@ export function rewriteImports(content) {
   );
 }
 
+/**
+ * Build the maintainer feedback note for a swizzled component.
+ *
+ * Returns { issuesUrl, ghCommand? }. When the issues URL is a GitHub
+ * "new issue" URL and the `gh` CLI is available, a ready-to-run
+ * `gh issue create` command is included so the user can file feedback
+ * without leaving the terminal.
+ */
+function buildFeedback(component) {
+  const issuesUrl = DEFAULT_ISSUES_URL;
+  const feedback = {issuesUrl};
+
+  const match = issuesUrl.match(
+    /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/issues\/new\/?$/,
+  );
+  if (match && checkGhCli()) {
+    const [, owner, repo] = match;
+    feedback.ghCommand = `gh issue create --repo ${owner}/${repo} --title "[${component}] Swizzle feedback"`;
+  }
+
+  return feedback;
+}
+
 function isCancel(value) {
   if (p.isCancel(value)) {
     p.cancel('Cancelled.');
@@ -71,20 +90,6 @@ export function registerSwizzle(program) {
     .description('Copy component source for customization')
     .option('--output <dir>', 'Output directory', './components/astryx')
     .option('--list', 'List available components')
-    .option('--gap <reason>', 'File a gap report explaining why you swizzled')
-    .option('--gap-category <category>', 'Gap category (for --gap mode)')
-    .option(
-      '--no-report',
-      'Suppress all gap reporting (interactive prompt AND --gap auto-filing)',
-    )
-    .option(
-      '--dry-run',
-      'For --gap: print the issue that would be filed without contacting GitHub. Default in non-TTY / --json mode.',
-    )
-    .option(
-      '--commit',
-      'For --gap: actually file the issue. Required in non-interactive mode.',
-    )
     .option('-f, --overwrite', 'Overwrite existing files without prompting')
     .action(async (component, options) => {
       const coreDir = findCoreDir(process.cwd());
@@ -209,98 +214,7 @@ export function registerSwizzle(program) {
           fs.statSync(path.join(componentDir, f)).isFile(),
       );
 
-      // --- Gap reporting ---
-
-      const gapConfig = await loadGapReportConfig();
-      let gapReportUrl = null;
-      let gapDryRunPreview = null;
-
-      // CRITICAL: --no-report must suppress BOTH the interactive prompt AND
-      // the --gap auto-file path. Previously --gap bypassed --no-report.
-      // commander sets options.report to false for `--no-report`.
-      const reportingSuppressed = options.report === false;
-
-      if (options.gap && !reportingSuppressed && gapConfig.enabled) {
-        const category = options.gapCategory || 'other';
-        const previewArgs = {
-          component: dirName,
-          category,
-          intention: options.gap,
-          source: 'llm-auto',
-        };
-
-        const willFile = shouldActuallyFile({
-          commit: options.commit,
-          dryRun: options.dryRun,
-          json,
-        });
-
-        const preview = await buildGapReportPreview(previewArgs);
-
-        if (!willFile) {
-          // Dry-run: do NOT call gh. Surface what would have been filed.
-          gapDryRunPreview = {
-            dryRun: true,
-            wouldFile: preview.mode !== 'disabled',
-            mode: preview.mode,
-            title: preview.title,
-            body: preview.body,
-            repo: preview.repo,
-            command: preview.command || null,
-          };
-        } else if (gapConfig.command || checkGhCli()) {
-          try {
-            gapReportUrl = await createGapReport(previewArgs);
-          } catch (err) {
-            if (!json)
-              console.error(
-                `Warning: Could not file gap report: ${err.message}`,
-              );
-          }
-        }
-      }
-
-      if (options.gap) {
-        if (json)
-          return jsonOut('swizzle.copy', {
-            component: dirName,
-            outputDir: relOutput,
-            filesCopied: copied,
-            files: copiedFiles.map(f => f),
-            gapReport: gapReportUrl,
-            gapReportDryRun: gapDryRunPreview,
-            gapReportSuppressed: reportingSuppressed || !gapConfig.enabled,
-          });
-        humanLog(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
-        humanLog(
-          'Relative imports have been rewritten to use @astryxdesign/core.',
-        );
-        humanLog('You can now customize the component source freely.\n');
-        if (gapReportUrl) {
-          humanLog(`✓ Gap report filed: ${gapReportUrl}\n`);
-        } else if (gapDryRunPreview) {
-          humanLog(
-            formatPreview(
-              await buildGapReportPreview({
-                component: dirName,
-                category: options.gapCategory || 'other',
-                intention: options.gap,
-                source: 'llm-auto',
-              }),
-            ),
-          );
-          humanLog(
-            '\n[dry-run] No gap report was filed. Re-run with --commit to file.',
-          );
-        } else if (reportingSuppressed) {
-          humanLog('Gap reporting suppressed by --no-report.');
-        } else if (!gapConfig.enabled) {
-          humanLog('Gap reporting is disabled via configuration.');
-        } else if (!gapConfig.command && !checkGhCli()) {
-          humanLog('Skipping gap report: gh CLI not available.');
-        }
-        return;
-      }
+      const feedback = buildFeedback(dirName);
 
       if (json)
         return jsonOut('swizzle.copy', {
@@ -308,6 +222,7 @@ export function registerSwizzle(program) {
           outputDir: relOutput,
           filesCopied: copied,
           files: copiedFiles.map(f => f),
+          feedback,
         });
 
       humanLog(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
@@ -316,102 +231,17 @@ export function registerSwizzle(program) {
       );
       humanLog('You can now customize the component source freely.\n');
 
-      if (reportingSuppressed || !gapConfig.enabled) {
-        return;
+      // Maintainer feedback note. If we couldn't swizzle cleanly, the team
+      // wants to know — point users at the issue tracker.
+      humanLog(
+        'Customizing a component often signals a gap in the design system.',
+      );
+      humanLog('Let the maintainers know what you needed:');
+      if (feedback.ghCommand) {
+        humanLog(`  ${feedback.ghCommand}`);
+      } else {
+        humanLog(`  ${feedback.issuesUrl}`);
       }
-
-      // Interactive gap report prompt
-      //
-      // This prompt is OPTIONAL — the swizzle copy already succeeded above.
-      // In a non-interactive context (CI, piped I/O, no TTY) we must not
-      // block on it; skip gracefully rather than hang. Use --gap with
-      // explicit flags for non-interactive gap reporting.
-      if (!isInteractive()) {
-        return;
-      }
-
-      if (!gapConfig.command && !checkGhCli()) {
-        // Silently skip if gh isn't available and no custom command configured
-        return;
-      }
-
-      const shouldReport = isCancel(
-        await p.confirm({
-          message: 'Would you like to report why you swizzled this component?',
-          initialValue: false,
-        }),
-      );
-
-      if (!shouldReport) return;
-
-      const category = isCancel(
-        await p.select({
-          message: 'What kind of gap is this?',
-          options: GAP_CATEGORIES,
-        }),
-      );
-
-      const intention = isCancel(
-        await p.text({
-          message: 'What were you trying to achieve?',
-          placeholder:
-            'e.g. "Need a compact variant for use in dense data tables"',
-          validate: val => {
-            if (!val.trim())
-              return 'Please describe what you were trying to do';
-          },
-        }),
-      );
-
-      const detail = isCancel(
-        await p.text({
-          message: 'Any additional context? (optional)',
-          placeholder: 'Press Enter to skip',
-        }),
-      );
-
-      const previewArgs = {
-        component: dirName,
-        category,
-        intention: intention.trim(),
-        detail: detail?.trim() || undefined,
-        source: 'interactive',
-      };
-
-      const preview = await buildGapReportPreview(previewArgs);
-
-      p.note(
-        `${preview.mode === 'github' ? `Repo: ${preview.repo}` : `Custom command: ${preview.command}`}\n\n` +
-          `Title:\n  ${preview.title}\n\n` +
-          `Body:\n${preview.body
-            .split('\n')
-            .map(l => `  ${l}`)
-            .join('\n')}`,
-        'Preview — this is exactly what will be filed',
-      );
-
-      const confirmFile = isCancel(
-        await p.confirm({
-          message: 'File this gap report now?',
-          initialValue: false,
-        }),
-      );
-
-      if (!confirmFile) {
-        humanLog('Cancelled — nothing was filed.');
-        return;
-      }
-
-      const s = p.spinner();
-      s.start('Filing gap report');
-
-      try {
-        const url = await createGapReport(previewArgs);
-        s.stop('Gap report filed');
-        humanLog(`✓ ${url}\n`);
-      } catch (err) {
-        s.stop('Failed to file gap report');
-        console.error(`Warning: Could not file gap report: ${err.message}`);
-      }
+      humanLog('');
     });
 }
