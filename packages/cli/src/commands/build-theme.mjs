@@ -980,8 +980,7 @@ Or with a <link> tag:
       }
 
       // theme.add — print where files landed + how to use the theme.
-      const {slug: addedSlug, displayName, outputDir, entry, exportName, files} =
-        result.data;
+      const {displayName, outputDir, entry, exportName, files} = result.data;
       humanLog(`\n✓ Added ${displayName} theme to ${outputDir}/`);
       for (const f of files) {
         humanLog(`  ${outputDir}/${f}`);
