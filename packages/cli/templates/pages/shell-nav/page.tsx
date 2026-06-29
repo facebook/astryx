@@ -178,7 +178,7 @@ const COMMANDS = [
   {id: 'theme', label: 'theme.ts'},
 ];
 
-export default function ShellIDE() {
+export default function ShellNav() {
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const searchSource = useMemo(() => createStaticSource(COMMANDS), []);
 
