@@ -47,7 +47,7 @@ class Program {
     bool isIssueCreate = args.Length >= 2 && args[0] == "issue" && args[1] == "create";
     if (isIssueCreate) {
       string marker = @"${markerFile}";
-      string argsStr = "[" + string.Join(",", Array.ConvertAll(args, a => "\\"" + a.Replace("\\"", "\\\\\\\"") + "\\"")) + "]";
+      string argsStr = "[" + string.Join(",", Array.ConvertAll(args, a => "\\"" + a.Replace("\\"", "\\\\\\"") + "\\"")) + "]";
       File.AppendAllText(marker, argsStr + "\\n");
       Console.Error.WriteLine("TEST GUARD: real gh issue create blocked");
       return 1;
