@@ -7,7 +7,6 @@
  * ------------------------------------------------------------------
  * xds --json swizzle [--list]               -> swizzle.list
  * xds --json swizzle <component>            -> swizzle.copy
- * xds --json swizzle <component> --gap "x"  -> swizzle.copy (with gapReport)
  * (not found)                               -> CLIError
  */
 
@@ -15,6 +14,14 @@
 export interface SwizzleListResponse {
   type: 'swizzle.list';
   data: string[];
+}
+
+/** Maintainer feedback note emitted after a successful swizzle. */
+export interface SwizzleFeedback {
+  /** Where to report the gap that led to swizzling. */
+  issuesUrl: string;
+  /** Ready-to-run `gh issue create` command, when `gh` is available. */
+  ghCommand?: string;
 }
 
 /** xds --json swizzle <component> */
@@ -25,6 +32,6 @@ export interface SwizzleCopyResponse {
     outputDir: string;
     filesCopied: number;
     files: string[];
-    gapReport?: string | null;
+    feedback?: SwizzleFeedback;
   };
 }

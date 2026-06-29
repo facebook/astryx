@@ -69,7 +69,7 @@ describe('swizzle path safety', () => {
     const {project, outside} = buildFakeRepo(tmpDir);
 
     const result = runCli(
-      ['swizzle', 'Button', '--output', '../outside-project', '--no-report'],
+      ['swizzle', 'Button', '--output', '../outside-project'],
       project,
     );
 
@@ -87,7 +87,7 @@ describe('swizzle path safety', () => {
     const absTarget = path.join(tmpDir, 'absolute-target');
 
     const result = runCli(
-      ['swizzle', 'Button', '--output', absTarget, '--no-report'],
+      ['swizzle', 'Button', '--output', absTarget],
       project,
     );
 
@@ -105,7 +105,7 @@ describe('swizzle path safety', () => {
 
     // Use --json to force non-interactive mode.
     const result = runCli(
-      ['--json', 'swizzle', 'Button', '--no-report'],
+      ['--json', 'swizzle', 'Button'],
       project,
     );
 

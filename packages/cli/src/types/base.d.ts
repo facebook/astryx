@@ -44,10 +44,6 @@ import type {
 import type {SwizzleListResponse, SwizzleCopyResponse} from './swizzle';
 import type {ThemeBuildResponse} from './theme';
 import type {UpgradeListResponse, UpgradeRunResponse} from './upgrade';
-import type {
-  GapReportCategoriesResponse,
-  GapReportFileResponse,
-} from './gap-report';
 import type {SearchResponse} from './search';
 import type {ErrorCode} from './error-codes';
 import type {ManifestResponse} from './manifest';
@@ -104,8 +100,6 @@ export type CLIAnyResponse =
   | ThemeBuildResponse
   | UpgradeListResponse
   | UpgradeRunResponse
-  | GapReportCategoriesResponse
-  | GapReportFileResponse
   | SearchResponse
   | ManifestResponse
   | DoctorResponse;

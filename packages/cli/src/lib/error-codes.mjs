@@ -75,7 +75,6 @@
  *   | 'ERR_INVALID_VERSION'
  *   | 'ERR_DEP_MISSING'
  *   | 'ERR_GH_CLI'
- *   | 'ERR_GAP_REPORT_FAILED'
  *   | 'ERR_LAYOUT_PARSE'
  *   | 'ERR_LAYOUT_INVALID'
  * )} ErrorCode
@@ -180,11 +179,9 @@ export const ERROR_CODES = Object.freeze({
   /** A required external dependency (e.g. jscodeshift) is missing. */
   ERR_DEP_MISSING: 'ERR_DEP_MISSING',
 
-  // ── Gap report ───────────────────────────────────────────────────
+  // ── GitHub CLI ───────────────────────────────────────────────────
   /** GitHub CLI (`gh`) is not installed or not authenticated. */
   ERR_GH_CLI: 'ERR_GH_CLI',
-  /** Filing a gap report failed at the command/integration boundary. */
-  ERR_GAP_REPORT_FAILED: 'ERR_GAP_REPORT_FAILED',
 
   // ── Layout expressions (XLE/XLO) ─────────────────────────────────
   /** A layout expression failed to parse (syntax error, with line/col). */

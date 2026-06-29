@@ -5,7 +5,6 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {loadConfig} from './config.mjs';
 import {discover} from '../api/discover.mjs';
-import {loadGapReportConfig} from '../utils/github.mjs';
 import {getTemplateById} from '../api/template.mjs';
 
 let tmpDir;
@@ -134,18 +133,7 @@ describe('configured integrations', () => {
     ]);
   });
 
-  it('uses integration gap-report and template hooks', async () => {
-    await expect(loadGapReportConfig()).resolves.toMatchObject({
-      enabled: true,
-      command: path.join(
-        tmpDir,
-        'node_modules',
-        '@acme',
-        'widgets',
-        'scripts',
-        'report-gap.sh',
-      ),
-    });
+  it('uses integration template hooks', async () => {
     await expect(getTemplateById('P123', {cwd: tmpDir})).resolves.toEqual({
       type: 'template.get',
       data: {id: 'P123', source: 'template:P123'},
