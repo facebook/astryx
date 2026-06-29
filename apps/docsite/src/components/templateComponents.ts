@@ -117,6 +117,10 @@ export const TEMPLATE_COMPONENTS: Record<
   'side-gallery': lazy(
     () => import('../../../../packages/cli/templates/pages/side-gallery/page'),
   ),
+  'shell-side-nav': lazy(
+    () =>
+      import('../../../../packages/cli/templates/pages/shell-side-nav/page'),
+  ),
   table: lazy(
     () => import('../../../../packages/cli/templates/pages/table/page'),
   ),
