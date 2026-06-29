@@ -77,7 +77,7 @@ afterEach(() => {
 });
 
 describe('theme build install-instructions import path', () => {
-  it('emits ./<name> (no double slash) when out dir equals cwd', () => {
+  it('emits bare ./<name> specifiers (no double slash) when out dir equals cwd', () => {
     // Source theme lives directly in the project root, so the output dir
     // is the cwd and the relative dir is an empty string.
     const project = path.join(tmpDir, 'project');
@@ -97,7 +97,10 @@ describe('theme build install-instructions import path', () => {
     expect(result.stdout).toContain('href="./cwd-theme.css"');
   });
 
-  it('emits ./<sub>/<name> when out dir is a subdirectory of cwd', () => {
+  it('emits bare ./<name> specifiers (not a cwd-rooted path) for a subdirectory build', () => {
+    // The import is relative to the consumer's file, which the CLI can't
+    // know — so it must NOT fabricate a cwd-rooted `./themes/...` path
+    // (wrong whenever the importing file already lives under that dir).
     const project = path.join(tmpDir, 'project');
     const themeFile = writeTheme(path.join(project, 'themes'), 'sub-theme');
 
@@ -108,8 +111,12 @@ describe('theme build install-instructions import path', () => {
 
     expect(result.code).toBe(0);
     expect(result.stdout).not.toContain('.//');
-    expect(result.stdout).toContain("from './themes/sub-theme'");
-    expect(result.stdout).toContain("import './themes/sub-theme.css'");
-    expect(result.stdout).toContain('href="./themes/sub-theme.css"');
+    // Bare specifier, not the cwd-relative './themes/sub-theme'.
+    expect(result.stdout).toContain("from './sub-theme'");
+    expect(result.stdout).toContain("import './sub-theme.css'");
+    expect(result.stdout).toContain('href="./sub-theme.css"');
+    expect(result.stdout).not.toContain('./themes/sub-theme');
+    // But the instructions still tell the user where the files landed.
+    expect(result.stdout).toContain('themes/');
   });
 });

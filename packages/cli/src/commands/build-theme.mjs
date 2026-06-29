@@ -448,7 +448,7 @@ const KNOWN_COMPONENTS = {
   breadcrumbs: ['variant'],
   button: ['variant', 'size'],
   calendar: [],
-  card: [],
+  card: ['variant'],
   center: [],
   checkboxinput: [],
   collapsible: [],
@@ -742,10 +742,16 @@ export function registerTheme(program) {
       const sourceRelative = path.relative(process.cwd(), filePath);
       const buildCommand = `astryx theme build ${sourceRelative}${options.out ? ' --out ' + path.relative(process.cwd(), path.resolve(process.cwd(), options.out)) : ''}`;
 
-      // Determine output path
+      // All sibling outputs (.css/.js/.d.ts) derive from the theme's `name`
+      // so they share one naming scheme. Without an explicit --out the CSS
+      // used to be named after the INPUT file (e.g. gothicTheme.css) while
+      // the JS used the theme name (gothic.js) — confusingly inconsistent.
+      // Default the CSS to `<dir>/<name>.css` too; an explicit --out still
+      // wins (published theme packages pass `-o dist/theme.css`).
+      const baseName = themeDef.name;
       const outPath = options.out
         ? path.resolve(process.cwd(), options.out)
-        : filePath.replace(/\.(ts|tsx|js|jsx|mjs)$/, '.css');
+        : path.join(path.dirname(filePath), `${baseName}.css`);
 
       const displayTheme = resolvedTheme || themeDef;
       const tokenCount = displayTheme.tokens ? Object.keys(displayTheme.tokens).length : 0;
@@ -758,7 +764,6 @@ export function registerTheme(program) {
       // was left as orphaned half-built output. Stage-then-commit avoids
       // that.
       const outDir = path.dirname(outPath);
-      const baseName = themeDef.name;
       const jsPath = path.join(outDir, `${baseName}.js`);
       const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
@@ -839,18 +844,21 @@ export function registerTheme(program) {
         });
       }
 
-      // Print install instructions
-      const relDir = path.relative(process.cwd(), outDir);
-      // When the output dir is the cwd, relDir is empty — avoid emitting a
-      // double-slash import path like './/<name>'. Build a './<relDir>/'
-      // prefix that collapses to './' when relDir is empty.
-      const importPrefix = relDir ? `./${relDir}/` : './';
+      // Print install instructions. Reference the files by bare relative
+      // specifiers (`./<name>`) rather than a cwd-rooted path: the import is
+      // relative to the consumer's file, which we don't know, so a path like
+      // `./src/...` is wrong whenever their file already lives under src/.
+      // Use the ACTUAL emitted CSS basename (honors --out, e.g. theme.css)
+      // instead of assuming `<name>.css`.
+      const relOutDir = path.relative(process.cwd(), outDir) || '.';
+      const cssBase = path.basename(outPath, '.css');
       const exportName = `${toIdentifier(baseName)}Theme`;
       humanLog(`
-Install in your app:
+Install in your app (these files are in ${relOutDir}/ — adjust the paths to
+import them relative to your own file):
 
-  import { ${exportName} } from '${importPrefix}${baseName}';
-  import '${importPrefix}${baseName}.css';
+  import { ${exportName} } from './${baseName}';
+  import './${cssBase}.css';
 
   <Theme theme={${exportName}}>
     <App />
@@ -858,9 +866,9 @@ Install in your app:
 
 Or with a <link> tag:
 
-  import { ${exportName} } from '${importPrefix}${baseName}';
+  import { ${exportName} } from './${baseName}';
 
-  <link rel="stylesheet" href="${importPrefix}${baseName}.css" />
+  <link rel="stylesheet" href="./${cssBase}.css" />
   <Theme theme={${exportName}}>
     <App />
   </Theme>
@@ -985,11 +993,17 @@ Or with a <link> tag:
       for (const f of files) {
         humanLog(`  ${outputDir}/${f}`);
       }
-      const importPath = `${outputDir === '.' ? '.' : './' + outputDir}/${entry.replace(/\.tsx?$/, '')}`;
+      // The module path the consumer imports. `outputDir` is relative to the
+      // cwd, but the import has to be relative to THEIR file, which we don't
+      // know — so show a bare relative specifier (`./${entry}`) and tell them
+      // to point it at where the theme landed rather than fabricating a
+      // cwd-rooted path like `./src/...` that's wrong when their file already
+      // lives under src/.
+      const entryModule = `./${entry.replace(/\.tsx?$/, '')}`;
       humanLog(`
-Use it in your app:
+Use it in your app (adjust the import path to point at ${outputDir}/ from your file):
 
-  import { ${exportName} } from '${importPath}';
+  import { ${exportName} } from '${entryModule}';
 
   <Theme theme={${exportName}}>
     <App />
