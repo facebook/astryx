@@ -58,6 +58,17 @@ describe('HoverCard', () => {
     expect(screen.getByRole('button', {name: 'Trigger'})).toBeInTheDocument();
   });
 
+  it('gives the floating layer role="dialog"', () => {
+    render(
+      <HoverCard content={<span>Card content</span>}>
+        <button type="button">Trigger</button>
+      </HoverCard>,
+    );
+    expect(screen.getByRole('dialog', {hidden: true})).toHaveTextContent(
+      'Card content',
+    );
+  });
+
   it('wraps element children in an inline-safe span', () => {
     const {container} = render(
       <p>

@@ -455,6 +455,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
+        role: 'dialog',
         xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
         // Render the layer as inline-safe phrasing markup so HoverCard stays
         // valid (and hydration-stable) inside inline contexts like a `<p>`.
