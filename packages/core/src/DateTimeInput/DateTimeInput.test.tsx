@@ -31,6 +31,28 @@ describe('DateTimeInput', () => {
     expect(screen.getByPlaceholderText('Pick a date')).toBeInTheDocument();
   });
 
+  it('defaults the time portion placeholder to "Select a time"', () => {
+    render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+    expect(screen.getByPlaceholderText('Select a time')).toBeInTheDocument();
+  });
+
+  it('applies a custom timePlaceholder to the time portion', () => {
+    render(
+      <DateTimeInput
+        label="Meeting"
+        onChange={() => {}}
+        placeholder="Pick a date"
+        timePlaceholder="Pick a time"
+      />,
+    );
+    // Time portion uses the override; date portion keeps its own placeholder.
+    expect(screen.getByPlaceholderText('Pick a time')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Pick a date')).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText('Select a time'),
+    ).not.toBeInTheDocument();
+  });
+
   it('renders both date and time inputs', () => {
     render(<DateTimeInput label="Meeting" onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
@@ -90,9 +112,7 @@ describe('DateTimeInput', () => {
   });
 
   it('visually hides label when isLabelHidden is true', () => {
-    render(
-      <DateTimeInput label="Meeting" isLabelHidden onChange={() => {}} />,
-    );
+    render(<DateTimeInput label="Meeting" isLabelHidden onChange={() => {}} />);
     const label = screen.getByText('Meeting');
     expect(label).toBeInTheDocument();
     expect(screen.getByLabelText('Meeting')).toBeInTheDocument();
