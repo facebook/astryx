@@ -17,6 +17,7 @@ export type {
   CalendarHandle,
   ISODateString,
   DayOfWeek,
+  DayOfWeekName,
   DateRange,
 } from './Calendar';
 

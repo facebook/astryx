@@ -146,10 +146,7 @@ describe('Calendar', () => {
     const handleFocusChange = vi.fn();
 
     render(
-      <Calendar
-        focusDate="2026-01-01"
-        onFocusDateChange={handleFocusChange}
-      />,
+      <Calendar focusDate="2026-01-01" onFocusDateChange={handleFocusChange} />,
     );
 
     const nextButton = screen.getByRole('button', {name: 'Next month'});
@@ -189,9 +186,7 @@ describe('Calendar', () => {
       return day !== 0 && day !== 6;
     };
 
-    render(
-      <Calendar focusDate="2026-01-01" dateConstraints={[isWeekday]} />,
-    );
+    render(<Calendar focusDate="2026-01-01" dateConstraints={[isWeekday]} />);
 
     // January 4, 2026 is a Sunday - should be disabled
     const sunday = getDayButton(4);
@@ -238,6 +233,21 @@ describe('Calendar', () => {
     expect(dayNames[0]).toHaveTextContent('Mo');
   });
 
+  it('accepts a three-letter day name for weekStartsOn', () => {
+    render(<Calendar weekStartsOn="mon" />);
+
+    // "mon" should behave exactly like the numeric 1 (Monday first).
+    const dayNames = screen.getAllByText(/^(Mo|Tu|We|Th|Fr|Sa|Su)$/);
+    expect(dayNames[0]).toHaveTextContent('Mo');
+  });
+
+  it('treats weekStartsOn day names case-insensitively', () => {
+    render(<Calendar weekStartsOn={'WED' as 'wed'} />);
+
+    const dayNames = screen.getAllByText(/^(Mo|Tu|We|Th|Fr|Sa|Su)$/);
+    expect(dayNames[0]).toHaveTextContent('We');
+  });
+
   // ─── Range Mode ──────────────────────────────────────────────
 
   it('supports range selection mode', async () => {
@@ -245,11 +255,7 @@ describe('Calendar', () => {
     const handleChange = vi.fn();
 
     render(
-      <Calendar
-        mode="range"
-        onChange={handleChange}
-        focusDate="2026-01-01"
-      />,
+      <Calendar mode="range" onChange={handleChange} focusDate="2026-01-01" />,
     );
 
     // Click start date
@@ -271,11 +277,7 @@ describe('Calendar', () => {
     const handleChange = vi.fn();
 
     render(
-      <Calendar
-        mode="range"
-        onChange={handleChange}
-        focusDate="2026-01-01"
-      />,
+      <Calendar mode="range" onChange={handleChange} focusDate="2026-01-01" />,
     );
 
     // Click later date first
@@ -346,10 +348,7 @@ describe('Calendar', () => {
     const handleFocusChange = vi.fn();
 
     render(
-      <Calendar
-        focusDate="2026-01-01"
-        onFocusDateChange={handleFocusChange}
-      />,
+      <Calendar focusDate="2026-01-01" onFocusDateChange={handleFocusChange} />,
     );
 
     // Focus Jan 28
@@ -414,11 +413,7 @@ describe('Calendar', () => {
     const handleChange = vi.fn();
 
     render(
-      <Calendar
-        mode="range"
-        onChange={handleChange}
-        focusDate="2026-01-01"
-      />,
+      <Calendar mode="range" onChange={handleChange} focusDate="2026-01-01" />,
     );
 
     // Click start date to begin range selection

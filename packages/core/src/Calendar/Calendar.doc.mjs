@@ -103,8 +103,8 @@ export const docs = {
     },
     {
       name: 'weekStartsOn',
-      type: '0 | 1 | 2 | 3 | 4 | 5 | 6',
-      description: 'First day of week (0=Sunday).',
+      type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'",
+      description: 'First day of week. Accepts a number (0=Sunday) or a three-letter day name (e.g. "mon").',
       default: '0',
     },
   ],
@@ -147,7 +147,7 @@ export const docsZh = {
     {name: 'hasOutsideDays', type: 'boolean', description: '显示相邻月份的日期。', default: 'true'},
     {name: 'hasWeekNumbers', type: 'boolean', description: '显示 ISO 周数。', default: 'false'},
     {name: 'hasVariableRowCount', type: 'boolean', description: '可变行数与固定 6 行网格。', default: 'false'},
-    {name: 'weekStartsOn', type: '0 | 1 | 2 | 3 | 4 | 5 | 6', description: '每周起始日（0=周日）。', default: '0'},
+    {name: 'weekStartsOn', type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun'…'sat'", description: '每周起始日。可为数字（0=周日）或三字母星期缩写（如 "mon"）。', default: '0'},
   ],
   theming: {
     targets: [
@@ -200,6 +200,6 @@ export const docsDense = {
     hasOutsideDays: 'show days from adjacent months',
     hasWeekNumbers: 'show ISO week numbers',
     hasVariableRowCount: 'variable vs fixed 6-row grid',
-    weekStartsOn: 'first day of week (0=Sunday)',
+    weekStartsOn: 'first day of week (0=Sunday, or name e.g. "mon")',
   },
 };
