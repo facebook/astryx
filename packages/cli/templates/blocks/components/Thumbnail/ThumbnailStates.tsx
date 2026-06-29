@@ -6,10 +6,10 @@ import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
-// Inline data URI so the example is self-contained and same-origin — see
+// Inline same-origin data URI so the example is self-contained — see
 // ThumbnailRemovable for why image-backed Thumbnails avoid cross-origin URLs.
-const SCENE =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAACDElEQVR42u2Yy07CQBSGjxUfAiEsvOsrmBiNFwSDAqIrfQKfygAF8QJeqOAlGI1GHwBaLKIu1LUblx0XJEi4lLac0gzOZDY0Tb//7+GfOdO+H2EHaB42RSF0GyCEdgP0VwBYBVgGWAZYBVgG/vVODOwv1KMhti/5a39+XaSoqcCgO9DKz2c2icviiAK4s6n6Wm+4OI6gDocn0PadOTwBRCJHFII1nd6gxro7vUEsqGWrEBYXLQMuX0gX2OULoXCt3AdQ0Fa2Eiho+itAFMu6ABQ02j4gJ+K6wHIijsLthWUUbSMrxniN1GKMx4JyhADilPj2HiSeRyRiVqAyxUhURb0YieLiTMlAIRwBgKntrcaLNB1o8rths1cC/iRvo/RMHz/NU/xdaC9dwGwlEoK46Z3sjvSEIGJmYD8jVZ+7sTxhtvoqDue70EFWanx6yG2KjTpWpxU4vCyqkNYXx3HVq+CMZODo6lkLL7gw1rn0tix9BpLXsi52YH60E/UacVrPA6mcbEyBf063DV2s9hU4vil18iJTOXltdkT7/XpxaiE+uX1BSWFF0+rMsPptxnBcqz4PS32tPpW20jCuSQbS92WTdqKzuzIArEwPIeLqz8Tmqa9VjIj7y8D541vXujHh4RXvPEAIAGSe3oHO0W/nBkof30Dt4IDywQwwA8wAM8AMMAPMADPADDAD1o1fMFhlmPil7jgAAAAASUVORK5CYII=';
+const MISTY_VALLEY =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAwFBMVEWPnaqJmKSIlaKHlaGGlaKGk6CEkp6Ckp+Cj5uAj51/jZp6i5h8ipd7iZZ4hpR1g5FzhpdzhJN0g5FuhZdsgpVqgZRpgJNpf5JmfpFufYxufYtlfJBpe4tke49neo1ieo5kd4tndoZidopheY1geIxfd4tmdYVddYpcdIlbc4hgcoNebn5ZcodYcYZXb4VVboRUbYNTbIJaantWaXxRa4FQaYBPaH9NZ35UZXZQY3dMZn1LZXxKZHxMYHRKXnIoOEh3WzsBAAABeElEQVR42u3T11oCQQyG4R9FEREFqVJEgh17xbZ7/3cl29gpmQGeeOh7OF+Ss8G3EL6E8CmEdyG8CeFVCC9CeBTCgxDuhXAnhFsh3AjhSgiXQrgQwtlayHrB6TqIyHzCREMTH4rpbxip5nnkRintEUNF0oc8yqnP6Oey3ueQSnlHN6P0ro0Mi4BOSu8dA1mygnbC7G0NMdKEVszuLQXx4oZmhO3NDLlEEY05R280PDGbgD0RaBeI/Bdg7weBMkDLwF4PtBOcwH0gCJZf0DPYdd8Jo8K177hgZbjW+RN2hWffusBVnMR+XE5yfMRx5MPtOOOI0Xd+9ot/rTOiVrtepuabwcDwNFgP6przSH0dqKiOUhUfvaKcO8yVncyM0sK+psSyK4qpPUvRwlUUYrusgoaviG27YMFXNz38I0nc8PNPAFtC2BFClRFWV4cDU5g4WEE0hJ4q1PU8sgmMF0LOmKN2TBOh21RjRsxms3C5WYwrCIX+D/zBgV8HCFv4gVKf1AAAAABJRU5ErkJggg==';
 
 export default function ThumbnailStates() {
   return (
@@ -33,10 +33,10 @@ export default function ThumbnailStates() {
           </Stack>
           <Stack direction="vertical" gap={1} hAlign="center">
             <Thumbnail
-              src={SCENE}
-              alt="Mountain landscape"
+              src={MISTY_VALLEY}
+              alt="Misty mountain valley"
               isLoading
-              label="landscape.jpg"
+              label="misty-valley.jpg"
             />
             <Text type="supporting" color="secondary">
               Uploading
@@ -44,9 +44,9 @@ export default function ThumbnailStates() {
           </Stack>
           <Stack direction="vertical" gap={1} hAlign="center">
             <Thumbnail
-              src={SCENE}
-              alt="Mountain landscape"
-              label="landscape.jpg"
+              src={MISTY_VALLEY}
+              alt="Misty mountain valley"
+              label="misty-valley.jpg"
             />
             <Text type="supporting" color="secondary">
               Loaded
