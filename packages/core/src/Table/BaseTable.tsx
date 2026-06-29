@@ -45,6 +45,10 @@ import {mergeProps} from '../utils';
 import {EmptyState} from '../EmptyState';
 import {Text} from '../Text';
 import {themeProps} from '../utils/themeProps';
+import {
+  collectHeaderContextActions,
+  wrapInTableContextMenu,
+} from './tableContextMenu';
 
 const styles = stylex.create({
   table: {
@@ -409,29 +413,38 @@ function BaseTableInner<T extends Record<string, unknown>>({
     const hasSlots =
       before != null || after != null || overlay != null || below != null;
 
+    const headerInner = hasSlots ? (
+      <>
+        {before}
+        {after != null ? (
+          <div {...stylex.props(styles.headerLabelRow)}>
+            {resolvedContent}
+            {after}
+          </div>
+        ) : (
+          resolvedContent
+        )}
+        {overlay}
+        {below}
+      </>
+    ) : (
+      resolvedContent
+    );
+
+    // Right-click context menu: aggregate actions contributed by every plugin
+    // for this header and wrap the content. No-op (native menu) when none.
+    const headerCellContent = wrapInTableContextMenu(
+      headerInner,
+      collectHeaderContextActions(plugins, col, columnIndex),
+    );
+
     return (
       <HeaderCellComponent
         key={col.key}
         {...mergedHtmlProps}
         {...headerTitleProp}
         xstyle={cellRenderProps.styles}>
-        {hasSlots ? (
-          <>
-            {before}
-            {after != null ? (
-              <div {...stylex.props(styles.headerLabelRow)}>
-                {resolvedContent}
-                {after}
-              </div>
-            ) : (
-              resolvedContent
-            )}
-            {overlay}
-            {below}
-          </>
-        ) : (
-          resolvedContent
-        )}
+        {headerCellContent}
       </HeaderCellComponent>
     );
   });

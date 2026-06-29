@@ -336,6 +336,38 @@ export interface ScrollWrapperRenderProps {
 }
 
 // =============================================================================
+// Context-menu actions
+// =============================================================================
+
+/**
+ * A single right-click context-menu action contributed by a plugin.
+ *
+ * Plugins contribute actions via {@link TablePlugin.getHeaderContextActions} /
+ * {@link TablePlugin.getRowContextActions}; the table aggregates actions from
+ * every enabled plugin into a single menu per header cell / row.
+ */
+export interface TableContextAction {
+  /** Stable identifier, unique within a single menu. */
+  id: string;
+  /** Visible label for the menu item. */
+  label: ReactNode;
+  /** Optional leading icon. */
+  icon?: ReactNode;
+  /** Invoked when the item is selected. */
+  onSelect: () => void;
+  /** When true, the item is rendered but not selectable. */
+  disabled?: boolean;
+  /**
+   * Group key used to cluster related actions and insert a divider between
+   * groups (e.g. 'sort', 'selection'). Actions without a group form a trailing
+   * group. Group order follows first-seen order across the aggregated list.
+   */
+  group?: string;
+  /** When true, the item renders as checked (e.g. the active sort direction). */
+  checked?: boolean;
+}
+
+// =============================================================================
 // Plugin Interface
 // =============================================================================
 
@@ -353,6 +385,10 @@ export interface ScrollWrapperRenderProps {
  * 6. `transformBodyCell` — transform each body `<td>` props
  * 7. `transformScrollWrapper` — transform the scroll-container wrapper around the table
  * 8. `transformTableContext` — wrap the table output in context providers
+ *
+ * Plugins may also contribute right-click menu actions via
+ * `getHeaderContextActions` / `getRowContextActions` (aggregated into one menu
+ * per header cell / row).
  */
 export interface TablePlugin<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -409,6 +445,21 @@ export interface TablePlugin<
   ) => ScrollWrapperRenderProps;
   /** Wrap the table output in context providers */
   transformTableContext?: (children: ReactNode) => ReactNode;
+  /**
+   * Contribute right-click actions for a column header. Called for the header
+   * under the cursor; return an empty array to contribute nothing. Actions
+   * from all plugins are merged into one menu (never overridden).
+   */
+  getHeaderContextActions?: (
+    column: TableColumn<T>,
+    columnIndex: number,
+  ) => TableContextAction[];
+  /**
+   * Contribute right-click actions for a body row. Called for the row under
+   * the cursor; return an empty array to contribute nothing. Actions from all
+   * plugins are merged into one menu (never overridden).
+   */
+  getRowContextActions?: (item: T, rowIndex: number) => TableContextAction[];
 }
 
 // =============================================================================

@@ -49,6 +49,7 @@ export type {
   ProportionalWidth,
   PixelWidth,
   TablePlugin,
+  TableContextAction,
   TableRenderProps,
   HeaderRowRenderProps,
   HeaderCellRenderProps,

@@ -377,6 +377,48 @@ export function useTableSortable<
           ),
         };
       },
+      getHeaderContextActions(column: TableColumn<T>) {
+        const sortKey = resolveSortKey(column);
+        if (sortKey == null) {
+          return [];
+        }
+        const cfg = configRef.current;
+        const entry = cfg.sort.find(e => e.sortKey === sortKey);
+        const direction = entry?.direction ?? null;
+        const actions = [
+          {
+            id: 'sort-asc',
+            group: 'sort',
+            label: 'Sort ascending',
+            icon: <Icon icon="arrowUp" size="xsm" aria-hidden />,
+            checked: direction === 'ascending',
+            onSelect: () =>
+              cfg.onSortChange([{sortKey: sortKey as TSortKey, direction: 'ascending'}]),
+          },
+          {
+            id: 'sort-desc',
+            group: 'sort',
+            label: 'Sort descending',
+            icon: <Icon icon="arrowDown" size="xsm" aria-hidden />,
+            checked: direction === 'descending',
+            onSelect: () =>
+              cfg.onSortChange([{sortKey: sortKey as TSortKey, direction: 'descending'}]),
+          },
+        ];
+        // Offer "Clear sort" only when this column is actively sorted.
+        if (direction != null) {
+          actions.push({
+            id: 'sort-clear',
+            group: 'sort-clear',
+            label: 'Clear sort',
+            icon: <Icon icon="close" size="xsm" aria-hidden />,
+            checked: false,
+            onSelect: () =>
+              cfg.onSortChange(cfg.sort.filter(e => e.sortKey !== sortKey)),
+          });
+        }
+        return actions;
+      },
     }),
     [],
   );
