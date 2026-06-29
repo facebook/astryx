@@ -160,7 +160,7 @@ function ConversationItem({
   );
 }
 
-export default function ShellAIChat() {
+export default function ShellSideNav() {
   return (
     <AppShell
       contentPadding={0}
