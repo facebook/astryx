@@ -81,6 +81,18 @@ function toIdentifier(name) {
 }
 
 /**
+ * Import specifier for install/scaffold instructions. Drops a leading `src/`
+ * from the cwd-relative dir (most consumers import from a file under src/) but
+ * keeps the rest of the path (e.g. `themes/gothic`). Callers note the path is
+ * relative to the consumer's file.
+ */
+function importSpecifier(relDir, base) {
+  const normalized = relDir === '.' ? '' : relDir;
+  const withinSrc = normalized.replace(/^src\/?/, '').replace(/\/+$/, '');
+  return withinSrc ? `./${withinSrc}/${base}` : `./${base}`;
+}
+
+/**
  * Convert a kebab-case component name to PascalCase.
  * e.g. 'button' → 'Button', 'progress-bar' → 'ProgressBar', 'avatar-status-dot' → 'AvatarStatusDot'
  */
@@ -840,17 +852,18 @@ export function registerTheme(program) {
         });
       }
 
-      // Use bare `./<name>` specifiers (the import is relative to the
-      // consumer's file, not cwd) and the actual emitted CSS basename.
+      // Paths relative to src/ (where most consumers import from); the note
+      // covers files elsewhere. Use the actual emitted CSS basename (--out).
       const relOutDir = path.relative(process.cwd(), outDir) || '.';
       const cssBase = path.basename(outPath, '.css');
+      const jsImport = importSpecifier(relOutDir, baseName);
+      const cssImport = importSpecifier(relOutDir, cssBase) + '.css';
       const exportName = `${toIdentifier(baseName)}Theme`;
       humanLog(`
-Install in your app (these files are in ${relOutDir}/ — adjust the paths to
-import them relative to your own file):
+Install in your app (paths are relative to a file in src/ — adjust if yours lives elsewhere):
 
-  import { ${exportName} } from './${baseName}';
-  import './${cssBase}.css';
+  import { ${exportName} } from '${jsImport}';
+  import '${cssImport}';
 
   <Theme theme={${exportName}}>
     <App />
@@ -858,9 +871,9 @@ import them relative to your own file):
 
 Or with a <link> tag:
 
-  import { ${exportName} } from './${baseName}';
+  import { ${exportName} } from '${jsImport}';
 
-  <link rel="stylesheet" href="./${cssBase}.css" />
+  <link rel="stylesheet" href="${cssImport}" />
   <Theme theme={${exportName}}>
     <App />
   </Theme>
@@ -985,11 +998,14 @@ Or with a <link> tag:
       for (const f of files) {
         humanLog(`  ${outputDir}/${f}`);
       }
-      // Bare specifier — the import is relative to the consumer's file, not
-      // cwd, so we can't build the full path for them.
-      const entryModule = `./${entry.replace(/\.tsx?$/, '')}`;
+      // Path relative to src/ (where most consumers import from); the note
+      // covers files that live elsewhere.
+      const entryModule = importSpecifier(
+        outputDir,
+        entry.replace(/\.tsx?$/, ''),
+      );
       humanLog(`
-Use it in your app (adjust the import path to point at ${outputDir}/ from your file):
+Use it in your app (import path is relative to a file in src/ — adjust if yours lives elsewhere):
 
   import { ${exportName} } from '${entryModule}';
 
