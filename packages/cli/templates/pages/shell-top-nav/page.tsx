@@ -132,7 +132,7 @@ function MegaFeatured(props: {
   );
 }
 
-export default function ShellCommerce() {
+export default function ShellTopNav() {
   return (
     <AppShell
       variant="surface"
