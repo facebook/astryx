@@ -55,6 +55,19 @@ describe('Tooltip', () => {
     expect(screen.getByRole('button', {name: 'Trigger'})).toBeInTheDocument();
   });
 
+  it('gives the tooltip layer role="tooltip" linked from the trigger', () => {
+    render(
+      <Tooltip content="Tooltip text">
+        <button type="button">Trigger</button>
+      </Tooltip>,
+    );
+    const layer = screen.getByRole('tooltip', {hidden: true});
+    expect(layer).toHaveTextContent('Tooltip text');
+    // ARIA tooltip pattern: trigger references the layer via aria-describedby.
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    expect(trigger.getAttribute('aria-describedby')).toBe(layer.id);
+  });
+
   it('calls onOpenChange(true) when shown via hover', async () => {
     const onOpenChange = vi.fn();
     render(
