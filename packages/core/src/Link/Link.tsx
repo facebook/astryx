@@ -106,10 +106,20 @@ const styles = stylex.create({
  */
 const linkColorStyles = stylex.create({
   primary: {
-    color: colorVars['--color-text-primary'],
+    color: {
+      default: colorVars['--color-text-primary'],
+      ':hover': {
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-text-primary']}, ${colorVars['--color-tint-hover']} 15%)`,
+      },
+    },
   },
   secondary: {
-    color: colorVars['--color-text-secondary'],
+    color: {
+      default: colorVars['--color-text-secondary'],
+      ':hover': {
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-text-secondary']}, ${colorVars['--color-tint-hover']} 15%)`,
+      },
+    },
   },
   disabled: {
     color: colorVars['--color-text-disabled'],
@@ -118,7 +128,12 @@ const linkColorStyles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   accent: {
-    color: colorVars['--color-text-accent'],
+    color: {
+      default: colorVars['--color-text-accent'],
+      ':hover': {
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-text-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
+      },
+    },
   },
   inherit: {
     color: 'inherit',
