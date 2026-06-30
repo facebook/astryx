@@ -21,6 +21,7 @@ import type {
   TablePlugin,
   HeaderCellRenderProps,
   TableColumn,
+  TableContextAction,
 } from '../../types';
 
 // =============================================================================
@@ -359,6 +360,44 @@ export function useTableSortable<
         // Find sort entry for this column
         const cfg = configRef.current;
         const entry = cfg.sort.find(e => e.sortKey === sortKey);
+        const direction = entry?.direction ?? null;
+
+        // Right-click actions: sort asc / desc, and clear when active. Appended
+        // to any actions other plugins contributed for this header.
+        const sortActions: TableContextAction[] = [
+          {
+            id: 'sort-asc',
+            group: 'sort',
+            label: 'Sort ascending',
+            icon: <Icon icon="arrowUp" size="xsm" aria-hidden />,
+            checked: direction === 'ascending',
+            onSelect: () =>
+              cfg.onSortChange([
+                {sortKey: sortKey as TSortKey, direction: 'ascending'},
+              ]),
+          },
+          {
+            id: 'sort-desc',
+            group: 'sort',
+            label: 'Sort descending',
+            icon: <Icon icon="arrowDown" size="xsm" aria-hidden />,
+            checked: direction === 'descending',
+            onSelect: () =>
+              cfg.onSortChange([
+                {sortKey: sortKey as TSortKey, direction: 'descending'},
+              ]),
+          },
+        ];
+        if (direction != null) {
+          sortActions.push({
+            id: 'sort-clear',
+            group: 'sort-clear',
+            label: 'Clear sort',
+            icon: <Icon icon="close" size="xsm" aria-hidden />,
+            onSelect: () =>
+              cfg.onSortChange(cfg.sort.filter(e => e.sortKey !== sortKey)),
+          });
+        }
 
         return {
           ...props,
@@ -375,49 +414,11 @@ export function useTableSortable<
               {props.content}
             </SortHeaderButton>
           ),
+          contextMenuActions: [
+            ...(props.contextMenuActions ?? []),
+            ...sortActions,
+          ],
         };
-      },
-      getHeaderContextActions(column: TableColumn<T>) {
-        const sortKey = resolveSortKey(column);
-        if (sortKey == null) {
-          return [];
-        }
-        const cfg = configRef.current;
-        const entry = cfg.sort.find(e => e.sortKey === sortKey);
-        const direction = entry?.direction ?? null;
-        const actions = [
-          {
-            id: 'sort-asc',
-            group: 'sort',
-            label: 'Sort ascending',
-            icon: <Icon icon="arrowUp" size="xsm" aria-hidden />,
-            checked: direction === 'ascending',
-            onSelect: () =>
-              cfg.onSortChange([{sortKey: sortKey as TSortKey, direction: 'ascending'}]),
-          },
-          {
-            id: 'sort-desc',
-            group: 'sort',
-            label: 'Sort descending',
-            icon: <Icon icon="arrowDown" size="xsm" aria-hidden />,
-            checked: direction === 'descending',
-            onSelect: () =>
-              cfg.onSortChange([{sortKey: sortKey as TSortKey, direction: 'descending'}]),
-          },
-        ];
-        // Offer "Clear sort" only when this column is actively sorted.
-        if (direction != null) {
-          actions.push({
-            id: 'sort-clear',
-            group: 'sort-clear',
-            label: 'Clear sort',
-            icon: <Icon icon="close" size="xsm" aria-hidden />,
-            checked: false,
-            onSelect: () =>
-              cfg.onSortChange(cfg.sort.filter(e => e.sortKey !== sortKey)),
-          });
-        }
-        return actions;
       },
     }),
     [],

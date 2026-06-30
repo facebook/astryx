@@ -45,10 +45,7 @@ import {mergeProps} from '../utils';
 import {EmptyState} from '../EmptyState';
 import {Text} from '../Text';
 import {themeProps} from '../utils/themeProps';
-import {
-  collectHeaderContextActions,
-  wrapInTableContextMenu,
-} from './tableContextMenu';
+import {wrapInTableContextMenu} from './tableContextMenu';
 
 const styles = stylex.create({
   table: {
@@ -431,11 +428,12 @@ function BaseTableInner<T extends Record<string, unknown>>({
       resolvedContent
     );
 
-    // Right-click context menu: aggregate actions contributed by every plugin
-    // for this header and wrap the content. No-op (native menu) when none.
+    // Right-click context menu: plugins append actions to
+    // `contextMenuActions` in transformHeaderCell; wrap the content in a menu.
+    // No-op (native menu) when none.
     const headerCellContent = wrapInTableContextMenu(
       headerInner,
-      collectHeaderContextActions(plugins, col, columnIndex),
+      cellRenderProps.contextMenuActions ?? [],
     );
 
     return (

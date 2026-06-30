@@ -262,6 +262,12 @@ export interface HeaderCellRenderProps {
   /** Content rendered below the header label row (e.g. inline filter controls). */
   below?: ReactNode;
   /**
+   * Right-click context-menu actions for this header cell. Plugins append
+   * their actions in `transformHeaderCell`; BaseTable concatenates the arrays
+   * across plugins (never overridden) and renders one menu per header cell.
+   */
+  contextMenuActions?: TableContextAction[];
+  /**
    * Index of this column within the final, ordered list of rendered columns
    * (after column injection/reordering by other plugins). Populated by
    * BaseTable. Optional for backward compatibility with hand-constructed
@@ -290,6 +296,13 @@ export interface BodyRowRenderProps {
 export interface BodyCellRenderProps {
   htmlProps: TdHTMLAttributes<HTMLTableCellElement>;
   styles: StyleXStyles[];
+  /**
+   * Right-click context-menu actions for this body cell. Plugins append their
+   * actions in `transformBodyCell`; BaseTable concatenates the arrays across
+   * plugins and across the row's cells (never overridden) and renders one menu
+   * per row.
+   */
+  contextMenuActions?: TableContextAction[];
   /**
    * Index of this cell's column within the final ordered column list.
    * Mirrors the `columnIndex` passed to `transformHeaderCell`. Populated by
@@ -342,9 +355,10 @@ export interface ScrollWrapperRenderProps {
 /**
  * A single right-click context-menu action contributed by a plugin.
  *
- * Plugins contribute actions via {@link TablePlugin.getHeaderContextActions} /
- * {@link TablePlugin.getRowContextActions}; the table aggregates actions from
- * every enabled plugin into a single menu per header cell / row.
+ * Plugins contribute actions via the `contextMenuActions` field on
+ * `HeaderCellRenderProps` / `BodyCellRenderProps` (set in
+ * `transformHeaderCell` / `transformBodyCell`); the table aggregates actions
+ * from every enabled plugin into a single menu per header cell / row.
  */
 export interface TableContextAction {
   /** Stable identifier, unique within a single menu. */
@@ -386,9 +400,9 @@ export interface TableContextAction {
  * 7. `transformScrollWrapper` — transform the scroll-container wrapper around the table
  * 8. `transformTableContext` — wrap the table output in context providers
  *
- * Plugins may also contribute right-click menu actions via
- * `getHeaderContextActions` / `getRowContextActions` (aggregated into one menu
- * per header cell / row).
+ * Plugins may also contribute right-click menu actions by appending to
+ * `contextMenuActions` in `transformHeaderCell` / `transformBodyCell`
+ * (aggregated into one menu per header cell / row).
  */
 export interface TablePlugin<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -445,21 +459,6 @@ export interface TablePlugin<
   ) => ScrollWrapperRenderProps;
   /** Wrap the table output in context providers */
   transformTableContext?: (children: ReactNode) => ReactNode;
-  /**
-   * Contribute right-click actions for a column header. Called for the header
-   * under the cursor; return an empty array to contribute nothing. Actions
-   * from all plugins are merged into one menu (never overridden).
-   */
-  getHeaderContextActions?: (
-    column: TableColumn<T>,
-    columnIndex: number,
-  ) => TableContextAction[];
-  /**
-   * Contribute right-click actions for a body row. Called for the row under
-   * the cursor; return an empty array to contribute nothing. Actions from all
-   * plugins are merged into one menu (never overridden).
-   */
-  getRowContextActions?: (item: T, rowIndex: number) => TableContextAction[];
 }
 
 // =============================================================================

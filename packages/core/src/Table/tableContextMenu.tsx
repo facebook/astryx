@@ -5,8 +5,8 @@
 /**
  * @file tableContextMenu.tsx
  * @input React, ContextMenu, Icon, types
- * @output collectContextActions + wrapInTableContextMenu helpers
- * @position Renders the aggregated plugin context actions for a header/row
+ * @output wrapInTableContextMenu helper
+ * @position Renders the aggregated `contextMenuActions` for a header cell / row
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Table/BaseTable.tsx (call sites)
@@ -16,44 +16,7 @@
 import type {ReactNode} from 'react';
 import {ContextMenu, type ContextMenuOption} from '../ContextMenu';
 import {Icon} from '../Icon';
-import type {TablePlugin, TableContextAction, TableColumn} from './types';
-
-/**
- * Aggregate header context actions from every plugin for a given column.
- * Actions are concatenated in plugin order (never overridden).
- */
-export function collectHeaderContextActions<
-  T extends Record<string, unknown>,
->(
-  plugins: TablePlugin<T>[],
-  column: TableColumn<T>,
-  columnIndex: number,
-): TableContextAction[] {
-  const actions: TableContextAction[] = [];
-  for (const plugin of plugins) {
-    if (plugin.getHeaderContextActions) {
-      actions.push(...plugin.getHeaderContextActions(column, columnIndex));
-    }
-  }
-  return actions;
-}
-
-/**
- * Aggregate row context actions from every plugin for a given row.
- */
-export function collectRowContextActions<T extends Record<string, unknown>>(
-  plugins: TablePlugin<T>[],
-  item: T,
-  rowIndex: number,
-): TableContextAction[] {
-  const actions: TableContextAction[] = [];
-  for (const plugin of plugins) {
-    if (plugin.getRowContextActions) {
-      actions.push(...plugin.getRowContextActions(item, rowIndex));
-    }
-  }
-  return actions;
-}
+import type {TableContextAction} from './types';
 
 /**
  * Convert the flat action list into ContextMenu options, inserting a divider

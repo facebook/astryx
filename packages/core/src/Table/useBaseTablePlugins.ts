@@ -89,10 +89,6 @@ const VALID_TRANSFORM_KEYS = new Set([
   'transformBodyCell',
   'transformScrollWrapper',
   'transformTableContext',
-  // Context-menu action contributors (not transforms, but valid plugin keys
-  // that make a plugin do meaningful work).
-  'getHeaderContextActions',
-  'getRowContextActions',
 ]);
 
 /**

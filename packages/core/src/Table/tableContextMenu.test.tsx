@@ -2,18 +2,14 @@
 
 /**
  * @file tableContextMenu.test.tsx
- * @output Tests for the Table context-menu system (collection + rendering)
- * @position Validates plugin action aggregation and header context menus
+ * @output Tests for the Table context-menu system
+ * @position Validates contextMenuActions aggregation + header context menus
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {useState} from 'react';
 import {Table} from './Table';
-import {
-  collectHeaderContextActions,
-  collectRowContextActions,
-} from './tableContextMenu';
 import {
   useTableSortable,
   type TableSortState,
@@ -63,53 +59,17 @@ const columns: TableColumn<Row>[] = [
 ];
 
 // =============================================================================
-// Collection
-// =============================================================================
-
-describe('collectHeaderContextActions / collectRowContextActions', () => {
-  it('aggregates actions from every plugin in order', () => {
-    const a: TablePlugin<Row> = {
-      getHeaderContextActions: () => [
-        {id: 'a', label: 'A', onSelect: () => {}},
-      ],
-    };
-    const b: TablePlugin<Row> = {
-      getHeaderContextActions: () => [
-        {id: 'b', label: 'B', onSelect: () => {}},
-      ],
-    };
-    const actions = collectHeaderContextActions([a, b], columns[0], 0);
-    expect(actions.map(x => x.id)).toEqual(['a', 'b']);
-  });
-
-  it('returns an empty array when no plugin contributes', () => {
-    const plugin: TablePlugin<Row> = {transformHeaderCell: p => p};
-    expect(collectHeaderContextActions([plugin], columns[0], 0)).toEqual([]);
-    expect(collectRowContextActions([plugin], data[0], 0)).toEqual([]);
-  });
-
-  it('collects row actions per plugin', () => {
-    const plugin: TablePlugin<Row> = {
-      getRowContextActions: item => [
-        {id: `del-${item.id}`, label: 'Delete', onSelect: () => {}},
-      ],
-    };
-    const actions = collectRowContextActions([plugin], data[1], 1);
-    expect(actions.map(x => x.id)).toEqual(['del-2']);
-  });
-});
-
-// =============================================================================
-// Rendering (header)
+// contextMenuActions via transformHeaderCell
 // =============================================================================
 
 describe('Table header context menu', () => {
-  it('opens a menu with the plugin actions on right-click', () => {
+  it('renders a menu from a plugin that sets contextMenuActions', () => {
     const onSelect = vi.fn();
     const plugin: TablePlugin<Row> = {
-      getHeaderContextActions: () => [
-        {id: 'pin', label: 'Pin column', onSelect},
-      ],
+      transformHeaderCell: props => ({
+        ...props,
+        contextMenuActions: [{id: 'pin', label: 'Pin column', onSelect}],
+      }),
     };
     render(
       <Table data={data} columns={columns} idKey="id" plugins={{plugin}} />,
@@ -122,6 +82,37 @@ describe('Table header context menu', () => {
     expect(items.length).toBeGreaterThan(0);
     fireEvent.click(items[0]);
     expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
+  it('concatenates actions from multiple plugins (never overridden)', () => {
+    const a: TablePlugin<Row> = {
+      transformHeaderCell: props => ({
+        ...props,
+        contextMenuActions: [
+          ...(props.contextMenuActions ?? []),
+          {id: 'a', label: 'Action A', onSelect: () => {}},
+        ],
+      }),
+    };
+    const b: TablePlugin<Row> = {
+      transformHeaderCell: props => ({
+        ...props,
+        contextMenuActions: [
+          ...(props.contextMenuActions ?? []),
+          {id: 'b', label: 'Action B', onSelect: () => {}},
+        ],
+      }),
+    };
+    render(
+      <Table data={data} columns={columns} idKey="id" plugins={{a, b}} />,
+    );
+    fireEvent.contextMenu(screen.getByText('Name'));
+    expect(
+      screen.getAllByRole('menuitem', {name: 'Action A', hidden: true}).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole('menuitem', {name: 'Action B', hidden: true}).length,
+    ).toBeGreaterThan(0);
   });
 
   it('does not render a menu when no plugin contributes actions', () => {
