@@ -622,7 +622,7 @@
   ],
   "scripts": {
     "prepack": "pnpm build",
-    "build": "rm -rf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && pnpm build:umd",
+    "build": "rimraf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && pnpm build:umd",
     "build:esm": "babel src --out-dir dist --extensions '.ts,.tsx' --out-file-extension '.js' --ignore '**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts' --config-file ./babel.config.json",
     "build:css": "node ../../scripts/build-css.mjs",
     "build:umd": "node ../../scripts/build-umd.mjs",
@@ -648,6 +648,7 @@
     "@stylexjs/babel-plugin": "^0.19.0",
     "@testing-library/dom": "^10.0.0",
     "@testing-library/jest-dom": "^6.6.0",
-    "@testing-library/react": "^16.3.2"
+    "@testing-library/react": "^16.3.2",
+    "rimraf": "^6.0.1"
   }
 }
