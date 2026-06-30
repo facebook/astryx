@@ -125,6 +125,40 @@ describe('Table header context menu', () => {
 });
 
 // =============================================================================
+// Body / row context menu
+// =============================================================================
+
+describe('Table body context menu', () => {
+  it('renders row actions from a plugin that sets contextMenuActions in transformBodyCell', () => {
+    const onSelect = vi.fn();
+    const plugin: TablePlugin<Row> = {
+      transformBodyCell: (props, _column, item) => ({
+        ...props,
+        contextMenuActions: [
+          {
+            id: `delete-${item.id}`,
+            label: 'Delete row',
+            onSelect: () => onSelect(item.id),
+          },
+        ],
+      }),
+    };
+    render(
+      <Table data={data} columns={columns} idKey="id" plugins={{plugin}} />,
+    );
+    // Right-click the first body cell (Alice).
+    fireEvent.contextMenu(screen.getByText('Alice'));
+    const items = screen.getAllByRole('menuitem', {
+      name: 'Delete row',
+      hidden: true,
+    });
+    expect(items.length).toBeGreaterThan(0);
+    fireEvent.click(items[0]);
+    expect(onSelect).toHaveBeenCalledWith('1');
+  });
+});
+
+// =============================================================================
 // Sortable integration
 // =============================================================================
 

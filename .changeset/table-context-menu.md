@@ -3,19 +3,23 @@
 ---
 
 [feat] Add a plugin-contributed right-click context-menu system to `Table`.
-Right-clicking a column header shows a menu of actions aggregated from every
-enabled plugin (instead of the browser's generic menu).
+Right-clicking a column header or a row shows a menu of actions aggregated from
+every enabled plugin (instead of the browser's generic menu).
 
 - New `TableContextAction` type and an optional `contextMenuActions` field on
   `HeaderCellRenderProps` / `BodyCellRenderProps`. Plugins append their actions
   inside the existing `transformHeaderCell` / `transformBodyCell` transforms;
-  the table concatenates them across plugins (never overridden) and renders one
-  menu per header cell, built on the `ContextMenu` component. Actions group with
-  dividers and show a checkmark for the active item; when none are contributed,
-  the native browser menu passes through.
+  the table concatenates them across plugins (never overridden), the same way
+  `styles` are merged.
+- The cell components (`TableHeaderCell` / `TableCell`) own the menu wrapper and
+  render it around their own content via the `ContextMenuActions` prop, so the
+  cell controls how the wrapper interacts with padding / content sizing — and
+  row menus work without invalid `<tr>` nesting. Actions group with dividers and
+  show a checkmark for the active item; when none are contributed, the native
+  browser menu passes through.
 - First contributor: `useTableSortable` adds "Sort ascending / Sort descending
   / Clear sort" on sortable headers.
 
-(Header menus only for now; row-menu rendering is a follow-up pending
-`asChild`/Slot support for valid `<tr>` nesting.)
+Built on the `ContextMenu` component. Other plugins opt in by setting
+`contextMenuActions` in their cell transforms — no core changes needed.
 @humbertovirtudes

@@ -482,12 +482,25 @@ export interface TableRowComponentProps extends HTMLAttributes<HTMLTableRowEleme
 export interface TableCellComponentProps extends TdHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
   xstyle?: StyleXStyles | StyleXStyles[];
+  /**
+   * Right-click actions to render as a context menu around the cell content.
+   * The cell owns the menu wrapper so it can control how it interacts with
+   * padding / content sizing. Empty/undefined renders no menu (native passes
+   * through).
+   */
+  contextMenuActions?: TableContextAction[];
 }
 
 /** Props for header cell components used in the components prop */
 export interface TableHeaderCellComponentProps extends ThHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
   xstyle?: StyleXStyles | StyleXStyles[];
+  /**
+   * Right-click actions to render as a context menu around the header content.
+   * The cell owns the menu wrapper so it can control how it interacts with
+   * padding / content sizing. Empty/undefined renders no menu.
+   */
+  contextMenuActions?: TableContextAction[];
 }
 
 // =============================================================================
