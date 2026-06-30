@@ -25,7 +25,9 @@ export type ErrorCode =
   | 'ERR_UNKNOWN_SECTION'
   | 'ERR_UNKNOWN_CATEGORY'
   | 'ERR_UNKNOWN_TEMPLATE'
+  | 'ERR_AMBIGUOUS_TEMPLATE'
   | 'ERR_AMBIGUOUS_COMPONENT'
+  | 'ERR_UNKNOWN_THEME'
   | 'ERR_UNKNOWN_PACKAGE'
   | 'ERR_UNKNOWN_AGENT'
   | 'ERR_UNKNOWN_FEATURE'
@@ -45,7 +47,9 @@ export type ErrorCode =
   | 'ERR_VERSION_DETECT'
   | 'ERR_INVALID_VERSION'
   | 'ERR_DEP_MISSING'
-  | 'ERR_GH_CLI';
+  | 'ERR_GH_CLI'
+  | 'ERR_LAYOUT_PARSE'
+  | 'ERR_LAYOUT_INVALID';
 
 /** The frozen runtime map of all error codes (keys === values). */
 export declare const ERROR_CODES: Readonly<Record<ErrorCode, ErrorCode>>;
