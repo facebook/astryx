@@ -53,6 +53,7 @@
  *   | 'ERR_UNKNOWN_CATEGORY'
  *   | 'ERR_UNKNOWN_TEMPLATE'
  *   | 'ERR_AMBIGUOUS_TEMPLATE'
+ *   | 'ERR_AMBIGUOUS_COMPONENT'
  *   | 'ERR_UNKNOWN_THEME'
  *   | 'ERR_UNKNOWN_PACKAGE'
  *   | 'ERR_UNKNOWN_AGENT'
@@ -125,6 +126,8 @@ export const ERROR_CODES = Object.freeze({
   ERR_UNKNOWN_TEMPLATE: 'ERR_UNKNOWN_TEMPLATE',
   /** A template id matched more than one template (narrow with --type/--package). */
   ERR_AMBIGUOUS_TEMPLATE: 'ERR_AMBIGUOUS_TEMPLATE',
+  /** A component name is owned by more than one package (narrow with --package). */
+  ERR_AMBIGUOUS_COMPONENT: 'ERR_AMBIGUOUS_COMPONENT',
   /** No theme matched the requested slug (theme add). */
   ERR_UNKNOWN_THEME: 'ERR_UNKNOWN_THEME',
   /** No package matched the requested name (discover). */
