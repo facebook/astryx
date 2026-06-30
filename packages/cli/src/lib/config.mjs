@@ -11,10 +11,9 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
-import {createJiti} from 'jiti';
 import {loadIntegrations} from './integrations.mjs';
 import {validateConfig} from './config-schema.mjs';
+import {importUserModule, findPresentFiles} from './module-loader.mjs';
 
 /** Conventional config basenames, in load-precedence order. */
 const CONFIG_BASENAMES = [
@@ -22,14 +21,6 @@ const CONFIG_BASENAMES = [
   'astryx.config.mjs',
   'astryx.config.js',
 ];
-
-let jitiInstance;
-function getJiti() {
-  if (!jitiInstance) {
-    jitiInstance = createJiti(import.meta.url);
-  }
-  return jitiInstance;
-}
 
 /**
  * Find the directory of the nearest package.json walking up from startDir.
@@ -53,26 +44,15 @@ function findPackageRoot(startDir) {
  */
 export function findConfigPath(startDir = process.cwd()) {
   const root = findPackageRoot(startDir) ?? startDir;
-  const present = CONFIG_BASENAMES.filter(name =>
-    fs.existsSync(path.join(root, name)),
-  );
+  const present = findPresentFiles(root, CONFIG_BASENAMES);
   if (present.length > 1) {
     throw new Error(
-      `Multiple Astryx config files found in ${root} (${present.join(', ')}). Keep exactly one.`,
+      `Multiple Astryx config files found in ${root} (${present
+        .map(file => path.basename(file))
+        .join(', ')}). Keep exactly one.`,
     );
   }
-  return present.length === 1 ? path.join(root, present[0]) : null;
-}
-
-/**
- * Load a config module. `.ts` is loaded via jiti; `.mjs`/`.js` via dynamic
- * import.
- */
-async function importConfig(file) {
-  if (file.endsWith('.ts')) {
-    return await getJiti().import(file);
-  }
-  return await import(pathToFileURL(file).href);
+  return present.length === 1 ? present[0] : null;
 }
 
 /**
@@ -88,7 +68,7 @@ export async function loadConfig(startDir = process.cwd()) {
     return {integrations: [], loadedIntegrations: []};
   }
 
-  const mod = await importConfig(configPath);
+  const mod = await importUserModule(configPath);
   const rawConfig = mod.default ?? {};
   const config = validateConfig(rawConfig);
 

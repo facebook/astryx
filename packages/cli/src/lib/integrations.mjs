@@ -12,9 +12,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
-import {createJiti} from 'jiti';
 import {validateIntegration} from './config-schema.mjs';
+import {importUserModule, findPresentFiles} from './module-loader.mjs';
 
 /** Conventional manifest basenames, in load-precedence order. */
 export const MANIFEST_BASENAMES = [
@@ -31,9 +30,7 @@ export const MANIFEST_BASENAMES = [
  * @returns {string[]} absolute manifest paths
  */
 export function findManifestPaths(dir) {
-  return MANIFEST_BASENAMES.filter(name =>
-    fs.existsSync(path.join(dir, name)),
-  ).map(name => path.join(dir, name));
+  return findPresentFiles(dir, MANIFEST_BASENAMES);
 }
 
 /**
@@ -43,16 +40,8 @@ export function findManifestPaths(dir) {
  * @returns {Promise<unknown>} the exported integration object (or module)
  */
 export async function loadManifestObject(file) {
-  const mod = await importManifest(file);
+  const mod = await importUserModule(file);
   return mod.default ?? mod.integration ?? mod;
-}
-
-let jitiInstance;
-function getJiti() {
-  if (!jitiInstance) {
-    jitiInstance = createJiti(import.meta.url);
-  }
-  return jitiInstance;
 }
 
 /**
@@ -73,9 +62,7 @@ export function resolvePackageDir(packageName, cwd = process.cwd()) {
  * @returns {string} absolute manifest path
  */
 function resolveManifestPath(packageDir, spec) {
-  const present = MANIFEST_BASENAMES.filter(name =>
-    fs.existsSync(path.join(packageDir, name)),
-  );
+  const present = findPresentFiles(packageDir, MANIFEST_BASENAMES);
   if (present.length === 0) {
     throw new Error(
       `Integration package "${spec}" has no conventional root manifest. Add one of: ${MANIFEST_BASENAMES.join(', ')} next to its package.json.`,
@@ -83,22 +70,12 @@ function resolveManifestPath(packageDir, spec) {
   }
   if (present.length > 1) {
     throw new Error(
-      `Integration package "${spec}" has multiple root manifests (${present.join(', ')}). Keep exactly one.`,
+      `Integration package "${spec}" has multiple root manifests (${present
+        .map(file => path.basename(file))
+        .join(', ')}). Keep exactly one.`,
     );
   }
-  return path.join(packageDir, present[0]);
-}
-
-/**
- * Load a manifest module. `.ts` is loaded via jiti; `.mjs`/`.js` via dynamic
- * import.
- * @param {string} file
- */
-async function importManifest(file) {
-  if (file.endsWith('.ts')) {
-    return await getJiti().import(file);
-  }
-  return await import(pathToFileURL(file).href);
+  return present[0];
 }
 
 /**
@@ -127,7 +104,7 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
     }
 
     const manifestFile = resolveManifestPath(packageDir, spec);
-    const mod = await importManifest(manifestFile);
+    const mod = await importUserModule(manifestFile);
     const exported = mod.default ?? mod.integration ?? mod;
     if (!exported || typeof exported !== 'object') {
       throw new Error(`Integration ${spec} did not export an object.`);
