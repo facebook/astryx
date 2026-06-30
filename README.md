@@ -102,6 +102,8 @@ corepack enable
 pnpm install
 ```
 
+> Running `npm install` or `yarn install` will fail fast — the repo enforces pnpm via a `preinstall` script.
+
 ## License
 
 MIT
