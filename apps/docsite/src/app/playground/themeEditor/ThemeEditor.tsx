@@ -226,6 +226,8 @@ export function ThemeEditor({
 
   const handleExpandColorScale = useCallback((accentHex: string) => {
     const derived = expandColorScale({accent: accentHex});
+    // Do not override the user's custom picker selection for `--color-accent` itself
+    delete derived['--color-accent'];
     let hex = accentHex.replace('#', '');
     // Normalize 3-char short hex (e.g. "f00") to 6-char ("ff0000")
     if (hex.length === 3) {
