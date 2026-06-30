@@ -32,6 +32,11 @@ import * as p from '@clack/prompts';
 import {ensureJscodeshift} from '../codemods/ensure-jscodeshift.mjs';
 import {getTransformsBetween, latestVersion} from '../codemods/registry.mjs';
 import {runCodemods} from '../codemods/runner.mjs';
+import {
+  discoverIntegrationCodemods,
+  selectIntegrationCodemods,
+} from '../codemods/integration-discovery.mjs';
+import {runIntegrationCodemods} from '../codemods/integration-runner.mjs';
 import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {isValidSemver, semverGte} from '../utils/semver.mjs';
@@ -237,6 +242,7 @@ export function registerUpgrade(program) {
 
       let integrations;
       let postCodemodHooks;
+      let integrationCodemodsByVersion;
       try {
         const config = await loadConfig(process.cwd());
         postCodemodHooks = config.hooks?.postCodemod ?? [];
@@ -245,6 +251,11 @@ export function registerUpgrade(program) {
           ...(options.integration ?? []),
         ]);
         integrations = await loadIntegrations(integrationSpecs);
+        // Discover file-based integration codemods up front. A broken
+        // integration (bad export, invalid schema, duplicate id) is a hard
+        // error here so the upgrade fails before mutating any files.
+        integrationCodemodsByVersion =
+          await discoverIntegrationCodemods(integrations);
       } catch (err) {
         if (json)
           return jsonError(
@@ -277,13 +288,22 @@ export function registerUpgrade(program) {
         return;
       }
 
-      // Resolve transforms. Integrations no longer contribute codemods here;
-      // file-based integration codemod discovery is a later change.
+      // Resolve transforms. Core built-in codemods come from the registry;
+      // file-based integration codemods are discovered separately and run
+      // alongside them, ordered by version.
       const versionManifests = [
         ...(await getTransformsBetween(currentVersion, targetVersion)),
       ];
+      const integrationVersionGroups = selectIntegrationCodemods(
+        integrationCodemodsByVersion,
+        currentVersion,
+        targetVersion,
+      );
+      const hasIntegrationCodemods = integrationVersionGroups.some(
+        g => g.codemods.length > 0,
+      );
 
-      if (versionManifests.length === 0) {
+      if (versionManifests.length === 0 && !hasIntegrationCodemods) {
         if (json) {
           return jsonOut('upgrade.status', {
             status: 'no_codemods',
@@ -303,6 +323,16 @@ export function registerUpgrade(program) {
         for (const t of transforms) {
           if (options.codemod && t.name !== options.codemod) continue;
           if (t.optional && !options.codemod) {
+            totalOptional++;
+          } else {
+            totalTransforms++;
+          }
+        }
+      }
+      for (const {codemods} of integrationVersionGroups) {
+        for (const c of codemods) {
+          if (options.codemod && c.id !== options.codemod) continue;
+          if (c.codemod.isOptional && !options.codemod) {
             totalOptional++;
           } else {
             totalTransforms++;
@@ -363,15 +393,46 @@ export function registerUpgrade(program) {
         silent: json,
       });
 
+      // Run file-based integration codemods alongside the core registry
+      // codemods (config codemods first, then code codemods), ordered by
+      // version. Their results are merged into the receipt below.
+      let integrationResult = null;
+      if (hasIntegrationCodemods) {
+        if (!json) p.log.step('Applying integration codemods...');
+        const jscodeshift = (await import('jscodeshift')).default;
+        integrationResult = runIntegrationCodemods(integrationVersionGroups, {
+          apply: options.apply,
+          path: options.path,
+          codemod: options.codemod,
+          jscodeshift,
+          silent: json,
+        });
+      }
+
+      // Merge core + integration codemod results into a single accounting so
+      // hooks, receipts, and error gating see both.
+      const mergedFilesChanged =
+        (codemodResult?.totalFilesChanged ?? 0) +
+        (integrationResult?.totalFilesChanged ?? 0);
+      const mergedTransformsApplied =
+        (codemodResult?.totalTransformsApplied ?? 0) +
+        (integrationResult?.totalTransformsApplied ?? 0);
+      const mergedWrittenFiles = [
+        ...(codemodResult?.writtenFiles ?? []),
+        ...(integrationResult?.writtenFiles ?? []),
+      ];
+      const mergedErrors = [
+        ...(codemodResult?.errors ?? []),
+        ...(integrationResult?.errors ?? []),
+      ];
+
       // Post-codemod hooks come from the app config (config.hooks.postCodemod).
       // They run only when codemods actually changed files. In apply mode the
       // commands execute (nonzero exit fails the upgrade); in dry-run mode we
       // only preview the resolved command (a buildCommand throw still fails).
-      const changedFileCount = codemodResult?.totalFilesChanged ?? 0;
+      const changedFileCount = mergedFilesChanged;
       if (postCodemodHooks.length > 0 && changedFileCount > 0) {
-        const absoluteChangedFiles = uniqueFiles(
-          codemodResult?.writtenFiles ?? [],
-        );
+        const absoluteChangedFiles = uniqueFiles(mergedWrittenFiles);
         const files = absoluteChangedFiles.map(file =>
           path.relative(process.cwd(), file),
         );
@@ -420,11 +481,9 @@ export function registerUpgrade(program) {
         }
       }
 
-      if (codemodResult && typeof codemodResult === 'object') {
-        receipt.filesChanged = codemodResult.totalFilesChanged ?? 0;
-        receipt.transformsApplied = codemodResult.totalTransformsApplied ?? 0;
-        receipt.errors = codemodResult.errors ?? [];
-      }
+      receipt.filesChanged = mergedFilesChanged;
+      receipt.transformsApplied = mergedTransformsApplied;
+      receipt.errors = mergedErrors;
 
       if (receipt.errors?.length > 0) {
         const msg = `Upgrade completed with ${receipt.errors.length} codemod error${receipt.errors.length === 1 ? '' : 's'}.`;
