@@ -15,13 +15,22 @@
  *   3. Refresh agent docs (AGENTS.md / CLAUDE.md) if present
  *
  * Options:
- *   --from <version>     Previous version before the dependency upgrade
- *   --apply              Write changes to disk (default: dry-run)
- *   --force              Run codemods even when from >= installed version
- *   --codemod <name>     Run a specific transform only
- *   --integration <spec> Load an explicit integration package or file
- *   --path <dir>         Source directory (default: ./src)
- *   --install-deps       Auto-install jscodeshift without prompting (for CI/LLM)
+ *   --from <version>       Previous version before the dependency upgrade
+ *   --apply                Write changes to disk (default: dry-run)
+ *   --force                Run codemods even when from >= installed version
+ *   --codemod <name>       Run a specific transform only
+ *   --skip-codemod <name…> Exclude named codemods (variadic). Use this to
+ *                          re-run past a codemod that failed at execution time.
+ *   --integration <spec>   Load an explicit integration package or file
+ *   --path <dir>           Source directory (default: ./src)
+ *   --install-deps         Auto-install jscodeshift without prompting (for CI/LLM)
+ *
+ * Integration error policy:
+ *   - A DISCOVERY/definition error for an integration (bad manifest/export,
+ *     duplicate ids, missing root) SKIPS that integration's codemods and warns
+ *     (via the integration-issue nudge) — it does NOT hard-fail the upgrade.
+ *   - An EXECUTION-time failure (a transform THROWS while rewriting files)
+ *     ABORTS the upgrade (nonzero exit) so a partial write never proceeds.
  */
 
 import * as fs from 'node:fs';
@@ -41,7 +50,7 @@ import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {isValidSemver, semverGte} from '../utils/semver.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
-import {loadConfig} from '../lib/config.mjs';
+import {Project} from '../lib/project.mjs';
 import {loadIntegrations} from '../lib/integrations.mjs';
 import {warnOnIntegrationIssues} from '../lib/integration-warnings.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
@@ -145,6 +154,10 @@ export function registerUpgrade(program) {
     )
     .option('--codemod <name>', 'Run a specific transform only')
     .option(
+      '--skip-codemod <name...>',
+      'Exclude named codemods (repeatable). Re-run past a failed codemod by skipping it.',
+    )
+    .option(
       '--integration <package-or-file>',
       'Explicit integration package name or integration file path (repeatable)',
       (value, previous) => [...(previous ?? []), value],
@@ -245,18 +258,35 @@ export function registerUpgrade(program) {
       let postCodemodHooks;
       let integrationCodemodsByVersion;
       try {
-        const config = await loadConfig(process.cwd());
-        postCodemodHooks = config.hooks?.postCodemod ?? [];
+        const project = await Project.load(process.cwd());
+        postCodemodHooks = project.config.hooks?.postCodemod ?? [];
         const integrationSpecs = uniqueFiles([
-          ...(config.integrations ?? []),
+          ...(project.integrations ?? []),
           ...(options.integration ?? []),
         ]);
         integrations = await loadIntegrations(integrationSpecs);
-        // Discover file-based integration codemods up front. A broken
-        // integration (bad export, invalid schema, duplicate id) is a hard
-        // error here so the upgrade fails before mutating any files.
-        integrationCodemodsByVersion =
-          await discoverIntegrationCodemods(integrations);
+        // Discover file-based integration codemods up front, PER integration.
+        // A broken integration (bad export, invalid schema, duplicate id,
+        // missing root) is a DEFINITION error: skip that integration's
+        // codemods and warn (below), rather than hard-failing the upgrade.
+        // This reverses the previous hard-fail-on-broken-integration policy.
+        // An EXECUTION-time failure (a transform throwing) is handled later by
+        // the codemod-error gate, which still aborts the upgrade.
+        integrationCodemodsByVersion = new Map();
+        for (const integration of integrations) {
+          if (!integration?.codemods) continue;
+          try {
+            const byVersion = await discoverIntegrationCodemods([integration]);
+            for (const [version, list] of byVersion) {
+              const existing = integrationCodemodsByVersion.get(version);
+              if (existing) existing.push(...list);
+              else integrationCodemodsByVersion.set(version, [...list]);
+            }
+          } catch {
+            // Skip this integration's codemods; the validate-integration nudge
+            // below surfaces the underlying issue. Best-effort, non-blocking.
+          }
+        }
       } catch (err) {
         if (json)
           return jsonError(
@@ -327,12 +357,19 @@ export function registerUpgrade(program) {
         return;
       }
 
+      // Codemods explicitly excluded via --skip-codemod, matched by the same
+      // identifier the run loop uses (core transform `t.name`, integration
+      // codemod `c.id`). Lets a user re-run past a codemod that failed at
+      // execution time.
+      const skipCodemods = new Set(options.skipCodemod ?? []);
+
       // Count transforms (optional codemods only count when explicitly requested)
       let totalTransforms = 0;
       let totalOptional = 0;
       for (const {transforms} of versionManifests) {
         for (const t of transforms) {
           if (options.codemod && t.name !== options.codemod) continue;
+          if (skipCodemods.has(t.name)) continue;
           if (t.optional && !options.codemod) {
             totalOptional++;
           } else {
@@ -343,6 +380,7 @@ export function registerUpgrade(program) {
       for (const {codemods} of integrationVersionGroups) {
         for (const c of codemods) {
           if (options.codemod && c.id !== options.codemod) continue;
+          if (skipCodemods.has(c.id)) continue;
           if (c.codemod.isOptional && !options.codemod) {
             totalOptional++;
           } else {
@@ -401,6 +439,7 @@ export function registerUpgrade(program) {
         apply: options.apply,
         path: options.path,
         codemod: options.codemod,
+        skipCodemods,
         silent: json,
       });
 
@@ -415,6 +454,7 @@ export function registerUpgrade(program) {
           apply: options.apply,
           path: options.path,
           codemod: options.codemod,
+          skipCodemods,
           jscodeshift,
           silent: json,
         });

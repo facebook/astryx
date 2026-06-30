@@ -22,7 +22,7 @@ import {
   findIntegrationComponentSource,
   resolveImportPath,
 } from '../lib/component-discovery.mjs';
-import {loadConfig} from '../lib/config.mjs';
+import {Project} from '../lib/project.mjs';
 import {loadDocs} from '../lib/component-loader.mjs';
 import {searchComponents} from '../lib/string-utils.mjs';
 import {AstryxError} from './error.mjs';
@@ -37,8 +37,8 @@ import {findShowcase, findRelatedBlocks} from './template.mjs';
  */
 async function loadIntegrationsSafely(cwd) {
   try {
-    const config = await loadConfig(cwd);
-    return config.loadedIntegrations ?? [];
+    const project = await Project.load(cwd);
+    return project.loadedIntegrations;
   } catch {
     return [];
   }

@@ -216,11 +216,12 @@ async function runConfigCodemod(transformEntry, {apply, log}) {
  * @param {boolean} options.apply - Write changes to disk
  * @param {string} options.path - Source directory to scan
  * @param {string|undefined} options.codemod - Run only this specific transform
+ * @param {Set<string>} [options.skipCodemods] - Transform names to exclude
  * @param {boolean} [options.silent] - Suppress all human-facing output (for --json)
  */
 export async function runCodemods(
   versionManifests,
-  {apply, path: srcPath, codemod, silent = false},
+  {apply, path: srcPath, codemod, skipCodemods, silent = false},
 ) {
   // No-op stub object so silent mode skips clack stdout entirely without
   // littering the body with `if (!silent)` guards.
@@ -265,6 +266,8 @@ export async function runCodemods(
     for (const transformEntry of transforms) {
       // Filter by codemod name if specified
       if (codemod && transformEntry.name !== codemod) continue;
+      // Exclude explicitly skipped codemods (by transform name).
+      if (skipCodemods?.has(transformEntry.name)) continue;
 
       const {name, transform, meta, optional} = transformEntry;
       const transformExtensions = new Set(

@@ -3,7 +3,7 @@
 /**
  * @file Compact, non-blocking integration-issue nudge for everyday commands.
  *
- * When a CONFIGURED integration (from loadConfig's `loadedIntegrations`) has
+ * When a CONFIGURED integration (from the Project's `loadedIntegrations`) has
  * validation issues, the everyday commands (component / template / upgrade)
  * should print ONE compact, non-blocking line per integration telling the user
  * to run `validate-integration` — instead of silently skipping broken
@@ -28,7 +28,7 @@ import {validateLoadedIntegration} from '../api/validate-integration.mjs';
  *
  *   Warning: <pkg> has N integration issue(s). Run: astryx validate-integration <pkg>
  *
- * @param {Array<object>} loadedIntegrations integrations from loadConfig
+ * @param {Array<object>} loadedIntegrations the Project's loaded integrations
  * @param {{json?: boolean}} [options]
  * @returns {Promise<void>}
  */

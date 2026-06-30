@@ -26,7 +26,7 @@ import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {checkGhCli} from '../utils/github.mjs';
-import {loadConfig} from '../lib/config.mjs';
+import {Project} from '../lib/project.mjs';
 import {
   CORE_PACKAGE,
   findIntegrationComponentDoc,
@@ -109,19 +109,21 @@ function isCancel(value) {
 /**
  * Load the configured integrations + core issues URL for `cwd`, swallowing any
  * config errors so swizzle never hard-fails on a malformed/absent config. An
- * empty list means "core only".
+ * empty list means "core only". The core issues URL is routed through the
+ * Project (config.issuesUrl, falling back to the default core tracker).
  * @param {string} cwd
- * @returns {Promise<{loadedIntegrations: Array<object>, issuesUrl: string|undefined}>}
+ * @returns {Promise<{loadedIntegrations: Array<object>, issuesUrl: string|undefined, project: Project|null}>}
  */
 async function loadConfigSafely(cwd) {
   try {
-    const config = await loadConfig(cwd);
+    const project = await Project.load(cwd);
     return {
-      loadedIntegrations: config.loadedIntegrations ?? [],
-      issuesUrl: config.issuesUrl,
+      loadedIntegrations: project.loadedIntegrations,
+      issuesUrl: project.config.issuesUrl,
+      project,
     };
   } catch {
-    return {loadedIntegrations: [], issuesUrl: undefined};
+    return {loadedIntegrations: [], issuesUrl: undefined, project: null};
   }
 }
 
@@ -215,13 +217,20 @@ export function registerSwizzle(program) {
       const dirName = component.replace(/^XDS/, '');
 
       // Resolve the component's owning package(s) across core + integrations.
-      const {loadedIntegrations, issuesUrl: configIssuesUrl} =
-        await loadConfigSafely(process.cwd());
+      const {loadedIntegrations, project} = await loadConfigSafely(
+        process.cwd(),
+      );
+      // Core feedback URL is routed through the Project (config.issuesUrl,
+      // falling back to the default core tracker). When config load failed,
+      // resolveOwners applies the same default fallback.
+      const coreIssuesUrl = project
+        ? project.issuesUrl({package: CORE_PACKAGE})
+        : undefined;
       const allOwners = resolveOwners(
         coreDir,
         loadedIntegrations,
         dirName,
-        configIssuesUrl,
+        coreIssuesUrl,
       );
 
       if (allOwners.length === 0) {

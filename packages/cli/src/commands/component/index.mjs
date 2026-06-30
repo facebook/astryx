@@ -24,7 +24,7 @@ import {cliError} from '../../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../lib/error-codes.mjs';
 import {component as componentApi} from '../../api/component.mjs';
 import {findRelatedBlocks} from '../../api/template.mjs';
-import {loadConfig} from '../../lib/config.mjs';
+import {Project} from '../../lib/project.mjs';
 import {warnOnIntegrationIssues} from '../../lib/integration-warnings.mjs';
 
 export function registerComponent(program) {
@@ -61,8 +61,8 @@ export function registerComponent(program) {
       // issues, print one compact line to stderr pointing at
       // validate-integration. Best-effort; suppressed in --json mode.
       try {
-        const config = await loadConfig(process.cwd());
-        await warnOnIntegrationIssues(config.loadedIntegrations, {json});
+        const project = await Project.load(process.cwd());
+        await warnOnIntegrationIssues(project.loadedIntegrations, {json});
       } catch {
         // Never let the nudge break the command.
       }

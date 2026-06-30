@@ -27,7 +27,7 @@ import {createRequire} from 'node:module';
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../lib/node-version.mjs';
 import {CLI_ROOT, findCoreDir} from '../utils/paths.mjs';
 import {detectPackageManager} from '../utils/package-manager.mjs';
-import {findConfigPath, loadConfig} from '../lib/config.mjs';
+import {findConfigPath, Project} from '../lib/project.mjs';
 import {semverCompare} from '../utils/semver.mjs';
 
 const _require = createRequire(import.meta.url);
@@ -279,8 +279,9 @@ export async function checkConfig(ctx) {
     };
   }
 
-  // loadConfig swallows errors and returns an empty config, so re-import
-  // directly to surface a genuine load failure as a FAIL.
+  // Project.load swallows nothing — it surfaces a genuine load failure — but
+  // the config check wants to report a bad default export precisely, so we
+  // re-import directly to surface a genuine load failure as a FAIL.
   try {
     const {pathToFileURL} = await import('node:url');
     const mod = await import(pathToFileURL(ctx.configPath).href);
@@ -477,8 +478,8 @@ export async function runChecks(options = {}) {
   // Resolve a possible theme key from config (best-effort; never throws).
   let configTheme = null;
   try {
-    const loaded = await loadConfig(cwd);
-    configTheme = loaded?.theme ?? null;
+    const project = await Project.load(cwd);
+    configTheme = project.config?.theme ?? null;
   } catch {
     // Best-effort: a missing/invalid config leaves configTheme null.
   }

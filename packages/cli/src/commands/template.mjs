@@ -12,7 +12,7 @@ import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {template as templateApi} from '../api/template.mjs';
-import {loadConfig} from '../lib/config.mjs';
+import {Project} from '../lib/project.mjs';
 import {warnOnIntegrationIssues} from '../lib/integration-warnings.mjs';
 
 export {discoverTemplates, listTemplates} from '../api/template.mjs';
@@ -41,8 +41,8 @@ export function registerTemplate(program) {
       // issues, print one compact line to stderr pointing at
       // validate-integration. Best-effort; suppressed in --json mode.
       try {
-        const config = await loadConfig(process.cwd());
-        await warnOnIntegrationIssues(config.loadedIntegrations, {json});
+        const project = await Project.load(process.cwd());
+        await warnOnIntegrationIssues(project.loadedIntegrations, {json});
       } catch {
         // Never let the nudge break the command.
       }

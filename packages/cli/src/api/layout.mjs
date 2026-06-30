@@ -25,7 +25,7 @@ import {expand} from '../lib/xle/expand.mjs';
 import {toCompact, toOutline} from '../lib/xle/print.mjs';
 import {buildRegistry, ALIAS_TABLE} from '../lib/xle/registry.mjs';
 import {discoverTemplates, stripTemplateAssetRefs} from './template.mjs';
-import {loadConfig} from '../lib/config.mjs';
+import {Project} from '../lib/project.mjs';
 
 /**
  * The catalog a `{hint}` can resolve to: template blocks (spliced inline) plus
@@ -43,8 +43,8 @@ async function loadBlocks(cwd) {
     // discovery is best-effort
   }
   try {
-    const config = await loadConfig(cwd);
-    const components = config.experimental?.xle?.components ?? {};
+    const project = await Project.load(cwd);
+    const components = project.config.experimental?.xle?.components ?? {};
     for (const [name, spec] of Object.entries(components)) {
       const importPath = spec.from;
       if (!importPath) continue;

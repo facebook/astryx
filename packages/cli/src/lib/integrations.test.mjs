@@ -3,7 +3,7 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {loadConfig} from './config.mjs';
+import {Project} from './project.mjs';
 import {loadIntegrations} from './integrations.mjs';
 import {discover} from '../api/discover.mjs';
 
@@ -65,9 +65,9 @@ describe('configured integrations', () => {
       };\n`,
     );
 
-    const config = await loadConfig(tmpDir);
-    expect(config.integrations).toEqual(['@acme/widgets']);
-    const loaded = config.loadedIntegrations[0];
+    const project = await Project.load(tmpDir);
+    expect(project.integrations).toEqual(['@acme/widgets']);
+    const loaded = project.loadedIntegrations[0];
     // Identity comes from package.json, not the manifest.
     expect(loaded.name).toBe('@acme/widgets');
     expect(loaded.version).toBe('1.2.3');

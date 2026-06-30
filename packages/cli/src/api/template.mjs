@@ -16,7 +16,7 @@ import {
 } from '../utils/path-safety.mjs';
 import {AstryxError} from './error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
-import {loadConfig} from '../lib/config.mjs';
+import {Project} from '../lib/project.mjs';
 
 /** Identity used for core (built-in) templates in package-scoped listings. */
 const CORE_PACKAGE = '@astryxdesign/core';
@@ -303,8 +303,8 @@ async function discoverIntegrationTemplates(cwd = process.cwd()) {
 
   let loadedIntegrations;
   try {
-    const config = await loadConfig(cwd);
-    loadedIntegrations = config.loadedIntegrations ?? [];
+    const project = await Project.load(cwd);
+    loadedIntegrations = project.loadedIntegrations;
   } catch {
     // Config load failures are surfaced elsewhere (discover/doctor); here we
     // simply contribute no integration templates.

@@ -16,7 +16,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
-import {findConfigPath} from '../lib/config.mjs';
+import {findConfigPath} from '../lib/project.mjs';
 import {fixDirectiveCorruption, validateOutput} from './runner.mjs';
 
 const DEFAULT_CODE_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.cjs'];
@@ -185,13 +185,14 @@ function runCodeCodemod(entry, files, {apply, log, jscodeshift}) {
  * @param {boolean} options.apply
  * @param {string} options.path source directory to scan
  * @param {string} [options.codemod] run only this codemod id
+ * @param {Set<string>} [options.skipCodemods] codemod ids to exclude
  * @param {Function} options.jscodeshift
  * @param {boolean} [options.silent]
  * @returns {{totalFilesChanged: number, totalTransformsApplied: number, writtenFiles: string[], errors: Array, skippedOptional: Array}}
  */
 export function runIntegrationCodemods(
   versionGroups,
-  {apply, path: srcPath, codemod, jscodeshift, silent = false},
+  {apply, path: srcPath, codemod, skipCodemods, jscodeshift, silent = false},
 ) {
   const log = makeLog(silent);
 
@@ -207,6 +208,8 @@ export function runIntegrationCodemods(
   for (const {version, codemods} of versionGroups) {
     for (const entry of codemods) {
       const withVersion = {...entry, version};
+      // Exclude explicitly skipped codemods (by codemod id).
+      if (skipCodemods?.has(entry.id)) continue;
       if (entry.codemod.isOptional && !codemod) {
         skippedOptional.push(withVersion);
         continue;

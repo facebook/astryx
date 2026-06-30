@@ -4,7 +4,7 @@
  * @file Programmatic API for the discover command.
  */
 
-import {loadConfig} from '../lib/config.mjs';
+import {Project} from '../lib/project.mjs';
 import {
   scanAllPackages,
   findComponentInPackages,
@@ -40,7 +40,7 @@ function validateDocs(docs) {
  */
 export async function discover(query, options = {}) {
   const {lang = null, zh = false} = options;
-  const config = await loadConfig();
+  const project = await Project.load();
   const toEntry = pkg => ({
     name: pkg.name,
     category: pkg.category,
@@ -52,7 +52,7 @@ export async function discover(query, options = {}) {
 
   // External packages come from configured integrations that declare a
   // components root. Each becomes a scannable package keyed by its docsDir.
-  const explicitPackages = (config.loadedIntegrations ?? [])
+  const explicitPackages = project.loadedIntegrations
     .filter(integration => integration.components)
     .map(integration => ({
       name: integration.name,

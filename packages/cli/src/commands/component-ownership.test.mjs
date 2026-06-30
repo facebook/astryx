@@ -12,16 +12,16 @@ import {
   CORE_PACKAGE,
 } from '../lib/component-discovery.mjs';
 
-// The api `component()` reads integrations via loadConfig(). In the vitest
+// The api `component()` reads integrations via Project.load(). In the vitest
 // environment, Vite's `server.fs.allow` only permits loading modules from
 // under `node_modules`, so a real astryx.config.mjs at a tmp root cannot be
-// imported. We therefore mock loadConfig to return resolved `loadedIntegrations`
-// (exactly the shape lib/integrations.mjs produces) while keeping the
-// integration's `components` dir on disk under node_modules so its `.doc.mjs`
-// files load normally.
-const loadConfigMock = vi.fn();
-vi.mock('../lib/config.mjs', () => ({
-  loadConfig: (...args) => loadConfigMock(...args),
+// imported. We therefore mock Project.load to return a project whose
+// `loadedIntegrations` are resolved (exactly the shape lib/integrations.mjs
+// produces) while keeping the integration's `components` dir on disk under
+// node_modules so its `.doc.mjs` files load normally.
+const projectLoadMock = vi.fn();
+vi.mock('../lib/project.mjs', () => ({
+  Project: {load: (...args) => projectLoadMock(...args)},
 }));
 
 // Import the api AFTER the mock is registered.
@@ -37,7 +37,7 @@ const INTEGRATION_ISSUES = 'https://example.com/meta/issues';
  * - packages/core symlinked to the real @astryxdesign/core (loadDocs source)
  * - node_modules/@test/meta with a `components` dir using the same-stem
  *   source/doc convention (MetaAppShell.tsx + MetaAppShell.doc.mjs)
- * Returns the absolute `components` dir so the loadConfig mock can hand back a
+ * Returns the absolute `components` dir so the Project.load mock can hand back a
  * resolved integration entry.
  */
 function createFixture({withSource = true, extraComponent = null} = {}) {
@@ -82,7 +82,7 @@ function createFixture({withSource = true, extraComponent = null} = {}) {
     codemods: undefined,
     issuesUrl: INTEGRATION_ISSUES,
   };
-  loadConfigMock.mockResolvedValue({
+  projectLoadMock.mockResolvedValue({
     integrations: [INTEGRATION_NAME],
     loadedIntegrations: [integration],
   });
@@ -91,9 +91,9 @@ function createFixture({withSource = true, extraComponent = null} = {}) {
 
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-ownership-'));
-  loadConfigMock.mockReset();
+  projectLoadMock.mockReset();
   // Default: no integrations (core only).
-  loadConfigMock.mockResolvedValue({integrations: [], loadedIntegrations: []});
+  projectLoadMock.mockResolvedValue({integrations: [], loadedIntegrations: []});
 });
 
 afterEach(() => {

@@ -4,7 +4,7 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {loadConfig} from '../lib/config.mjs';
+import {Project} from '../lib/project.mjs';
 import {
   discoverIntegrationCodemods,
   selectIntegrationCodemods,
@@ -81,11 +81,11 @@ describe('integration codemod discovery', () => {
       `,
     });
 
-    const config = await loadConfig(tmpDir);
-    expect(config.loadedIntegrations).toHaveLength(1);
+    const project = await Project.load(tmpDir);
+    expect(project.loadedIntegrations).toHaveLength(1);
 
     const byVersion = await discoverIntegrationCodemods(
-      config.loadedIntegrations,
+      project.loadedIntegrations,
     );
     expect([...byVersion.keys()]).toEqual(['0.2.0']);
     const entry = byVersion.get('0.2.0')[0];
@@ -131,16 +131,16 @@ describe('integration codemod discovery', () => {
         });
       `,
     });
-    // Make the config file a transform target. (loadConfig only needs a valid
+    // Make the config file a transform target. (Project.load only needs a valid
     // default export; the marker string lives in a comment.)
     fs.writeFileSync(
       path.join(tmpDir, 'astryx.config.mjs'),
       `// consumer-old\nexport default { integrations: ['@acme/widgets'] };\n`,
     );
 
-    const config = await loadConfig(tmpDir);
+    const project = await Project.load(tmpDir);
     const byVersion = await discoverIntegrationCodemods(
-      config.loadedIntegrations,
+      project.loadedIntegrations,
     );
     expect(byVersion.get('0.2.0')[0].type).toBe('config');
 
@@ -163,9 +163,9 @@ describe('integration codemod discovery', () => {
     scaffold({
       '0.2.0/broken.mjs': `export const notDefault = 1;\n`,
     });
-    const config = await loadConfig(tmpDir);
+    const project = await Project.load(tmpDir);
     await expect(
-      discoverIntegrationCodemods(config.loadedIntegrations),
+      discoverIntegrationCodemods(project.loadedIntegrations),
     ).rejects.toThrow(/default-export/i);
   });
 
@@ -173,9 +173,9 @@ describe('integration codemod discovery', () => {
     scaffold({
       '0.2.0/bad.mjs': `export default { title: 'x', transform: () => null };\n`,
     });
-    const config = await loadConfig(tmpDir);
+    const project = await Project.load(tmpDir);
     await expect(
-      discoverIntegrationCodemods(config.loadedIntegrations),
+      discoverIntegrationCodemods(project.loadedIntegrations),
     ).rejects.toThrow(/not a valid codemod/i);
   });
 
@@ -190,9 +190,9 @@ describe('integration codemod discovery', () => {
         export default createCodemod({title: 'b', transform: () => null});
       `,
     });
-    const config = await loadConfig(tmpDir);
+    const project = await Project.load(tmpDir);
     await expect(
-      discoverIntegrationCodemods(config.loadedIntegrations),
+      discoverIntegrationCodemods(project.loadedIntegrations),
     ).rejects.toThrow(/across versions/i);
   });
 });
