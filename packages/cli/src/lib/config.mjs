@@ -80,7 +80,7 @@ async function importConfig(file) {
  * Returns an empty config when no config file is found.
  *
  * @param {string} [startDir]
- * @returns {Promise<{integrations: string[], issuesUrl?: string, hooks?: object, loadedIntegrations: object[]}>}
+ * @returns {Promise<{integrations: string[], issuesUrl?: string, hooks?: object, experimental?: object, loadedIntegrations: object[]}>}
  */
 export async function loadConfig(startDir = process.cwd()) {
   const configPath = findConfigPath(startDir);
@@ -102,6 +102,7 @@ export async function loadConfig(startDir = process.cwd()) {
     integrations,
     issuesUrl: config.issuesUrl,
     hooks: config.hooks,
+    experimental: config.experimental,
     loadedIntegrations,
   };
 }

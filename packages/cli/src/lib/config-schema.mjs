@@ -15,6 +15,14 @@ export const PostCodemodHookSchema = z
   })
   .strict();
 
+export const XleComponentSchema = z
+  .object({
+    from: z.string(),
+    description: z.string().optional(),
+    default: z.boolean().optional(),
+  })
+  .strict();
+
 export const AstryxConfigSchema = z
   .object({
     integrations: z.array(z.string()).optional(),
@@ -22,6 +30,17 @@ export const AstryxConfigSchema = z
     hooks: z
       .object({
         postCodemod: z.array(PostCodemodHookSchema).optional(),
+      })
+      .strict()
+      .optional(),
+    experimental: z
+      .object({
+        xle: z
+          .object({
+            components: z.record(z.string(), XleComponentSchema).optional(),
+          })
+          .strict()
+          .optional(),
       })
       .strict()
       .optional(),

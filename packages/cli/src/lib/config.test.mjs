@@ -102,6 +102,68 @@ describe('loadConfig', () => {
     await expect(loadConfig(dir)).rejects.toThrow(/integrations/);
   });
 
+  it('exposes experimental.xle.components from the config', async () => {
+    const dir = makeRoot('experimental');
+    fs.writeFileSync(
+      path.join(dir, 'astryx.config.mjs'),
+      `export default {
+        experimental: {
+          xle: {
+            components: {
+              KpiCard: { from: '@/components/KpiCard' },
+              Chart: { from: '@/components/Chart', description: 'A chart', default: true },
+            },
+          },
+        },
+      };\n`,
+    );
+    const config = await loadConfig(dir);
+    expect(config.experimental.xle.components.KpiCard).toEqual({
+      from: '@/components/KpiCard',
+    });
+    expect(config.experimental.xle.components.Chart).toEqual({
+      from: '@/components/Chart',
+      description: 'A chart',
+      default: true,
+    });
+  });
+
+  it('rejects unknown keys under experimental (strict)', async () => {
+    const dir = makeRoot('exp-strict');
+    fs.writeFileSync(
+      path.join(dir, 'astryx.config.mjs'),
+      `export default { experimental: { bogus: true } };\n`,
+    );
+    await expect(loadConfig(dir)).rejects.toThrow(/bogus|Unrecognized/);
+  });
+
+  it('rejects unknown keys under experimental.xle (strict)', async () => {
+    const dir = makeRoot('exp-xle-strict');
+    fs.writeFileSync(
+      path.join(dir, 'astryx.config.mjs'),
+      `export default { experimental: { xle: { nope: 1 } } };\n`,
+    );
+    await expect(loadConfig(dir)).rejects.toThrow(/nope|Unrecognized/);
+  });
+
+  it('rejects a string shorthand for a component (object-only)', async () => {
+    const dir = makeRoot('exp-string');
+    fs.writeFileSync(
+      path.join(dir, 'astryx.config.mjs'),
+      `export default { experimental: { xle: { components: { Foo: './x' } } } };\n`,
+    );
+    await expect(loadConfig(dir)).rejects.toThrow(/components/);
+  });
+
+  it('rejects an unknown key under a component (strict)', async () => {
+    const dir = makeRoot('exp-comp-strict');
+    fs.writeFileSync(
+      path.join(dir, 'astryx.config.mjs'),
+      `export default { experimental: { xle: { components: { Foo: { from: './x', extra: 1 } } } } };\n`,
+    );
+    await expect(loadConfig(dir)).rejects.toThrow(/extra|Unrecognized/);
+  });
+
   it('rejects multiple config files at the same root', async () => {
     const dir = makeRoot('dupe');
     fs.writeFileSync(path.join(dir, 'astryx.config.mjs'), `export default {};\n`);
