@@ -138,7 +138,9 @@ describe('Table body context menu', () => {
           {
             id: `delete-${item.id}`,
             label: 'Delete row',
-            onSelect: () => onSelect(item.id),
+            onSelect: () => {
+              onSelect(item.id);
+            },
           },
         ],
       }),
