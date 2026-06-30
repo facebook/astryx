@@ -21,12 +21,21 @@ export interface TemplateListResponse {
 }
 
 export interface TemplateListEntry {
+  /** Stable template id (relative path under the templates root, minus the .doc.* suffix). */
+  id: string;
   name: string;
+  /** @deprecated Alias of `name`, retained for back-compat. */
   displayName: string;
   description: string;
+  type: 'page' | 'block';
+  /** Owning package; core (built-in) templates report '@astryxdesign/core'. */
+  package: string;
+  /** Optional grouping/category label. */
+  category?: string;
+  /** Component display names the template composes. */
+  componentsUsed?: string[];
   isReady: boolean;
   scaffold?: boolean;
-  type: 'page' | 'block';
 }
 
 /** xds --json template <name> */

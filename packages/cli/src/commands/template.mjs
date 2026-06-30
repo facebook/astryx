@@ -29,6 +29,7 @@ export function registerTemplate(program) {
     .description('Inject a page or block template')
     .option('--list', 'List available templates')
     .option('--type <type>', 'Filter by template type: page or block')
+    .option('--package <pkg>', 'Narrow to templates from a specific package')
     .option('--skeleton', 'Show layout skeleton with spatial annotations (padding, gap, nesting)')
     .option('-f, --overwrite', 'Overwrite existing files without prompting')
     .action(async (name, targetPath, options) => {
@@ -72,6 +73,7 @@ export function registerTemplate(program) {
           list: options.list,
           skeleton: options.skeleton,
           type: options.type,
+          package: options.package,
           targetPath,
           cwd: process.cwd(),
         });
@@ -88,26 +90,28 @@ export function registerTemplate(program) {
         case 'template.list': {
           const pages = result.data.filter(t => t.type === 'page');
           const blocks = result.data.filter(t => t.type === 'block');
+          const renderEntry = t => {
+            const status = t.isReady ? '' : ' (WIP)';
+            const pkg =
+              t.package && t.package !== '@astryxdesign/core'
+                ? `  [${t.package}]`
+                : '';
+            humanLog(`  ${t.name}${status}${pkg}`);
+            if (t.description) humanLog(`    ${t.description}`);
+          };
           if (pages.length > 0) {
             humanLog('\nPage Templates:\n');
-            for (const t of pages) {
-              const status = t.isReady ? '' : ' (WIP)';
-              humanLog(`  ${t.name}${status}`);
-              if (t.description) humanLog(`    ${t.description}`);
-            }
+            for (const t of pages) renderEntry(t);
           }
           if (blocks.length > 0) {
             humanLog('\nBlock Templates:\n');
-            for (const t of blocks) {
-              const status = t.isReady ? '' : ' (WIP)';
-              humanLog(`  ${t.name}${status}`);
-              if (t.description) humanLog(`    ${t.description}`);
-            }
+            for (const t of blocks) renderEntry(t);
           }
           humanLog('\nUsage:');
-          humanLog('  astryx template <name> [target-path]   Scaffold page or block');
-          humanLog('  astryx template <name> --skeleton      Layout reference');
-          humanLog('  astryx template --list --type block    List only blocks\n');
+          humanLog('  astryx template <id> [target-path]     Scaffold page or block');
+          humanLog('  astryx template <id> --skeleton        Layout reference');
+          humanLog('  astryx template --list --type block    List only blocks');
+          humanLog('  astryx template --list --package <pkg> List from one package\n');
           break;
         }
 
@@ -148,7 +152,7 @@ async function detectTemplateCollision(name, targetPath) {
   const {discoverTemplates} = await import('../api/template.mjs');
   let templates;
   try {
-    templates = await discoverTemplates();
+    templates = await discoverTemplates(process.cwd());
   } catch {
     return null;
   }

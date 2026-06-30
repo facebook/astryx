@@ -47,6 +47,10 @@
       "types": "./src/types/integration.d.ts",
       "import": "./src/integration.mjs"
     },
+    "./template": {
+      "types": "./src/types/template-api.d.ts",
+      "import": "./src/template.mjs"
+    },
     "./xle": {
       "types": "./src/lib/xle/browser.d.ts",
       "import": "./src/lib/xle/browser.mjs"
