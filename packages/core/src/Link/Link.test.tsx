@@ -120,6 +120,24 @@ describe('Link', () => {
     expect(screen.getByRole('link')).toBeInTheDocument();
   });
 
+  it('defaults the inner text type to body', () => {
+    render(<Link href="/test">Body link</Link>);
+    expect(screen.getByText('Body link')).toHaveClass('astryx-text', 'body');
+  });
+
+  it('forwards type="inherit" so the link adopts the surrounding text type', () => {
+    render(
+      <Link href="/test" type="inherit">
+        Inline link
+      </Link>,
+    );
+    // The inner Text renders with the `inherit` type, so font-size/line-height
+    // inherit from the surrounding text rather than imposing the body type.
+    const text = screen.getByText('Inline link');
+    expect(text).toHaveClass('astryx-text', 'inherit');
+    expect(text).not.toHaveClass('body');
+  });
+
   it('applies hasUnderline style when true', () => {
     render(
       <Link href="/test" hasUnderline>
