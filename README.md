@@ -95,12 +95,17 @@ Battle-tested design solutions for common interactions and workflows: table page
 
 We welcome contributions! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide.
 
-Quick start for contributors: this repo uses **pnpm 10** via [Corepack](https://nodejs.org/api/corepack.html). Enable it once and the right pnpm version installs automatically:
+Quick start for contributors: this repo uses **Node 22 LTS** and **pnpm 10**.
+With Node 22, enable [Corepack](https://nodejs.org/api/corepack.html) once and
+the right pnpm version installs automatically:
 
 ```bash
 corepack enable
 pnpm install
 ```
+
+If `corepack` is missing, switch to Node 22 LTS or install pnpm directly; see
+the troubleshooting notes in [CONTRIBUTING.md](CONTRIBUTING.md#troubleshooting).
 
 ## License
 

@@ -17,7 +17,7 @@ This file covers local development setup.
 
 ### Node.js
 
-Install Node.js v22+ using one of these methods:
+Install Node.js v22 LTS using one of these methods:
 
 **Via nvm (recommended):**
 
@@ -35,14 +35,15 @@ Download and install from https://nodejs.org
 Astryx uses [pnpm](https://pnpm.io/) as its package manager (declared in
 the `packageManager` and `devEngines.packageManager` fields of
 `package.json`). The easiest way to install it is via
-[Corepack](https://nodejs.org/api/corepack.html), which ships
-with Node.js:
+[Corepack](https://nodejs.org/api/corepack.html):
 
 ```bash
 corepack enable
 ```
 
 This makes the `pnpm` command available with the exact version Astryx pins.
+Corepack ships with Node.js 22, but not with current Node.js 25+ releases. If
+`corepack` is missing, switch to Node 22 LTS or install pnpm directly.
 Alternatively, install pnpm directly:
 
 ```bash
@@ -53,7 +54,7 @@ npm install -g pnpm@10
 brew install pnpm
 
 # Via standalone installer (no npm or Node.js required)
-curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=10.33.4 sh -
+curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=10.34.1 sh -
 
 # Via GitHub releases (single binary, no dependencies)
 # https://github.com/pnpm/pnpm/releases/latest
@@ -391,6 +392,51 @@ yet" — open the PR as a draft and mark it ready for review when it's done.
 - Export types alongside components
 
 ## Troubleshooting
+
+### Setup Issues
+
+**`pnpm: command not found`**
+
+Enable Corepack on Node 22 LTS:
+
+```bash
+corepack enable
+```
+
+If Corepack is not available, install pnpm directly using one of the commands
+above, then run `pnpm --version`.
+
+**`corepack: command not found`**
+
+Make sure you are using Node 22 LTS:
+
+```bash
+nvm install 22
+nvm use 22
+```
+
+Node 25+ does not include Corepack. If you need to stay on Node 25+, install
+pnpm directly instead.
+
+**Unexpected Node.js version**
+
+Check the active version before installing dependencies:
+
+```bash
+node --version
+```
+
+Use `nvm use 22` if your shell selected a different version, such as the latest
+`stable` release.
+
+**CLI path issues**
+
+If `astryx` is not found in a consuming app, add the package script shown in the
+root `README.md` and run it through your package manager:
+
+```bash
+pnpm astryx -- component --list
+```
 
 ### pnpm Installation Issues
 
