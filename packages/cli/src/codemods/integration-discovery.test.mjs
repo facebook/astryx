@@ -159,24 +159,60 @@ describe('integration codemod discovery', () => {
     ).toContain('consumer-new');
   });
 
-  it('fails discovery when a codemod has no valid default export', async () => {
+  it('fails discovery when a codemod has no default export', async () => {
     scaffold({
       '0.2.0/broken.mjs': `export const notDefault = 1;\n`,
     });
     const project = await Project.load(tmpDir);
+    // Validation now happens at the LOAD boundary (loadModuleWithSchema against
+    // CodemodEnvelopeSchema); a missing default export is a schema-invalid
+    // failure rather than the old bespoke "must default-export" message.
     await expect(
       discoverIntegrationCodemods(project.loadedIntegrations),
-    ).rejects.toThrow(/default-export/i);
+    ).rejects.toThrow(/is invalid/i);
   });
 
-  it('fails discovery when default export is not a codemod result', async () => {
+  it('fails discovery when default export is not a codemod envelope', async () => {
     scaffold({
       '0.2.0/bad.mjs': `export default { title: 'x', transform: () => null };\n`,
     });
     const project = await Project.load(tmpDir);
+    // No `type` discriminator -> fails the envelope schema at load.
     await expect(
       discoverIntegrationCodemods(project.loadedIntegrations),
-    ).rejects.toThrow(/not a valid codemod/i);
+    ).rejects.toThrow(/is invalid/i);
+  });
+
+  it('accepts a PLAIN OBJECT codemod envelope (no factory required)', async () => {
+    // Proves we dropped factory-identity coupling: a hand-written object that
+    // matches the envelope schema is accepted by discovery.
+    scaffold({
+      '0.2.0/hand-written.mjs': `
+        export default {
+          type: 'code',
+          title: 'Hand written',
+          transform: (file) => file.source,
+        };
+      `,
+    });
+    const project = await Project.load(tmpDir);
+    const byVersion = await discoverIntegrationCodemods(
+      project.loadedIntegrations,
+    );
+    const entry = byVersion.get('0.2.0')[0];
+    expect(entry.id).toBe('hand-written');
+    expect(entry.type).toBe('code');
+    expect(entry.codemod.isOptional).toBe(false); // schema default applied
+  });
+
+  it('rejects a malformed codemod envelope at load (missing transform)', async () => {
+    scaffold({
+      '0.2.0/no-transform.mjs': `export default { type: 'code', title: 'x' };\n`,
+    });
+    const project = await Project.load(tmpDir);
+    await expect(
+      discoverIntegrationCodemods(project.loadedIntegrations),
+    ).rejects.toThrow(/transform/i);
   });
 
   it('fails discovery on a duplicate id across versions within a package', async () => {

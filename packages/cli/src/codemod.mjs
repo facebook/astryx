@@ -5,9 +5,12 @@
  *
  * Integrations (and core) author codemods as standalone modules that
  * default-export a `createCodemod(...)` or `createConfigCodemod(...)` result.
- * These helpers validate the definition at authoring time and stamp a `type`
- * discriminator (`'code'` | `'config'`) consumed by integration codemod
- * discovery during `astryx upgrade`.
+ * These helpers are intentionally tiny: they stamp a `type` discriminator
+ * (`'code'` | `'config'`) consumed by integration codemod discovery during
+ * `astryx upgrade`, and otherwise return the definition unchanged. They do NOT
+ * validate — validation happens at the load boundary, where discovery runs the
+ * module's default export through {@link CodemodEnvelopeSchema} (see
+ * `loadModuleWithSchema`). The exported schemas below ARE that contract.
  */
 
 import {z} from 'zod';
@@ -16,7 +19,12 @@ const Fn = z.custom(value => typeof value === 'function', {
   message: 'Expected a function',
 });
 
-const CodemodSchema = z
+/**
+ * Authoring shape for a file-transforming codemod (the `def` an author passes
+ * to {@link createCodemod}), before the `type` discriminator is stamped on.
+ * Exported so discovery can validate the stamped result against the envelope.
+ */
+export const CodemodSchema = z
   .object({
     title: z.string(),
     description: z.string().optional(),
@@ -26,7 +34,12 @@ const CodemodSchema = z
   })
   .strict();
 
-const ConfigCodemodSchema = z
+/**
+ * Authoring shape for a config-targeting codemod (the `def` an author passes to
+ * {@link createConfigCodemod}). Like {@link CodemodSchema} but without
+ * `fileExtensions`, which is only meaningful for code codemods.
+ */
+export const ConfigCodemodSchema = z
   .object({
     title: z.string(),
     description: z.string().optional(),
@@ -36,47 +49,45 @@ const ConfigCodemodSchema = z
   .strict();
 
 /**
- * @param {string} label
- * @param {import('zod').ZodError} error
+ * The metadata envelope discovery validates: a stamped codemod result. This is
+ * the LOAD-boundary contract — a hand-written plain object that matches this
+ * shape is accepted (discovery does not check "was it made by the factory",
+ * only the shape). A single discriminated union over the stamped `type`:
+ *   - `type: 'code'`  → may carry `fileExtensions`
+ *   - `type: 'config'` → no `fileExtensions`
  */
-function formatZodError(label, error) {
-  const issues = error.issues
-    .map(issue => {
-      const path = issue.path.length ? issue.path.join('.') : '(root)';
-      return `${path}: ${issue.message}`;
-    })
-    .join('; ');
-  return `${label} is invalid: ${issues}`;
-}
+export const CodemodEnvelopeSchema = z.discriminatedUnion('type', [
+  CodemodSchema.extend({type: z.literal('code')}),
+  ConfigCodemodSchema.extend({type: z.literal('config')}),
+]);
 
 /**
- * Define a file-transforming codemod.
+ * Define a file-transforming codemod. Stamp-only: returns the definition with
+ * `type: 'code'` injected. Validation happens at the load boundary.
  *
  * @template {import('./types/codemod').AstryxCodemodDef} T
  * @param {T} def
  * @returns {import('./types/codemod').AstryxCodemod}
  */
 export function createCodemod(def) {
-  const result = CodemodSchema.safeParse(def);
-  if (!result.success) {
-    throw new Error(formatZodError('createCodemod definition', result.error));
-  }
-  return {...result.data, type: 'code'};
+  return /** @type {import('./types/codemod').AstryxCodemod} */ ({
+    ...def,
+    type: 'code',
+  });
 }
 
 /**
- * Define a codemod that targets the consumer's astryx.config.* file.
+ * Define a codemod that targets the consumer's astryx.config.* file. Stamp-only:
+ * returns the definition with `type: 'config'` injected. Validation happens at
+ * the load boundary.
  *
  * @template {import('./types/codemod').AstryxConfigCodemodDef} T
  * @param {T} def
  * @returns {import('./types/codemod').AstryxConfigCodemod}
  */
 export function createConfigCodemod(def) {
-  const result = ConfigCodemodSchema.safeParse(def);
-  if (!result.success) {
-    throw new Error(
-      formatZodError('createConfigCodemod definition', result.error),
-    );
-  }
-  return {...result.data, type: 'config'};
+  return /** @type {import('./types/codemod').AstryxConfigCodemod} */ ({
+    ...def,
+    type: 'config',
+  });
 }

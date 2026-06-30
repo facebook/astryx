@@ -1,9 +1,20 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {createPageTemplate, createBlockTemplate} from './template.mjs';
+import {
+  createPageTemplate,
+  createBlockTemplate,
+  TemplateEnvelopeSchema,
+} from './template.mjs';
 
-describe('createPageTemplate', () => {
+// createPageTemplate/createBlockTemplate are now stamp-only: they inject the
+// `type` discriminant and return the def otherwise unchanged, with NO runtime
+// validation. Validation happens at the LOAD boundary (integration template
+// discovery runs the default export through TemplateEnvelopeSchema), so the
+// rejection cases that used to assert factory throws now assert the envelope
+// schema rejects the same shapes.
+
+describe('createPageTemplate (stamp-only)', () => {
   it('returns the def with type "page" injected', () => {
     const t = createPageTemplate({
       name: 'Landing',
@@ -30,34 +41,14 @@ describe('createPageTemplate', () => {
     expect(t.type).toBe('page');
   });
 
-  it('throws when name is missing', () => {
-    expect(() => createPageTemplate({description: 'x'})).toThrow(/name/);
-  });
-
-  it('throws when description is missing', () => {
-    expect(() => createPageTemplate({name: 'x'})).toThrow(/description/);
-  });
-
-  it('throws when name is an empty string', () => {
-    expect(() => createPageTemplate({name: '', description: 'x'})).toThrow(
-      /name/,
-    );
-  });
-
-  it('hard-errors on unknown keys', () => {
-    expect(() =>
-      createPageTemplate({name: 'x', description: 'y', source: './x.tsx'}),
-    ).toThrow();
-  });
-
-  it('rejects inline sourceFile (not supported in v1)', () => {
-    expect(() =>
-      createPageTemplate({name: 'x', description: 'y', sourceFile: './x.tsx'}),
-    ).toThrow();
+  it('does NOT validate — returns an invalid def stamped, unchanged', () => {
+    const t = createPageTemplate({description: 'x'});
+    expect(t.type).toBe('page');
+    expect(t.name).toBeUndefined();
   });
 });
 
-describe('createBlockTemplate', () => {
+describe('createBlockTemplate (stamp-only)', () => {
   it('returns the def with type "block" injected', () => {
     const t = createBlockTemplate({
       name: 'Hero',
@@ -66,15 +57,71 @@ describe('createBlockTemplate', () => {
     expect(t.type).toBe('block');
     expect(t.name).toBe('Hero');
   });
+});
 
-  it('throws when required fields are missing', () => {
-    expect(() => createBlockTemplate({name: 'Hero'})).toThrow(/description/);
-    expect(() => createBlockTemplate({description: 'x'})).toThrow(/name/);
+describe('TemplateEnvelopeSchema (load-boundary validation)', () => {
+  it('accepts a stamped page template', () => {
+    const parsed = TemplateEnvelopeSchema.parse(
+      createPageTemplate({name: 'Landing', description: 'A landing page.'}),
+    );
+    expect(parsed.type).toBe('page');
   });
 
-  it('hard-errors on unknown keys', () => {
+  it('accepts a PLAIN OBJECT envelope (no factory required)', () => {
+    const parsed = TemplateEnvelopeSchema.parse({
+      type: 'block',
+      name: 'Hero',
+      description: 'A hero block.',
+    });
+    expect(parsed.name).toBe('Hero');
+  });
+
+  it('rejects a missing name', () => {
     expect(() =>
-      createBlockTemplate({name: 'x', description: 'y', bogus: 1}),
+      TemplateEnvelopeSchema.parse({type: 'page', description: 'x'}),
+    ).toThrow(/name/);
+  });
+
+  it('rejects a missing description', () => {
+    expect(() =>
+      TemplateEnvelopeSchema.parse({type: 'page', name: 'x'}),
+    ).toThrow(/description/);
+  });
+
+  it('rejects an empty-string name', () => {
+    expect(() =>
+      TemplateEnvelopeSchema.parse({type: 'page', name: '', description: 'x'}),
+    ).toThrow(/name/);
+  });
+
+  it('rejects a missing/invalid type', () => {
+    expect(() =>
+      TemplateEnvelopeSchema.parse({name: 'x', description: 'y'}),
+    ).toThrow();
+    expect(() =>
+      TemplateEnvelopeSchema.parse({type: 'bogus', name: 'x', description: 'y'}),
+    ).toThrow();
+  });
+
+  it('rejects unknown keys (strict)', () => {
+    expect(() =>
+      TemplateEnvelopeSchema.parse({
+        type: 'page',
+        name: 'x',
+        description: 'y',
+        source: './x.tsx',
+      }),
+    ).toThrow();
+  });
+
+  it('rejects inline sourceFile (not supported in v1)', () => {
+    expect(() =>
+      TemplateEnvelopeSchema.parse({
+        type: 'page',
+        name: 'x',
+        description: 'y',
+        sourceFile: './x.tsx',
+      }),
     ).toThrow();
   });
 });

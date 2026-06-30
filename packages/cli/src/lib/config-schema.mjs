@@ -57,10 +57,14 @@ export const AstryxIntegrationSchema = z
   .strict();
 
 /**
+ * Format a zod error into a single readable line, mirroring the issue-joining
+ * convention used across the CLI (path: message; path: message). Exported so
+ * the shared module loader and other validators stay in lockstep.
  * @param {string} label
  * @param {import('zod').ZodError} error
+ * @returns {string}
  */
-function formatZodError(label, error) {
+export function formatZodError(label, error) {
   const issues = error.issues
     .map(issue => {
       const path = issue.path.length ? issue.path.join('.') : '(root)';

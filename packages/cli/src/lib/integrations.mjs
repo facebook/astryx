@@ -12,8 +12,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {validateIntegration} from './config-schema.mjs';
-import {importUserModule, findPresentFiles} from './module-loader.mjs';
+import {AstryxIntegrationSchema} from './config-schema.mjs';
+import {loadModuleWithSchema, findPresentFiles} from './module-loader.mjs';
 
 /** Conventional manifest basenames, in load-precedence order. */
 export const MANIFEST_BASENAMES = [
@@ -34,14 +34,16 @@ export function findManifestPaths(dir) {
 }
 
 /**
- * Load a manifest module's exported object. `.ts` is loaded via jiti;
- * `.mjs`/`.js` via dynamic import. Exposed for validate-integration.
+ * Load and validate a manifest module's default export against the integration
+ * schema. Default export only — `.ts` is loaded via jiti; `.mjs`/`.js` via
+ * dynamic import. Throws if the default export is missing or invalid. Exposed
+ * for validate-integration.
  * @param {string} file absolute manifest path
- * @returns {Promise<unknown>} the exported integration object (or module)
+ * @param {string} [label] used in error messages
+ * @returns {Promise<import('../types/integration').AstryxIntegration>}
  */
-export async function loadManifestObject(file) {
-  const mod = await importUserModule(file);
-  return mod.default ?? mod.integration ?? mod;
+export async function loadManifestObject(file, label = 'integration manifest') {
+  return loadModuleWithSchema(file, AstryxIntegrationSchema, {label});
 }
 
 /**
@@ -104,12 +106,11 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
     }
 
     const manifestFile = resolveManifestPath(packageDir, spec);
-    const mod = await importUserModule(manifestFile);
-    const exported = mod.default ?? mod.integration ?? mod;
-    if (!exported || typeof exported !== 'object') {
-      throw new Error(`Integration ${spec} did not export an object.`);
-    }
-    const manifest = validateIntegration(exported, `Integration ${spec}`);
+    const manifest = await loadModuleWithSchema(
+      manifestFile,
+      AstryxIntegrationSchema,
+      {label: `Integration ${spec}`},
+    );
 
     const resolveRoot = value =>
       value == null ? undefined : path.resolve(packageDir, value);

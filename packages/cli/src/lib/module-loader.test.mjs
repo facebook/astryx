@@ -3,7 +3,12 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {findPresentFiles, importUserModule} from './module-loader.mjs';
+import {z} from 'zod';
+import {
+  findPresentFiles,
+  importUserModule,
+  loadModuleWithSchema,
+} from './module-loader.mjs';
 
 let tmpDir;
 
@@ -55,5 +60,47 @@ describe('importUserModule', () => {
     const mod = await importUserModule(file);
     expect(mod.default).toEqual({answer: 42});
     expect(mod.named).toBe('hi');
+  });
+});
+
+describe('loadModuleWithSchema', () => {
+  // Temp module files live under a repo-local dir (not /tmp): Vite's dynamic
+  // import blocks /tmp, so we mirror the existing repo-local temp pattern.
+  const schema = z
+    .object({
+      name: z.string(),
+      count: z.number().optional(),
+    })
+    .strict();
+
+  it('returns the parsed default export when it satisfies the schema', async () => {
+    const file = path.join(tmpDir, 'valid.mjs');
+    fs.writeFileSync(file, `export default {name: 'ok', count: 3};\n`);
+    const value = await loadModuleWithSchema(file, schema, {label: 'thing'});
+    expect(value).toEqual({name: 'ok', count: 3});
+  });
+
+  it('throws a readable error when there is no default export', async () => {
+    const file = path.join(tmpDir, 'no-default.mjs');
+    fs.writeFileSync(file, `export const named = {name: 'x'};\n`);
+    await expect(
+      loadModuleWithSchema(file, schema, {label: 'thing'}),
+    ).rejects.toThrow(/thing is invalid/i);
+  });
+
+  it('throws a readable error when the default export fails the schema', async () => {
+    const file = path.join(tmpDir, 'invalid.mjs');
+    fs.writeFileSync(file, `export default {count: 'not-a-number'};\n`);
+    await expect(
+      loadModuleWithSchema(file, schema, {label: 'thing'}),
+    ).rejects.toThrow(/thing is invalid:.*name/i);
+  });
+
+  it('falls back to the file path in the message when no label is given', async () => {
+    const file = path.join(tmpDir, 'unlabeled.mjs');
+    fs.writeFileSync(file, `export default {bogus: true};\n`);
+    await expect(loadModuleWithSchema(file, schema)).rejects.toThrow(
+      new RegExp(`${path.basename(file)} is invalid`),
+    );
   });
 });

@@ -11,8 +11,10 @@
  * where `<version>` is the immediate folder name (e.g. "0.2.0") and `<id>` is
  * the codemod module's relative path under that version folder WITHOUT its
  * extension (kebab-case; may include nested segments like "config/rename").
- * Each module DEFAULT-EXPORTS a `createCodemod` / `createConfigCodemod`
- * result.
+ * Each module DEFAULT-EXPORTS a codemod envelope — typically a `createCodemod`
+ * / `createConfigCodemod` result, though any plain object matching
+ * {@link CodemodEnvelopeSchema} is accepted. Validation happens here at the
+ * load boundary via `loadModuleWithSchema`, not in the factories.
  *
  * Version selection mirrors the core registry's getTransformsBetween(from,to):
  * a codemod under folder X runs when upgrading to include X.
@@ -24,7 +26,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {importUserModule} from '../lib/module-loader.mjs';
+import {loadModuleWithSchema} from '../lib/module-loader.mjs';
+import {CodemodEnvelopeSchema} from '../codemod.mjs';
 import {semverCompare} from '../utils/semver.mjs';
 
 /** File extensions recognized as codemod modules. */
@@ -60,34 +63,6 @@ function collectCodemodFiles(versionDir) {
 
   walk(versionDir);
   return out.sort((a, b) => a.id.localeCompare(b.id));
-}
-
-/**
- * Validate that a module's default export is a createCodemod/
- * createConfigCodemod result.
- * @param {unknown} mod
- * @param {string} label
- * @returns {import('../types/codemod').AstryxCodemod | import('../types/codemod').AstryxConfigCodemod}
- */
-function validateCodemodExport(mod, label) {
-  const exported = mod?.default;
-  if (!exported || typeof exported !== 'object') {
-    throw new Error(
-      `${label} must default-export a createCodemod/createConfigCodemod result.`,
-    );
-  }
-  if (exported.type !== 'code' && exported.type !== 'config') {
-    throw new Error(
-      `${label} default export is not a valid codemod (expected createCodemod or createConfigCodemod result).`,
-    );
-  }
-  if (typeof exported.title !== 'string' || exported.title.length === 0) {
-    throw new Error(`${label} codemod is missing a title.`);
-  }
-  if (typeof exported.transform !== 'function') {
-    throw new Error(`${label} codemod is missing a transform function.`);
-  }
-  return exported;
 }
 
 /**
@@ -149,8 +124,9 @@ export async function discoverIntegrationCodemods(loadedIntegrations = []) {
         }
         idToVersion.set(id, version);
 
-        const mod = await importUserModule(file);
-        const codemod = validateCodemodExport(mod, label);
+        const codemod = await loadModuleWithSchema(file, CodemodEnvelopeSchema, {
+          label,
+        });
 
         const entry = {
           id,

@@ -6,7 +6,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {importUserModule} from '../lib/module-loader.mjs';
+import {loadModuleWithSchema} from '../lib/module-loader.mjs';
+import {TemplateEnvelopeSchema} from '../template.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../utils/paths.mjs';
 import {
   assertWithin,
@@ -24,15 +25,18 @@ const CORE_PACKAGE = '@astryxdesign/core';
 const DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
 
 /**
- * Load an integration template doc module. `.ts` is loaded via jiti; `.mjs`/
- * `.js` via dynamic import. The doc may be the default export (e.g.
- * `export default createPageTemplate({...})`) or a named `doc` export.
+ * Load an integration template doc module and validate it against the template
+ * envelope at the load boundary. Default export only — `.ts` via jiti,
+ * `.mjs`/`.js` via dynamic import. Throws (caught by discovery) if the default
+ * export is missing or fails {@link TemplateEnvelopeSchema}. NOTE: the built-in
+ * core templates use `export const doc = {...}` and are loaded by a different
+ * function ({@link loadDocModule}) — this path is for INTEGRATION templates.
  *
  * @param {string} file
+ * @param {string} [label]
  */
-async function loadIntegrationDoc(file) {
-  const mod = await importUserModule(file);
-  return mod.default ?? mod.doc ?? null;
+async function loadIntegrationDoc(file, label) {
+  return loadModuleWithSchema(file, TemplateEnvelopeSchema, {label});
 }
 
 const TEMPLATES_DIR = path.join(CLI_ROOT, 'templates');
@@ -348,7 +352,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
 
     let doc;
     try {
-      doc = await loadIntegrationDoc(docPath);
+      doc = await loadIntegrationDoc(docPath, `Template "${id}"`);
     } catch (err) {
       errors.push({
         package: pkgLabel,
@@ -358,6 +362,9 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       continue;
     }
 
+    // loadIntegrationDoc validates against the envelope (incl. a 'page'|'block'
+    // type) at the load boundary, so a valid doc always has a type. This guard
+    // stays as defense-in-depth.
     const type = doc?.type;
     if (type !== 'page' && type !== 'block') {
       errors.push({

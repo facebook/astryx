@@ -24,7 +24,6 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {validateIntegration} from '../lib/config-schema.mjs';
 import {
   findManifestPaths,
   loadManifestObject,
@@ -71,32 +70,6 @@ function error(code, message) {
 /** @param {string} code @param {string} message @returns {Issue} */
 function warning(code, message) {
   return {code, severity: 'warning', message};
-}
-
-/**
- * Validate the manifest object against the integration schema. Schema failures
- * become a single `invalid_manifest` error issue.
- * @param {unknown} exported
- * @param {string} label
- * @param {Issue[]} issues
- * @returns {import('../types/integration').AstryxIntegration | null}
- */
-function validateManifestSchema(exported, label, issues) {
-  if (!exported || typeof exported !== 'object') {
-    issues.push(
-      error(
-        'invalid_manifest',
-        `${label} did not export an integration object.`,
-      ),
-    );
-    return null;
-  }
-  try {
-    return validateIntegration(exported, label);
-  } catch (err) {
-    issues.push(error('invalid_manifest', err.message));
-    return null;
-  }
 }
 
 /**
@@ -275,22 +248,20 @@ async function validateAtPackageDir(packageDir, identity) {
   const manifestFile = manifests[0];
   result.manifestFile = manifestFile;
 
-  let exported;
+  // loadManifestObject loads the default export and validates it against the
+  // integration schema (the shared load boundary). A missing default export or
+  // a schema failure throws; we convert either into a single invalid_manifest
+  // error issue so validate-integration stays exit-1-but-not-crash.
+  let manifest;
   try {
-    exported = await loadManifestObject(manifestFile);
-  } catch (err) {
-    issues.push(
-      error('invalid_manifest', `Failed to load manifest: ${err.message}`),
+    manifest = await loadManifestObject(
+      manifestFile,
+      `Integration manifest (${path.basename(manifestFile)})`,
     );
+  } catch (err) {
+    issues.push(error('invalid_manifest', err.message));
     return result;
   }
-
-  const manifest = validateManifestSchema(
-    exported,
-    `Integration manifest (${path.basename(manifestFile)})`,
-    issues,
-  );
-  if (!manifest) return result;
 
   const resolveRoot = value =>
     value == null ? undefined : path.resolve(packageDir, value);
