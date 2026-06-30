@@ -82,27 +82,49 @@ export function registerComponent(program) {
 
       switch (result.type) {
         case 'component.list': {
-          // --detail brief (default for list views) — names with import paths.
+          // --detail brief (default for list views). The API now returns
+          // package-qualified entries ({name, package}); the human view omits
+          // the core package label for readability but ALWAYS shows the package
+          // for integration components (and whenever names collide).
+          const CORE_PKG = '@astryxdesign/core';
+          // Names that appear under more than one package across the whole
+          // listing — these must always be package-qualified to disambiguate.
+          const nameCounts = new Map();
+          for (const items of Object.values(result.data)) {
+            for (const item of items) {
+              const set = nameCounts.get(item.name) ?? new Set();
+              set.add(item.package);
+              nameCounts.set(item.name, set);
+            }
+          }
+          const isCollision = n => (nameCounts.get(n)?.size ?? 0) > 1;
+          const pkgSuffix = item => {
+            if (item.package !== CORE_PKG) return `  [${item.package}]`;
+            if (isCollision(item.name)) return `  [${item.package}]`;
+            return '';
+          };
+
           if (options.category) {
             const [cat, comps] = Object.entries(result.data)[0];
             humanLog(`\n${cat}:`);
-            for (const comp of comps) {
-              const importPath = resolveImportPath(coreDir, comp);
-              humanLog(`  ${comp}  ← ${importPath}`);
+            for (const item of comps) {
+              const importPath = resolveImportPath(coreDir, item.name);
+              humanLog(`  ${item.name}  ← ${importPath}${pkgSuffix(item)}`);
             }
             humanLog('');
           } else {
             humanLog('');
             for (const [key, comps] of Object.entries(result.data)) {
-              const isUngrouped = comps.length === 1 && comps[0] === key;
+              const isUngrouped = comps.length === 1 && comps[0]?.name === key;
               if (isUngrouped) {
-                const importPath = resolveImportPath(coreDir, key);
-                humanLog(`${key}  ← ${importPath}`);
+                const item = comps[0];
+                const importPath = resolveImportPath(coreDir, item.name);
+                humanLog(`${item.name}  ← ${importPath}${pkgSuffix(item)}`);
               } else {
                 humanLog(`${key} (group)`);
-                for (const comp of comps) {
-                  const importPath = resolveImportPath(coreDir, comp);
-                  humanLog(`  ${comp}  ← ${importPath}`);
+                for (const item of comps) {
+                  const importPath = resolveImportPath(coreDir, item.name);
+                  humanLog(`  ${item.name}  ← ${importPath}${pkgSuffix(item)}`);
                 }
               }
             }

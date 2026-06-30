@@ -11,17 +11,47 @@ import * as fs from 'node:fs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {findCoreDir, discoverExternalPackages} from '../utils/paths.mjs';
 import {
+  CORE_PACKAGE,
   discoverComponents,
   discoverExternalComponentsGrouped,
+  discoverIntegrationComponents,
   findComponentReadme,
   findComponentSource,
   findExternalComponentDoc,
+  findIntegrationComponentDoc,
+  findIntegrationComponentSource,
   resolveImportPath,
 } from '../lib/component-discovery.mjs';
+import {loadConfig} from '../lib/config.mjs';
 import {loadDocs} from '../lib/component-loader.mjs';
 import {searchComponents} from '../lib/string-utils.mjs';
 import {AstryxError} from './error.mjs';
 import {findShowcase, findRelatedBlocks} from './template.mjs';
+
+/**
+ * Load the configured integrations for `cwd`, swallowing any config errors so
+ * component discovery never hard-fails on a malformed/absent integration. An
+ * empty list means "core only".
+ * @param {string} cwd
+ * @returns {Promise<Array<{name: string, components?: string, issuesUrl?: string}>>}
+ */
+async function loadIntegrationsSafely(cwd) {
+  try {
+    const config = await loadConfig(cwd);
+    return config.loadedIntegrations ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Resolve a loaded integration by package name.
+ * @param {Array<{name: string}>} loadedIntegrations
+ * @param {string} packageName
+ */
+function findLoadedIntegration(loadedIntegrations, packageName) {
+  return loadedIntegrations.find(i => i.name === packageName) ?? null;
+}
 
 /**
  * Resolve an external package by name from the discovered externals list.
@@ -131,8 +161,13 @@ export async function component(name, options = {}) {
         return {type: 'component.full', data: {[match[0]]: entries}};
       }
 
-      // Default: brief — names only
-      return {type: 'component.list', data: {[match[0]]: match[1]}};
+      // Default: brief — package-qualified object list for the category.
+      // Pre-1.0 JSON contract: members are {name, package} objects, not bare
+      // strings, so consumers can disambiguate ownership.
+      return {
+        type: 'component.list',
+        data: {[match[0]]: match[1].map(n => ({name: n, package: CORE_PACKAGE}))},
+      };
     }
 
     // All components — merge core + external packages with grouped subcategories
@@ -179,43 +214,181 @@ export async function component(name, options = {}) {
       return {type: 'component.full', data: result};
     }
 
-    // Default: brief — names only (with externals merged in)
+    // Default: brief — package-qualified object list (core + integrations).
+    // Pre-1.0 JSON contract: each group's members are {name, package} objects.
+    /** @type {Record<string, Array<{name: string, package: string}>>} */
+    const listData = {};
+    for (const [cat, comps] of Object.entries(components)) {
+      listData[cat] = comps.map(n => ({name: n, package: CORE_PACKAGE}));
+    }
+
+    // Integration components (authoritative source: loadedIntegrations).
+    const loadedIntegrations = await loadIntegrationsSafely(cwd);
+    const seenIntegration = new Set();
+    for (const integration of loadedIntegrations) {
+      seenIntegration.add(integration.name);
+      const owned = discoverIntegrationComponents(integration);
+      // Group integration components by their doc `group`, falling back to the
+      // package name. Keys are package-qualified so they never collide with
+      // core groups or each other.
+      /** @type {Map<string, Array<{name: string, package: string}>>} */
+      const byGroup = new Map();
+      for (const rec of owned) {
+        const groupLabel = rec.group ?? integration.name;
+        const key = `${groupLabel} (${integration.name})`;
+        if (!byGroup.has(key)) byGroup.set(key, []);
+        byGroup.get(key).push({name: rec.name, package: integration.name});
+      }
+      for (const [key, members] of byGroup) {
+        members.sort((a, b) => a.name.localeCompare(b.name));
+        listData[key] = members;
+      }
+    }
+
+    // Back-compat: node_modules-scanned external packages (pkg.astryx.docs)
+    // that are NOT configured integrations. Preserves existing discovery for
+    // consumers that haven't adopted the config-integration flow.
     const externals = discoverExternalPackages(cwd);
     for (const ext of externals) {
+      if (seenIntegration.has(ext.name)) continue;
       const grouped = discoverExternalComponentsGrouped(ext.docsDir);
       const groupKeys = Object.keys(grouped);
       if (groupKeys.length === 0) continue;
 
-      // If the package has subcategories (groups), emit each as a separate key.
-      // If no groups exist, fall back to the flat list under one key.
       const hasGroups = groupKeys.some(
         k => grouped[k].length > 1 || grouped[k][0] !== k,
       );
 
       if (hasGroups) {
         for (const [group, members] of Object.entries(grouped)) {
-          components[`${group} (${ext.name})`] = members;
+          listData[`${group} (${ext.name})`] = members.map(n => ({
+            name: n,
+            package: ext.name,
+          }));
         }
       } else {
-        // All ungrouped — single flat list under the package category
         const allComps = Object.values(grouped).flat().sort();
         if (allComps.length > 0) {
-          components[`${ext.category} (${ext.name})`] = allComps;
+          listData[`${ext.category} (${ext.name})`] = allComps.map(n => ({
+            name: n,
+            package: ext.name,
+          }));
         }
       }
     }
-    return {type: 'component.list', data: components};
+    return {type: 'component.list', data: listData};
   }
 
   // ── Single component ───────────────────────────────────────────
 
   const dirName = name.replace(/^XDS/, '');
 
+  // Ownership-aware resolution. Build the set of OWNER packages that provide a
+  // component with this name across core + every loaded integration. This is
+  // what lets the CLI disambiguate by package and expose the owner's source +
+  // issuesUrl (the inputs the future integration-component swizzle needs).
+  const loadedIntegrations = await loadIntegrationsSafely(cwd);
+  const coreDocPath = findComponentReadme(coreDir, dirName);
+  /**
+   * @type {Array<{
+   *   package: string,
+   *   docPath: string,
+   *   sourcePath: string|null,
+   *   issuesUrl: string|undefined,
+   *   integration: object|null,
+   * }>}
+   */
+  const owners = [];
+  if (coreDocPath) {
+    owners.push({
+      package: CORE_PACKAGE,
+      docPath: coreDocPath,
+      sourcePath: findComponentSource(coreDir, dirName),
+      issuesUrl: undefined,
+      integration: null,
+    });
+  }
+  for (const integration of loadedIntegrations) {
+    const docPath = findIntegrationComponentDoc(integration, dirName);
+    if (!docPath) continue;
+    owners.push({
+      package: integration.name,
+      docPath,
+      sourcePath: findIntegrationComponentSource(integration, dirName),
+      issuesUrl: integration.issuesUrl,
+      integration,
+    });
+  }
+
+  /**
+   * Augment a loaded `component.detail` doc with ownership metadata. Adds
+   * `package`, the resolved `import` specifier, and `sourceAvailable` (whether
+   * a swizzleable source file exists for the owner). Existing doc fields
+   * (name, usage, props, …) are preserved.
+   * @param {object} docs
+   * @param {{package: string, sourcePath: string|null}} owner
+   * @param {string} componentName
+   */
+  function withOwnership(docs, owner, componentName) {
+    const importSpec =
+      owner.package === CORE_PACKAGE
+        ? resolveImportPath(coreDir, componentName)
+        : `${owner.package}/${componentName}`;
+    return {
+      ...docs,
+      package: owner.package,
+      import: importSpec,
+      sourceAvailable: owner.sourcePath != null,
+    };
+  }
+
   // When scoped to a specific package, search that package first.
   // This is critical for components that exist in both core and an external
   // package (e.g. AppShell, Button, SideNav) — the package scope ensures
   // the external package's docs are returned, not core's.
   if (packageScope) {
+    // Core scope: resolve from core directly.
+    if (packageScope === CORE_PACKAGE) {
+      const owner = owners.find(o => o.package === CORE_PACKAGE);
+      if (!owner) {
+        throw new AstryxError(`No component "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
+      }
+      if (source) {
+        if (!owner.sourcePath) {
+          throw new AstryxError(`Source for "${name}" not found`, undefined, ERROR_CODES.ERR_NO_SOURCE);
+        }
+        return {type: 'component.detail.source', data: {component: dirName, source: fs.readFileSync(owner.sourcePath, 'utf-8')}};
+      }
+      const docs = await loadDocs(owner.docPath, {zh, dense, lang});
+      if (props) {
+        const p = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
+        return {type: 'component.detail.props', data: p};
+      }
+      return {type: 'component.detail', data: withOwnership(docs, owner, dirName)};
+    }
+
+    // Integration scope (authoritative): resolve from the loaded integration.
+    const integration = findLoadedIntegration(loadedIntegrations, packageScope);
+    if (integration) {
+      const owner = owners.find(o => o.package === packageScope);
+      if (!owner) {
+        throw new AstryxError(`No component "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
+      }
+      if (source) {
+        if (!owner.sourcePath) {
+          throw new AstryxError(`Source for "${name}" not found in package "${packageScope}"`, undefined, ERROR_CODES.ERR_NO_SOURCE);
+        }
+        return {type: 'component.detail.source', data: {component: dirName, source: fs.readFileSync(owner.sourcePath, 'utf-8')}};
+      }
+      const docs = await loadDocs(owner.docPath, {zh, dense, lang});
+      if (props) {
+        const p = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
+        return {type: 'component.detail.props', data: p};
+      }
+      return {type: 'component.detail', data: withOwnership(docs, owner, dirName)};
+    }
+
+    // Legacy fallback: node_modules `pkg.astryx.docs` external package.
     const ext = resolveExternalPackage(packageScope, cwd);
     if (!ext) {
       throw new AstryxError(`External package "${packageScope}" not found`, undefined, ERROR_CODES.ERR_UNKNOWN_PACKAGE);
@@ -244,9 +417,47 @@ export async function component(name, options = {}) {
         const p = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
         return {type: 'component.detail.props', data: p};
       }
-      return {type: 'component.detail', data: docs};
+      return {
+        type: 'component.detail',
+        data: withOwnership(docs, {package: ext.name, sourcePath: null}, dirName),
+      };
     }
     throw new AstryxError(`No component "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_UNKNOWN_COMPONENT);
+  }
+
+  // Ambiguity: when the name is owned by MORE THAN ONE package (core and/or
+  // integrations) and the caller did not scope with --package, refuse to guess.
+  // NOTE: legacy `pkg.astryx.docs` externals are intentionally NOT part of this
+  // ambiguity set — they retain their historical core-first fallback below so
+  // existing consumers (and tests) keep working. Only config-driven integration
+  // ownership participates here.
+  if (owners.length > 1) {
+    throw new AstryxError(
+      `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
+      owners.map(o => ({name: o.package, reason: 'provides this component'})),
+      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+    );
+  }
+
+  // Single non-core owner (an integration provides it, core does not) — resolve
+  // from that integration so the integration component is authoritative.
+  if (owners.length === 1 && owners[0].package !== CORE_PACKAGE) {
+    const owner = owners[0];
+    if (source) {
+      if (!owner.sourcePath) {
+        throw new AstryxError(`Source for "${name}" not found`, undefined, ERROR_CODES.ERR_NO_SOURCE);
+      }
+      return {type: 'component.detail.source', data: {component: dirName, source: fs.readFileSync(owner.sourcePath, 'utf-8')}};
+    }
+    if (showcase) {
+      throw new AstryxError(`No showcase found for "${name}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
+    }
+    const docs = await loadDocs(owner.docPath, {zh, dense, lang});
+    if (props) {
+      const p = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
+      return {type: 'component.detail.props', data: p};
+    }
+    return {type: 'component.detail', data: withOwnership(docs, owner, dirName)};
   }
 
   if (source) {
@@ -274,6 +485,10 @@ export async function component(name, options = {}) {
 
   let readmePath = findComponentReadme(coreDir, dirName);
   let resolvedName = dirName;
+  // Track the resolving owner so the detail payload can carry ownership info.
+  // Defaults to core; the legacy-external fallback below may reassign it.
+  let resolvedOwnerPackage = CORE_PACKAGE;
+  let resolvedSourcePath = readmePath ? findComponentSource(coreDir, dirName) : null;
 
   if (!readmePath) {
     const externals = discoverExternalPackages(cwd);
@@ -281,6 +496,8 @@ export async function component(name, options = {}) {
       const extDocPath = findExternalComponentDoc(ext.docsDir, dirName);
       if (extDocPath) {
         readmePath = extDocPath;
+        resolvedOwnerPackage = ext.name;
+        resolvedSourcePath = null;
         break;
       }
     }
@@ -299,6 +516,8 @@ export async function component(name, options = {}) {
       if (topScore >= 90 && topTied.length === 1 && gap >= 20) {
         resolvedName = topTied[0].name;
         readmePath = findComponentReadme(coreDir, resolvedName);
+        resolvedOwnerPackage = CORE_PACKAGE;
+        resolvedSourcePath = findComponentSource(coreDir, resolvedName);
       } else {
         const threshold = Math.max(topScore - 20, 1);
         const candidates = results.filter(r => r.score >= threshold).slice(0, 5);
@@ -382,7 +601,14 @@ export async function component(name, options = {}) {
     if (props) {
       return {type: 'component.detail.props', data: matchingComponent.props || []};
     }
-    return {type: 'component.detail', data: scoped};
+    return {
+      type: 'component.detail',
+      data: withOwnership(
+        scoped,
+        {package: resolvedOwnerPackage, sourcePath: resolvedSourcePath},
+        dirName,
+      ),
+    };
   }
 
   if (props) {
@@ -390,5 +616,12 @@ export async function component(name, options = {}) {
     return {type: 'component.detail.props', data: p};
   }
 
-  return {type: 'component.detail', data: docs};
+  return {
+    type: 'component.detail',
+    data: withOwnership(
+      docs,
+      {package: resolvedOwnerPackage, sourcePath: resolvedSourcePath},
+      resolvedName,
+    ),
+  };
 }
