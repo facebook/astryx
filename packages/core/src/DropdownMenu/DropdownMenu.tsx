@@ -97,6 +97,12 @@ export interface DropdownMenuItemData {
   onClick?: () => void;
   isDisabled?: boolean;
   icon?: ReactNode | IconType;
+  /**
+   * Selection state for single-select menus. When defined (true or false),
+   * the item renders as `role="menuitemradio"` with `aria-checked` and shows
+   * a check indicator when selected. Leave undefined for plain action items.
+   */
+  isSelected?: boolean;
 }
 
 export interface DropdownMenuDivider {
@@ -261,7 +267,8 @@ export function DropdownMenu({
     handleKeyDown: listNavKeyDown,
     focusFirst,
   } = useListFocus<HTMLDivElement>({
-    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
+    itemSelector:
+      '[role="menuitem"]:not([aria-disabled="true"]), [role="menuitemradio"]:not([aria-disabled="true"])',
     wrap: false,
     onEscape: closeMenu,
   });
@@ -286,8 +293,9 @@ export function DropdownMenu({
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
-        if (focused?.getAttribute('role') === 'menuitem') {
-          focused.click();
+        const focusedRole = focused?.getAttribute('role');
+        if (focusedRole === 'menuitem' || focusedRole === 'menuitemradio') {
+          focused?.click();
         }
         return;
       }

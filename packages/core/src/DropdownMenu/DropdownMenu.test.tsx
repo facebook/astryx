@@ -45,30 +45,21 @@ beforeEach(() => {
 describe('DropdownMenu', () => {
   it('renders trigger button with label', () => {
     render(
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={[{label: 'Item 1'}]}
-      />,
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
     );
     expect(screen.getByRole('button', {name: /Actions/})).toBeInTheDocument();
   });
 
   it('renders menu with role="menu"', () => {
     render(
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={[{label: 'Item 1'}]}
-      />,
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
     );
     expect(screen.getByRole('menu', {hidden: true})).toBeInTheDocument();
   });
 
   it('defaults menu placement below', () => {
     render(
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={[{label: 'Item 1'}]}
-      />,
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
     );
     const popover = screen
       .getByRole('menu', {hidden: true})
@@ -96,10 +87,7 @@ describe('DropdownMenu', () => {
 
   it('has aria-haspopup and aria-expanded attributes', () => {
     render(
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={[{label: 'Item 1'}]}
-      />,
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
     );
     const button = screen.getByRole('button', {name: /Actions/});
     expect(button).toHaveAttribute('aria-haspopup', 'menu');
@@ -109,10 +97,7 @@ describe('DropdownMenu', () => {
   it('opens menu when button is clicked', async () => {
     const user = userEvent.setup();
     render(
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={[{label: 'Item 1'}]}
-      />,
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
     );
 
     await user.click(screen.getByRole('button', {name: /Actions/}));
@@ -575,5 +560,118 @@ describe('DropdownMenu compound mode', () => {
     expect(
       screen.getByRole('menuitem', {name: 'Conditional', hidden: true}),
     ).toBeInTheDocument();
+  });
+});
+
+describe('DropdownMenu single-select (isSelected)', () => {
+  it('renders role="menuitemradio" with aria-checked="true" and a check icon when selected', () => {
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Newest" isSelected={true} onClick={() => {}} />
+        <DropdownMenuItem
+          label="Oldest"
+          isSelected={false}
+          onClick={() => {}}
+        />
+      </DropdownMenu>,
+    );
+
+    const selected = screen.getByRole('menuitemradio', {
+      name: 'Newest',
+      hidden: true,
+    });
+    expect(selected).toHaveAttribute('aria-checked', 'true');
+    expect(selected.querySelector('svg')).not.toBeNull();
+  });
+
+  it('renders aria-checked="false" without a check icon when isSelected is false', () => {
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Newest" isSelected={true} onClick={() => {}} />
+        <DropdownMenuItem
+          label="Oldest"
+          isSelected={false}
+          onClick={() => {}}
+        />
+      </DropdownMenu>,
+    );
+
+    const unselected = screen.getByRole('menuitemradio', {
+      name: 'Oldest',
+      hidden: true,
+    });
+    expect(unselected).toHaveAttribute('aria-checked', 'false');
+    expect(unselected.querySelector('svg')).toBeNull();
+    // Layout stays stable: the unselected sibling reserves the check slot.
+    expect(unselected.querySelector('span[aria-hidden="true"]')).not.toBeNull();
+  });
+
+  it('keeps default behavior when isSelected is undefined', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Edit', onClick: () => {}}]}
+      />,
+    );
+
+    const item = screen.getByRole('menuitem', {name: 'Edit', hidden: true});
+    expect(item).not.toHaveAttribute('aria-checked');
+    expect(item.querySelector('svg')).toBeNull();
+    expect(
+      screen.queryByRole('menuitemradio', {hidden: true}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('supports isSelected on data-driven items and sections', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Sort'}}
+        items={[
+          {
+            type: 'section',
+            title: 'Sort by',
+            items: [
+              {label: 'Newest', isSelected: true},
+              {label: 'Oldest', isSelected: false},
+            ],
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Oldest', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('activates a menuitemradio via click and Enter', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Sort'}} hasAutoFocus={false}>
+        <DropdownMenuItem
+          label="Newest"
+          isSelected={false}
+          onClick={onSelect}
+        />
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const item = screen.getByRole('menuitemradio', {
+      name: 'Newest',
+      hidden: true,
+    });
+
+    await user.click(item);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    item.focus();
+    fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {key: 'Enter'});
+    expect(onSelect).toHaveBeenCalledTimes(2);
   });
 });

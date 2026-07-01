@@ -49,18 +49,14 @@ function getSectionKey(section: DropdownMenuSection, index: number): string {
  * Converts data-driven items into DropdownMenuItem components,
  * so both modes share the same rendering and keyboard navigation path.
  */
-export function renderDropdownItems(
-  items: DropdownMenuOption[],
-): ReactNode {
+export function renderDropdownItems(items: DropdownMenuOption[]): ReactNode {
   const elements: ReactNode[] = [];
 
   for (let i = 0; i < items.length; i++) {
     const option = items[i];
 
     if ('type' in option && option.type === 'divider') {
-      elements.push(
-        <Divider key={`divider-${i}`} xstyle={styles.divider} />,
-      );
+      elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
     } else if ('type' in option && option.type === 'section') {
       elements.push(
         <div
@@ -79,6 +75,7 @@ export function renderDropdownItems(
               label={item.label}
               onClick={item.onClick}
               isDisabled={item.isDisabled}
+              isSelected={item.isSelected}
             />
           ))}
         </div>,
@@ -91,6 +88,7 @@ export function renderDropdownItems(
           label={option.label}
           onClick={option.onClick}
           isDisabled={option.isDisabled}
+          isSelected={option.isSelected}
         />,
       );
     }
