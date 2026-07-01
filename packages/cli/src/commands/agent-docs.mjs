@@ -29,7 +29,8 @@ import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';
-const CLAUDE_DIR_MD = path.join('.claude', 'CLAUDE.md');
+const CLAUDE_DIR_MD = '.claude/CLAUDE.md'; // cross-platform literal
+
 
 const MARKER_START = '<!-- ASTRYX:START -->';
 const MARKER_END = '<!-- ASTRYX:END -->';

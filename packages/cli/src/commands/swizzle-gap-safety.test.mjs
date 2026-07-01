@@ -58,7 +58,13 @@ class Program {
 `;
     const csPath = path.join(shimDir, 'gh.cs');
     fs.writeFileSync(csPath, csCode);
-    const compileResult = spawnSync('C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\csc.exe', [
+    // Locate csc.exe using the Windows directory path. Note: v4.0.30319 has been
+    // frozen since 2010 across all .NET Framework 4.x in-place upgrades.
+    const cscPath = path.join(
+      process.env.WINDIR || 'C:\\Windows',
+      'Microsoft.NET\\Framework\\v4.0.30319\\csc.exe',
+    );
+    const compileResult = spawnSync(cscPath, [
       '/nologo',
       `/out:${path.join(shimDir, 'gh.exe')}`,
       csPath,
