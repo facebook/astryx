@@ -281,6 +281,14 @@ export async function component(name, options = {}) {
 
   // ── Single component ───────────────────────────────────────────
 
+  if (typeof name !== 'string') {
+    throw new AstryxError(
+      `No component named "${String(name)}"`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+    );
+  }
+
   const dirName = name.replace(/^XDS/, '');
 
   // Ownership-aware resolution. Build the set of OWNER packages that provide a
