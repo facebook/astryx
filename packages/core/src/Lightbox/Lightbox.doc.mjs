@@ -64,6 +64,15 @@ export const docs = {
       { guidance: false, description: 'Nest interactive content inside captions; keep them plain text.' },
     ],
   },
+  playground: {
+    defaults: {
+      media: {
+        src: 'https://picsum.photos/id/10/1200/800',
+        alt: 'Forest path',
+        caption: 'A winding path through the forest',
+      },
+    },
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
