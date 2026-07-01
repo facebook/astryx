@@ -17,6 +17,7 @@ import {useRef, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
+import {resolveContextActions} from '../../tableContextMenu';
 import type {
   TablePlugin,
   HeaderCellRenderProps,
@@ -423,9 +424,7 @@ export function useTableSortable<
             </SortHeaderButton>
           ),
           contextMenuActions: () => [
-            ...(typeof priorActions === 'function'
-              ? priorActions()
-              : (priorActions ?? [])),
+            ...resolveContextActions(priorActions),
             ...getSortActions(),
           ],
         };

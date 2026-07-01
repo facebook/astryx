@@ -19,6 +19,27 @@ import {Icon} from '../Icon';
 import type {TableContextAction, TableContextActions} from './types';
 
 /**
+ * Resolve a `contextMenuActions` value (array or getter) to a plain array.
+ * Use this when composing actions from a prior plugin's render props so you
+ * don't have to branch on the array-vs-getter form:
+ *
+ * ```
+ * contextMenuActions: () => [
+ *   ...resolveContextActions(props.contextMenuActions),
+ *   ...myActions,
+ * ]
+ * ```
+ */
+export function resolveContextActions(
+  actions: TableContextActions | undefined,
+): TableContextAction[] {
+  if (typeof actions === 'function') {
+    return actions();
+  }
+  return actions ?? [];
+}
+
+/**
  * Convert the flat action list into ContextMenu options, inserting a divider
  * between groups (first-seen group order). Ungrouped actions form a trailing
  * group. A `checked` action shows a trailing check icon.

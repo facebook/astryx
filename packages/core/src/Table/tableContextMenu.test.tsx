@@ -15,6 +15,7 @@ import {
   type TableSortState,
 } from './plugins/sortable/useTableSortable';
 import type {TablePlugin, TableColumn} from './types';
+import {resolveContextActions} from './tableContextMenu';
 
 // jsdom doesn't implement the Popover API; mirror the ContextMenu test's mock
 // so the menu can "open" and its items become queryable (as hidden).
@@ -89,7 +90,7 @@ describe('Table header context menu', () => {
       transformHeaderCell: props => ({
         ...props,
         contextMenuActions: [
-          ...(props.contextMenuActions ?? []),
+          ...resolveContextActions(props.contextMenuActions),
           {id: 'a', label: 'Action A', onSelect: () => {}},
         ],
       }),
@@ -98,7 +99,7 @@ describe('Table header context menu', () => {
       transformHeaderCell: props => ({
         ...props,
         contextMenuActions: [
-          ...(props.contextMenuActions ?? []),
+          ...resolveContextActions(props.contextMenuActions),
           {id: 'b', label: 'Action B', onSelect: () => {}},
         ],
       }),
