@@ -21,10 +21,7 @@ export type {ChatSendButtonProps} from './ChatSendButton';
 export {ChatComposerDrawer} from './ChatComposerDrawer';
 export type {ChatComposerDrawerProps} from './ChatComposerDrawer';
 
-export {
-  ChatComposerInput,
-  ChatComposerTokenElement,
-} from './ChatComposerInput';
+export {ChatComposerInput, ChatComposerTokenElement} from './ChatComposerInput';
 export type {
   ChatComposerInputProps,
   ChatComposerInputHandle,
@@ -59,6 +56,18 @@ export type {
   ChatSystemMessageProps,
   ChatSystemMessageVariant,
 } from './ChatSystemMessage';
+
+export {ChatReactionBar} from './ChatReactionBar';
+export type {ChatReactionBarProps, ChatReaction} from './ChatReactionBar';
+
+export {ChatEmojiPicker, DEFAULT_CHAT_EMOJIS} from './ChatEmojiPicker';
+export type {ChatEmojiPickerProps, ChatEmojiOption} from './ChatEmojiPicker';
+
+export {ChatUnreadDivider} from './ChatUnreadDivider';
+export type {ChatUnreadDividerProps} from './ChatUnreadDivider';
+
+export {ChatTypingIndicator} from './ChatTypingIndicator';
+export type {ChatTypingIndicatorProps} from './ChatTypingIndicator';
 
 export {useChatStreamScroll} from './useChatStreamScroll';
 export type {
