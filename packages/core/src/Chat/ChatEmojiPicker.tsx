@@ -35,6 +35,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import type {BaseProps} from '../BaseProps';
 import {Popover} from '../Popover';
 import {TextInput} from '../TextInput';
 import {useGridFocus} from '../hooks/useGridFocus';
@@ -71,7 +72,13 @@ export const DEFAULT_CHAT_EMOJIS: ReadonlyArray<ChatEmojiOption> = [
 
 const GRID_COLUMNS = 8;
 
-export interface ChatEmojiPickerProps {
+export interface ChatEmojiPickerProps extends Omit<
+  BaseProps<HTMLDivElement>,
+  'onSelect'
+> {
+  /** Ref forwarded to the popover panel element */
+  ref?: React.Ref<HTMLDivElement>;
+
   /**
    * Called with the picked emoji character.
    * The popover closes itself after selection.
@@ -140,7 +147,7 @@ const styles = stylex.create({
     },
     cursor: 'pointer',
     fontSize: 18,
-    lineHeight: 1,
+    lineHeight: typeScaleVars['--text-body-leading'],
     outline: {
       default: 'none',
       ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
@@ -186,7 +193,11 @@ export function ChatEmojiPicker({
   label = 'Pick an emoji',
   searchLabel = 'Search emoji',
   children,
+  xstyle,
+  className,
+  style: styleProp,
   'data-testid': testId,
+  ref,
 }: ChatEmojiPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -226,9 +237,12 @@ export function ChatEmojiPicker({
       data-testid={testId}
       content={
         <div
+          ref={ref}
           {...mergeProps(
             themeProps('chat-emoji-picker'),
-            stylex.props(styles.panel),
+            stylex.props(styles.panel, xstyle),
+            className,
+            styleProp,
           )}>
           <TextInput
             label={searchLabel}

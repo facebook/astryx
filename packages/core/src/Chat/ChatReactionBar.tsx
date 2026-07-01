@@ -148,14 +148,14 @@ const styles = stylex.create({
   },
   emoji: {
     fontSize: typeScaleVars['--text-body-size'],
-    lineHeight: 1,
+    lineHeight: typeScaleVars['--text-body-leading'],
   },
   count: {
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     fontVariantNumeric: 'tabular-nums',
-    lineHeight: 1,
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
   countSelected: {
     color: colorVars['--color-text-accent'],
@@ -182,7 +182,7 @@ const styles = stylex.create({
     cursor: 'pointer',
     boxSizing: 'border-box',
     fontSize: 15,
-    lineHeight: 1,
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     padding: 0,
   },
 });

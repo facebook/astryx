@@ -64,7 +64,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-bold'],
     color: colorVars['--color-error'],
-    lineHeight: 1,
+    lineHeight: typeScaleVars['--text-supporting-leading'],
   },
 });
 
