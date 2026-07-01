@@ -20,8 +20,6 @@ const styles = stylex.create({
     width: '100%',
     maxWidth: 360,
     marginInline: 'auto',
-    // Decorative preview — never interactive.
-    pointerEvents: 'none',
   },
   controlsRow: {
     rowGap: spacingVars['--spacing-3'],
@@ -38,9 +36,10 @@ export function ComponentsPreview() {
   const [checked, setChecked] = useState(true);
   const [on, setOn] = useState(true);
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState('');
 
   return (
-    <VStack gap={4} align="stretch" xstyle={styles.root} inert>
+    <VStack gap={4} align="stretch" xstyle={styles.root}>
       <HStack
         gap={2}
         hAlign="evenly"
@@ -53,8 +52,8 @@ export function ComponentsPreview() {
           label="Sample option"
           isLabelHidden
           size="md"
-          value=""
-          onChange={() => {}}>
+          value={selected}
+          onChange={setSelected}>
           <RadioListItem label="" value="sample" />
         </RadioList>
         <CheckboxInput
