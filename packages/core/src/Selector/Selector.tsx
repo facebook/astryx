@@ -908,7 +908,7 @@ export function Selector<T extends SelectorOptionType>(
           aria-busy={isBusy || undefined}
           disabled={isDisabled}
           onKeyDown={onKeyDown}
-          tabIndex={-1}
+          tabIndex={isDisabled ? -1 : 0}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerLabel)}>
             {selectedItem?.label ?? placeholder}
@@ -918,7 +918,6 @@ export function Selector<T extends SelectorOptionType>(
         {hasClear && value != null && !isDisabled && (
           <button
             type="button"
-            tabIndex={-1}
             onClick={handleClear}
             aria-label={`Clear ${label}`}
             {...stylex.props(styles.clearButton)}>

@@ -675,4 +675,64 @@ describe('MultiSelector', () => {
   it('has displayName', () => {
     expect(MultiSelector.displayName).toBe('MultiSelector');
   });
+
+  describe('keyboard accessibility', () => {
+    it('trigger is focusable via Tab when enabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      await user.tab();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+    });
+
+    it('trigger is not focusable when disabled', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      expect(screen.getByRole('combobox')).toHaveAttribute('tabIndex', '-1');
+    });
+
+    it('opens the listbox with ArrowDown from a focused trigger', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      expect(trigger).toHaveFocus();
+      await user.keyboard('{ArrowDown}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('clear button is reachable by keyboard', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={['Apple', 'Banana']}
+          onChange={() => {}}
+          hasClear
+        />,
+      );
+      const clear = screen.getByRole('button', {name: 'Clear all Fruit'});
+      expect(clear).not.toHaveAttribute('tabIndex', '-1');
+    });
+  });
 });

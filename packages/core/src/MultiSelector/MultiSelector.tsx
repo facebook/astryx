@@ -1159,7 +1159,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           aria-busy={isBusy || undefined}
           disabled={isDisabled}
           onKeyDown={onKeyDown}
-          tabIndex={-1}
+          tabIndex={isDisabled ? -1 : 0}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerContent)}>
             {renderTriggerContent()}
@@ -1169,7 +1169,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         {hasClear && value.length > 0 && !isDisabled && (
           <button
             type="button"
-            tabIndex={-1}
             onClick={handleClear}
             aria-label={`Clear all ${label}`}
             {...stylex.props(styles.clearButton)}>

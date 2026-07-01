@@ -467,4 +467,60 @@ describe('Selector', () => {
       ).toBeInTheDocument();
     });
   });
+
+  describe('keyboard accessibility', () => {
+    it('trigger is focusable via Tab when enabled', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} />);
+
+      await user.tab();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+    });
+
+    it('trigger is not focusable when disabled', () => {
+      render(<Selector label="Fruit" options={OPTIONS} isDisabled />);
+      expect(screen.getByRole('combobox')).toHaveAttribute('tabIndex', '-1');
+    });
+
+    it('opens the listbox with ArrowDown from a focused trigger', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      expect(trigger).toHaveFocus();
+
+      await user.keyboard('{ArrowDown}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('opens and selects an option with Enter (no mouse)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector label="Fruit" options={OPTIONS} onChange={onChange} />,
+      );
+
+      await user.tab();
+      await user.keyboard('{Enter}'); // open
+      await user.keyboard('{ArrowDown}'); // move highlight
+      await user.keyboard('{Enter}'); // select
+
+      expect(onChange).toHaveBeenCalled();
+    });
+
+    it('clear button is reachable by keyboard', () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasClear
+        />,
+      );
+      const clear = screen.getByRole('button', {name: 'Clear Fruit'});
+      expect(clear).not.toHaveAttribute('tabIndex', '-1');
+    });
+  });
 });
