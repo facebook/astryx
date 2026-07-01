@@ -4,12 +4,23 @@
  * @file Codemod: Drop the `XDS` prefix from @xds/core imports and their usages
  *
  * Part of the XDS-prefix migration (P2380608025). Rewrites consumer code from
- * the prefixed names to the bare compatibility aliases shipped in P1:
+ * the prefixed names to their bare equivalents:
  *
  *   XDSButton      -> Button
  *   XDSButtonProps -> ButtonProps
  *   useXDSTheme    -> useTheme
  *   useXDSToast    -> useToast
+ *   XDSIconRegistry-> IconRegistry
+ *
+ * Mandatory in v0.1.0: the prefixed compatibility aliases (which made both
+ * prefixed and bare names valid during the 0.0.x compat window) were dropped
+ * in v0.1.0, so the un-prefixing is now required for code to keep type-
+ * checking against @astryxdesign/core.
+ *
+ * Ordering: within the v0.1.0 manifest this runs BEFORE
+ * migrate-xds-module-specifiers so it still matches `@xds/core` imports (its
+ * source matcher) and un-prefixes the identifiers first; the specifier codemod
+ * then rewrites the module paths `@xds/*` -> `@astryxdesign/*`.
  *
  * Safety: this codemod ONLY renames identifiers that are imported from
  * `@xds/core` (bare or subpath, e.g. `@xds/core/Button`). It tracks the local
@@ -36,9 +47,9 @@ export const meta = {
   title: 'Drop XDS prefix from @xds/core imports (XDSButton -> Button)',
   description:
     'Rewrites @xds/core imports and their usages from the prefixed names ' +
-    '(XDSButton, useXDSTheme, XDSButtonProps) to the bare compatibility ' +
-    'aliases (Button, useTheme, ButtonProps). Only renames bindings imported ' +
-    'from @xds/core, leaving unrelated identifiers untouched.',
+    '(XDSButton, useXDSTheme, XDSIconRegistry, XDSButtonProps) to their bare ' +
+    'names (Button, useTheme, IconRegistry, ButtonProps). Only renames ' +
+    'bindings imported from @xds/core, leaving unrelated identifiers untouched.',
   pr: '#2880',
 };
 
