@@ -56,3 +56,55 @@ if (typeof window.matchMedia === 'undefined') {
     }),
   });
 }
+
+import {expect} from 'vitest';
+
+let isNormalizing = false;
+
+if (typeof expect !== 'undefined' && expect.addSnapshotSerializer) {
+  expect.addSnapshotSerializer({
+    serialize(
+      val: Element,
+      config: object,
+      indentation: string,
+      depth: number,
+      refs: unknown[],
+      printer: (
+        val: Element,
+        config: object,
+        indentation: string,
+        depth: number,
+        refs: unknown[],
+      ) => string,
+    ) {
+      isNormalizing = true;
+      try {
+        const clone = val.cloneNode(true) as Element;
+        if (clone.setAttribute && clone.getAttribute) {
+          const styleSrc = clone.getAttribute('data-style-src');
+          if (styleSrc) {
+            clone.setAttribute('data-style-src', styleSrc.replace(/\\/g, '/'));
+          }
+          const elements = clone.querySelectorAll('[data-style-src]');
+          for (const el of elements) {
+            const src = el.getAttribute('data-style-src');
+            if (src) {
+              el.setAttribute('data-style-src', src.replace(/\\/g, '/'));
+            }
+          }
+        }
+        return printer(clone, config, indentation, depth, refs);
+      } finally {
+        isNormalizing = false;
+      }
+    },
+    test(val: unknown) {
+      return (
+        !isNormalizing &&
+        val != null &&
+        typeof val === 'object' &&
+        (val as Element).nodeType === 1
+      );
+    },
+  });
+}
