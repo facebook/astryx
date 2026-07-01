@@ -187,18 +187,16 @@ export function DocPageLayout({
   }
 
   const rowProps = stylex.props(styles.row);
+  const rowStyle: React.CSSProperties & Record<'--docs-anchor-offset', string> =
+    {
+      ...rowProps.style,
+      // Consumed by anchored section headings (AnchorHeading and Markdown
+      // headings) to clear the sticky mobile selector when scrolled to.
+      '--docs-anchor-offset': `${selectorHeight}px`,
+    };
 
   return (
-    <div
-      className={rowProps.className}
-      style={
-        {
-          ...rowProps.style,
-          // Consumed by anchored section headings (AnchorHeading and Markdown
-          // headings) to clear the sticky mobile selector when scrolled to.
-          '--docs-anchor-offset': `${selectorHeight}px`,
-        } as React.CSSProperties
-      }>
+    <div className={rowProps.className} style={rowStyle}>
       {article}
       {showAside ? (
         <aside {...stylex.props(styles.aside)}>
