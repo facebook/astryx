@@ -157,11 +157,9 @@ export function SiteFooter() {
   const copyright = `\u00A9${year} Meta Platforms, Inc.`;
 
   const astryxLogo = (
-    <AstryxLogo
-      role="img"
-      aria-label="Astryx"
-      {...stylex.props(styles.astryxLogo)}
-    />
+    <Link href="/" label="Astryx">
+      <AstryxLogo aria-hidden="true" {...stylex.props(styles.astryxLogo)} />
+    </Link>
   );
 
   const metaOpenSourceLink = (

@@ -25,7 +25,7 @@ import {
 } from './_landing/hero/HeroThemeReel';
 import {FeaturesShowcase} from './_landing/FeaturesShowcase';
 import {AboutShowcase} from './_landing/AboutShowcase';
-import {StoriesShowcase} from './_landing/StoriesShowcase';
+import {BlogShowcase} from './_landing/BlogShowcase';
 import {DiscoverShowcase} from './_landing/DiscoverShowcase';
 
 const HERO_BAND_HEIGHT = 760;
@@ -342,7 +342,7 @@ export default function HomePage() {
       <VStack ref={showcaseRef} xstyle={styles.showcaseOverlay}>
         <FeaturesShowcase />
         <AboutShowcase />
-        <StoriesShowcase />
+        <BlogShowcase />
         <DiscoverShowcase />
       </VStack>
     </div>
