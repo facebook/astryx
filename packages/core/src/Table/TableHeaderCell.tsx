@@ -25,7 +25,7 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
-import type {TableContextAction} from './types';
+import type {TableContextActions} from './types';
 import {overflowStyles, containerEdgeStyles} from './table.stylex';
 import {useTableContext, mergeXStyle} from './useTableCellStyles';
 import {wrapInTableContextMenu} from './tableContextMenu';
@@ -49,7 +49,7 @@ export interface TableHeaderCellProps extends BaseProps<HTMLTableCellElement> {
    * The cell owns the wrapper so it controls how the menu interacts with its
    * padding / content. Empty or undefined renders no menu.
    */
-  contextMenuActions?: TableContextAction[];
+  contextMenuActions?: TableContextActions;
 }
 
 const densityStyles = stylex.create({
@@ -150,7 +150,7 @@ export function TableHeaderCell({
 
   // The cell owns the context-menu wrapper so it controls how the menu
   // interacts with its padding / content. No-op when no actions.
-  const content = wrapInTableContextMenu(children, contextMenuActions ?? []);
+  const content = wrapInTableContextMenu(children, contextMenuActions);
 
   return (
     <th

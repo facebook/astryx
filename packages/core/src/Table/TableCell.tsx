@@ -24,7 +24,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
-import type {TableContextAction} from './types';
+import type {TableContextActions} from './types';
 import {wrapInTableContextMenu} from './tableContextMenu';
 import {
   overflowStyles,
@@ -63,7 +63,7 @@ export interface TableCellProps extends BaseProps<HTMLTableCellElement> {
    * The cell owns the wrapper so it controls how the menu interacts with its
    * padding / content. Empty or undefined renders no menu.
    */
-  contextMenuActions?: TableContextAction[];
+  contextMenuActions?: TableContextActions;
 }
 
 const densityStyles = stylex.create({
@@ -166,7 +166,7 @@ export function TableCell({
 
   // The cell owns the context-menu wrapper so it controls how the menu
   // interacts with its padding / content. No-op when no actions.
-  const content = wrapInTableContextMenu(children, contextMenuActions ?? []);
+  const content = wrapInTableContextMenu(children, contextMenuActions);
 
   return (
     <td

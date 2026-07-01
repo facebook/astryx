@@ -17,6 +17,11 @@ every enabled plugin (instead of the browser's generic menu).
   row menus work without invalid `<tr>` nesting. Actions group with dividers and
   show a checkmark for the active item; when none are contributed, the native
   browser menu passes through.
+- `contextMenuActions` accepts either an array or a getter
+  (`() => TableContextAction[]`); the getter is resolved lazily when the menu
+  opens, so plugins with state-derived actions don't build arrays on every
+  render. `useTableSortable` uses a getter so its checked/clear state always
+  reflects the latest sort.
 - First contributor: `useTableSortable` adds "Sort ascending / Sort descending
   / Clear sort" on sortable headers.
 

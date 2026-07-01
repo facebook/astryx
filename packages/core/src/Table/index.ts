@@ -50,6 +50,7 @@ export type {
   PixelWidth,
   TablePlugin,
   TableContextAction,
+  TableContextActions,
   TableRenderProps,
   HeaderRowRenderProps,
   HeaderCellRenderProps,

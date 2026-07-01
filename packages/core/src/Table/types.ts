@@ -266,7 +266,7 @@ export interface HeaderCellRenderProps {
    * their actions in `transformHeaderCell`; BaseTable concatenates the arrays
    * across plugins (never overridden) and renders one menu per header cell.
    */
-  contextMenuActions?: TableContextAction[];
+  contextMenuActions?: TableContextActions;
   /**
    * Index of this column within the final, ordered list of rendered columns
    * (after column injection/reordering by other plugins). Populated by
@@ -302,7 +302,7 @@ export interface BodyCellRenderProps {
    * plugins and across the row's cells (never overridden) and renders one menu
    * per row.
    */
-  contextMenuActions?: TableContextAction[];
+  contextMenuActions?: TableContextActions;
   /**
    * Index of this cell's column within the final ordered column list.
    * Mirrors the `columnIndex` passed to `transformHeaderCell`. Populated by
@@ -380,6 +380,17 @@ export interface TableContextAction {
   /** When true, the item renders as checked (e.g. the active sort direction). */
   checked?: boolean;
 }
+
+/**
+ * Context-menu actions for a cell — either a static array, or a getter that
+ * returns the actions lazily. Prefer the getter for actions derived from state
+ * (e.g. the active sort direction): it's only invoked when the menu is opened,
+ * so the plugin doesn't build an action array (with closures) for every cell on
+ * every render.
+ */
+export type TableContextActions =
+  | TableContextAction[]
+  | (() => TableContextAction[]);
 
 // =============================================================================
 // Plugin Interface
@@ -488,7 +499,7 @@ export interface TableCellComponentProps extends TdHTMLAttributes<HTMLTableCellE
    * padding / content sizing. Empty/undefined renders no menu (native passes
    * through).
    */
-  contextMenuActions?: TableContextAction[];
+  contextMenuActions?: TableContextActions;
 }
 
 /** Props for header cell components used in the components prop */
@@ -500,7 +511,7 @@ export interface TableHeaderCellComponentProps extends ThHTMLAttributes<HTMLTabl
    * The cell owns the menu wrapper so it can control how it interacts with
    * padding / content sizing. Empty/undefined renders no menu.
    */
-  contextMenuActions?: TableContextAction[];
+  contextMenuActions?: TableContextActions;
 }
 
 // =============================================================================

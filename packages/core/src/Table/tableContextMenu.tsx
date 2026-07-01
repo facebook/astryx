@@ -13,10 +13,10 @@
  * - /packages/core/src/Table/types.ts (TableContextAction)
  */
 
-import type {ReactNode} from 'react';
+import {useState, type ReactNode} from 'react';
 import {ContextMenu, type ContextMenuOption} from '../ContextMenu';
 import {Icon} from '../Icon';
-import type {TableContextAction} from './types';
+import type {TableContextAction, TableContextActions} from './types';
 
 /**
  * Convert the flat action list into ContextMenu options, inserting a divider
@@ -69,11 +69,49 @@ function toContextMenuOptions(
  * actions the element is returned untouched so the native browser menu passes
  * through.
  */
+/**
+ * A context menu whose actions are resolved lazily — only when the user opens
+ * the menu (right-click). Deferring the work means plugins that pass a getter
+ * don't build an action array (with its closures) for every cell on every
+ * render; it's computed on demand and memoized until the menu closes.
+ */
+function LazyTableContextMenu({
+  element,
+  getActions,
+}: {
+  element: ReactNode;
+  getActions: () => TableContextAction[];
+}): ReactNode {
+  const [options, setOptions] = useState<ContextMenuOption[] | null>(null);
+  return (
+    <ContextMenu
+      items={options ?? []}
+      hasAutoFocus={false}
+      onOpenChange={open => {
+        // Resolve actions when opening; clear on close so state derived later
+        // (e.g. current sort direction) is always fresh next open.
+        setOptions(open ? toContextMenuOptions(getActions()) : null);
+      }}>
+      {element}
+    </ContextMenu>
+  );
+}
+
+/**
+ * Wrap a table element (a header cell's content or a body cell) in a right-click
+ * context menu rendering the aggregated `actions`. Accepts a static array or a
+ * getter (resolved lazily on open). When there are no actions the element is
+ * returned untouched so the native browser menu passes through.
+ */
 export function wrapInTableContextMenu(
   element: ReactNode,
-  actions: TableContextAction[],
+  actions: TableContextActions | undefined,
 ): ReactNode {
-  if (actions.length === 0) {
+  // Getter form → resolve lazily on open.
+  if (typeof actions === 'function') {
+    return <LazyTableContextMenu element={element} getActions={actions} />;
+  }
+  if (!actions || actions.length === 0) {
     return element;
   }
   // hasAutoFocus={false}: a right-click menu shouldn't pre-highlight the first

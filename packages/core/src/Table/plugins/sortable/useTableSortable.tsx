@@ -357,48 +357,56 @@ export function useTableSortable<
           return props;
         }
 
-        // Find sort entry for this column
         const cfg = configRef.current;
         const entry = cfg.sort.find(e => e.sortKey === sortKey);
-        const direction = entry?.direction ?? null;
 
-        // Right-click actions: sort asc / desc, and clear when active. Appended
-        // to any actions other plugins contributed for this header.
-        const sortActions: TableContextAction[] = [
-          {
-            id: 'sort-asc',
-            group: 'sort',
-            label: 'Sort ascending',
-            icon: <Icon icon="arrowUp" size="xsm" aria-hidden />,
-            checked: direction === 'ascending',
-            onSelect: () =>
-              cfg.onSortChange([
-                {sortKey: sortKey as TSortKey, direction: 'ascending'},
-              ]),
-          },
-          {
-            id: 'sort-desc',
-            group: 'sort',
-            label: 'Sort descending',
-            icon: <Icon icon="arrowDown" size="xsm" aria-hidden />,
-            checked: direction === 'descending',
-            onSelect: () =>
-              cfg.onSortChange([
-                {sortKey: sortKey as TSortKey, direction: 'descending'},
-              ]),
-          },
-        ];
-        if (direction != null) {
-          sortActions.push({
-            id: 'sort-clear',
-            group: 'sort-clear',
-            label: 'Clear sort',
-            icon: <Icon icon="close" size="xsm" aria-hidden />,
-            onSelect: () =>
-              cfg.onSortChange(cfg.sort.filter(e => e.sortKey !== sortKey)),
-          });
-        }
+        // Context-menu actions are built lazily (only when the menu opens) via
+        // a getter, reading the current sort state at call time — so we don't
+        // build an action array for every header on every render, and the
+        // checked/clear state always reflects the latest sort.
+        const getSortActions = (): TableContextAction[] => {
+          const c = configRef.current;
+          const dir = c.sort.find(e => e.sortKey === sortKey)?.direction ?? null;
+          const actions: TableContextAction[] = [
+            {
+              id: 'sort-asc',
+              group: 'sort',
+              label: 'Sort ascending',
+              icon: <Icon icon="arrowUp" size="xsm" aria-hidden />,
+              checked: dir === 'ascending',
+              onSelect: () =>
+                c.onSortChange([
+                  {sortKey: sortKey as TSortKey, direction: 'ascending'},
+                ]),
+            },
+            {
+              id: 'sort-desc',
+              group: 'sort',
+              label: 'Sort descending',
+              icon: <Icon icon="arrowDown" size="xsm" aria-hidden />,
+              checked: dir === 'descending',
+              onSelect: () =>
+                c.onSortChange([
+                  {sortKey: sortKey as TSortKey, direction: 'descending'},
+                ]),
+            },
+          ];
+          if (dir != null) {
+            actions.push({
+              id: 'sort-clear',
+              group: 'sort-clear',
+              label: 'Clear sort',
+              icon: <Icon icon="close" size="xsm" aria-hidden />,
+              onSelect: () =>
+                c.onSortChange(c.sort.filter(e => e.sortKey !== sortKey)),
+            });
+          }
+          return actions;
+        };
 
+        // Merge with any actions a prior plugin contributed (array or getter),
+        // resolving both lazily at open time.
+        const priorActions = props.contextMenuActions;
         return {
           ...props,
           htmlProps: {
@@ -414,9 +422,11 @@ export function useTableSortable<
               {props.content}
             </SortHeaderButton>
           ),
-          contextMenuActions: [
-            ...(props.contextMenuActions ?? []),
-            ...sortActions,
+          contextMenuActions: () => [
+            ...(typeof priorActions === 'function'
+              ? priorActions()
+              : (priorActions ?? [])),
+            ...getSortActions(),
           ],
         };
       },

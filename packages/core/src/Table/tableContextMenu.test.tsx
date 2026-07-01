@@ -207,4 +207,48 @@ describe('sortable context actions', () => {
         .length,
     ).toBeGreaterThan(0);
   });
+
+  it('resolves fresh actions on each open as sort state changes (lazy getter)', () => {
+    const onSortChange = vi.fn();
+    function Harness() {
+      const [sort, setSort] = useState<TableSortState>([]);
+      const sortPlugin = useTableSortable<Row>({
+        sort,
+        onSortChange: next => {
+          setSort(next);
+          onSortChange(next);
+        },
+      });
+      return (
+        <Table
+          data={data}
+          columns={[{key: 'name', header: 'Name', sortable: true}]}
+          idKey="id"
+          plugins={{sort: sortPlugin}}
+        />
+      );
+    }
+    render(<Harness />);
+
+    // Open (unsorted) and pick descending.
+    fireEvent.contextMenu(screen.getByText('Name'));
+    fireEvent.click(
+      screen.getAllByRole('menuitem', {name: 'Sort descending', hidden: true})[0],
+    );
+    expect(onSortChange).toHaveBeenLastCalledWith([
+      {sortKey: 'name', direction: 'descending'},
+    ]);
+
+    // Re-open: the getter recomputes against the now-descending state, so
+    // "Clear sort" is present and clicking it clears — proving the actions are
+    // freshly derived on each open, not memoized from the first render.
+    fireEvent.contextMenu(screen.getByText('Name'));
+    const clear = screen.getAllByRole('menuitem', {
+      name: 'Clear sort',
+      hidden: true,
+    });
+    expect(clear.length).toBeGreaterThan(0);
+    fireEvent.click(clear[0]);
+    expect(onSortChange).toHaveBeenLastCalledWith([]);
+  });
 });
