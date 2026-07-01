@@ -8,6 +8,10 @@ export const docs = {
   displayName: 'Metadata List Item',
   isHiddenFromOverview: true,
   description: 'A single labeled metadata value within an MetadataList.',
+  playground: {
+    defaults: {label: 'Status', children: 'Active'},
+    wrapper: {component: 'MetadataList'},
+  },
   props: [
     {
       name: 'children',

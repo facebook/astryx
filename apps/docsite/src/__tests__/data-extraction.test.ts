@@ -284,6 +284,19 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('MetadataListItem declares a playground wrapper for realistic preview structure', () => {
+    const core = components['@astryxdesign/core'];
+    const metadataListItem = core.find(c => c.name === 'MetadataListItem');
+    expect(metadataListItem).toBeDefined();
+    expect(metadataListItem!.playground?.defaults).toMatchObject({
+      label: 'Status',
+      children: 'Active',
+    });
+    expect(metadataListItem!.playground?.wrapper).toMatchObject({
+      component: 'MetadataList',
+    });
+  });
+
   it('Chat has many sub-components (standalone docs take priority over compound entries)', () => {
     const core = components['@astryxdesign/core'];
     // Chat compound doc has 14 sub-components, but ChatToolCalls and
