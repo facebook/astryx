@@ -248,3 +248,11 @@ export {
 } from './ChartV2';
 export * from './Stepper';
 export * from './CircularProgress';
+
+// LogStream — experimental streaming log viewer
+export {
+  LogStream,
+  type LogStreamProps,
+  type LogEntry,
+  type LogStreamLevel,
+} from './LogStream';

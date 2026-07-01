@@ -851,6 +851,7 @@ export type TemplateCategory =
   | 'Tools - Notebook/Report Page'
   | 'Tools - Diff Compare Viewer'
   | 'Tools - Search Results Page'
+  | 'Tools - Deployment Detail'
   // Content
   | 'Content - Card Grid'
   | 'Content - Order Detail'
