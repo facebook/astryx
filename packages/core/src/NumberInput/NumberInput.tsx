@@ -46,6 +46,7 @@ import {
   inputStatusFocusWithinStyles,
 } from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -96,17 +97,6 @@ const styles = stylex.create({
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
-  },
-  visuallyHidden: {
-    position: 'absolute',
-    width: '1px',
-    height: '1px',
-    padding: 0,
-    margin: '-1px',
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
   },
   units: {
     fontFamily: typographyVars['--font-family-body'],
@@ -590,12 +580,9 @@ export function NumberInput({
         The value silently reverts on blur, so without this a screen-reader
         user would get no feedback that their entry was rejected (WCAG 3.3.1).
       */}
-      <span
-        role="alert"
-        aria-live="assertive"
-        {...stylex.props(styles.visuallyHidden)}>
+      <VisuallyHidden as="div" role="alert" aria-live="assertive">
         {!isInputValid ? 'Invalid number' : ''}
-      </span>
+      </VisuallyHidden>
       {hasClear && value != null && !isDisabled && (
         <button
           type="button"
