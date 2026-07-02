@@ -97,6 +97,17 @@ const styles = stylex.create({
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
   },
+  visuallyHidden: {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    borderWidth: 0,
+  },
   units: {
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-body-size'],
@@ -563,7 +574,9 @@ export function NumberInput({
         step={step ?? undefined}
         aria-describedby={ariaDescribedBy}
         aria-required={isRequired === true ? 'true' : undefined}
-        aria-invalid={status?.type === 'error' ? 'true' : undefined}
+        aria-invalid={
+          status?.type === 'error' || !isInputValid ? 'true' : undefined
+        }
         aria-label={inputGroup ? label : undefined}
         {...stylex.props(
           styles.input,
@@ -572,6 +585,17 @@ export function NumberInput({
         )}
       />
       {units && <span {...stylex.props(styles.units)}>{units}</span>}
+      {/*
+        Live region announcing invalid typed input to assistive technology.
+        The value silently reverts on blur, so without this a screen-reader
+        user would get no feedback that their entry was rejected (WCAG 3.3.1).
+      */}
+      <span
+        role="alert"
+        aria-live="assertive"
+        {...stylex.props(styles.visuallyHidden)}>
+        {!isInputValid ? 'Invalid number' : ''}
+      </span>
       {hasClear && value != null && !isDisabled && (
         <button
           type="button"

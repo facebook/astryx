@@ -146,6 +146,17 @@ const styles = stylex.create({
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
   },
+  visuallyHidden: {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    borderWidth: 0,
+  },
   dateWrapper: {
     flex: 1,
     flexBasis: 0,
@@ -838,7 +849,9 @@ export function DateTimeInput({
             disabled={isEffectivelyDisabled}
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
-            aria-invalid={status?.type === 'error' ? 'true' : undefined}
+            aria-invalid={
+              status?.type === 'error' || !isDateInputValid ? 'true' : undefined
+            }
             aria-busy={isBusy || undefined}
             aria-expanded={popover.isOpen}
             aria-haspopup="dialog"
@@ -851,6 +864,18 @@ export function DateTimeInput({
               !isDateInputValid && styles.inputInvalid,
             )}
           />
+          {/*
+            Live region announcing invalid typed date input to assistive
+            technology. The value silently reverts on blur, so without this a
+            screen-reader user would get no feedback that their entry was
+            rejected (WCAG 3.3.1).
+          */}
+          <span
+            role="alert"
+            aria-live="assertive"
+            {...stylex.props(styles.visuallyHidden)}>
+            {!isDateInputValid ? 'Invalid date' : ''}
+          </span>
           {hasClear && value !== undefined && !isEffectivelyDisabled && (
             <button
               type="button"
@@ -900,13 +925,25 @@ export function DateTimeInput({
             disabled={isEffectivelyDisabled}
             aria-label="Time"
             aria-required={isRequired === true ? 'true' : undefined}
-            aria-invalid={status?.type === 'error' ? 'true' : undefined}
+            aria-invalid={
+              status?.type === 'error' || !isTimeInputValid ? 'true' : undefined
+            }
             {...stylex.props(
               styles.input,
               isEffectivelyDisabled && styles.inputDisabled,
               !isTimeInputValid && styles.inputInvalid,
             )}
           />
+          {/*
+            Live region announcing invalid typed time input to assistive
+            technology (WCAG 3.3.1).
+          */}
+          <span
+            role="alert"
+            aria-live="assertive"
+            {...stylex.props(styles.visuallyHidden)}>
+            {!isTimeInputValid ? 'Invalid time' : ''}
+          </span>
         </div>
       </div>
 

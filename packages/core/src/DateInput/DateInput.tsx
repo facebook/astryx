@@ -45,11 +45,7 @@ import {
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {
-  Calendar,
-  type ISODateString,
-  type CalendarHandle,
-} from '../Calendar';
+import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {parseDateInput} from '../utils';
@@ -106,6 +102,17 @@ const styles = stylex.create({
   },
   inputInvalid: {
     color: colorVars['--color-text-secondary'],
+  },
+  visuallyHidden: {
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    padding: 0,
+    margin: '-1px',
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    borderWidth: 0,
   },
 });
 
@@ -554,7 +561,9 @@ export function DateInput({
           disabled={isEffectivelyDisabled}
           aria-describedby={ariaDescribedBy}
           aria-required={isRequired === true ? 'true' : undefined}
-          aria-invalid={status?.type === 'error' ? 'true' : undefined}
+          aria-invalid={
+            status?.type === 'error' || !isInputValid ? 'true' : undefined
+          }
           aria-busy={isBusy || undefined}
           aria-expanded={popover.isOpen}
           aria-haspopup="dialog"
@@ -567,6 +576,17 @@ export function DateInput({
             !isInputValid && styles.inputInvalid,
           )}
         />
+        {/*
+          Live region announcing invalid typed input to assistive technology.
+          The value silently reverts on blur, so without this a screen-reader
+          user would get no feedback that their entry was rejected (WCAG 3.3.1).
+        */}
+        <span
+          role="alert"
+          aria-live="assertive"
+          {...stylex.props(styles.visuallyHidden)}>
+          {!isInputValid ? 'Invalid date' : ''}
+        </span>
         {hasClear && value !== undefined && !isEffectivelyDisabled && (
           <button
             type="button"
