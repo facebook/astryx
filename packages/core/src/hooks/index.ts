@@ -20,6 +20,9 @@ export type {UseGridFocusOptions, UseGridFocusReturn} from './useGridFocus';
 export {useListFocus} from './useListFocus';
 export type {UseListFocusOptions, UseListFocusReturn} from './useListFocus';
 
+export {useHotkeys} from './useHotkeys';
+export type {Hotkey} from './useHotkeys';
+
 export {useMediaQuery} from './useMediaQuery';
 
 export {useOverflow} from './useOverflow';

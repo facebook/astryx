@@ -30,6 +30,11 @@ export const docs = {
       description: 'Additional content rendered after the label and description.',
     },
     {
+      name: 'isSelected',
+      type: 'boolean',
+      description: 'Selection state for single-select menus. When defined (true or false), the item renders as role="menuitemradio" with aria-checked and shows a check indicator when selected; unselected siblings reserve the same space for a stable layout. Leave undefined for plain action items.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
@@ -64,6 +69,11 @@ export const docsZh = {
       description: '在标签和描述之后渲染的附加内容。',
     },
     {
+      name: 'isSelected',
+      type: 'boolean',
+      description: '单选菜单的选中状态。定义后（true 或 false）项目渲染为 role="menuitemradio" 并带有 aria-checked，选中时显示对勾指示器；未选中的同级项保留相同空间以保持布局稳定。普通操作项请保持未定义。',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: '根容器的 StyleX 样式。',
@@ -81,6 +91,7 @@ export const docsDense = {
     label: 'primary label text',
     description: 'secondary text below label',
     endContent: 'additional content after label+description',
+    isSelected: 'single-select state; defined → role="menuitemradio" + aria-checked, check icon when true, space reserved when false; undefined → plain menuitem',
     xstyle: 'StyleX styles for root container',
   },
 };

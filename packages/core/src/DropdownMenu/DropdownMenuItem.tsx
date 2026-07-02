@@ -7,8 +7,10 @@
  * @output Exports DropdownMenuItem component
  * @position Sub-component; used inside DropdownMenu
  *
- * Interactive menu item with role="menuitem". Keyboard navigation
- * is handled by useListFocus on the parent menu container.
+ * Interactive menu item with role="menuitem" — or role="menuitemradio"
+ * with aria-checked when `isSelected` is defined (single-select menus).
+ * Keyboard navigation is handled by useListFocus on the parent menu
+ * container.
  *
  * Composes Item for the shared start content + label + description + end content layout.
  * Passes role="menuitem" so Item puts onClick on the root div instead of
@@ -26,7 +28,7 @@
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {renderIconSlot, type IconType} from '../Icon';
+import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Item} from '../Item';
 import {
   colorVars,
@@ -62,6 +64,16 @@ const menuItemStyles = stylex.create({
     opacity: 0.5,
     cursor: 'not-allowed',
   },
+  // Fixed-size slot so unselected siblings keep a stable layout —
+  // mirrors the 16px check idiom used by Selector's option list.
+  checkIndicator: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    width: 16,
+    height: 16,
+  },
 });
 
 const itemSizeStyles = stylex.create({
@@ -86,6 +98,14 @@ export interface DropdownMenuItemProps {
   onClick?: () => void;
   /** Whether the item is disabled. @default false */
   isDisabled?: boolean;
+  /**
+   * Selection state for single-select menus. When defined (true or false),
+   * the item renders as `role="menuitemradio"` with `aria-checked` and a
+   * check indicator when selected — unselected siblings reserve the same
+   * space so the layout stays stable. Leave undefined for plain action
+   * items (`role="menuitem"`, no indicator).
+   */
+  isSelected?: boolean;
   /** Additional content to render after the label/description. */
   endContent?: ReactNode;
   /**
@@ -125,6 +145,7 @@ export function DropdownMenuItem({
   description,
   onClick,
   isDisabled = false,
+  isSelected,
   endContent,
   xstyle,
   className,
@@ -141,9 +162,24 @@ export function DropdownMenuItem({
     ctx?.closeMenu();
   }, [isDisabled, onClick, ctx]);
 
+  // Defined isSelected (true OR false) switches the item into
+  // single-select mode: menuitemradio + aria-checked + check slot.
+  const isRadioItem = isSelected !== undefined;
+  const resolvedEndContent = isRadioItem ? (
+    <>
+      {endContent}
+      <span {...stylex.props(menuItemStyles.checkIndicator)} aria-hidden="true">
+        {isSelected ? <Icon icon="check" size="sm" color="accent" /> : null}
+      </span>
+    </>
+  ) : (
+    endContent
+  );
+
   return (
     <Item
-      role="menuitem"
+      role={isRadioItem ? 'menuitemradio' : 'menuitem'}
+      aria-checked={isRadioItem ? isSelected : undefined}
       tabIndex={isDisabled ? undefined : -1}
       startContent={
         icon
@@ -152,7 +188,7 @@ export function DropdownMenuItem({
       }
       label={label}
       description={description}
-      endContent={endContent}
+      endContent={resolvedEndContent}
       onClick={handleClick}
       isDisabled={isDisabled}
       xstyle={[
