@@ -238,8 +238,8 @@ export function Toolbar({
   const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
     itemSelector: 'button, input, [tabindex]',
     orientation,
-    rovingTabIndex: true,
-    deferToCaret: true,
+    hasRovingTabIndex: true,
+    hasCaretGuard: true,
   });
 
   return (

@@ -40,7 +40,7 @@ export const docs = {
       required: false,
     },
     {
-      name: 'options.enableHomeEnd',
+      name: 'options.hasHomeEnd',
       type: 'boolean',
       description: 'Whether Home/End jump to the first/last enabled item.',
       default: 'true',
@@ -54,16 +54,16 @@ export const docs = {
       required: false,
     },
     {
-      name: 'options.rovingTabIndex',
+      name: 'options.hasRovingTabIndex',
       type: 'boolean',
       description: 'Opt into roving-tabindex ownership: the hook stamps a single tab stop (one item tabindex="0", the rest -1), repairs it as items mount/unmount or toggle disabled, and moves it with arrow navigation. When false, the hook only moves focus and never touches tabindex.',
       default: 'false',
       required: false,
     },
     {
-      name: 'options.deferToCaret',
+      name: 'options.hasCaretGuard',
       type: 'boolean',
-      description: "When true, arrow keys are not stolen from a nested text input/textarea whose caret is not at the boundary in the direction of travel (or that has a selection). Preserves inline text editing within the list.",
+      description: "When true, arrow keys are not stolen from a nested text input/textarea whose caret is not at the boundary in the direction of travel (or that has a selection), and are never stolen from a nested contenteditable (rich-text editor / chat composer). Preserves inline text editing within the list.",
       default: 'false',
       required: false,
     },
@@ -82,7 +82,7 @@ export const docs = {
     {
       name: 'handleFocus',
       type: '(e: React.FocusEvent) => void',
-      description: 'Focus handler for the container. Keeps the roving tab stop in sync when rovingTabIndex is enabled; a no-op otherwise, so it is always safe to attach.',
+      description: 'Focus handler for the container. Keeps the roving tab stop in sync when hasRovingTabIndex is enabled; a no-op otherwise, so it is always safe to attach.',
     },
     {
       name: 'focusItem',
@@ -102,11 +102,11 @@ export const docs = {
   ],
   usage: {
     description:
-      'Manages keyboard navigation within a linear list following WAI-ARIA menu/listbox/toolbar patterns. Supports arrow key navigation (vertical, horizontal, or both), Home/End for boundaries, optional wrap-around, RTL, and Escape to close. Opt into rovingTabIndex for composite widgets (toolbars, segmented controls, tab strips) that own a single tab stop. Suitable for dropdown menus, toolbars, and any 1D focusable list.',
+      'Manages keyboard navigation within a linear list following WAI-ARIA menu/listbox/toolbar patterns. Supports arrow key navigation (vertical, horizontal, or both), Home/End for boundaries, optional wrap-around, RTL, and Escape to close. Opt into hasRovingTabIndex for composite widgets (toolbars, segmented controls, tab strips) that own a single tab stop. Suitable for dropdown menus, toolbars, and any 1D focusable list.',
     bestPractices: [
       { guidance: true, description: "Set orientation to 'horizontal' for toolbars and tab bars, 'vertical' for dropdown menus." },
       { guidance: true, description: 'Provide an onEscape callback for menus/dropdowns to return focus to the trigger.' },
-      { guidance: true, description: 'Enable rovingTabIndex (and deferToCaret when the widget can contain text inputs) for toolbar-style composites that should be a single tab stop.' },
+      { guidance: true, description: 'Enable hasRovingTabIndex (and hasCaretGuard when the widget can contain text inputs) for toolbar-style composites that should be a single tab stop.' },
       { guidance: false, description: 'Use for 2D grid navigation; prefer useGridFocus for grids and calendars.' },
     ],
   },
@@ -126,15 +126,15 @@ export const docsDense = {
     'options.wrap': 'whether arrow navigation wraps around at ends.',
     'options.onEscape': 'callback when Escape key pressed (e.g. close menu).',
     'options.orientation': "navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight, 'vertical' uses ArrowUp/ArrowDown, 'both' accepts all four arrows.",
-    'options.enableHomeEnd': 'whether Home/End jump to first/last enabled item.',
+    'options.hasHomeEnd': 'whether Home/End jump to first/last enabled item.',
     'options.isRtl': 'when true, ArrowLeft/ArrowRight swap for horizontal nav (RTL).',
-    'options.rovingTabIndex': 'opt into roving-tabindex ownership: hook stamps + repairs a single tab stop across items.',
-    'options.deferToCaret': "when true, don't steal arrow keys from a nested text input mid-line.",
+    'options.hasRovingTabIndex': 'opt into roving-tabindex ownership: hook stamps + repairs a single tab stop across items.',
+    'options.hasCaretGuard': "when true, don't steal arrow keys from a nested text input/textarea mid-line or from a contenteditable.",
   },
   returnDescriptions: {
     listRef: 'ref to attach to list container element.',
     handleKeyDown: 'key down handler for list container.',
-    handleFocus: 'focus handler; keeps roving tab stop in sync when rovingTabIndex is on (else no-op).',
+    handleFocus: 'focus handler; keeps roving tab stop in sync when hasRovingTabIndex is on (else no-op).',
     focusItem: 'focus specific item by index (clamped to valid range).',
     focusFirst: 'focus first enabled item; returns true when focused.',
     focusLast: 'focus last enabled item; returns true when focused.',

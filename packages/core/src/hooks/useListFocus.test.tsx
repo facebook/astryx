@@ -107,8 +107,8 @@ describe('useListFocus disabled-item skipping', () => {
 
 // ---------------------------------------------------------------------------
 // Roving-tabindex mode + composite navigation behaviors.
-// These exercise the opt-in `rovingTabIndex`, `isRtl`, `orientation: 'both'`,
-// `deferToCaret`, and shortcut-passthrough behaviors.
+// These exercise the opt-in `hasRovingTabIndex`, `isRtl`, `orientation: 'both'`,
+// `hasCaretGuard`, and shortcut-passthrough behaviors.
 // ---------------------------------------------------------------------------
 
 const ROVING_LABELS = ['A', 'B', 'C'];
@@ -123,7 +123,7 @@ function RovingToolbar({
 } & Parameters<typeof useListFocus>[0]) {
   const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
     itemSelector: 'button, input, [tabindex]',
-    rovingTabIndex: true,
+    hasRovingTabIndex: true,
     orientation: 'horizontal',
     ...opts,
   });
@@ -146,7 +146,7 @@ function RovingToolbar({
   );
 }
 
-describe('useListFocus roving tabindex (rovingTabIndex)', () => {
+describe('useListFocus roving tabindex (hasRovingTabIndex)', () => {
   it('stamps a single tab stop (first enabled item is tabbable)', () => {
     render(<RovingToolbar />);
     expect(screen.getByTestId('A')).toHaveAttribute('tabindex', '0');
@@ -234,8 +234,8 @@ describe('useListFocus roving tabindex (rovingTabIndex)', () => {
     expect(screen.getByTestId('B')).toHaveFocus();
   });
 
-  it('does not manage tabindex when rovingTabIndex is off', () => {
-    render(<RovingToolbar rovingTabIndex={false} />);
+  it('does not manage tabindex when hasRovingTabIndex is off', () => {
+    render(<RovingToolbar hasRovingTabIndex={false} />);
     // No tabindex stamped — the buttons keep their intrinsic tab order.
     expect(screen.getByTestId('A')).not.toHaveAttribute('tabindex');
     expect(screen.getByTestId('B')).not.toHaveAttribute('tabindex');
@@ -245,9 +245,9 @@ describe('useListFocus roving tabindex (rovingTabIndex)', () => {
 function ToolbarWithInput(opts: Parameters<typeof useListFocus>[0]) {
   const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
     itemSelector: 'button, input, [tabindex]',
-    rovingTabIndex: true,
+    hasRovingTabIndex: true,
     orientation: 'horizontal',
-    deferToCaret: true,
+    hasCaretGuard: true,
     ...opts,
   });
   return (
@@ -267,7 +267,7 @@ function ToolbarWithInput(opts: Parameters<typeof useListFocus>[0]) {
   );
 }
 
-describe('useListFocus caret-boundary guard (deferToCaret, navigation-4)', () => {
+describe('useListFocus caret-boundary guard (hasCaretGuard, navigation-4)', () => {
   function getField(): HTMLInputElement {
     const el = screen.getByTestId('field');
     if (!(el instanceof HTMLInputElement)) {
@@ -308,14 +308,58 @@ describe('useListFocus caret-boundary guard (deferToCaret, navigation-4)', () =>
     expect(field).toHaveFocus();
   });
 
-  it('steals the key from a text input when deferToCaret is off', () => {
-    render(<ToolbarWithInput deferToCaret={false} />);
+  it('steals the key from a text input when hasCaretGuard is off', () => {
+    render(<ToolbarWithInput hasCaretGuard={false} />);
     const toolbar = screen.getByRole('toolbar');
     const field = getField();
     field.focus();
     field.setSelectionRange(1, 1); // caret mid-line, but no caret guard
     fireEvent.keyDown(toolbar, {key: 'ArrowRight'});
     expect(screen.getByTestId('after')).toHaveFocus();
+  });
+});
+
+function ToolbarWithEditable(opts: Parameters<typeof useListFocus>[0]) {
+  const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
+    itemSelector: 'button, input, [contenteditable], [tabindex]',
+    hasRovingTabIndex: true,
+    orientation: 'horizontal',
+    hasCaretGuard: true,
+    ...opts,
+  });
+  return (
+    <div
+      ref={listRef}
+      role="toolbar"
+      onKeyDown={handleKeyDown}
+      onFocus={handleFocus}>
+      <button type="button" data-testid="before">
+        Before
+      </button>
+      <div
+        contentEditable
+        suppressContentEditableWarning
+        data-testid="composer">
+        hello world
+      </div>
+      <button type="button" data-testid="after">
+        After
+      </button>
+    </div>
+  );
+}
+
+describe('useListFocus caret-boundary guard: contenteditable (navigation-4)', () => {
+  it('does not steal arrow keys from a non-empty contenteditable', () => {
+    render(<ToolbarWithEditable />);
+    const toolbar = screen.getByRole('toolbar');
+    const composer = screen.getByTestId('composer');
+    composer.focus();
+    fireEvent.keyDown(toolbar, {key: 'ArrowRight'});
+    // Focus stays in the editor; list navigation must not hijack the arrow.
+    expect(composer).toHaveFocus();
+    fireEvent.keyDown(toolbar, {key: 'ArrowLeft'});
+    expect(composer).toHaveFocus();
   });
 });
 

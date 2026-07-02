@@ -56,7 +56,7 @@ export interface UseListFocusOptions {
    * Whether Home/End jump to the first/last enabled item.
    * @default true
    */
-  enableHomeEnd?: boolean;
+  hasHomeEnd?: boolean;
 
   /**
    * Whether the list is in a right-to-left context. When true, ArrowLeft and
@@ -79,16 +79,18 @@ export interface UseListFocusOptions {
    * never touches `tabindex` — the caller owns tab-stop management.
    * @default false
    */
-  rovingTabIndex?: boolean;
+  hasRovingTabIndex?: boolean;
 
   /**
    * When true, arrow keys are not stolen from a nested text input/textarea
    * whose caret is not at the boundary in the direction of travel (or that has
-   * a non-collapsed selection). This preserves normal caret movement while the
-   * user is editing inline within the list (e.g. a toolbar search field).
+   * a non-collapsed selection), and are never stolen from a nested
+   * `contenteditable` (rich-text editor / chat composer). This preserves
+   * normal caret movement while the user is editing inline within the list
+   * (e.g. a toolbar search field or composer).
    * @default false
    */
-  deferToCaret?: boolean;
+  hasCaretGuard?: boolean;
 }
 
 /**
@@ -107,7 +109,7 @@ export interface UseListFocusReturn<T extends HTMLElement = HTMLElement> {
 
   /**
    * Focus handler to attach to the container's `onFocus`. Keeps the roving tab
-   * stop in sync when `rovingTabIndex` is enabled; a no-op otherwise, so it is
+   * stop in sync when `hasRovingTabIndex` is enabled; a no-op otherwise, so it is
    * always safe to attach.
    */
   handleFocus: (e: React.FocusEvent) => void;
@@ -140,15 +142,59 @@ const TEXT_INPUT_TYPES = new Set([
 ]);
 
 /**
+ * The nearest `contenteditable` root for `el`, or null when `el` is not inside
+ * an editable region. Prefers the browser's `isContentEditable` property and
+ * falls back to the closest `[contenteditable]` ancestor whose value is not
+ * `"false"` (so environments without `isContentEditable` still work).
+ */
+function getContentEditableRoot(el: HTMLElement): HTMLElement | null {
+  if (el.isContentEditable) {
+    return el;
+  }
+  const candidate = el.closest<HTMLElement>('[contenteditable]');
+  if (candidate && candidate.getAttribute('contenteditable') !== 'false') {
+    return candidate;
+  }
+  return null;
+}
+
+/**
  * Whether an arrow/Home/End key should be left to the browser because the
- * event target is a text input/textarea whose caret is not yet at the boundary
+ * event target is a text-editing element whose caret is not yet at the boundary
  * in the direction of travel (or a selection is present). Returns true when the
  * list should NOT steal the key.
+ *
+ * Covers three editing surfaces:
+ * - `<textarea>` and text-type `<input>` — use `selectionStart`/`selectionEnd`
+ *   to steal only at the boundary in the travel direction.
+ * - `contenteditable` (rich-text editor / chat composer) — precise caret
+ *   boundary detection in an arbitrary editable subtree is fragile, so we err
+ *   on the side of never hijacking an active editor: defer on every caret key
+ *   whenever focus is inside a non-empty contenteditable. (An empty editable
+ *   has nothing to caret through, so navigation may proceed.)
  */
 function shouldDeferToCaret(target: EventTarget | null, key: string): boolean {
   if (!(target instanceof HTMLElement)) {
     return false;
   }
+
+  // contenteditable (covers an element with contenteditable="" / "true" and
+  // descendants that inherit it). `isContentEditable` is the reliable property
+  // in the browser; fall back to the nearest `contenteditable` ancestor for
+  // environments (e.g. jsdom) that don't implement the property.
+  const editableRoot = getContentEditableRoot(target);
+  if (editableRoot) {
+    const selection =
+      typeof window !== 'undefined' ? window.getSelection() : null;
+    // A non-collapsed selection means the user is selecting text — never steal.
+    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+      return true;
+    }
+    // Collapsed caret (or no selection API): defer whenever the editor has
+    // content, so arrow keys stay with the active rich-text editor.
+    return (editableRoot.textContent ?? '').length > 0;
+  }
+
   const isTextarea = target.tagName === 'TEXTAREA';
   const isTextInput =
     target.tagName === 'INPUT' &&
@@ -188,7 +234,7 @@ function shouldDeferToCaret(target: EventTarget | null, key: string): boolean {
  * - Escape: Custom callback (e.g., close menu)
  *
  * By default the hook only *moves* focus and leaves `tabindex` management to
- * the caller. Opt into {@link UseListFocusOptions.rovingTabIndex} for a hook
+ * the caller. Opt into {@link UseListFocusOptions.hasRovingTabIndex} for a hook
  * that owns a single tab stop (roving tabindex) across the items — stamping and
  * repairing it as items mount/unmount or toggle disabled — for toolbars,
  * segmented controls, tab strips, and similar composite widgets.
@@ -211,8 +257,8 @@ function shouldDeferToCaret(target: EventTarget | null, key: string): boolean {
  * const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
  *   itemSelector: 'button, input, [tabindex]',
  *   orientation: 'horizontal',
- *   rovingTabIndex: true,
- *   deferToCaret: true,
+ *   hasRovingTabIndex: true,
+ *   hasCaretGuard: true,
  * });
  *
  * <div ref={listRef} role="toolbar" onKeyDown={handleKeyDown} onFocus={handleFocus}>
@@ -228,10 +274,10 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
     wrap = true,
     onEscape,
     orientation = 'vertical',
-    enableHomeEnd = true,
+    hasHomeEnd = true,
     isRtl = false,
-    rovingTabIndex = false,
-    deferToCaret = false,
+    hasRovingTabIndex = false,
+    hasCaretGuard = false,
   } = options;
 
   const listRef = useRef<T>(null);
@@ -306,7 +352,7 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
     return items.findIndex(item => item === active || item.contains(active));
   }, [getItems]);
 
-  // --- Roving tabindex ownership (opt-in via `rovingTabIndex`) -------------
+  // --- Roving tabindex ownership (opt-in via `hasRovingTabIndex`) -------------
 
   /**
    * Set `tabindex` on an item, but only when it differs (avoids redundant DOM
@@ -340,7 +386,7 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
   // Keep the tab stop valid across renders (items added/removed, disabled
   // toggled). Runs after every commit but only when roving tabindex is on.
   useIsomorphicLayoutEffect(() => {
-    if (rovingTabIndex) {
+    if (hasRovingTabIndex) {
       syncTabStops();
     }
   });
@@ -355,14 +401,14 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       if (!target) {
         return;
       }
-      if (rovingTabIndex) {
+      if (hasRovingTabIndex) {
         for (const el of items) {
           setTabIndex(el, el === target ? 0 : -1);
         }
       }
       target.focus();
     },
-    [rovingTabIndex, setTabIndex],
+    [hasRovingTabIndex, setTabIndex],
   );
 
   /**
@@ -412,10 +458,10 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
    * roving tabindex is enabled.
    */
   const handleFocus = useCallback(() => {
-    if (rovingTabIndex) {
+    if (hasRovingTabIndex) {
       syncTabStops();
     }
-  }, [rovingTabIndex, syncTabStops]);
+  }, [hasRovingTabIndex, syncTabStops]);
 
   /**
    * Handle keyboard navigation.
@@ -453,8 +499,8 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
 
       const isNext = nextKeys.includes(e.key);
       const isPrev = prevKeys.includes(e.key);
-      const isHome = enableHomeEnd && e.key === 'Home';
-      const isEnd = enableHomeEnd && e.key === 'End';
+      const isHome = hasHomeEnd && e.key === 'Home';
+      const isEnd = hasHomeEnd && e.key === 'End';
 
       if (!isNext && !isPrev && !isHome && !isEnd) {
         return;
@@ -464,7 +510,7 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       // the React event target and the actual focused element (events may
       // bubble up to the container).
       if (
-        deferToCaret &&
+        hasCaretGuard &&
         (shouldDeferToCaret(e.target, e.key) ||
           shouldDeferToCaret(document.activeElement, e.key))
       ) {
@@ -500,8 +546,8 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       wrap,
       orientation,
       isRtl,
-      enableHomeEnd,
-      deferToCaret,
+      hasHomeEnd,
+      hasCaretGuard,
       findEnabledIndex,
       focusIndex,
       focusFirst,
