@@ -657,7 +657,7 @@ export default function KanbanBoardTemplate() {
                 label="Auto triage"
                 isLabelHidden={false}
                 checked={autoTriage}
-                onChange={setAutoTriage}
+                onChange={(checked: boolean) => setAutoTriage(checked)}
               />
               <Button
                 label="Add work item"
