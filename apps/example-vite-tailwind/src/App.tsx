@@ -13,12 +13,12 @@ import {Divider} from '@astryxdesign/core/Divider';
 import {Avatar} from '@astryxdesign/core/Avatar';
 
 /**
- * XDS + Vite + Tailwind Example
+ * Astryx + Vite + Tailwind Example
  *
  * Demonstrates:
- * - XDS components for UI (buttons, cards, inputs, badges)
+ * - Astryx components for UI (buttons, cards, inputs, badges)
  * - Tailwind utilities for page layout and custom spacing
- * - Tailwind Bridge: XDS tokens as native Tailwind utilities
+ * - Tailwind Bridge: Astryx tokens as native Tailwind utilities
  *   (bg-surface, text-primary, text-secondary, etc.)
  */
 export default function App() {
@@ -32,21 +32,20 @@ export default function App() {
           <VStack gap={8}>
             {/* Header */}
             <VStack gap={2}>
-              <Heading level={1}>XDS + Vite + Tailwind</Heading>
+              <Heading level={1}>Astryx + Vite + Tailwind</Heading>
               <Text type="body" color="secondary">
-                
-                XDS handles components and design tokens. Tailwind handles page
-                layout and custom styling, powered by the token bridge.
+                Astryx handles components and design tokens. Tailwind handles
+                page layout and custom styling, powered by the token bridge.
               </Text>
             </VStack>
 
             <Divider />
 
-            {/* Token Bridge — Tailwind using XDS tokens */}
+            {/* Token Bridge — Tailwind using Astryx tokens */}
             <VStack gap={3}>
               <Heading level={2}>Token Bridge</Heading>
               <Text type="supporting" color="secondary">
-                XDS tokens available as Tailwind utilities via{' '}
+                Astryx tokens available as Tailwind utilities via{' '}
                 <code className="rounded-sm bg-muted px-1 py-0.5 text-xs">
                   @astryxdesign/core/tailwind-theme.css
                 </code>
@@ -78,26 +77,32 @@ export default function App() {
               <div className="flex flex-wrap gap-3">
                 <div className="flex items-center gap-2 rounded-md bg-success/10 px-3 py-2">
                   <div className="h-2 w-2 rounded-full bg-success" />
-                  <Text type="supporting" weight="bold">Success</Text>
+                  <Text type="supporting" weight="bold">
+                    Success
+                  </Text>
                 </div>
                 <div className="flex items-center gap-2 rounded-md bg-error/10 px-3 py-2">
                   <div className="h-2 w-2 rounded-full bg-error" />
-                  <Text type="supporting" weight="bold">Error</Text>
+                  <Text type="supporting" weight="bold">
+                    Error
+                  </Text>
                 </div>
                 <div className="flex items-center gap-2 rounded-md bg-warning/10 px-3 py-2">
                   <div className="h-2 w-2 rounded-full bg-warning" />
-                  <Text type="supporting" weight="bold">Warning</Text>
+                  <Text type="supporting" weight="bold">
+                    Warning
+                  </Text>
                 </div>
               </div>
             </VStack>
 
             <Divider />
 
-            {/* Profile cards using XDS components in Tailwind grid */}
+            {/* Profile cards using Astryx components in Tailwind grid */}
             <VStack gap={3}>
               <Heading level={2}>Components + Layout</Heading>
               <Text type="supporting" color="secondary">
-                XDS components arranged with Tailwind grid utilities.
+                Astryx components arranged with Tailwind grid utilities.
               </Text>
 
               <div className="grid grid-cols-2 gap-4">
@@ -176,23 +181,33 @@ export default function App() {
             <VStack gap={3}>
               <Heading level={2}>Color Palette</Heading>
               <Text type="supporting" color="secondary">
-                Hue tokens from XDS, accessible as Tailwind utilities.
+                Hue tokens from Astryx, accessible as Tailwind utilities.
               </Text>
               <div className="grid grid-cols-5 gap-3">
                 <div className="rounded-md border border-blue-ring bg-blue-subtle p-3 text-center">
-                  <Text type="supporting" weight="bold">Blue</Text>
+                  <Text type="supporting" weight="bold">
+                    Blue
+                  </Text>
                 </div>
                 <div className="rounded-md border border-green-ring bg-green-subtle p-3 text-center">
-                  <Text type="supporting" weight="bold">Green</Text>
+                  <Text type="supporting" weight="bold">
+                    Green
+                  </Text>
                 </div>
                 <div className="rounded-md border border-purple-ring bg-purple-subtle p-3 text-center">
-                  <Text type="supporting" weight="bold">Purple</Text>
+                  <Text type="supporting" weight="bold">
+                    Purple
+                  </Text>
                 </div>
                 <div className="rounded-md border border-orange-ring bg-orange-subtle p-3 text-center">
-                  <Text type="supporting" weight="bold">Orange</Text>
+                  <Text type="supporting" weight="bold">
+                    Orange
+                  </Text>
                 </div>
                 <div className="rounded-md border border-red-ring bg-red-subtle p-3 text-center">
-                  <Text type="supporting" weight="bold">Red</Text>
+                  <Text type="supporting" weight="bold">
+                    Red
+                  </Text>
                 </div>
               </div>
             </VStack>

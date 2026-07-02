@@ -55,19 +55,18 @@ export default function Home() {
       <div className="mx-auto max-w-3xl">
         <VStack gap={8}>
           <VStack gap={2}>
-            <Heading level={1}>XDS + Tailwind</Heading>
+            <Heading level={1}>Astryx + Tailwind</Heading>
             <Text type="body" color="secondary">
-              
               Pre-built dist package. No StyleX plugin needed. Tailwind handles
-              layout, XDS handles components and tokens.
+              layout, Astryx handles components and tokens.
             </Text>
           </VStack>
 
           <Divider />
 
-          {/* Tailwind utilities on XDS components */}
+          {/* Tailwind utilities on Astryx components */}
           <VStack gap={3}>
-            <Heading level={2}>Tailwind on XDS components</Heading>
+            <Heading level={2}>Tailwind on Astryx components</Heading>
             <Card className="border-2 border-blue-500 shadow-lg">
               <Text type="body">
                 Card with{' '}
@@ -103,7 +102,7 @@ export default function Home() {
               <code className="rounded-sm bg-gray-100 px-1 py-0.5 text-xs">
                 @astryxdesign/core/tailwind-theme.css
               </code>
-              , XDS tokens become native Tailwind utilities. No{' '}
+              , Astryx tokens become native Tailwind utilities. No{' '}
               <code className="rounded-sm bg-gray-100 px-1 py-0.5 text-xs">
                 var()
               </code>{' '}
@@ -129,9 +128,7 @@ export default function Home() {
               <VStack gap={2}>
                 <Text type="label">After (bridge utilities)</Text>
                 <div className="rounded-lg border border-border bg-surface p-4">
-                  <p className="text-base text-primary">
-                    Short and clean ✨
-                  </p>
+                  <p className="text-base text-primary">Short and clean ✨</p>
                   <p className="mt-2 text-sm text-secondary">
                     bg-surface text-primary
                   </p>
@@ -228,7 +225,7 @@ export default function Home() {
 
           <Divider />
 
-          {/* Shadcn-style components alongside XDS */}
+          {/* Shadcn-style components alongside Astryx */}
           <VStack gap={3}>
             <Heading level={2}>Shadcn-style components</Heading>
             <div className="grid grid-cols-2 gap-6">
@@ -286,13 +283,13 @@ export default function Home() {
             <div className="grid grid-cols-2 gap-6">
               <VStack gap={3}>
                 <TextInput
-                  label="XDS Input"
+                  label="Astryx Input"
                   placeholder="Enter name"
                   value={input1}
                   onChange={setInput1}
                 />
                 <TextInput
-                  label="XDS Email"
+                  label="Astryx Email"
                   placeholder="you@example.com"
                   value={input2}
                   onChange={setInput2}

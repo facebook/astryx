@@ -97,7 +97,7 @@ describe('discoverExternalPackages', () => {
     fs.writeFileSync(
       path.join(scopedDir, 'package.json'),
       JSON.stringify({
-        name: '@acme/xds-widgets',
+        name: '@acme/astryx-widgets',
         astryx: {docs: './lib', category: 'Widgets'},
       }),
     );
@@ -105,7 +105,7 @@ describe('discoverExternalPackages', () => {
     const result = discoverExternalPackages(tmpDir);
     expect(result).toEqual([
       {
-        name: '@acme/xds-widgets',
+        name: '@acme/astryx-widgets',
         category: 'Widgets',
         docsDir: path.join(scopedDir, 'lib'),
         blocksDir: null,

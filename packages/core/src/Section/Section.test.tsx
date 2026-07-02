@@ -38,9 +38,7 @@ describe('Section', () => {
   });
 
   it('renders with variant="muted"', () => {
-    const {container} = render(
-      <Section variant="muted">Content</Section>,
-    );
+    const {container} = render(<Section variant="muted">Content</Section>);
     const inner = container.firstElementChild!.firstElementChild!;
     expect(inner.className).toContain('astryx-section');
     expect(inner.className).toContain('muted');
@@ -109,9 +107,7 @@ describe('Section', () => {
   });
 
   it('renders variant in astryx class names', () => {
-    const {container} = render(
-      <Section variant="muted">Content</Section>,
-    );
+    const {container} = render(<Section variant="muted">Content</Section>);
     const inner = container.firstElementChild!.firstElementChild!;
     expect(inner.className).toContain('astryx-section');
     expect(inner.className).toContain('muted');
@@ -120,9 +116,7 @@ describe('Section', () => {
   it('accepts xstyle prop without error', () => {
     // xstyle is a StyleXStyles type; in tests stylex.create returns objects
     // that may not produce runtime styles, but the prop should be accepted
-    const {container} = render(
-      <Section xstyle={undefined}>Content</Section>,
-    );
+    const {container} = render(<Section xstyle={undefined}>Content</Section>);
     expect(container.firstElementChild).toBeInTheDocument();
   });
 
@@ -163,7 +157,7 @@ describe('Section', () => {
         <Section data-testid="inner">Inner</Section>
       </Section>,
     );
-    // Outer section's inner div should set --xds-section-padding
+    // Outer section's inner div should set --astryx-section-padding
     const outerInner = container.firstElementChild!.firstElementChild!;
     expect(outerInner.className).toBeDefined();
     // Inner section should render without error

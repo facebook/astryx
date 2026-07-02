@@ -6,9 +6,9 @@ ESLint plugin for Astryx design system token enforcement.
 
 This plugin implements a two-tier linting strategy:
 
-| Mode            | Audience  | Behavior            | Trigger                          |
-| --------------- | --------- | ------------------- | -------------------------------- |
-| **Recommended** | Humans    | Warnings only       | Default (local dev)              |
+| Mode            | Audience  | Behavior            | Trigger                             |
+| --------------- | --------- | ------------------- | ----------------------------------- |
+| **Recommended** | Humans    | Warnings only       | Default (local dev)                 |
 | **Strict**      | Agents/CI | Errors (fail build) | `CI=true` or `ASTRYX_STRICT_LINT=1` |
 
 ### Why Two Tiers?
@@ -109,15 +109,15 @@ Expected output in strict mode:
 The plugin is configured in `eslint.config.js`:
 
 ```js
-import xdsPlugin from "./internal/eslint-plugin-astryx/index.js";
+import astryxPlugin from "./internal/eslint-plugin-astryx/index.js";
 
 const isStrictMode = process.env.ASTRYX_STRICT_LINT === '1' || process.env.CI === 'true';
-const xdsConfig = isStrictMode ? xdsPlugin.configs.strict : xdsPlugin.configs.recommended;
+const astryxConfig = isStrictMode ? astryxPlugin.configs.strict : astryxPlugin.configs.recommended;
 
 // Applied to core package files
 {
   files: ["packages/core/src/**/*.{ts,tsx}"],
-  ...xdsConfig,
+  ...astryxConfig,
 }
 ```
 
@@ -129,7 +129,7 @@ If a property legitimately needs a hardcoded value:
 // In eslint.config.js
 {
   files: ["packages/core/src/**/*.{ts,tsx}"],
-  plugins: { '@astryx': xdsPlugin },
+  plugins: { '@astryx': astryxPlugin },
   rules: {
     '@astryx/no-hardcoded-styles': ['warn', {
       ignore: ['lineHeight']  // Allow hardcoded lineHeight
