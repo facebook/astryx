@@ -240,6 +240,65 @@ describe('Pagination', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // pageSize guarding
+  // ---------------------------------------------------------------------------
+
+  describe('pageSize guarding', () => {
+    it('does not crash the dots variant when pageSize is 0', () => {
+      render(
+        <Pagination
+          page={1}
+          onChange={() => {}}
+          totalItems={5}
+          pageSize={0}
+          variant="dots"
+        />,
+      );
+      const group = screen.getByRole('group', {name: 'Page indicators'});
+      expect(within(group).getAllByRole('button')).toHaveLength(5);
+    });
+
+    it('treats NaN pageSize as the default', () => {
+      render(
+        <Pagination
+          page={1}
+          onChange={() => {}}
+          totalItems={50}
+          pageSize={NaN}
+          variant="compact"
+        />,
+      );
+      expect(screen.getByText('Page 1 of 5')).toBeInTheDocument();
+    });
+
+    it('clamps negative pageSize to 1', () => {
+      render(
+        <Pagination
+          page={1}
+          onChange={() => {}}
+          totalItems={5}
+          pageSize={-10}
+          variant="compact"
+        />,
+      );
+      expect(screen.getByText('Page 1 of 5')).toBeInTheDocument();
+    });
+
+    it('floors fractional pageSize', () => {
+      render(
+        <Pagination
+          page={1}
+          onChange={() => {}}
+          totalItems={50}
+          pageSize={2.5}
+          variant="compact"
+        />,
+      );
+      expect(screen.getByText('Page 1 of 25')).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Variant: dots
   // ---------------------------------------------------------------------------
 

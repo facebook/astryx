@@ -335,7 +335,7 @@ export function Pagination({
   totalItems,
   totalPages: totalPagesProp,
   hasMore,
-  pageSize = 10,
+  pageSize: pageSizeProp = 10,
   pageSizeOptions,
   onPageSizeChange,
   variant = 'pages',
@@ -350,6 +350,14 @@ export function Pagination({
   ref,
 }: PaginationProps) {
   const [, startTransition] = useTransition();
+
+  // pageSize is typed as number, so 0, NaN, and negatives are valid at the
+  // type level but yield Infinity/NaN page counts, and
+  // Array.from({length: Infinity}) crashes the dots variant. Coerce to a
+  // positive integer; non-finite values fall back to the default.
+  const pageSize = Number.isFinite(pageSizeProp)
+    ? Math.max(1, Math.floor(pageSizeProp))
+    : 10;
 
   // Track the page optimistically so rapid prev/next clicks advance from the
   // in-flight target instead of stalling on the last committed page.
