@@ -6,32 +6,20 @@
  * "Avoid traditional blog sidebars"). Mirrors the craft/playground layout.
  */
 
-import {headers} from 'next/headers';
 import {AppShell} from '@astryxdesign/core/AppShell';
 import {SharedTopNav} from '../../components/SharedTopNav';
 import {SiteFooter} from '../../components/SiteFooter';
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import {getCopyrightYear} from '../../lib/copyrightYear';
 
 export default async function BlogLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const headersList = await headers();
-  const ua = headersList.get('user-agent') ?? '';
-  const defaultIsMobile = /mobile|android|iphone|ipad/i.test(ua);
-
   return (
-    <AppShell
-      variant="surface"
-      height="auto"
-      mobileNav={{defaultIsMobile}}
-      topNav={<SharedTopNav />}>
+    <AppShell variant="surface" height="auto" topNav={<SharedTopNav />}>
       {children}
-      <SiteFooter />
+      <SiteFooter year={await getCopyrightYear()} />
     </AppShell>
   );
 }

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Metadata} from 'next';
-import {Analytics} from '@vercel/analytics/react';
+import {Analytics} from '@vercel/analytics/next';
 import './globals.css';
 import {Providers} from './providers';
 // Public origin and identity live in lib/siteConfig so the sitemap and
@@ -14,10 +14,6 @@ import {
   SITE_TITLE,
   SITE_DESCRIPTION,
 } from '../lib/siteConfig';
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 // Note: the Astryx theme (src/themes/astryxTheme.ts) is Figtree-first.
 // We can't use next/font/google here (it requires SWC, but this app pins
