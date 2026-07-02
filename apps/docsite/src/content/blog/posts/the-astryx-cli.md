@@ -4,7 +4,7 @@ description: 'What the Astryx CLI is, why it is docs-first, and a tour of every 
 date: '2026-07-02'
 type: 'engineering'
 authors:
-  - 'joeyfarina'
+  - 'josephfarina'
 tags:
   - 'CLI'
   - 'AI'

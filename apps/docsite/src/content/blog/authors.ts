@@ -58,9 +58,9 @@ export const authors = {
     github: 'cixzhang',
     role: 'Engineering',
   },
-  joeyfarina: {
+  josephfarina: {
     name: 'Joey',
-    github: 'joeyfarina',
+    github: 'josephfarina',
     role: 'Engineering',
   },
 } as const satisfies Record<string, AuthorProfile>;
