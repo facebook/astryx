@@ -99,23 +99,18 @@ export interface FieldProps extends Omit<
    */
   description?: string;
   /**
-   * ID of the input element this label points AT (used as the label's
-   * `htmlFor`). This is the id of the *control*, not of the label element —
-   * see `labelElementID` for the latter.
+   * ID for the input element (used for label's htmlFor attribute).
    */
   inputID: string;
   /**
-   * The `id` applied TO the label element itself (distinct from `inputID`,
-   * which is the control the label points at). A grouping control
-   * (radiogroup, checkbox group) references this via `aria-labelledby` to take
-   * the label as its accessible name. Pair with `isGroupLabel`.
+   * Optional `id` applied to the `<label>` so a grouping control (radiogroup,
+   * checkbox group) can reference it via `aria-labelledby`.
    */
-  labelElementID?: string;
+  labelID?: string;
   /**
    * When the field wraps a group of controls rather than a single input, set
-   * this so the label renders as a non-`<label>` element (a `<span>`): a
-   * `<label>` semantically names one control and can't be associated with a
-   * group. Pair with `labelElementID` + `aria-labelledby` on the group.
+   * this so the label's `htmlFor` (which can't target a group) is omitted.
+   * Pair with `labelID` + `aria-labelledby` on the group.
    * @default false
    */
   isGroupLabel?: boolean;
@@ -189,7 +184,7 @@ export function Field({
   isLabelHidden = false,
   description,
   inputID,
-  labelElementID,
+  labelID,
   isGroupLabel = false,
   descriptionID,
   isOptional = false,
@@ -225,7 +220,7 @@ export function Field({
     <FieldLabel
       label={label}
       inputID={inputID}
-      labelElementID={labelElementID}
+      labelID={labelID}
       isGroupLabel={isGroupLabel}
       isLabelHidden={isLabelHidden}
       isDisabled={isDisabled}

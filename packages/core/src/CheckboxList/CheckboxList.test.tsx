@@ -26,6 +26,21 @@ describe('CheckboxList', () => {
     expect(screen.getByText('Preferences')).toBeInTheDocument();
   });
 
+  it('wraps items in a group named by the label (forms audit: group role)', () => {
+    render(
+      <CheckboxList label="Preferences" value={[]} onChange={() => {}}>
+        <CheckboxListItem label="Option A" value="a" />
+      </CheckboxList>,
+    );
+    // The checkboxes are wrapped in a role="group" whose accessible name comes
+    // from the field label (via aria-labelledby), not an orphaned htmlFor.
+    const group = screen.getByRole('group', {name: 'Preferences'});
+    expect(group).toBeInTheDocument();
+    const label = screen.getByText('Preferences').closest('label');
+    expect(label).not.toHaveAttribute('for');
+    expect(group.getAttribute('aria-labelledby')).toBe(label?.id);
+  });
+
   it('renders checkbox items', () => {
     render(
       <CheckboxList label="Preferences" value={[]} onChange={() => {}}>

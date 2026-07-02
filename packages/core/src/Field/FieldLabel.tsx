@@ -82,25 +82,20 @@ export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
    */
   label: string;
   /**
-   * ID of the input element this label points AT (rendered as `htmlFor` on the
-   * label). This is *not* the id of the label element itself — see
-   * `labelElementID` for that.
+   * ID of the input element this label is for.
    */
   inputID: string;
   /**
-   * The `id` applied TO the label element itself (not the element it points
-   * at — that's `inputID`). A grouping control (e.g. `role="radiogroup"`) can
-   * reference this via `aria-labelledby` to take the label as its accessible
-   * name.
+   * Optional `id` applied to the `<label>` element itself, so a grouping
+   * control (e.g. `role="radiogroup"`) can reference it via `aria-labelledby`.
    */
-  labelElementID?: string;
+  labelID?: string;
   /**
-   * When true, the field wraps a *group* of controls (e.g. a radiogroup)
-   * rather than a single input. In that case the label is rendered as a
-   * `<span>` instead of a `<label>` — a `<label>` semantically names one form
-   * control and can't be associated with a group, so it must not be a literal
-   * label element. The group takes the label as its name via
-   * `labelElementID` + `aria-labelledby`.
+   * When true, the field wraps a group of controls (e.g. a radiogroup) rather
+   * than a single input, so the `<label>`'s `htmlFor` is omitted — a label
+   * cannot be associated with a group via `htmlFor`, and pointing it at a
+   * non-existent id makes label clicks dead. Pair with `labelID` +
+   * `aria-labelledby` on the group.
    * @default false
    */
   isGroupLabel?: boolean;
@@ -161,7 +156,7 @@ export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
 export function FieldLabel({
   label,
   inputID,
-  labelElementID,
+  labelID,
   isGroupLabel = false,
   isLabelHidden = false,
   isDisabled = false,
@@ -175,37 +170,11 @@ export function FieldLabel({
 }: FieldLabelProps) {
   const statusText = isOptional ? 'Optional' : isRequired ? 'Required' : null;
 
-  // A group label (e.g. for a radiogroup) must not be a literal `<label>`
-  // element: a `<label>` semantically names a single form control and can't be
-  // associated with a group. Render it as a `<span>` instead, keeping all the
-  // label styling and slots. The group references it via `aria-labelledby`.
-  const LabelElement = isGroupLabel ? 'span' : 'label';
-
-  const labelContent = (
-    <>
-      {labelIcon && renderIconSlot(labelIcon, {size: 'sm', color: 'inherit'})}
-      {label}
-      {statusText && (
-        <span {...stylex.props(styles.optionalRequired)}>
-          <span aria-hidden="true"> ∙ </span>
-          {statusText}
-        </span>
-      )}
-      {labelTooltip && (
-        <Tooltip content={labelTooltip} placement="above">
-          <Icon icon="info" size="sm" color="inherit" />
-        </Tooltip>
-      )}
-    </>
-  );
-
   return (
     <>
-      <LabelElement
+      <label
         ref={ref}
-        id={labelElementID}
-        // `htmlFor` only applies to a real `<label>` associating with a single
-        // control; a group label (span) has no `htmlFor`.
+        id={labelID}
         htmlFor={isGroupLabel ? undefined : inputID}
         {...mergeProps(
           themeProps('field-label'),
@@ -215,8 +184,20 @@ export function FieldLabel({
             isLabelHidden && styles.srOnly,
           ),
         )}>
-        {labelContent}
-      </LabelElement>
+        {labelIcon && renderIconSlot(labelIcon, {size: 'sm', color: 'inherit'})}
+        {label}
+        {statusText && (
+          <span {...stylex.props(styles.optionalRequired)}>
+            <span aria-hidden="true"> ∙ </span>
+            {statusText}
+          </span>
+        )}
+        {labelTooltip && (
+          <Tooltip content={labelTooltip} placement="above">
+            <Icon icon="info" size="sm" color="inherit" />
+          </Tooltip>
+        )}
+      </label>
       {description && (
         <span
           id={descriptionID}
