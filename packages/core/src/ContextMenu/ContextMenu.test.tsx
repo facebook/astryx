@@ -82,15 +82,15 @@ describe('ContextMenu', () => {
         <div>Right-click me</div>
       </ContextMenu>,
     );
-    // Defaults to "Context menu"; overridable via menuLabel.
+    // Defaults to "Context menu"; overridable via label.
     expect(
       screen.getByRole('menu', {name: 'Context menu', hidden: true}),
     ).toBeInTheDocument();
   });
 
-  it('uses a custom menuLabel', () => {
+  it('uses a custom label', () => {
     render(
-      <ContextMenu items={[{label: 'Item 1'}]} menuLabel="Row actions">
+      <ContextMenu items={[{label: 'Item 1'}]} label="Row actions">
         <div>Right-click me</div>
       </ContextMenu>,
     );

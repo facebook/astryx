@@ -53,7 +53,7 @@ export const docs = {
       default: "'md'",
     },
     {
-      name: 'menuLabel',
+      name: 'label',
       type: 'string',
       description: 'Accessible name for the menu surface, announced when it opens.',
       default: "'Context menu'",

@@ -118,7 +118,7 @@ interface ContextMenuBaseProps extends BaseProps {
    * Accessible name for the menu surface, announced when it opens.
    * @default 'Context menu'
    */
-  menuLabel?: string;
+  label?: string;
   /**
    * Whether to auto-focus the first menu item when the menu opens.
    * Set to `false` for inline showcases or documentation previews.
@@ -177,7 +177,7 @@ export function ContextMenu({
   children,
   menuWidth,
   size = 'md',
-  menuLabel = 'Context menu',
+  label = 'Context menu',
   hasAutoFocus = true,
   isDisabled = false,
   onOpenChange,
@@ -363,7 +363,7 @@ export function ContextMenu({
           ref={listRef}
           id={menuId}
           role="menu"
-          aria-label={menuLabel}
+          aria-label={label}
           onKeyDown={listKeyDown}
           {...mergeProps(
             themeProps('context-menu'),
