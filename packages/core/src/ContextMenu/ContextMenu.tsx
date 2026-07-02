@@ -43,6 +43,7 @@ import {
 } from '../DropdownMenu/DropdownMenuContext';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
+import {useLongPress} from '../hooks/useLongPress';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {
   colorVars,
@@ -63,6 +64,11 @@ import type {
 } from '../DropdownMenu/DropdownMenu';
 
 const styles = stylex.create({
+  // Trigger wrapper: suppress the iOS long-press callout/selection so the
+  // long-press opens our context menu instead of the native text/callout UI.
+  trigger: {
+    WebkitTouchCallout: 'none',
+  },
   menu: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -325,7 +331,18 @@ export function ContextMenu({
         return;
       }
       e.preventDefault();
-      positionRef.current = {x: e.clientX, y: e.clientY};
+      // A keyboard-initiated contextmenu (Shift+F10 / the Menu key) fires a
+      // `contextmenu` event whose coordinates are (0, 0) in several browsers.
+      // Detect that and anchor the menu to the trigger's box instead, so the
+      // menu is reachable without a pointer (menus-8).
+      const isKeyboardInvoked =
+        e.clientX === 0 && e.clientY === 0 && e.detail === 0;
+      if (isKeyboardInvoked && e.currentTarget instanceof HTMLElement) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        positionRef.current = {x: rect.left, y: rect.bottom};
+      } else {
+        positionRef.current = {x: e.clientX, y: e.clientY};
+      }
       // Remember the element focused before opening so we can restore it on
       // close (Escape or outside-click), instead of dropping focus to <body>.
       triggerFocusRef.current =
@@ -339,6 +356,24 @@ export function ContextMenu({
     },
     [isDisabled, layer, hasAutoFocus, focusFirst],
   );
+
+  // Touch long-press invocation (menus-8). iOS Safari never synthesizes a
+  // `contextmenu` event on long-press, so a context menu is otherwise
+  // unreachable on touch. Open the menu at the touch point once the press is
+  // held long enough (see useLongPress for timer/move-cancel/cleanup logic).
+  const longPressHandlers = useLongPress({
+    disabled: isDisabled,
+    onLongPress: useCallback(
+      (point: {x: number; y: number}) => {
+        positionRef.current = {x: point.x, y: point.y};
+        layer.show();
+        if (hasAutoFocus) {
+          requestAnimationFrame(() => focusFirst());
+        }
+      },
+      [layer, hasAutoFocus, focusFirst],
+    ),
+  });
 
   const popoverXstyle = menuWidth
     ? styles.popoverCustomWidth(menuWidth)
@@ -354,7 +389,12 @@ export function ContextMenu({
 
   return (
     <>
-      <div ref={ref} onContextMenu={handleContextMenu} data-testid={testId}>
+      <div
+        ref={ref}
+        onContextMenu={handleContextMenu}
+        {...longPressHandlers}
+        data-testid={testId}
+        {...stylex.props(styles.trigger)}>
         {children}
       </div>
 

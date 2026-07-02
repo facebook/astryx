@@ -9,7 +9,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ContextMenu} from './ContextMenu';
 import {ContextMenuItem} from './index';
@@ -192,6 +192,72 @@ describe('ContextMenu', () => {
       </ContextMenu>,
     );
     expect(screen.getByTestId('my-context-menu')).toBeInTheDocument();
+  });
+
+  it('opens from a keyboard-invoked contextmenu (Shift+F10 / Menu key)', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    const trigger = screen.getByTestId('ctx');
+    // Anchor the trigger box so the rect fallback has a position to read.
+    trigger.getBoundingClientRect = () =>
+      ({
+        left: 40,
+        top: 10,
+        bottom: 30,
+        right: 100,
+        width: 60,
+        height: 20,
+      }) as DOMRect;
+    // Keyboard-initiated contextmenu: coords are (0,0) and detail is 0.
+    fireEvent.contextMenu(trigger, {clientX: 0, clientY: 0, detail: 0});
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('opens on touch long-press', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Long-press me</div>
+        </ContextMenu>,
+      );
+      const trigger = screen.getByTestId('ctx');
+      fireEvent.touchStart(trigger, {
+        touches: [{clientX: 20, clientY: 20}],
+      });
+      // Not open until the long-press threshold elapses.
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cancels the long-press when the finger moves past the threshold', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Long-press me</div>
+        </ContextMenu>,
+      );
+      const trigger = screen.getByTestId('ctx');
+      fireEvent.touchStart(trigger, {touches: [{clientX: 20, clientY: 20}]});
+      // Move past MOVE_CANCEL_PX (10px) — treated as a scroll, not a press.
+      fireEvent.touchMove(trigger, {touches: [{clientX: 20, clientY: 40}]});
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
