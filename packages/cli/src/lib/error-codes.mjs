@@ -75,6 +75,8 @@
  *   | 'ERR_INVALID_VERSION'
  *   | 'ERR_DEP_MISSING'
  *   | 'ERR_GH_CLI'
+ *   | 'ERR_UNKNOWN_POST'
+ *   | 'ERR_FETCH_FAILED'
  *   | 'ERR_LAYOUT_PARSE'
  *   | 'ERR_LAYOUT_INVALID'
  * )} ErrorCode
@@ -180,6 +182,12 @@ export const ERROR_CODES = Object.freeze({
   // ── GitHub CLI ───────────────────────────────────────────────────
   /** GitHub CLI (`gh`) is not installed or not authenticated. */
   ERR_GH_CLI: 'ERR_GH_CLI',
+
+  // ── Blog (read via the published RSS feed) ───────────────────────
+  /** No blog post matched the requested slug in the feed. */
+  ERR_UNKNOWN_POST: 'ERR_UNKNOWN_POST',
+  /** A network fetch (RSS feed or post text) failed. */
+  ERR_FETCH_FAILED: 'ERR_FETCH_FAILED',
 
   // ── Layout expressions (XLE/XLO) ─────────────────────────────────
   /** A layout expression failed to parse (syntax error, with line/col). */

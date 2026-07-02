@@ -40,6 +40,11 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.svg',
   },
+  alternates: {
+    types: {
+      'application/rss+xml': '/rss.xml',
+    },
+  },
   verification: {
     google: '2R11kontqme-N-8WuDSR0MZ1YVbKX3IQg3OM08UO_e0',
   },
