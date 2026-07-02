@@ -36,11 +36,16 @@ export interface UseListFocusOptions {
   onEscape?: () => void;
 
   /**
-   * Navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight,
-   * 'vertical' uses ArrowUp/ArrowDown.
+   * Navigation orientation. `'horizontal'` uses ArrowLeft/ArrowRight,
+   * `'vertical'` uses ArrowUp/ArrowDown, `'both'` accepts all four arrows
+   * (next = ArrowRight or ArrowDown, prev = ArrowLeft or ArrowUp; Home/End
+   * still jump to the ends). Use `'both'` for widgets like tab strips where,
+   * per the WAI-ARIA APG allowance, keyboard users navigate without knowing
+   * the layout axis and `aria-orientation` is reported separately by the
+   * caller.
    * @default 'vertical'
    */
-  orientation?: 'horizontal' | 'vertical';
+  orientation?: 'horizontal' | 'vertical' | 'both';
 }
 
 /**
@@ -222,38 +227,37 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       const items = getItems();
       let handled = true;
 
-      const nextKey = orientation === 'horizontal' ? 'ArrowRight' : 'ArrowDown';
-      const prevKey = orientation === 'horizontal' ? 'ArrowLeft' : 'ArrowUp';
+      // `'both'` accepts either axis' arrows (tab-strip APG allowance);
+      // otherwise navigation is strictly gated to the configured axis.
+      const horizontal = orientation === 'horizontal' || orientation === 'both';
+      const vertical = orientation === 'vertical' || orientation === 'both';
+      const isNext =
+        (horizontal && e.key === 'ArrowRight') ||
+        (vertical && e.key === 'ArrowDown');
+      const isPrev =
+        (horizontal && e.key === 'ArrowLeft') ||
+        (vertical && e.key === 'ArrowUp');
 
-      switch (e.key) {
-        case nextKey: {
-          const from = currentIndex === -1 ? 0 : currentIndex + 1;
-          const next = findEnabledIndex(items, from, 1, wrap);
-          if (next !== -1) {
-            items[next]?.focus();
-          }
-          break;
+      if (isNext) {
+        const from = currentIndex === -1 ? 0 : currentIndex + 1;
+        const next = findEnabledIndex(items, from, 1, wrap);
+        if (next !== -1) {
+          items[next]?.focus();
         }
-        case prevKey: {
-          const from =
-            currentIndex === -1 ? items.length - 1 : currentIndex - 1;
-          const prev = findEnabledIndex(items, from, -1, wrap);
-          if (prev !== -1) {
-            items[prev]?.focus();
-          }
-          break;
+      } else if (isPrev) {
+        const from = currentIndex === -1 ? items.length - 1 : currentIndex - 1;
+        const prev = findEnabledIndex(items, from, -1, wrap);
+        if (prev !== -1) {
+          items[prev]?.focus();
         }
-        case 'Home':
-          focusFirst();
-          break;
-        case 'End':
-          focusLast();
-          break;
-        case 'Escape':
-          onEscape?.();
-          break;
-        default:
-          handled = false;
+      } else if (e.key === 'Home') {
+        focusFirst();
+      } else if (e.key === 'End') {
+        focusLast();
+      } else if (e.key === 'Escape') {
+        onEscape?.();
+      } else {
+        handled = false;
       }
 
       if (handled) {
