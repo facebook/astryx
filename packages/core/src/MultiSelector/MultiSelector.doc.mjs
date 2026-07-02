@@ -75,7 +75,8 @@ export const docs = {
         {
           name: 'triggerDisplay',
           type: "'count' | 'labels' | 'badges'",
-          description: 'How to display selected items in the trigger.',
+          description:
+            'How to display selected items in the trigger. In "count" mode the text is customizable via formatTriggerCount.',
           default: "'count'",
         },
         {
@@ -84,6 +85,13 @@ export const docs = {
           description:
             'Maximum badges to show before "+N". Only for triggerDisplay="badges".',
           default: '3',
+        },
+        {
+          name: 'formatTriggerCount',
+          type: '(count: number) => string',
+          description:
+            'Formats the trigger text from the selected count, e.g. "3 spaces selected". Only for triggerDisplay="count".',
+          default: '(count) => `${count} selected`',
         },
         {
           name: 'hasSelectAll',
@@ -209,9 +217,12 @@ export const docsZh = {
         changeAction: '变化时的异步操作，在 onChange 之后触发。',
         placeholder: '未选择值时显示的占位文本。',
         size: '选择器的尺寸变体。',
-        triggerDisplay: '在触发器中显示选中项的方式。',
+        triggerDisplay:
+          '在触发器中显示选中项的方式。"count" 模式下可通过 formatTriggerCount 自定义文本。',
         maxBadges:
           '显示"+N"之前的最大徽章数。仅适用于 triggerDisplay="badges"。',
+        formatTriggerCount:
+          '根据选中数量格式化触发器文本，例如 "3 spaces selected"。仅适用于 triggerDisplay="count"。',
         hasSelectAll: '是否显示全选复选框。',
         selectAllLabel: '全选复选框的标签。',
         hasSearch: '是否显示用于过滤选项的搜索输入。',
@@ -317,8 +328,11 @@ export const docsDense = {
         changeAction: 'async; fires after onChange',
         placeholder: 'text when nothing selected',
         size: 'size variant',
-        triggerDisplay: 'how to show selected in trigger',
+        triggerDisplay:
+          'how to show selected in trigger; count text via formatTriggerCount',
         maxBadges: 'max badges before "+N"; badges mode only',
+        formatTriggerCount:
+          'format count trigger text, e.g. "3 spaces selected"; count mode only',
         hasSelectAll: 'show select-all checkbox',
         selectAllLabel: 'select-all label',
         hasSearch: 'show search input',
