@@ -4,7 +4,7 @@
 
 /**
  * @file TreeList.tsx
- * @input Uses React, StyleX, theme tokens, TreeListItem, TreeListTypes
+ * @input Uses React, StyleX, theme tokens, TreeListItem, TreeListTypes, useTreeFocus
  * @output Exports TreeList component, TreeListProps type
  * @position Core implementation; consumed by index.ts
  *
@@ -23,6 +23,7 @@ import type {BaseProps} from '../BaseProps';
 import {TreeListItem} from './TreeListItem';
 import type {TreeListItemData, TreeListDensity} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
+import {useTreeFocus} from '../hooks/useTreeFocus';
 
 // =============================================================================
 // Types
@@ -97,6 +98,34 @@ function collectExpandedKeys(items: TreeListItemData[]): string[] {
   return keys;
 }
 
+/**
+ * Compute the initial roving-tabindex owner: the first selected enabled item
+ * in document order, else the first enabled item, else the first item.
+ * Only the top-level candidates are considered for the default so the tab stop
+ * is reachable even when the tree is fully collapsed.
+ */
+function findDefaultActiveId(items: TreeListItemData[]): string | undefined {
+  let firstEnabled: string | undefined;
+  const walk = (list: TreeListItemData[]): string | undefined => {
+    for (const item of list) {
+      if (item.isSelected && item.isDisabled !== true) {
+        return item.id;
+      }
+      if (firstEnabled == null && item.isDisabled !== true) {
+        firstEnabled = item.id;
+      }
+      if (item.children != null && item.children.length > 0) {
+        const selected = walk(item.children);
+        if (selected != null) {
+          return selected;
+        }
+      }
+    }
+    return undefined;
+  };
+  return walk(items) ?? firstEnabled ?? items[0]?.id;
+}
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -160,6 +189,55 @@ export function TreeList({
     [expandedKeysFromProps],
   );
 
+  // ---------------------------------------------------------------------------
+  // Roving tabindex + APG tree keyboard model (via useTreeFocus)
+  // ---------------------------------------------------------------------------
+
+  // The treeitem that currently owns the tree's single tab stop. The hook moves
+  // it around via onActiveChange; a data-driven default seeds it (selected item
+  // or first enabled).
+  const [activeId, setActiveId] = useState<string | undefined>(() =>
+    findDefaultActiveId(items),
+  );
+
+  // If the seed id is no longer present (items changed), fall back to a valid
+  // default so the tree always has exactly one reachable tab stop.
+  const resolvedActiveId = useMemo(() => {
+    if (activeId == null) {
+      return findDefaultActiveId(items);
+    }
+    const exists = (list: TreeListItemData[]): boolean =>
+      list.some(
+        item =>
+          item.id === activeId ||
+          (item.children != null && exists(item.children)),
+      );
+    return exists(items) ? activeId : findDefaultActiveId(items);
+  }, [activeId, items]);
+
+  // Enter/Space activation: prefer the treeitem's own inner action (link or
+  // button); return true when handled so the hook does not also toggle. Scoped
+  // to this treeitem's own row — never a descendant treeitem's action inside an
+  // expanded group.
+  const activateItem = useCallback((current: HTMLElement): boolean => {
+    const candidates = current.querySelectorAll<HTMLElement>(
+      'a[href], button:not([aria-label="Toggle children"])',
+    );
+    for (const candidate of candidates) {
+      if (candidate.closest('[role="treeitem"]') === current) {
+        candidate.click();
+        return true;
+      }
+    }
+    return false;
+  }, []);
+
+  const {treeRef, handleKeyDown} = useTreeFocus<HTMLUListElement>({
+    onToggleExpand: handleToggle,
+    onActivate: activateItem,
+    onActiveChange: setActiveId,
+  });
+
   function renderItems(
     items: TreeListItemData[],
     nestedLevel: number,
@@ -206,6 +284,9 @@ export function TreeList({
           onToggle={handleToggle}
           density={density}
           renderedChildren={renderedChildren}
+          posInSet={index + 1}
+          setSize={items.length}
+          isTabbable={item.id === resolvedActiveId}
         />
       );
     });
@@ -227,8 +308,10 @@ export function TreeList({
         </div>
       )}
       <ul
+        ref={treeRef}
         role="tree"
         aria-labelledby={header != null ? headerId : undefined}
+        onKeyDown={handleKeyDown}
         {...stylex.props(styles.list)}>
         {renderItems(items, 0, [])}
       </ul>
