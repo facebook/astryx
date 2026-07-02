@@ -17,6 +17,7 @@ export const docs = {
       { guidance: true, description: 'Use `repeat: \'fill\'` (the default) for consistent item widths. Use `\'fit\'` when items should stretch to fill leftover space.' },
       { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
       { guidance: false, description: 'Use `HStack` with wrapping for grids; use Grid instead.' },
+      { guidance: true, description: 'Track templates use CSS-variable indirection (not raw inline styles), so `xstyle` overrides of `gridTemplateColumns` — including inside `@media` queries — take effect.' },
     ],
   },
   theming: {
@@ -101,6 +102,7 @@ export const docsZh = {
       { guidance: true, description: 'Use `repeat: \'fill\'` (the default) for consistent item widths. Use `\'fit\'` when items should stretch to fill leftover space.' },
       { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
       { guidance: false, description: 'Use `HStack` with wrapping for grids; use Grid instead.' },
+      { guidance: true, description: 'Track templates use CSS-variable indirection (not raw inline styles), so `xstyle` overrides of `gridTemplateColumns` — including inside `@media` queries — take effect.' },
     ],
   },
 };
@@ -116,6 +118,7 @@ export const docsDense = {
       { guidance: true, description: 'Use repeat: \'fill\' (the default) for consistent item widths. Use \'fit\' when items should stretch to fill leftover space.' },
       { guidance: false, description: 'Write manual CSS grid; Grid handles spacing and responsive behavior for you.' },
       { guidance: false, description: 'Use HStack with wrapping for grids; use Grid instead.' },
+      { guidance: true, description: 'track templates use CSS-var indirection, not inline styles — xstyle/@media overrides of gridTemplateColumns work.' },
     ],
   },
 };
