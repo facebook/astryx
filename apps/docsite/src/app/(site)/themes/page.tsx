@@ -49,9 +49,6 @@ export default function ThemesPage({
 }: {
   searchParams: Promise<{theme?: string | string[]}>;
 }) {
-  // The search-param read happens in a Suspense-wrapped child so the rest of
-  // the route (nav, footer, section shell) stays statically prerenderable;
-  // the seeded theme explorer streams in at request time.
   return (
     <Section maxWidth="lg" padding={6}>
       <Suspense fallback={null}>

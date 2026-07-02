@@ -37,9 +37,6 @@ function url(path: string): string {
   return new URL(path, SITE_URL).toString();
 }
 
-// Cached so the sitemap stays prerenderable under Cache Components; the
-// value effectively reflects build/revalidation time, matching the old
-// "regenerated on every build" behavior documented above.
 async function getLastModified(): Promise<Date> {
   'use cache';
   cacheLife('days');

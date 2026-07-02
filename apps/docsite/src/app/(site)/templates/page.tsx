@@ -96,9 +96,6 @@ interface TemplateItem {
 }
 
 export default function TemplatesPage() {
-  // useSearchParams() (for the ?preview= deep link below) requires a Suspense
-  // boundary above it so the rest of the route can prerender.
-  // https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
   return (
     <Suspense fallback={null}>
       <TemplatesGallery />
