@@ -235,9 +235,11 @@ export function Toolbar({
 
   const gapVar = spacingVars[spacingStepToVar[gap]] as string;
 
-  const {listRef, handleKeyDown} = useListFocus<HTMLDivElement>({
-    itemSelector: 'button, input, [tabindex="0"]',
+  const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
+    itemSelector: 'button, input, [tabindex]',
     orientation,
+    rovingTabIndex: true,
+    deferToCaret: true,
   });
 
   return (
@@ -256,6 +258,7 @@ export function Toolbar({
           aria-label={label}
           aria-orientation={orientation}
           onKeyDown={handleKeyDown}
+          onFocus={handleFocus}
           {...mergeProps(
             themeProps('toolbar', {size}),
             stylex.props(
