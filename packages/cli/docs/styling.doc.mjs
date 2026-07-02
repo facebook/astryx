@@ -339,6 +339,59 @@ const styles = stylex.create({
       ],
     },
     {
+      title: 'StyleX Build Setup (required for swizzled components)',
+  category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Astryx components ship pre-compiled, so consuming the published package needs no StyleX setup. But `astryx swizzle <Component>` copies the raw StyleX *source* into your app, and StyleX source requires a build-time StyleX compiler to produce atomic CSS. Without one the component compiles but renders completely unstyled — no error, no warning. If a swizzled component looks unstyled, a missing StyleX compiler is almost always why. The same applies if you author your own StyleX with `stylex.create()`.',
+        },
+        {
+          type: 'table',
+          headers: ['Bundler', 'StyleX plugin'],
+          rows: [
+            ['Webpack', '@stylexjs/webpack-plugin'],
+            ['Vite / Rollup', '@stylexjs/rollup-plugin (or a community Vite plugin)'],
+            ['Babel (any bundler)', '@stylexjs/babel-plugin + @stylexjs/postcss-plugin'],
+            ['Next.js (App Router, SWC)', 'An SWC-based transform — see the Next.js note below'],
+          ],
+        },
+        {
+          type: 'prose',
+          text: 'Next.js (App Router) is the sharp edge. StyleX\u2019s canonical compiler is a Babel plugin, but introducing a Babel config in Next.js disables the SWC compiler, which in turn breaks SWC-dependent features like `next/font`. So the "obvious" Babel setup is actively incompatible with a standard Next 15 App Router app.',
+        },
+        {
+          type: 'prose',
+          text: 'The working path on Next.js is an SWC-based StyleX transform (e.g. the community `@stylexswc/nextjs-plugin`) wired into `next.config`, which keeps SWC and `next/font` intact. See the example app `apps/example-nextjs-stylex` in the repo for a complete, working Next.js + StyleX + SWC configuration.',
+        },
+        {
+          type: 'code',
+          lang: 'js',
+          label: 'next.config.mjs — SWC-based StyleX transform (keeps next/font working)',
+          code: `import stylexPlugin from '@stylexswc/nextjs-plugin';
+
+export default stylexPlugin({
+  rsOptions: {
+    // Resolve @astryxdesign/core's StyleX so swizzled component source compiles.
+    aliases: {'@/*': ['./src/*']},
+    unstable_moduleResolution: {type: 'commonJS'},
+  },
+})({
+  // your existing Next.js config
+});`,
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'Symptom of a missing compiler: swizzled component renders with no styles, but no build or runtime error.',
+            'Do NOT add @stylexjs/babel-plugin to a Next.js App Router app — it disables SWC and breaks next/font.',
+            'Pure theming (defineTheme + astryx theme build) needs NO StyleX compiler — only swizzled/authored StyleX source does.',
+          ],
+        },
+      ],
+    },
+    {
       title: 'What NOT to Do',
   category: 'guide',
       content: [
