@@ -10,7 +10,7 @@ export const docs = {
   // ChatPastedTextToken is an internal helper (not exported from index.ts).
   // Hide it from the component listing so it doesn't surface as an undocumented entry.
   hiddenComponents: ['ChatPastedTextToken'],
-  keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message', 'composer', 'mention', 'trigger', 'typeahead', 'token', 'imperative', 'tokenized-text'],
+  keywords: ['chat', 'message', 'bubble', 'conversation', 'ai', 'assistant', 'thread', 'system-message', 'composer', 'mention', 'trigger', 'typeahead', 'token', 'imperative', 'tokenized-text', 'reaction', 'emoji', 'unread', 'typing'],
   theming: {
     targets: [
       {className: 'astryx-chat-layout', visualProps: ['density']},
@@ -24,6 +24,10 @@ export const docs = {
       },
       {className: 'astryx-chat-message-list', visualProps: ['density']},
       {className: 'astryx-chat-system-message', visualProps: ['variant']},
+      {className: 'astryx-chat-reaction-bar'},
+      {className: 'astryx-chat-emoji-picker'},
+      {className: 'astryx-chat-unread-divider'},
+      {className: 'astryx-chat-typing-indicator'},
       {className: 'astryx-chat-message-metadata'},
       {className: 'astryx-chat-send-button'},
       {className: 'astryx-chat-tokenized-text'},
@@ -46,6 +50,10 @@ export const docs = {
     {name: 'ChatMessageBubble'},
     {name: 'ChatMessageMetadata'},
     {name: 'ChatSystemMessage'},
+    {name: 'ChatReactionBar'},
+    {name: 'ChatEmojiPicker'},
+    {name: 'ChatUnreadDivider'},
+    {name: 'ChatTypingIndicator'},
     {name: 'ChatComposer'},
     {name: 'ChatComposerInput'},
     {name: 'ChatComposerDrawer'},
