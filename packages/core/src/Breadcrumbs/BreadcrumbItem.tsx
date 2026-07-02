@@ -191,6 +191,10 @@ export function BreadcrumbItem({
   // Auto-detect: if no sibling has aria-current="page" and this is the last
   // non-separator item, set aria-current on our content element.
   // Runs as useEffect (not layout) — only sets an aria attribute, no visual change.
+  // Placed on the item's content element (the link/button/span after the
+  // separator), matching where the explicit `isCurrent` path sets it, so
+  // aria-current lands on the actual interactive element — including when the
+  // last item is a link — rather than on the outer <li> (navigation-11).
   useEffect(() => {
     if (!isAutoCandidate) {
       return;
@@ -211,12 +215,14 @@ export function BreadcrumbItem({
     const hasExplicit = ol.querySelector('[aria-current="page"]');
 
     if (isLast && !hasExplicit) {
-      li.setAttribute('aria-current', 'page');
+      // The content element is the last child of the <li> (the separator span
+      // is first). Fall back to the <li> if it can't be resolved.
+      const target = (li.lastElementChild as HTMLElement | null) ?? li;
+      target.setAttribute('aria-current', 'page');
+      return () => {
+        target.removeAttribute('aria-current');
+      };
     }
-
-    return () => {
-      li.removeAttribute('aria-current');
-    };
   });
 
   const content = (
