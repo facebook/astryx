@@ -22,6 +22,9 @@ export {
   type SyntaxToken,
 } from '@astryxdesign/core/CodeBlock';
 
+// InfoTip — accessible info-icon help affordance (RFC facebook/astryx#3349)
+export {InfoTip, type InfoTipProps, type InfoTipSize} from './InfoTip';
+
 // Chat — experimental reasoning display
 export {
   ChatReasoning,
