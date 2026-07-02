@@ -4,15 +4,25 @@
 
 /**
  * @file useListFocus.ts
- * @input Uses React useCallback, useRef
+ * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect
  * @output Exports useListFocus hook for linear list keyboard navigation
- * @position Core hook; used by TabMenu for dropdown menu navigation, Toolbar for roving tabindex
+ * @position Core hook; used by TabMenu for dropdown menu navigation, Toolbar
+ *   for roving tabindex, ButtonGroup, ContextMenu, NavHeadingMenu, and more.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
  */
 
 import {useCallback, useRef} from 'react';
+import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
+
+/**
+ * Navigation orientation for a linear list.
+ * - `'horizontal'`: ArrowLeft/ArrowRight move between items.
+ * - `'vertical'`: ArrowUp/ArrowDown move between items.
+ * - `'both'`: all four arrows move between items (in linear DOM order).
+ */
+export type ListFocusOrientation = 'horizontal' | 'vertical' | 'both';
 
 /**
  * Configuration for list focus behavior
@@ -20,7 +30,7 @@ import {useCallback, useRef} from 'react';
 export interface UseListFocusOptions {
   /**
    * Selector for focusable items within the list.
-   * @default '[role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"]'
+   * @default '[role="menuitem"]'
    */
   itemSelector?: string;
 
@@ -36,11 +46,51 @@ export interface UseListFocusOptions {
   onEscape?: () => void;
 
   /**
-   * Navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight,
-   * 'vertical' uses ArrowUp/ArrowDown.
+   * Navigation orientation. `'horizontal'` uses ArrowLeft/ArrowRight,
+   * `'vertical'` uses ArrowUp/ArrowDown, `'both'` accepts all four arrows.
    * @default 'vertical'
    */
-  orientation?: 'horizontal' | 'vertical';
+  orientation?: ListFocusOrientation;
+
+  /**
+   * Whether Home/End jump to the first/last enabled item.
+   * @default true
+   */
+  hasHomeEnd?: boolean;
+
+  /**
+   * Whether the list is in a right-to-left context. When true, ArrowLeft and
+   * ArrowRight are swapped so horizontal navigation follows visual direction.
+   * Only affects horizontal (`'horizontal'`/`'both'`) navigation.
+   * @default false
+   */
+  isRtl?: boolean;
+
+  /**
+   * Roving-tabindex ownership. When true, the hook manages a single tab stop
+   * across the items: exactly one enabled item carries `tabindex="0"` and the
+   * rest `tabindex="-1"`. The tab stop is stamped on mount and repaired
+   * whenever items mount/unmount or toggle disabled, and moves with arrow
+   * navigation. Attach the returned {@link UseListFocusReturn.handleFocus} to
+   * the container's `onFocus` to keep the stop in sync after clicks or
+   * programmatic focus.
+   *
+   * When false (the default), the hook only *moves* focus (`.focus()`) and
+   * never touches `tabindex` — the caller owns tab-stop management.
+   * @default false
+   */
+  hasRovingTabIndex?: boolean;
+
+  /**
+   * When true, arrow keys are not stolen from a nested text input/textarea
+   * whose caret is not at the boundary in the direction of travel (or that has
+   * a non-collapsed selection), and are never stolen from a nested
+   * `contenteditable` (rich-text editor / chat composer). This preserves
+   * normal caret movement while the user is editing inline within the list
+   * (e.g. a toolbar search field or composer).
+   * @default false
+   */
+  hasCaretGuard?: boolean;
 }
 
 /**
@@ -58,19 +108,119 @@ export interface UseListFocusReturn<T extends HTMLElement = HTMLElement> {
   handleKeyDown: (e: React.KeyboardEvent) => void;
 
   /**
+   * Focus handler to attach to the container's `onFocus`. Keeps the roving tab
+   * stop in sync when `hasRovingTabIndex` is enabled; a no-op otherwise, so it is
+   * always safe to attach.
+   */
+  handleFocus: (e: React.FocusEvent) => void;
+
+  /**
    * Focus a specific item by index.
    */
   focusItem: (index: number) => void;
 
   /**
-   * Focus the first focusable item.
+   * Focus the first enabled item. Returns true when an item was focused.
    */
-  focusFirst: () => void;
+  focusFirst: () => boolean;
 
   /**
-   * Focus the last focusable item.
+   * Focus the last enabled item. Returns true when an item was focused.
    */
-  focusLast: () => void;
+  focusLast: () => boolean;
+}
+
+// Text-editing inputs whose caret must not be hijacked by arrow navigation.
+const TEXT_INPUT_TYPES = new Set([
+  'text',
+  'search',
+  'url',
+  'tel',
+  'email',
+  'password',
+  'number',
+]);
+
+/**
+ * The nearest `contenteditable` root for `el`, or null when `el` is not inside
+ * an editable region. Prefers the browser's `isContentEditable` property and
+ * falls back to the closest `[contenteditable]` ancestor whose value is not
+ * `"false"` (so environments without `isContentEditable` still work).
+ */
+function getContentEditableRoot(el: HTMLElement): HTMLElement | null {
+  if (el.isContentEditable) {
+    return el;
+  }
+  const candidate = el.closest<HTMLElement>('[contenteditable]');
+  if (candidate && candidate.getAttribute('contenteditable') !== 'false') {
+    return candidate;
+  }
+  return null;
+}
+
+/**
+ * Whether an arrow/Home/End key should be left to the browser because the
+ * event target is a text-editing element whose caret is not yet at the boundary
+ * in the direction of travel (or a selection is present). Returns true when the
+ * list should NOT steal the key.
+ *
+ * Covers three editing surfaces:
+ * - `<textarea>` and text-type `<input>` — use `selectionStart`/`selectionEnd`
+ *   to steal only at the boundary in the travel direction.
+ * - `contenteditable` (rich-text editor / chat composer) — precise caret
+ *   boundary detection in an arbitrary editable subtree is fragile, so we err
+ *   on the side of never hijacking an active editor: defer on every caret key
+ *   whenever focus is inside a non-empty contenteditable. (An empty editable
+ *   has nothing to caret through, so navigation may proceed.)
+ */
+function shouldDeferToCaret(target: EventTarget | null, key: string): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  // contenteditable (covers an element with contenteditable="" / "true" and
+  // descendants that inherit it). `isContentEditable` is the reliable property
+  // in the browser; fall back to the nearest `contenteditable` ancestor for
+  // environments (e.g. jsdom) that don't implement the property.
+  const editableRoot = getContentEditableRoot(target);
+  if (editableRoot) {
+    const selection =
+      typeof window !== 'undefined' ? window.getSelection() : null;
+    // A non-collapsed selection means the user is selecting text — never steal.
+    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+      return true;
+    }
+    // Collapsed caret (or no selection API): defer whenever the editor has
+    // content, so arrow keys stay with the active rich-text editor.
+    return (editableRoot.textContent ?? '').length > 0;
+  }
+
+  const isTextarea = target.tagName === 'TEXTAREA';
+  const isTextInput =
+    target.tagName === 'INPUT' &&
+    TEXT_INPUT_TYPES.has((target as HTMLInputElement).type);
+  if (!isTextarea && !isTextInput) {
+    return false;
+  }
+  const input = target as HTMLInputElement | HTMLTextAreaElement;
+  const {selectionStart, selectionEnd, value} = input;
+  // A non-collapsed selection means the user is selecting text — never steal.
+  if (selectionStart !== selectionEnd) {
+    return true;
+  }
+  // number inputs report null selection; treat as "always defer" for caret keys.
+  if (selectionStart == null) {
+    return true;
+  }
+  if (key === 'ArrowLeft' || key === 'ArrowUp' || key === 'Home') {
+    // Defer unless the caret is at the very start.
+    return selectionStart > 0;
+  }
+  if (key === 'ArrowRight' || key === 'ArrowDown' || key === 'End') {
+    // Defer unless the caret is at the very end.
+    return selectionStart < value.length;
+  }
+  return false;
 }
 
 /**
@@ -83,6 +233,12 @@ export interface UseListFocusReturn<T extends HTMLElement = HTMLElement> {
  * - End: Move to last item
  * - Escape: Custom callback (e.g., close menu)
  *
+ * By default the hook only *moves* focus and leaves `tabindex` management to
+ * the caller. Opt into {@link UseListFocusOptions.hasRovingTabIndex} for a hook
+ * that owns a single tab stop (roving tabindex) across the items — stamping and
+ * repairing it as items mount/unmount or toggle disabled — for toolbars,
+ * segmented controls, tab strips, and similar composite widgets.
+ *
  * @example
  * ```
  * const {listRef, handleKeyDown} = useListFocus({
@@ -91,6 +247,22 @@ export interface UseListFocusReturn<T extends HTMLElement = HTMLElement> {
  *
  * <div ref={listRef} role="menu" onKeyDown={handleKeyDown}>
  *   {items.map(item => <div role="menuitem" tabIndex={0}>{item}</div>)}
+ * </div>
+ * ```
+ *
+ * Roving-tabindex composite (e.g. a toolbar):
+ *
+ * @example
+ * ```
+ * const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLDivElement>({
+ *   itemSelector: 'button, input, [tabindex]',
+ *   orientation: 'horizontal',
+ *   hasRovingTabIndex: true,
+ *   hasCaretGuard: true,
+ * });
+ *
+ * <div ref={listRef} role="toolbar" onKeyDown={handleKeyDown} onFocus={handleFocus}>
+ *   {children}
  * </div>
  * ```
  */
@@ -102,6 +274,10 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
     wrap = true,
     onEscape,
     orientation = 'vertical',
+    hasHomeEnd = true,
+    isRtl = false,
+    hasRovingTabIndex = false,
+    hasCaretGuard = false,
   } = options;
 
   const listRef = useRef<T>(null);
@@ -176,6 +352,65 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
     return items.findIndex(item => item === active || item.contains(active));
   }, [getItems]);
 
+  // --- Roving tabindex ownership (opt-in via `hasRovingTabIndex`) -------------
+
+  /**
+   * Set `tabindex` on an item, but only when it differs (avoids redundant DOM
+   * writes). Uses setAttribute so the value reflects even for elements (like
+   * `<button>`) whose default tabIndex is already 0.
+   */
+  const setTabIndex = useCallback((el: HTMLElement, value: 0 | -1) => {
+    if (el.getAttribute('tabindex') !== String(value)) {
+      el.setAttribute('tabindex', String(value));
+    }
+  }, []);
+
+  /**
+   * Stamp the roving tab stop: exactly one enabled item is tabbable (0), the
+   * rest are -1. Prefer keeping the currently-tabbable item if it is still
+   * enabled; otherwise promote the first enabled item (tab-stop repair).
+   */
+  const syncTabStops = useCallback(() => {
+    const items = getItems();
+    const enabled = items.filter(el => !isItemDisabled(el));
+    if (enabled.length === 0) {
+      return;
+    }
+    const current = enabled.find(el => el.getAttribute('tabindex') === '0');
+    const tabbable = current ?? enabled[0];
+    for (const el of items) {
+      setTabIndex(el, el === tabbable ? 0 : -1);
+    }
+  }, [getItems, isItemDisabled, setTabIndex]);
+
+  // Keep the tab stop valid across renders (items added/removed, disabled
+  // toggled). Runs after every commit but only when roving tabindex is on.
+  useIsomorphicLayoutEffect(() => {
+    if (hasRovingTabIndex) {
+      syncTabStops();
+    }
+  });
+
+  /**
+   * Move focus to `items[index]`. When roving tabindex is enabled, also move
+   * the tab stop so `index` becomes the sole tabbable item.
+   */
+  const focusIndex = useCallback(
+    (items: HTMLElement[], index: number) => {
+      const target = items[index];
+      if (!target) {
+        return;
+      }
+      if (hasRovingTabIndex) {
+        for (const el of items) {
+          setTabIndex(el, el === target ? 0 : -1);
+        }
+      }
+      target.focus();
+    },
+    [hasRovingTabIndex, setTabIndex],
+  );
+
   /**
    * Focus an item by index, clamping to valid range.
    */
@@ -186,86 +421,135 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
         return;
       }
       const clampedIndex = Math.max(0, Math.min(index, items.length - 1));
-      items[clampedIndex]?.focus();
+      focusIndex(items, clampedIndex);
     },
-    [getItems],
+    [getItems, focusIndex],
   );
 
   /**
-   * Focus the first enabled item.
+   * Focus the first enabled item. Returns true when an item was focused.
    */
-  const focusFirst = useCallback(() => {
+  const focusFirst = useCallback((): boolean => {
     const items = getItems();
     const index = findEnabledIndex(items, 0, 1, false);
     if (index !== -1) {
-      items[index]?.focus();
+      focusIndex(items, index);
+      return true;
     }
-  }, [getItems, findEnabledIndex]);
+    return false;
+  }, [getItems, findEnabledIndex, focusIndex]);
 
   /**
-   * Focus the last enabled item.
+   * Focus the last enabled item. Returns true when an item was focused.
    */
-  const focusLast = useCallback(() => {
+  const focusLast = useCallback((): boolean => {
     const items = getItems();
     const index = findEnabledIndex(items, items.length - 1, -1, false);
     if (index !== -1) {
-      items[index]?.focus();
+      focusIndex(items, index);
+      return true;
     }
-  }, [getItems, findEnabledIndex]);
+    return false;
+  }, [getItems, findEnabledIndex, focusIndex]);
+
+  /**
+   * Keep the roving stop pointing at whatever ended up focused (e.g. a click
+   * or programmatic focus) so the next Tab behaves correctly. No-op unless
+   * roving tabindex is enabled.
+   */
+  const handleFocus = useCallback(() => {
+    if (hasRovingTabIndex) {
+      syncTabStops();
+    }
+  }, [hasRovingTabIndex, syncTabStops]);
 
   /**
    * Handle keyboard navigation.
    */
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      // Let browser/OS shortcut chords (Ctrl/Cmd/Alt + key) through untouched.
+      if (e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+      }
+
+      // Escape is handled regardless of orientation. Preserve the historical
+      // behavior of always consuming Escape here (preventDefault) so consumers
+      // that relied on it are unaffected.
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onEscape?.();
+        return;
+      }
+
+      const horizontal = orientation === 'horizontal' || orientation === 'both';
+      const vertical = orientation === 'vertical' || orientation === 'both';
+
+      // Resolve which keys advance vs retreat, honoring RTL for horizontal.
+      const nextKeys: string[] = [];
+      const prevKeys: string[] = [];
+      if (horizontal) {
+        nextKeys.push(isRtl ? 'ArrowLeft' : 'ArrowRight');
+        prevKeys.push(isRtl ? 'ArrowRight' : 'ArrowLeft');
+      }
+      if (vertical) {
+        nextKeys.push('ArrowDown');
+        prevKeys.push('ArrowUp');
+      }
+
+      const isNext = nextKeys.includes(e.key);
+      const isPrev = prevKeys.includes(e.key);
+      const isHome = hasHomeEnd && e.key === 'Home';
+      const isEnd = hasHomeEnd && e.key === 'End';
+
+      if (!isNext && !isPrev && !isHome && !isEnd) {
+        return;
+      }
+
+      // Never hijack a caret key from a nested text input mid-line. Check both
+      // the React event target and the actual focused element (events may
+      // bubble up to the container).
+      if (
+        hasCaretGuard &&
+        (shouldDeferToCaret(e.target, e.key) ||
+          shouldDeferToCaret(document.activeElement, e.key))
+      ) {
+        return;
+      }
+
       const currentIndex = getCurrentIndex();
       const items = getItems();
-      let handled = true;
 
-      const nextKey = orientation === 'horizontal' ? 'ArrowRight' : 'ArrowDown';
-      const prevKey = orientation === 'horizontal' ? 'ArrowLeft' : 'ArrowUp';
-
-      switch (e.key) {
-        case nextKey: {
-          const from = currentIndex === -1 ? 0 : currentIndex + 1;
-          const next = findEnabledIndex(items, from, 1, wrap);
-          if (next !== -1) {
-            items[next]?.focus();
-          }
-          break;
+      if (isNext) {
+        const from = currentIndex === -1 ? 0 : currentIndex + 1;
+        const next = findEnabledIndex(items, from, 1, wrap);
+        if (next !== -1) {
+          focusIndex(items, next);
         }
-        case prevKey: {
-          const from =
-            currentIndex === -1 ? items.length - 1 : currentIndex - 1;
-          const prev = findEnabledIndex(items, from, -1, wrap);
-          if (prev !== -1) {
-            items[prev]?.focus();
-          }
-          break;
+      } else if (isPrev) {
+        const from = currentIndex === -1 ? items.length - 1 : currentIndex - 1;
+        const prev = findEnabledIndex(items, from, -1, wrap);
+        if (prev !== -1) {
+          focusIndex(items, prev);
         }
-        case 'Home':
-          focusFirst();
-          break;
-        case 'End':
-          focusLast();
-          break;
-        case 'Escape':
-          onEscape?.();
-          break;
-        default:
-          handled = false;
+      } else if (isHome) {
+        focusFirst();
+      } else if (isEnd) {
+        focusLast();
       }
 
-      if (handled) {
-        e.preventDefault();
-      }
+      e.preventDefault();
     },
     [
       getCurrentIndex,
       getItems,
       wrap,
       orientation,
+      isRtl,
+      hasHomeEnd,
+      hasCaretGuard,
       findEnabledIndex,
+      focusIndex,
       focusFirst,
       focusLast,
       onEscape,
@@ -275,6 +559,7 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
   return {
     listRef,
     handleKeyDown,
+    handleFocus,
     focusItem,
     focusFirst,
     focusLast,
