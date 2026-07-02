@@ -352,6 +352,9 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
+    // The popup's own role="listbox" is the exposed semantics; the input keeps
+    // DOM focus, so wrapping it in a modal dialog would misrepresent it.
+    role: 'none',
   });
 
   // Show the layer, deferring past the active click if a pointer is down.

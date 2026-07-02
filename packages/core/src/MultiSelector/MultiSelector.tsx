@@ -696,7 +696,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onHide: handleLayerHide,
     hasCloseButton: false,
     hasAutoFocus: false,
-    dialogLabel: `${label} options`,
+    // The popup's own role="listbox" is the exposed semantics; the trigger
+    // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
+    role: 'none',
   });
 
   // Open dropdown on mount when isDefaultOpen is true

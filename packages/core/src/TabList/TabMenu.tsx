@@ -267,6 +267,9 @@ export function TabMenu({
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
+    // The popup's own role="menu" is the exposed semantics; a modal dialog
+    // wrapper would announce an unnamed dialog around the menu.
+    role: 'none',
   });
 
   const {listRef, handleKeyDown: handleListKeyDown} =

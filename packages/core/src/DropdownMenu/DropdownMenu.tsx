@@ -249,6 +249,9 @@ export function DropdownMenu({
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
+    // The popup's own role="menu" is the exposed semantics; wrapping it in a
+    // modal dialog would announce an unnamed dialog around the menu.
+    role: 'none',
   });
 
   const closeMenu = useCallback(() => {

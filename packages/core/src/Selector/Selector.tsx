@@ -618,6 +618,9 @@ export function Selector<T extends SelectorOptionType>(
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
+    // The popup's own role="listbox" is the exposed semantics; the trigger
+    // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
+    role: 'none',
   });
 
   // Open dropdown on mount when isDefaultOpen is true

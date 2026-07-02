@@ -63,6 +63,22 @@ describe('DropdownMenu', () => {
     expect(screen.getByRole('menu', {hidden: true})).toBeInTheDocument();
   });
 
+  it('does not wrap the menu in a role="dialog" aria-modal element', () => {
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Item 1'}]}
+      />,
+    );
+    // The popup exposes its own role="menu"; it must not be nested inside a
+    // modal dialog, which would announce an unnamed dialog around the menu
+    // while focus stays on the trigger.
+    expect(screen.queryByRole('dialog', {hidden: true})).not.toBeInTheDocument();
+    expect(
+      document.querySelector('[aria-modal="true"]'),
+    ).not.toBeInTheDocument();
+  });
+
   it('defaults menu placement below', () => {
     render(
       <DropdownMenu
