@@ -65,6 +65,7 @@ import {
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
 import {mergeProps} from '../utils';
+import {useAnnounce} from '../hooks/useAnnounce';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
@@ -607,6 +608,25 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     [options],
   );
 
+  // Announce selection-count changes politely (comboboxes-7 announce path).
+  // Toggling options / select-all previously produced no audible feedback.
+  const announce = useAnnounce();
+  const announceSelection = useCallback(
+    (nextValue: string[]) => {
+      const total = selectableItems.length;
+      const selectableSet = new Set(selectableItems.map(item => item.value));
+      const selectedCount = nextValue.filter(v => selectableSet.has(v)).length;
+      if (selectedCount === 0) {
+        announce('Selection cleared');
+      } else if (total > 0 && selectedCount === total) {
+        announce('All selected');
+      } else {
+        announce(`${selectedCount} of ${total} selected`);
+      }
+    },
+    [announce, selectableItems],
+  );
+
   // Filter items by search query
   const filteredItems = useMemo(() => {
     if (!searchQuery) {
@@ -715,6 +735,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
       onChange([]);
+      announceSelection([]);
       if (changeAction) {
         startTransition(async () => {
           setOptimisticValue([]);
@@ -722,7 +743,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         });
       }
     },
-    [onChange, changeAction, startTransition, setOptimisticValue],
+    [
+      onChange,
+      changeAction,
+      startTransition,
+      setOptimisticValue,
+      announceSelection,
+    ],
   );
 
   const handleToggle = useCallback(
@@ -732,6 +759,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         : [...optimisticValue, itemValue];
 
       onChange(newValue);
+      announceSelection(newValue);
       if (changeAction) {
         startTransition(async () => {
           setOptimisticValue(newValue);
@@ -745,6 +773,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       changeAction,
       startTransition,
       setOptimisticValue,
+      announceSelection,
     ],
   );
 
@@ -790,6 +819,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }
 
     onChange(newValue);
+    announceSelection(newValue);
     if (changeAction) {
       startTransition(async () => {
         setOptimisticValue(newValue);
@@ -804,6 +834,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     changeAction,
     startTransition,
     setOptimisticValue,
+    announceSelection,
   ]);
 
   // Route toggle: select-all sentinel → handleSelectAll, everything else → handleToggle

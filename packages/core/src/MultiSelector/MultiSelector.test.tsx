@@ -9,10 +9,19 @@
  * SYNC: When MultiSelector.tsx API changes, update these tests.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MultiSelector} from './MultiSelector';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+// Module-level constants to satisfy @eslint-react/no-unstable-default-props.
+const ANNOUNCE_OPTIONS = ['Apple', 'Banana', 'Orange'] as const;
+const EMPTY_VALUE: string[] = [];
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -38,6 +47,10 @@ beforeEach(() => {
     }
     return originalMatches.call(this, selector);
   };
+});
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
 });
 
 // Helper: jsdom popover content is in the DOM but may not be
@@ -769,6 +782,61 @@ describe('MultiSelector', () => {
         delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
           .scrollIntoView;
       }
+    });
+  });
+
+  describe('announcements', () => {
+    it('announces the selection count politely when toggling an option', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={[...ANNOUNCE_OPTIONS]}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+        />,
+      );
+      await user.click(screen.getByRole('combobox'));
+      const options = screen.getAllByRole('option', {hidden: true});
+      await user.click(options[0]);
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('1 of 3 selected');
+      });
+    });
+
+    it('announces "All selected" when select-all selects everything', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={[...ANNOUNCE_OPTIONS]}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSelectAll
+        />,
+      );
+      await user.click(screen.getByRole('combobox'));
+      await user.click(screen.getByText('Select all'));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('All selected');
+      });
+    });
+
+    it('announces "Selection cleared" when clearing', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={[...ANNOUNCE_OPTIONS]}
+          value={['Apple', 'Banana']}
+          onChange={() => {}}
+          hasClear
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Clear all Fruit'}));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Selection cleared');
+      });
     });
   });
 });

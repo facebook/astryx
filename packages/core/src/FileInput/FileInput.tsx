@@ -44,6 +44,7 @@ import {
 } from '../Field';
 import {Icon, type IconName} from '../Icon';
 import {Spinner} from '../Spinner';
+import {useAnnounce} from '../hooks/useAnnounce';
 
 export type {
   InputStatus as FileInputStatus,
@@ -410,6 +411,11 @@ export function FileInput({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
+  // Announce successful file selection to screen readers via a persistent
+  // live region (forms-17). The component's own role="status" region only
+  // carries validation errors, so a successful attach was previously silent.
+  const announce = useAnnounce();
+
   const status =
     statusProp ??
     (validationError
@@ -470,6 +476,17 @@ export function FileInput({
       const result = isMultiple ? valid : valid[0];
       onChange(result);
 
+      // Announce the successful selection politely. Validation errors are
+      // handled by the role="status" region below, so only announce the
+      // attach here (do not double-announce errors).
+      if (errors.length === 0) {
+        announce(
+          valid.length === 1
+            ? `1 file selected: ${valid[0].name}`
+            : `${valid.length} files selected`,
+        );
+      }
+
       if (changeAction) {
         startTransition(async () => {
           await changeAction(result);
@@ -485,6 +502,7 @@ export function FileInput({
       onChange,
       changeAction,
       startTransition,
+      announce,
     ],
   );
 
