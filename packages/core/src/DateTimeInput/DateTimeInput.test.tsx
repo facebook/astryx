@@ -747,4 +747,43 @@ describe('DateTimeInput', () => {
       expect(timeInput).toHaveAttribute('placeholder', 'Select a time');
     });
   });
+
+  describe('timeIncrement', () => {
+    it('steps the time by timeIncrement minutes on ArrowUp', () => {
+      const onChange = vi.fn();
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          timeIncrement={15}
+          onChange={onChange}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.keyDown(timeInput, {key: 'ArrowUp'});
+
+      // 14:30 + 15min increment = 14:45
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0]).toContain('14:45');
+    });
+
+    it('defaults to a 1-minute increment', () => {
+      const onChange = vi.fn();
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          onChange={onChange}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.keyDown(timeInput, {key: 'ArrowUp'});
+
+      // 14:30 + default 1min = 14:31
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0]).toContain('14:31');
+    });
+  });
 });
