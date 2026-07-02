@@ -11,12 +11,14 @@ export default async function MarketingLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const year = await getCopyrightYear();
+
   return (
     <AppShell variant="surface" height="auto" topNav={<SharedTopNav />}>
       <div className={styles.shell}>
         <div className={styles.main}>{children}</div>
         <div className={styles.footer}>
-          <SiteFooter year={await getCopyrightYear()} />
+          <SiteFooter year={year} />
         </div>
       </div>
     </AppShell>

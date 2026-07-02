@@ -10,6 +10,8 @@ import {getCopyrightYear} from '../lib/copyrightYear';
 import styles from './not-found.module.css';
 
 export default async function NotFound() {
+  const year = await getCopyrightYear();
+
   return (
     <AppShell variant="surface" height="fill" topNav={<SharedTopNav />}>
       <div className={styles.shell}>
@@ -25,7 +27,7 @@ export default async function NotFound() {
             </VStack>
           </Center>
         </div>
-        <SiteFooter year={await getCopyrightYear()} />
+        <SiteFooter year={year} />
       </div>
     </AppShell>
   );

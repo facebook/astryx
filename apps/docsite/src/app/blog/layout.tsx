@@ -16,10 +16,12 @@ export default async function BlogLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const year = await getCopyrightYear();
+
   return (
     <AppShell variant="surface" height="auto" topNav={<SharedTopNav />}>
       {children}
-      <SiteFooter year={await getCopyrightYear()} />
+      <SiteFooter year={year} />
     </AppShell>
   );
 }

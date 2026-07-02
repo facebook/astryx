@@ -13,6 +13,8 @@ export default async function DocsLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const year = await getCopyrightYear();
+
   return (
     <DocsShell
       components={components}
@@ -20,7 +22,7 @@ export default async function DocsLayout({
       docTopics={docTopics}
       templates={templates}>
       {children}
-      <SiteFooter year={await getCopyrightYear()} />
+      <SiteFooter year={year} />
     </DocsShell>
   );
 }
