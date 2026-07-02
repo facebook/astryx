@@ -373,15 +373,20 @@ export function usePopover(
     'aria-controls': layer.id,
   };
 
-  // Dev-only warning: a dialog popover should always be labeled.
-  if (process.env.NODE_ENV !== 'production' && role === 'dialog' && !dialogLabel) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      'usePopover: role="dialog" without a `dialogLabel` renders an unnamed ' +
-        'dialog. Pass `dialogLabel`, or use `role: "none"` for listbox/menu ' +
-        'popups whose content already carries its own role.',
-    );
-  }
+  // Dev-time guardrail: a dialog popover should always be labeled. Warn once
+  // per hook instance (in an effect) rather than on every render.
+  const warnedUnnamedDialogRef = useRef(false);
+  useEffect(() => {
+    if (role === 'dialog' && !dialogLabel && !warnedUnnamedDialogRef.current) {
+      warnedUnnamedDialogRef.current = true;
+      // eslint-disable-next-line no-console
+      console.warn(
+        'usePopover: role="dialog" without a `dialogLabel` renders an unnamed ' +
+          'dialog. Pass `dialogLabel`, or use `role: "none"` for listbox/menu ' +
+          'popups whose content already carries its own role.',
+      );
+    }
+  }, [role, dialogLabel]);
 
   // Wrapped render function that includes surface styles and optional hidden close button
   const render = useCallback(
