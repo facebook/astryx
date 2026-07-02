@@ -36,22 +36,16 @@ export interface UseListFocusOptions {
   onEscape?: () => void;
 
   /**
-   * Navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight,
-   * 'vertical' uses ArrowUp/ArrowDown.
+   * Navigation orientation. `'horizontal'` uses ArrowLeft/ArrowRight,
+   * `'vertical'` uses ArrowUp/ArrowDown, `'both'` accepts all four arrows
+   * (next = ArrowRight or ArrowDown, prev = ArrowLeft or ArrowUp; Home/End
+   * still jump to the ends). Use `'both'` for widgets like tab strips where,
+   * per the WAI-ARIA APG allowance, keyboard users navigate without knowing
+   * the layout axis and `aria-orientation` is reported separately by the
+   * caller.
    * @default 'vertical'
    */
-  orientation?: 'horizontal' | 'vertical';
-
-  /**
-   * Accept both arrow axes regardless of `orientation`, per the WAI-ARIA APG
-   * allowance for tab strips: next = ArrowRight or ArrowDown, prev = ArrowLeft
-   * or ArrowUp (Home/End still jump to the ends). Use for widgets where the
-   * caller wants keyboard users to navigate without knowing the layout axis;
-   * `orientation` then only affects the reported `aria-orientation`. When
-   * false (the default), navigation is strictly orientation-gated.
-   * @default false
-   */
-  bothAxes?: boolean;
+  orientation?: 'horizontal' | 'vertical' | 'both';
 }
 
 /**
@@ -113,7 +107,6 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
     wrap = true,
     onEscape,
     orientation = 'vertical',
-    bothAxes = false,
   } = options;
 
   const listRef = useRef<T>(null);
@@ -234,14 +227,16 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       const items = getItems();
       let handled = true;
 
-      // When `bothAxes` is set, either axis' arrows navigate (tab-strip APG
-      // allowance); otherwise navigation is strictly orientation-gated.
-      const isNext = bothAxes
-        ? e.key === 'ArrowRight' || e.key === 'ArrowDown'
-        : e.key === (orientation === 'horizontal' ? 'ArrowRight' : 'ArrowDown');
-      const isPrev = bothAxes
-        ? e.key === 'ArrowLeft' || e.key === 'ArrowUp'
-        : e.key === (orientation === 'horizontal' ? 'ArrowLeft' : 'ArrowUp');
+      // `'both'` accepts either axis' arrows (tab-strip APG allowance);
+      // otherwise navigation is strictly gated to the configured axis.
+      const horizontal = orientation === 'horizontal' || orientation === 'both';
+      const vertical = orientation === 'vertical' || orientation === 'both';
+      const isNext =
+        (horizontal && e.key === 'ArrowRight') ||
+        (vertical && e.key === 'ArrowDown');
+      const isPrev =
+        (horizontal && e.key === 'ArrowLeft') ||
+        (vertical && e.key === 'ArrowUp');
 
       if (isNext) {
         const from = currentIndex === -1 ? 0 : currentIndex + 1;
@@ -274,7 +269,6 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       getItems,
       wrap,
       orientation,
-      bothAxes,
       findEnabledIndex,
       focusFirst,
       focusLast,

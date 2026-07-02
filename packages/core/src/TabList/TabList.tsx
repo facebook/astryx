@@ -138,13 +138,13 @@ export function TabList({
   const size = useSize(sizeProp, 'md');
 
   // Roving-tabindex keyboard navigation across the tab strip via the shared
-  // hook. `bothAxes` accepts both arrow axes regardless of orientation per the
-  // WAI-ARIA APG allowance for tab strips (ArrowRight/ArrowDown advance,
-  // ArrowLeft/ArrowUp retreat); `orientation` only affects aria-orientation.
+  // hook. `orientation: 'both'` accepts both arrow axes per the WAI-ARIA APG
+  // allowance for tab strips (ArrowRight/ArrowDown advance, ArrowLeft/ArrowUp
+  // retreat) regardless of the component's `orientation` prop, which only
+  // drives the reported `aria-orientation`.
   const {listRef, handleKeyDown} = useListFocus<HTMLElement>({
     itemSelector: TAB_STOP_SELECTOR,
-    orientation,
-    bothAxes: true,
+    orientation: 'both',
   });
 
   const contextValue = useMemo(
