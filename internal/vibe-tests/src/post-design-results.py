@@ -12,7 +12,7 @@ Usage:
         --scores /tmp/design-scores-gemini.json \
         --iteration fd6afde6 \
         --issue 1041 \
-        --repo facebookexperimental/xds \
+        --repo facebook/astryx \
         --token $GITHUB_TOKEN
 
     # Legacy flag still accepted for backward compat:
@@ -20,7 +20,7 @@ Usage:
         --scores /tmp/design-scores-gemini.json \
         --release-tag design-judge-fd6afde6 \
         --issue 1041 \
-        --repo facebookexperimental/xds \
+        --repo facebook/astryx \
         --token $GITHUB_TOKEN
 """
 import argparse
@@ -209,7 +209,7 @@ def main():
     p.add_argument("--iteration", help="Iteration ID (images served from gh-pages)")
     p.add_argument("--release-tag", help="(deprecated) GitHub release tag — ignored, kept for backward compat")
     p.add_argument("--issue", required=True, type=int, help="GitHub issue number")
-    p.add_argument("--repo", default="facebookexperimental/xds", help="GitHub repo")
+    p.add_argument("--repo", default="facebook/astryx", help="GitHub repo")
     p.add_argument("--token", required=True, help="GitHub token")
     p.add_argument("--dry-run", action="store_true", help="Print comment without posting")
     args = p.parse_args()

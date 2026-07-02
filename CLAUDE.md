@@ -1,4 +1,4 @@
-# XDS
+# Astryx
 
 A design system for building internal tools and products.
 
@@ -6,7 +6,7 @@ A design system for building internal tools and products.
 
 ### `/vibe-test [count]` - Run vibeability tests
 
-Tests how well AGENTS.md helps LLMs generate correct XDS component code.
+Tests how well AGENTS.md helps LLMs generate correct Astryx component code.
 
 **Usage:**
 
@@ -21,7 +21,7 @@ Tests how well AGENTS.md helps LLMs generate correct XDS component code.
 1. Run `pnpm -F @astryxdesign/vibe-tests interactive --sample <count>` to set up iteration
 2. Spawn parallel subagents (one per test prompt) to:
    - Read the task file from `results/<iteration>/tasks/{promptId}.json`
-   - Generate code for the prompt using XDS components (AGENTS.md auto-injected)
+   - Generate code for the prompt using Astryx components (AGENTS.md auto-injected)
    - Self-evaluate for success/escape hatches
    - Write `.tsx` result to `results/<iteration>/results/{promptId}.tsx`
    - Write `.json` metadata to `results/<iteration>/results/{promptId}.json`
@@ -50,7 +50,7 @@ Probes at turns 0, 6, 8, 10 to measure quality degradation. Results show a line 
 
 ## AI Context
 
-For architectural context, decisions, and research, see the **[GitHub Wiki](https://github.com/facebookexperimental/xds/wiki)**:
+For architectural context, decisions, and research, see the **[GitHub Wiki](https://github.com/facebook/astryx/wiki)**:
 
 - **Decisions** — API Conventions, Why StyleX, StyleX Distribution
 - **Architecture** — System Architecture, Component Authoring Guide
@@ -111,32 +111,32 @@ Documentation lives in two places:
 |PATTERN: CSS fallback values -> stylex.firstThatWorks() (not manual fallback)
 |PATTERN: dynamic/runtime values -> stylex.create({ s: (val) => ({ prop: val }) }) (not inline styles)
 |PATTERN: conditional styles -> stylex.props(condition && styles.x) (not className toggling)
-|PATTERN: link elements -> useXDSLinkComponent() (not hardcoded <a>). Consumers swap via XDSLinkProvider for framework routers (Next.js, React Router)
+|PATTERN: link elements -> useLinkComponent() (not hardcoded <a>). Consumers swap via LinkProvider for framework routers (Next.js, React Router)
 |VERIFY: node internal/stylex-capabilities/scan.mjs
 
 <!-- STYLEX-CAPS:END -->
 
-<!-- XDS-CLI:START -->
+<!-- ASTRYX-CLI:START -->
 
-XDS CLI|Run from repo root. Load agent docs before any component work.
-XDS="node packages/cli/bin/astryx.mjs"
+Astryx CLI|Run from repo root. Load agent docs before any component work.
+ASTRYX="node packages/cli/bin/astryx.mjs"
 BOOTSTRAP (run every branch, <500ms):
-$XDS help # discover all commands and options
-$XDS docs # list available doc topics
-$XDS docs principles --dense # design rules, anti-patterns, xstyle, tokens
-$XDS docs tokens --dense # spacing, color, radius, typography, shadow
-$XDS docs theme --dense # theme provider, light/dark, overrides
-$XDS component --list # all components grouped by category
-$XDS template --list # available page templates
+$ASTRYX help # discover all commands and options
+$ASTRYX docs # list available doc topics
+$ASTRYX docs principles --dense # design rules, anti-patterns, xstyle, tokens
+$ASTRYX docs tokens --dense # spacing, color, radius, typography, shadow
+$ASTRYX docs theme --dense # theme provider, light/dark, overrides
+$ASTRYX component --list # all components grouped by category
+$ASTRYX template --list # available page templates
 ON DEMAND:
-$XDS component <Name> --dense # props, variants, usage, anatomy for one component
-$XDS template <name> # emit full page source
-$XDS template <name> --skeleton # layout skeleton with spatial annotations
-$XDS swizzle <Name> # eject component source for deep customization
-$XDS upgrade --apply # run version migration codemods
+$ASTRYX component <Name> --dense # props, variants, usage, anatomy for one component
+$ASTRYX template <name> # emit full page source
+$ASTRYX template <name> --skeleton # layout skeleton with spatial annotations
+$ASTRYX swizzle <Name> # eject component source for deep customization
+$ASTRYX upgrade --apply # run version migration codemods
 OPTIONS: --detail compact|brief less output | --dense token-efficient | --zh Chinese
 RULE: always run bootstrap on each branch — docs reflect the branch's actual API
-RULE: always run $XDS component <Name> --dense before modifying a component
-RULE: after @astryxdesign/core bump, always run $XDS upgrade --apply
+RULE: always run $ASTRYX component <Name> --dense before modifying a component
+RULE: after @astryxdesign/core bump, always run $ASTRYX upgrade --apply
 
-<!-- XDS-CLI:END -->
+<!-- ASTRYX-CLI:END -->

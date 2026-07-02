@@ -193,7 +193,7 @@ jobs:
             echo "Restored reports"
           fi
 
-          # Copy XDS dist CSS for the landing page
+          # Copy Astryx dist CSS for the landing page
           mkdir -p deploy/assets
           cp packages/core/dist/astryx.css deploy/assets/astryx.css
           cp packages/core/src/reset.css deploy/assets/reset.css
@@ -263,7 +263,7 @@ jobs:
                   </div>
                   <span class="arrow">→</span>
                 </a>
-                <a class="card" href="https://github.com/facebookexperimental/xds">
+                <a class="card" href="https://github.com/facebook/astryx">
                   <div>
                     <div class="card-title">💻 GitHub</div>
                     <div class="card-desc">Source code, issues, and wiki</div>

@@ -1,6 +1,6 @@
-# Create XDS Theme
+# Create Astryx Theme
 
-Create a new XDS theme using `defineTheme`.
+Create a new Astryx theme using `defineTheme`.
 
 ## Theme Name
 
@@ -26,7 +26,7 @@ packages/themes/{themeName}/
   "name": "@astryxdesign/theme-{themeName}",
   "version": "0.0.1",
   "private": false,
-  "description": "{Description} theme for XDS",
+  "description": "{Description} theme for Astryx",
   "license": "MIT",
   "sideEffects": false,
   "main": "./src/index.ts",
@@ -37,7 +37,7 @@ packages/themes/{themeName}/
   },
   "files": ["dist", "src"],
   "scripts": {
-    "build:theme": "xds build-theme src/index.ts -o dist/theme.css"
+    "build:theme": "astryx theme build src/index.ts -o dist/theme.css"
   },
   "peerDependencies": {
     "@astryxdesign/core": "*"
@@ -144,7 +144,7 @@ Component overrides generate scoped CSS:
 
 ### Distribution
 
-- **Unbuilt**: `XDSTheme` generates CSS and injects `<style>` at runtime
+- **Unbuilt**: `Theme` generates CSS and injects `<style>` at runtime
 - **Built**: `npx astryx theme build` pre-compiles to a CSS file
 
 ## Extending an Existing Theme

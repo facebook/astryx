@@ -240,7 +240,7 @@ export function checkThemes(ctx) {
       label: 'Theme packages',
       status: 'warn',
       message: 'No @astryxdesign/theme-* packages are installed.',
-      fix: 'Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then import its CSS or set xds.theme.',
+      fix: 'Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then import its CSS or set astryx.theme.',
     };
   }
 
@@ -354,7 +354,7 @@ export function checkAgentDocs(ctx) {
       label: 'AI agent docs',
       status: 'warn',
       message: `Agent docs present (${present.join(', ')}) but no Astryx section markers found.`,
-      fix: 'Add the XDS section to your agent docs with `astryx init --features agents`.',
+      fix: 'Add the Astryx section to your agent docs with `astryx init --features agents`.',
     };
   }
 
@@ -362,7 +362,7 @@ export function checkAgentDocs(ctx) {
     id: 'agent-docs',
     label: 'AI agent docs',
     status: 'pass',
-    message: `XDS agent docs section present in ${withMarkers.join(', ')}.`,
+    message: `Astryx agent docs section present in ${withMarkers.join(', ')}.`,
   };
 }
 

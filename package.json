@@ -22,7 +22,7 @@
     "docsite": "pnpm -F @astryxdesign/docsite dev",
     "sync:exports": "node scripts/sync-exports.js",
     "sync:exports:check": "node scripts/sync-exports.js --check",
-    "xds": "pnpm -F @astryxdesign/cli xds",
+    "astryx": "pnpm -F @astryxdesign/cli astryx",
     "package:source": "node scripts/package-source.js",
     "changeset": "changeset",
     "changeset:new": "node scripts/changeset-new.mjs",

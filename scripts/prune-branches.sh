@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-REPO="facebookexperimental/xds"
+REPO="facebook/astryx"
 PROTECTED="main|gh-pages"
 MODE="${1:-dry-run}"
 PARALLEL=15
