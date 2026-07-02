@@ -60,3 +60,4 @@ apps/example-nextjs-tailwind/.next
 # Lockfiles (pnpm is the package manager — see pnpm-workspace.yaml)
 package-lock.json
 yarn.lock
+.repo-build-lock/

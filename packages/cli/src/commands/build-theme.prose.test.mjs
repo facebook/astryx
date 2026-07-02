@@ -29,6 +29,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
+import {withRepoBuildLock} from '../../../../scripts/repo-build-lock.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
@@ -69,16 +70,21 @@ function writeTheme(dir, name) {
 }
 
 // `astryx theme build` imports the compiled @astryxdesign/core/theme entry. Build core
-// once if it isn't already present so the suite works in any CI job.
+// once if it isn't already present so the suite works in any CI job. The build runs
+// under the repo build lock and re-checks inside it: other test files also build
+// into packages/core/dist from parallel workers, and unsynchronized builds race
+// each other's rimraf/output (#3479).
 beforeAll(() => {
-  if (!fs.existsSync(CORE_THEME_ENTRY)) {
-    execFileSync('pnpm', ['-F', '@astryxdesign/core', 'build'], {
-      cwd: REPO_ROOT,
-      stdio: 'pipe',
-      timeout: 180_000,
-    });
-  }
-}, 200_000);
+  withRepoBuildLock(() => {
+    if (!fs.existsSync(CORE_THEME_ENTRY)) {
+      execFileSync('pnpm', ['-F', '@astryxdesign/core', 'build'], {
+        cwd: REPO_ROOT,
+        stdio: 'pipe',
+        timeout: 180_000,
+      });
+    }
+  });
+}, 500_000);
 
 let tmpDir;
 beforeEach(() => {
