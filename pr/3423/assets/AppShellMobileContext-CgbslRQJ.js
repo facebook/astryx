@@ -1,1 +1,0 @@
-import{ah as e}from"./iframe-FpdBIrKz.js";const o={isMobile:!1,isMobileNavOpen:!1,toggleMobileNav:()=>{},openMobileNav:()=>{},closeMobileNav:()=>{},isMobileNavEnabled:!1,hasAutoToggle:!0},l=e.createContext(o);l.displayName="AppShellMobileContext";function t(){return e.use(l)}export{l as A,t as u};
