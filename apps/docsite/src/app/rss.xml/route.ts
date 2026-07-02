@@ -40,8 +40,8 @@ export async function GET() {
 
   const items = blogPosts
     .map(post => {
-      const link = abs(`/blog/${post.slug}`);
-      const txt = abs(`/blog/${post.slug}.txt`);
+      const link = escapeXml(abs(`/blog/${post.slug}`));
+      const txt = escapeXml(abs(`/blog/${post.slug}.txt`));
       const parts = [
         '    <item>',
         `      <title>${escapeXml(post.title)}</title>`,
@@ -52,7 +52,9 @@ export async function GET() {
         ...post.authors.map(a => `      <author>${escapeXml(a)}</author>`),
       ];
       const pub = rfc822(post.date);
-      if (pub) parts.push(`      <pubDate>${pub}</pubDate>`);
+      if (pub) {
+        parts.push(`      <pubDate>${pub}</pubDate>`);
+      }
       // Machine-readable plaintext alternate for this post. Atom's <link> with
       // rel="alternate" rides inside the RSS item so a reader (or the CLI) can
       // fetch the raw Markdown without scraping HTML.
@@ -68,11 +70,11 @@ export async function GET() {
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>${escapeXml(SITE_NAME)} Blog</title>
-    <link>${blogUrl}</link>
+    <link>${escapeXml(blogUrl)}</link>
     <description>${escapeXml(SITE_DESCRIPTION)}</description>
     <language>en</language>
     <lastBuildDate>${lastBuild}</lastBuildDate>
-    <atom:link href="${feedUrl}" rel="self" type="application/rss+xml" />
+    <atom:link href="${escapeXml(feedUrl)}" rel="self" type="application/rss+xml" />
 ${items}
   </channel>
 </rss>

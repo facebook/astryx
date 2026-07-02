@@ -11,21 +11,24 @@
  *
  *   astryx blog                    List posts from the feed
  *   astryx blog <slug>             Print a post as plaintext
- *   astryx blog --site <url>       Read from a different origin (e.g. a preview)
  */
 
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
-import {blog as blogApi, DEFAULT_SITE} from '../api/blog.mjs';
+import {blog as blogApi} from '../api/blog.mjs';
 
-function formatList(posts, run) {
-  if (posts.length === 0) return '\nNo posts found in the feed.\n';
-  const lines = ['\nAstryx blog:\n'];
+function formatList({feedUrl, posts}, run) {
+  const lines = [`\nAstryx blog · feed: ${feedUrl}\n`];
+  if (posts.length === 0) {
+    lines.push('No posts found in the feed.');
+    return lines.join('\n');
+  }
   for (const p of posts) {
     lines.push(`  ${p.slug}`);
     lines.push(`    ${p.title}`);
     if (p.type) lines.push(`    ${p.type}`);
+    if (p.textUrl) lines.push(`    ${p.textUrl}`);
     lines.push('');
   }
   lines.push(`Read one: ${run} astryx blog <slug>`);
@@ -36,12 +39,11 @@ export function registerBlog(program) {
   program
     .command('blog [slug]', {hidden: true})
     .description('Read the Astryx blog from the published feed')
-    .option('--site <url>', 'Origin to read from', DEFAULT_SITE)
-    .action(async (slug, options) => {
+    .action(async slug => {
       const run = getRunPrefix();
       let result;
       try {
-        result = await blogApi(slug, {site: options.site});
+        result = await blogApi(slug);
       } catch (e) {
         cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
         return;
@@ -50,7 +52,8 @@ export function registerBlog(program) {
       if (result.type === 'blog.list') {
         humanLog(formatList(result.data, run));
       } else {
-        // blog.detail — the plaintext body is already the readable form.
+        // blog.detail — print the feed URL, then the plaintext body.
+        humanLog(`Feed: ${result.data.feedUrl}\n`);
         humanLog(result.data.text);
       }
     });

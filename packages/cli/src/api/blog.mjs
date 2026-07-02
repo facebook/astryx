@@ -12,25 +12,33 @@
 
 import {AstryxError} from './error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
+import {SITE_URL, SITE_ORIGIN} from '../lib/site.mjs';
 
-/** Default published origin. Override for previews via the `site` option. */
-export const DEFAULT_SITE = 'https://astryx.atmeta.com';
+/** Abort a feed/post fetch that hangs, and cap how much we'll read. */
+const FETCH_TIMEOUT_MS = 15000;
+const MAX_BYTES = 5 * 1024 * 1024; // 5 MB — a blog feed is never larger.
 
-function feedUrl(site) {
-  return new URL('/rss.xml', site).toString();
-}
+const FEED_URL = new URL('/rss.xml', SITE_URL).toString();
 
 async function fetchText(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   let res;
   try {
-    res = await fetch(url);
+    res = await fetch(url, {
+      signal: controller.signal,
+      redirect: 'follow',
+    });
   } catch (e) {
+    clearTimeout(timer);
+    const reason = e.name === 'AbortError' ? 'timed out' : e.message;
     throw new AstryxError(
-      `Could not reach ${url}: ${e.message}`,
+      `Could not reach ${url}: ${reason}`,
       [],
       ERROR_CODES.ERR_FETCH_FAILED,
     );
   }
+  clearTimeout(timer);
   if (!res.ok) {
     throw new AstryxError(
       `Request to ${url} failed with ${res.status}`,
@@ -38,7 +46,40 @@ async function fetchText(url) {
       ERROR_CODES.ERR_FETCH_FAILED,
     );
   }
-  return res.text();
+  const body = await res.text();
+  if (body.length > MAX_BYTES) {
+    throw new AstryxError(
+      `Response from ${url} exceeded ${MAX_BYTES} bytes`,
+      [],
+      ERROR_CODES.ERR_FETCH_FAILED,
+    );
+  }
+  return body;
+}
+
+/**
+ * Defense in depth: a post's plaintext URL comes from feed content. Require it
+ * to live on the canonical origin so even a tampered feed can't redirect the
+ * CLI to another host.
+ */
+function assertCanonicalOrigin(target) {
+  let targetOrigin;
+  try {
+    targetOrigin = new URL(target).origin;
+  } catch {
+    throw new AstryxError(
+      `Post has an invalid plaintext URL: "${target}"`,
+      [],
+      ERROR_CODES.ERR_FETCH_FAILED,
+    );
+  }
+  if (targetOrigin !== SITE_ORIGIN) {
+    throw new AstryxError(
+      `Refusing to fetch post text from a non-canonical origin (${targetOrigin})`,
+      [],
+      ERROR_CODES.ERR_FETCH_FAILED,
+    );
+  }
 }
 
 function unescapeXml(value) {
@@ -113,19 +154,18 @@ function parseFeed(xml) {
 
 /**
  * List posts (from the feed), or read one post (via its .txt alternate).
+ * Both envelopes carry `feedUrl` so a caller can hit the RSS feed directly.
+ * The feed is always the canonical site — there is no user-supplied URL.
  *
  * @param {string} [slug]
- * @param {object} [options]
- * @param {string} [options.site]  Origin to read from (default published site).
  * @returns {Promise<{type: string, data: unknown}>}
  */
-export async function blog(slug, options = {}) {
-  const {site = DEFAULT_SITE} = options;
-  const xml = await fetchText(feedUrl(site));
+export async function blog(slug) {
+  const xml = await fetchText(FEED_URL);
   const posts = parseFeed(xml);
 
   if (!slug) {
-    return {type: 'blog.list', data: posts};
+    return {type: 'blog.list', data: {feedUrl: FEED_URL, posts}};
   }
 
   const normalized = slug.toLowerCase();
@@ -146,6 +186,7 @@ export async function blog(slug, options = {}) {
     );
   }
 
+  assertCanonicalOrigin(post.textUrl);
   const text = await fetchText(post.textUrl);
-  return {type: 'blog.detail', data: {...post, text}};
+  return {type: 'blog.detail', data: {...post, feedUrl: FEED_URL, text}};
 }
