@@ -156,6 +156,7 @@ export function InputGroup({
 }: InputGroupProps) {
   const size = useSize(sizeProp, 'md');
   const inputId = useId();
+  const labelId = useId();
   const statusMessageId = useId();
 
   const contextValue = useMemo(() => ({isInGroup: true as const}), []);
@@ -168,6 +169,8 @@ export function InputGroup({
           isLabelHidden={isLabelHidden}
           description={description}
           inputID={inputId}
+          labelID={labelId}
+          isGroupLabel
           isOptional={isOptional}
           isRequired={isRequired}
           isDisabled={isDisabled}
@@ -185,7 +188,7 @@ export function InputGroup({
           <div
             ref={ref}
             role="group"
-            aria-label={label}
+            aria-labelledby={labelId}
             data-testid={testId}
             {...rest}
             {...mergeProps(

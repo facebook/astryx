@@ -16,33 +16,28 @@ import {InputGroupText} from './InputGroupText';
 import {TextInput} from '../TextInput';
 
 describe('InputGroup', () => {
-  it('renders a group with aria-label', () => {
+  it('names the group via the label element (forms-14)', () => {
     render(
       <InputGroup label="Price">
         <InputGroupText>$</InputGroupText>
-        <TextInput
-          label="Amount"
-          isLabelHidden
-          value=""
-          onChange={() => {}}
-        />
+        <TextInput label="Amount" isLabelHidden value="" onChange={() => {}} />
       </InputGroup>,
     );
 
-    const group = screen.getByRole('group');
+    // The group is named by the field label via aria-labelledby (not a
+    // duplicated aria-label), and the label is not an orphaned htmlFor.
+    const group = screen.getByRole('group', {name: 'Price'});
     expect(group).toBeInTheDocument();
-    expect(group).toHaveAttribute('aria-label', 'Price');
+    expect(group).not.toHaveAttribute('aria-label');
+    const label = screen.getByText('Price').closest('label');
+    expect(label).not.toHaveAttribute('for');
+    expect(group.getAttribute('aria-labelledby')).toBe(label?.id);
   });
 
   it('renders the visible label', () => {
     render(
       <InputGroup label="Price">
-        <TextInput
-          label="Amount"
-          isLabelHidden
-          value=""
-          onChange={() => {}}
-        />
+        <TextInput label="Amount" isLabelHidden value="" onChange={() => {}} />
       </InputGroup>,
     );
 
@@ -53,12 +48,7 @@ describe('InputGroup', () => {
     render(
       <InputGroup label="Price">
         <InputGroupText>$</InputGroupText>
-        <TextInput
-          label="Amount"
-          isLabelHidden
-          value=""
-          onChange={() => {}}
-        />
+        <TextInput label="Amount" isLabelHidden value="" onChange={() => {}} />
       </InputGroup>,
     );
 
@@ -68,12 +58,7 @@ describe('InputGroup', () => {
   it('renders the input', () => {
     render(
       <InputGroup label="Price">
-        <TextInput
-          label="Amount"
-          isLabelHidden
-          value=""
-          onChange={() => {}}
-        />
+        <TextInput label="Amount" isLabelHidden value="" onChange={() => {}} />
       </InputGroup>,
     );
 
@@ -97,12 +82,7 @@ describe('InputGroup', () => {
   it('applies data-testid', () => {
     render(
       <InputGroup label="Price" data-testid="price-group">
-        <TextInput
-          label="Amount"
-          isLabelHidden
-          value=""
-          onChange={() => {}}
-        />
+        <TextInput label="Amount" isLabelHidden value="" onChange={() => {}} />
       </InputGroup>,
     );
 
@@ -112,12 +92,7 @@ describe('InputGroup', () => {
   it('renders description text', () => {
     render(
       <InputGroup label="Price" description="Enter the price in USD">
-        <TextInput
-          label="Amount"
-          isLabelHidden
-          value=""
-          onChange={() => {}}
-        />
+        <TextInput label="Amount" isLabelHidden value="" onChange={() => {}} />
       </InputGroup>,
     );
 
@@ -129,12 +104,7 @@ describe('InputGroup', () => {
       <InputGroup
         label="Price"
         status={{type: 'error', message: 'Price is required'}}>
-        <TextInput
-          label="Amount"
-          isLabelHidden
-          value=""
-          onChange={() => {}}
-        />
+        <TextInput label="Amount" isLabelHidden value="" onChange={() => {}} />
       </InputGroup>,
     );
 
@@ -144,12 +114,7 @@ describe('InputGroup', () => {
   it('renders with hidden label', () => {
     render(
       <InputGroup label="Price" isLabelHidden>
-        <TextInput
-          label="Amount"
-          isLabelHidden
-          value=""
-          onChange={() => {}}
-        />
+        <TextInput label="Amount" isLabelHidden value="" onChange={() => {}} />
       </InputGroup>,
     );
 
@@ -160,24 +125,14 @@ describe('InputGroup', () => {
   it('renders with different sizes', () => {
     const {rerender} = render(
       <InputGroup label="Price" size="sm">
-        <TextInput
-          label="Amount"
-          isLabelHidden
-          value=""
-          onChange={() => {}}
-        />
+        <TextInput label="Amount" isLabelHidden value="" onChange={() => {}} />
       </InputGroup>,
     );
     expect(screen.getByRole('textbox')).toBeInTheDocument();
 
     rerender(
       <InputGroup label="Price" size="lg">
-        <TextInput
-          label="Amount"
-          isLabelHidden
-          value=""
-          onChange={() => {}}
-        />
+        <TextInput label="Amount" isLabelHidden value="" onChange={() => {}} />
       </InputGroup>,
     );
     expect(screen.getByRole('textbox')).toBeInTheDocument();
