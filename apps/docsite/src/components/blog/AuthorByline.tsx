@@ -7,9 +7,11 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
+import {Fragment} from 'react';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {AvatarGroup} from '@astryxdesign/core/AvatarGroup';
 import {Text} from '@astryxdesign/core/Text';
+import {Link} from '@astryxdesign/core/Link';
 import {HStack} from '@astryxdesign/core/Layout';
 import {Divider} from '@astryxdesign/core/Divider';
 import {resolveAuthor} from '../../content/blog/authors';
@@ -54,7 +56,10 @@ export function AuthorByline({
   const resolved = authors.map(resolveAuthor);
   const avatarSize = variant === 'full' ? 'small' : 'tiny';
   const textType = variant === 'full' ? 'body' : 'supporting';
-  const names = resolved.map(a => a.name).join(', ');
+  // Only link author names in the full (article) byline. The compact byline
+  // renders inside a card-wide anchor (BlogCard), where a nested <a> would be
+  // invalid HTML and break hydration.
+  const linkAuthors = variant === 'full';
 
   return (
     <HStack
@@ -69,7 +74,23 @@ export function AuthorByline({
             ))}
           </AvatarGroup>
           <Text type={textType} color="secondary">
-            {names}
+            {resolved.map((author, i) => (
+              <Fragment key={author.key}>
+                {i > 0 ? ', ' : ''}
+                {linkAuthors && author.href ? (
+                  <Link
+                    href={author.href}
+                    type={textType}
+                    color="secondary"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    {author.name}
+                  </Link>
+                ) : (
+                  author.name
+                )}
+              </Fragment>
+            ))}
           </Text>
           <Divider orientation="vertical" xstyle={styles.divider} />
         </>
