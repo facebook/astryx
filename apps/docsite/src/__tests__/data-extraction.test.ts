@@ -909,3 +909,32 @@ describe('Card playground defaults', () => {
     expect(typeof defaults!.children).toBe('object');
   });
 });
+
+// ── Vertical ToggleButtonGroup example (#2707) ─────────────────────────────
+// ToggleButtonGroup supports orientation="vertical", but no docsite example
+// demonstrated it — the prop was undiscoverable without reading the API
+// table. A dedicated vertical example block must exist and actually use the
+// vertical orientation.
+describe('ToggleButtonGroup vertical example', () => {
+  it('discovers the ToggleButtonGroupVertical block', () => {
+    const block = blocks.find(b => b.dirName === 'ToggleButtonGroupVertical');
+    expect(block).toBeDefined();
+    expect(block!.exampleFor).toBe('ToggleButtonGroup');
+    expect(block!.isShowcase).toBe(false);
+    expect(block!.name).toBe('ToggleButtonGroup — Vertical');
+  });
+
+  it('registers it among the ToggleButtonGroup examples', () => {
+    const examples = exampleRegistry['ToggleButtonGroup'] ?? [];
+    const vertical = examples.find(e => /Vertical/i.test(e.name));
+    expect(vertical).toBeDefined();
+    expect(vertical!.source).toContain('orientation="vertical"');
+  });
+
+  it('demonstrates both single-select and multi-select stacks', () => {
+    const examples = exampleRegistry['ToggleButtonGroup'] ?? [];
+    const vertical = examples.find(e => /Vertical/i.test(e.name));
+    expect(vertical).toBeDefined();
+    expect(vertical!.source).toContain('type="multiple"');
+  });
+});
