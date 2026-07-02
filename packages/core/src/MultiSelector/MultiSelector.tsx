@@ -710,19 +710,27 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   }, []);
 
   // Handle toggle
-  // Handle clear button click
+  // Clear all selected values. Shared by the clear button and the keyboard
+  // Delete/Backspace path so clearing is reachable without a mouse.
+  const clearValues = useCallback(() => {
+    onChange([]);
+    if (changeAction) {
+      startTransition(async () => {
+        setOptimisticValue([]);
+        await changeAction([]);
+      });
+    }
+  }, [onChange, changeAction, startTransition, setOptimisticValue]);
+
+  // Whether there is at least one selected value (clearing is meaningful).
+  const hasValue = optimisticValue.length > 0;
+
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
-      onChange([]);
-      if (changeAction) {
-        startTransition(async () => {
-          setOptimisticValue([]);
-          await changeAction([]);
-        });
-      }
+      clearValues();
     },
-    [onChange, changeAction, startTransition, setOptimisticValue],
+    [clearValues],
   );
 
   const handleToggle = useCallback(
@@ -845,6 +853,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }, [popover, hasSearch, optimisticValue]),
     onClose: popover.hide,
     onToggle: handleNavigableToggle,
+    onClear: hasClear ? clearValues : undefined,
+    hasValue,
     listboxId,
   });
 

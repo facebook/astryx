@@ -652,6 +652,18 @@ export function Selector<T extends SelectorOptionType>(
       ? {marginBlockStart: `-${selectedItemOffset}px`}
       : undefined;
 
+  // Clear the current value. Shared by the clear button and the keyboard
+  // Delete/Backspace path so clearing is reachable without a mouse.
+  const clearValue = useCallback(() => {
+    onChange?.(null);
+    if (changeAction) {
+      startTransition(async () => {
+        setOptimisticValue(undefined);
+        await changeAction(null);
+      });
+    }
+  }, [onChange, changeAction, startTransition, setOptimisticValue]);
+
   // Selector behavior (keyboard nav, typeahead, selection)
   const {
     highlightedIndex,
@@ -688,6 +700,7 @@ export function Selector<T extends SelectorOptionType>(
       },
       [onChange, changeAction, startTransition, setOptimisticValue],
     ),
+    onClear: hasClear ? clearValue : undefined,
     listboxId,
   });
 
@@ -708,15 +721,9 @@ export function Selector<T extends SelectorOptionType>(
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
-      onChange?.(null);
-      if (changeAction) {
-        startTransition(async () => {
-          setOptimisticValue(undefined);
-          await changeAction(null);
-        });
-      }
+      clearValue();
     },
-    [onChange, changeAction, startTransition, setOptimisticValue],
+    [clearValue],
   );
 
   // Render search input
