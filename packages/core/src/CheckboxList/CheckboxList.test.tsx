@@ -39,10 +39,7 @@ describe('CheckboxList', () => {
 
   it('checks the correct items based on value prop', () => {
     render(
-      <CheckboxList
-        label="Preferences"
-        value={['a', 'c']}
-        onChange={() => {}}>
+      <CheckboxList label="Preferences" value={['a', 'c']} onChange={() => {}}>
         <CheckboxListItem label="Option A" value="a" />
         <CheckboxListItem label="Option B" value="b" />
         <CheckboxListItem label="Option C" value="c" />
@@ -58,10 +55,7 @@ describe('CheckboxList', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     render(
-      <CheckboxList
-        label="Preferences"
-        value={['a']}
-        onChange={handleChange}>
+      <CheckboxList label="Preferences" value={['a']} onChange={handleChange}>
         <CheckboxListItem label="Option A" value="a" />
         <CheckboxListItem label="Option B" value="b" />
       </CheckboxList>,
@@ -272,11 +266,7 @@ describe('CheckboxList', () => {
           isChecked={false}
           onCheck={handleSelectAll}
         />
-        <CheckboxListItem
-          label="Name"
-          isChecked={true}
-          onCheck={handleCheck}
-        />
+        <CheckboxListItem label="Name" isChecked={true} onCheck={handleCheck} />
         <CheckboxListItem
           label="Email"
           isChecked={false}
@@ -347,8 +337,15 @@ describe('CheckboxListItem standalone mode', () => {
         <CheckboxListItem label="Partial" isChecked="indeterminate" />
       </List>,
     );
+    // The inner native checkbox exposes mixed state via the indeterminate DOM
+    // property (not a redundant aria-checked, forms-16); the list row still
+    // carries aria-checked="mixed" for its own listitem semantics.
     const checkbox = screen.getByRole('checkbox');
-    expect(checkbox).toHaveAttribute('aria-checked', 'mixed');
+    expect(checkbox).toBeInstanceOf(HTMLInputElement);
+    if (checkbox instanceof HTMLInputElement) {
+      expect(checkbox.indeterminate).toBe(true);
+    }
+    expect(checkbox).not.toHaveAttribute('aria-checked');
   });
 
   it('calls onCheck with true when clicking indeterminate item', async () => {

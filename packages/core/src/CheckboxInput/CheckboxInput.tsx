@@ -376,7 +376,10 @@ export function CheckboxInput({
   const isChecked = optimisticValue === true;
   const isCheckedOrIndeterminate = isChecked || isIndeterminate;
 
-  // Sync the native indeterminate DOM property (can't be set via JSX attribute)
+  // Sync the native indeterminate DOM property (can't be set via JSX
+  // attribute). On a native checkbox this is the authoritative way to expose
+  // the mixed state — a separate aria-checked="mixed" would be redundant and
+  // can desync from / override the native state (forms-16), so it is omitted.
   const indeterminateRef = useCallback(
     (el: HTMLInputElement | null) => {
       if (el) {
@@ -436,7 +439,6 @@ export function CheckboxInput({
             }}
             onFocus={onFocus}
             onBlur={onBlur}
-            aria-checked={isIndeterminate ? 'mixed' : undefined}
             aria-readonly={isReadOnly || undefined}
             aria-describedby={ariaDescribedBy}
             aria-invalid={status?.type === 'error' ? true : undefined}
