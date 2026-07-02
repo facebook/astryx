@@ -30,10 +30,10 @@ interface UseMultiComboboxOptions {
    */
   onClear?: () => void;
   /**
-   * Whether there is anything to clear (i.e. at least one value selected). The
-   * Delete/Backspace clear path is skipped when false.
+   * Whether at least one value is selected (i.e. there is something to clear).
+   * The Delete/Backspace clear path is skipped when false.
    */
-  canClear?: boolean;
+  hasValue?: boolean;
   listboxId: string;
 }
 
@@ -61,7 +61,7 @@ export function useMultiCombobox({
   onClose,
   onToggle,
   onClear,
-  canClear = false,
+  hasValue = false,
   listboxId,
 }: UseMultiComboboxOptions): UseMultiComboboxResult {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -198,7 +198,7 @@ export function useMultiCombobox({
           // selected values from the closed trigger so clearing is not
           // mouse-only. Skipped in search mode (keys edit the query) and while
           // the popup is open (arrow navigation owns interaction).
-          if (!hasSearch && !isOpen && onClear != null && canClear) {
+          if (!hasSearch && !isOpen && onClear != null && hasValue) {
             e.preventDefault();
             onClear();
           }
@@ -244,7 +244,7 @@ export function useMultiCombobox({
       typeahead,
       hasSearch,
       onClear,
-      canClear,
+      hasValue,
     ],
   );
 
