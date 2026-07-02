@@ -41,6 +41,17 @@ export interface UseListFocusOptions {
    * @default 'vertical'
    */
   orientation?: 'horizontal' | 'vertical';
+
+  /**
+   * Accept both arrow axes regardless of `orientation`, per the WAI-ARIA APG
+   * allowance for tab strips: next = ArrowRight or ArrowDown, prev = ArrowLeft
+   * or ArrowUp (Home/End still jump to the ends). Use for widgets where the
+   * caller wants keyboard users to navigate without knowing the layout axis;
+   * `orientation` then only affects the reported `aria-orientation`. When
+   * false (the default), navigation is strictly orientation-gated.
+   * @default false
+   */
+  bothAxes?: boolean;
 }
 
 /**
@@ -102,6 +113,7 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
     wrap = true,
     onEscape,
     orientation = 'vertical',
+    bothAxes = false,
   } = options;
 
   const listRef = useRef<T>(null);
@@ -222,38 +234,35 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       const items = getItems();
       let handled = true;
 
-      const nextKey = orientation === 'horizontal' ? 'ArrowRight' : 'ArrowDown';
-      const prevKey = orientation === 'horizontal' ? 'ArrowLeft' : 'ArrowUp';
+      // When `bothAxes` is set, either axis' arrows navigate (tab-strip APG
+      // allowance); otherwise navigation is strictly orientation-gated.
+      const isNext = bothAxes
+        ? e.key === 'ArrowRight' || e.key === 'ArrowDown'
+        : e.key === (orientation === 'horizontal' ? 'ArrowRight' : 'ArrowDown');
+      const isPrev = bothAxes
+        ? e.key === 'ArrowLeft' || e.key === 'ArrowUp'
+        : e.key === (orientation === 'horizontal' ? 'ArrowLeft' : 'ArrowUp');
 
-      switch (e.key) {
-        case nextKey: {
-          const from = currentIndex === -1 ? 0 : currentIndex + 1;
-          const next = findEnabledIndex(items, from, 1, wrap);
-          if (next !== -1) {
-            items[next]?.focus();
-          }
-          break;
+      if (isNext) {
+        const from = currentIndex === -1 ? 0 : currentIndex + 1;
+        const next = findEnabledIndex(items, from, 1, wrap);
+        if (next !== -1) {
+          items[next]?.focus();
         }
-        case prevKey: {
-          const from =
-            currentIndex === -1 ? items.length - 1 : currentIndex - 1;
-          const prev = findEnabledIndex(items, from, -1, wrap);
-          if (prev !== -1) {
-            items[prev]?.focus();
-          }
-          break;
+      } else if (isPrev) {
+        const from = currentIndex === -1 ? items.length - 1 : currentIndex - 1;
+        const prev = findEnabledIndex(items, from, -1, wrap);
+        if (prev !== -1) {
+          items[prev]?.focus();
         }
-        case 'Home':
-          focusFirst();
-          break;
-        case 'End':
-          focusLast();
-          break;
-        case 'Escape':
-          onEscape?.();
-          break;
-        default:
-          handled = false;
+      } else if (e.key === 'Home') {
+        focusFirst();
+      } else if (e.key === 'End') {
+        focusLast();
+      } else if (e.key === 'Escape') {
+        onEscape?.();
+      } else {
+        handled = false;
       }
 
       if (handled) {
@@ -265,6 +274,7 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       getItems,
       wrap,
       orientation,
+      bothAxes,
       findEnabledIndex,
       focusFirst,
       focusLast,
