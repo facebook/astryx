@@ -164,10 +164,13 @@ export function parseTimeInput(
 
   const trimmed = input.trim().toLowerCase();
 
-  // Check for AM/PM
-  const hasMeridiem = /[ap]m?\s*$/i.test(trimmed);
+  // Check for AM/PM. hasMeridiem is derived from isPM/isAM so the detection
+  // can never drift from them: it previously used its own regex without the
+  // optional dots, so dotted meridiems ("2:30 p.m.") skipped the 12h -> 24h
+  // conversion and parsed 12 hours off.
   const isPM = /p\.?m?\.?\s*$/i.test(trimmed);
   const isAM = /a\.?m?\.?\s*$/i.test(trimmed);
+  const hasMeridiem = isPM || isAM;
 
   // Remove AM/PM suffix
   const timeStr = trimmed.replace(/\s*[ap]\.?m?\.?\s*$/i, '').trim();

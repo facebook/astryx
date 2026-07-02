@@ -144,11 +144,21 @@ describe('parseTimeInput', () => {
     expect(parseTimeInput('12pm')).toBe('12:00');
   });
 
+  it('parses dotted meridiems (a.m./p.m.)', () => {
+    expect(parseTimeInput('2:30 p.m.')).toBe('14:30');
+    expect(parseTimeInput('2:30 P.M.')).toBe('14:30');
+    expect(parseTimeInput('2:30 p.m')).toBe('14:30');
+    expect(parseTimeInput('12 a.m.')).toBe('00:00');
+    expect(parseTimeInput('12 p.m.')).toBe('12:00');
+    expect(parseTimeInput('2 p.m.')).toBe('14:00');
+  });
+
   it('returns null for invalid input', () => {
     expect(parseTimeInput('')).toBeNull();
     expect(parseTimeInput('abc')).toBeNull();
     expect(parseTimeInput('25:00')).toBeNull();
     expect(parseTimeInput('13:00 PM')).toBeNull(); // 13 is invalid in 12h format
+    expect(parseTimeInput('13:00 p.m.')).toBeNull(); // dotted variant rejected too
   });
 });
 
