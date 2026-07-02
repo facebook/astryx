@@ -86,6 +86,20 @@ export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
    */
   inputID: string;
   /**
+   * Optional `id` applied to the `<label>` element itself, so a grouping
+   * control (e.g. `role="radiogroup"`) can reference it via `aria-labelledby`.
+   */
+  labelID?: string;
+  /**
+   * When true, the field wraps a group of controls (e.g. a radiogroup) rather
+   * than a single input, so the `<label>`'s `htmlFor` is omitted — a label
+   * cannot be associated with a group via `htmlFor`, and pointing it at a
+   * non-existent id makes label clicks dead. Pair with `labelID` +
+   * `aria-labelledby` on the group.
+   * @default false
+   */
+  isGroupLabel?: boolean;
+  /**
    * Whether to visually hide the label and description (still accessible
    * to screen readers). When hidden, the entire label group is rendered
    * with sr-only styles and takes up no layout space.
@@ -142,6 +156,8 @@ export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
 export function FieldLabel({
   label,
   inputID,
+  labelID,
+  isGroupLabel = false,
   isLabelHidden = false,
   isDisabled = false,
   isOptional = false,
@@ -158,7 +174,8 @@ export function FieldLabel({
     <>
       <label
         ref={ref}
-        htmlFor={inputID}
+        id={labelID}
+        htmlFor={isGroupLabel ? undefined : inputID}
         {...mergeProps(
           themeProps('field-label'),
           stylex.props(

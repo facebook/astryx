@@ -103,6 +103,18 @@ export interface FieldProps extends Omit<
    */
   inputID: string;
   /**
+   * Optional `id` applied to the `<label>` so a grouping control (radiogroup,
+   * checkbox group) can reference it via `aria-labelledby`.
+   */
+  labelID?: string;
+  /**
+   * When the field wraps a group of controls rather than a single input, set
+   * this so the label's `htmlFor` (which can't target a group) is omitted.
+   * Pair with `labelID` + `aria-labelledby` on the group.
+   * @default false
+   */
+  isGroupLabel?: boolean;
+  /**
    * ID for the description element (use for aria-describedby on the input).
    */
   descriptionID?: string;
@@ -172,6 +184,8 @@ export function Field({
   isLabelHidden = false,
   description,
   inputID,
+  labelID,
+  isGroupLabel = false,
   descriptionID,
   isOptional = false,
   isRequired = false,
@@ -206,6 +220,8 @@ export function Field({
     <FieldLabel
       label={label}
       inputID={inputID}
+      labelID={labelID}
+      isGroupLabel={isGroupLabel}
       isLabelHidden={isLabelHidden}
       isDisabled={isDisabled}
       isOptional={isOptional}
@@ -245,10 +261,7 @@ export function Field({
         <div {...stylex.props(styles.horizontalLabelAlign)}>{labelNode}</div>
         <div {...stylex.props(styles.inputStatusWrapper)}>
           {description && (
-            <Text
-              type="supporting"
-              display="block"
-              id={resolvedDescriptionID}>
+            <Text type="supporting" display="block" id={resolvedDescriptionID}>
               {description}
             </Text>
           )}
