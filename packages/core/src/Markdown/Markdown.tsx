@@ -1399,6 +1399,11 @@ function renderBlock(
       return (
         <div
           key={index}
+          // Keyboard-focusable so keyboard users can scroll a horizontally
+          // overflowing GFM table.
+          tabIndex={0}
+          role="region"
+          aria-label="Table"
           {...stylex.props(
             styles.tableWrapper,
             spacing,

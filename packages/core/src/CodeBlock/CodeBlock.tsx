@@ -87,7 +87,7 @@ const styles = stylex.create({
     backgroundColor: 'var(--color-syntax-background)',
     overflow: 'hidden',
   },
-  header: {
+  headerRow: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -96,6 +96,19 @@ const styles = stylex.create({
     position: 'sticky',
     top: 0,
     zIndex: 1,
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+    // Reset default <button> appearance for the collapsible title control.
+    padding: 0,
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: 'inherit',
+    font: 'inherit',
+    textAlign: 'start',
   },
   headerWithDivider: {
     paddingBlock: spacingVars['--spacing-2'],
@@ -469,7 +482,10 @@ function useTokenLines(
 // Span-mode code element
 // ---------------------------------------------------------------------------
 
-function buildSpanLine(lineText: string, tokens: SyntaxToken[]): React.ReactNode {
+function buildSpanLine(
+  lineText: string,
+  tokens: SyntaxToken[],
+): React.ReactNode {
   if (tokens.length === 0) {
     return lineText || '\u200b';
   }
@@ -677,7 +693,9 @@ export function CodeBlock({
   const copyButtonEl = hasCopyButton ? (
     <button
       type="button"
-      onClick={() => {
+      onClick={e => {
+        // Stop propagation so copying does not toggle the collapsible header.
+        e.stopPropagation();
         void handleCopy();
       }}
       aria-label={copied ? 'Copied' : 'Copy code'}
@@ -691,39 +709,44 @@ export function CodeBlock({
 
   const headerEl = showHeader ? (
     <div
-      role={canCollapse ? 'button' : undefined}
-      tabIndex={canCollapse ? 0 : undefined}
-      aria-expanded={canCollapse ? !isCollapsed : undefined}
-      onClick={canCollapse ? () => setIsCollapsed(prev => !prev) : undefined}
-      onKeyDown={
-        canCollapse
-          ? (e: React.KeyboardEvent) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                setIsCollapsed(prev => !prev);
-              }
-            }
-          : undefined
-      }
       {...stylex.props(
-        styles.header,
+        styles.headerRow,
         hasLineNumbers ? styles.headerWithDivider : styles.headerCompact,
-        canCollapse && styles.headerCollapsible,
       )}>
-      <span {...stylex.props(styles.headerTitle)}>
-        {title}
-        {title && languageLabel ? ' — ' : ''}
-        {languageLabel}
-        {canCollapse && (
-          <span
-            {...stylex.props(
-              styles.collapseChevron,
-              isCollapsed && styles.collapseChevronCollapsed,
-            )}>
-            <Icon icon="chevronDown" size="xsm" color="inherit" />
-          </span>
-        )}
-      </span>
+      <div
+        role={canCollapse ? 'button' : undefined}
+        tabIndex={canCollapse ? 0 : undefined}
+        aria-expanded={canCollapse ? !isCollapsed : undefined}
+        onClick={canCollapse ? () => setIsCollapsed(prev => !prev) : undefined}
+        onKeyDown={
+          canCollapse
+            ? (e: React.KeyboardEvent) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setIsCollapsed(prev => !prev);
+                }
+              }
+            : undefined
+        }
+        {...stylex.props(
+          styles.header,
+          canCollapse && styles.headerCollapsible,
+        )}>
+        <span {...stylex.props(styles.headerTitle)}>
+          {title}
+          {title && languageLabel ? ' — ' : ''}
+          {languageLabel}
+          {canCollapse && (
+            <span
+              {...stylex.props(
+                styles.collapseChevron,
+                isCollapsed && styles.collapseChevronCollapsed,
+              )}>
+              <Icon icon="chevronDown" size="xsm" color="inherit" />
+            </span>
+          )}
+        </span>
+      </div>
       {copyButtonEl}
     </div>
   ) : null;
@@ -731,6 +754,11 @@ export function CodeBlock({
   const codeBody = (
     <div
       ref={scrollContainerRef}
+      // The scroll container is keyboard-focusable so keyboard users can
+      // scroll long or wide code that overflows the viewport.
+      tabIndex={0}
+      role="region"
+      aria-label={languageLabel ?? 'Code'}
       {...mergeProps(stylex.props(styles.scrollContainer), {
         style: scrollStyle,
       })}>

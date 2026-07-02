@@ -151,6 +151,11 @@ function TableScrollWrapper({
   return (
     <div
       ref={ref}
+      // Keyboard-focusable so keyboard users can scroll a horizontally
+      // overflowing table. Callers may override role/aria-label via htmlProps.
+      tabIndex={0}
+      role="region"
+      aria-label="Table"
       {...restHtmlProps}
       {...mergeProps(
         themeProps('table-scroll-wrapper'),
