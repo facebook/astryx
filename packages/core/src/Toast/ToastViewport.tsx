@@ -13,6 +13,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
 import {Toast} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
@@ -126,15 +127,28 @@ export function ToastViewport({
   const pendingFocusRef = useRef<string | 'restore' | null>(null);
 
   // Collect a focusable control within a toast node, if any.
+  // Reuses the canonical INTERACTIVE_SELECTORS list (native controls plus
+  // role-based interactive elements) instead of a hand-rolled subset, then
+  // narrows to the first candidate that can actually receive focus —
+  // excluding elements opted out with `tabindex="-1"` and disabled controls.
   const getFocusable = useCallback(
     (container: HTMLElement | null): HTMLElement | null => {
       if (!container) {
         return null;
       }
-      const candidate = container.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      return candidate;
+      const candidates =
+        container.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTORS);
+      for (const candidate of candidates) {
+        if (
+          candidate.getAttribute('tabindex') === '-1' ||
+          candidate.hasAttribute('disabled') ||
+          candidate.getAttribute('aria-disabled') === 'true'
+        ) {
+          continue;
+        }
+        return candidate;
+      }
+      return null;
     },
     [],
   );
