@@ -40,6 +40,12 @@ export interface AstryxCodemodDef {
   description?: string;
   /** When true, the codemod runs only when explicitly requested. */
   isOptional?: boolean;
+  /** Semver string identifying the release this codemod runs in. */
+  version: string;
+  /** IDs of same-package, same-version codemods this one MUST run before. */
+  runBefore?: string[];
+  /** IDs of same-package, same-version codemods that MUST run before this one. */
+  runAfter?: string[];
   /** File extensions this codemod applies to (e.g. ['.tsx', '.ts']). */
   fileExtensions?: string[];
   /** The transform function. */
@@ -60,6 +66,12 @@ export interface AstryxConfigCodemodDef {
   description?: string;
   /** When true, the codemod runs only when explicitly requested. */
   isOptional?: boolean;
+  /** Semver string identifying the release this codemod runs in. */
+  version: string;
+  /** IDs of same-package, same-version codemods this one MUST run before. */
+  runBefore?: string[];
+  /** IDs of same-package, same-version codemods that MUST run before this one. */
+  runAfter?: string[];
   /** The transform function applied to the astryx.config.* file. */
   transform: AstryxCodemodTransform;
 }

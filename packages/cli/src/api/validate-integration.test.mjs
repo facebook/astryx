@@ -60,12 +60,12 @@ describe('validate-integration API', () => {
     writePackage(pkgDir, {
       manifest: `export default { codemods: './codemods' };\n`,
     });
-    const cmDir = path.join(pkgDir, 'codemods', '0.2.0');
+    const cmDir = path.join(pkgDir, 'codemods');
     fs.mkdirSync(cmDir, {recursive: true});
     fs.writeFileSync(
       path.join(cmDir, 'drop-foo.mjs'),
       `import {createCodemod} from ${JSON.stringify(codemodModuleUrl)};\n` +
-        `export default createCodemod({ title: 'Drop foo', transform: (file) => file.source });\n`,
+        `export default createCodemod({ title: 'Drop foo', version: '0.2.0', transform: (file) => file.source });\n`,
     );
 
     const result = await validateLocalIntegration(pkgDir);
@@ -124,7 +124,7 @@ describe('validate-integration API', () => {
     writePackage(pkgDir, {
       manifest: `export default { codemods: './codemods' };\n`,
     });
-    const cmDir = path.join(pkgDir, 'codemods', '0.2.0');
+    const cmDir = path.join(pkgDir, 'codemods');
     fs.mkdirSync(cmDir, {recursive: true});
     // Missing default export → discovery throws → invalid_codemod.
     fs.writeFileSync(path.join(cmDir, 'broken.mjs'), `export const nope = 1;\n`);

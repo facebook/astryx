@@ -68,7 +68,7 @@ function writeSource() {
 
 /**
  * Scaffold a consumer + an installed integration package with codemods.
- * @param {Object<string,string>} codemodFiles "<version>/<id>.mjs" -> body
+ * @param {Object<string,string>} codemodFiles "<id>.mjs" -> body (version in def)
  */
 function scaffoldIntegration(codemodFiles) {
   fs.writeFileSync(
@@ -130,7 +130,7 @@ describe('upgrade integration error policy (skip + warn)', () => {
     // a DEFINITION error. The upgrade must NOT abort; it skips the broken
     // integration's codemods and completes.
     scaffoldIntegration({
-      '0.2.0/bad.mjs': `export default { not: 'a codemod' };\n`,
+      'bad.mjs': `export default { not: 'a codemod' };\n`,
     });
     writeInstalledCore('0.2.0');
     writeSource();
@@ -152,9 +152,9 @@ describe('upgrade integration error policy (skip + warn)', () => {
 
   it('runs a healthy integration codemod for an applicable range', async () => {
     scaffoldIntegration({
-      '0.2.0/drop-foo.mjs':
+      'drop-foo.mjs':
         `import {createCodemod} from ${JSON.stringify(codemodModuleUrl)};\n` +
-        `export default createCodemod({ title: 'Drop foo', transform: (file) => file.source.replace(/foo/g, 'bar') });\n`,
+        `export default createCodemod({ title: 'Drop foo', version: '0.2.0', transform: (file) => file.source.replace(/foo/g, 'bar') });\n`,
     });
     writeInstalledCore('0.2.0');
     writeSource();
@@ -177,9 +177,9 @@ describe('upgrade integration error policy (skip + warn)', () => {
 
   it('--skip-codemod excludes a named integration codemod', async () => {
     scaffoldIntegration({
-      '0.2.0/drop-foo.mjs':
+      'drop-foo.mjs':
         `import {createCodemod} from ${JSON.stringify(codemodModuleUrl)};\n` +
-        `export default createCodemod({ title: 'Drop foo', transform: (file) => file.source.replace(/foo/g, 'bar') });\n`,
+        `export default createCodemod({ title: 'Drop foo', version: '0.2.0', transform: (file) => file.source.replace(/foo/g, 'bar') });\n`,
     });
     writeInstalledCore('0.2.0');
     writeSource();

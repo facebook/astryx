@@ -154,6 +154,10 @@ export function registerUpgrade(program) {
     )
     .option('--codemod <name>', 'Run a specific transform only')
     .option(
+      '--package <pkg>',
+      'Scope --codemod to a specific package (disambiguates a codemod id that exists in more than one package)',
+    )
+    .option(
       '--skip-codemod <name...>',
       'Exclude named codemods (repeatable). Re-run past a failed codemod by skipping it.',
     )
@@ -174,7 +178,12 @@ export function registerUpgrade(program) {
       const json = program.opts().json || false;
       if (!json) p.intro('Upgrade');
 
-      if (!options.list && !options.from) {
+      // --codemod puts us in EXPLICIT mode: run a named codemod regardless of
+      // the version range. In explicit mode --from is optional (we relax the
+      // range gate). Without --codemod, --from remains required (range mode).
+      const explicitMode = !!options.codemod;
+
+      if (!options.list && !explicitMode && !options.from) {
         const msg =
           'Missing required --from. Install the target version first, then run `astryx upgrade --from <old-version>`.';
         if (json)
@@ -185,8 +194,9 @@ export function registerUpgrade(program) {
         return;
       }
 
-      // Validate --from upfront so callers don't silently accept typos.
-      if (!options.list && !isValidSemver(options.from)) {
+      // Validate --from upfront so callers don't silently accept typos. In
+      // explicit mode --from may be omitted; only validate it when present.
+      if (!options.list && options.from && !isValidSemver(options.from)) {
         const msg = `Invalid --from value: "${options.from}". Expected a semver string like 0.0.5.`;
         if (json)
           return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_VERSION);
@@ -233,7 +243,13 @@ export function registerUpgrade(program) {
         return;
       }
 
-      const currentVersion = options.from;
+      // In explicit mode without --from, scan the FULL range (0.0.0 → target)
+      // so the named codemod is reachable regardless of version; the runners'
+      // name filtering then selects only the requested codemod. Also implies
+      // --force so the range gate below never short-circuits.
+      const explicitFullRange = explicitMode && !options.from;
+      const currentVersion = explicitFullRange ? '0.0.0' : options.from;
+      const forceRun = options.force || explicitFullRange;
       const installed = detectInstalledTargetVersion();
       if (!installed) {
         const msg =
@@ -269,7 +285,7 @@ export function registerUpgrade(program) {
       // integration codemods (which DO require a valid loaded config).
       // ───────────────────────────────────────────────────────────────────
 
-      if (!options.force && semverGte(currentVersion, targetVersion)) {
+      if (!forceRun && semverGte(currentVersion, targetVersion)) {
         if (json) {
           return jsonOut('upgrade.status', {
             status: 'up_to_date',
@@ -290,13 +306,99 @@ export function registerUpgrade(program) {
         ...(await getTransformsBetween(currentVersion, targetVersion)),
       ];
 
+      // ── EXPLICIT MODE: --codemod candidate resolution + --package scoping ──
+      //
+      // A named --codemod is resolved across ALL packages (core registry +
+      // every configured integration, all versions). If it matches more than
+      // one package it is AMBIGUOUS: error and suggest --package. --package
+      // scopes which package the named codemod runs from.
+      //
+      // We must know the integration candidates BEFORE running core codemods to
+      // report ambiguity up front, so we discover integrations here (best
+      // effort — a config that cannot load yet simply yields no integration
+      // candidates and we proceed with the core-only view).
+      const CORE_PACKAGE = '@astryxdesign/core';
+      let corePackageAllowed = true;
+      if (explicitMode) {
+        const coreCandidates = [];
+        for (const {version, transforms} of versionManifests) {
+          for (const t of transforms) {
+            if (t.name === options.codemod) {
+              coreCandidates.push({package: CORE_PACKAGE, version});
+            }
+          }
+        }
+
+        /** @type {Array<{package: string, version: string}>} */
+        const integrationCandidates = [];
+        try {
+          const project = await Project.load(process.cwd());
+          const integrationSpecs = uniqueFiles([
+            ...(project.integrations ?? []),
+            ...(options.integration ?? []),
+          ]);
+          const loaded = await loadIntegrations(integrationSpecs);
+          for (const integration of loaded) {
+            if (!integration?.codemods) continue;
+            try {
+              const byVersion = await discoverIntegrationCodemods([integration]);
+              for (const [version, list] of byVersion) {
+                for (const c of list) {
+                  if (c.id === options.codemod) {
+                    integrationCandidates.push({package: c.package, version});
+                  }
+                }
+              }
+            } catch {
+              // Best effort: a broken integration is surfaced by the nudge and
+              // simply contributes no candidates here.
+            }
+          }
+        } catch {
+          // Config not loadable yet (e.g. a pending config codemod repairs it):
+          // proceed with the core-only candidate view.
+        }
+
+        let candidates = [...coreCandidates, ...integrationCandidates];
+        if (options.package) {
+          candidates = candidates.filter(c => c.package === options.package);
+          corePackageAllowed = options.package === CORE_PACKAGE;
+        }
+
+        const distinctPackages = [...new Set(candidates.map(c => c.package))];
+        if (distinctPackages.length > 1) {
+          const list = candidates
+            .map(c => `${c.package}@${c.version}`)
+            .sort()
+            .join(', ');
+          const msg = `Codemod "${options.codemod}" is ambiguous across packages: ${list}. Disambiguate with --package <pkg>.`;
+          if (json)
+            return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
+          p.log.error(msg);
+          p.outro('Aborted');
+          process.exitCode = 1;
+          return;
+        }
+
+        // When --package targets a single non-core package, core codemods with
+        // the same id must not also run.
+        if (options.package && options.package !== CORE_PACKAGE) {
+          corePackageAllowed = false;
+        }
+      }
+
+      // When --package scopes --codemod to a non-core package, the core runner
+      // must not run (even if it holds a same-id codemod). Everywhere below
+      // that reasons about core transforms uses `coreVersionManifests`.
+      const coreVersionManifests = corePackageAllowed ? versionManifests : [];
+
       // Does the selected core set include >=1 CONFIG codemod? A config codemod
       // is the established convention `meta.codemodType === 'config'` (see
       // `toUnifiedEntry` in runner.mjs). This drives the graceful dry-run catch
       // around `Project.load` below: a fixable config error is only "expected"
       // when a pending core config codemod would repair it.
       const coreConfigCodemodNames = [];
-      for (const {transforms} of versionManifests) {
+      for (const {transforms} of coreVersionManifests) {
         for (const t of transforms) {
           if (options.codemod && t.name !== options.codemod) continue;
           if (t.meta?.codemodType === 'config') {
@@ -316,7 +418,7 @@ export function registerUpgrade(program) {
       // requested). Integration counts are added after discovery below.
       let totalTransforms = 0;
       let totalOptional = 0;
-      for (const {transforms} of versionManifests) {
+      for (const {transforms} of coreVersionManifests) {
         for (const t of transforms) {
           if (options.codemod && t.name !== options.codemod) continue;
           if (skipCodemods.has(t.name)) continue;
@@ -349,7 +451,7 @@ export function registerUpgrade(program) {
       // core config codemods WRITE the repaired config to disk; in dry-run they
       // only PREVIEW. This is what makes the v0.1.3 config codemod reachable on
       // a config that the strict loader would otherwise reject.
-      const codemodResult = await runCodemods(versionManifests, {
+      const codemodResult = await runCodemods(coreVersionManifests, {
         apply: options.apply,
         path: options.path,
         codemod: options.codemod,
@@ -461,9 +563,15 @@ export function registerUpgrade(program) {
         try {
           const byVersion = await discoverIntegrationCodemods([integration]);
           for (const [version, list] of byVersion) {
+            // In explicit mode, --package scopes the named codemod to one
+            // package; drop other packages' codemods from the run.
+            const scoped = options.package
+              ? list.filter(c => c.package === options.package)
+              : list;
+            if (scoped.length === 0) continue;
             const existing = integrationCodemodsByVersion.get(version);
-            if (existing) existing.push(...list);
-            else integrationCodemodsByVersion.set(version, [...list]);
+            if (existing) existing.push(...scoped);
+            else integrationCodemodsByVersion.set(version, [...scoped]);
           }
         } catch {
           // Skip this integration's codemods; the validate-integration nudge
@@ -473,7 +581,10 @@ export function registerUpgrade(program) {
       integrationVersionGroups = selectIntegrationCodemods(
         integrationCodemodsByVersion,
         currentVersion,
-        targetVersion,
+        // Explicit --codemod bypasses the version-range gate: select across all
+        // discovered versions so a named codemod above the installed target is
+        // still reachable. The runner's id filter then runs only the request.
+        explicitMode ? '999.999.999' : targetVersion,
       );
       const hasIntegrationCodemods = integrationVersionGroups.some(
         g => g.codemods.length > 0,
@@ -493,7 +604,7 @@ export function registerUpgrade(program) {
       }
 
       // No codemods at all for this range (neither core nor integration).
-      if (versionManifests.length === 0 && !hasIntegrationCodemods) {
+      if (coreVersionManifests.length === 0 && !hasIntegrationCodemods) {
         if (json) {
           return jsonOut('upgrade.status', {
             status: 'no_codemods',

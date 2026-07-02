@@ -29,6 +29,23 @@ export const CodemodSchema = z
     title: z.string(),
     description: z.string().optional(),
     isOptional: z.boolean().optional().default(false),
+    /**
+     * Semver string identifying the release this codemod runs in during an
+     * upgrade. With the flat-directory convention the version is declared here,
+     * not derived from a parent folder name.
+     */
+    version: z.string(),
+    /**
+     * IDs of other codemods (same package, same version) that this codemod MUST
+     * run before. Intra-version only; cross-version ordering is implicit from
+     * semver.
+     */
+    runBefore: z.array(z.string()).optional(),
+    /**
+     * IDs of other codemods (same package, same version) that MUST run before
+     * this one. Intra-version only.
+     */
+    runAfter: z.array(z.string()).optional(),
     fileExtensions: z.array(z.string()).optional(),
     transform: Fn,
   })
@@ -44,6 +61,12 @@ export const ConfigCodemodSchema = z
     title: z.string(),
     description: z.string().optional(),
     isOptional: z.boolean().optional().default(false),
+    /** Semver string identifying the release this codemod runs in. */
+    version: z.string(),
+    /** IDs of same-version codemods this one MUST run before. */
+    runBefore: z.array(z.string()).optional(),
+    /** IDs of same-version codemods that MUST run before this one. */
+    runAfter: z.array(z.string()).optional(),
     transform: Fn,
   })
   .strict();

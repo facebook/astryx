@@ -57,16 +57,32 @@ describe('createConfigCodemod (stamp-only)', () => {
 describe('CodemodEnvelopeSchema (load-boundary validation)', () => {
   it('accepts a stamped code codemod (incl. defaults)', () => {
     const parsed = CodemodEnvelopeSchema.parse(
-      createCodemod({title: 'Drop foo', transform: () => null}),
+      createCodemod({title: 'Drop foo', version: '0.2.0', transform: () => null}),
     );
     expect(parsed.type).toBe('code');
+    expect(parsed.version).toBe('0.2.0');
     expect(parsed.isOptional).toBe(false); // schema default applied at load
+  });
+
+  it('accepts runBefore / runAfter ordering hints', () => {
+    const parsed = CodemodEnvelopeSchema.parse(
+      createCodemod({
+        title: 'Ordered',
+        version: '0.2.0',
+        runBefore: ['b'],
+        runAfter: ['a'],
+        transform: () => null,
+      }),
+    );
+    expect(parsed.runBefore).toEqual(['b']);
+    expect(parsed.runAfter).toEqual(['a']);
   });
 
   it('accepts a PLAIN OBJECT envelope (no factory required)', () => {
     const parsed = CodemodEnvelopeSchema.parse({
       type: 'code',
       title: 'Hand-written',
+      version: '0.2.0',
       transform: () => null,
     });
     expect(parsed.title).toBe('Hand-written');
@@ -74,9 +90,19 @@ describe('CodemodEnvelopeSchema (load-boundary validation)', () => {
 
   it('accepts a stamped config codemod', () => {
     const parsed = CodemodEnvelopeSchema.parse(
-      createConfigCodemod({title: 'Bump', transform: () => null}),
+      createConfigCodemod({title: 'Bump', version: '0.2.0', transform: () => null}),
     );
     expect(parsed.type).toBe('config');
+  });
+
+  it('rejects a missing version', () => {
+    expect(() =>
+      CodemodEnvelopeSchema.parse({
+        type: 'code',
+        title: 'x',
+        transform: () => null,
+      }),
+    ).toThrow(/version/i);
   });
 
   it('rejects a missing title', () => {
@@ -126,6 +152,7 @@ describe('CodemodEnvelopeSchema (load-boundary validation)', () => {
       CodemodEnvelopeSchema.parse({
         type: 'config',
         title: 'x',
+        version: '0.2.0',
         transform: () => null,
         fileExtensions: ['.ts'],
       }),
