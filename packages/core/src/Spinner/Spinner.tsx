@@ -70,7 +70,13 @@ const styles = stylex.create({
   canvas: {
     backfaceVisibility: 'hidden',
     display: 'block',
-    animationDuration: durationVars['--duration-slow-min'],
+    // Slow the rotation dramatically under reduced-motion rather than freezing
+    // it (a frozen spinner reads as broken), matching ProgressBar's approach.
+    // The role="status" + "Loading" label still convey busy state (obs-6).
+    animationDuration: {
+      default: durationVars['--duration-slow-min'],
+      '@media (prefers-reduced-motion: reduce)': '3s',
+    },
     animationIterationCount: 'infinite',
     animationName: rotation,
     animationTimingFunction: 'linear',
