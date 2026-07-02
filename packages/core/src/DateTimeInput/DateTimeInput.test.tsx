@@ -486,7 +486,7 @@ describe('DateTimeInput', () => {
         />,
       );
 
-      const timeInput = screen.getByLabelText('Time');
+      const timeInput = screen.getByLabelText('Meeting time');
       fireEvent.change(timeInput, {target: {value: '99:99 zz'}});
 
       expect(timeInput).toHaveAttribute('aria-invalid', 'true');
@@ -501,7 +501,7 @@ describe('DateTimeInput', () => {
         />,
       );
 
-      const timeInput = screen.getByLabelText('Time');
+      const timeInput = screen.getByLabelText('Meeting time');
       fireEvent.change(timeInput, {target: {value: '3:45 pm'}});
 
       expect(timeInput).not.toHaveAttribute('aria-invalid');
@@ -516,7 +516,7 @@ describe('DateTimeInput', () => {
         />,
       );
 
-      const timeInput = screen.getByLabelText('Time');
+      const timeInput = screen.getByLabelText('Meeting time');
       fireEvent.change(timeInput, {target: {value: '99:99 zz'}});
 
       expect(screen.getByText('Invalid time')).toBeInTheDocument();
