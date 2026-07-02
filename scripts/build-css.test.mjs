@@ -13,6 +13,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import {execSync} from 'child_process';
+import {withRepoBuildLock} from './repo-build-lock.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -50,9 +51,13 @@ describe('build-css astryx.css', () => {
 
   beforeAll(async () => {
     console.log('Running pnpm build...');
-    execSync('pnpm build', {cwd: ROOT, stdio: 'pipe', timeout: 120_000});
+    // Serialized with the build-theme suites, which build @astryxdesign/core
+    // into the same dist directory from parallel workers (#3479).
+    withRepoBuildLock(() => {
+      execSync('pnpm build', {cwd: ROOT, stdio: 'pipe', timeout: 300_000});
+    });
     astryxCss = await fs.readFile(path.join(CORE_DIST, 'astryx.css'), 'utf8');
-  }, 180_000);
+  }, 500_000);
 
   it('contains @media rules', () => {
     const mediaRules = extractMediaRules(astryxCss);
