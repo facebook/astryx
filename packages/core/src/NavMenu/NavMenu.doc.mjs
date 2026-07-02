@@ -17,6 +17,15 @@ export const docs = {
       'NavHeadingMenuItem renders individual selectable items. ' +
       'Pass as the menu prop of SideNavHeading or TopNavHeading.',
   },
+  playground: {
+    defaults: {
+      children: [
+        {__element: 'NavHeadingMenuItem', props: {label: 'Dashboard', href: '#'}},
+        {__element: 'NavHeadingMenuItem', props: {label: 'Analytics', href: '#'}},
+        {__element: 'NavHeadingMenuItem', props: {label: 'Settings', href: '#'}},
+      ],
+    },
+  },
   props: [
     {name: 'children', type: 'ReactNode', required: true, description: 'Menu items.'},
     {name: 'size', type: "'sm' | 'md' | 'lg'", default: "'md'", description: 'Controls min-width and item padding.'},
