@@ -138,10 +138,9 @@ pnpm docsite
 which runs the doc site's `generate` step (theme CSS, registries,
 playground scope) before booting Next.
 
-> **Note:** `pnpm docs` (without `run`) collides with the `npm docs`
-> builtin, which tries to open the package's npm page in a browser.
-> Use `pnpm docsite` instead (or `pnpm run docs` if you prefer the
-> original script name).
+> **Note:** `pnpm docs` collides with the `npm docs` builtin, which
+> tries to open the package's npm page in a browser. Use `pnpm docsite`
+> instead.
 
 ## Project Structure
 

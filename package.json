@@ -19,7 +19,6 @@
     "lint:strict": "pnpm check:repo && ASTRYX_STRICT_LINT=1 eslint . --cache",
     "storybook": "pnpm -F @astryxdesign/storybook dev",
     "storybook:build": "pnpm -F @astryxdesign/storybook build",
-    "docs": "pnpm -F @astryxdesign/docsite dev",
     "docsite": "pnpm -F @astryxdesign/docsite dev",
     "sync:exports": "node scripts/sync-exports.js",
     "sync:exports:check": "node scripts/sync-exports.js --check",
