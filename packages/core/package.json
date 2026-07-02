@@ -226,6 +226,11 @@
       "types": "./dist/Divider/index.d.ts",
       "default": "./dist/Divider/index.js"
     },
+    "./Drawer": {
+      "source": "./src/Drawer/index.ts",
+      "types": "./dist/Drawer/index.d.ts",
+      "default": "./dist/Drawer/index.js"
+    },
     "./DropdownMenu": {
       "source": "./src/DropdownMenu/index.ts",
       "types": "./dist/DropdownMenu/index.d.ts",
