@@ -295,9 +295,16 @@ export function Carousel({
     const firstChild = el.firstElementChild as HTMLElement | null;
     const itemWidth = firstChild ? firstChild.offsetWidth : 0;
     const amount = el.clientWidth - itemWidth * 0.5;
+    // Respect the user's reduced-motion preference — mirrors the CSS
+    // scroll-behavior override so button-driven scrolling doesn't animate
+    // for users who opted out of motion.
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     el.scrollBy({
       left: direction * Math.max(amount, itemWidth),
-      behavior: 'smooth',
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
     });
   }, []);
 
@@ -360,6 +367,11 @@ export function Carousel({
                 variant="ghost"
                 size="sm"
                 isIconOnly
+                // Disabled when there's nothing to scroll toward. Keeps the
+                // button mounted (stable layout/focus) but removes it from the
+                // tab order and a11y tree while it's visually hidden, so
+                // keyboard users don't land on an invisible control.
+                isDisabled={!overflowStart}
                 onClick={() => scrollBy(-1)}
                 xstyle={styles.buttonRadiusOverride}
               />
@@ -376,6 +388,9 @@ export function Carousel({
                 variant="ghost"
                 size="sm"
                 isIconOnly
+                // See "Scroll left" — disabled while visually hidden so the
+                // button stays mounted but out of the tab order / a11y tree.
+                isDisabled={!overflowEnd}
                 onClick={() => scrollBy(1)}
                 xstyle={styles.buttonRadiusOverride}
               />
