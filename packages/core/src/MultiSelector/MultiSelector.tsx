@@ -4,7 +4,7 @@
 
 /**
  * @file MultiSelector.tsx
- * @input Uses React, StyleX, usePopover, CheckboxInput, Field, Badge, Icon
+ * @input Uses React, StyleX, usePopover, useTooltip, CheckboxInput, Field, Badge, Icon
  * @output Exports MultiSelector component
  * @position Core implementation; consumed by index.ts
  *
@@ -27,6 +27,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
+import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import type {IconName} from '../Icon';
 import {
@@ -398,6 +399,30 @@ export interface MultiSelectorProps<
   isDisabled?: boolean;
 
   /**
+   * Explains why the selector is disabled. When set together with
+   * `isDisabled`, the selector shows a tooltip with this text on hover and
+   * keyboard focus, and the trigger stays focusable (via `aria-disabled`)
+   * so the reason is discoverable by keyboard and assistive technology.
+   * Activation stays blocked.
+   *
+   * Use this instead of wrapping a disabled selector in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <MultiSelector
+   *   label="Columns"
+   *   options={columns}
+   *   value={selected}
+   *   onChange={setSelected}
+   *   isDisabled
+   *   disabledReason="Select a table first"
+   * />
+   * ```
+   */
+  disabledReason?: string;
+
+  /**
    * The options to display in the selector.
    * Can be strings, objects, dividers, or sections.
    */
@@ -545,6 +570,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  disabledReason,
   options,
   value,
   onChange,
@@ -592,11 +618,26 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the trigger container (which already exists)
+  // and the trigger button stays perceivable via aria-disabled instead of the
+  // disabled attribute. Activation is blocked by the isDisabled guards in
+  // useMultiCombobox (onTriggerClick / onKeyDown).
+  const showsDisabledReason = isDisabled && !!disabledReason;
+  const disabledReasonTooltip = useTooltip({
+    placement: 'above',
+    // The container div is not naturally focusable; focusin bubbles up from
+    // the trigger button, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledReason,
+  });
+
   // Build aria-describedby
   const ariaDescribedBy =
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
+      showsDisabledReason ? disabledReasonTooltip.describedBy : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -1062,9 +1103,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
 
       if (isDivider(option)) {
         flushPending();
-        elements.push(
-          <Divider key={`divider-${i}`} xstyle={styles.divider} />,
-        );
+        elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
       } else if (isSection(option)) {
         flushPending();
         const count = option.options.length;
@@ -1120,6 +1159,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       <div
         ref={el => {
           popover.triggerRef(el);
+          // Anchor + hover/focus listeners for the disabled-reason tooltip.
+          // Handlers are gated internally by isEnabled, and anchor names
+          // compose, so attaching unconditionally is safe.
+          disabledReasonTooltip.ref(el);
         }}
         onClick={onTriggerClick}
         data-testid={testId}
@@ -1157,9 +1200,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           aria-required={isRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
-          disabled={isDisabled}
+          // With a disabledReason the trigger keeps focusability via
+          // aria-disabled so the reason is focus-discoverable; activation is
+          // still blocked by the isDisabled guards in useMultiCombobox.
+          disabled={isDisabled && !showsDisabledReason}
+          aria-disabled={showsDisabledReason ? 'true' : undefined}
           onKeyDown={onKeyDown}
-          tabIndex={isDisabled ? -1 : 0}
+          tabIndex={isDisabled && !showsDisabledReason ? -1 : 0}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerContent)}>
             {renderTriggerContent()}
@@ -1210,6 +1257,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           xstyle: styles.popover,
         },
       )}
+
+      {showsDisabledReason &&
+        disabledReasonTooltip.renderTooltip(disabledReason)}
     </Field>
   );
 }
