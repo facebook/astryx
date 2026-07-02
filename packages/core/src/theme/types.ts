@@ -162,7 +162,7 @@ export type TextColor =
   | 'secondary'
   | 'disabled'
   | 'placeholder'
-  | 'active'
+  | 'accent'
   | 'inherit';
 
 /**

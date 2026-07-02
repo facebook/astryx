@@ -40,7 +40,7 @@ export const docs = {
     },
     {
       name: 'color',
-      type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'active' | 'inherit'",
+      type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'accent' | 'inherit'",
       description: "Text color. Defaults to 'secondary' for the 'supporting' type, 'primary' for all others.",
     },
     {

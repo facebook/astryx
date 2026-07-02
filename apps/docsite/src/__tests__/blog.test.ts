@@ -289,6 +289,6 @@ describe('blog content', () => {
     const post = posts.find(p => p.slug === 'introducing-astryx');
     expect(post).toBeDefined();
     expect(post?.type).toBe('update');
-    expect(post?.authors).toContain('cvkxx');
+    expect(post?.authors).toContain('team');
   });
 });

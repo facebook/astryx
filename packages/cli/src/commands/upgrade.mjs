@@ -438,7 +438,7 @@ export function registerUpgrade(program) {
         } catch {
           if (!json) {
             p.log.warn(
-              `Could not update agent docs. Run \`${getRunPrefix()} astryx agent-docs\` to update manually.`,
+              `Could not update agent docs. Run \`${getRunPrefix()} astryx init --features agents\` to update manually.`,
             );
           }
         }

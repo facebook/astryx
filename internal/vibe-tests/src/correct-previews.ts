@@ -62,7 +62,7 @@ interface CorrectionTask {
  * Gives the LLM the actual API surface to fix against.
  */
 function getComponentDocs(code: string, target: string): string {
-  if (target !== 'xds') {
+  if (target !== 'astryx' && target !== 'astryx-tailwind') {
     return '';
   }
 

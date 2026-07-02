@@ -37,7 +37,7 @@ const meta: Meta<typeof Text> = {
         'secondary',
         'disabled',
         'placeholder',
-        'active',
+        'accent',
         'inherit',
       ],
       description: 'Text color',
@@ -139,9 +139,7 @@ export const AllTypes: Story = {
       <Text type="body">Body: The bulk of content (14px)</Text>
       <Text type="large">Large: Emphasized content (16px)</Text>
       <Text type="label">Label: Form/chart labels (14px medium)</Text>
-      <Text type="supporting">
-        Supporting: Helper text (12px secondary)
-      </Text>
+      <Text type="supporting">Supporting: Helper text (12px secondary)</Text>
       <Text type="code">Code: const x = 1; (14px monospace)</Text>
     </div>
   ),
@@ -166,7 +164,7 @@ export const ColorVariants: Story = {
       <Text type="body" color="placeholder">
         Placeholder color
       </Text>
-      <Text type="body" color="active">
+      <Text type="body" color="accent">
         Active color (accent)
       </Text>
       <div style={{color: 'purple'}}>
@@ -628,7 +626,7 @@ export const MetricsExample: Story = {
         <Text type="body" color="secondary" display="block">
           Conversion
         </Text>
-        <Text type="large" weight="bold" color="active" hasTabularNumbers>
+        <Text type="large" weight="bold" color="accent" hasTabularNumbers>
           23.4%
         </Text>
       </div>
@@ -669,7 +667,7 @@ export const FormLikeContext: Story = {
           These text types create a natural visual hierarchy without any
           additional styling.
         </Text>
-        <Text type="supporting" color="active" display="block">
+        <Text type="supporting" color="accent" display="block">
           Active supporting text draws attention to important details.
         </Text>
       </div>

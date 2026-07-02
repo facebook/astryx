@@ -117,7 +117,7 @@ const linkColorStyles = stylex.create({
   placeholder: {
     color: colorVars['--color-text-secondary'],
   },
-  active: {
+  accent: {
     color: colorVars['--color-text-accent'],
   },
   inherit: {
@@ -203,6 +203,10 @@ export interface LinkProps extends BaseProps<
   isStandalone?: boolean;
   /**
    * Semantic text type for Text. Determines base typography.
+   *
+   * Use `type="inherit"` for inline links inside an existing `Text` element so
+   * the link adopts the surrounding text's size and line-height instead of
+   * imposing its own (e.g. a link within a `large` paragraph).
    * @default 'body'
    */
   type?: TextType;
@@ -216,7 +220,7 @@ export interface LinkProps extends BaseProps<
   weight?: TextWeight;
   /**
    * Text color. Forwarded to Text.
-   * @default 'active'
+   * @default 'accent'
    */
   color?: TextColor;
   /**
@@ -248,6 +252,11 @@ export interface LinkProps extends BaseProps<
  * <Link href="/settings" color="secondary">Settings</Link>
  * <Link href="/privacy" hasUnderline>Privacy Policy</Link>
  * <Link label="Close dialog" href="/home"><Icon icon="x" /></Link>
+ *
+ * // Inline link inside text — inherits the surrounding type/size:
+ * <Text type="large">
+ *   Read our <Link href="/terms" type="inherit">terms</Link> first.
+ * </Text>
  * ```
  */
 export function Link({
@@ -264,7 +273,7 @@ export function Link({
   type = 'body',
   size,
   weight,
-  color = 'active',
+  color = 'accent',
   display = 'inline',
   maxLines = 0,
   children,

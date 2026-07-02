@@ -477,6 +477,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
             <TableHeader>
               <RowComponent
                 {...headerRowRenderProps.htmlProps}
+                isHeaderRow
                 xstyle={headerRowRenderProps.styles}>
                 {headerRowRenderProps.children}
               </RowComponent>

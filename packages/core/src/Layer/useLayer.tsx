@@ -23,6 +23,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
+import {addAnchorName, removeAnchorName} from './anchorName';
 import {typographyVars} from '../theme/tokens.stylex';
 
 const styles = stylex.create({
@@ -65,6 +66,12 @@ export type LayerAlignment = 'start' | 'center' | 'end';
 export interface ContextRenderProps {
   placement?: LayerPlacement;
   alignment?: LayerAlignment;
+  /**
+   * ARIA role applied to the popover container (e.g. `'tooltip'`). Lets
+   * consumers complete the ARIA pattern and gives test tooling a stable,
+   * non-hashed selector for the layer.
+   */
+  role?: string;
   /**
    * StyleX styles for the popover container.
    */
@@ -324,16 +331,14 @@ export function useLayer(
   const ref: RefCallback<HTMLElement> | undefined =
     mode === 'context'
       ? (el: HTMLElement | null) => {
-          // Cleanup previous element
-          if (triggerRef.current) {
-            (
-              triggerRef.current.style as unknown as Record<string, string>
-            ).anchorName = '';
+          // Remove only THIS layer's anchor name from the previous element so
+          // other layers sharing the same trigger keep their anchors.
+          if (triggerRef.current && triggerRef.current !== el) {
+            removeAnchorName(triggerRef.current, anchorId);
           }
 
           if (el) {
-            (el.style as unknown as Record<string, string>).anchorName =
-              anchorId;
+            addAnchorName(el, anchorId);
           }
 
           triggerRef.current = el;
@@ -379,6 +384,7 @@ export function useLayer(
       const {
         placement = 'above',
         alignment = 'center',
+        role,
         xstyle,
         className: extraClassName,
         style: extraStyle,
@@ -404,6 +410,7 @@ export function useLayer(
         <Container
           ref={popoverRefCallback}
           id={id}
+          role={role}
           popover={lightDismiss ? 'auto' : 'manual'}
           className={combinedClassName}
           style={{...stylexResult.style, ...anchorStyle, ...extraStyle}}>

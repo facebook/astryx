@@ -20,7 +20,7 @@ const meta: Meta<typeof Link> = {
     color: {
       control: 'select',
       options: [
-        'active',
+        'accent',
         'primary',
         'secondary',
         'disabled',
@@ -129,8 +129,8 @@ export const Standalone: Story = {
 export const InlineWithText: Story = {
   render: () => (
     <Text type="body">
-      Read the <Link href="/docs">documentation</Link> for more
-      information about using Astryx components.
+      Read the <Link href="/docs">documentation</Link> for more information
+      about using Astryx components.
     </Text>
   ),
 };
@@ -195,11 +195,7 @@ export const ExternalLinks: Story = {
       <Link href="https://developer.mozilla.org" isExternalLink isStandalone>
         MDN Web Docs
       </Link>
-      <Link
-        href="https://react.dev"
-        isExternalLink
-        hasUnderline
-        isStandalone>
+      <Link href="https://react.dev" isExternalLink hasUnderline isStandalone>
         React Documentation
       </Link>
     </div>
@@ -215,10 +211,7 @@ export const LinksWithTooltips: Story = {
         isStandalone>
         Settings
       </Link>
-      <Link
-        href="/profile"
-        tooltip="View and edit your profile"
-        isStandalone>
+      <Link href="/profile" tooltip="View and edit your profile" isStandalone>
         Profile
       </Link>
       <Link
@@ -313,8 +306,8 @@ export const ButtonFallbackVariants: Story = {
 export const ButtonFallbackInline: Story = {
   render: () => (
     <Text type="body">
-      You can <Link onClick={() => alert('Undo!')}>undo this action</Link>{' '}
-      if you change your mind.
+      You can <Link onClick={() => alert('Undo!')}>undo this action</Link> if
+      you change your mind.
     </Text>
   ),
   parameters: {

@@ -1,5 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
+import {useState} from 'react';
 import {Typeahead} from '@astryxdesign/core/Typeahead';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 
@@ -21,14 +24,15 @@ const fruitSource: SearchSource = {
 };
 
 export default function TypeaheadShowcase() {
+  const [value, setValue] = useState<SearchableItem | null>(null);
   return (
     <div style={{width: 320}}>
       <Typeahead
         label="Fruit"
         placeholder="Search fruits..."
         searchSource={fruitSource}
-        value={null}
-        onChange={() => {}}
+        value={value}
+        onChange={setValue}
       />
     </div>
   );

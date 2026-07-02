@@ -161,6 +161,12 @@ export const categories: SandboxCategory[] = [
     description: 'Interactive tools for building and exploring Astryx components.',
     pages: [
       {
+        name: 'Layout DSL',
+        href: '/pages/layout-dsl/',
+        description:
+          'Write compressed XLE/XLO layout expressions and expand them to TSX with live token metrics',
+      },
+      {
         name: 'CodeBlock Perf',
         href: '/pages/codeblock-perf/',
         description: 'Compare highlight modes and scroll performance',

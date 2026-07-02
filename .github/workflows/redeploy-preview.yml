@@ -67,7 +67,10 @@ jobs:
 
       - name: Build Sandbox
         env:
-          SANDBOX_BASE_PATH: /pr/${{ github.event.inputs.pr_number }}/sandbox
+          # GitHub Pages serves at <owner>.github.io/<repo>/, so the sandbox base
+          # path must include the repo name — otherwise root-absolute asset URLs
+          # drop the /<repo> segment and 404, breaking the preview's styles/JS.
+          SANDBOX_BASE_PATH: /${{ github.event.repository.name }}/pr/${{ github.event.inputs.pr_number }}/sandbox
         run: pnpm -F @astryxdesign/sandbox build
 
       - name: Deploy to GitHub Pages

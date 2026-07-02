@@ -43,10 +43,20 @@ export interface ResolvedAuthor extends Omit<AuthorProfile, 'avatar' | 'href'> {
  * `authors` frontmatter list.
  */
 export const authors = {
+  team: {
+    name: 'Astryx team',
+    avatar: '/favicon.svg',
+    href: 'https://github.com/facebook/astryx',
+  },
   cvkxx: {
     name: 'Catherine',
     github: 'cvkxx',
     role: 'Design',
+  },
+  cixzhang: {
+    name: 'Cindy',
+    github: 'cixzhang',
+    role: 'Engineering',
   },
 } as const satisfies Record<string, AuthorProfile>;
 

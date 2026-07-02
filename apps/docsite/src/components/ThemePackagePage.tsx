@@ -15,6 +15,8 @@ import {Carousel} from '@astryxdesign/core/Carousel';
 import {Theme} from '@astryxdesign/core/theme';
 import type {DefinedTheme} from '@astryxdesign/core/theme';
 import {Button} from '@astryxdesign/core/Button';
+import {CodeBlock} from '@astryxdesign/core/CodeBlock';
+import {Popover} from '@astryxdesign/core/Popover';
 import {Link} from '@astryxdesign/core/Link';
 import {LinkProvider} from '@astryxdesign/core/Link';
 import {SelectableCard} from '@astryxdesign/core/SelectableCard';
@@ -28,8 +30,9 @@ import {packages} from '../generated/packageRegistry';
 import {layout} from '../layout.stylex';
 import {themeObjects} from '../generated/themeRegistry';
 import {templates} from '../generated/templateRegistry';
-import {trackOpenPlayground, trackToggle} from '../lib/analytics';
+import {trackCopy, trackOpenPlayground, trackToggle} from '../lib/analytics';
 import {useThemeMode} from '../app/providers';
+import commandBlockStyles from './ThemeCommandBlock.module.css';
 
 // Raw source of the theme-showcase page template (embedded as a string in
 // the generated template registry). Used to prepopulate the playground's
@@ -63,6 +66,13 @@ const THEME_ORDER: ReadonlyArray<string> = [
 // (selecting the "default" theme would write a query that the
 // server then strips on reload, etc.).
 const DEFAULT_THEME_PACKAGE = '@astryxdesign/theme-neutral';
+
+// The CLI command that copies a theme into the consumer's project as
+// editable source (see `astryx theme add`). The destination defaults to
+// `src/themes/<slug>/`, so the bare command is copy-paste runnable.
+function themeScaffoldCommand(slug: string): string {
+  return `npx astryx theme add ${slug}`;
+}
 
 // Strip "Theme: " prefix and " Theme" suffix from the registered
 // displayName so the switcher labels read as the brand wordmark
@@ -196,13 +206,28 @@ const styles = stylex.create({
     width: '100%',
     justifyContent: 'flex-start',
   },
-  // Hero primary CTA — sits on a flex row beside the icon-only
-  // mode toggle. flex:1 + minWidth:0 lets it absorb the leading
-  // horizontal space so the icon button stays pinned to the
-  // trailing edge regardless of label length.
-  heroPrimaryButton: {
+  // The two stacked action buttons, full-width.
+  actionButton: {
+    width: '100%',
+  },
+  // Title row — heading takes the leading flex space (minWidth:0 lets it
+  // shrink) so the icon-only mode toggle stays pinned to the trailing edge.
+  titleRow: {
+    width: '100%',
+  },
+  titleText: {
     flex: 1,
     minWidth: 0,
+  },
+  // The command snippet in the popover — CodeBlock with container="section"
+  // (no border/radius of its own), so paint the muted inset here. The extra
+  // inline-end padding keeps wrapping text clear of the absolutely-positioned
+  // copy button (see ThemeCommandBlock.module.css).
+  commandBlock: {
+    width: '100%',
+    borderRadius: 'var(--radius-element)',
+    backgroundColor: 'var(--color-background-muted)',
+    paddingInlineEnd: 'var(--spacing-5)',
   },
   // Themed theme-row card. The SelectableCard wrapper itself
   // stays variant="transparent" + padding=0 so it doesn't paint a
@@ -442,10 +467,10 @@ const styles = stylex.create({
   showcaseCard: {
     overflow: 'hidden',
   },
-  // Caps the showcase at the site's wide-content width and centers it
-  // so it doesn't run edge-to-edge on very wide screens. overflow:hidden
+  // Caps the showcase at the site's wide-content width and centers it so
+  // it doesn't run edge-to-edge on very wide screens. overflow:hidden
   // clips template content that exceeds the width on mobile (e.g.
-  // inventory filter rows, tables).
+  // inventory filter rows, tables) to the card's rounded corners.
   showcaseBlock: {
     width: '100%',
     maxWidth: layout.contentMaxWidth,
@@ -461,7 +486,7 @@ const styles = stylex.create({
     [SIDEBAR_BREAKPOINT]: {
       display: 'flex',
       flexDirection: 'column' as const,
-      gap: 'var(--spacing-3)',
+      gap: 'var(--spacing-5)',
     },
   },
 });
@@ -508,35 +533,137 @@ const PICKER_OVERRIDES: Record<
 function ThemeHeading({
   align = 'start',
   isMobile = false,
+  mode,
+  onToggleMode,
 }: {
   align?: 'start' | 'center';
   isMobile?: boolean;
+  /** Effective preview color mode — drives the toggle beside the title. */
+  mode: 'light' | 'dark';
+  /** Toggle the preview color mode. */
+  onToggleMode: () => void;
 }) {
   const isCentered = align === 'center';
+  const modeToggleLabel =
+    mode === 'light'
+      ? 'Switch preview to dark mode'
+      : 'Switch preview to light mode';
+  const modeToggleIcon =
+    mode === 'light' ? <Moon size={16} /> : <Sun size={16} />;
 
   return (
     <VStack gap={2} hAlign={isCentered ? 'center' : undefined}>
-      {/* display-3 in the desktop sidebar (display-2 wraps in the 260px
-          column); display-2 in the narrow layout to match /templates and
-          /components. Driven by the same SIDEBAR_QUERY mobile check the rest
-          of the component uses, not a separate CSS breakpoint. */}
-      <Heading
-        level={1}
-        type={isMobile ? 'display-2' : 'display-3'}
-        justify={align}>
-        Themes
-      </Heading>
-      <Text
-        type="body"
-        color="secondary"
-        display={isCentered ? 'block' : 'inline'}
-        justify={align}>
-        Preview each theme, then start from one and make it your own.{' '}
+      {/* Title row — heading takes the leading flex space so the icon-only
+          mode toggle stays pinned to the trailing edge. display-3 in the
+          260px sidebar; display-2 in the narrow layout. */}
+      <HStack gap={2} vAlign="center" xstyle={styles.titleRow}>
+        <Heading
+          level={1}
+          type={isMobile ? 'display-2' : 'display-3'}
+          justify={align}
+          xstyle={styles.titleText}>
+          Themes
+        </Heading>
+        <Button
+          variant="ghost"
+          size="lg"
+          isIconOnly
+          label={modeToggleLabel}
+          tooltip={modeToggleLabel}
+          icon={modeToggleIcon}
+          onClick={onToggleMode}
+        />
+      </HStack>
+      {/* Body + docs link on its own line below it. */}
+      <VStack gap={1} hAlign={isCentered ? 'center' : undefined}>
+        <Text type="body" color="secondary" justify={align}>
+          Astryx comes with a default theme built in. To make it your own, copy
+          any theme you see here into a theme file you own.
+        </Text>
         <Link type="body" color="secondary" href="/docs/theme" hasUnderline>
           Learn how theming works
         </Link>
-        .
-      </Text>
+      </VStack>
+    </VStack>
+  );
+}
+
+interface ThemeActionsProps {
+  selectedPkgName: string;
+  /** Playground deep link for the selected theme + showcase source. */
+  customizeHref: string;
+}
+
+// Shared action cluster for the desktop sidebar and the mobile context
+// block. The primary action ("Use this theme") opens a popover with the
+// CLI command that copies the theme into the consumer's project; "Try in
+// Playground" is secondary. The preview mode toggle lives beside the page
+// title (ThemeHeading), not here.
+function ThemeActions({selectedPkgName, customizeHref}: ThemeActionsProps) {
+  const slug = packageNameToSlug(selectedPkgName);
+  const command = themeScaffoldCommand(slug);
+  // Capitalize the slug for the popover copy — some theme packages have no
+  // registered displayName, so the slug is lowercase (e.g. "matcha").
+  const displayName = slug.charAt(0).toUpperCase() + slug.slice(1);
+
+  return (
+    <VStack gap={2} align="stretch">
+      <Popover
+        width={300}
+        label="Use this theme"
+        content={
+          <VStack gap={2}>
+            <Text type="body">
+              Run this in a terminal in your project to add {displayName} as a
+              theme file you can edit.
+            </Text>
+            <CodeBlock
+              code={command}
+              language="bash"
+              size="sm"
+              container="section"
+              width="100%"
+              isWrapped
+              hasLanguageLabel={false}
+              xstyle={styles.commandBlock}
+              className={commandBlockStyles.commandBlock}
+              onCopy={() => {
+                trackCopy({
+                  page: 'themes',
+                  target: 'cli_command',
+                  item: selectedPkgName,
+                });
+              }}
+            />
+          </VStack>
+        }>
+        {/* Render-prop trigger: no inline-flex anchor wrapper, so the
+            Button fills the column width as a direct flex child. */}
+        {triggerProps => (
+          <Button
+            {...triggerProps}
+            variant="primary"
+            size="lg"
+            label="Use this theme"
+            xstyle={styles.actionButton}
+          />
+        )}
+      </Popover>
+
+      <Button
+        variant="secondary"
+        size="lg"
+        label="Try in Playground"
+        href={customizeHref}
+        xstyle={styles.actionButton}
+        onClick={() => {
+          trackOpenPlayground({
+            page: 'themes',
+            item: selectedPkgName,
+            source: 'theme-showcase',
+          });
+        }}
+      />
     </VStack>
   );
 }
@@ -671,6 +798,20 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
     [themePackages],
   );
 
+  // Mode toggle + analytics — used by the toggle beside the title
+  // (ThemeHeading). The bare floating toolbar uses the untracked
+  // handleToggleMode above.
+  const handleToggleModeTracked = useCallback(() => {
+    const next = mode === 'light' ? 'dark' : 'light';
+    trackToggle({
+      page: 'themes',
+      target: 'mode',
+      item: selectedPkgName,
+      value: next,
+    });
+    setLocalMode(next);
+  }, [mode, selectedPkgName]);
+
   // Shared action cluster reused by both the sidebar (vertical
   // stack) and the mobile bar (inline row). Hoisted so the two
   // placements stay byte-identical — adding a button updates both.
@@ -679,7 +820,7 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
       ? 'Switch preview to dark mode'
       : 'Switch preview to light mode';
   const modeToggleIcon =
-    mode === 'light' ? <Moon size={20} /> : <Sun size={20} />;
+    mode === 'light' ? <Moon size={16} /> : <Sun size={16} />;
 
   // Open in Playground destination: the main /playground seeded with
   // the theme-showcase template in the code editor (#code) and the
@@ -710,47 +851,16 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
                 Heading is display-3 in this sidebar (display-2 wraps in the
                 260px column); the narrow layout uses display-2 (see isMobile).
                 CTAs stack full-width. */}
-            <VStack gap={3}>
-              <ThemeHeading isMobile={isMobile} />
-              {/* Action row — primary CTA takes the leading flex
-                  space, mode toggle (icon-only) sits on the trailing
-                  edge. Both belong here because they're page-level
-                  preview controls; the theme list below stays a
-                  pure picker. */}
-              <HStack gap={2} vAlign="center">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  label="Open in Playground"
-                  href={customizeHref}
-                  xstyle={styles.heroPrimaryButton}
-                  onClick={() => {
-                    trackOpenPlayground({
-                      page: 'themes',
-                      item: selectedPkgName,
-                      source: 'theme-showcase',
-                    });
-                  }}
-                />
-                <Button
-                  variant="ghost"
-                  size="lg"
-                  isIconOnly
-                  label={modeToggleLabel}
-                  tooltip={modeToggleLabel}
-                  icon={modeToggleIcon}
-                  onClick={() => {
-                    const next = mode === 'light' ? 'dark' : 'light';
-                    trackToggle({
-                      page: 'themes',
-                      target: 'mode',
-                      item: selectedPkgName,
-                      value: next,
-                    });
-                    setLocalMode(next);
-                  }}
-                />
-              </HStack>
+            <VStack gap={5}>
+              <ThemeHeading
+                isMobile={isMobile}
+                mode={mode}
+                onToggleMode={handleToggleModeTracked}
+              />
+              <ThemeActions
+                selectedPkgName={selectedPkgName}
+                customizeHref={customizeHref}
+              />
             </VStack>
 
             <Divider />
@@ -866,41 +976,16 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
             Mirrors the sidebar's hero: heading, description, and
             action buttons (Open in Playground + mode toggle). */}
         <div {...stylex.props(styles.mobileContext)}>
-          <ThemeHeading align="center" isMobile={isMobile} />
-          <HStack gap={2} vAlign="center">
-            <Button
-              variant="primary"
-              size="lg"
-              label="Open in Playground"
-              href={customizeHref}
-              xstyle={styles.heroPrimaryButton}
-              onClick={() => {
-                trackOpenPlayground({
-                  page: 'themes',
-                  item: selectedPkgName,
-                  source: 'theme-showcase',
-                });
-              }}
-            />
-            <Button
-              variant="ghost"
-              size="lg"
-              isIconOnly
-              label={modeToggleLabel}
-              tooltip={modeToggleLabel}
-              icon={modeToggleIcon}
-              onClick={() => {
-                const next = mode === 'light' ? 'dark' : 'light';
-                trackToggle({
-                  page: 'themes',
-                  target: 'mode',
-                  item: selectedPkgName,
-                  value: next,
-                });
-                setLocalMode(next);
-              }}
-            />
-          </HStack>
+          <ThemeHeading
+            align="center"
+            isMobile={isMobile}
+            mode={mode}
+            onToggleMode={handleToggleModeTracked}
+          />
+          <ThemeActions
+            selectedPkgName={selectedPkgName}
+            customizeHref={customizeHref}
+          />
         </div>
 
         {/* Mobile theme carousel — horizontal row of theme cards.

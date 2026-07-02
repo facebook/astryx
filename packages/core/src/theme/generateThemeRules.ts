@@ -472,7 +472,7 @@ function generateColorOverrides(
     secondary: 'var(--color-text-secondary)',
     disabled: 'var(--color-text-disabled)',
     placeholder: 'var(--color-text-secondary)',
-    active: 'var(--color-accent)',
+    accent: 'var(--color-text-accent)',
   };
 
   const touchesText = 'text' in components;

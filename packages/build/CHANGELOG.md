@@ -1,5 +1,19 @@
 # @xds/build
 
+# 0.1.2
+
+#### Fixes
+
+- ship TypeScript declarations for the `@astryxdesign/build/vite` export
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @benjipeng
+
+---
+
 # 0.1.1
 
 #### Breaking Changes

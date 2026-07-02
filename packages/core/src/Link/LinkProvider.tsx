@@ -23,6 +23,7 @@
  * - /packages/core/src/Link/index.ts
  * - /packages/core/src/Link/Link.doc.mjs
  * - /packages/cli/templates/blocks/components/Link/ (showcase blocks)
+ * - /packages/cli/templates/blocks/components/LinkProvider/ (example blocks)
  */
 
 import {useMemo, type ReactNode} from 'react';

@@ -34,11 +34,11 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @astryxdesign/cli and run `npx astryx agent-docs` to set up your Astryx context. Read the generated file.',
+          code: 'Install @astryxdesign/cli and run `npx astryx init --features agents` to set up your Astryx context. Read the generated file.',
         },
         {
           type: 'prose',
-          text: 'That\'s it. The agent-docs command generates everything your AI needs (component index, behavioral rules, CLI reference) pulled from your installed version. After a version bump, run it again to update in place.',
+          text: 'That\'s it. The `init --features agents` command generates everything your AI needs (component index, behavioral rules, CLI reference) pulled from your installed version. After a version bump, run it again to update in place.',
         },
         {
           type: 'prose',
@@ -48,9 +48,9 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Manual options',
-          code: `npx astryx agent-docs --agent claude    # CLAUDE.md
-npx astryx agent-docs --agent cursor    # .cursorrules
-npx astryx agent-docs --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
+          code: `npx astryx init --features agents --agent claude    # CLAUDE.md
+npx astryx init --features agents --agent cursor    # .cursorrules
+npx astryx init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
         },
       ],
     },
@@ -88,7 +88,7 @@ npx astryx agent-docs --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
           lang: 'bash',
           label: 'Install as a Cursor user rule',
           code: `mkdir -p ~/.cursor/rules
-npx astryx agent-docs --agent-docs-path ~/.cursor/rules/xds.mdc`,
+npx astryx init --features agents --agent-docs-path ~/.cursor/rules/xds.mdc`,
         },
       ],
     },

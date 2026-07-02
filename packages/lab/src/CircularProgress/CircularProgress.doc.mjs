@@ -22,7 +22,7 @@ export const docs = {
     {
       name: 'label',
       type: 'string',
-      description: 'Accessible label for screen readers (required).',
+      description: 'Accessible label for screen readers.',
       required: true,
     },
     {
@@ -164,7 +164,7 @@ export const docsDense = {
   propDescriptions: {
     value: 'Current value. Omit for indeterminate spinning animation.',
     max: 'Maximum value.',
-    label: 'Accessible label for screen readers (required).',
+    label: 'Accessible label for screen readers.',
     isLabelHidden: 'Visually hide label (remains accessible). Defaults to true.',
     children: 'Center content: percentage, icon, or custom.',
     size: 'Ring diameter (32px, 48px, 64px).',

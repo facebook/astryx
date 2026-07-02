@@ -231,6 +231,7 @@ jobs:
 
           echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
           echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
+          echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox" >> $GITHUB_OUTPUT
           echo "storybook_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/" >> $GITHUB_OUTPUT
           echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/sandbox/" >> $GITHUB_OUTPUT
 
@@ -238,7 +239,10 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         run: pnpm -F @astryxdesign/sandbox build
         env:
-          SANDBOX_BASE_PATH: /pr/${{ steps.urls.outputs.pr_number }}/sandbox
+          # Must match the deployed Pages path (<owner>.github.io/<repo>/pr/<n>/sandbox).
+          # Built without the /<repo> prefix, the sandbox's root-absolute asset URLs
+          # drop that segment and 404 — breaking all styles/JS on the preview.
+          SANDBOX_BASE_PATH: ${{ steps.urls.outputs.sandbox_base_path }}
           NODE_OPTIONS: '--max-old-space-size=8192'
 
       - name: Upload Storybook artifact

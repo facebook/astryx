@@ -13,13 +13,13 @@ export const docs = {
       name: 'startKeys',
       type: 'string[]',
       description:
-        'Column keys pinned to the start (inline-start / left in LTR) edge — the contiguous run from the first column through the last listed key.',
+        'Column keys pinned to the start (inline-start / left in LTR) edge: the contiguous run from the first column through the last listed key.',
     },
     {
       name: 'endKeys',
       type: 'string[]',
       description:
-        'Column keys pinned to the end (inline-end / right in LTR) edge — the contiguous run from the first listed key through the last column.',
+        'Column keys pinned to the end (inline-end / right in LTR) edge: the contiguous run from the first listed key through the last column.',
     },
   ],
 };

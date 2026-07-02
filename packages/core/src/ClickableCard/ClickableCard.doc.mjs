@@ -37,6 +37,21 @@ export const docs = {
     container: true,
     targets: [{className: 'astryx-clickable-card', visualProps: ['variant']}],
   },
+  playground: {
+    defaults: {
+      label: 'View product details',
+      href: '#',
+      padding: 4,
+      children: {
+        __element: 'XDSVStack',
+        props: {gap: 1},
+        children: [
+          {__element: 'XDSHeading', props: {level: 3}, children: 'Wireless Headphones'},
+          {__element: 'XDSText', props: {type: 'body'}, children: 'Noise-cancelling over-ear headphones with 30-hour battery life.'},
+        ],
+      },
+    },
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

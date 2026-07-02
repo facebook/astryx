@@ -233,9 +233,7 @@ function isFocusable(element: HTMLElement): boolean {
  * {tooltip.renderTooltip('Helpful tooltip text')}
  * ```
  */
-export function useTooltip(
-  options: TooltipOptions = {},
-): TooltipReturn {
+export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
   const {
     placement = 'above',
     alignment = 'center',
@@ -429,6 +427,7 @@ export function useTooltip(
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
+        role: 'tooltip',
         xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
         className: themeProps('tooltip').className,
       };

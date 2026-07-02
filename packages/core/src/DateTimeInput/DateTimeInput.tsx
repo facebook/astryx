@@ -48,11 +48,7 @@ import {
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
-import {
-  Calendar,
-  type ISODateString,
-  type CalendarHandle,
-} from '../Calendar';
+import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {useInputContainer} from '../hooks/useInputContainer';
@@ -278,10 +274,16 @@ export interface DateTimeInputProps extends Omit<
   hasClear?: boolean;
 
   /**
-   * Placeholder text shown when no date is selected.
+   * Placeholder text shown in the date portion when no date is selected.
    * @default "Select a date"
    */
   placeholder?: string;
+
+  /**
+   * Placeholder text shown in the time portion when no time is selected.
+   * @default "Select a time"
+   */
+  timePlaceholder?: string;
 
   /**
    * The size of the inputs.
@@ -385,6 +387,7 @@ export function DateTimeInput({
   timeIncrement = 1,
   hasClear = false,
   placeholder = 'Select a date',
+  timePlaceholder = 'Select a time',
   size: sizeProp,
   status,
   labelTooltip,
@@ -520,12 +523,12 @@ export function DateTimeInput({
     return isTimeInRange(parsed, timeMin, timeMax);
   }, [timePendingInput, hasSeconds, timeMin, timeMax]);
 
-  const timePlaceholder = useMemo(() => {
+  const resolvedTimePlaceholder = useMemo(() => {
     if (isTimeFocused && !timeDisplayValue) {
       return hourFormat === '12h' ? 'e.g., 2:30 PM' : 'e.g., 14:30';
     }
-    return 'Select a time';
-  }, [isTimeFocused, timeDisplayValue, hourFormat]);
+    return timePlaceholder;
+  }, [isTimeFocused, timeDisplayValue, hourFormat, timePlaceholder]);
 
   // --- Unified change handler ---
   const fireChange = useCallback(
@@ -893,7 +896,7 @@ export function DateTimeInput({
             onFocus={handleTimeFocus}
             onBlur={handleTimeBlur}
             onKeyDown={handleTimeKeyDown}
-            placeholder={timePlaceholder}
+            placeholder={resolvedTimePlaceholder}
             disabled={isEffectivelyDisabled}
             aria-label="Time"
             aria-required={isRequired === true ? 'true' : undefined}

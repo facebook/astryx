@@ -20,7 +20,7 @@ import {
 } from './utils';
 import './report.css';
 
-type WinnerType = 'xds' | 'xds-tailwind' | 'baseline' | 'html' | 'tie';
+type WinnerType = 'astryx' | 'astryx-tailwind' | 'baseline' | 'html' | 'tie';
 
 interface CompareViewProps {
   comparison: UniversalComparison;
@@ -32,7 +32,7 @@ interface DimRow extends Record<string, unknown> {
   astryxScore: number;
   baselineScore: number;
   htmlScore?: number;
-  xdsTailwindScore?: number;
+  astryxTailwindScore?: number;
   delta: number;
   winner: string;
 }
@@ -43,7 +43,7 @@ interface CatRow extends Record<string, unknown> {
   astryxOverall: number;
   baselineOverall: number;
   htmlOverall?: number;
-  xdsTailwindOverall?: number;
+  astryxTailwindOverall?: number;
   delta: number;
 }
 
@@ -53,7 +53,7 @@ interface CostRow extends Record<string, unknown> {
   astryx: string;
   baseline: string;
   html?: string;
-  xdsTailwind?: string;
+  astryxTailwind?: string;
   winner: string;
 }
 
@@ -72,7 +72,7 @@ function costWinner(
     entries.push(['html', htmlVal]);
   }
   if (twVal != null) {
-    entries.push(['xds-tailwind', twVal]);
+    entries.push(['astryx-tailwind', twVal]);
   }
 
   const best = lowerIsBetter
@@ -95,7 +95,7 @@ function winnerBadgeVariant(
       return 'error';
     case 'html':
       return 'warning';
-    case 'xds-tailwind':
+    case 'astryx-tailwind':
       return 'info';
     default:
       return 'neutral';
@@ -110,7 +110,7 @@ function winnerLabel(w: string): string {
       return 'Baseline';
     case 'html':
       return 'HTML';
-    case 'xds-tailwind':
+    case 'astryx-tailwind':
       return 'XDS+TW';
     default:
       return 'Tie';
@@ -131,15 +131,15 @@ function CostComparisonSection({
   astryxCost,
   baselineCost,
   htmlCost,
-  xdsTailwindCost,
+  astryxTailwindCost,
 }: {
   astryxCost: CostMetrics;
   baselineCost: CostMetrics;
   htmlCost?: CostMetrics;
-  xdsTailwindCost?: CostMetrics;
+  astryxTailwindCost?: CostMetrics;
 }) {
   const isThreeWay = !!htmlCost;
-  const isFourWay = !!xdsTailwindCost;
+  const isFourWay = !!astryxTailwindCost;
   const hasDuration =
     astryxCost.avgDurationMs > 0 || baselineCost.avgDurationMs > 0;
 
@@ -156,7 +156,7 @@ function CostComparisonSection({
               : {}),
             ...(isFourWay
               ? {
-                  xdsTailwind: `${((xdsTailwindCost?.avgDurationMs ?? 0) / 1000).toFixed(1)}s`,
+                  astryxTailwind: `${((astryxTailwindCost?.avgDurationMs ?? 0) / 1000).toFixed(1)}s`,
                 }
               : {}),
             winner: costWinner(
@@ -164,7 +164,7 @@ function CostComparisonSection({
               baselineCost.avgDurationMs,
               true,
               htmlCost?.avgDurationMs,
-              xdsTailwindCost?.avgDurationMs,
+              astryxTailwindCost?.avgDurationMs,
             ),
           },
         ]
@@ -179,7 +179,7 @@ function CostComparisonSection({
         : {}),
       ...(isFourWay
         ? {
-            xdsTailwind: `~${xdsTailwindCost?.estimatedInputTokens.toLocaleString()}`,
+            astryxTailwind: `~${astryxTailwindCost?.estimatedInputTokens.toLocaleString()}`,
           }
         : {}),
       winner: costWinner(
@@ -187,7 +187,7 @@ function CostComparisonSection({
         baselineCost.estimatedInputTokens,
         true,
         htmlCost?.estimatedInputTokens,
-        xdsTailwindCost?.estimatedInputTokens,
+        astryxTailwindCost?.estimatedInputTokens,
       ),
     },
     {
@@ -200,7 +200,7 @@ function CostComparisonSection({
         : {}),
       ...(isFourWay
         ? {
-            xdsTailwind: `~${xdsTailwindCost?.estimatedOutputTokens.toLocaleString()}`,
+            astryxTailwind: `~${astryxTailwindCost?.estimatedOutputTokens.toLocaleString()}`,
           }
         : {}),
       winner: costWinner(
@@ -208,7 +208,7 @@ function CostComparisonSection({
         baselineCost.estimatedOutputTokens,
         true,
         htmlCost?.estimatedOutputTokens,
-        xdsTailwindCost?.estimatedOutputTokens,
+        astryxTailwindCost?.estimatedOutputTokens,
       ),
     },
     {
@@ -223,7 +223,7 @@ function CostComparisonSection({
         : {}),
       ...(isFourWay
         ? {
-            xdsTailwind: `~${((xdsTailwindCost?.estimatedInputTokens ?? 0) + (xdsTailwindCost?.estimatedOutputTokens ?? 0)).toLocaleString()}`,
+            astryxTailwind: `~${((astryxTailwindCost?.estimatedInputTokens ?? 0) + (astryxTailwindCost?.estimatedOutputTokens ?? 0)).toLocaleString()}`,
           }
         : {}),
       winner: costWinner(
@@ -233,9 +233,9 @@ function CostComparisonSection({
         htmlCost
           ? htmlCost.estimatedInputTokens + htmlCost.estimatedOutputTokens
           : undefined,
-        xdsTailwindCost
-          ? xdsTailwindCost.estimatedInputTokens +
-              xdsTailwindCost.estimatedOutputTokens
+        astryxTailwindCost
+          ? astryxTailwindCost.estimatedInputTokens +
+              astryxTailwindCost.estimatedOutputTokens
           : undefined,
       ),
     },
@@ -246,14 +246,14 @@ function CostComparisonSection({
       baseline: String(baselineCost.avgOutputLines),
       ...(isThreeWay ? {html: String(htmlCost?.avgOutputLines)} : {}),
       ...(isFourWay
-        ? {xdsTailwind: String(xdsTailwindCost?.avgOutputLines)}
+        ? {astryxTailwind: String(astryxTailwindCost?.avgOutputLines)}
         : {}),
       winner: costWinner(
         astryxCost.avgOutputLines,
         baselineCost.avgOutputLines,
         true,
         htmlCost?.avgOutputLines,
-        xdsTailwindCost?.avgOutputLines,
+        astryxTailwindCost?.avgOutputLines,
       ),
     },
     {
@@ -262,7 +262,9 @@ function CostComparisonSection({
       astryx: String(astryxCost.avgDocsRead),
       baseline: String(baselineCost.avgDocsRead),
       ...(isThreeWay ? {html: String(htmlCost?.avgDocsRead)} : {}),
-      ...(isFourWay ? {xdsTailwind: String(xdsTailwindCost?.avgDocsRead)} : {}),
+      ...(isFourWay
+        ? {astryxTailwind: String(astryxTailwindCost?.avgDocsRead)}
+        : {}),
       winner: 'tie', // not inherently better or worse
     },
   ];
@@ -293,10 +295,10 @@ function CostComparisonSection({
     ...(isFourWay
       ? [
           {
-            key: 'xdsTailwind' as const,
+            key: 'astryxTailwind' as const,
             header: 'XDS+TW',
             renderCell: (row: CostRow) => (
-              <Text type="body">{row.xdsTailwind ?? '—'}</Text>
+              <Text type="body">{row.astryxTailwind ?? '—'}</Text>
             ),
           } satisfies TableColumn<CostRow>,
         ]
@@ -325,14 +327,14 @@ function CostComparisonSection({
 }
 
 export function CompareView({comparison}: CompareViewProps) {
-  const {xds, baseline, html, xdsTailwind, winners} = comparison;
+  const {astryx, baseline, html, astryxTailwind, winners} = comparison;
   const isThreeWay = !!html;
-  const isFourWay = !!xdsTailwind;
+  const isFourWay = !!astryxTailwind;
 
   let astryxWins = 0;
   let baselineWins = 0;
   let htmlWins = 0;
-  let xdsTailwindWins = 0;
+  let astryxTailwindWins = 0;
   let ties = 0;
   for (const dim of ALL_DIMENSIONS) {
     const w = winners[dim];
@@ -342,8 +344,8 @@ export function CompareView({comparison}: CompareViewProps) {
       baselineWins++;
     } else if (w === 'html') {
       htmlWins++;
-    } else if (w === 'xds-tailwind') {
-      xdsTailwindWins++;
+    } else if (w === 'astryx-tailwind') {
+      astryxTailwindWins++;
     } else {
       ties++;
     }
@@ -357,7 +359,9 @@ export function CompareView({comparison}: CompareViewProps) {
     astryxScore: astryx.averages[dim] ?? 0,
     baselineScore: baseline.averages[dim] ?? 0,
     ...(isThreeWay ? {htmlScore: html?.averages[dim] ?? 0} : {}),
-    ...(isFourWay ? {xdsTailwindScore: xdsTailwind?.averages[dim] ?? 0} : {}),
+    ...(isFourWay
+      ? {astryxTailwindScore: astryxTailwind?.averages[dim] ?? 0}
+      : {}),
     delta: (astryx.averages[dim] ?? 0) - (baseline.averages[dim] ?? 0),
     winner: winners[dim],
   }));
@@ -394,12 +398,12 @@ export function CompareView({comparison}: CompareViewProps) {
     ...(isFourWay
       ? [
           {
-            key: 'xdsTailwindScore' as const,
+            key: 'astryxTailwindScore' as const,
             header: 'XDS+TW',
             renderCell: (row: DimRow) => (
               <Text type="body">
-                {row.xdsTailwindScore != null
-                  ? formatScore(row.xdsTailwindScore)
+                {row.astryxTailwindScore != null
+                  ? formatScore(row.astryxTailwindScore)
                   : '—'}
               </Text>
             ),
@@ -432,7 +436,7 @@ export function CompareView({comparison}: CompareViewProps) {
     ...Object.keys(astryx.byCategory),
     ...Object.keys(baseline.byCategory),
     ...(html ? Object.keys(html.byCategory) : []),
-    ...(xdsTailwind ? Object.keys(xdsTailwind.byCategory) : []),
+    ...(astryxTailwind ? Object.keys(astryxTailwind.byCategory) : []),
   ]);
 
   const catData: CatRow[] = [...allCategories].map(cat => {
@@ -443,7 +447,7 @@ export function CompareView({comparison}: CompareViewProps) {
       html?.byCategory[cat] ?? (htmlInit as Record<UniversalDimension, number>);
     const twInit = {};
     const twCat =
-      xdsTailwind?.byCategory[cat] ??
+      astryxTailwind?.byCategory[cat] ??
       (twInit as Record<UniversalDimension, number>);
     const astryxAvg =
       CODE_DIMENSIONS.reduce(
@@ -473,7 +477,7 @@ export function CompareView({comparison}: CompareViewProps) {
       astryxOverall: astryxAvg,
       baselineOverall: baseAvg,
       ...(htmlAvg != null ? {htmlOverall: htmlAvg} : {}),
-      ...(twAvg != null ? {xdsTailwindOverall: twAvg} : {}),
+      ...(twAvg != null ? {astryxTailwindOverall: twAvg} : {}),
       delta: astryxAvg - baseAvg,
     };
   });
@@ -510,12 +514,12 @@ export function CompareView({comparison}: CompareViewProps) {
     ...(isFourWay
       ? [
           {
-            key: 'xdsTailwindOverall' as const,
+            key: 'astryxTailwindOverall' as const,
             header: 'XDS+TW',
             renderCell: (row: CatRow) => (
               <Text type="body">
-                {row.xdsTailwindOverall != null
-                  ? formatScore(row.xdsTailwindOverall)
+                {row.astryxTailwindOverall != null
+                  ? formatScore(row.astryxTailwindOverall)
                   : '—'}
               </Text>
             ),
@@ -584,7 +588,9 @@ export function CompareView({comparison}: CompareViewProps) {
               <VStack gap={2}>
                 <Text type="label">XDS+TW Wins</Text>
                 <Heading level={2}>
-                  <span className="report-color-info">{xdsTailwindWins}</span>
+                  <span className="report-color-info">
+                    {astryxTailwindWins}
+                  </span>
                 </Heading>
               </VStack>
             </div>
@@ -633,7 +639,7 @@ export function CompareView({comparison}: CompareViewProps) {
             astryxCost={astryx.cost}
             baselineCost={baseline.cost}
             htmlCost={html?.cost}
-            xdsTailwindCost={xdsTailwind?.cost}
+            astryxTailwindCost={astryxTailwind?.cost}
           />
         </VStack>
       )}

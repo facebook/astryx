@@ -19,7 +19,7 @@ export default function ChatDictationButtonShowcase() {
   const dictation = useChatDictation({
     inputRef,
     hasSounds: true,
-    onResult: (text) => {
+    onResult: text => {
       console.log('Dictation result:', text);
     },
   });
@@ -31,7 +31,7 @@ export default function ChatDictationButtonShowcase() {
         input.
       </Text>
       <ChatComposer
-        onSubmit={(v) => console.log('Submit:', v)}
+        onSubmit={v => console.log('Submit:', v)}
         input={<ChatComposerInput handleRef={inputRef} />}
         sendActions={<ChatDictationButton dictation={dictation} />}
       />
@@ -63,7 +63,7 @@ export default function ChatDictationButtonShowcase() {
         </HStack>
       )}
       {!dictation.isSupported && (
-        <Text type="supporting" color="active">
+        <Text type="supporting" color="accent">
           SpeechRecognition is not supported in this browser.
         </Text>
       )}

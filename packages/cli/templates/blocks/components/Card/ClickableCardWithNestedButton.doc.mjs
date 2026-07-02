@@ -5,7 +5,7 @@ export const doc = {
   type: 'block',
   exampleFor: 'ClickableCard',
   name: 'ClickableCardWithNestedButton',
-  displayName: 'Clickable Card With Nested Button',
+  displayName: 'Clickable Card — Nested Button',
   description:
     'A product card that navigates on click but has an independent "Add to cart" button inside.',
   isReady: true,

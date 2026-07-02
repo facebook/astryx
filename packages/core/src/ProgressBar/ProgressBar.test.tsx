@@ -79,9 +79,7 @@ describe('ProgressBar', () => {
   });
 
   it('passes data-testid', () => {
-    render(
-      <ProgressBar value={50} label="Test" data-testid="my-progress" />,
-    );
+    render(<ProgressBar value={50} label="Test" data-testid="my-progress" />);
     expect(screen.getByTestId('my-progress')).toBeInTheDocument();
   });
 
@@ -113,6 +111,18 @@ describe('ProgressBar', () => {
     );
     expect(screen.getByText('60%')).toBeInTheDocument();
     expect(screen.getByText('Hidden')).toBeInTheDocument();
+  });
+
+  it('renders no visible value label when isLabelHidden without hasValueLabel', () => {
+    // Mirrors the intended "accessible label only" composition: the text
+    // label is kept for assistive tech (visually hidden) while no extra
+    // visible value label is surfaced.
+    render(<ProgressBar value={42} label="Context usage" isLabelHidden />);
+    expect(screen.queryByText('42%')).not.toBeInTheDocument();
+    const label = screen.getByText('Context usage');
+    expect(label).toBeInTheDocument();
+    const meter = screen.getByRole('meter');
+    expect(meter).toHaveAttribute('aria-labelledby', label.id);
   });
 
   it('handles zero max gracefully', () => {

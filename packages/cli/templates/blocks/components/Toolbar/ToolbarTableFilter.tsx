@@ -2,19 +2,20 @@
 
 'use client';
 
+import {useState} from 'react';
 import {Toolbar} from '@astryxdesign/core/Toolbar';
-import {Button} from '@astryxdesign/core/Button';
-import {Icon} from '@astryxdesign/core/Icon';
+import {Selector} from '@astryxdesign/core/Selector';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {MoreMenu} from '@astryxdesign/core/MoreMenu';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Table} from '@astryxdesign/core/Table';
-import {
-  MagnifyingGlassIcon,
-  ChevronDownIcon,
-} from '@heroicons/react/24/outline';
+import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 
 export default function ToolbarTableFilter() {
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<string | null>(null);
+  const [priority, setPriority] = useState<string | null>(null);
+
   return (
     <Stack direction="vertical" style={{width: '100%'}}>
       <Toolbar
@@ -27,19 +28,27 @@ export default function ToolbarTableFilter() {
               label="Search"
               isLabelHidden
               placeholder="Search..."
-              value=""
-              onChange={() => {}}
+              value={search}
+              onChange={setSearch}
               startIcon={MagnifyingGlassIcon}
             />
-            <Button
+            <Selector
               label="Status"
-              variant="secondary"
-              endContent={<Icon icon={ChevronDownIcon} />}
+              isLabelHidden
+              placeholder="Status"
+              hasClear
+              value={status}
+              onChange={setStatus}
+              options={['Open', 'In progress', 'Done']}
             />
-            <Button
+            <Selector
               label="Priority"
-              variant="secondary"
-              endContent={<Icon icon={ChevronDownIcon} />}
+              isLabelHidden
+              placeholder="Priority"
+              hasClear
+              value={priority}
+              onChange={setPriority}
+              options={['High', 'Medium', 'Low']}
             />
           </>
         }

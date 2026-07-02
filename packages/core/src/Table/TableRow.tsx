@@ -34,6 +34,11 @@ export interface TableRowProps extends BaseProps<HTMLTableRowElement> {
    * Must be a `stylex.create()` value — not an inline style object.
    */
   xstyle?: StyleXStyles[];
+  /**
+   * Whether this row is the header row. Header rows skip the striped/hover
+   * row styling (which is only meant for body rows).
+   */
+  isHeaderRow?: boolean;
 }
 
 const stripedRowStyles = stylex.create({
@@ -114,6 +119,7 @@ export function TableRow({
   children,
   xstyle,
   ref,
+  isHeaderRow = false,
   ...props
 }: TableRowProps) {
   const ctx = use(TableContext);
@@ -134,13 +140,17 @@ export function TableRow({
 
   const rowStyles: StyleXStyles[] = [];
 
-  // Handle striped + hover combination to avoid backgroundColor conflicts
-  if (ctx.isStriped && ctx.hasHover) {
-    rowStyles.push(stripedHoverRowStyles.row);
-  } else if (ctx.isStriped) {
-    rowStyles.push(stripedRowStyles.row);
-  } else if (ctx.hasHover) {
-    rowStyles.push(hoverRowStyles.row);
+  // Striped + hover styling is for body rows only — the header row must not
+  // pick up the hover highlight (or striping) even when hasHover/isStriped.
+  if (!isHeaderRow) {
+    // Handle striped + hover combination to avoid backgroundColor conflicts
+    if (ctx.isStriped && ctx.hasHover) {
+      rowStyles.push(stripedHoverRowStyles.row);
+    } else if (ctx.isStriped) {
+      rowStyles.push(stripedRowStyles.row);
+    } else if (ctx.hasHover) {
+      rowStyles.push(hoverRowStyles.row);
+    }
   }
 
   if (ctx.dividers === 'rows' || ctx.dividers === 'grid') {

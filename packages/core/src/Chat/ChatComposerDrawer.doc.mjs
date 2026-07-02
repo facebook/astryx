@@ -8,6 +8,18 @@ export const docs = {
   displayName: 'Chat Composer Drawer',
   isHiddenFromOverview: true,
   description: "Collapsible drawer panel that sits above the chat input inside ChatComposer. Pass it to the composer's `drawer` slot to show attachments, context chips, or any supplementary content. When `count` is provided the drawer gains a collapse toggle: collapsed state shows a badge and label, expanded state shows all children.",
+  playground: {
+    wrapper: {component: 'Stack', props: {width: 480}},
+    defaults: {
+      count: 3,
+      label: 'Attachments',
+      children: [
+        {__element: 'Token', props: {label: 'design-spec.pdf'}},
+        {__element: 'Token', props: {label: 'api-schema.json'}},
+        {__element: 'Token', props: {label: 'screenshot.png'}},
+      ],
+    },
+  },
   props: [
     {
       name: 'children',

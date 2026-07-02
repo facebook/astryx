@@ -77,7 +77,7 @@ afterEach(() => {
 });
 
 describe('theme build install-instructions import path', () => {
-  it('emits ./<name> (no double slash) when out dir equals cwd', () => {
+  it('emits bare ./<name> specifiers (no double slash) when out dir equals cwd', () => {
     // Source theme lives directly in the project root, so the output dir
     // is the cwd and the relative dir is an empty string.
     const project = path.join(tmpDir, 'project');
@@ -97,7 +97,7 @@ describe('theme build install-instructions import path', () => {
     expect(result.stdout).toContain('href="./cwd-theme.css"');
   });
 
-  it('emits ./<sub>/<name> when out dir is a subdirectory of cwd', () => {
+  it('keeps the subdir in the import path for a non-src subdirectory build', () => {
     const project = path.join(tmpDir, 'project');
     const themeFile = writeTheme(path.join(project, 'themes'), 'sub-theme');
 
@@ -111,5 +111,25 @@ describe('theme build install-instructions import path', () => {
     expect(result.stdout).toContain("from './themes/sub-theme'");
     expect(result.stdout).toContain("import './themes/sub-theme.css'");
     expect(result.stdout).toContain('href="./themes/sub-theme.css"');
+  });
+
+  it('strips a leading src/ from the import path (relative to a file in src/)', () => {
+    const project = path.join(tmpDir, 'project');
+    const themeFile = writeTheme(
+      path.join(project, 'src', 'themes', 'ocean'),
+      'ocean',
+    );
+
+    const result = runCli(
+      ['theme', 'build', path.relative(project, themeFile)],
+      project,
+    );
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).not.toContain('.//');
+    // The leading src/ is dropped, but themes/ocean/ is kept (people need it).
+    expect(result.stdout).toContain("from './themes/ocean/ocean'");
+    expect(result.stdout).toContain("import './themes/ocean/ocean.css'");
+    expect(result.stdout).not.toContain('./src/');
   });
 });

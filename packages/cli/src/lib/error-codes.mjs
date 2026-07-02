@@ -52,6 +52,7 @@
  *   | 'ERR_UNKNOWN_SECTION'
  *   | 'ERR_UNKNOWN_CATEGORY'
  *   | 'ERR_UNKNOWN_TEMPLATE'
+ *   | 'ERR_UNKNOWN_THEME'
  *   | 'ERR_UNKNOWN_PACKAGE'
  *   | 'ERR_UNKNOWN_AGENT'
  *   | 'ERR_UNKNOWN_FEATURE'
@@ -124,6 +125,8 @@ export const ERROR_CODES = Object.freeze({
   ERR_UNKNOWN_CATEGORY: 'ERR_UNKNOWN_CATEGORY',
   /** No template matched the requested name. */
   ERR_UNKNOWN_TEMPLATE: 'ERR_UNKNOWN_TEMPLATE',
+  /** No theme matched the requested slug (theme add). */
+  ERR_UNKNOWN_THEME: 'ERR_UNKNOWN_THEME',
   /** No package matched the requested name (discover). */
   ERR_UNKNOWN_PACKAGE: 'ERR_UNKNOWN_PACKAGE',
   /** An unrecognized `--agent` value was passed to agent-docs/init. */

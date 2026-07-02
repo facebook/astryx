@@ -93,6 +93,7 @@ export function BlogCard({post, feature = false}: BlogCardProps) {
             </Text>
           </VStack>
           <AuthorByline
+            authors={post.authors}
             date={post.date}
             readingTimeMinutes={post.readingTimeMinutes}
             variant="compact"

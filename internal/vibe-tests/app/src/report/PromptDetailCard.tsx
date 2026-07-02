@@ -96,12 +96,14 @@ interface PromptDetailCardProps {
   astryxScore?: UniversalScore;
   baselineScore?: UniversalScore;
   htmlScore?: UniversalScore;
-  xdsTailwindScore?: UniversalScore;
+  astryxTailwindScore?: UniversalScore;
   hasXdsCode: boolean;
   hasBaselineCode: boolean;
   hasHtmlCode: boolean;
   hasXdsTailwindCode: boolean;
-  onViewCode: (target: 'xds' | 'baseline' | 'html' | 'xds-tailwind') => void;
+  onViewCode: (
+    target: 'astryx' | 'baseline' | 'html' | 'astryx-tailwind',
+  ) => void;
   /** Relative preview URLs keyed by target (e.g. { astryx: "previews/sd-1/astryx.html" }) */
   previewUrls?: Record<string, string>;
 }
@@ -112,7 +114,7 @@ export function PromptDetailCard({
   astryxScore,
   baselineScore,
   htmlScore,
-  xdsTailwindScore,
+  astryxTailwindScore,
   hasXdsCode,
   hasBaselineCode,
   hasHtmlCode,
@@ -124,7 +126,7 @@ export function PromptDetailCard({
     previewUrls?.astryx ||
     previewUrls?.baseline ||
     previewUrls?.html ||
-    previewUrls?.['xds-tailwind'];
+    previewUrls?.['astryx-tailwind'];
   const hasAnyCode =
     hasXdsCode || hasBaselineCode || hasHtmlCode || hasXdsTailwindCode;
 
@@ -133,7 +135,7 @@ export function PromptDetailCard({
     astryxScore,
     baselineScore,
     htmlScore,
-    xdsTailwindScore,
+    astryxTailwindScore,
   ].filter(Boolean).length;
   const scoresClassName =
     scoreCount >= 4
@@ -182,12 +184,12 @@ export function PromptDetailCard({
                     label="HTML Preview"
                   />
                 )}
-                {previewUrls?.['xds-tailwind'] && (
+                {previewUrls?.['astryx-tailwind'] && (
                   <Button
                     variant="secondary"
                     size="sm"
                     onClick={() =>
-                      window.open(previewUrls['xds-tailwind'], '_blank')
+                      window.open(previewUrls['astryx-tailwind'], '_blank')
                     }
                     label="XDS+TW Preview"
                   />
@@ -220,7 +222,7 @@ export function PromptDetailCard({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onViewCode('xds-tailwind')}
+                    onClick={() => onViewCode('astryx-tailwind')}
                     label="XDS+TW Code"
                   />
                 )}
@@ -229,15 +231,20 @@ export function PromptDetailCard({
           </div>
 
           {/* Score summaries in constrained grid */}
-          {(astryxScore || baselineScore || htmlScore || xdsTailwindScore) && (
+          {(astryxScore ||
+            baselineScore ||
+            htmlScore ||
+            astryxTailwindScore) && (
             <div className={scoresClassName}>
-              {astryxScore && <ScoreSummary label="Astryx" score={astryxScore} />}
+              {astryxScore && (
+                <ScoreSummary label="Astryx" score={astryxScore} />
+              )}
               {baselineScore && (
                 <ScoreSummary label="Baseline" score={baselineScore} />
               )}
               {htmlScore && <ScoreSummary label="HTML" score={htmlScore} />}
-              {xdsTailwindScore && (
-                <ScoreSummary label="XDS+TW" score={xdsTailwindScore} />
+              {astryxTailwindScore && (
+                <ScoreSummary label="XDS+TW" score={astryxTailwindScore} />
               )}
             </div>
           )}
@@ -279,14 +286,14 @@ export function PromptDetailCard({
             </>
           )}
 
-          {xdsTailwindScore && (
+          {astryxTailwindScore && (
             <>
               <Divider />
               <div className="report-promptDetail-section">
                 <div className="report-promptDetail-sectionLabel">
                   <Text type="label">XDS+TW Findings</Text>
                 </div>
-                <Findings score={xdsTailwindScore} />
+                <Findings score={astryxTailwindScore} />
               </div>
             </>
           )}

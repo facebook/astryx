@@ -11,43 +11,13 @@ import {Section} from '@astryxdesign/core/Section';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {Carousel} from '@astryxdesign/core/Carousel';
 import {typeScaleVars} from '@astryxdesign/core/theme/tokens.stylex';
-import {GITHUB_REPO} from '../constants';
 import {layout} from '../layout.stylex';
-
-function linkifyPRs(markdown: string): string {
-  return markdown.replace(/(?<!\[)#(\d+)/g, `[#$1](${GITHUB_REPO}/pull/$1)`);
-}
-
-function stripTitle(markdown: string): string {
-  return markdown.replace(/^#\s+.+\n+/, '');
-}
-
-function linkifyComponents(markdown: string, names: string[]): string {
-  if (names.length === 0) {
-    return markdown;
-  }
-
-  const nameToHref = new Map<string, string>();
-  for (const name of names) {
-    nameToHref.set(name, `/components/${name}`);
-    nameToHref.set('XDS' + name, `/components/${name}`);
-  }
-
-  const sorted = [...nameToHref.keys()].sort((a, b) => b.length - a.length);
-  const escaped = sorted.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  const pattern = new RegExp(
-    '(?<!`|\\[)\\b(' + escaped.join('|') + ')\\b(?!`|\\])',
-    'g',
-  );
-
-  return markdown.replace(pattern, match => {
-    const href = nameToHref.get(match);
-    if (!href) {
-      return match;
-    }
-    return '[' + match + '](' + href + ')';
-  });
-}
+import {
+  linkifyPRs,
+  linkifyContributors,
+  linkifyComponents,
+  stripTitle,
+} from './changelogLinkify';
 
 interface ChangelogEntry {
   pkg: string;
@@ -107,7 +77,7 @@ export function ChangelogView({
             {active != null && (
               <Markdown headingLevelStart={2}>
                 {linkifyComponents(
-                  linkifyPRs(stripTitle(active.content)),
+                  linkifyContributors(linkifyPRs(stripTitle(active.content))),
                   componentNames,
                 )}
               </Markdown>

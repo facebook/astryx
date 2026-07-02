@@ -317,13 +317,13 @@ export interface UniversalAggregate {
   cost?: CostMetrics;
 }
 
-export type TargetName = 'astryx' | 'xds-tailwind' | 'baseline' | 'html';
+export type TargetName = 'astryx' | 'astryx-tailwind' | 'baseline' | 'html';
 
 export interface UniversalComparison {
   astryx: UniversalAggregate;
   baseline: UniversalAggregate;
   html?: UniversalAggregate;
-  xdsTailwind?: UniversalAggregate;
+  astryxTailwind?: UniversalAggregate;
   winners: Record<UniversalDimension, TargetName | 'tie'>;
   byPrompt: Record<
     string,
@@ -331,7 +331,7 @@ export interface UniversalComparison {
       astryx: UniversalScore;
       baseline: UniversalScore;
       html?: UniversalScore;
-      xdsTailwind?: UniversalScore;
+      astryxTailwind?: UniversalScore;
       winner: TargetName | 'tie';
     }
   >;

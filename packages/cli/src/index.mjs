@@ -59,6 +59,8 @@ export const JSON_SUPPORTED = new Set([
   'template',
   'hook',
   'theme build',
+  'theme list',
+  'theme add',
   'gap-report',
   'upgrade',
   'manifest',

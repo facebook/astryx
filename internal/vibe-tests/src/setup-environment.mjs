@@ -38,7 +38,7 @@ function copyFile(src, dest) {
  * Create an isolated project directory for a single agent.
  * Returns the absolute path to the project directory.
  *
- * @param {'astryx' | 'xds-tailwind' | 'baseline' | 'html'} target
+ * @param {'astryx' | 'astryx-tailwind' | 'baseline' | 'html'} target
  * @param {string} iterDir - The iteration results directory
  * @param {string} promptId - The prompt ID (used to name the clone)
  */
@@ -48,7 +48,7 @@ export function createAgentProject(target, iterDir, promptId) {
 
   const templateMap = {
     astryx: 'project-astryx',
-    'xds-tailwind': 'project-xds-tailwind',
+    'astryx-tailwind': 'project-astryx-tailwind',
     baseline: 'project-baseline',
     html: 'project-html',
   };
@@ -61,7 +61,7 @@ export function createAgentProject(target, iterDir, promptId) {
     copyFile(path.join(templateDir, file), path.join(projectDir, file));
   }
 
-  if (target === 'astryx' || target === 'xds-tailwind') {
+  if (target === 'astryx' || target === 'astryx-tailwind') {
     // Symlink node_modules/@astryxdesign/core → packages/core
     const coreLink = path.join(projectDir, 'node_modules', '@astryxdesign', 'core');
     ensureDir(path.dirname(coreLink));

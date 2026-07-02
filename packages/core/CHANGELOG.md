@@ -1,5 +1,110 @@
 # @xds/core
 
+# 0.1.2
+
+#### Breaking Changes
+
+- `Text`, `Heading`, `Link`, and `Timestamp` rename the `color="active"` value to `color="accent"`, now mapping to the dedicated `--color-text-accent` token (legible accent text ink) instead of `--color-accent`. Run `astryx upgrade` to migrate call sites automatically. (#2863)
+
+#### New Features
+
+- Button: add `isInterruptible` to keep the button clickable while a `clickAction` is pending — the spinner and `aria-busy` still show, but the button is not disabled or deduped, so a re-click interrupts the in-flight action. ToggleButton's async toggle now runs through this path, staying interruptible.
+- Add a prebuilt UMD bundle (`dist/astryx.umd.js`, global `Astryx`) plus `unpkg`/`jsdelivr` fields, so the library works directly from a CDN via a `<script>` tag with no bundler. React/ReactDOM stay as peer globals; the StyleX runtime is bundled in.
+- Add `useTableStickyColumns` — pin a contiguous run of `Table` columns to
+  the start and/or end edge with cumulative offsets and scroll-aware drop shadows.
+  Configure with `{ startKeys, endKeys }`; an empty config is a valid no-op.
+
+#### Fixes
+
+- AvatarGroupOverflow now forwards rest props (data-_, aria-_, event handlers, id, role, tabIndex) to the rendered element, matching the behavior of Avatar and AvatarGroup.
+- Fix HoverCard SSR hydration mismatch when used inside an SSR Client Component (#3107). The floating layer now renders inline instead of portaling to `document.body`, so server and client markup match. No API change.
+- Kbd: use the `--color-border-emphasized` token for its bottom border instead of `--color-border` (#2850)
+- useLayer now treats `anchor-name` as a comma-separated list, so multiple layers can anchor to the same element (e.g. two TopNavMegaMenus in one nav) without clobbering each other's anchor. Previously the second menu lost its anchor and rendered over the nav.
+- Fix mobile nav drawer not re-opening after it is closed (#3091)
+  The AppShell mobile drawer mounts `MobileNav` inside an `<Activity>` that
+  switches to `mode="hidden"` when the drawer closes. On close, React runs the
+  drawer effect's cleanup (with a stale `isOpen`) instead of re-running the
+  effect with `isOpen=false`, so the deferred `dialog.close()` never fired and
+  the native `<dialog>` was left `open` in the hidden subtree. The next open then
+  skipped `showModal()` (the dialog was already open), so the drawer could be
+  opened and closed once but never re-opened. The effect cleanup now closes the
+  dialog if it is still open, keeping the native dialog state in sync so a
+  subsequent open cleanly calls `showModal()` again.
+- Core components (`Banner`, `EmptyState`, `Markdown`) no longer render a `<p>` by default — they render `<div>` (appearance unchanged). This avoids hydration mismatches when block content lands in a `<p>`. `Markdown` paragraphs use `role="paragraph"`; pass `components={{paragraph: 'p'}}` to opt back into `<p>`.
+- `Pagination`'s `changeAction` is now interruptible — page changes run in a transition with optimistic page state, so rapid prev/next clicks advance through pages instead of being dropped. `Button`'s `clickAction` keeps its single-fire guard.
+- make the `Slider` default track color visible on muted backgrounds
+  The background track painted with `--color-background-muted` — the same token
+  used for muted surface fills — so the track disappeared on muted backgrounds.
+  The track now uses the dedicated `--color-track` channel token, which is
+  designed to stay legible against body/muted surfaces.
+- Polish `useTableStickyColumns` pinned-cell backgrounds so they match the
+  rest of the row:
+- Table: the header row no longer picks up the `hasHover` row highlight — hover (and striped) styling now applies to body rows only. Adds an internal `isHeaderRow` flag on the row component so the header row in `<thead>` opts out (#2734)
+- `Timestamp` now renders the current time (and small clock skew up to ~30s in the future) as "now" instead of "in a few seconds" (#3099).
+- ToggleButton onPressedChange receives the click event for preventDefault opt-out
+  `onPressedChange` now receives the originating click event as a second
+  argument. Calling `event.preventDefault()` skips `pressedChangeAction`, so a
+  consumer can handle the toggle entirely in `onPressedChange` without firing the
+  action — matching how `Switch`'s `onChange` and `Button`'s `onClick` already
+  gate their action props. Existing `(isPressed) => void` handlers keep working;
+  the event is an added trailing argument.
+- Tokenizer/PowerSearch: align end content (clear button, resultCount) with the field's inline padding instead of hugging the border (~3px). It now uses spacing-2 (8px) to match the text/start-icon inset (#2849)
+- Tooltip and HoverCard: add ARIA roles to the floating layers — `role="tooltip"` on Tooltip (completing the ARIA tooltip pattern; the trigger already links via `aria-describedby`) and `role="dialog"` on HoverCard. Plumbed via a new optional `role` on the layer render props. (#3240; Popover already exposes `role="dialog"`.)
+
+#### Documentation
+
+- Document Banner's `defaultIsExpanded` prop, which controls whether the collapsible content area starts expanded but was missing from the docsite properties tab
+- Rename the ClickableCard and SelectableCard examples to follow the "Component — Variant" title convention (`Clickable Card — Nested Button`, `Selectable Card — Multi-select`), and add playground defaults to both card docs so their docsite previews show realistic card content (#2877)
+- Declare playground scaffolds for the Chat sub-components so they preview at a realistic width (ChatComposer and ChatComposerDrawer wrap in a sized container, and the drawer seeds default content), and drop the redundant visible value label from the ChatComposerDrawer "With Progress" example while keeping the accessible label (#2877)
+- Document two public props missing from the docsite properties tab: List's `start` (ordered-list counter start) and CheckboxInput's `isReadOnly`
+- Restore the Icon and Skeleton properties-tab previews on the docsite. Icon now seeds a default `icon` (it was a required, non-generatable prop), and Skeleton renders with concrete preview dimensions instead of collapsing at `100%` (#2848, #2875)
+- Document Heading's `justify` prop, which was supported by the component but missing from the docsite properties tab (#2847)
+- OverflowList: seed example items via playground defaults so the docsite properties-tab preview renders a real list instead of an empty container (#2872)
+- Document Section's `paddingBlock` prop (block-axis padding override), which was supported by the component but missing from the docsite properties tab
+- Give the `Skeleton` properties-tab example explicit dimensions so it is visible
+  The `Skeleton` doc had no `playground` config, so the interactive
+  properties-tab preview fell back to the prop defaults of `width: '100%'` /
+  `height: '100%'`. With no sized parent, the skeleton collapsed to a zero-size
+  (invisible) element. The doc now sets a `playground.defaults` of
+  `width: 320` / `height: 80` so the shimmer placeholder renders visibly.
+- Update stale `facebookexperimental/xds` doc/JSDoc links to the current `facebook/astryx` namespace in source comments (theme/syntax `@see` references). The old org 301-redirects, so these weren't broken — just stale — and this matches the canonical org used elsewhere
+- Document Table's `verticalAlign` and `textOverflow` props, which were supported by the component but missing from the docsite properties tab
+- Document TabList's `layout` prop ('hug' | 'fill') for tab sizing, which was supported by the component but missing from the docsite properties tab
+- Document Text's `justify` prop, which was supported by the component but missing from the docsite properties tab (same omission previously fixed for Heading) (#2847-adjacent)
+- Restore the Timestamp properties-tab preview on the docsite. `value` is a required prop with no semantic default, so the preview rendered "Invalid time value"; it now seeds a valid ISO 8601 date (#2877)
+- Document ToggleButton's `isIconOnly` prop, which was a supported public prop but missing from the docsite properties tab
+- Make the Toolbar "Table Filter" example use real Selector controls for its Status and Priority filters instead of buttons styled to look like dropdowns, and add meaningful playground defaults plus richer slot options (buttons, icon buttons, tabs, segmented controls, selectors) to the Toolbar docs (#2877).
+
+#### Other Changes
+
+- Pinned cells paint an opaque base via the overridable
+  `--table-sticky-background` variable (defaults to `--color-background-card`),
+  fixing a grey mismatch in themes/modes where `surface !== card` (e.g. neutral
+  dark). Consumers on a different backdrop override the variable.
+- The row's overlay (striping and/or hover) is replayed on the pinned cell via
+  a background-image gradient. `TableRow` publishes its current overlay color as
+  the inheritable `--table-row-overlay` variable, so pinned columns mirror the
+  row exactly — striped when the table is striped, hover when enabled, nothing
+  otherwise (no phantom stripes) — transitioning in lockstep with the row.
+- `background-clip: padding-box` keeps the row divider visible on pinned cells.
+- New `transformScrollWrapper` hook (+ `ScrollWrapperRenderProps`) lets plugins attach a `ref`
+  to the horizontal scroll container and inject before/after chrome.
+- `transformHeaderCell` / `transformBodyCell` now receive `columnIndex` and the
+  full ordered `columns` list (also surfaced on the render props), enabling
+  position-aware plugins such as sticky columns. Existing plugins are unaffected
+  — the new args and methods are additive and optional.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+- @durvesh1992
+- @ernesttien
+- @humbertovirtudes
+
+---
+
 # 0.1.1
 
 #### Breaking Changes

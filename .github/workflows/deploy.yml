@@ -66,6 +66,26 @@ jobs:
 
       - run: pnpm build
 
+      # Typecheck gates mirroring the PR `build` job in ci.yml. ci.yml only runs
+      # on pull_request/merge_group, so a typecheck error can land on main (its
+      # push only runs `pnpm test`) undetected — then break the `build` check on
+      # every open PR, which typechecks the PR merged with main (see #3197).
+      # Running them here closes that gap and blocks a broken deploy.
+      - name: Verify package exports
+        run: node scripts/verify-exports.mjs
+
+      - name: Typecheck component docs
+        run: pnpm -F @astryxdesign/core typecheck:docs
+
+      - name: Typecheck template docs
+        run: pnpm -F @astryxdesign/cli typecheck:template-docs
+
+      - name: Typecheck storybook
+        run: pnpm -F @astryxdesign/storybook typecheck
+
+      - name: Typecheck core (including tests)
+        run: pnpm -F @astryxdesign/core typecheck
+
   deploy:
     needs: test
     if: always() && !cancelled() && needs.test.result == 'success'
@@ -118,7 +138,11 @@ jobs:
       - name: Build Sandbox
         run: pnpm -F @astryxdesign/sandbox build
         env:
-          SANDBOX_BASE_PATH: /sandbox
+          # GitHub Pages serves this project at <owner>.github.io/<repo>/, so the
+          # sandbox must be built with the repo name as a base path prefix —
+          # otherwise its root-absolute asset URLs (/sandbox/_next/...) drop the
+          # /<repo> segment and 404. Derived from the repo name so it survives renames.
+          SANDBOX_BASE_PATH: /${{ github.event.repository.name }}/sandbox
           NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Preserve PR previews and reports from gh-pages
@@ -153,7 +177,7 @@ jobs:
           mkdir -p deploy/storybook
           cp -r apps/storybook/dist/* deploy/storybook/
 
-          # Stable sandbox (built with basePath=/sandbox)
+          # Stable sandbox (built with basePath=/<repo>/sandbox)
           if [ -d "apps/sandbox/out" ]; then
             mkdir -p deploy/sandbox
             cp -r apps/sandbox/out/* deploy/sandbox/

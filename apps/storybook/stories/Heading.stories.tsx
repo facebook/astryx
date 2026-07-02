@@ -21,7 +21,7 @@ const meta: Meta<typeof Heading> = {
         'secondary',
         'disabled',
         'placeholder',
-        'active',
+        'accent',
         'inherit',
       ],
       description: 'Text color',
@@ -158,7 +158,7 @@ export const ColorVariants: Story = {
       <Heading level={2} color="placeholder">
         Placeholder heading
       </Heading>
-      <Heading level={2} color="active">
+      <Heading level={2} color="accent">
         Active heading (accent)
       </Heading>
       <div style={{color: 'purple'}}>

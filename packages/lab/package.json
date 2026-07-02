@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/lab",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Experimental XDS components — not published, available in storybook and sandbox for testing",
   "author": "Meta Open Source",
@@ -25,7 +25,7 @@
   "sideEffects": false,
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.1.1",
+    "@astryxdesign/core": "0.1.2",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
   },

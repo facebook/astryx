@@ -17,10 +17,15 @@ import * as path from 'node:path';
 import {pathToFileURL, fileURLToPath} from 'node:url';
 import {createJiti} from 'jiti';
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {sanitizeName, PathSafetyError} from '../utils/path-safety.mjs';
+import {
+  sanitizeName,
+  PathSafetyError,
+  isNonInteractive,
+} from '../utils/path-safety.mjs';
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
+import {themeAdd, listThemes} from '../api/theme-add.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -73,6 +78,18 @@ function generatedHeader(sourceFile, lang = 'js', command) {
  */
 function toIdentifier(name) {
   return name.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+/**
+ * Import specifier for install/scaffold instructions. Drops a leading `src/`
+ * from the cwd-relative dir (most consumers import from a file under src/) but
+ * keeps the rest of the path (e.g. `themes/gothic`). Callers note the path is
+ * relative to the consumer's file.
+ */
+function importSpecifier(relDir, base) {
+  const normalized = relDir === '.' ? '' : relDir;
+  const withinSrc = normalized.replace(/^src\/?/, '').replace(/\/+$/, '');
+  return withinSrc ? `./${withinSrc}/${base}` : `./${base}`;
 }
 
 /**
@@ -443,7 +460,7 @@ const KNOWN_COMPONENTS = {
   breadcrumbs: ['variant'],
   button: ['variant', 'size'],
   calendar: [],
-  card: [],
+  card: ['variant'],
   center: [],
   checkboxinput: [],
   collapsible: [],
@@ -737,10 +754,12 @@ export function registerTheme(program) {
       const sourceRelative = path.relative(process.cwd(), filePath);
       const buildCommand = `astryx theme build ${sourceRelative}${options.out ? ' --out ' + path.relative(process.cwd(), path.resolve(process.cwd(), options.out)) : ''}`;
 
-      // Determine output path
+      // Derive the default CSS name from the theme name so .css/.js/.d.ts
+      // share one scheme; an explicit --out still wins.
+      const baseName = themeDef.name;
       const outPath = options.out
         ? path.resolve(process.cwd(), options.out)
-        : filePath.replace(/\.(ts|tsx|js|jsx|mjs)$/, '.css');
+        : path.join(path.dirname(filePath), `${baseName}.css`);
 
       const displayTheme = resolvedTheme || themeDef;
       const tokenCount = displayTheme.tokens ? Object.keys(displayTheme.tokens).length : 0;
@@ -753,7 +772,6 @@ export function registerTheme(program) {
       // was left as orphaned half-built output. Stage-then-commit avoids
       // that.
       const outDir = path.dirname(outPath);
-      const baseName = themeDef.name;
       const jsPath = path.join(outDir, `${baseName}.js`);
       const dtsPath = path.join(outDir, `${baseName}.d.ts`);
 
@@ -834,18 +852,16 @@ export function registerTheme(program) {
         });
       }
 
-      // Print install instructions
-      const relDir = path.relative(process.cwd(), outDir);
-      // When the output dir is the cwd, relDir is empty — avoid emitting a
-      // double-slash import path like './/<name>'. Build a './<relDir>/'
-      // prefix that collapses to './' when relDir is empty.
-      const importPrefix = relDir ? `./${relDir}/` : './';
+      const relOutDir = path.relative(process.cwd(), outDir) || '.';
+      const cssBase = path.basename(outPath, '.css');
+      const jsImport = importSpecifier(relOutDir, baseName);
+      const cssImport = importSpecifier(relOutDir, cssBase) + '.css';
       const exportName = `${toIdentifier(baseName)}Theme`;
       humanLog(`
-Install in your app:
+Install in your app (paths are relative to a file in src/ — adjust if yours lives elsewhere):
 
-  import { ${exportName} } from '${importPrefix}${baseName}';
-  import '${importPrefix}${baseName}.css';
+  import { ${exportName} } from '${jsImport}';
+  import '${cssImport}';
 
   <Theme theme={${exportName}}>
     <App />
@@ -853,9 +869,9 @@ Install in your app:
 
 Or with a <link> tag:
 
-  import { ${exportName} } from '${importPrefix}${baseName}';
+  import { ${exportName} } from '${jsImport}';
 
-  <link rel="stylesheet" href="${importPrefix}${baseName}.css" />
+  <link rel="stylesheet" href="${cssImport}" />
   <Theme theme={${exportName}}>
     <App />
   </Theme>
@@ -871,4 +887,157 @@ Or with a <link> tag:
         humanLog('');
       }
     });
+
+  theme
+    .command('list')
+    .description('List themes available to add')
+    .action(async () => {
+      const json = program.opts().json || false;
+      let result;
+      try {
+        result = await themeAdd(undefined, {list: true, cwd: process.cwd()});
+      } catch (e) {
+        cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
+        return;
+      }
+
+      if (json) return jsonOut(result.type, result.data);
+
+      const themes = result.data;
+      if (themes.length === 0) {
+        humanLog('\nNo themes are bundled with this CLI build.\n');
+        return;
+      }
+      humanLog('\nThemes:\n');
+      for (const t of themes) {
+        const tag = t.maintained ? ' (maintained)' : '';
+        humanLog(`  ${t.slug}${tag}`);
+        if (t.description) humanLog(`    ${t.description}`);
+      }
+      humanLog('\nUsage:');
+      humanLog('  astryx theme add <slug> [target-path]   Scaffold a theme file you own\n');
+    });
+
+  theme
+    .command('add [slug] [path]')
+    .description('Scaffold a theme into your project as editable source')
+    .option('-f, --overwrite', 'Overwrite existing files without prompting')
+    .option('--list', 'List available themes')
+    .action(async (slug, targetPath, options) => {
+      const json = program.opts().json || false;
+
+      // Only prompt with a real TTY on stdin — a piped/redirected stdin would
+      // make clack hang. Non-interactive callers fall through to the API's
+      // ERR_FILE_EXISTS guard.
+      const interactive =
+        !json && !isNonInteractive({json}) && Boolean(process.stdin.isTTY);
+      if (slug && !options.list && !options.overwrite && interactive) {
+        const collision = await detectThemeCollision(slug, targetPath);
+        if (collision) {
+          const rel = path.relative(process.cwd(), collision) || collision;
+          const p = await import('@clack/prompts');
+          const confirmed = await p.confirm({
+            message: `Overwrite existing file ${rel}?`,
+            initialValue: false,
+          });
+          if (p.isCancel(confirmed)) {
+            p.cancel('Cancelled.');
+            return;
+          }
+          if (!confirmed) {
+            humanLog('Aborted. Re-run with --overwrite to replace the file.');
+            return;
+          }
+          options.overwrite = true;
+        }
+      }
+
+      let result;
+      try {
+        result = await themeAdd(slug, {
+          list: options.list,
+          targetPath,
+          overwrite: options.overwrite,
+          cwd: process.cwd(),
+        });
+      } catch (e) {
+        cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
+        return;
+      }
+
+      if (json) return jsonOut(result.type, result.data);
+
+      if (result.type === 'theme.list') {
+        const themes = result.data;
+        humanLog('\nThemes:\n');
+        for (const t of themes) {
+          const tag = t.maintained ? ' (maintained)' : '';
+          humanLog(`  ${t.slug}${tag}`);
+          if (t.description) humanLog(`    ${t.description}`);
+        }
+        humanLog('\nUsage:');
+        humanLog('  astryx theme add <slug> [target-path]   Scaffold a theme file you own\n');
+        return;
+      }
+
+      // theme.add — print where files landed + how to use the theme.
+      const {displayName, outputDir, entry, exportName, files} = result.data;
+      humanLog(`\n✓ Added ${displayName} theme to ${outputDir}/`);
+      for (const f of files) {
+        humanLog(`  ${outputDir}/${f}`);
+      }
+      const entryModule = importSpecifier(
+        outputDir,
+        entry.replace(/\.tsx?$/, ''),
+      );
+      humanLog(`
+Use it in your app (import path is relative to a file in src/ — adjust if yours lives elsewhere):
+
+  import { ${exportName} } from '${entryModule}';
+
+  <Theme theme={${exportName}}>
+    <App />
+  </Theme>
+
+This is your copy of the ${displayName} theme — edit ${entry} to make it your own.
+`);
+    });
+}
+
+/**
+ * First existing file that scaffolding <slug> into <targetPath> would clobber,
+ * or null. Used to prompt before invoking the API; the API re-validates and
+ * owns any authoritative error.
+ *
+ * @param {string} slug
+ * @param {string} [targetPath]
+ * @returns {Promise<string|null>}
+ */
+async function detectThemeCollision(slug, targetPath) {
+  let themes;
+  try {
+    themes = listThemes();
+  } catch {
+    return null;
+  }
+  const match = themes.find(t => t.slug.toLowerCase() === slug.toLowerCase());
+  if (!match) return null;
+
+  const rawTarget = targetPath || path.join('src', 'themes', match.slug);
+  let resolvedDir;
+  try {
+    // Fail soft (null) on traversal; the API surfaces the real error.
+    const {assertWithin} = await import('../utils/path-safety.mjs');
+    resolvedDir = assertWithin(rawTarget, process.cwd(), {
+      label: 'theme target path',
+    });
+  } catch {
+    return null;
+  }
+
+  for (const name of match.files) {
+    const dest = path.join(resolvedDir, name);
+    if (fs.existsSync(dest)) return dest;
+  }
+  return null;
 }

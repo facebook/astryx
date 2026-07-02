@@ -101,7 +101,9 @@ describe('generateThemeRules', () => {
 
   it('includes .astryx-heading.level-* rules for all 6 levels', () => {
     for (let level = 1; level <= 6; level++) {
-      const rule = rules.find(r => r.includes(`.astryx-heading.level-${level}`));
+      const rule = rules.find(r =>
+        r.includes(`.astryx-heading.level-${level}`),
+      );
       expect(rule).toBeDefined();
       expect(rule).toContain('font-family');
       expect(rule).toContain(`var(--text-heading-${level}-size)`);
@@ -137,9 +139,7 @@ describe('generateThemeRules', () => {
     });
     const pseudoRules = generateThemeRules(pseudoTheme);
     expect(
-      pseudoRules.some(rule =>
-        rule.includes('.astryx-button:hover'),
-      ),
+      pseudoRules.some(rule => rule.includes('.astryx-button:hover')),
     ).toBe(true);
   });
 
@@ -186,7 +186,8 @@ describe('generateThemeRules', () => {
     expect(rules.some(r => r.includes('.astryx-text.secondary'))).toBe(true);
     expect(rules.some(r => r.includes('.astryx-heading.primary'))).toBe(true);
     expect(rules.some(r => r.includes('.astryx-heading.disabled'))).toBe(true);
-    expect(rules.some(r => r.includes('.astryx-text.active'))).toBe(true);
+    expect(rules.some(r => r.includes('.astryx-text.active'))).toBe(false);
+    expect(rules.some(r => r.includes('.astryx-text.accent'))).toBe(true);
   });
 
   // --- Consistency ---
@@ -194,9 +195,7 @@ describe('generateThemeRules', () => {
   it('generateThemeCSS returns prose and component blocks with @scope', () => {
     const {prose, component} = generateThemeCSS(theme);
     const combined = prose + component;
-    expect(combined).toContain(
-      '@scope ([data-astryx-theme="default"])',
-    );
+    expect(combined).toContain('@scope ([data-astryx-theme="default"])');
     expect(combined).toContain('to ([data-astryx-theme])');
     // Every rule from generateThemeRules should appear in one of the blocks
     for (const rule of rules) {

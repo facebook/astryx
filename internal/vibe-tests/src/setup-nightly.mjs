@@ -5,8 +5,8 @@
  * @file setup-nightly.mjs
  * 
  * Sets up a complete nightly vibe test run: 4 iterations
- * (xds, xds-tailwind, baseline, html) using the same prompts.
- * XDS and XDS+Tailwind tasks include CLI-retrieval instructions.
+ * (astryx, astryx-tailwind, baseline, html) using the same prompts.
+ * Astryx and Astryx+Tailwind tasks include CLI-retrieval instructions.
  *
  * Usage:
  *   node internal/vibe-tests/src/setup-nightly.mjs
@@ -82,8 +82,8 @@ function samplePrompts(prompts, n) {
 
 // ── Task prompt templates ────────────────────────────────────────────
 
-function generateXdsTaskPrompt(prompt, projectDir) {
-  return `You are generating React/TSX code using the XDS design system.
+function generateAstryxTaskPrompt(prompt, projectDir) {
+  return `You are generating React/TSX code using the Astryx design system.
 Your project is at ${projectDir}. Explore it to find available components.
 
 ## Task
@@ -99,8 +99,8 @@ Metadata: {"completedAt": "<ISO timestamp>", "docsRead": [<component names you l
 Write ONLY valid TSX. No markdown fences, no explanation.`;
 }
 
-function generateXdsTailwindTaskPrompt(prompt, projectDir) {
-  return `You are generating React/TSX code using the XDS design system with Tailwind CSS.
+function generateAstryxTailwindTaskPrompt(prompt, projectDir) {
+  return `You are generating React/TSX code using the Astryx design system with Tailwind CSS.
 Your project is at ${projectDir}. Explore it to find available components.
 
 ## Task
@@ -152,8 +152,8 @@ Write ONLY valid TSX. No markdown fences, no explanation.`;
 }
 
 const TARGET_CONFIG = {
-  xds: {label: 'XDS', generateFn: generateXdsTaskPrompt, cliRetrieval: true},
-  'xds-tailwind': {label: 'XDS+TW', generateFn: generateXdsTailwindTaskPrompt, cliRetrieval: true},
+  astryx: {label: 'Astryx', generateFn: generateAstryxTaskPrompt, cliRetrieval: true},
+  'astryx-tailwind': {label: 'Astryx+TW', generateFn: generateAstryxTailwindTaskPrompt, cliRetrieval: true},
   baseline: {label: 'Baseline', generateFn: generateBaselineTaskPrompt, cliRetrieval: false},
   html: {label: 'HTML', generateFn: generateHtmlTaskPrompt, cliRetrieval: false},
 };
@@ -214,7 +214,7 @@ function createIteration(target, prompts) {
 
 // ── Main ─────────────────────────────────────────────────────────────
 
-const TARGETS = ['xds', 'xds-tailwind', 'baseline', 'html'];
+const TARGETS = ['astryx', 'astryx-tailwind', 'baseline', 'html'];
 const args = process.argv.slice(2);
 const sampleIdx = args.indexOf('--sample');
 const sample = sampleIdx !== -1 ? parseInt(args[sampleIdx + 1]) : 10;
@@ -284,9 +284,9 @@ console.log(`\n  # Evaluation`);
 for (const id of allIds) {
   console.log(`  npx tsx src/universal-aggregate.ts --iteration ${id}`);
 }
-console.log(`\n  # Compare (3-way: xds vs baseline vs html)`);
-console.log(`  npx tsx src/universal-compare.ts --xds ${iterations.xds} --baseline ${iterations.baseline} --html ${iterations.html}`);
-console.log(`\n  # Compare (xds vs xds-tailwind)`);
-console.log(`  npx tsx src/universal-compare.ts --xds ${iterations.xds} --baseline ${iterations['xds-tailwind']}`);
-console.log(`\n  # Deploy report (xds vs baseline)`);
-console.log(`  npx tsx src/deploy-report.ts --iteration ${iterations.xds} --baseline ${iterations.baseline}`);
+console.log(`\n  # Compare (3-way: astryx vs baseline vs html)`);
+console.log(`  npx tsx src/universal-compare.ts --astryx ${iterations.astryx} --baseline ${iterations.baseline} --html ${iterations.html}`);
+console.log(`\n  # Compare (astryx vs astryx+tailwind)`);
+console.log(`  npx tsx src/universal-compare.ts --astryx ${iterations.astryx} --baseline ${iterations['astryx-tailwind']}`);
+console.log(`\n  # Deploy report (astryx vs baseline vs html + astryx-tailwind)`);
+console.log(`  npx tsx src/deploy-report.ts --iteration ${iterations.astryx} --baseline ${iterations.baseline} --html ${iterations.html} --astryx-tailwind ${iterations['astryx-tailwind']}`);

@@ -61,7 +61,7 @@ const meta: Meta<typeof Timestamp> = {
         'secondary',
         'disabled',
         'placeholder',
-        'active',
+        'accent',
         'inherit',
       ],
       description: 'Text color',
@@ -249,16 +249,8 @@ export const TextTypes: Story = {
         format="date_time"
         type="supporting"
       />
-      <Timestamp
-        value="2026-02-19T17:00:00Z"
-        format="date_time"
-        type="body"
-      />
-      <Timestamp
-        value="2026-02-19T17:00:00Z"
-        format="date_time"
-        type="large"
-      />
+      <Timestamp value="2026-02-19T17:00:00Z" format="date_time" type="body" />
+      <Timestamp value="2026-02-19T17:00:00Z" format="date_time" type="large" />
       <Timestamp
         value="2026-02-19T17:00:00Z"
         format="date_time"
@@ -290,7 +282,7 @@ export const Colors: Story = {
       <Timestamp
         value="2026-02-19T17:00:00Z"
         format="date_time"
-        color="active"
+        color="accent"
       />
     </div>
   ),

@@ -171,7 +171,7 @@ export function Report() {
   const [activeTab, setActiveTab] = useState('overview');
   const [codeModal, setCodeModal] = useState<{
     promptId: string;
-    target: 'xds' | 'baseline' | 'html' | 'xds-tailwind';
+    target: 'astryx' | 'baseline' | 'html' | 'astryx-tailwind';
   } | null>(null);
 
   const data: ReportData | undefined = window.__REPORT_DATA__;
@@ -215,9 +215,7 @@ export function Report() {
                     <Text type="supporting">Target: {data.target}</Text>
                   )}
                   {data.iterationId && (
-                    <Text type="supporting">
-                      Iteration: {data.iterationId}
-                    </Text>
+                    <Text type="supporting">Iteration: {data.iterationId}</Text>
                   )}
                 </VStack>
                 <Button
@@ -258,11 +256,11 @@ export function Report() {
                       compareLabel="HTML"
                     />
                   )}
-                  {comparison?.xdsTailwind && (
+                  {comparison?.astryxTailwind && (
                     <ScoreCard
                       label="Overall Score vs XDS+TW"
                       score={universal.overall}
-                      compareScore={comparison.xdsTailwind.overall}
+                      compareScore={comparison.astryxTailwind.overall}
                       compareLabel="XDS+TW"
                     />
                   )}
@@ -298,7 +296,7 @@ export function Report() {
                           'Astryx',
                           'Baseline',
                           comparison.html ? 'HTML' : null,
-                          comparison.xdsTailwind ? 'XDS+TW' : null,
+                          comparison.astryxTailwind ? 'XDS+TW' : null,
                         ]
                           .filter(Boolean)
                           .join(' vs ')}{' '}
@@ -325,14 +323,14 @@ export function Report() {
                         astryxScore={universal.byPrompt[promptId]}
                         baselineScore={comparison?.baseline.byPrompt[promptId]}
                         htmlScore={comparison?.html?.byPrompt[promptId]}
-                        xdsTailwindScore={
-                          comparison?.xdsTailwind?.byPrompt[promptId]
+                        astryxTailwindScore={
+                          comparison?.astryxTailwind?.byPrompt[promptId]
                         }
                         hasXdsCode={!!data.sourceCode?.[promptId]}
                         hasBaselineCode={!!data.baselineSourceCode?.[promptId]}
                         hasHtmlCode={!!data.htmlSourceCode?.[promptId]}
                         hasXdsTailwindCode={
-                          !!data.xdsTailwindSourceCode?.[promptId]
+                          !!data.astryxTailwindSourceCode?.[promptId]
                         }
                         onViewCode={target => setCodeModal({promptId, target})}
                         previewUrls={data.previews?.[promptId]}
@@ -350,8 +348,8 @@ export function Report() {
                       ? data.sourceCode?.[codeModal.promptId]
                       : codeModal.target === 'baseline'
                         ? data.baselineSourceCode?.[codeModal.promptId]
-                        : codeModal.target === 'xds-tailwind'
-                          ? data.xdsTailwindSourceCode?.[codeModal.promptId]
+                        : codeModal.target === 'astryx-tailwind'
+                          ? data.astryxTailwindSourceCode?.[codeModal.promptId]
                           : data.htmlSourceCode?.[codeModal.promptId];
                   return code ? (
                     <CodeModal

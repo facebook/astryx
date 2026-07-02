@@ -32,7 +32,7 @@ export const docs = {
     },
     {
       name: 'color',
-      type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'active' | 'inherit'",
+      type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'accent' | 'inherit'",
       description: 'Text color.',
       default: "'primary'",
     },
@@ -119,7 +119,7 @@ export const docsZh = {
     },
     {
       name: 'color',
-      type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'active' | 'inherit'",
+      type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'accent' | 'inherit'",
       description: '文本颜色。',
       default: "'primary'",
     },

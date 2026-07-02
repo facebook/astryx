@@ -31,9 +31,9 @@ export default function TimestampColors() {
       </Stack>
       <Stack direction="vertical" gap={1}>
         <Text type="supporting" color="secondary">
-          Active
+          Accent
         </Text>
-        <Timestamp value={DATE} format="date_time" color="active" />
+        <Timestamp value={DATE} format="date_time" color="accent" />
       </Stack>
     </Stack>
   );

@@ -461,10 +461,7 @@ export default function ExampleCardsPage() {
                   value="bank"
                   label="Bank Transfer — SWIFT / IBAN"
                 />
-                <RadioListItem
-                  value="paypal"
-                  label="PayPal — Instant Payout"
-                />
+                <RadioListItem value="paypal" label="PayPal — Instant Payout" />
               </RadioList>
               <TextInput
                 label="IBAN / Account Number"
@@ -747,7 +744,7 @@ export default function ExampleCardsPage() {
                   <Text type="supporting" color="secondary">
                     Solar Gen
                   </Text>
-                  <Text type="label" weight="bold" color="active">
+                  <Text type="label" weight="bold" color="accent">
                     +1.2 kW
                   </Text>
                 </VStack>
@@ -1136,9 +1133,7 @@ export default function ExampleCardsPage() {
                   QR Code
                 </Text>
               </div>
-              <Heading level={3}>
-                Scan to connect your mobile device
-              </Heading>
+              <Heading level={3}>Scan to connect your mobile device</Heading>
               <Text type="supporting" color="secondary">
                 Open the Ledger mobile app and scan this code to link your
                 device.
@@ -1751,11 +1746,7 @@ export default function ExampleCardsPage() {
                     <Button label="Small" variant="secondary" size="sm" />
                     <Button label="Medium" variant="secondary" size="md" />
                     <Button label="Large" variant="secondary" size="lg" />
-                    <Button
-                      label="Disabled"
-                      variant="secondary"
-                      isDisabled
-                    />
+                    <Button label="Disabled" variant="secondary" isDisabled />
                   </HStack>
                 </VStack>
                 <VStack gap={1}>
@@ -1766,11 +1757,7 @@ export default function ExampleCardsPage() {
                     <Button label="Small" variant="destructive" size="sm" />
                     <Button label="Medium" variant="destructive" size="md" />
                     <Button label="Large" variant="destructive" size="lg" />
-                    <Button
-                      label="Disabled"
-                      variant="destructive"
-                      isDisabled
-                    />
+                    <Button label="Disabled" variant="destructive" isDisabled />
                   </HStack>
                 </VStack>
                 <VStack gap={1}>
@@ -2038,9 +2025,7 @@ export default function ExampleCardsPage() {
                   <Text type="supporting" color="secondary">
                     Code
                   </Text>
-                  <Text type="code">
-                    const fox = &apos;quick brown&apos;;
-                  </Text>
+                  <Text type="code">const fox = &apos;quick brown&apos;;</Text>
                 </VStack>
               </VStack>
             </VStack>

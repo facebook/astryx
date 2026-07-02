@@ -79,6 +79,7 @@ export function BlogArticle({post}: BlogArticleProps) {
             {post.description}
           </Text>
           <AuthorByline
+            authors={post.authors}
             date={post.date}
             updatedAt={post.updatedAt}
             readingTimeMinutes={post.readingTimeMinutes}

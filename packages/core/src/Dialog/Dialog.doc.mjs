@@ -40,13 +40,13 @@ export const docs = {
     {
       name: 'isOpen',
       type: 'boolean',
-      description: 'Whether the dialog is open (required).',
+      description: 'Whether the dialog is open.',
       required: true,
     },
     {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => unknown',
-      description: 'Callback when dialog visibility changes (required).',
+      description: 'Callback when dialog visibility changes.',
       required: true,
     },
     {

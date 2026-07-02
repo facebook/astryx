@@ -19,7 +19,7 @@ export const docs = {
       name: 'onColumnResizeEnd',
       type: '(updates: Record<string, number>) => void',
       description:
-        'Called when a resize completes (pointerup / Enter). Receives a map of every column key whose width changed — merge it into your columnWidths state.',
+        'Called when a resize completes (pointerup / Enter). Receives a map of every column key whose width changed; merge it into your columnWidths state.',
     },
     {
       name: 'minWidth',
@@ -37,7 +37,7 @@ export const docs = {
       name: 'columns',
       type: 'TableColumn<T>[]',
       description:
-        'Column definitions — needed to derive per-column min widths and detect proportional vs pixel columns for neighbor/last-column resize behavior.',
+        'Column definitions, needed to derive per-column min widths and detect proportional vs pixel columns for neighbor/last-column resize behavior.',
     },
   ],
 };
@@ -91,6 +91,6 @@ export const docsDense = {
     minWidth: 'Global min column width (px) during resize.',
     maxWidth: 'Global max column width (px) during resize. Default Infinity.',
     columns:
-      'Column defs — derive per-column mins + proportional/pixel detection for neighbor/last-column behavior.',
+      'Column defs: derive per-column mins + proportional/pixel detection for neighbor/last-column behavior.',
   },
 };

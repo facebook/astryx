@@ -7,6 +7,9 @@ export const docs = {
   subComponentOf: 'Chat',
   displayName: 'Chat Composer',
   description: 'Layout shell for a chat composer. Arranges named slots (drawer, header, input, footer, send) with page-radius container, hover/focus shadows, and concentric inner radius for child elements.',
+  playground: {
+    wrapper: {component: 'Stack', props: {width: 480}},
+  },
   props: [
     {
       name: 'onSubmit',

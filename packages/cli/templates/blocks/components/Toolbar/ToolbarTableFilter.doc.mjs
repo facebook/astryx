@@ -7,8 +7,8 @@ export const doc = {
   name: 'Toolbar — Table Filter',
   displayName: 'Toolbar — Table Filter',
   description:
-    'A compact toolbar with a search input, filter buttons, and an overflow menu. Use above a data table to let users search, filter, and access view options.',
+    'A compact toolbar with a search input, Status and Priority filter selectors, and an overflow menu. Use above a data table to let users search, filter, and access view options.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Toolbar', 'Button', 'Icon', 'TextInput', 'MoreMenu', 'Layout', 'Table'],
+  componentsUsed: ['Toolbar', 'Selector', 'TextInput', 'MoreMenu', 'Layout', 'Table'],
 };

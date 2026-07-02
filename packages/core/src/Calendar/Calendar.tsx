@@ -70,8 +70,19 @@ import {
 // Types
 // =============================================================================
 
-export type {ISODateString, DayOfWeek, DateRange} from '../utils/dateTypes';
-import type {ISODateString, DayOfWeek, DateRange} from '../utils/dateTypes';
+export type {
+  ISODateString,
+  DayOfWeek,
+  DayOfWeekName,
+  DateRange,
+} from '../utils/dateTypes';
+import type {
+  ISODateString,
+  DayOfWeek,
+  DayOfWeekName,
+  DateRange,
+} from '../utils/dateTypes';
+import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
 
 /** Imperative handle for Calendar handleRef */
@@ -134,10 +145,11 @@ interface CalendarBaseProps extends Omit<
   hasVariableRowCount?: boolean;
 
   /**
-   * First day of week.
+   * First day of week. Accepts a number (0 = Sunday … 6 = Saturday) or a
+   * three-letter day name ('sun'–'sat', case-insensitive) for readability.
    * Default: 0 (Sunday)
    */
-  weekStartsOn?: DayOfWeek;
+  weekStartsOn?: DayOfWeek | DayOfWeekName;
 }
 
 // ─── Mode-specific Props (discriminated union) ────────────────
@@ -200,12 +212,16 @@ export function Calendar({ref, ...props}: CalendarProps) {
     hasOutsideDays = true,
     hasWeekNumbers = false,
     hasVariableRowCount = false,
-    weekStartsOn = 0,
+    weekStartsOn: weekStartsOnProp = 0,
     xstyle,
     className,
     style,
     ...rest
   } = props;
+
+  // Normalize `weekStartsOn` (number or three-letter day name) to a numeric
+  // DayOfWeek so all downstream date math keeps working with an index.
+  const weekStartsOn = normalizeDayOfWeek(weekStartsOnProp);
 
   // Today's date (memoized)
   const today = useMemo(() => plainDateToday(), []);

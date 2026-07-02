@@ -31,7 +31,7 @@ export interface ReportData {
   sourceCode?: Record<string, string>;
   baselineSourceCode?: Record<string, string>;
   htmlSourceCode?: Record<string, string>;
-  xdsTailwindSourceCode?: Record<string, string>;
+  astryxTailwindSourceCode?: Record<string, string>;
   /** Map of promptId → { target → relative URL } */
   previews?: Record<string, Record<string, string>>;
   /** Map of promptId → prompt text */

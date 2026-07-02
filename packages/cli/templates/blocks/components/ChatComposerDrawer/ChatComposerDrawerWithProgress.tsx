@@ -44,7 +44,7 @@ export default function ChatComposerDrawerWithProgress() {
         }
         headerContext={
           <Stack direction="horizontal" gap={2} vAlign="center">
-            <ProgressBar value={42} label="Context usage" isLabelHidden hasValueLabel />
+            <ProgressBar value={42} label="Context usage" isLabelHidden />
           </Stack>
         }
       />
