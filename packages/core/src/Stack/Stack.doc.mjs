@@ -39,6 +39,16 @@ export const docs = {
           description: "Height of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
         },
         {
+          name: 'maxWidth',
+          type: 'SizeValue',
+          description: "Maximum width of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
+        },
+        {
+          name: 'minHeight',
+          type: 'SizeValue',
+          description: "Minimum height of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
+        },
+        {
           name: 'hAlign',
           type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
           description: 'Horizontal (main-axis) alignment of items.',
@@ -105,6 +115,16 @@ export const docs = {
           name: 'height',
           type: 'SizeValue',
           description: "Height of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
+        },
+        {
+          name: 'maxWidth',
+          type: 'SizeValue',
+          description: "Maximum width of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
+        },
+        {
+          name: 'minHeight',
+          type: 'SizeValue',
+          description: "Minimum height of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
         },
         {
           name: 'hAlign',

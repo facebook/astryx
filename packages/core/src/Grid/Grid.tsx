@@ -84,6 +84,18 @@ export interface GridProps extends BaseProps<HTMLDivElement> {
   height?: SizeValue;
 
   /**
+   * Maximum width of the grid container.
+   * Numbers are treated as pixels, strings are used as-is (e.g., '100%').
+   */
+  maxWidth?: SizeValue;
+
+  /**
+   * Minimum height of the grid container.
+   * Numbers are treated as pixels, strings are used as-is (e.g., '100%').
+   */
+  minHeight?: SizeValue;
+
+  /**
    * Spacing between all grid items (both row and column).
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    */
@@ -346,6 +358,8 @@ export function Grid({
   rowHeight,
   width,
   height,
+  maxWidth,
+  minHeight,
   gap,
   rowGap,
   columnGap,
@@ -408,6 +422,12 @@ export function Grid({
     }),
     ...(height != null && {
       height: typeof height === 'number' ? `${height}px` : height,
+    }),
+    ...(maxWidth != null && {
+      maxWidth: typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth,
+    }),
+    ...(minHeight != null && {
+      minHeight: typeof minHeight === 'number' ? `${minHeight}px` : minHeight,
     }),
   };
 
