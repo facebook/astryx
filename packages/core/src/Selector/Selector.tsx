@@ -474,34 +474,30 @@ type SelectorPropsNonClearable<
   changeAction?: (value: string) => void | Promise<void>;
 };
 
-type SelectorPropsClearable<
-  T extends SelectorOptionType = SelectorOptionType,
-> = SelectorPropsBase<T> & {
-  /**
-   * Whether to show a clear button when a value is selected.
-   * When clicked, resets the value to `null` and returns focus to the trigger.
-   *
-   * When enabled, `value` and `onChange` widen to include `null`.
-   */
-  hasClear: true;
-  value: string | null;
-  onChange?: (value: string | null) => void;
-  changeAction?: (value: string | null) => void | Promise<void>;
-};
+type SelectorPropsClearable<T extends SelectorOptionType = SelectorOptionType> =
+  SelectorPropsBase<T> & {
+    /**
+     * Whether to show a clear button when a value is selected.
+     * When clicked, resets the value to `null` and returns focus to the trigger.
+     *
+     * When enabled, `value` and `onChange` widen to include `null`.
+     */
+    hasClear: true;
+    value: string | null;
+    onChange?: (value: string | null) => void;
+    changeAction?: (value: string | null) => void | Promise<void>;
+  };
 
-export type SelectorProps<
-  T extends SelectorOptionType = SelectorOptionType,
-> = SelectorPropsNonClearable<T> | SelectorPropsClearable<T>;
+export type SelectorProps<T extends SelectorOptionType = SelectorOptionType> =
+  | SelectorPropsNonClearable<T>
+  | SelectorPropsClearable<T>;
 
 /**
  * Default option renderer
  */
 function DefaultOption({option}: {option: SelectorOptionData}) {
   return (
-    <SelectorOption
-      icon={option.icon}
-      label={option.label ?? option.value}
-    />
+    <SelectorOption icon={option.icon} label={option.label ?? option.value} />
   );
 }
 
@@ -717,16 +713,30 @@ export function Selector<T extends SelectorOptionType>(
         <input
           ref={searchRef}
           id={searchId}
-          role="searchbox"
+          // When hasSearch is set, focus moves into this input on open, so it —
+          // not the trigger — must be the combobox that reports the highlighted
+          // option via aria-activedescendant (comboboxes-4). A bare searchbox
+          // left the highlight silent to screen readers.
+          role="combobox"
+          aria-expanded={popover.isOpen}
           aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            popover.isOpen && highlightedIndex >= 0
+              ? getItemId(highlightedIndex)
+              : undefined
+          }
           aria-label="Search options"
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           onKeyDown={e => {
+            // Arrow keys navigate options; Enter selects; Escape/Tab close.
+            // Home/End are left to the input for caret movement.
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
+              e.key === 'Enter' ||
               e.key === 'Escape' ||
               e.key === 'Tab'
             ) {
@@ -745,6 +755,9 @@ export function Selector<T extends SelectorOptionType>(
     searchQuery,
     searchPlaceholder,
     onKeyDown,
+    popover.isOpen,
+    highlightedIndex,
+    getItemId,
   ]);
 
   // Render an individual item
@@ -812,9 +825,7 @@ export function Selector<T extends SelectorOptionType>(
       const option = options[i];
 
       if (isDivider(option)) {
-        elements.push(
-          <Divider key={`divider-${i}`} xstyle={styles.divider} />,
-        );
+        elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
       } else if (isSection(option)) {
         const sectionItems: ReactNode[] = [];
         for (const opt of option.options) {
@@ -892,13 +903,16 @@ export function Selector<T extends SelectorOptionType>(
           ref={triggerRef}
           id={triggerId}
           type="button"
-          role="combobox"
+          // In hasSearch mode the popup's search input is the combobox (it owns
+          // focus + aria-activedescendant, comboboxes-4), so the trigger is a
+          // plain button that opens the listbox — not a second combobox.
+          role={hasSearch ? undefined : 'combobox'}
           {...rest}
           aria-haspopup="listbox"
           aria-expanded={popover.isOpen}
           aria-controls={listboxId}
           aria-activedescendant={
-            popover.isOpen && highlightedIndex >= 0
+            !hasSearch && popover.isOpen && highlightedIndex >= 0
               ? getItemId(highlightedIndex)
               : undefined
           }

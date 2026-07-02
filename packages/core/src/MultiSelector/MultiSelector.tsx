@@ -906,17 +906,30 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         <input
           ref={searchRef}
           id={searchId}
-          role="searchbox"
+          // When hasSearch is set, focus moves into this input on open, so it —
+          // not the trigger — must be the combobox reporting the highlighted
+          // option via aria-activedescendant (comboboxes-4).
+          role="combobox"
+          aria-expanded={popover.isOpen}
           aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            popover.isOpen && highlightedIndex >= 0
+              ? getItemId(highlightedIndex)
+              : undefined
+          }
           aria-label="Search options"
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           onKeyDown={e => {
-            // Let ArrowDown/Up/Escape/Tab propagate to parent handler
+            // Arrow keys navigate options; Enter toggles; Escape/Tab close.
+            // Space and Home/End are left to the input (type a space / move
+            // the caret), not forwarded to option navigation.
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
+              e.key === 'Enter' ||
               e.key === 'Escape' ||
               e.key === 'Tab'
             ) {
@@ -935,6 +948,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     searchQuery,
     searchPlaceholder,
     onKeyDown,
+    popover.isOpen,
+    highlightedIndex,
+    getItemId,
   ]);
 
   // Render an individual item (index-based)
@@ -1062,9 +1078,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
 
       if (isDivider(option)) {
         flushPending();
-        elements.push(
-          <Divider key={`divider-${i}`} xstyle={styles.divider} />,
-        );
+        elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
       } else if (isSection(option)) {
         flushPending();
         const count = option.options.length;
@@ -1144,12 +1158,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           ref={triggerRef}
           id={triggerId}
           type="button"
-          role="combobox"
+          // In hasSearch mode the popup's search input is the combobox (it owns
+          // focus + aria-activedescendant, comboboxes-4), so the trigger is a
+          // plain button that opens the listbox — not a second combobox.
+          role={hasSearch ? undefined : 'combobox'}
           aria-haspopup="listbox"
           aria-expanded={popover.isOpen}
           aria-controls={listboxId}
           aria-activedescendant={
-            popover.isOpen && highlightedIndex >= 0
+            !hasSearch && popover.isOpen && highlightedIndex >= 0
               ? getItemId(highlightedIndex)
               : undefined
           }

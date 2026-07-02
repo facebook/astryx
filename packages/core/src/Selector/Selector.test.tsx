@@ -83,7 +83,12 @@ function mockSelectorRects() {
     'innerHeight',
   );
   HTMLElement.prototype.getBoundingClientRect = function () {
-    if (this.getAttribute('role') === 'combobox') {
+    // The trigger is role="combobox" by default, or a plain button with
+    // aria-haspopup="listbox" in hasSearch mode — match either.
+    if (
+      this.getAttribute('role') === 'combobox' ||
+      this.getAttribute('aria-haspopup') === 'listbox'
+    ) {
       return rect({top: 160, bottom: 190, height: 30});
     }
     if (this.getAttribute('role') === 'listbox') {
@@ -108,9 +113,7 @@ function mockSelectorRects() {
 
 describe('Selector', () => {
   it('renders with placeholder when no value', () => {
-    render(
-      <Selector label="Fruit" options={OPTIONS} placeholder="Pick one" />,
-    );
+    render(<Selector label="Fruit" options={OPTIONS} placeholder="Pick one" />);
     expect(screen.getByRole('combobox')).toHaveTextContent('Pick one');
   });
 
@@ -355,8 +358,33 @@ describe('Selector', () => {
           hasSearch
         />,
       );
-      await user.click(screen.getByRole('combobox'));
-      expect(screen.getByRole('searchbox', h)).toBeInTheDocument();
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      expect(screen.getByRole('combobox', h)).toBeInTheDocument();
+    });
+
+    it('wires the search input as the combobox with activedescendant (comboboxes-4)', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      const triggerBtn = screen.getByRole('button', {name: 'Fruit'});
+      // In hasSearch mode the trigger is a plain button, not a combobox.
+      expect(triggerBtn).not.toHaveAttribute('role', 'combobox');
+      await user.click(triggerBtn);
+      const search = screen.getByRole('combobox', h);
+      expect(search).toHaveAttribute('aria-autocomplete', 'list');
+      expect(search).toHaveAttribute('aria-expanded', 'true');
+      expect(search).toHaveAttribute('aria-controls');
+      // ArrowDown moves the highlight; the search input reports it via
+      // aria-activedescendant (previously silent on the trigger).
+      await user.keyboard('{ArrowDown}');
+      expect(search).toHaveAttribute('aria-activedescendant');
     });
 
     it('does not render search input when hasSearch is false', async () => {
@@ -369,6 +397,8 @@ describe('Selector', () => {
           onChange={() => {}}
         />,
       );
+      // hasSearch is false, so the trigger itself is the combobox and there is
+      // no separate search input inside the popup.
       await user.click(screen.getByRole('combobox'));
       expect(screen.queryByRole('searchbox', h)).not.toBeInTheDocument();
     });
@@ -384,8 +414,8 @@ describe('Selector', () => {
           hasSearch
         />,
       );
-      await user.click(screen.getByRole('combobox'));
-      await user.type(screen.getByRole('searchbox', h), 'ban');
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'ban');
       const options = screen.getAllByRole('option', h);
       expect(options).toHaveLength(1);
       expect(options[0]).toHaveTextContent('Banana');
@@ -402,8 +432,8 @@ describe('Selector', () => {
           hasSearch
         />,
       );
-      await user.click(screen.getByRole('combobox'));
-      await user.type(screen.getByRole('searchbox', h), 'xyz');
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
       expect(screen.queryAllByRole('option', h)).toHaveLength(0);
       expect(screen.getByText('No results found')).toBeInTheDocument();
     });
@@ -420,8 +450,8 @@ describe('Selector', () => {
           hasSearch
         />,
       );
-      await user.click(screen.getByRole('combobox'));
-      await user.type(screen.getByRole('searchbox', h), 'ban');
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'ban');
       await user.click(screen.getByRole('option', {name: /Banana/, ...h}));
       expect(onChange).toHaveBeenCalledWith('Banana');
     });
@@ -441,7 +471,9 @@ describe('Selector', () => {
         </>,
       );
 
-      const trigger = screen.getByRole('combobox');
+      // In hasSearch mode the trigger is a plain button (the popup's search
+      // input is the combobox); it still owns aria-expanded.
+      const trigger = screen.getByRole('button', {name: 'Fruit'});
       await user.click(trigger);
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
@@ -461,7 +493,7 @@ describe('Selector', () => {
           searchPlaceholder="Find a fruit..."
         />,
       );
-      await user.click(screen.getByRole('combobox'));
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
       expect(
         screen.getByPlaceholderText('Find a fruit...'),
       ).toBeInTheDocument();
@@ -497,9 +529,7 @@ describe('Selector', () => {
     it('opens and selects an option with Enter (no mouse)', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
-      render(
-        <Selector label="Fruit" options={OPTIONS} onChange={onChange} />,
-      );
+      render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
 
       await user.tab();
       await user.keyboard('{Enter}'); // open

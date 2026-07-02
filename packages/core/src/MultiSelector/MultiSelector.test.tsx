@@ -496,8 +496,10 @@ describe('MultiSelector', () => {
       />,
     );
 
-    await user.click(screen.getByRole('combobox'));
-    expect(screen.getByRole('searchbox', h)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const searchInput = screen.getByRole('combobox', h);
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toHaveAttribute('aria-autocomplete', 'list');
   });
 
   it('filters options when searching', async () => {
@@ -512,8 +514,8 @@ describe('MultiSelector', () => {
       />,
     );
 
-    await user.click(screen.getByRole('combobox'));
-    const searchInput = screen.getByRole('searchbox', h);
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const searchInput = screen.getByRole('combobox', h);
     await user.type(searchInput, 'app');
 
     const options = screen.getAllByRole('option', h);
@@ -532,8 +534,8 @@ describe('MultiSelector', () => {
       />,
     );
 
-    await user.click(screen.getByRole('combobox'));
-    const searchInput = screen.getByRole('searchbox', h);
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const searchInput = screen.getByRole('combobox', h);
     await user.type(searchInput, 'xyz');
 
     expect(screen.getByText('No results found')).toBeInTheDocument();
