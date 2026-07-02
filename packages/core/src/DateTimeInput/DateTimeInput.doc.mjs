@@ -95,7 +95,7 @@ export const docs = {
     },
     {
       name: 'timeIncrement',
-      type: 'number',
+      type: '1 | 5 | 10 | 15 | 30',
       description: 'Minutes to add or subtract when using arrow keys in the time input.',
       default: '1',
     },
@@ -206,7 +206,7 @@ export const docsZh = {
     {name: 'dateConstraints', type: 'Array<(date: Date) => boolean>', description: '自定义约束函数数组，用于禁用特定日期。'},
     {name: 'hasSeconds', type: 'boolean', description: '在时间部分包含秒。', default: 'false'},
     {name: 'hourFormat', type: "'12h' | '24h'", description: "控制显示格式。'12h' 显示 AM/PM；'24h' 使用 24 小时制。", default: "'12h'"},
-    {name: 'timeIncrement', type: 'number', description: '在时间输入中按箭头键时增减的分钟数。', default: '1'},
+    {name: 'timeIncrement', type: '1 | 5 | 10 | 15 | 30', description: '在时间输入中按箭头键时增减的分钟数。', default: '1'},
     {name: 'hasClear', type: 'boolean', description: '当有值时显示清除按钮。', default: 'false'},
     {name: 'placeholder', type: 'string', description: '日期部分未选择日期时显示的占位符文本。', default: "'Select a date'"},
     {name: 'timePlaceholder', type: 'string', description: '时间部分未选择时间时显示的占位符文本。', default: "'Select a time'"},
