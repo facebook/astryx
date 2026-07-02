@@ -12,7 +12,6 @@ export default function MoreMenuShowcase() {
     <MoreMenu
       isMenuOpen={isMenuOpen}
       onOpenChange={setIsMenuOpen}
-      hasAutoFocus={false}
       items={[
         {label: 'Edit', onClick: () => {}},
         {label: 'Duplicate', onClick: () => {}},

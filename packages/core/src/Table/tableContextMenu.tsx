@@ -107,7 +107,6 @@ function LazyTableContextMenu({
   return (
     <ContextMenu
       items={options ?? []}
-      hasAutoFocus={false}
       onOpenChange={open => {
         // Resolve actions when opening; clear on close so state derived later
         // (e.g. current sort direction) is always fresh next open.
@@ -135,12 +134,9 @@ export function wrapInTableContextMenu(
   if (!actions || actions.length === 0) {
     return element;
   }
-  // hasAutoFocus={false}: a right-click menu shouldn't pre-highlight the first
   // item (it looked like "ascending" was always selected). Focus moves only
   // when the user arrow-keys into the menu.
   return (
-    <ContextMenu items={toContextMenuOptions(actions)} hasAutoFocus={false}>
-      {element}
-    </ContextMenu>
+    <ContextMenu items={toContextMenuOptions(actions)}>{element}</ContextMenu>
   );
 }

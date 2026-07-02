@@ -135,13 +135,6 @@ interface DropdownMenuBaseProps extends BaseProps {
    */
   placement?: LayerPlacement;
 
-  /**
-   * Whether to auto-focus the first menu item when the menu opens.
-   * Set to `false` for inline showcases or documentation previews
-   * where stealing focus is undesirable.
-   * @default true
-   */
-  hasAutoFocus?: boolean;
   'data-testid'?: string;
 }
 
@@ -193,7 +186,6 @@ export function DropdownMenu({
   onClick,
   hasChevron = true,
   placement = 'below',
-  hasAutoFocus = true,
   className,
   style,
   xstyle,
@@ -299,14 +291,12 @@ export function DropdownMenu({
     if (isControlled) {
       if (controlledIsOpen && !popover.isOpen) {
         popover.show();
-        if (hasAutoFocus) {
-          requestAnimationFrame(() => focusFirst());
-        }
+        requestAnimationFrame(() => focusFirst());
       } else if (!controlledIsOpen && popover.isOpen) {
         popover.hide();
       }
     }
-  }, [controlledIsOpen, isControlled, popover, hasAutoFocus, focusFirst]);
+  }, [controlledIsOpen, isControlled, popover, focusFirst]);
 
   // Extend useListFocus with Enter/Space activation + typeahead
   const listKeyDown = useCallback(
@@ -340,10 +330,8 @@ export function DropdownMenu({
 
   const openAndFocus = useCallback(() => {
     popover.show();
-    if (hasAutoFocus) {
-      requestAnimationFrame(() => focusFirst());
-    }
-  }, [popover, hasAutoFocus, focusFirst]);
+    requestAnimationFrame(() => focusFirst());
+  }, [popover, focusFirst]);
 
   const handleButtonClick = useCallback(() => {
     // If the menu was just closed by light dismiss (e.g. iOS Safari fires

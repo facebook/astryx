@@ -12,7 +12,6 @@ export default function DropdownMenuShowcase() {
     <DropdownMenu
       isMenuOpen={isMenuOpen}
       onOpenChange={setIsMenuOpen}
-      hasAutoFocus={false}
       button={{label: 'Actions'}}
       items={[
         {label: 'Edit', onClick: () => {}},
