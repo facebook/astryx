@@ -44,8 +44,9 @@ import {themeProps} from '../utils/themeProps';
  * - Non-semantic palette: `blue | cyan | gray | green | orange | pink | purple | red | teal | yellow`
  *   Each uses the corresponding `--color-background-<name>` token (20% opacity tint).
  *
- * All variants include a transparent border to prevent layout jitter
- * when switching variants. Themes can override borderWidth/borderColor.
+ * The `default` variant's border is drawn with an inset box-shadow, not a real
+ * CSS border, so all variants share identical geometry with no layout jitter
+ * when switching. Themes override the color via `--color-border-emphasized`.
  */
 export type CardVariant =
   | 'default'
@@ -71,12 +72,17 @@ const styles = stylex.create({
     '--_card-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_card-radius)',
     overflow: 'clip',
-    borderWidth: borderVars['--border-width'],
-    borderStyle: 'solid',
-    borderColor: 'transparent',
   },
+  // The `default` variant's 1px border is a fake border drawn with an inset
+  // box-shadow rather than a real CSS border. box-shadow doesn't occupy layout,
+  // so (a) every variant shares identical geometry with no jitter when
+  // switching, and (b) the padding box equals the border box — which lets an
+  // interactive composition (e.g. ClickableCard) tint the whole card with a
+  // simple `::after { inset: 0 }` overlay, covering this border with no
+  // untinted 1px ring on hover. Non-`default` variants draw no border at all.
+  // Themes override the color via the --color-border-emphasized token.
   withBorder: {
-    borderColor: colorVars['--color-border-emphasized'],
+    boxShadow: `inset 0 0 0 ${borderVars['--border-width']} ${colorVars['--color-border-emphasized']}`,
   },
   // Fixed-height cards scroll content; overflow: auto also clips to border-radius
   scrollable: {
