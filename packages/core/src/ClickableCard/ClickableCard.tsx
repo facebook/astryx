@@ -84,6 +84,37 @@ const styles = stylex.create({
       },
     },
   },
+  // Border hover/active tint — for non-`default` variants only.
+  //
+  // Card always renders a 1px border and, for every variant except `default`,
+  // keeps it transparent (the card background shows through) to avoid layout
+  // jitter when switching variants. The hover overlay above is an `::after`
+  // pinned to `inset: 0`, but the card's `overflow: clip` clips it to the
+  // padding box — so it tints the surface but never reaches the 1px border
+  // region. That left the border untinted on hover, reading as a faint 1px
+  // ring around the card.
+  //
+  // Tint the border itself with the SAME semi-transparent values as the
+  // overlay. Because the card background paints under the border, a
+  // `currentColor N%` border composites over that background exactly like the
+  // overlay does over the surface — so border and surface darken uniformly and
+  // the ring disappears. `default` is untouched: its border is an
+  // intentionally-visible design element (`--color-border-emphasized`).
+  overlayBorder: {
+    transitionProperty: 'border-color',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    ':active': {
+      borderColor: 'color-mix(in srgb, currentColor 10%, transparent)',
+    },
+  },
+  overlayBorderHoverOnPointer: {
+    '@media (hover: hover)': {
+      ':hover': {
+        borderColor: 'color-mix(in srgb, currentColor 5%, transparent)',
+      },
+    },
+  },
   disabled: {
     cursor: 'not-allowed',
     opacity: 0.5,
@@ -266,6 +297,12 @@ export function ClickableCard({
           styles.focusWithin,
           !isDisabled && styles.overlay,
           !isDisabled && styles.hoverOnPointer,
+          // Non-`default` variants keep a transparent border that the clipped
+          // overlay can't reach — tint it in sync so no 1px ring shows on hover.
+          !isDisabled && variant !== 'default' && styles.overlayBorder,
+          !isDisabled &&
+            variant !== 'default' &&
+            styles.overlayBorderHoverOnPointer,
           isDisabled && styles.disabled,
           xstyleProp,
         ] as unknown as StyleXStyles

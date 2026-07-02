@@ -106,4 +106,42 @@ describe('ClickableCard', () => {
     const link = screen.getByRole('link', {name: 'Disabled link'});
     expect(link).toHaveAttribute('aria-disabled', 'true');
   });
+
+  // Non-`default` variants render a transparent 1px border (from Card) that the
+  // clipped hover overlay can't reach. Without a border tint it shows as a faint
+  // 1px ring on hover. These tests lock in that only non-`default` variants get
+  // the border-tint styles, and `default` (with its intentional visible border)
+  // does not.
+  it('applies the border hover/active tint on non-default variants', () => {
+    const {container} = render(
+      <ClickableCard label="Blue card" variant="blue">
+        Content
+      </ClickableCard>,
+    );
+    const card = container.firstChild as HTMLElement;
+    expect(card.className).toContain('ClickableCard__styles.overlayBorder');
+    expect(card.className).toContain(
+      'ClickableCard__styles.overlayBorderHoverOnPointer',
+    );
+  });
+
+  it('does NOT apply the border tint on the default variant', () => {
+    const {container} = render(
+      <ClickableCard label="Default card" variant="default">
+        Content
+      </ClickableCard>,
+    );
+    const card = container.firstChild as HTMLElement;
+    expect(card.className).not.toContain('ClickableCard__styles.overlayBorder');
+  });
+
+  it('does NOT apply the border tint when disabled', () => {
+    const {container} = render(
+      <ClickableCard label="Disabled blue" variant="blue" isDisabled>
+        Content
+      </ClickableCard>,
+    );
+    const card = container.firstChild as HTMLElement;
+    expect(card.className).not.toContain('ClickableCard__styles.overlayBorder');
+  });
 });
