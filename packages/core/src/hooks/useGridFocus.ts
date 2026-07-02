@@ -26,10 +26,37 @@ export interface UseGridFocusOptions {
   columns: number;
 
   /**
-   * Selector for focusable cells within the grid.
+   * Selector for cells within the grid. This should match ALL grid cell
+   * positions in DOM order (including disabled/empty ones) so the hook can
+   * preserve the true grid geometry when computing rows and columns.
+   *
+   * Use {@link UseGridFocusOptions.isCellFocusable} to distinguish cells that
+   * can receive focus from those that cannot (disabled or empty). Navigation
+   * moves to a target row/column and, if that cell is not focusable, continues
+   * in the same direction to the next focusable cell — the geometry is never
+   * collapsed to only-focusable cells.
+   *
    * @default 'button:not([disabled]), [tabindex]:not([tabindex="-1"])'
    */
   cellSelector?: string;
+
+  /**
+   * Predicate determining whether a cell matched by {@link cellSelector} can
+   * receive focus. When omitted, every matched cell is considered focusable
+   * (backwards-compatible behavior).
+   *
+   * @param cell A cell element matched by `cellSelector`.
+   */
+  isCellFocusable?: (cell: HTMLElement) => boolean;
+
+  /**
+   * Resolves the element to focus for a given cell. Useful when the cell is a
+   * wrapper element (e.g. a `role="gridcell"` div) whose focusable content is a
+   * descendant (e.g. a `<button>`). When omitted, the cell itself is focused.
+   *
+   * @param cell A cell element matched by `cellSelector`.
+   */
+  getFocusTarget?: (cell: HTMLElement) => HTMLElement | null;
 
   /**
    * Callback when navigation would go before the first cell.
@@ -99,6 +126,12 @@ export interface UseGridFocusReturn<T extends HTMLElement = HTMLElement> {
  * - Ctrl+End: Move to last cell in grid
  * - Page Up/Down: Custom callbacks (e.g., month navigation)
  *
+ * The hook enumerates ALL cells matched by `cellSelector` in DOM order and
+ * computes row/column over that full set, preserving the true grid geometry
+ * even when some cells are disabled or empty. When a move lands on a
+ * non-focusable cell (per `isCellFocusable`), it continues in the same
+ * direction to the next focusable cell.
+ *
  * @example
  * ```
  * const {gridRef, handleKeyDown} = useGridFocus({
@@ -118,6 +151,8 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
   const {
     columns,
     cellSelector = 'button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    isCellFocusable,
+    getFocusTarget,
     onNavigateBefore,
     onNavigateAfter,
     onPageUp,
@@ -127,7 +162,8 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
   const gridRef = useRef<T>(null);
 
   /**
-   * Get all focusable cells in the grid.
+   * Get all cells in the grid, in DOM order. This includes disabled and empty
+   * cells so the true grid geometry is preserved.
    */
   const getCells = useCallback((): HTMLElement[] => {
     if (!gridRef.current) {
@@ -139,7 +175,48 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
   }, [cellSelector]);
 
   /**
-   * Get the currently focused cell index.
+   * Whether a cell can receive focus.
+   */
+  const cellFocusable = useCallback(
+    (cell: HTMLElement | undefined): boolean => {
+      if (!cell) {
+        return false;
+      }
+      return isCellFocusable ? isCellFocusable(cell) : true;
+    },
+    [isCellFocusable],
+  );
+
+  /**
+   * Resolve the element that should actually receive focus for a cell.
+   */
+  const resolveFocusTarget = useCallback(
+    (cell: HTMLElement | undefined): HTMLElement | null => {
+      if (!cell) {
+        return null;
+      }
+      return getFocusTarget ? getFocusTarget(cell) : cell;
+    },
+    [getFocusTarget],
+  );
+
+  /**
+   * Focus a cell (resolving to its focus target).
+   */
+  const focusCellElement = useCallback(
+    (cell: HTMLElement | undefined): boolean => {
+      const target = resolveFocusTarget(cell);
+      if (target) {
+        target.focus();
+        return true;
+      }
+      return false;
+    },
+    [resolveFocusTarget],
+  );
+
+  /**
+   * Get the currently focused cell index within the full cell set.
    */
   const getCurrentIndex = useCallback((): number => {
     const cells = getCells();
@@ -148,32 +225,28 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
   }, [getCells]);
 
   /**
-   * Focus a cell by index, clamping to valid range.
-   * Returns true if focus was successful, false if navigation callback was triggered.
+   * Find the next focusable cell starting at `startIndex`, moving by `step`.
+   * Returns the index of the focusable cell, or -1 if none exists in range
+   * (i.e. we ran off the start/end of the grid).
    */
-  const focusCellInternal = useCallback(
-    (index: number, currentColumn: number, offset: number) => {
-      const cells = getCells();
-      if (cells.length === 0) {
-        return;
+  const findFocusableInDirection = useCallback(
+    (cells: HTMLElement[], startIndex: number, step: number): number => {
+      let index = startIndex;
+      while (index >= 0 && index < cells.length) {
+        if (cellFocusable(cells[index])) {
+          return index;
+        }
+        index += step;
       }
-
-      if (index < 0) {
-        onNavigateBefore?.(currentColumn, offset);
-        return;
-      }
-      if (index >= cells.length) {
-        onNavigateAfter?.(currentColumn, offset);
-        return;
-      }
-
-      cells[index]?.focus();
+      return -1;
     },
-    [getCells, onNavigateBefore, onNavigateAfter],
+    [cellFocusable],
   );
 
   /**
-   * Public focusCell that doesn't trigger navigation callbacks
+   * Focus a cell by index, clamping to valid range. Skips non-focusable cells
+   * toward the nearest edge. Used by public focus helpers (no navigation
+   * callbacks).
    */
   const focusCell = useCallback(
     (index: number) => {
@@ -182,38 +255,55 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
         return;
       }
       const clampedIndex = Math.max(0, Math.min(index, cells.length - 1));
-      cells[clampedIndex]?.focus();
+      // Prefer the requested cell; otherwise search forward, then backward.
+      let target = findFocusableInDirection(cells, clampedIndex, 1);
+      if (target === -1) {
+        target = findFocusableInDirection(cells, clampedIndex, -1);
+      }
+      if (target !== -1) {
+        focusCellElement(cells[target]);
+      }
     },
-    [getCells],
+    [getCells, findFocusableInDirection, focusCellElement],
   );
 
   /**
-   * Focus the first cell.
+   * Focus the first focusable cell.
    */
   const focusFirst = useCallback(() => {
     const cells = getCells();
-    cells[0]?.focus();
-  }, [getCells]);
+    const index = findFocusableInDirection(cells, 0, 1);
+    if (index !== -1) {
+      focusCellElement(cells[index]);
+    }
+  }, [getCells, findFocusableInDirection, focusCellElement]);
 
   /**
-   * Focus the last cell.
+   * Focus the last focusable cell.
    */
   const focusLast = useCallback(() => {
     const cells = getCells();
-    cells[cells.length - 1]?.focus();
-  }, [getCells]);
+    const index = findFocusableInDirection(cells, cells.length - 1, -1);
+    if (index !== -1) {
+      focusCellElement(cells[index]);
+    }
+  }, [getCells, findFocusableInDirection, focusCellElement]);
 
   /**
    * Handle keyboard navigation.
    */
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      const cells = getCells();
+      if (cells.length === 0) {
+        return;
+      }
+
       const currentIndex = getCurrentIndex();
       if (currentIndex === -1) {
         return;
       }
 
-      const cells = getCells();
       const currentRow = Math.floor(currentIndex / columns);
       const currentCol = currentIndex % columns;
       const totalRows = Math.ceil(cells.length / columns);
@@ -221,65 +311,95 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
       let handled = true;
 
       switch (e.key) {
-        case 'ArrowRight':
-          // Horizontal navigation: offset = 1
-          focusCellInternal(currentIndex + 1, (currentCol + 1) % columns, 1);
+        case 'ArrowRight': {
+          // Move right, skipping non-focusable cells in the same direction.
+          const target = findFocusableInDirection(cells, currentIndex + 1, 1);
+          if (target !== -1) {
+            focusCellElement(cells[target]);
+          } else {
+            onNavigateAfter?.((currentCol + 1) % columns, 1);
+          }
           break;
+        }
 
-        case 'ArrowLeft':
-          // Horizontal navigation: offset = 1
-          focusCellInternal(
-            currentIndex - 1,
-            currentCol === 0 ? columns - 1 : currentCol - 1,
-            1,
-          );
+        case 'ArrowLeft': {
+          const target = findFocusableInDirection(cells, currentIndex - 1, -1);
+          if (target !== -1) {
+            focusCellElement(cells[target]);
+          } else {
+            onNavigateBefore?.(
+              currentCol === 0 ? columns - 1 : currentCol - 1,
+              1,
+            );
+          }
           break;
+        }
 
-        case 'ArrowDown':
-          // Vertical navigation: offset = columns (7 for calendar)
+        case 'ArrowDown': {
           if (currentRow < totalRows - 1) {
-            const nextIndex = currentIndex + columns;
-            if (nextIndex < cells.length) {
-              focusCellInternal(nextIndex, currentCol, columns);
+            // Move to the same column one row down, then continue downward
+            // (by whole rows) to the next focusable cell in that column.
+            const target = findFocusableInDirection(
+              cells,
+              currentIndex + columns,
+              columns,
+            );
+            if (target !== -1) {
+              focusCellElement(cells[target]);
             } else {
-              // Last row might be partial, focus last cell
-              focusCellInternal(cells.length - 1, currentCol, columns);
+              onNavigateAfter?.(currentCol, columns);
             }
           } else {
             onNavigateAfter?.(currentCol, columns);
           }
           break;
+        }
 
-        case 'ArrowUp':
-          // Vertical navigation: offset = columns (7 for calendar)
+        case 'ArrowUp': {
           if (currentRow > 0) {
-            focusCellInternal(currentIndex - columns, currentCol, columns);
+            const target = findFocusableInDirection(
+              cells,
+              currentIndex - columns,
+              -columns,
+            );
+            if (target !== -1) {
+              focusCellElement(cells[target]);
+            } else {
+              onNavigateBefore?.(currentCol, columns);
+            }
           } else {
             onNavigateBefore?.(currentCol, columns);
           }
           break;
+        }
 
         case 'Home':
           if (e.ctrlKey || e.metaKey) {
-            // Ctrl+Home: first cell in grid
+            // Ctrl+Home: first focusable cell in grid
             focusFirst();
           } else {
-            // Home: first cell in current row
-            focusCell(currentRow * columns);
+            // Home: first focusable cell in current row (searching rightward)
+            const rowStart = currentRow * columns;
+            const rowEnd = Math.min(rowStart + columns - 1, cells.length - 1);
+            const target = findFocusableInDirection(cells, rowStart, 1);
+            if (target !== -1 && target <= rowEnd) {
+              focusCellElement(cells[target]);
+            }
           }
           break;
 
         case 'End':
           if (e.ctrlKey || e.metaKey) {
-            // Ctrl+End: last cell in grid
+            // Ctrl+End: last focusable cell in grid
             focusLast();
           } else {
-            // End: last cell in current row
-            const rowEnd = Math.min(
-              (currentRow + 1) * columns - 1,
-              cells.length - 1,
-            );
-            focusCell(rowEnd);
+            // End: last focusable cell in current row (searching leftward)
+            const rowStart = currentRow * columns;
+            const rowEnd = Math.min(rowStart + columns - 1, cells.length - 1);
+            const target = findFocusableInDirection(cells, rowEnd, -1);
+            if (target !== -1 && target >= rowStart) {
+              focusCellElement(cells[target]);
+            }
           }
           break;
 
@@ -302,8 +422,8 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
     },
     [
       columns,
-      focusCell,
-      focusCellInternal,
+      findFocusableInDirection,
+      focusCellElement,
       focusFirst,
       focusLast,
       getCells,

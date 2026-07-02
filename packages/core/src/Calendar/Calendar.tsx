@@ -621,11 +621,22 @@ function MonthGrid({
     }
   }, [getFocusedDate, onNavigateNext]);
 
-  // Grid focus navigation
+  // Grid focus navigation.
+  //
+  // The hook enumerates ALL grid cells (every `role="gridcell"`, including
+  // disabled days and empty placeholder cells) so the true 7-column geometry is
+  // preserved. `isCellFocusable` / `getFocusTarget` tell the hook which cells
+  // can take focus (those containing an enabled day button) and where to send
+  // focus (the day button inside the cell). Arrow keys move to the target
+  // row/column and, if that cell is disabled, continue in the same direction to
+  // the next enabled cell.
   const {gridRef, handleKeyDown: handleGridKeyDown} =
     useGridFocus<HTMLDivElement>({
       columns: 7,
-      cellSelector: 'button:not([disabled])',
+      cellSelector: '[role="gridcell"]',
+      isCellFocusable: cell =>
+        cell.querySelector('button:not([disabled])') !== null,
+      getFocusTarget: cell => cell.querySelector<HTMLElement>('button'),
       onNavigateBefore: handleNavigatePrevious,
       onNavigateAfter: handleNavigateNext,
       onPageUp: handlePageUp,
@@ -704,31 +715,7 @@ function MonthGrid({
 
   return (
     <div {...stylex.props(monthGridStyles.monthGrid)}>
-      {/* Day names header */}
-      <div
-        {...stylex.props(
-          monthGridStyles.weekHeader,
-          hasWeekNumbers && monthGridStyles.weekHeaderWithNumbers,
-        )}>
-        {hasWeekNumbers && (
-          <div
-            {...stylex.props(
-              monthGridStyles.dayName,
-              monthGridStyles.weekNumberHeader,
-            )}
-          />
-        )}
-        {dayNames.map(name => (
-          <div
-            key={name}
-            role="columnheader"
-            {...stylex.props(monthGridStyles.dayName)}>
-            {name}
-          </div>
-        ))}
-      </div>
-
-      {/* Days grid */}
+      {/* Days grid (APG grid: header row of columnheaders + week rows) */}
       <div
         ref={gridRef}
         role="grid"
@@ -738,6 +725,27 @@ function MonthGrid({
           monthGridStyles.daysGrid,
           hasWeekNumbers && monthGridStyles.daysGridWithNumbers,
         )}>
+        {/* Day names header row (columnheaders live inside the grid). Uses the
+            same display:contents row so its cells align to the grid columns. */}
+        <div role="row" {...stylex.props(monthGridStyles.weekRow)}>
+          {hasWeekNumbers && (
+            <div
+              {...stylex.props(
+                monthGridStyles.dayName,
+                monthGridStyles.weekNumberHeader,
+              )}
+            />
+          )}
+          {dayNames.map(name => (
+            <div
+              key={name}
+              role="columnheader"
+              {...stylex.props(monthGridStyles.dayName)}>
+              {name}
+            </div>
+          ))}
+        </div>
+
         {weeks.map(week => {
           const weekDate = week.find(d => !d.isOutside)?.date || week[0].date;
           const weekNum = plainDateGetWeekNumber(weekDate);
@@ -748,7 +756,9 @@ function MonthGrid({
               role="row"
               {...stylex.props(monthGridStyles.weekRow)}>
               {hasWeekNumbers && (
-                <div {...stylex.props(monthGridStyles.weekNumber)}>
+                <div
+                  role="rowheader"
+                  {...stylex.props(monthGridStyles.weekNumber)}>
                   {weekNum}
                 </div>
               )}
@@ -819,7 +829,9 @@ function DayCell({
   const {date, isOutside, dayNumber} = day;
 
   if (isOutside && !hasOutsideDays) {
-    return <div {...stylex.props(dayCellStyles.cell)} />;
+    // Empty placeholder cell — still a gridcell so the grid geometry stays a
+    // clean 7-per-row set for keyboard navigation.
+    return <div role="gridcell" {...stylex.props(dayCellStyles.cell)} />;
   }
 
   const state = computeDayCellState({
@@ -841,7 +853,7 @@ function DayCell({
   const previewRounding = computePreviewRounding(state);
 
   return (
-    <div {...stylex.props(dayCellStyles.cell)}>
+    <div role="gridcell" {...stylex.props(dayCellStyles.cell)}>
       {/* Range background */}
       {state.isInRange && (
         <div
@@ -879,7 +891,6 @@ function DayCell({
       {/* Day button */}
       <button
         type="button"
-        role="gridcell"
         data-date={day.iso}
         aria-label={plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY)}
         aria-selected={state.isSelected || state.isInRange || undefined}
