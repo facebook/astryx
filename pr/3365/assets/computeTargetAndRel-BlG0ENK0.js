@@ -1,1 +1,0 @@
-const s=["noopener","noreferrer"];function t(n,e){if(n!=="_blank")return{target:n,rel:e};const o=e?.split(/\s+/).filter(Boolean)??[];for(const r of s)o.includes(r)||o.push(r);return{target:n,rel:o.join(" ")}}export{t as c};
