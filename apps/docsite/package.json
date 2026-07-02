@@ -5,8 +5,8 @@
   "scripts": {
     "build:theme": "astryx theme build src/themes/astryxTheme.ts --out src/themes/astryx.css",
     "generate": "pnpm build:theme && node scripts/generate-data.mjs && node scripts/generate-scope.mjs && node scripts/generate-playground-types.mjs && node scripts/copy-vendor.mjs",
-    "dev": "pnpm generate && next dev",
-    "build": "pnpm generate && next build",
+    "dev": "pnpm generate && next dev --webpack",
+    "build": "pnpm generate && next build --webpack",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -31,7 +31,7 @@
     "lz-string": "^1.5.0",
     "mcp-handler": "^1.1.0",
     "monaco-editor": "^0.55.1",
-    "next": "^15.5.16",
+    "next": "16.3.0-preview.5",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zod": "^4.4.3"
