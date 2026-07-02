@@ -55,7 +55,6 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingBlock: spacingVars['--spacing-2'],
     paddingInline: spacingVars['--spacing-3'],
     borderWidth: 0,
     borderStyle: 'none',
@@ -140,15 +139,24 @@ const styles = stylex.create({
   },
 });
 
+/**
+ * Sizes use min-height (not a fixed height) so theme paddingBlock overrides
+ * can grow the button instead of being absorbed by border-box (#3379).
+ * Each size pairs the min-height with the paddingBlock that reproduces it:
+ * 20px label line-height + 2x paddingBlock = --size-element-*.
+ */
 const sizeStyles = stylex.create({
   sm: {
-    height: sizeVars['--size-element-sm'],
+    minHeight: sizeVars['--size-element-sm'],
+    paddingBlock: spacingVars['--spacing-1'],
   },
   md: {
-    height: sizeVars['--size-element-md'],
+    minHeight: sizeVars['--size-element-md'],
+    paddingBlock: spacingVars['--spacing-1-5'],
   },
   lg: {
-    height: sizeVars['--size-element-lg'],
+    minHeight: sizeVars['--size-element-lg'],
+    paddingBlock: spacingVars['--spacing-2'],
   },
 });
 

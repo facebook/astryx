@@ -418,4 +418,39 @@ describe('Button', () => {
     rerender(<Button label="Submit" isLoading />);
     expect(liveRegion).toHaveTextContent('Loading');
   });
+
+  it('sizes with min-height, not a fixed height, so theme paddingBlock overrides can grow the button (#3379)', () => {
+    const {rerender} = render(<Button label="Save" size="sm" />);
+    const button = screen.getByRole('button');
+
+    for (const [size, sizeVar] of [
+      ['sm', 'var(--size-element-sm)'],
+      ['md', 'var(--size-element-md)'],
+      ['lg', 'var(--size-element-lg)'],
+    ] as const) {
+      rerender(<Button label="Save" size={size} />);
+      const computed = getComputedStyle(button);
+      // A fixed height would absorb any theme paddingBlock override under
+      // border-box, making the override a silent no-op.
+      expect(computed.height).toBe('');
+      expect(computed.minHeight).toBe(sizeVar);
+    }
+  });
+
+  it('pairs each size with the padding that reproduces the default geometry', () => {
+    const {rerender} = render(<Button label="Save" size="sm" />);
+    const button = screen.getByRole('button');
+
+    // 20px label line-height + 2x padding = the --size-element-* min-height,
+    // so default buttons render at the same height as the previous fixed one.
+    for (const [size, spacingVar] of [
+      ['sm', 'var(--spacing-1)'],
+      ['md', 'var(--spacing-1-5)'],
+      ['lg', 'var(--spacing-2)'],
+    ] as const) {
+      rerender(<Button label="Save" size={size} />);
+      const computed = getComputedStyle(button);
+      expect(computed.getPropertyValue('padding-block')).toBe(spacingVar);
+    }
+  });
 });
