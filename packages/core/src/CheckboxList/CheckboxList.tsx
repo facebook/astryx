@@ -151,7 +151,7 @@ export function CheckboxList({
   'data-testid': dataTestId,
 }: CheckboxListProps) {
   const inputID = useId();
-  const labelID = useId();
+  const labelElementID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
 
@@ -211,7 +211,7 @@ export function CheckboxList({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={inputID}
-      labelID={labelID}
+      labelElementID={labelElementID}
       isGroupLabel
       descriptionID={description ? descriptionID : undefined}
       isDisabled={isDisabled}
@@ -231,7 +231,7 @@ export function CheckboxList({
       <CheckboxListContext value={contextValue}>
         <div
           role="group"
-          aria-labelledby={labelID}
+          aria-labelledby={labelElementID}
           aria-describedby={
             [
               description ? descriptionID : null,

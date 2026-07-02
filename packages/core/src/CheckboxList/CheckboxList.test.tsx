@@ -33,12 +33,16 @@ describe('CheckboxList', () => {
       </CheckboxList>,
     );
     // The checkboxes are wrapped in a role="group" whose accessible name comes
-    // from the field label (via aria-labelledby), not an orphaned htmlFor.
+    // from the field label (via aria-labelledby). The label is rendered as a
+    // <span> (not a literal <label>, which can't name a group) with no
+    // orphaned htmlFor.
     const group = screen.getByRole('group', {name: 'Preferences'});
     expect(group).toBeInTheDocument();
-    const label = screen.getByText('Preferences').closest('label');
+    const label = screen.getByText('Preferences');
+    expect(label.tagName).toBe('SPAN');
+    expect(label.closest('label')).toBeNull();
     expect(label).not.toHaveAttribute('for');
-    expect(group.getAttribute('aria-labelledby')).toBe(label?.id);
+    expect(group.getAttribute('aria-labelledby')).toBe(label.id);
   });
 
   it('renders checkbox items', () => {
