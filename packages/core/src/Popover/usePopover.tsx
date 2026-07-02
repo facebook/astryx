@@ -366,9 +366,7 @@ export function usePopover(
 
   // ARIA attributes for the trigger
   const triggerProps = {
-    'aria-haspopup': (role === 'dialog' ? 'dialog' : 'true') as
-      | 'dialog'
-      | 'true',
+    'aria-haspopup': role === 'dialog' ? ('dialog' as const) : ('true' as const),
     'aria-expanded': layer.isOpen,
     'aria-controls': layer.id,
   };
@@ -379,7 +377,6 @@ export function usePopover(
   useEffect(() => {
     if (role === 'dialog' && !dialogLabel && !warnedUnnamedDialogRef.current) {
       warnedUnnamedDialogRef.current = true;
-      // eslint-disable-next-line no-console
       console.warn(
         'usePopover: role="dialog" without a `dialogLabel` renders an unnamed ' +
           'dialog. Pass `dialogLabel`, or use `role: "none"` for listbox/menu ' +
