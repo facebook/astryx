@@ -9,10 +9,27 @@
  * SYNC: When FileInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {FileInput} from './FileInput';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
+
+function fileInputEl(): HTMLInputElement {
+  const el = document.querySelector('input[type="file"]');
+  if (!(el instanceof HTMLInputElement)) {
+    throw new Error('file input not found');
+  }
+  return el;
+}
 
 function createFile(
   name: string,
@@ -242,6 +259,55 @@ describe('FileInput', () => {
         'input[type="file"]',
       ) as HTMLInputElement;
       expect(input).toHaveAttribute('multiple');
+    });
+  });
+
+  describe('announcements', () => {
+    it('announces a single file selection politely', async () => {
+      render(<FileInput label="Upload" value={null} onChange={() => {}} />);
+      fireEvent.change(fileInputEl(), {
+        target: {files: [createFile('report.pdf', 100)]},
+      });
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('1 file selected: report.pdf');
+      });
+    });
+
+    it('announces a multi-file count politely', async () => {
+      render(
+        <FileInput
+          label="Upload"
+          value={null}
+          onChange={() => {}}
+          isMultiple
+        />,
+      );
+      const files = [
+        createFile('a.txt', 100),
+        createFile('b.txt', 200),
+        createFile('c.txt', 300),
+      ];
+      fireEvent.change(fileInputEl(), {target: {files}});
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('3 files selected');
+      });
+    });
+
+    it('does not announce a selection when validation rejects all files', async () => {
+      render(
+        <FileInput
+          label="Upload"
+          value={null}
+          onChange={() => {}}
+          accept=".pdf"
+        />,
+      );
+      fireEvent.change(fileInputEl(), {
+        target: {files: [createFile('note.txt', 100)]},
+      });
+      // A rejected selection creates no polite region (only the error goes to
+      // the existing role="status" region).
+      expect(politeRegion()).toBeNull();
     });
   });
 
