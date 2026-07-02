@@ -8,7 +8,6 @@ export const docs = {
   displayName: 'Base Typeahead',
   isHiddenFromOverview: true,
   description: 'Unstyled combobox engine providing input, search, keyboard navigation, and dropdown. No wrapper div, no border styling, no token rendering. Used by Typeahead and Tokenizer for custom compositions.',
-  relatedComponents: ['Typeahead', 'Tokenizer'],
   usage: {
     description: 'Unstyled combobox engine providing input, search, keyboard navigation, and dropdown. No wrapper div, no border styling, no token rendering. Used by Typeahead and Tokenizer for custom compositions.',
     bestPractices: [
