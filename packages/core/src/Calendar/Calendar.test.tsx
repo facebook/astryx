@@ -215,6 +215,33 @@ describe('Calendar', () => {
     expect(screen.getByText(/February 2026.*March 2026/)).toBeInTheDocument();
   });
 
+  it('clamps out-of-range numberOfMonths to a single month', () => {
+    // 1000 would otherwise try to render 1000 month grids and lock the page up.
+    render(
+      <Calendar
+        numberOfMonths={1000 as unknown as 1 | 2}
+        focusDate="2026-01-01"
+      />,
+    );
+
+    // Only the focused month renders — no second month, no range separator.
+    expect(screen.getByText('January 2026')).toBeInTheDocument();
+    expect(screen.queryByText(/February 2026/)).not.toBeInTheDocument();
+  });
+
+  it('clamps numberOfMonths={0} to a single month', () => {
+    render(
+      <Calendar
+        numberOfMonths={0 as unknown as 1 | 2}
+        focusDate="2026-01-01"
+      />,
+    );
+
+    // 0 previously rendered no months at all; now falls back to one.
+    expect(screen.getByText('January 2026')).toBeInTheDocument();
+    expect(screen.getAllByRole('gridcell').length).toBeGreaterThan(0);
+  });
+
   // ─── Display Options ─────────────────────────────────────────
 
   it('shows week numbers when hasWeekNumbers is true', () => {

@@ -203,7 +203,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
     value,
     defaultValue,
     onChange,
-    numberOfMonths = 1,
+    numberOfMonths: numberOfMonthsProp = 1,
     min,
     max,
     dateConstraints,
@@ -222,6 +222,11 @@ export function Calendar({ref, ...props}: CalendarProps) {
   // Normalize `weekStartsOn` (number or three-letter day name) to a numeric
   // DayOfWeek so all downstream date math keeps working with an index.
   const weekStartsOn = normalizeDayOfWeek(weekStartsOnProp);
+
+  // `numberOfMonths` is typed `1 | 2`; defensively clamp anything else that
+  // slips through at runtime to 1 so `Array.from({length})` can't render an
+  // absurd number of month grids (e.g. `numberOfMonths={1000}`).
+  const numberOfMonths = numberOfMonthsProp === 2 ? 2 : 1;
 
   // Today's date (memoized)
   const today = useMemo(() => plainDateToday(), []);
