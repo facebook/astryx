@@ -33,8 +33,9 @@ Download and install from https://nodejs.org
 ### pnpm
 
 Astryx uses [pnpm](https://pnpm.io/) as its package manager (declared in
-the `packageManager` field of `package.json`). The easiest way to install
-it is via [Corepack](https://nodejs.org/api/corepack.html), which ships
+the `packageManager` and `devEngines.packageManager` fields of
+`package.json`). The easiest way to install it is via
+[Corepack](https://nodejs.org/api/corepack.html), which ships
 with Node.js:
 
 ```bash

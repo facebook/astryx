@@ -63,6 +63,12 @@
     "vitest": "^2.1.0"
   },
   "packageManager": "pnpm@10.34.1",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "onFail": "error"
+    }
+  },
   "workspaces": [
     "apps/*",
     "packages/*",
