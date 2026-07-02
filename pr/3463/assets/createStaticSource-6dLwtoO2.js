@@ -1,1 +1,0 @@
-function a(r,n){const t=n?.keywords;return{search(s){const e=s.toLowerCase().trim();return e===""?r:r.filter(o=>o.label.toLowerCase().includes(e)?!0:t?t(o).some(u=>u.toLowerCase().includes(e)):!1)},bootstrap(){return r}}}export{a as c};
