@@ -1,14 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Blog tests for the docsite.
+ * @file Blog discovery/validation tests.
  *
- * Covers blog post discovery, frontmatter parsing, and validation — the
- * contract agents and authors rely on. The discovery/validation logic lives in
- * src/lib/blog/posts.mjs (shared with the build-time generator), so these tests
- * exercise the same code path that CI and `yarn generate` use.
- *
- * Run: yarn workspace @astryxdesign/docsite test
+ * Covers frontmatter parsing, validation, reading-time estimation, and post
+ * discovery — the contract `astryx blog`, the docsite generator, and authors
+ * all rely on. The logic lives in blog.mjs, so these tests exercise the same
+ * code path everything else uses.
  */
 
 import * as fs from 'node:fs';
@@ -25,11 +23,10 @@ import {
   collectTags,
   POST_TYPES,
   MAX_TAGS,
-} from '../lib/blog/posts.mjs';
+  BLOG_DIR,
+} from './blog.mjs';
 
-const POSTS_DIR = path.resolve(__dirname, '../content/blog/posts');
-
-const VALID_FM: Record<string, unknown> = {
+const VALID_FM = {
   title: 'A title',
   description: 'A description',
   date: '2026-06-17',
@@ -181,7 +178,6 @@ describe('estimateReadingTime', () => {
     expect(estimateReadingTime(prose)).toBe(2);
     const withCode =
       prose + '\n```\n' + Array(1000).fill('x').join(' ') + '\n```';
-    // Code is excluded, so the estimate stays ~2 minutes.
     expect(estimateReadingTime(withCode)).toBe(2);
   });
 });
@@ -189,7 +185,7 @@ describe('estimateReadingTime', () => {
 // ── Discovery against a temp directory ─────────────────────────────────
 
 describe('discoverPosts (temp fixtures)', () => {
-  let dir: string;
+  let dir;
 
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-blog-'));
@@ -199,10 +195,10 @@ describe('discoverPosts (temp fixtures)', () => {
     fs.rmSync(dir, {recursive: true, force: true});
   });
 
-  const write = (name: string, content: string) =>
+  const write = (name, content) =>
     fs.writeFileSync(path.join(dir, name), content);
 
-  const fm = (over: Record<string, string> = {}) => {
+  const fm = (over = {}) => {
     const f = {
       title: 'T',
       description: 'D',
@@ -272,20 +268,20 @@ describe('discoverPosts (temp fixtures)', () => {
   });
 });
 
-// ── The real content directory ─────────────────────────────────────────
+// ── The real content directory (source of truth in the CLI) ────────────
 
 describe('blog content', () => {
   it('discovers and validates all committed posts without throwing', () => {
-    expect(() => discoverPosts(POSTS_DIR, {includeDrafts: true})).not.toThrow();
+    expect(() => discoverPosts(BLOG_DIR, {includeDrafts: true})).not.toThrow();
   });
 
   it('has at least one published example post', () => {
-    const posts = discoverPosts(POSTS_DIR);
+    const posts = discoverPosts(BLOG_DIR);
     expect(posts.length).toBeGreaterThanOrEqual(1);
   });
 
   it('ships the Astryx launch announcement', () => {
-    const posts = discoverPosts(POSTS_DIR);
+    const posts = discoverPosts(BLOG_DIR);
     const post = posts.find(p => p.slug === 'introducing-astryx');
     expect(post).toBeDefined();
     expect(post?.type).toBe('update');

@@ -53,6 +53,7 @@ export const program = new Command();
 export const JSON_SUPPORTED = new Set([
   'component',
   'docs',
+  'blog',
   'discover',
   'search',
   'swizzle',
@@ -245,6 +246,7 @@ const commands = [
   {name: 'init', path: './commands/init.mjs', register: 'registerInit'},
   {name: 'component', path: './commands/component/index.mjs', register: 'registerComponent'},
   {name: 'docs', path: './commands/docs.mjs', register: 'registerDocs'},
+  {name: 'blog', path: './commands/blog.mjs', register: 'registerBlog'},
   {name: 'swizzle', path: './commands/swizzle.mjs', register: 'registerSwizzle'},
   // agent-docs folded into init — functions still importable from agent-docs.mjs
   {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},

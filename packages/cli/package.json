@@ -65,6 +65,7 @@
     "src",
     "templates",
     "docs",
+    "blog",
     "CHANGELOG.md"
   ],
   "scripts": {

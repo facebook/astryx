@@ -48,6 +48,7 @@ export const RESPONSE_TYPES = {
     'component.detail.blocks',
   ],
   docs: ['docs.list', 'docs.detail', 'docs.detail.section'],
+  blog: ['blog.list', 'blog.detail'],
   discover: ['discover.list', 'discover.detail', 'discover.detail.doc', 'discover.search'],
   search: ['search'],
   swizzle: ['swizzle.list', 'swizzle.copy'],
@@ -77,6 +78,7 @@ export const RESPONSE_TYPES = {
 const EXAMPLES = {
   component: ['astryx component', 'astryx component XDSButton', 'astryx component XDSButton --props --json'],
   docs: ['astryx docs', 'astryx docs spacing --json'],
+  blog: ['astryx blog', 'astryx blog how-astryx-works --json'],
   discover: ['astryx discover --json'],
   search: ['astryx search modal --json', 'astryx search button --type component --json'],
   swizzle: ['astryx swizzle XDSButton'],

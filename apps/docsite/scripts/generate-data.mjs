@@ -1478,24 +1478,18 @@ ${componentLines}
 async function generateBlogRegistry() {
   console.log('Generating blog registry...');
 
-  const POSTS_DIR = path.join(
-    DOCSITE_ROOT,
-    'src',
-    'content',
-    'blog',
-    'posts',
-  );
-
-  // Single source of truth for discovery + validation (shared with tests).
-  const {discoverPosts, collectTypes, collectTags} = await import(
+  // Blog posts live in the CLI package (source of truth), the same way docs and
+  // templates do. Discovery + validation is the CLI's shared blog lib, so the
+  // same rules apply to `astryx blog`, this generator, and CI.
+  const {discoverPosts, collectTypes, collectTags, BLOG_DIR} = await import(
     pathToFileURL(
-      path.join(DOCSITE_ROOT, 'src', 'lib', 'blog', 'posts.mjs'),
+      path.join(CLI_ROOT, 'src', 'lib', 'blog.mjs'),
     ).href
   );
 
   // Exclude drafts from production output; include them only in dev.
   const includeDrafts = process.env.NODE_ENV !== 'production';
-  const posts = discoverPosts(POSTS_DIR, {includeDrafts});
+  const posts = discoverPosts(BLOG_DIR, {includeDrafts});
   const types = collectTypes(posts);
   const tags = collectTags(posts);
 

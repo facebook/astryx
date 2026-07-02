@@ -49,6 +49,7 @@
  *   | 'ERR_UNKNOWN_COMPONENT'
  *   | 'ERR_UNKNOWN_HOOK'
  *   | 'ERR_UNKNOWN_TOPIC'
+ *   | 'ERR_UNKNOWN_POST'
  *   | 'ERR_UNKNOWN_SECTION'
  *   | 'ERR_UNKNOWN_CATEGORY'
  *   | 'ERR_UNKNOWN_TEMPLATE'
@@ -118,6 +119,8 @@ export const ERROR_CODES = Object.freeze({
   ERR_UNKNOWN_HOOK: 'ERR_UNKNOWN_HOOK',
   /** No docs topic matched the requested name. */
   ERR_UNKNOWN_TOPIC: 'ERR_UNKNOWN_TOPIC',
+  /** No blog post matched the requested slug. */
+  ERR_UNKNOWN_POST: 'ERR_UNKNOWN_POST',
   /** A docs topic exists but the requested section within it does not. */
   ERR_UNKNOWN_SECTION: 'ERR_UNKNOWN_SECTION',
   /** A `--category` filter value did not match any known category. */

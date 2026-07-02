@@ -1,32 +1,39 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file posts.mjs
+ * @file blog.mjs
  *
- * Build-time blog post discovery, frontmatter parsing, and validation.
+ * Blog post discovery, frontmatter parsing, and validation.
  *
  * This module is the single source of truth for how blog posts are read and
- * validated. It is consumed both by the docsite data generator
- * (scripts/generate-data.mjs) and by the test suite (src/__tests__/blog.test.ts),
- * so the same rules apply at build time and in CI.
+ * validated. The blog posts themselves live in packages/cli/blog/posts, so the
+ * CLI owns the content the same way it owns docs and templates. It is consumed
+ * by the `astryx blog` command, the docsite data generator, and the test suite,
+ * so the same rules apply everywhere.
  *
- * Authoring model (see issue #2896): a blog post is a single Markdown file with
- * YAML frontmatter under src/content/blog/posts/<slug>.md. No bespoke wiring is
- * required — files are discovered automatically and sorted latest-first.
+ * Authoring model: a blog post is a single Markdown file with YAML frontmatter
+ * under blog/posts/<slug>.md. Files are discovered automatically and sorted
+ * latest-first.
  *
  * Why a hand-written frontmatter parser instead of a YAML dependency: the
  * frontmatter schema is small and fixed (scalars, string sequences, and a
  * sequence of {title, href} maps for relatedDocs). Keeping the parser local
- * avoids adding a dependency to the lockfile of a public repo for a build-only
- * concern, and it is fully covered by tests.
+ * avoids adding a dependency to the lockfile of a public repo, and it is fully
+ * covered by tests.
  *
- * @input  src/content/blog/posts/<slug>.md files with YAML frontmatter
+ * @input  blog/posts/<slug>.md files with YAML frontmatter
  * @output Array of validated post objects ({ ...frontmatter, slug, body, readingTimeMinutes })
- * @position Imported by scripts/generate-data.mjs and src/__tests__/blog.test.ts
+ * @position Imported by api/blog.mjs, the docsite generator, and the test suite
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {fileURLToPath} from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/** Absolute path to the CLI's blog posts directory (source of truth). */
+export const BLOG_DIR = path.resolve(__dirname, '..', '..', 'blog', 'posts');
 
 /**
  * The small, stable set of editorial post types used for primary filtering.
