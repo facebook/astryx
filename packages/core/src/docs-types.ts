@@ -877,6 +877,7 @@ export type TemplateCategory =
   | 'Shell - Top Nav'
   | 'Shell - Top Nav + Left Sidebar'
   | 'Shell - Breadcrumb Driven Layout'
+  | 'Shell - Messaging'
   | 'Shell - Blank';
 
 interface BaseTemplateDoc {
