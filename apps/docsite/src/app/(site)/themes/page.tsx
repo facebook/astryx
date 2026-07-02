@@ -16,6 +16,7 @@
  */
 
 import type {Metadata} from 'next';
+import {Suspense} from 'react';
 import {notFound} from 'next/navigation';
 import {Section} from '@astryxdesign/core/Section';
 import {packages} from '../../../generated/packageRegistry';
@@ -43,7 +44,21 @@ function slugToPackageName(slug: string): string {
   return `@astryxdesign/theme-${slug}`;
 }
 
-export default async function ThemesPage({
+export default function ThemesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{theme?: string | string[]}>;
+}) {
+  return (
+    <Section maxWidth="lg" padding={6}>
+      <Suspense fallback={null}>
+        <SeededThemeExplorer searchParams={searchParams} />
+      </Suspense>
+    </Section>
+  );
+}
+
+async function SeededThemeExplorer({
   searchParams,
 }: {
   searchParams: Promise<{theme?: string | string[]}>;
@@ -83,9 +98,5 @@ export default async function ThemesPage({
     notFound();
   }
 
-  return (
-    <Section maxWidth="lg" padding={6}>
-      <ThemePackagePage packageName={seedPkg.name} theme={seedTheme} />
-    </Section>
-  );
+  return <ThemePackagePage packageName={seedPkg.name} theme={seedTheme} />;
 }

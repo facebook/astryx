@@ -6,7 +6,7 @@
 
 'use client';
 
-import {useCallback, useMemo, useState} from 'react';
+import {Suspense, useCallback, useMemo, useState} from 'react';
 import type {CSSProperties} from 'react';
 import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 import * as stylex from '@stylexjs/stylex';
@@ -96,6 +96,14 @@ interface TemplateItem {
 }
 
 export default function TemplatesPage() {
+  return (
+    <Suspense fallback={null}>
+      <TemplatesGallery />
+    </Suspense>
+  );
+}
+
+function TemplatesGallery() {
   const {isMobile} = useAppShellMobile();
 
   // Flat, display-ordered list of available templates. Ordered by category
@@ -199,7 +207,10 @@ export default function TemplatesPage() {
   );
 
   return (
-    <Section maxWidth={layout.contentMaxWidth} padding={6} style={{marginInline: 'auto'}}>
+    <Section
+      maxWidth={layout.contentMaxWidth}
+      padding={6}
+      style={{marginInline: 'auto'}}>
       <VStack gap={10}>
         {/* Header */}
         <VStack gap={6} align="stretch">

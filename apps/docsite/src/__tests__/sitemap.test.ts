@@ -10,7 +10,12 @@
  * Run: pnpm -F @astryxdesign/docsite test
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
+
+// Outside a Next.js server, `'use cache'` is inert and cacheLife() has no
+// cache scope to configure. Stub it so the sitemap can run under vitest.
+vi.mock('next/cache', () => ({cacheLife: () => {}}));
+
 import sitemap from '../app/sitemap';
 import {SITE_URL} from '../lib/siteConfig';
 import {flattenComponentSidebarEntries} from '../components/componentSidebarData';
@@ -19,7 +24,7 @@ import {packages} from '../generated/packageRegistry';
 import {templates} from '../generated/templateRegistry';
 import {blogPosts} from '../generated/blogRegistry';
 
-const entries = sitemap();
+const entries = await sitemap();
 const urls = entries.map(e => e.url);
 
 describe('docsite sitemap', () => {

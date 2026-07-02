@@ -148,9 +148,8 @@ function LegalLinks() {
   );
 }
 
-export function SiteFooter() {
+export function SiteFooter({year}: {year: number}) {
   const {isMobile} = useAppShellMobile();
-  const year = new Date().getFullYear();
 
   // The regex compliance check requires the year to immediately follow the
   // copyright mark — `©{year}`, no separating space. See PR description.

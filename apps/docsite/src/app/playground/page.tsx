@@ -2,7 +2,6 @@
 
 import type {Metadata} from 'next';
 import {Suspense} from 'react';
-import {headers} from 'next/headers';
 import {PlaygroundClient} from './PlaygroundClient';
 
 export const metadata: Metadata = {
@@ -10,14 +9,10 @@ export const metadata: Metadata = {
   description: 'Interactive code playground for Astryx components',
 };
 
-export default async function PlaygroundPage() {
-  const headersList = await headers();
-  const ua = headersList.get('user-agent') ?? '';
-  const defaultIsMobile = /mobile|android|iphone|ipad/i.test(ua);
-
+export default function PlaygroundPage() {
   return (
     <Suspense fallback={null}>
-      <PlaygroundClient defaultIsMobile={defaultIsMobile} />
+      <PlaygroundClient />
     </Suspense>
   );
 }

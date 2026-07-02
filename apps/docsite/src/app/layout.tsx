@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Metadata} from 'next';
-import {Analytics} from '@vercel/analytics/react';
+import {Analytics} from '@vercel/analytics/next';
 import './globals.css';
 import {Providers} from './providers';
 // Public origin and identity live in lib/siteConfig so the sitemap and
