@@ -17,16 +17,7 @@
 
 import {useCallback, useEffect, useRef} from 'react';
 
-/**
- * Selector for commonly focusable elements. Includes the tabbable natives
- * (button/link/input/select/textarea/[tabindex]) plus editable and media
- * elements the browser also puts in the tab order — contenteditable, media
- * with controls, iframe, and an open <details>'s <summary> — which a naive
- * selector misses, letting Tab escape a trap whose only interactive content is
- * (e.g.) a contenteditable composer (infra-8).
- */
-const FOCUSABLE_SELECTOR =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled]), [contenteditable]:not([contenteditable="false"]), audio[controls], video[controls], iframe, details > summary:first-child';
+import {FOCUSABLE_SELECTOR} from './focusableSelector';
 
 /**
  * Whether an element is currently perceivable/focusable — excludes ones hidden
