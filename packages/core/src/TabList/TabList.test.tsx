@@ -280,6 +280,173 @@ describe('TabList', () => {
   });
 });
 
+describe('TabList keyboard navigation (roving tabindex)', () => {
+  it('exposes the tab strip as a single Tab stop (only selected tab is tabbable)', () => {
+    render(
+      <TabList value="settings" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+        <Tab value="profile" label="Profile" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('button', {name: 'Home'})).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+    expect(screen.getByRole('button', {name: 'Settings'})).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
+    expect(screen.getByRole('button', {name: 'Profile'})).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+  });
+
+  it('makes the first tab tabbable when the selected value matches no tab', () => {
+    render(
+      <TabList value="__none__" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('button', {name: 'Home'})).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
+    expect(screen.getByRole('button', {name: 'Settings'})).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+  });
+
+  it('moves focus with ArrowRight and ArrowLeft', async () => {
+    const user = userEvent.setup();
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+        <Tab value="profile" label="Profile" />
+      </TabList>,
+    );
+
+    const home = screen.getByRole('button', {name: 'Home'});
+    const settings = screen.getByRole('button', {name: 'Settings'});
+    const profile = screen.getByRole('button', {name: 'Profile'});
+
+    home.focus();
+    expect(home).toHaveFocus();
+
+    await user.keyboard('{ArrowRight}');
+    expect(settings).toHaveFocus();
+
+    await user.keyboard('{ArrowRight}');
+    expect(profile).toHaveFocus();
+
+    await user.keyboard('{ArrowLeft}');
+    expect(settings).toHaveFocus();
+  });
+
+  it('supports ArrowDown and ArrowUp as forward/backward as well', async () => {
+    const user = userEvent.setup();
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+      </TabList>,
+    );
+
+    const home = screen.getByRole('button', {name: 'Home'});
+    const settings = screen.getByRole('button', {name: 'Settings'});
+
+    home.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(settings).toHaveFocus();
+
+    await user.keyboard('{ArrowUp}');
+    expect(home).toHaveFocus();
+  });
+
+  it('jumps to first and last tab with Home and End', async () => {
+    const user = userEvent.setup();
+    render(
+      <TabList value="settings" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+        <Tab value="profile" label="Profile" />
+      </TabList>,
+    );
+
+    const home = screen.getByRole('button', {name: 'Home'});
+    const settings = screen.getByRole('button', {name: 'Settings'});
+    const profile = screen.getByRole('button', {name: 'Profile'});
+
+    settings.focus();
+
+    await user.keyboard('{End}');
+    expect(profile).toHaveFocus();
+
+    await user.keyboard('{Home}');
+    expect(home).toHaveFocus();
+  });
+
+  it('wraps around at the ends', async () => {
+    const user = userEvent.setup();
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+        <Tab value="profile" label="Profile" />
+      </TabList>,
+    );
+
+    const home = screen.getByRole('button', {name: 'Home'});
+    const profile = screen.getByRole('button', {name: 'Profile'});
+
+    home.focus();
+    await user.keyboard('{ArrowLeft}');
+    expect(profile).toHaveFocus();
+
+    await user.keyboard('{ArrowRight}');
+    expect(home).toHaveFocus();
+  });
+
+  it('skips disabled tabs during arrow navigation', async () => {
+    const user = userEvent.setup();
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" aria-disabled="true" />
+        <Tab value="profile" label="Profile" />
+      </TabList>,
+    );
+
+    const home = screen.getByRole('button', {name: 'Home'});
+    const profile = screen.getByRole('button', {name: 'Profile'});
+
+    home.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(profile).toHaveFocus();
+  });
+
+  it('does not intercept unrelated keys', async () => {
+    const user = userEvent.setup();
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+      </TabList>,
+    );
+
+    const home = screen.getByRole('button', {name: 'Home'});
+    home.focus();
+    await user.keyboard('a');
+    expect(home).toHaveFocus();
+  });
+});
+
 describe('Tab polymorphic link', () => {
   it('renders custom component when href and as are provided', () => {
     render(

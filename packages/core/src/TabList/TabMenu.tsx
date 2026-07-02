@@ -306,6 +306,8 @@ export function TabMenu({
         aria-haspopup="menu"
         aria-expanded={popover.isOpen}
         aria-controls={menuId}
+        data-tab-menu=""
+        tabIndex={hasSelectedOption ? 0 : -1}
         onClick={handleToggle}
         {...mergeProps(
           themeProps('tab-menu'),
@@ -390,9 +392,7 @@ export function TabMenu({
                     })}
                   {option.label}
                 </span>
-                {isSelected && (
-                  <Icon icon="check" size="sm" color="accent" />
-                )}
+                {isSelected && <Icon icon="check" size="sm" color="accent" />}
               </div>
             );
           })}

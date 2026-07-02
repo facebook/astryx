@@ -6,7 +6,9 @@
  * @file TabList.tsx
  * @input Uses React, StyleX, TabListContext
  * @output Exports TabList component and TabListProps type
- * @position Nav wrapper; provides TabListContext to Tab and TabMenu children
+ * @position Nav wrapper; provides TabListContext to Tab and TabMenu children.
+ *   Owns roving-tabindex keyboard navigation (Arrow/Home/End) across the tab
+ *   strip so it is a single Tab stop.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/TabList/TabList.doc.mjs
@@ -15,21 +17,33 @@
  * - /packages/cli/templates/blocks/components/TabList/ (showcase blocks)
  */
 
-import React, {useMemo, type ReactNode} from 'react';
+import React, {useCallback, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {TabListContext} from './TabListContext';
-import type {TabListSize} from './TabListContext';
+import type {TabListOrientation, TabListSize} from './TabListContext';
 import {useSize} from '../SizeContext/SizeContext';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
 
-export interface TabListProps extends Omit<
-  BaseProps<HTMLElement>,
-  'onChange'
-> {
+/**
+ * Selector matching the focusable stops in the tab strip: every Tab
+ * (`[data-tab-value]`) and every TabMenu trigger (`[data-tab-menu]`),
+ * in DOM order. Disabled stops are filtered out by the handler.
+ */
+const TAB_STOP_SELECTOR = '[data-tab-value],[data-tab-menu]';
+
+function isDisabledStop(el: HTMLElement): boolean {
+  return (
+    el.getAttribute('aria-disabled') === 'true' ||
+    (el instanceof HTMLButtonElement && el.disabled)
+  );
+}
+
+export interface TabListProps extends Omit<BaseProps<HTMLElement>, 'onChange'> {
   ref?: React.Ref<HTMLElement>;
   /**
    * The currently selected tab value.
@@ -57,6 +71,15 @@ export interface TabListProps extends Omit<
    * @default false
    */
   hasDivider?: boolean;
+  /**
+   * Orientation of the tab strip, controlling which arrow keys move
+   * focus between tabs.
+   * - `'horizontal'` (default): ArrowLeft / ArrowRight (ArrowUp / ArrowDown
+   *   also work per the WAI-ARIA APG).
+   * - `'vertical'`: ArrowUp / ArrowDown (ArrowLeft / ArrowRight also work).
+   * @default 'horizontal'
+   */
+  orientation?: TabListOrientation;
   /**
    * Tab and TabMenu children.
    */
@@ -104,6 +127,7 @@ export function TabList({
   size: sizeProp,
   layout = 'hug',
   hasDivider = false,
+  orientation = 'horizontal',
   xstyle,
   className,
   style,
@@ -111,17 +135,87 @@ export function TabList({
   ...restProps
 }: TabListProps) {
   const size = useSize(sizeProp, 'md');
+  const navRef = useRef<HTMLElement>(null);
 
   const contextValue = useMemo(
     () => ({value, onChange, size, layout}),
     [value, onChange, size, layout],
   );
 
+  // Roving tabindex: the tab strip is a single Tab stop. Individual Tabs set
+  // tabIndex={0} on the selected tab and -1 on the rest (see Tab.tsx). If the
+  // selected value doesn't correspond to any focusable stop (e.g. selection
+  // lives in a collapsed TabMenu that renders no matching stop, or there is no
+  // selection at all), no stop would be tabbable — this effect repairs that by
+  // making the first stop tabbable. Same pattern as the SegmentedControl fix.
+  useIsomorphicLayoutEffect(() => {
+    const nav = navRef.current;
+    if (nav == null) {
+      return;
+    }
+    const stops = Array.from(
+      nav.querySelectorAll<HTMLElement>(TAB_STOP_SELECTOR),
+    );
+    if (stops.length === 0) {
+      return;
+    }
+    const hasTabbable = stops.some(el => el.tabIndex === 0);
+    if (!hasTabbable) {
+      const firstEnabled = stops.find(el => !isDisabledStop(el)) ?? stops[0];
+      firstEnabled.tabIndex = 0;
+    }
+  });
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
+    const nav = navRef.current;
+    if (nav == null) {
+      return;
+    }
+
+    // Accept both axes' arrows per the WAI-ARIA APG so keyboard users don't
+    // have to know the orientation: forward keys advance, backward keys
+    // retreat. Orientation only affects the reported aria-orientation.
+    const isForward = e.key === 'ArrowRight' || e.key === 'ArrowDown';
+    const isBackward = e.key === 'ArrowLeft' || e.key === 'ArrowUp';
+
+    if (!isForward && !isBackward && e.key !== 'Home' && e.key !== 'End') {
+      return;
+    }
+
+    const stops = Array.from(
+      nav.querySelectorAll<HTMLElement>(TAB_STOP_SELECTOR),
+    ).filter(el => !isDisabledStop(el));
+    if (stops.length === 0) {
+      return;
+    }
+
+    const currentIndex = stops.findIndex(el => el === document.activeElement);
+    let nextIndex: number;
+
+    if (e.key === 'Home') {
+      nextIndex = 0;
+    } else if (e.key === 'End') {
+      nextIndex = stops.length - 1;
+    } else if (isForward) {
+      nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % stops.length;
+    } else {
+      nextIndex =
+        currentIndex === -1
+          ? stops.length - 1
+          : (currentIndex - 1 + stops.length) % stops.length;
+    }
+
+    e.preventDefault();
+    stops[nextIndex].focus();
+  }, []);
+
   return (
     <TabListContext value={contextValue}>
       <nav
-        ref={ref}
+        ref={mergeRefs(ref, navRef)}
         aria-label="Tabs"
+        aria-orientation={orientation}
+        onKeyDown={handleKeyDown}
         {...{[EDGE_COMP_ATTR]: ''}}
         {...restProps}
         {...mergeProps(
