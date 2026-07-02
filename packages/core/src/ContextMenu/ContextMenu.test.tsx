@@ -60,6 +60,22 @@ describe('ContextMenu', () => {
     expect(screen.getByRole('menu', {hidden: true})).toBeInTheDocument();
   });
 
+  it('typeahead focuses the matching menu item (menus-11)', () => {
+    render(
+      <ContextMenu
+        items={[{label: 'Cut'}, {label: 'Copy'}, {label: 'Paste'}]}
+        hasAutoFocus={false}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const menu = screen.getByRole('menu', {hidden: true});
+    fireEvent.keyDown(menu, {key: 'p'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Paste', hidden: true}),
+    ).toHaveFocus();
+  });
+
   it('opens menu on right-click', () => {
     render(
       <ContextMenu items={[{label: 'Item 1'}]}>
