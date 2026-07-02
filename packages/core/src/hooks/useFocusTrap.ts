@@ -20,6 +20,56 @@ import {useCallback, useEffect, useRef} from 'react';
 import {FOCUSABLE_SELECTOR} from './focusableSelector';
 
 /**
+ * Module-level stack of active focus-trap Escape handlers.
+ *
+ * Every active `useFocusTrap` used to attach its own document-level `keydown`
+ * listener with no coordination, so a single Escape press closed *every* open
+ * layer at once (e.g. a popover nested inside a Dialog closed both). Tracking
+ * traps in a shared stack lets only the most recently activated (top-most)
+ * trap respond to Escape.
+ */
+const escapeStack: (() => void)[] = [];
+
+function pushEscapeHandler(handler: () => void): void {
+  escapeStack.push(handler);
+}
+
+function removeEscapeHandler(handler: () => void): void {
+  const index = escapeStack.lastIndexOf(handler);
+  if (index !== -1) {
+    escapeStack.splice(index, 1);
+  }
+}
+
+function isTopEscapeHandler(handler: () => void): boolean {
+  return escapeStack[escapeStack.length - 1] === handler;
+}
+
+/**
+ * Whether any focus-trap Escape handler is currently active (i.e. a popover
+ * layer is open). Other overlay primitives that manage their own Escape (e.g.
+ * Dialog) can consult this to defer to a popover layered on top of them,
+ * giving topmost-only dismissal until a full layer stack exists.
+ */
+export function hasActiveFocusTrapEscape(): boolean {
+  return escapeStack.length > 0;
+}
+
+/**
+ * Whether an Escape keydown should be ignored because it is cancelling an
+ * in-progress IME composition. CJK/IME users press Escape to cancel
+ * composition; that must not close the surrounding overlay. `keyCode === 229`
+ * covers browsers that fire keydown before `isComposing` is set. Exported so
+ * other overlays (Dialog, Drawer, CommandPalette) share one definition.
+ */
+export function isImeKeyEvent(event: {
+  isComposing?: boolean;
+  keyCode?: number;
+}): boolean {
+  return event.isComposing === true || event.keyCode === 229;
+}
+
+/**
  * Whether an element is currently perceivable/focusable — excludes ones hidden
  * via `display:none`/`visibility:hidden` or inside an `inert`/`hidden` subtree,
  * which the browser skips for Tab.
@@ -222,6 +272,16 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
       return;
     }
 
+    // Register this trap on the shared Escape stack so only the top-most
+    // active trap responds to Escape. A stable identity per active period is
+    // enough — we push on activate and remove on cleanup.
+    const escapeHandler = () => {
+      onEscape?.();
+    };
+    if (onEscape) {
+      pushEscapeHandler(escapeHandler);
+    }
+
     const handleKeyDown = (event: KeyboardEvent) => {
       const container = containerRef.current;
       if (!container) {
@@ -229,7 +289,19 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
       }
 
       if (event.key === 'Escape' && onEscape) {
+        // Ignore Escape that is cancelling an IME composition, already handled
+        // by a nested handler, or not targeting the top-most trap.
+        if (
+          event.defaultPrevented ||
+          isImeKeyEvent(event) ||
+          !isTopEscapeHandler(escapeHandler)
+        ) {
+          return;
+        }
+        // Mark handled and stop propagation so an outer layer (e.g. a Dialog
+        // hosting this popover) does not also dismiss on the same press.
         event.preventDefault();
+        event.stopPropagation();
         onEscape();
         return;
       }
@@ -266,6 +338,9 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      if (onEscape) {
+        removeEscapeHandler(escapeHandler);
+      }
     };
   }, [isActive, onEscape]);
 
