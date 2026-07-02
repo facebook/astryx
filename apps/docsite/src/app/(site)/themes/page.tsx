@@ -16,16 +16,13 @@
  */
 
 import type {Metadata} from 'next';
+import {Suspense} from 'react';
 import {notFound} from 'next/navigation';
 import {Section} from '@astryxdesign/core/Section';
 import {packages} from '../../../generated/packageRegistry';
 import {themeObjects} from '../../../generated/themeRegistry';
 import {ThemePackagePage} from '../../../components/ThemePackagePage';
 import {pageMetadata} from '../../../lib/pageMetadata';
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 // Static canonical metadata for /themes. The page also accepts a `?theme=`
 // param to preselect the picker, but every variant is the same surface, so the
@@ -47,7 +44,24 @@ function slugToPackageName(slug: string): string {
   return `@astryxdesign/theme-${slug}`;
 }
 
-export default async function ThemesPage({
+export default function ThemesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{theme?: string | string[]}>;
+}) {
+  // The search-param read happens in a Suspense-wrapped child so the rest of
+  // the route (nav, footer, section shell) stays statically prerenderable;
+  // the seeded theme explorer streams in at request time.
+  return (
+    <Section maxWidth="lg" padding={6}>
+      <Suspense fallback={null}>
+        <SeededThemeExplorer searchParams={searchParams} />
+      </Suspense>
+    </Section>
+  );
+}
+
+async function SeededThemeExplorer({
   searchParams,
 }: {
   searchParams: Promise<{theme?: string | string[]}>;
@@ -87,9 +101,5 @@ export default async function ThemesPage({
     notFound();
   }
 
-  return (
-    <Section maxWidth="lg" padding={6}>
-      <ThemePackagePage packageName={seedPkg.name} theme={seedTheme} />
-    </Section>
-  );
+  return <ThemePackagePage packageName={seedPkg.name} theme={seedTheme} />;
 }
