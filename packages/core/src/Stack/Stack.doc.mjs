@@ -29,6 +29,31 @@ export const docs = {
             'Spacing step (number literal): 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10. Pass as a JSX number expression e.g. gap={4}, NOT a string like gap="4".',
         },
         {
+          name: 'padding',
+          type: 'SpacingStep',
+          description:
+            'Inner padding on all sides, using the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10). Matches the padding prop on Card, LayoutContent, and LayoutPanel. Pass as a JSX number expression e.g. padding={3}.',
+        },
+        {
+          name: 'paddingInline',
+          type: 'SpacingStep',
+          description:
+            'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
+        },
+        {
+          name: 'paddingBlock',
+          type: 'SpacingStep',
+          description:
+            'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
+        },
+        {
+          name: 'isScrollable',
+          type: 'boolean',
+          description:
+            'Enables scrollable overflow (overflow: auto). Matches isScrollable on LayoutContent and LayoutPanel.',
+          default: 'false',
+        },
+        {
           name: 'width',
           type: 'SizeValue',
           description: "Width of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
@@ -97,6 +122,31 @@ export const docs = {
             'Spacing step (number literal): 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10. Pass as a JSX number expression e.g. gap={4}, NOT a string like gap="4".',
         },
         {
+          name: 'padding',
+          type: 'SpacingStep',
+          description:
+            'Inner padding on all sides, using the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10). Matches the padding prop on Card, LayoutContent, and LayoutPanel. Pass as a JSX number expression e.g. padding={3}.',
+        },
+        {
+          name: 'paddingInline',
+          type: 'SpacingStep',
+          description:
+            'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
+        },
+        {
+          name: 'paddingBlock',
+          type: 'SpacingStep',
+          description:
+            'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
+        },
+        {
+          name: 'isScrollable',
+          type: 'boolean',
+          description:
+            'Enables scrollable overflow (overflow: auto). Matches isScrollable on LayoutContent and LayoutPanel.',
+          default: 'false',
+        },
+        {
           name: 'width',
           type: 'SizeValue',
           description: "Width of the stack container. Numbers are treated as pixels, strings are used as-is (e.g., '100%').",
@@ -159,6 +209,13 @@ export const docs = {
           description:
             'Flex grow behavior: static keeps natural size, fill expands to consume remaining space.',
           default: "'static'",
+        },
+        {
+          name: 'isScrollable',
+          type: 'boolean',
+          description:
+            'Enables scrollable overflow (overflow: auto). StackItem already applies the flex min-height/min-width reset, so <StackItem size="fill" isScrollable> is a complete scroll region. Matches isScrollable on LayoutContent and LayoutPanel.',
+          default: 'false',
         },
         {
           name: 'crossAlignSelf',

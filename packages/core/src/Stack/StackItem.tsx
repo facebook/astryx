@@ -23,6 +23,12 @@ import {
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
+const overflowStyles = stylex.create({
+  scrollable: {
+    overflow: 'auto',
+  },
+});
+
 export interface StackItemProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
@@ -40,6 +46,18 @@ export interface StackItemProps extends BaseProps<HTMLElement> {
    * @default "static"
    */
   size?: StackItemSize;
+
+  /**
+   * Enables scrollable overflow (`overflow: auto`) for the item.
+   *
+   * StackItem already applies the flex `min-height: 0` / `min-width: 0`
+   * reset, so `<StackItem size="fill" isScrollable>` is a complete scroll
+   * region — it grows to fill the stack and scrolls its own overflow with
+   * no extra style plumbing. Matches `isScrollable` on `LayoutContent`
+   * and `LayoutPanel`.
+   * @default false
+   */
+  isScrollable?: boolean;
 
   /**
    * The element type to render.
@@ -92,6 +110,7 @@ export interface StackItemProps extends BaseProps<HTMLElement> {
 export function StackItem({
   crossAlignSelf,
   size,
+  isScrollable,
   as: element = 'div',
   xstyle,
   className,
@@ -102,6 +121,7 @@ export function StackItem({
 }: StackItemProps) {
   const stylexProps = stylex.props(
     ...stackItem({crossAlignSelf, size}),
+    isScrollable && overflowStyles.scrollable,
     xstyle,
   );
 

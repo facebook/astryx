@@ -79,4 +79,27 @@ describe('StackItem', () => {
     const element = screen.getByTestId('stack-item');
     expect(element).toHaveAttribute('aria-label', 'Stack item');
   });
+
+  it('applies an overflow class when isScrollable is set', () => {
+    const {rerender} = render(
+      <StackItem data-testid="stack-item">Content</StackItem>,
+    );
+    const withoutScroll = screen.getByTestId('stack-item').className;
+    rerender(
+      <StackItem isScrollable data-testid="stack-item">
+        Content
+      </StackItem>,
+    );
+    const withScroll = screen.getByTestId('stack-item').className;
+    expect(withScroll).not.toBe(withoutScroll);
+  });
+
+  it('composes isScrollable with size="fill"', () => {
+    render(
+      <StackItem size="fill" isScrollable data-testid="stack-item">
+        Content
+      </StackItem>,
+    );
+    expect(screen.getByTestId('stack-item').className).not.toBe('');
+  });
 });

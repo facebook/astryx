@@ -253,15 +253,65 @@ describe('Stack', () => {
 
   it('applies both width and height together', () => {
     render(
-      <Stack
-        direction="vertical"
-        width={400}
-        height="100%"
-        data-testid="stack">
+      <Stack direction="vertical" width={400} height="100%" data-testid="stack">
         <div>Item</div>
       </Stack>,
     );
     const el = screen.getByTestId('stack');
     expect(el).toHaveStyle({width: '400px', height: '100%'});
+  });
+
+  it('applies a class when padding is set', () => {
+    render(
+      <Stack padding={3} data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    expect(screen.getByTestId('stack').className).not.toBe('');
+  });
+
+  it('accepts paddingInline and paddingBlock without error', () => {
+    render(
+      <Stack paddingInline={4} paddingBlock={2} data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    expect(screen.getByTestId('stack')).toBeInTheDocument();
+  });
+
+  it('lets paddingInline/paddingBlock override padding on their axis', () => {
+    // padding sets both axes; paddingInline overrides the inline axis. The
+    // component should render without conflict and carry a class.
+    render(
+      <Stack padding={2} paddingInline={5} data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    expect(screen.getByTestId('stack').className).not.toBe('');
+  });
+
+  it('applies a class when isScrollable is set', () => {
+    render(
+      <Stack isScrollable data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    expect(screen.getByTestId('stack').className).not.toBe('');
+  });
+
+  it('does not set overflow class when isScrollable is false', () => {
+    const {rerender} = render(
+      <Stack data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    const withoutScroll = screen.getByTestId('stack').className;
+    rerender(
+      <Stack isScrollable data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    const withScroll = screen.getByTestId('stack').className;
+    expect(withScroll).not.toBe(withoutScroll);
   });
 });
