@@ -45,30 +45,21 @@ beforeEach(() => {
 describe('DropdownMenu', () => {
   it('renders trigger button with label', () => {
     render(
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={[{label: 'Item 1'}]}
-      />,
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
     );
     expect(screen.getByRole('button', {name: /Actions/})).toBeInTheDocument();
   });
 
   it('renders menu with role="menu"', () => {
     render(
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={[{label: 'Item 1'}]}
-      />,
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
     );
     expect(screen.getByRole('menu', {hidden: true})).toBeInTheDocument();
   });
 
   it('defaults menu placement below', () => {
     render(
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={[{label: 'Item 1'}]}
-      />,
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
     );
     const popover = screen
       .getByRole('menu', {hidden: true})
@@ -96,10 +87,7 @@ describe('DropdownMenu', () => {
 
   it('has aria-haspopup and aria-expanded attributes', () => {
     render(
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={[{label: 'Item 1'}]}
-      />,
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
     );
     const button = screen.getByRole('button', {name: /Actions/});
     expect(button).toHaveAttribute('aria-haspopup', 'menu');
@@ -109,14 +97,27 @@ describe('DropdownMenu', () => {
   it('opens menu when button is clicked', async () => {
     const user = userEvent.setup();
     render(
-      <DropdownMenu
-        button={{label: 'Actions'}}
-        items={[{label: 'Item 1'}]}
-      />,
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
     );
 
     await user.click(screen.getByRole('button', {name: /Actions/}));
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('typeahead focuses the item matching the typed character (menus-11)', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Cut'}, {label: 'Copy'}, {label: 'Delete'}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    fireEvent.keyDown(menu, {key: 'd'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
+    ).toHaveFocus();
   });
 
   it('calls onClick callback when button is clicked', async () => {

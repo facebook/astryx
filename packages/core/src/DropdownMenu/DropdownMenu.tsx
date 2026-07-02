@@ -43,6 +43,7 @@ import {
   type DropdownMenuContextValue,
 } from './DropdownMenuContext';
 import {useListFocus} from '../hooks/useListFocus';
+import {useTypeahead} from '../hooks/useTypeahead';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerPlacement} from '../Layer/useLayer';
 import {
@@ -260,10 +261,34 @@ export function DropdownMenu({
     listRef,
     handleKeyDown: listNavKeyDown,
     focusFirst,
+    focusItem,
   } = useListFocus<HTMLDivElement>({
     itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
     wrap: false,
     onEscape: closeMenu,
+  });
+
+  // First-character typeahead over the (enabled) menu items — jump to the next
+  // item whose label starts with the typed text (menus-11).
+  const getMenuItems = useCallback(
+    (): HTMLElement[] =>
+      listRef.current
+        ? Array.from(
+            listRef.current.querySelectorAll<HTMLElement>(
+              '[role="menuitem"]:not([aria-disabled="true"])',
+            ),
+          )
+        : [],
+    [listRef],
+  );
+  const typeahead = useTypeahead({
+    getItemLabels: () => getMenuItems().map(el => el.textContent),
+    onMatch: focusItem,
+    getCurrentIndex: () =>
+      getMenuItems().findIndex(
+        el =>
+          el === document.activeElement || el.contains(document.activeElement),
+      ),
   });
 
   // Sync controlled open state → popover, and focus first item on open
@@ -280,7 +305,7 @@ export function DropdownMenu({
     }
   }, [controlledIsOpen, isControlled, popover, hasAutoFocus, focusFirst]);
 
-  // Extend useListFocus with Enter/Space activation
+  // Extend useListFocus with Enter/Space activation + typeahead
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -291,9 +316,14 @@ export function DropdownMenu({
         }
         return;
       }
+      // Type-to-focus first; if it consumed a printable key, stop here.
+      if (typeahead.onKeyDown(e)) {
+        e.preventDefault();
+        return;
+      }
       listNavKeyDown(e);
     },
-    [listNavKeyDown],
+    [listNavKeyDown, typeahead],
   );
 
   const openAndFocus = useCallback(() => {
