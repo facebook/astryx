@@ -151,6 +151,7 @@ export function CheckboxList({
   'data-testid': dataTestId,
 }: CheckboxListProps) {
   const inputID = useId();
+  const labelElementID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
 
@@ -210,6 +211,8 @@ export function CheckboxList({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={inputID}
+      labelElementID={labelElementID}
+      isGroupLabel
       descriptionID={description ? descriptionID : undefined}
       isDisabled={isDisabled}
       status={
@@ -226,9 +229,21 @@ export function CheckboxList({
       xstyle={xstyle}
       {...mergeProps(themeProps('checkbox-list'), {className, style})}>
       <CheckboxListContext value={contextValue}>
-        <List density={density} hasDividers={hasDividers}>
-          {children}
-        </List>
+        <div
+          role="group"
+          aria-labelledby={labelElementID}
+          aria-describedby={
+            [
+              description ? descriptionID : null,
+              status?.message ? statusMessageID : null,
+            ]
+              .filter(Boolean)
+              .join(' ') || undefined
+          }>
+          <List density={density} hasDividers={hasDividers}>
+            {children}
+          </List>
+        </div>
       </CheckboxListContext>
     </Field>
   );
