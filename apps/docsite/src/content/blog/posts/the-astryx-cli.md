@@ -9,6 +9,8 @@ tags:
   - 'CLI'
   - 'AI'
   - 'Docs'
+coverImage: '/blog/the-astryx-cli/cover.gif'
+coverAlt: 'A terminal running astryx init'
 relatedDocs:
   - title: 'How Astryx works'
     href: '/blog/how-astryx-works'
