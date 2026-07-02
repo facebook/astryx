@@ -1,5 +1,4 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-
 'use client';
 
 /**
@@ -181,15 +180,11 @@ function buildTableStylePlugin<
 >(): TablePlugin<T> {
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
-      const existingClass = props.htmlProps.className ?? '';
-      const tableClass = themeProps('table').className;
       return {
         ...props,
         htmlProps: {
           ...props.htmlProps,
-          className: existingClass
-            ? `${existingClass} ${tableClass}`
-            : tableClass,
+          ...themeProps('table'),
         },
         styles: [...props.styles, tableStyles.base],
       };
