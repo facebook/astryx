@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
@@ -108,9 +108,7 @@ function mockSelectorRects() {
 
 describe('Selector', () => {
   it('renders with placeholder when no value', () => {
-    render(
-      <Selector label="Fruit" options={OPTIONS} placeholder="Pick one" />,
-    );
+    render(<Selector label="Fruit" options={OPTIONS} placeholder="Pick one" />);
     expect(screen.getByRole('combobox')).toHaveTextContent('Pick one');
   });
 
@@ -497,9 +495,7 @@ describe('Selector', () => {
     it('opens and selects an option with Enter (no mouse)', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
-      render(
-        <Selector label="Fruit" options={OPTIONS} onChange={onChange} />,
-      );
+      render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
 
       await user.tab();
       await user.keyboard('{Enter}'); // open
@@ -521,6 +517,128 @@ describe('Selector', () => {
       );
       const clear = screen.getByRole('button', {name: 'Clear Fruit'});
       expect(clear).not.toHaveAttribute('tabIndex', '-1');
+    });
+  });
+
+  describe('disabledReason', () => {
+    it('shows the reason tooltip on hover when disabled with a reason', async () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          isDisabled
+          disabledReason="You need the Editor role"
+          data-testid="fruit-selector"
+        />,
+      );
+
+      const container = screen.getByTestId('fruit-selector');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('You need the Editor role');
+
+      fireEvent.mouseEnter(container);
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+
+      fireEvent.mouseLeave(container);
+      await waitFor(() => {
+        expect(tooltip).not.toHaveAttribute('popover-open');
+      });
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          isDisabled
+          disabledReason="You need the Editor role"
+        />,
+      );
+
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          disabledReason="You need the Editor role"
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(<Selector label="Fruit" options={OPTIONS} isDisabled />);
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the trigger focusable via aria-disabled when a reason is provided', () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          isDisabled
+          disabledReason="You need the Editor role"
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).not.toBeDisabled();
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
+      expect(trigger).toHaveAttribute('tabIndex', '0');
+    });
+
+    it('links the reason tooltip from the trigger via aria-describedby', () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          isDisabled
+          disabledReason="You need the Editor role"
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(trigger.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks activation while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          onChange={onChange}
+          isDisabled
+          disabledReason="You need the Editor role"
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+      await user.keyboard('{Enter}');
+      await user.keyboard('{ArrowDown}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('remains non-focusable when disabled without a reason', () => {
+      render(<Selector label="Fruit" options={OPTIONS} isDisabled />);
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).toBeDisabled();
+      expect(trigger).toHaveAttribute('tabIndex', '-1');
     });
   });
 });

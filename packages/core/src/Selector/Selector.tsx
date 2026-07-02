@@ -4,7 +4,7 @@
 
 /**
  * @file Selector.tsx
- * @input Uses React, StyleX, usePopover, Icon
+ * @input Uses React, StyleX, usePopover, useTooltip, Icon
  * @output Exports Selector component
  * @position Core implementation; consumed by index.ts
  *
@@ -27,6 +27,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
+import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import type {IconName} from '../Icon';
 import {
@@ -370,6 +371,28 @@ interface SelectorPropsBase<
   isDisabled?: boolean;
 
   /**
+   * Explains why the selector is disabled. When set together with
+   * `isDisabled`, the selector shows a tooltip with this text on hover and
+   * keyboard focus, and the trigger stays focusable (via `aria-disabled`)
+   * so the reason is discoverable by keyboard and assistive technology.
+   * Activation stays blocked.
+   *
+   * Use this instead of wrapping a disabled selector in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <Selector
+   *   label="Owner"
+   *   options={owners}
+   *   isDisabled
+   *   disabledReason="You need the Editor role to change this"
+   * />
+   * ```
+   */
+  disabledReason?: string;
+
+  /**
    * The options to display in the selector.
    * Can be strings, objects, dividers, or sections.
    */
@@ -474,34 +497,30 @@ type SelectorPropsNonClearable<
   changeAction?: (value: string) => void | Promise<void>;
 };
 
-type SelectorPropsClearable<
-  T extends SelectorOptionType = SelectorOptionType,
-> = SelectorPropsBase<T> & {
-  /**
-   * Whether to show a clear button when a value is selected.
-   * When clicked, resets the value to `null` and returns focus to the trigger.
-   *
-   * When enabled, `value` and `onChange` widen to include `null`.
-   */
-  hasClear: true;
-  value: string | null;
-  onChange?: (value: string | null) => void;
-  changeAction?: (value: string | null) => void | Promise<void>;
-};
+type SelectorPropsClearable<T extends SelectorOptionType = SelectorOptionType> =
+  SelectorPropsBase<T> & {
+    /**
+     * Whether to show a clear button when a value is selected.
+     * When clicked, resets the value to `null` and returns focus to the trigger.
+     *
+     * When enabled, `value` and `onChange` widen to include `null`.
+     */
+    hasClear: true;
+    value: string | null;
+    onChange?: (value: string | null) => void;
+    changeAction?: (value: string | null) => void | Promise<void>;
+  };
 
-export type SelectorProps<
-  T extends SelectorOptionType = SelectorOptionType,
-> = SelectorPropsNonClearable<T> | SelectorPropsClearable<T>;
+export type SelectorProps<T extends SelectorOptionType = SelectorOptionType> =
+  | SelectorPropsNonClearable<T>
+  | SelectorPropsClearable<T>;
 
 /**
  * Default option renderer
  */
 function DefaultOption({option}: {option: SelectorOptionData}) {
   return (
-    <SelectorOption
-      icon={option.icon}
-      label={option.label ?? option.value}
-    />
+    <SelectorOption icon={option.icon} label={option.label ?? option.value} />
   );
 }
 
@@ -529,6 +548,7 @@ export function Selector<T extends SelectorOptionType>(
     isOptional = false,
     isRequired = false,
     isDisabled = false,
+    disabledReason,
     options,
     value,
     onChange,
@@ -571,11 +591,26 @@ export function Selector<T extends SelectorOptionType>(
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
   const isBusy = isLoading || optimisticValue !== normalizedValue;
 
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the trigger container (which already exists)
+  // and the trigger button stays perceivable via aria-disabled instead of the
+  // disabled attribute. Activation is blocked by the isDisabled guards in
+  // useCombobox (onTriggerClick / onKeyDown).
+  const showsDisabledReason = isDisabled && !!disabledReason;
+  const disabledReasonTooltip = useTooltip({
+    placement: 'above',
+    // The container div is not naturally focusable; focusin bubbles up from
+    // the trigger button, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledReason,
+  });
+
   // Build aria-describedby
   const ariaDescribedBy =
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
+      showsDisabledReason ? disabledReasonTooltip.describedBy : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -812,9 +847,7 @@ export function Selector<T extends SelectorOptionType>(
       const option = options[i];
 
       if (isDivider(option)) {
-        elements.push(
-          <Divider key={`divider-${i}`} xstyle={styles.divider} />,
-        );
+        elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
       } else if (isSection(option)) {
         const sectionItems: ReactNode[] = [];
         for (const opt of option.options) {
@@ -868,6 +901,10 @@ export function Selector<T extends SelectorOptionType>(
       <div
         ref={el => {
           popover.triggerRef(el);
+          // Anchor + hover/focus listeners for the disabled-reason tooltip.
+          // Handlers are gated internally by isEnabled, and anchor names
+          // compose, so attaching unconditionally is safe.
+          disabledReasonTooltip.ref(el);
         }}
         onClick={onTriggerClick}
         data-testid={testId}
@@ -906,9 +943,13 @@ export function Selector<T extends SelectorOptionType>(
           aria-required={isRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
-          disabled={isDisabled}
+          // With a disabledReason the trigger keeps focusability via
+          // aria-disabled so the reason is focus-discoverable; activation is
+          // still blocked by the isDisabled guards in useCombobox.
+          disabled={isDisabled && !showsDisabledReason}
+          aria-disabled={showsDisabledReason ? 'true' : undefined}
           onKeyDown={onKeyDown}
-          tabIndex={isDisabled ? -1 : 0}
+          tabIndex={isDisabled && !showsDisabledReason ? -1 : 0}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerLabel)}>
             {selectedItem?.label ?? placeholder}
@@ -975,6 +1016,9 @@ export function Selector<T extends SelectorOptionType>(
           style: popoverOffsetStyle,
         },
       )}
+
+      {showsDisabledReason &&
+        disabledReasonTooltip.renderTooltip(disabledReason)}
     </Field>
   );
 }
