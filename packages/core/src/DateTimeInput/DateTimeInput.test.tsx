@@ -429,4 +429,78 @@ describe('DateTimeInput', () => {
       expect(dateInput).toHaveValue('March 20, 2026');
     });
   });
+
+  describe('invalid typed input feedback (WCAG 3.3.1)', () => {
+    it('sets aria-invalid="true" on the date input when typed date is unparseable', () => {
+      render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+
+      const dateInput = screen.getByRole('combobox');
+      fireEvent.change(dateInput, {target: {value: '13/45/2024'}});
+
+      expect(dateInput).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('does not set aria-invalid on the date input when typed date is valid', () => {
+      render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+
+      const dateInput = screen.getByRole('combobox');
+      fireEvent.change(dateInput, {target: {value: '03/15/2026'}});
+
+      expect(dateInput).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('announces an alert message when the typed date is invalid', () => {
+      render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+
+      const dateInput = screen.getByRole('combobox');
+      fireEvent.change(dateInput, {target: {value: '13/45/2024'}});
+
+      expect(screen.getByText('Invalid date')).toBeInTheDocument();
+    });
+
+    it('sets aria-invalid="true" on the time input when typed time is unparseable', () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T10:00' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Time');
+      fireEvent.change(timeInput, {target: {value: '99:99 zz'}});
+
+      expect(timeInput).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('does not set aria-invalid on the time input when typed time is valid', () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T10:00' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Time');
+      fireEvent.change(timeInput, {target: {value: '3:45 pm'}});
+
+      expect(timeInput).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('announces an alert message when the typed time is invalid', () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T10:00' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Time');
+      fireEvent.change(timeInput, {target: {value: '99:99 zz'}});
+
+      expect(screen.getByText('Invalid time')).toBeInTheDocument();
+    });
+  });
 });
