@@ -122,6 +122,47 @@ describe('BaseTypeahead', () => {
     });
   });
 
+  it('announces the result count to a live region (comboboxes-6)', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'Ap'}});
+
+    await waitFor(() => {
+      const region = document.querySelector(
+        '[data-astryx-live-region="polite"]',
+      );
+      expect(region?.textContent).toMatch(/\d+ results?/);
+    });
+  });
+
+  it('announces "no results found" when the search is empty (comboboxes-6)', async () => {
+    render(
+      <BaseTypeahead
+        searchSource={fruitSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+        emptySearchResultsText="No results found"
+      />,
+    );
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'zzzzz'}});
+
+    await waitFor(() => {
+      const region = document.querySelector(
+        '[data-astryx-live-region="polite"]',
+      );
+      expect(region).toHaveTextContent('No results found');
+    });
+  });
+
   it('disables input when isDisabled', () => {
     render(
       <BaseTypeahead

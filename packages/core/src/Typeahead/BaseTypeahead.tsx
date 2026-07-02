@@ -29,6 +29,7 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {TypeaheadItem} from './TypeaheadItem';
 import {Icon} from '../Icon';
 import {
@@ -48,9 +49,10 @@ import {themeProps} from '../utils/themeProps';
 // Types
 // =============================================================================
 
-export interface BaseTypeaheadProps<
-  T extends SearchableItem,
-> extends Omit<BaseProps<HTMLElement>, 'onChange'> {
+export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
+  BaseProps<HTMLElement>,
+  'onChange'
+> {
   ref?: React.Ref<HTMLInputElement>;
   /**
    * Search source providing items.
@@ -280,9 +282,7 @@ const itemSizeStyles = stylex.create({
  * />
  * ```
  */
-export const BaseTypeahead = function BaseTypeahead<
-  T extends SearchableItem,
->({
+export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   searchSource,
   value,
   onChange,
@@ -310,6 +310,11 @@ export const BaseTypeahead = function BaseTypeahead<
 
   const inputRef = useRef<HTMLInputElement>(null);
   const fallbackAnchorRef = useRef<HTMLInputElement>(null);
+
+  // Announce result counts / "no results" to screen readers via a persistent
+  // live region (comboboxes-6). The combobox's own popup carries no working
+  // live region, so highlight/result changes were previously silent.
+  const announce = useAnnounce();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<T[]>([]);
@@ -394,10 +399,20 @@ export const BaseTypeahead = function BaseTypeahead<
           return;
         }
         resultsGenRef.current = gen;
-        setResults(searchResults.slice(0, maxMenuItems));
+        const shown = searchResults.slice(0, maxMenuItems);
+        setResults(shown);
         setHighlightedIndex(searchResults.length > 0 ? 0 : -1);
         if (searchResults.length > 0 || searchQuery.length > 0) {
           showLayer();
+        }
+        // Announce the outcome only for an active query (not the initial
+        // focus-open), so screen-reader users hear result counts / no-results.
+        if (searchQuery.length > 0) {
+          announce(
+            shown.length === 0
+              ? emptySearchResultsText
+              : `${shown.length} ${shown.length === 1 ? 'result' : 'results'}`,
+          );
         }
       } catch {
         if (searchGenRef.current !== gen) {
@@ -411,7 +426,7 @@ export const BaseTypeahead = function BaseTypeahead<
         }
       }
     },
-    [searchSource, maxMenuItems, showLayer],
+    [searchSource, maxMenuItems, showLayer, announce, emptySearchResultsText],
   );
 
   // Perform bootstrap
@@ -456,6 +471,8 @@ export const BaseTypeahead = function BaseTypeahead<
         searchSource.cancel?.();
         setResults([]);
         setHasSearched(false);
+        // Clear any lingering result-count / no-results announcement.
+        announce('');
         popover.hide();
         return;
       }
@@ -482,6 +499,7 @@ export const BaseTypeahead = function BaseTypeahead<
       popover,
       debounceMs,
       searchSource,
+      announce,
     ],
   );
 

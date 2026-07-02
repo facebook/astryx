@@ -14,6 +14,9 @@
 export {useFocusTrap} from './useFocusTrap';
 export type {UseFocusTrapOptions, UseFocusTrapReturn} from './useFocusTrap';
 
+export {useAnnounce} from './useAnnounce';
+export type {AnnounceFn, AnnouncePoliteness} from './useAnnounce';
+
 export {useGridFocus} from './useGridFocus';
 export type {UseGridFocusOptions, UseGridFocusReturn} from './useGridFocus';
 
