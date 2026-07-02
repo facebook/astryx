@@ -132,12 +132,11 @@ ON DEMAND:
 $XDS component <Name> --dense # props, variants, usage, anatomy for one component
 $XDS template <name> # emit full page source
 $XDS template <name> --skeleton # layout skeleton with spatial annotations
-$XDS swizzle <Name> # eject component source (use --gap to report why)
+$XDS swizzle <Name> # eject component source for deep customization
 $XDS upgrade --apply # run version migration codemods
 OPTIONS: --detail compact|brief less output | --dense token-efficient | --zh Chinese
 RULE: always run bootstrap on each branch — docs reflect the branch's actual API
 RULE: always run $XDS component <Name> --dense before modifying a component
 RULE: after @astryxdesign/core bump, always run $XDS upgrade --apply
-RULE: when swizzling, always use --gap to report missing capabilities
 
 <!-- XDS-CLI:END -->

@@ -62,7 +62,6 @@ Options:
 | `upgrade`     | Run codemods to migrate between versions                                                             |
 | `theme build` | Compile a defineTheme file to production CSS and JS                                                  |
 | `discover`    | Discover external packages and components                                                            |
-| `gap-report`  | Report a gap when a component doesn't meet your needs                                                |
 | `doctor`      | Diagnose your XDS setup and report problems with fixes (CI-friendly via exit code)                   |
 
 ### Global options
@@ -161,7 +160,6 @@ if (isError(result)) {
 | `ERR_INVALID_VERSION`    | A `--from`/`--to` value was not a valid semver string.                                 |
 | `ERR_DEP_MISSING`        | A required external dependency (e.g. jscodeshift) is missing.                          |
 | `ERR_GH_CLI`             | GitHub CLI (`gh`) is not installed or not authenticated.                               |
-| `ERR_GAP_REPORT_FAILED`  | Filing a gap report failed (disabled, or the integration errored).                     |
 
 ## Capability manifest (agent discovery)
 
@@ -358,8 +356,6 @@ Every response has a `type` string that uniquely identifies it:
 | `xds --json theme build <file>`                | `theme.build`               | `ThemeBuildResponse`              |
 | `xds --json upgrade --list`                    | `upgrade.list`              | `UpgradeListResponse`             |
 | `xds --json upgrade [--apply]`                 | `upgrade.run`               | `UpgradeRunResponse`              |
-| `xds --json gap-report --list-categories`      | `gap-report.categories`     | `GapReportCategoriesResponse`     |
-| `xds --json gap-report --component X ...`      | `gap-report.file`           | `GapReportFileResponse`           |
 | `xds --json doctor`                            | `doctor`                    | `DoctorResponse`                  |
 | any error                                      | —                           | `CLIError`                        |
 | unsupported command                            | —                           | `CLIUnsupportedError`             |
@@ -434,8 +430,6 @@ export default {
   templates: {
     get: async id => fetchTemplateFromAPI(id),
   },
-  gapReport: {
-    url: 'https://your-api.com/gaps',
-  },
+  issuesUrl: 'https://github.com/your-org/your-repo/issues',
 };
 ```

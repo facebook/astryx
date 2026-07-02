@@ -257,7 +257,6 @@ add('doctor', ['doctor'], () => apiCall(api.doctor, {cwd: ROOT}));
 // Other commands — probe with safe read-only args (no API yet)
 const otherCommands = [
   ['swizzle', '--list'],
-  ['gap-report', '--list-categories'],
   ['upgrade', '--list'],
 ];
 for (const args of otherCommands) {
