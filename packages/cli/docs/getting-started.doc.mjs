@@ -48,6 +48,10 @@ export const docs = {
           label: 'Terminal',
           code: `npx astryx init`,
         },
+        {
+          type: 'prose',
+          text: 'Adding Astryx to an *existing* Next.js + Tailwind project (rather than a fresh app)? A few integration-boundary traps fail silently — Tailwind preflight defeating theme overrides, `moduleResolution`, and the StyleX build for swizzled components. See `npx astryx docs adopting-existing-app` for the full walkthrough.',
+        },
       ],
     },
     {
