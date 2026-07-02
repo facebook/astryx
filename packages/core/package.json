@@ -639,11 +639,9 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "peerDependencies": {
+    "@stylexjs/stylex": "^0.18.3",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
-  },
-  "dependencies": {
-    "@stylexjs/stylex": "^0.18.3"
   },
   "devDependencies": {
     "@babel/cli": "^7.29.7",
