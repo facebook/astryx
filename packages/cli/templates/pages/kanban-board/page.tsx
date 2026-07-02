@@ -3,8 +3,15 @@
 'use client';
 
 import {useMemo, useState, type CSSProperties, type DragEvent} from 'react';
+import * as stylex from '@stylexjs/stylex';
 
-import {Layout, LayoutContent, HStack, VStack} from '@astryxdesign/core/Layout';
+import {
+  Layout,
+  LayoutHeader,
+  LayoutContent,
+  HStack,
+  VStack,
+} from '@astryxdesign/core/Layout';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Card} from '@astryxdesign/core/Card';
 import {Badge} from '@astryxdesign/core/Badge';
@@ -14,19 +21,18 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {StatusDot} from '@astryxdesign/core/StatusDot';
 import {Switch} from '@astryxdesign/core/Switch';
 import {EmptyState} from '@astryxdesign/core/EmptyState';
-import {Collapsible} from '@astryxdesign/core/Collapsible';
 import {MoreMenu} from '@astryxdesign/core/MoreMenu';
-import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
+import {Selector} from '@astryxdesign/core/Selector';
+import {Section} from '@astryxdesign/core/Section';
+import {Divider} from '@astryxdesign/core/Divider';
+import {Toolbar} from '@astryxdesign/core/Toolbar';
 
 import {
   PlusIcon,
   MagnifyingGlassIcon,
-  ArrowRightIcon,
   ArrowsUpDownIcon,
   FunnelIcon,
   ArrowPathIcon,
-  ChevronDoubleLeftIcon,
-  StarIcon,
   PauseCircleIcon,
   CheckCircleIcon,
   InboxIcon,
@@ -37,7 +43,7 @@ import {
 
 // ============= TYPES =============
 
-type ColumnId = 'queue' | 'agent' | 'needs-you' | 'resolved';
+type ColumnId = 'backlog' | 'in-progress' | 'in-review' | 'done';
 type Priority = 'high' | 'medium' | 'low';
 type ItemKind = 'task' | 'alert';
 
@@ -50,11 +56,9 @@ interface WorkItem {
   title: string;
   description: string;
   score: number;
-  /** "Needs you" cards show elapsed-work + status; resolved cards show a handled-in stamp. */
   status?: string;
   worked?: string;
   handledIn?: string;
-  /** Optional nested review action (e.g. a diff awaiting review). */
   review?: string;
 }
 
@@ -66,59 +70,48 @@ interface ColumnMeta {
   emptyTitle: string;
   emptyDescription: string;
   emptyIcon: typeof InboxIcon;
-  /** Only the first column offers an inline add affordance in its empty state. */
   emptyHasAdd?: boolean;
-}
-
-interface FeedItem {
-  id: string;
-  kind: ItemKind;
-  ref: string;
-  priority: Priority;
-  title: string;
-  score: number;
-  age: string;
 }
 
 // ============= DATA =============
 
 const COLUMNS: ColumnMeta[] = [
   {
-    id: 'queue',
-    title: 'Queue',
+    id: 'backlog',
+    title: 'Backlog',
     variant: 'neutral',
     tooltip: 'Items waiting to be picked up.',
-    emptyTitle: 'Nothing queued yet',
+    emptyTitle: 'Backlog is empty',
     emptyDescription:
-      'Auto-triage adds and investigates new items as they arrive. Or drag a feed item here to queue one.',
+      'Auto-triage adds and investigates new items as they arrive.',
     emptyIcon: InboxIcon,
     emptyHasAdd: true,
   },
   {
-    id: 'agent',
-    title: 'Agent handling',
+    id: 'in-progress',
+    title: 'In progress',
     variant: 'accent',
-    tooltip: 'Items an agent is actively working.',
+    tooltip: 'Items currently in progress.',
     emptyTitle: 'Nothing in progress',
-    emptyDescription: 'Items the agent picks up appear here.',
+    emptyDescription: 'Items being worked on appear here.',
     emptyIcon: ArrowPathIcon,
   },
   {
-    id: 'needs-you',
-    title: 'Needs you',
+    id: 'in-review',
+    title: 'In review',
     variant: 'warning',
-    tooltip: 'Items waiting on your input or review.',
-    emptyTitle: 'All caught up',
-    emptyDescription: 'Nothing needs your input.',
-    emptyIcon: CheckCircleIcon,
+    tooltip: 'Items waiting for your review.',
+    emptyTitle: 'Nothing in review',
+    emptyDescription: 'Items awaiting your review appear here.',
+    emptyIcon: ClipboardDocumentCheckIcon,
   },
   {
-    id: 'resolved',
-    title: 'Resolved',
+    id: 'done',
+    title: 'Done',
     variant: 'success',
     tooltip: 'Items that have been handled.',
-    emptyTitle: 'Nothing resolved yet',
-    emptyDescription: 'Resolved items appear here.',
+    emptyTitle: 'Nothing done yet',
+    emptyDescription: 'Completed items appear here.',
     emptyIcon: CheckCircleIcon,
   },
 ];
@@ -135,7 +128,7 @@ const PRIORITY_META: Record<
 const INITIAL_ITEMS: WorkItem[] = [
   {
     id: 'w1',
-    column: 'needs-you',
+    column: 'in-review',
     kind: 'task',
     ref: 'Task 4821',
     priority: 'low',
@@ -149,7 +142,7 @@ const INITIAL_ITEMS: WorkItem[] = [
   },
   {
     id: 'w2',
-    column: 'needs-you',
+    column: 'in-review',
     kind: 'task',
     ref: 'Task 4825',
     priority: 'low',
@@ -163,7 +156,7 @@ const INITIAL_ITEMS: WorkItem[] = [
   },
   {
     id: 'w3',
-    column: 'needs-you',
+    column: 'in-review',
     kind: 'task',
     ref: 'Task 4833',
     priority: 'medium',
@@ -177,7 +170,7 @@ const INITIAL_ITEMS: WorkItem[] = [
   },
   {
     id: 'r1',
-    column: 'resolved',
+    column: 'done',
     kind: 'alert',
     ref: 'Alert',
     priority: 'low',
@@ -189,7 +182,7 @@ const INITIAL_ITEMS: WorkItem[] = [
   },
   {
     id: 'r2',
-    column: 'resolved',
+    column: 'done',
     kind: 'alert',
     ref: 'Alert',
     priority: 'high',
@@ -201,7 +194,7 @@ const INITIAL_ITEMS: WorkItem[] = [
   },
   {
     id: 'r3',
-    column: 'resolved',
+    column: 'done',
     kind: 'task',
     ref: 'Task 4790',
     priority: 'medium',
@@ -213,74 +206,23 @@ const INITIAL_ITEMS: WorkItem[] = [
   },
 ];
 
-const FEED_CURRENT: FeedItem[] = [];
-
-const FEED_PRIOR: FeedItem[] = [
-  {
-    id: 'f1',
-    kind: 'task',
-    ref: 'Task 4590',
-    priority: 'medium',
-    title: 'Owner review needed for serialization change',
-    score: 45,
-    age: '2d ago',
-  },
-  {
-    id: 'f2',
-    kind: 'task',
-    ref: 'Task 4291',
-    priority: 'medium',
-    title: 'Rotation schedule has a gap with no active members',
-    score: 45,
-    age: '6d ago',
-  },
-  {
-    id: 'f3',
-    kind: 'task',
-    ref: 'Task 4035',
-    priority: 'low',
-    title: 'Unowned asset detected in shared directory',
-    score: 40,
-    age: '8d ago',
-  },
-  {
-    id: 'f4',
-    kind: 'alert',
-    ref: 'Alert',
-    priority: 'high',
-    title: 'Dead detector: SLI signal for chat notifications',
-    score: 62,
-    age: '8d ago',
-  },
-  {
-    id: 'f5',
-    kind: 'task',
-    ref: 'Task 3835',
-    priority: 'medium',
-    title: 'Scheduled test of root-cause notification path',
-    score: 45,
-    age: '8d ago',
-  },
-];
-
 // ============= LAYOUT STYLES =============
 // Inline styles cover only layout concerns the primitives delegate to CSS
 // (overflow, flex sizing, fixed rail width) — never color or spacing tokens.
 
-const page: CSSProperties = {height: '100dvh'};
-const feedRail: CSSProperties = {
-  flexShrink: 0,
-  flexBasis: 300,
-  height: '100%',
-  overflowY: 'auto',
-  padding: 'var(--spacing-4)',
-  borderInlineEnd: '1px solid var(--color-border, rgba(5,54,89,0.1))',
-};
 const boardScroll: CSSProperties = {
   overflowX: 'auto',
   overflowY: 'hidden',
-  flexGrow: 1,
+  height: '100%',
 };
+
+const styles = stylex.create({
+  verticalDivider: {
+    height: 'auto',
+    marginBlock: '2px',
+    alignSelf: 'stretch',
+  },
+});
 const columnShell: CSSProperties = {
   flexShrink: 0,
   flexBasis: 300,
@@ -293,8 +235,6 @@ const columnList: CSSProperties = {
 };
 const grab: CSSProperties = {cursor: 'grab'};
 
-// ============= FEED RAIL =============
-
 function KindIcon({kind}: {kind: ItemKind}) {
   return (
     <Icon
@@ -302,136 +242,6 @@ function KindIcon({kind}: {kind: ItemKind}) {
       size="xsm"
       color={kind === 'alert' ? 'error' : 'secondary'}
     />
-  );
-}
-
-function FeedCard({item}: {item: FeedItem}) {
-  const priority = PRIORITY_META[item.priority];
-  return (
-    <div draggable style={grab}>
-      <Card padding={3}>
-        <VStack gap={2}>
-          <HStack gap={2} vAlign="center">
-            <KindIcon kind={item.kind} />
-            <Text type="supporting" color="secondary">
-              {item.ref}
-            </Text>
-            <Badge label={priority.label} variant={priority.variant} />
-          </HStack>
-          <Text weight="medium">{item.title}</Text>
-          <HStack hAlign="between" vAlign="center">
-            <HStack gap={1} vAlign="center">
-              <Icon icon={StarIcon} size="xsm" color="secondary" />
-              <Text type="supporting" color="secondary" hasTabularNumbers>
-                {item.score}
-              </Text>
-            </HStack>
-            <HStack gap={2} vAlign="center">
-              <Text type="supporting" color="secondary">
-                {item.age}
-              </Text>
-              <IconButton
-                icon={<Icon icon={ArrowRightIcon} size="xsm" />}
-                label="Promote to board"
-                variant="ghost"
-                size="sm"
-              />
-            </HStack>
-          </HStack>
-        </VStack>
-      </Card>
-    </div>
-  );
-}
-
-function FeedSection({
-  title,
-  count,
-  description,
-  items,
-  defaultIsOpen,
-}: {
-  title: string;
-  count: number;
-  description: string;
-  items: FeedItem[];
-  defaultIsOpen?: boolean;
-}) {
-  return (
-    <Collapsible
-      defaultIsOpen={defaultIsOpen}
-      trigger={
-        <HStack gap={2} vAlign="center">
-          <Heading level={4}>{title}</Heading>
-          <Badge label={count} variant="neutral" />
-        </HStack>
-      }>
-      <VStack gap={2}>
-        <Text type="supporting" color="secondary">
-          {description}
-        </Text>
-        {items.map(item => (
-          <FeedCard key={item.id} item={item} />
-        ))}
-      </VStack>
-    </Collapsible>
-  );
-}
-
-function FeedRail() {
-  return (
-    <VStack gap={4} style={feedRail}>
-      <HStack hAlign="between" vAlign="center">
-        <HStack gap={2} vAlign="center">
-          <Heading level={3}>Feed</Heading>
-          <Badge
-            label={FEED_CURRENT.length + FEED_PRIOR.length}
-            variant="neutral"
-          />
-        </HStack>
-        <HStack gap={0} vAlign="center">
-          <IconButton
-            icon={<Icon icon={ArrowsUpDownIcon} size="xsm" />}
-            label="Sort feed"
-            variant="ghost"
-            size="sm"
-          />
-          <IconButton
-            icon={<Icon icon={FunnelIcon} size="xsm" />}
-            label="Filter feed"
-            variant="ghost"
-            size="sm"
-          />
-          <IconButton
-            icon={<Icon icon={ChevronDoubleLeftIcon} size="xsm" />}
-            label="Collapse feed"
-            variant="ghost"
-            size="sm"
-          />
-          <IconButton
-            icon={<Icon icon={ArrowPathIcon} size="xsm" />}
-            label="Refresh feed"
-            variant="ghost"
-            size="sm"
-          />
-        </HStack>
-      </HStack>
-
-      <FeedSection
-        title="Current shift"
-        count={FEED_CURRENT.length}
-        description="No new items this shift yet — they'll appear here as they arrive. See prior shifts below."
-        items={FEED_CURRENT}
-        defaultIsOpen
-      />
-      <FeedSection
-        title="Prior shifts"
-        count={FEED_PRIOR.length}
-        description="From before this shift; launch manually if needed."
-        items={FEED_PRIOR}
-        defaultIsOpen
-      />
-    </VStack>
   );
 }
 
@@ -543,65 +353,69 @@ function BoardColumn({
   onDropColumn: (col: ColumnId) => void;
 }) {
   return (
-    <VStack gap={3} style={columnShell}>
-      <HStack gap={2} vAlign="center">
-        <StatusDot variant={meta.variant} label={`${meta.title} status`} />
-        <Heading level={4}>{meta.title}</Heading>
-        <Icon icon={InformationCircleIcon} size="xsm" color="secondary" />
-        <HStack style={{marginInlineStart: 'auto'}}>
-          <Text type="supporting" color="secondary" hasTabularNumbers>
-            {items.length}
-          </Text>
-        </HStack>
-      </HStack>
-
-      <div
-        onDragOver={(e: DragEvent) => {
-          e.preventDefault();
-          onDragEnterColumn(meta.id);
-        }}
-        onDrop={(e: DragEvent) => {
-          e.preventDefault();
-          onDropColumn(meta.id);
-        }}
-        style={columnList}>
-        <Card
-          padding={2}
-          variant={isDropTarget ? 'muted' : 'gray'}
-          minHeight="100%">
-          {items.length === 0 ? (
-            <EmptyState
-              isCompact
-              icon={<Icon icon={meta.emptyIcon} size="md" color="secondary" />}
-              title={meta.emptyTitle}
-              description={meta.emptyDescription}
-              actions={
-                meta.emptyHasAdd ? (
-                  <Button
-                    label="Add work item"
-                    variant="secondary"
-                    size="sm"
-                    icon={<Icon icon={PlusIcon} size="xsm" />}
-                  />
-                ) : undefined
-              }
-            />
-          ) : (
-            <VStack gap={2}>
-              {items.map(item => (
-                <WorkItemCard
-                  key={item.id}
-                  item={item}
-                  onMove={onMove}
-                  onDragStart={onDragStart}
-                  onDragEnd={onDragEnd}
+    <Card variant="muted" padding={0} style={columnShell}>
+      <Layout
+        height="fill"
+        header={
+          <LayoutHeader padding={3}>
+            <HStack justify="between" vAlign="center">
+              <HStack gap={2} vAlign="center">
+                <StatusDot
+                  variant={meta.variant}
+                  label={`${meta.title} status`}
                 />
-              ))}
-            </VStack>
-          )}
-        </Card>
-      </div>
-    </VStack>
+                <Heading level={4}>{meta.title}</Heading>
+                <Icon
+                  icon={InformationCircleIcon}
+                  size="xsm"
+                  color="secondary"
+                />
+              </HStack>
+              <Text type="supporting" color="secondary" hasTabularNumbers>
+                {items.length}
+              </Text>
+            </HStack>
+          </LayoutHeader>
+        }
+        content={
+          <LayoutContent padding={3}>
+            <div
+              onDragOver={(e: DragEvent) => {
+                e.preventDefault();
+                onDragEnterColumn(meta.id);
+              }}
+              onDrop={(e: DragEvent) => {
+                e.preventDefault();
+                onDropColumn(meta.id);
+              }}
+              style={columnList}>
+              {items.length === 0 ? (
+                <EmptyState
+                  isCompact
+                  icon={
+                    <Icon icon={meta.emptyIcon} size="md" color="secondary" />
+                  }
+                  title={meta.emptyTitle}
+                  description={meta.emptyDescription}
+                />
+              ) : (
+                <VStack gap={2}>
+                  {items.map(item => (
+                    <WorkItemCard
+                      key={item.id}
+                      item={item}
+                      onMove={onMove}
+                      onDragStart={onDragStart}
+                      onDragEnd={onDragEnd}
+                    />
+                  ))}
+                </VStack>
+              )}
+            </div>
+          </LayoutContent>
+        }
+      />
+    </Card>
   );
 }
 
@@ -610,7 +424,7 @@ function BoardColumn({
 export default function KanbanBoardTemplate() {
   const [items, setItems] = useState<WorkItem[]>(INITIAL_ITEMS);
   const [autoTriage, setAutoTriage] = useState(true);
-  const [shift, setShift] = useState('Current shift');
+  const [sprint, setSprint] = useState('003');
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropColumn, setDropColumn] = useState<ColumnId | null>(null);
 
@@ -630,10 +444,10 @@ export default function KanbanBoardTemplate() {
 
   const itemsByColumn = useMemo(() => {
     const map: Record<ColumnId, WorkItem[]> = {
-      queue: [],
-      agent: [],
-      'needs-you': [],
-      resolved: [],
+      backlog: [],
+      'in-progress': [],
+      'in-review': [],
+      done: [],
     };
     for (const item of items) {
       map[item.column].push(item);
@@ -642,89 +456,88 @@ export default function KanbanBoardTemplate() {
   }, [items]);
 
   return (
-    <div style={page}>
-      <Layout
-        height="fill"
-        start={<FeedRail />}
-        header={
-          <HStack hAlign="between" vAlign="center">
-            <HStack gap={3} vAlign="center">
-              <HStack gap={2} vAlign="center">
-                <Heading level={3}>Board</Heading>
-                <Badge label={items.length} variant="neutral" />
+    <Section variant="section" padding={4} height="100dvh">
+      <Card padding={0} variant="muted" height="100%">
+        <Layout
+          height="fill"
+          header={
+            <LayoutHeader hasDivider padding={4}>
+              <Toolbar
+                label="Board actions"
+                gap={2}
+                startContent={
+                  <>
+                    <Heading level={3}>Board</Heading>
+                    <Badge label={items.length} variant="neutral" />
+                  </>
+                }
+                endContent={
+                  <>
+                    <Selector
+                      label="Sprint"
+                      width={200}
+                      isLabelHidden
+                      value={sprint}
+                      onChange={setSprint}
+                      options={[
+                        {value: '003', label: 'Sprint 003'},
+                        {value: '002', label: 'Sprint 002'},
+                        {value: '001', label: 'Sprint 001'},
+                      ]}
+                    />
+                    <HStack gap={1} vAlign="center">
+                      <IconButton
+                        icon={<Icon icon={ArrowsUpDownIcon} size="sm" />}
+                        label="Sort"
+                      />
+                      <IconButton
+                        icon={<Icon icon={FunnelIcon} size="sm" />}
+                        label="Filter"
+                      />
+                      <IconButton
+                        icon={<Icon icon={MagnifyingGlassIcon} size="sm" />}
+                        label="Search"
+                      />
+                    </HStack>
+                    <Divider
+                      orientation="vertical"
+                      variant="strong"
+                      xstyle={styles.verticalDivider}
+                    />
+                    <Button
+                      label="Add task"
+                      variant="primary"
+                      icon={<Icon icon={PlusIcon} size="sm" />}
+                    />
+                  </>
+                }
+              />
+            </LayoutHeader>
+          }
+          content={
+            <LayoutContent padding={4}>
+              <HStack gap={2} style={boardScroll}>
+                {COLUMNS.map(meta => (
+                  <BoardColumn
+                    key={meta.id}
+                    meta={meta}
+                    items={itemsByColumn[meta.id]}
+                    isDropTarget={dropColumn === meta.id}
+                    onMove={moveItem}
+                    onDragStart={setDraggingId}
+                    onDragEnd={() => {
+                      setDraggingId(null);
+                      setDropColumn(null);
+                    }}
+                    onDragEnterColumn={setDropColumn}
+                    onDropColumn={handleDropColumn}
+                  />
+                ))}
               </HStack>
-              <Switch
-                label="Auto triage"
-                value={autoTriage}
-                onChange={(checked: boolean) => setAutoTriage(checked)}
-              />
-              <Button
-                label="Add work item"
-                variant="secondary"
-                size="sm"
-                icon={<Icon icon={PlusIcon} size="xsm" />}
-              />
-            </HStack>
-            <HStack gap={2} vAlign="center">
-              <DropdownMenu
-                button={{label: shift, variant: 'secondary', size: 'sm'}}
-                hasChevron
-                items={[
-                  {
-                    label: 'Current shift',
-                    onClick: () => setShift('Current shift'),
-                  },
-                  {
-                    label: 'Previous shift',
-                    onClick: () => setShift('Previous shift'),
-                  },
-                  {label: 'All shifts', onClick: () => setShift('All shifts')},
-                ]}
-              />
-              <IconButton
-                icon={<Icon icon={MagnifyingGlassIcon} size="xsm" />}
-                label="Search board"
-                variant="ghost"
-                size="sm"
-              />
-              <IconButton
-                icon={<Icon icon={ArrowsUpDownIcon} size="xsm" />}
-                label="Sort board"
-                variant="ghost"
-                size="sm"
-              />
-              <IconButton
-                icon={<Icon icon={FunnelIcon} size="xsm" />}
-                label="Filter board"
-                variant="ghost"
-                size="sm"
-              />
-            </HStack>
-          </HStack>
-        }
-        content={
-          <LayoutContent padding={4}>
-            <HStack gap={4} style={boardScroll}>
-              {COLUMNS.map(meta => (
-                <BoardColumn
-                  key={meta.id}
-                  meta={meta}
-                  items={itemsByColumn[meta.id]}
-                  isDropTarget={dropColumn === meta.id}
-                  onMove={moveItem}
-                  onDragStart={setDraggingId}
-                  onDragEnd={() => {
-                    setDraggingId(null);
-                    setDropColumn(null);
-                  }}
-                  onDragEnterColumn={setDropColumn}
-                  onDropColumn={handleDropColumn}
-                />
-              ))}
-            </HStack>
-          </LayoutContent>
-        }
-      />
-    </div>
+            </LayoutContent>
+          }
+        />
+      </Card>
+    </Section>
   );
 }
