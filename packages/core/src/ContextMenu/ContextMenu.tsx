@@ -114,12 +114,6 @@ interface ContextMenuBaseProps extends BaseProps {
   menuWidth?: number | string;
   /** Size of menu items. @default 'md' */
   size?: 'sm' | 'md' | 'lg';
-  /**
-   * Whether to auto-focus the first menu item when the menu opens.
-   * Set to `false` for inline showcases or documentation previews.
-   * @default true
-   */
-  hasAutoFocus?: boolean;
   /** When true, right-click shows the native browser context menu instead. */
   isDisabled?: boolean;
   /** Called when the menu opens or closes. */
@@ -172,7 +166,6 @@ export function ContextMenu({
   children,
   menuWidth,
   size = 'md',
-  hasAutoFocus = true,
   isDisabled = false,
   onOpenChange,
   ref,
@@ -327,11 +320,9 @@ export function ContextMenu({
           ? document.activeElement
           : (e.currentTarget as HTMLElement);
       layer.show();
-      if (hasAutoFocus) {
-        requestAnimationFrame(() => focusFirst());
-      }
+      requestAnimationFrame(() => focusFirst());
     },
-    [isDisabled, layer, hasAutoFocus, focusFirst],
+    [isDisabled, layer, focusFirst],
   );
 
   const popoverXstyle = menuWidth

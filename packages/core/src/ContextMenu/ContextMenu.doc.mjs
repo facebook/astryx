@@ -51,14 +51,7 @@ export const docs = {
       type: "'sm' | 'md' | 'lg'",
       description: 'Size of menu items: controls padding density.',
       default: "'md'",
-    },
-    {
-      name: 'hasAutoFocus',
-      type: 'boolean',
-      description: 'Whether to auto-focus the first menu item when the menu opens. Set to false for inline showcases.',
-      default: 'true',
-    },
-    {
+    },    {
       name: 'isDisabled',
       type: 'boolean',
       description: 'When true, right-click shows the native browser context menu instead.',
