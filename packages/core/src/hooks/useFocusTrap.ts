@@ -18,10 +18,38 @@
 import {useCallback, useEffect, useRef} from 'react';
 
 /**
- * Selector for commonly focusable elements.
+ * Selector for commonly focusable elements. Includes the tabbable natives
+ * (button/link/input/select/textarea/[tabindex]) plus editable and media
+ * elements the browser also puts in the tab order — contenteditable, media
+ * with controls, iframe, and an open <details>'s <summary> — which a naive
+ * selector misses, letting Tab escape a trap whose only interactive content is
+ * (e.g.) a contenteditable composer (infra-8).
  */
 const FOCUSABLE_SELECTOR =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])';
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled]), [contenteditable]:not([contenteditable="false"]), audio[controls], video[controls], iframe, details > summary:first-child';
+
+/**
+ * Whether an element is currently perceivable/focusable — excludes ones hidden
+ * via `display:none`/`visibility:hidden` or inside an `inert`/`hidden` subtree,
+ * which the browser skips for Tab.
+ */
+function isVisiblyFocusable(el: HTMLElement): boolean {
+  if (el.hasAttribute('inert') || el.closest('[inert]')) {
+    return false;
+  }
+  if (el.hidden || el.closest('[hidden]')) {
+    return false;
+  }
+  // offsetParent is null for display:none (and fixed elements); pair with a
+  // visibility check via getComputedStyle when available.
+  if (typeof window !== 'undefined' && window.getComputedStyle) {
+    const style = window.getComputedStyle(el);
+    if (style.visibility === 'hidden' || style.display === 'none') {
+      return false;
+    }
+  }
+  return true;
+}
 
 /**
  * Get all focusable elements within a container.
@@ -29,7 +57,7 @@ const FOCUSABLE_SELECTOR =
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
   return Array.from(
     container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  );
+  ).filter(isVisiblyFocusable);
 }
 
 /**
