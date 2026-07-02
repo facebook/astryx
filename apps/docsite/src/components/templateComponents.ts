@@ -74,6 +74,9 @@ export const TEMPLATE_COMPONENTS: Record<
     () => import('../../../../packages/cli/templates/pages/gallery-hero/page'),
   ),
   ide: lazy(() => import('../../../../packages/cli/templates/pages/ide/page')),
+  'kanban-board': lazy(
+    () => import('../../../../packages/cli/templates/pages/kanban-board/page'),
+  ),
   library: lazy(
     () => import('../../../../packages/cli/templates/pages/library/page'),
   ),
