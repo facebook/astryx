@@ -35,6 +35,7 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
+    lineHeight: typeScaleVars['--text-label-leading'],
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
     cursor: 'pointer',
@@ -61,6 +62,7 @@ const styles = stylex.create({
   optionalRequired: {
     fontWeight: fontWeightVars['--font-weight-normal'],
     fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
     color: colorVars['--color-text-secondary'],
   },
   description: {
