@@ -70,7 +70,7 @@ A response can be successful AND have acceptable escape hatches.
 
 ### CSS Variable Validation
 
-XDS uses specific CSS variable naming. **Any variable not matching these patterns is a hallucination.**
+Astryx uses specific CSS variable naming. **Any variable not matching these patterns is a hallucination.**
 
 **Valid CSS variable prefixes:**
 

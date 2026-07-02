@@ -12,7 +12,7 @@ Usage:
         --scores /tmp/design-scores-gemini.json \
         --iteration fd6afde6 \
         --issue 1041 \
-        --repo facebookexperimental/xds \
+        --repo facebook/astryx \
         --token $GITHUB_TOKEN
 
     # Legacy flag still accepted for backward compat:
@@ -20,7 +20,7 @@ Usage:
         --scores /tmp/design-scores-gemini.json \
         --release-tag design-judge-fd6afde6 \
         --issue 1041 \
-        --repo facebookexperimental/xds \
+        --repo facebook/astryx \
         --token $GITHUB_TOKEN
 """
 import argparse
@@ -30,7 +30,7 @@ import urllib.request
 import urllib.error
 
 
-EMOJI = {"xds": "🟣", "baseline": "⚪", "html": "🟠"}
+EMOJI = {"astryx": "🟣", "baseline": "⚪", "html": "🟠"}
 PROMPT_LABELS = {
     "dd-1": "Data table with sortable columns",
     "dd-2": "Transaction list with amount, date, status",
@@ -66,7 +66,7 @@ PROMPT_LABELS = {
 }
 
 
-# GitHub Pages base URL for the XDS repo
+# GitHub Pages base URL for the Astryx repo
 GH_PAGES_BASE = "https://facebook.github.io/astryx"
 
 
@@ -95,7 +95,7 @@ def build_comment(data, iteration_id_override=None):
     averages = data.get("averages", {})
     iteration_id = iteration_id_override or data["iterationId"]
     model = data["model"]
-    targets = ["xds", "baseline", "html"]
+    targets = ["astryx", "baseline", "html"]
 
     lines = []
     lines.append(f"## 🔬 Night Watch Design Judge — Gemini Vision")
@@ -156,20 +156,20 @@ def build_comment(data, iteration_id_override=None):
         # Screenshot images
         has_baseline = "baseline" in pd
         if has_baseline:
-            lines.append("**Ideal** | **XDS** | **Baseline** | **HTML**")
+            lines.append("**Ideal** | **Astryx** | **Baseline** | **HTML**")
             lines.append(":--: | :--: | :--: | :--:")
             lines.append(
                 f'<img src="{ideal_url(f"{pid}.png")}" width="220"> | '
-                f'<img src="{img_url(iteration_id, f"{pid}-xds-desktop-light.png")}" width="220"> | '
+                f'<img src="{img_url(iteration_id, f"{pid}-astryx-desktop-light.png")}" width="220"> | '
                 f'<img src="{img_url(iteration_id, f"{pid}-baseline-desktop-light.png")}" width="220"> | '
                 f'<img src="{img_url(iteration_id, f"{pid}-html-desktop-light.png")}" width="220">'
             )
         else:
-            lines.append("**Ideal** | **XDS** | **HTML**")
+            lines.append("**Ideal** | **Astryx** | **HTML**")
             lines.append(":--: | :--: | :--:")
             lines.append(
                 f'<img src="{ideal_url(f"{pid}.png")}" width="220"> | '
-                f'<img src="{img_url(iteration_id, f"{pid}-xds-desktop-light.png")}" width="220"> | '
+                f'<img src="{img_url(iteration_id, f"{pid}-astryx-desktop-light.png")}" width="220"> | '
                 f'<img src="{img_url(iteration_id, f"{pid}-html-desktop-light.png")}" width="220">'
             )
         lines.append("")
@@ -209,7 +209,7 @@ def main():
     p.add_argument("--iteration", help="Iteration ID (images served from gh-pages)")
     p.add_argument("--release-tag", help="(deprecated) GitHub release tag — ignored, kept for backward compat")
     p.add_argument("--issue", required=True, type=int, help="GitHub issue number")
-    p.add_argument("--repo", default="facebookexperimental/xds", help="GitHub repo")
+    p.add_argument("--repo", default="facebook/astryx", help="GitHub repo")
     p.add_argument("--token", required=True, help="GitHub token")
     p.add_argument("--dry-run", action="store_true", help="Print comment without posting")
     args = p.parse_args()

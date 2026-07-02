@@ -23,7 +23,7 @@
 
 **Notes:**
 
-- `XDSButtonVariant` type is derived from the `variants` StyleX object using `keyof typeof variants`
+- `ButtonVariant` type is derived from the `variants` StyleX object using `keyof typeof variants`
 - Destructive variant uses `colorTokens.negative` for its focus outline color
 
 ## CheckboxInput
@@ -69,7 +69,7 @@
 
 **Built-in accessibility:**
 
-- Theme Colors: Color variants mapped to XDS icon color tokens
+- Theme Colors: Color variants mapped to Astryx icon color tokens
 - Accessible: Icons are hidden from screen readers by default (aria-hidden)
 
 **Notes:**
@@ -103,7 +103,7 @@
 - Uses `useId` hook for accessible label-textarea association
 - Label is always rendered for accessibility; use `isLabelHidden` to hide visually
 - Hidden label uses CSS technique that remains accessible to screen readers
-- Wraps `XDSField` component for label, description, and optional/required handling
+- Wraps `Field` component for label, description, and optional/required handling
 - Optional/Required text appears on the same line as the label
 - Label is required prop - component handles label association
 
@@ -120,7 +120,7 @@
 - Uses `useId` hook for accessible label-input association
 - Label is always rendered for accessibility; use `isLabelHidden` to hide visually
 - Hidden label uses CSS technique that remains accessible to screen readers
-- Wraps `XDSField` component for label, description, and optional/required handling
+- Wraps `Field` component for label, description, and optional/required handling
 - Optional/Required text appears on the same line as the label
 - Label is required prop - component handles label association
 
@@ -128,4 +128,4 @@
 
 **Built-in accessibility:**
 
-- XDSTheme Provider: Wraps app to provide CSS variables
+- Theme Provider: Wraps app to provide CSS variables

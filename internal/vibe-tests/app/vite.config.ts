@@ -13,7 +13,7 @@ const repoRoot = path.resolve(__dirname, '../../..');
 /**
  * Browser targets for lightningcss.
  * Prevents lowering native light-dark() into --lightningcss-light/--lightningcss-dark
- * polyfill variables. XDS tokens use native light-dark() which is baseline 2024:
+ * polyfill variables. Astryx tokens use native light-dark() which is baseline 2024:
  * Chrome 123+, Firefox 120+, Safari 17.5+
  *
  * Must match the targets in apps/storybook/.storybook/main.ts

@@ -957,7 +957,7 @@ function generateSubagentPrompt(
   const personaFraming: Record<string, Record<string, string>> = {
     astryx: {
       naive: '', // No special framing - just the natural request
-      experienced: `Use XDS components from @astryxdesign/core. `,
+      experienced: `Use Astryx components from @astryxdesign/core. `,
       adversarial: `I'm used to Tailwind/baseline patterns but need to use your design system. `,
     },
     baseline: {

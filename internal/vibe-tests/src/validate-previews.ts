@@ -2,9 +2,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Standalone validator: check built preview HTML for unresolved XDS refs
+ * @file Standalone validator: check built preview HTML for unresolved XDS-prefixed refs
  *
- * Scans built preview HTML files and detects literal XDS component references
+ * Scans built preview HTML files and detects literal legacy XDS-prefixed component references
  * that survived the bundle — meaning they weren't imported and will crash
  * at runtime with React error #130.
  *
@@ -92,9 +92,7 @@ function main() {
           totalErrors++;
           const relPath = `${promptDir}/${htmlFile}`;
           errors.push({file: relPath, components: unresolved});
-          console.error(
-            `  ✗ ${relPath}: unresolved ${unresolved.join(', ')}`,
-          );
+          console.error(`  ✗ ${relPath}: unresolved ${unresolved.join(', ')}`);
         } else {
           console.log(`  ✓ ${promptDir}/${htmlFile}`);
         }
@@ -102,10 +100,14 @@ function main() {
     }
   }
 
-  console.log(`\n${totalErrors === 0 ? '✅' : '❌'} ${totalFiles} file(s) checked, ${totalErrors} error(s)`);
+  console.log(
+    `\n${totalErrors === 0 ? '✅' : '❌'} ${totalFiles} file(s) checked, ${totalErrors} error(s)`,
+  );
 
   if (errors.length > 0) {
-    console.error('\nUnresolved XDS components will cause React error #130 at runtime.');
+    console.error(
+      '\nUnresolved XDS-prefixed components will cause React error #130 at runtime.',
+    );
     console.error('Run fix-imports.ts then rebuild to fix.');
     process.exit(1);
   }
