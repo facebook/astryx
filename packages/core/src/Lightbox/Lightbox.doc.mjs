@@ -67,9 +67,9 @@ export const docs = {
   playground: {
     defaults: {
       media: {
-        src: 'https://picsum.photos/id/10/1200/800',
-        alt: 'Forest path',
-        caption: 'A winding path through the forest',
+        src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
+        alt: 'Coastal shoreline with ocean waves',
+        caption: 'A scenic coastline with waves rolling onto a sandy beach beneath a clear sky.',
       },
     },
   },

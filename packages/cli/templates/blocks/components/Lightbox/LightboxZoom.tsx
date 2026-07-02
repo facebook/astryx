@@ -4,41 +4,27 @@
 
 import {useState} from 'react';
 import {Lightbox} from '@astryxdesign/core/Lightbox';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 
 export default function LightboxZoom() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      <img
-        src="https://picsum.photos/id/10/1200/800"
-        alt="Forest path"
-        style={{
-          width: 320,
-          aspectRatio: '3 / 2',
-          objectFit: 'cover',
-          borderRadius: 8,
-          cursor: 'zoom-in',
-          display: 'block',
-        }}
-        role="button"
-        tabIndex={0}
-        aria-haspopup="dialog"
+      <Thumbnail
+        src="https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png"
+        alt="Coastal shoreline with ocean waves"
+        label="Coastal shoreline with ocean waves"
         onClick={() => setIsOpen(true)}
-        onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            setIsOpen(true);
-          }
-        }}
       />
       <Lightbox
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         media={{
-          src: 'https://picsum.photos/id/10/1200/800',
-          alt: 'Forest path',
-          caption: 'Double-click to zoom in, drag to pan',
+          src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
+          alt: 'Coastal shoreline with ocean waves',
+          caption:
+            'A scenic coastline. Double-click to zoom in and drag to pan.',
         }}
         hasZoom
       />

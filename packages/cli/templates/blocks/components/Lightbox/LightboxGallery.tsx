@@ -3,26 +3,31 @@
 'use client';
 
 import {useLightbox} from '@astryxdesign/core/Lightbox';
+import {Grid} from '@astryxdesign/core/Grid';
+import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 
 const PHOTOS = [
   {
-    src: 'https://picsum.photos/id/10/1200/800',
-    alt: 'Forest path',
-    caption: 'A winding path through the forest',
+    src: 'https://lookaside.facebook.com/assets/astryx/Neutral-Backpack.png',
+    alt: 'Backpack',
+    caption: 'A backpack displayed on a neutral background.',
   },
   {
-    src: 'https://picsum.photos/id/15/1200/800',
-    alt: 'Mountain lake',
-    caption: 'Still waters of a mountain lake',
+    src: 'https://lookaside.facebook.com/assets/astryx/building.png',
+    alt: 'Modern building',
+    caption: 'A modern building with a contemporary architectural design.',
   },
   {
-    src: 'https://picsum.photos/id/20/1200/800',
-    alt: 'Beach at sunset',
-    caption: 'Golden hour at the beach',
+    src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
+    alt: 'Coastal shoreline with ocean waves',
+    caption:
+      'A scenic coastline with waves rolling onto a sandy beach beneath a clear sky.',
   },
   {
-    src: 'https://picsum.photos/id/25/1200/800',
-    alt: 'City skyline',
+    src: 'https://lookaside.facebook.com/assets/astryx/illustrative-vertical-1.png',
+    alt: 'Illustrated lakeside landscape at sunset',
+    caption:
+      'A stylized landscape illustration featuring pink clouds reflected over a calm lake at sunset.',
   },
 ];
 
@@ -31,30 +36,17 @@ export default function LightboxGallery() {
 
   return (
     <>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 8,
-          maxWidth: 480,
-        }}>
+      <Grid columns={2} gap={2} style={{width: 136}}>
         {PHOTOS.map((photo, i) => (
-          <img
+          <Thumbnail
             key={photo.src}
             src={photo.src}
             alt={photo.alt}
-            style={{
-              width: '100%',
-              aspectRatio: '3 / 2',
-              objectFit: 'cover',
-              borderRadius: 8,
-              cursor: 'pointer',
-              display: 'block',
-            }}
-            {...lightbox.getTriggerProps(i)}
+            label={photo.alt}
+            onClick={() => lightbox.open(i)}
           />
         ))}
-      </div>
+      </Grid>
       {lightbox.element}
     </>
   );
