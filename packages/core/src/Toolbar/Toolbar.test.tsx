@@ -256,4 +256,49 @@ describe('Toolbar', () => {
     render(<Toolbar label="Actions" data-testid="my-toolbar" />);
     expect(screen.getByTestId('my-toolbar')).toBe(screen.getByRole('toolbar'));
   });
+
+  it('is a single tab stop — only one item is tabbable (navigation-3)', () => {
+    render(
+      <Toolbar
+        label="Actions"
+        startContent={
+          <>
+            <button type="button">Cut</button>
+            <button type="button">Copy</button>
+            <button type="button">Paste</button>
+          </>
+        }
+      />,
+    );
+    const buttons = screen.getAllByRole('button');
+    const tabbable = buttons.filter(b => b.getAttribute('tabindex') === '0');
+    expect(tabbable).toHaveLength(1);
+    expect(buttons[0]).toHaveAttribute('tabindex', '0');
+    expect(buttons[1]).toHaveAttribute('tabindex', '-1');
+    expect(buttons[2]).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('does not steal caret keys from a text input mid-line (navigation-4)', async () => {
+    const user = userEvent.setup();
+    render(
+      <Toolbar
+        label="Search"
+        startContent={
+          <>
+            <input type="text" aria-label="Query" defaultValue="hello" />
+            <button type="button">Go</button>
+          </>
+        }
+      />,
+    );
+    const inputEl = screen.getByLabelText('Query');
+    if (!(inputEl instanceof HTMLInputElement)) {
+      throw new Error('expected an input');
+    }
+    inputEl.focus();
+    inputEl.setSelectionRange(1, 1); // caret mid-line
+    await user.keyboard('{ArrowRight}');
+    // Caret movement stays in the input; focus is not stolen by the toolbar.
+    expect(document.activeElement).toBe(inputEl);
+  });
 });
