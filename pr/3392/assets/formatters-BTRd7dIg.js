@@ -1,0 +1,1 @@
+function i(t="$"){return e=>{const r=Number(e);return isNaN(r)?String(e):Math.abs(r)>=1e9?`${t}${n(r/1e9)}B`:Math.abs(r)>=1e6?`${t}${n(r/1e6)}M`:Math.abs(r)>=1e3?`${t}${n(r/1e3)}K`:`${t}${r.toLocaleString()}`}}function n(t){const e=t.toFixed(1);return e.endsWith(".0")?e.slice(0,-2):e}export{i as c};

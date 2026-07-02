@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" data-astryx-theme="neutral">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Astryx Design System</title>
+  <link rel="stylesheet" href="assets/reset.css">
+  <link rel="stylesheet" href="assets/astryx.css">
+  <link rel="stylesheet" href="assets/theme.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--color-background-body);
+      font-family: var(--font-family-body);
+      color: var(--color-text-primary);
+    }
+    .container {
+      max-width: 480px;
+      width: 100%;
+      padding: var(--spacing-6);
+    }
+    h1 { font-size: var(--text-heading-1-size); font-weight: var(--font-weight-semibold); margin-bottom: var(--spacing-2); }
+    p { color: var(--color-text-secondary); margin-bottom: var(--spacing-6); font-size: var(--text-body-size); line-height: 1.5; }
+    .links { display: flex; flex-direction: column; gap: var(--spacing-3); }
+    a.card {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--spacing-4);
+      background: var(--color-background-card);
+      border-radius: var(--radius-element);
+      box-shadow: var(--shadow-low);
+      text-decoration: none;
+      color: var(--color-text-primary);
+      transition: box-shadow 0.15s ease;
+    }
+    a.card:hover { box-shadow: var(--shadow-med); }
+    .card-title { font-weight: var(--font-weight-semibold); }
+    .card-desc { font-size: var(--text-supporting-size); color: var(--color-text-secondary); margin-top: 2px; }
+    .arrow { color: var(--color-text-secondary); font-size: 1.25rem; }
+    .hash { font-family: var(--font-family-code); font-size: var(--text-supporting-size); color: var(--color-text-secondary); margin-top: var(--spacing-4); text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Astryx Design System</h1>
+    <p>Component library for building internal tools. Select an environment below.</p>
+    <div class="links">
+      <a class="card" href="storybook/index.html">
+        <div>
+          <div class="card-title">📖 Storybook</div>
+          <div class="card-desc">Component docs, props, and interactive examples</div>
+        </div>
+        <span class="arrow">→</span>
+      </a>
+      <a class="card" href="sandbox/index.html">
+        <div>
+          <div class="card-title">🏗️ Sandbox</div>
+          <div class="card-desc">Full app demo with theme editor</div>
+        </div>
+        <span class="arrow">→</span>
+      </a>
+      <a class="card" href="https://github.com/facebook/astryx">
+        <div>
+          <div class="card-title">💻 GitHub</div>
+          <div class="card-desc">Source code, issues, and wiki</div>
+        </div>
+        <span class="arrow">→</span>
+      </a>
+    </div>
+    <div class="hash">Build: 792c68e</div>
+  </div>
+</body>
+</html>
