@@ -142,7 +142,6 @@ function ConversationItem({
             <MoreMenu
               size="sm"
               label="Conversation options"
-              hasAutoFocus={false}
               onOpenChange={setIsMenuOpen}
               items={[
                 {label: 'Pin', onClick: () => {}},
