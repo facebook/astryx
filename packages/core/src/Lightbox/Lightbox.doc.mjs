@@ -64,6 +64,15 @@ export const docs = {
       { guidance: false, description: 'Nest interactive content inside captions; keep them plain text.' },
     ],
   },
+  playground: {
+    defaults: {
+      media: {
+        src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
+        alt: 'Coastal shoreline with ocean waves',
+        caption: 'A scenic coastline with waves rolling onto a sandy beach beneath a clear sky.',
+      },
+    },
+  },
 };
 
 /** @type {import('../docs-types').ComponentDoc} */
