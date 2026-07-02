@@ -17,7 +17,7 @@ This file covers local development setup.
 
 ### Node.js
 
-Install Node.js v22+ using one of these methods:
+Install Node.js 22+ from an active LTS line using one of these methods:
 
 **Via nvm (recommended):**
 
@@ -33,16 +33,7 @@ Download and install from https://nodejs.org
 ### pnpm
 
 Astryx uses [pnpm](https://pnpm.io/) as its package manager (declared in
-the `packageManager` field of `package.json`). The easiest way to install
-it is via [Corepack](https://nodejs.org/api/corepack.html), which ships
-with Node.js:
-
-```bash
-corepack enable
-```
-
-This makes the `pnpm` command available with the exact version Astryx pins.
-Alternatively, install pnpm directly:
+the `packageManager` field of `package.json`). You can install pnpm directly:
 
 ```bash
 # Via npm
@@ -52,16 +43,32 @@ npm install -g pnpm@10
 brew install pnpm
 
 # Via standalone installer (no npm or Node.js required)
-curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=10.33.4 sh -
+curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=10.34.1 sh -
 
 # Via GitHub releases (single binary, no dependencies)
 # https://github.com/pnpm/pnpm/releases/latest
 ```
 
+Or use [Corepack](https://nodejs.org/api/corepack.html) to install the exact
+pnpm version Astryx pins:
+
+```bash
+corepack enable
+```
+
+Corepack ships with Node.js 22 and 24, but current Node.js 25+ releases no
+longer bundle it. If `corepack` is missing and you want the auto-pinning path,
+install Corepack manually first:
+
+```bash
+npm install -g corepack
+corepack enable
+```
+
 Verify installation:
 
 ```bash
-node --version   # v22.x.x
+node --version   # v22.x.x or v24.x.x
 pnpm --version   # 10.x.x
 ```
 
@@ -390,6 +397,54 @@ yet" — open the PR as a draft and mark it ready for review when it's done.
 - Export types alongside components
 
 ## Troubleshooting
+
+### Setup Issues
+
+**`pnpm: command not found`**
+
+Install pnpm directly:
+
+```bash
+npm install -g pnpm@10
+```
+
+Or enable Corepack if you want to use the repository's pinned pnpm version:
+
+```bash
+corepack enable
+```
+
+**`corepack: command not found`**
+
+Install Corepack manually, then enable it:
+
+```bash
+npm install -g corepack
+corepack enable
+```
+
+Node 25+ does not include Corepack. You can either install Corepack manually or
+install pnpm directly.
+
+**Unexpected Node.js version**
+
+Check the active version before installing dependencies:
+
+```bash
+node --version
+```
+
+Use an active LTS line such as 22 or 24 if your shell selected a different
+version, such as a non-LTS `stable` release.
+
+**CLI path issues**
+
+If `astryx` is not found in a consuming app, add the package script shown in the
+root `README.md` and run it through your package manager:
+
+```bash
+pnpm astryx -- component --list
+```
 
 ### pnpm Installation Issues
 
