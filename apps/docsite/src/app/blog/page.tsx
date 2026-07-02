@@ -10,6 +10,10 @@ import type {Metadata} from 'next';
 import {blogPosts, blogTypes} from '../../generated/blogRegistry';
 import {BlogIndex} from '../../components/blog/BlogIndex';
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 const BLOG_TITLE = 'Blog';
 const BLOG_DESCRIPTION =
   'Notes on building Astryx — releases, guides, stories, and perspectives on designing a system for humans and agents.';

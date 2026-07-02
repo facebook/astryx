@@ -23,6 +23,10 @@ import {themeObjects} from '../../../generated/themeRegistry';
 import {ThemePackagePage} from '../../../components/ThemePackagePage';
 import {pageMetadata} from '../../../lib/pageMetadata';
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 // Static canonical metadata for /themes. The page also accepts a `?theme=`
 // param to preselect the picker, but every variant is the same surface, so the
 // canonical stays the bare /themes path to avoid duplicate-URL dilution.

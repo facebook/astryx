@@ -20,6 +20,10 @@ import {PackageStubPage} from '../../../../components/docs/PackageStubPage';
 import {type InstallStep} from '../../../../components/docs/PackageActions';
 import {pageMetadata} from '../../../../lib/pageMetadata';
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 const TOKEN_TOPICS = new Set([
   'tokens',
   'color',
