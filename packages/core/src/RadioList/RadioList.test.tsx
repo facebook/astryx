@@ -280,20 +280,23 @@ describe('RadioList', () => {
     expect(screen.getByRole('radiogroup')).not.toHaveAttribute('aria-label');
   });
 
-  it('does not leave the group label with an orphaned htmlFor (forms-14)', () => {
+  it('renders the group label as a span, not a label element (forms-14)', () => {
     render(
       <RadioList label="Plan" value="" onChange={() => {}}>
         <RadioListItem label="Free" value="free" />
         <RadioListItem label="Pro" value="pro" />
       </RadioList>,
     );
-    // The Field label is a group label, so it must NOT carry an htmlFor that
-    // points at a non-existent input; instead the group references it.
-    const label = screen.getByText('Plan').closest('label');
-    expect(label).not.toBeNull();
-    expect(label).not.toHaveAttribute('for');
+    // A radiogroup's accessible name must not come from a literal `<label>`
+    // element — a `<label>` names a single control and can't be associated
+    // with a group. It is rendered as a `<span>` and referenced via
+    // aria-labelledby (with no orphaned htmlFor).
+    const labelEl = screen.getByText('Plan');
+    expect(labelEl.tagName).toBe('SPAN');
+    expect(labelEl.closest('label')).toBeNull();
+    expect(labelEl).not.toHaveAttribute('for');
     const group = screen.getByRole('radiogroup', {name: 'Plan'});
-    expect(group.getAttribute('aria-labelledby')).toBe(label?.id);
+    expect(group.getAttribute('aria-labelledby')).toBe(labelEl.id);
   });
 
   it('renders description on items', () => {
