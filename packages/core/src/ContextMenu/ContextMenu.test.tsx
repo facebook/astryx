@@ -182,7 +182,7 @@ describe('ContextMenu items', () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
     render(
-      <ContextMenu items={[{label: 'Cut', onClick: handleClick}]}>
+      <ContextMenu items={[{label: 'Cut', onClick: handleClick}]}> 
         <div>Right-click me</div>
       </ContextMenu>,
     );
@@ -196,7 +196,7 @@ describe('ContextMenu items', () => {
     const handleClick = vi.fn();
     render(
       <ContextMenu
-        items={[{label: 'Cut', onClick: handleClick, isDisabled: true}]}>
+        items={[{label: 'Cut', onClick: handleClick, isDisabled: true}]}> 
         <div>Right-click me</div>
       </ContextMenu>,
     );
@@ -207,7 +207,7 @@ describe('ContextMenu items', () => {
 
   it('has aria-disabled when disabled', () => {
     render(
-      <ContextMenu items={[{label: 'Cut', isDisabled: true}]}>
+      <ContextMenu items={[{label: 'Cut', isDisabled: true}]}> 
         <div>Right-click me</div>
       </ContextMenu>,
     );

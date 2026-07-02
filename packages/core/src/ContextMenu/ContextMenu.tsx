@@ -3,11 +3,11 @@
 
 /**
  * @file ContextMenu.tsx
- * @input Uses React, StyleX, useLayer (fixed mode), useListFocus
+ * @input Uses React, StyleX, useLayer (context mode), useListFocus
  * @output Exports ContextMenu component
  * @position Core implementation; consumed by index.ts
  *
- * Right-click context menu positioned at cursor coordinates.
+ * Right-click context menu anchored to the trigger element.
  * Reuses DropdownMenu item rendering and keyboard navigation.
  *
  * Supports two content modes with a single keyboard/focus path:
@@ -146,7 +146,8 @@ export type ContextMenuProps = ContextMenuDataProps | ContextMenuCompoundProps;
 // =============================================================================
 
 /**
- * A context menu component that appears on right-click at cursor position.
+ * A context menu component that appears on right-click and is anchored to the
+ * trigger element.
  *
  * Supports two modes:
  * - **Data-driven**: pass `items` for static menus
@@ -186,7 +187,6 @@ export function ContextMenu({
   const menuContent = 'menuContent' in props ? props.menuContent : undefined;
 
   const menuId = useId();
-  const positionRef = useRef({x: 0, y: 0});
   // Element focused before the menu opened, restored when it closes so focus
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
@@ -194,7 +194,7 @@ export function ContextMenu({
   const [isOpen, setIsOpen] = useState(false);
 
   const layer = useLayer({
-    mode: 'fixed',
+    mode: 'context',
     onHide: useCallback(() => {
       setIsOpen(false);
       onOpenChange?.(false);
@@ -319,7 +319,6 @@ export function ContextMenu({
         return;
       }
       e.preventDefault();
-      positionRef.current = {x: e.clientX, y: e.clientY};
       // Remember the element focused before opening so we can restore it on
       // close (Escape or outside-click), instead of dropping focus to <body>.
       triggerFocusRef.current =
@@ -373,8 +372,8 @@ export function ContextMenu({
           </DropdownMenuContext>
         </div>,
         {
-          x: positionRef.current.x,
-          y: positionRef.current.y,
+          placement: 'below',
+          alignment: 'start',
           xstyle: [popoverXstyle, layerAnimations.below],
         },
       )}

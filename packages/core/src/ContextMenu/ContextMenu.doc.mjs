@@ -21,7 +21,7 @@ export const docs = {
       {property: 'padding', vars: ['--_dropdown-menu-padding']},
     ],
   },
-  description: 'A context menu that appears on right-click at the cursor position. Wraps trigger content as children.',
+  description: 'A context menu that appears on right-click and is anchored to the trigger element. Wraps trigger content as children.',
   props: [
     {
       name: 'children',
@@ -69,7 +69,7 @@ export const docs = {
     {name: 'ContextMenuItem'},
   ],
   usage: {
-    description: 'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions without cluttering the UI with visible buttons.',
+    description: 'A right-click context menu that appears anchored to the trigger element. Use to provide contextual actions for specific elements or regions without cluttering the UI with visible buttons.',
     bestPractices: [
       { guidance: true, description: 'Keep menu items concise and action-oriented; users expect quick access to contextual actions.' },
       { guidance: true, description: 'Use sections and dividers to group related actions when the menu has many items.' },
@@ -83,7 +83,7 @@ export const docs = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
   usage: {
-    description: '右键点击时在光标位置出现的上下文菜单。用于为特定元素或区域提供上下文操作，而不使 UI 杂乱。',
+    description: '右键点击时锚定到触发元素的上下文菜单。用于为特定元素或区域提供上下文操作，而不使 UI 杂乱。',
     bestPractices: [
       { guidance: true, description: '保持菜单项简洁和面向操作。' },
       { guidance: true, description: '有很多项时使用分组和分隔线。' },
@@ -96,9 +96,9 @@ export const docsZh = {
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'right-click context menu at cursor position',
+  description: 'anchored right-click context menu',
   usage: {
-    description: 'A right-click context menu that appears at the cursor position. Use to provide contextual actions for specific elements or regions.',
+    description: 'A right-click context menu that appears anchored to the trigger element. Use to provide contextual actions for specific elements or regions.',
     bestPractices: [
       { guidance: true, description: 'Keep items concise and action-oriented.' },
       { guidance: true, description: 'Group related actions with sections and dividers.' },
