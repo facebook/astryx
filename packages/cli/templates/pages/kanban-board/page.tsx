@@ -655,8 +655,7 @@ export default function KanbanBoardTemplate() {
               </HStack>
               <Switch
                 label="Auto triage"
-                isLabelHidden={false}
-                checked={autoTriage}
+                value={autoTriage}
                 onChange={(checked: boolean) => setAutoTriage(checked)}
               />
               <Button
