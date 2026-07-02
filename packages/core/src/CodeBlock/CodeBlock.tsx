@@ -4,8 +4,9 @@
 /**
  * @file CodeBlock.tsx
  * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API
- * @output Exports CodeBlock component and CodeBlockProps
+ * @output Exports CodeBlock component, CodeBlockProps, and CodeBlockHighlightLine
  * @position Core implementation; read-only syntax-highlighted code display
+ *   with per-line accents (neutral highlight plus add/remove diff washes)
  */
 
 import {
@@ -206,6 +207,16 @@ const styles = stylex.create({
     marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
     paddingInline: spacingVars['--spacing-4'],
   },
+  lineAdded: {
+    backgroundColor: colorVars['--color-success-muted'],
+    marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
+    paddingInline: spacingVars['--spacing-4'],
+  },
+  lineRemoved: {
+    backgroundColor: colorVars['--color-error-muted'],
+    marginInline: `calc(-1 * ${spacingVars['--spacing-4']})`,
+    paddingInline: spacingVars['--spacing-4'],
+  },
   sizeSm: {
     fontSize: typeScaleVars['--text-supporting-size'],
   },
@@ -250,31 +261,39 @@ const styles = stylex.create({
 const LINE_CHUNK_SIZE = 20;
 const LINE_CHUNK_THRESHOLD = 100;
 
+const lineTypeStyles = {
+  highlight: styles.lineHighlighted,
+  add: styles.lineAdded,
+  remove: styles.lineRemoved,
+} as const;
+
 /**
  * Memoized chunk component — cheaper than memoizing every individual line.
  */
 const CodeChunk = React.memo(function CodeChunk({
   lines,
   startIndex,
-  highlightSet,
+  highlightMap,
   renderLineContent,
 }: {
   lines: string[];
   startIndex: number;
-  highlightSet: Set<number> | null;
+  highlightMap: ReadonlyMap<number, CodeBlockLineAccent> | null;
   renderLineContent: (line: string, lineIndex: number) => React.ReactNode;
 }) {
   return (
     <>
       {lines.map((line, j) => {
         const i = startIndex + j;
+        const accent = highlightMap?.get(i + 1) ?? null;
         return (
           <div
             key={i}
             data-line={i + 1}
+            data-line-type={accent ?? undefined}
             {...stylex.props(
               styles.line,
-              (highlightSet?.has(i + 1) ?? false) && styles.lineHighlighted,
+              accent != null && lineTypeStyles[accent],
             )}>
             {renderLineContent(line, i)}
           </div>
@@ -286,7 +305,7 @@ const CodeChunk = React.memo(function CodeChunk({
 
 function renderLines(
   lines: string[],
-  highlightSet: Set<number> | null,
+  highlightMap: ReadonlyMap<number, CodeBlockLineAccent> | null,
   renderLineContent: (line: string, lineIndex: number) => React.ReactNode,
   chunkSize: number = LINE_CHUNK_SIZE,
 ): React.ReactNode {
@@ -297,7 +316,7 @@ function renderLines(
       <CodeChunk
         lines={lines}
         startIndex={0}
-        highlightSet={highlightSet}
+        highlightMap={highlightMap}
         renderLineContent={renderLineContent}
       />
     );
@@ -318,7 +337,7 @@ function renderLines(
         <CodeChunk
           lines={chunkLines}
           startIndex={start}
-          highlightSet={highlightSet}
+          highlightMap={highlightMap}
           renderLineContent={renderLineContent}
         />
       </div>,
@@ -331,6 +350,22 @@ function renderLines(
 // Props
 // ---------------------------------------------------------------------------
 
+/**
+ * Accent applied to a single line via `highlightLines`.
+ * - `'highlight'`: neutral attention accent (same as a plain number entry).
+ * - `'add'`: success-toned diff wash for added lines.
+ * - `'remove'`: error-toned diff wash for removed lines.
+ */
+export type CodeBlockLineAccent = 'add' | 'remove' | 'highlight';
+
+/**
+ * A `highlightLines` entry: a 1-indexed line number (neutral accent) or an
+ * object selecting a specific accent for that line.
+ */
+export type CodeBlockHighlightLine =
+  | number
+  | {line: number; type?: CodeBlockLineAccent};
+
 export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
   ref?: React.Ref<HTMLPreElement>;
   code: string;
@@ -338,7 +373,22 @@ export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
   title?: string;
   hasLanguageLabel?: boolean;
   hasLineNumbers?: boolean;
-  highlightLines?: number[];
+  /**
+   * 1-indexed lines to accent. Plain numbers (and `type: 'highlight'`) use
+   * the neutral attention accent; `'add'` / `'remove'` render theme-aware
+   * success/error diff washes. Entries outside the code's line range are
+   * ignored.
+   *
+   * @example
+   * ```
+   * <CodeBlock
+   *   code={updatedConfig}
+   *   language="json"
+   *   highlightLines={[{line: 4, type: 'remove'}, {line: 5, type: 'add'}, 12]}
+   * />
+   * ```
+   */
+  highlightLines?: CodeBlockHighlightLine[];
   hasCopyButton?: boolean;
   onCopy?: () => void;
   isWrapped?: boolean;
@@ -501,13 +551,13 @@ function buildSpanLine(lineText: string, tokens: SyntaxToken[]): React.ReactNode
 function SpanCodeContent({
   lines,
   tokenLines,
-  highlightSet,
+  highlightMap,
   isWrapped,
   sizeStyle,
 }: {
   lines: string[];
   tokenLines: TokenLine[];
-  highlightSet: Set<number> | null;
+  highlightMap: ReadonlyMap<number, CodeBlockLineAccent> | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
 }) {
@@ -530,7 +580,7 @@ function SpanCodeContent({
         sizeStyle,
         isWrapped && styles.codeWrapped,
       )}>
-      {renderLines(lines, highlightSet, renderLineContent)}
+      {renderLines(lines, highlightMap, renderLineContent)}
     </code>
   );
 }
@@ -542,13 +592,13 @@ function SpanCodeContent({
 function RangeCodeContent({
   lines,
   tokenLines,
-  highlightSet,
+  highlightMap,
   isWrapped,
   sizeStyle,
 }: {
   lines: string[];
   tokenLines: TokenLine[];
-  highlightSet: Set<number> | null;
+  highlightMap: ReadonlyMap<number, CodeBlockLineAccent> | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
 }) {
@@ -581,7 +631,7 @@ function RangeCodeContent({
         sizeStyle,
         isWrapped && styles.codeWrapped,
       )}>
-      {renderLines(lines, highlightSet, renderLineContent)}
+      {renderLines(lines, highlightMap, renderLineContent)}
     </code>
   );
 }
@@ -640,10 +690,20 @@ export function CodeBlock({
 
   const tokenLines = useTokenLines(code, language, customTokenizer);
 
-  const highlightSet = useMemo(
-    () => (highlightLines ? new Set(highlightLines) : null),
-    [highlightLines],
-  );
+  const highlightMap = useMemo(() => {
+    if (!highlightLines || highlightLines.length === 0) {
+      return null;
+    }
+    const map = new Map<number, CodeBlockLineAccent>();
+    for (const entry of highlightLines) {
+      if (typeof entry === 'number') {
+        map.set(entry, 'highlight');
+      } else {
+        map.set(entry.line, entry.type ?? 'highlight');
+      }
+    }
+    return map;
+  }, [highlightLines]);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -755,7 +815,7 @@ export function CodeBlock({
           <SpanCodeContent
             lines={lines}
             tokenLines={tokenLines}
-            highlightSet={highlightSet}
+            highlightMap={highlightMap}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
           />
@@ -763,7 +823,7 @@ export function CodeBlock({
           <RangeCodeContent
             lines={lines}
             tokenLines={tokenLines}
-            highlightSet={highlightSet}
+            highlightMap={highlightMap}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
           />
