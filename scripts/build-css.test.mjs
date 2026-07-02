@@ -110,4 +110,30 @@ describe('build-css astryx.css', () => {
       fs.access(path.join(CORE_DIST, 'common.css')).then(() => true, () => false),
     ).resolves.toBe(false);
   });
+
+  it('Button sizes use min-height (not a fixed height) so theme padding overrides compose (#3379)', () => {
+    // Regression: Button sizes previously set a fixed `height`, which under
+    // border-box absorbed any theme `paddingBlock` override — "make this button
+    // taller" silently did nothing. Sizes now set `min-height` plus a per-size
+    // `padding-block`, so the default heights are unchanged but a padding
+    // override grows the button.
+    expect(astryxCss).toMatch(/min-height:var\(--size-element-sm\)/);
+    expect(astryxCss).toMatch(/min-height:var\(--size-element-md\)/);
+    expect(astryxCss).toMatch(/min-height:var\(--size-element-lg\)/);
+
+    // Per-size padding-block replaces the removed base padding-block so the
+    // default heights (28/32/36) are preserved exactly.
+    expect(astryxCss).toMatch(/padding-block:var\(--spacing-1\)/);
+    expect(astryxCss).toMatch(/padding-block:var\(--spacing-1-5\)/);
+
+    // The old fixed height on the size classes must be gone. A fixed
+    // `height:var(--size-element-*)` paired with a `min-height:` reset on the
+    // same declaration would reintroduce the bug; assert the size rule that
+    // carries min-height does not also pin a fixed height.
+    const buttonSizeRule = astryxCss.match(
+      /\{min-height:var\(--size-element-lg\)[^}]*\}/,
+    );
+    expect(buttonSizeRule).not.toBeNull();
+    expect(buttonSizeRule[0]).not.toMatch(/[^-]height:var\(--size-element-lg\)/);
+  });
 });
