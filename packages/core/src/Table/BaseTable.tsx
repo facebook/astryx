@@ -225,7 +225,7 @@ function TableRowInner<T extends Record<string, unknown>>({
     rowIndex,
   );
 
-  return (
+  const row = (
     <RowComponent
       key={rowKey}
       ref={rowRenderProps.ref}
@@ -234,6 +234,19 @@ function TableRowInner<T extends Record<string, unknown>>({
       {rowRenderProps.children}
     </RowComponent>
   );
+
+  // afterRow: plugins (e.g. row expansion) can append extra <tr> elements
+  // after the row (expanded-detail panel). Rendered as a sibling fragment.
+  if (rowRenderProps.afterRow) {
+    return (
+      <>
+        {row}
+        {rowRenderProps.afterRow}
+      </>
+    );
+  }
+
+  return row;
 }
 
 /**

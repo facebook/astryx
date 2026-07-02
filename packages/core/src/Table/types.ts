@@ -290,6 +290,13 @@ export interface BodyRowRenderProps {
   children: ReactNode;
   /** Ref for the `<tr>` element. Plugins can set this to access the row DOM node. */
   ref?: Ref<HTMLTableRowElement>;
+  /**
+   * Extra content rendered immediately after this row's `<tr>` — e.g. a
+   * full-width expanded-detail row. Must itself be valid table markup (one or
+   * more `<tr>`). Plugins should compose with any existing `afterRow` rather
+   * than replace it.
+   */
+  afterRow?: ReactNode;
 }
 
 /** Props passed through the plugin pipeline for each body `<td>` */
