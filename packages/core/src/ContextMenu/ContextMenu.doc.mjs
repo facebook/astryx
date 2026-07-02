@@ -53,6 +53,12 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'menuLabel',
+      type: 'string',
+      description: 'Accessible name for the menu surface, announced when it opens.',
+      default: "'Context menu'",
+    },
+    {
       name: 'hasAutoFocus',
       type: 'boolean',
       description: 'Whether to auto-focus the first menu item when the menu opens. Set to false for inline showcases.',

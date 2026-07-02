@@ -76,6 +76,38 @@ describe('ContextMenu', () => {
     ).toHaveFocus();
   });
 
+  it('gives the menu an accessible name (menus-13)', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    // Defaults to "Context menu"; overridable via menuLabel.
+    expect(
+      screen.getByRole('menu', {name: 'Context menu', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('uses a custom menuLabel', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]} menuLabel="Row actions">
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    expect(
+      screen.getByRole('menu', {name: 'Row actions', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('does not put aria-haspopup on the role-less trigger wrapper (menus-15)', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    expect(screen.getByTestId('ctx')).not.toHaveAttribute('aria-haspopup');
+  });
+
   it('opens menu on right-click', () => {
     render(
       <ContextMenu items={[{label: 'Item 1'}]}>

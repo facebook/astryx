@@ -115,6 +115,11 @@ interface ContextMenuBaseProps extends BaseProps {
   /** Size of menu items. @default 'md' */
   size?: 'sm' | 'md' | 'lg';
   /**
+   * Accessible name for the menu surface, announced when it opens.
+   * @default 'Context menu'
+   */
+  menuLabel?: string;
+  /**
    * Whether to auto-focus the first menu item when the menu opens.
    * Set to `false` for inline showcases or documentation previews.
    * @default true
@@ -172,6 +177,7 @@ export function ContextMenu({
   children,
   menuWidth,
   size = 'md',
+  menuLabel = 'Context menu',
   hasAutoFocus = true,
   isDisabled = false,
   onOpenChange,
@@ -348,11 +354,7 @@ export function ContextMenu({
 
   return (
     <>
-      <div
-        ref={ref}
-        onContextMenu={handleContextMenu}
-        aria-haspopup="menu"
-        data-testid={testId}>
+      <div ref={ref} onContextMenu={handleContextMenu} data-testid={testId}>
         {children}
       </div>
 
@@ -361,6 +363,7 @@ export function ContextMenu({
           ref={listRef}
           id={menuId}
           role="menu"
+          aria-label={menuLabel}
           onKeyDown={listKeyDown}
           {...mergeProps(
             themeProps('context-menu'),

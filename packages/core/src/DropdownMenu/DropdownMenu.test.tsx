@@ -57,6 +57,15 @@ describe('DropdownMenu', () => {
     expect(screen.getByRole('menu', {hidden: true})).toBeInTheDocument();
   });
 
+  it('names the menu from the trigger label (menus-13)', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
+    );
+    expect(
+      screen.getByRole('menu', {name: 'Actions', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
   it('does not wrap the menu in a role="dialog" aria-modal element', () => {
     render(
       <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,

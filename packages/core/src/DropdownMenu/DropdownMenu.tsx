@@ -441,6 +441,10 @@ export function DropdownMenu({
           ref={listRef}
           id={menuId}
           role="menu"
+          // Give the menu an accessible name from its trigger's label, so
+          // screen readers announce e.g. "Actions menu" rather than an unnamed
+          // menu (menus-13).
+          aria-label={button.label}
           onKeyDown={listKeyDown}
           {...mergeProps(
             themeProps('dropdown-menu'),
