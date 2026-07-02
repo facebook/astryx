@@ -11,11 +11,12 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import sitemap from '../app/sitemap';
 
 // Outside a Next.js server, `'use cache'` is inert and cacheLife() has no
-// cache scope to configure — stub it so the sitemap can run under vitest.
+// cache scope to configure. Stub it so the sitemap can run under vitest.
 vi.mock('next/cache', () => ({cacheLife: () => {}}));
+
+import sitemap from '../app/sitemap';
 import {SITE_URL} from '../lib/siteConfig';
 import {flattenComponentSidebarEntries} from '../components/componentSidebarData';
 import {docTopics} from '../generated/docsRegistry';
