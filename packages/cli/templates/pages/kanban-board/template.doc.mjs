@@ -6,7 +6,7 @@ export const doc = {
   name: 'Kanban Board',
   displayName: 'Kanban Board',
   description:
-    'Task board with color-coded status columns, draggable work-item cards, priority tags, assignees, and per-card actions',
+    'Task board with color-coded status columns, draggable task cards, priority tags, and metadata',
   isReady: true,
   category: 'Tools - Kanban Board',
 };
