@@ -175,13 +175,84 @@ async function getKnownValues(componentName) {
 }
 
 /**
+ * Resolve `@astryxdesign/core`'s package root relative to the CLI package. Core
+ * and the CLI ship as siblings (`@astryxdesign/core`, `@astryxdesign/cli`), so
+ * `../../../core` from `src/commands/` reaches core whether installed from npm
+ * or run inside the monorepo. Returns null if it can't be found.
+ */
+function resolveCoreRoot() {
+  const cliDir = path.dirname(fileURLToPath(import.meta.url));
+  const coreRoot = path.resolve(cliDir, '../../../core');
+  return fs.existsSync(coreRoot) ? coreRoot : null;
+}
+
+/**
+ * Read the type declarations `@astryxdesign/core/<Component>` exposes so we can
+ * check whether a given augmentation-target interface actually exists before
+ * generating a module augmentation against it.
+ *
+ * Reads the shipped `dist/<Component>/index.d.ts` (what a consumer's TypeScript
+ * actually sees), falling back to the `src/<Component>/index.ts` in the
+ * monorepo. Returns the file contents, or '' if nothing is found.
+ */
+const _componentDeclCache = new Map();
+function readComponentDeclarations(pascalName) {
+  if (_componentDeclCache.has(pascalName)) {
+    return _componentDeclCache.get(pascalName);
+  }
+  let contents = '';
+  const coreRoot = resolveCoreRoot();
+  if (coreRoot) {
+    const candidates = [
+      path.join(coreRoot, 'dist', pascalName, 'index.d.ts'),
+      path.join(coreRoot, 'src', pascalName, 'index.ts'),
+    ];
+    for (const file of candidates) {
+      try {
+        if (fs.existsSync(file)) {
+          contents = fs.readFileSync(file, 'utf-8');
+          break;
+        }
+      } catch {
+        // ignore and try the next candidate
+      }
+    }
+  }
+  _componentDeclCache.set(pascalName, contents);
+  return contents;
+}
+
+/**
+ * Determine whether `@astryxdesign/core/<Component>` exports an interface named
+ * `interfaceName` that can be augmented via module augmentation.
+ *
+ * Only interfaces are extension points — closed literal-union types (e.g.
+ * `HeadingType`, `ButtonSize`) are NOT augmentable, so a generated augmentation
+ * against them is dead code. We check that the name is exported (directly or
+ * re-exported) as a type/interface.
+ */
+function componentHasAugmentableInterface(pascalName, interfaceName) {
+  const decl = readComponentDeclarations(pascalName);
+  if (!decl) return false;
+  // Word-boundary match so `ButtonVariantMap` doesn't match `XButtonVariantMap`.
+  const re = new RegExp(`\\b${interfaceName}\\b`);
+  return re.test(decl);
+}
+
+/**
  * Generate TypeScript declaration content with module augmentation for custom
  * component prop values found in the theme's `components` keys. Reads known
  * values from doc files to filter out base prop values.
  *
- * Interface naming convention: Astryx + PascalCase(component) + PascalCase(prop) + Map
- *   banner + status → XDSBannerStatusMap
- *   button + variant → XDSButtonVariantMap
+ * Interface naming convention: PascalCase(component) + PascalCase(prop) + Map
+ *   banner + status → BannerStatusMap
+ *   button + variant → ButtonVariantMap
+ *
+ * An augmentation is only emitted when `@astryxdesign/core/<Component>` actually
+ * exports a matching interface. Props backed by closed literal-union types
+ * (e.g. Button `size`, Heading `type`/`level`) have no augmentation point, so
+ * generating a `declare module` block for them would be dead code — those are
+ * skipped.
  *
  * @param {object} themeDef - Theme definition (resolved by defineTheme)
  * @returns {Promise<string|null>} TypeScript declaration content, or null if no augmentations needed
@@ -233,7 +304,14 @@ async function generateVariantDeclarationsAsync(themeDef) {
       const pascal = toPascalCase(component);
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
       const modulePath = `@astryxdesign/core/${pascal}`;
-      const interfaceName = `XDS${pascal}${propPascal}Map`;
+      const interfaceName = `${pascal}${propPascal}Map`;
+
+      // Only augment interfaces that actually exist as an extension point in
+      // core. Props backed by closed literal-union types (e.g. Button `size`,
+      // Heading `type`/`level`) have no `*Map` interface — a `declare module`
+      // block against a non-existent interface just creates a new, unused
+      // interface and never extends the component's prop union, so skip it.
+      if (!componentHasAugmentableInterface(pascal, interfaceName)) continue;
 
       sections.push(`declare module '${modulePath}' {`);
       sections.push(`  interface ${interfaceName} {`);
@@ -245,6 +323,13 @@ async function generateVariantDeclarationsAsync(themeDef) {
       sections.push('');
     }
   }
+
+  // If every custom value targeted a non-augmentable prop, there's nothing to
+  // emit beyond the header — return null so no `.variants.d.ts` is written.
+  const hasEmittedAugmentation = sections.some(line =>
+    line.startsWith('declare module'),
+  );
+  if (!hasEmittedAugmentation) return null;
 
   return sections.join('\n');
 }
@@ -432,13 +517,21 @@ ${iconReExport}`;
 /**
  * Generate TypeScript declarations for a built theme module.
  */
-function generateBuiltTypes(themeDef, iconInfo) {
+function generateBuiltTypes(themeDef, iconInfo, variantsFileName) {
   const iconType = iconInfo
     ? `import type { IconRegistry } from '@astryxdesign/core/Icon';
 export declare const ${iconInfo.exportName}: IconRegistry;
 `
     : '';
-  return `import type { DefinedTheme } from '@astryxdesign/core/theme';
+  // Pull in the generated custom-variant augmentations so that importing the
+  // theme's types also loads the module augmentations (otherwise the
+  // `.variants.d.ts` is emitted but never referenced, and the custom variants
+  // never widen the component prop unions for consumers).
+  const variantsRef = variantsFileName
+    ? `/// <reference path="./${variantsFileName}" />
+`
+    : '';
+  return `${variantsRef}import type { DefinedTheme } from '@astryxdesign/core/theme';
 ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedTheme;
 `;
 }
@@ -777,18 +870,22 @@ export function registerTheme(program) {
 
       const iconInfo = extractIconInfo(filePath);
 
-      // Generate all file contents in memory first.
-      const cssContent = generatedHeader(sourceRelative, 'css', buildCommand) + css;
-      const jsContent = generatedHeader(sourceRelative, 'js', buildCommand) + generateBuiltModule(resolvedTheme || themeDef, iconInfo);
-      const dtsContent = generatedHeader(sourceRelative, 'ts', buildCommand) + generateBuiltTypes(themeDef, iconInfo);
-
-      // Type augmentation .d.ts if theme has custom prop values
+      // Type augmentation .d.ts if theme has custom prop values. Computed
+      // before the main .d.ts so the latter can reference it (see below).
       const augmentationSource = resolvedTheme || themeDef;
       const variantDecl = await generateVariantDeclarationsAsync(augmentationSource);
-      const variantDtsPath = variantDecl ? path.join(outDir, `${baseName}.variants.d.ts`) : null;
+      const variantsFileName = variantDecl ? `${baseName}.variants.d.ts` : null;
+      const variantDtsPath = variantDecl ? path.join(outDir, variantsFileName) : null;
       const variantContent = variantDecl
         ? generatedHeader(sourceRelative, 'ts', buildCommand) + variantDecl
         : null;
+
+      // Generate all file contents in memory first. The main .d.ts references
+      // the variants file (when present) via a triple-slash directive so
+      // importing the theme also loads the custom-variant augmentations.
+      const cssContent = generatedHeader(sourceRelative, 'css', buildCommand) + css;
+      const jsContent = generatedHeader(sourceRelative, 'js', buildCommand) + generateBuiltModule(resolvedTheme || themeDef, iconInfo);
+      const dtsContent = generatedHeader(sourceRelative, 'ts', buildCommand) + generateBuiltTypes(themeDef, iconInfo, variantsFileName);
 
       // Atomic-ish write: stage every file as `<dest>.tmp`, then rename
       // each into place. If any stage step fails we clean up partials and
