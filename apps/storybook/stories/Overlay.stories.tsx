@@ -59,10 +59,10 @@ const styles = stylex.create({
   },
 });
 
-const SAMPLE_IMAGE = 'https://picsum.photos/seed/xds-overlay/800/450';
-const SAMPLE_IMAGE_2 = 'https://picsum.photos/seed/xds-overlay-2/800/450';
-const SAMPLE_IMAGE_3 = 'https://picsum.photos/seed/xds-overlay-3/800/450';
-const SAMPLE_HERO = 'https://picsum.photos/seed/xds-hero/1200/600';
+const SAMPLE_IMAGE = 'https://picsum.photos/seed/astryx-overlay/800/450';
+const SAMPLE_IMAGE_2 = 'https://picsum.photos/seed/astryx-overlay-2/800/450';
+const SAMPLE_IMAGE_3 = 'https://picsum.photos/seed/astryx-overlay-3/800/450';
+const SAMPLE_HERO = 'https://picsum.photos/seed/astryx-hero/1200/600';
 
 const meta: Meta<typeof Overlay> = {
   title: 'Core/Overlay',

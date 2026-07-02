@@ -4,12 +4,12 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import eslintReact from "@eslint-react/eslint-plugin";
 import reactCompiler from "eslint-plugin-react-compiler";
-import xdsPlugin from "./internal/eslint-plugin-astryx/index.js";
+import astryxPlugin from "./internal/eslint-plugin-astryx/index.js";
 
 /* global process */
 
 /**
- * XDS ESLint Configuration
+ * Astryx ESLint Configuration
  *
  * Two-tier linting philosophy:
  * - CI/Agents: Strict mode (errors) - Set ASTRYX_STRICT_LINT=1 or CI=true
@@ -22,7 +22,7 @@ import xdsPlugin from "./internal/eslint-plugin-astryx/index.js";
  */
 
 const isStrictMode = process.env.ASTRYX_STRICT_LINT === '1' || process.env.CI === 'true';
-const xdsConfig = isStrictMode ? xdsPlugin.configs.strict : xdsPlugin.configs.recommended;
+const astryxConfig = isStrictMode ? astryxPlugin.configs.strict : astryxPlugin.configs.recommended;
 const reactSeverity = isStrictMode ? 'error' : 'warn';
 
 export default tseslint.config(
@@ -137,19 +137,19 @@ export default tseslint.config(
     files: ["**/*.{ts,tsx}"],
     ignores: ["**/*.d.ts", "**/dist/**"],
     plugins: {
-      '@astryx': xdsPlugin,
+      '@astryx': astryxPlugin,
     },
     rules: {
       '@astryx/copyright-header': 'error',
     },
   },
-  // XDS design token enforcement - applies to core package (excluding theme files)
+  // Astryx design token enforcement - applies to core package (excluding theme files)
   {
     files: ["packages/core/src/**/*.{ts,tsx}"],
     ignores: ["packages/core/src/theme/**"],
-    ...xdsConfig,
+    ...astryxConfig,
     rules: {
-      ...xdsConfig.rules,
+      ...astryxConfig.rules,
       // Temporarily allow Children.* in files that need architectural fixes.
       // Tracked: OverflowList, MetadataList, Carousel need data-driven APIs.
       '@astryx/no-react-introspection': ['error', {
@@ -292,7 +292,7 @@ export default tseslint.config(
   {
     files: ["packages/cli/src/**/*.mjs", "packages/cli/bin/**/*.mjs"],
     plugins: {
-      '@astryx': xdsPlugin,
+      '@astryx': astryxPlugin,
     },
     languageOptions: {
       sourceType: "module",
@@ -338,7 +338,7 @@ export default tseslint.config(
   {
     files: ["packages/cli/src/**/*.mjs", "packages/cli/bin/**/*.mjs"],
     plugins: {
-      '@astryx': xdsPlugin,
+      '@astryx': astryxPlugin,
     },
     rules: {
       '@astryx/copyright-header': 'error',

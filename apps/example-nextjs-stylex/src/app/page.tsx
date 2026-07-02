@@ -39,16 +39,15 @@ export default function Home() {
       <div {...stylex.props(styles.container)}>
         <VStack gap={6}>
           <VStack gap={2}>
-            <Heading level={1}>XDS + StyleX (Dist Build)</Heading>
+            <Heading level={1}>Astryx + StyleX (Dist Build)</Heading>
             <Text type="body" color="secondary">
               This example consumes{' '}
               <Text type="body" weight="bold">
                 @astryxdesign/core
               </Text>{' '}
-              
-              as a pre-built dist package. StyleX is only used for
-              product-level layout styles, not to compile XDS itself. XDS
-              handles components, theming, and design tokens.
+              as a pre-built dist package. StyleX is only used for product-level
+              layout styles, not to compile Astryx itself. Astryx handles
+              components, theming, and design tokens.
             </Text>
           </VStack>
 
@@ -97,9 +96,10 @@ export default function Home() {
             <Heading level={2}>StyleX Integration</Heading>
             <div {...stylex.props(styles.card)}>
               <Text type="body">
-                This card uses StyleX for layout with XDS design tokens via CSS
-                custom properties. StyleX compiles your app styles at build time
-                while XDS component CSS comes pre-built from the dist package.
+                This card uses StyleX for layout with Astryx design tokens via
+                CSS custom properties. StyleX compiles your app styles at build
+                time while Astryx component CSS comes pre-built from the dist
+                package.
               </Text>
             </div>
           </VStack>
