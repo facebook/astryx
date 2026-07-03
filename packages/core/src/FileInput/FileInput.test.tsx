@@ -9,7 +9,7 @@
  * SYNC: When FileInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, afterEach} from 'vitest';
+import {describe, it, expect, vi, afterEach, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {FileInput} from './FileInput';
@@ -18,6 +18,43 @@ import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 afterEach(() => {
   __resetLiveRegionsForTest();
 });
+
+// Mock showPopover/hidePopover since jsdom does not implement them. Used by the
+// disabledMessage tooltip.
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    // jsdom does not resolve :focus-visible for role="button" divs the way a
+    // browser does after keyboard focus; treat the active element as
+    // focus-visible so the tooltip's keyboard-focus path is exercised.
+    if (selector === ':focus-visible') {
+      return this === document.activeElement;
+    }
+    return originalMatches.call(this, selector);
+  };
+});
+
+// jsdom popover content is in the DOM but may not be "visible" in the
+// accessibility tree. Use hidden: true to find it.
+const h = {hidden: true} as const;
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
@@ -579,6 +616,148 @@ describe('FileInput', () => {
         'input[type="file"]',
       ) as HTMLInputElement;
       expect(input).toHaveAttribute('data-testid', 'file-upload');
+    });
+  });
+
+  describe('disabledMessage', () => {
+    it('shows the reason tooltip on hover when disabled with a reason', async () => {
+      render(
+        <FileInput
+          label="Resume"
+          value={null}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const trigger = screen.getByRole('button');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('You need the Editor role');
+
+      fireEvent.mouseEnter(trigger);
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+
+      fireEvent.mouseLeave(trigger);
+      await waitFor(() => {
+        expect(tooltip).not.toHaveAttribute('popover-open');
+      });
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(
+        <FileInput
+          label="Resume"
+          value={null}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      expect(screen.getByRole('button')).toHaveFocus();
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <FileInput
+          label="Resume"
+          value={null}
+          onChange={() => {}}
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(
+        <FileInput
+          label="Resume"
+          value={null}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the trigger focusable via aria-disabled when a reason is provided', () => {
+      render(
+        <FileInput
+          label="Resume"
+          value={null}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const trigger = screen.getByRole('button');
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
+      expect(trigger).toHaveAttribute('tabindex', '0');
+    });
+
+    it('links the reason tooltip from the trigger via aria-describedby', () => {
+      render(
+        <FileInput
+          label="Resume"
+          value={null}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const trigger = screen.getByRole('button');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(trigger.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks opening the file picker while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <FileInput
+          label="Resume"
+          value={null}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const trigger = screen.getByRole('button');
+      const input = document.querySelector(
+        'input[type="file"]',
+      ) as HTMLInputElement;
+      const clickSpy = vi.spyOn(input, 'click');
+
+      await user.click(trigger);
+      trigger.focus();
+      await user.keyboard('{Enter}');
+      await user.keyboard(' ');
+
+      expect(clickSpy).not.toHaveBeenCalled();
+    });
+
+    it('keeps the trigger non-focusable when disabled without a reason', () => {
+      render(
+        <FileInput
+          label="Resume"
+          value={null}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      const trigger = screen.getByRole('button');
+      expect(trigger).toHaveAttribute('tabindex', '-1');
+      expect(trigger).not.toHaveAttribute('aria-disabled');
     });
   });
 });

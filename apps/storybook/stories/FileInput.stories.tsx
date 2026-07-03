@@ -48,6 +48,11 @@ const meta: Meta<typeof FileInput> = {
       control: 'boolean',
       description: 'Whether the input is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the trigger focusable via aria-disabled (opening the file picker stays blocked). Use this instead of wrapping a disabled FileInput in Tooltip.',
+    },
     isLoading: {
       control: 'boolean',
       description: 'Whether the input is in a loading state',
@@ -169,6 +174,25 @@ export const Disabled: Story = {
   },
 };
 
+// Disabled with an explanation tooltip. Hover or keyboard-focus the trigger to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the trigger stays focusable (opening the picker is
+// still blocked). Use disabledMessage instead of wrapping a disabled FileInput
+// in Tooltip: disabled controls swallow the pointer events a Tooltip wrapper
+// needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState<File | File[] | null>(null);
+    return <FileInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Resume',
+    isDisabled: true,
+    disabledMessage: 'Uploads are locked until your profile is verified',
+    placeholder: 'Upload is currently disabled',
+  },
+};
+
 export const Loading: Story = {
   render: args => {
     const [value, setValue] = useState<File | File[] | null>(null);
@@ -228,11 +252,7 @@ export const AllVariations: Story = {
           gap: '24px',
           maxWidth: '400px',
         }}>
-        <FileInput
-          label="Default (input mode)"
-          value={v1}
-          onChange={setV1}
-        />
+        <FileInput label="Default (input mode)" value={v1} onChange={setV1} />
         <FileInput
           label="Dropzone with constraints"
           value={v2}
