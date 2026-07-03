@@ -20,7 +20,7 @@ export interface InputGroupInputAriaOptions {
   /** ID of the input's own label when the group owns field chrome. */
   inputLabelID?: string;
   /** IDs for the input's own description/status text. */
-  describedByIDs?: Array<string | null | undefined | false>;
+  describedByIDs?: (string | null | undefined | false)[];
 }
 
 export interface InputGroupInputAria {
@@ -31,7 +31,7 @@ export interface InputGroupInputAria {
 }
 
 function joinAriaIDs(
-  ...values: Array<string | null | undefined | false>
+  ...values: (string | null | undefined | false)[]
 ): string | undefined {
   const ids = values
     .flatMap(value =>
