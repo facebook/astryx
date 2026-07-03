@@ -60,6 +60,11 @@ const meta: Meta<typeof Selector> = {
       control: 'boolean',
       description: 'Whether the selector is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the selector is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the trigger focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled Selector in Tooltip.',
+    },
     isOptional: {
       control: 'boolean',
       description: 'Whether the field is optional',
@@ -428,6 +433,21 @@ export const Disabled: Story = {
     value: 'Apple',
     isDisabled: true,
     placeholder: 'Select a fruit...',
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the trigger to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the trigger stays focusable (activation is still
+// blocked). Use disabledMessage instead of wrapping a disabled Selector in
+// Tooltip: disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  args: {
+    label: 'Owner',
+    options: ['Alice', 'Bob', 'Carol'],
+    isDisabled: true,
+    disabledMessage: 'You need the Editor role to change this',
+    placeholder: 'Select an owner...',
   },
 };
 
