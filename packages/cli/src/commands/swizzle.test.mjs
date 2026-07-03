@@ -51,3 +51,60 @@ describe('rewriteImports', () => {
     );
   });
 });
+
+describe('rewriteImports (location-aware, nested files)', () => {
+  const componentDir = '/repo/packages/core/src/Table';
+  const nestedDir = '/repo/packages/core/src/Table/plugins/pagination';
+
+  it('rewrites imports that escape the component from a nested file', () => {
+    const input = `import { spacingVars } from '../../../theme/tokens.stylex';`;
+    const result = rewriteImports(input, '@astryxdesign/core', {
+      fromDir: nestedDir,
+      componentDir,
+    });
+    expect(result).toBe(
+      `import { spacingVars } from '@astryxdesign/core/theme';`,
+    );
+  });
+
+  it('rewrites escaping sibling-component imports from a nested file', () => {
+    const input = `import { Pagination } from '../../../Pagination';`;
+    const result = rewriteImports(input, '@astryxdesign/core', {
+      fromDir: nestedDir,
+      componentDir,
+    });
+    expect(result).toBe(`import { Pagination } from '@astryxdesign/core/Pagination';`);
+  });
+
+  it('leaves intra-component imports from a nested file relative', () => {
+    // '../../types' from Table/plugins/pagination resolves to Table/types,
+    // which is copied alongside — it must stay relative, not become
+    // '@astryxdesign/core/..'.
+    const input = `import type { TablePlugin } from '../../types';`;
+    const result = rewriteImports(input, '@astryxdesign/core', {
+      fromDir: nestedDir,
+      componentDir,
+    });
+    expect(result).toBe(`import type { TablePlugin } from '../../types';`);
+  });
+
+  it('leaves nested-sibling imports relative', () => {
+    const input = `import { useTableSelection } from '../selection/useTableSelection';`;
+    const result = rewriteImports(input, '@astryxdesign/core', {
+      fromDir: nestedDir,
+      componentDir,
+    });
+    expect(result).toBe(
+      `import { useTableSelection } from '../selection/useTableSelection';`,
+    );
+  });
+
+  it('matches legacy behavior for top-level files (fromDir === componentDir)', () => {
+    const input = `import { tokens } from '../theme/tokens.stylex';`;
+    const result = rewriteImports(input, '@astryxdesign/core', {
+      fromDir: componentDir,
+      componentDir,
+    });
+    expect(result).toBe(`import { tokens } from '@astryxdesign/core/theme';`);
+  });
+});
