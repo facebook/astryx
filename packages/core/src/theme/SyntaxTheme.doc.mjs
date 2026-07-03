@@ -52,7 +52,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          'Wrap individual CodeBlock instances with SyntaxTheme: use the syntaxTheme prop on CodeBlock directly for per-instance overrides.',
+          'Look for a syntaxTheme prop on CodeBlock: no such prop exists. Wrapping in SyntaxTheme is the supported per-instance override, even for a single CodeBlock.',
       },
     ],
   },
@@ -98,7 +98,7 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Wrap individual CodeBlock instances w/ SyntaxTheme: use syntaxTheme prop on CodeBlock directly for per-instance overrides instead.',
+          'Look for syntaxTheme prop on CodeBlock: no such prop exists. Wrapping w/ SyntaxTheme is the supported per-instance override, even for single CodeBlock.',
       },
     ],
   },

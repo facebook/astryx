@@ -56,14 +56,8 @@ import {
   generateTypeScaleComponents,
   type TypeScaleConfig,
 } from './expandTypeScale';
-import {
-  expandMotionScale,
-  type MotionScaleConfig,
-} from './expandMotionScale';
-import {
-  expandRadiusScale,
-  type RadiusScaleConfig,
-} from './expandRadiusScale';
+import {expandMotionScale, type MotionScaleConfig} from './expandMotionScale';
+import {expandRadiusScale, type RadiusScaleConfig} from './expandRadiusScale';
 import {expandColorScale, type ColorScaleConfig} from './expandColorScale';
 
 import type {DomainTokenName} from './domainTokens';
@@ -153,10 +147,7 @@ export type StyleOverrides = Record<string, string | Record<string, string>>;
  * }
  * ```
  */
-export type ComponentStyleMap = Record<
-  string,
-  Record<string, StyleOverrides>
->;
+export type ComponentStyleMap = Record<string, Record<string, StyleOverrides>>;
 
 /** Input to defineTheme */
 export interface DefineThemeInput {
@@ -287,7 +278,7 @@ export interface DefineThemeInput {
   /**
    * Default syntax highlighting theme for code components.
    * Sets --color-syntax-* tokens at the theme root. Can be overridden
-   * per-region via SyntaxTheme or per-instance via syntaxTheme prop.
+   * per-region (or per-instance) by wrapping in SyntaxTheme.
    *
    * @example
    * ```tsx
