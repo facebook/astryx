@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {expandColorScale} from './expandColorScale';
+import {expandColorScale, deriveAccentFamily} from './expandColorScale';
 import {defineTheme} from './defineTheme';
 
 describe('expandColorScale', () => {
@@ -70,6 +70,32 @@ describe('expandColorScale', () => {
       standard['--color-text-primary'],
     );
   });
+});
+
+describe('deriveAccentFamily', () => {
+  it('returns exactly the five accent-family tokens', () => {
+    const family = deriveAccentFamily('#0064E0');
+    expect(Object.keys(family).sort()).toEqual(
+      [
+        '--color-accent',
+        '--color-accent-muted',
+        '--color-icon-accent',
+        '--color-on-accent',
+        '--color-text-accent',
+      ].sort(),
+    );
+  });
+
+  it.each(['#0064E0', '#DC2626', '#3E481D'])(
+    'matches expandColorScale accent-family output for seed %s',
+    seed => {
+      const family = deriveAccentFamily(seed);
+      const scale = expandColorScale({accent: seed});
+      for (const [key, value] of Object.entries(family)) {
+        expect(value).toBe(scale[key]);
+      }
+    },
+  );
 });
 
 describe('expandColorScale + defineTheme integration', () => {

@@ -13,6 +13,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/defineTheme.ts
+ * - /packages/core/src/theme/Accent.tsx (shares deriveAccentFamily)
  */
 
 import {hexToHct, tonalPalette, hexWithAlpha} from './hct';
@@ -77,6 +78,40 @@ function ld(light: string, dark: string): string {
   return `light-dark(${light}, ${dark})`;
 }
 
+/** The five semantic tokens that derive from a single accent seed. */
+export type AccentFamilyTokens = Record<
+  | '--color-accent'
+  | '--color-accent-muted'
+  | '--color-on-accent'
+  | '--color-text-accent'
+  | '--color-icon-accent',
+  string
+>;
+
+/**
+ * Derive the accent-family semantic tokens from a single seed color.
+ *
+ * Single source of truth for the accent → derived-token formulas, shared
+ * by expandColorScale (theme generation) and Accent (scoped runtime
+ * re-accenting). Tones follow Material HCT conventions: accent 40/80,
+ * text ink 30/80 (darker in light mode for legibility), on-accent 100/20.
+ */
+export function deriveAccentFamily(accent: string): AccentFamilyTokens {
+  const seed = hexToHct(accent);
+  const P = tonalPalette(seed.hue, Math.max(seed.chroma, 48));
+
+  return {
+    '--color-accent': ld(P[40], P[80]),
+    '--color-accent-muted': ld(
+      hexWithAlpha(P[40], 0.2),
+      hexWithAlpha(P[80], 0.25),
+    ),
+    '--color-on-accent': ld(P[100], P[20]),
+    '--color-text-accent': ld(P[30], P[80]),
+    '--color-icon-accent': ld(P[40], P[80]),
+  };
+}
+
 /**
  * Expand a color scale config into Astryx color token overrides.
  *
@@ -91,19 +126,15 @@ function ld(light: string, dark: string): string {
  * // tokens['--color-accent'] === 'light-dark(#..., #...)'
  * ```
  */
-export function expandColorScale(
-  config: ColorScaleConfig,
-): ColorScaleTokens {
+export function expandColorScale(config: ColorScaleConfig): ColorScaleTokens {
   const {accent, neutralStyle = 'cool', contrast = 'standard'} = config;
 
   const seed = hexToHct(accent);
   const seedHue = seed.hue;
 
-  const primaryChroma = Math.max(seed.chroma, 48);
   const neutralChroma = NEUTRAL_CHROMA[neutralStyle] ?? 5;
   const neutralVariantChroma = NEUTRAL_VARIANT_CHROMA[neutralStyle] ?? 8;
 
-  const P = tonalPalette(seedHue, primaryChroma);
   const N = tonalPalette(seedHue, neutralChroma);
   const NV = tonalPalette(seedHue, neutralVariantChroma);
 
@@ -115,13 +146,8 @@ export function expandColorScale(
   const textSecondaryDarkTone = isHigh ? 80 : 70;
 
   return {
-    // Core semantic
-    '--color-accent': ld(P[40], P[80]),
-    '--color-accent-muted': ld(
-      hexWithAlpha(P[40], 0.2),
-      hexWithAlpha(P[80], 0.25),
-    ),
-    '--color-on-accent': ld(P[100], P[20]),
+    // Core semantic — accent family shared with Accent via deriveAccentFamily
+    ...deriveAccentFamily(accent),
     '--color-neutral': ld(hexWithAlpha(N[10], 0.1), hexWithAlpha(N[90], 0.2)),
     '--color-background-surface': ld(N[99], N[10]),
     '--color-background-body': ld(N[95], N[5]),
@@ -146,10 +172,8 @@ export function expandColorScale(
       NV[textSecondaryDarkTone],
     ),
     '--color-text-disabled': ld(NV[60], NV[40]),
-    '--color-text-accent': ld(P[30], P[80]),
 
     // Icon
-    '--color-icon-accent': ld(P[40], P[80]),
     '--color-icon-primary': ld(N[textPrimaryLightTone], N[textPrimaryDarkTone]),
     '--color-icon-secondary': ld(
       NV[textSecondaryLightTone],

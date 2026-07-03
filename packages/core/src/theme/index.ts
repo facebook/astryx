@@ -18,6 +18,8 @@
 export {Theme} from './Theme';
 export {MediaTheme} from './MediaTheme';
 export type {MediaThemeProps} from './MediaTheme';
+export {Accent} from './Accent';
+export type {AccentProps} from './Accent';
 export {
   defineTheme,
   generateThemeCSS,
@@ -71,19 +73,17 @@ export {expandTypeScale, generateTypeScaleComponents} from './expandTypeScale';
 export type {TypeScaleConfig, TypeScaleTokens} from './expandTypeScale';
 
 export {expandRadiusScale} from './expandRadiusScale';
-export type {
-  RadiusScaleConfig,
-  RadiusScaleTokens,
-} from './expandRadiusScale';
+export type {RadiusScaleConfig, RadiusScaleTokens} from './expandRadiusScale';
 
-export {expandColorScale} from './expandColorScale';
-export type {ColorScaleConfig, ColorScaleTokens} from './expandColorScale';
+export {expandColorScale, deriveAccentFamily} from './expandColorScale';
+export type {
+  ColorScaleConfig,
+  ColorScaleTokens,
+  AccentFamilyTokens,
+} from './expandColorScale';
 
 export {expandMotionScale} from './expandMotionScale';
-export type {
-  MotionScaleConfig,
-  MotionScaleTokens,
-} from './expandMotionScale';
+export type {MotionScaleConfig, MotionScaleTokens} from './expandMotionScale';
 
 // Export token defaults and vars for use in custom components and themes
 export {
