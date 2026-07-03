@@ -1,0 +1,28 @@
+{
+  "name": "@jedi/themes",
+  "version": "0.2.0",
+  "description": "JEDI theme engine — light/dark mode CSS variable application",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "test": "vitest run src/index.test.ts"
+  },
+  "dependencies": {
+    "@jedi/tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
