@@ -311,4 +311,52 @@ describe('Toolbar', () => {
     // Caret movement stays in the input; focus is not stolen by the toolbar.
     expect(document.activeElement).toBe(inputEl);
   });
+
+  it('composes consumer onKeyDown with internal arrow navigation', async () => {
+    const user = userEvent.setup();
+    const onKeyDown = vi.fn();
+
+    render(
+      <Toolbar
+        label="Actions"
+        onKeyDown={onKeyDown}
+        startContent={
+          <>
+            <button type="button">Cut</button>
+            <button type="button">Copy</button>
+          </>
+        }
+      />,
+    );
+
+    const buttons = screen.getAllByRole('button');
+    buttons[0].focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(onKeyDown).toHaveBeenCalled();
+    expect(buttons[1]).toHaveFocus();
+  });
+
+  it('respects preventDefault from consumer onKeyDown', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <Toolbar
+        label="Actions"
+        onKeyDown={e => e.preventDefault()}
+        startContent={
+          <>
+            <button type="button">Cut</button>
+            <button type="button">Copy</button>
+          </>
+        }
+      />,
+    );
+
+    const buttons = screen.getAllByRole('button');
+    buttons[0].focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(buttons[0]).toHaveFocus();
+  });
 });

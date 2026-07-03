@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/Toolbar/ (showcase blocks)
  */
 
-import type {ReactNode} from 'react';
+import {useCallback, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import type {SectionVariant} from '../Section/Section';
 import type {SpacingStep} from '../utils/types';
@@ -228,6 +228,12 @@ export function Toolbar({
   className,
   style,
   ref,
+  onKeyDown: onKeyDownProp,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
+  role: _role,
+  'aria-label': _ariaLabel,
+  'aria-orientation': _ariaOrientation,
   ...props
 }: ToolbarProps) {
   const hasCenterContent = centerContent != null;
@@ -243,7 +249,47 @@ export function Toolbar({
     hasCaretGuard: true,
   });
 
-  const hint = useKeyboardHint({orientation});
+  const {
+    hintElement,
+    onKeyDown: onHintKeyDown,
+    onFocus: onHintFocus,
+    onBlur: onHintBlur,
+  } = useKeyboardHint({orientation});
+
+  const handleToolbarKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      onKeyDownProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      onHintKeyDown(e);
+      handleKeyDown(e);
+    },
+    [onKeyDownProp, onHintKeyDown, handleKeyDown],
+  );
+
+  const handleToolbarFocus = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      onFocusProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      onHintFocus(e);
+      handleFocus(e);
+    },
+    [onFocusProp, onHintFocus, handleFocus],
+  );
+
+  const handleToolbarBlur = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      onBlurProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      onHintBlur(e);
+    },
+    [onBlurProp, onHintBlur],
+  );
 
   return (
     <SizeProvider value={size}>
@@ -260,15 +306,9 @@ export function Toolbar({
           role="toolbar"
           aria-label={label}
           aria-orientation={orientation}
-          onKeyDown={e => {
-            hint.onKeyDown(e);
-            handleKeyDown(e);
-          }}
-          onFocus={e => {
-            hint.onFocus(e);
-            handleFocus(e);
-          }}
-          onBlur={hint.onBlur}
+          onKeyDown={handleToolbarKeyDown}
+          onFocus={handleToolbarFocus}
+          onBlur={handleToolbarBlur}
           {...mergeProps(
             themeProps('toolbar', {size}),
             stylex.props(
@@ -333,7 +373,7 @@ export function Toolbar({
               )}
             </>
           )}
-          {hint.hintElement}
+          {hintElement}
         </div>
       </Section>
     </SizeProvider>

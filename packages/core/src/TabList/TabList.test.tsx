@@ -445,6 +445,47 @@ describe('TabList keyboard navigation (roving tabindex)', () => {
     await user.keyboard('a');
     expect(home).toHaveFocus();
   });
+
+  it('composes consumer onKeyDown with internal arrow navigation', async () => {
+    const user = userEvent.setup();
+    const onKeyDown = vi.fn();
+
+    render(
+      <TabList value="home" onChange={() => {}} onKeyDown={onKeyDown}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+      </TabList>,
+    );
+
+    const home = screen.getByRole('button', {name: 'Home'});
+    const settings = screen.getByRole('button', {name: 'Settings'});
+
+    home.focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(onKeyDown).toHaveBeenCalled();
+    expect(settings).toHaveFocus();
+  });
+
+  it('respects preventDefault from consumer onKeyDown', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <TabList
+        value="home"
+        onChange={() => {}}
+        onKeyDown={e => e.preventDefault()}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+      </TabList>,
+    );
+
+    const home = screen.getByRole('button', {name: 'Home'});
+    home.focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(home).toHaveFocus();
+  });
 });
 
 describe('Tab polymorphic link', () => {
