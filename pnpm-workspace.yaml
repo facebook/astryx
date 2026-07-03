@@ -1,7 +1,3 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-
 packages:
-  - "apps/*"
   - "packages/*"
-  - "packages/themes/*"
-  - "internal/*"
+  - "apps/*"

@@ -1,0 +1,34 @@
+{
+  "name": "@jedi/foundation",
+  "version": "0.3.0",
+  "description": "JEDI layout primitives — Box, Flex, Stack, Grid, Surface",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.tsx --format esm --dts --external react",
+    "test": "vitest run src/index.test.tsx"
+  },
+  "dependencies": {
+    "@jedi/stylex": "workspace:*",
+    "@jedi/tokens": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

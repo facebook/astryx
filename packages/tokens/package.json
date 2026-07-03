@@ -1,0 +1,29 @@
+{
+  "name": "@jedi/tokens",
+  "version": "0.2.0",
+  "description": "JEDI design language tokens — core, semantic, and component tiers",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    }
+  },
+  "files": ["dist", "schema"],
+  "scripts": {
+    "build": "tsup src/index.ts src/schema.ts --format esm --dts",
+    "test": "vitest run --dir ."
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

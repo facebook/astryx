@@ -1,0 +1,29 @@
+{
+  "name": "@jedi/stylex",
+  "version": "0.2.0",
+  "description": "JEDI styling infrastructure (current implementation: StyleX)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "test": "vitest run src/index.test.ts"
+  },
+  "dependencies": {
+    "@jedi/tokens": "workspace:*",
+    "@stylexjs/stylex": "^0.10.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
