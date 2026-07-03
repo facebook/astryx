@@ -1,62 +1,8 @@
-# Dependencies
-node_modules/
-
-# Build outputs
-dist/
-*.tsbuildinfo
-
-# Storybook
-storybook-static/
-
-# Test coverage
-coverage/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Env files
-.env
-.env.local
-.env.*.local
-
-# Logs
+node_modules
+dist
+.next
+.turbo
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Playwright
-test-results/
-playwright-report/
-e2e/test-results/
-e2e/playwright-report/
-e2e/playwright/.cache/
-
-# Lint
-.eslintcache
-
-# Vibe tests (large generated files)
-internal/vibe-tests/results/
-
-# Astryx agent docs (generated)
-.astryx-docs/
-apps/sandbox/.next/
-apps/sandbox/out/
-apps/sandbox/next-env.d.ts
-apps/example-nextjs-tailwind/.next
-.parity-test-results.json
-.worktree-parity-test
-# Patch files
-*.patch
-*.rej
-
-# Lockfiles (pnpm is the package manager — see pnpm-workspace.yaml)
-package-lock.json
-yarn.lock
+.DS_Store
+coverage
+.env*.local
