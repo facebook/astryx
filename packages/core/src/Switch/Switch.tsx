@@ -44,6 +44,7 @@ import {switchScope} from './switch.markers.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 // Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
 const SWITCH_WIDTH = 40;
@@ -178,17 +179,6 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
-  },
-  srOnly: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    padding: 0,
-    margin: -1,
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
   },
 });
 
@@ -416,11 +406,7 @@ export function Switch({
           {isBusy && <Spinner size="sm" />}
         </div>
       </div>
-      {isBusy && (
-        <span {...stylex.props(styles.srOnly)} role="status">
-          Loading
-        </span>
-      )}
+      {isBusy && <VisuallyHidden role="status">Loading</VisuallyHidden>}
     </div>
   );
 
