@@ -1,6 +1,7 @@
 {
   "name": "@astryxdesign/build",
   "version": "0.1.2",
+  "type": "module",
   "description": "Build plugins for XDS source builds — babel, PostCSS, and Vite integrations",
   "author": "Meta Open Source",
   "license": "MIT",
@@ -25,10 +26,8 @@
     ".": "./src/config.js",
     "./babel": "./src/babel.js",
     "./postcss": "./src/index.js",
-    "./vite": {
-      "types": "./dist/vite.d.ts",
-      "import": "./dist/vite.mjs"
-    },
+    "./vite": "./src/vite.ts",
+    "./src/vite": "./src/vite.ts",
     "./next": "./src/next.js"
   },
   "files": [

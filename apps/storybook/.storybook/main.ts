@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {StorybookConfig} from '@storybook/react-vite';
-import {astryxStylex} from '@astryxdesign/build/vite';
+// Import the source implementation directly – the build output may not exist in dev.
+import {astryxStylex} from '@astryxdesign/build/src/vite';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
