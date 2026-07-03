@@ -2,11 +2,7 @@
  * JEDI token bridge — maps application compatibility aliases to Astryx theme tokens.
  * Expand mappings as portfolio editorial components are validated on gothic/neutral.
  *
- * Import after theme CSS:
- * @import '@jedi/themes/reset.css';
- * @import '@jedi/themes/base.css';
- * @import '@jedi/themes/gothic.css';  /* or neutral.css per mode */
- * @import '@jedi/tokens/bridge.css';
+ * Import after theme CSS (reset, base, gothic or neutral, then this file).
  */
 
 :root[data-theme="dark"],
