@@ -1,0 +1,37 @@
+{
+  "name": "@jedi/themes",
+  "version": "0.1.0",
+  "description": "JEDI theme definitions and CSS entrypoints",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": ["**/*.css"],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./reset.css": "@astryxdesign/core/reset.css",
+    "./base.css": "@astryxdesign/core/astryx.css",
+    "./gothic.css": "@astryxdesign/theme-gothic/theme.css",
+    "./neutral.css": "@astryxdesign/theme-neutral/theme.css"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "tsup src/index.ts --format esm --dts --watch"
+  },
+  "dependencies": {
+    "@astryxdesign/core": "workspace:*",
+    "@astryxdesign/theme-gothic": "workspace:*",
+    "@astryxdesign/theme-neutral": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=19"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^6.0.3"
+  }
+}

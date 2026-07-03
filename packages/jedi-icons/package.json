@@ -1,0 +1,15 @@
+{
+  "name": "@jedi/icons",
+  "version": "0.1.0",
+  "description": "JEDI icon surface (stub — v0.2)",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {},
+  "dependencies": {
+    "lucide-react": "^1.18.0"
+  }
+}

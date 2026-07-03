@@ -1,0 +1,12 @@
+{
+  "name": "@jedi/motion",
+  "version": "0.1.0",
+  "description": "JEDI motion primitives (stub — v0.2)",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {}
+}

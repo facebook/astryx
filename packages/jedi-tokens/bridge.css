@@ -1,0 +1,23 @@
+/**
+ * JEDI token bridge — maps application compatibility aliases to Astryx theme tokens.
+ * Expand mappings as portfolio editorial components are validated on gothic/neutral.
+ *
+ * Import after theme CSS:
+ * @import '@jedi/themes/reset.css';
+ * @import '@jedi/themes/base.css';
+ * @import '@jedi/themes/gothic.css';  /* or neutral.css per mode */
+ * @import '@jedi/tokens/bridge.css';
+ */
+
+:root[data-theme="dark"],
+:root[data-theme="light"] {
+  /* Semantic aliases consumed by john-ohio-portfolio inline styles */
+  --bg: var(--ax-color-bg-canvas, var(--ax-bg-canvas));
+  --fg: var(--ax-color-text-primary, var(--ax-text-primary));
+  --fg-muted: var(--ax-color-text-secondary, var(--ax-text-secondary));
+  --fg-subtle: var(--ax-color-text-tertiary, var(--ax-text-tertiary));
+  --border: var(--ax-color-border-default, var(--ax-border-default));
+  --surface: var(--ax-color-bg-surface, var(--ax-bg-surface));
+  --accent: var(--ax-color-text-brand, var(--ax-text-brand));
+  --nav-backdrop: var(--ax-color-bg-canvas-subtle, var(--ax-bg-canvas-subtle));
+}

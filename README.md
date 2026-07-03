@@ -1,6 +1,18 @@
 <!-- SYNC CONTRACT: Architecture changes require documentation updates. -->
 
-# Astryx
+# JEDI
+
+> **JEDI** is a modern React platform for documentation-heavy, information-dense applications — built on [Astryx](https://github.com/facebook/astryx) as upstream foundation.
+
+- **[Vision](docs/VISION.md)** — product manifesto and decision lens
+- **[Public API](docs/PUBLIC_API.md)** — v0.1 consumer guide
+- **[ADRs](docs/adrs/)** — platform architecture decisions
+
+This repository contains the Astryx upstream fork **and** `@jedi/*` public packages. Applications import `@jedi/*` only — never `@astryxdesign/*`.
+
+---
+
+# Astryx (upstream)
 
 An open source design system that's fully customizable and built for how we build now — by people and the agents working alongside them.
 

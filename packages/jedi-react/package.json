@@ -1,0 +1,45 @@
+{
+  "name": "@jedi/react",
+  "version": "0.1.0",
+  "description": "JEDI React UI primitives",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./Button": {
+      "types": "./dist/Button.d.ts",
+      "import": "./dist/Button.js"
+    },
+    "./Badge": {
+      "types": "./dist/Badge.d.ts",
+      "import": "./dist/Badge.js"
+    },
+    "./Link": {
+      "types": "./dist/Link.d.ts",
+      "import": "./dist/Link.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup src/index.ts src/Button.ts src/Badge.ts src/Link.ts --format esm --dts --clean",
+    "dev": "tsup src/index.ts src/Button.ts src/Badge.ts src/Link.ts --format esm --dts --watch"
+  },
+  "dependencies": {
+    "@astryxdesign/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "tsup": "^8.3.0",
+    "typescript": "^6.0.3"
+  }
+}

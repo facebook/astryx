@@ -777,6 +777,87 @@ importers:
         specifier: ^6.0.1
         version: 6.1.3
 
+  packages/jedi-core:
+    dependencies:
+      '@astryxdesign/core':
+        specifier: workspace:*
+        version: link:../core
+      '@jedi/themes':
+        specifier: workspace:*
+        version: link:../jedi-themes
+      react:
+        specifier: '>=19'
+        version: 19.2.7
+      react-dom:
+        specifier: '>=19'
+        version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@types/react':
+        specifier: ^19
+        version: 19.2.17
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.15)(tsx@4.22.4)(typescript@6.0.3)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
+  packages/jedi-icons:
+    dependencies:
+      lucide-react:
+        specifier: ^1.18.0
+        version: 1.18.0(react@19.2.7)
+
+  packages/jedi-motion: {}
+
+  packages/jedi-react:
+    dependencies:
+      '@astryxdesign/core':
+        specifier: workspace:*
+        version: link:../core
+      react:
+        specifier: '>=19'
+        version: 19.2.7
+      react-dom:
+        specifier: '>=19'
+        version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@types/react':
+        specifier: ^19
+        version: 19.2.17
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.15)(tsx@4.22.4)(typescript@6.0.3)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
+  packages/jedi-themes:
+    dependencies:
+      '@astryxdesign/core':
+        specifier: workspace:*
+        version: link:../core
+      '@astryxdesign/theme-gothic':
+        specifier: workspace:*
+        version: link:../themes/gothic
+      '@astryxdesign/theme-neutral':
+        specifier: workspace:*
+        version: link:../themes/neutral
+      react:
+        specifier: '>=19'
+        version: 19.2.7
+    devDependencies:
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.15)(tsx@4.22.4)(typescript@6.0.3)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
+  packages/jedi-tokens: {}
+
+  packages/jedi-utils: {}
+
   packages/lab:
     dependencies:
       '@astryxdesign/core':
@@ -10826,7 +10907,7 @@ snapshots:
       source-map: 0.7.6
       sucrase: 3.35.1
       tinyexec: 0.3.2
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
       tree-kill: 1.2.2
     optionalDependencies:
       postcss: 8.5.15
