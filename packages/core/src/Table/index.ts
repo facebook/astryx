@@ -1,11 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-// No 'use client' here: this file only re-exports. Each client module below
-// carries its own directive, while the pure column utilities (proportional,
-// pixel, generateColumns, paginateData) stay importable from React Server
-// Components. A directive on this barrel would mark those helpers as client
-// functions and make them throw when called during a server render (#3457).
-
 /**
  * @file index.ts
  * @input Imports from Table component files
