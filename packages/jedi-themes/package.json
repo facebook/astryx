@@ -23,9 +23,9 @@
     "dev": "tsup src/index.ts --format esm --dts --watch"
   },
   "dependencies": {
-    "@astryxdesign/core": "workspace:*",
-    "@astryxdesign/theme-gothic": "workspace:*",
-    "@astryxdesign/theme-neutral": "workspace:*"
+    "@astryxdesign/core": "0.1.2",
+    "@astryxdesign/theme-gothic": "0.1.2",
+    "@astryxdesign/theme-neutral": "0.1.2"
   },
   "peerDependencies": {
     "react": ">=19"

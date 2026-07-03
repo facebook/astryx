@@ -31,7 +31,7 @@
     "dev": "tsup src/index.ts src/Button.ts src/Badge.ts src/Link.ts --format esm --dts --watch"
   },
   "dependencies": {
-    "@astryxdesign/core": "workspace:*"
+    "@astryxdesign/core": "0.1.2"
   },
   "peerDependencies": {
     "react": ">=19",

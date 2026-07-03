@@ -19,8 +19,8 @@
     "dev": "tsup src/index.ts --format esm --dts --watch"
   },
   "dependencies": {
-    "@astryxdesign/core": "workspace:*",
-    "@jedi/themes": "workspace:*"
+    "@astryxdesign/core": "0.1.2",
+    "@jedi/themes": "0.1.0"
   },
   "peerDependencies": {
     "react": ">=19",
