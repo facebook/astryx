@@ -21,7 +21,11 @@ export {useGridFocus} from './useGridFocus';
 export type {UseGridFocusOptions, UseGridFocusReturn} from './useGridFocus';
 
 export {useListFocus} from './useListFocus';
-export type {UseListFocusOptions, UseListFocusReturn} from './useListFocus';
+export type {
+  UseListFocusOptions,
+  UseListFocusReturn,
+  ListFocusOrientation,
+} from './useListFocus';
 
 export {useTypeahead} from './useTypeahead';
 export type {UseTypeaheadOptions, UseTypeaheadReturn} from './useTypeahead';
