@@ -109,7 +109,7 @@ describe('Field', () => {
       <Field
         label="Plan"
         inputID="plan-group"
-        labelElementID="plan-label"
+        labelID="plan-label"
         isGroupLabel>
         <div role="radiogroup" aria-labelledby="plan-label" />
       </Field>,
@@ -119,7 +119,7 @@ describe('Field', () => {
     expect(labelEl.tagName).toBe('SPAN');
     expect(labelEl.closest('label')).toBeNull();
     expect(labelEl).not.toHaveAttribute('for');
-    // labelElementID is applied to the label element and referenced by the group.
+    // labelID is applied to the label element and referenced by the group.
     expect(labelEl).toHaveAttribute('id', 'plan-label');
     const group = screen.getByRole('radiogroup', {name: 'Plan'});
     expect(group.getAttribute('aria-labelledby')).toBe(labelEl.id);
