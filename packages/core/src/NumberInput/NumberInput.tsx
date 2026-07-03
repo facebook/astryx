@@ -4,7 +4,7 @@
 
 /**
  * @file NumberInput.tsx
- * @input Uses React, useId, useState, useMemo, useCallback, Field, Icon
+ * @input Uses React, useId, useState, useMemo, useCallback, Field, Icon, InputGroupContext
  * @output Exports NumberInput component, NumberInputProps
  * @position Core implementation; consumed by index.ts, tested by NumberInput.test.tsx
  *
@@ -440,6 +440,7 @@ export function NumberInput({
 
   const ariaDescribedBy =
     [
+      inputGroup?.describedByIDs ?? null,
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
@@ -622,7 +623,7 @@ export function NumberInput({
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }
-        aria-label={inputGroup ? label : undefined}
+        aria-labelledby={inputGroup ? inputGroup.labelID : undefined}
         {...stylex.props(
           styles.input,
           isDisabled && styles.inputDisabled,

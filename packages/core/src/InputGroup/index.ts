@@ -16,3 +16,4 @@ export {InputGroupText} from './InputGroupText';
 export type {InputGroupTextProps} from './InputGroupText';
 
 export {useInputGroup} from './InputGroupContext';
+export type {InputGroupContextValue} from './InputGroupContext';

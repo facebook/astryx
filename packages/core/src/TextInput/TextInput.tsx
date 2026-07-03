@@ -4,7 +4,7 @@
 
 /**
  * @file TextInput.tsx
- * @input Uses React, useId, ChangeEvent, Field, Icon
+ * @input Uses React, useId, ChangeEvent, Field, Icon, InputGroupContext
  * @output Exports TextInput component, TextInputProps
  * @position Core implementation; consumed by index.ts, tested by TextInput.test.tsx
  *
@@ -340,6 +340,7 @@ export function TextInput({
 
   const ariaDescribedBy =
     [
+      inputGroup?.describedByIDs ?? null,
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
@@ -436,7 +437,7 @@ export function TextInput({
         aria-required={isRequired === true ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
         aria-busy={isBusy || undefined}
-        aria-label={inputGroup ? label : undefined}
+        aria-labelledby={inputGroup ? inputGroup.labelID : undefined}
         {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
       />
       {hasClear && value !== '' && !isDisabled && (

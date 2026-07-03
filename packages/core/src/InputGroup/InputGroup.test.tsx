@@ -14,6 +14,7 @@ import {render, screen} from '@testing-library/react';
 import {InputGroup} from './InputGroup';
 import {InputGroupText} from './InputGroupText';
 import {TextInput} from '../TextInput';
+import {NumberInput} from '../NumberInput';
 
 describe('InputGroup', () => {
   it('names the group via the label element (forms-14)', () => {
@@ -35,6 +36,74 @@ describe('InputGroup', () => {
     expect(label.closest('label')).toBeNull();
     expect(label).not.toHaveAttribute('for');
     expect(group.getAttribute('aria-labelledby')).toBe(label.id);
+  });
+
+  it('associates group description and status through aria-describedby', () => {
+    render(
+      <InputGroup
+        label="Price"
+        description="Enter the amount in USD"
+        status={{type: 'error', message: 'Price is required'}}>
+        <InputGroupText>$</InputGroupText>
+        <TextInput label="Amount" isLabelHidden value="" onChange={() => {}} />
+      </InputGroup>,
+    );
+
+    const group = screen.getByRole('group', {name: 'Price'});
+    const describedBy = group.getAttribute('aria-describedby');
+    expect(describedBy).toBeTruthy();
+    expect(describedBy!.split(' ')).toHaveLength(2);
+    expect(describedBy).toContain(
+      screen.getByText('Enter the amount in USD').id,
+    );
+    expect(describedBy).toContain(screen.getByText('Price is required').id);
+  });
+
+  it('labels grouped TextInput from the visible group label context', () => {
+    render(
+      <InputGroup
+        label="Price"
+        description="Enter the amount in USD"
+        status={{type: 'error', message: 'Price is required'}}>
+        <InputGroupText>$</InputGroupText>
+        <TextInput label="Amount" isLabelHidden value="" onChange={() => {}} />
+      </InputGroup>,
+    );
+
+    const group = screen.getByRole('group', {name: 'Price'});
+    const labelID = group.getAttribute('aria-labelledby');
+    const describedBy = group.getAttribute('aria-describedby');
+    const input = screen.getByRole('textbox', {name: 'Price'});
+
+    expect(input).toHaveAttribute('aria-labelledby', labelID);
+    expect(input).not.toHaveAttribute('aria-label');
+    expect(input).toHaveAttribute('aria-describedby', describedBy);
+  });
+
+  it('labels grouped NumberInput from the visible group label context', () => {
+    render(
+      <InputGroup label="Budget" description="Whole dollars only">
+        <InputGroupText>$</InputGroupText>
+        <NumberInput
+          label="Amount"
+          isLabelHidden
+          value={null}
+          onChange={() => {}}
+        />
+      </InputGroup>,
+    );
+
+    const group = screen.getByRole('group', {name: 'Budget'});
+    const input = screen.getByRole('spinbutton', {name: 'Budget'});
+
+    expect(input).toHaveAttribute(
+      'aria-labelledby',
+      group.getAttribute('aria-labelledby'),
+    );
+    expect(input).toHaveAttribute(
+      'aria-describedby',
+      group.getAttribute('aria-describedby'),
+    );
   });
 
   it('renders the visible label', () => {
