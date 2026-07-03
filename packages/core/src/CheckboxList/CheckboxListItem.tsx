@@ -145,6 +145,11 @@ export function CheckboxListItem({
 
   // Disabled: parent-level OR item-level
   const effectiveDisabled = (ctx?.isDisabled ?? false) || isItemDisabled;
+  // When the whole group is disabled with a disabledMessage, keep this item's
+  // checkbox focusable via aria-disabled so the group's reason tooltip is
+  // keyboard-discoverable. Per-item disabling still uses native `disabled`.
+  const keepsFocusableForMessage =
+    (ctx?.showsDisabledMessage ?? false) && !isItemDisabled;
   const effectiveReadOnly = ctx?.isReadOnly ?? false;
   // Loading is per-item: explicit item prop OR (collection mode) the item
   // whose `changeAction` is currently pending in the parent.
@@ -223,6 +228,7 @@ export function CheckboxListItem({
           value={resolvedChecked}
           onChange={() => handleToggle()}
           isDisabled={effectiveDisabled}
+          isFocusableWhenDisabled={keepsFocusableForMessage}
           isReadOnly={effectiveReadOnly}
           isLoading={isBusy}
           size={checkboxSize}
