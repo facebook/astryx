@@ -1,5 +1,5 @@
 {
-  "name": "@jedi/themes",
+  "name": "@jon4ohio/jedi-themes",
   "version": "0.1.0",
   "description": "JEDI theme definitions and CSS entrypoints",
   "license": "MIT",
@@ -30,6 +30,10 @@
   },
   "peerDependencies": {
     "react": ">=19"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
   },
   "devDependencies": {
     "tsup": "^8.3.0",

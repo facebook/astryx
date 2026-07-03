@@ -1,5 +1,5 @@
 {
-  "name": "@jedi/tokens",
+  "name": "@jon4ohio/jedi-tokens",
   "version": "0.1.0",
   "description": "JEDI token bridge — compatibility aliases for application layers",
   "license": "MIT",
@@ -8,5 +8,9 @@
   "exports": {
     "./bridge.css": "./bridge.css"
   },
-  "files": ["bridge.css", "README.md"]
+  "files": ["bridge.css", "README.md"],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
+  }
 }

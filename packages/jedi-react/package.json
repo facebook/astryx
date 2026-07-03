@@ -1,5 +1,5 @@
 {
-  "name": "@jedi/react",
+  "name": "@jon4ohio/jedi-react",
   "version": "0.1.0",
   "description": "JEDI React UI primitives",
   "license": "MIT",
@@ -40,6 +40,10 @@
   "peerDependencies": {
     "react": ">=19",
     "react-dom": ">=19"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
   },
   "devDependencies": {
     "@types/react": "^19",

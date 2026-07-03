@@ -1,5 +1,5 @@
 {
-  "name": "@jedi/core",
+  "name": "@jon4ohio/jedi-core",
   "version": "0.1.0",
   "description": "JEDI platform core — providers, contracts, theme mode",
   "license": "MIT",
@@ -21,11 +21,15 @@
   },
   "dependencies": {
     "@astryxdesign/core": "0.1.2",
-    "@jedi/themes": "file:../jedi-themes"
+    "@jon4ohio/jedi-themes": "workspace:*"
   },
   "peerDependencies": {
     "react": ">=19",
     "react-dom": ">=19"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
   },
   "devDependencies": {
     "@types/react": "^19",

@@ -780,9 +780,9 @@ importers:
   packages/jedi-core:
     dependencies:
       '@astryxdesign/core':
-        specifier: workspace:*
+        specifier: 0.1.2
         version: link:../core
-      '@jedi/themes':
+      '@jon4ohio/jedi-themes':
         specifier: workspace:*
         version: link:../jedi-themes
       react:
@@ -813,7 +813,7 @@ importers:
   packages/jedi-react:
     dependencies:
       '@astryxdesign/core':
-        specifier: workspace:*
+        specifier: 0.1.2
         version: link:../core
       react:
         specifier: '>=19'
@@ -835,13 +835,13 @@ importers:
   packages/jedi-themes:
     dependencies:
       '@astryxdesign/core':
-        specifier: workspace:*
+        specifier: 0.1.2
         version: link:../core
       '@astryxdesign/theme-gothic':
-        specifier: workspace:*
+        specifier: 0.1.2
         version: link:../themes/gothic
       '@astryxdesign/theme-neutral':
-        specifier: workspace:*
+        specifier: 0.1.2
         version: link:../themes/neutral
       react:
         specifier: '>=19'

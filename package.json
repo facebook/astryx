@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build:jedi": "pnpm -F @jedi/themes build && pnpm -F @jedi/core build && pnpm -F @jedi/react build",
+    "build:jedi": "pnpm -F @jon4ohio/jedi-themes build && pnpm -F @jon4ohio/jedi-core build && pnpm -F @jon4ohio/jedi-react build",
     "build": "pnpm -F @astryxdesign/build build && pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/lab build && pnpm -F @astryxdesign/vega build && pnpm -F @astryxdesign/theme-neutral build && pnpm -F @astryxdesign/theme-matcha build && pnpm -F @astryxdesign/theme-stone build && pnpm -F @astryxdesign/theme-gothic build && pnpm -F @astryxdesign/theme-chocolate build && pnpm -F @astryxdesign/theme-y2k build && pnpm -F @astryxdesign/theme-butter build && pnpm bundle:cli-themes && pnpm build:jedi",
     "bundle:cli-themes": "node scripts/generate-cli-themes.mjs",
     "dev": "pnpm -F @astryxdesign/storybook dev",

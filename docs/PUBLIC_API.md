@@ -56,3 +56,16 @@ export function Providers({children}: {children: React.ReactNode}) {
 ## Versioning
 
 Portfolio V2.0 pins `@jedi/*` at `0.1.x`. Breaking changes require a new minor within 0.1 only for additive API; removals wait for 0.2+.
+
+## Distribution (GitHub Packages)
+
+> **GitHub Packages is an implementation detail of JEDI v0.x. The public package identity remains `@jedi/*`. Distribution mechanisms may change without requiring application import changes.**
+
+| Public identity | GitHub Packages (v0.1)  | Consumer install                                    |
+| --------------- | ----------------------- | --------------------------------------------------- |
+| `@jedi/core`    | `@jon4ohio/jedi-core`   | `"@jedi/core": "npm:@jon4ohio/jedi-core@0.1.0"`     |
+| `@jedi/react`   | `@jon4ohio/jedi-react`  | `"@jedi/react": "npm:@jon4ohio/jedi-react@0.1.0"`   |
+| `@jedi/themes`  | `@jon4ohio/jedi-themes` | `"@jedi/themes": "npm:@jon4ohio/jedi-themes@0.1.0"` |
+| `@jedi/tokens`  | `@jon4ohio/jedi-tokens` | `"@jedi/tokens": "npm:@jon4ohio/jedi-tokens@0.1.0"` |
+
+Future npm publish under `@jedi/*` is a `package.json` alias swap — no application import changes.

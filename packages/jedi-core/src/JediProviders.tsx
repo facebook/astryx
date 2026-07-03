@@ -6,7 +6,11 @@ import type {ReactNode} from 'react';
 import {Theme} from '@astryxdesign/core/theme';
 import {LinkProvider} from '@astryxdesign/core/Link';
 import type {LinkComponentType} from '@astryxdesign/core/Link';
-import {gothicTheme, neutralTheme, type JediThemeMode} from '@jedi/themes';
+import {
+  gothicTheme,
+  neutralTheme,
+  type JediThemeMode,
+} from '@jon4ohio/jedi-themes';
 
 export type {JediThemeMode};
 
