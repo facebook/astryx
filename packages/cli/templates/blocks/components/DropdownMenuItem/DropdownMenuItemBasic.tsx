@@ -6,11 +6,7 @@ import {DropdownMenu, DropdownMenuItem} from '@astryxdesign/core/DropdownMenu';
 
 export default function DropdownMenuItemBasic() {
   return (
-    <DropdownMenu
-      button={{label: 'Actions'}}
-      isMenuOpen
-      hasAutoFocus={false}
-      onOpenChange={() => {}}>
+    <DropdownMenu button={{label: 'Actions'}}>
       <DropdownMenuItem
         label="Edit"
         description="Modify this item"

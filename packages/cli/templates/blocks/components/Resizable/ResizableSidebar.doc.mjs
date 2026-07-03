@@ -3,7 +3,7 @@
 /** @type {import('../../../../../core/src/docs-types').TemplateDoc} */
 export const doc = {
   type: 'block',
-  exampleFor: 'Resizable',
+  exampleFor: 'ResizeHandle',
   alsoExampleFor: ['useResizable'],
   name: 'Resizable — Collapsible with snap points',
   displayName: 'Resizable — Collapsible with snap points',
