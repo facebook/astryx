@@ -4,7 +4,7 @@
 
 /**
  * @file Collapsible.tsx
- * @input Uses React, StyleX, useCollapsible hook, getIcon, theme tokens
+ * @input Uses React, StyleX, useCollapsible hook, CollapsibleGroupPresentationContext, getIcon, theme tokens
  * @output Exports Collapsible component and CollapsibleProps
  * @position Collapsible content primitive — trigger toggles visibility of children
  *
@@ -13,6 +13,11 @@
  * Handles state management, accessibility (aria-expanded), and chevron indicator.
  *
  * Works standalone or coordinated by CollapsibleGroup via the `value` prop.
+ * When the surrounding CollapsibleGroup enables `dividers`, each Collapsible
+ * draws its own row chrome (borderBlockStart suppressed on :first-child, plus
+ * density padding) from CollapsibleGroupPresentationContext — StyleX has no
+ * child selectors, so the group cannot draw it from outside. The presentation
+ * context is reset around children so nested collapsibles stay chrome-free.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Collapsible/index.ts (exports)
@@ -21,9 +26,10 @@
  * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
-import type {ReactNode} from 'react';
+import {use, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
+  borderVars,
   colorVars,
   typographyVars,
   fontWeightVars,
@@ -33,6 +39,7 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import {useCollapsible} from './useCollapsible';
+import {CollapsibleGroupPresentationContext} from './CollapsibleGroupContext';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -87,7 +94,41 @@ const styles = stylex.create({
   content: {
     paddingBlockStart: spacingVars['--spacing-1'],
   },
+  // Group divider chrome — a hairline above every item except the first.
+  // The group's wrapper (or 'all' mode) owns the outer edges.
+  divided: {
+    borderBlockStartWidth: {
+      default: borderVars['--border-width'],
+      ':first-child': '0',
+    },
+    borderBlockStartStyle: 'solid',
+    borderBlockStartColor: colorVars['--color-border'],
+  },
 });
+
+// Density padding for divided/padded accordion rows. paddingBlock mapping
+// follows Table's density scale (spacing-1/2/3); content only pads its end
+// so text doesn't sit on the divider below (block-start stays spacing-1).
+const densityStyles = stylex.create({
+  triggerCompact: {paddingBlock: spacingVars['--spacing-1']},
+  triggerBalanced: {paddingBlock: spacingVars['--spacing-2']},
+  triggerSpacious: {paddingBlock: spacingVars['--spacing-3']},
+  contentCompact: {paddingBlockEnd: spacingVars['--spacing-1']},
+  contentBalanced: {paddingBlockEnd: spacingVars['--spacing-2']},
+  contentSpacious: {paddingBlockEnd: spacingVars['--spacing-3']},
+});
+
+const triggerDensity = {
+  compact: densityStyles.triggerCompact,
+  balanced: densityStyles.triggerBalanced,
+  spacious: densityStyles.triggerSpacious,
+} as const;
+
+const contentDensity = {
+  compact: densityStyles.contentCompact,
+  balanced: densityStyles.contentBalanced,
+  spacious: densityStyles.contentSpacious,
+} as const;
 
 export interface CollapsibleProps extends BaseProps {
   /** Ref forwarded to the root element */
@@ -192,14 +233,21 @@ export function Collapsible({
     value,
   });
 
+  const presentation = use(CollapsibleGroupPresentationContext);
+  const isDivided = presentation != null && presentation.dividers !== 'none';
+  const density = presentation?.density ?? null;
+
   const chevronIcon = getIcon('chevronDown');
 
   return (
     <div
       ref={ref}
       {...mergeProps(
-        themeProps('collapsible'),
-        stylex.props(styles.root, xstyle),
+        themeProps('collapsible', {
+          dividers: isDivided ? presentation.dividers : undefined,
+          density: density ?? undefined,
+        }),
+        stylex.props(styles.root, isDivided && styles.divided, xstyle),
         className,
         style,
       )}
@@ -208,7 +256,10 @@ export function Collapsible({
         type="button"
         onClick={toggle}
         aria-expanded={isOpen}
-        {...stylex.props(styles.trigger)}>
+        {...stylex.props(
+          styles.trigger,
+          density != null && triggerDensity[density],
+        )}>
         <span {...stylex.props(styles.triggerLabel)}>{trigger}</span>
         <span
           {...stylex.props(
@@ -219,10 +270,18 @@ export function Collapsible({
         </span>
       </button>
       <div
-        {...(isOpen
-          ? stylex.props(styles.content)
-          : stylex.props(styles.content, styles.contentHidden))}>
-        {children}
+        {...stylex.props(
+          styles.content,
+          density != null && contentDensity[density],
+          !isOpen && styles.contentHidden,
+        )}>
+        {presentation != null ? (
+          <CollapsibleGroupPresentationContext value={null}>
+            {children}
+          </CollapsibleGroupPresentationContext>
+        ) : (
+          children
+        )}
       </div>
     </div>
   );
