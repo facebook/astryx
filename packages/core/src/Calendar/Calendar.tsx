@@ -425,7 +425,14 @@ export function Calendar({ref, ...props}: CalendarProps) {
         <Button
           label="Previous month"
           variant="ghost"
-          icon={<Icon icon="chevronLeft" size="sm" color="inherit" />}
+          icon={
+            // Wrapper span (not Icon props): Icon's string mode clobbers
+            // caller classNames, so the RTL mirror must live on its own
+            // element.
+            <span {...stylex.props(calendarStyles.navIcon)}>
+              <Icon icon="chevronLeft" size="sm" color="inherit" />
+            </span>
+          }
           onClick={() => navigateMonth(-1)}
           isDisabled={!canNavigatePrevious}
           isIconOnly
@@ -438,7 +445,11 @@ export function Calendar({ref, ...props}: CalendarProps) {
         <Button
           label="Next month"
           variant="ghost"
-          icon={<Icon icon="chevronRight" size="sm" color="inherit" />}
+          icon={
+            <span {...stylex.props(calendarStyles.navIcon)}>
+              <Icon icon="chevronRight" size="sm" color="inherit" />
+            </span>
+          }
           onClick={() => navigateMonth(1)}
           isDisabled={!canNavigateNext}
           isIconOnly

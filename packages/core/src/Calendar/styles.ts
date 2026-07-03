@@ -64,9 +64,19 @@ export const calendarStyles = stylex.create({
     whiteSpace: 'nowrap',
     borderWidth: 0,
   },
+  /**
+   * Wrapper for the month nav chevrons. In RTL the flex header already
+   * swaps the buttons' visual sides; the glyphs must mirror with them so
+   * "Previous month" points outward (visually right) instead of inward.
+   * Keyed on the dir attribute (dir="rtl"), same as MobileNav's drawer
+   * transform — bare CSS `direction: rtl` alone won't trigger it.
+   */
   navIcon: {
-    width: spacingVars['--spacing-4'],
-    height: spacingVars['--spacing-4'],
+    display: 'inline-flex',
+    transform: {
+      default: null,
+      ':is([dir="rtl"] *)': 'scaleX(-1)',
+    },
   },
 });
 

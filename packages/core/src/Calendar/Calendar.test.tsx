@@ -12,8 +12,10 @@
 import {describe, it, expect, vi} from 'vitest';
 import {act, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import * as stylex from '@stylexjs/stylex';
 import {Calendar} from './Calendar';
 import type {CalendarHandle} from './Calendar';
+import {calendarStyles} from './styles';
 
 /**
  * Helper to find a day button by its day number.
@@ -595,5 +597,49 @@ describe('Calendar', () => {
         expect(button).not.toHaveAttribute('role', 'gridcell');
       }
     }
+  });
+
+  // ─── RTL (#3388) ─────────────────────────────────────────────
+
+  describe('RTL month navigation', () => {
+    // jsdom does not apply compiled StyleX CSS, so the scaleX(-1) mirror
+    // itself is only observable in a browser (see the dir="rtl" Storybook
+    // story). These tests pin the structure the fix depends on: both nav
+    // chevrons render inside the navIcon wrapper that carries the
+    // ':is([dir="rtl"] *)' conditional transform.
+    it('wraps both nav chevrons in the RTL-mirroring navIcon wrapper', () => {
+      render(<Calendar focusDate="2026-01-01" />);
+
+      const {className: navIconClass} = stylex.props(calendarStyles.navIcon);
+      expect(navIconClass).toBeTruthy();
+
+      for (const name of ['Previous month', 'Next month']) {
+        const button = screen.getByRole('button', {name});
+        const wrappers = Array.from(button.querySelectorAll('span')).filter(
+          span => span.className === navIconClass,
+        );
+        expect(wrappers.length).toBe(1);
+      }
+    });
+
+    it('keeps navigation semantics unchanged under dir="rtl"', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <div dir="rtl">
+          <Calendar focusDate="2026-02-01" />
+        </div>,
+      );
+
+      expect(screen.getByText('February 2026')).toBeInTheDocument();
+
+      // DOM order and handlers must not change in RTL: flexbox already
+      // places "Previous month" at the visual right; only the glyph mirrors.
+      await user.click(screen.getByRole('button', {name: 'Previous month'}));
+      expect(screen.getByText('January 2026')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', {name: 'Next month'}));
+      expect(screen.getByText('February 2026')).toBeInTheDocument();
+    });
   });
 });
