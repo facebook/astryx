@@ -1,0 +1,15 @@
+{
+  "$comment": "Pins which published version the 'latest' docsite build documents. The docsite CODE is always built from main; only the packages it reads CONTENT from are pinned. Canary reads the live workspace (main). In production, latest.versions drive `npm install @astryxdesign/core@<version>`; in CI/sandbox the resolver materializes the same sources offline from latest.gitTag via `git archive`.",
+  "canary": {
+    "label": "Canary (main)",
+    "source": "workspace"
+  },
+  "latest": {
+    "label": "Latest (stable)",
+    "gitTag": "v0.1.2",
+    "versions": {
+      "@astryxdesign/core": "0.1.2",
+      "@astryxdesign/cli": "0.1.2"
+    }
+  }
+}
