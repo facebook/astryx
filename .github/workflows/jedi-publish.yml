@@ -38,6 +38,12 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Build upstream Astryx deps for JEDI
+        run: |
+          pnpm -F @astryxdesign/core build
+          pnpm -F @astryxdesign/theme-gothic build
+          pnpm -F @astryxdesign/theme-neutral build
+
       - name: Build JEDI packages
         run: pnpm build:jedi
 
