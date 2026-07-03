@@ -38,7 +38,7 @@ export const docs = {
     {
       name: 'hintElement',
       type: 'ReactNode',
-      description: 'The popover hint element to render inside the composite container (as the last child). Portals to the top layer via popover="manual" and manages its own visibility — render it unconditionally.',
+      description: 'The popover hint element to render inside the composite container (as the last child). Portals to the top layer via popover="manual", renders arrow keys with Kbd, and manages its own visibility — render it unconditionally.',
     },
     {
       name: 'onFocus',
@@ -58,7 +58,7 @@ export const docs = {
   ],
   usage: {
     description:
-      'Shows an ephemeral "← → to navigate" hint anchored to the focused item the first time a roving-tabindex composite (Toolbar, TabList, SegmentedControl, etc.) receives keyboard focus. It teaches sighted keyboard users that arrow keys move within the group. The hint renders in the top layer (popover="manual") and is CSS-anchor-positioned to the focused element, so overflow containers never clip it. It auto-dismisses on the first arrow press, on timeout, or on blur, and does not re-show for that instance. Toolbar, TabList, and SegmentedControl wire this in automatically — reach for the hook directly only when building a custom roving-tabindex widget.',
+      'Shows an ephemeral "← → to navigate" hint anchored to the focused item the first time a roving-tabindex composite (Toolbar, TabList, SegmentedControl, etc.) receives keyboard focus. It teaches sighted keyboard users that arrow keys move within the group. The hint renders arrow keys with Kbd in the top layer (popover="manual") and is CSS-anchor-positioned to the focused element, so overflow containers never clip it. It auto-dismisses on the first arrow press, on timeout, or on blur, and does not re-show for that instance. Toolbar, TabList, and SegmentedControl wire this in automatically — reach for the hook directly only when building a custom roving-tabindex widget.',
     bestPractices: [
       { guidance: true, description: 'Compose the returned onFocus/onKeyDown with your existing focus handlers rather than replacing them — call onKeyDown first (it only dismisses, never prevents), then your navigation handler.' },
       { guidance: true, description: 'Render hintElement as the last child of the composite container; it is position:fixed in the top layer and aria-hidden, so it never affects layout or the accessibility tree.' },
@@ -75,7 +75,7 @@ export const docs = {
 /** @type {import('../docs-types').HookTranslationDoc} */
 export const docsDense = {
   description:
-    'Ephemeral "← → to navigate" hint anchored to the focused item on first keyboard focus of a roving-tabindex composite (Toolbar/TabList/SegmentedControl). Teaches sighted keyboard users that arrows move within the group. Top-layer popover="manual", CSS-anchor-positioned (never clipped by overflow), aria-hidden. Auto-dismisses on first arrow press, timeout, or blur; never re-shows for that instance.',
+    'Ephemeral "← → to navigate" hint anchored to the focused item on first keyboard focus of a roving-tabindex composite (Toolbar/TabList/SegmentedControl). Teaches sighted keyboard users that arrows move within the group. Kbd-rendered arrows in a top-layer popover="manual", CSS-anchor-positioned (never clipped by overflow), aria-hidden. Auto-dismisses on first arrow press, timeout, or blur; never re-shows for that instance.',
   paramDescriptions: {
     options: 'config for the keyboard hint.',
     'options.orientation': "arrow axis: 'horizontal' (← →), 'vertical' (↑ ↓), 'both' (all four). Controls shown icons.",
@@ -83,7 +83,7 @@ export const docsDense = {
     'options.isEnabled': 'whether the hint is enabled; false suppresses it (e.g. disabled/read-only widget).',
   },
   returnDescriptions: {
-    hintElement: 'popover hint to render as last child of the container. Top-layer, self-managing — render unconditionally.',
+    hintElement: 'popover hint to render as last child of the container. Kbd-rendered arrows, top-layer, self-managing — render unconditionally.',
     onFocus: 'container onFocus: shows hint on first :focus-visible entry from outside.',
     onBlur: 'container onBlur: hides on leaving the composite; re-anchors on internal moves.',
     onKeyDown: 'container onKeyDown: dismisses on first arrow press. Never prevents default.',

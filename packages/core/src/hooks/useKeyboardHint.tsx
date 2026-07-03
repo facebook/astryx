@@ -4,7 +4,7 @@
 
 /**
  * @file useKeyboardHint.tsx
- * @input Uses React, StyleX, CSS anchor positioning, Popover API (top layer)
+ * @input Uses React, StyleX, Kbd, useLayer
  * @output Exports useKeyboardHint hook — ephemeral arrow-key navigation hint
  * @position Core hook; shows sighted keyboard users how to navigate composite
  *   widgets that use roving tabindex (single Tab stop, arrows inside)
@@ -16,25 +16,17 @@
  * - /packages/cli/templates/blocks/components/Hooks/useKeyboardHintHookUsage.tsx
  */
 
-import React, {
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import React, {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   radiusVars,
   shadowVars,
   spacingVars,
-  textSizeVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {addAnchorName, removeAnchorName} from '../Layer/anchorName';
-import {mergeProps} from '../utils';
+import {Kbd} from '../Kbd';
+import {useLayer} from '../Layer/useLayer';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -101,6 +93,15 @@ export interface UseKeyboardHintReturn {
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
 
+const ARROW_HINT_KEYS: Record<
+  KeyboardHintOrientation,
+  ReadonlyArray<string>
+> = {
+  horizontal: ['left', 'right'],
+  vertical: ['up', 'down'],
+  both: ['left', 'right', 'up', 'down'],
+};
+
 const styles = stylex.create({
   hint: {
     // Top layer + anchor positioned
@@ -113,7 +114,10 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-popover'],
     borderRadius: radiusVars['--radius-element'],
     boxShadow: shadowVars['--shadow-low'],
-    padding: `${spacingVars['--spacing-1']} ${spacingVars['--spacing-2']}`,
+    paddingBlockStart: spacingVars['--spacing-1'],
+    paddingBlockEnd: spacingVars['--spacing-1'],
+    paddingInlineStart: spacingVars['--spacing-2'],
+    paddingInlineEnd: spacingVars['--spacing-2'],
 
     // Typography
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -138,18 +142,8 @@ const styles = stylex.create({
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
   },
-  kbd: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: '18px',
-    height: '18px',
-    padding: `0 ${spacingVars['--spacing-0-5']}`,
-    borderRadius: radiusVars['--radius-element'],
-    backgroundColor: colorVars['--color-background-muted'],
-    fontSize: textSizeVars['--font-size-xs'],
-    fontFamily: 'inherit',
-    lineHeight: typeScaleVars['--text-supporting-leading'],
+  label: {
+    marginInlineStart: spacingVars['--spacing-1'],
   },
 });
 
@@ -185,81 +179,69 @@ export function useKeyboardHint(
     isEnabled = true,
   } = options;
 
-  const id = useId();
-  const anchorId = `--astryx-hint-${id.replace(/:/g, '')}`;
-  const popoverRef = useRef<HTMLDivElement>(null);
-  const dismissedRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const anchoredElRef = useRef<HTMLElement | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  const dismissedRef = useRef(false);
+  const isVisibleRef = useRef(false);
+  const layerAnchorRef = useRef<(el: HTMLElement | null) => void>(() => {});
 
-  // Hide + mark dismissed (won't re-show for this instance)
-  const dismiss = useCallback(() => {
-    dismissedRef.current = true;
-    setIsVisible(false);
+  const clearDismissTimeout = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
-    const el = popoverRef.current;
-    if (el && typeof el.hidePopover === 'function') {
-      try {
-        el.hidePopover();
-      } catch {
-        // already hidden or unsupported
-      }
-    }
-    if (anchoredElRef.current) {
-      removeAnchorName(anchoredElRef.current, anchorId);
-      anchoredElRef.current = null;
-    }
-  }, [anchorId]);
+  }, []);
 
-  // Show the popover (top layer)
+  const handleLayerShow = useCallback(() => {
+    isVisibleRef.current = true;
+  }, []);
+
+  const handleLayerHide = useCallback(() => {
+    isVisibleRef.current = false;
+    clearDismissTimeout();
+    layerAnchorRef.current(null);
+  }, [clearDismissTimeout]);
+
+  const layer = useLayer({
+    mode: 'context',
+    onShow: handleLayerShow,
+    onHide: handleLayerHide,
+  });
+  layerAnchorRef.current = layer.ref;
+
+  // Hide + mark dismissed (won't re-show for this instance)
+  const dismiss = useCallback(() => {
+    dismissedRef.current = true;
+    clearDismissTimeout();
+    layer.hide();
+    isVisibleRef.current = false;
+    layerAnchorRef.current(null);
+  }, [clearDismissTimeout, layer]);
+
+  // Show the layer anchored to the focused element
   const show = useCallback(
     (anchor: HTMLElement) => {
       if (dismissedRef.current || !isEnabled) {
         return;
       }
-      // Anchor to the focused element
-      if (anchoredElRef.current && anchoredElRef.current !== anchor) {
-        removeAnchorName(anchoredElRef.current, anchorId);
-      }
-      addAnchorName(anchor, anchorId);
-      anchoredElRef.current = anchor;
 
-      setIsVisible(true);
-      const el = popoverRef.current;
-      if (el && typeof el.showPopover === 'function') {
-        try {
-          el.showPopover();
-        } catch {
-          // already showing or unsupported
-        }
-      }
+      layerAnchorRef.current(anchor);
+      layer.show();
 
-      // Auto-dismiss timeout
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      clearDismissTimeout();
       timeoutRef.current = setTimeout(() => {
         dismiss();
       }, dismissAfterMs);
     },
-    [anchorId, dismiss, dismissAfterMs, isEnabled],
+    [clearDismissTimeout, dismiss, dismissAfterMs, isEnabled, layer],
   );
 
   // Cleanup on unmount
   useEffect(
     () => () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      if (anchoredElRef.current) {
-        removeAnchorName(anchoredElRef.current, anchorId);
-      }
+      clearDismissTimeout();
+      layerAnchorRef.current(null);
     },
-    [anchorId],
+    [clearDismissTimeout],
   );
 
   // --- Handlers ---
@@ -289,7 +271,7 @@ export function useKeyboardHint(
 
   const onBlur = useCallback(
     (e: React.FocusEvent) => {
-      if (!isVisible) {
+      if (!isVisibleRef.current) {
         return;
       }
       const container = e.currentTarget as HTMLElement;
@@ -300,76 +282,50 @@ export function useKeyboardHint(
       ) {
         // Focus moved within — re-anchor to the new target
         if (!dismissedRef.current && e.relatedTarget instanceof HTMLElement) {
-          if (anchoredElRef.current) {
-            removeAnchorName(anchoredElRef.current, anchorId);
-          }
-          addAnchorName(e.relatedTarget, anchorId);
-          anchoredElRef.current = e.relatedTarget;
+          layerAnchorRef.current(e.relatedTarget);
         }
         return;
       }
       dismiss();
     },
-    [isVisible, dismiss, anchorId],
+    [dismiss],
   );
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (!isVisible) {
+      if (!isVisibleRef.current) {
         return;
       }
       if (ARROW_KEYS.has(e.key)) {
         dismiss();
       }
     },
-    [isVisible, dismiss],
+    [dismiss],
   );
 
   // --- Render the hint element ---
 
-  const arrowContent =
-    orientation === 'vertical' ? (
-      <span {...stylex.props(styles.keys)}>
-        <kbd {...stylex.props(styles.kbd)}>↑</kbd>
-        <kbd {...stylex.props(styles.kbd)}>↓</kbd>
-      </span>
-    ) : orientation === 'both' ? (
-      <span {...stylex.props(styles.keys)}>
-        <kbd {...stylex.props(styles.kbd)}>←</kbd>
-        <kbd {...stylex.props(styles.kbd)}>→</kbd>
-        <kbd {...stylex.props(styles.kbd)}>↑</kbd>
-        <kbd {...stylex.props(styles.kbd)}>↓</kbd>
-      </span>
-    ) : (
-      <span {...stylex.props(styles.keys)}>
-        <kbd {...stylex.props(styles.kbd)}>←</kbd>
-        <kbd {...stylex.props(styles.kbd)}>→</kbd>
-      </span>
-    );
+  const arrowContent = (
+    <span {...stylex.props(styles.keys)}>
+      {ARROW_HINT_KEYS[orientation].map(key => (
+        <Kbd key={key} keys={key} />
+      ))}
+    </span>
+  );
 
-  const hintElement = (
-    <div
-      ref={popoverRef}
-      // Top layer, no light-dismiss (we manage visibility ourselves)
-      popover="manual"
-      aria-hidden="true"
-      {...mergeProps(
-        stylex.props(styles.hint),
-        undefined,
-        // Anchor positioned to the currently-focused item
-        {
-          positionAnchor: anchorId,
-          positionArea: 'block-end span-inline-end',
-          positionTryFallbacks:
-            'flip-block, flip-inline, flip-block flip-inline',
-          marginBlockStart: spacingVars['--spacing-1'],
-        },
-      )}>
+  const hintElement = layer.render(
+    <span aria-hidden="true">
       {arrowContent}
-      <span style={{marginInlineStart: spacingVars['--spacing-1']}}>
-        to navigate
-      </span>
-    </div>
+      <span {...stylex.props(styles.label)}>to navigate</span>
+    </span>,
+    {
+      placement: 'below',
+      alignment: 'start',
+      xstyle: styles.hint,
+      style: {
+        marginBlockStart: spacingVars['--spacing-2'],
+      },
+    },
   );
 
   return {hintElement, onFocus, onBlur, onKeyDown};
