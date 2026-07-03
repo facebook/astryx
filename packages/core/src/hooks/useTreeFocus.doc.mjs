@@ -85,7 +85,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use for hierarchical tree widgets: wire onToggleExpand to your expansion state and onActiveChange to a single roving tab stop.' },
       { guidance: true, description: 'Attach both treeRef and handleKeyDown to the role="tree" container element.' },
-      { guidance: false, description: 'Use for linear lists (prefer useListFocus) or 2D grids (prefer useGridFocus) — those traversals differ from a tree.' },
+      { guidance: false, description: 'Use for linear lists (prefer useListFocus) or 2D grids (prefer useGridFocus); those traversals differ from a tree.' },
     ],
   },
   relatedComponents: ['TreeList'],
