@@ -23,7 +23,7 @@ import {ScheduleContext} from './context';
 import {defaultSchedulePlugins} from './plugins';
 import {styles} from './shared';
 import {createZonedDateTime} from './zonedDateTime';
-import {themeProps} from '../../../core/src/utils/themeProps';
+import {themeProps} from '@astryxdesign/core/utils';
 import type {
   CalendarEvent,
   Instant,

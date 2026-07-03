@@ -31,7 +31,7 @@ import {
 import {mergeProps} from '@astryxdesign/core/utils';
 import type {BaseProps} from '@astryxdesign/core';
 import {useStepperContext} from './StepperContext';
-import {themeProps} from '../../../core/src/utils/themeProps';
+import {themeProps} from '@astryxdesign/core/utils';
 import type {StepStatus} from './StepStatus';
 
 /**

@@ -8,7 +8,6 @@ export * from './template';
 export * from './hook';
 export * from './swizzle';
 export * from './theme';
-export * from './gap-report';
 export * from './upgrade';
 export * from './search';
 export * from './error-codes';

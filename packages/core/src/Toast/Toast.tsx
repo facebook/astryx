@@ -167,6 +167,20 @@ export function Toast({
     };
   }, [autoHideDuration, startTimer]);
 
+  // Pause the auto-hide timer while the window is not focused, so a toast
+  // doesn't silently expire while the user is in another window or tab.
+  useEffect(() => {
+    if (!isAutoHide) {
+      return;
+    }
+    window.addEventListener('blur', pauseTimer);
+    window.addEventListener('focus', resumeTimer);
+    return () => {
+      window.removeEventListener('blur', pauseTimer);
+      window.removeEventListener('focus', resumeTimer);
+    };
+  }, [isAutoHide, pauseTimer, resumeTimer]);
+
   const handleDismiss = useCallback(() => {
     onDismiss('manual');
   }, [onDismiss]);

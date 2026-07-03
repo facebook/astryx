@@ -25,7 +25,7 @@ import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps} from '@astryxdesign/core/utils';
 import {iconVars} from './tokens.stylex';
 import {variations, opticalSize} from './variations.stylex';
-import {themeProps} from '../../../core/src/utils/themeProps';
+import {themeProps} from '@astryxdesign/core/utils';
 
 // =============================================================================
 // Types
@@ -80,10 +80,7 @@ export interface SVGIconDef {
   secondary?: IconShape[];
 }
 
-export interface SVGIconProps extends Omit<
-  SVGProps<SVGSVGElement>,
-  'color'
-> {
+export interface SVGIconProps extends Omit<SVGProps<SVGSVGElement>, 'color'> {
   /** The icon definition containing path data */
   icon: SVGIconDef;
   /**

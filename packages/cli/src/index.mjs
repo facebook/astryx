@@ -61,10 +61,10 @@ export const JSON_SUPPORTED = new Set([
   'theme build',
   'theme list',
   'theme add',
-  'gap-report',
   'upgrade',
   'manifest',
   'doctor',
+  'validate-integration',
   'layout expand',
   'layout check',
   'layout grammar',
@@ -155,7 +155,7 @@ program
   });
 
 /**
- * Compute the fully qualified command name, e.g. "theme build" or "gap-report".
+ * Compute the fully qualified command name, e.g. "theme build" or "swizzle".
  * @param {import('commander').Command} actionCommand
  * @returns {string}
  */
@@ -249,7 +249,6 @@ const commands = [
   // agent-docs folded into init — functions still importable from agent-docs.mjs
   {name: 'template', path: './commands/template.mjs', register: 'registerTemplate'},
   {name: 'layout', path: './commands/layout.mjs', register: 'registerLayout'},
-  {name: 'gap-report', path: './commands/gap-report.mjs', register: 'registerGapReport'},
   {name: 'upgrade', path: './commands/upgrade.mjs', register: 'registerUpgrade'},
   {name: 'theme', path: './commands/build-theme.mjs', register: 'registerTheme'},
   {name: 'hook', path: './commands/hook/index.mjs', register: 'registerHook'},
@@ -257,6 +256,11 @@ const commands = [
   {name: 'search', path: './commands/search.mjs', register: 'registerSearch'},
   {name: 'build', path: './commands/build.mjs', register: 'registerBuild'},
   {name: 'doctor', path: './commands/doctor.mjs', register: 'registerDoctor'},
+  {
+    name: 'validate-integration',
+    path: './commands/validate-integration.mjs',
+    register: 'registerValidateIntegration',
+  },
 ];
 
 for (const cmd of commands) {

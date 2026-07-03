@@ -52,6 +52,8 @@
  *   | 'ERR_UNKNOWN_SECTION'
  *   | 'ERR_UNKNOWN_CATEGORY'
  *   | 'ERR_UNKNOWN_TEMPLATE'
+ *   | 'ERR_AMBIGUOUS_TEMPLATE'
+ *   | 'ERR_AMBIGUOUS_COMPONENT'
  *   | 'ERR_UNKNOWN_THEME'
  *   | 'ERR_UNKNOWN_PACKAGE'
  *   | 'ERR_UNKNOWN_AGENT'
@@ -69,13 +71,10 @@
  *   | 'ERR_WRITE_FAILED'
  *   | 'ERR_THEME_INVALID'
  *   | 'ERR_THEME_LOAD'
- *   | 'ERR_TEMPLATE_CONFIG'
- *   | 'ERR_TEMPLATE_GET'
  *   | 'ERR_VERSION_DETECT'
  *   | 'ERR_INVALID_VERSION'
  *   | 'ERR_DEP_MISSING'
  *   | 'ERR_GH_CLI'
- *   | 'ERR_GAP_REPORT_FAILED'
  *   | 'ERR_LAYOUT_PARSE'
  *   | 'ERR_LAYOUT_INVALID'
  * )} ErrorCode
@@ -125,6 +124,10 @@ export const ERROR_CODES = Object.freeze({
   ERR_UNKNOWN_CATEGORY: 'ERR_UNKNOWN_CATEGORY',
   /** No template matched the requested name. */
   ERR_UNKNOWN_TEMPLATE: 'ERR_UNKNOWN_TEMPLATE',
+  /** A template id matched more than one template (narrow with --type/--package). */
+  ERR_AMBIGUOUS_TEMPLATE: 'ERR_AMBIGUOUS_TEMPLATE',
+  /** A component name is owned by more than one package (narrow with --package). */
+  ERR_AMBIGUOUS_COMPONENT: 'ERR_AMBIGUOUS_COMPONENT',
   /** No theme matched the requested slug (theme add). */
   ERR_UNKNOWN_THEME: 'ERR_UNKNOWN_THEME',
   /** No package matched the requested name (discover). */
@@ -166,12 +169,6 @@ export const ERROR_CODES = Object.freeze({
   /** A theme file could not be loaded / parsed into a defineTheme result. */
   ERR_THEME_LOAD: 'ERR_THEME_LOAD',
 
-  // ── Template config ──────────────────────────────────────────────
-  /** `template.get` is not configured in astryx.config.mjs (fetch-by-id). */
-  ERR_TEMPLATE_CONFIG: 'ERR_TEMPLATE_CONFIG',
-  /** A configured `template.get` threw or returned an invalid value. */
-  ERR_TEMPLATE_GET: 'ERR_TEMPLATE_GET',
-
   // ── Upgrade ──────────────────────────────────────────────────────
   /** The current `@astryxdesign/core` version could not be detected. */
   ERR_VERSION_DETECT: 'ERR_VERSION_DETECT',
@@ -180,11 +177,9 @@ export const ERROR_CODES = Object.freeze({
   /** A required external dependency (e.g. jscodeshift) is missing. */
   ERR_DEP_MISSING: 'ERR_DEP_MISSING',
 
-  // ── Gap report ───────────────────────────────────────────────────
+  // ── GitHub CLI ───────────────────────────────────────────────────
   /** GitHub CLI (`gh`) is not installed or not authenticated. */
   ERR_GH_CLI: 'ERR_GH_CLI',
-  /** Filing a gap report failed at the command/integration boundary. */
-  ERR_GAP_REPORT_FAILED: 'ERR_GAP_REPORT_FAILED',
 
   // ── Layout expressions (XLE/XLO) ─────────────────────────────────
   /** A layout expression failed to parse (syntax error, with line/col). */

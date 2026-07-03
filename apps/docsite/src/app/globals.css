@@ -19,10 +19,10 @@ html {
 }
 
 /* Marketing-only custom properties for the docsite home page. These are
-   NOT XDS theming tokens — they're docsite-specific values that back the
+   NOT Astryx theming tokens — they're docsite-specific values that back the
    landing page's bento feature cards + section rhythm — so they live here
    in globals.css rather than in the Astryx theme (which should only
-   override real XDS semantic tokens). Each is a light-dark() pair so dark
+   override real Astryx semantic tokens). Each is a light-dark() pair so dark
    mode is handled by the value itself, no consumer logic required. */
 :root {
   /* AppShell measures its header post-hydration and sets
@@ -43,7 +43,7 @@ html {
      as a single related group. */
   --astryx-marketing-feature-card-bg: light-dark(#e6f0ff, #1a2333);
 
-  /* Spacing between major home-page sections (the XDS scale tops out at 48px,
+  /* Spacing between major home-page sections (the Astryx scale tops out at 48px,
      too tight for a section break). Shrinks on mobile (below). */
   --astryx-marketing-section-gap: 100px;
 }
@@ -148,10 +148,10 @@ body[data-hero-dark]:not([data-nav-mode='surface'])
 }
 
 /* Hide the prev/next chevron buttons inside the home page's hero theme
-   switcher pagination so only the dot indicators show. XDSPagination's
+   switcher pagination so only the dot indicators show. Pagination's
    variant="dots" ships with chevrons by default; the hero wants a minimal
    indicator-only treatment. Scoped to [data-home-page] so other
-   XDSPagination instances across the site stay untouched. */
+   Pagination instances across the site stay untouched. */
 [data-home-page] .astryx-pagination button[aria-label='Go to previous page'],
 [data-home-page] .astryx-pagination button[aria-label='Go to next page'] {
   display: none;

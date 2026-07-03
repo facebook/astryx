@@ -4,7 +4,7 @@
 
 /**
  * @file RadioList.tsx
- * @input Uses React useId, createContext, ReactNode, Field, InputStatus
+ * @input Uses React useId, useCallback, useRef, createContext, ReactNode, Field, InputStatus
  * @output Exports RadioList component, RadioListProps, RadioListContext
  * @position Core implementation; consumed by index.ts, tested by RadioList.test.tsx
  *
@@ -16,7 +16,14 @@
  * - /packages/cli/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
-import React, {createContext, useId, useMemo, type ReactNode} from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useId,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {Field} from '../Field/Field';
@@ -41,8 +48,9 @@ export interface RadioListContextValue {
   status?: InputStatus;
 }
 
-export const RadioListContext =
-  createContext<RadioListContextValue | null>(null);
+export const RadioListContext = createContext<RadioListContextValue | null>(
+  null,
+);
 RadioListContext.displayName = 'RadioListContext';
 
 const styles = stylex.create({
@@ -175,12 +183,97 @@ export function RadioList({
 }: RadioListProps) {
   const name = useId();
   const inputID = useId();
+  const labelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+
+  const groupRef = useRef<HTMLDivElement>(null);
 
   const contextValue = useMemo<RadioListContextValue>(
     () => ({name, value, onChange, isDisabled, isRequired, size, status}),
     [name, value, onChange, isDisabled, isRequired, size, status],
+  );
+
+  /**
+   * Make the tab stop deterministic when a radio group has no selected value.
+   *
+   * Native `<input type="radio">` groups (same `name`) implement roving
+   * tabindex for free: when a value is selected, that radio is the single tab
+   * stop and receives focus, so no correction is needed there. But the ARIA
+   * radio-group pattern (APG) also requires a deterministic tab stop when the
+   * group has *no* selection — and browsers disagree here. Chrome, when
+   * Shift+Tab moves focus backward into an unselected group, lands on the
+   * *last* radio; forward Tab lands on the *first*. To keep the entry point
+   * predictable we redirect focus:
+   *   - forward entry  → first enabled radio (APG default)
+   *   - backward entry → last enabled radio (matches Chrome's backward tab)
+   *
+   * The redirect only runs when focus arrives from *outside* the group's own
+   * radios (guarded via `relatedTarget` containment). Moving between radios
+   * inside the group — arrow keys, clicks, programmatic focus of a sibling —
+   * is never hijacked.
+   */
+  const handleFocus = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      // Only correct the no-selection case; a selected value already provides
+      // a deterministic native tab stop.
+      if (value !== '') {
+        return;
+      }
+
+      const group = groupRef.current;
+      if (!group) {
+        return;
+      }
+
+      // Ignore focus moving *within* the group. `relatedTarget` is the element
+      // losing focus; if it was inside the group, this is intra-group movement
+      // (arrow keys, clicking a sibling) and must not be hijacked. Some browsers
+      // report a null `relatedTarget`; fall back to checking whether the group
+      // already contained the active element before this focus landed.
+      const relatedTarget = e.relatedTarget as Node | null;
+      if (relatedTarget) {
+        if (group.contains(relatedTarget)) {
+          return;
+        }
+      } else if (
+        document.activeElement &&
+        document.activeElement !== e.target &&
+        group.contains(document.activeElement)
+      ) {
+        return;
+      }
+
+      const radios = Array.from(
+        group.querySelectorAll<HTMLInputElement>(
+          'input[type="radio"]:not([disabled])',
+        ),
+      );
+      if (radios.length === 0) {
+        return;
+      }
+
+      const target = e.target as HTMLElement;
+      const targetIndex = radios.findIndex(radio => radio === target);
+      // Only correct when the focus target is one of our enabled radios (not a
+      // nested control such as end-content).
+      if (targetIndex === -1) {
+        return;
+      }
+
+      // Infer tab direction from which end the browser chose. On a backward
+      // (Shift+Tab) entry into an unselected group, browsers focus the *last*
+      // radio; keep it as the deterministic backward tab stop. Any other entry
+      // (forward Tab, or a browser that lands mid-group) is normalized to the
+      // *first* enabled radio, the APG default.
+      const isBackwardEntry = targetIndex === radios.length - 1;
+      const intended = isBackwardEntry ? radios[radios.length - 1] : radios[0];
+
+      if (target !== intended) {
+        intended.focus();
+      }
+    },
+    [value],
   );
 
   return (
@@ -191,6 +284,8 @@ export function RadioList({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={inputID}
+      labelID={labelID}
+      isGroupLabel
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -211,8 +306,10 @@ export function RadioList({
       className={className}
       style={style}>
       <div
+        ref={groupRef}
         role="radiogroup"
-        aria-label={label}
+        aria-labelledby={labelID}
+        onFocus={handleFocus}
         aria-describedby={
           [
             description ? descriptionID : null,
@@ -230,9 +327,7 @@ export function RadioList({
             orientation === 'vertical' ? styles.vertical : styles.horizontal,
           ),
         )}>
-        <RadioListContext value={contextValue}>
-          {children}
-        </RadioListContext>
+        <RadioListContext value={contextValue}>{children}</RadioListContext>
       </div>
     </Field>
   );

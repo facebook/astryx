@@ -145,6 +145,11 @@ export const docsDense = {
         description: 'Build on Popover/HoverCard/Tooltip for common overlay patterns.',
       },
       {
+        guidance: true,
+        description:
+          'Rely on the Popover API top layer to escape clipping/stacking: render inline (no portal) to inherit the trigger theme cascade and natural focus order. Use `as: "span"` when the layer must be valid in inline contexts like a paragraph.',
+      },
+      {
         guidance: false,
         description:
           'Implement ARIA directly in Layer unless you own full accessibility behavior.',

@@ -208,7 +208,7 @@ export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPre
       .sort();
     if (topics.length > 0) lines.push(`  docs <topic>       ${topics.join(', ')}`);
   }
-  lines.push('  swizzle <Name>     eject component source (--gap reports why)');
+  lines.push('  swizzle <Name>     eject component source for deep customization');
   lines.push('  upgrade --apply    run after any @astryxdesign/core bump');
   lines.push(MARKER_END);
 

@@ -284,6 +284,19 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('MetadataListItem declares a playground wrapper for realistic preview structure', () => {
+    const core = components['@astryxdesign/core'];
+    const metadataListItem = core.find(c => c.name === 'MetadataListItem');
+    expect(metadataListItem).toBeDefined();
+    expect(metadataListItem!.playground?.defaults).toMatchObject({
+      label: 'Status',
+      children: 'Active',
+    });
+    expect(metadataListItem!.playground?.wrapper).toMatchObject({
+      component: 'MetadataList',
+    });
+  });
+
   it('Chat has many sub-components (standalone docs take priority over compound entries)', () => {
     const core = components['@astryxdesign/core'];
     // Chat compound doc has 14 sub-components, but ChatToolCalls and
@@ -353,7 +366,7 @@ describe('componentRegistry', () => {
     const core = components['@astryxdesign/core'];
     // Public hooks (useTheme, useToast, useTableSortable, …) ship example
     // blocks; internal utility hooks (useFocusTrap, useScrollLock, …) do not.
-    // Post un-prefix migration (P2380608025) the doc `name` is bare for both,
+    // Post un-prefix migration the doc `name` is bare for both,
     // so the public set is identified by having an example-registry entry
     // rather than by a name prefix.
     const hooks = core.filter(

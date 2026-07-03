@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {describe, it, expect, vi} from 'vitest';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {createEventFromISO} from './CalendarEvent';
 import {Schedule} from './Schedule';

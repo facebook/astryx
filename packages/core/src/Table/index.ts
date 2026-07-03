@@ -28,6 +28,7 @@ export {useTableColumnSettings} from './plugins/columnSettings';
 export {useTableColumnSettingsState} from './plugins/columnSettings';
 export {useTableColumnResize} from './plugins/columnResize';
 export {useTableStickyColumns} from './plugins/stickyColumns';
+export {resolveContextActions} from './tableContextMenu';
 export {
   useTableFiltering,
   useTableFilterState,
@@ -49,6 +50,8 @@ export type {
   ProportionalWidth,
   PixelWidth,
   TablePlugin,
+  TableContextAction,
+  TableContextActions,
   TableRenderProps,
   HeaderRowRenderProps,
   HeaderCellRenderProps,

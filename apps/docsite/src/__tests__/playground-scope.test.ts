@@ -39,7 +39,9 @@ function getExpectedComponents(): string[] {
   const pkg = JSON.parse(fs.readFileSync(CORE_PKG_PATH, 'utf-8'));
   return Object.keys(pkg.exports ?? {})
     .filter(k => {
-      if (SKIP.test(k)) {return false;}
+      if (SKIP.test(k)) {
+        return false;
+      }
       const name = k.replace('./', '');
       return /^[A-Z]/.test(name);
     })
@@ -70,7 +72,9 @@ describe('playground-scope', () => {
   it('imports every PascalCase component from @astryxdesign/core', () => {
     const missing = expectedComponents.filter(
       name =>
-        !scopeContent.includes(`import * as ${name} from '@astryxdesign/core/${name}';`),
+        !scopeContent.includes(
+          `import * as ${name} from '@astryxdesign/core/${name}';`,
+        ),
     );
     expect(missing).toEqual([]);
   });
@@ -93,7 +97,9 @@ describe('playground-scope', () => {
   it('component count matches core exports', () => {
     const importLines = scopeContent
       .split('\n')
-      .filter(l => l.match(/^import \* as \w+ from '@astryxdesign\/core\/[A-Z]/));
+      .filter(l =>
+        l.match(/^import \* as \w+ from '@astryxdesign\/core\/[A-Z]/),
+      );
     expect(importLines.length).toBe(expectedComponents.length);
   });
 
@@ -124,7 +130,7 @@ describe('playground-scope', () => {
   it('includes Theme controlled wrapper and tokens', () => {
     expect(scopeContent).toContain("'@astryxdesign/core/theme': {Theme:");
     expect(scopeContent).toContain(
-      "'@astryxdesign/core/theme/tokens.stylex': xdsTokens,",
+      "'@astryxdesign/core/theme/tokens.stylex': astryxTokens,",
     );
     expect(scopeContent).toContain('ControlledTheme');
     expect(scopeContent).toContain('SCOPE_THEMES');

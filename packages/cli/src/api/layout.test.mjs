@@ -196,11 +196,14 @@ describe('template referencing', () => {
 
   it('imports app-registered local components (the local-component bridge)', async () => {
     // Inside the workspace so @astryxdesign/core resolves; cleaned up after.
+    // A package.json beside the config makes Project.load resolve it as the
+    // sibling-of-nearest-package.json (the standard config resolution).
     const cwd = mkdtempSync(join(process.cwd(), '.xle-imp-test-'));
     try {
+      writeFileSync(join(cwd, 'package.json'), '{"name": "xle-imp-fixture"}\n');
       writeFileSync(
         join(cwd, 'astryx.config.mjs'),
-        `export default {layout: {components: {KpiCard: '@/components/KpiCard', TimeRangePicker: {from: '@/components/TimeRangePicker'}}}};\n`,
+        `export default {experimental: {xle: {components: {KpiCard: {from: '@/components/KpiCard'}, TimeRangePicker: {from: '@/components/TimeRangePicker'}}}}};\n`,
       );
       const result = await layoutExpand('S[p6] > (G[c4 g4] > {kpi-card}*4) + {time-range-picker}', {
         name: 'Demo',

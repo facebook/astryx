@@ -177,7 +177,7 @@ describe('Lightbox', () => {
       expect(screen.getByLabelText('Next')).toBeInTheDocument();
     });
 
-    it('hides prev button on first item', () => {
+    it('keeps prev mounted and disabled on first item', () => {
       render(
         <Lightbox
           isOpen={true}
@@ -186,11 +186,16 @@ describe('Lightbox', () => {
           index={0}
         />,
       );
-      expect(screen.queryByLabelText('Previous')).not.toBeInTheDocument();
-      expect(screen.getByLabelText('Next')).toBeInTheDocument();
+      // The Prev button stays mounted at the range boundary (disabled) rather
+      // than unmounting, so navigating to the first item never removes the
+      // focused control and drops focus to <body>.
+      const prev = screen.getByLabelText('Previous');
+      expect(prev).toBeInTheDocument();
+      expect(prev).toBeDisabled();
+      expect(screen.getByLabelText('Next')).not.toBeDisabled();
     });
 
-    it('hides next button on last item', () => {
+    it('keeps next mounted and disabled on last item', () => {
       render(
         <Lightbox
           isOpen={true}
@@ -199,8 +204,51 @@ describe('Lightbox', () => {
           index={2}
         />,
       );
+      const next = screen.getByLabelText('Next');
+      expect(next).toBeInTheDocument();
+      expect(next).toBeDisabled();
+      expect(screen.getByLabelText('Previous')).not.toBeDisabled();
+    });
+
+    it('does not drop focus to <body> when navigating to the last item', () => {
+      const {rerender} = render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={1}
+        />,
+      );
+      // Simulate arriving at the final item (Next becomes disabled).
+      rerender(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={2}
+        />,
+      );
+      // Both nav buttons remain in the DOM; the dialog stays available so
+      // keyboard gallery navigation isn't dead-ended.
       expect(screen.getByLabelText('Previous')).toBeInTheDocument();
-      expect(screen.queryByLabelText('Next')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Next')).toBeInTheDocument();
+      const dialog = document.querySelector('dialog');
+      expect(dialog).toBeInTheDocument();
+      // Arrow handling is on the dialog, so navigation still works at the edge.
+      const onIndexChange = vi.fn();
+      rerender(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={2}
+          onIndexChange={onIndexChange}
+        />,
+      );
+      if (dialog instanceof HTMLElement) {
+        fireEvent.keyDown(dialog, {key: 'ArrowLeft'});
+      }
+      expect(onIndexChange).toHaveBeenCalledWith(1);
     });
 
     it('calls onIndexChange when next is clicked', () => {

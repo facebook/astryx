@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import {describe, it, expect} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {ChatReasoning} from './ChatReasoning';
 
@@ -15,9 +16,7 @@ describe('ChatReasoning', () => {
 
   it('shows preview text when collapsed', () => {
     render(
-      <ChatReasoning>
-        Some reasoning text about constraints
-      </ChatReasoning>,
+      <ChatReasoning>Some reasoning text about constraints</ChatReasoning>,
     );
     expect(
       screen.getAllByText('Some reasoning text about constraints').length,

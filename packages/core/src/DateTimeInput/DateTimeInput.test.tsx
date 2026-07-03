@@ -20,6 +20,25 @@ describe('DateTimeInput', () => {
     expect(screen.getByLabelText('Meeting time')).toBeInTheDocument();
   });
 
+  it('derives the time input label from the field label (forms-15)', () => {
+    render(<DateTimeInput label="Meeting time" onChange={() => {}} />);
+    // Not a hardcoded "Time" — tied to the field label so it is localizable
+    // and unambiguous when multiple date-time fields share a page.
+    expect(screen.getByLabelText('Meeting time time')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Time')).not.toBeInTheDocument();
+  });
+
+  it('uses an explicit timeLabel when provided', () => {
+    render(
+      <DateTimeInput
+        label="Meeting time"
+        timeLabel="Start time"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByLabelText('Start time')).toBeInTheDocument();
+  });
+
   it('renders with placeholder', () => {
     render(
       <DateTimeInput
@@ -56,7 +75,7 @@ describe('DateTimeInput', () => {
   it('renders both date and time inputs', () => {
     render(<DateTimeInput label="Meeting" onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeInTheDocument();
-    expect(screen.getByLabelText('Time')).toBeInTheDocument();
+    expect(screen.getByLabelText('Meeting time')).toBeInTheDocument();
   });
 
   it('displays formatted date in date input when value is provided', () => {
@@ -134,13 +153,13 @@ describe('DateTimeInput', () => {
   it('sets disabled on both inputs when isDisabled is true', () => {
     render(<DateTimeInput label="Meeting" isDisabled onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeDisabled();
-    expect(screen.getByLabelText('Time')).toBeDisabled();
+    expect(screen.getByLabelText('Meeting time')).toBeDisabled();
   });
 
   it('is not disabled by default', () => {
     render(<DateTimeInput label="Meeting" onChange={() => {}} />);
     expect(screen.getByRole('combobox')).not.toBeDisabled();
-    expect(screen.getByLabelText('Time')).not.toBeDisabled();
+    expect(screen.getByLabelText('Meeting time')).not.toBeDisabled();
   });
 
   it('date input has role="combobox"', () => {
@@ -180,7 +199,7 @@ describe('DateTimeInput', () => {
   it('disables inputs and button when isLoading is true', () => {
     render(<DateTimeInput label="Meeting" isLoading onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeDisabled();
-    expect(screen.getByLabelText('Time')).toBeDisabled();
+    expect(screen.getByLabelText('Meeting time')).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Open calendar'})).toBeDisabled();
   });
 
@@ -304,7 +323,7 @@ describe('DateTimeInput', () => {
     const onChange = vi.fn();
     render(<DateTimeInput label="Meeting" onChange={onChange} />);
 
-    const timeInput = screen.getByLabelText('Time');
+    const timeInput = screen.getByLabelText('Meeting time');
     fireEvent.change(timeInput, {target: {value: '3:45 pm'}});
 
     expect(onChange).not.toHaveBeenCalled();
@@ -320,7 +339,7 @@ describe('DateTimeInput', () => {
       />,
     );
 
-    const timeInput = screen.getByLabelText('Time');
+    const timeInput = screen.getByLabelText('Meeting time');
     fireEvent.change(timeInput, {target: {value: '3:45 pm'}});
 
     expect(onChange).toHaveBeenCalledWith('2026-03-15T15:45');
@@ -427,6 +446,80 @@ describe('DateTimeInput', () => {
 
       // Pending input should be cleared, showing the new formatted date
       expect(dateInput).toHaveValue('March 20, 2026');
+    });
+  });
+
+  describe('invalid typed input feedback (WCAG 3.3.1)', () => {
+    it('sets aria-invalid="true" on the date input when typed date is unparseable', () => {
+      render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+
+      const dateInput = screen.getByRole('combobox');
+      fireEvent.change(dateInput, {target: {value: '13/45/2024'}});
+
+      expect(dateInput).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('does not set aria-invalid on the date input when typed date is valid', () => {
+      render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+
+      const dateInput = screen.getByRole('combobox');
+      fireEvent.change(dateInput, {target: {value: '03/15/2026'}});
+
+      expect(dateInput).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('announces an alert message when the typed date is invalid', () => {
+      render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+
+      const dateInput = screen.getByRole('combobox');
+      fireEvent.change(dateInput, {target: {value: '13/45/2024'}});
+
+      expect(screen.getByText('Invalid date')).toBeInTheDocument();
+    });
+
+    it('sets aria-invalid="true" on the time input when typed time is unparseable', () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T10:00' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.change(timeInput, {target: {value: '99:99 zz'}});
+
+      expect(timeInput).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('does not set aria-invalid on the time input when typed time is valid', () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T10:00' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.change(timeInput, {target: {value: '3:45 pm'}});
+
+      expect(timeInput).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('announces an alert message when the typed time is invalid', () => {
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T10:00' as ISODateTimeString}
+          onChange={() => {}}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.change(timeInput, {target: {value: '99:99 zz'}});
+
+      expect(screen.getByText('Invalid time')).toBeInTheDocument();
     });
   });
 });

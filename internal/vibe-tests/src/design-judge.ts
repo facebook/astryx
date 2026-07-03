@@ -496,7 +496,7 @@ async function main() {
   console.log(`   Prompts to evaluate: ${promptsToEvaluate.join(', ')}\n`);
 
   const results: DesignResult[] = [];
-  const targets = ['xds', 'baseline', 'html'];
+  const targets = ['astryx', 'baseline', 'html'];
 
   for (const promptId of promptsToEvaluate) {
     const promptText = loadPromptText(promptId);

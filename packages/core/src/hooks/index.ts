@@ -14,11 +14,24 @@
 export {useFocusTrap} from './useFocusTrap';
 export type {UseFocusTrapOptions, UseFocusTrapReturn} from './useFocusTrap';
 
+export {useAnnounce} from './useAnnounce';
+export type {AnnounceFn, AnnouncePoliteness} from './useAnnounce';
+
 export {useGridFocus} from './useGridFocus';
 export type {UseGridFocusOptions, UseGridFocusReturn} from './useGridFocus';
 
 export {useListFocus} from './useListFocus';
-export type {UseListFocusOptions, UseListFocusReturn} from './useListFocus';
+export type {
+  UseListFocusOptions,
+  UseListFocusReturn,
+  ListFocusOrientation,
+} from './useListFocus';
+
+export {useTreeFocus} from './useTreeFocus';
+export type {UseTreeFocusOptions, UseTreeFocusReturn} from './useTreeFocus';
+
+export {useTypeahead} from './useTypeahead';
+export type {UseTypeaheadOptions, UseTypeaheadReturn} from './useTypeahead';
 
 export {useMediaQuery} from './useMediaQuery';
 
@@ -41,7 +54,7 @@ export type {
 export {useImageMode} from './useImageMode';
 export type {ImageSampleRegion, UseImageModeOptions} from './useImageMode';
 
-export {useClickableContainer} from './useClickableContainer';
+export {useClickableContainer, INTERACTIVE_SELECTORS} from './useClickableContainer';
 export type {
   UseClickableContainerOptions,
   ClickableContainerResult,
@@ -55,3 +68,9 @@ export type {
   InteractiveRole,
   UseInteractiveRoleOptions,
 } from './useInteractiveRole';
+
+export {useLongPress} from './useLongPress';
+export type {
+  UseLongPressOptions,
+  UseLongPressHandlers,
+} from './useLongPress';

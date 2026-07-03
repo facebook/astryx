@@ -24,6 +24,8 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
+import type {TableContextActions} from './types';
+import {wrapInTableContextMenu} from './tableContextMenu';
 import {
   overflowStyles,
   wrapStyles,
@@ -56,6 +58,12 @@ export interface TableCellProps extends BaseProps<HTMLTableCellElement> {
    * Must be a `stylex.create()` value — not an inline style object.
    */
   xstyle?: StyleXStyles | StyleXStyles[];
+  /**
+   * Right-click actions rendered as a context menu around the cell content.
+   * The cell owns the wrapper so it controls how the menu interacts with its
+   * padding / content. Empty or undefined renders no menu.
+   */
+  contextMenuActions?: TableContextActions;
 }
 
 const densityStyles = stylex.create({
@@ -138,33 +146,27 @@ export function TableCell({
   ref,
   className: incomingClassName,
   style: incomingStyle,
+  contextMenuActions,
   ...props
 }: TableCellProps) {
   const ctx = useTableContext();
 
-  if (!ctx) {
-    return (
-      <td
-        ref={ref}
-        {...props}
-        {...mergeProps(
-          themeProps('table-cell'),
-          stylex.props(xstyle),
-          incomingClassName,
-          incomingStyle,
-        )}>
-        {children}
-      </td>
-    );
-  }
+  // Standalone (no table context) renders plain, with no density/divider styles.
+  const cellStyles: StyleXStyles[] = ctx
+    ? [
+        densityStyles[ctx.density],
+        ctx.textOverflow === 'truncate'
+          ? overflowStyles.cell
+          : wrapStyles.cell,
+        containerEdgeStyles[ctx.density],
+        verticalAlignStyles[ctx.verticalAlign],
+        ...buildDividerStyles(ctx, dividerRowStyles.cell, dividerColumnStyles.cell),
+      ]
+    : [];
 
-  const cellStyles: StyleXStyles[] = [
-    densityStyles[ctx.density],
-    ctx.textOverflow === 'truncate' ? overflowStyles.cell : wrapStyles.cell,
-    containerEdgeStyles[ctx.density],
-    verticalAlignStyles[ctx.verticalAlign],
-    ...buildDividerStyles(ctx, dividerRowStyles.cell, dividerColumnStyles.cell),
-  ];
+  // The cell owns the context-menu wrapper so it controls how the menu
+  // interacts with its padding / content. No-op when no actions.
+  const content = wrapInTableContextMenu(children, contextMenuActions);
 
   return (
     <td
@@ -176,7 +178,7 @@ export function TableCell({
         incomingClassName,
         incomingStyle,
       )}>
-      {children}
+      {content}
     </td>
   );
 }

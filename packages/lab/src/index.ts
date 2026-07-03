@@ -7,7 +7,9 @@
  * They're available in storybook and sandbox for testing and iteration.
  * Once vetted, components graduate to @astryxdesign/core.
  *
- * This package is never published to npm.
+ * This package is published to npm ONLY under the @canary dist-tag
+ * (npm install @astryxdesign/lab@canary). It is never released as a
+ * stable (latest) version.
  */
 
 // Code components — syntax highlighting domain

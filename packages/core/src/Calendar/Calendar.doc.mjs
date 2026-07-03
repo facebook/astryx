@@ -147,7 +147,7 @@ export const docsZh = {
     {name: 'hasOutsideDays', type: 'boolean', description: '显示相邻月份的日期。', default: 'true'},
     {name: 'hasWeekNumbers', type: 'boolean', description: '显示 ISO 周数。', default: 'false'},
     {name: 'hasVariableRowCount', type: 'boolean', description: '可变行数与固定 6 行网格。', default: 'false'},
-    {name: 'weekStartsOn', type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun'…'sat'", description: '每周起始日。可为数字（0=周日）或三字母星期缩写（如 "mon"）。', default: '0'},
+    {name: 'weekStartsOn', type: "0 | 1 | 2 | 3 | 4 | 5 | 6 | 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat'", description: '每周起始日。可为数字（0=周日）或三字母星期缩写（如 "mon"）。', default: '0'},
   ],
   theming: {
     targets: [

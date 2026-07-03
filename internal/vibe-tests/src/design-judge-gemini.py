@@ -42,7 +42,7 @@ CA = os.environ.get("GEMINI_CA", "")
 MODEL = "gemini-2.5-pro-preview"
 BASE = os.environ.get("GEMINI_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/models")
 API_KEY = os.environ.get("GEMINI_API_KEY", "")
-TARGETS = ["xds", "baseline", "html"]
+TARGETS = ["astryx", "baseline", "html"]
 
 # Prompt registry — maps prompt ID to human-readable description for the judge
 PROMPTS = {
@@ -234,11 +234,11 @@ def compute_averages(results, targets):
 
 def print_summary(results, avg_out, prompts_to_score, targets):
     print(f"\n{'='*70}")
-    print(f"{'Prompt':<8} {'XDS':>6} {'Base':>6} {'HTML':>6}")
+    print(f"{'Prompt':<8} {'Astryx':>6} {'Base':>6} {'HTML':>6}")
     print("-" * 30)
     for pid in prompts_to_score:
         if pid in results:
-            x = results[pid].get("xds", {}).get("overall", "—")
+            x = results[pid].get("astryx", {}).get("overall", "—")
             b = results[pid].get("baseline", {}).get("overall", "—")
             h = results[pid].get("html", {}).get("overall", "—")
             print(f"{pid:<8} {str(x):>6} {str(b):>6} {str(h):>6}")

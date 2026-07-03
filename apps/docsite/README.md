@@ -1,6 +1,6 @@
-# XDS Docsite
+# Astryx Docsite
 
-The OSS documentation site for XDS. Built with Next.js and StyleX.
+The OSS documentation site for Astryx. Built with Next.js and StyleX.
 
 ## Quick Start
 
@@ -24,17 +24,17 @@ from the monorepo and writes typed TypeScript registries to `src/generated/`.
 
 `scripts/generate-data.mjs` scans the monorepo and produces:
 
-| Registry               | Source                            | What it contains                                              |
-| ---------------------- | --------------------------------- | ------------------------------------------------------------- |
-| `packageRegistry.ts`   | `packages/*/package.json`         | Name, version, description, README for each published package |
-| `componentRegistry.ts` | `*.doc.mjs` files                 | Props, usage docs, hooks, groups, per package                 |
-| `blockRegistry.ts`     | CLI `templates/blocks/`           | Showcase and example blocks with metadata                     |
-| `templateRegistry.ts`  | CLI `templates/pages/`            | Page-level templates (e.g. dashboard, settings)               |
-| `docsRegistry.ts`      | CLI `docs/`                       | Long-form guide and foundation topics                         |
-| `blogRegistry.ts`      | `src/content/blog/posts/`         | Human-authored blog posts (frontmatter validated)             |
+| Registry               | Source                                     | What it contains                                              |
+| ---------------------- | ------------------------------------------ | ------------------------------------------------------------- |
+| `packageRegistry.ts`   | `packages/*/package.json`                  | Name, version, description, README for each published package |
+| `componentRegistry.ts` | `*.doc.mjs` files                          | Props, usage docs, hooks, groups, per package                 |
+| `blockRegistry.ts`     | CLI `templates/blocks/`                    | Showcase and example blocks with metadata                     |
+| `templateRegistry.ts`  | CLI `templates/pages/`                     | Page-level templates (e.g. dashboard, settings)               |
+| `docsRegistry.ts`      | CLI `docs/`                                | Long-form guide and foundation topics                         |
+| `blogRegistry.ts`      | `src/content/blog/posts/`                  | Human-authored blog posts (frontmatter validated)             |
 | `themeRegistry.ts`     | Installed `@astryxdesign/theme-*` packages | Built theme objects, keyed by package name                    |
-| `showcaseRegistry.ts`  | Blocks with `isShowcase`          | Copied showcase source files                                  |
-| `exampleRegistry.ts`   | Blocks with `exampleFor`          | Copied example blocks per component                           |
+| `showcaseRegistry.ts`  | Blocks with `isShowcase`                   | Copied showcase source files                                  |
+| `exampleRegistry.ts`   | Blocks with `exampleFor`                   | Copied example blocks per component                           |
 
 The `src/generated/` directory is gitignored. Pages import from these registries
 and render whatever the pipeline found, with no manual wiring needed.
@@ -110,7 +110,7 @@ apps/docsite/
 ├── src/
 │   ├── generated/            # gitignored — pipeline output
 │   ├── app/
-│   │   ├── globals.css       # CSS imports (reset, xds base, theme stylesheets)
+│   │   ├── globals.css       # CSS imports (reset, astryx base, theme stylesheets)
 │   │   ├── layout.tsx        # Root layout
 │   │   ├── providers.tsx     # Theme + client providers
 │   │   ├── (docs)/           # Main docs routes (components, packages, docs)

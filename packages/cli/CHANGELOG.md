@@ -110,7 +110,6 @@ Thanks to everyone who contributed to this release:
 Thanks to everyone who contributed to this release:
 
 - @ejhammond
-- @joeyfarina
 - @josephfarina
 - @nynexman4464
 

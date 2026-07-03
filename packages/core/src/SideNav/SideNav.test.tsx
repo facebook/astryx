@@ -577,6 +577,22 @@ describe('SideNavItem', () => {
     expect(link).toHaveAttribute('aria-current', 'page');
   });
 
+  it('places aria-current on the link, not the wrapper, for split-action items', () => {
+    // A collapsible item (has children) WITH a primary href renders the
+    // split-action path: the link and the expand toggle are siblings inside a
+    // wrapper div. aria-current="page" must sit on the focusable link so it is
+    // announced as the current page (navigation-8).
+    render(
+      <SideNavItem label="Reports" href="/reports" isSelected>
+        <SideNavItem label="Weekly" href="/reports/weekly" />
+      </SideNavItem>,
+    );
+    const link = screen.getByRole('link', {name: /Reports/});
+    expect(link).toHaveAttribute('aria-current', 'page');
+    // The wrapper div must NOT carry aria-current.
+    expect(link.closest('[aria-current="page"]')).toBe(link);
+  });
+
   it('renders custom component when as and href are provided', () => {
     render(<SideNavItem label="Dashboard" href="/dashboard" as={CustomLink} />);
     const link = screen.getByRole('link');

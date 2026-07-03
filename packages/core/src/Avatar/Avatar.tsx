@@ -297,7 +297,11 @@ export function Avatar({
   const showInitials = !showImage && !showFallbackImage && name;
   const showIcon = !showImage && !showFallbackImage && !name;
 
-  const accessibleName = alt || name || 'Avatar';
+  // A meaningful accessible name comes from `alt` or `name`. With neither, the
+  // avatar is decorative — expose it as `presentation`/`aria-hidden` rather than
+  // announcing a meaningless generic "Avatar" (obs-9).
+  const accessibleName = alt || name;
+  const isDecorative = !accessibleName;
   const avatarGroup = useAvatarGroup();
   const resolvedSize = avatarGroup?.size ?? size;
   const numericSize = useMemo(() => resolveSize(resolvedSize), [resolvedSize]);
@@ -306,8 +310,9 @@ export function Avatar({
     <AvatarSizeContext value={numericSize}>
       <div
         ref={ref}
-        role="img"
-        aria-label={accessibleName}
+        role={isDecorative ? 'presentation' : 'img'}
+        aria-label={isDecorative ? undefined : accessibleName}
+        aria-hidden={isDecorative || undefined}
         data-testid={testId}
         {...mergeProps(
           themeProps('avatar', {size: resolvedSize}),
@@ -326,7 +331,7 @@ export function Avatar({
           {showImage && (
             <img
               src={src}
-              alt={accessibleName}
+              alt=""
               onError={() => setImageError(true)}
               {...stylex.props(styles.image)}
             />
@@ -334,7 +339,7 @@ export function Avatar({
           {showFallbackImage && (
             <img
               src={fallbackSrc}
-              alt={accessibleName}
+              alt=""
               onError={() => setFallbackError(true)}
               {...stylex.props(styles.image)}
             />

@@ -2,18 +2,16 @@
 
 /**
  * @file BlogCard.tsx
- * Blog index card: cover, title, excerpt, byline, and a type + tags chip row.
+ * Blog index card: cover, title, excerpt, and byline.
  * The `feature` variant (latest post) renders larger.
  */
 
 import * as stylex from '@stylexjs/stylex';
 import {Text, Heading} from '@astryxdesign/core/Text';
-import {VStack, HStack} from '@astryxdesign/core/Layout';
-import {Badge} from '@astryxdesign/core/Badge';
+import {VStack} from '@astryxdesign/core/Layout';
 import {Link} from '@astryxdesign/core/Link';
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import type {BlogPost} from '../../lib/blog/schema';
-import {POST_TYPE_LABELS} from '../../lib/blog/schema';
 import {AuthorByline} from './AuthorByline';
 import css from './BlogCard.module.css';
 
@@ -50,9 +48,6 @@ const styles = stylex.create({
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
   },
-  postTags: {
-    flexWrap: 'wrap',
-  },
 });
 
 export interface BlogCardProps {
@@ -85,7 +80,8 @@ export function BlogCard({post, feature = false}: BlogCardProps) {
           <VStack gap={1}>
             <Heading level={feature ? 1 : 3}>{post.title}</Heading>
             <Text
-              type="body"
+              type={feature ? 'large' : 'body'}
+              weight="normal"
               color="secondary"
               xstyle={styles.excerpt}
               className={css.description}>
@@ -99,12 +95,6 @@ export function BlogCard({post, feature = false}: BlogCardProps) {
             variant="compact"
             className={css.byline}
           />
-          <HStack gap={1} xstyle={styles.postTags}>
-            <Badge label={POST_TYPE_LABELS[post.type]} variant="cyan" />
-            {post.tags.map(tag => (
-              <Badge key={tag} label={tag} variant="neutral" />
-            ))}
-          </HStack>
         </VStack>
       </VStack>
     </Link>

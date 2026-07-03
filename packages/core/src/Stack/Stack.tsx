@@ -25,8 +25,18 @@ import {
   type SpacingStep,
 } from './stack.stylex';
 import type {SizeValue} from '../utils/types';
+import {
+  paddingInlineStyles,
+  paddingBlockStyles,
+} from '../Layout/padding.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+
+const overflowStyles = stylex.create({
+  scrollable: {
+    overflow: 'auto',
+  },
+});
 
 /**
  * Alignment values accepted by Stack.
@@ -39,7 +49,6 @@ import {themeProps} from '../utils/themeProps';
  *   `'start' | 'center' | 'end' | 'stretch'`
  */
 export type StackAlignment = StackMainAlignment | StackCrossAlignment;
-
 
 export interface StackProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
@@ -105,6 +114,37 @@ export interface StackProps extends BaseProps<HTMLElement> {
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    */
   gap?: SpacingStep;
+
+  /**
+   * Inner padding on all sides, using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   *
+   * Matches the `padding` prop on `Card`, `LayoutContent`, and `LayoutPanel`.
+   */
+  padding?: SpacingStep;
+
+  /**
+   * Inline (horizontal) padding, using the spacing scale.
+   * Overrides `padding` on the inline axis when both are set.
+   */
+  paddingInline?: SpacingStep;
+
+  /**
+   * Block (vertical) padding, using the spacing scale.
+   * Overrides `padding` on the block axis when both are set.
+   */
+  paddingBlock?: SpacingStep;
+
+  /**
+   * Enables scrollable overflow (`overflow: auto`) for the stack.
+   *
+   * Matches the `isScrollable` prop on `LayoutContent` and `LayoutPanel`.
+   * When the stack is itself a flex child that should scroll, pair it with
+   * a parent `StackItem size="fill" isScrollable` (StackItem applies the
+   * `min-height: 0` reset that flex scroll regions require).
+   * @default false
+   */
+  isScrollable?: boolean;
 
   /**
    * Whether items should wrap.
@@ -180,6 +220,10 @@ export function Stack({
   justify,
   align,
   gap,
+  padding,
+  paddingInline,
+  paddingBlock,
+  isScrollable,
   width,
   height,
   wrap,
@@ -207,6 +251,11 @@ export function Stack({
       ? (resolvedVAlign as StackCrossAlignment | undefined)
       : (resolvedHAlign as StackCrossAlignment | undefined);
 
+  // Resolve padding to per-axis values: `padding` sets both axes; `paddingInline`
+  // / `paddingBlock` take precedence on their own axis when provided.
+  const resolvedPaddingInline = paddingInline ?? padding;
+  const resolvedPaddingBlock = paddingBlock ?? padding;
+
   const stylexProps = stylex.props(
     ...stack({
       direction,
@@ -215,6 +264,9 @@ export function Stack({
       gap,
       wrap,
     }),
+    resolvedPaddingInline != null && paddingInlineStyles[resolvedPaddingInline],
+    resolvedPaddingBlock != null && paddingBlockStyles[resolvedPaddingBlock],
+    isScrollable && overflowStyles.scrollable,
     xstyle,
   );
 

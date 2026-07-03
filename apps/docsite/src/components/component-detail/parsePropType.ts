@@ -11,8 +11,6 @@ import {getIconRegistry} from '@astryxdesign/core/Icon';
  * Parses a stringified TypeScript prop type into a control descriptor
  * that the playground can render an input for. Literal unions become
  * enum controls, including mixed string-literal + boolean unions.
- *
- * Ported from the internal docsite (nest/apps/xds).
  */
 
 export interface ElementOption {
@@ -72,7 +70,7 @@ function isInputStatusType(typeStr: string, propName?: string): boolean {
     return false;
   }
 
-  // Prefix-agnostic (XDS-prefix migration P2380608025): match both the legacy
+  // Prefix-agnostic (XDS-prefix migration): match both the legacy
   // prefixed names (XDSInputStatus/XDSFieldStatus) and the bare forms.
   if (/\b(?:XDS)?(?:InputStatus|FieldStatus)\b/.test(typeStr)) {
     return true;

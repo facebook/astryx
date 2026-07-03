@@ -474,34 +474,30 @@ type SelectorPropsNonClearable<
   changeAction?: (value: string) => void | Promise<void>;
 };
 
-type SelectorPropsClearable<
-  T extends SelectorOptionType = SelectorOptionType,
-> = SelectorPropsBase<T> & {
-  /**
-   * Whether to show a clear button when a value is selected.
-   * When clicked, resets the value to `null` and returns focus to the trigger.
-   *
-   * When enabled, `value` and `onChange` widen to include `null`.
-   */
-  hasClear: true;
-  value: string | null;
-  onChange?: (value: string | null) => void;
-  changeAction?: (value: string | null) => void | Promise<void>;
-};
+type SelectorPropsClearable<T extends SelectorOptionType = SelectorOptionType> =
+  SelectorPropsBase<T> & {
+    /**
+     * Whether to show a clear button when a value is selected.
+     * When clicked, resets the value to `null` and returns focus to the trigger.
+     *
+     * When enabled, `value` and `onChange` widen to include `null`.
+     */
+    hasClear: true;
+    value: string | null;
+    onChange?: (value: string | null) => void;
+    changeAction?: (value: string | null) => void | Promise<void>;
+  };
 
-export type SelectorProps<
-  T extends SelectorOptionType = SelectorOptionType,
-> = SelectorPropsNonClearable<T> | SelectorPropsClearable<T>;
+export type SelectorProps<T extends SelectorOptionType = SelectorOptionType> =
+  | SelectorPropsNonClearable<T>
+  | SelectorPropsClearable<T>;
 
 /**
  * Default option renderer
  */
 function DefaultOption({option}: {option: SelectorOptionData}) {
   return (
-    <SelectorOption
-      icon={option.icon}
-      label={option.label ?? option.value}
-    />
+    <SelectorOption icon={option.icon} label={option.label ?? option.value} />
   );
 }
 
@@ -622,6 +618,9 @@ export function Selector<T extends SelectorOptionType>(
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
+    // The popup's own role="listbox" is the exposed semantics; the trigger
+    // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
+    role: 'none',
   });
 
   // Open dropdown on mount when isDefaultOpen is true
@@ -652,6 +651,18 @@ export function Selector<T extends SelectorOptionType>(
     selectedItemOffset > 0
       ? {marginBlockStart: `-${selectedItemOffset}px`}
       : undefined;
+
+  // Clear the current value. Shared by the clear button and the keyboard
+  // Delete/Backspace path so clearing is reachable without a mouse.
+  const clearValue = useCallback(() => {
+    onChange?.(null);
+    if (changeAction) {
+      startTransition(async () => {
+        setOptimisticValue(undefined);
+        await changeAction(null);
+      });
+    }
+  }, [onChange, changeAction, startTransition, setOptimisticValue]);
 
   // Selector behavior (keyboard nav, typeahead, selection)
   const {
@@ -689,22 +700,30 @@ export function Selector<T extends SelectorOptionType>(
       },
       [onChange, changeAction, startTransition, setOptimisticValue],
     ),
+    onClear: hasClear ? clearValue : undefined,
     listboxId,
   });
+
+  // Keep the highlighted option visible during keyboard navigation. The
+  // listbox is a fixed-height scroll container, so without this the virtual
+  // cursor walks off-screen once navigation passes the visible window. Mirrors
+  // CommandPaletteItem's scrollIntoView({block: 'nearest'}) behavior.
+  useEffect(() => {
+    if (!popover.isOpen || highlightedIndex < 0) {
+      return;
+    }
+    document
+      .getElementById(getItemId(highlightedIndex))
+      ?.scrollIntoView?.({block: 'nearest'});
+  }, [popover.isOpen, highlightedIndex, getItemId]);
 
   // Handle clear button click
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
-      onChange?.(null);
-      if (changeAction) {
-        startTransition(async () => {
-          setOptimisticValue(undefined);
-          await changeAction(null);
-        });
-      }
+      clearValue();
     },
-    [onChange, changeAction, startTransition, setOptimisticValue],
+    [clearValue],
   );
 
   // Render search input
@@ -717,16 +736,30 @@ export function Selector<T extends SelectorOptionType>(
         <input
           ref={searchRef}
           id={searchId}
-          role="searchbox"
+          // When hasSearch is set, focus moves into this input on open, so it —
+          // not the trigger — must be the combobox that reports the highlighted
+          // option via aria-activedescendant (comboboxes-4). A bare searchbox
+          // left the highlight silent to screen readers.
+          role="combobox"
+          aria-expanded={popover.isOpen}
           aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            popover.isOpen && highlightedIndex >= 0
+              ? getItemId(highlightedIndex)
+              : undefined
+          }
           aria-label="Search options"
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           onKeyDown={e => {
+            // Arrow keys navigate options; Enter selects; Escape/Tab close.
+            // Home/End are left to the input for caret movement.
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
+              e.key === 'Enter' ||
               e.key === 'Escape' ||
               e.key === 'Tab'
             ) {
@@ -745,6 +778,9 @@ export function Selector<T extends SelectorOptionType>(
     searchQuery,
     searchPlaceholder,
     onKeyDown,
+    popover.isOpen,
+    highlightedIndex,
+    getItemId,
   ]);
 
   // Render an individual item
@@ -812,9 +848,7 @@ export function Selector<T extends SelectorOptionType>(
       const option = options[i];
 
       if (isDivider(option)) {
-        elements.push(
-          <Divider key={`divider-${i}`} xstyle={styles.divider} />,
-        );
+        elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
       } else if (isSection(option)) {
         const sectionItems: ReactNode[] = [];
         for (const opt of option.options) {
@@ -892,13 +926,16 @@ export function Selector<T extends SelectorOptionType>(
           ref={triggerRef}
           id={triggerId}
           type="button"
-          role="combobox"
+          // In hasSearch mode the popup's search input is the combobox (it owns
+          // focus + aria-activedescendant, comboboxes-4), so the trigger is a
+          // plain button that opens the listbox — not a second combobox.
+          role={hasSearch ? undefined : 'combobox'}
           {...rest}
           aria-haspopup="listbox"
           aria-expanded={popover.isOpen}
           aria-controls={listboxId}
           aria-activedescendant={
-            popover.isOpen && highlightedIndex >= 0
+            !hasSearch && popover.isOpen && highlightedIndex >= 0
               ? getItemId(highlightedIndex)
               : undefined
           }
@@ -908,7 +945,7 @@ export function Selector<T extends SelectorOptionType>(
           aria-busy={isBusy || undefined}
           disabled={isDisabled}
           onKeyDown={onKeyDown}
-          tabIndex={-1}
+          tabIndex={isDisabled ? -1 : 0}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerLabel)}>
             {selectedItem?.label ?? placeholder}
@@ -918,7 +955,6 @@ export function Selector<T extends SelectorOptionType>(
         {hasClear && value != null && !isDisabled && (
           <button
             type="button"
-            tabIndex={-1}
             onClick={handleClear}
             aria-label={`Clear ${label}`}
             {...stylex.props(styles.clearButton)}>

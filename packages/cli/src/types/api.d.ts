@@ -33,7 +33,6 @@ import type {
   TemplateShowResponse,
   TemplateSkeletonResponse,
   TemplateCopyResponse,
-  TemplateGetResponse,
 } from './template';
 import type {
   HookListResponse,
@@ -138,6 +137,8 @@ export interface TemplateOptions {
   show?: boolean;
   /** Filter templates by kind: 'page' or 'block'. Only applies to list views. */
   type?: 'page' | 'block';
+  /** Narrow to templates from a specific package (id-only lookups across packages are ambiguous). */
+  package?: string;
   targetPath?: string;
   cwd?: string;
 }
@@ -152,11 +153,6 @@ export declare function template(
   name?: string,
   options?: TemplateOptions,
 ): Promise<TemplateResult>;
-
-export declare function getTemplateById(
-  id: string,
-  options?: {cwd?: string},
-): Promise<TemplateGetResponse>;
 
 // ── Hook ─────────────────────────────────────────────────────────────
 

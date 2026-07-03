@@ -56,10 +56,7 @@ describe('SegmentedControl', () => {
     const handleChange = vi.fn();
 
     render(
-      <SegmentedControl
-        value="grid"
-        onChange={handleChange}
-        label="View mode">
+      <SegmentedControl value="grid" onChange={handleChange} label="View mode">
         <SegmentedControlItem value="grid" label="Grid" />
         <SegmentedControlItem value="list" label="List" />
       </SegmentedControl>,
@@ -74,10 +71,7 @@ describe('SegmentedControl', () => {
     const handleChange = vi.fn();
 
     render(
-      <SegmentedControl
-        value="grid"
-        onChange={handleChange}
-        label="View mode">
+      <SegmentedControl value="grid" onChange={handleChange} label="View mode">
         <SegmentedControlItem value="grid" label="Grid" />
         <SegmentedControlItem value="list" label="List" />
       </SegmentedControl>,
@@ -196,6 +190,45 @@ describe('SegmentedControl', () => {
       '-1',
     );
   });
+
+  it('keeps a tab stop when the value matches no item (tab-stop repair)', () => {
+    render(
+      <SegmentedControl
+        value="nonexistent"
+        onChange={() => {}}
+        label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+        <SegmentedControlItem value="table" label="Table" />
+      </SegmentedControl>,
+    );
+
+    // No item is selected, but the group must remain Tab-reachable: the first
+    // enabled radio is promoted to tabIndex=0.
+    expect(screen.getByRole('radio', {name: 'Grid'})).toHaveAttribute(
+      'tabIndex',
+      '0',
+    );
+  });
+
+  it('promotes the first enabled item when the value matches no item and the first is disabled', () => {
+    render(
+      <SegmentedControl
+        value="nonexistent"
+        onChange={() => {}}
+        label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" isDisabled />
+        <SegmentedControlItem value="list" label="List" />
+        <SegmentedControlItem value="table" label="Table" />
+      </SegmentedControl>,
+    );
+
+    // The disabled first item is skipped; the first ENABLED radio is tabbable.
+    expect(screen.getByRole('radio', {name: 'List'})).toHaveAttribute(
+      'tabIndex',
+      '0',
+    );
+  });
 });
 
 describe('SegmentedControl keyboard navigation', () => {
@@ -204,10 +237,7 @@ describe('SegmentedControl keyboard navigation', () => {
     const handleChange = vi.fn();
 
     render(
-      <SegmentedControl
-        value="grid"
-        onChange={handleChange}
-        label="View mode">
+      <SegmentedControl value="grid" onChange={handleChange} label="View mode">
         <SegmentedControlItem value="grid" label="Grid" />
         <SegmentedControlItem value="list" label="List" />
         <SegmentedControlItem value="table" label="Table" />
@@ -226,10 +256,7 @@ describe('SegmentedControl keyboard navigation', () => {
     const handleChange = vi.fn();
 
     render(
-      <SegmentedControl
-        value="list"
-        onChange={handleChange}
-        label="View mode">
+      <SegmentedControl value="list" onChange={handleChange} label="View mode">
         <SegmentedControlItem value="grid" label="Grid" />
         <SegmentedControlItem value="list" label="List" />
         <SegmentedControlItem value="table" label="Table" />
@@ -248,10 +275,7 @@ describe('SegmentedControl keyboard navigation', () => {
     const handleChange = vi.fn();
 
     render(
-      <SegmentedControl
-        value="table"
-        onChange={handleChange}
-        label="View mode">
+      <SegmentedControl value="table" onChange={handleChange} label="View mode">
         <SegmentedControlItem value="grid" label="Grid" />
         <SegmentedControlItem value="list" label="List" />
         <SegmentedControlItem value="table" label="Table" />
@@ -270,10 +294,7 @@ describe('SegmentedControl keyboard navigation', () => {
     const handleChange = vi.fn();
 
     render(
-      <SegmentedControl
-        value="grid"
-        onChange={handleChange}
-        label="View mode">
+      <SegmentedControl value="grid" onChange={handleChange} label="View mode">
         <SegmentedControlItem value="grid" label="Grid" />
         <SegmentedControlItem value="list" label="List" />
         <SegmentedControlItem value="table" label="Table" />
@@ -292,10 +313,7 @@ describe('SegmentedControl keyboard navigation', () => {
     const handleChange = vi.fn();
 
     render(
-      <SegmentedControl
-        value="table"
-        onChange={handleChange}
-        label="View mode">
+      <SegmentedControl value="table" onChange={handleChange} label="View mode">
         <SegmentedControlItem value="grid" label="Grid" />
         <SegmentedControlItem value="list" label="List" />
         <SegmentedControlItem value="table" label="Table" />
@@ -314,10 +332,7 @@ describe('SegmentedControl keyboard navigation', () => {
     const handleChange = vi.fn();
 
     render(
-      <SegmentedControl
-        value="grid"
-        onChange={handleChange}
-        label="View mode">
+      <SegmentedControl value="grid" onChange={handleChange} label="View mode">
         <SegmentedControlItem value="grid" label="Grid" />
         <SegmentedControlItem value="list" label="List" />
         <SegmentedControlItem value="table" label="Table" />
@@ -351,6 +366,41 @@ describe('SegmentedControl disabled state', () => {
     );
   });
 
+  it('removes the tab stop from the selected item when the group is disabled (navigation-13)', () => {
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={() => {}}
+        label="View mode"
+        isDisabled>
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+    // Selected segment must not be a focusable-but-dead tab stop when disabled.
+    const selected = screen.getByRole('radio', {name: 'Grid'});
+    expect(selected).toHaveAttribute('tabIndex', '-1');
+    expect(selected).toHaveAttribute('aria-disabled', 'true');
+    // No enabled segment is tabbable either.
+    expect(screen.getByRole('radio', {name: 'List'})).toHaveAttribute(
+      'tabIndex',
+      '-1',
+    );
+  });
+
+  it('removes the tab stop from an individually disabled selected item', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem value="grid" label="Grid" isDisabled />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+    expect(screen.getByRole('radio', {name: 'Grid'})).toHaveAttribute(
+      'tabIndex',
+      '-1',
+    );
+  });
+
   it('does not call onChange when group is disabled', async () => {
     const user = userEvent.setup({pointerEventsCheck: 0});
     const handleChange = vi.fn();
@@ -375,10 +425,7 @@ describe('SegmentedControl disabled state', () => {
     const handleChange = vi.fn();
 
     render(
-      <SegmentedControl
-        value="grid"
-        onChange={handleChange}
-        label="View mode">
+      <SegmentedControl value="grid" onChange={handleChange} label="View mode">
         <SegmentedControlItem value="grid" label="Grid" />
         <SegmentedControlItem value="list" label="List" isDisabled />
       </SegmentedControl>,
@@ -398,10 +445,7 @@ describe('SegmentedControl disabled state', () => {
     const handleChange = vi.fn();
 
     render(
-      <SegmentedControl
-        value="grid"
-        onChange={handleChange}
-        label="View mode">
+      <SegmentedControl value="grid" onChange={handleChange} label="View mode">
         <SegmentedControlItem value="grid" label="Grid" />
         <SegmentedControlItem value="list" label="List" isDisabled />
         <SegmentedControlItem value="table" label="Table" />

@@ -36,7 +36,6 @@ src/
     swizzle.mjs                # CLI-only (side-effect: copies + rewrites imports)
     build-theme.mjs            # CLI-only (side-effect: compiles theme to CSS)
     upgrade.mjs                # CLI-only (side-effect: runs codemods)
-    gap-report.mjs             # CLI-only (side-effect: files GitHub issues)
     init.mjs                   # CLI-only (interactive prompts)
   lib/
     json.mjs                   # jsonOut(type, data), jsonError(msg) — internal
@@ -51,7 +50,6 @@ src/
     swizzle.d.ts               # SwizzleListResponse, SwizzleCopyResponse
     theme.d.ts                 # ThemeBuildResponse
     upgrade.d.ts               # UpgradeListResponse, UpgradeRunResponse
-    gap-report.d.ts            # GapReportCategoriesResponse, GapReportFileResponse
     index.d.ts                 # barrel re-export
 ```
 
@@ -61,7 +59,7 @@ src/
 
 **Yes** if the command returns data that consumers might want programmatically — component docs, template source, lists, search results. Put the logic in `src/api/`, export from `@astryxdesign/cli/api`, and make the CLI handler a thin wrapper.
 
-**No** if the command is purely interactive or only makes sense in a terminal — `init` (interactive prompts), `gap-report setup` (config wizard). These can live entirely in `src/commands/`.
+**No** if the command is purely interactive or only makes sense in a terminal — `init` (interactive prompts). These can live entirely in `src/commands/`.
 
 **Rule of thumb:** if it supports `--json`, it should have an API function. The parity test (`api-cli-parity-test.mjs`) will flag any `--json` type that doesn't have API coverage.
 
@@ -202,6 +200,7 @@ packages/cli/templates/{name}/
 3. Done — auto-discovered by `astryx template --list` and the `template()` API function
 
 **Rules:**
+
 - No extra files — no CSS, no images, no other assets. Everything lives in `page.tsx`.
 - Images must use external URLs (e.g. Unsplash), not local imports.
 - All styles must use StyleX or inline styles, not separate CSS files.
@@ -237,12 +236,12 @@ This is a breaking change for `@astryxdesign/cli/api` consumers. Bump the versio
 
 ### Response types: `{Command}{Mode}{SubMode?}Response`
 
-| Part    | Rule                    | Examples |
-|---------|-------------------------|----------|
-| Command | PascalCase command name | `Component`, `Discover`, `ThemeBuild` |
+| Part    | Rule                    | Examples                                                                          |
+| ------- | ----------------------- | --------------------------------------------------------------------------------- |
+| Command | PascalCase command name | `Component`, `Discover`, `ThemeBuild`                                             |
 | Mode    | What the response IS    | `List`, `Brief`, `Detail`, `Search`, `Copy`, `Build`, `Run`, `Categories`, `File` |
-| SubMode | Narrower view of Mode   | `Props`, `Source`, `Doc`, `Section` |
-| Suffix  | Always `Response`       | |
+| SubMode | Narrower view of Mode   | `Props`, `Source`, `Doc`, `Section`                                               |
+| Suffix  | Always `Response`       |                                                                                   |
 
 ### Entry types: `{Command}{What}Entry`
 

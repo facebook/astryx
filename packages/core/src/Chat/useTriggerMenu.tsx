@@ -296,6 +296,9 @@ export function useTriggerMenu(
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
+    // The popup's own role="listbox" is the exposed semantics; focus stays in
+    // the contenteditable composer, so a modal dialog wrapper is incorrect.
+    role: 'none',
   });
 
   // Cleanup on unmount

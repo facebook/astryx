@@ -29,7 +29,7 @@ import {
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps} from '@astryxdesign/core/utils';
 import type {BaseProps} from '@astryxdesign/core';
-import {themeProps} from '../../../core/src/utils/themeProps';
+import {themeProps} from '@astryxdesign/core/utils';
 
 /**
  * Extensible variant map for CircularProgress.

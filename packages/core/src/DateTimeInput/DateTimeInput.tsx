@@ -47,6 +47,7 @@ import {
   inputStatusFocusWithinStyles,
 } from '../Field';
 import {Icon} from '../Icon';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {Spinner} from '../Spinner';
 import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
@@ -286,6 +287,13 @@ export interface DateTimeInputProps extends Omit<
   timePlaceholder?: string;
 
   /**
+   * Accessible label for the time portion of the field. Defaults to
+   * `"{label} time"` so it is tied to the field's own label and localizable,
+   * rather than a hardcoded English "Time".
+   */
+  timeLabel?: string;
+
+  /**
    * The size of the inputs.
    * @default 'md'
    */
@@ -388,6 +396,7 @@ export function DateTimeInput({
   hasClear = false,
   placeholder = 'Select a date',
   timePlaceholder = 'Select a time',
+  timeLabel,
   size: sizeProp,
   status,
   labelTooltip,
@@ -838,7 +847,9 @@ export function DateTimeInput({
             disabled={isEffectivelyDisabled}
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
-            aria-invalid={status?.type === 'error' ? 'true' : undefined}
+            aria-invalid={
+              status?.type === 'error' || !isDateInputValid ? 'true' : undefined
+            }
             aria-busy={isBusy || undefined}
             aria-expanded={popover.isOpen}
             aria-haspopup="dialog"
@@ -851,6 +862,15 @@ export function DateTimeInput({
               !isDateInputValid && styles.inputInvalid,
             )}
           />
+          {/*
+            Live region announcing invalid typed date input to assistive
+            technology. The value silently reverts on blur, so without this a
+            screen-reader user would get no feedback that their entry was
+            rejected (WCAG 3.3.1).
+          */}
+          <VisuallyHidden as="div" role="alert" aria-live="assertive">
+            {!isDateInputValid ? 'Invalid date' : ''}
+          </VisuallyHidden>
           {hasClear && value !== undefined && !isEffectivelyDisabled && (
             <button
               type="button"
@@ -898,15 +918,24 @@ export function DateTimeInput({
             onKeyDown={handleTimeKeyDown}
             placeholder={resolvedTimePlaceholder}
             disabled={isEffectivelyDisabled}
-            aria-label="Time"
+            aria-label={timeLabel ?? `${label} time`}
             aria-required={isRequired === true ? 'true' : undefined}
-            aria-invalid={status?.type === 'error' ? 'true' : undefined}
+            aria-invalid={
+              status?.type === 'error' || !isTimeInputValid ? 'true' : undefined
+            }
             {...stylex.props(
               styles.input,
               isEffectivelyDisabled && styles.inputDisabled,
               !isTimeInputValid && styles.inputInvalid,
             )}
           />
+          {/*
+            Live region announcing invalid typed time input to assistive
+            technology (WCAG 3.3.1).
+          */}
+          <VisuallyHidden as="div" role="alert" aria-live="assertive">
+            {!isTimeInputValid ? 'Invalid time' : ''}
+          </VisuallyHidden>
         </div>
       </div>
 

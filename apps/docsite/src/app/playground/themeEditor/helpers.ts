@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {COMPONENT_VAR_TO_OVERRIDE, COMPONENT_VAR_NAMES} from './constants';
+import {expandColorScale} from '@astryxdesign/core/theme';
 
 export function parseLightDark(
   value: string,
@@ -237,4 +238,27 @@ export function generateThemeCode(
 
   lines.push('});');
   return lines.join('\n');
+}
+
+export function getExpandedColorScale(accentHex: string): Record<string, string> {
+  const derived = expandColorScale({accent: accentHex}) as Record<string, string>;
+  // Do not override the user's custom picker selection for `--color-accent` itself
+  delete derived['--color-accent'];
+  let hex = accentHex.replace('#', '');
+  // Normalize 3-char short hex (e.g. "f00") to 6-char ("ff0000")
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+  // Guard against invalid hex — fall back to black
+  if (hex.length !== 6 || !/^[0-9a-fA-F]{6}$/.test(hex)) {
+    hex = '000000';
+  }
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  derived['--shadow-inset-hover'] =
+    `inset 0px 0px 0px 2px rgba(${r}, ${g}, ${b}, 0.3)`;
+  derived['--shadow-inset-selected'] =
+    `inset 0px 0px 0px 2px rgba(${r}, ${g}, ${b}, 0.5)`;
+  return derived;
 }

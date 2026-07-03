@@ -14,7 +14,9 @@ export const docs = {
     {name: 'hasAutoFocus', type: 'boolean', description: 'Whether to automatically focus the first focusable element when opened.', default: 'true'},
     {name: 'hasCloseButton', type: 'boolean', description: 'Whether to include a hidden close button that appears for keyboard users.', default: 'true'},
     {name: 'closeButtonLabel', type: 'string', description: 'Accessible label for the hidden close button.', default: "'Close popover'"},
-    {name: 'dialogLabel', type: 'string', description: 'Accessible label for the popover dialog. Provide one when there is no visible title.'},
+    {name: 'dialogLabel', type: 'string', description: 'Accessible label for the popover dialog (only applies when role is "dialog"). Provide one when there is no visible title.'},
+    {name: 'role', type: "'dialog' | 'none'", description: 'ARIA role on the content wrapper. Use "dialog" for genuine dialog content; use "none" for listbox/menu popups whose own content role should be exposed and whose trigger keeps DOM focus.', default: "'dialog'"},
+    {name: 'isModal', type: 'boolean', description: 'Whether a dialog-role popover is modal (aria-modal). Only applies when role is "dialog".', default: 'true'},
     {name: 'hasSurface', type: 'boolean', description: 'Whether to apply the default popover surface background, radius, and shadow.', default: 'true'},
   ],
   returns: [
@@ -27,7 +29,7 @@ export const docs = {
     {name: 'isOpen', type: 'boolean', description: 'Whether the popover is currently open.'},
     {name: 'id', type: 'string', description: 'Unique ID for aria-describedby or aria-controls.'},
     {name: 'render', type: '(children: ReactNode, props?: ContextRenderProps) => ReactNode', description: 'Render function for anchor-positioned popover content. Pass placement and alignment here.'},
-    {name: 'triggerProps', type: '{aria-haspopup: "dialog"; aria-expanded: boolean; aria-controls: string}', description: 'ARIA attributes to spread onto the trigger element.'},
+    {name: 'triggerProps', type: '{aria-haspopup: "dialog" | "true"; aria-expanded: boolean; aria-controls: string}', description: 'ARIA attributes to spread onto the trigger element. aria-haspopup reflects the popover role.'},
   ],
   usage: {
     description: 'Headless hook for click-triggered popovers with focus trapping. Combines useLayer with useFocusTrap, auto-focus, light dismiss, Escape handling, and an optional hidden close button for accessible dialog-like popover behavior. Use for custom interactive floating content that needs keyboard navigation.',
@@ -54,7 +56,9 @@ export const docsDense = {
     hasAutoFocus: 'whether first focusable element receives focus on open.',
     hasCloseButton: 'whether hidden keyboard close button is included.',
     closeButtonLabel: 'label for hidden close button.',
-    dialogLabel: 'accessible label for popover dialog.',
+    dialogLabel: 'accessible label for popover dialog (role="dialog" only).',
+    role: 'content wrapper ARIA role; "none" for listbox/menu popups.',
+    isModal: 'whether a dialog-role popover is modal (aria-modal).',
     hasSurface: 'apply default surface background/radius/shadow.',
   },
   returnDescriptions: {

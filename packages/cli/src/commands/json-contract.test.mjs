@@ -91,15 +91,6 @@ describe('--json contract: rejects before side effects', () => {
     expect(fs.readdirSync(tmpDir)).toEqual([]);
   });
 
-  it('astryx gap-report setup --json rejects before prompting', () => {
-    const {status, stdout} = runCli(['gap-report', 'setup', '--json'], {cwd: tmpDir});
-    expect(status).toBe(1);
-    const parsed = parseJson(stdout);
-    expect(parsed.error).toMatch(/gap-report setup/);
-    // No astryx.config.mjs written.
-    expect(fs.existsSync(path.join(tmpDir, 'astryx.config.mjs'))).toBe(false);
-  });
-
   it('astryx theme --json (parent, no subcommand) rejects without printing help', () => {
     const {status, stdout, stderr} = runCli(['theme', '--json'], {cwd: tmpDir});
     expect(status).toBe(1);
@@ -143,29 +134,6 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(parsed.type).toBe('help');
     expect(Array.isArray(parsed.data.commands)).toBe(true);
     expect(Array.isArray(parsed.data.jsonSupported)).toBe(true);
-  });
-
-  it('astryx gap-report --json --list-categories returns a typed envelope', () => {
-    const {status, stdout} = runCli(['gap-report', '--json', '--list-categories'], {cwd: tmpDir});
-    expect(status).toBe(0);
-    const parsed = parseJson(stdout);
-    expect(parsed.type).toBe('gap-report.categories');
-    expect(Array.isArray(parsed.data)).toBe(true);
-  });
-
-  it('astryx gap-report --json without required flags emits a structured error (no clack)', () => {
-    // Configure gap-report so it doesn't error on "disabled" — we want to
-    // hit the "interactive prompt would start" branch.
-    fs.writeFileSync(
-      path.join(tmpDir, 'astryx.config.mjs'),
-      'export default { gapReport: { command: "true" } };\n',
-    );
-    const {status, stdout} = runCli(['gap-report', '--json'], {cwd: tmpDir});
-    expect(status).toBe(1);
-    const parsed = parseJson(stdout);
-    expect(parsed.error).toMatch(/component/i);
-    // Must not contain clack-rendered prompt characters.
-    expect(stdout).not.toMatch(/Which component/);
   });
 
   it('astryx upgrade --json --list returns the codemod list', () => {

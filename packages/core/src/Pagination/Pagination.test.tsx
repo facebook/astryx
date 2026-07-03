@@ -9,10 +9,26 @@
  * SYNC: When Pagination.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, within, fireEvent, act} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {
+  render,
+  screen,
+  within,
+  fireEvent,
+  act,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Pagination, generatePageRange} from './Pagination';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
 
 // =============================================================================
 // generatePageRange helper
@@ -240,6 +256,65 @@ describe('Pagination', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // pageSize guarding
+  // ---------------------------------------------------------------------------
+
+  describe('pageSize guarding', () => {
+    it('does not crash the dots variant when pageSize is 0', () => {
+      render(
+        <Pagination
+          page={1}
+          onChange={() => {}}
+          totalItems={5}
+          pageSize={0}
+          variant="dots"
+        />,
+      );
+      const group = screen.getByRole('group', {name: 'Page indicators'});
+      expect(within(group).getAllByRole('button')).toHaveLength(5);
+    });
+
+    it('treats NaN pageSize as the default', () => {
+      render(
+        <Pagination
+          page={1}
+          onChange={() => {}}
+          totalItems={50}
+          pageSize={NaN}
+          variant="compact"
+        />,
+      );
+      expect(screen.getByText('Page 1 of 5')).toBeInTheDocument();
+    });
+
+    it('clamps negative pageSize to 1', () => {
+      render(
+        <Pagination
+          page={1}
+          onChange={() => {}}
+          totalItems={5}
+          pageSize={-10}
+          variant="compact"
+        />,
+      );
+      expect(screen.getByText('Page 1 of 5')).toBeInTheDocument();
+    });
+
+    it('floors fractional pageSize', () => {
+      render(
+        <Pagination
+          page={1}
+          onChange={() => {}}
+          totalItems={50}
+          pageSize={2.5}
+          variant="compact"
+        />,
+      );
+      expect(screen.getByText('Page 1 of 25')).toBeInTheDocument();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Variant: dots
   // ---------------------------------------------------------------------------
 
@@ -304,6 +379,38 @@ describe('Pagination', () => {
   // ---------------------------------------------------------------------------
 
   describe('page change callbacks', () => {
+    it('does not announce on initial mount', () => {
+      render(<Pagination page={1} onChange={() => {}} totalPages={10} />);
+      expect(politeRegion()).toBeNull();
+    });
+
+    it('announces the new page politely when navigating', async () => {
+      const user = userEvent.setup();
+      render(<Pagination page={2} onChange={() => {}} totalPages={10} />);
+      await user.click(screen.getByRole('button', {name: 'Go to page 3'}));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Page 3 of 10');
+      });
+    });
+
+    it('announces the next page when clicking next', async () => {
+      const user = userEvent.setup();
+      render(<Pagination page={2} onChange={() => {}} totalPages={5} />);
+      await user.click(screen.getByRole('button', {name: 'Go to next page'}));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Page 3 of 5');
+      });
+    });
+
+    it('announces without a total when only hasMore is known', async () => {
+      const user = userEvent.setup();
+      render(<Pagination page={1} onChange={() => {}} hasMore />);
+      await user.click(screen.getByRole('button', {name: 'Go to next page'}));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Page 2');
+      });
+    });
+
     it('calls onChange when clicking a page button', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -395,7 +502,9 @@ describe('Pagination', () => {
       // reflects the page being navigated to.
       await user.click(screen.getByRole('button', {name: 'Go to next page'}));
       expect(changeAction).toHaveBeenCalledWith(2);
-      expect(screen.getByText('Page 2 of 5')).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('navigation')).getByText('Page 2 of 5'),
+      ).toBeInTheDocument();
 
       await act(async () => {
         resolveAction?.();
@@ -425,14 +534,17 @@ describe('Pagination', () => {
       );
 
       const next = screen.getByRole('button', {name: 'Go to next page'});
+      const nav = screen.getByRole('navigation');
       await act(async () => {
         fireEvent.click(next);
       });
-      expect(screen.getByText('Page 2 of 5')).toBeInTheDocument();
+      // Scope to the nav landmark: the live region on document.body also
+      // carries the announced page text.
+      expect(within(nav).getByText('Page 2 of 5')).toBeInTheDocument();
       await act(async () => {
         fireEvent.click(next);
       });
-      expect(screen.getByText('Page 3 of 5')).toBeInTheDocument();
+      expect(within(nav).getByText('Page 3 of 5')).toBeInTheDocument();
 
       expect(changeAction).toHaveBeenCalledTimes(2);
       expect(changeAction).toHaveBeenNthCalledWith(1, 2);

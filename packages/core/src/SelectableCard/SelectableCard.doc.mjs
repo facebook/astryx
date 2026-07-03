@@ -46,7 +46,7 @@ export const docs = {
         props: {gap: 1},
         children: [
           {__element: 'XDSHeading', props: {level: 3}, children: 'Pro plan'},
-          {__element: 'XDSText', props: {type: 'body'}, children: '$29/month — unlimited projects and priority support.'},
+          {__element: 'XDSText', props: {type: 'body'}, children: '$29/month, unlimited projects and priority support.'},
         ],
       },
     },

@@ -43,6 +43,7 @@ import {
   type DropdownMenuContextValue,
 } from './DropdownMenuContext';
 import {useListFocus} from '../hooks/useListFocus';
+import {useTypeahead} from '../hooks/useTypeahead';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerPlacement} from '../Layer/useLayer';
 import {
@@ -134,13 +135,6 @@ interface DropdownMenuBaseProps extends BaseProps {
    */
   placement?: LayerPlacement;
 
-  /**
-   * Whether to auto-focus the first menu item when the menu opens.
-   * Set to `false` for inline showcases or documentation previews
-   * where stealing focus is undesirable.
-   * @default true
-   */
-  hasAutoFocus?: boolean;
   'data-testid'?: string;
 }
 
@@ -192,7 +186,6 @@ export function DropdownMenu({
   onClick,
   hasChevron = true,
   placement = 'below',
-  hasAutoFocus = true,
   className,
   style,
   xstyle,
@@ -249,6 +242,9 @@ export function DropdownMenu({
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
+    // The popup's own role="menu" is the exposed semantics; wrapping it in a
+    // modal dialog would announce an unnamed dialog around the menu.
+    role: 'none',
   });
 
   const closeMenu = useCallback(() => {
@@ -260,10 +256,34 @@ export function DropdownMenu({
     listRef,
     handleKeyDown: listNavKeyDown,
     focusFirst,
+    focusItem,
   } = useListFocus<HTMLDivElement>({
     itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
     wrap: false,
     onEscape: closeMenu,
+  });
+
+  // First-character typeahead over the (enabled) menu items — jump to the next
+  // item whose label starts with the typed text (menus-11).
+  const getMenuItems = useCallback(
+    (): HTMLElement[] =>
+      listRef.current
+        ? Array.from(
+            listRef.current.querySelectorAll<HTMLElement>(
+              '[role="menuitem"]:not([aria-disabled="true"])',
+            ),
+          )
+        : [],
+    [listRef],
+  );
+  const typeahead = useTypeahead({
+    getItemLabels: () => getMenuItems().map(el => el.textContent),
+    onMatch: focusItem,
+    getCurrentIndex: () =>
+      getMenuItems().findIndex(
+        el =>
+          el === document.activeElement || el.contains(document.activeElement),
+      ),
   });
 
   // Sync controlled open state → popover, and focus first item on open
@@ -271,16 +291,14 @@ export function DropdownMenu({
     if (isControlled) {
       if (controlledIsOpen && !popover.isOpen) {
         popover.show();
-        if (hasAutoFocus) {
-          requestAnimationFrame(() => focusFirst());
-        }
+        requestAnimationFrame(() => focusFirst());
       } else if (!controlledIsOpen && popover.isOpen) {
         popover.hide();
       }
     }
-  }, [controlledIsOpen, isControlled, popover, hasAutoFocus, focusFirst]);
+  }, [controlledIsOpen, isControlled, popover, focusFirst]);
 
-  // Extend useListFocus with Enter/Space activation
+  // Extend useListFocus with Enter/Space activation + typeahead
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -291,17 +309,29 @@ export function DropdownMenu({
         }
         return;
       }
+      // APG menu-button pattern: Tab closes the menu. Menu items are
+      // tabIndex={-1} so the focus trap has nothing trappable and Tab would
+      // otherwise leak into the page while the menu stayed open (menus-5).
+      // Do NOT preventDefault — closing restores focus to the trigger, and the
+      // browser's default Tab then continues from there to the next element.
+      if (e.key === 'Tab') {
+        closeMenu();
+        return;
+      }
+      // Type-to-focus next; if it consumed a printable key, stop here.
+      if (typeahead.onKeyDown(e)) {
+        e.preventDefault();
+        return;
+      }
       listNavKeyDown(e);
     },
-    [listNavKeyDown],
+    [listNavKeyDown, closeMenu, typeahead],
   );
 
   const openAndFocus = useCallback(() => {
     popover.show();
-    if (hasAutoFocus) {
-      requestAnimationFrame(() => focusFirst());
-    }
-  }, [popover, hasAutoFocus, focusFirst]);
+    requestAnimationFrame(() => focusFirst());
+  }, [popover, focusFirst]);
 
   const handleButtonClick = useCallback(() => {
     // If the menu was just closed by light dismiss (e.g. iOS Safari fires
@@ -399,6 +429,10 @@ export function DropdownMenu({
           ref={listRef}
           id={menuId}
           role="menu"
+          // Give the menu an accessible name from its trigger's label, so
+          // screen readers announce e.g. "Actions menu" rather than an unnamed
+          // menu (menus-13).
+          aria-label={button.label}
           onKeyDown={listKeyDown}
           {...mergeProps(
             themeProps('dropdown-menu'),

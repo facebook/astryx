@@ -138,6 +138,13 @@ interface UseComboboxOptions {
   onOpen: () => void;
   onClose: () => void;
   onSelect?: (value: string) => void;
+  /**
+   * Clear the current value. When provided, pressing Delete or Backspace on the
+   * closed trigger clears the selection — a keyboard equivalent of the clear
+   * button, so clearing is not mouse-only. No-op when the popup is open (arrow
+   * navigation owns those keys there) or when there is no value.
+   */
+  onClear?: () => void;
   listboxId: string;
 }
 
@@ -163,6 +170,7 @@ export function useCombobox({
   onOpen,
   onClose,
   onSelect,
+  onClear,
   listboxId,
 }: UseComboboxOptions): UseComboboxResult {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -310,6 +318,19 @@ export function useCombobox({
           }
           break;
 
+        case 'Delete':
+        case 'Backspace':
+          // Keyboard equivalent of the clear button (comboboxes-2): clear the
+          // value from the closed trigger so clearing is not mouse-only. When
+          // hasSearch is active these keys must edit the search text instead,
+          // and when the popup is open arrow navigation owns interaction, so
+          // only handle the closed non-search case with a clearable value.
+          if (!hasSearch && !isOpen && onClear != null && value != null) {
+            e.preventDefault();
+            onClear();
+          }
+          break;
+
         default:
           if (!hasSearch && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
             const newTypeahead = typeahead + e.key.toLowerCase();
@@ -349,6 +370,8 @@ export function useCombobox({
       getEnabledIndices,
       typeahead,
       hasSearch,
+      onClear,
+      value,
     ],
   );
 

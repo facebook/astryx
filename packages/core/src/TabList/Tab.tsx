@@ -259,7 +259,13 @@ export function Tab({
     ...restProps,
     ...(isLabelHidden ? {'aria-label': label} : {}),
     [EDGE_COMP_ATTR]: '',
+    'data-tab-value': value,
     'aria-current': isSelected ? ('page' as const) : undefined,
+    // Roving tabindex: the tab strip is a single Tab stop. The selected tab is
+    // the tabbable one; the rest are reachable via arrow keys (handled by
+    // TabList's onKeyDown). When no tab is selected, TabList's repair effect
+    // makes the first stop tabbable.
+    tabIndex: isSelected ? 0 : -1,
     ...mergeProps(
       themeProps('tab', {
         selected: isSelected ? 'selected' : null,

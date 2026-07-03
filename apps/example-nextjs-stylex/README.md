@@ -1,12 +1,12 @@
-# XDS Example: Next.js + StyleX (Dist)
+# Astryx Example: Next.js + StyleX (Dist)
 
 Reference application for consuming **@astryxdesign/core** as a pre-built dist package with **StyleX** for product-level styles.
 
-XDS component CSS comes pre-built; there is no need to compile XDS source. StyleX is only used for your own app-level layout and custom styles, compiled at build time via the PostCSS plugin.
+Astryx component CSS comes pre-built; there is no need to compile Astryx source. StyleX is only used for your own app-level layout and custom styles, compiled at build time via the PostCSS plugin.
 
 ## CSS Layer Integration
 
-This example uses StyleX's `useCSSLayers.before` option to declare XDS dist layers before the StyleX app layers:
+This example uses StyleX's `useCSSLayers.before` option to declare Astryx dist layers before the StyleX app layers:
 
 ```js
 // postcss.config.js
@@ -21,17 +21,17 @@ This produces a layer order of:
 reset < astryx-base < astryx-theme < stylex.base < stylex.1 < stylex.2 < ...
 ```
 
-Product-level StyleX styles always win over XDS component defaults without needing `!important` or extra specificity.
+Product-level StyleX styles always win over Astryx component defaults without needing `!important` or extra specificity.
 
 ## Key Difference from Source Build
 
-|                     | This example (dist + StyleX)                | Source build                                 |
-| ------------------- | ------------------------------------------- | -------------------------------------------- |
-| XDS CSS             | Pre-built via `@import "@astryxdesign/core/astryx.css"` | Compiled from source via StyleX babel plugin |
-| PostCSS `include`   | `src/**/*` only (your code)                 | `src/**/*` + `node_modules/@astryxdesign/core/**/*`   |
-| StyleX `aliases`    | Not needed                                  | Required for `createTheme` resolution        |
-| `transpilePackages` | Not needed                                  | Required in next.config                      |
-| Layer ordering      | `useCSSLayers.before` declares XDS layers   | `useCSSLayers: true` (XDS layers mixed in)   |
+|                     | This example (dist + StyleX)                            | Source build                                        |
+| ------------------- | ------------------------------------------------------- | --------------------------------------------------- |
+| Astryx CSS          | Pre-built via `@import "@astryxdesign/core/astryx.css"` | Compiled from source via StyleX babel plugin        |
+| PostCSS `include`   | `src/**/*` only (your code)                             | `src/**/*` + `node_modules/@astryxdesign/core/**/*` |
+| StyleX `aliases`    | Not needed                                              | Required for `createTheme` resolution               |
+| `transpilePackages` | Not needed                                              | Required in next.config                             |
+| Layer ordering      | `useCSSLayers.before` declares Astryx layers            | `useCSSLayers: true` (Astryx layers mixed in)       |
 
 ## Setup Steps
 
@@ -76,11 +76,11 @@ module.exports = {
 };
 ```
 
-> No `aliases` config needed; we're not compiling XDS source.
+> No `aliases` config needed; we're not compiling Astryx source.
 
 ### 4. PostCSS config
 
-`postcss.config.js`: scan your app source, declare XDS layers before StyleX layers:
+`postcss.config.js`: scan your app source, declare Astryx layers before StyleX layers:
 
 ```js
 module.exports = {

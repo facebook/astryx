@@ -1,7 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 name: Bug Report
-description: Report a bug in an XDS component.
+description: Report a bug in an Astryx component.
 title: "[Bug] "
 labels: ["bug"]
 body:
@@ -29,7 +29,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: XDS Version
+      label: Astryx Version
       placeholder: "@astryxdesign/core@0.x.x"
     validations:
       required: true

@@ -5,7 +5,7 @@
 /**
  * @file generate-data.mjs
  *
- * Build-time data extraction for the XDS docsite.
+ * Build-time data extraction for the Astryx docsite.
  * Reads package.json, .doc.mjs, templates, and markdown files across the
  * monorepo and generates typed TypeScript registries in src/generated/.
  *

@@ -9,6 +9,12 @@ import * as path from 'node:path';
 
 const SKIP_DIRS = new Set(['hooks', 'utils', '__tests__', 'node_modules']);
 
+/** The owner package name for built-in (core) components. */
+export const CORE_PACKAGE = '@astryxdesign/core';
+
+/** Conventional doc-file suffixes for integration components (same-stem). */
+const INTEGRATION_DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
+
 // Component source files are named `XDS{Name}.tsx` today. The XDS-prefix
 // migration (P2380608025, P4) renames them to the bare `{Name}.tsx` form, so
 // discovery must recognize BOTH. The `XDS` prefix has historically doubled as
@@ -477,6 +483,177 @@ export function findExternalComponentDoc(docsDir, name) {
   }
 
   return scanDir(docsDir);
+}
+
+// ── Integration component discovery (ownership-aware) ────────────────
+//
+// Integration packages contribute a `components` root (resolved absolute path
+// in `loadedIntegrations`, see lib/integrations.mjs). Each component uses a
+// same-stem source/doc convention — e.g. `MetaAppShell.tsx` next to
+// `MetaAppShell.doc.{ts,mjs,js}`. The doc file is authoritative for discovery;
+// the sibling `.tsx` (if present) is the swizzleable source.
+//
+// Each discovered component is recorded with its OWNER package (the
+// integration's package name) and the owner's `issuesUrl` so downstream
+// commands — and the future integration-component swizzle — can disambiguate
+// by package and route source/issues correctly.
+
+/**
+ * Given an integration component doc path, return the sibling component source
+ * (`{Name}.tsx`) if one exists, else null.
+ *
+ * @param {string} docPath absolute path to a `{Name}.doc.{ts,mjs,js}` file
+ * @returns {string|null}
+ */
+function integrationSourceForDoc(docPath) {
+  const dir = path.dirname(docPath);
+  const base = path.basename(docPath).replace(/\.doc\.(ts|mjs|js)$/, '');
+  const candidate = path.join(dir, `${base}.tsx`);
+  return fs.existsSync(candidate) ? candidate : null;
+}
+
+/**
+ * Discover ownership records for the components contributed by a single loaded
+ * integration. Scans the integration's resolved `components` dir for same-stem
+ * doc files and records each with owner package + issuesUrl + sourcePath.
+ *
+ * @param {{name: string, components?: string, issuesUrl?: string}} integration
+ *   a single entry from `loadedIntegrations` (lib/integrations.mjs)
+ * @returns {Array<{name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>}
+ */
+export function discoverIntegrationComponents(integration) {
+  const componentsDir = integration?.components;
+  if (!componentsDir || !fs.existsSync(componentsDir)) return [];
+
+  /** @type {Map<string, {name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>} */
+  const byName = new Map();
+
+  function scanDir(dirPath) {
+    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    for (const entry of entries) {
+      if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        scanDir(fullPath);
+        continue;
+      }
+      const suffix = INTEGRATION_DOC_SUFFIXES.find(s => entry.name.endsWith(s));
+      if (!suffix) continue;
+      const name = entry.name.slice(0, -suffix.length);
+      const {group, hidden} = readDocMeta(fullPath);
+      if (hidden) continue;
+      // First doc wins per name (precedence matches INTEGRATION_DOC_SUFFIXES).
+      if (byName.has(name)) continue;
+      byName.set(name, {
+        name,
+        package: integration.name,
+        docPath: fullPath,
+        sourcePath: integrationSourceForDoc(fullPath),
+        issuesUrl: integration.issuesUrl,
+        group: group ?? null,
+      });
+    }
+  }
+
+  scanDir(componentsDir);
+  return [...byName.values()];
+}
+
+/**
+ * Find an integration component's doc file by name within a loaded
+ * integration's resolved `components` dir. Honors the same-stem convention
+ * (`{Name}.doc.{ts,mjs,js}`), preferring `.ts` → `.mjs` → `.js`.
+ *
+ * @param {{components?: string}} integration
+ * @param {string} name bare component name (no `XDS`/`Astryx` prefix)
+ * @returns {string|null}
+ */
+export function findIntegrationComponentDoc(integration, name) {
+  const componentsDir = integration?.components;
+  if (!componentsDir || !fs.existsSync(componentsDir)) return null;
+
+  function scanDir(dirPath) {
+    const entries = fs.readdirSync(dirPath, {withFileTypes: true});
+    // Exact same-stem match (precedence order) first in this dir.
+    for (const suffix of INTEGRATION_DOC_SUFFIXES) {
+      const candidate = path.join(dirPath, `${name}${suffix}`);
+      if (fs.existsSync(candidate)) return candidate;
+    }
+    for (const entry of entries) {
+      if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+      if (entry.isDirectory()) {
+        const found = scanDir(path.join(dirPath, entry.name));
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  return scanDir(componentsDir);
+}
+
+/**
+ * Find an integration component's swizzleable source file (`{Name}.tsx`) by
+ * name within a loaded integration's resolved `components` dir. Returns null
+ * when the integration ships docs without source.
+ *
+ * @param {{components?: string}} integration
+ * @param {string} name bare component name
+ * @returns {string|null}
+ */
+export function findIntegrationComponentSource(integration, name) {
+  const docPath = findIntegrationComponentDoc(integration, name);
+  if (!docPath) return null;
+  return integrationSourceForDoc(docPath);
+}
+
+/**
+ * Build a flat list of ownership records for ALL discoverable components —
+ * core (built-in) plus every loaded integration. This is the authoritative
+ * source for package-aware listing and disambiguation.
+ *
+ * Core records carry `package: '@astryxdesign/core'`, `issuesUrl: undefined`
+ * (the default core issues URL), and the resolved `.tsx` source via
+ * findComponentSource(). Integration records carry their owner package name,
+ * the manifest `issuesUrl`, and the same-stem `.tsx` source if present.
+ *
+ * @param {string} coreDir
+ * @param {Array<{name: string, components?: string, issuesUrl?: string}>} [loadedIntegrations]
+ * @returns {Array<{name: string, package: string, group: string|null, docPath: string|null, sourcePath: string|null, issuesUrl: string|undefined}>}
+ */
+export function discoverOwnedComponents(coreDir, loadedIntegrations = []) {
+  /** @type {Array<{name: string, package: string, group: string|null, docPath: string|null, sourcePath: string|null, issuesUrl: string|undefined}>} */
+  const records = [];
+
+  // Core components — derive group from discoverComponents (grouped record).
+  const grouped = discoverComponents(coreDir);
+  /** @type {Map<string, string|null>} name → group */
+  const coreGroup = new Map();
+  for (const [key, members] of Object.entries(grouped)) {
+    const isUngrouped = members.length === 1 && members[0] === key;
+    for (const name of members) {
+      coreGroup.set(name, isUngrouped ? null : key);
+    }
+  }
+  for (const [name, group] of coreGroup) {
+    records.push({
+      name,
+      package: CORE_PACKAGE,
+      group,
+      docPath: findComponentReadme(coreDir, name),
+      sourcePath: findComponentSource(coreDir, name),
+      issuesUrl: undefined,
+    });
+  }
+
+  // Integration components.
+  for (const integration of loadedIntegrations) {
+    for (const rec of discoverIntegrationComponents(integration)) {
+      records.push(rec);
+    }
+  }
+
+  return records;
 }
 
 // ── Legacy markdown-parsing functions ────────────────────────────────

@@ -62,7 +62,12 @@ const styles = stylex.create({
     animationDirection: 'alternate',
     animationDuration: durationVars['--duration-medium-max'],
     animationIterationCount: 'infinite',
-    animationName: skeletonFade,
+    // Disable the pulse under reduced-motion; the static placeholder still
+    // reads as loading (complex-20).
+    animationName: {
+      default: skeletonFade,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     animationTimingFunction: 'steps(10, end)',
   },
 });
@@ -180,6 +185,11 @@ export function Skeleton({
   return (
     <div
       ref={ref}
+      // Purely decorative loading placeholder — hide from assistive tech so it
+      // isn't announced as empty content. The surrounding region should convey
+      // the loading/busy state (e.g. aria-busy) (complex-20). Consumers can
+      // override via props if a specific skeleton must be exposed.
+      aria-hidden="true"
       data-testid={testId}
       {...mergeProps(
         themeProps('skeleton'),

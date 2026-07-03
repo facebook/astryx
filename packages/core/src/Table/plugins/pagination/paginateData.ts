@@ -15,7 +15,8 @@
  *
  * @param data - Full data array
  * @param page - Current page number (1-based)
- * @param pageSize - Number of items per page
+ * @param pageSize - Number of items per page; coerced to a positive integer,
+ *   non-finite values fall back to 10
  * @returns Slice of data for the current page
  *
  * @example
@@ -31,6 +32,12 @@ export function paginateData<T>(
   page: number,
   pageSize: number,
 ): T[] {
-  const start = (page - 1) * pageSize;
-  return data.slice(start, start + pageSize);
+  // Same coercion as Pagination and useTablePagination: a 0/NaN/negative
+  // pageSize would slice every page empty while the pagination chrome still
+  // renders page buttons.
+  const size = Number.isFinite(pageSize)
+    ? Math.max(1, Math.floor(pageSize))
+    : 10;
+  const start = (page - 1) * size;
+  return data.slice(start, start + size);
 }

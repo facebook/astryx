@@ -1,6 +1,6 @@
 # Adding a Blog Post
 
-The XDS docsite blog lives at `/blog` (index) and `/blog/<slug>` (post detail).
+The Astryx docsite blog lives at `/blog` (index) and `/blog/<slug>` (post detail).
 Posts are human-authored. Adding one is intentionally close to "drop in one
 Markdown file."
 
@@ -35,7 +35,7 @@ tags:
 ---
 
 Write the post in human-authored prose here. Use any structure that fits —
-headings, code blocks, lists, links. The body is rendered with `XDSMarkdown`.
+headings, code blocks, lists, links. The body is rendered with `Markdown`.
 ```
 
 ## 2. Frontmatter reference

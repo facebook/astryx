@@ -72,22 +72,38 @@ const animationBase = {
  *
  * Keyed by LayerPlacement ('above' | 'below' | 'start' | 'end')
  * for easy lookup: `layerAnimations[placement]`.
+ *
+ * Each entry disables its keyframe animation under
+ * `prefers-reduced-motion: reduce` so the layer appears instantly instead of
+ * translating/scaling in (infra-6).
  */
 export const layerAnimations = stylex.create({
   below: {
-    animationName: enterBelow,
+    animationName: {
+      default: enterBelow,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     ...animationBase,
   },
   above: {
-    animationName: enterAbove,
+    animationName: {
+      default: enterAbove,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     ...animationBase,
   },
   end: {
-    animationName: enterEnd,
+    animationName: {
+      default: enterEnd,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     ...animationBase,
   },
   start: {
-    animationName: enterStart,
+    animationName: {
+      default: enterStart,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     ...animationBase,
   },
 });

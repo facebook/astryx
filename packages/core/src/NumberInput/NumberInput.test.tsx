@@ -17,9 +17,7 @@ import {NumberInput} from './NumberInput';
 
 describe('NumberInput', () => {
   it('renders with label', () => {
-    render(
-      <NumberInput label="Quantity" value={null} onChange={() => {}} />,
-    );
+    render(<NumberInput label="Quantity" value={null} onChange={() => {}} />);
     expect(screen.getByLabelText('Quantity')).toBeInTheDocument();
   });
 
@@ -41,9 +39,7 @@ describe('NumberInput', () => {
   });
 
   it('displays null for null value', () => {
-    render(
-      <NumberInput label="Quantity" value={null} onChange={() => {}} />,
-    );
+    render(<NumberInput label="Quantity" value={null} onChange={() => {}} />);
     expect(screen.getByRole('spinbutton')).toHaveValue(null);
   });
 
@@ -103,9 +99,7 @@ describe('NumberInput', () => {
   });
 
   it('does not set aria-required when isRequired is false', () => {
-    render(
-      <NumberInput label="Quantity" value={null} onChange={() => {}} />,
-    );
+    render(<NumberInput label="Quantity" value={null} onChange={() => {}} />);
     expect(screen.getByRole('spinbutton')).not.toHaveAttribute('aria-required');
   });
 
@@ -139,9 +133,7 @@ describe('NumberInput', () => {
   });
 
   it('is not disabled by default', () => {
-    render(
-      <NumberInput label="Quantity" value={null} onChange={() => {}} />,
-    );
+    render(<NumberInput label="Quantity" value={null} onChange={() => {}} />);
     expect(screen.getByRole('spinbutton')).not.toBeDisabled();
   });
 
@@ -176,12 +168,7 @@ describe('NumberInput', () => {
 
     it('sets max attribute', () => {
       render(
-        <NumberInput
-          label="Age"
-          value={null}
-          onChange={() => {}}
-          max={120}
-        />,
+        <NumberInput label="Age" value={null} onChange={() => {}} max={120} />,
       );
       expect(screen.getByRole('spinbutton')).toHaveAttribute('max', '120');
     });
@@ -204,11 +191,7 @@ describe('NumberInput', () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
       render(
-        <NumberInput
-          label="Quantity"
-          value={null}
-          onChange={handleChange}
-        />,
+        <NumberInput label="Quantity" value={null} onChange={handleChange} />,
       );
 
       const input = screen.getByRole('spinbutton');
@@ -497,6 +480,68 @@ describe('NumberInput', () => {
     });
   });
 
+  describe('invalid typed input feedback (WCAG 3.3.1)', () => {
+    it('sets aria-invalid="true" when typed input is unparseable', async () => {
+      const user = userEvent.setup();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={() => {}}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      // "3.5" is invalid when isIntegerOnly is set
+      await user.type(input, '3.5');
+
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('does not set aria-invalid when typed input is valid', async () => {
+      const user = userEvent.setup();
+      render(<NumberInput label="Count" value={null} onChange={() => {}} />);
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '42');
+
+      expect(input).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('announces an alert message when typed input is invalid', async () => {
+      const user = userEvent.setup();
+      render(
+        <NumberInput
+          label="Count"
+          value={null}
+          onChange={() => {}}
+          isIntegerOnly
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '3.5');
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Invalid number');
+    });
+
+    it('does not announce an alert message when input is valid', async () => {
+      const user = userEvent.setup();
+      render(<NumberInput label="Count" value={null} onChange={() => {}} />);
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.type(input, '42');
+
+      expect(screen.getByRole('alert')).toHaveTextContent('');
+      expect(screen.queryByText('Invalid number')).not.toBeInTheDocument();
+    });
+  });
+
   it('renders tooltip info icon when labelTooltip is provided', () => {
     render(
       <NumberInput
@@ -510,9 +555,7 @@ describe('NumberInput', () => {
   });
 
   it('does not render tooltip icon when labelTooltip is not provided', () => {
-    render(
-      <NumberInput label="Quantity" value={null} onChange={() => {}} />,
-    );
+    render(<NumberInput label="Quantity" value={null} onChange={() => {}} />);
     expect(document.querySelector('svg')).not.toBeInTheDocument();
   });
 
@@ -530,9 +573,7 @@ describe('NumberInput', () => {
     });
 
     it('does not focus when hasAutoFocus is false', () => {
-      render(
-        <NumberInput label="Quantity" value={null} onChange={() => {}} />,
-      );
+      render(<NumberInput label="Quantity" value={null} onChange={() => {}} />);
       expect(screen.getByRole('spinbutton')).not.toHaveFocus();
     });
   });
@@ -554,9 +595,7 @@ describe('NumberInput', () => {
     });
 
     it('does not set name attribute when htmlName is not provided', () => {
-      render(
-        <NumberInput label="Quantity" value={null} onChange={() => {}} />,
-      );
+      render(<NumberInput label="Quantity" value={null} onChange={() => {}} />);
       expect(screen.getByRole('spinbutton')).not.toHaveAttribute('name');
     });
   });
@@ -590,12 +629,7 @@ describe('NumberInput', () => {
 
     it('does not show clear button when value is null', () => {
       render(
-        <NumberInput
-          label="Qty"
-          value={null}
-          onChange={() => {}}
-          hasClear
-        />,
+        <NumberInput label="Qty" value={null} onChange={() => {}} hasClear />,
       );
       expect(
         screen.queryByRole('button', {name: 'Clear Qty'}),

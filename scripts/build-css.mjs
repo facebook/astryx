@@ -3,17 +3,20 @@
 /**
  * @file build-css.mjs
  * Post-build script that extracts StyleX CSS from compiled source files
- * and outputs a combined astryx.css wrapped in @layer astryx-base.
+ * and outputs a combined stylesheet wrapped in @layer astryx-base.
  *
- * Usage: node scripts/build-css.mjs
+ * Usage:
+ *   node scripts/build-css.mjs                 # core  → packages/core/dist/astryx.css
+ *   node scripts/build-css.mjs --package lab   # lab   → packages/lab/dist/lab.css
  *
  * This script:
- * 1. Runs Babel with the StyleX plugin over all source files
+ * 1. Runs Babel with the StyleX plugin over the target package's source files
  * 2. Collects all StyleX rules
- * 3. Outputs a combined astryx.css with all rules in @layer astryx-base
+ * 3. Outputs a combined stylesheet with all rules in @layer astryx-base
  *
- * Dist consumers import the full stylesheet:
+ * Dist consumers import the full stylesheet, e.g.:
  *   import '@astryxdesign/core/astryx.css';
+ *   import '@astryxdesign/lab/lab.css';
  */
 
 import {transformAsync} from '@babel/core';
@@ -25,12 +28,48 @@ import {glob} from 'glob';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const CORE_SRC = path.resolve(ROOT, 'packages/core/src');
-const CORE_DIST = path.resolve(ROOT, 'packages/core/dist');
 
-async function collectStyleXCSS() {
+// Per-package build targets. Each entry defines where source lives, where the
+// stylesheet is written, and any StyleX module-resolution aliases needed for
+// cross-package theme-token imports (lab consumes @astryxdesign/core tokens).
+const TARGETS = {
+  core: {
+    src: path.resolve(ROOT, 'packages/core/src'),
+    dist: path.resolve(ROOT, 'packages/core/dist'),
+    outFile: 'astryx.css',
+    banner: 'Astryx Pre-compiled StyleX CSS — all components',
+    aliases: {},
+  },
+  lab: {
+    src: path.resolve(ROOT, 'packages/lab/src'),
+    dist: path.resolve(ROOT, 'packages/lab/dist'),
+    outFile: 'lab.css',
+    banner: 'Astryx Lab Pre-compiled StyleX CSS — experimental components',
+    // lab imports @astryxdesign/core/theme/tokens.stylex; point the resolver at
+    // core's source so the cross-package token reference resolves.
+    aliases: {
+      '@astryxdesign/core/*': [path.join(ROOT, 'packages/core/src/*')],
+      '@astryxdesign/core': [path.join(ROOT, 'packages/core/src')],
+    },
+  },
+};
+
+function parseTarget() {
+  const idx = process.argv.indexOf('--package');
+  const name = idx !== -1 ? process.argv[idx + 1] : 'core';
+  const target = TARGETS[name];
+  if (!target) {
+    console.error(
+      `Unknown --package "${name}". Valid: ${Object.keys(TARGETS).join(', ')}`,
+    );
+    process.exit(1);
+  }
+  return {name, ...target};
+}
+
+async function collectStyleXCSS(target) {
   const files = await glob('**/*.{ts,tsx}', {
-    cwd: CORE_SRC,
+    cwd: target.src,
     absolute: true,
     ignore: ['**/*.test.*', '**/*.d.ts', '**/node_modules/**'],
   });
@@ -62,6 +101,7 @@ async function collectStyleXCSS() {
               runtimeInjection: false,
               genConditionalClasses: true,
               treeshakeCompensation: true,
+              aliases: target.aliases,
               unstable_moduleResolution: {
                 type: 'commonJS',
                 rootDir: ROOT,
@@ -87,24 +127,25 @@ async function collectStyleXCSS() {
 }
 
 async function main() {
-  const allRules = await collectStyleXCSS();
+  const target = parseTarget();
+  const allRules = await collectStyleXCSS(target);
 
   if (allRules.length === 0) {
     console.error('No StyleX rules found!');
     process.exit(1);
   }
 
-  await fs.mkdir(CORE_DIST, {recursive: true});
+  await fs.mkdir(target.dist, {recursive: true});
 
   const combinedCSS = stylexBabelPlugin.processStylexRules(allRules, false);
 
-  const astryxPath = path.resolve(CORE_DIST, 'astryx.css');
-  const combinedFileContents = `/* Astryx Pre-compiled StyleX CSS — all components */\n/* Auto-generated. Do not edit manually. */\n\n@layer astryx-base {\n${combinedCSS
+  const outPath = path.resolve(target.dist, target.outFile);
+  const combinedFileContents = `/* ${target.banner} */\n/* Auto-generated. Do not edit manually. */\n\n@layer astryx-base {\n${combinedCSS
     .split('\n')
     .map(line => '  ' + line)
     .join('\n')}\n}\n`;
-  await fs.writeFile(astryxPath, combinedFileContents, 'utf8');
-  console.log(`astryx.css: ${(combinedCSS.length / 1024).toFixed(1)} KB`);
+  await fs.writeFile(outPath, combinedFileContents, 'utf8');
+  console.log(`${target.outFile}: ${(combinedCSS.length / 1024).toFixed(1)} KB`);
 }
 
 main().catch(err => {

@@ -68,7 +68,6 @@ export default function DropdownMenuItemShowcase() {
     <DropdownMenu
       button={{label: 'Actions'}}
       isMenuOpen
-      hasAutoFocus={false}
       onOpenChange={() => {}}>
       <DropdownMenuItem
         icon={PencilIcon}

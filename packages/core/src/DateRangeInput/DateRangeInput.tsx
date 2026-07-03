@@ -561,7 +561,7 @@ export function DateRangeInput({
         <div {...stylex.props(styles.popoverLayout)}>
           {presets && presets.length > 0 && (
             <div
-              role="listbox"
+              role="group"
               aria-label="Preset date ranges"
               {...stylex.props(styles.presetSidebar)}>
               {presets.map(preset => {
@@ -571,8 +571,12 @@ export function DateRangeInput({
                   <button
                     key={preset.label}
                     type="button"
-                    role="option"
-                    aria-selected={isActive}
+                    // These presets are independent action buttons navigated by
+                    // Tab, not a single-tab-stop listbox — so they are a labeled
+                    // group of buttons, and the currently-applied preset is
+                    // marked with aria-current (not aria-selected, a listbox
+                    // concept that contradicted the Tab interaction) (forms-5).
+                    aria-current={isActive ? 'true' : undefined}
                     onClick={() => handlePresetClick(preset)}
                     {...stylex.props(
                       styles.presetButton,

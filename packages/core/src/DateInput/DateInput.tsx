@@ -44,12 +44,9 @@ import {
   inputStatusFocusWithinStyles,
 } from '../Field';
 import {Icon} from '../Icon';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {Spinner} from '../Spinner';
-import {
-  Calendar,
-  type ISODateString,
-  type CalendarHandle,
-} from '../Calendar';
+import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
 import {parseDateInput} from '../utils';
@@ -483,12 +480,22 @@ export function DateInput({
       if (e.key === 'Escape' && popover.isOpen) {
         e.preventDefault();
         popover.hide();
+      } else if (
+        (e.key === 'ArrowDown' || (e.altKey && e.key === 'ArrowDown')) &&
+        !popover.isOpen
+      ) {
+        // APG combobox: ArrowDown (and Alt+ArrowDown) opens the calendar
+        // popover from the keyboard, keeping focus in the input (forms-13).
+        e.preventDefault();
+        if (!isEffectivelyDisabled) {
+          popover.show({skipAutoFocus: true});
+        }
       } else if (e.key === 'Enter') {
         e.preventDefault();
         commitPendingInput();
       }
     },
-    [popover, commitPendingInput],
+    [popover, commitPendingInput, isEffectivelyDisabled],
   );
 
   return (
@@ -554,7 +561,9 @@ export function DateInput({
           disabled={isEffectivelyDisabled}
           aria-describedby={ariaDescribedBy}
           aria-required={isRequired === true ? 'true' : undefined}
-          aria-invalid={status?.type === 'error' ? 'true' : undefined}
+          aria-invalid={
+            status?.type === 'error' || !isInputValid ? 'true' : undefined
+          }
           aria-busy={isBusy || undefined}
           aria-expanded={popover.isOpen}
           aria-haspopup="dialog"
@@ -567,6 +576,14 @@ export function DateInput({
             !isInputValid && styles.inputInvalid,
           )}
         />
+        {/*
+          Live region announcing invalid typed input to assistive technology.
+          The value silently reverts on blur, so without this a screen-reader
+          user would get no feedback that their entry was rejected (WCAG 3.3.1).
+        */}
+        <VisuallyHidden as="div" role="alert" aria-live="assertive">
+          {!isInputValid ? 'Invalid date' : ''}
+        </VisuallyHidden>
         {hasClear && value !== undefined && !isEffectivelyDisabled && (
           <button
             type="button"

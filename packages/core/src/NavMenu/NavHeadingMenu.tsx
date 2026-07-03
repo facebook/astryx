@@ -12,12 +12,13 @@
  * - /packages/core/src/NavMenu/index.ts
  */
 
-import React, {useMemo, type ReactNode} from 'react';
+import React, {useCallback, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useListFocus} from '../hooks/useListFocus';
+import {useTypeahead} from '../hooks/useTypeahead';
 import {themeProps} from '../utils/themeProps';
 import {
   NavHeadingMenuContext,
@@ -98,9 +99,55 @@ export function NavHeadingMenu({
   const closeCtx = useNavHeadingCloseContext();
   const closeMenu = closeCtx?.closeMenu;
 
-  const {listRef, handleKeyDown} = useListFocus({
+  const {listRef, handleKeyDown, focusItem} = useListFocus({
+    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
     onEscape: closeMenu,
   });
+
+  // First-character typeahead over the (enabled) menu items (menus-11).
+  const getMenuItems = useCallback(
+    (): HTMLElement[] =>
+      listRef.current
+        ? Array.from(
+            listRef.current.querySelectorAll<HTMLElement>(
+              '[role="menuitem"]:not([aria-disabled="true"])',
+            ),
+          )
+        : [],
+    [listRef],
+  );
+  const typeahead = useTypeahead({
+    getItemLabels: () => getMenuItems().map(el => el.textContent),
+    onMatch: focusItem,
+    getCurrentIndex: () =>
+      getMenuItems().findIndex(
+        el =>
+          el === document.activeElement || el.contains(document.activeElement),
+      ),
+  });
+
+  // Extend useListFocus with Enter/Space activation. Items rendered without an
+  // `href` are `<div role="menuitem">` elements, which have no native keyboard
+  // activation — without this, Enter/Space on a focused onClick-only item does
+  // nothing. Anchor items (with `href`) already activate on Enter natively.
+  const listKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const focused = document.activeElement as HTMLElement | null;
+        if (focused?.getAttribute('role') === 'menuitem') {
+          e.preventDefault();
+          focused.click();
+          return;
+        }
+      }
+      if (typeahead.onKeyDown(e)) {
+        e.preventDefault();
+        return;
+      }
+      handleKeyDown(e);
+    },
+    [handleKeyDown, typeahead],
+  );
 
   const ctx = useMemo(
     () => ({
@@ -117,7 +164,7 @@ export function NavHeadingMenu({
       <div
         ref={mergeRefs(ref, listRef)}
         role="menu"
-        onKeyDown={handleKeyDown}
+        onKeyDown={listKeyDown}
         data-testid={testId}
         {...mergeProps(
           themeProps('nav-heading-menu', {size}),

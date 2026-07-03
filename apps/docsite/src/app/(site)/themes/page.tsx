@@ -3,7 +3,7 @@
 /**
  * Themes page — /themes
  *
- * Single canonical surface for browsing every XDS theme. Renders the
+ * Single canonical surface for browsing every Astryx theme. Renders the
  * full live ThemePackagePage (sidebar picker + themed preview
  * mockup + card showcase), seeded with the Neutral theme as the
  * default selection.

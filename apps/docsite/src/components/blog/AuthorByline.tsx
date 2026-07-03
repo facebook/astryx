@@ -7,8 +7,11 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
+import {Fragment} from 'react';
 import {Avatar} from '@astryxdesign/core/Avatar';
+import {AvatarGroup} from '@astryxdesign/core/AvatarGroup';
 import {Text} from '@astryxdesign/core/Text';
+import {Link} from '@astryxdesign/core/Link';
 import {HStack} from '@astryxdesign/core/Layout';
 import {Divider} from '@astryxdesign/core/Divider';
 import {resolveAuthor} from '../../content/blog/authors';
@@ -21,7 +24,7 @@ export function formatDate(iso: string): string {
   }
   return d.toLocaleDateString('en-US', {
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
     timeZone: 'UTC',
   });
@@ -52,49 +55,65 @@ export function AuthorByline({
 }: AuthorBylineProps) {
   const resolved = authors.map(resolveAuthor);
   const avatarSize = variant === 'full' ? 'small' : 'tiny';
-  const names = resolved.map(a => a.name).join(', ');
+  const textType = variant === 'full' ? 'body' : 'supporting';
+  // Only link author names in the full (article) byline. The compact byline
+  // renders inside a card-wide anchor (BlogCard), where a nested <a> would be
+  // invalid HTML and break hydration.
+  const linkAuthors = variant === 'full';
 
   return (
-    <HStack gap={2} align="center" className={className}>
+    <HStack
+      gap={variant === 'full' ? 4 : 2}
+      align="center"
+      className={className}>
       {resolved.length > 0 ? (
         <>
-          <HStack gap={0} align="center">
+          <AvatarGroup size={avatarSize}>
             {resolved.map(author => (
-              <Avatar
-                key={author.key}
-                src={author.avatar}
-                name={author.name}
-                size={avatarSize}
-              />
+              <Avatar key={author.key} src={author.avatar} name={author.name} />
             ))}
-          </HStack>
-          <Text type="supporting" color="secondary">
-            {names}
+          </AvatarGroup>
+          <Text type={textType} color="secondary">
+            {resolved.map((author, i) => (
+              <Fragment key={author.key}>
+                {i > 0 ? ', ' : ''}
+                {linkAuthors && author.href ? (
+                  <Link
+                    href={author.href}
+                    type={textType}
+                    color="secondary"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    {author.name}
+                  </Link>
+                ) : (
+                  author.name
+                )}
+              </Fragment>
+            ))}
           </Text>
           <Divider orientation="vertical" xstyle={styles.divider} />
         </>
       ) : null}
-      <HStack gap={2} align="center">
-        <Text type="supporting" color="secondary">
-          {formatDate(date)}
-        </Text>
-        {variant === 'full' && updatedAt ? (
-          <>
-            <Divider orientation="vertical" xstyle={styles.divider} />
-            <Text type="supporting" color="secondary">
-              Updated {formatDate(updatedAt)}
-            </Text>
-          </>
-        ) : null}
-        {readingTimeMinutes ? (
-          <>
-            <Divider orientation="vertical" xstyle={styles.divider} />
-            <Text type="supporting" color="secondary">
-              {readingTimeMinutes} min read
-            </Text>
-          </>
-        ) : null}
-      </HStack>
+      <Text type={textType} color="secondary">
+        {formatDate(date)}
+      </Text>
+      {variant === 'full' && updatedAt ? (
+        <>
+          <Divider orientation="vertical" xstyle={styles.divider} />
+          <Text type={textType} color="secondary">
+            Updated {formatDate(updatedAt)}
+          </Text>
+        </>
+      ) : null}
+      {readingTimeMinutes ? (
+        <>
+          <Divider orientation="vertical" xstyle={styles.divider} />
+          <Text type={textType} color="secondary">
+            {readingTimeMinutes} min read
+          </Text>
+        </>
+      ) : null}
     </HStack>
   );
 }

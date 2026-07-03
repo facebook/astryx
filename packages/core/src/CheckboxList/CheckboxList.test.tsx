@@ -26,6 +26,25 @@ describe('CheckboxList', () => {
     expect(screen.getByText('Preferences')).toBeInTheDocument();
   });
 
+  it('wraps items in a group named by the label (forms audit: group role)', () => {
+    render(
+      <CheckboxList label="Preferences" value={[]} onChange={() => {}}>
+        <CheckboxListItem label="Option A" value="a" />
+      </CheckboxList>,
+    );
+    // The checkboxes are wrapped in a role="group" whose accessible name comes
+    // from the field label (via aria-labelledby). The label is rendered as a
+    // <span> (not a literal <label>, which can't name a group) with no
+    // orphaned htmlFor.
+    const group = screen.getByRole('group', {name: 'Preferences'});
+    expect(group).toBeInTheDocument();
+    const label = screen.getByText('Preferences');
+    expect(label.tagName).toBe('SPAN');
+    expect(label.closest('label')).toBeNull();
+    expect(label).not.toHaveAttribute('for');
+    expect(group.getAttribute('aria-labelledby')).toBe(label.id);
+  });
+
   it('renders checkbox items', () => {
     render(
       <CheckboxList label="Preferences" value={[]} onChange={() => {}}>
@@ -39,10 +58,7 @@ describe('CheckboxList', () => {
 
   it('checks the correct items based on value prop', () => {
     render(
-      <CheckboxList
-        label="Preferences"
-        value={['a', 'c']}
-        onChange={() => {}}>
+      <CheckboxList label="Preferences" value={['a', 'c']} onChange={() => {}}>
         <CheckboxListItem label="Option A" value="a" />
         <CheckboxListItem label="Option B" value="b" />
         <CheckboxListItem label="Option C" value="c" />
@@ -58,10 +74,7 @@ describe('CheckboxList', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     render(
-      <CheckboxList
-        label="Preferences"
-        value={['a']}
-        onChange={handleChange}>
+      <CheckboxList label="Preferences" value={['a']} onChange={handleChange}>
         <CheckboxListItem label="Option A" value="a" />
         <CheckboxListItem label="Option B" value="b" />
       </CheckboxList>,
@@ -272,11 +285,7 @@ describe('CheckboxList', () => {
           isChecked={false}
           onCheck={handleSelectAll}
         />
-        <CheckboxListItem
-          label="Name"
-          isChecked={true}
-          onCheck={handleCheck}
-        />
+        <CheckboxListItem label="Name" isChecked={true} onCheck={handleCheck} />
         <CheckboxListItem
           label="Email"
           isChecked={false}
@@ -347,8 +356,15 @@ describe('CheckboxListItem standalone mode', () => {
         <CheckboxListItem label="Partial" isChecked="indeterminate" />
       </List>,
     );
+    // The inner native checkbox exposes mixed state via the indeterminate DOM
+    // property (not a redundant aria-checked, forms-16); the list row still
+    // carries aria-checked="mixed" for its own listitem semantics.
     const checkbox = screen.getByRole('checkbox');
-    expect(checkbox).toHaveAttribute('aria-checked', 'mixed');
+    expect(checkbox).toBeInstanceOf(HTMLInputElement);
+    if (checkbox instanceof HTMLInputElement) {
+      expect(checkbox.indeterminate).toBe(true);
+    }
+    expect(checkbox).not.toHaveAttribute('aria-checked');
   });
 
   it('calls onCheck with true when clicking indeterminate item', async () => {

@@ -286,7 +286,7 @@ function analyzeAccessibility(code: string): DimensionScore {
       }
     }
 
-    // Form inputs without labels (skip XDS inputs with built-in labels)
+    // Form inputs without labels (skip Astryx inputs with built-in labels)
     if (line.match(/<(input|Input)\b/) && !line.includes('type="hidden"')) {
       const hasLabel = /(label|Label|aria-label|ariaLabel)/.test(nearby);
       if (!hasLabel) {

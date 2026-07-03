@@ -195,7 +195,10 @@ export function SegmentedControlItem({
       aria-disabled={isItemDisabled || undefined}
       aria-label={isLabelHidden ? label : undefined}
       data-value={value}
-      tabIndex={isSelected ? 0 : -1}
+      // Disabled items (including when the whole group is disabled) are not tab
+      // stops — otherwise the selected segment stays keyboard-focusable but is
+      // silently dead (arrows and activation are no-ops) (navigation-13).
+      tabIndex={isSelected && !isItemDisabled ? 0 : -1}
       onClick={handleClick}
       {...mergeProps(
         themeProps('segmented-control-item', {

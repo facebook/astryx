@@ -78,17 +78,12 @@ export const monthGridStyles = stylex.create({
   monthGrid: {
     flex: '1 1 0',
   },
-  weekHeader: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(7, 1fr)',
-    marginBottom: spacingVars['--spacing-1'],
-  },
-  weekHeaderWithNumbers: {
-    gridTemplateColumns: 'auto repeat(7, 1fr)',
-  },
   dayName: {
     width: sizeVars['--size-element-md'],
-    height: sizeVars['--size-element-md'],
+    // Restores the small gap the standalone header used to have below it.
+    height: `calc(${sizeVars['--size-element-md']} + ${spacingVars['--spacing-1']})`,
+    paddingBottom: spacingVars['--spacing-1'],
+    boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

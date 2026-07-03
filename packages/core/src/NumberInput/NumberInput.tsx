@@ -46,6 +46,7 @@ import {
   inputStatusFocusWithinStyles,
 } from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -563,7 +564,9 @@ export function NumberInput({
         step={step ?? undefined}
         aria-describedby={ariaDescribedBy}
         aria-required={isRequired === true ? 'true' : undefined}
-        aria-invalid={status?.type === 'error' ? 'true' : undefined}
+        aria-invalid={
+          status?.type === 'error' || !isInputValid ? 'true' : undefined
+        }
         aria-label={inputGroup ? label : undefined}
         {...stylex.props(
           styles.input,
@@ -572,6 +575,14 @@ export function NumberInput({
         )}
       />
       {units && <span {...stylex.props(styles.units)}>{units}</span>}
+      {/*
+        Live region announcing invalid typed input to assistive technology.
+        The value silently reverts on blur, so without this a screen-reader
+        user would get no feedback that their entry was rejected (WCAG 3.3.1).
+      */}
+      <VisuallyHidden as="div" role="alert" aria-live="assertive">
+        {!isInputValid ? 'Invalid number' : ''}
+      </VisuallyHidden>
       {hasClear && value != null && !isDisabled && (
         <button
           type="button"

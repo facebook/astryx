@@ -87,6 +87,33 @@ function getKeyDisplay(key: string, isMac: boolean): string {
   return KEY_DISPLAY[key] ?? key.toUpperCase();
 }
 
+/**
+ * Spoken-word labels for screen readers. The visual `KEY_DISPLAY` uses glyphs
+ * (⌘, ⇧, ↵, …) that assistive tech cannot announce meaningfully, so the
+ * accessible name for the shortcut is built from these words instead.
+ */
+const KEY_LABEL: Record<string, string> = {
+  ctrl: 'Control',
+  alt: 'Alt',
+  shift: 'Shift',
+  enter: 'Enter',
+  backspace: 'Backspace',
+  escape: 'Escape',
+  tab: 'Tab',
+  up: 'Up arrow',
+  down: 'Down arrow',
+  left: 'Left arrow',
+  right: 'Right arrow',
+  plus: 'Plus',
+};
+
+function getKeyLabel(key: string, isMac: boolean): string {
+  if (key === 'mod') {
+    return isMac ? 'Command' : 'Control';
+  }
+  return KEY_LABEL[key] ?? key.toUpperCase();
+}
+
 function subscribeToPlatformChanges(): () => void {
   return () => {};
 }
@@ -155,19 +182,24 @@ export function Kbd({keys, ref, xstyle, className, style, ...rest}: KbdProps) {
 
   const parts = keys.split('+').map(key => key.trim().toLowerCase());
 
+  // Screen-reader name: the joined spoken labels (e.g. "Command + K"), since
+  // the visual glyphs below are announced meaninglessly by assistive tech.
+  const accessibleName = parts.map(key => getKeyLabel(key, isMac)).join(' + ');
+
   return (
     <span
       ref={ref}
+      role="img"
+      aria-label={accessibleName}
       {...rest}
       {...mergeProps(
         themeProps('kbd'),
         stylex.props(styles.wrapper, xstyle),
         className,
         style,
-      )}
-      aria-hidden="true">
+      )}>
       {parts.map(key => (
-        <kbd key={key} {...stylex.props(styles.kbd)}>
+        <kbd key={key} aria-hidden="true" {...stylex.props(styles.kbd)}>
           {getKeyDisplay(key, isMac)}
         </kbd>
       ))}

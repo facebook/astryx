@@ -199,7 +199,7 @@ export function useTablePagination<T extends Record<string, unknown>>(
     totalItems,
     totalPages: totalPagesProp,
     hasMore,
-    pageSize = 10,
+    pageSize: pageSizeConfig = 10,
     onPageSizeChange,
     pageSizeOptions,
     variant = 'pages',
@@ -208,6 +208,13 @@ export function useTablePagination<T extends Record<string, unknown>>(
     align = 'center',
     label = 'Table pagination',
   } = config;
+
+  // Same guard as Pagination itself: 0/NaN/negative pageSize would produce an
+  // Infinity/NaN totalPages here, which bypasses Pagination's own coercion
+  // because it is passed down as the explicit totalPages prop.
+  const pageSize = Number.isFinite(pageSizeConfig)
+    ? Math.max(1, Math.floor(pageSizeConfig))
+    : 10;
 
   const computedTotalPages =
     totalPagesProp ??

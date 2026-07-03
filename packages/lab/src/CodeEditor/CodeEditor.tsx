@@ -33,7 +33,7 @@ import {
   SYNC_TOKENIZE_THRESHOLD,
 } from '@astryxdesign/core/CodeBlock';
 import type {TokenLine} from '@astryxdesign/core/CodeBlock';
-import {themeProps} from '../../../core/src/utils/themeProps';
+import {themeProps} from '@astryxdesign/core/utils';
 import {
   ensureHighlightStyles,
   applyHighlightRangesFlat,

@@ -25,7 +25,8 @@ import {
 // Default social card image: the launch banner that the announcement blog post
 // uses for its cover. Reusing the same branded banner keeps the shared-link
 // preview consistent with the launch creative across the site and the post.
-const OG_IMAGE = '/astryx-og-banner.png';
+const OG_IMAGE =
+  'https://lookaside.facebook.com/assets/astryx/Astryx-Banner.png';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -51,8 +52,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: OG_IMAGE,
-        width: 1200,
-        height: 675,
+        width: 2400,
+        height: 1260,
         alt: 'Astryx — an open source design system by Meta',
       },
     ],

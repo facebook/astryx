@@ -42,6 +42,8 @@ import {
   type DropdownMenuContextValue,
 } from '../DropdownMenu/DropdownMenuContext';
 import {useListFocus} from '../hooks/useListFocus';
+import {useTypeahead} from '../hooks/useTypeahead';
+import {useLongPress} from '../hooks/useLongPress';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {
   colorVars,
@@ -62,6 +64,11 @@ import type {
 } from '../DropdownMenu/DropdownMenu';
 
 const styles = stylex.create({
+  // Trigger wrapper: suppress the iOS long-press callout/selection so the
+  // long-press opens our context menu instead of the native text/callout UI.
+  trigger: {
+    WebkitTouchCallout: 'none',
+  },
   menu: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -114,11 +121,10 @@ interface ContextMenuBaseProps extends BaseProps {
   /** Size of menu items. @default 'md' */
   size?: 'sm' | 'md' | 'lg';
   /**
-   * Whether to auto-focus the first menu item when the menu opens.
-   * Set to `false` for inline showcases or documentation previews.
-   * @default true
+   * Accessible name for the menu surface, announced when it opens.
+   * @default 'Context menu'
    */
-  hasAutoFocus?: boolean;
+  label?: string;
   /** When true, right-click shows the native browser context menu instead. */
   isDisabled?: boolean;
   /** Called when the menu opens or closes. */
@@ -138,9 +144,7 @@ interface ContextMenuCompoundProps extends ContextMenuBaseProps {
   menuContent: ReactNode;
 }
 
-export type ContextMenuProps =
-  | ContextMenuDataProps
-  | ContextMenuCompoundProps;
+export type ContextMenuProps = ContextMenuDataProps | ContextMenuCompoundProps;
 
 // =============================================================================
 // ContextMenu
@@ -173,7 +177,7 @@ export function ContextMenu({
   children,
   menuWidth,
   size = 'md',
-  hasAutoFocus = true,
+  label = 'Context menu',
   isDisabled = false,
   onOpenChange,
   ref,
@@ -188,6 +192,9 @@ export function ContextMenu({
 
   const menuId = useId();
   const positionRef = useRef({x: 0, y: 0});
+  // Element focused before the menu opened, restored when it closes so focus
+  // does not fall to <body> after Escape or outside-click dismissal.
+  const triggerFocusRef = useRef<HTMLElement | null>(null);
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -196,6 +203,12 @@ export function ContextMenu({
     onHide: useCallback(() => {
       setIsOpen(false);
       onOpenChange?.(false);
+      // Restore focus to the element that was focused before opening.
+      const toRestore = triggerFocusRef.current;
+      triggerFocusRef.current = null;
+      if (toRestore && document.contains(toRestore)) {
+        toRestore.focus();
+      }
     }, [onOpenChange]),
     onShow: useCallback(() => {
       setIsOpen(true);
@@ -212,10 +225,33 @@ export function ContextMenu({
     listRef,
     handleKeyDown: listNavKeyDown,
     focusFirst,
+    focusItem,
   } = useListFocus<HTMLDivElement>({
     itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
     wrap: false,
     onEscape: closeMenu,
+  });
+
+  // First-character typeahead over the enabled menu items (menus-11).
+  const getMenuItems = useCallback(
+    (): HTMLElement[] =>
+      listRef.current
+        ? Array.from(
+            listRef.current.querySelectorAll<HTMLElement>(
+              '[role="menuitem"]:not([aria-disabled="true"])',
+            ),
+          )
+        : [],
+    [listRef],
+  );
+  const typeahead = useTypeahead({
+    getItemLabels: () => getMenuItems().map(el => el.textContent),
+    onMatch: focusItem,
+    getCurrentIndex: () =>
+      getMenuItems().findIndex(
+        el =>
+          el === document.activeElement || el.contains(document.activeElement),
+      ),
   });
 
   // Dismiss on any click outside the menu. We use popover="manual" (not
@@ -238,6 +274,30 @@ export function ContextMenu({
     };
   }, [isOpen, closeMenu, listRef]);
 
+  // Dismiss on Escape from anywhere while open. The menu div's own onKeyDown
+  // only fires when focus is inside the menu; a document-level listener is
+  // kept as a reliable fallback Escape path (e.g. if focus has moved out of
+  // the menu). Guards against IME composition-cancel.
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') {
+        return;
+      }
+      if (e.isComposing || e.keyCode === 229) {
+        return;
+      }
+      e.preventDefault();
+      closeMenu();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, closeMenu]);
+
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -248,9 +308,13 @@ export function ContextMenu({
         }
         return;
       }
+      if (typeahead.onKeyDown(e)) {
+        e.preventDefault();
+        return;
+      }
       listNavKeyDown(e);
     },
-    [listNavKeyDown],
+    [listNavKeyDown, typeahead],
   );
 
   const handleContextMenu = useCallback(
@@ -259,14 +323,45 @@ export function ContextMenu({
         return;
       }
       e.preventDefault();
-      positionRef.current = {x: e.clientX, y: e.clientY};
-      layer.show();
-      if (hasAutoFocus) {
-        requestAnimationFrame(() => focusFirst());
+      // A keyboard-initiated contextmenu (Shift+F10 / the Menu key) fires a
+      // `contextmenu` event whose coordinates are (0, 0) in several browsers.
+      // Detect that and anchor the menu to the trigger's box instead, so the
+      // menu is reachable without a pointer (menus-8).
+      const isKeyboardInvoked =
+        e.clientX === 0 && e.clientY === 0 && e.detail === 0;
+      if (isKeyboardInvoked && e.currentTarget instanceof HTMLElement) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        positionRef.current = {x: rect.left, y: rect.bottom};
+      } else {
+        positionRef.current = {x: e.clientX, y: e.clientY};
       }
+      // Remember the element focused before opening so we can restore it on
+      // close (Escape or outside-click), instead of dropping focus to <body>.
+      triggerFocusRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : (e.currentTarget as HTMLElement);
+      layer.show();
+      requestAnimationFrame(() => focusFirst());
     },
-    [isDisabled, layer, hasAutoFocus, focusFirst],
+    [isDisabled, layer, focusFirst],
   );
+
+  // Touch long-press invocation (menus-8). iOS Safari never synthesizes a
+  // `contextmenu` event on long-press, so a context menu is otherwise
+  // unreachable on touch. Open the menu at the touch point once the press is
+  // held long enough (see useLongPress for timer/move-cancel/cleanup logic).
+  const longPressHandlers = useLongPress({
+    disabled: isDisabled,
+    onLongPress: useCallback(
+      (point: {x: number; y: number}) => {
+        positionRef.current = {x: point.x, y: point.y};
+        layer.show();
+        requestAnimationFrame(() => focusFirst());
+      },
+      [layer, focusFirst],
+    ),
+  });
 
   const popoverXstyle = menuWidth
     ? styles.popoverCustomWidth(menuWidth)
@@ -285,8 +380,9 @@ export function ContextMenu({
       <div
         ref={ref}
         onContextMenu={handleContextMenu}
-        aria-haspopup="menu"
-        data-testid={testId}>
+        {...longPressHandlers}
+        data-testid={testId}
+        {...stylex.props(styles.trigger)}>
         {children}
       </div>
 
@@ -295,6 +391,7 @@ export function ContextMenu({
           ref={listRef}
           id={menuId}
           role="menu"
+          aria-label={label}
           onKeyDown={listKeyDown}
           {...mergeProps(
             themeProps('context-menu'),

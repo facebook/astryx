@@ -3,12 +3,14 @@
 /**
  * @file swizzle command — Copy component source for customization
  *
- * Resolves component source from packages/core/src/{Component}/,
- * copies non-test files to the output directory, and rewrites
- * relative imports to use '@astryxdesign/core' package paths.
+ * Resolves a component's owning package (core or a configured integration),
+ * copies its non-test/non-doc source files to the output directory, and
+ * rewrites escaping relative imports to use the OWNER package's subpaths.
  *
- * After swizzling, optionally prompts the user to file a gap report
- * explaining why they needed to customize the component.
+ * After swizzling, prints a short maintainer feedback note pointing users at
+ * the owner's issue tracker so they can let the team know what gap led them to
+ * customize the component. The core feedback URL is routed through app config
+ * (`config.issuesUrl`); integration components use their manifest `issuesUrl`.
  */
 
 import * as fs from 'node:fs';
@@ -20,27 +22,36 @@ import {
   PathSafetyError,
   isNonInteractive,
 } from '../utils/path-safety.mjs';
-import {isInteractive} from '../utils/interactive.mjs';
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
+import {checkGhCli} from '../utils/github.mjs';
+import {Project} from '../lib/project.mjs';
 import {
-  buildGapReportPreview,
-  checkGhCli,
-  createGapReport,
-  loadGapReportConfig,
-  GAP_CATEGORIES,
-} from '../utils/github.mjs';
-import {shouldActuallyFile, formatPreview} from './gap-report.mjs';
+  CORE_PACKAGE,
+  findIntegrationComponentDoc,
+  findIntegrationComponentSource,
+} from '../lib/component-discovery.mjs';
+
+/** Default issue tracker for maintainer feedback after swizzling. */
+const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
 
 /**
- * Rewrite relative imports that point outside the component directory
- * to use @astryxdesign/core package paths.
+ * Rewrite relative imports that point outside the component directory to use
+ * the OWNER package's subpaths. Imports within the copied directory (./x) are
+ * left untouched.
  *
- * e.g. '../theme/tokens.stylex' -> '@astryxdesign/core/theme'
+ * e.g. with ownerPackage '@astryxdesign/core':
+ *      '../theme/tokens.stylex' -> '@astryxdesign/core/theme'
  *      '../utils/mergeProps'     -> '@astryxdesign/core/utils'
+ *
+ * `ownerPackage` defaults to '@astryxdesign/core' so existing core behavior is
+ * unchanged; integration components pass their own owning package.
+ *
+ * @param {string} content
+ * @param {string} [ownerPackage]
  */
-export function rewriteImports(content) {
+export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
   // Match import/export from statements with relative paths going up
   return content.replace(
     /(from\s+['"])(\.\.\/.+?)(['"])/g,
@@ -51,10 +62,40 @@ export function rewriteImports(content) {
       const parts = importPath.replace(/^\.\.\//, '').split('/');
       const topDir = parts[0];
 
-      // Map to @astryxdesign/core subpath
-      return `${prefix}@astryxdesign/core/${topDir}${suffix}`;
+      // Map to the owner package subpath
+      return `${prefix}${ownerPackage}/${topDir}${suffix}`;
     },
   );
+}
+
+/**
+ * Build the maintainer feedback note for a swizzled component.
+ *
+ * Returns { issuesUrl, ghCommand? } or null when no issues URL is available
+ * (an integration that ships no `issuesUrl`). When the issues URL is a GitHub
+ * issues URL and the `gh` CLI is available, a ready-to-run `gh issue create`
+ * command is included so the user can file feedback without leaving the
+ * terminal.
+ *
+ * @param {string} component bare component name (used in the issue title)
+ * @param {string|undefined} issuesUrl owner's issue tracker URL
+ * @returns {{issuesUrl: string, ghCommand?: string} | null}
+ */
+function buildFeedback(component, issuesUrl) {
+  if (!issuesUrl) return null;
+
+  const feedback = {issuesUrl};
+
+  // Accept any github.com/<owner>/<repo>/issues(/new)? form.
+  const match = issuesUrl.match(
+    /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/issues(?:\/new)?\/?$/,
+  );
+  if (match && checkGhCli()) {
+    const [, owner, repo] = match;
+    feedback.ghCommand = `gh issue create --repo ${owner}/${repo} --title "[${component}] Swizzle feedback"`;
+  }
+
+  return feedback;
 }
 
 function isCancel(value) {
@@ -65,26 +106,85 @@ function isCancel(value) {
   return value;
 }
 
+/**
+ * Load the configured integrations + core issues URL for `cwd`, swallowing any
+ * config errors so swizzle never hard-fails on a malformed/absent config. An
+ * empty list means "core only". The core issues URL is routed through the
+ * Project (config.issuesUrl, falling back to the default core tracker).
+ * @param {string} cwd
+ * @returns {Promise<{loadedIntegrations: Array<object>, issuesUrl: string|undefined, project: Project|null}>}
+ */
+async function loadConfigSafely(cwd) {
+  try {
+    const project = await Project.load(cwd);
+    return {
+      loadedIntegrations: project.loadedIntegrations,
+      issuesUrl: project.config.issuesUrl,
+      project,
+    };
+  } catch {
+    return {loadedIntegrations: [], issuesUrl: undefined, project: null};
+  }
+}
+
+/**
+ * Build the set of OWNER packages that provide a component with `name` across
+ * core + every loaded integration.
+ *
+ * Core ownership is determined by the source directory existing on disk
+ * (`coreDir/src/<name>`) so plain core components without a `.doc.mjs` still
+ * resolve as today. Integration ownership is determined by a same-stem doc file
+ * (`<name>.doc.{ts,mjs,js}`) via findIntegrationComponentDoc.
+ *
+ * @param {string} coreDir
+ * @param {Array<{name: string, components?: string, issuesUrl?: string}>} loadedIntegrations
+ * @param {string} name bare component name (no XDS/Astryx prefix)
+ * @param {string|undefined} coreIssuesUrl
+ * @returns {Array<{package: string, sourceDir: string|null, ownerPackage: string, issuesUrl: string|undefined}>}
+ */
+function resolveOwners(coreDir, loadedIntegrations, name, coreIssuesUrl) {
+  const owners = [];
+
+  const coreComponentDir = path.join(coreDir, 'src', name);
+  if (fs.existsSync(coreComponentDir)) {
+    owners.push({
+      package: CORE_PACKAGE,
+      sourceDir: coreComponentDir,
+      ownerPackage: CORE_PACKAGE,
+      issuesUrl: coreIssuesUrl || DEFAULT_ISSUES_URL,
+    });
+  }
+
+  for (const integration of loadedIntegrations) {
+    const docPath = findIntegrationComponentDoc(integration, name);
+    if (!docPath) continue;
+    const sourcePath = findIntegrationComponentSource(integration, name);
+    owners.push({
+      package: integration.name,
+      // The component's own folder — the directory containing its source.
+      sourceDir: sourcePath ? path.dirname(sourcePath) : null,
+      ownerPackage: integration.name,
+      issuesUrl: integration.issuesUrl,
+    });
+  }
+
+  return owners;
+}
+
+/** Whether a filename should be excluded from the swizzle copy. */
+function isExcludedFromCopy(file) {
+  return (
+    file.includes('.test.') || file.includes('.doc.') || file === 'README.md'
+  );
+}
+
 export function registerSwizzle(program) {
   program
     .command('swizzle [component]')
     .description('Copy component source for customization')
     .option('--output <dir>', 'Output directory', './components/astryx')
+    .option('--package <pkg>', 'Scope to a specific owning package')
     .option('--list', 'List available components')
-    .option('--gap <reason>', 'File a gap report explaining why you swizzled')
-    .option('--gap-category <category>', 'Gap category (for --gap mode)')
-    .option(
-      '--no-report',
-      'Suppress all gap reporting (interactive prompt AND --gap auto-filing)',
-    )
-    .option(
-      '--dry-run',
-      'For --gap: print the issue that would be filed without contacting GitHub. Default in non-TTY / --json mode.',
-    )
-    .option(
-      '--commit',
-      'For --gap: actually file the issue. Required in non-interactive mode.',
-    )
     .option('-f, --overwrite', 'Overwrite existing files without prompting')
     .action(async (component, options) => {
       const coreDir = findCoreDir(process.cwd());
@@ -115,15 +215,73 @@ export function registerSwizzle(program) {
       }
 
       const dirName = component.replace(/^XDS/, '');
-      const componentDir = path.join(coreDir, 'src', dirName);
 
-      if (!fs.existsSync(componentDir)) {
+      // Resolve the component's owning package(s) across core + integrations.
+      const {loadedIntegrations, project} = await loadConfigSafely(
+        process.cwd(),
+      );
+      // Core feedback URL is routed through the Project (config.issuesUrl,
+      // falling back to the default core tracker). When config load failed,
+      // resolveOwners applies the same default fallback.
+      const coreIssuesUrl = project
+        ? project.issuesUrl({package: CORE_PACKAGE})
+        : undefined;
+      const allOwners = resolveOwners(
+        coreDir,
+        loadedIntegrations,
+        dirName,
+        coreIssuesUrl,
+      );
+
+      if (allOwners.length === 0) {
         cliError(`Component "${component}" not found.`, {
           suggestions: components.slice(0, 10).map(n => ({name: n})),
           code: ERROR_CODES.ERR_UNKNOWN_COMPONENT,
         });
         return;
       }
+
+      let owner;
+      if (options.package) {
+        owner = allOwners.find(o => o.package === options.package);
+        if (!owner) {
+          cliError(
+            `Component "${dirName}" is not provided by package "${options.package}".`,
+            {
+              suggestions: allOwners.map(o => ({
+                name: o.package,
+                reason: 'provides this component',
+              })),
+              code: ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+            },
+          );
+          return;
+        }
+      } else if (allOwners.length > 1) {
+        cliError(
+          `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
+          {
+            suggestions: allOwners.map(o => ({
+              name: o.package,
+              reason: 'provides this component',
+            })),
+            code: ERROR_CODES.ERR_AMBIGUOUS_COMPONENT,
+          },
+        );
+        return;
+      } else {
+        owner = allOwners[0];
+      }
+
+      if (!owner.sourceDir || !fs.existsSync(owner.sourceDir)) {
+        cliError(
+          `No source found for "${dirName}" in package "${owner.package}".`,
+          {code: ERROR_CODES.ERR_NO_SOURCE},
+        );
+        return;
+      }
+
+      const componentDir = owner.sourceDir;
 
       // Path-safety: --output must resolve inside cwd. Reject absolute
       // paths and `..` traversal up front, before any directory is created.
@@ -144,7 +302,7 @@ export function registerSwizzle(program) {
       // Pre-flight overwrite check: collect files we'd write and detect
       // collisions before mkdir/writeFile so we never half-clobber.
       const sourceFiles = fs.readdirSync(componentDir).filter(file => {
-        if (file.includes('.test.') || file === 'README.md') return false;
+        if (isExcludedFromCopy(file)) return false;
         const stat = fs.statSync(path.join(componentDir, file));
         return stat.isFile();
       });
@@ -178,13 +336,13 @@ export function registerSwizzle(program) {
 
       fs.mkdirSync(outputDir, {recursive: true});
 
-      // Copy all non-test, non-README files
+      // Copy all non-test, non-doc, non-README files
       const files = fs.readdirSync(componentDir);
       let copied = 0;
 
       for (const file of files) {
-        // Skip test files and README
-        if (file.includes('.test.') || file === 'README.md') continue;
+        // Skip test files, doc files, and README
+        if (isExcludedFromCopy(file)) continue;
 
         const srcPath = path.join(componentDir, file);
         const stat = fs.statSync(srcPath);
@@ -192,9 +350,9 @@ export function registerSwizzle(program) {
 
         let content = fs.readFileSync(srcPath, 'utf-8');
 
-        // Rewrite imports for .ts/.tsx files
+        // Rewrite escaping imports for .ts/.tsx files to the owner package.
         if (file.endsWith('.ts') || file.endsWith('.tsx')) {
-          content = rewriteImports(content);
+          content = rewriteImports(content, owner.ownerPackage);
         }
 
         fs.writeFileSync(path.join(outputDir, file), content);
@@ -204,214 +362,45 @@ export function registerSwizzle(program) {
       const relOutput = path.relative(process.cwd(), outputDir);
       const copiedFiles = files.filter(
         f =>
-          !f.includes('.test.') &&
-          f !== 'README.md' &&
+          !isExcludedFromCopy(f) &&
           fs.statSync(path.join(componentDir, f)).isFile(),
       );
 
-      // --- Gap reporting ---
+      const feedback = buildFeedback(dirName, owner.issuesUrl);
 
-      const gapConfig = await loadGapReportConfig();
-      let gapReportUrl = null;
-      let gapDryRunPreview = null;
-
-      // CRITICAL: --no-report must suppress BOTH the interactive prompt AND
-      // the --gap auto-file path. Previously --gap bypassed --no-report.
-      // commander sets options.report to false for `--no-report`.
-      const reportingSuppressed = options.report === false;
-
-      if (options.gap && !reportingSuppressed && gapConfig.enabled) {
-        const category = options.gapCategory || 'other';
-        const previewArgs = {
+      if (json) {
+        /** @type {Record<string, unknown>} */
+        const payload = {
           component: dirName,
-          category,
-          intention: options.gap,
-          source: 'llm-auto',
-        };
-
-        const willFile = shouldActuallyFile({
-          commit: options.commit,
-          dryRun: options.dryRun,
-          json,
-        });
-
-        const preview = await buildGapReportPreview(previewArgs);
-
-        if (!willFile) {
-          // Dry-run: do NOT call gh. Surface what would have been filed.
-          gapDryRunPreview = {
-            dryRun: true,
-            wouldFile: preview.mode !== 'disabled',
-            mode: preview.mode,
-            title: preview.title,
-            body: preview.body,
-            repo: preview.repo,
-            command: preview.command || null,
-          };
-        } else if (gapConfig.command || checkGhCli()) {
-          try {
-            gapReportUrl = await createGapReport(previewArgs);
-          } catch (err) {
-            if (!json)
-              console.error(
-                `Warning: Could not file gap report: ${err.message}`,
-              );
-          }
-        }
-      }
-
-      if (options.gap) {
-        if (json)
-          return jsonOut('swizzle.copy', {
-            component: dirName,
-            outputDir: relOutput,
-            filesCopied: copied,
-            files: copiedFiles.map(f => f),
-            gapReport: gapReportUrl,
-            gapReportDryRun: gapDryRunPreview,
-            gapReportSuppressed: reportingSuppressed || !gapConfig.enabled,
-          });
-        humanLog(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
-        humanLog(
-          'Relative imports have been rewritten to use @astryxdesign/core.',
-        );
-        humanLog('You can now customize the component source freely.\n');
-        if (gapReportUrl) {
-          humanLog(`✓ Gap report filed: ${gapReportUrl}\n`);
-        } else if (gapDryRunPreview) {
-          humanLog(
-            formatPreview(
-              await buildGapReportPreview({
-                component: dirName,
-                category: options.gapCategory || 'other',
-                intention: options.gap,
-                source: 'llm-auto',
-              }),
-            ),
-          );
-          humanLog(
-            '\n[dry-run] No gap report was filed. Re-run with --commit to file.',
-          );
-        } else if (reportingSuppressed) {
-          humanLog('Gap reporting suppressed by --no-report.');
-        } else if (!gapConfig.enabled) {
-          humanLog('Gap reporting is disabled via configuration.');
-        } else if (!gapConfig.command && !checkGhCli()) {
-          humanLog('Skipping gap report: gh CLI not available.');
-        }
-        return;
-      }
-
-      if (json)
-        return jsonOut('swizzle.copy', {
-          component: dirName,
+          package: owner.package,
           outputDir: relOutput,
           filesCopied: copied,
           files: copiedFiles.map(f => f),
-        });
+        };
+        if (feedback) payload.feedback = feedback;
+        return jsonOut('swizzle.copy', payload);
+      }
 
       humanLog(`\n✓ Copied ${copied} files to ${relOutput}/\n`);
       humanLog(
-        'Relative imports have been rewritten to use @astryxdesign/core.',
+        `Relative imports have been rewritten to use ${owner.ownerPackage}.`,
       );
       humanLog('You can now customize the component source freely.\n');
 
-      if (reportingSuppressed || !gapConfig.enabled) {
-        return;
-      }
-
-      // Interactive gap report prompt
-      //
-      // This prompt is OPTIONAL — the swizzle copy already succeeded above.
-      // In a non-interactive context (CI, piped I/O, no TTY) we must not
-      // block on it; skip gracefully rather than hang. Use --gap with
-      // explicit flags for non-interactive gap reporting.
-      if (!isInteractive()) {
-        return;
-      }
-
-      if (!gapConfig.command && !checkGhCli()) {
-        // Silently skip if gh isn't available and no custom command configured
-        return;
-      }
-
-      const shouldReport = isCancel(
-        await p.confirm({
-          message: 'Would you like to report why you swizzled this component?',
-          initialValue: false,
-        }),
-      );
-
-      if (!shouldReport) return;
-
-      const category = isCancel(
-        await p.select({
-          message: 'What kind of gap is this?',
-          options: GAP_CATEGORIES,
-        }),
-      );
-
-      const intention = isCancel(
-        await p.text({
-          message: 'What were you trying to achieve?',
-          placeholder:
-            'e.g. "Need a compact variant for use in dense data tables"',
-          validate: val => {
-            if (!val.trim())
-              return 'Please describe what you were trying to do';
-          },
-        }),
-      );
-
-      const detail = isCancel(
-        await p.text({
-          message: 'Any additional context? (optional)',
-          placeholder: 'Press Enter to skip',
-        }),
-      );
-
-      const previewArgs = {
-        component: dirName,
-        category,
-        intention: intention.trim(),
-        detail: detail?.trim() || undefined,
-        source: 'interactive',
-      };
-
-      const preview = await buildGapReportPreview(previewArgs);
-
-      p.note(
-        `${preview.mode === 'github' ? `Repo: ${preview.repo}` : `Custom command: ${preview.command}`}\n\n` +
-          `Title:\n  ${preview.title}\n\n` +
-          `Body:\n${preview.body
-            .split('\n')
-            .map(l => `  ${l}`)
-            .join('\n')}`,
-        'Preview — this is exactly what will be filed',
-      );
-
-      const confirmFile = isCancel(
-        await p.confirm({
-          message: 'File this gap report now?',
-          initialValue: false,
-        }),
-      );
-
-      if (!confirmFile) {
-        humanLog('Cancelled — nothing was filed.');
-        return;
-      }
-
-      const s = p.spinner();
-      s.start('Filing gap report');
-
-      try {
-        const url = await createGapReport(previewArgs);
-        s.stop('Gap report filed');
-        humanLog(`✓ ${url}\n`);
-      } catch (err) {
-        s.stop('Failed to file gap report');
-        console.error(`Warning: Could not file gap report: ${err.message}`);
+      // Maintainer feedback note. If we couldn't swizzle cleanly, the team
+      // wants to know — point users at the issue tracker. Skipped when the
+      // owning package ships no issues URL.
+      if (feedback) {
+        humanLog(
+          'Customizing a component often signals a gap in the design system.',
+        );
+        humanLog('Let the maintainers know what you needed:');
+        if (feedback.ghCommand) {
+          humanLog(`  ${feedback.ghCommand}`);
+        } else {
+          humanLog(`  ${feedback.issuesUrl}`);
+        }
+        humanLog('');
       }
     });
 }

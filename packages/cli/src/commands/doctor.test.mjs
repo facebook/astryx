@@ -133,7 +133,7 @@ describe('doctor — individual checks', () => {
     );
     const configPath = path.join(fixtureDir, 'astryx.config.mjs');
     try {
-      fs.writeFileSync(configPath, 'export default { theme: "default" };');
+      fs.writeFileSync(configPath, 'export default { integrations: [] };');
       const res = await checkConfig({cwd: fixtureDir, configPath});
       if (res.status !== 'pass') {
         throw new Error(`expected pass, got ${res.status}: ${res.message}`);
@@ -159,13 +159,13 @@ describe('doctor — individual checks', () => {
     }
   });
 
-  it('config: FAIL when packages is the wrong shape', async () => {
+  it('config: FAIL when default export is not an object', async () => {
     const fixtureDir = fs.mkdtempSync(
       path.join(path.dirname(fileURLToPath(import.meta.url)), '__doctor_cfg_'),
     );
     const configPath = path.join(fixtureDir, 'astryx.config.mjs');
     try {
-      fs.writeFileSync(configPath, 'export default { packages: [123] };');
+      fs.writeFileSync(configPath, 'export default 123;');
       const res = await checkConfig({cwd: fixtureDir, configPath});
       expect(res.status).toBe('fail');
     } finally {

@@ -17,33 +17,21 @@ import {CheckboxInput} from './CheckboxInput';
 describe('CheckboxInput', () => {
   it('renders with label', () => {
     render(
-      <CheckboxInput
-        label="Accept terms"
-        value={false}
-        onChange={() => {}}
-      />,
+      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
     );
     expect(screen.getByLabelText('Accept terms')).toBeInTheDocument();
   });
 
   it('renders as unchecked by default', () => {
     render(
-      <CheckboxInput
-        label="Accept terms"
-        value={false}
-        onChange={() => {}}
-      />,
+      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
     );
     expect(screen.getByRole('checkbox')).not.toBeChecked();
   });
 
   it('renders as checked when value prop is true', () => {
     render(
-      <CheckboxInput
-        label="Accept terms"
-        value={true}
-        onChange={() => {}}
-      />,
+      <CheckboxInput label="Accept terms" value={true} onChange={() => {}} />,
     );
     expect(screen.getByRole('checkbox')).toBeChecked();
   });
@@ -182,11 +170,7 @@ describe('CheckboxInput', () => {
 
   it('shows label visually by default', () => {
     render(
-      <CheckboxInput
-        label="Accept terms"
-        value={false}
-        onChange={() => {}}
-      />,
+      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
     );
     const label = screen.getByText('Accept terms');
     expect(label).toBeVisible();
@@ -204,7 +188,7 @@ describe('CheckboxInput', () => {
     expect(screen.getByRole('checkbox')).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('sets aria-checked="mixed" for indeterminate state', () => {
+  it('exposes indeterminate state via the native indeterminate property', () => {
     render(
       <CheckboxInput
         label="Select all"
@@ -212,10 +196,15 @@ describe('CheckboxInput', () => {
         onChange={() => {}}
       />,
     );
-    expect(screen.getByRole('checkbox')).toHaveAttribute(
-      'aria-checked',
-      'mixed',
-    );
+    const checkbox = screen.getByRole('checkbox');
+    // Native checkboxes expose mixed state through the DOM indeterminate
+    // property, which browsers map to aria-checked="mixed". A redundant
+    // aria-checked attribute is intentionally NOT set (forms-16).
+    expect(checkbox).toBeInstanceOf(HTMLInputElement);
+    if (checkbox instanceof HTMLInputElement) {
+      expect(checkbox.indeterminate).toBe(true);
+    }
+    expect(checkbox).not.toHaveAttribute('aria-checked');
   });
 
   it('renders semantic labelIcon names as icons', () => {

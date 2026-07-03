@@ -81,13 +81,6 @@ export interface MoreMenuProps extends Pick<
    */
   onOpenChange?: (isOpen: boolean) => void;
 
-  /**
-   * Whether to auto-focus the first menu item when the menu opens.
-   * Set to `false` for inline showcases or documentation previews.
-   * @default true
-   */
-  hasAutoFocus?: boolean;
-
   /** Test ID for testing frameworks. */
   'data-testid'?: string;
 }
@@ -116,7 +109,6 @@ export function MoreMenu({
   isDisabled = false,
   isMenuOpen,
   onOpenChange,
-  hasAutoFocus,
   xstyle,
   className: classNameProp,
   style,
@@ -149,7 +141,6 @@ export function MoreMenu({
       }}
       items={items}
       hasChevron={false}
-      hasAutoFocus={hasAutoFocus}
       data-testid={testId}
     />
   );

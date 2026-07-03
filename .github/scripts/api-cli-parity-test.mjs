@@ -6,7 +6,7 @@
  *
  * Auto-discovers every component, doc topic, and CLI command,
  * then verifies the programmatic API returns identical results
- * to `xds --json` for each one. Nothing is hardcoded.
+ * to `astryx --json` for each one. Nothing is hardcoded.
  *
  * Usage:
  *   node .github/scripts/api-cli-parity-test.mjs              # full run
@@ -76,8 +76,13 @@ console.log('Discovering...');
 const api = await import('../../packages/cli/src/api/index.mjs');
 
 const componentList = cliJson(['component', '--list']);
+// `component --list` data is package-qualified: each group value is an array
+// of { name, package } objects. Map to bare names for the per-component cases.
+// (Tolerate plain strings too, in case the shape is ever simplified.)
 const allComponents = componentList.data && !componentList.error
-  ? Object.values(componentList.data).flat()
+  ? Object.values(componentList.data)
+      .flat()
+      .map(c => (typeof c === 'string' ? c : c.name))
   : [];
 
 const docsList = cliJson(['docs']);
@@ -101,7 +106,7 @@ console.log(`  ${allHooks.length} hooks, ${hookCategories.length} hook categorie
 // ─── Build cases ──────────────────────────────────────────────────────────────
 //
 // Each case: { label, cli, apiFn? }
-//   - cli:   args for `xds --json ...`
+//   - cli:   args for `astryx --json ...`
 //   - apiFn: if present, called to get API result; compared with CLI result
 //   - if apiFn is absent, CLI-only (still counted for coverage)
 
@@ -252,7 +257,6 @@ add('doctor', ['doctor'], () => apiCall(api.doctor, {cwd: ROOT}));
 // Other commands — probe with safe read-only args (no API yet)
 const otherCommands = [
   ['swizzle', '--list'],
-  ['gap-report', '--list-categories'],
   ['upgrade', '--list'],
 ];
 for (const args of otherCommands) {

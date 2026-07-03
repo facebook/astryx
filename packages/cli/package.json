@@ -43,6 +43,18 @@
       "types": "./src/types/config.d.ts",
       "import": "./src/config.mjs"
     },
+    "./integration": {
+      "types": "./src/types/integration.d.ts",
+      "import": "./src/integration.mjs"
+    },
+    "./template": {
+      "types": "./src/types/template-api.d.ts",
+      "import": "./src/template.mjs"
+    },
+    "./codemod": {
+      "types": "./src/types/codemod.d.ts",
+      "import": "./src/codemod.mjs"
+    },
     "./xle": {
       "types": "./src/lib/xle/browser.d.ts",
       "import": "./src/lib/xle/browser.mjs"

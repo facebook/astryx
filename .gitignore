@@ -45,7 +45,7 @@ e2e/playwright/.cache/
 # Vibe tests (large generated files)
 internal/vibe-tests/results/
 
-# XDS agent docs (generated)
+# Astryx agent docs (generated)
 .astryx-docs/
 apps/sandbox/.next/
 apps/sandbox/out/

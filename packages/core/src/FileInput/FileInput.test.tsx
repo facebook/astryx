@@ -9,10 +9,27 @@
  * SYNC: When FileInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {FileInput} from './FileInput';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
+
+function fileInputEl(): HTMLInputElement {
+  const el = document.querySelector('input[type="file"]');
+  if (!(el instanceof HTMLInputElement)) {
+    throw new Error('file input not found');
+  }
+  return el;
+}
 
 function createFile(
   name: string,
@@ -36,12 +53,7 @@ describe('FileInput', () => {
 
   it('renders default placeholder for multiple files', () => {
     render(
-      <FileInput
-        label="Files"
-        value={null}
-        onChange={() => {}}
-        isMultiple
-      />,
+      <FileInput label="Files" value={null} onChange={() => {}} isMultiple />,
     );
     expect(screen.getByText('Choose files')).toBeInTheDocument();
   });
@@ -67,12 +79,7 @@ describe('FileInput', () => {
   it('displays multiple file names', () => {
     const files = [createFile('a.txt', 100), createFile('b.txt', 200)];
     render(
-      <FileInput
-        label="Files"
-        value={files}
-        onChange={() => {}}
-        isMultiple
-      />,
+      <FileInput label="Files" value={files} onChange={() => {}} isMultiple />,
     );
     expect(screen.getByText('a.txt, b.txt')).toBeInTheDocument();
   });
@@ -80,12 +87,7 @@ describe('FileInput', () => {
   it('forwards ref to the native input', () => {
     const ref = vi.fn();
     render(
-      <FileInput
-        ref={ref}
-        label="Upload"
-        value={null}
-        onChange={() => {}}
-      />,
+      <FileInput ref={ref} label="Upload" value={null} onChange={() => {}} />,
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLInputElement));
   });
@@ -104,31 +106,43 @@ describe('FileInput', () => {
 
   it('sets aria-required when isRequired is true', () => {
     render(
+      <FileInput label="Resume" isRequired value={null} onChange={() => {}} />,
+    );
+    // aria-required lives on the focusable role="button" wrapper, not the
+    // hidden file input (forms-6).
+    expect(screen.getByRole('button', {name: 'Resume'})).toHaveAttribute(
+      'aria-required',
+      'true',
+    );
+  });
+
+  it('places aria-describedby on the focusable button, not the hidden input (forms-6)', () => {
+    render(
       <FileInput
         label="Resume"
-        isRequired
+        description="PDF only"
         value={null}
         onChange={() => {}}
       />,
     );
+    const button = screen.getByRole('button', {name: 'Resume'});
+    expect(button).toHaveAttribute('aria-describedby');
+    // The hidden file input no longer carries the describedby/required/invalid.
     const input = document.querySelector('input[type="file"]')!;
-    expect(input).toHaveAttribute('aria-required', 'true');
+    expect(input).not.toHaveAttribute('aria-describedby');
+    expect(input).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('does not set aria-required by default', () => {
     render(<FileInput label="Resume" value={null} onChange={() => {}} />);
-    const input = document.querySelector('input[type="file"]')!;
-    expect(input).not.toHaveAttribute('aria-required');
+    expect(screen.getByRole('button', {name: 'Resume'})).not.toHaveAttribute(
+      'aria-required',
+    );
   });
 
   it('sets disabled attribute when isDisabled is true', () => {
     render(
-      <FileInput
-        label="Upload"
-        isDisabled
-        value={null}
-        onChange={() => {}}
-      />,
+      <FileInput label="Upload" isDisabled value={null} onChange={() => {}} />,
     );
     const input = document.querySelector('input[type="file"]')!;
     expect(input).toBeDisabled();
@@ -143,8 +157,10 @@ describe('FileInput', () => {
         status={{type: 'error', message: 'Something went wrong'}}
       />,
     );
-    const input = document.querySelector('input[type="file"]')!;
-    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('button', {name: 'Upload'})).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
   });
 
   it('does not set aria-invalid for warning status', () => {
@@ -156,8 +172,9 @@ describe('FileInput', () => {
         status={{type: 'warning'}}
       />,
     );
-    const input = document.querySelector('input[type="file"]')!;
-    expect(input).not.toHaveAttribute('aria-invalid');
+    expect(screen.getByRole('button', {name: 'Upload'})).not.toHaveAttribute(
+      'aria-invalid',
+    );
   });
 
   it('renders status message when provided', () => {
@@ -187,9 +204,7 @@ describe('FileInput', () => {
   describe('file selection via native input', () => {
     it('calls onChange when a file is selected', () => {
       const handleChange = vi.fn();
-      render(
-        <FileInput label="Upload" value={null} onChange={handleChange} />,
-      );
+      render(<FileInput label="Upload" value={null} onChange={handleChange} />);
       const input = document.querySelector(
         'input[type="file"]',
       ) as HTMLInputElement;
@@ -244,6 +259,55 @@ describe('FileInput', () => {
         'input[type="file"]',
       ) as HTMLInputElement;
       expect(input).toHaveAttribute('multiple');
+    });
+  });
+
+  describe('announcements', () => {
+    it('announces a single file selection politely', async () => {
+      render(<FileInput label="Upload" value={null} onChange={() => {}} />);
+      fireEvent.change(fileInputEl(), {
+        target: {files: [createFile('report.pdf', 100)]},
+      });
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('1 file selected: report.pdf');
+      });
+    });
+
+    it('announces a multi-file count politely', async () => {
+      render(
+        <FileInput
+          label="Upload"
+          value={null}
+          onChange={() => {}}
+          isMultiple
+        />,
+      );
+      const files = [
+        createFile('a.txt', 100),
+        createFile('b.txt', 200),
+        createFile('c.txt', 300),
+      ];
+      fireEvent.change(fileInputEl(), {target: {files}});
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('3 files selected');
+      });
+    });
+
+    it('does not announce a selection when validation rejects all files', async () => {
+      render(
+        <FileInput
+          label="Upload"
+          value={null}
+          onChange={() => {}}
+          accept=".pdf"
+        />,
+      );
+      fireEvent.change(fileInputEl(), {
+        target: {files: [createFile('note.txt', 100)]},
+      });
+      // A rejected selection creates no polite region (only the error goes to
+      // the existing role="status" region).
+      expect(politeRegion()).toBeNull();
     });
   });
 
@@ -382,9 +446,7 @@ describe('FileInput', () => {
       const user = userEvent.setup();
       const handleChange = vi.fn();
       const file = createFile('test.txt', 100);
-      render(
-        <FileInput label="Upload" value={file} onChange={handleChange} />,
-      );
+      render(<FileInput label="Upload" value={file} onChange={handleChange} />);
       await user.click(screen.getByRole('button', {name: 'Clear Upload'}));
       expect(handleChange).toHaveBeenCalledWith(null);
     });
@@ -392,12 +454,7 @@ describe('FileInput', () => {
     it('does not show clear button during loading', () => {
       const file = createFile('test.txt', 100);
       render(
-        <FileInput
-          label="Upload"
-          value={file}
-          onChange={() => {}}
-          isLoading
-        />,
+        <FileInput label="Upload" value={file} onChange={() => {}} isLoading />,
       );
       expect(
         screen.queryByRole('button', {name: 'Clear Upload'}),
@@ -426,9 +483,7 @@ describe('FileInput', () => {
 
     it('does not handle drop in input mode', () => {
       const handleChange = vi.fn();
-      render(
-        <FileInput label="Upload" value={null} onChange={handleChange} />,
-      );
+      render(<FileInput label="Upload" value={null} onChange={handleChange} />);
       const dropzone = screen.getByRole('button', {name: 'Upload'});
       const file = createFile('dropped.txt', 100);
       fireEvent.drop(dropzone, {

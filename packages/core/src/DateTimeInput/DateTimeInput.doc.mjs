@@ -118,6 +118,11 @@ export const docs = {
       default: "'Select a time'",
     },
     {
+      name: 'timeLabel',
+      type: 'string',
+      description: 'Accessible label for the time portion. Defaults to "{label} time" so it is tied to the field label and localizable.',
+    },
+    {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
       description: 'Size of the input control.',
@@ -210,6 +215,7 @@ export const docsZh = {
     {name: 'hasClear', type: 'boolean', description: '当有值时显示清除按钮。', default: 'false'},
     {name: 'placeholder', type: 'string', description: '日期部分未选择日期时显示的占位符文本。', default: "'Select a date'"},
     {name: 'timePlaceholder', type: 'string', description: '时间部分未选择时间时显示的占位符文本。', default: "'Select a time'"},
+    {name: 'timeLabel', type: 'string', description: '时间部分的无障碍标签。默认为“{label} time”，与字段标签关联且可本地化。'},
     {name: 'size', type: "'sm' | 'md' | 'lg'", description: '输入控件的尺寸。', default: "'md'"},
     {name: 'status', type: 'InputStatus', description: '错误、警告或成功状态的状态指示对象，附带消息。'},
     {name: 'labelTooltip', type: 'string', description: '通过标签末尾的信息图标显示的提示文本。'},
@@ -258,6 +264,7 @@ export const docsDense = {
     hasClear: 'Shows clear button when datetime is set',
     placeholder: 'date-portion placeholder when empty',
     timePlaceholder: 'time-portion placeholder when empty',
+    timeLabel: 'accessible label for the time input; defaults to "{label} time"',
     size: 'input control size',
     status: 'error/warning/success status w/ message',
     labelTooltip: 'tooltip text via info icon at label end',

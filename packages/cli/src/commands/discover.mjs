@@ -10,7 +10,6 @@
  *   astryx discover searchterm                Search across all packages
  */
 
-import {loadConfig} from '../lib/config.mjs';
 import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mjs';
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
@@ -45,27 +44,17 @@ export function registerDiscover(program) {
       switch (result.type) {
         case 'discover.list': {
           if (result.data.length === 0) {
-            const config = await loadConfig();
             humanLog('');
-            if (config.packages.length === 0) {
-              humanLog('No package directories configured.');
+            if (result.meta && result.meta.configured === false) {
+              humanLog('No integrations configured.');
               humanLog('');
-              humanLog('Add a packages field to astryx.config.mjs:');
+              humanLog('Add integration package names to astryx.config.mjs:');
               humanLog('');
               humanLog('  export default {');
-              humanLog("    packages: ['/path/to/your/libs'],");
+              humanLog("    integrations: ['@scope/your-integration'],");
               humanLog('  };');
             } else {
-              humanLog('No external packages found.');
-              humanLog('');
-              humanLog('Packages opt in by adding an "astryx" field to package.json:');
-              humanLog('');
-              humanLog('  {');
-              humanLog('    "astryx": {');
-              humanLog('      "docs": "./src",');
-              humanLog('      "category": "Common"');
-              humanLog('    }');
-              humanLog('  }');
+              humanLog('No external components found in configured integrations.');
             }
             humanLog('');
           } else {

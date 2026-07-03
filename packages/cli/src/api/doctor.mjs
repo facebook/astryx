@@ -27,7 +27,7 @@ import {createRequire} from 'node:module';
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../lib/node-version.mjs';
 import {CLI_ROOT, findCoreDir} from '../utils/paths.mjs';
 import {detectPackageManager} from '../utils/package-manager.mjs';
-import {findConfigPath, loadConfig} from '../lib/config.mjs';
+import {findConfigPath, Project} from '../lib/project.mjs';
 import {semverCompare} from '../utils/semver.mjs';
 
 const _require = createRequire(import.meta.url);
@@ -240,7 +240,7 @@ export function checkThemes(ctx) {
       label: 'Theme packages',
       status: 'warn',
       message: 'No @astryxdesign/theme-* packages are installed.',
-      fix: 'Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then import its CSS or set xds.theme.',
+      fix: 'Install a theme, e.g. `npm install @astryxdesign/theme-neutral`, then import its CSS or set astryx.theme.',
     };
   }
 
@@ -279,8 +279,9 @@ export async function checkConfig(ctx) {
     };
   }
 
-  // loadConfig swallows errors and returns defaults, so re-import directly to
-  // surface a genuine load failure as a FAIL.
+  // Project.load swallows nothing — it surfaces a genuine load failure — but
+  // the config check wants to report a bad default export precisely, so we
+  // re-import directly to surface a genuine load failure as a FAIL.
   try {
     const {pathToFileURL} = await import('node:url');
     const mod = await import(pathToFileURL(ctx.configPath).href);
@@ -291,24 +292,8 @@ export async function checkConfig(ctx) {
         label: 'astryx.config.mjs',
         status: 'fail',
         message: `astryx.config.mjs default export is not an object (got ${typeof config}).`,
-        fix: 'Export a default object from astryx.config.mjs, e.g. `export default { theme: "default" };`.',
+        fix: 'Export a default object from astryx.config.mjs, e.g. `export default { integrations: [] };`.',
       };
-    }
-    // Validate that `packages`, if present, is a string or array of strings.
-    if (config?.packages !== undefined) {
-      const arr = Array.isArray(config.packages)
-        ? config.packages
-        : [config.packages];
-      const bad = arr.some(p => typeof p !== 'string');
-      if (bad) {
-        return {
-          id: 'config',
-          label: 'astryx.config.mjs',
-          status: 'fail',
-          message: 'astryx.config.mjs `packages` must be a string or array of strings.',
-          fix: 'Set `packages` to a path string or array of path strings.',
-        };
-      }
     }
     return {
       id: 'config',
@@ -369,7 +354,7 @@ export function checkAgentDocs(ctx) {
       label: 'AI agent docs',
       status: 'warn',
       message: `Agent docs present (${present.join(', ')}) but no Astryx section markers found.`,
-      fix: 'Add the XDS section to your agent docs with `astryx init --features agents`.',
+      fix: 'Add the Astryx section to your agent docs with `astryx init --features agents`.',
     };
   }
 
@@ -377,7 +362,7 @@ export function checkAgentDocs(ctx) {
     id: 'agent-docs',
     label: 'AI agent docs',
     status: 'pass',
-    message: `XDS agent docs section present in ${withMarkers.join(', ')}.`,
+    message: `Astryx agent docs section present in ${withMarkers.join(', ')}.`,
   };
 }
 
@@ -493,8 +478,8 @@ export async function runChecks(options = {}) {
   // Resolve a possible theme key from config (best-effort; never throws).
   let configTheme = null;
   try {
-    const loaded = await loadConfig(cwd);
-    configTheme = loaded?.theme ?? null;
+    const project = await Project.load(cwd);
+    configTheme = project.config?.theme ?? null;
   } catch {
     // Best-effort: a missing/invalid config leaves configTheme null.
   }

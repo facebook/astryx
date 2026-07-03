@@ -42,9 +42,9 @@ const styles = stylex.create({
     // Leading follows the type scale's convention (unitless ratio = a
     // 4px-grid-snapped line box ÷ font size, per expandTypeScale's
     // computeLeading). The grid-snapped value closest to the requested ~1.7
-    // at 16px is 28px ÷ 16px = 1.75.
-    [typeScaleVars['--text-body-size']]: '1rem', // 16px
-    [typeScaleVars['--text-body-leading']]: '1.75', // 28px line box
+    // at 17px is 28px ÷ 17px = 1.6470588235.
+    [typeScaleVars['--text-body-size']]: '1.0625rem', // 17px
+    [typeScaleVars['--text-body-leading']]: '1.6470588235', // 28px line box
   },
   // Article that shares the row with a sticky outline aside. Mirrors the
   // larger/airier article body typography from sectionCentered so pages with
@@ -53,8 +53,8 @@ const styles = stylex.create({
     marginInline: 0,
     flexShrink: 1,
     minWidth: 0,
-    [typeScaleVars['--text-body-size']]: '1rem', // 16px
-    [typeScaleVars['--text-body-leading']]: '1.75', // 28px line box
+    [typeScaleVars['--text-body-size']]: '1.0625rem', // 17px
+    [typeScaleVars['--text-body-leading']]: '1.6470588235', // 28px line box
   },
   row: {
     display: 'flex',
@@ -187,18 +187,16 @@ export function DocPageLayout({
   }
 
   const rowProps = stylex.props(styles.row);
+  const rowStyle: React.CSSProperties & Record<'--docs-anchor-offset', string> =
+    {
+      ...rowProps.style,
+      // Consumed by anchored section headings (AnchorHeading and Markdown
+      // headings) to clear the sticky mobile selector when scrolled to.
+      '--docs-anchor-offset': `${selectorHeight}px`,
+    };
 
   return (
-    <div
-      className={rowProps.className}
-      style={
-        {
-          ...rowProps.style,
-          // Consumed by anchored section headings (AnchorHeading and Markdown
-          // headings) to clear the sticky mobile selector when scrolled to.
-          '--docs-anchor-offset': `${selectorHeight}px`,
-        } as React.CSSProperties
-      }>
+    <div className={rowProps.className} style={rowStyle}>
       {article}
       {showAside ? (
         <aside {...stylex.props(styles.aside)}>

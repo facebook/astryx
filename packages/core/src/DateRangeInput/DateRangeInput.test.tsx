@@ -23,9 +23,7 @@ describe('DateRangeInput', () => {
   });
 
   it('renders placeholder when value is null', () => {
-    render(
-      <DateRangeInput label="Range" value={null} onChange={() => {}} />,
-    );
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
     expect(screen.getByText('Select date range')).toBeInTheDocument();
   });
 
@@ -99,9 +97,7 @@ describe('DateRangeInput', () => {
   });
 
   it('does not set aria-required when isRequired is false', () => {
-    render(
-      <DateRangeInput label="Range" value={null} onChange={() => {}} />,
-    );
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
     const trigger = screen.getByRole('button', {name: /Range/});
     expect(trigger).not.toHaveAttribute('aria-required');
   });
@@ -120,25 +116,19 @@ describe('DateRangeInput', () => {
   });
 
   it('is not disabled by default', () => {
-    render(
-      <DateRangeInput label="Range" value={null} onChange={() => {}} />,
-    );
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
     const trigger = screen.getByRole('button', {name: /Range/});
     expect(trigger).not.toBeDisabled();
   });
 
   it('trigger has aria-haspopup="dialog"', () => {
-    render(
-      <DateRangeInput label="Range" value={null} onChange={() => {}} />,
-    );
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
     const trigger = screen.getByRole('button', {name: /Range/});
     expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
   });
 
   it('trigger has aria-expanded=false by default', () => {
-    render(
-      <DateRangeInput label="Range" value={null} onChange={() => {}} />,
-    );
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
     const trigger = screen.getByRole('button', {name: /Range/});
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
@@ -201,9 +191,7 @@ describe('DateRangeInput', () => {
   });
 
   it('calendar icon button is present', () => {
-    render(
-      <DateRangeInput label="Range" value={null} onChange={() => {}} />,
-    );
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
     expect(
       screen.getByRole('button', {name: 'Open calendar'}),
     ).toBeInTheDocument();
@@ -319,6 +307,69 @@ describe('DateRangeInput', () => {
       );
       fireEvent.click(screen.getByRole('button', {name: 'Clear Range'}));
       expect(onChange).toHaveBeenCalledWith(null);
+    });
+  });
+
+  describe('presets', () => {
+    const presets = [
+      {
+        label: 'Last 7 days',
+        getRange: (): DateRange => ({
+          start: '2026-03-01',
+          end: '2026-03-07',
+        }),
+      },
+      {
+        label: 'This month',
+        getRange: (): DateRange => ({
+          start: '2026-03-01',
+          end: '2026-03-31',
+        }),
+      },
+    ];
+
+    it('renders presets as a labeled group of buttons, not a listbox (forms-5)', () => {
+      render(
+        <DateRangeInput
+          label="Range"
+          value={null}
+          onChange={() => {}}
+          presets={presets}
+        />,
+      );
+      // The preset sidebar is a group of action buttons — not a listbox of
+      // options (which would announce a Tab-navigable listbox it isn't).
+      expect(
+        screen.queryByRole('listbox', {hidden: true}),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('group', {name: 'Preset date ranges', hidden: true}),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', {name: 'Last 7 days', hidden: true}),
+      ).toBeInTheDocument();
+    });
+
+    it('marks the applied preset with aria-current, not aria-selected', () => {
+      render(
+        <DateRangeInput
+          label="Range"
+          value={{start: '2026-03-01', end: '2026-03-07'}}
+          onChange={() => {}}
+          presets={presets}
+        />,
+      );
+      const active = screen.getByRole('button', {
+        name: 'Last 7 days',
+        hidden: true,
+      });
+      expect(active).toHaveAttribute('aria-current', 'true');
+      expect(active).not.toHaveAttribute('aria-selected');
+      const inactive = screen.getByRole('button', {
+        name: 'This month',
+        hidden: true,
+      });
+      expect(inactive).not.toHaveAttribute('aria-current');
     });
   });
 });

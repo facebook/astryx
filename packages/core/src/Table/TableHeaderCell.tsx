@@ -25,8 +25,10 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import type {StyleXStyles} from '../theme/types';
+import type {TableContextActions} from './types';
 import {overflowStyles, containerEdgeStyles} from './table.stylex';
 import {useTableContext, mergeXStyle} from './useTableCellStyles';
+import {wrapInTableContextMenu} from './tableContextMenu';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
@@ -42,6 +44,12 @@ export interface TableHeaderCellProps extends BaseProps<HTMLTableCellElement> {
    * Must be a `stylex.create()` value — not an inline style object.
    */
   xstyle?: StyleXStyles | StyleXStyles[];
+  /**
+   * Right-click actions rendered as a context menu around the cell content.
+   * The cell owns the wrapper so it controls how the menu interacts with its
+   * padding / content. Empty or undefined renders no menu.
+   */
+  contextMenuActions?: TableContextActions;
 }
 
 const densityStyles = stylex.create({
@@ -117,41 +125,32 @@ export function TableHeaderCell({
   ref,
   className: incomingClassName,
   style: incomingStyle,
+  contextMenuActions,
   ...props
 }: TableHeaderCellProps) {
   const ctx = useTableContext();
 
-  if (!ctx) {
-    return (
-      <th
-        ref={ref}
-        {...props}
-        {...mergeProps(
-          themeProps('table-header-cell'),
-          stylex.props(xstyle),
-          incomingClassName,
-          incomingStyle,
-        )}>
-        {children}
-      </th>
-    );
-  }
-
   // Header cells always get the bottom divider (separates header from body).
-  // Column dividers use the shared buildDividerStyles — but only for
-  // the column axis, since the row divider is the headerDividerStyles.
-  const cellStyles: StyleXStyles[] = [
-    headerStyles.cell,
-    densityStyles[ctx.density],
-    headerDividerStyles.cell,
-    overflowStyles.cell,
-    containerEdgeStyles[ctx.density],
-  ];
-
-  // Only add column dividers from the shared builder
-  if (ctx.dividers === 'columns' || ctx.dividers === 'grid') {
-    cellStyles.push(dividerColumnStyles.cell);
+  // When used standalone (no table context) the cell renders plain, with no
+  // density/divider styles.
+  const cellStyles: StyleXStyles[] = [];
+  if (ctx) {
+    cellStyles.push(
+      headerStyles.cell,
+      densityStyles[ctx.density],
+      headerDividerStyles.cell,
+      overflowStyles.cell,
+      containerEdgeStyles[ctx.density],
+    );
+    // Column dividers come from the shared builder (column axis only).
+    if (ctx.dividers === 'columns' || ctx.dividers === 'grid') {
+      cellStyles.push(dividerColumnStyles.cell);
+    }
   }
+
+  // The cell owns the context-menu wrapper so it controls how the menu
+  // interacts with its padding / content. No-op when no actions.
+  const content = wrapInTableContextMenu(children, contextMenuActions);
 
   return (
     <th
@@ -163,7 +162,7 @@ export function TableHeaderCell({
         incomingClassName,
         incomingStyle,
       )}>
-      {children}
+      {content}
     </th>
   );
 }

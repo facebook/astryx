@@ -29,6 +29,7 @@ import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity} from './TreeListTypes';
+import {treeItemScope} from './treeListItem.markers.stylex';
 import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
@@ -42,6 +43,9 @@ const styles = stylex.create({
     padding: 0,
     position: 'relative',
     width: '100%',
+    // The treeitem row is the roving-tabindex focus owner; suppress the
+    // native focus ring in favor of the row's :focus-visible outline below.
+    outline: 'none',
   },
   childGroup: {
     margin: 0,
@@ -82,10 +86,16 @@ const styles = stylex.create({
   focusVisibleOutline: {
     outline: {
       default: 'none',
+      // Focus lives on the treeitem row (the <li>) via roving tabindex.
+      // Scoped to the row's OWN treeitem so focusing a parent does not leak
+      // the ring onto descendant rows. Also support inner focusable actions.
+      [stylex.when.ancestor(':focus-visible', treeItemScope)]:
+        `2px solid ${colorVars['--color-accent']}`,
       ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
       default: '0',
+      [stylex.when.ancestor(':focus-visible', treeItemScope)]: '2px',
       ':has(:focus-visible)': '2px',
     },
   },
@@ -250,6 +260,15 @@ export interface TreeListItemInternalProps {
   density: TreeListDensity;
   /** Pre-rendered children subtree (rendered by the parent recursion) */
   renderedChildren?: ReactNode;
+  /** 1-based position of this item among its siblings (aria-posinset). */
+  posInSet: number;
+  /** Number of siblings at this level (aria-setsize). */
+  setSize: number;
+  /**
+   * Whether this treeitem currently owns the tree's single tab stop
+   * (roving tabindex). Exactly one visible treeitem is tabbable at a time.
+   */
+  isTabbable: boolean;
 }
 
 // =============================================================================
@@ -275,6 +294,9 @@ export function TreeListItem({
   onToggle,
   density,
   renderedChildren,
+  posInSet,
+  setSize,
+  isTabbable,
 }: TreeListItemInternalProps) {
   const labelId = useId();
   const descriptionId = useId();
@@ -342,18 +364,26 @@ export function TreeListItem({
   );
 
   const chevron = hasChildren ? (
-    handleClick != null && onClick != null ? (
-      // Separate toggle button when item has its own onClick
+    handleToggle != null ? (
+      // Real toggle button whenever expand/collapse is supported, so the row
+      // can be expanded from the keyboard even when the item has no onClick/href
+      // (row-level onClick is the only click path in that case, but there is no
+      // focusable element to receive Enter/Space). The row's handleClick ignores
+      // clicks originating inside a <button>, so this never double-toggles.
       <button
         type="button"
         aria-expanded={isExpanded}
         aria-label="Toggle children"
+        disabled={isDisabled}
+        // Roving tabindex lives on the treeitem row; the chevron toggle is not
+        // a separate tab stop. Row-level Enter/Space forwards to this button.
+        tabIndex={-1}
         onClick={handleToggle}
         {...stylex.props(styles.chevronButton)}>
         {chevronIcon}
       </button>
     ) : (
-      // Non-interactive chevron when clicking the row toggles
+      // Non-interactive chevron only when toggling is not wired up at all
       <span {...stylex.props(styles.chevronContainer)}>{chevronIcon}</span>
     )
   ) : null;
@@ -371,7 +401,9 @@ export function TreeListItem({
           aria-disabled={isDisabled || undefined}
           aria-labelledby={labelId}
           aria-describedby={description != null ? descriptionId : undefined}
-          tabIndex={isDisabled ? -1 : undefined}
+          // Roving tabindex lives on the treeitem row; inner action is not a
+          // separate tab stop. Activation is forwarded from the row.
+          tabIndex={-1}
           {...stylex.props(styles.invisibleAnchor)}>
           {labelAndDescription}
         </LinkComponent>
@@ -382,6 +414,9 @@ export function TreeListItem({
           disabled={isDisabled}
           aria-labelledby={labelId}
           aria-describedby={description != null ? descriptionId : undefined}
+          // Roving tabindex lives on the treeitem row; inner action is not a
+          // separate tab stop. Activation is forwarded from the row.
+          tabIndex={-1}
           {...stylex.props(styles.invisibleButton)}>
           {labelAndDescription}
         </button>
@@ -400,7 +435,17 @@ export function TreeListItem({
       aria-expanded={hasChildren ? isExpanded : undefined}
       aria-selected={isSelected || undefined}
       aria-disabled={isDisabled || undefined}
-      {...stylex.props(styles.wrapper)}>
+      aria-level={nestedLevel + 1}
+      aria-posinset={posInSet}
+      aria-setsize={setSize}
+      // Roving tabindex: exactly one visible treeitem is tabbable at a time.
+      // Disabled items are skipped by the tree keyboard handler but remain
+      // in the accessibility tree.
+      tabIndex={isDisabled ? -1 : isTabbable ? 0 : -1}
+      data-tree-id={id}
+      data-tree-level={nestedLevel + 1}
+      data-tree-disabled={isDisabled || undefined}
+      {...stylex.props(styles.wrapper, treeItemScope)}>
       <div {...stylex.props(styles.treeBranches)}>
         <TreeListBranches
           ancestorsIsLast={ancestorsIsLast}

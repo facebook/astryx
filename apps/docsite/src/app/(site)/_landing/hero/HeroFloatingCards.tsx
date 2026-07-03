@@ -51,9 +51,8 @@ const styles = stylex.create({
       '@media (min-width: 1024px)': 'block',
     },
   },
-  // Narrow-screen collage grid. <768px: 2 columns (product|reward, side below).
-  // 768–1024px: 3 columns (product | reward | side group). In flow inside the
-  // fixed hero content, so it's pinned and sits --hero-gap below the text.
+  // Narrow-screen collage grid. <768px: 2 cols (product|reward, side below);
+  // 768–1023px: 3 cols. Fixed-size box (see height) so a swap can't reflow the page.
   collage: {
     display: {
       default: 'grid',
@@ -68,7 +67,7 @@ const styles = stylex.create({
     },
     gridTemplateColumns: {
       default: '1fr 1fr',
-      '@media (min-width: 768px)': '1fr 1fr minmax(0, 240px)',
+      '@media (min-width: 768px)': '1fr 1fr 1fr',
     },
     gridTemplateAreas: {
       default: '"product reward" "side side"',
@@ -78,21 +77,39 @@ const styles = stylex.create({
     alignItems: 'stretch',
     justifyContent: 'center',
     textAlign: 'start',
-    columnGap: 'var(--spacing-4)',
-    rowGap: 'var(--spacing-4)',
+    // Literal, not var(--spacing-4): the collage renders inside <Theme> where
+    // Matcha/Y2K scale --spacing ~1.5×, so a token would differ per theme.
+    columnGap: 16,
+    rowGap: 16,
+    // Fixed height so a swap can't reflow the page (image cells absorb per-theme
+    // differences). 420px at 768-1023px fits the tallest theme's side column.
+    height: {
+      default: '665px',
+      '@media (min-width: 768px)': '420px',
+      '@media (min-width: 1024px)': 'auto',
+    },
+    // 2-col: side row is content-sized (`auto`), top cards take the rest (`1fr`);
+    // the fixed height means `auto` can't grow the box. 3-col: one row.
+    gridTemplateRows: {
+      default: 'minmax(0, 1fr) auto',
+      '@media (min-width: 768px)': 'minmax(0, 1fr)',
+      '@media (min-width: 1024px)': 'none',
+    },
     width: '100%',
     maxWidth: {
       default: 520,
       '@media (min-width: 768px)': 1200,
     },
     marginInline: 'auto',
-    paddingInline: 'var(--spacing-6)',
+    // Literal, like the gaps above — a themed value would make column widths
+    // differ per theme.
+    paddingInline: 24,
     boxSizing: 'border-box',
     zIndex: 0,
     pointerEvents: 'none',
   },
-  // Breaks the collage out of the 800px hero text column to span the viewport so
-  // the inner grid can center at the shared 1200px content width.
+  // Full-bleed wrapper so the inner grid can center at 1200px. Its top gap is
+  // set on a non-themed wrapper in page.tsx (heroCollageGap).
   collageBleed: {
     display: {
       default: 'block',
@@ -100,11 +117,6 @@ const styles = stylex.create({
     },
     width: '100vw',
     marginInline: 'calc(50% - 50vw)',
-    // --hero-gap (96px) is too cavernous on phones; full gap returns at ≥768px.
-    marginBlockStart: {
-      default: 'var(--spacing-10)',
-      '@media (min-width: 768px)': 'var(--hero-gap)',
-    },
   },
   gaProduct: {
     gridArea: 'product',
@@ -120,25 +132,39 @@ const styles = stylex.create({
     minHeight: 0,
     textAlign: 'start',
   },
-  // Side group: flex column of the small items with a uniform gap. alignSelf
-  // start so it keeps its natural height (it's the row-height ruler).
+  // Side column (buy card, composer, pills). 3-col: stretch + space-between so it
+  // fills the fixed-height row. 2-col: content-sized row, so it keeps the 16px gap.
   gaSide: {
     gridArea: 'side',
     display: 'flex',
     flexDirection: 'column',
-    alignSelf: 'start',
-    gap: 'var(--spacing-3)',
+    alignSelf: 'stretch',
+    justifyContent: 'space-between',
+    gap: 16,
     minWidth: 0,
+    minHeight: 0,
     textAlign: 'start',
   },
-  // Radio + badge on one row, shrink to content.
+  // Radio + badge pills. 3-col: display:contents hoists them into the side
+  // column's space-between distribution so their gap matches the cards. 2-col:
+  // one centered row.
   collagePillRow: {
-    display: 'flex',
+    display: {
+      default: 'flex',
+      '@media (min-width: 768px)': 'contents',
+    },
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     flexWrap: 'wrap',
     gap: 'var(--spacing-2)',
+  },
+  // Left-align the pills when hoisted in 3-col (see collagePillRow); centered in 2-col.
+  pillSelf: {
+    alignSelf: {
+      default: 'center',
+      '@media (min-width: 768px)': 'flex-start',
+    },
   },
   // Per-card reset in the collage: drop the overlap positioning + scaled pose.
   stackCard: {
@@ -150,19 +176,15 @@ const styles = stylex.create({
   collageProductBody: {
     height: '100%',
   },
-  // Image fills the card height without adding intrinsic height (flexBasis:0 +
-  // absolutely-filled img), so the side group stays the row-height ruler. minH
-  // gives a real height in 2-col (own row, nothing to stretch it); 0 in 3-col.
+  // Image fills the card height (flexBasis:0 + absolutely-filled img, minHeight:0)
+  // so it's the flexible element that absorbs each theme's text-height differences.
   collageImageFill: {
     position: 'relative',
     flexGrow: 1,
     flexBasis: 0,
-    minHeight: {
-      default: 180,
-      '@media (min-width: 768px)': 0,
-    },
+    minHeight: 0,
     overflow: 'hidden',
-    borderRadius: 'var(--radius-element)',
+    borderRadius: 'var(--radius-container)',
   },
   collageImageAbs: {
     position: 'absolute',
@@ -181,10 +203,7 @@ const styles = stylex.create({
     position: 'relative',
     flexGrow: 1,
     flexBasis: 0,
-    minHeight: {
-      default: 180,
-      '@media (min-width: 768px)': 0,
-    },
+    minHeight: 0,
     overflow: 'hidden',
   },
   // Shared base for the overlap-layout floating cards.
@@ -212,7 +231,7 @@ const styles = stylex.create({
   // Shared image helpers.
   imageFrame: {
     overflow: 'hidden',
-    borderRadius: 'var(--radius-element)',
+    borderRadius: 'var(--radius-container)',
   },
   image: {
     width: '100%',
@@ -287,6 +306,10 @@ const styles = stylex.create({
     borderWidth: 0,
     boxShadow: 'none',
     whiteSpace: 'nowrap',
+    alignSelf: {
+      default: 'center',
+      '@media (min-width: 768px)': 'flex-start',
+    },
   },
   buyCard: {
     left: '80%',
@@ -300,7 +323,7 @@ const styles = stylex.create({
     height: 'var(--spacing-12)',
     flexShrink: 0,
     overflow: 'hidden',
-    borderRadius: 'var(--radius-element)',
+    borderRadius: 'var(--radius-container)',
   },
   fullWidth: {
     width: '100%',
@@ -337,6 +360,7 @@ export function HeroFloatingCards({
       variant="green"
       label={content.pills.leading}
       icon={<Sparkles size={12} />}
+      xstyle={styles.pillSelf}
     />
   );
 

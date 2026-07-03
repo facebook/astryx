@@ -496,13 +496,16 @@ export function Lightbox({
           />
         </div>
 
-        {/* Gallery nav: prev */}
-        {isGallery && canPrev && (
+        {/* Gallery nav: prev — stays mounted and is disabled at the start of
+            the range so pressing/arrowing to the boundary doesn't unmount the
+            focused control and drop focus to <body>. */}
+        {isGallery && (
           <div {...stylex.props(styles.navButton, styles.navPrev)}>
             <IconButton
               icon={<Icon icon="chevronLeft" size="sm" color="inherit" />}
               label="Previous"
               variant="ghost"
+              isDisabled={!canPrev}
               onClick={goToPrev}
               xstyle={styles.controlButton}
             />
@@ -549,13 +552,15 @@ export function Lightbox({
           )}
         </div>
 
-        {/* Gallery nav: next */}
-        {isGallery && canNext && (
+        {/* Gallery nav: next — see "prev" above; stays mounted and disabled at
+            the end of the range instead of unmounting. */}
+        {isGallery && (
           <div {...stylex.props(styles.navButton, styles.navNext)}>
             <IconButton
               icon={<Icon icon="chevronRight" size="sm" color="inherit" />}
               label="Next"
               variant="ghost"
+              isDisabled={!canNext}
               onClick={goToNext}
               xstyle={styles.controlButton}
             />

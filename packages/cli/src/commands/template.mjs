@@ -11,9 +11,11 @@ import {isNonInteractive} from '../utils/path-safety.mjs';
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
-import {template as templateApi, getTemplateById} from '../api/template.mjs';
+import {template as templateApi} from '../api/template.mjs';
+import {Project} from '../lib/project.mjs';
+import {warnOnIntegrationIssues} from '../lib/integration-warnings.mjs';
 
-export {discoverTemplates, listTemplates, getTemplateById} from '../api/template.mjs';
+export {discoverTemplates, listTemplates} from '../api/template.mjs';
 
 function isCancel(value) {
   if (p.isCancel(value)) {
@@ -24,15 +26,26 @@ function isCancel(value) {
 }
 
 export function registerTemplate(program) {
-  const templateCmd = program
+  program
     .command('template [name] [path]')
     .description('Inject a page or block template')
     .option('--list', 'List available templates')
     .option('--type <type>', 'Filter by template type: page or block')
+    .option('--package <pkg>', 'Narrow to templates from a specific package')
     .option('--skeleton', 'Show layout skeleton with spatial annotations (padding, gap, nesting)')
     .option('-f, --overwrite', 'Overwrite existing files without prompting')
     .action(async (name, targetPath, options) => {
       const json = program.opts().json || false;
+
+      // Non-blocking nudge: if any configured integration has validation
+      // issues, print one compact line to stderr pointing at
+      // validate-integration. Best-effort; suppressed in --json mode.
+      try {
+        const project = await Project.load(process.cwd());
+        await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+      } catch {
+        // Never let the nudge break the command.
+      }
 
       // Pre-flight overwrite check (only when we'd actually copy a file).
       // The API resolves the destination; we need to mirror its logic
@@ -72,6 +85,7 @@ export function registerTemplate(program) {
           list: options.list,
           skeleton: options.skeleton,
           type: options.type,
+          package: options.package,
           targetPath,
           cwd: process.cwd(),
         });
@@ -88,26 +102,28 @@ export function registerTemplate(program) {
         case 'template.list': {
           const pages = result.data.filter(t => t.type === 'page');
           const blocks = result.data.filter(t => t.type === 'block');
+          const renderEntry = t => {
+            const status = t.isReady ? '' : ' (WIP)';
+            const pkg =
+              t.package && t.package !== '@astryxdesign/core'
+                ? `  [${t.package}]`
+                : '';
+            humanLog(`  ${t.name}${status}${pkg}`);
+            if (t.description) humanLog(`    ${t.description}`);
+          };
           if (pages.length > 0) {
             humanLog('\nPage Templates:\n');
-            for (const t of pages) {
-              const status = t.isReady ? '' : ' (WIP)';
-              humanLog(`  ${t.name}${status}`);
-              if (t.description) humanLog(`    ${t.description}`);
-            }
+            for (const t of pages) renderEntry(t);
           }
           if (blocks.length > 0) {
             humanLog('\nBlock Templates:\n');
-            for (const t of blocks) {
-              const status = t.isReady ? '' : ' (WIP)';
-              humanLog(`  ${t.name}${status}`);
-              if (t.description) humanLog(`    ${t.description}`);
-            }
+            for (const t of blocks) renderEntry(t);
           }
           humanLog('\nUsage:');
-          humanLog('  astryx template <name> [target-path]   Scaffold page or block');
-          humanLog('  astryx template <name> --skeleton      Layout reference');
-          humanLog('  astryx template --list --type block    List only blocks\n');
+          humanLog('  astryx template <id> [target-path]     Scaffold page or block');
+          humanLog('  astryx template <id> --skeleton        Layout reference');
+          humanLog('  astryx template --list --type block    List only blocks');
+          humanLog('  astryx template --list --package <pkg> List from one package\n');
           break;
         }
 
@@ -131,26 +147,6 @@ export function registerTemplate(program) {
         }
       }
     });
-
-  templateCmd
-    .command('get')
-    .description('Fetch a template by ID via the astryx.config.mjs hook')
-    .requiredOption('--id <id>', 'Template identifier to fetch')
-    .action(async (options) => {
-      const json = program.opts().json || false;
-
-      let result;
-      try {
-        result = await getTemplateById(options.id, {cwd: process.cwd()});
-      } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions, code: e.code});
-        return;
-      }
-
-      if (json) return jsonOut(result.type, result.data);
-
-      humanLog(result.data.source);
-    });
 }
 
 /**
@@ -168,7 +164,7 @@ async function detectTemplateCollision(name, targetPath) {
   const {discoverTemplates} = await import('../api/template.mjs');
   let templates;
   try {
-    templates = await discoverTemplates();
+    templates = await discoverTemplates(process.cwd());
   } catch {
     return null;
   }

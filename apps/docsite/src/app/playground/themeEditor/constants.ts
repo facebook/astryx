@@ -267,7 +267,7 @@ export const COMPONENT_VARS: Record<
 };
 
 // Maps component CSS var names to defineTheme() components entries.
-// Most use the derivedVarRegistry keys (which match XDS component selector keys).
+// Most use the derivedVarRegistry keys (which match Astryx component selector keys).
 // Some components set internal --_ vars via StyleX on a child element,
 // so we target the child class directly with the internal var name.
 export const COMPONENT_VAR_TO_OVERRIDE: Record<

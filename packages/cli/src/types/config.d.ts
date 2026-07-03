@@ -1,99 +1,70 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** User config exported from astryx.config.mjs. */
-export interface AstryxConfig {
-  /** External package directories to scan for package.json astryx.docs metadata. */
-  packages?: string | string[];
-  /** Integration package names or manifest paths. */
-  integrations?: string | string[];
-  /** Gap report delivery override. Omit for default GitHub issue filing. */
-  gapReport?: false | {command: string};
-  /** Template hooks. */
-  template?: {
-    get?: (id: string) => string | Promise<string>;
+/**
+ * A command to run as part of a post-codemod hook. Returned by a hook's
+ * `buildCommand` and executed via `execFile` after codemods write files.
+ */
+export interface PostCodemodCommand {
+  command: string;
+  args?: string[];
+  options?: {
+    cwd?: string;
+    env?: NodeJS.ProcessEnv;
+    timeout?: number;
   };
-  [key: string]: unknown;
 }
 
-export interface AstryxIntegrationCodemod {
-  name: string;
-  from?: string;
-  to?: string;
-  title?: string;
-  description?: string;
-  pr?: string;
-  optional?: boolean;
-  fileExtensions?: string[];
-  transform:
-    | string
-    | ((file: unknown, api: unknown) => string | undefined | null);
-}
-
-export interface AstryxPostCodemodContext {
-  packageDir: string;
-  codemodDir: string;
-  changedFiles: string[];
-  absoluteChangedFiles: string[];
-  packageChangedFiles: string[];
-  apply: boolean;
-  run: (
-    command: string,
-    args?: string[],
-    options?: {
-      cwd?: string;
-      timeoutMs?: number;
-      env?: Record<string, string>;
-    },
-  ) => Promise<void>;
-}
-
-export interface AstryxPostCodemodHook {
+/**
+ * A post-codemod hook. `buildCommand` receives the package directory and the
+ * list of files changed by codemods, and returns the command to run (or a
+ * nullish value to skip).
+ */
+export type PostCodemodHook = {
   name?: string;
-  run?: (context: AstryxPostCodemodContext) => void | Promise<void>;
-  command?: (context: AstryxPostCodemodContext) =>
-    | {
-        command: string;
-        args?: string[];
-        cwd?: string;
-        timeoutMs?: number;
-        env?: Record<string, string>;
-      }
+  buildCommand: (ctx: {
+    packageDir: string;
+    files: string[];
+  }) =>
+    | PostCodemodCommand
     | null
     | undefined
-    | Promise<
-        | {
-            command: string;
-            args?: string[];
-            cwd?: string;
-            timeoutMs?: number;
-            env?: Record<string, string>;
-          }
-        | null
-        | undefined
-      >;
+    | Promise<PostCodemodCommand | null | undefined>;
+};
+
+/** A component XLE layout expressions can reference by name via `{hint}`. */
+export interface XleComponent {
+  /** Import specifier the component is imported from, e.g. '@/components/KpiCard'. */
+  from: string;
+  /** Optional human description shown in tooling. */
+  description?: string;
+  /** Import as the module's default export instead of a named export. Defaults to false. */
+  default?: boolean;
 }
 
-/** Integration manifest exported from an astryx.integration.mjs file. */
-export interface AstryxIntegration {
-  name: string;
-  version?: string;
-  displayName?: string;
-  description?: string;
-  /** Relative docs root containing *.doc.mjs files. */
-  docs?: string;
-  category?: string;
-  /** Relative block-template root. */
-  blocks?: string;
-  gapReport?: false | {command: string};
-  template?: {
-    get?: string | ((id: string) => string | Promise<string>);
+/** User config exported from astryx.config.{ts,mjs,js}. */
+export interface AstryxConfig {
+  /** Integration package names to load. */
+  integrations?: string[];
+  /** Where to file issues/feedback for this project. */
+  issuesUrl?: string;
+  /** Lifecycle hooks. */
+  hooks?: {
+    postCodemod?: PostCodemodHook[];
   };
-  codemods?: AstryxIntegrationCodemod[];
-  postCodemod?: AstryxPostCodemodHook[];
-  [key: string]: unknown;
+  /**
+   * EXPERIMENTAL — shape may change and is not part of the stable config
+   * contract. Provisional home for features still being proven out.
+   */
+  experimental?: {
+    /** Experimental XLE (layout expression) configuration. */
+    xle?: {
+      /**
+       * Register app-local components so XLE layout expressions can
+       * reference them by name via {hint}. Keyed by component name.
+       */
+      components?: Record<string, XleComponent>;
+    };
+  };
 }
 
 export declare function createConfig<T extends AstryxConfig>(config: T): T;
-export declare function createIntegration<T extends AstryxIntegration>(
-  integration: T,
-): T;

@@ -19,6 +19,7 @@ import React, {useMemo, useRef, useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
 import {SegmentedControlContext} from './SegmentedControlContext';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {
   SegmentedControlSize,
   SegmentedControlLayout,
@@ -196,6 +197,31 @@ export function SegmentedControl({
     () => ({value, onChange, size, layout, isDisabled}),
     [value, onChange, size, layout, isDisabled],
   );
+
+  // Tab-stop repair (navigation-6): each item sets tabIndex=0 only when its
+  // value matches the group value, so a stale/unmatched `value` (or a disabled
+  // selected item) can leave every segment at tabIndex=-1 — making the whole
+  // radiogroup unreachable by Tab. After render, if no enabled radio is
+  // tabbable, promote the first enabled radio to tabIndex=0 so the group always
+  // has exactly one tab stop. Mirrors Base UI's Composite tab-stop repair.
+  useIsomorphicLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+    const enabled = Array.from(
+      container.querySelectorAll<HTMLButtonElement>(
+        '[role="radio"]:not([aria-disabled="true"])',
+      ),
+    );
+    if (enabled.length === 0) {
+      return;
+    }
+    const hasTabStop = enabled.some(el => el.tabIndex === 0);
+    if (!hasTabStop) {
+      enabled[0].tabIndex = 0;
+    }
+  });
 
   return (
     <SegmentedControlContext value={contextValue}>

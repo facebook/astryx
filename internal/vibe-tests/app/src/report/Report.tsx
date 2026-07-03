@@ -258,10 +258,10 @@ export function Report() {
                   )}
                   {comparison?.astryxTailwind && (
                     <ScoreCard
-                      label="Overall Score vs XDS+TW"
+                      label="Overall Score vs Astryx+TW"
                       score={universal.overall}
                       compareScore={comparison.astryxTailwind.overall}
-                      compareLabel="XDS+TW"
+                      compareLabel="Astryx+TW"
                     />
                   )}
 
@@ -296,7 +296,7 @@ export function Report() {
                           'Astryx',
                           'Baseline',
                           comparison.html ? 'HTML' : null,
-                          comparison.astryxTailwind ? 'XDS+TW' : null,
+                          comparison.astryxTailwind ? 'Astryx+TW' : null,
                         ]
                           .filter(Boolean)
                           .join(' vs ')}{' '}

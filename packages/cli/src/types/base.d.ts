@@ -32,7 +32,6 @@ import type {
   TemplateShowResponse,
   TemplateSkeletonResponse,
   TemplateCopyResponse,
-  TemplateGetResponse,
 } from './template';
 import type {
   HookListResponse,
@@ -44,14 +43,11 @@ import type {
 import type {SwizzleListResponse, SwizzleCopyResponse} from './swizzle';
 import type {ThemeBuildResponse} from './theme';
 import type {UpgradeListResponse, UpgradeRunResponse} from './upgrade';
-import type {
-  GapReportCategoriesResponse,
-  GapReportFileResponse,
-} from './gap-report';
 import type {SearchResponse} from './search';
 import type {ErrorCode} from './error-codes';
 import type {ManifestResponse} from './manifest';
 import type {DoctorResponse} from './doctor';
+import type {ValidateIntegrationResponse} from './validate-integration';
 
 /**
  * Structured error. Check `'error' in result` to discriminate.
@@ -93,7 +89,6 @@ export type CLIAnyResponse =
   | TemplateShowResponse
   | TemplateSkeletonResponse
   | TemplateCopyResponse
-  | TemplateGetResponse
   | HookListResponse
   | HookBriefResponse
   | HookFullResponse
@@ -104,11 +99,10 @@ export type CLIAnyResponse =
   | ThemeBuildResponse
   | UpgradeListResponse
   | UpgradeRunResponse
-  | GapReportCategoriesResponse
-  | GapReportFileResponse
   | SearchResponse
   | ManifestResponse
-  | DoctorResponse;
+  | DoctorResponse
+  | ValidateIntegrationResponse;
 
 /** Union of all type discriminator string literals. */
 export type CLIResponseType = CLIAnyResponse['type'];

@@ -6,9 +6,9 @@ set -euo pipefail
 # Publish a vibe test report to GitHub Pages.
 #
 # Usage:
-#   ./scripts/publish-report.sh <xds-iteration> [baseline-iteration]
+#   ./scripts/publish-report.sh <astryx-iteration> [baseline-iteration]
 #
-# The report is always published under reports/<xds-iteration>/ on gh-pages.
+# The report is always published under reports/<astryx-iteration>/ on gh-pages.
 # No --slug, no --name, no override — just the hash.
 #
 # Examples:
@@ -19,10 +19,10 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VIBE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 if [ $# -lt 1 ]; then
-  echo "Usage: $0 <xds-iteration> [baseline-iteration]"
+  echo "Usage: $0 <astryx-iteration> [baseline-iteration]"
   echo ""
   echo "Builds and deploys a vibe test report to GitHub Pages."
-  echo "Report URL: https://facebook.github.io/astryx/reports/<xds-iteration>/"
+  echo "Report URL: https://facebook.github.io/astryx/reports/<astryx-iteration>/"
   exit 1
 fi
 
@@ -36,7 +36,7 @@ fi
 
 echo ""
 echo "📊 Publishing vibe test report"
-echo "   XDS iteration:      $ASTRYX_ITER"
+echo "   Astryx iteration:      $ASTRYX_ITER"
 if [ -n "$BASELINE_ITER" ]; then
   echo "   Baseline iteration: $BASELINE_ITER"
 fi

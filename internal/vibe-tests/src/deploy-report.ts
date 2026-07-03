@@ -370,7 +370,7 @@ function updateReportsIndex(ghPagesDir: string): void {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>XDS Vibe Test Reports</title>
+  <title>Astryx Vibe Test Reports</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -395,8 +395,8 @@ function updateReportsIndex(ghPagesDir: string): void {
   </style>
 </head>
 <body>
-  <h1>📊 XDS Vibe Test Reports</h1>
-  <p>Evaluation reports comparing XDS, baseline, and raw HTML targets.</p>
+  <h1>📊 Astryx Vibe Test Reports</h1>
+  <p>Evaluation reports comparing Astryx, baseline, and raw HTML targets.</p>
   <ul>
     ${entries.map(name => `<li><a href="${name}/">${name}</a></li>`).join('\n    ')}
   </ul>

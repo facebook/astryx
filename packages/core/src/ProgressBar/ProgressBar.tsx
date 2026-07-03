@@ -320,7 +320,7 @@ export function ProgressBar({
 
       {/* Progress track */}
       <div
-        role={isIndeterminate ? 'progressbar' : 'meter'}
+        role="progressbar"
         aria-valuenow={isIndeterminate ? undefined : clampedValue}
         aria-valuemin={isIndeterminate ? undefined : 0}
         aria-valuemax={isIndeterminate ? undefined : max}

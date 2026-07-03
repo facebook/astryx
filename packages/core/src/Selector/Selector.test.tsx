@@ -83,7 +83,12 @@ function mockSelectorRects() {
     'innerHeight',
   );
   HTMLElement.prototype.getBoundingClientRect = function () {
-    if (this.getAttribute('role') === 'combobox') {
+    // The trigger is role="combobox" by default, or a plain button with
+    // aria-haspopup="listbox" in hasSearch mode — match either.
+    if (
+      this.getAttribute('role') === 'combobox' ||
+      this.getAttribute('aria-haspopup') === 'listbox'
+    ) {
       return rect({top: 160, bottom: 190, height: 30});
     }
     if (this.getAttribute('role') === 'listbox') {
@@ -108,9 +113,7 @@ function mockSelectorRects() {
 
 describe('Selector', () => {
   it('renders with placeholder when no value', () => {
-    render(
-      <Selector label="Fruit" options={OPTIONS} placeholder="Pick one" />,
-    );
+    render(<Selector label="Fruit" options={OPTIONS} placeholder="Pick one" />);
     expect(screen.getByRole('combobox')).toHaveTextContent('Pick one');
   });
 
@@ -145,6 +148,25 @@ describe('Selector', () => {
 
     await user.click(screen.getByRole('combobox'));
     expect(screen.getByTestId('option-badge')).toHaveTextContent('Owner');
+  });
+
+  it('exposes the popup as a listbox, not a modal dialog', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+      />,
+    );
+    // The combobox trigger keeps DOM focus; the popup must expose its own
+    // role="listbox" and must not be wrapped in a role="dialog" aria-modal
+    // element, which would tell AT the focused trigger is inert.
+    expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', {hidden: true})).not.toBeInTheDocument();
+    expect(
+      document.querySelector('[aria-modal="true"]'),
+    ).not.toBeInTheDocument();
   });
 
   it('supports explicit menu placement', () => {
@@ -310,6 +332,59 @@ describe('Selector', () => {
       expect(onChange).toHaveBeenCalledWith(null);
     });
 
+    it('clears the value via Delete on the focused trigger', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={onChange}
+          hasClear
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      trigger.focus();
+      await user.keyboard('{Delete}');
+      expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it('clears the value via Backspace on the focused trigger', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={onChange}
+          hasClear
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      trigger.focus();
+      await user.keyboard('{Backspace}');
+      expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it('does not clear via Delete when hasClear is not set', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={onChange}
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      trigger.focus();
+      await user.keyboard('{Delete}');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('shows placeholder after clearing', () => {
       render(
         <Selector
@@ -355,8 +430,33 @@ describe('Selector', () => {
           hasSearch
         />,
       );
-      await user.click(screen.getByRole('combobox'));
-      expect(screen.getByRole('searchbox', h)).toBeInTheDocument();
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      expect(screen.getByRole('combobox', h)).toBeInTheDocument();
+    });
+
+    it('wires the search input as the combobox with activedescendant (comboboxes-4)', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      const triggerBtn = screen.getByRole('button', {name: 'Fruit'});
+      // In hasSearch mode the trigger is a plain button, not a combobox.
+      expect(triggerBtn).not.toHaveAttribute('role', 'combobox');
+      await user.click(triggerBtn);
+      const search = screen.getByRole('combobox', h);
+      expect(search).toHaveAttribute('aria-autocomplete', 'list');
+      expect(search).toHaveAttribute('aria-expanded', 'true');
+      expect(search).toHaveAttribute('aria-controls');
+      // ArrowDown moves the highlight; the search input reports it via
+      // aria-activedescendant (previously silent on the trigger).
+      await user.keyboard('{ArrowDown}');
+      expect(search).toHaveAttribute('aria-activedescendant');
     });
 
     it('does not render search input when hasSearch is false', async () => {
@@ -369,6 +469,8 @@ describe('Selector', () => {
           onChange={() => {}}
         />,
       );
+      // hasSearch is false, so the trigger itself is the combobox and there is
+      // no separate search input inside the popup.
       await user.click(screen.getByRole('combobox'));
       expect(screen.queryByRole('searchbox', h)).not.toBeInTheDocument();
     });
@@ -384,8 +486,8 @@ describe('Selector', () => {
           hasSearch
         />,
       );
-      await user.click(screen.getByRole('combobox'));
-      await user.type(screen.getByRole('searchbox', h), 'ban');
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'ban');
       const options = screen.getAllByRole('option', h);
       expect(options).toHaveLength(1);
       expect(options[0]).toHaveTextContent('Banana');
@@ -402,8 +504,8 @@ describe('Selector', () => {
           hasSearch
         />,
       );
-      await user.click(screen.getByRole('combobox'));
-      await user.type(screen.getByRole('searchbox', h), 'xyz');
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
       expect(screen.queryAllByRole('option', h)).toHaveLength(0);
       expect(screen.getByText('No results found')).toBeInTheDocument();
     });
@@ -420,8 +522,8 @@ describe('Selector', () => {
           hasSearch
         />,
       );
-      await user.click(screen.getByRole('combobox'));
-      await user.type(screen.getByRole('searchbox', h), 'ban');
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'ban');
       await user.click(screen.getByRole('option', {name: /Banana/, ...h}));
       expect(onChange).toHaveBeenCalledWith('Banana');
     });
@@ -441,7 +543,9 @@ describe('Selector', () => {
         </>,
       );
 
-      const trigger = screen.getByRole('combobox');
+      // In hasSearch mode the trigger is a plain button (the popup's search
+      // input is the combobox); it still owns aria-expanded.
+      const trigger = screen.getByRole('button', {name: 'Fruit'});
       await user.click(trigger);
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
 
@@ -461,10 +565,91 @@ describe('Selector', () => {
           searchPlaceholder="Find a fruit..."
         />,
       );
-      await user.click(screen.getByRole('combobox'));
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
       expect(
         screen.getByPlaceholderText('Find a fruit...'),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('keyboard accessibility', () => {
+    it('trigger is focusable via Tab when enabled', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} />);
+
+      await user.tab();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+    });
+
+    it('trigger is not focusable when disabled', () => {
+      render(<Selector label="Fruit" options={OPTIONS} isDisabled />);
+      expect(screen.getByRole('combobox')).toHaveAttribute('tabIndex', '-1');
+    });
+
+    it('opens the listbox with ArrowDown from a focused trigger', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      expect(trigger).toHaveFocus();
+
+      await user.keyboard('{ArrowDown}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('opens and selects an option with Enter (no mouse)', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+
+      await user.tab();
+      await user.keyboard('{Enter}'); // open
+      await user.keyboard('{ArrowDown}'); // move highlight
+      await user.keyboard('{Enter}'); // select
+
+      expect(onChange).toHaveBeenCalled();
+    });
+
+    it('clear button is reachable by keyboard', () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasClear
+        />,
+      );
+      const clear = screen.getByRole('button', {name: 'Clear Fruit'});
+      expect(clear).not.toHaveAttribute('tabIndex', '-1');
+    });
+
+    it('scrolls the highlighted option into view during arrow navigation', async () => {
+      const scrollIntoView = vi.fn();
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: scrollIntoView,
+      });
+      try {
+        const user = userEvent.setup();
+        const longOptions = Array.from(
+          {length: 20},
+          (_, i) => `Option ${i + 1}`,
+        );
+        render(<Selector label="Fruit" options={longOptions} />);
+
+        await user.tab();
+        await user.keyboard('{Enter}'); // open
+        scrollIntoView.mockClear();
+        await user.keyboard('{ArrowDown}'); // move highlight
+        await user.keyboard('{ArrowDown}');
+
+        expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+      } finally {
+        delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+          .scrollIntoView;
+      }
     });
   });
 });

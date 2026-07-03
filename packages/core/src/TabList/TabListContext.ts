@@ -27,6 +27,12 @@ export type TabListSize = 'sm' | 'md' | 'lg';
 export type TabListLayout = 'hug' | 'fill';
 
 /**
+ * Orientation of the tab strip. Controls which arrow keys move focus
+ * between tabs and the reported `aria-orientation`.
+ */
+export type TabListOrientation = 'horizontal' | 'vertical';
+
+/**
  * Context for communicating value/onChange/size/layout from TabList to children.
  */
 export interface TabListContextValue {
@@ -36,9 +42,7 @@ export interface TabListContextValue {
   layout: TabListLayout;
 }
 
-export const TabListContext = createContext<TabListContextValue | null>(
-  null,
-);
+export const TabListContext = createContext<TabListContextValue | null>(null);
 TabListContext.displayName = 'TabListContext';
 
 /**

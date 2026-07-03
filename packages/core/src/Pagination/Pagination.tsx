@@ -34,6 +34,7 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {Selector} from '../Selector';
 import {Text} from '../Text';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -335,7 +336,7 @@ export function Pagination({
   totalItems,
   totalPages: totalPagesProp,
   hasMore,
-  pageSize = 10,
+  pageSize: pageSizeProp = 10,
   pageSizeOptions,
   onPageSizeChange,
   variant = 'pages',
@@ -350,6 +351,20 @@ export function Pagination({
   ref,
 }: PaginationProps) {
   const [, startTransition] = useTransition();
+
+  // pageSize is typed as number, so 0, NaN, and negatives are valid at the
+  // type level but yield Infinity/NaN page counts, and
+  // Array.from({length: Infinity}) crashes the dots variant. Coerce to a
+  // positive integer; non-finite values fall back to the default.
+  const pageSize = Number.isFinite(pageSizeProp)
+    ? Math.max(1, Math.floor(pageSizeProp))
+    : 10;
+
+  // Announce page changes politely (navigation-10). The controls carry no
+  // live region, so page transitions were previously silent to screen readers.
+  // Only user-driven changes go through handlePageChange, so initial mount is
+  // never announced.
+  const announce = useAnnounce();
 
   // Track the page optimistically so rapid prev/next clicks advance from the
   // in-flight target instead of stalling on the last committed page.
@@ -384,6 +399,11 @@ export function Pagination({
     // Keep onChange urgent so controlled page state updates in the same commit
     // as the click; only the optimistic indicator and changeAction defer.
     onChange(newPage);
+    announce(
+      computedTotalPages != null
+        ? `Page ${newPage} of ${computedTotalPages}`
+        : `Page ${newPage}`,
+    );
     startTransition(async () => {
       setOptimisticPage(newPage);
       await changeAction?.(newPage);

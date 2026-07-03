@@ -9,7 +9,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ContextMenu} from './ContextMenu';
 import {ContextMenuItem} from './index';
@@ -60,6 +60,52 @@ describe('ContextMenu', () => {
     expect(screen.getByRole('menu', {hidden: true})).toBeInTheDocument();
   });
 
+  it('typeahead focuses the matching menu item (menus-11)', () => {
+    render(
+      <ContextMenu items={[{label: 'Cut'}, {label: 'Copy'}, {label: 'Paste'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const menu = screen.getByRole('menu', {hidden: true});
+    fireEvent.keyDown(menu, {key: 'p'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Paste', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('gives the menu an accessible name (menus-13)', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    // Defaults to "Context menu"; overridable via label.
+    expect(
+      screen.getByRole('menu', {name: 'Context menu', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('uses a custom label', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]} label="Row actions">
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    expect(
+      screen.getByRole('menu', {name: 'Row actions', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('does not put aria-haspopup on the role-less trigger wrapper (menus-15)', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    expect(screen.getByTestId('ctx')).not.toHaveAttribute('aria-haspopup');
+  });
+
   it('opens menu on right-click', () => {
     render(
       <ContextMenu items={[{label: 'Item 1'}]}>
@@ -69,6 +115,48 @@ describe('ContextMenu', () => {
 
     fireEvent.contextMenu(screen.getByText('Right-click me'));
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('closes on Escape even when opened without auto-focus', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+    // Focus is not inside the menu, so the Escape path must be document-level.
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('ignores Escape during IME composition', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    fireEvent.keyDown(document, {key: 'Escape', isComposing: true});
+    expect(HTMLElement.prototype.hidePopover).not.toHaveBeenCalled();
+  });
+
+  it('restores focus to the trigger on close', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]}>
+        <button type="button">Right-click me</button>
+      </ContextMenu>,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Right-click me'});
+    trigger.focus();
+    expect(trigger).toHaveFocus();
+
+    fireEvent.contextMenu(trigger);
+    fireEvent.keyDown(document, {key: 'Escape'});
+    expect(trigger).toHaveFocus();
   });
 
   it('prevents default context menu on right-click', () => {
@@ -102,6 +190,72 @@ describe('ContextMenu', () => {
       </ContextMenu>,
     );
     expect(screen.getByTestId('my-context-menu')).toBeInTheDocument();
+  });
+
+  it('opens from a keyboard-invoked contextmenu (Shift+F10 / Menu key)', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    const trigger = screen.getByTestId('ctx');
+    // Anchor the trigger box so the rect fallback has a position to read.
+    trigger.getBoundingClientRect = () =>
+      ({
+        left: 40,
+        top: 10,
+        bottom: 30,
+        right: 100,
+        width: 60,
+        height: 20,
+      }) as DOMRect;
+    // Keyboard-initiated contextmenu: coords are (0,0) and detail is 0.
+    fireEvent.contextMenu(trigger, {clientX: 0, clientY: 0, detail: 0});
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('opens on touch long-press', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Long-press me</div>
+        </ContextMenu>,
+      );
+      const trigger = screen.getByTestId('ctx');
+      fireEvent.touchStart(trigger, {
+        touches: [{clientX: 20, clientY: 20}],
+      });
+      // Not open until the long-press threshold elapses.
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('cancels the long-press when the finger moves past the threshold', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Long-press me</div>
+        </ContextMenu>,
+      );
+      const trigger = screen.getByTestId('ctx');
+      fireEvent.touchStart(trigger, {touches: [{clientX: 20, clientY: 20}]});
+      // Move past MOVE_CANCEL_PX (10px) — treated as a scroll, not a press.
+      fireEvent.touchMove(trigger, {touches: [{clientX: 20, clientY: 40}]});
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(HTMLElement.prototype.showPopover).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

@@ -262,6 +262,12 @@ export interface HeaderCellRenderProps {
   /** Content rendered below the header label row (e.g. inline filter controls). */
   below?: ReactNode;
   /**
+   * Right-click context-menu actions for this header cell. Plugins append
+   * their actions in `transformHeaderCell`; BaseTable concatenates the arrays
+   * across plugins (never overridden) and renders one menu per header cell.
+   */
+  contextMenuActions?: TableContextActions;
+  /**
    * Index of this column within the final, ordered list of rendered columns
    * (after column injection/reordering by other plugins). Populated by
    * BaseTable. Optional for backward compatibility with hand-constructed
@@ -290,6 +296,13 @@ export interface BodyRowRenderProps {
 export interface BodyCellRenderProps {
   htmlProps: TdHTMLAttributes<HTMLTableCellElement>;
   styles: StyleXStyles[];
+  /**
+   * Right-click context-menu actions for this body cell. Plugins append their
+   * actions in `transformBodyCell`; BaseTable concatenates the arrays across
+   * plugins and across the row's cells (never overridden) and renders one menu
+   * per row.
+   */
+  contextMenuActions?: TableContextActions;
   /**
    * Index of this cell's column within the final ordered column list.
    * Mirrors the `columnIndex` passed to `transformHeaderCell`. Populated by
@@ -336,6 +349,50 @@ export interface ScrollWrapperRenderProps {
 }
 
 // =============================================================================
+// Context-menu actions
+// =============================================================================
+
+/**
+ * A single right-click context-menu action contributed by a plugin.
+ *
+ * Plugins contribute actions via the `contextMenuActions` field on
+ * `HeaderCellRenderProps` / `BodyCellRenderProps` (set in
+ * `transformHeaderCell` / `transformBodyCell`); the table aggregates actions
+ * from every enabled plugin into a single menu per header cell / row.
+ */
+export interface TableContextAction {
+  /** Stable identifier, unique within a single menu. */
+  id: string;
+  /** Visible label for the menu item. */
+  label: ReactNode;
+  /** Optional leading icon. */
+  icon?: ReactNode;
+  /** Invoked when the item is selected. */
+  onSelect: () => void;
+  /** When true, the item is rendered but not selectable. */
+  disabled?: boolean;
+  /**
+   * Group key used to cluster related actions and insert a divider between
+   * groups (e.g. 'sort', 'selection'). Actions without a group form a trailing
+   * group. Group order follows first-seen order across the aggregated list.
+   */
+  group?: string;
+  /** When true, the item renders as checked (e.g. the active sort direction). */
+  checked?: boolean;
+}
+
+/**
+ * Context-menu actions for a cell — either a static array, or a getter that
+ * returns the actions lazily. Prefer the getter for actions derived from state
+ * (e.g. the active sort direction): it's only invoked when the menu is opened,
+ * so the plugin doesn't build an action array (with closures) for every cell on
+ * every render.
+ */
+export type TableContextActions =
+  | TableContextAction[]
+  | (() => TableContextAction[]);
+
+// =============================================================================
 // Plugin Interface
 // =============================================================================
 
@@ -353,6 +410,10 @@ export interface ScrollWrapperRenderProps {
  * 6. `transformBodyCell` — transform each body `<td>` props
  * 7. `transformScrollWrapper` — transform the scroll-container wrapper around the table
  * 8. `transformTableContext` — wrap the table output in context providers
+ *
+ * Plugins may also contribute right-click menu actions by appending to
+ * `contextMenuActions` in `transformHeaderCell` / `transformBodyCell`
+ * (aggregated into one menu per header cell / row).
  */
 export interface TablePlugin<
   T extends Record<string, unknown> = Record<string, unknown>,
@@ -432,12 +493,25 @@ export interface TableRowComponentProps extends HTMLAttributes<HTMLTableRowEleme
 export interface TableCellComponentProps extends TdHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
   xstyle?: StyleXStyles | StyleXStyles[];
+  /**
+   * Right-click actions to render as a context menu around the cell content.
+   * The cell owns the menu wrapper so it can control how it interacts with
+   * padding / content sizing. Empty/undefined renders no menu (native passes
+   * through).
+   */
+  contextMenuActions?: TableContextActions;
 }
 
 /** Props for header cell components used in the components prop */
 export interface TableHeaderCellComponentProps extends ThHTMLAttributes<HTMLTableCellElement> {
   children?: ReactNode;
   xstyle?: StyleXStyles | StyleXStyles[];
+  /**
+   * Right-click actions to render as a context menu around the header content.
+   * The cell owns the menu wrapper so it can control how it interacts with
+   * padding / content sizing. Empty/undefined renders no menu.
+   */
+  contextMenuActions?: TableContextActions;
 }
 
 // =============================================================================

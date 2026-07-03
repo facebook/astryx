@@ -546,6 +546,9 @@ export function PowerSearch({
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
+    // The popup's own listbox/menu content is the exposed semantics; focus
+    // stays on the tokenizer input, so a modal dialog wrapper is incorrect.
+    role: 'none',
   });
 
   // Wrapper that manages layer visibility and tokenizer focus alongside state

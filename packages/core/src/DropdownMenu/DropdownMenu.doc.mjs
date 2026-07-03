@@ -61,14 +61,7 @@ export const docs = {
       type: 'boolean',
       description: 'Whether to show a chevron icon on the trigger button. Set to false for icon-only triggers.',
       default: 'true',
-    },
-    {
-      name: 'hasAutoFocus',
-      type: 'boolean',
-      description: 'Whether to auto-focus the first menu item when the menu opens. Set to false for inline showcases or documentation previews.',
-      default: 'true',
-    },
-    {
+    },    {
       name: 'children',
       type: '(item: DropdownMenuItemData) => ReactNode',
       description: 'Custom render function for each item in the list.',

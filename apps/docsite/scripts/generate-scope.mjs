@@ -4,7 +4,7 @@
 /**
  * Generates apps/docsite/src/generated/playground-scope.ts
  *
- * Maps every XDS module available in the playground preview iframe.
+ * Maps every Astryx module available in the playground preview iframe.
  * This runs as part of `pnpm generate` (before dev/build) so new components
  * are picked up automatically — no manual maintenance needed.
  *
@@ -207,7 +207,7 @@ lines.push('');
 lines.push("import {Theme} from '@astryxdesign/core/theme';");
 lines.push("import type {DefinedTheme} from '@astryxdesign/core/theme';");
 lines.push("import {createElement, type ComponentProps} from 'react';");
-lines.push("import * as xdsTokens from '@astryxdesign/core/theme/tokens.stylex';");
+lines.push("import * as astryxTokens from '@astryxdesign/core/theme/tokens.stylex';");
 lines.push('');
 
 // ── Hooks ──────────────────────────────────────────────────────────────
@@ -277,7 +277,7 @@ for (const t of SCOPE_THEMES) {
 lines.push("  '@astryxdesign/core/theme': {Theme: ControlledTheme},");
 
 // tokens.stylex
-lines.push("  '@astryxdesign/core/theme/tokens.stylex': xdsTokens,");
+lines.push("  '@astryxdesign/core/theme/tokens.stylex': astryxTokens,");
 
 // hooks (useMediaQuery, etc.)
 lines.push("  '@astryxdesign/core/hooks': Hooks,");

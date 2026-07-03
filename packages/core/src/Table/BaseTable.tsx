@@ -205,6 +205,7 @@ function TableRowInner<T extends Record<string, unknown>>({
       <CellComponent
         key={col.key}
         {...cellRenderProps.htmlProps}
+        contextMenuActions={cellRenderProps.contextMenuActions}
         xstyle={cellRenderProps.styles}>
         {content}
       </CellComponent>
@@ -409,29 +410,32 @@ function BaseTableInner<T extends Record<string, unknown>>({
     const hasSlots =
       before != null || after != null || overlay != null || below != null;
 
+    const headerInner = hasSlots ? (
+      <>
+        {before}
+        {after != null ? (
+          <div {...stylex.props(styles.headerLabelRow)}>
+            {resolvedContent}
+            {after}
+          </div>
+        ) : (
+          resolvedContent
+        )}
+        {overlay}
+        {below}
+      </>
+    ) : (
+      resolvedContent
+    );
+
     return (
       <HeaderCellComponent
         key={col.key}
         {...mergedHtmlProps}
         {...headerTitleProp}
+        contextMenuActions={cellRenderProps.contextMenuActions}
         xstyle={cellRenderProps.styles}>
-        {hasSlots ? (
-          <>
-            {before}
-            {after != null ? (
-              <div {...stylex.props(styles.headerLabelRow)}>
-                {resolvedContent}
-                {after}
-              </div>
-            ) : (
-              resolvedContent
-            )}
-            {overlay}
-            {below}
-          </>
-        ) : (
-          resolvedContent
-        )}
+        {headerInner}
       </HeaderCellComponent>
     );
   });

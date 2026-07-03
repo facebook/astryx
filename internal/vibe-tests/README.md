@@ -1,4 +1,4 @@
-# XDS Vibe Tests
+# Astryx Vibe Tests
 
 Structured evaluations that compare how well LLMs generate UI code under different design system configurations. Same prompts, different systems, measurable outcomes.
 
@@ -11,7 +11,7 @@ Prompts live in [`test-sets/default.json`](test-sets/default.json). Each prompt 
   "id": "fwc-6",
   "category": "feature-with-constraint",
   "prompt": "Build a shipping method selector with three options: Standard (free, 5-7 days), Express ($9.99, 2-3 days), Overnight ($19.99, next day)",
-  "expectedComponents": ["XDSRadioList", "XDSCard"],
+  "expectedComponents": ["RadioList", "Card"],
   "complexity": "simple"
 }
 ```
@@ -120,11 +120,11 @@ For evaluation fairness, check `universal-eval.ts`:
 
 ## Known Accepted Asymmetries
 
-These are intentional and documented; they slightly favor baseline, making XDS wins more credible:
+These are intentional and documented; they slightly favor baseline, making Astryx wins more credible:
 
-- **Efficiency:** Tailwind's single-line `className` gets a lower styling-ratio than XDS's multi-line `stylex.create` blocks, despite encoding more decisions
+- **Efficiency:** Tailwind's single-line `className` gets a lower styling-ratio than Astryx's multi-line `stylex.create` blocks, despite encoding more decisions
 - **Maintainability:** Tailwind scale values (`p-4`, `text-sm`) count as semantic, which is generous compared to how raw `16px` is counted for HTML
-- **XDS+Tailwind scoring:** The hybrid target counts styling decisions from both XDS props and Tailwind classes. This may inflate its decision count relative to pure XDS, but accurately reflects the code's actual styling surface area
+- **Astryx+Tailwind scoring:** The hybrid target counts styling decisions from both Astryx props and Tailwind classes. This may inflate its decision count relative to pure Astryx, but accurately reflects the code's actual styling surface area
 
 ## Directory Structure
 

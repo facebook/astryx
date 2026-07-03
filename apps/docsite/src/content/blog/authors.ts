@@ -4,7 +4,7 @@
  * @file authors.ts
  *
  * Shared author registry for the blog. Posts reference authors by key in their
- * frontmatter (`authors: ["xds-team"]`) so profile metadata is defined once.
+ * frontmatter (`authors: ["team"]`) so profile metadata is defined once.
  *
  * For GitHub-backed authors, set `github` and the site derives a stable avatar
  * and profile link from github.com without fetching profile data at build time.
@@ -45,7 +45,7 @@ export interface ResolvedAuthor extends Omit<AuthorProfile, 'avatar' | 'href'> {
 export const authors = {
   team: {
     name: 'Astryx team',
-    avatar: '/favicon.svg',
+    avatar: '/blog/authors/astryx-team.png',
     href: 'https://github.com/facebook/astryx',
   },
   cvkxx: {

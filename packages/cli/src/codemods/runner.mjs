@@ -12,6 +12,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '@clack/prompts';
 import {humanLog} from '../lib/json.mjs';
+import {runConfigCodemod} from './run-codemod.mjs';
 
 // Known corruption patterns that indicate a broken transform.
 // Each entry: [regex, human-readable description]
@@ -128,83 +129,42 @@ export function validateOutput(result, source, j, {parse = true} = {}) {
   return {valid: true};
 }
 
-function isConfigCodemod(transformEntry) {
-  return transformEntry.meta?.codemodType === 'config';
-}
-
-const CONFIG_CODEMOD_PATHS = new Set([
-  'package.json',
-  'astryx.config.mjs',
-  'xds.config.mjs',
-]);
-
-function resolveConfigPath(relativePath) {
-  if (!CONFIG_CODEMOD_PATHS.has(relativePath)) {
-    throw new Error(`unsupported config codemod path: ${relativePath}`);
-  }
-  return path.resolve(process.cwd(), relativePath);
-}
-
-function readOptionalConfigFile(relativePath) {
-  const fullPath = resolveConfigPath(relativePath);
-  if (!fs.existsSync(fullPath)) return null;
-  return {path: relativePath, source: fs.readFileSync(fullPath, 'utf-8')};
-}
-
-function getConfigCodemodContext() {
+/**
+ * Normalize a core registry transform entry to the unified codemod entry shape
+ * consumed by the shared runner (`run-codemod.mjs`).
+ *
+ * Core registry entries are stored as `{name, transform, meta, optional}`.
+ * The shared runner — the same one integration codemods use — operates on
+ * `{id, type, codemod: {title, transform, fileExtensions?, isOptional?},
+ * package, version}`.
+ *
+ * CONVENTION — how a core registry entry signals it is a CONFIG codemod:
+ * set `meta.codemodType === 'config'` on the entry (the default is a 'code'
+ * codemod). A config codemod runs against the consumer's astryx.config.* file
+ * via the unified `(file, api)`/jscodeshift contract; a code codemod runs
+ * against discovered source files. Any future core config codemod (e.g. a
+ * v0.1.3 one) must set `meta.codemodType = 'config'` and author its transform
+ * with the same `(file, api) => string | null | undefined` contract used by
+ * `createConfigCodemod`.
+ *
+ * @param {{name: string, transform: Function, meta: object, optional?: boolean}} transformEntry
+ * @param {string} version
+ * @returns {{id: string, type: 'code'|'config', codemod: object, package: string, version: string}}
+ */
+function toUnifiedEntry(transformEntry, version) {
+  const {name, transform, meta, optional} = transformEntry;
+  const type = meta?.codemodType === 'config' ? 'config' : 'code';
   return {
-    packageJson: readOptionalConfigFile('package.json'),
-    astryxConfig: readOptionalConfigFile('astryx.config.mjs'),
-    xdsConfig: readOptionalConfigFile('xds.config.mjs'),
-  };
-}
-
-async function runConfigCodemod(transformEntry, {apply, log}) {
-  const {transform} = transformEntry;
-  const api = {config: getConfigCodemodContext()};
-  const result = await transform({path: process.cwd(), source: ''}, api);
-  const errors = result?.errors ?? [];
-  if (errors.length > 0) {
-    for (const error of errors) {
-      log.error(`    ✗ ${error.file ?? 'config'} — ${error.error}`);
-    }
-    return {filesChanged: 0, errors};
-  }
-
-  const changes = result?.changes ?? [];
-  if (changes.length === 0) return {filesChanged: 0, errors: []};
-
-  for (const change of changes) {
-    const fullPath = resolveConfigPath(change.path);
-    if (change.delete) {
-      if (apply) fs.rmSync(fullPath, {force: true});
-      log[apply ? 'success' : 'warn'](
-        `    ${apply ? '✓' : '~'} ${change.path} (delete${apply ? '' : ', dry run'})`,
-      );
-      continue;
-    }
-
-    if (apply) {
-      fs.writeFileSync(fullPath, change.source, 'utf-8');
-    }
-    log[apply ? 'success' : 'warn'](
-      `    ${apply ? '✓' : '~'} ${change.path}${apply ? '' : ' (would change)'}`,
-    );
-  }
-
-  if (changes.length > 0) {
-    const verb = apply ? 'Updated' : 'Would update';
-    log.info(
-      `  ${verb} ${changes.length} config file${changes.length === 1 ? '' : 's'}`,
-    );
-  }
-
-  return {
-    filesChanged: changes.length,
-    writtenFiles: changes
-      .filter(change => !change.delete && path.extname(change.path) !== '.json')
-      .map(change => resolveConfigPath(change.path)),
-    errors: [],
+    id: name,
+    type,
+    codemod: {
+      title: meta.title,
+      transform,
+      fileExtensions: meta.fileExtensions,
+      isOptional: !!optional,
+    },
+    package: 'core',
+    version,
   };
 }
 
@@ -216,11 +176,12 @@ async function runConfigCodemod(transformEntry, {apply, log}) {
  * @param {boolean} options.apply - Write changes to disk
  * @param {string} options.path - Source directory to scan
  * @param {string|undefined} options.codemod - Run only this specific transform
+ * @param {Set<string>} [options.skipCodemods] - Transform names to exclude
  * @param {boolean} [options.silent] - Suppress all human-facing output (for --json)
  */
 export async function runCodemods(
   versionManifests,
-  {apply, path: srcPath, codemod, silent = false},
+  {apply, path: srcPath, codemod, skipCodemods, silent = false},
 ) {
   // No-op stub object so silent mode skips clack stdout entirely without
   // littering the body with `if (!silent)` guards.
@@ -233,20 +194,31 @@ export async function runCodemods(
 
   const resolvedPath = path.resolve(srcPath);
 
-  if (!fs.existsSync(resolvedPath)) {
+  // Config codemods target the consumer's astryx.config.* and never read
+  // source files, so a missing --path should not block them. Only hard-fail
+  // on a missing source path when there is at least one CODE codemod to run.
+  const hasCodeCodemod = versionManifests.some(({transforms}) =>
+    transforms.some(t => t.meta?.codemodType !== 'config'),
+  );
+  const sourcePathExists = fs.existsSync(resolvedPath);
+
+  if (!sourcePathExists && hasCodeCodemod) {
     log.error(`Source path not found: ${resolvedPath}`);
     return {ok: false, reason: 'source_path_missing', resolvedPath};
   }
 
-  log.step(`Scanning ${resolvedPath} for source files...`);
-  const files = findSourceFiles(resolvedPath);
+  let files = [];
+  if (sourcePathExists) {
+    log.step(`Scanning ${resolvedPath} for source files...`);
+    files = findSourceFiles(resolvedPath);
 
-  if (files.length === 0) {
-    log.warn('No source files found.');
-  } else {
-    log.info(
-      `Found ${files.length} source file${files.length === 1 ? '' : 's'}`,
-    );
+    if (files.length === 0) {
+      log.warn('No source files found.');
+    } else {
+      log.info(
+        `Found ${files.length} source file${files.length === 1 ? '' : 's'}`,
+      );
+    }
   }
 
   // Dynamically import jscodeshift
@@ -265,6 +237,8 @@ export async function runCodemods(
     for (const transformEntry of transforms) {
       // Filter by codemod name if specified
       if (codemod && transformEntry.name !== codemod) continue;
+      // Exclude explicitly skipped codemods (by transform name).
+      if (skipCodemods?.has(transformEntry.name)) continue;
 
       const {name, transform, meta, optional} = transformEntry;
       const transformExtensions = new Set(
@@ -279,20 +253,23 @@ export async function runCodemods(
 
       log.info(`  ${meta.title}`);
 
-      if (isConfigCodemod(transformEntry)) {
-        const result = await runConfigCodemod(transformEntry, {apply, log});
+      // Config codemods are routed through the SAME shared runner that
+      // integration config codemods use: the transform follows the unified
+      // `(file, api)` contract and targets the consumer's astryx.config.*.
+      // A core entry signals "config" via `meta.codemodType === 'config'`
+      // (see toUnifiedEntry).
+      if (meta?.codemodType === 'config') {
+        const result = runConfigCodemod(toUnifiedEntry(transformEntry, version), {
+          apply,
+          log,
+          jscodeshift,
+        });
         if (result.errors.length > 0) {
-          for (const error of result.errors) {
-            errors.push({
-              file: error.file ?? 'config',
-              codemod: name,
-              error: error.error,
-            });
-          }
+          errors.push(...result.errors);
         } else if (result.filesChanged > 0) {
           totalFilesChanged += result.filesChanged;
           totalTransformsApplied += result.filesChanged;
-          writtenFiles.push(...(result.writtenFiles ?? []));
+          writtenFiles.push(...result.writtenFiles);
         }
         continue;
       }

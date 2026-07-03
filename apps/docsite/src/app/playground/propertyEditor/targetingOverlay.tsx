@@ -269,7 +269,7 @@ function clearSelectionOverlay() {
 
 /**
  * Manages the targeting overlay lifecycle inside the iframe. When enabled,
- * intercepts pointer events to highlight hovered XDS components and report
+ * intercepts pointer events to highlight hovered Astryx components and report
  * clicks back to the parent frame.
  */
 export function createTargetingController(

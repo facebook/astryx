@@ -68,6 +68,13 @@ export {getKey, type Key, type KeyFallback} from './getKey';
 
 export {mergeProps} from './mergeProps';
 export {mergeRefs} from './mergeRefs';
+export {themeProps, themeDataAttributes} from './themeProps';
+export type {
+  ClassValue,
+  ClassProps,
+  ThemeDataAttributes,
+  ThemeProps,
+} from './themeProps';
 export {groupItems, getItemGroup} from './groupItems';
 export type {ItemGroup} from './groupItems';
 export {observeResize, unobserveResize} from './sharedResizeObserver';

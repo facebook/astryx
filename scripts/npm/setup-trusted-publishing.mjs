@@ -105,6 +105,7 @@ function discoverPackages() {
           dir,
           name: p.name,
           private: !!p.private,
+          canaryOnly: !!p.astryx?.canaryOnly,
           version: p.version,
         });
       }
@@ -119,13 +120,17 @@ function readChangesetConfig() {
   );
 }
 
-// The 12 publishable @astryxdesign/* packages: non-private and not ignored.
-// Sorted by npm name for deterministic, readable output.
+// The publishable @astryxdesign/* packages that need a trusted-publisher config.
+// This includes canaryOnly packages (e.g. lab): they stay `private: true` in git
+// as npm's hard guard against a stable publish, but they DO publish to the
+// @canary dist-tag from CI, so their name must still be claimed (bootstrap) and
+// trusted here. Everything else is included when non-private; ignored packages
+// are always excluded. Sorted by npm name for deterministic, readable output.
 function publishablePackages() {
   const config = readChangesetConfig();
   const ignore = new Set(config.ignore || []);
   return discoverPackages()
-    .filter(p => !p.private && !ignore.has(p.name))
+    .filter(p => (!p.private || p.canaryOnly) && !ignore.has(p.name))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 

@@ -25,13 +25,14 @@ import {expand} from '../lib/xle/expand.mjs';
 import {toCompact, toOutline} from '../lib/xle/print.mjs';
 import {buildRegistry, ALIAS_TABLE} from '../lib/xle/registry.mjs';
 import {discoverTemplates, stripTemplateAssetRefs} from './template.mjs';
-import {loadConfig} from '../lib/config.mjs';
+import {Project} from '../lib/project.mjs';
 
 /**
  * The catalog a `{hint}` can resolve to: template blocks (spliced inline) plus
- * any app-registered local components from astryx.config.mjs `layout.components`
- * (imported by name). App components are how XLE reaches domain pieces — the
- * KpiCard/chart/drawer set that the @astryxdesign/core registry can't see.
+ * any app-registered local components from astryx.config.mjs
+ * `experimental.xle.components` (imported by name). App components are how XLE
+ * reaches domain pieces — the KpiCard/chart/drawer set that the
+ * @astryxdesign/core registry can't see.
  */
 async function loadBlocks(cwd) {
   const blocks = [];
@@ -42,20 +43,20 @@ async function loadBlocks(cwd) {
     // discovery is best-effort
   }
   try {
-    const config = await loadConfig(cwd);
-    const components = config.layout?.components || {};
+    const project = await Project.load(cwd);
+    const components = project.config.experimental?.xle?.components ?? {};
     for (const [name, spec] of Object.entries(components)) {
-      const importPath = typeof spec === 'string' ? spec : spec.from;
+      const importPath = spec.from;
       if (!importPath) continue;
       blocks.push({
         type: 'block',
         kind: 'component',
         dirName: name,
         name,
-        description: typeof spec === 'object' ? spec.description || '' : '',
+        description: spec.description ?? '',
         category: 'app',
         importPath,
-        isDefault: typeof spec === 'object' ? Boolean(spec.default) : false,
+        isDefault: Boolean(spec.default),
       });
     }
   } catch {
@@ -281,7 +282,7 @@ TEMPLATE REFERENCING  ({hint} pulls in real content — this is how XLE reaches 
   {kpi-card}                   standalone reference (no wrapper element) — place a component directly
   {kpi-card}*4                 repeat a reference; the definition/import is emitted once
   app components               register local ones in astryx.config.mjs to import them by name:
-                                 export default {layout: {components: {KpiCard: '@/components/KpiCard'}}}
+                                 export default {experimental: {xle: {components: {KpiCard: {from: '@/components/KpiCard'}}}}}
                                then {kpi-card} → import {KpiCard} + <KpiCard /> (kebab ↔ Pascal)
 
 STRUCTURE THE EXPANDER HANDLES

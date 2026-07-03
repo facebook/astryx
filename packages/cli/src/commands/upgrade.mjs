@@ -15,13 +15,22 @@
  *   3. Refresh agent docs (AGENTS.md / CLAUDE.md) if present
  *
  * Options:
- *   --from <version>     Previous version before the dependency upgrade
- *   --apply              Write changes to disk (default: dry-run)
- *   --force              Run codemods even when from >= installed version
- *   --codemod <name>     Run a specific transform only
- *   --integration <spec> Load an explicit integration package or file
- *   --path <dir>         Source directory (default: ./src)
- *   --install-deps       Auto-install jscodeshift without prompting (for CI/LLM)
+ *   --from <version>       Previous version before the dependency upgrade
+ *   --apply                Write changes to disk (default: dry-run)
+ *   --force                Run codemods even when from >= installed version
+ *   --codemod <name>       Run a specific transform only
+ *   --skip-codemod <name…> Exclude named codemods (variadic). Use this to
+ *                          re-run past a codemod that failed at execution time.
+ *   --integration <spec>   Load an explicit integration package or file
+ *   --path <dir>           Source directory (default: ./src)
+ *   --install-deps         Auto-install jscodeshift without prompting (for CI/LLM)
+ *
+ * Integration error policy:
+ *   - A DISCOVERY/definition error for an integration (bad manifest/export,
+ *     duplicate ids, missing root) SKIPS that integration's codemods and warns
+ *     (via the integration-issue nudge) — it does NOT hard-fail the upgrade.
+ *   - An EXECUTION-time failure (a transform THROWS while rewriting files)
+ *     ABORTS the upgrade (nonzero exit) so a partial write never proceeds.
  */
 
 import * as fs from 'node:fs';
@@ -32,12 +41,18 @@ import * as p from '@clack/prompts';
 import {ensureJscodeshift} from '../codemods/ensure-jscodeshift.mjs';
 import {getTransformsBetween, latestVersion} from '../codemods/registry.mjs';
 import {runCodemods} from '../codemods/runner.mjs';
+import {
+  discoverIntegrationCodemods,
+  selectIntegrationCodemods,
+} from '../codemods/integration-discovery.mjs';
+import {runIntegrationCodemods} from '../codemods/integration-runner.mjs';
 import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {isValidSemver, semverGte, semverGt} from '../utils/semver.mjs';
+import {isValidSemver, semverGte} from '../utils/semver.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
-import {loadConfig} from '../lib/config.mjs';
+import {Project} from '../lib/project.mjs';
 import {loadIntegrations} from '../lib/integrations.mjs';
+import {warnOnIntegrationIssues} from '../lib/integration-warnings.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -64,90 +79,59 @@ function detectInstalledTargetVersion() {
   return null;
 }
 
-function normalizeIntegrationTransforms(integration, from, to) {
-  const transforms = [];
-  for (const entry of integration.codemods ?? []) {
-    const entryFrom = entry.from ?? '0.0.0';
-    const entryTo = entry.to ?? to;
-    if (semverGte(from, entryTo) || semverGt(entryFrom, to)) continue;
-    if (!entry.name)
-      throw new Error(
-        `Integration ${integration.name ?? integration.__spec} has a codemod without a name.`,
-      );
-    if (!entry.transform)
-      throw new Error(
-        `Integration codemod ${entry.name} is missing transform.`,
-      );
-    const directTransform =
-      typeof entry.transform === 'function' ? entry.transform : null;
-    if (!directTransform)
-      throw new Error(
-        `Integration codemod ${entry.name} did not resolve to a function.`,
-      );
-    transforms.push({
-      name: entry.name,
-      meta: {
-        title:
-          entry.title ??
-          `${integration.name ?? integration.__spec}: ${entry.name}`,
-        description: entry.description ?? '',
-        pr: entry.pr,
-        fileExtensions: entry.fileExtensions,
-      },
-      optional: !!entry.optional,
-      transform: directTransform,
-    });
-  }
-  return transforms.length ? [{version: to, transforms}] : [];
-}
-
 function uniqueFiles(files) {
   return [...new Set((files ?? []).filter(Boolean))];
 }
 
-async function runPostCodemodHooks(integrations, context, silent) {
-  const hooks = integrations.flatMap(integration =>
-    (integration.postCodemod ?? []).map(hook => ({integration, hook})),
-  );
-  if (hooks.length === 0) return;
+/**
+ * Run the app config's post-codemod hooks (config.hooks.postCodemod).
+ *
+ * Each hook's `buildCommand({packageDir, files})` returns a command to run
+ * (or a nullish value to skip). In dry-run mode we only PREVIEW — buildCommand
+ * is called (so a throw still fails the run) but the command is never executed.
+ * In apply mode the commands run in order via execFile; a nonzero exit (or a
+ * buildCommand throw) fails the upgrade.
+ *
+ * @param {import('../types/config').PostCodemodHook[]} hooks
+ * @param {{packageDir: string, files: string[], apply: boolean}} context
+ * @param {boolean} silent
+ */
+async function runPostCodemodHooks(hooks, context, silent) {
+  if (!hooks || hooks.length === 0) return;
 
   const log = silent ? {info() {}, warn() {}, success() {}, error() {}} : p.log;
+  const {packageDir, files, apply} = context;
 
-  const run = async (command, args, options = {}) => {
-    await execFileAsync(command, args, {
-      cwd: options.cwd ?? context.packageDir,
-      timeout: options.timeoutMs ?? 300_000,
+  for (let i = 0; i < hooks.length; i++) {
+    const hook = hooks[i];
+    const label = hook.name ?? `postCodemod[${i}]`;
+    if (typeof hook.buildCommand !== 'function') {
+      throw new Error(
+        `Post-codemod hook ${label} is missing a buildCommand function.`,
+      );
+    }
+
+    const cmd = await hook.buildCommand({packageDir, files});
+    if (!cmd) {
+      log.info(`Post-codemod hook ${label} produced no command; skipping.`);
+      continue;
+    }
+
+    if (!apply) {
+      const preview = [cmd.command, ...(cmd.args ?? [])].join(' ');
+      log.info(`Post-codemod hook ${label} (dry run): ${preview}`);
+      continue;
+    }
+
+    await execFileAsync(cmd.command, cmd.args ?? [], {
+      cwd: cmd.options?.cwd ?? packageDir,
+      timeout: cmd.options?.timeout ?? 300_000,
       stdio: 'pipe',
       encoding: 'utf-8',
-      env: {...process.env, ...(options.env ?? {})},
+      ...cmd.options,
+      env: {...process.env, ...(cmd.options?.env ?? {})},
     });
-  };
-
-  const ctx = {...context, run};
-  for (const {integration, hook} of hooks) {
-    const label = `${integration.name ?? integration.__spec}:${hook.name ?? 'postCodemod'}`;
-    try {
-      if (typeof hook.run === 'function') {
-        await hook.run(ctx);
-      } else if (typeof hook.command === 'function') {
-        const cmd = await hook.command(ctx);
-        if (cmd) {
-          await run(cmd.command, cmd.args ?? [], {
-            cwd: cmd.cwd,
-            timeoutMs: cmd.timeoutMs,
-            env: cmd.env,
-          });
-        }
-      } else {
-        log.warn(
-          `Integration hook ${label} has no run() or command() function; skipping.`,
-        );
-        continue;
-      }
-      log.success(`Post-codemod hook ${label} completed.`);
-    } catch (err) {
-      log.warn(`Post-codemod hook ${label} failed: ${err.message}`);
-    }
+    log.success(`Post-codemod hook ${label} completed.`);
   }
 }
 
@@ -169,6 +153,10 @@ export function registerUpgrade(program) {
       false,
     )
     .option('--codemod <name>', 'Run a specific transform only')
+    .option(
+      '--skip-codemod <name...>',
+      'Exclude named codemods (repeatable). Re-run past a failed codemod by skipping it.',
+    )
     .option(
       '--integration <package-or-file>',
       'Explicit integration package name or integration file path (repeatable)',
@@ -266,31 +254,20 @@ export function registerUpgrade(program) {
         );
       }
 
-      let integrations;
-      try {
-        const config = await loadConfig(process.cwd());
-        const integrationSpecs = uniqueFiles([
-          ...(config.integrations ?? []),
-          ...(options.integration ?? []),
-        ]);
-        integrations = await loadIntegrations(integrationSpecs);
-      } catch (err) {
-        if (json)
-          return jsonError(
-            err.message,
-            undefined,
-            ERROR_CODES.ERR_INVALID_ARGUMENT,
-          );
-        p.log.error(err.message);
-        p.outro('Aborted');
-        process.exitCode = 1;
-        return;
-      }
-      if (!json && integrations.length > 0) {
-        p.log.info(
-          `Integrations: ${integrations.map(i => i.name ?? i.__spec).join(', ')}`,
-        );
-      }
+      // ───────────────────────────────────────────────────────────────────
+      // PIPELINE ORDERING
+      //
+      // CORE codemods run BEFORE the consumer's config is loaded. `Project.load`
+      // STRICT-validates astryx.config.* and THROWS on unknown keys — but a core
+      // CONFIG codemod (e.g. v0.1.3 migrate-layout-components, signalled by
+      // `meta.codemodType === 'config'`) is precisely what repairs an otherwise
+      // -invalid config. Loading first created a chicken-and-egg: the config was
+      // rejected before the codemod that would fix it ever ran. Core codemods
+      // read files directly (config codemods via runConfigCodemod read
+      // astryx.config.*; code codemods scan --path), so they do NOT need the
+      // loaded config. We run them here, then load config, then sequence the
+      // integration codemods (which DO require a valid loaded config).
+      // ───────────────────────────────────────────────────────────────────
 
       if (!options.force && semverGte(currentVersion, targetVersion)) {
         if (json) {
@@ -306,19 +283,217 @@ export function registerUpgrade(program) {
         return;
       }
 
-      // Resolve transforms
+      // Resolve CORE transforms from the registry. These do not need the loaded
+      // config. Integration codemods are discovered later, AFTER the config
+      // loads successfully (they require a valid config to resolve).
       const versionManifests = [
         ...(await getTransformsBetween(currentVersion, targetVersion)),
-        ...integrations.flatMap(integration =>
-          normalizeIntegrationTransforms(
-            integration,
-            currentVersion,
-            targetVersion,
-          ),
-        ),
       ];
 
-      if (versionManifests.length === 0) {
+      // Does the selected core set include >=1 CONFIG codemod? A config codemod
+      // is the established convention `meta.codemodType === 'config'` (see
+      // `toUnifiedEntry` in runner.mjs). This drives the graceful dry-run catch
+      // around `Project.load` below: a fixable config error is only "expected"
+      // when a pending core config codemod would repair it.
+      const coreConfigCodemodNames = [];
+      for (const {transforms} of versionManifests) {
+        for (const t of transforms) {
+          if (options.codemod && t.name !== options.codemod) continue;
+          if (t.meta?.codemodType === 'config') {
+            coreConfigCodemodNames.push(t.name);
+          }
+        }
+      }
+      const hasCoreConfigCodemod = coreConfigCodemodNames.length > 0;
+
+      // Codemods explicitly excluded via --skip-codemod, matched by the same
+      // identifier the run loop uses (core transform `t.name`, integration
+      // codemod `c.id`). Lets a user re-run past a codemod that failed at
+      // execution time.
+      const skipCodemods = new Set(options.skipCodemod ?? []);
+
+      // Count CORE transforms (optional codemods only count when explicitly
+      // requested). Integration counts are added after discovery below.
+      let totalTransforms = 0;
+      let totalOptional = 0;
+      for (const {transforms} of versionManifests) {
+        for (const t of transforms) {
+          if (options.codemod && t.name !== options.codemod) continue;
+          if (skipCodemods.has(t.name)) continue;
+          if (t.optional && !options.codemod) {
+            totalOptional++;
+          } else {
+            totalTransforms++;
+          }
+        }
+      }
+
+      // Ensure jscodeshift is available before running any codemod.
+      const ready = await ensureJscodeshift({
+        installDeps: options.installDeps,
+        silent: json,
+      });
+      if (!ready) {
+        if (json)
+          return jsonError(
+            'jscodeshift is required but could not be installed.',
+            undefined,
+            ERROR_CODES.ERR_DEP_MISSING,
+          );
+        p.outro('Aborted');
+        process.exitCode = 1;
+        return;
+      }
+
+      // STEP 3 — Run CORE codemods FIRST (before loading config). In --apply,
+      // core config codemods WRITE the repaired config to disk; in dry-run they
+      // only PREVIEW. This is what makes the v0.1.3 config codemod reachable on
+      // a config that the strict loader would otherwise reject.
+      const codemodResult = await runCodemods(versionManifests, {
+        apply: options.apply,
+        path: options.path,
+        codemod: options.codemod,
+        skipCodemods,
+        silent: json,
+      });
+
+      // STEP 4 — Load the consumer's config (STRICT validation; unchanged). On
+      // --apply this now sees the repaired config the core codemod just wrote.
+      // We need `hooks.postCodemod` and the configured integration specs from
+      // here. Wrap in a graceful dry-run catch (see below).
+      // Assigned inside the try below; every catch branch returns, so these
+      // are always set before any later read.
+      let integrations;
+      let postCodemodHooks;
+      let integrationVersionGroups;
+      try {
+        const project = await Project.load(process.cwd());
+        postCodemodHooks = project.config.hooks?.postCodemod ?? [];
+        const integrationSpecs = uniqueFiles([
+          ...(project.integrations ?? []),
+          ...(options.integration ?? []),
+        ]);
+        integrations = await loadIntegrations(integrationSpecs);
+      } catch (err) {
+        // GRACEFUL DRY-RUN CATCH. A config that fails strict validation is the
+        // EXPECTED, fixable case ONLY when we are in dry-run AND a pending core
+        // config codemod just PREVIEWED a change to the config — i.e. the very
+        // codemod that would repair it. (Merely having a config codemod in the
+        // range is not enough: it may be a no-op on this config, in which case
+        // the validation error is genuine and we must abort. A config codemod
+        // that THREW reports zero would-change files, so it also fails this
+        // gate and aborts below — preserving the strictness contract.) This is
+        // the reason this PR reorders the pipeline.
+        const codemodWouldFixConfig =
+          hasCoreConfigCodemod && (codemodResult?.totalFilesChanged ?? 0) > 0;
+        if (!options.apply && codemodWouldFixConfig) {
+          const codemodFlags = coreConfigCodemodNames
+            .map(name => `--codemod ${name}`)
+            .join(' ');
+          const suggestedCommand = `astryx upgrade --from ${currentVersion} ${codemodFlags} --apply`;
+          const guidance =
+            'Your astryx.config currently fails strict validation, but a pending ' +
+            'config codemod would repair it. This dry run previewed the fix without ' +
+            'writing. Re-run with --apply to apply it, or run just the config codemod(s) ' +
+            'now:';
+          if (json) {
+            return jsonOut('upgrade.status', {
+              status: 'config_fixable',
+              from: currentVersion,
+              to: targetVersion,
+              configError: err.message,
+              configCodemods: coreConfigCodemodNames,
+              suggestedCommand,
+              message: guidance,
+              note: 'Integrations are skipped in this preview; they will be processed on the --apply run.',
+            });
+          }
+          p.log.warn(guidance);
+          p.log.info(`  ${suggestedCommand}`);
+          p.log.info(
+            'Integrations are skipped in this preview; they will be processed on the --apply run.',
+          );
+          p.outro('Dry run complete');
+          return;
+        }
+        // Genuine config error (apply mode, OR dry-run with no pending core
+        // config codemod that would fix it): abort as before.
+        if (json)
+          return jsonError(
+            err.message,
+            undefined,
+            ERROR_CODES.ERR_INVALID_ARGUMENT,
+          );
+        p.log.error(err.message);
+        p.outro('Aborted');
+        process.exitCode = 1;
+        return;
+      }
+
+      if (!json && integrations.length > 0) {
+        p.log.info(
+          `Integrations: ${integrations.map(i => i.name ?? i.__spec).join(', ')}`,
+        );
+      }
+
+      // Non-blocking nudge: if any configured integration has validation
+      // issues, print one compact line to stderr pointing at
+      // validate-integration. Best-effort; suppressed in --json mode. This
+      // depends on integrations being loaded, so it lives after the successful
+      // config load (it is skipped on the graceful dry-run path above, where
+      // integrations were never loaded).
+      try {
+        await warnOnIntegrationIssues(integrations, {json});
+      } catch {
+        // Never let the nudge break the upgrade.
+      }
+
+      // STEP 5 — Discover + run INTEGRATION codemods (only reached on a
+      // successful config load). A broken integration (bad export, invalid
+      // schema, duplicate id, missing root) is a DEFINITION error: skip that
+      // integration's codemods and warn (via the nudge above), rather than
+      // hard-failing the upgrade. An EXECUTION-time failure (a transform
+      // throwing) is handled later by the codemod-error gate, which still
+      // aborts the upgrade.
+      const integrationCodemodsByVersion = new Map();
+      for (const integration of integrations) {
+        if (!integration?.codemods) continue;
+        try {
+          const byVersion = await discoverIntegrationCodemods([integration]);
+          for (const [version, list] of byVersion) {
+            const existing = integrationCodemodsByVersion.get(version);
+            if (existing) existing.push(...list);
+            else integrationCodemodsByVersion.set(version, [...list]);
+          }
+        } catch {
+          // Skip this integration's codemods; the validate-integration nudge
+          // above surfaces the underlying issue. Best-effort, non-blocking.
+        }
+      }
+      integrationVersionGroups = selectIntegrationCodemods(
+        integrationCodemodsByVersion,
+        currentVersion,
+        targetVersion,
+      );
+      const hasIntegrationCodemods = integrationVersionGroups.some(
+        g => g.codemods.length > 0,
+      );
+
+      // Add integration transforms to the run counts.
+      for (const {codemods} of integrationVersionGroups) {
+        for (const c of codemods) {
+          if (options.codemod && c.id !== options.codemod) continue;
+          if (skipCodemods.has(c.id)) continue;
+          if (c.codemod.isOptional && !options.codemod) {
+            totalOptional++;
+          } else {
+            totalTransforms++;
+          }
+        }
+      }
+
+      // No codemods at all for this range (neither core nor integration).
+      if (versionManifests.length === 0 && !hasIntegrationCodemods) {
         if (json) {
           return jsonOut('upgrade.status', {
             status: 'no_codemods',
@@ -331,20 +506,7 @@ export function registerUpgrade(program) {
         return;
       }
 
-      // Count transforms (optional codemods only count when explicitly requested)
-      let totalTransforms = 0;
-      let totalOptional = 0;
-      for (const {transforms} of versionManifests) {
-        for (const t of transforms) {
-          if (options.codemod && t.name !== options.codemod) continue;
-          if (t.optional && !options.codemod) {
-            totalOptional++;
-          } else {
-            totalTransforms++;
-          }
-        }
-      }
-
+      // A named `--codemod` that matched nothing (across core + integration).
       if (totalTransforms === 0 && totalOptional === 0) {
         const msg = `Codemod "${options.codemod}" not found. Use --list to see available codemods.`;
         if (json)
@@ -373,54 +535,73 @@ export function registerUpgrade(program) {
         agentDocsRefreshed: false,
       };
 
-      // Ensure jscodeshift is available
-      const ready = await ensureJscodeshift({
-        installDeps: options.installDeps,
-        silent: json,
-      });
-      if (!ready) {
-        if (json)
-          return jsonError(
-            'jscodeshift is required but could not be installed.',
-            undefined,
-            ERROR_CODES.ERR_DEP_MISSING,
-          );
-        p.outro('Aborted');
-        process.exitCode = 1;
-        return;
+      // Run file-based integration codemods alongside the core registry
+      // codemods (config codemods first, then code codemods), ordered by
+      // version. Their results are merged into the receipt below.
+      let integrationResult = null;
+      if (hasIntegrationCodemods) {
+        if (!json) p.log.step('Applying integration codemods...');
+        const jscodeshift = (await import('jscodeshift')).default;
+        integrationResult = runIntegrationCodemods(integrationVersionGroups, {
+          apply: options.apply,
+          path: options.path,
+          codemod: options.codemod,
+          skipCodemods,
+          jscodeshift,
+          silent: json,
+        });
       }
 
-      // Run codemods
-      const codemodResult = await runCodemods(versionManifests, {
-        apply: options.apply,
-        path: options.path,
-        codemod: options.codemod,
-        silent: json,
-      });
 
-      if (options.apply && integrations.length > 0) {
-        const codemodDir = path.resolve(options.path);
-        const absoluteChangedFiles = uniqueFiles(
-          codemodResult?.writtenFiles ?? [],
-        );
-        const changedFiles = absoluteChangedFiles.map(file =>
+      // Merge core + integration codemod results into a single accounting so
+      // hooks, receipts, and error gating see both.
+      const mergedFilesChanged =
+        (codemodResult?.totalFilesChanged ?? 0) +
+        (integrationResult?.totalFilesChanged ?? 0);
+      const mergedTransformsApplied =
+        (codemodResult?.totalTransformsApplied ?? 0) +
+        (integrationResult?.totalTransformsApplied ?? 0);
+      const mergedWrittenFiles = [
+        ...(codemodResult?.writtenFiles ?? []),
+        ...(integrationResult?.writtenFiles ?? []),
+      ];
+      const mergedErrors = [
+        ...(codemodResult?.errors ?? []),
+        ...(integrationResult?.errors ?? []),
+      ];
+
+      // Post-codemod hooks come from the app config (config.hooks.postCodemod).
+      // They run only when codemods actually changed files. In apply mode the
+      // commands execute (nonzero exit fails the upgrade); in dry-run mode we
+      // only preview the resolved command (a buildCommand throw still fails).
+      const changedFileCount = mergedFilesChanged;
+      if (postCodemodHooks.length > 0 && changedFileCount > 0) {
+        const absoluteChangedFiles = uniqueFiles(mergedWrittenFiles);
+        const files = absoluteChangedFiles.map(file =>
           path.relative(process.cwd(), file),
         );
-        const packageChangedFiles = absoluteChangedFiles
-          .filter(file => file.startsWith(process.cwd() + path.sep))
-          .map(file => path.relative(process.cwd(), file));
-        await runPostCodemodHooks(
-          integrations,
-          {
-            packageDir: process.cwd(),
-            codemodDir,
-            changedFiles,
-            absoluteChangedFiles,
-            packageChangedFiles,
-            apply: options.apply,
-          },
-          json,
-        );
+        try {
+          await runPostCodemodHooks(
+            postCodemodHooks,
+            {
+              packageDir: process.cwd(),
+              files,
+              apply: options.apply,
+            },
+            json,
+          );
+        } catch (err) {
+          if (json)
+            return jsonError(
+              `Post-codemod hook failed: ${err.message}`,
+              {receipt},
+              ERROR_CODES.ERR_CODEMOD_FAILED,
+            );
+          p.log.error(`Post-codemod hook failed: ${err.message}`);
+          p.outro('Upgrade failed');
+          process.exitCode = 1;
+          return;
+        }
       }
 
       // Refresh agent docs if any exist (AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, etc.)
@@ -444,11 +625,9 @@ export function registerUpgrade(program) {
         }
       }
 
-      if (codemodResult && typeof codemodResult === 'object') {
-        receipt.filesChanged = codemodResult.totalFilesChanged ?? 0;
-        receipt.transformsApplied = codemodResult.totalTransformsApplied ?? 0;
-        receipt.errors = codemodResult.errors ?? [];
-      }
+      receipt.filesChanged = mergedFilesChanged;
+      receipt.transformsApplied = mergedTransformsApplied;
+      receipt.errors = mergedErrors;
 
       if (receipt.errors?.length > 0) {
         const msg = `Upgrade completed with ${receipt.errors.length} codemod error${receipt.errors.length === 1 ? '' : 's'}.`;

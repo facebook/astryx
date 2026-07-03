@@ -21,7 +21,7 @@ import * as stylex from '@stylexjs/stylex';
 
 import {mergeProps} from '@astryxdesign/core/utils';
 import type {BaseProps} from '@astryxdesign/core';
-import {themeProps} from '../../../core/src/utils/themeProps';
+import {themeProps} from '@astryxdesign/core/utils';
 import {
   StepperContext,
   type StepperOrientation,

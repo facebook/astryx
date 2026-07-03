@@ -28,7 +28,7 @@ import {
   easeVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps} from '@astryxdesign/core/utils';
-import {themeProps} from '../../../core/src/utils/themeProps';
+import {themeProps} from '@astryxdesign/core/utils';
 
 // =============================================================================
 // Types

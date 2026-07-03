@@ -1,8 +1,8 @@
-# XDS Example: Vite
+# Astryx Example: Vite
 
 Reference application for consuming **@astryxdesign/core** as a source distribution in a Vite + React project.
 
-XDS ships as raw TypeScript + StyleX source. Consumers compile it at the application level; there's no pre-built CSS or JS bundle. This example shows the complete setup using `@stylexjs/unplugin`, which handles both StyleX compilation and CSS extraction in a single Vite plugin.
+Astryx ships as raw TypeScript + StyleX source. Consumers compile it at the application level; there's no pre-built CSS or JS bundle. This example shows the complete setup using `@stylexjs/unplugin`, which handles both StyleX compilation and CSS extraction in a single Vite plugin.
 
 ## How it differs from Next.js
 
@@ -25,7 +25,7 @@ npm install --save-dev @stylexjs/unplugin @vitejs/plugin-react typescript \
 
 ### 2. Browserslist
 
-Add a `browserslist` to `package.json` so that both Vite's CSS pipeline and the StyleX unplugin target modern browsers. XDS tokens use native `light-dark()` (baseline 2024); without modern targets, lightningcss lowers it into polyfill variables that break theming:
+Add a `browserslist` to `package.json` so that both Vite's CSS pipeline and the StyleX unplugin target modern browsers. Astryx tokens use native `light-dark()` (baseline 2024); without modern targets, lightningcss lowers it into polyfill variables that break theming:
 
 ```json
 {
@@ -50,7 +50,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Required: tells the StyleX plugin's internal lightningcss transform
 // not to lower light-dark() into broken polyfill variables.
-// XDS tokens use light-dark() which is baseline 2024.
+// Astryx tokens use light-dark() which is baseline 2024.
 const lightningcssTargets = {
   chrome: 123 << 16,
   firefox: 120 << 16,
@@ -67,7 +67,7 @@ export default defineConfig({
           {
             tag: 'style',
             children:
-              '@layer reset, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9, xds.theme;',
+              '@layer reset, priority1, priority2, priority3, priority4, priority5, priority6, priority7, priority8, priority9, astryx-theme;',
             injectTo: 'head-prepend',
           },
         ];
@@ -97,10 +97,13 @@ export default defineConfig({
         __dirname,
         'node_modules/@astryxdesign/core/src/theme/tokens.stylex.ts',
       ),
-      '@astryxdesign/core': path.resolve(__dirname, 'node_modules/@astryxdesign/core/src'),
+      '@astryxdesign/core': path.resolve(
+        __dirname,
+        'node_modules/@astryxdesign/core/src',
+      ),
     },
   },
-  // Prevent Vite from pre-bundling XDS with esbuild. XDS ships as source
+  // Prevent Vite from pre-bundling Astryx with esbuild. Astryx ships as source
   // that must be compiled by the StyleX plugin — pre-bundling strips the
   // stylex.create/defineVars calls and causes a runtime error.
   optimizeDeps: {
@@ -132,7 +135,7 @@ import './index.css';
 The CSS import order matters:
 
 1. `reset.css`: baseline resets (`@layer reset`)
-2. `theme.css`: theme token overrides (`@layer xds.theme`)
+2. `theme.css`: theme token overrides (`@layer astryx-theme`)
 3. `index.css`: StyleX extraction placeholder
 
 ### 5. Theme provider
@@ -165,18 +168,18 @@ npm run preview
 
 ## Gotchas
 
-| Issue                         | Symptom                                     | Fix                                                                          |
-| ----------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
-| Missing `lightningcssOptions` | Colors broken: `light-dark()` gets lowered | Add `lightningcssOptions: { targets: lightningcssTargets }` to StyleX plugin |
-| Vite pre-bundles XDS          | `Unexpected stylex.defineVars at runtime`   | Add `optimizeDeps: { exclude: ['@astryxdesign/core', '@astryxdesign/theme-neutral'] }`         |
-| Missing resolve aliases       | Module not found errors for `@astryxdesign/core`     | Add `resolve.alias` pointing to source directory                             |
-| Missing CSS entry point       | StyleX has no CSS asset to append to        | Create a minimal `index.css` and import it in `main.tsx`                     |
-| Plugin order                  | Styles not extracted or HMR broken          | `stylex.vite()` must come before `react()` in the plugins array              |
-| Duplicate React types         | JSX component type errors in monorepo       | Known monorepo issue with `@types/react` hoisting; doesn't affect runtime    |
+| Issue                         | Symptom                                          | Fix                                                                                    |
+| ----------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| Missing `lightningcssOptions` | Colors broken: `light-dark()` gets lowered       | Add `lightningcssOptions: { targets: lightningcssTargets }` to StyleX plugin           |
+| Vite pre-bundles Astryx       | `Unexpected stylex.defineVars at runtime`        | Add `optimizeDeps: { exclude: ['@astryxdesign/core', '@astryxdesign/theme-neutral'] }` |
+| Missing resolve aliases       | Module not found errors for `@astryxdesign/core` | Add `resolve.alias` pointing to source directory                                       |
+| Missing CSS entry point       | StyleX has no CSS asset to append to             | Create a minimal `index.css` and import it in `main.tsx`                               |
+| Plugin order                  | Styles not extracted or HMR broken               | `stylex.vite()` must come before `react()` in the plugins array                        |
+| Duplicate React types         | JSX component type errors in monorepo            | Known monorepo issue with `@types/react` hoisting; doesn't affect runtime              |
 
 ## Testing outside the monorepo
 
-This example lives in the XDS monorepo for convenience, but it should be representative of a real app consuming `@astryxdesign/core` from npm. Monorepo workspace symlinks can silently bypass issues that external consumers hit (Vite dep pre-bundling, missing dependencies, wrong resolve paths).
+This example lives in the Astryx monorepo for convenience, but it should be representative of a real app consuming `@astryxdesign/core` from npm. Monorepo workspace symlinks can silently bypass issues that external consumers hit (Vite dep pre-bundling, missing dependencies, wrong resolve paths).
 
 **Before merging changes to this example, test it as an external consumer.** See the [Testing Example Apps](https://github.com/facebook/astryx/wiki/Testing-Example-Apps) wiki page for the full procedure.
 
@@ -184,4 +187,4 @@ This example lives in the XDS monorepo for convenience, but it should be represe
 
 - [Issue #145: Example apps for source distribution consumers](https://github.com/facebook/astryx/issues/145)
 - [StyleX Vite React example](https://github.com/facebook/stylex/tree/main/examples/example-vite-react)
-- [XDS Example: Next.js](../example-nextjs/)
+- [Astryx Example: Next.js](../example-nextjs/)

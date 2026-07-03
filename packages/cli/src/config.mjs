@@ -1,31 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {validateConfig, validateIntegration} from './lib/config-schema.mjs';
-
 /**
- * Type-preserving helpers for Astryx config and integration manifests.
+ * Type-preserving helper for the Astryx config file.
  *
- * These are intentionally tiny runtime identity functions. Their value is the
- * exported TypeScript surface from `@astryxdesign/cli/config`, so config files
- * can get editor/type feedback without coupling to CLI internals.
- */
-
-/**
+ * This is an intentionally tiny runtime identity function: it returns its
+ * argument unchanged. Its value is the exported TypeScript surface from
+ * `@astryxdesign/cli/config`, so config files get editor/type feedback without
+ * coupling to CLI internals. Validation is NOT performed here — it happens at
+ * the load boundary (see `loadModuleWithSchema` + `AstryxConfigSchema`).
+ *
  * @template {import('./types/config').AstryxConfig} T
  * @param {T} config
  * @returns {T}
  */
 export function createConfig(config) {
-  validateConfig(config);
   return config;
-}
-
-/**
- * @template {import('./types/config').AstryxIntegration} T
- * @param {T} integration
- * @returns {T}
- */
-export function createIntegration(integration) {
-  validateIntegration(integration);
-  return integration;
 }

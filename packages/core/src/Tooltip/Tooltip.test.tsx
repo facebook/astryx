@@ -153,4 +153,72 @@ describe('Tooltip', () => {
       });
     });
   });
+
+  describe('WCAG 1.4.13 — content on hover or focus', () => {
+    it('dismisses on Escape while visible (dismissible)', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip content="Dismiss me" onOpenChange={onOpenChange} delay={0}>
+          <button type="button">Trigger</button>
+        </Tooltip>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Trigger'});
+      fireEvent.mouseEnter(trigger);
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+
+      fireEvent.keyDown(document, {key: 'Escape'});
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(false);
+      });
+    });
+
+    it('ignores Escape during IME composition', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip content="Stay" onOpenChange={onOpenChange} delay={0}>
+          <button type="button">Trigger</button>
+        </Tooltip>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Trigger'});
+      fireEvent.mouseEnter(trigger);
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+      onOpenChange.mockClear();
+
+      fireEvent.keyDown(document, {key: 'Escape', isComposing: true});
+      // Give any (incorrect) async hide a chance to run.
+      await new Promise(r => setTimeout(r, 20));
+      expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    });
+
+    it('stays open when the pointer moves onto the tooltip surface (hoverable)', async () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Tooltip content="Hover me" onOpenChange={onOpenChange} delay={0}>
+          <button type="button">Trigger</button>
+        </Tooltip>,
+      );
+
+      const trigger = screen.getByRole('button', {name: 'Trigger'});
+      fireEvent.mouseEnter(trigger);
+      await waitFor(() => {
+        expect(onOpenChange).toHaveBeenCalledWith(true);
+      });
+      onOpenChange.mockClear();
+
+      // Pointer leaves the trigger but enters the tooltip surface before the
+      // hover-bridge grace period elapses — the tooltip must not hide.
+      fireEvent.mouseLeave(trigger);
+      const layer = screen.getByRole('tooltip', {hidden: true});
+      fireEvent.mouseEnter(layer);
+
+      await new Promise(r => setTimeout(r, 150));
+      expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    });
+  });
 });

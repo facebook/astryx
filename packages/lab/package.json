@@ -2,7 +2,7 @@
   "name": "@astryxdesign/lab",
   "version": "0.1.2",
   "private": true,
-  "description": "Experimental XDS components — not published, available in storybook and sandbox for testing",
+  "description": "Experimental Astryx components — published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
@@ -20,9 +20,41 @@
     "experimental",
     "design-system"
   ],
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "astryx": {
+    "canaryOnly": true,
+    "_comment": "Published ONLY to the @canary dist-tag (see .github/workflows/release.yml). Never published as a stable `latest` release. `private: true` is intentional and must stay — it is npm's hard guarantee against an accidental stable publish."
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "sideEffects": false,
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./lab.css": {
+      "default": "./dist/lab.css"
+    }
+  },
+  "scripts": {
+    "prepack": "pnpm build",
+    "build": "rm -rf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css",
+    "build:esm": "babel src --out-dir dist --extensions '.ts,.tsx' --out-file-extension '.js' --ignore '**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts' --config-file ./babel.config.js",
+    "build:css": "node ../../scripts/build-css.mjs --package lab",
+    "dev": "babel src --watch --out-dir dist --extensions '.ts,.tsx' --out-file-extension '.js' --ignore '**/*.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css*' --config-file ./babel.config.js",
+    "test": "vitest run --root ../..",
+    "test:watch": "vitest --root ../..",
+    "lint": "eslint src",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
     "@astryxdesign/core": "0.1.2",

@@ -13,7 +13,7 @@ const repoRoot = path.resolve(__dirname, '../../..');
  * Vite config for building reports ONLY — no StyleX plugin required.
  *
  * Reports use pre-compiled CSS from @astryxdesign/core/dist/astryx.css and
- * @astryxdesign/theme-neutral/dist/theme.css. XDS component JS is loaded from
+ * @astryxdesign/theme-neutral/dist/theme.css. Astryx component JS is loaded from
  * the built dist (which has stylex.create already compiled away by tsup).
  * Report-specific styles live in plain CSS (report.css).
  *
@@ -24,7 +24,7 @@ const repoRoot = path.resolve(__dirname, '../../..');
 /**
  * Browser targets for lightningcss.
  * Prevents lowering native light-dark() into --lightningcss-light/--lightningcss-dark
- * polyfill variables. XDS tokens use native light-dark() which is baseline 2024:
+ * polyfill variables. Astryx tokens use native light-dark() which is baseline 2024:
  * Chrome 123+, Firefox 120+, Safari 17.5+
  *
  * Must match the targets in apps/storybook/.storybook/main.ts
@@ -38,6 +38,12 @@ const lightningcssTargets = {
 export default defineConfig({
   plugins: [react(), viteSingleFile()],
   build: {
+    // The bundled @astryxdesign/core (Babel output) uses modern syntax that
+    // esbuild can't downlevel to the default es2020 target (destructuring in
+    // certain positions). The report is an internal artifact viewed in current
+    // browsers, so target esnext and skip downleveling. CSS targets stay modern
+    // below to preserve native light-dark().
+    target: 'esnext',
     rollupOptions: {
       input: path.resolve(__dirname, 'index.report.html'),
     },
@@ -58,11 +64,11 @@ export default defineConfig({
     alias: [
       // Pre-compiled CSS — no StyleX build needed
       {
-        find: 'xds-css',
+        find: 'astryx-css',
         replacement: path.resolve(repoRoot, 'packages/core/dist/astryx.css'),
       },
       {
-        find: 'xds-theme-css',
+        find: 'astryx-theme-css',
         replacement: path.resolve(
           repoRoot,
           'packages/themes/neutral/dist/theme.css',
@@ -76,21 +82,27 @@ export default defineConfig({
       // Core subpath imports → dist (bypasses "source" condition in exports map)
       {
         find: /^@astryxdesign\/core\/(.+)$/,
-        replacement: path.resolve(repoRoot, 'packages/core/dist/$1/index.mjs'),
+        replacement: path.resolve(repoRoot, 'packages/core/dist/$1/index.js'),
       },
       // Core root import
       {
         find: '@astryxdesign/core',
-        replacement: path.resolve(repoRoot, 'packages/core/dist/index.mjs'),
+        replacement: path.resolve(repoRoot, 'packages/core/dist/index.js'),
       },
       // Theme: resolve to source (no StyleX usage, just defineTheme + icons).
       {
         find: '@astryxdesign/theme-neutral',
-        replacement: path.resolve(repoRoot, 'packages/themes/neutral/src/source.ts'),
+        replacement: path.resolve(
+          repoRoot,
+          'packages/themes/neutral/src/source.ts',
+        ),
       },
       {
         find: '@astryxdesign/theme/neutral',
-        replacement: path.resolve(repoRoot, 'packages/themes/neutral/src/source.ts'),
+        replacement: path.resolve(
+          repoRoot,
+          'packages/themes/neutral/src/source.ts',
+        ),
       },
     ],
   },

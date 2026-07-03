@@ -28,7 +28,18 @@ import type {ComponentDoc, PropDoc} from '../../../core/src/docs-types';
 /** xds --json component [--list] [--category X] [--detail brief] */
 export interface ComponentListResponse {
   type: 'component.list';
-  data: Record<string, string[]>;
+  data: Record<string, ComponentListEntry[]>;
+}
+
+/**
+ * A single entry in a `component.list` group. Pre-1.0 the list moved from bare
+ * strings to package-qualified objects so consumers can disambiguate ownership
+ * (core vs. an integration package).
+ */
+export interface ComponentListEntry {
+  name: string;
+  /** Owner package, e.g. '@astryxdesign/core' or '@acme/astryx-meta'. */
+  package: string;
 }
 
 /** xds --json component --list --detail compact */
@@ -52,7 +63,21 @@ export interface ComponentFullResponse {
 /** xds --json component <name> */
 export interface ComponentDetailResponse {
   type: 'component.detail';
-  data: ComponentDoc;
+  data: ComponentDoc & ComponentOwnership;
+}
+
+/**
+ * Ownership metadata attached to every `component.detail` payload. Exposes the
+ * owner package, the import specifier, and whether a swizzleable source file is
+ * available — the inputs the integration-component swizzle (a later PR) needs.
+ */
+export interface ComponentOwnership {
+  /** Owner package, e.g. '@astryxdesign/core' or an integration package name. */
+  package: string;
+  /** Import specifier for the component (e.g. '@astryxdesign/core/Button'). */
+  import: string;
+  /** Whether a component source file exists for `--source` / swizzle. */
+  sourceAvailable: boolean;
 }
 
 /** xds --json component <name> --props */

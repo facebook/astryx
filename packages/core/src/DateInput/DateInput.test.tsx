@@ -110,6 +110,43 @@ describe('DateInput', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('sets aria-invalid="true" when typed input is unparseable', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '13/45/2024'}});
+
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('does not set aria-invalid when typed input is a valid date', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+
+    expect(input).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('announces an alert message when typed input is invalid', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '13/45/2024'}});
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Invalid date');
+  });
+
+  it('does not announce an alert message when input is valid', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+
+    expect(screen.getByRole('alert')).toHaveTextContent('');
+    expect(screen.queryByText('Invalid date')).not.toBeInTheDocument();
+  });
+
   it('reverts to previous value on blur when input is invalid', async () => {
     const onChange = vi.fn();
     render(<DateInput label="Date" value="2026-01-25" onChange={onChange} />);
@@ -278,6 +315,28 @@ describe('DateInput', () => {
       'aria-expanded',
       'false',
     );
+  });
+
+  it('opens the calendar popover on ArrowDown (keyboard, forms-13)', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('opens the calendar popover on Alt+ArrowDown (keyboard, forms-13)', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, {key: 'ArrowDown', altKey: true});
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not open on ArrowDown when disabled', () => {
+    render(<DateInput label="Date" isDisabled onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('input has aria-haspopup="dialog"', () => {

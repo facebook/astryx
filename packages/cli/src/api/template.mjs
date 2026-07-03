@@ -6,6 +6,8 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {loadModuleWithSchema} from '../lib/module-loader.mjs';
+import {TemplateEnvelopeSchema} from '../template.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../utils/paths.mjs';
 import {
   assertWithin,
@@ -14,7 +16,28 @@ import {
 } from '../utils/path-safety.mjs';
 import {AstryxError} from './error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
-import {loadConfig} from '../lib/config.mjs';
+import {Project} from '../lib/project.mjs';
+
+/** Identity used for core (built-in) templates in package-scoped listings. */
+const CORE_PACKAGE = '@astryxdesign/core';
+
+/** Doc-file basename suffixes for integration templates, in precedence order. */
+const DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
+
+/**
+ * Load an integration template doc module and validate it against the template
+ * envelope at the load boundary. Default export only — `.ts` via jiti,
+ * `.mjs`/`.js` via dynamic import. Throws (caught by discovery) if the default
+ * export is missing or fails {@link TemplateEnvelopeSchema}. NOTE: the built-in
+ * core templates use `export const doc = {...}` and are loaded by a different
+ * function ({@link loadDocModule}) — this path is for INTEGRATION templates.
+ *
+ * @param {string} file
+ * @param {string} [label]
+ */
+async function loadIntegrationDoc(file, label) {
+  return loadModuleWithSchema(file, TemplateEnvelopeSchema, {label});
+}
 
 const TEMPLATES_DIR = path.join(CLI_ROOT, 'templates');
 const PAGES_DIR = path.join(TEMPLATES_DIR, 'pages');
@@ -151,17 +174,13 @@ async function discoverBlocks() {
 }
 
 /**
- * Discover blocks from external packages that declare `xds.blocks`.
- * Same shape as discoverBlocks() output.
+ * Discover blocks from external packages that declare `astryx.blocks` in
+ * their package.json. Same shape as discoverBlocks() output.
  *
  * @param {string} [cwd]
  */
 async function discoverExternalBlocks(cwd = process.cwd()) {
-  const config = await loadConfig(cwd);
-  const integrationPackages = (config.loadedIntegrations ?? [])
-    .map(integration => integration.package)
-    .filter(Boolean);
-  const externals = [...discoverExternalPackages(cwd), ...integrationPackages];
+  const externals = discoverExternalPackages(cwd);
   const blocks = [];
 
   for (const ext of externals) {
@@ -205,12 +224,184 @@ async function discoverAllBlocks(cwd = process.cwd()) {
   return [...core, ...external];
 }
 
-async function discoverAll() {
-  const [pages, blocks] = await Promise.all([
+async function discoverAll(cwd = process.cwd()) {
+  const [pages, blocks, integration] = await Promise.all([
     discoverPages(),
-    discoverAllBlocks(),
+    discoverAllBlocks(cwd),
+    discoverIntegrationTemplates(cwd),
   ]);
-  return [...pages, ...blocks].sort((a, b) => a.name.localeCompare(b.name));
+  return [...pages, ...blocks, ...integration.templates].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+}
+
+/**
+ * Like {@link discoverAll} but also returns integration-template discovery
+ * errors (missing same-stem source, missing `type`, load failure). Use this
+ * when the caller wants to warn about malformed integration templates.
+ *
+ * @param {string} [cwd]
+ * @returns {Promise<{templates: object[], errors: {package: string, template?: string, message: string}[]}>}
+ */
+async function discoverAllWithErrors(cwd = process.cwd()) {
+  const [pages, blocks, integration] = await Promise.all([
+    discoverPages(),
+    discoverAllBlocks(cwd),
+    discoverIntegrationTemplates(cwd),
+  ]);
+  const templates = [...pages, ...blocks, ...integration.templates].sort(
+    (a, b) => a.name.localeCompare(b.name),
+  );
+  return {templates, errors: integration.errors};
+}
+
+export {discoverAllWithErrors};
+
+/**
+ * Recursively collect integration template doc files under `root`.
+ * Returns absolute paths to files ending in one of DOC_SUFFIXES.
+ *
+ * @param {string} root
+ * @returns {string[]}
+ */
+function findIntegrationDocFiles(root) {
+  const results = [];
+  if (!fs.existsSync(root)) return results;
+  const walk = dir => {
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (DOC_SUFFIXES.some(suffix => entry.name.endsWith(suffix))) {
+        results.push(full);
+      }
+    }
+  };
+  walk(root);
+  return results;
+}
+
+/**
+ * The doc-file suffix present on `file`, or null if none matches.
+ * @param {string} file
+ */
+function matchedDocSuffix(file) {
+  return DOC_SUFFIXES.find(suffix => file.endsWith(suffix)) ?? null;
+}
+
+/**
+ * Discover templates contributed by configured integrations.
+ *
+ * For each integration with a resolved `templates` root, every
+ * `<id>.doc.{ts,mjs,js}` file is a template whose id is its path relative to
+ * the templates root with the `.doc.*` suffix stripped (kebab-case, may be
+ * nested). The doc's `type` (page|block) decides scaffolding — there is no
+ * `/pages` vs `/blocks` requirement. A same-stem sibling source file
+ * (`<id>.tsx`) is required; a doc missing its source, or missing `type`, is
+ * an integration error and that template is skipped (recorded in `errors`).
+ *
+ * @param {string} [cwd]
+ * @returns {Promise<{templates: object[], errors: {package: string, template?: string, message: string}[]}>}
+ */
+async function discoverIntegrationTemplates(cwd = process.cwd()) {
+  const templates = [];
+  const errors = [];
+
+  let loadedIntegrations;
+  try {
+    const project = await Project.load(cwd);
+    loadedIntegrations = project.loadedIntegrations;
+  } catch {
+    // Config load failures are surfaced elsewhere (discover/doctor); here we
+    // simply contribute no integration templates.
+    return {templates, errors};
+  }
+
+  for (const integration of loadedIntegrations) {
+    const result = await discoverIntegrationTemplatesForOne(integration);
+    templates.push(...result.templates);
+    errors.push(...result.errors);
+  }
+
+  return {templates, errors};
+}
+
+/**
+ * Discover the templates contributed by a SINGLE integration. Same per-template
+ * rules as {@link discoverIntegrationTemplates} (same-stem source required,
+ * page|block type required); broken templates are recorded in `errors` rather
+ * than thrown. Exposed for `validate-integration`.
+ *
+ * @param {{name?: string, __spec?: string, templates?: string}} integration
+ * @returns {Promise<{templates: object[], errors: {package: string, template?: string, message: string}[]}>}
+ */
+export async function discoverIntegrationTemplatesForOne(integration) {
+  const templates = [];
+  const errors = [];
+
+  const root = integration?.templates;
+  const pkgLabel = integration?.name ?? integration?.__spec ?? 'integration';
+  if (!root || !fs.existsSync(root)) return {templates, errors};
+
+  for (const docPath of findIntegrationDocFiles(root)) {
+    const suffix = matchedDocSuffix(docPath);
+    const id = path
+      .relative(root, docPath)
+      .slice(0, -suffix.length)
+      .split(path.sep)
+      .join('/');
+
+    const sourcePath = docPath.slice(0, -suffix.length) + '.tsx';
+    if (!fs.existsSync(sourcePath)) {
+      errors.push({
+        package: pkgLabel,
+        template: id,
+        message: `Template "${id}" is missing its same-stem source file ${path.basename(sourcePath)}.`,
+      });
+      continue;
+    }
+
+    let doc;
+    try {
+      doc = await loadIntegrationDoc(docPath, `Template "${id}"`);
+    } catch (err) {
+      errors.push({
+        package: pkgLabel,
+        template: id,
+        message: `Template "${id}" failed to load: ${err.message}`,
+      });
+      continue;
+    }
+
+    // loadIntegrationDoc validates against the envelope (incl. a 'page'|'block'
+    // type) at the load boundary, so a valid doc always has a type. This guard
+    // stays as defense-in-depth.
+    const type = doc?.type;
+    if (type !== 'page' && type !== 'block') {
+      errors.push({
+        package: pkgLabel,
+        template: id,
+        message: `Template "${id}" is missing a "type" of "page" or "block". Author it with createPageTemplate/createBlockTemplate.`,
+      });
+      continue;
+    }
+
+    templates.push({
+      type,
+      dirName: id,
+      name: doc?.name || id,
+      description: doc?.description || '',
+      category: doc?.category || '',
+      isReady: true,
+      scaffold: false,
+      componentsUsed: doc?.componentsUsed ?? [],
+      filePath: sourcePath,
+      docPath,
+      package: pkgLabel,
+    });
+  }
+
+  return {templates, errors};
 }
 
 export async function findRelatedBlocks(componentName, cwd) {
@@ -503,78 +694,14 @@ function extractSkeleton(source) {
 }
 
 /**
- * Fetch a template by ID using the `template.get` hook in astryx.config.mjs.
- * @param {string} id
- * @param {object} [options]
- * @param {string} [options.cwd]
- * @returns {Promise<{type: 'template.get', data: {id: string, source: string}}>}
- */
-export async function getTemplateById(id, options = {}) {
-  const {cwd = process.cwd()} = options;
-  const config = await loadConfig(cwd);
-
-  const getter = config.template?.get;
-  if (typeof getter !== 'function') {
-    throw new AstryxError(
-      'Template fetching by ID is not configured.\n' +
-        'Add a template.get function to astryx.config.mjs:\n\n' +
-        '  export default {\n' +
-        '    template: {\n' +
-        '      get: async (id) => { /* return template source string */ },\n' +
-        '    },\n' +
-        '  };',
-      undefined,
-      ERROR_CODES.ERR_TEMPLATE_CONFIG,
-    );
-  }
-
-  let source;
-  try {
-    source = await getter(id);
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err);
-    throw new AstryxError(
-      `template.get("${id}") threw an error: ${detail}`,
-      undefined,
-      ERROR_CODES.ERR_TEMPLATE_GET,
-    );
-  }
-
-  if (source == null) {
-    throw new AstryxError(
-      `template.get("${id}") returned ${source} — no template found for that ID`,
-      undefined,
-      ERROR_CODES.ERR_TEMPLATE_GET,
-    );
-  }
-
-  if (typeof source !== 'string') {
-    throw new AstryxError(
-      `template.get("${id}") must return a string, got ${typeof source}`,
-      undefined,
-      ERROR_CODES.ERR_TEMPLATE_GET,
-    );
-  }
-
-  if (source.trim() === '') {
-    throw new AstryxError(
-      `template.get("${id}") returned an empty string`,
-      undefined,
-      ERROR_CODES.ERR_TEMPLATE_GET,
-    );
-  }
-
-  return {type: 'template.get', data: {id, source}};
-}
-
-/**
  * @param {string} [name]
  * @param {object} [options]
  * @param {string} [options.targetPath]
  * @param {boolean} [options.list]
  * @param {boolean} [options.skeleton]
  * @param {boolean} [options.show]
- * @param {'page'|'block'} [options.type] - Filter list views by template kind.
+ * @param {'page'|'block'} [options.type] - Filter list views / narrow lookups by template kind.
+ * @param {string} [options.package] - Narrow lookups to a specific package (id-only matches across packages are ambiguous).
  * @param {string} [options.cwd]
  * @returns {Promise<{type: string, data: unknown}>}
  */
@@ -585,34 +712,65 @@ export async function template(name, options = {}) {
     show = false,
     targetPath,
     type,
+    package: packageFilter,
     cwd = process.cwd(),
   } = options;
-  const templates = await discoverAll();
+  const templates = await discoverAll(cwd);
+
+  /**
+   * Identity for a template in package-scoped views. Core (built-in)
+   * templates have no `package` field; report them under @astryxdesign/core.
+   * @param {{package?: string}} t
+   */
+  const pkgOf = t => t.package ?? CORE_PACKAGE;
 
   if (list || (!name && !skeleton)) {
     let filtered = templates;
-    if (type) filtered = templates.filter(t => t.type === type);
+    if (type) filtered = filtered.filter(t => t.type === type);
+    if (packageFilter) filtered = filtered.filter(t => pkgOf(t) === packageFilter);
     return {
       type: 'template.list',
       data: filtered.map(t => ({
-        name: t.dirName,
+        id: t.dirName,
+        name: t.name,
+        // `displayName` retained for back-compat with existing consumers.
         displayName: t.name,
         description: t.description,
+        type: t.type,
+        package: pkgOf(t),
+        category: t.category || undefined,
+        componentsUsed: t.componentsUsed ?? undefined,
         isReady: t.isReady,
         scaffold: t.scaffold ?? false,
-        type: t.type,
       })),
     };
   }
 
-  const match = templates.find(t => t.dirName === name);
-  if (name && !match) {
+  // Resolve `name` to a single template. The same id can appear across types
+  // and/or packages (e.g. a core "hero" page and an integration "hero"
+  // block); narrow with --type / --package.
+  let candidates = templates.filter(t => t.dirName === name);
+  if (type) candidates = candidates.filter(t => t.type === type);
+  if (packageFilter) candidates = candidates.filter(t => pkgOf(t) === packageFilter);
+
+  if (name && candidates.length === 0) {
     throw new AstryxError(
       `Unknown template "${name}"`,
       templates.map(t => ({name: t.dirName, reason: `${t.type} template`})),
       ERROR_CODES.ERR_UNKNOWN_TEMPLATE,
     );
   }
+  if (name && candidates.length > 1) {
+    throw new AstryxError(
+      `Template "${name}" is ambiguous — narrow it with --type and/or --package.`,
+      candidates.map(t => ({
+        name: t.dirName,
+        reason: `${t.type} template in ${pkgOf(t)}`,
+      })),
+      ERROR_CODES.ERR_AMBIGUOUS_TEMPLATE,
+    );
+  }
+  const match = candidates[0];
 
   if (skeleton) {
     if (!match) {

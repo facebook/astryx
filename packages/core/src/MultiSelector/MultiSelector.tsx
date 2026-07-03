@@ -65,6 +65,7 @@ import {
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
 import {mergeProps} from '../utils';
+import {useAnnounce} from '../hooks/useAnnounce';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
@@ -607,6 +608,25 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     [options],
   );
 
+  // Announce selection-count changes politely (comboboxes-7 announce path).
+  // Toggling options / select-all previously produced no audible feedback.
+  const announce = useAnnounce();
+  const announceSelection = useCallback(
+    (nextValue: string[]) => {
+      const total = selectableItems.length;
+      const selectableSet = new Set(selectableItems.map(item => item.value));
+      const selectedCount = nextValue.filter(v => selectableSet.has(v)).length;
+      if (selectedCount === 0) {
+        announce('Selection cleared');
+      } else if (total > 0 && selectedCount === total) {
+        announce('All selected');
+      } else {
+        announce(`${selectedCount} of ${total} selected`);
+      }
+    },
+    [announce, selectableItems],
+  );
+
   // Filter items by search query
   const filteredItems = useMemo(() => {
     if (!searchQuery) {
@@ -696,7 +716,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     onHide: handleLayerHide,
     hasCloseButton: false,
     hasAutoFocus: false,
-    dialogLabel: `${label} options`,
+    // The popup's own role="listbox" is the exposed semantics; the trigger
+    // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
+    role: 'none',
   });
 
   // Open dropdown on mount when isDefaultOpen is true
@@ -708,19 +730,34 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   }, []);
 
   // Handle toggle
-  // Handle clear button click
+  // Clear all selected values. Shared by the clear button and the keyboard
+  // Delete/Backspace path so clearing is reachable without a mouse.
+  const clearValues = useCallback(() => {
+    onChange([]);
+    announceSelection([]);
+    if (changeAction) {
+      startTransition(async () => {
+        setOptimisticValue([]);
+        await changeAction([]);
+      });
+    }
+  }, [
+    onChange,
+    changeAction,
+    startTransition,
+    setOptimisticValue,
+    announceSelection,
+  ]);
+
+  // Whether there is at least one selected value (clearing is meaningful).
+  const hasValue = optimisticValue.length > 0;
+
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
-      onChange([]);
-      if (changeAction) {
-        startTransition(async () => {
-          setOptimisticValue([]);
-          await changeAction([]);
-        });
-      }
+      clearValues();
     },
-    [onChange, changeAction, startTransition, setOptimisticValue],
+    [clearValues],
   );
 
   const handleToggle = useCallback(
@@ -730,6 +767,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         : [...optimisticValue, itemValue];
 
       onChange(newValue);
+      announceSelection(newValue);
       if (changeAction) {
         startTransition(async () => {
           setOptimisticValue(newValue);
@@ -743,6 +781,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       changeAction,
       startTransition,
       setOptimisticValue,
+      announceSelection,
     ],
   );
 
@@ -788,6 +827,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }
 
     onChange(newValue);
+    announceSelection(newValue);
     if (changeAction) {
       startTransition(async () => {
         setOptimisticValue(newValue);
@@ -802,6 +842,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     changeAction,
     startTransition,
     setOptimisticValue,
+    announceSelection,
   ]);
 
   // Route toggle: select-all sentinel → handleSelectAll, everything else → handleToggle
@@ -843,8 +884,23 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }, [popover, hasSearch, optimisticValue]),
     onClose: popover.hide,
     onToggle: handleNavigableToggle,
+    onClear: hasClear ? clearValues : undefined,
+    hasValue,
     listboxId,
   });
+
+  // Keep the highlighted option visible during keyboard navigation. The
+  // listbox is a fixed-height scroll container, so without this the virtual
+  // cursor walks off-screen once navigation passes the visible window. Mirrors
+  // CommandPaletteItem's scrollIntoView({block: 'nearest'}) behavior.
+  useEffect(() => {
+    if (!popover.isOpen || highlightedIndex < 0) {
+      return;
+    }
+    document
+      .getElementById(getItemId(highlightedIndex))
+      ?.scrollIntoView?.({block: 'nearest'});
+  }, [popover.isOpen, highlightedIndex, getItemId]);
 
   // Build trigger display content
   const selectedLabels = useMemo(() => {
@@ -906,17 +962,30 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         <input
           ref={searchRef}
           id={searchId}
-          role="searchbox"
+          // When hasSearch is set, focus moves into this input on open, so it —
+          // not the trigger — must be the combobox reporting the highlighted
+          // option via aria-activedescendant (comboboxes-4).
+          role="combobox"
+          aria-expanded={popover.isOpen}
           aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            popover.isOpen && highlightedIndex >= 0
+              ? getItemId(highlightedIndex)
+              : undefined
+          }
           aria-label="Search options"
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           onKeyDown={e => {
-            // Let ArrowDown/Up/Escape/Tab propagate to parent handler
+            // Arrow keys navigate options; Enter toggles; Escape/Tab close.
+            // Space and Home/End are left to the input (type a space / move
+            // the caret), not forwarded to option navigation.
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
+              e.key === 'Enter' ||
               e.key === 'Escape' ||
               e.key === 'Tab'
             ) {
@@ -935,6 +1004,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     searchQuery,
     searchPlaceholder,
     onKeyDown,
+    popover.isOpen,
+    highlightedIndex,
+    getItemId,
   ]);
 
   // Render an individual item (index-based)
@@ -1062,9 +1134,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
 
       if (isDivider(option)) {
         flushPending();
-        elements.push(
-          <Divider key={`divider-${i}`} xstyle={styles.divider} />,
-        );
+        elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
       } else if (isSection(option)) {
         flushPending();
         const count = option.options.length;
@@ -1144,12 +1214,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           ref={triggerRef}
           id={triggerId}
           type="button"
-          role="combobox"
+          // In hasSearch mode the popup's search input is the combobox (it owns
+          // focus + aria-activedescendant, comboboxes-4), so the trigger is a
+          // plain button that opens the listbox — not a second combobox.
+          role={hasSearch ? undefined : 'combobox'}
           aria-haspopup="listbox"
           aria-expanded={popover.isOpen}
           aria-controls={listboxId}
           aria-activedescendant={
-            popover.isOpen && highlightedIndex >= 0
+            !hasSearch && popover.isOpen && highlightedIndex >= 0
               ? getItemId(highlightedIndex)
               : undefined
           }
@@ -1159,7 +1232,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           aria-busy={isBusy || undefined}
           disabled={isDisabled}
           onKeyDown={onKeyDown}
-          tabIndex={-1}
+          tabIndex={isDisabled ? -1 : 0}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerContent)}>
             {renderTriggerContent()}
@@ -1169,7 +1242,6 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         {hasClear && value.length > 0 && !isDisabled && (
           <button
             type="button"
-            tabIndex={-1}
             onClick={handleClear}
             aria-label={`Clear all ${label}`}
             {...stylex.props(styles.clearButton)}>
