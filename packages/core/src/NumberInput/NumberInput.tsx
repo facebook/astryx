@@ -48,6 +48,7 @@ import {
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useTooltip} from '../Tooltip';
+import {getInputGroupInputAria} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
@@ -439,19 +440,15 @@ export function NumberInput({
     success: 'success',
   };
 
-  const ariaDescribedBy =
-    [
-      inputGroup?.describedByIDs ?? null,
+  const {ariaLabelledBy, ariaDescribedBy} = getInputGroupInputAria({
+    inputGroup,
+    inputLabelID,
+    describedByIDs: [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
-
-  const ariaLabelledBy = inputGroup
-    ? `${inputGroup.labelID} ${inputLabelID}`
-    : undefined;
+    ],
+  });
 
   // Display value: pending input if typing, otherwise the raw value
   // Note: With type="number", we can't use formatted display values

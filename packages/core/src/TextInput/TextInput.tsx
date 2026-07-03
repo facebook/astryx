@@ -49,6 +49,7 @@ import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {getInputGroupInputAria} from '../utils';
 
 const styles = stylex.create({
   clearButton: {
@@ -340,19 +341,15 @@ export function TextInput({
     success: 'success',
   };
 
-  const ariaDescribedBy =
-    [
-      inputGroup?.describedByIDs ?? null,
+  const {ariaLabelledBy, ariaDescribedBy} = getInputGroupInputAria({
+    inputGroup,
+    inputLabelID,
+    describedByIDs: [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
-
-  const ariaLabelledBy = inputGroup
-    ? `${inputGroup.labelID} ${inputLabelID}`
-    : undefined;
+    ],
+  });
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     // Value can't change while showing a disabled message (the field is
