@@ -163,9 +163,9 @@ PASS: package boundaries OK
 | Accessibility and motion utilities stable | PASS |
 | Full test suite green | PASS |
 | Public API audit PASS | PASS |
-| PR merged to `main` | PENDING |
+| PR merged to `main` | PASS (PR #1, 2026-07-04) |
 
-**Phase 5:** PENDING (awaiting PR merge)
+**Phase 5:** PASS
 
 ---
 
@@ -194,4 +194,4 @@ Observations recorded in `docs/sprints/sprint-01-design-language.md`:
 
 ## Acceptance Verdict
 
-**PASS** — ready for staged commits on `foundation-program`.
+**PASS** — Foundation Program merged to `main` via PR #1.
