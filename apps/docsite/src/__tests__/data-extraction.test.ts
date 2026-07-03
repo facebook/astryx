@@ -284,6 +284,18 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('Citation satisfies its required source prop via playground defaults', () => {
+    const core = components['@astryxdesign/core'];
+    const citation = core.find(c => c.name === 'Citation');
+    expect(citation).toBeDefined();
+    // `source` is a custom object type the preview cannot auto-generate;
+    // without these defaults the properties tab has no interactive preview.
+    expect(citation!.playground?.defaults).toMatchObject({
+      source: {title: 'Astryx Design', url: 'https://example.com'},
+      number: 1,
+    });
+  });
+
   it('MetadataListItem declares a playground wrapper for realistic preview structure', () => {
     const core = components['@astryxdesign/core'];
     const metadataListItem = core.find(c => c.name === 'MetadataListItem');

@@ -83,6 +83,10 @@ const styles = stylex.create({
       },
     },
     color: {
+      // Explicit default: without it, this hover-only conditional replaces
+      // the base secondary color from `label` (last-wins property merge),
+      // leaving linked citations to inherit the surrounding text color.
+      default: colorVars['--color-text-secondary'],
       ':hover': {
         '@media (hover: hover)': colorVars['--color-text-primary'],
       },
@@ -96,7 +100,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
-    color: colorVars['--color-text-accent'],
+    color: colorVars['--color-text-secondary'],
     backgroundColor: colorVars['--color-accent-muted'],
     borderRadius: radiusVars['--radius-full'],
     minWidth: spacingVars['--spacing-5'],
@@ -110,6 +114,10 @@ const styles = stylex.create({
   },
   numberHover: {
     backgroundColor: {
+      // Explicit default for the same reason as labelHover's color: a
+      // hover-only conditional replaces the base accent-muted pill from
+      // `number` on merge, leaving linked badges transparent.
+      default: colorVars['--color-accent-muted'],
       ':hover': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },

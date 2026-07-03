@@ -56,6 +56,16 @@ export const docs = {
     ],
   },
 
+  // `source` is a custom object type the docsite preview cannot generate
+  // automatically; without these defaults the properties tab shows the
+  // missing-required-props placeholder instead of an interactive preview.
+  playground: {
+    defaults: {
+      source: {title: 'Astryx Design', url: 'https://example.com'},
+      number: 1,
+    },
+  },
+
   props: [
     {
       name: 'source',
