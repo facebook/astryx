@@ -59,7 +59,7 @@ describe('InputGroup', () => {
     expect(describedBy).toContain(screen.getByText('Price is required').id);
   });
 
-  it('labels grouped TextInput from the visible group label context', () => {
+  it('labels grouped TextInput from the group and inner input labels', () => {
     render(
       <InputGroup
         label="Price"
@@ -71,16 +71,22 @@ describe('InputGroup', () => {
     );
 
     const group = screen.getByRole('group', {name: 'Price'});
-    const labelID = group.getAttribute('aria-labelledby');
+    const groupLabelID = group.getAttribute('aria-labelledby');
     const describedBy = group.getAttribute('aria-describedby');
-    const input = screen.getByRole('textbox', {name: 'Price'});
+    const input = screen.getByRole('textbox', {name: 'Price Amount'});
+    const labelledByIDs =
+      input.getAttribute('aria-labelledby')?.split(' ') ?? [];
 
-    expect(input).toHaveAttribute('aria-labelledby', labelID);
+    expect(labelledByIDs).toHaveLength(2);
+    expect(labelledByIDs[0]).toBe(groupLabelID);
+    expect(document.getElementById(labelledByIDs[1])).toHaveTextContent(
+      'Amount',
+    );
     expect(input).not.toHaveAttribute('aria-label');
     expect(input).toHaveAttribute('aria-describedby', describedBy);
   });
 
-  it('labels grouped NumberInput from the visible group label context', () => {
+  it('labels grouped NumberInput from the group and inner input labels', () => {
     render(
       <InputGroup label="Budget" description="Whole dollars only">
         <InputGroupText>$</InputGroupText>
@@ -94,12 +100,17 @@ describe('InputGroup', () => {
     );
 
     const group = screen.getByRole('group', {name: 'Budget'});
-    const input = screen.getByRole('spinbutton', {name: 'Budget'});
+    const groupLabelID = group.getAttribute('aria-labelledby');
+    const input = screen.getByRole('spinbutton', {name: 'Budget Amount'});
+    const labelledByIDs =
+      input.getAttribute('aria-labelledby')?.split(' ') ?? [];
 
-    expect(input).toHaveAttribute(
-      'aria-labelledby',
-      group.getAttribute('aria-labelledby'),
+    expect(labelledByIDs).toHaveLength(2);
+    expect(labelledByIDs[0]).toBe(groupLabelID);
+    expect(document.getElementById(labelledByIDs[1])).toHaveTextContent(
+      'Amount',
     );
+    expect(input).not.toHaveAttribute('aria-label');
     expect(input).toHaveAttribute(
       'aria-describedby',
       group.getAttribute('aria-describedby'),

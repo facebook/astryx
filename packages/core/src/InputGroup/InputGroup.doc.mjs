@@ -92,7 +92,7 @@ export const docs = {
     bestPractices: [
       {guidance: true, description: 'Use text addons to show units, prefixes, or suffixes that clarify the input format (e.g., "$", "kg", "https://").'},
       {guidance: true, description: 'Use InputGroupText for static prefixes/suffixes like "$", "kg", or "https://".'},
-      {guidance: true, description: 'Set isLabelHidden on the inner input and let the group label be visible; the group label, description, and status wire to grouped inputs automatically.'},
+      {guidance: true, description: "Keep each inner input's label specific; grouped inputs automatically combine the group label with their own label and inherit the group description/status context."},
       {guidance: false, description: 'Don\'t put multiple text inputs in one group; use separate fields instead.'},
       {guidance: false, description: 'Don\'t use InputGroup for unrelated inputs; it\'s for a single input with decorations.'},
     ],
@@ -114,7 +114,7 @@ export const docsDense = {
     bestPractices: [
       {guidance: true, description: 'Use text addons to show units, prefixes, or suffixes that clarify input format (e.g. "$", "kg", "https://").'},
       {guidance: true, description: 'Use InputGroupText for static prefixes/suffixes like "$", "kg", or "https://".'},
-      {guidance: true, description: 'Set isLabelHidden on the inner input and let the group label be visible; group label/description/status wire automatically.'},
+      {guidance: true, description: "Keep each inner input's label specific; grouped inputs combine the group label with their own label and inherit group description/status."},
       {guidance: false, description: 'Don\'t put multiple text inputs in one group; use separate fields instead.'},
       {guidance: false, description: 'Don\'t use InputGroup for unrelated inputs; it\'s for a single input with decorations.'},
     ],

@@ -48,6 +48,7 @@ import {
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 const styles = stylex.create({
   clearButton: {
@@ -299,6 +300,7 @@ export function TextInput({
   const size = useSize(sizeProp, 'md');
 
   const id = useId();
+  const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -347,6 +349,10 @@ export function TextInput({
     ]
       .filter(Boolean)
       .join(' ') || undefined;
+
+  const ariaLabelledBy = inputGroup
+    ? `${inputGroup.labelID} ${inputLabelID}`
+    : undefined;
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     // Value can't change while showing a disabled message (the field is
@@ -406,6 +412,7 @@ export function TextInput({
         style,
       )}>
       {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+      {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       <input
         {...rest}
         ref={mergeRefs(ref, inputRef)}
@@ -437,7 +444,7 @@ export function TextInput({
         aria-required={isRequired === true ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
         aria-busy={isBusy || undefined}
-        aria-labelledby={inputGroup ? inputGroup.labelID : undefined}
+        aria-labelledby={ariaLabelledBy}
         {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
       />
       {hasClear && value !== '' && !isDisabled && (

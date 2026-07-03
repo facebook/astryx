@@ -400,6 +400,7 @@ export function NumberInput({
 }: NumberInputProps) {
   const size = useSize(sizeProp, 'md');
   const id = useId();
+  const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -447,6 +448,10 @@ export function NumberInput({
     ]
       .filter(Boolean)
       .join(' ') || undefined;
+
+  const ariaLabelledBy = inputGroup
+    ? `${inputGroup.labelID} ${inputLabelID}`
+    : undefined;
 
   // Display value: pending input if typing, otherwise the raw value
   // Note: With type="number", we can't use formatted display values
@@ -594,6 +599,7 @@ export function NumberInput({
         style,
       )}>
       {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+      {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       <input
         {...rest}
         ref={mergeRefs(ref, inputRef)}
@@ -623,7 +629,7 @@ export function NumberInput({
         aria-invalid={
           status?.type === 'error' || !isInputValid ? 'true' : undefined
         }
-        aria-labelledby={inputGroup ? inputGroup.labelID : undefined}
+        aria-labelledby={ariaLabelledBy}
         {...stylex.props(
           styles.input,
           isDisabled && styles.inputDisabled,
