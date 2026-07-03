@@ -30,6 +30,7 @@ import {
 import {Icon} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {Text} from '../Text';
+import {VisuallyHidden} from '../VisuallyHidden';
 import type {
   TextType,
   TextSize,
@@ -97,18 +98,6 @@ const styles = stylex.create({
   standalone: {
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
-  },
-  // Screen-reader-only text (announces the new-tab context change).
-  visuallyHidden: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    margin: -1,
-    padding: 0,
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderStyle: 'none',
   },
 });
 
@@ -345,7 +334,7 @@ export function Link({
       {isExternalLink && !renderAsButton && (
         <>
           <Icon icon="externalLink" size="xsm" color="inherit" />
-          <span {...stylex.props(styles.visuallyHidden)}>{newTabLabel}</span>
+          <VisuallyHidden>{newTabLabel}</VisuallyHidden>
         </>
       )}
     </>

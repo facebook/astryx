@@ -34,6 +34,7 @@ import {
 } from '../theme/tokens.stylex';
 import {Tooltip} from '../Tooltip/Tooltip';
 import {Spinner} from '../Spinner';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
@@ -123,17 +124,6 @@ const styles = stylex.create({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     minWidth: 0,
-  },
-  visuallyHidden: {
-    position: 'absolute',
-    width: '1px',
-    height: '1px',
-    padding: 0,
-    margin: '-1px',
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
   },
   link: {
     textDecoration: 'none',
@@ -690,12 +680,9 @@ export function Button({
         )}
       </span>
       {/* Live region for loading state announcements */}
-      <span
-        {...stylex.props(styles.visuallyHidden)}
-        role="status"
-        aria-live="polite">
+      <VisuallyHidden role="status" aria-live="polite">
         {isLoadingState ? 'Loading' : ''}
-      </span>
+      </VisuallyHidden>
     </>
   );
 

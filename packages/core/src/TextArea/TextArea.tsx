@@ -49,6 +49,7 @@ import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
@@ -92,17 +93,6 @@ const styles = stylex.create({
   },
   counterError: {
     color: colorVars['--color-error'],
-  },
-  srOnly: {
-    position: 'absolute',
-    width: '1px',
-    height: '1px',
-    padding: 0,
-    margin: '-1px',
-    overflow: 'hidden',
-    clip: 'rect(0,0,0,0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
   },
   statusIcon: {
     position: 'absolute',
@@ -451,13 +441,13 @@ export function TextArea({
             optimisticValue.length > maxLength && styles.counterError,
           )}>
           {optimisticValue.length}/{maxLength}
-          <span aria-live="polite" {...stylex.props(styles.srOnly)}>
+          <VisuallyHidden aria-live="polite">
             {optimisticValue.length >= maxLength * COUNTER_WARNING_THRESHOLD
               ? optimisticValue.length > maxLength
                 ? `${optimisticValue.length - maxLength} characters over limit`
                 : `${maxLength - optimisticValue.length} characters remaining`
               : ''}
-          </span>
+          </VisuallyHidden>
         </div>
       )}
     </Field>
