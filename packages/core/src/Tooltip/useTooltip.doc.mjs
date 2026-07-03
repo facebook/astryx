@@ -7,8 +7,8 @@ export const docs = {
   group: 'Tooltip',
   keywords: ['tooltip', 'hint', 'label', 'hover', 'info', 'title', 'floating'],
   params: [
-    {name: 'placement', type: "'above' | 'below' | 'start' | 'end'", description: 'Position relative to the trigger.', default: "'above'"},
-    {name: 'alignment', type: "'start' | 'center' | 'end'", description: 'Alignment along the placement axis.', default: "'center'"},
+    {name: 'placement', type: "'above' | 'below' | 'start' | 'end'", description: "Position relative to the trigger. Logical: start/end resolve against the trigger's computed direction at open time (RTL mirrors).", default: "'above'"},
+    {name: 'alignment', type: "'start' | 'center' | 'end'", description: "Alignment along the placement axis. Logical: start/end resolve against the trigger's computed direction at open time (RTL mirrors).", default: "'center'"},
     {name: 'delay', type: 'number', description: 'Delay before showing on hover, in milliseconds.', default: '200'},
     {name: 'hideDelay', type: 'number', description: 'Delay before hiding after mouse or focus leaves, in milliseconds.', default: '0'},
     {name: 'focusTrigger', type: "'auto' | 'always' | 'never'", description: 'When focus should open the tooltip. auto only attaches focus listeners to naturally focusable elements.', default: "'auto'"},
@@ -44,8 +44,8 @@ export const docs = {
 export const docsDense = {
   description: 'Headless hover/focus tooltip hook. Builds on useLayer w/ hover intent, keyboard focus handling, aria-describedby. Use for custom triggers without wrapper component.',
   paramDescriptions: {
-    placement: 'position relative to trigger.',
-    alignment: 'alignment along placement axis.',
+    placement: 'position relative to trigger. logical: start/end follow trigger computed direction (RTL mirrors).',
+    alignment: 'alignment along placement axis. logical: start/end follow trigger computed direction (RTL mirrors).',
     delay: 'show delay in ms.',
     hideDelay: 'hide delay after mouse/focus leave in ms.',
     focusTrigger: 'when focus opens tooltip; auto = naturally focusable elements only.',

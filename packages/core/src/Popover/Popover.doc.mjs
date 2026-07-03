@@ -36,13 +36,13 @@ export const docs = {
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: 'Position placement relative to the trigger.',
+          description: 'Position placement relative to the trigger. Logical: start/end resolve against the trigger\'s computed direction at open time, so RTL contexts mirror automatically.',
           default: "'below'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: 'Alignment along the placement axis.',
+          description: 'Alignment along the placement axis. Logical: start/end follow the trigger\'s computed direction (RTL mirrors).',
           default: "'start'",
         },
         {
@@ -165,13 +165,13 @@ export const docsZh = {
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: '相对于触发器的位置放置方式。',
+          description: '相对于触发器的位置放置方式。逻辑值：start/end 在打开时根据触发器的计算方向解析，RTL 环境自动镜像。',
           default: "'below'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: '沿放置轴的对齐方式。',
+          description: '沿放置轴的对齐方式。逻辑值：start/end 跟随触发器的计算方向（RTL 镜像）。',
           default: "'start'",
         },
         {
@@ -281,8 +281,8 @@ export const docsDense = {
         children: 'Trigger element. Must contain <button> or [role="button"] element.',
         anchorRef: 'External ref for popover anchor in sibling mode.',
         content: 'Content displayed inside popover.',
-        placement: 'Position relative to trigger.',
-        alignment: 'Alignment along placement axis.',
+        placement: 'Position relative to trigger. Logical: start/end resolve against trigger computed direction at open (RTL mirrors).',
+        alignment: 'Alignment along placement axis. Logical: start/end follow trigger computed direction (RTL mirrors).',
         isOpen: 'Whether popover shown in controlled mode.',
         onOpenChange: 'Callback fired when popover visibility changes.',
         isEnabled: 'When false, trigger interactions ignored.',

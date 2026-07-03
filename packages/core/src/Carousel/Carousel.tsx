@@ -320,6 +320,9 @@ export function Carousel({
 
   const coverStyle: React.CSSProperties = {
     positionArea: 'center',
+    // Null the RTL justify-self useLayer may emit — the anchor-size cover
+    // must stay centered on the anchor with no self-alignment offset.
+    justifySelf: undefined,
     width: 'anchor-size(width)',
     height: 'anchor-size(height)',
   };

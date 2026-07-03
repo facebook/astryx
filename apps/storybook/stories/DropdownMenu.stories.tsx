@@ -515,3 +515,38 @@ export const PlacementAbove: Story = {
     />
   ),
 };
+
+export const RTL: Story = {
+  render: () => (
+    <div style={{direction: 'rtl', display: 'flex', gap: '16px'}}>
+      <DropdownMenu
+        button={{label: 'CSS direction: rtl'}}
+        items={[
+          {label: 'Edit', onClick: () => console.log('Edit')},
+          {label: 'Duplicate', onClick: () => console.log('Duplicate')},
+          {label: 'Delete', onClick: () => console.log('Delete')},
+        ]}
+      />
+      <div dir="ltr">
+        <div dir="rtl">
+          <DropdownMenu
+            button={{label: 'dir="rtl" attribute'}}
+            items={[
+              {label: 'Edit', onClick: () => console.log('Edit')},
+              {label: 'Duplicate', onClick: () => console.log('Duplicate')},
+              {label: 'Delete', onClick: () => console.log('Delete')},
+            ]}
+          />
+        </div>
+      </div>
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "In RTL contexts (CSS direction property or dir attribute) the menu right-edge-aligns to the trigger and grows toward the left — the logical mirror of the LTR default (#3389). Both direction mechanisms are shown; the fix resolves the trigger's computed direction at open time.",
+      },
+    },
+  },
+};

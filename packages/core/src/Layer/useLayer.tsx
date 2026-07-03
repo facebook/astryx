@@ -9,7 +9,8 @@
  * @position Core layer utility; used by useHoverCard, useTooltip, etc.
  *
  * SYNC: When modified, update:
- * - /packages/core/src/Layer/Layer.doc.mjs
+ * - /packages/core/src/Layer/useLayer.doc.mjs
+ * - /packages/core/src/Layer/useLayer.test.tsx
  * - /packages/core/src/Layer/index.ts
  */
 
@@ -52,7 +53,9 @@ const styles = stylex.create({
 });
 
 /**
- * Position placement relative to anchor
+ * Position placement relative to anchor.
+ * Logical: start/end resolve against the trigger's computed direction at
+ * open time (RTL contexts mirror automatically).
  */
 export type LayerPlacement = 'above' | 'below' | 'start' | 'end';
 
@@ -253,16 +256,23 @@ export interface FixedLayerReturn {
 
 /**
  * Map placement and alignment to CSS position-area value.
+ *
+ * placement/alignment are LOGICAL (start = inline-start), but position-area
+ * only supports physical keywords reliably (the logical/self keyword families
+ * are unsupported in current Chrome, and an invalid position-area pins the
+ * popover to the viewport corner because styles.base zeroes the UA margins).
+ * So the mirroring happens here, from the trigger's computed direction.
  */
 function getPositionArea(
   placement: LayerPlacement = 'above',
   alignment: LayerAlignment = 'center',
+  isRtl = false,
 ): string {
   const placementMap: Record<LayerPlacement, string> = {
     above: 'top',
     below: 'bottom',
-    start: 'left',
-    end: 'right',
+    start: isRtl ? 'right' : 'left',
+    end: isRtl ? 'left' : 'right',
   };
 
   const cssPlacement = placementMap[placement];
@@ -270,15 +280,15 @@ function getPositionArea(
   // For above/below, alignment is horizontal
   if (placement === 'above' || placement === 'below') {
     if (alignment === 'start') {
-      return `${cssPlacement} span-right`;
+      return `${cssPlacement} ${isRtl ? 'span-left' : 'span-right'}`;
     }
     if (alignment === 'end') {
-      return `${cssPlacement} span-left`;
+      return `${cssPlacement} ${isRtl ? 'span-right' : 'span-left'}`;
     }
     return cssPlacement; // center
   }
 
-  // For start/end, alignment is vertical
+  // For start/end, alignment is vertical (direction-neutral)
   if (alignment === 'start') {
     return `${cssPlacement} span-bottom`;
   }
@@ -286,6 +296,38 @@ function getPositionArea(
     return `${cssPlacement} span-top`;
   }
   return `${cssPlacement} center`;
+}
+
+/**
+ * Explicit physical inline-axis self-alignment, emitted in RTL only.
+ *
+ * position-area's implied "normal" alignment is what non-conformant engines
+ * resolve against the popover's own inherited RTL direction (instead of the
+ * containing block), which is how #3389's menu landed at the viewport mirror
+ * of its trigger. An explicit physical value removes that direction-sensitive
+ * resolution entirely; the flip-inline try tactic value-flips left/right, so
+ * position-try fallbacks still hug the anchor. Omitted in LTR so the emitted
+ * inline style stays byte-identical to the previous behavior.
+ */
+function getRtlJustifySelf(
+  placement: LayerPlacement = 'above',
+  alignment: LayerAlignment = 'center',
+): string | undefined {
+  if (placement === 'above' || placement === 'below') {
+    // Area spans the anchor column plus one side; hug the anchor edge.
+    if (alignment === 'start') {
+      return 'right';
+    }
+    if (alignment === 'end') {
+      return 'left';
+    }
+    return undefined; // center: implied anchor-center is symmetric
+  }
+
+  // Side placements: the area is a single column; hug the anchor-adjacent
+  // edge (placement start renders in the right column under RTL, so the
+  // anchor sits at its left edge, and vice versa).
+  return placement === 'start' ? 'left' : 'right';
 }
 
 /**
@@ -315,6 +357,13 @@ export function useLayer(
   const popoverRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
+  // Whether the trigger renders in an RTL context. Resolved from computed
+  // style at show time (not render time) so it works for both the dir
+  // attribute and the CSS direction property, and tracks runtime direction
+  // changes on the next open. Read from the trigger, not the popover: the
+  // popover's computed style can be stale before top-layer promotion.
+  const [isRtl, setIsRtl] = useState(false);
+
   // Ref mirrors isOpen for synchronous reads inside show/hide.
   // State drives re-renders; the ref lets the imperative calls avoid
   // stale-closure reads of the previous isOpen value.
@@ -322,6 +371,10 @@ export function useLayer(
 
   const show = useCallback(() => {
     if (popoverRef.current && !isOpenRef.current) {
+      setIsRtl(
+        triggerRef.current != null &&
+          getComputedStyle(triggerRef.current).direction === 'rtl',
+      );
       popoverRef.current.showPopover();
       isOpenRef.current = true;
       setIsOpen(true);
@@ -451,10 +504,14 @@ export function useLayer(
       } = props || {};
 
       // CSS anchor positioning (dynamic, not in StyleX)
+      const rtlJustifySelf = isRtl
+        ? getRtlJustifySelf(placement, alignment)
+        : undefined;
       const anchorStyle: React.CSSProperties = {
         positionAnchor: anchorId,
-        positionArea: getPositionArea(placement, alignment),
+        positionArea: getPositionArea(placement, alignment, isRtl),
         positionTryFallbacks: 'flip-block, flip-inline, flip-block flip-inline',
+        ...(rtlJustifySelf != null && {justifySelf: rtlJustifySelf}),
       };
 
       const stylexResult = stylex.props(styles.base, xstyle);
@@ -479,7 +536,7 @@ export function useLayer(
         </Container>
       );
     },
-    [anchorId, id, lightDismiss, popoverRefCallback],
+    [anchorId, id, isRtl, lightDismiss, popoverRefCallback],
   );
 
   // Render function for fixed mode

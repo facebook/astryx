@@ -653,6 +653,10 @@ export function Tokenizer<T extends SearchableItem>({
   const popoverOverrideStyle: React.CSSProperties = {
     positionArea: undefined,
     positionTryFallbacks: undefined,
+    // Also null the RTL justify-self useLayer may emit: with explicit insets
+    // (no position-area) it would re-align the box inside the inset-modified
+    // containing block instead of hugging the anchor.
+    justifySelf: undefined,
     top: 'anchor(top)',
     left: 'anchor(start)',
   };

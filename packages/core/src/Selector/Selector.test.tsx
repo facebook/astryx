@@ -163,7 +163,9 @@ describe('Selector', () => {
     // role="listbox" and must not be wrapped in a role="dialog" aria-modal
     // element, which would tell AT the focused trigger is inert.
     expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
-    expect(screen.queryByRole('dialog', {hidden: true})).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('dialog', {hidden: true}),
+    ).not.toBeInTheDocument();
     expect(
       document.querySelector('[aria-modal="true"]'),
     ).not.toBeInTheDocument();
@@ -185,6 +187,56 @@ describe('Selector', () => {
     expect(popover?.getAttribute('style')).toContain(
       'position-area: top span-right',
     );
+  });
+
+  it('mirrors menu placement under an RTL ancestor (#3389)', async () => {
+    const user = userEvent.setup();
+
+    // jsdom's getComputedStyle does not inherit direction from ancestors
+    // (descendants of a direction:rtl wrapper report ''), so a plain wrapper
+    // would silently exercise the LTR path. Delegate to the real
+    // implementation and override only `direction` for elements inside the
+    // RTL wrapper — everything else (visibility checks etc.) stays real.
+    const original = window.getComputedStyle;
+    let wrapper: HTMLElement | null = null;
+    const spy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el, pseudo) => {
+        const style = original(el, pseudo);
+        if (wrapper && el instanceof Element && wrapper.contains(el)) {
+          Object.defineProperty(style, 'direction', {
+            value: 'rtl',
+            configurable: true,
+          });
+        }
+        return style;
+      });
+
+    try {
+      const {container} = render(
+        <div style={{direction: 'rtl'}}>
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Banana"
+            onChange={() => {}}
+          />
+        </div>,
+      );
+      wrapper = container.firstElementChild as HTMLElement;
+
+      // Direction is resolved at show time, so the listbox must be opened.
+      await user.click(screen.getByRole('combobox'));
+
+      const popover = screen
+        .getByRole('listbox', {hidden: true})
+        .closest('[popover]');
+      const style = popover?.getAttribute('style') ?? '';
+      expect(style).toContain('position-area: bottom span-left');
+      expect(style).toContain('justify-self: right');
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('clamps the default selected-item overlay to the viewport', async () => {

@@ -78,7 +78,7 @@ export const docs = {
       name: 'render',
       type: '(children: ReactNode, props: ContextRenderProps | FixedRenderProps) => ReactNode',
       description:
-        'Render function for the popover element. Pass placement/alignment in context mode or x/y in fixed mode. In context mode, pass `as: "span"` to render an inline-safe layer (e.g. inside a paragraph). The layer renders inline in the React tree; the Popover API promotes it to the top layer when shown, so it escapes ancestor clipping and stacking without a portal.',
+        'Render function for the popover element. Pass placement/alignment in context mode or x/y in fixed mode. Placement/alignment are logical: start/end resolve against the trigger\'s computed direction at open time, so RTL contexts mirror automatically. In context mode, pass `as: "span"` to render an inline-safe layer (e.g. inside a paragraph). The layer renders inline in the React tree; the Popover API promotes it to the top layer when shown, so it escapes ancestor clipping and stacking without a portal.',
     },
   ],
   usage: {
@@ -130,7 +130,7 @@ export const docsDense = {
     hide: 'hide layer.',
     isOpen: 'whether layer is open.',
     id: 'unique ARIA id.',
-    render: 'renders popover element; pass placement/alignment or x/y. Context mode accepts `as: "span"` for inline-safe layers. Renders inline; the Popover API top layer escapes clipping/stacking without a portal.',
+    render: 'renders popover element; pass placement/alignment or x/y. Placement/alignment logical: start/end resolve against trigger computed direction at open (RTL mirrors). Context mode accepts `as: "span"` for inline-safe layers. Renders inline; the Popover API top layer escapes clipping/stacking without a portal.',
   },
   usage: {
     description:
