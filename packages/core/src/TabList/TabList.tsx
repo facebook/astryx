@@ -26,7 +26,6 @@ import type {TabListOrientation, TabListSize} from './TabListContext';
 import {useSize} from '../SizeContext/SizeContext';
 import {mergeProps, mergeRefs} from '../utils';
 import {useListFocus} from '../hooks/useListFocus';
-import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
 
@@ -36,13 +35,6 @@ import {themeProps} from '../utils/themeProps';
  * in DOM order. Disabled stops are filtered out by the handler.
  */
 const TAB_STOP_SELECTOR = '[data-tab-value],[data-tab-menu]';
-
-function isDisabledStop(el: HTMLElement): boolean {
-  return (
-    el.getAttribute('aria-disabled') === 'true' ||
-    (el instanceof HTMLButtonElement && el.disabled)
-  );
-}
 
 export interface TabListProps extends Omit<BaseProps<HTMLElement>, 'onChange'> {
   ref?: React.Ref<HTMLElement>;
@@ -142,41 +134,24 @@ export function TabList({
   // allowance for tab strips (ArrowRight/ArrowDown advance, ArrowLeft/ArrowUp
   // retreat) regardless of the component's `orientation` prop, which only
   // drives the reported `aria-orientation`.
-  const {listRef, handleKeyDown} = useListFocus<HTMLElement>({
+  //
+  // `hasRovingTabIndex` makes the hook own the single tab stop: it stamps
+  // tabindex 0/-1, repairs the stop on mount and as stops mount/unmount or
+  // toggle disabled, and — via `handleFocus` on the nav — keeps the stop in
+  // sync after clicks or programmatic focus. Individual Tabs still render
+  // `tabIndex={isSelected ? 0 : -1}` (see Tab.tsx) as the initial source of
+  // truth; the hook's repair preserves an existing tab stop and only promotes
+  // the first enabled stop when none is tabbable.
+  const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLElement>({
     itemSelector: TAB_STOP_SELECTOR,
     orientation: 'both',
+    hasRovingTabIndex: true,
   });
 
   const contextValue = useMemo(
     () => ({value, onChange, size, layout}),
     [value, onChange, size, layout],
   );
-
-  // Roving tabindex: the tab strip is a single Tab stop. Individual Tabs set
-  // tabIndex={0} on the selected tab and -1 on the rest (see Tab.tsx). If the
-  // selected value doesn't correspond to any focusable stop (e.g. selection
-  // lives in a collapsed TabMenu that renders no matching stop, or there is no
-  // selection at all), no stop would be tabbable — this effect repairs that by
-  // making the first stop tabbable. useListFocus handles arrow navigation but
-  // not the initial tabbable stop, so this stays. Same pattern as the
-  // SegmentedControl fix.
-  useIsomorphicLayoutEffect(() => {
-    const nav = listRef.current;
-    if (nav == null) {
-      return;
-    }
-    const stops = Array.from(
-      nav.querySelectorAll<HTMLElement>(TAB_STOP_SELECTOR),
-    );
-    if (stops.length === 0) {
-      return;
-    }
-    const hasTabbable = stops.some(el => el.tabIndex === 0);
-    if (!hasTabbable) {
-      const firstEnabled = stops.find(el => !isDisabledStop(el)) ?? stops[0];
-      firstEnabled.tabIndex = 0;
-    }
-  });
 
   return (
     <TabListContext value={contextValue}>
@@ -185,6 +160,7 @@ export function TabList({
         aria-label="Tabs"
         aria-orientation={orientation}
         onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
         {...{[EDGE_COMP_ATTR]: ''}}
         {...restProps}
         {...mergeProps(
