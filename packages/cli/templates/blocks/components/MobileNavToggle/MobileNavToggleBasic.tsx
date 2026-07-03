@@ -6,6 +6,7 @@ import {useState} from 'react';
 import {MobileNav, MobileNavToggle} from '@astryxdesign/core/MobileNav';
 import {AppShellMobileContext} from '@astryxdesign/core/AppShell';
 import {SideNavItem, SideNavSection} from '@astryxdesign/core/SideNav';
+import {Icon} from '@astryxdesign/core/Icon';
 import {HStack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
@@ -23,7 +24,9 @@ export default function MobileNavToggleBasic() {
         hasAutoToggle: false,
       }}>
       <HStack gap={3} vAlign="center">
-        <MobileNavToggle />
+        <MobileNavToggle label="Open menu">
+          <Icon icon="viewColumns" />
+        </MobileNavToggle>
         <Text type="body" weight="bold">
           Page title
         </Text>

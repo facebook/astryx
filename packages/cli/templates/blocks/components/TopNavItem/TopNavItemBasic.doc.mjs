@@ -9,6 +9,6 @@ export const doc = {
   description:
     'Navigation links inside a TopNav with one item marked as selected. Use for top-level pages of an application.',
   isReady: true,
-  aspectRatio: 16 / 9,
+  aspectRatio: 3,
   componentsUsed: ['TopNav', 'TopNavHeading', 'TopNavItem'],
 };

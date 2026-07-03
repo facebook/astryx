@@ -10,5 +10,14 @@ export const doc = {
     'A scrollable main content area below a fixed header. Use LayoutContent inside Layout to get automatic padding and scroll containment for the primary content.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['LayoutContent', 'Layout', 'Center', 'Text'],
+  componentsUsed: [
+    'LayoutContent',
+    'Layout',
+    'LayoutHeader',
+    'Center',
+    'Card',
+    'VStack',
+    'Heading',
+    'Text',
+  ],
 };

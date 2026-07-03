@@ -15,6 +15,8 @@ export const doc = {
     'Layout',
     'LayoutContent',
     'Center',
+    'Card',
+    'HStack',
     'Button',
   ],
 };

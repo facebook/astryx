@@ -14,7 +14,7 @@ export default function TopNavHeadingBasic() {
         <TopNavHeading
           heading="Acme Platform"
           logo={<NavIcon icon={<Icon icon="viewColumns" />} />}
-          href="/"
+          headingHref="/"
         />
       }
     />

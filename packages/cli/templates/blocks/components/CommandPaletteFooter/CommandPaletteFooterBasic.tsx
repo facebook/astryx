@@ -7,7 +7,6 @@ import {
   CommandPalette,
   CommandPaletteFooter,
 } from '@astryxdesign/core/CommandPalette';
-import {Text} from '@astryxdesign/core/Text';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
 
 export default function CommandPaletteFooterBasic() {
@@ -27,13 +26,7 @@ export default function CommandPaletteFooterBasic() {
       isInline
       onOpenChange={() => {}}
       searchSource={source}
-      footer={
-        <CommandPaletteFooter>
-          <Text type="supporting" color="secondary">
-            Press Enter to run a command
-          </Text>
-        </CommandPaletteFooter>
-      }
+      footer={<CommandPaletteFooter />}
     />
   );
 }

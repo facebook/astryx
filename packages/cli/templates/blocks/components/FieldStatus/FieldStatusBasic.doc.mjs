@@ -10,5 +10,5 @@ export const doc = {
     'Detached error and success messages for validation feedback. Use below checkboxes, switches, or custom controls where an attached status would overlap.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['FieldStatus', 'Layout'],
+  componentsUsed: ['FieldStatus', 'VStack'],
 };

@@ -10,5 +10,5 @@ export const doc = {
     'Standalone labels with required and optional indicators and a helper description. Use when labeling a custom control that does not render its own label.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['Field', 'FieldLabel', 'Layout'],
+  componentsUsed: ['Field', 'FieldLabel', 'VStack'],
 };

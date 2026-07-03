@@ -10,5 +10,5 @@ export const doc = {
     'Circular icon containers wrapping semantic icons. Use as logos or accent icons in navigation headers such as TopNavHeading.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['NavIcon', 'Icon', 'Layout'],
+  componentsUsed: ['NavIcon', 'Icon', 'HStack'],
 };

@@ -7,7 +7,7 @@ export const doc = {
   name: 'MobileNavToggle — Basic',
   displayName: 'MobileNavToggle — Basic',
   description:
-    'A hamburger button that opens and closes a MobileNav drawer. It reads open state from the AppShell mobile context, which AppShell provides automatically.',
+    'A nav toggle with a custom icon and accessible label instead of the default hamburger. It opens a MobileNav drawer via the AppShell mobile context, which AppShell provides automatically.',
   isReady: true,
   aspectRatio: 16 / 9,
   componentsUsed: [
@@ -16,7 +16,8 @@ export const doc = {
     'AppShell',
     'SideNavItem',
     'SideNavSection',
-    'Layout',
+    'Icon',
+    'HStack',
     'Text',
   ],
 };

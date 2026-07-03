@@ -10,5 +10,5 @@ export const doc = {
     'Items arranged in a horizontal row with a consistent gap and centered vertical alignment. Use HStack whenever siblings should sit side by side.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['HStack', 'Layout', 'Badge'],
+  componentsUsed: ['HStack', 'Badge'],
 };

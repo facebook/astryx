@@ -10,5 +10,5 @@ export const doc = {
     'A heading and paragraphs stacked vertically with a consistent gap. Use VStack whenever siblings should flow top to bottom with even spacing.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['VStack', 'Layout', 'Text'],
+  componentsUsed: ['VStack', 'Text', 'Heading'],
 };

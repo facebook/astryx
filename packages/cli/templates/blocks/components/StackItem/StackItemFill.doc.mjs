@@ -10,5 +10,5 @@ export const doc = {
     'A static-width item next to one that fills the remaining space. Wrap stack children in StackItem when an item needs explicit sizing control.',
   isReady: true,
   aspectRatio: 16 / 9,
-  componentsUsed: ['StackItem', 'Layout', 'Card', 'Text'],
+  componentsUsed: ['StackItem', 'HStack', 'Card', 'Text'],
 };
