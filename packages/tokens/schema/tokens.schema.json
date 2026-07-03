@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://jedi.design/schema/tokens.json",
+  "title": "JEDI Token",
+  "description": "Schema for a single JEDI design token",
+  "type": "object",
+  "required": ["name", "value", "tier"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(\\.[a-z0-9]+)*$",
+      "description": "Dot-notation token name e.g. color.blue.500"
+    },
+    "value": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "object" }
+      ],
+      "description": "Raw value or reference to another token"
+    },
+    "tier": {
+      "type": "string",
+      "enum": ["core", "semantic", "component"],
+      "description": "Token tier in the design language hierarchy"
+    },
+    "description": {
+      "type": "string"
+    },
+    "references": {
+      "type": "string",
+      "description": "Reference to a core token e.g. {color.blue.500}"
+    }
+  },
+  "additionalProperties": false
+}
