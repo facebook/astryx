@@ -1,5 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+'use client';
+
 export {
   JediProviders,
   resolveJediTheme,

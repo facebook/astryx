@@ -10,19 +10,23 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./Button": {
       "types": "./dist/Button.d.ts",
-      "import": "./dist/Button.js"
+      "import": "./dist/Button.js",
+      "default": "./dist/Button.js"
     },
     "./Badge": {
       "types": "./dist/Badge.d.ts",
-      "import": "./dist/Badge.js"
+      "import": "./dist/Badge.js",
+      "default": "./dist/Badge.js"
     },
     "./Link": {
       "types": "./dist/Link.d.ts",
-      "import": "./dist/Link.js"
+      "import": "./dist/Link.js",
+      "default": "./dist/Link.js"
     }
   },
   "files": ["dist"],

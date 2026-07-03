@@ -10,14 +10,15 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
-    "./reset.css": "@astryxdesign/core/reset.css",
-    "./base.css": "@astryxdesign/core/astryx.css",
-    "./gothic.css": "@astryxdesign/theme-gothic/theme.css",
-    "./neutral.css": "@astryxdesign/theme-neutral/theme.css"
+    "./reset.css": "./styles/reset.css",
+    "./base.css": "./styles/base.css",
+    "./gothic.css": "./styles/gothic.css",
+    "./neutral.css": "./styles/neutral.css"
   },
-  "files": ["dist"],
+  "files": ["dist", "styles"],
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
     "dev": "tsup src/index.ts --format esm --dts --watch"
