@@ -54,6 +54,11 @@ const meta: Meta<typeof TextInput> = {
       control: 'boolean',
       description: 'Whether the input is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled TextInput in Tooltip.',
+    },
     status: {
       control: 'object',
       description:
@@ -234,6 +239,24 @@ export const Disabled: Story = {
     label: 'Locked Field',
     isDisabled: true,
     value: 'Cannot edit this',
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the input to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the input stays focusable (editing is still blocked).
+// Use disabledMessage instead of wrapping a disabled TextInput in Tooltip:
+// disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? 'alice@example.com');
+    return <TextInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Owner',
+    isDisabled: true,
+    disabledMessage: 'You need the Editor role to change this',
+    value: 'alice@example.com',
   },
 };
 
