@@ -32,6 +32,7 @@ export * from './Carousel';
 export * from './Calendar';
 export * from './Center';
 export * from './CodeBlock';
+export * from './Container';
 export * from './CommandPalette';
 export * from './Chat';
 export * from './Markdown';

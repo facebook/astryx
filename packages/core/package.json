@@ -196,6 +196,11 @@
       "types": "./dist/CommandPalette/index.d.ts",
       "default": "./dist/CommandPalette/index.js"
     },
+    "./Container": {
+      "source": "./src/Container/index.ts",
+      "types": "./dist/Container/index.d.ts",
+      "default": "./dist/Container/index.js"
+    },
     "./ContextMenu": {
       "source": "./src/ContextMenu/index.ts",
       "types": "./dist/ContextMenu/index.d.ts",
