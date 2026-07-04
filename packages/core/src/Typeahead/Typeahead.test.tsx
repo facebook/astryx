@@ -18,7 +18,7 @@ import {
   afterAll,
   beforeEach,
 } from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Typeahead} from './Typeahead';
 import {BaseTypeahead} from './BaseTypeahead';
@@ -314,6 +314,50 @@ describe('BaseTypeahead focus-out', () => {
 });
 
 describe('Typeahead', () => {
+  describe('out-of-order async results', () => {
+    it('discards a stale response that resolves after a newer query', async () => {
+      const resolvers = new Map<string, (items: SearchableItem[]) => void>();
+      const rawSource: SearchSource = {
+        search: async (query: string) =>
+          new Promise<SearchableItem[]>(resolve => {
+            resolvers.set(query, resolve);
+          }),
+        bootstrap: () => [],
+      };
+
+      render(
+        <Typeahead
+          label="Fruit"
+          searchSource={rawSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      fireEvent.change(input, {target: {value: 'a'}});
+      fireEvent.change(input, {target: {value: 'ap'}});
+
+      // The newer query resolves first…
+      await act(async () => {
+        resolvers.get('ap')!([{id: 'apple', label: 'Apple'}]);
+      });
+      expect(screen.getByText('Apple')).toBeInTheDocument();
+
+      // …then the abandoned query's slow response arrives and must be
+      // discarded rather than overwriting the current results.
+      await act(async () => {
+        resolvers.get('a')!([
+          {id: 'avocado', label: 'Avocado'},
+          {id: 'apricot', label: 'Apricot'},
+        ]);
+      });
+      expect(screen.getByText('Apple')).toBeInTheDocument();
+      expect(screen.queryByText('Avocado')).not.toBeInTheDocument();
+    });
+  });
+
   it('renders with label', () => {
     render(
       <Typeahead
