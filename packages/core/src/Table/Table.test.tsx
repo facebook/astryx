@@ -686,6 +686,24 @@ describe('Table', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLTableElement));
   });
 
+  it('preserves tableProps className and style while applying the semantic table theme class', () => {
+    render(
+      <Table
+        data={users}
+        columns={columns}
+        tableProps={{
+          className: 'custom-table-class',
+          style: {borderCollapse: 'separate'},
+        }}
+      />,
+    );
+
+    const table = screen.getByRole('table');
+    expect(table).toHaveClass('custom-table-class');
+    expect(table.className).toContain('astryx-table');
+    expect(table).toHaveStyle({borderCollapse: 'separate'});
+  });
+
   describe('density', () => {
     it('renders with compact density', () => {
       render(<Table data={users} columns={columns} density="compact" />);
