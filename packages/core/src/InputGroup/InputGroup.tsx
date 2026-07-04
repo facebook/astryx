@@ -8,9 +8,9 @@
  * @output Exports InputGroup component with group label/description ARIA wiring
  * @position Groups input with prefix/suffix addons; consumed by index.ts
  *
- * Children (TextInput, NumberInput) consume the InputGroup context
- * to remove their own border/radius so the group container provides
- * the unified border treatment.
+ * Compatible children (currently TextInput and NumberInput) consume
+ * the InputGroup context to remove their own border/radius so the
+ * group container provides the unified border treatment.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/InputGroup/InputGroup.doc.mjs
@@ -64,7 +64,7 @@ export interface InputGroupProps extends Omit<
   ref?: React.Ref<HTMLDivElement>;
 
   /**
-   * Input and addon children.
+   * One compatible input control and optional addon children.
    */
   children: ReactNode;
 
@@ -125,8 +125,8 @@ export interface InputGroupProps extends Omit<
 }
 
 /**
- * Groups an input with prefix/suffix addons in a visually connected
- * container with shared border and focus ring.
+ * Groups one compatible single-line input with prefix/suffix addons
+ * in a visually connected container with shared border and focus ring.
  *
  * @example
  * ```

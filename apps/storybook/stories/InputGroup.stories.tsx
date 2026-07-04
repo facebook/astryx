@@ -12,6 +12,14 @@ const meta: Meta<typeof InputGroup> = {
   title: 'Core/InputGroup',
   component: InputGroup,
   tags: ['autodocs'],
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'InputGroup is a composite single-line input surface for one compatible control with optional prefix/suffix addons. Currently supported controls are TextInput and NumberInput. TextArea, Slider, Switch, CheckboxInput, and RadioList are unsupported by design.',
+      },
+    },
+  },
   argTypes: {
     label: {control: 'text', description: 'Label text (required)'},
     isLabelHidden: {control: 'boolean', description: 'Visually hide the label'},
@@ -116,7 +124,7 @@ export const WithIconPrefix: Story = {
   },
 };
 
-export const WithNumberInput: Story = {
+export const NumberInputWithPrefixAndSuffix: Story = {
   render: args => {
     const [value, setValue] = useState<number | undefined>(undefined);
     return (
@@ -129,6 +137,7 @@ export const WithNumberInput: Story = {
           onChange={setValue}
           placeholder="0.00"
         />
+        <InputGroupText>USD</InputGroupText>
       </InputGroup>
     );
   },
@@ -226,32 +235,53 @@ export const FullWidth: Story = {
   },
 };
 
-export const TwoInputs: Story = {
-  render: args => {
-    const [left, setLeft] = useState('');
-    const [right, setRight] = useState('');
-    return (
-      <InputGroup {...args}>
-        <TextInput
-          label="Address"
-          isLabelHidden
-          value={left}
-          onChange={setLeft}
-          placeholder="Address"
-        />
-        <InputGroupText>@</InputGroupText>
-        <TextInput
-          label="Domain"
-          isLabelHidden
-          value={right}
-          onChange={setRight}
-          placeholder="Domain"
-        />
-      </InputGroup>
-    );
+export const CompatibilityBoundary: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'InputGroup is only for one supported single-line control. Use TextInput or NumberInput with optional InputGroupText addons. TextArea, Slider, Switch, CheckboxInput, and RadioList are unsupported by design and should be rendered as standalone fields instead.',
+      },
+    },
   },
-  args: {
-    label: 'Email',
+  render: () => {
+    const [textValue, setTextValue] = useState('');
+    const [numberValue, setNumberValue] = useState<number | undefined>(
+      undefined,
+    );
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          maxWidth: '400px',
+        }}>
+        <InputGroup label="Supported text input">
+          <InputGroupText>https://</InputGroupText>
+          <TextInput
+            label="URL"
+            isLabelHidden
+            value={textValue}
+            onChange={setTextValue}
+            placeholder="example"
+          />
+          <InputGroupText>.com</InputGroupText>
+        </InputGroup>
+        <InputGroup label="Supported number input">
+          <InputGroupText>$</InputGroupText>
+          <NumberInput
+            label="Amount"
+            isLabelHidden
+            value={numberValue}
+            onChange={setNumberValue}
+            placeholder="0.00"
+          />
+          <InputGroupText>USD</InputGroupText>
+        </InputGroup>
+      </div>
+    );
   },
 };
 
@@ -261,6 +291,7 @@ export const AllVariations: Story = {
     const [v2, setV2] = useState('');
     const [v3, setV3] = useState('');
     const [v4, setV4] = useState('');
+    const [v5, setV5] = useState<number | undefined>(undefined);
 
     return (
       <div
@@ -312,6 +343,17 @@ export const AllVariations: Story = {
             onChange={setV4}
             placeholder="0.00"
           />
+        </InputGroup>
+        <InputGroup label="Budget">
+          <InputGroupText>$</InputGroupText>
+          <NumberInput
+            label="Amount"
+            isLabelHidden
+            value={v5}
+            onChange={setV5}
+            placeholder="0.00"
+          />
+          <InputGroupText>USD</InputGroupText>
         </InputGroup>
       </div>
     );
