@@ -7,8 +7,9 @@ import {InputGroupText} from '@astryxdesign/core/InputGroup';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {NumberInput} from '@astryxdesign/core/NumberInput';
 import {TimeInput} from '@astryxdesign/core/TimeInput';
+import {DateInput} from '@astryxdesign/core/DateInput';
 import {Icon} from '@astryxdesign/core/Icon';
-import type {ISOTimeString} from '@astryxdesign/core';
+import type {ISOTimeString, ISODateString} from '@astryxdesign/core';
 
 const meta: Meta<typeof InputGroup> = {
   title: 'Core/InputGroup',
@@ -161,6 +162,29 @@ export const WithTimeInput: Story = {
   args: {
     label: 'Schedule',
     description: 'Use local time',
+  },
+};
+
+export const WithDateInput: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-07-04' as ISODateString,
+    );
+    return (
+      <InputGroup {...args}>
+        <InputGroupText>Departs</InputGroupText>
+        <DateInput
+          label="Departure date"
+          isLabelHidden
+          value={value}
+          onChange={setValue}
+        />
+      </InputGroup>
+    );
+  },
+  args: {
+    label: 'Trip',
+    description: 'All dates are local',
   },
 };
 

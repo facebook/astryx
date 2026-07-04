@@ -172,6 +172,11 @@ export const docs = {
           'Show a loading state with changeAction when the date triggers a server-side save.',
       },
       {
+        guidance: true,
+        description:
+          'Place DateInput inside InputGroup when the date needs a single-line prefix or suffix addon, like a departs/returns label.',
+      },
+      {
         guidance: false,
         description:
           'Use a DateInput for free-form text that does not represent a calendar date.',

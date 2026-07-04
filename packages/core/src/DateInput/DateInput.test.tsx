@@ -13,6 +13,8 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DateInput} from './DateInput';
+import {InputGroup, InputGroupText} from '../InputGroup';
+import type {ISODateString} from '../Calendar';
 
 describe('DateInput', () => {
   it('renders with label', () => {
@@ -769,6 +771,138 @@ describe('DateInput', () => {
       const input = screen.getByRole('combobox');
       expect(input).toBeDisabled();
       expect(input).not.toHaveAttribute('aria-disabled');
+    });
+  });
+
+  describe('InputGroup integration', () => {
+    it('labels grouped DateInput from the group and inner input labels', () => {
+      render(
+        <InputGroup label="Trip" description="All dates are local">
+          <InputGroupText>Departs</InputGroupText>
+          <DateInput
+            label="Departure date"
+            isLabelHidden
+            value={'2026-07-04' as ISODateString}
+            onChange={() => {}}
+          />
+        </InputGroup>,
+      );
+
+      const group = screen.getByRole('group', {name: 'Trip'});
+      const groupLabelID = group.getAttribute('aria-labelledby');
+      const input = screen.getByRole('combobox', {
+        name: 'Trip Departure date',
+      });
+      const labelledByIDs =
+        input.getAttribute('aria-labelledby')?.split(' ') ?? [];
+
+      expect(labelledByIDs).toHaveLength(2);
+      expect(labelledByIDs[0]).toBe(groupLabelID);
+      expect(document.getElementById(labelledByIDs[1])).toHaveTextContent(
+        'Departure date',
+      );
+      expect(input).not.toHaveAttribute('aria-label');
+      expect(input).toHaveAttribute(
+        'aria-describedby',
+        group.getAttribute('aria-describedby'),
+      );
+    });
+
+    it('includes group and local described-by content when grouped', () => {
+      render(
+        <InputGroup
+          label="Trip"
+          description="All dates are local"
+          status={{type: 'warning', message: 'Trip is unusually long'}}>
+          <InputGroupText>Departs</InputGroupText>
+          <DateInput
+            label="Departure date"
+            isLabelHidden
+            value={'2026-07-04' as ISODateString}
+            onChange={() => {}}
+            description="Weekdays only"
+            status={{type: 'error', message: 'Departure date is required'}}
+            isDisabled
+            disabledMessage="Date edits are locked"
+          />
+        </InputGroup>,
+      );
+
+      const input = screen.getByRole('combobox', {
+        name: 'Trip Departure date',
+      });
+      const describedByIDs =
+        input.getAttribute('aria-describedby')?.split(' ') ?? [];
+      const describedText = describedByIDs
+        .map(id => document.getElementById(id)?.textContent)
+        .join(' ');
+
+      expect(describedText).toContain('All dates are local');
+      expect(describedText).toContain('Trip is unusually long');
+      expect(describedText).toContain('Weekdays only');
+      expect(describedText).toContain('Departure date is required');
+      expect(describedText).toContain('Date edits are locked');
+    });
+
+    it('does not render duplicate Field label chrome when grouped', () => {
+      render(
+        <InputGroup label="Trip">
+          <InputGroupText>Departs</InputGroupText>
+          <DateInput
+            label="Departure date"
+            isLabelHidden
+            value={'2026-07-04' as ISODateString}
+            onChange={() => {}}
+          />
+        </InputGroup>,
+      );
+
+      expect(screen.getByText('Trip')).toBeInTheDocument();
+      expect(screen.getByText('Departure date')).toBeInTheDocument();
+      expect(screen.getByText('Departure date').tagName).toBe('SPAN');
+      expect(document.querySelector('label')).toBeNull();
+    });
+
+    it('suppresses the local status icon when grouped', () => {
+      render(
+        <InputGroup label="Trip">
+          <InputGroupText>Departs</InputGroupText>
+          <DateInput
+            label="Departure date"
+            isLabelHidden
+            value={'2026-07-04' as ISODateString}
+            onChange={() => {}}
+            status={{type: 'error', message: 'Departure date is required'}}
+          />
+        </InputGroup>,
+      );
+
+      // The error is announced via the hidden status message, not an icon.
+      const alerts = screen.getAllByRole('alert');
+      expect(
+        alerts.some(a => a.textContent === 'Departure date is required'),
+      ).toBe(true);
+    });
+
+    it('still opens the calendar popover when grouped', async () => {
+      render(
+        <InputGroup label="Trip">
+          <InputGroupText>Departs</InputGroupText>
+          <DateInput
+            label="Departure date"
+            isLabelHidden
+            value={'2026-07-04' as ISODateString}
+            onChange={() => {}}
+          />
+        </InputGroup>,
+      );
+
+      fireEvent.click(screen.getByRole('button', {name: 'Open calendar'}));
+      await waitFor(() => {
+        expect(
+          screen.getByRole('combobox', {name: 'Trip Departure date'}),
+        ).toHaveAttribute('aria-expanded', 'true');
+      });
     });
   });
 });
