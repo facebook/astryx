@@ -77,6 +77,10 @@ function ld(light: string, dark: string): string {
   return `light-dark(${light}, ${dark})`;
 }
 
+function accentWithAlpha(alpha: number): string {
+  return `color-mix(in srgb, var(--color-accent) ${alpha * 100}%, transparent)`;
+}
+
 /**
  * Expand a color scale config into Astryx color token overrides.
  *
@@ -117,10 +121,11 @@ export function expandColorScale(
   return {
     // Core semantic
     '--color-accent': ld(P[40], P[80]),
-    '--color-accent-muted': ld(
-      hexWithAlpha(P[40], 0.2),
-      hexWithAlpha(P[80], 0.25),
-    ),
+    // Derived accent tokens reference --color-accent instead of baking its
+    // resolved hex, so a scoped override of the base token re-accents the
+    // whole subtree at runtime. --color-on-accent stays baked: it is a
+    // contrast computation against the accent, which CSS cannot express.
+    '--color-accent-muted': ld(accentWithAlpha(0.2), accentWithAlpha(0.25)),
     '--color-on-accent': ld(P[100], P[20]),
     '--color-neutral': ld(hexWithAlpha(N[10], 0.1), hexWithAlpha(N[90], 0.2)),
     '--color-background-surface': ld(N[99], N[10]),
@@ -146,10 +151,10 @@ export function expandColorScale(
       NV[textSecondaryDarkTone],
     ),
     '--color-text-disabled': ld(NV[60], NV[40]),
-    '--color-text-accent': ld(P[30], P[80]),
+    '--color-text-accent': 'var(--color-accent)',
 
     // Icon
-    '--color-icon-accent': ld(P[40], P[80]),
+    '--color-icon-accent': 'var(--color-accent)',
     '--color-icon-primary': ld(N[textPrimaryLightTone], N[textPrimaryDarkTone]),
     '--color-icon-secondary': ld(
       NV[textSecondaryLightTone],
