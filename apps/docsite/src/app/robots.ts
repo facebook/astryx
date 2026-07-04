@@ -13,6 +13,11 @@
 import type {MetadataRoute} from 'next';
 import {SITE_URL} from '../lib/siteConfig';
 
+// Fully build-time static (derived from SITE_URL), so it can be emitted as a
+// file. Required for the canary static-export build (output:'export'); a no-op
+// for the latest server build. See scripts/build-versioned.mjs.
+export const dynamic = 'force-static';
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
