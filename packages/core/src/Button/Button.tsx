@@ -734,7 +734,7 @@ export function Button({
 
   if (tooltip) {
     return (
-      <Tooltip content={tooltip} placement="above">
+      <Tooltip content={tooltip} placement="above" {...edgeCompAttr}>
         {element}
       </Tooltip>
     );

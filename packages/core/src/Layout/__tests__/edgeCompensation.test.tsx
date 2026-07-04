@@ -116,4 +116,72 @@ describe('Edge Compensation', () => {
       expect(dismissButton).toHaveAttribute(EDGE_COMP_ATTR);
     });
   });
+
+  // The container's compensation selector is a direct-child combinator:
+  //   :has(> [data-astryx-edge-comp]:last-child)
+  // so an edge-comp marker only counts when it sits on a *direct* child of the
+  // slot. A tooltip wrapper must not bury the marker one level deeper (#2578).
+  describe('Tooltip wrapper preserves marker discoverability', () => {
+    // Resolve the toolbar slot (the flex wrapper that carries the negative
+    // margin) — it is the direct child of the [role="toolbar"] row.
+    const findSlot = (
+      button: HTMLElement,
+      toolbar: HTMLElement,
+    ): HTMLElement => {
+      let node = button;
+      while (node.parentElement && node.parentElement !== toolbar) {
+        node = node.parentElement;
+      }
+      return node;
+    };
+
+    it('keeps the marker on a direct child of the slot without a tooltip', () => {
+      const {container} = render(
+        <Toolbar
+          label="Actions"
+          endContent={
+            <Button
+              label="Close"
+              variant="ghost"
+              isIconOnly
+              icon={<span>x</span>}
+            />
+          }
+        />,
+      );
+      const button = screen.getByRole('button', {name: 'Close'});
+      const toolbar = container.querySelector(
+        '[role="toolbar"]',
+      ) as HTMLElement;
+      const slot = findSlot(button, toolbar);
+      const directMarked = slot.querySelector(`:scope > [${EDGE_COMP_ATTR}]`);
+      expect(directMarked).not.toBeNull();
+    });
+
+    it('keeps the marker on a direct child of the slot when tooltip is set', () => {
+      const {container} = render(
+        <Toolbar
+          label="Actions"
+          endContent={
+            <Button
+              label="Close"
+              variant="ghost"
+              isIconOnly
+              icon={<span>x</span>}
+              tooltip="Close panel"
+            />
+          }
+        />,
+      );
+      const button = screen.getByRole('button', {name: 'Close'});
+      const toolbar = container.querySelector(
+        '[role="toolbar"]',
+      ) as HTMLElement;
+      const slot = findSlot(button, toolbar);
+      // The tooltip wrapper must not hide the marker from the container's
+      // direct-child `:has(> [marker]:last-child)` selector.
+      const directMarked = slot.querySelector(`:scope > [${EDGE_COMP_ATTR}]`);
+      expect(directMarked).not.toBeNull();
+    });
+  });
 });
