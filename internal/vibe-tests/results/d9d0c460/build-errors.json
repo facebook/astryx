@@ -1,0 +1,73 @@
+{
+  "cwm-3": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "dd-1": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "fwc-14": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "io-2": {
+    "target": "html",
+    "errors": [
+      {
+        "line": 18,
+        "message": "Expected 1 arguments, but got 0.",
+        "code": "TS2554"
+      },
+      {
+        "line": 18,
+        "message": "Cannot find namespace 'NodeJS'.",
+        "code": "TS2503"
+      }
+    ],
+    "errorCount": 2,
+    "buildSuccess": false
+  },
+  "ps-1": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "rc-1": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "sd-4": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "tc-4": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ty-10": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "wd-4": {
+    "target": "html",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  }
+}

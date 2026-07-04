@@ -1,0 +1,897 @@
+{
+  "averages": {
+    "correctness": 87,
+    "accessibility": 98,
+    "codeQuality": 99,
+    "efficiency": 86,
+    "maintainability": 98
+  },
+  "overall": 94,
+  "byPrompt": {
+    "cwm-3": {
+      "correctness": {
+        "score": 100,
+        "findings": []
+      },
+      "accessibility": {
+        "score": 77,
+        "findings": [
+          {
+            "rule": "img-no-alt",
+            "severity": "moderate",
+            "detail": "Image without alt text",
+            "line": 24
+          },
+          {
+            "rule": "input-no-label",
+            "severity": "critical",
+            "detail": "Form input without associated label",
+            "line": 48
+          }
+        ]
+      },
+      "codeQuality": {
+        "score": 97,
+        "findings": [
+          {
+            "rule": "index-key",
+            "severity": "minor",
+            "detail": "Array index as key",
+            "line": 66
+          }
+        ]
+      },
+      "efficiency": {
+        "score": 93,
+        "findings": [],
+        "metrics": {
+          "totalLines": 84,
+          "codeLines": 80,
+          "stylingLines": 10,
+          "boilerplateLines": 5,
+          "logicLines": 65,
+          "stylingRatio": 0.125,
+          "boilerplateRatio": 0.0625,
+          "decisionsPerElement": 2.6,
+          "elementCount": 17,
+          "stylingDecisionCount": 45,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 92,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 14,
+          "avgStateSpread": 30
+        }
+      }
+    },
+    "dd-1": {
+      "correctness": {
+        "score": 85,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2554: Expected 1 arguments, but got 0.",
+            "line": 29
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 74,
+        "findings": [
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 8 times",
+            "count": 8,
+            "example": "{id: N, name: \"_\", email: \"_\", role: \"_\", department: \"_\", joinDate: \"_\"},"
+          }
+        ],
+        "metrics": {
+          "totalLines": 44,
+          "codeLines": 38,
+          "stylingLines": 1,
+          "boilerplateLines": 13,
+          "logicLines": 24,
+          "stylingRatio": 0.02631578947368421,
+          "boilerplateRatio": 0.34210526315789475,
+          "decisionsPerElement": 0.6,
+          "elementCount": 5,
+          "stylingDecisionCount": 3,
+          "duplicateRatio": 0.21
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 0,
+          "avgStateSpread": 11
+        }
+      }
+    },
+    "fwc-14": {
+      "correctness": {
+        "score": 100,
+        "findings": []
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 97,
+        "findings": [
+          {
+            "rule": "index-key",
+            "severity": "minor",
+            "detail": "Array index as key",
+            "line": 36
+          }
+        ]
+      },
+      "efficiency": {
+        "score": 82,
+        "findings": [
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 6 times",
+            "count": 6,
+            "example": "{type: \"_\", src: \"_\", alt: \"_\"},"
+          }
+        ],
+        "metrics": {
+          "totalLines": 64,
+          "codeLines": 58,
+          "stylingLines": 5,
+          "boilerplateLines": 9,
+          "logicLines": 44,
+          "stylingRatio": 0.08620689655172414,
+          "boilerplateRatio": 0.15517241379310345,
+          "decisionsPerElement": 2.6,
+          "elementCount": 8,
+          "stylingDecisionCount": 21,
+          "duplicateRatio": 0.1
+        }
+      },
+      "maintainability": {
+        "score": 92,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 5,
+          "avgStateSpread": 33
+        }
+      }
+    },
+    "io-2": {
+      "correctness": {
+        "score": 40,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ search: (query: string) => Promise<Suggestion[]>; bootstrap: () => Promise<Suggestion[]>; }' is not assignable to type 'SearchSource<SearchableItem<unknown>>'.",
+            "line": 46
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'Suggestion | null' is not assignable to type 'SearchableItem<unknown> | null'.",
+            "line": 47
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'Dispatch<SetStateAction<Suggestion | null>>' is not assignable to type '(item: SearchableItem<unknown> | null) => void'.",
+            "line": 48
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '(item: Suggestion) => React.JSX.Element' is not assignable to type '(item: SearchableItem<unknown>) => ReactNode'.",
+            "line": 51
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 82,
+        "findings": [
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 10 times",
+            "count": 10,
+            "example": "{id: N, name: \"_\", category: \"_\"},"
+          }
+        ],
+        "metrics": {
+          "totalLines": 69,
+          "codeLines": 63,
+          "stylingLines": 3,
+          "boilerplateLines": 10,
+          "logicLines": 50,
+          "stylingRatio": 0.047619047619047616,
+          "boilerplateRatio": 0.15873015873015872,
+          "decisionsPerElement": 1.2,
+          "elementCount": 12,
+          "stylingDecisionCount": 14,
+          "duplicateRatio": 0.16
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 8,
+          "avgStateSpread": 25
+        }
+      }
+    },
+    "ps-1": {
+      "correctness": {
+        "score": 100,
+        "findings": []
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 97,
+        "findings": [
+          {
+            "rule": "index-key",
+            "severity": "minor",
+            "detail": "Array index as key",
+            "line": 54
+          }
+        ]
+      },
+      "efficiency": {
+        "score": 89,
+        "findings": [],
+        "metrics": {
+          "totalLines": 59,
+          "codeLines": 54,
+          "stylingLines": 5,
+          "boilerplateLines": 10,
+          "logicLines": 39,
+          "stylingRatio": 0.09259259259259259,
+          "boilerplateRatio": 0.18518518518518517,
+          "decisionsPerElement": 0.7,
+          "elementCount": 21,
+          "stylingDecisionCount": 15,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 4,
+          "avgStateSpread": 21
+        }
+      }
+    },
+    "rc-1": {
+      "correctness": {
+        "score": 100,
+        "findings": []
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 88,
+        "findings": [],
+        "metrics": {
+          "totalLines": 42,
+          "codeLines": 38,
+          "stylingLines": 7,
+          "boilerplateLines": 4,
+          "logicLines": 27,
+          "stylingRatio": 0.18421052631578946,
+          "boilerplateRatio": 0.10526315789473684,
+          "decisionsPerElement": 1.9,
+          "elementCount": 15,
+          "stylingDecisionCount": 29,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 10,
+          "avgStateSpread": 17
+        }
+      }
+    },
+    "sd-4": {
+      "correctness": {
+        "score": 100,
+        "findings": []
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 93,
+        "findings": [],
+        "metrics": {
+          "totalLines": 52,
+          "codeLines": 46,
+          "stylingLines": 3,
+          "boilerplateLines": 5,
+          "logicLines": 38,
+          "stylingRatio": 0.06521739130434782,
+          "boilerplateRatio": 0.10869565217391304,
+          "decisionsPerElement": 1.3,
+          "elementCount": 12,
+          "stylingDecisionCount": 15,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 5,
+          "avgStateSpread": 29
+        }
+      }
+    },
+    "tc-4": {
+      "correctness": {
+        "score": 100,
+        "findings": []
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 91,
+        "findings": [],
+        "metrics": {
+          "totalLines": 58,
+          "codeLines": 53,
+          "stylingLines": 5,
+          "boilerplateLines": 7,
+          "logicLines": 41,
+          "stylingRatio": 0.09433962264150944,
+          "boilerplateRatio": 0.1320754716981132,
+          "decisionsPerElement": 1.1,
+          "elementCount": 17,
+          "stylingDecisionCount": 19,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 9,
+          "avgStateSpread": 17
+        }
+      }
+    },
+    "ty-10": {
+      "correctness": {
+        "score": 85,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"md\"' is not assignable to type 'AvatarSize | undefined'.",
+            "line": 15
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 91,
+        "findings": [],
+        "metrics": {
+          "totalLines": 38,
+          "codeLines": 36,
+          "stylingLines": 5,
+          "boilerplateLines": 3,
+          "logicLines": 28,
+          "stylingRatio": 0.1388888888888889,
+          "boilerplateRatio": 0.08333333333333333,
+          "decisionsPerElement": 1.4,
+          "elementCount": 21,
+          "stylingDecisionCount": 30,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 11,
+          "avgStateSpread": 0
+        }
+      }
+    },
+    "wd-4": {
+      "correctness": {
+        "score": 55,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2345: Argument of type '{ pageSize: number; }' is not assignable to parameter of type 'UseTablePaginationConfig'.",
+            "line": 42
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2554: Expected 1 arguments, but got 0.",
+            "line": 43
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'TablePlugin<Todo>' is not assignable to type 'TablePlugin<Record<string, unknown>>'.",
+            "line": 69
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 73,
+        "findings": [
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 12 times",
+            "count": 12,
+            "example": "{id: N, title: \"_\", status: \"_\", priority: \"_\", createdAt: \"_\"},"
+          },
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 4 times",
+            "count": 4,
+            "example": "{key: \"_\", header: \"_\"},"
+          }
+        ],
+        "metrics": {
+          "totalLines": 74,
+          "codeLines": 66,
+          "stylingLines": 2,
+          "boilerplateLines": 14,
+          "logicLines": 50,
+          "stylingRatio": 0.030303030303030304,
+          "boilerplateRatio": 0.21212121212121213,
+          "decisionsPerElement": 0.9,
+          "elementCount": 8,
+          "stylingDecisionCount": 7,
+          "duplicateRatio": 0.24
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 2,
+          "avgStateSpread": 21
+        }
+      }
+    }
+  },
+  "byCategory": {
+    "clone-with-modification": {
+      "correctness": 100,
+      "accessibility": 77,
+      "codeQuality": 97,
+      "efficiency": 93,
+      "maintainability": 92
+    },
+    "data-display": {
+      "correctness": 85,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 74,
+      "maintainability": 100
+    },
+    "feature-with-constraint": {
+      "correctness": 100,
+      "accessibility": 100,
+      "codeQuality": 97,
+      "efficiency": 82,
+      "maintainability": 92
+    },
+    "integration-oriented": {
+      "correctness": 40,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 82,
+      "maintainability": 100
+    },
+    "page-setup": {
+      "correctness": 100,
+      "accessibility": 100,
+      "codeQuality": 97,
+      "efficiency": 89,
+      "maintainability": 100
+    },
+    "responsive-context": {
+      "correctness": 100,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 88,
+      "maintainability": 100
+    },
+    "state-driven": {
+      "correctness": 100,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 93,
+      "maintainability": 100
+    },
+    "theme-customization": {
+      "correctness": 100,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 91,
+      "maintainability": 100
+    },
+    "typography": {
+      "correctness": 85,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 91,
+      "maintainability": 100
+    },
+    "workflow-description": {
+      "correctness": 55,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 73,
+      "maintainability": 100
+    }
+  },
+  "darkModeRate": 0,
+  "cost": {
+    "totalDurationMs": 7664725,
+    "avgDurationMs": 766473,
+    "avgOutputChars": 2471,
+    "avgOutputLines": 58,
+    "avgDocsRead": 17,
+    "estimatedInputTokens": 110000,
+    "estimatedOutputTokens": 6181,
+    "byPrompt": {
+      "cwm-3": {
+        "durationMs": 766474,
+        "outputChars": 3094,
+        "outputLines": 84,
+        "docsRead": [
+          "Lightbox",
+          "Table",
+          "Button",
+          "Card",
+          "TextInput",
+          "CheckboxInput",
+          "Typeahead",
+          "Layout",
+          "LayoutPanel",
+          "LayoutHeader",
+          "LayoutContent",
+          "Heading",
+          "Text",
+          "Theme",
+          "Avatar",
+          "IconButton",
+          "defineTheme"
+        ],
+        "estimatedInputTokens": 11000,
+        "estimatedOutputTokens": 774
+      },
+      "dd-1": {
+        "durationMs": 766473,
+        "outputChars": 2246,
+        "outputLines": 44,
+        "docsRead": [
+          "Lightbox",
+          "Table",
+          "Button",
+          "Card",
+          "TextInput",
+          "CheckboxInput",
+          "Typeahead",
+          "Layout",
+          "LayoutPanel",
+          "LayoutHeader",
+          "LayoutContent",
+          "Heading",
+          "Text",
+          "Theme",
+          "Avatar",
+          "IconButton",
+          "defineTheme"
+        ],
+        "estimatedInputTokens": 11000,
+        "estimatedOutputTokens": 562
+      },
+      "fwc-14": {
+        "durationMs": 766475,
+        "outputChars": 2182,
+        "outputLines": 64,
+        "docsRead": [
+          "Lightbox",
+          "Table",
+          "Button",
+          "Card",
+          "TextInput",
+          "CheckboxInput",
+          "Typeahead",
+          "Layout",
+          "LayoutPanel",
+          "LayoutHeader",
+          "LayoutContent",
+          "Heading",
+          "Text",
+          "Theme",
+          "Avatar",
+          "IconButton",
+          "defineTheme"
+        ],
+        "estimatedInputTokens": 11000,
+        "estimatedOutputTokens": 546
+      },
+      "io-2": {
+        "durationMs": 766472,
+        "outputChars": 2270,
+        "outputLines": 69,
+        "docsRead": [
+          "Lightbox",
+          "Table",
+          "Button",
+          "Card",
+          "TextInput",
+          "CheckboxInput",
+          "Typeahead",
+          "Layout",
+          "LayoutPanel",
+          "LayoutHeader",
+          "LayoutContent",
+          "Heading",
+          "Text",
+          "Theme",
+          "Avatar",
+          "IconButton",
+          "defineTheme"
+        ],
+        "estimatedInputTokens": 11000,
+        "estimatedOutputTokens": 568
+      },
+      "ps-1": {
+        "durationMs": 766471,
+        "outputChars": 2654,
+        "outputLines": 59,
+        "docsRead": [
+          "Lightbox",
+          "Table",
+          "Button",
+          "Card",
+          "TextInput",
+          "CheckboxInput",
+          "Typeahead",
+          "Layout",
+          "LayoutPanel",
+          "LayoutHeader",
+          "LayoutContent",
+          "Heading",
+          "Text",
+          "Theme",
+          "Avatar",
+          "IconButton",
+          "defineTheme"
+        ],
+        "estimatedInputTokens": 11000,
+        "estimatedOutputTokens": 664
+      },
+      "rc-1": {
+        "durationMs": 766472,
+        "outputChars": 1523,
+        "outputLines": 42,
+        "docsRead": [
+          "Lightbox",
+          "Table",
+          "Button",
+          "Card",
+          "TextInput",
+          "CheckboxInput",
+          "Typeahead",
+          "Layout",
+          "LayoutPanel",
+          "LayoutHeader",
+          "LayoutContent",
+          "Heading",
+          "Text",
+          "Theme",
+          "Avatar",
+          "IconButton",
+          "defineTheme"
+        ],
+        "estimatedInputTokens": 11000,
+        "estimatedOutputTokens": 381
+      },
+      "sd-4": {
+        "durationMs": 766473,
+        "outputChars": 2558,
+        "outputLines": 52,
+        "docsRead": [
+          "Lightbox",
+          "Table",
+          "Button",
+          "Card",
+          "TextInput",
+          "CheckboxInput",
+          "Typeahead",
+          "Layout",
+          "LayoutPanel",
+          "LayoutHeader",
+          "LayoutContent",
+          "Heading",
+          "Text",
+          "Theme",
+          "Avatar",
+          "IconButton",
+          "defineTheme"
+        ],
+        "estimatedInputTokens": 11000,
+        "estimatedOutputTokens": 640
+      },
+      "tc-4": {
+        "durationMs": 766470,
+        "outputChars": 2413,
+        "outputLines": 58,
+        "docsRead": [
+          "Lightbox",
+          "Table",
+          "Button",
+          "Card",
+          "TextInput",
+          "CheckboxInput",
+          "Typeahead",
+          "Layout",
+          "LayoutPanel",
+          "LayoutHeader",
+          "LayoutContent",
+          "Heading",
+          "Text",
+          "Theme",
+          "Avatar",
+          "IconButton",
+          "defineTheme"
+        ],
+        "estimatedInputTokens": 11000,
+        "estimatedOutputTokens": 603
+      },
+      "ty-10": {
+        "durationMs": 766471,
+        "outputChars": 2467,
+        "outputLines": 38,
+        "docsRead": [
+          "Lightbox",
+          "Table",
+          "Button",
+          "Card",
+          "TextInput",
+          "CheckboxInput",
+          "Typeahead",
+          "Layout",
+          "LayoutPanel",
+          "LayoutHeader",
+          "LayoutContent",
+          "Heading",
+          "Text",
+          "Theme",
+          "Avatar",
+          "IconButton",
+          "defineTheme"
+        ],
+        "estimatedInputTokens": 11000,
+        "estimatedOutputTokens": 617
+      },
+      "wd-4": {
+        "durationMs": 766474,
+        "outputChars": 3304,
+        "outputLines": 74,
+        "docsRead": [
+          "Lightbox",
+          "Table",
+          "Button",
+          "Card",
+          "TextInput",
+          "CheckboxInput",
+          "Typeahead",
+          "Layout",
+          "LayoutPanel",
+          "LayoutHeader",
+          "LayoutContent",
+          "Heading",
+          "Text",
+          "Theme",
+          "Avatar",
+          "IconButton",
+          "defineTheme"
+        ],
+        "estimatedInputTokens": 11000,
+        "estimatedOutputTokens": 826
+      }
+    }
+  }
+}

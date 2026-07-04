@@ -1,0 +1,111 @@
+{
+  "cwm-3": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "dd-1": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 29,
+        "message": "Expected 1 arguments, but got 0.",
+        "code": "TS2554"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "fwc-14": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "io-2": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 46,
+        "message": "Type '{ search: (query: string) => Promise<Suggestion[]>; bootstrap: () => Promise<Suggestion[]>; }' is not assignable to type 'SearchSource<SearchableItem<unknown>>'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 47,
+        "message": "Type 'Suggestion | null' is not assignable to type 'SearchableItem<unknown> | null'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 48,
+        "message": "Type 'Dispatch<SetStateAction<Suggestion | null>>' is not assignable to type '(item: SearchableItem<unknown> | null) => void'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 51,
+        "message": "Type '(item: Suggestion) => React.JSX.Element' is not assignable to type '(item: SearchableItem<unknown>) => ReactNode'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 4,
+    "buildSuccess": false
+  },
+  "ps-1": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "rc-1": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "sd-4": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "tc-4": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ty-10": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 15,
+        "message": "Type '\"md\"' is not assignable to type 'AvatarSize | undefined'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "wd-4": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 42,
+        "message": "Argument of type '{ pageSize: number; }' is not assignable to parameter of type 'UseTablePaginationConfig'.",
+        "code": "TS2345"
+      },
+      {
+        "line": 43,
+        "message": "Expected 1 arguments, but got 0.",
+        "code": "TS2554"
+      },
+      {
+        "line": 69,
+        "message": "Type 'TablePlugin<Todo>' is not assignable to type 'TablePlugin<Record<string, unknown>>'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  }
+}
