@@ -52,6 +52,29 @@ function writeRegistry(filename, content) {
 }
 
 /**
+ * Copy a version-pinned content .tsx (showcase/example) into src/generated/.
+ *
+ * These files are snapshots of a published release's CLI templates, but the
+ * docsite typechecks against main's @xds/core types. When the pinned release
+ * predates a public-API change on main (e.g. a prop removed between the pin and
+ * main), the snapshot legitimately uses API that main's types no longer expose,
+ * which would fail `tsc`. For the pinned `latest` build we prepend `@ts-nocheck`
+ * so these generated snapshots don't gate the build on version skew they can't
+ * control. The `canary` build reads main's own templates against main's types,
+ * so it is copied verbatim and keeps full type coverage.
+ */
+function copyContentFile(srcPath, destPath) {
+  if (BUILD.target === 'latest') {
+    const body = fs.readFileSync(srcPath, 'utf-8');
+    const banner =
+      '// @ts-nocheck — version-pinned content snapshot (see copyContentFile)\n';
+    fs.writeFileSync(destPath, banner + body, 'utf-8');
+  } else {
+    fs.copyFileSync(srcPath, destPath);
+  }
+}
+
+/**
  * Validates that a doc file declared an explicit `displayName`. Display
  * names are authored by hand rather than derived at build time so
  * authors stay in control of how each component reads in the gallery
@@ -1347,7 +1370,7 @@ function generateShowcaseRegistry() {
     if (isShowcase) {
       // Copy the TSX file into generated/showcases/
       const destFile = `${basename}.tsx`;
-      fs.copyFileSync(tsxSrc, path.join(SHOWCASE_OUT, destFile));
+      copyContentFile(tsxSrc, path.join(SHOWCASE_OUT, destFile));
       entries.push({exampleFor, basename, destFile});
     }
 
@@ -1357,7 +1380,7 @@ function generateShowcaseRegistry() {
     for (const target of alsoShowcaseFor) {
       const aliasBasename = `${basename}__${target}`;
       const destFile = `${aliasBasename}.tsx`;
-      fs.copyFileSync(tsxSrc, path.join(SHOWCASE_OUT, destFile));
+      copyContentFile(tsxSrc, path.join(SHOWCASE_OUT, destFile));
       entries.push({exampleFor: target, basename: aliasBasename, destFile});
     }
 
@@ -1429,7 +1452,7 @@ function generateExampleRegistry() {
     const alsoExampleFor = extractStringArrayField(content, 'alsoExampleFor');
 
     if (!isShowcase) {
-      fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${basename}.tsx`));
+      copyContentFile(tsxSrc, path.join(EXAMPLES_OUT, `${basename}.tsx`));
       entries.push({
         exampleFor,
         basename,
@@ -1444,7 +1467,7 @@ function generateExampleRegistry() {
     // without inferring intent from the TSX source.
     for (const target of alsoExampleFor) {
       const aliasBasename = `${basename}__${target}`;
-      fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${aliasBasename}.tsx`));
+      copyContentFile(tsxSrc, path.join(EXAMPLES_OUT, `${aliasBasename}.tsx`));
       entries.push({
         exampleFor: target,
         basename: aliasBasename,
