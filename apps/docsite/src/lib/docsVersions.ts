@@ -24,18 +24,29 @@ export interface DocsVersionInfo {
   target: DocsTarget;
   /** Menu label, e.g. "Latest (stable)". */
   label: string;
-  /** Absolute base URL of that deploy, or null if not configured. */
-  baseUrl: string | null;
+  /**
+   * Base path or absolute URL of that deploy. Empty string means "this origin,
+   * at the root" (the default latest deploy). A path like "/canary" or an
+   * absolute "https://…" are both supported.
+   */
+  baseUrl: string;
 }
 
 /**
- * Base URLs for each deployed target. Set at build time:
+ * Base path/URL for each target. In the default ONE-DEPLOY topology
+ * (see scripts/build-versioned.mjs) both targets live on the SAME deployment:
+ *   latest → served at "/"        (full Next server build)
+ *   canary → served at "/canary"  (static export nested in public/canary/)
+ * so the defaults are same-origin path prefixes and the switcher works with no
+ * configuration.
+ *
+ * To split the targets across two deployments/domains instead, set absolute
+ * URLs at build time (read by the client bundle, hence NEXT_PUBLIC_):
  *   NEXT_PUBLIC_DOCS_LATEST_URL  — e.g. https://astryx.dev
  *   NEXT_PUBLIC_DOCS_CANARY_URL  — e.g. https://next.astryx.dev
- * Both are read by the client bundle (hence NEXT_PUBLIC_).
  */
-const LATEST_URL = process.env.NEXT_PUBLIC_DOCS_LATEST_URL ?? null;
-const CANARY_URL = process.env.NEXT_PUBLIC_DOCS_CANARY_URL ?? null;
+const LATEST_URL = process.env.NEXT_PUBLIC_DOCS_LATEST_URL ?? '';
+const CANARY_URL = process.env.NEXT_PUBLIC_DOCS_CANARY_URL ?? '/canary';
 
 export const DOCS_VERSIONS: Record<DocsTarget, DocsVersionInfo> = {
   latest: {target: 'latest', label: 'Latest (stable)', baseUrl: LATEST_URL},
@@ -48,22 +59,49 @@ export const CURRENT_TARGET: DocsTarget = buildTarget.target;
 /** The @astryxdesign/core version this build documents, if known. */
 export const CURRENT_CORE_VERSION: string | null = buildTarget.coreVersion;
 
+/** Base paths, ordered longest-first, that a target may be mounted under. */
+const KNOWN_BASE_PATHS = ['/canary'];
+
 /**
- * Build the URL that lands on the same `path` in the given target's deploy.
- * Returns null when that target has no configured base URL (so callers can
- * disable the option instead of linking somewhere broken).
+ * Strip a known target base path prefix from a pathname so we get the
+ * target-agnostic "logical" path. e.g. on the canary deploy the current
+ * pathname is "/canary/components"; the logical path is "/components".
  */
-export function urlForTarget(target: DocsTarget, path: string): string | null {
-  const base = DOCS_VERSIONS[target].baseUrl;
-  if (!base) {return null;}
-  const trimmed = base.replace(/\/$/, '');
-  const suffix = path.startsWith('/') ? path : `/${path}`;
-  return `${trimmed}${suffix}`;
+function toLogicalPath(pathname: string): string {
+  for (const base of KNOWN_BASE_PATHS) {
+    if (pathname === base) {
+      return '/';
+    }
+    if (pathname.startsWith(base + '/')) {
+      return pathname.slice(base.length);
+    }
+  }
+  return pathname || '/';
 }
 
-/** True when at least one *other* target has a configured deploy URL. */
+/**
+ * Build the URL that lands on the same logical page in the given target's
+ * deploy. `path` is the CURRENT pathname (which may carry the current target's
+ * base path); we normalize it first, then apply the destination target's base.
+ * Returns null only when the destination is the current target (no-op).
+ */
+export function urlForTarget(target: DocsTarget, path: string): string | null {
+  if (target === CURRENT_TARGET) {
+    return null;
+  }
+  const logical = toLogicalPath(path);
+  const base = DOCS_VERSIONS[target].baseUrl.replace(/\/$/, '');
+  const suffix = logical.startsWith('/') ? logical : `/${logical}`;
+  // base "" → same origin at root; base "/canary" → nested; base "https://…"
+  // → other origin. All compose the same way.
+  return `${base}${suffix}` || '/';
+}
+
+/**
+ * The switcher is always usable in the one-deploy topology: an empty baseUrl
+ * ("") is a valid "root of this origin" destination, so both targets are
+ * reachable. (Kept as a function so a future config could disable a target.)
+ */
 export function hasSwitchableTargets(): boolean {
-  return (Object.keys(DOCS_VERSIONS) as DocsTarget[]).some(
-    t => t !== CURRENT_TARGET && DOCS_VERSIONS[t].baseUrl != null,
-  );
+  return true;
 }
