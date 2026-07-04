@@ -847,7 +847,7 @@ describe('Tokenizer', () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       renderTokenizer({onChange});
-      const input = screen.getByRole('combobox') as HTMLInputElement;
+      const input = screen.getByRole('combobox');
       input.focus();
       await user.keyboard('Ali');
       expect(input.value).toBe('');

@@ -250,7 +250,12 @@ describe('PowerSearch', () => {
 
     it('does not render a tooltip when disabled without a reason', () => {
       render(
-        <PowerSearch config={config} filters={[]} onChange={() => {}} isDisabled />,
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          isDisabled
+        />,
       );
       expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
     });
@@ -272,7 +277,7 @@ describe('PowerSearch', () => {
     it('blocks input while focusable-disabled', async () => {
       const user = userEvent.setup();
       renderSearch();
-      const input = screen.getByRole('combobox') as HTMLInputElement;
+      const input = screen.getByRole('combobox');
       input.focus();
       await user.keyboard('open');
       expect(input.value).toBe('');
@@ -280,7 +285,12 @@ describe('PowerSearch', () => {
 
     it('keeps the input natively disabled when disabled without a reason', () => {
       render(
-        <PowerSearch config={config} filters={[]} onChange={() => {}} isDisabled />,
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          isDisabled
+        />,
       );
       expect(screen.getByRole('combobox')).toBeDisabled();
     });
