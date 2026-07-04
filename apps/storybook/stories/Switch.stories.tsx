@@ -36,6 +36,11 @@ const meta: Meta<typeof Switch> = {
       control: 'boolean',
       description: 'Whether the switch is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the switch is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the switch focusable via aria-disabled (toggling stays blocked). Use this instead of wrapping a disabled Switch in Tooltip.',
+    },
     isOptional: {
       control: 'boolean',
       description: 'Whether the field is optional',
@@ -537,5 +542,29 @@ export const StatusVariations: Story = {
         />
       </div>
     );
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the switch to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the switch stays focusable (toggling is still blocked).
+// Use disabledMessage instead of wrapping a disabled Switch in Tooltip: disabled
+// controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? false);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <Switch
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
+  },
+  args: {
+    label: 'Enable notifications',
+    isDisabled: true,
+    disabledMessage: 'Notifications are turned off org-wide',
   },
 };
