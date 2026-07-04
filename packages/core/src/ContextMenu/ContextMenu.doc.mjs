@@ -21,6 +21,21 @@ export const docs = {
       {property: 'padding', vars: ['--_dropdown-menu-padding']},
     ],
   },
+  playground: {
+    defaults: {
+      children: {
+        __element: 'Box', props: {padding: 4, border: true, borderRadius: 2}, children: [
+          {__element: 'Text', props: {color: 'secondary'}, children: 'Right-click this area'},
+        ],
+      },
+      items: [
+        {label: 'Edit'},
+        {label: 'Duplicate'},
+        {type: 'divider'},
+        {label: 'Delete'},
+      ],
+    },
+  },
   description: 'A context menu that appears on right-click at the cursor position. Wraps trigger content as children.',
   props: [
     {

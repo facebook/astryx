@@ -8,6 +8,14 @@ export const docs = {
   displayName: 'Context Menu Item',
   isHiddenFromOverview: true,
   description: 'Menu item component for compound mode. Re-exported from DropdownMenuItem for discoverability.',
+  usage: {
+    description: 'Use ContextMenuItem inside a ContextMenu with the menuContent prop (compound mode) when you need custom-rendered menu entries with icons, descriptions, or end content.',
+    bestPractices: [
+      { guidance: true, description: 'Use compound mode (menuContent + ContextMenuItem) when items need icons, descriptions, or custom end content.' },
+      { guidance: true, description: 'Provide a concise label and optional description; keep descriptions to one line.' },
+      { guidance: false, description: 'Mix data-driven items and menuContent in the same ContextMenu; choose one mode.' },
+    ],
+  },
   props: [
     {
       name: 'icon',
