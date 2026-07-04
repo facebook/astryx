@@ -14,9 +14,11 @@
  *
  * Order matters:
  *   1. Build canary as a STATIC EXPORT (DOCSITE_TARGET=canary → next.config
- *      switches on output:'export' + basePath:'/canary'). Route handlers can't
- *      be statically exported, so the dynamic MCP route is temporarily removed
- *      for this pass only (latest still ships it).
+ *      switches on output:'export' + basePath:'/canary'). Route handlers
+ *      (route.ts/route.tsx — /mcp, /rss.xml, /blog/txt/[slug], …) can't be
+ *      statically exported, so ALL of them are temporarily stashed for this
+ *      pass only (latest still ships them). Auto-discovered so a route added
+ *      on main can't silently break the export.
  *   2. Copy the export (out/) into public/canary/.
  *   3. Build latest (server). Next copies public/canary/** into the served
  *      static assets, so /canary/* resolves on the same deployment.
@@ -34,8 +36,8 @@ import {fileURLToPath} from 'node:url';
 const DOCSITE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(DOCSITE, 'out');
 const PUBLIC_CANARY = path.join(DOCSITE, 'public', 'canary');
-const MCP_DIR = path.join(DOCSITE, 'src', 'app', 'mcp');
-const MCP_STASH = path.join(DOCSITE, '.mcp-stash');
+const APP_DIR = path.join(DOCSITE, 'src', 'app');
+const ROUTE_STASH = path.join(DOCSITE, '.route-stash');
 
 function run(cmd, env) {
   console.log(`\n$ ${cmd}`);
@@ -46,23 +48,59 @@ function rmrf(p) {
   fs.rmSync(p, {recursive: true, force: true});
 }
 
+/** Recursively find every App Router route handler (route.ts/route.tsx). */
+function findRouteHandlers(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...findRouteHandlers(full));
+    } else if (entry.name === 'route.ts' || entry.name === 'route.tsx') {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
 // ── 1. Canary static export ──────────────────────────────────────────────
 console.log('=== [1/3] Building canary (static export → /canary) ===');
 rmrf(OUT);
-// The MCP route handler is dynamic and cannot be statically exported. Stash it
-// for the canary pass; the latest (server) build below restores and ships it.
-const hasMcp = fs.existsSync(MCP_DIR);
-if (hasMcp) {
-  rmrf(MCP_STASH);
-  fs.renameSync(MCP_DIR, MCP_STASH);
+// Route handlers (route.ts/route.tsx — e.g. /mcp, /rss.xml, /blog/txt/[slug])
+// are server-only and cannot be statically exported. Stash ALL of them for the
+// canary pass, preserving their relative paths; the latest (server) build below
+// restores and ships them. Auto-discovered so a route added on main can't
+// silently break the export.
+rmrf(ROUTE_STASH);
+const routeHandlers = findRouteHandlers(APP_DIR).map(src => ({
+  src,
+  rel: path.relative(APP_DIR, src),
+}));
+for (const {src, rel} of routeHandlers) {
+  const dest = path.join(ROUTE_STASH, rel);
+  fs.mkdirSync(path.dirname(dest), {recursive: true});
+  fs.renameSync(src, dest);
+}
+if (routeHandlers.length) {
+  console.log(
+    `Stashed ${routeHandlers.length} route handler(s) for the export: ${routeHandlers
+      .map(r => r.rel)
+      .join(', ')}`,
+  );
+}
+function restoreRouteHandlers() {
+  for (const {src, rel} of routeHandlers) {
+    const stashed = path.join(ROUTE_STASH, rel);
+    if (fs.existsSync(stashed)) {
+      fs.mkdirSync(path.dirname(src), {recursive: true});
+      fs.renameSync(stashed, src);
+    }
+  }
+  rmrf(ROUTE_STASH);
 }
 try {
   run('pnpm generate && next build', {DOCSITE_TARGET: 'canary'});
 } finally {
-  if (hasMcp && fs.existsSync(MCP_STASH)) {
-    rmrf(MCP_DIR);
-    fs.renameSync(MCP_STASH, MCP_DIR);
-  }
+  restoreRouteHandlers();
 }
 if (!fs.existsSync(OUT)) {
   throw new Error('Canary export did not produce out/. Aborting.');

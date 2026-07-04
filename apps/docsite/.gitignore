@@ -25,4 +25,4 @@ src/themes/astryx.d.ts
 # One-deploy dual-version build artifacts (scripts/build-versioned.mjs)
 out/
 public/canary/
-.mcp-stash/
+.route-stash/

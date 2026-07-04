@@ -13,7 +13,7 @@ import {resolve} from 'node:path';
 //
 // The static export can't run the dynamic MCP route or request-time headers(),
 // so the canary pass excludes MCP (latest still serves /mcp) and the mobile
-// hint falls back to a client-corrected default. See scripts/build-canary-static.mjs
+// hint falls back to a client-corrected default. See scripts/build-versioned.mjs
 // and lib/serverMobileHint.ts.
 const IS_CANARY_STATIC = process.env.DOCSITE_TARGET === 'canary';
 
