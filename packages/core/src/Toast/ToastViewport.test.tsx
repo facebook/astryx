@@ -202,3 +202,13 @@ describe('Toast blur timer pause', () => {
     }
   });
 });
+
+describe('ToastViewport region ARIA', () => {
+  it('exposes the notifications region without a prohibited aria-modal', () => {
+    renderViewport(<ShowToastButton />);
+    const region = screen.getByRole('region', {name: 'Notifications'});
+    // aria-modal is only valid on role="dialog"/"alertdialog"; a region must
+    // not declare it (axe: aria-allowed-attr).
+    expect(region).not.toHaveAttribute('aria-modal');
+  });
+});

@@ -136,8 +136,9 @@ export function ToastViewport({
       if (!container) {
         return null;
       }
-      const candidates =
-        container.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTORS);
+      const candidates = container.querySelectorAll<HTMLElement>(
+        INTERACTIVE_SELECTORS,
+      );
       for (const candidate of candidates) {
         if (
           candidate.getAttribute('tabindex') === '-1' ||
@@ -351,7 +352,6 @@ export function ToastViewport({
         ref={viewportRef}
         role="region"
         aria-label="Notifications"
-        aria-modal={false}
         tabIndex={-1}
         // popover="manual" promotes to the top layer (above dialogs).
         // Omitted inside dialogs where the viewport is already in a top layer.
