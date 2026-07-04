@@ -392,4 +392,40 @@ describe('CheckboxInput', () => {
       expect(screen.getByRole('checkbox')).toBeDisabled();
     });
   });
+  describe('form participation', () => {
+    it('submits under htmlName when checked', () => {
+      const {container} = render(
+        <form>
+          <CheckboxInput label="Terms" htmlName="terms" value={true} onChange={() => {}} />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('terms')).toBe('on');
+    });
+
+    it('is excluded from form data when disabled, even with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <CheckboxInput
+            label="Terms"
+            htmlName="terms"
+            value={true}
+            onChange={() => {}}
+            isDisabled
+            disabledMessage="Locked"
+          />
+        </form>,
+      );
+      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+    });
+
+    it('submits nothing when unchecked', () => {
+      const {container} = render(
+        <form>
+          <CheckboxInput label="Terms" htmlName="terms" value={false} onChange={() => {}} />
+        </form>,
+      );
+      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+    });
+  });
 });

@@ -440,6 +440,13 @@ export interface MultiSelectorProps<
   value: string[];
 
   /**
+   * The HTML name attribute for form submissions. When set, hidden inputs
+   * carry one entry per selected value under this name, matching how a
+   * native multi-select serializes.
+   */
+  htmlName?: string;
+
+  /**
    * Callback when selection changes.
    */
   onChange: (value: string[]) => void;
@@ -597,6 +604,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   renderOption,
   isDefaultOpen = false,
   'data-testid': testId,
+  htmlName,
   width,
   xstyle,
   className,
@@ -1280,6 +1288,18 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             {renderTriggerContent()}
           </span>
         </button>
+        {htmlName != null &&
+          value.map(v => (
+            <input
+              key={v}
+              type="hidden"
+              name={htmlName}
+              value={v}
+              // Disabled native controls are excluded from form submission;
+              // mirror that for the hidden carriers.
+              disabled={isDisabled}
+            />
+          ))}
         {isBusy && <Spinner size="sm" />}
         {hasClear && value.length > 0 && !isDisabled && (
           <button

@@ -228,6 +228,13 @@ export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
    * @default false
    */
   isDisabled?: boolean;
+
+  /**
+   * The HTML name attribute for the underlying checkbox input.
+   * Useful for form submissions.
+   */
+  htmlName?: string;
+
   /**
    * Explains why the switch is disabled. When set together with `isDisabled`,
    * the switch shows a tooltip with this text on hover and keyboard focus, and
@@ -334,6 +341,7 @@ export function Switch({
   isLoading = false,
   value,
   isDisabled = false,
+  htmlName,
   disabledMessage,
   isOptional = false,
   isRequired = false,
@@ -395,6 +403,10 @@ export function Switch({
         id={id}
         type="checkbox"
         role="switch"
+        // Withhold the name while disabled: with a disabledMessage the
+        // input stays focusable (not natively disabled), and a disabled
+        // control must not submit.
+        name={isDisabled ? undefined : htmlName}
         checked={isOn}
         // With a disabledMessage the switch keeps focusability via aria-disabled
         // so the reason is focus-discoverable; toggling is still blocked by the

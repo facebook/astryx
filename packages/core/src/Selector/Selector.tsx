@@ -484,6 +484,13 @@ interface SelectorPropsBase<
   isDefaultOpen?: boolean;
 
   /**
+   * The HTML name attribute for form submissions. When set, a hidden input
+   * carries the selected value under this name, matching how a native
+   * select serializes.
+   */
+  htmlName?: string;
+
+  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -564,6 +571,7 @@ export function Selector<T extends SelectorOptionType>(
     status,
     labelTooltip,
     startIcon,
+    htmlName,
     renderOption,
     hasSearch = false,
     searchPlaceholder = 'Search...',
@@ -991,6 +999,16 @@ export function Selector<T extends SelectorOptionType>(
             {selectedItem?.label ?? placeholder}
           </span>
         </button>
+        {htmlName != null && (
+          <input
+            type="hidden"
+            name={htmlName}
+            value={value ?? ''}
+            // Disabled native controls are excluded from form submission;
+            // mirror that for the hidden carrier.
+            disabled={isDisabled}
+          />
+        )}
         {isBusy && <Spinner size="sm" />}
         {hasClear && value != null && !isDisabled && (
           <button

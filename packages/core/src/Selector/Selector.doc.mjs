@@ -87,6 +87,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        'The HTML name attribute for form submissions. Renders a hidden input carrying the selected value, like a native select.',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:

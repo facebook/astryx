@@ -113,6 +113,12 @@ export const docs = {
           description: 'Disables the selector.',
         },
         {
+          name: 'htmlName',
+          type: 'string',
+          description:
+            'The HTML name attribute for form submissions. Renders one hidden input per selected value, like a native multi-select.',
+        },
+        {
           name: 'disabledMessage',
           type: 'string',
           description:
@@ -233,6 +239,7 @@ export const docsZh = {
         hasSearch: '是否显示用于过滤选项的搜索输入。',
         searchPlaceholder: '搜索输入的占位文本。',
         isDisabled: '禁用选择器。',
+        htmlName: '用于表单提交的 HTML name 属性。为每个已选值渲染一个隐藏输入，类似原生多选。',
         disabledMessage:
           '解释选择器被禁用的原因。与 isDisabled 一起使用时，悬停/键盘聚焦时显示工具提示，并通过 aria-disabled 保持触发器可聚焦（仍无法激活）。请使用此属性，而不是用 Tooltip 包裹被禁用的选择器。',
         isLabelHidden: '视觉上隐藏标签同时保持其可访问性。',
@@ -357,6 +364,7 @@ export const docsDense = {
         hasSearch: 'show search input',
         searchPlaceholder: 'search placeholder',
         isDisabled: 'disables selector',
+        htmlName: 'HTML name attr; one hidden input per selected value.',
         disabledMessage:
           'why disabled; w/ isDisabled shows tooltip on hover/focus, trigger stays focusable via aria-disabled; use instead of Tooltip wrapper',
         isLabelHidden: 'visually hides label',

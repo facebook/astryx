@@ -111,6 +111,12 @@ export interface SliderBaseProps extends Omit<
   valueDisplay?: 'tooltip' | 'text' | 'none';
   /** Tick marks at specified positions with optional labels. */
   marks?: {value: number; label?: string}[];
+  /**
+   * The HTML name attribute for form submissions. When set, the slider
+   * renders hidden inputs carrying the current value (two in range mode,
+   * matching how paired native range inputs submit).
+   */
+  htmlName?: string;
   /** Test ID for the root element. */
   'data-testid'?: string;
 }
@@ -363,6 +369,7 @@ export function Slider({ref, ...props}: SliderProps) {
     step = 1,
     orientation = 'horizontal',
     formatValue,
+    htmlName,
     valueDisplay = 'tooltip',
     marks,
     width,
@@ -803,6 +810,19 @@ export function Slider({ref, ...props}: SliderProps) {
           }),
           stylex.props(styles.sliderRow),
         )}>
+        {htmlName != null &&
+          values.map((v, i) => (
+            <input
+              // Positional identity: index 0 is the start thumb, 1 the end.
+              key={i === 0 ? 'start' : 'end'}
+              type="hidden"
+              name={htmlName}
+              value={String(v)}
+              // Disabled native controls are excluded from form submission;
+              // mirror that for the hidden carrier.
+              disabled={isDisabled}
+            />
+          ))}
         <div
           ref={mergeRefs(ref, trackRef, disabledMessageTooltip.ref)}
           {...(isRange ? {role: 'group', 'aria-label': label} : undefined)}

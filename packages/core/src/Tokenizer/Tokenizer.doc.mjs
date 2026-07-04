@@ -71,6 +71,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        'The HTML name attribute for form submissions. Renders one hidden input per selected item id.',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -278,6 +284,11 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description: '用于表单提交的 HTML name 属性。为每个已选项目的 id 渲染一个隐藏输入。',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -435,6 +446,7 @@ export const docsDense = {
     renderToken: 'Custom token render. Default renders Token w/ label+onRemove.',
     renderItem: 'Custom dropdown item render. Default renders TypeaheadItem.',
     isDisabled: 'Disables input+all token interactions.',
+    htmlName: 'HTML name attr; one hidden input per selected item id.',
     status: 'Validation status w/ type+message for error/warning/success.',
     isLabelHidden: 'Visually hides label; keeps a11y.',
     description: 'Helper text below label.',

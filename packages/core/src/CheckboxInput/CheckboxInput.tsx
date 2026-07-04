@@ -272,6 +272,12 @@ export interface CheckboxInputProps extends Omit<BaseProps, 'onChange'> {
    * @default false
    */
   isDisabled?: boolean;
+
+  /**
+   * The HTML name attribute for the underlying checkbox input.
+   * Useful for form submissions.
+   */
+  htmlName?: string;
   /**
    * Explains why the checkbox is disabled. When set together with
    * `isDisabled`, the checkbox shows a tooltip with this text on hover and
@@ -374,6 +380,7 @@ export function CheckboxInput({
   isLoading = false,
   value,
   isDisabled = false,
+  htmlName,
   disabledMessage,
   isReadOnly = false,
   isOptional = false,
@@ -484,6 +491,10 @@ export function CheckboxInput({
             )}
             id={id}
             type="checkbox"
+            // Withhold the name while disabled: with a disabledMessage the
+            // input stays focusable (not natively disabled), and a disabled
+            // control must not submit.
+            name={isDisabled ? undefined : htmlName}
             checked={isChecked}
             // With a disabledMessage the checkbox keeps focusability via
             // aria-disabled so the reason is focus-discoverable; toggling is

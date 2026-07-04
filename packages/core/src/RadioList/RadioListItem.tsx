@@ -254,6 +254,10 @@ export function RadioListItem({
         checked={isChecked}
         disabled={isDisabled && !keepsFocusableForMessage}
         aria-disabled={keepsFocusableForMessage ? 'true' : undefined}
+        // A focusable-disabled radio is not natively disabled, so detach it
+        // from the form instead: it keeps its name (grouping) but is excluded
+        // from submission, matching a natively disabled control.
+        form={keepsFocusableForMessage ? '' : undefined}
         required={context.isRequired}
         onChange={() => {
           if (isDisabled) {

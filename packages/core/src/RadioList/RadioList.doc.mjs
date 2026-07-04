@@ -75,6 +75,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        'The HTML name attribute shared by the radio inputs, useful for form submissions. When omitted, a unique internal name still groups the radios.',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
