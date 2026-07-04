@@ -152,6 +152,19 @@ const baseStyles = stylex.create({
   },
 });
 
+// Dynamic track values compile to CSS variables + a class-level declaration
+// (grid-template-columns: var(--x)) instead of a raw inline style, so
+// consumer `xstyle` overrides — including ones inside @media queries — can
+// still win. A raw inline `grid-template-columns` would beat any class.
+const dynamicStyles = stylex.create({
+  templateColumns: (value: string) => ({
+    gridTemplateColumns: value,
+  }),
+  autoRows: (value: number) => ({
+    gridAutoRows: `${value}px`,
+  }),
+});
+
 const alignStyles = stylex.create({
   start: {
     alignItems: 'start',
@@ -413,10 +426,10 @@ export function Grid({
     gridTemplateColumns = '1fr';
   }
 
-  // Build inline style for dynamic values
+  // Build inline style for dynamic values. Track templates go through
+  // dynamicStyles (CSS-var indirection) so xstyle/@media overrides work;
+  // width/height stay inline as explicit caller-set dimensions.
   const inlineStyle: React.CSSProperties = {
-    gridTemplateColumns,
-    ...(rowHeight != null && {gridAutoRows: `${rowHeight}px`}),
     ...(width != null && {
       width: typeof width === 'number' ? `${width}px` : width,
     }),
@@ -446,6 +459,8 @@ export function Grid({
         themeProps('grid', {columns: columnsVariant, gap, align, justify}),
         stylex.props(
           baseStyles.grid,
+          dynamicStyles.templateColumns(gridTemplateColumns),
+          rowHeight != null && dynamicStyles.autoRows(rowHeight),
           gap != null && gapStyles[gap],
           rowGap != null && rowGapStyles[rowGap],
           columnGap != null && columnGapStyles[columnGap],
