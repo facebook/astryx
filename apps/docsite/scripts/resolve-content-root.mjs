@@ -111,10 +111,21 @@ function materializeFromNpm(version, packages) {
       const spec = `${name}@${version}`;
       // `npm pack` downloads the exact published tarball and prints its
       // filename; --pack-destination keeps it out of the cwd.
+      //
+      // Run it from the tmp dir (OUTSIDE the repo), NOT from the workspace: the
+      // root package.json declares `devEngines.packageManager: pnpm`, which
+      // makes npm hard-error EBADDEVENGINES if it discovers that manifest by
+      // walking up from the cwd. The tmp dir has no package.json, so npm skips
+      // the engine guard. (COREPACK_ENABLE_STRICT=0 as belt-and-suspenders in
+      // case a parent dir ever reintroduces a manifest.)
       const out = run(
         'npm',
         ['pack', spec, '--pack-destination', tmp, '--json'],
-        {cwd: DOCSITE_ROOT, maxBuffer: 256 * 1024 * 1024},
+        {
+          cwd: tmp,
+          maxBuffer: 256 * 1024 * 1024,
+          env: {...process.env, COREPACK_ENABLE_STRICT: '0'},
+        },
       );
       const tgz = path.join(tmp, JSON.parse(out)[0].filename);
       const dest = path.join(cacheRoot, dir);
