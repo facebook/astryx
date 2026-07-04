@@ -163,8 +163,17 @@ export function resolveContentRoot() {
   const versions = Object.fromEntries(packages.map(p => [p.name, version]));
   return {
     target,
+    // DATA (component .doc.mjs prop tables, package.json versions, READMEs) is
+    // read from the pinned release — that's the point of `latest`.
     contentRoot,
-    cliRoot: path.join(contentRoot, 'packages', 'cli'),
+    // EXECUTABLE content (CLI templates: showcases, examples, blocks, pages,
+    // long-form docs) is LIVE-RENDERED as React and always resolves @xds/core
+    // from node_modules — i.e. main, the version the docsite bundles. Pinning
+    // it would make a stale release's demo use API main's runtime no longer
+    // exposes (e.g. a removed prop), breaking render AND typecheck. So it always
+    // comes from the real workspace, matching the bundled core; only the
+    // documented DATA is pinned.
+    cliRoot: path.join(REPO_ROOT, 'packages', 'cli'),
     versions,
     label: cfg.label ?? 'Latest (stable)',
   };
