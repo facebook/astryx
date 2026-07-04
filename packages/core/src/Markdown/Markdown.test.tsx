@@ -195,7 +195,7 @@ describe('Markdown', () => {
     expect(table).toBeInTheDocument();
     // The GFM table's outer overflow wrapper is keyboard-focusable so keyboard
     // users can horizontally scroll a wide table.
-    const wrapper = table!.closest('[role="region"][tabindex="0"]');
+    const wrapper = table!.closest('[role="group"][tabindex="0"]');
     expect(wrapper).toBeTruthy();
     expect(wrapper).toHaveAttribute('aria-label', 'Table');
   });

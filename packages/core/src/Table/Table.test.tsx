@@ -639,7 +639,7 @@ describe('Table', () => {
     const wrapper = table.parentElement;
     expect(wrapper).toBeTruthy();
     expect(wrapper!).toHaveAttribute('tabindex', '0');
-    expect(wrapper!).toHaveAttribute('role', 'region');
+    expect(wrapper!).toHaveAttribute('role', 'group');
     expect(wrapper!).toHaveAttribute('aria-label', 'Table');
   });
 

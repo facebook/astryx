@@ -755,9 +755,11 @@ export function CodeBlock({
     <div
       ref={scrollContainerRef}
       // The scroll container is keyboard-focusable so keyboard users can
-      // scroll long or wide code that overflows the viewport.
+      // scroll long or wide code that overflows the viewport. Uses
+      // role="group" (not "region") so multiple code blocks on a page don't
+      // create duplicate same-named landmarks (axe: landmark-unique).
       tabIndex={0}
-      role="region"
+      role="group"
       aria-label={languageLabel ?? 'Code'}
       {...mergeProps(stylex.props(styles.scrollContainer), {
         style: scrollStyle,

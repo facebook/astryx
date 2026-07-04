@@ -152,9 +152,12 @@ function TableScrollWrapper({
     <div
       ref={ref}
       // Keyboard-focusable so keyboard users can scroll a horizontally
-      // overflowing table. Callers may override role/aria-label via htmlProps.
+      // overflowing table. Uses role="group" (not "region") so multiple
+      // tables on a page don't create duplicate same-named landmarks
+      // (axe: landmark-unique). Callers may override role/aria-label via
+      // htmlProps.
       tabIndex={0}
-      role="region"
+      role="group"
       aria-label="Table"
       {...restHtmlProps}
       {...mergeProps(
