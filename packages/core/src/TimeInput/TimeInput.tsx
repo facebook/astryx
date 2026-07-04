@@ -4,7 +4,7 @@
 
 /**
  * @file TimeInput.tsx
- * @input Uses React, useId, useState, useEffect, useCallback, useRef, Field, Icon
+ * @input Uses React, useId, useState, useCallback, useRef, Field, Icon, InputGroupContext
  * @output Exports TimeInput component, TimeInputProps
  * @position Core implementation; consumed by index.ts, tested by TimeInput.test.tsx
  *
@@ -48,6 +48,7 @@ import {
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {
   type ISOTimeString,
   parseTimeInput,
@@ -58,11 +59,14 @@ import {
   isTimeInRange,
   mergeProps,
   mergeRefs,
+  getInputARIA,
 } from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {groupStyles} from '../InputGroup/groupStyles';
 import {useTooltip} from '../Tooltip';
 import {themeProps} from '../utils/themeProps';
 
@@ -350,10 +354,12 @@ export function TimeInput({
   const size = useSize(sizeProp, 'md');
 
   const id = useId();
+  const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputGroup = useInputGroup();
 
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -388,14 +394,15 @@ export function TimeInput({
     success: 'success',
   };
 
-  const ariaDescribedBy =
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    inputLabelID,
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+    ],
+    inputGroup,
+  );
 
   // Pending input while user is typing (null = show formatted value)
   const [pendingInput, setPendingInput] = useState<string | null>(null);
@@ -564,6 +571,109 @@ export function TimeInput({
       disabled: isDisabled,
     });
 
+  const inputWrapper = (
+    <div
+      ref={el => {
+        containerRef.current = el;
+        // Anchor + hover/focus listeners for the disabled-message tooltip.
+        // Handlers are gated internally by isEnabled, so attaching
+        // unconditionally is safe.
+        disabledMessageTooltip.ref(el);
+      }}
+      onClick={handleWrapperClick}
+      onMouseUp={handleWrapperMouseUp}
+      {...mergeProps(
+        themeProps('time-input', {size, status: status?.type ?? null}),
+        stylex.props(
+          inputWrapperStyles.base,
+          sizeStyles[size],
+          isDisabled && inputWrapperStyles.disabled,
+          status && inputStatusBorderStyles[status.type],
+          status && inputStatusHoverShadowStyles[status.type],
+          status && inputStatusFocusWithinStyles[status.type],
+          inputGroup && groupStyles.inGroup,
+          xstyle,
+        ),
+        className,
+        style,
+      )}>
+      <div {...stylex.props(styles.icon)}>
+        <Icon icon="clock" size="sm" color="secondary" />
+      </div>
+      {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
+      {inputGroup && description && (
+        <VisuallyHidden as="div" id={descriptionID}>
+          {description}
+        </VisuallyHidden>
+      )}
+      {inputGroup && status?.message && (
+        <VisuallyHidden
+          as="div"
+          id={statusMessageID}
+          role={status.type === 'error' ? 'alert' : 'status'}
+          aria-live={status.type === 'error' ? 'assertive' : 'polite'}>
+          {status.message}
+        </VisuallyHidden>
+      )}
+      <input
+        ref={mergeRefs(ref, inputRef)}
+        id={id}
+        type="text"
+        value={displayValue}
+        onChange={handleInputChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onKeyDown={handleInputKeyDown}
+        placeholder={displayPlaceholder}
+        // With a disabledMessage the input keeps focusability via
+        // aria-disabled so the reason is focus-discoverable; typing and
+        // arrow-key adjustment are blocked with readOnly and the guards.
+        disabled={isDisabled && !showsDisabledMessage}
+        aria-disabled={showsDisabledMessage ? 'true' : undefined}
+        readOnly={showsDisabledMessage || undefined}
+        autoFocus={hasAutoFocus}
+        data-autofocus={hasAutoFocus || undefined}
+        aria-describedby={ariaDescribedBy}
+        aria-required={isRequired === true ? 'true' : undefined}
+        aria-invalid={status?.type === 'error' ? 'true' : undefined}
+        aria-busy={isBusy || undefined}
+        aria-labelledby={ariaLabelledBy}
+        {...stylex.props(
+          styles.input,
+          isDisabled && styles.inputDisabled,
+          !isInputValid && styles.inputInvalid,
+        )}
+      />
+      {isBusy && <Spinner size="sm" />}
+      {hasClear && value && !isDisabled && (
+        <button
+          type="button"
+          onClick={handleClear}
+          aria-label={`Clear ${label}`}
+          {...stylex.props(styles.clearButton)}>
+          <Icon icon="close" size="sm" color="secondary" />
+        </button>
+      )}
+      {status && !inputGroup && (
+        <Icon
+          icon={statusIconMap[status.type]}
+          size="md"
+          color={statusIconColorMap[status.type]}
+        />
+      )}
+    </div>
+  );
+
+  if (inputGroup) {
+    return (
+      <>
+        {inputWrapper}
+        {showsDisabledMessage &&
+          disabledMessageTooltip.renderTooltip(disabledMessage)}
+      </>
+    );
+  }
+
   return (
     <Field
       label={label}
@@ -585,80 +695,7 @@ export function TimeInput({
       }
       labelTooltip={labelTooltip}
       width={width}>
-      <div
-        ref={el => {
-          containerRef.current = el;
-          // Anchor + hover/focus listeners for the disabled-message tooltip.
-          // Handlers are gated internally by isEnabled, so attaching
-          // unconditionally is safe.
-          disabledMessageTooltip.ref(el);
-        }}
-        onClick={handleWrapperClick}
-        onMouseUp={handleWrapperMouseUp}
-        {...mergeProps(
-          themeProps('time-input', {size, status: status?.type ?? null}),
-          stylex.props(
-            inputWrapperStyles.base,
-            sizeStyles[size],
-            isDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
-            xstyle,
-          ),
-          className,
-          style,
-        )}>
-        <div {...stylex.props(styles.icon)}>
-          <Icon icon="clock" size="sm" color="secondary" />
-        </div>
-        <input
-          ref={mergeRefs(ref, inputRef)}
-          id={id}
-          type="text"
-          value={displayValue}
-          onChange={handleInputChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onKeyDown={handleInputKeyDown}
-          placeholder={displayPlaceholder}
-          // With a disabledMessage the input keeps focusability via
-          // aria-disabled so the reason is focus-discoverable; typing and
-          // arrow-key adjustment are blocked with readOnly and the guards.
-          disabled={isDisabled && !showsDisabledMessage}
-          aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          readOnly={showsDisabledMessage || undefined}
-          autoFocus={hasAutoFocus}
-          data-autofocus={hasAutoFocus || undefined}
-          aria-describedby={ariaDescribedBy}
-          aria-required={isRequired === true ? 'true' : undefined}
-          aria-invalid={status?.type === 'error' ? 'true' : undefined}
-          aria-busy={isBusy || undefined}
-          {...stylex.props(
-            styles.input,
-            isDisabled && styles.inputDisabled,
-            !isInputValid && styles.inputInvalid,
-          )}
-        />
-        {isBusy && <Spinner size="sm" />}
-        {hasClear && value && !isDisabled && (
-          <button
-            type="button"
-            onClick={handleClear}
-            aria-label={`Clear ${label}`}
-            {...stylex.props(styles.clearButton)}>
-            <Icon icon="close" size="sm" color="secondary" />
-          </button>
-        )}
-        {status && (
-          <Icon
-            icon={statusIconMap[status.type]}
-            size="md"
-            color={statusIconColorMap[status.type]}
-          />
-        )}
-      </div>
-
+      {inputWrapper}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>

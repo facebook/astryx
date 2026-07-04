@@ -6,7 +6,9 @@ import {InputGroup} from '@astryxdesign/core/InputGroup';
 import {InputGroupText} from '@astryxdesign/core/InputGroup';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {NumberInput} from '@astryxdesign/core/NumberInput';
+import {TimeInput} from '@astryxdesign/core/TimeInput';
 import {Icon} from '@astryxdesign/core/Icon';
+import type {ISOTimeString} from '@astryxdesign/core';
 
 const meta: Meta<typeof InputGroup> = {
   title: 'Core/InputGroup',
@@ -134,6 +136,31 @@ export const WithNumberInput: Story = {
   },
   args: {
     label: 'Budget',
+  },
+};
+
+export const WithTimeInput: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISOTimeString | undefined>(
+      '09:00' as ISOTimeString,
+    );
+    return (
+      <InputGroup {...args}>
+        <InputGroupText>Starts</InputGroupText>
+        <TimeInput
+          label="Start time"
+          isLabelHidden
+          value={value}
+          onChange={setValue}
+          hourFormat="24h"
+          placeholder="09:00"
+        />
+      </InputGroup>
+    );
+  },
+  args: {
+    label: 'Schedule',
+    description: 'Use local time',
   },
 };
 

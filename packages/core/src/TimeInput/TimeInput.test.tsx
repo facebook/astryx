@@ -13,6 +13,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TimeInput} from './TimeInput';
+import {InputGroup, InputGroupText} from '../InputGroup';
 import type {ISOTimeString} from '../utils';
 
 describe('TimeInput', () => {
@@ -206,6 +207,116 @@ describe('TimeInput', () => {
     fireEvent.click(wrapper);
     expect(input).toHaveFocus();
   });
+  describe('InputGroup integration', () => {
+    it('labels grouped TimeInput from the group and inner input labels', () => {
+      render(
+        <InputGroup label="Schedule" description="Use local time">
+          <InputGroupText>Starts</InputGroupText>
+          <TimeInput
+            label="Start time"
+            isLabelHidden
+            value={'09:00' as ISOTimeString}
+            onChange={() => {}}
+          />
+        </InputGroup>,
+      );
+
+      const group = screen.getByRole('group', {name: 'Schedule'});
+      const groupLabelID = group.getAttribute('aria-labelledby');
+      const input = screen.getByRole('textbox', {
+        name: 'Schedule Start time',
+      });
+      const labelledByIDs =
+        input.getAttribute('aria-labelledby')?.split(' ') ?? [];
+
+      expect(labelledByIDs).toHaveLength(2);
+      expect(labelledByIDs[0]).toBe(groupLabelID);
+      expect(document.getElementById(labelledByIDs[1])).toHaveTextContent(
+        'Start time',
+      );
+      expect(input).not.toHaveAttribute('aria-label');
+      expect(input).toHaveAttribute(
+        'aria-describedby',
+        group.getAttribute('aria-describedby'),
+      );
+    });
+
+    it('includes group and local described-by content when grouped', () => {
+      render(
+        <InputGroup
+          label="Schedule"
+          description="Use local time"
+          status={{type: 'warning', message: 'Schedule is unusual'}}>
+          <InputGroupText>Starts</InputGroupText>
+          <TimeInput
+            label="Start time"
+            isLabelHidden
+            value={'09:00' as ISOTimeString}
+            onChange={() => {}}
+            description="Business hours only"
+            status={{type: 'error', message: 'Start time is required'}}
+            isDisabled
+            disabledMessage="Time edits are locked"
+          />
+        </InputGroup>,
+      );
+
+      const input = screen.getByRole('textbox', {
+        name: 'Schedule Start time',
+      });
+      const describedByIDs =
+        input.getAttribute('aria-describedby')?.split(' ') ?? [];
+      const describedText = describedByIDs
+        .map(id => document.getElementById(id)?.textContent)
+        .join(' ');
+
+      expect(describedText).toContain('Use local time');
+      expect(describedText).toContain('Schedule is unusual');
+      expect(describedText).toContain('Business hours only');
+      expect(describedText).toContain('Start time is required');
+      expect(describedText).toContain('Time edits are locked');
+    });
+
+    it('does not render duplicate Field label chrome when grouped', () => {
+      render(
+        <InputGroup label="Schedule">
+          <InputGroupText>Starts</InputGroupText>
+          <TimeInput
+            label="Start time"
+            isLabelHidden
+            value={'09:00' as ISOTimeString}
+            onChange={() => {}}
+          />
+        </InputGroup>,
+      );
+
+      expect(screen.getByText('Schedule')).toBeInTheDocument();
+      expect(screen.getByText('Start time')).toBeInTheDocument();
+      expect(screen.getByText('Start time').tagName).toBe('SPAN');
+      expect(document.querySelector('label')).toBeNull();
+    });
+
+    it('suppresses the local status icon when grouped', () => {
+      const {container} = render(
+        <InputGroup label="Schedule">
+          <InputGroupText>Starts</InputGroupText>
+          <TimeInput
+            label="Start time"
+            isLabelHidden
+            value={'09:00' as ISOTimeString}
+            onChange={() => {}}
+            status={{type: 'error'}}
+          />
+        </InputGroup>,
+      );
+
+      // The clock icon remains, but the trailing status icon is suppressed in
+      // grouped mode so the shared InputGroup border/status treatment is not
+      // duplicated.
+      expect(container.querySelectorAll('svg')).toHaveLength(1);
+    });
+  });
+
   describe('disabledMessage', () => {
     // jsdom does not implement the Popover API used by the tooltip, so mock
     // showPopover/hidePopover to toggle a `popover-open` attribute the tests

@@ -49,6 +49,11 @@ export const docs = {
           'Enable hasClear when the field is optional, so users can remove a previously selected time.',
       },
       {
+        guidance: true,
+        description:
+          'Place TimeInput inside InputGroup when the time needs a single-line prefix or suffix addon, like a start/end label or timezone marker.',
+      },
+      {
         guidance: false,
         description:
           'Don\u2019t use TimeInput for combined date-and-time selection \u2014 pair it with a separate DateInput instead.',
