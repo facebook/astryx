@@ -7,6 +7,7 @@ import {InputGroupText} from '@astryxdesign/core/InputGroup';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {NumberInput} from '@astryxdesign/core/NumberInput';
 import {TimeInput} from '@astryxdesign/core/TimeInput';
+import {Selector} from '@astryxdesign/core/Selector';
 import {Icon} from '@astryxdesign/core/Icon';
 import type {ISOTimeString} from '@astryxdesign/core';
 
@@ -161,6 +162,28 @@ export const WithTimeInput: Story = {
   args: {
     label: 'Schedule',
     description: 'Use local time',
+  },
+};
+
+export const WithSelector: Story = {
+  render: args => {
+    const [value, setValue] = useState<string | undefined>('kg');
+    return (
+      <InputGroup {...args}>
+        <InputGroupText>Unit</InputGroupText>
+        <Selector
+          label="Weight unit"
+          isLabelHidden
+          options={['kg', 'lb', 'oz']}
+          value={value}
+          onChange={setValue}
+        />
+      </InputGroup>
+    );
+  },
+  args: {
+    label: 'Shipping weight',
+    description: 'Pick the unit used on the label',
   },
 };
 

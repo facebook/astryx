@@ -4,7 +4,7 @@
 
 /**
  * @file Selector.tsx
- * @input Uses React, StyleX, usePopover, useTooltip, Icon
+ * @input Uses React, StyleX, usePopover, useTooltip, Icon, InputGroupContext
  * @output Exports Selector component
  * @position Core implementation; consumed by index.ts
  *
@@ -62,7 +62,10 @@ import {
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {SelectorOption} from './SelectorOption';
-import {mergeProps} from '../utils';
+import {mergeProps, getInputARIA} from '../utils';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -578,9 +581,11 @@ export function Selector<T extends SelectorOptionType>(
   // Normalize null to undefined for internal use (null is the clear sentinel)
   const normalizedValue = value === null ? undefined : value;
   const triggerId = useId();
+  const triggerLabelId = useId();
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+  const inputGroup = useInputGroup();
   const searchId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -606,14 +611,15 @@ export function Selector<T extends SelectorOptionType>(
   });
 
   // Build aria-describedby
-  const ariaDescribedBy =
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    triggerLabelId,
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+    ],
+    inputGroup,
+  );
 
   // Flatten options for keyboard navigation
   const selectableItems = useMemo(
@@ -917,6 +923,161 @@ export function Selector<T extends SelectorOptionType>(
     return elements;
   }, [options, renderItem, hasSearch, searchQuery, filteredItems]);
 
+  const showsStatusIcon = !!status && !inputGroup;
+
+  const triggerWrapper = (
+    <div
+      ref={el => {
+        popover.triggerRef(el);
+        // Anchor + hover/focus listeners for the disabled-message tooltip.
+        // Handlers are gated internally by isEnabled, and anchor names
+        // compose, so attaching unconditionally is safe.
+        disabledMessageTooltip.ref(el);
+      }}
+      onClick={onTriggerClick}
+      data-testid={testId}
+      {...mergeProps(
+        themeProps('selector', {size, status: status?.type ?? null}),
+        stylex.props(
+          inputWrapperStyles.base,
+          styles.triggerContainer,
+          sizeStyles[size],
+          isDisabled && inputWrapperStyles.disabled,
+          !selectedItem && styles.triggerPlaceholder,
+          status && inputStatusBorderStyles[status.type],
+          status && inputStatusHoverShadowStyles[status.type],
+          inputGroup && groupStyles.inGroup,
+          xstyle,
+        ),
+        className,
+        style,
+      )}>
+      {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+      {inputGroup && (
+        <VisuallyHidden id={triggerLabelId}>{label}</VisuallyHidden>
+      )}
+      {inputGroup && description && (
+        <VisuallyHidden as="div" id={descriptionId}>
+          {description}
+        </VisuallyHidden>
+      )}
+      {inputGroup && status?.message && (
+        <VisuallyHidden
+          as="div"
+          id={statusMessageId}
+          role={status.type === 'error' ? 'alert' : 'status'}
+          aria-live={status.type === 'error' ? 'assertive' : 'polite'}>
+          {status.message}
+        </VisuallyHidden>
+      )}
+      <button
+        ref={triggerRef}
+        id={triggerId}
+        type="button"
+        // In hasSearch mode the popup's search input is the combobox (it owns
+        // focus + aria-activedescendant, comboboxes-4), so the trigger is a
+        // plain button that opens the listbox — not a second combobox.
+        role={hasSearch ? undefined : 'combobox'}
+        {...rest}
+        aria-haspopup="listbox"
+        aria-expanded={popover.isOpen}
+        aria-controls={listboxId}
+        aria-activedescendant={
+          !hasSearch && popover.isOpen && highlightedIndex >= 0
+            ? getItemId(highlightedIndex)
+            : undefined
+        }
+        aria-describedby={ariaDescribedBy}
+        aria-labelledby={ariaLabelledBy}
+        aria-required={isRequired ? 'true' : undefined}
+        aria-invalid={status?.type === 'error' ? 'true' : undefined}
+        aria-busy={isBusy || undefined}
+        // With a disabledMessage the trigger keeps focusability via
+        // aria-disabled so the reason is focus-discoverable; activation is
+        // still blocked by the isDisabled guards in useCombobox.
+        disabled={isDisabled && !showsDisabledMessage}
+        aria-disabled={showsDisabledMessage ? 'true' : undefined}
+        onKeyDown={onKeyDown}
+        tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
+        {...stylex.props(styles.trigger)}>
+        <span {...stylex.props(styles.triggerLabel)}>
+          {selectedItem?.label ?? placeholder}
+        </span>
+      </button>
+      {isBusy && <Spinner size="sm" />}
+      {hasClear && value != null && !isDisabled && (
+        <button
+          type="button"
+          onClick={handleClear}
+          aria-label={`Clear ${label}`}
+          {...stylex.props(styles.clearButton)}>
+          <Icon icon="close" size="sm" color="secondary" />
+        </button>
+      )}
+      <span
+        {...stylex.props(
+          styles.triggerIcon,
+          !showsStatusIcon && popover.isOpen && styles.triggerIconOpen,
+          showsStatusIcon && styles.triggerIconStatus,
+        )}>
+        {showsStatusIcon ? (
+          <Icon
+            icon={STATUS_ICON_MAP[status.type]}
+            size="sm"
+            color={STATUS_ICON_COLOR_MAP[status.type]}
+          />
+        ) : (
+          <Icon icon="chevronDown" size="sm" color="inherit" />
+        )}
+      </span>
+    </div>
+  );
+
+  const listboxPopover = popover.render(
+    hasSearch ? (
+      <div>
+        {renderSearch()}
+        <div
+          ref={listboxRef}
+          id={listboxId}
+          role="listbox"
+          aria-labelledby={triggerId}
+          {...stylex.props(styles.dropdown)}>
+          {renderOptions()}
+        </div>
+      </div>
+    ) : (
+      <div
+        ref={listboxRef}
+        id={listboxId}
+        role="listbox"
+        aria-labelledby={triggerId}
+        {...stylex.props(
+          styles.dropdown,
+          !isPositioned && styles.dropdownHidden,
+        )}>
+        {renderOptions()}
+      </div>
+    ),
+    {
+      placement: popoverPlacement,
+      alignment: 'start',
+      xstyle: [styles.popover, layerAnimations[popoverPlacement]],
+      style: popoverOffsetStyle,
+    },
+  );
+
+  if (inputGroup) {
+    return (
+      <>
+        {triggerWrapper}
+        {listboxPopover}
+        {showsDisabledMessage &&
+          disabledMessageTooltip.renderTooltip(disabledMessage)}
+      </>
+    );
+  }
+
   return (
     <Field
       label={label}
@@ -938,127 +1099,9 @@ export function Selector<T extends SelectorOptionType>(
       }
       labelTooltip={labelTooltip}
       width={width}>
-      <div
-        ref={el => {
-          popover.triggerRef(el);
-          // Anchor + hover/focus listeners for the disabled-message tooltip.
-          // Handlers are gated internally by isEnabled, and anchor names
-          // compose, so attaching unconditionally is safe.
-          disabledMessageTooltip.ref(el);
-        }}
-        onClick={onTriggerClick}
-        data-testid={testId}
-        {...mergeProps(
-          themeProps('selector', {size, status: status?.type ?? null}),
-          stylex.props(
-            inputWrapperStyles.base,
-            styles.triggerContainer,
-            sizeStyles[size],
-            isDisabled && inputWrapperStyles.disabled,
-            !selectedItem && styles.triggerPlaceholder,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            xstyle,
-          ),
-          className,
-          style,
-        )}>
-        {startIcon &&
-          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
-        <button
-          ref={triggerRef}
-          id={triggerId}
-          type="button"
-          // In hasSearch mode the popup's search input is the combobox (it owns
-          // focus + aria-activedescendant, comboboxes-4), so the trigger is a
-          // plain button that opens the listbox — not a second combobox.
-          role={hasSearch ? undefined : 'combobox'}
-          {...rest}
-          aria-haspopup="listbox"
-          aria-expanded={popover.isOpen}
-          aria-controls={listboxId}
-          aria-activedescendant={
-            !hasSearch && popover.isOpen && highlightedIndex >= 0
-              ? getItemId(highlightedIndex)
-              : undefined
-          }
-          aria-describedby={ariaDescribedBy}
-          aria-required={isRequired ? 'true' : undefined}
-          aria-invalid={status?.type === 'error' ? 'true' : undefined}
-          aria-busy={isBusy || undefined}
-          // With a disabledMessage the trigger keeps focusability via
-          // aria-disabled so the reason is focus-discoverable; activation is
-          // still blocked by the isDisabled guards in useCombobox.
-          disabled={isDisabled && !showsDisabledMessage}
-          aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          onKeyDown={onKeyDown}
-          tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-          {...stylex.props(styles.trigger)}>
-          <span {...stylex.props(styles.triggerLabel)}>
-            {selectedItem?.label ?? placeholder}
-          </span>
-        </button>
-        {isBusy && <Spinner size="sm" />}
-        {hasClear && value != null && !isDisabled && (
-          <button
-            type="button"
-            onClick={handleClear}
-            aria-label={`Clear ${label}`}
-            {...stylex.props(styles.clearButton)}>
-            <Icon icon="close" size="sm" color="secondary" />
-          </button>
-        )}
-        <span
-          {...stylex.props(
-            styles.triggerIcon,
-            !status && popover.isOpen && styles.triggerIconOpen,
-            status && styles.triggerIconStatus,
-          )}>
-          {status ? (
-            <Icon
-              icon={STATUS_ICON_MAP[status.type]}
-              size="sm"
-              color={STATUS_ICON_COLOR_MAP[status.type]}
-            />
-          ) : (
-            <Icon icon="chevronDown" size="sm" color="inherit" />
-          )}
-        </span>
-      </div>
+      {triggerWrapper}
 
-      {popover.render(
-        hasSearch ? (
-          <div>
-            {renderSearch()}
-            <div
-              ref={listboxRef}
-              id={listboxId}
-              role="listbox"
-              aria-labelledby={triggerId}
-              {...stylex.props(styles.dropdown)}>
-              {renderOptions()}
-            </div>
-          </div>
-        ) : (
-          <div
-            ref={listboxRef}
-            id={listboxId}
-            role="listbox"
-            aria-labelledby={triggerId}
-            {...stylex.props(
-              styles.dropdown,
-              !isPositioned && styles.dropdownHidden,
-            )}>
-            {renderOptions()}
-          </div>
-        ),
-        {
-          placement: popoverPlacement,
-          alignment: 'start',
-          xstyle: [styles.popover, layerAnimations[popoverPlacement]],
-          style: popoverOffsetStyle,
-        },
-      )}
+      {listboxPopover}
 
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

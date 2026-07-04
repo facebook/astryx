@@ -140,6 +140,11 @@ export const docs = {
       {
         guidance: true,
         description:
+          'Place Selector inside InputGroup when the choice needs a single-line prefix or suffix addon, like a unit or category label.',
+      },
+      {
+        guidance: true,
+        description:
           'Provide a visible label so users understand what they are selecting.',
       },
       {

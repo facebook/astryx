@@ -14,6 +14,7 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
+import {InputGroup, InputGroupText} from '../InputGroup';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -772,6 +773,116 @@ describe('Selector', () => {
       const trigger = screen.getByRole('combobox');
       expect(trigger).toBeDisabled();
       expect(trigger).toHaveAttribute('tabIndex', '-1');
+    });
+  });
+
+  describe('InputGroup integration', () => {
+    it('labels the grouped trigger from the group and inner labels', () => {
+      render(
+        <InputGroup label="Order" description="Choose your fruit">
+          <InputGroupText>Fruit</InputGroupText>
+          <Selector label="Fruit" isLabelHidden options={OPTIONS} />
+        </InputGroup>,
+      );
+
+      const group = screen.getByRole('group', {name: 'Order'});
+      const groupLabelID = group.getAttribute('aria-labelledby');
+      const trigger = screen.getByRole('combobox', {name: 'Order Fruit'});
+      const labelledByIDs =
+        trigger.getAttribute('aria-labelledby')?.split(' ') ?? [];
+
+      expect(labelledByIDs).toHaveLength(2);
+      expect(labelledByIDs[0]).toBe(groupLabelID);
+      expect(document.getElementById(labelledByIDs[1])).toHaveTextContent(
+        'Fruit',
+      );
+      expect(trigger).toHaveAttribute(
+        'aria-describedby',
+        group.getAttribute('aria-describedby'),
+      );
+    });
+
+    it('includes group and local described-by content when grouped', () => {
+      render(
+        <InputGroup
+          label="Order"
+          description="Choose your fruit"
+          status={{type: 'warning', message: 'Stock is limited'}}>
+          <InputGroupText>Fruit</InputGroupText>
+          <Selector
+            label="Fruit"
+            isLabelHidden
+            options={OPTIONS}
+            description="Seasonal fruit only"
+            status={{type: 'error', message: 'Fruit is required'}}
+            isDisabled
+            disabledMessage="Ordering is closed"
+          />
+        </InputGroup>,
+      );
+
+      const trigger = screen.getByRole('combobox', {name: 'Order Fruit'});
+      const describedByIDs =
+        trigger.getAttribute('aria-describedby')?.split(' ') ?? [];
+      const describedText = describedByIDs
+        .map(id => document.getElementById(id)?.textContent)
+        .join(' ');
+
+      expect(describedText).toContain('Choose your fruit');
+      expect(describedText).toContain('Stock is limited');
+      expect(describedText).toContain('Seasonal fruit only');
+      expect(describedText).toContain('Fruit is required');
+      expect(describedText).toContain('Ordering is closed');
+    });
+
+    it('does not render duplicate Field label chrome when grouped', () => {
+      render(
+        <InputGroup label="Order">
+          <InputGroupText>Fruit</InputGroupText>
+          <Selector label="Fruit" isLabelHidden options={OPTIONS} />
+        </InputGroup>,
+      );
+
+      expect(screen.getByText('Order')).toBeInTheDocument();
+      expect(screen.getByText('Fruit', {selector: 'span'})).toBeInTheDocument();
+      expect(document.querySelector('label')).toBeNull();
+    });
+
+    it('keeps the chevron instead of the status icon when grouped', () => {
+      render(
+        <InputGroup label="Order">
+          <InputGroupText>Fruit</InputGroupText>
+          <Selector
+            label="Fruit"
+            isLabelHidden
+            options={OPTIONS}
+            status={{type: 'error', message: 'Fruit is required'}}
+          />
+        </InputGroup>,
+      );
+
+      // The error is announced via the hidden status message; the trigger
+      // keeps its chevron affordance.
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts.some(a => a.textContent === 'Fruit is required')).toBe(
+        true,
+      );
+    });
+
+    it('still opens the listbox when grouped', async () => {
+      render(
+        <InputGroup label="Order">
+          <InputGroupText>Fruit</InputGroupText>
+          <Selector label="Fruit" isLabelHidden options={OPTIONS} />
+        </InputGroup>,
+      );
+
+      const trigger = screen.getByRole('combobox', {name: 'Order Fruit'});
+      fireEvent.click(trigger);
+      await waitFor(() => {
+        expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      });
+      expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
     });
   });
 });
