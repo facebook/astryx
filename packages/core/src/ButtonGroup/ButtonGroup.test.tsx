@@ -88,17 +88,18 @@ describe('ButtonGroup', () => {
     expect(refValue).toBe(screen.getByRole('group'));
   });
 
-  it('sets aria-orientation', () => {
+  it('reflects orientation via data-orientation, not aria-orientation', () => {
+    // aria-orientation is not a valid ARIA attribute on role="group"; the
+    // orientation is exposed through data-orientation instead.
     const {rerender} = render(
       <ButtonGroup label="Actions">
         <Button label="Copy" />
       </ButtonGroup>,
     );
 
-    expect(screen.getByRole('group')).toHaveAttribute(
-      'aria-orientation',
-      'horizontal',
-    );
+    let group = screen.getByRole('group');
+    expect(group).not.toHaveAttribute('aria-orientation');
+    expect(group).toHaveAttribute('data-orientation', 'horizontal');
 
     rerender(
       <ButtonGroup label="Actions" orientation="vertical">
@@ -106,10 +107,9 @@ describe('ButtonGroup', () => {
       </ButtonGroup>,
     );
 
-    expect(screen.getByRole('group')).toHaveAttribute(
-      'aria-orientation',
-      'vertical',
-    );
+    group = screen.getByRole('group');
+    expect(group).not.toHaveAttribute('aria-orientation');
+    expect(group).toHaveAttribute('data-orientation', 'vertical');
   });
 
   it('renders with vertical orientation', () => {
