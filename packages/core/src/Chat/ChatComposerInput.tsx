@@ -632,7 +632,6 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       )}
       <div
         ref={editableRef}
-        role="textbox"
         aria-multiline="true"
         aria-label={label}
         contentEditable={!isDisabled}
