@@ -32,6 +32,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {execFileSync} from 'node:child_process';
+import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -58,39 +59,74 @@ function run(cmd, args, opts = {}) {
 }
 
 /**
- * Materialize the pinned-version package sources for `latest` into a cache dir,
- * OFFLINE, from the git tag. Returns the cache root that mirrors REPO_ROOT's
- * layout: <cache>/packages/{core,cli}/...
+ * Materialize the pinned-version package sources for `latest` into a cache dir
+ * by downloading each pinned package's PUBLISHED TARBALL from npm.
+ *
+ * Why npm and not a git tag: the Vercel build runs on a shallow checkout with
+ * no tags, so `git show <tag>` / `git archive <tag>` fail there. npm is always
+ * reachable. The published tarballs ship `src/` (see each package's
+ * package.json "files"), so the .doc.mjs docs the pipeline reads are present.
+ *
+ * Layout produced (mirrors a real monorepo release so generate-data.mjs's
+ * workspace discovery works unchanged):
+ *   <cache>/package.json                 — synthetic root (workspaces globs)
+ *   <cache>/packages/core/…              — @astryxdesign/core tarball
+ *   <cache>/packages/cli/…               — @astryxdesign/cli tarball
+ *   <cache>/packages/themes/<name>/…     — @astryxdesign/theme-<name> tarballs
+ *
+ * `packages` is the manifest's list of {name, dir} pairs.
  */
-function materializeFromGitTag(tag) {
-  const cacheRoot = path.join(DOCSITE_ROOT, '.content-cache', tag);
+function materializeFromNpm(version, packages) {
+  const cacheRoot = path.join(DOCSITE_ROOT, '.content-cache', `npm-${version}`);
   const stamp = path.join(cacheRoot, '.stamp');
-  if (fs.existsSync(stamp) && fs.readFileSync(stamp, 'utf-8').trim() === tag) {
+  const stampValue = `npm-${version}:${packages.map(p => p.name).sort().join(',')}`;
+  if (
+    fs.existsSync(stamp) &&
+    fs.readFileSync(stamp, 'utf-8').trim() === stampValue
+  ) {
     return cacheRoot;
   }
   fs.rmSync(cacheRoot, {recursive: true, force: true});
   fs.mkdirSync(cacheRoot, {recursive: true});
 
-  // Root package.json drives workspace discovery in generate-data.mjs; take the
-  // pinned tag's version so discovery matches the pinned tree.
-  const rootPkg = run('git', ['show', `${tag}:package.json`], {cwd: REPO_ROOT});
-  fs.writeFileSync(path.join(cacheRoot, 'package.json'), rootPkg);
+  // Synthetic root package.json so discoverPackageDirs() expands the same
+  // workspace globs it would in the real monorepo.
+  fs.writeFileSync(
+    path.join(cacheRoot, 'package.json'),
+    JSON.stringify(
+      {
+        name: 'astryx-pinned-content',
+        private: true,
+        version,
+        workspaces: ['packages/*', 'packages/themes/*'],
+      },
+      null,
+      2,
+    ),
+  );
 
-  // Archive the WHOLE packages/ tree from the tag. Package + theme discovery,
-  // versions, READMEs and CHANGELOGs must all reflect the pinned release — not
-  // just the two content packages — so the pinned build's package/theme lists
-  // match what was actually published.
-  const dest = path.join(cacheRoot, 'packages');
-  fs.mkdirSync(dest, {recursive: true});
-  const tar = run('git', ['archive', tag, 'packages'], {
-    cwd: REPO_ROOT,
-    maxBuffer: 512 * 1024 * 1024,
-    encoding: 'buffer',
-  });
-  // Strip the leading packages/ prefix so files land under dest.
-  run('tar', ['-x', '--strip-components=1', '-C', dest], {input: tar});
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-pin-'));
+  try {
+    for (const {name, dir} of packages) {
+      const spec = `${name}@${version}`;
+      // `npm pack` downloads the exact published tarball and prints its
+      // filename; --pack-destination keeps it out of the cwd.
+      const out = run(
+        'npm',
+        ['pack', spec, '--pack-destination', tmp, '--json'],
+        {cwd: DOCSITE_ROOT, maxBuffer: 256 * 1024 * 1024},
+      );
+      const tgz = path.join(tmp, JSON.parse(out)[0].filename);
+      const dest = path.join(cacheRoot, dir);
+      fs.mkdirSync(dest, {recursive: true});
+      // npm tarballs wrap everything under a top-level "package/" dir.
+      run('tar', ['-x', '-z', '-f', tgz, '--strip-components=1', '-C', dest]);
+    }
+  } finally {
+    fs.rmSync(tmp, {recursive: true, force: true});
+  }
 
-  fs.writeFileSync(stamp, tag);
+  fs.writeFileSync(stamp, stampValue);
   return cacheRoot;
 }
 
@@ -115,18 +151,21 @@ export function resolveContentRoot() {
   // latest
   const cfg = manifest.latest;
   if (!cfg) throw new Error('versions.json missing "latest" entry.');
-  const tag = cfg.gitTag;
-  if (!tag) {
+  const version = cfg.version;
+  const packages = cfg.packages;
+  if (!version || !Array.isArray(packages) || packages.length === 0) {
     throw new Error(
-      'versions.json latest.gitTag is required for the offline/CI resolver.',
+      'versions.json latest must define "version" and a non-empty "packages" list.',
     );
   }
-  const contentRoot = materializeFromGitTag(tag);
+  const contentRoot = materializeFromNpm(version, packages);
+  // The switcher/UI wants a name→version map for the pinned content packages.
+  const versions = Object.fromEntries(packages.map(p => [p.name, version]));
   return {
     target,
     contentRoot,
     cliRoot: path.join(contentRoot, 'packages', 'cli'),
-    versions: cfg.versions ?? null,
+    versions,
     label: cfg.label ?? 'Latest (stable)',
   };
 }
