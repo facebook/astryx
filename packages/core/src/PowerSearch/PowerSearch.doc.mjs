@@ -72,6 +72,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the search is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (input stays blocked). Use this instead of wrapping a disabled PowerSearch in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'status',
       type: 'InputStatus',
       description:
@@ -136,6 +142,7 @@ export const docs = {
       { guidance: true, description: 'Define clear, descriptive field names and aliases so users can quickly find the filter they need.' },
       { guidance: true, description: 'Provide a result count to give users feedback on how their filters affect the data set.' },
       { guidance: false, description: 'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.' },
+      { guidance: false, description: 'Wrap a disabled PowerSearch in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
   },
 };
@@ -213,6 +220,12 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the search is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (input stays blocked). Use this instead of wrapping a disabled PowerSearch in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'status',
       type: 'InputStatus',
       description: '带有类型和可选消息的验证状态对象。',
@@ -269,6 +282,7 @@ export const docsZh = {
       { guidance: true, description: 'Define clear, descriptive field names and aliases so users can quickly find the filter they need.' },
       { guidance: true, description: 'Provide a result count to give users feedback on how their filters affect the data set.' },
       { guidance: false, description: 'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.' },
+      { guidance: false, description: 'Wrap a disabled PowerSearch in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
   },
 };
@@ -284,6 +298,7 @@ export const docsDense = {
       { guidance: true, description: 'Define clear, descriptive field names and aliases so users can quickly find the filter they need.' },
       { guidance: true, description: 'Provide a result count to give users feedback on how their filters affect the data set.' },
       { guidance: false, description: 'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.' },
+      { guidance: false, description: 'Wrap a disabled PowerSearch in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
   },
   propDescriptions: {
