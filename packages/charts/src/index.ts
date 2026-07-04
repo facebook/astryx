@@ -3,16 +3,15 @@
 /**
  * @astryxdesign/charts — Astryx chart components
  *
- * Thin, themeable wrappers over a peer charting engine. The package owns the
- * design-system surface (config-driven labels + colors, a CSS-variable color
- * bridge, and themed tooltip/legend chrome) while leaving the rendering engine
- * as a peer dependency the consumer manages.
+ * Thin, themeable wrappers over a peer charting engine. This package owns the
+ * design-system surface while leaving the rendering engine as a peer
+ * dependency the consumer manages.
  *
  * This package is published to npm ONLY under the @canary dist-tag
  * (npm install @astryxdesign/charts@canary). It is never released as a
  * stable (latest) version.
+ *
+ * Bootstrap scaffold — no components yet. Add exports here as components land.
  */
 
-export {ChartContainer, useChartConfig} from './ChartContainer';
-export type {ChartContainerProps} from './ChartContainer';
-export type {ChartConfig, ChartSeriesConfig} from './types';
+export {};

@@ -52,18 +52,6 @@ const TARGETS = {
       '@astryxdesign/core': [path.join(ROOT, 'packages/core/src')],
     },
   },
-  charts: {
-    src: path.resolve(ROOT, 'packages/charts/src'),
-    dist: path.resolve(ROOT, 'packages/charts/dist'),
-    outFile: 'charts.css',
-    banner: 'Astryx Charts Pre-compiled StyleX CSS — chart components',
-    // charts imports @astryxdesign/core/theme/tokens.stylex; point the resolver
-    // at core's source so the cross-package token reference resolves.
-    aliases: {
-      '@astryxdesign/core/*': [path.join(ROOT, 'packages/core/src/*')],
-      '@astryxdesign/core': [path.join(ROOT, 'packages/core/src')],
-    },
-  },
 };
 
 function parseTarget() {
