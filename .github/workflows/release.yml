@@ -187,24 +187,28 @@ jobs:
 
           # Publish each package with --tag canary. Failures are collected and
           # the job still fails at the end (never `|| true`-swallowed), but one
-          # rejected publish no longer aborts the loop: when lab's first OIDC
-          # publish was rejected (no npm package/trust bootstrapped yet), every
-          # package after it in the loop (all seven themes) stopped receiving
-          # canaries. Publishes are per-package and idempotent, so attempting
-          # the rest is always safe.
+          # rejected publish no longer aborts the loop: when a package's first OIDC
+          # publish is rejected (no npm package/trust bootstrapped yet), every
+          # package after it in the loop stopped receiving canaries. Publishes are
+          # per-package and idempotent, so attempting the rest is always safe.
           FAILED=""
           for pkg_dir in packages/* packages/themes/*; do
             [ -f "$pkg_dir/package.json" ] || continue
-            # canaryOnly packages are publishable here (the stamp step above
-            # already stripped their `private` flag in this ephemeral checkout).
+            # Guardrail: only publish packages that already exist on npm. This
+            # avoids hard-failing on E404 for unbootstrapped package names.
+            NAME=$(node -p "require('./$pkg_dir/package.json').name")
             IS_PUBLISHABLE=$(node -p "const p=require('./$pkg_dir/package.json'); (!p.private || p.astryx?.canaryOnly) && p.name?.startsWith('@astryxdesign/') ? 'yes' : 'no'")
-            if [ "$IS_PUBLISHABLE" = "yes" ]; then
-              NAME=$(node -p "require('./$pkg_dir/package.json').name")
-              echo "Publishing ${NAME}@${CANARY_VERSION}"
-              if ! pnpm publish "./$pkg_dir" --tag canary --provenance --access public --no-git-checks; then
-                echo "::error::Canary publish failed for ${NAME}@${CANARY_VERSION}"
-                FAILED="${FAILED} ${NAME}"
-              fi
+            [ "$IS_PUBLISHABLE" = "yes" ] || continue
+
+            if ! npm view "$NAME" version --registry https://registry.npmjs.org >/dev/null 2>&1; then
+              echo "::warning::Skipping ${NAME}: package not found on npm (not bootstrapped yet)"
+              continue
+            fi
+
+            echo "Publishing ${NAME}@${CANARY_VERSION}"
+            if ! pnpm publish "./$pkg_dir" --tag canary --provenance --access public --no-git-checks; then
+              echo "::error::Canary publish failed for ${NAME}@${CANARY_VERSION}"
+              FAILED="${FAILED} ${NAME}"
             fi
           done
 
