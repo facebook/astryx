@@ -120,8 +120,10 @@ describe('Edge Compensation', () => {
   // The container's compensation selector is a direct-child combinator:
   //   :has(> [data-astryx-edge-comp]:last-child)
   // so an edge-comp marker only counts when it sits on a *direct* child of the
-  // slot. A tooltip wrapper must not bury the marker one level deeper (#2578).
-  describe('Tooltip wrapper preserves marker discoverability', () => {
+  // slot. Attaching a tooltip must not bury the marker one level deeper — the
+  // Button uses the tooltip hook (no wrapper element) so the marker stays on the
+  // button itself (#2578).
+  describe('Tooltip attachment preserves marker discoverability', () => {
     // Resolve the toolbar slot (the flex wrapper that carries the negative
     // margin) — it is the direct child of the [role="toolbar"] row.
     const findSlot = (
@@ -178,8 +180,10 @@ describe('Edge Compensation', () => {
         '[role="toolbar"]',
       ) as HTMLElement;
       const slot = findSlot(button, toolbar);
-      // The tooltip wrapper must not hide the marker from the container's
-      // direct-child `:has(> [marker]:last-child)` selector.
+      // The tooltip is attached via the hook (no wrapper element), so the
+      // marker stays on the button — a direct child of the container's slot —
+      // and the container's direct-child `:has(> [marker]:last-child)` selector
+      // still matches.
       const directMarked = slot.querySelector(`:scope > [${EDGE_COMP_ATTR}]`);
       expect(directMarked).not.toBeNull();
     });

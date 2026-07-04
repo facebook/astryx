@@ -25,7 +25,6 @@ import * as stylex from '@stylexjs/stylex';
 import {useTooltip, type TooltipFocusTrigger} from './useTooltip';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
 import {colorVars} from '../theme/tokens.stylex';
-import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 
 export type {TooltipFocusTrigger} from './useTooltip';
 
@@ -137,15 +136,6 @@ export interface TooltipProps {
    * The tooltip is still dismissible — this just opens it initially.
    */
   isDefaultOpen?: boolean;
-
-  /**
-   * When set, the tooltip's `display: contents` wrapper carries the
-   * edge-compensation marker so containers that detect edge-compensatable
-   * items via a direct-child `:has()` selector still match through the
-   * wrapper. Set by components (e.g. a ghost Button) that are edge-comp
-   * eligible and wrap themselves in a Tooltip.
-   */
-  'data-astryx-edge-comp'?: string;
 }
 
 /**
@@ -191,7 +181,6 @@ export function Tooltip({
   hasHoverIndication = 'auto',
   isOpen,
   isDefaultOpen,
-  [EDGE_COMP_ATTR]: edgeCompAttr,
 }: TooltipProps): ReactElement {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const textOnly = children != null ? isTextOnly(children) : false;
@@ -319,10 +308,7 @@ export function Tooltip({
   // For element children: use display:contents, ref on first child
   return (
     <>
-      <div
-        ref={wrapperRef}
-        {...(edgeCompAttr != null ? {[EDGE_COMP_ATTR]: edgeCompAttr} : null)}
-        {...stylex.props(styles.wrapperContents)}>
+      <div ref={wrapperRef} {...stylex.props(styles.wrapperContents)}>
         {children}
       </div>
       {tooltip.renderTooltip(content)}
