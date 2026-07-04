@@ -125,9 +125,7 @@ describe('useFocusTrap Escape coordination', () => {
     const {rerender} = render(
       <EscapeTrap isActive onEscape={onEscape} label="toggle" />,
     );
-    rerender(
-      <EscapeTrap isActive={false} onEscape={onEscape} label="toggle" />,
-    );
+    rerender(<EscapeTrap isActive={false} onEscape={onEscape} label="toggle" />);
     fireEvent.keyDown(document, {key: 'Escape'});
     expect(onEscape).not.toHaveBeenCalled();
   });

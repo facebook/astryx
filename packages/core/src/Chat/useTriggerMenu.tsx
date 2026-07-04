@@ -40,7 +40,10 @@ import {
 import {mergeProps, groupItems} from '../utils';
 import type {SearchableItem} from '../Typeahead/types';
 import {themeProps} from '../utils/themeProps';
-import type {ChatComposerTrigger, ChatComposerToken} from './ChatComposerInput';
+import type {
+  ChatComposerTrigger,
+  ChatComposerToken,
+} from './ChatComposerInput';
 
 // =============================================================================
 // Types

@@ -73,9 +73,7 @@ describe('DropdownMenu', () => {
     // The popup exposes its own role="menu"; it must not be nested inside a
     // modal dialog, which would announce an unnamed dialog around the menu
     // while focus stays on the trigger.
-    expect(
-      screen.queryByRole('dialog', {hidden: true}),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', {hidden: true})).not.toBeInTheDocument();
     expect(
       document.querySelector('[aria-modal="true"]'),
     ).not.toBeInTheDocument();

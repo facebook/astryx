@@ -18,7 +18,6 @@ interface DocsShellProps {
   children: React.ReactNode;
   packages: PackageMeta[];
   docTopics: DocTopic[];
-  defaultIsMobile?: boolean;
 }
 
 /** Foundations: tokens first, then alphabetical */
@@ -38,7 +37,6 @@ export function DocsShell({
   children,
   packages,
   docTopics,
-  defaultIsMobile,
 }: DocsShellProps) {
   const pathname = usePathname();
   const [componentQuery, setComponentQuery] = useState('');
@@ -112,7 +110,6 @@ export function DocsShell({
     <AppShell
       variant="surface"
       height="auto"
-      mobileNav={{defaultIsMobile}}
       topNav={<SharedTopNav />}
       sideNav={
         <SideNav topContent={isOnComponentsRoute ? componentSearch : undefined}>

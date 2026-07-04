@@ -163,9 +163,7 @@ describe('Selector', () => {
     // role="listbox" and must not be wrapped in a role="dialog" aria-modal
     // element, which would tell AT the focused trigger is inert.
     expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
-    expect(
-      screen.queryByRole('dialog', {hidden: true}),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', {hidden: true})).not.toBeInTheDocument();
     expect(
       document.querySelector('[aria-modal="true"]'),
     ).not.toBeInTheDocument();

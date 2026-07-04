@@ -286,7 +286,9 @@ export interface UsePopoverReturn {
  * }
  * ```
  */
-export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
+export function usePopover(
+  options: UsePopoverOptions = {},
+): UsePopoverReturn {
   const {
     onShow,
     onHide,
@@ -364,8 +366,7 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
 
   // ARIA attributes for the trigger
   const triggerProps = {
-    'aria-haspopup':
-      role === 'dialog' ? ('dialog' as const) : ('true' as const),
+    'aria-haspopup': role === 'dialog' ? ('dialog' as const) : ('true' as const),
     'aria-expanded': layer.isOpen,
     'aria-controls': layer.id,
   };

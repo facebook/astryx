@@ -136,9 +136,8 @@ export function ToastViewport({
       if (!container) {
         return null;
       }
-      const candidates = container.querySelectorAll<HTMLElement>(
-        INTERACTIVE_SELECTORS,
-      );
+      const candidates =
+        container.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTORS);
       for (const candidate of candidates) {
         if (
           candidate.getAttribute('tabindex') === '-1' ||
