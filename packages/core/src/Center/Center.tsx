@@ -39,14 +39,20 @@ const styles = stylex.create({
 
 // Dynamic styles for sizing props
 const dynamicStyles = stylex.create({
-  sizing: (width: SizeValue | null, height: SizeValue | null) => ({
+  sizing: (
+    width: SizeValue | null,
+    height: SizeValue | null,
+    maxWidth: SizeValue | null,
+    minHeight: SizeValue | null,
+  ) => ({
     width,
     height,
+    maxWidth,
+    minHeight,
   }),
 });
 
 export type CenterAxis = 'both' | 'horizontal' | 'vertical';
-
 
 export interface CenterProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -71,6 +77,18 @@ export interface CenterProps extends BaseProps<HTMLDivElement> {
    * Numbers are treated as pixels, strings are used as-is (e.g., '100%').
    */
   height?: SizeValue;
+
+  /**
+   * Maximum width of the container.
+   * Numbers are treated as pixels, strings are used as-is (e.g., '100%').
+   */
+  maxWidth?: SizeValue;
+
+  /**
+   * Minimum height of the container.
+   * Numbers are treated as pixels, strings are used as-is (e.g., '100%').
+   */
+  minHeight?: SizeValue;
 
   /**
    * Whether to make the container inline-flex (useful for text/icons).
@@ -101,6 +119,8 @@ export function Center({
   axis = 'both',
   width,
   height,
+  maxWidth,
+  minHeight,
   isInline = false,
   children,
   xstyle,
@@ -115,7 +135,12 @@ export function Center({
       isInline ? styles.inline : styles.base,
       (axis === 'both' || axis === 'vertical') && styles.alignItemsCenter,
       (axis === 'both' || axis === 'horizontal') && styles.justifyContentCenter,
-      dynamicStyles.sizing(width ?? null, height ?? null),
+      dynamicStyles.sizing(
+        width ?? null,
+        height ?? null,
+        maxWidth ?? null,
+        minHeight ?? null,
+      ),
       xstyle,
     ),
     className,
