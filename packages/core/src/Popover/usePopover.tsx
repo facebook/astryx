@@ -110,6 +110,19 @@ export interface UsePopoverOptions {
   hasLightDismiss?: boolean;
 
   /**
+   * Whether pressing Escape dismisses the popover.
+   *
+   * Takes effect together with `hasLightDismiss: false`: with light dismiss
+   * on, the native popover uses `popover="auto"`, whose browser-level light
+   * dismiss also closes on Escape, so Escape handling stays registered to
+   * keep topmost-only dismissal intact. Set both to `false` for
+   * explicit-dismiss-only surfaces like onboarding coachmarks.
+   *
+   * @default true
+   */
+  hasEscapeDismiss?: boolean;
+
+  /**
    * Whether to automatically focus the first focusable element when opened.
    * @default true
    */
@@ -253,7 +266,7 @@ export interface UsePopoverReturn {
  * - `useLayer` for popover positioning using CSS anchor positioning
  * - `useFocusTrap` for trapping focus within the popover content
  * - Auto-focus first element on open
- * - Escape key to close
+ * - Escape key to close (configurable via hasEscapeDismiss)
  * - Hidden close button that reveals on focus for accessibility
  *
  * The render function automatically wraps your content in a focus trap container
@@ -286,14 +299,13 @@ export interface UsePopoverReturn {
  * }
  * ```
  */
-export function usePopover(
-  options: UsePopoverOptions = {},
-): UsePopoverReturn {
+export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
   const {
     onShow,
     onHide,
     xstyle,
     hasLightDismiss = true,
+    hasEscapeDismiss = true,
     hasAutoFocus = true,
     hasSurface = true,
     hasCloseButton = true,
@@ -317,10 +329,12 @@ export function usePopover(
     onHide,
   });
 
-  // Focus trap for the popover content
+  // Focus trap for the popover content. Escape stays registered while light
+  // dismiss is on (native popover="auto" closes on Escape regardless), so a
+  // host Dialog keeps deferring to this trap instead of double-dismissing.
   const {containerRef: contentRef, focusFirst} = useFocusTrap<HTMLDivElement>({
     isActive: layer.isOpen,
-    onEscape: layer.hide,
+    onEscape: hasEscapeDismiss || hasLightDismiss ? layer.hide : undefined,
   });
 
   // Auto-focus first element when popover opens (unless skipped)
@@ -366,7 +380,8 @@ export function usePopover(
 
   // ARIA attributes for the trigger
   const triggerProps = {
-    'aria-haspopup': role === 'dialog' ? ('dialog' as const) : ('true' as const),
+    'aria-haspopup':
+      role === 'dialog' ? ('dialog' as const) : ('true' as const),
     'aria-expanded': layer.isOpen,
     'aria-controls': layer.id,
   };

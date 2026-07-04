@@ -13,6 +13,7 @@ import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import React, {useRef} from 'react';
 import {Popover} from './Popover';
+import {Dialog} from '../Dialog';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -232,5 +233,125 @@ describe('Popover', () => {
       expect.stringContaining('must contain a <button> or [role="button"]'),
     );
     warnSpy.mockRestore();
+  });
+
+  describe('dismiss controls', () => {
+    // jsdom does not implement <dialog> showModal/close, needed by the
+    // host-Dialog fall-through test below.
+    beforeAll(() => {
+      HTMLDialogElement.prototype.showModal = vi.fn(function (
+        this: HTMLDialogElement,
+      ) {
+        this.setAttribute('open', '');
+      });
+      HTMLDialogElement.prototype.close = vi.fn(function (
+        this: HTMLDialogElement,
+      ) {
+        this.removeAttribute('open');
+      });
+    });
+
+    it('dismisses on Escape by default', () => {
+      render(
+        <Popover content={<span>Content</span>} label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const trigger = screen.getByRole('button', {name: 'Open'});
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      fireEvent.keyDown(document, {key: 'Escape'});
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('stays open on Escape when hasEscapeDismiss is false', () => {
+      render(
+        <Popover
+          content={<span>Content</span>}
+          label="Test"
+          hasLightDismiss={false}
+          hasEscapeDismiss={false}>
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const trigger = screen.getByRole('button', {name: 'Open'});
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      fireEvent.keyDown(document, {key: 'Escape'});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('still dismisses on Escape when only light dismiss is off', () => {
+      render(
+        <Popover
+          content={<span>Content</span>}
+          label="Test"
+          hasLightDismiss={false}>
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const trigger = screen.getByRole('button', {name: 'Open'});
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      fireEvent.keyDown(document, {key: 'Escape'});
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('switches to popover="manual" when hasLightDismiss is false', () => {
+      const {unmount} = render(
+        <Popover content={<span>Content</span>} label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+      expect(document.querySelector('[popover]')).toHaveAttribute(
+        'popover',
+        'auto',
+      );
+      unmount();
+
+      render(
+        <Popover
+          content={<span>Content</span>}
+          label="Test"
+          hasLightDismiss={false}>
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+      expect(document.querySelector('[popover]')).toHaveAttribute(
+        'popover',
+        'manual',
+      );
+    });
+
+    it('lets Escape fall through to a host Dialog when fully opted out', () => {
+      const onDialogOpenChange = vi.fn();
+      render(
+        <Dialog isOpen={true} onOpenChange={onDialogOpenChange} purpose="info">
+          <Popover
+            content={<span>Coachmark</span>}
+            label="Tip"
+            hasLightDismiss={false}
+            hasEscapeDismiss={false}>
+            <button type="button">Open tip</button>
+          </Popover>
+        </Dialog>,
+      );
+      const trigger = screen.getByRole('button', {name: 'Open tip'});
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      // The Dialog listens for Escape on the dialog element, so fire from a
+      // node inside it. The popover registers no Escape handler, so
+      // hasActiveFocusTrapEscape() is false and the Dialog handles the press
+      // while the popover itself stays open.
+      fireEvent.keyDown(trigger, {key: 'Escape'});
+      expect(onDialogOpenChange).toHaveBeenCalledWith(false);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
   });
 });

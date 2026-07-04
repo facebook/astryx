@@ -187,6 +187,24 @@ export interface PopoverProps extends Pick<
   hasAutoFocus?: boolean;
 
   /**
+   * Whether clicking outside dismisses the popover.
+   * Set to `false` for surfaces that should stay open until explicitly
+   * dismissed, like onboarding coachmarks or multi-step flows.
+   * @default true
+   */
+  hasLightDismiss?: boolean;
+
+  /**
+   * Whether pressing Escape dismisses the popover.
+   *
+   * Only takes full effect together with `hasLightDismiss={false}`: with
+   * light dismiss on, the browser's native light dismiss also closes on
+   * Escape. Set both to `false` for explicit-dismiss-only surfaces.
+   * @default true
+   */
+  hasEscapeDismiss?: boolean;
+
+  /**
    * Test ID for the popover container.
    */
   'data-testid'?: string;
@@ -239,7 +257,7 @@ const styles = stylex.create({
  * (immune to pressed-state transforms like `:active { scale(0.98) }`).
  *
  * Focus is trapped inside the popover when open.
- * Supports light dismiss (click outside or Escape to close).
+ * Supports light dismiss by default (click outside or Escape to close).
  *
  * For hover-triggered overlays, use {@link HoverCard} instead.
  *
@@ -277,6 +295,8 @@ export function Popover({
   hasCloseButton,
   closeButtonLabel,
   hasAutoFocus,
+  hasLightDismiss = true,
+  hasEscapeDismiss = true,
   xstyle,
   className,
   style,
@@ -299,7 +319,8 @@ export function Popover({
 
   const popover = usePopover({
     dialogLabel: label,
-    hasLightDismiss: true,
+    hasLightDismiss,
+    hasEscapeDismiss,
     hasCloseButton,
     closeButtonLabel,
     hasAutoFocus,
