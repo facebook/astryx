@@ -180,11 +180,18 @@ function buildTableStylePlugin<
 >(): TablePlugin<T> {
   return {
     transformTable(props: TableRenderProps): TableRenderProps {
+      const styleProps = mergeProps(
+        themeProps('table'),
+        undefined,
+        props.htmlProps?.className,
+        props.htmlProps?.style,
+      );
+
       return {
         ...props,
         htmlProps: {
           ...props.htmlProps,
-          ...themeProps('table'),
+          ...styleProps,
         },
         styles: [...props.styles, tableStyles.base],
       };
