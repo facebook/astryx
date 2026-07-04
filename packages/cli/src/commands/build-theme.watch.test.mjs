@@ -9,7 +9,9 @@
  * the watcher keeps running.
  *
  * Building `astryx theme build` requires a compiled @astryxdesign/core, so this
- * suite builds core once in beforeAll (mirrors build-theme.prose.test.mjs).
+ * suite builds core once in beforeAll via the shared ensureCoreBuilt() helper —
+ * which serializes concurrent Vitest workers behind a lock — to stay
+ * self-sufficient regardless of CI job ordering.
  */
 
 import {describe, it, expect, beforeAll, beforeEach, afterEach} from 'vitest';
@@ -18,14 +20,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
+import {ensureCoreBuilt} from './ensure-core-built.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
-const REPO_ROOT = path.resolve(__dirname, '../../../..');
-const CORE_THEME_ENTRY = path.join(
-  REPO_ROOT,
-  'packages/core/dist/theme/index.js',
-);
 
 function runCli(args, cwd) {
   try {
@@ -56,13 +54,7 @@ async function waitFor(predicate, {timeout = 8000, interval = 50} = {}) {
 }
 
 beforeAll(() => {
-  if (!fs.existsSync(CORE_THEME_ENTRY)) {
-    execFileSync('pnpm', ['-F', '@astryxdesign/core', 'build'], {
-      cwd: REPO_ROOT,
-      stdio: 'pipe',
-      timeout: 180_000,
-    });
-  }
+  ensureCoreBuilt();
 }, 200_000);
 
 let tmpDir;
