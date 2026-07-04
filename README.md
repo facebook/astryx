@@ -27,8 +27,7 @@ Design Language → Platform Foundation → Design System → Applications
 
 ```bash
 pnpm install
-pnpm build
-pnpm test
+pnpm verify    # test + build + boundaries + metrics
 pnpm dev:examples
 ```
 
@@ -36,10 +35,12 @@ pnpm dev:examples
 
 - [CONSTITUTION.md](./docs/CONSTITUTION.md)
 - [ARCHITECTURE.md](./docs/ARCHITECTURE.md)
+- [ARCHITECTURE-FREEZE.md](./docs/ARCHITECTURE-FREEZE.md)
+- [PLATFORM-HEALTH.md](./docs/PLATFORM-HEALTH.md)
+- [APPS.md](./docs/APPS.md)
 - [LIFECYCLE.md](./docs/LIFECYCLE.md)
 - [CAPABILITY-MATRIX.md](./docs/CAPABILITY-MATRIX.md)
 - [ACCEPTANCE.md](./docs/ACCEPTANCE.md)
-- [ARCHITECTURE-FREEZE.md](./docs/ARCHITECTURE-FREEZE.md)
 - [UPSTREAM.md](./docs/upstream/UPSTREAM.md)
 
 ## Branch Strategy

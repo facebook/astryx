@@ -1,7 +1,7 @@
 {
   "name": "@jedi/patterns",
   "version": "0.4.0",
-  "description": "JEDI application patterns — layouts, navigation",
+  "description": "JEDI application patterns \u2014 layouts, navigation",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -13,7 +13,8 @@
     }
   },
   "scripts": {
-    "build": "tsup src/index.tsx --format esm --dts --external react"
+    "build": "tsup src/index.tsx --format esm --dts --external react",
+    "test": "vitest run src/index.test.tsx"
   },
   "dependencies": {
     "@jedi/foundation": "workspace:*",
@@ -27,6 +28,7 @@
     "@types/react": "^19.0.0",
     "react": "^19.0.0",
     "tsup": "^8.3.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
   }
 }

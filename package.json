@@ -11,7 +11,13 @@
     "check:boundaries": "node internal/check-boundaries.mjs",
     "dev:examples": "pnpm -F @jedi/examples dev",
     "dev:docs": "pnpm -F @jedi/docs-app dev",
-    "dev:playground": "pnpm -F @jedi/playground dev"
+    "dev:playground": "pnpm -F @jedi/playground dev",
+    "metrics:bundle": "node internal/metrics/bundle-size.mjs",
+    "metrics:tokens": "node internal/metrics/token-coverage.mjs",
+    "metrics:api": "node internal/metrics/api-snapshot.mjs",
+    "metrics": "pnpm metrics:bundle && pnpm metrics:tokens && pnpm metrics:api",
+    "check:app-boundaries": "node internal/check-app-boundaries.mjs",
+    "verify": "pnpm test && pnpm build && pnpm check:boundaries && pnpm check:app-boundaries && pnpm metrics"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

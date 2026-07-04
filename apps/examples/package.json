@@ -13,7 +13,6 @@
     "@jedi/motion": "workspace:*",
     "@jedi/react": "workspace:*",
     "@jedi/themes": "workspace:*",
-    "@jedi/tokens": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
