@@ -62,14 +62,34 @@ function findRouteHandlers(dir) {
   return out;
 }
 
+/**
+ * Remove `dir` and any now-empty ancestors, stopping at (but never removing)
+ * `stopAt`. Stashing a route.ts must not leave an empty route-segment directory
+ * behind: an empty dynamic segment like `blog/txt/[slug]/` makes Next's static
+ * export choke during route collection. The old MCP-only logic moved the whole
+ * `mcp/` dir, so nothing was left; this restores that property generally.
+ */
+function pruneEmptyDirsUpward(dir, stopAt) {
+  let cur = dir;
+  while (
+    cur.startsWith(stopAt + path.sep) &&
+    fs.existsSync(cur) &&
+    fs.readdirSync(cur).length === 0
+  ) {
+    fs.rmdirSync(cur);
+    cur = path.dirname(cur);
+  }
+}
+
 // ── 1. Canary static export ──────────────────────────────────────────────
 console.log('=== [1/3] Building canary (static export → /canary) ===');
 rmrf(OUT);
 // Route handlers (route.ts/route.tsx — e.g. /mcp, /rss.xml, /blog/txt/[slug])
 // are server-only and cannot be statically exported. Stash ALL of them for the
-// canary pass, preserving their relative paths; the latest (server) build below
-// restores and ships them. Auto-discovered so a route added on main can't
-// silently break the export.
+// canary pass, preserving their relative paths, and prune the empty route
+// segment dirs left behind (an empty [slug] segment breaks export route
+// collection). The latest (server) build below restores everything. Routes are
+// auto-discovered so one added on main can't silently break the export.
 rmrf(ROUTE_STASH);
 const routeHandlers = findRouteHandlers(APP_DIR).map(src => ({
   src,
@@ -79,6 +99,7 @@ for (const {src, rel} of routeHandlers) {
   const dest = path.join(ROUTE_STASH, rel);
   fs.mkdirSync(path.dirname(dest), {recursive: true});
   fs.renameSync(src, dest);
+  pruneEmptyDirsUpward(path.dirname(src), APP_DIR);
 }
 if (routeHandlers.length) {
   console.log(
