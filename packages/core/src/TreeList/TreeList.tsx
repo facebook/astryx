@@ -99,12 +99,13 @@ function collectExpandedKeys(items: TreeListItemData[]): string[] {
 }
 
 /**
- * Compute the initial roving-tabindex owner: the first selected enabled item
- * in document order, else the first enabled item, else the first item.
- * Only the top-level candidates are considered for the default so the tab stop
- * is reachable even when the tree is fully collapsed.
+ * Compute the initial roving-tabindex seed: the first selected enabled item in
+ * document order, else the first enabled item, else the first item. The hook
+ * (useTreeFocus with hasRovingTabIndex) takes ownership after mount — it
+ * preserves this seeded `tabindex="0"` on its repair pass and moves the stop
+ * with keyboard navigation.
  */
-function findDefaultActiveId(items: TreeListItemData[]): string | undefined {
+function findInitialTabbableId(items: TreeListItemData[]): string | undefined {
   let firstEnabled: string | undefined;
   const walk = (list: TreeListItemData[]): string | undefined => {
     for (const item of list) {
@@ -193,27 +194,14 @@ export function TreeList({
   // Roving tabindex + APG tree keyboard model (via useTreeFocus)
   // ---------------------------------------------------------------------------
 
-  // The treeitem that currently owns the tree's single tab stop. The hook moves
-  // it around via onActiveChange; a data-driven default seeds it (selected item
-  // or first enabled).
-  const [activeId, setActiveId] = useState<string | undefined>(() =>
-    findDefaultActiveId(items),
+  // The hook (hasRovingTabIndex) owns the tree's single tab stop: it repairs
+  // the stop on mount and moves it with keyboard navigation. We only seed the
+  // initially-tabbable treeitem in the render (selected item or first enabled);
+  // the hook's repair pass preserves that seeded `tabindex="0"`.
+  const initialTabbableId = useMemo(
+    () => findInitialTabbableId(items),
+    [items],
   );
-
-  // If the seed id is no longer present (items changed), fall back to a valid
-  // default so the tree always has exactly one reachable tab stop.
-  const resolvedActiveId = useMemo(() => {
-    if (activeId == null) {
-      return findDefaultActiveId(items);
-    }
-    const exists = (list: TreeListItemData[]): boolean =>
-      list.some(
-        item =>
-          item.id === activeId ||
-          (item.children != null && exists(item.children)),
-      );
-    return exists(items) ? activeId : findDefaultActiveId(items);
-  }, [activeId, items]);
 
   // Enter/Space activation: prefer the treeitem's own inner action (link or
   // button); return true when handled so the hook does not also toggle. Scoped
@@ -232,10 +220,10 @@ export function TreeList({
     return false;
   }, []);
 
-  const {treeRef, handleKeyDown} = useTreeFocus<HTMLUListElement>({
+  const {treeRef, handleKeyDown, handleFocus} = useTreeFocus<HTMLUListElement>({
     onToggleExpand: handleToggle,
     onActivate: activateItem,
-    onActiveChange: setActiveId,
+    hasRovingTabIndex: true,
   });
 
   function renderItems(
@@ -286,7 +274,7 @@ export function TreeList({
           renderedChildren={renderedChildren}
           posInSet={index + 1}
           setSize={items.length}
-          isTabbable={item.id === resolvedActiveId}
+          isTabbable={item.id === initialTabbableId}
         />
       );
     });
@@ -312,6 +300,7 @@ export function TreeList({
         role="tree"
         aria-labelledby={header != null ? headerId : undefined}
         onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
         {...stylex.props(styles.list)}>
         {renderItems(items, 0, [])}
       </ul>

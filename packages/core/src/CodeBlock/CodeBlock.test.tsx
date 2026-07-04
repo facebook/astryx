@@ -34,14 +34,14 @@ describe('CodeBlock', () => {
 
   it('makes the scroll container keyboard-focusable', () => {
     render(<CodeBlock code="const x = 1;" language="javascript" />);
-    const region = screen.getByRole('region');
+    const region = screen.getByRole('group');
     expect(region).toHaveAttribute('tabindex', '0');
     expect(region).toHaveAttribute('aria-label', 'javascript');
   });
 
   it('labels the scroll region "Code" when no language label is shown', () => {
     render(<CodeBlock code="hello" hasLanguageLabel={false} />);
-    const region = screen.getByRole('region');
+    const region = screen.getByRole('group');
     expect(region).toHaveAttribute('tabindex', '0');
     expect(region).toHaveAttribute('aria-label', 'Code');
   });

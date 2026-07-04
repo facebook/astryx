@@ -1,5 +1,69 @@
 # @xds/cli
 
+# 0.1.3
+
+#### New Features
+
+- Add a hidden `astryx blog` command that reads the blog over the site's RSS feed and prints a post's plaintext (`.txt`) variant. The command is not shown in `--help` or the manifest and always reads from the canonical site origin.
+- Component discovery is now package-ownership aware: --package scoping, source resolution for integration components, and package-qualified JSON listings.
+- Strict config + integration v1 schema (integrations, issuesUrl, hooks.postCodemod) and new @astryxdesign/cli/integration export.
+- File-based codemod API (createCodemod/createConfigCodemod) with the @astryxdesign/cli/codemod export and integration codemod discovery in upgrade.
+- component, template, and upgrade now print a one-line non-blocking warning when a configured integration has validation issues, pointing to validate-integration.
+- Add a Kanban Board page template: color-coded status columns, draggable task cards with priority tags, and board toolbar.
+- Add frame-first layout guidance: new `astryx docs layout` topic (shell choice, region budgets, app archetypes, cards-vs-rows policy, responsive contracts), layout rules in the generated agent cheat sheet, and layout anti-patterns in `docs principles`.
+- Add a v0.1.3 config codemod that migrates astryx.config layout.components to experimental.xle.components.
+- Add v0.1.0 codemods for migrating `declare module "@xds/core/..."` type augmentations and `.xds-*` / `[data-xds-theme]` / `@layer xds-theme` CSS surfaces to their `@astryxdesign`/`astryx-*` equivalents.
+- Introduce the Project configuration API as the single entry point for reading resolved project config, components, templates, codemods, and issue routing, replacing loadConfig. Misconfigured integrations are now skipped with a warning during upgrade instead of hard-failing, and a new --skip-codemod flag lets you re-run past a failed codemod.
+- Add a Shell page-template category to the CLI: Top Nav, Side Nav, and Shell Nav app-shell scaffolds (#3245, #3246, #3247)
+- Static template authoring API (createPageTemplate/createBlockTemplate) with the @astryxdesign/cli/template export and type-driven, package-scoped template discovery.
+- Swizzle can now copy integration-owned components, rewrites escaping imports to the owning package, and routes maintainer feedback through config and integration issue URLs.
+- `astryx theme build --watch`: rebuild a theme automatically whenever the source file changes, until interrupted with Ctrl-C. Removes the manual re-run step (and the stale-CSS confusion that comes with forgetting it) from the theme-authoring loop. Each rebuild runs in a child process so a build error is contained and the watcher keeps running. Not supported with `--json`. (#3375)
+- Add the validate-integration command and integration issue model for checking an Astryx integration package's manifest and contributions.
+- XLE app-component registration moved into validated config under experimental.xle.components (object form), replacing the unvalidated layout.components read.
+
+#### Fixes
+
+- Align the CLI error-code type declarations with the runtime error codes (add the missing ERR_AMBIGUOUS_TEMPLATE declaration).
+- Correct the `doctor` theme-wiring hint to reference the real `astryx.theme` config field (was `xds.theme`) and update the agent-docs check wording to say "Astryx".
+- Update the API/CLI parity harness for the package-qualified `component --list` shape, and make the component API reject a non-string name with a clean error instead of throwing.
+- The XDS-prefix drop codemod now runs as a mandatory v0.1.0 upgrade step, so upgrading from 0.0.x rewrites prefixed imports (useXDSTheme, XDSButton, XDSIconRegistry, ...) to their bare names alongside the @xds/_ → @astryxdesign/_ scope rename.
+- upgrade now runs core codemods before loading config, so a config codemod can repair an otherwise-invalid config; dry-run reports a fixable config and suggests the command to apply it.
+
+#### Documentation
+
+- Blockquote: add "With Attribution" and "Testimonials" examples (#3385)
+- DateTimeInput and DateRangeInput: add example blocks so their docs pages have populated Examples sections and playground links (#2724)
+- Add copyable example blocks to 46 component docs pages that previously showed only a hero visual and an empty Examples section (#3481)
+- HoverCard: give the "Link Preview" example an interactive `Link` trigger so there is something to hover over (#2728)
+- Lightbox: add Gallery, Video, and Zoom examples and fix the playground preview (#3301)
+- Remove lingering references to the removed gap-report feature and swizzle gap flags; docs now reflect swizzle's maintainer feedback link.
+- Tab: add an interactive example showing `icon` and `selectedIcon` on the Tab docs page (#2765)
+- ToggleButtonGroup: add a vertical example block showing orientation="vertical" with single- and multi-select groups (#2707)
+
+#### Other Changes
+
+- Integration codemod and template-doc loading now use the shared module-loader util instead of duplicating the jiti/import logic.
+- Extract the shared module-loading + conventional-file-discovery helpers used by config and integration loading into one internal util (no behavior change).
+- Remove the standalone gap-report command. Swizzle now prints a short maintainer feedback link instead of filing issues.
+- Load and validate user-authored config, integration, codemod, and template modules through one shared module loader; create\* factories are now type-only and validation happens at load.
+- Remove the obsolete xds config-surface migration codemod and unify config codemod execution on the shared (file, api) runner used by integration codemods.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @ejhammond
+- @ernestt
+- @harshavardhan194
+- @josephfarina
+- @kentonquatman
+- @mohitWeb-lab
+- @pollychen-lab
+- @thedjpetersen
+
+---
+
 # 0.1.2
 
 #### Breaking Changes

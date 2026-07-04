@@ -265,8 +265,9 @@ export interface TreeListItemInternalProps {
   /** Number of siblings at this level (aria-setsize). */
   setSize: number;
   /**
-   * Whether this treeitem currently owns the tree's single tab stop
-   * (roving tabindex). Exactly one visible treeitem is tabbable at a time.
+   * Whether this treeitem is the initial roving-tabindex seed. Exactly one
+   * treeitem is seeded tabbable at mount; useTreeFocus (hasRovingTabIndex)
+   * then owns the tab stop dynamically.
    */
   isTabbable: boolean;
 }

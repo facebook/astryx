@@ -89,18 +89,18 @@ export const docs = {
   },
   usage: {
     description:
-      'Timestamp formats a date or time value into human-readable text. Use it to show when something was created, updated, or is scheduled \u2014 picking relative for recency, absolute for precision, or auto to let the component decide.',
+      'Timestamp formats a date or time value into human-readable text. Use it to show when something was created, updated, or is scheduled; picking relative for recency, absolute for precision, or auto to let the component decide.',
     bestPractices: [
-      {guidance: true, description: 'Use the auto format in feeds and lists so recent items show \u201c2 hours ago\u201d and older items show the full date automatically.'},
-      {guidance: true, description: 'Keep formatting consistent within the same list or table \u2014 mixing relative and absolute timestamps in the same column confuses scanning.'},
+      {guidance: true, description: 'Use the auto format in feeds and lists so recent items show "2 hours ago" and older items show the full date automatically.'},
+      {guidance: true, description: 'Keep formatting consistent within the same list or table; mixing relative and absolute timestamps in the same column confuses scanning.'},
       {guidance: true, description: 'Enable isTimezoneShown when the audience spans multiple time zones, like a global team calendar or audit log.'},
       {guidance: true, description: 'Use isLive for active dashboards or real-time feeds so the relative time stays accurate without a page refresh.'},
-      {guidance: false, description: 'Don\u2019t display raw Unix timestamps or ISO strings to users \u2014 always pass them through Timestamp to get a human-readable format.'},
-      {guidance: false, description: 'Avoid system_date or system_time formats in user-facing UI \u2014 they are meant for developer tools, logs, and machine-readable contexts.'},
-      {guidance: false, description: 'Don\u2019t disable the tooltip on relative timestamps \u2014 users expect to hover for the full date when they see \u201c3 hours ago\u201d.'},
+      {guidance: false, description: 'Don\'t display raw Unix timestamps or ISO strings to users; always pass them through Timestamp to get a human-readable format.'},
+      {guidance: false, description: 'Avoid system_date or system_time formats in user-facing UI; they are meant for developer tools, logs, and machine-readable contexts.'},
+      {guidance: false, description: 'Don\'t disable the tooltip on relative timestamps; users expect to hover for the full date when they see "3 hours ago".'},
     ],
     anatomy: [
-      {name: 'Formatted text', required: true, description: 'The rendered date, time, or relative label like \u201c2 hours ago\u201d or \u201cMar 21, 2025\u201d.'},
+      {name: 'Formatted text', required: true, description: 'The rendered date, time, or relative label like "2 hours ago" or "Mar 21, 2025".'},
       {name: 'Tooltip', required: false, description: 'A hover card showing the full absolute date and time when the display is relative.'},
     ],
   },
@@ -122,18 +122,18 @@ export const docsZh = {
   },
   usage: {
     description:
-      'Timestamp formats a date or time value into human-readable text. Use it to show when something was created, updated, or is scheduled \u2014 picking relative for recency, absolute for precision, or auto to let the component decide.',
+      'Timestamp formats a date or time value into human-readable text. Use it to show when something was created, updated, or is scheduled; picking relative for recency, absolute for precision, or auto to let the component decide.',
     bestPractices: [
-      {guidance: true, description: 'Use the auto format in feeds and lists so recent items show \u201c2 hours ago\u201d and older items show the full date automatically.'},
-      {guidance: true, description: 'Keep formatting consistent within the same list or table \u2014 mixing relative and absolute timestamps in the same column confuses scanning.'},
+      {guidance: true, description: 'Use the auto format in feeds and lists so recent items show "2 hours ago" and older items show the full date automatically.'},
+      {guidance: true, description: 'Keep formatting consistent within the same list or table; mixing relative and absolute timestamps in the same column confuses scanning.'},
       {guidance: true, description: 'Enable isTimezoneShown when the audience spans multiple time zones, like a global team calendar or audit log.'},
       {guidance: true, description: 'Use isLive for active dashboards or real-time feeds so the relative time stays accurate without a page refresh.'},
-      {guidance: false, description: 'Don\u2019t display raw Unix timestamps or ISO strings to users \u2014 always pass them through Timestamp to get a human-readable format.'},
-      {guidance: false, description: 'Avoid system_date or system_time formats in user-facing UI \u2014 they are meant for developer tools, logs, and machine-readable contexts.'},
-      {guidance: false, description: 'Don\u2019t disable the tooltip on relative timestamps \u2014 users expect to hover for the full date when they see \u201c3 hours ago\u201d.'},
+      {guidance: false, description: 'Don\'t display raw Unix timestamps or ISO strings to users; always pass them through Timestamp to get a human-readable format.'},
+      {guidance: false, description: 'Avoid system_date or system_time formats in user-facing UI; they are meant for developer tools, logs, and machine-readable contexts.'},
+      {guidance: false, description: 'Don\'t disable the tooltip on relative timestamps; users expect to hover for the full date when they see "3 hours ago".'},
     ],
     anatomy: [
-      {name: 'Formatted text', required: true, description: 'The rendered date, time, or relative label like \u201c2 hours ago\u201d or \u201cMar 21, 2025\u201d.'},
+      {name: 'Formatted text', required: true, description: 'The rendered date, time, or relative label like "2 hours ago" or "Mar 21, 2025".'},
       {name: 'Tooltip', required: false, description: 'A hover card showing the full absolute date and time when the display is relative.'},
     ],
   },
@@ -144,15 +144,15 @@ export const docsDense = {
   description: 'formatted timestamp with relative/absolute/auto modes, live updates, timezone display',
   usage: {
     description:
-      'Timestamp formats a date or time into readable text. Use for creation dates, update times, or schedules \u2014 relative for recency, absolute for precision, auto to switch automatically.',
+      'Timestamp formats a date or time into readable text. Use for creation dates, update times, or schedules; relative for recency, absolute for precision, auto to switch automatically.',
     bestPractices: [
-      {guidance: true, description: 'Auto format in feeds and lists \u2014 recent shows relative, older shows date_time.'},
+      {guidance: true, description: 'Auto format in feeds and lists; recent shows relative, older shows date_time.'},
       {guidance: true, description: 'Consistent formatting within the same list or table column.'},
       {guidance: true, description: 'isTimezoneShown for multi-timezone audiences.'},
       {guidance: true, description: 'isLive for dashboards so relative time stays current.'},
-      {guidance: false, description: 'Don\u2019t show raw Unix timestamps or ISO strings \u2014 always use Timestamp.'},
-      {guidance: false, description: 'Avoid system_* formats in user-facing UI \u2014 those are for dev tools and logs.'},
-      {guidance: false, description: 'Don\u2019t disable tooltip on relative timestamps \u2014 users expect the full date on hover.'},
+      {guidance: false, description: 'Don\'t show raw Unix timestamps or ISO strings; always use Timestamp.'},
+      {guidance: false, description: 'Avoid system_* formats in user-facing UI; those are for dev tools and logs.'},
+      {guidance: false, description: 'Don\'t disable tooltip on relative timestamps; users expect the full date on hover.'},
     ],
   },
   propDescriptions: {

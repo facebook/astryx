@@ -45,6 +45,7 @@ import {
 import {Icon, type IconName} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useTooltip} from '../Tooltip';
 
 export type {
   InputStatus as FileInputStatus,
@@ -322,6 +323,27 @@ export interface FileInputProps extends Omit<
    */
   isDisabled?: boolean;
   /**
+   * Explains why the input is disabled. When set together with `isDisabled`,
+   * the file input shows a tooltip with this text on hover and keyboard focus,
+   * and its trigger stays focusable (via `aria-disabled`) so the reason is
+   * discoverable by keyboard and assistive technology. Opening the file picker
+   * stays blocked.
+   *
+   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <FileInput
+   *   label="Resume"
+   *   value={file}
+   *   isDisabled
+   *   disabledMessage="Uploads are locked until your profile is verified"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
+  /**
    * Whether the input is required.
    * @default false
    */
@@ -387,6 +409,7 @@ export function FileInput({
   maxSize,
   maxFiles,
   isDisabled = false,
+  disabledMessage,
   isRequired = false,
   isLoading = false,
   status: statusProp,
@@ -416,6 +439,18 @@ export function FileInput({
   // carries validation errors, so a successful attach was previously silent.
   const announce = useAnnounce();
 
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the role="button" trigger (which already
+  // exists) and the trigger stays perceivable via aria-disabled instead of the
+  // native disabled attribute. Opening the picker is blocked by the isDisabled
+  // guards in handleClick / handleKeyDown / handleFiles.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
   const status =
     statusProp ??
     (validationError
@@ -441,6 +476,7 @@ export function FileInput({
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -684,8 +720,18 @@ export function FileInput({
       labelTooltip={labelTooltip}
       width={width}>
       <div
+        ref={el => {
+          // Anchor + hover/focus listeners for the disabled-message tooltip.
+          // Handlers are gated internally by isEnabled, and anchor names
+          // compose, so attaching unconditionally is safe.
+          disabledMessageTooltip.ref(el);
+        }}
         role="button"
-        tabIndex={isDisabled ? -1 : 0}
+        // With a disabledMessage the trigger keeps focusability via
+        // aria-disabled so the reason is focus-discoverable; opening the picker
+        // is still blocked by the isDisabled guards in the handlers.
+        tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
+        aria-disabled={showsDisabledMessage ? 'true' : undefined}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         aria-label={label}
@@ -738,6 +784,8 @@ export function FileInput({
         {...stylex.props(styles.liveRegion)}>
         {validationError}
       </div>
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }

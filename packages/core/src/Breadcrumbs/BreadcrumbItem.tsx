@@ -179,6 +179,7 @@ export function BreadcrumbItem({
   className,
   style,
   'data-testid': testId,
+  ...rest
 }: BreadcrumbItemProps) {
   const ctx = use(BreadcrumbContext);
   const LinkComponent = useLinkComponent(as);
@@ -252,7 +253,8 @@ export function BreadcrumbItem({
           className,
           style,
         )}
-        data-testid={testId}>
+        data-testid={testId}
+        {...rest}>
         <span aria-hidden="true" {...stylex.props(itemStyles.separator)}>
           {ctx.separator}
         </span>
@@ -286,7 +288,8 @@ export function BreadcrumbItem({
         className,
         style,
       )}
-      data-testid={testId}>
+      data-testid={testId}
+      {...rest}>
       <span aria-hidden="true" {...stylex.props(itemStyles.separator)}>
         {ctx.separator}
       </span>

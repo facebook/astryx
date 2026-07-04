@@ -1,5 +1,19 @@
 # @xds/build
 
+# 0.1.3
+
+#### Fixes
+
+- Use `pnpm build` in the `prepack` script so publishing no longer fails the `devEngines` package-manager check (#3564).
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @cixzhang
+
+---
+
 # 0.1.2
 
 #### Fixes

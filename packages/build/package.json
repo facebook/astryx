@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/build",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Build plugins for XDS source builds — babel, PostCSS, and Vite integrations",
   "author": "Meta Open Source",
   "license": "MIT",
@@ -37,7 +37,7 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "prepack": "npm run build"
+    "prepack": "pnpm build"
   },
   "peerDependencies": {
     "@stylexjs/babel-plugin": ">=0.18.0",

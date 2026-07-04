@@ -1400,9 +1400,11 @@ function renderBlock(
         <div
           key={index}
           // Keyboard-focusable so keyboard users can scroll a horizontally
-          // overflowing GFM table.
+          // overflowing GFM table. Uses role="group" (not "region") so
+          // multiple tables don't create duplicate same-named landmarks
+          // (axe: landmark-unique).
           tabIndex={0}
-          role="region"
+          role="group"
           aria-label="Table"
           {...stylex.props(
             styles.tableWrapper,

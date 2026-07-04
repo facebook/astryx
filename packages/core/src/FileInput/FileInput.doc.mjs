@@ -89,6 +89,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the trigger focusable via aria-disabled (opening the file picker stays blocked). Use this instead of wrapping a disabled FileInput in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'isLoading',
       type: 'boolean',
       description:
@@ -135,6 +141,7 @@ export const docs = {
       {guidance: true, description: 'Use changeAction for immediate upload workflows that benefit from optimistic UI.'},
       {guidance: false, description: "Don't use FileInput for directory or folder uploads; that is not supported in v1."},
       {guidance: false, description: "Don't avoid dropzone mode unless space is constrained; drag-and-drop is the expected interaction for file uploads."},
+      {guidance: false, description: "Don't wrap a disabled FileInput in Tooltip to explain why it's disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -212,6 +219,12 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        '说明输入框被禁用的原因。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示工具提示，并通过 aria-disabled 保持触发器可聚焦（打开文件选择器仍被阻止）。请使用此属性，而不是用 Tooltip 包裹已禁用的 FileInput。',
+    },
+    {
       name: 'isLoading',
       type: 'boolean',
       description: '加载状态，显示旋转器并设置 aria-busy。',
@@ -248,6 +261,7 @@ export const docsZh = {
       {guidance: true, description: 'Add a description to communicate constraints.'},
       {guidance: false, description: "Don't use FileInput for directory uploads."},
       {guidance: false, description: "Don't use mode='input' unless space is constrained; dropzone mode provides a better experience."},
+      {guidance: false, description: "Don't wrap a disabled FileInput in Tooltip to explain the disabled state; use the disabledMessage prop instead."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text identifying the field.'},
@@ -272,6 +286,7 @@ export const docsDense = {
       {guidance: true, description: 'Use changeAction for immediate upload workflows that benefit from optimistic UI.'},
       {guidance: false, description: "Don't use FileInput for directory uploads."},
       {guidance: false, description: "Don't use mode='input' unless space is constrained; dropzone mode provides a better experience."},
+      {guidance: false, description: "Don't wrap a disabled FileInput in Tooltip to explain the disabled state; use the disabledMessage prop instead."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text identifying the field.'},
@@ -295,6 +310,8 @@ export const docsDense = {
     isOptional: 'Shows "Optional" indicator.',
     isRequired: 'Shows "Required" indicator+sets aria-required.',
     isDisabled: 'Disables input, prevents interaction.',
+    disabledMessage:
+      'Explains why input is disabled. With isDisabled, shows tooltip on hover/focus + keeps trigger focusable via aria-disabled (opening picker stays blocked). Use instead of wrapping a disabled FileInput in Tooltip.',
     isLoading: 'Loading state w/ spinner+aria-busy.',
     placeholder: 'Placeholder when no files selected.',
     mode: "Visual mode: 'input' (compact) or 'dropzone' (drag-and-drop).",

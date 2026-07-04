@@ -22,8 +22,8 @@ export const docs = {
     },
     {
       name: 'height',
-      type: 'number | string',
-      description: 'Header height.',
+      type: 'SizeValue',
+      description: 'Header height. Numbers are treated as pixels, strings are used as-is.',
     },
     {
       name: 'label',
@@ -57,8 +57,8 @@ export const docsZh = {
     },
     {
       name: 'height',
-      type: 'number | string',
-      description: '页眉高度。',
+      type: 'SizeValue',
+      description: '页眉高度。数字类型会被解释为像素值，字符串类型按原样使用。',
     },
     {
       name: 'label',

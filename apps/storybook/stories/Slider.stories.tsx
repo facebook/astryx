@@ -23,6 +23,11 @@ const meta: Meta<typeof Slider> = {
       control: 'boolean',
       description: 'Whether the slider is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the slider is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the thumb focusable via aria-disabled (value changes stay blocked). Use this instead of wrapping a disabled Slider in Tooltip.',
+    },
     min: {
       control: 'number',
       description: 'Minimum value',
@@ -235,5 +240,22 @@ export const AllVariations: Story = {
         />
       </div>
     );
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the thumb to see
+// why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the thumb stays focusable (value changes are still
+// blocked). Use disabledMessage instead of wrapping a disabled Slider in
+// Tooltip: disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    return <Slider {...(args as any)} />;
+  },
+  args: {
+    label: 'Volume',
+    value: 50,
+    isDisabled: true,
+    disabledMessage: 'Volume is locked while sharing your screen',
   },
 };

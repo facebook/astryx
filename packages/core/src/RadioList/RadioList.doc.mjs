@@ -75,6 +75,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the group is disabled. Applies to the whole-group disabled state (isDisabled), not per item. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the radios focusable via aria-disabled (selection stays blocked). Use this instead of wrapping a disabled RadioList in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'isRequired',
       type: 'boolean',
       description: 'Whether the radio group is required.',
@@ -121,6 +127,7 @@ export const docs = {
       { guidance: false, description: 'Use when multiple selections are needed; use CheckboxList instead.' },
       { guidance: false, description: 'Use for long lists; use Selector for better discoverability.' },
       { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
+      { guidance: false, description: 'Wrap a disabled RadioList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
@@ -142,6 +149,7 @@ export const docsZh = {
       { guidance: false, description: 'Use when multiple selections are needed; use CheckboxList instead.' },
       { guidance: false, description: 'Use for long lists; use Selector for better discoverability.' },
       { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
+      { guidance: false, description: 'Wrap a disabled RadioList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},
@@ -165,6 +173,7 @@ export const docsDense = {
       { guidance: false, description: 'Use when multiple selections are needed; use CheckboxList instead.' },
       { guidance: false, description: 'Use for long lists; use Selector for better discoverability.' },
       { guidance: false, description: 'Use horizontal layout with more than 4 options; it wraps awkwardly.' },
+      { guidance: false, description: 'Wrap a disabled RadioList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
     anatomy: [
       {name: 'Header', required: false, description: 'Optional heading above the radio list.'},

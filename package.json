@@ -53,6 +53,7 @@
     "husky": "^9.1.7",
     "jscodeshift": "^17.3.0",
     "jsdom": "^27.4.0",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -63,6 +64,12 @@
     "vitest": "^2.1.0"
   },
   "packageManager": "pnpm@10.34.1",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "onFail": "error"
+    }
+  },
   "workspaces": [
     "apps/*",
     "packages/*",

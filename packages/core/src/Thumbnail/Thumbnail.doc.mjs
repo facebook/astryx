@@ -126,11 +126,11 @@ export const docsDense = {
     description:
       'Compact square image preview. Shimmer while uploading, image on success, placeholder when empty. Use in chat composers, file lists, or small media previews.',
     bestPractices: [
-      {guidance: true, description: 'Always set label (file name) for a11y \u2014 powers screen reader announce + hover tooltip.'},
+      {guidance: true, description: 'Always set label (file name) for a11y; powers screen reader announce + hover tooltip.'},
       {guidance: true, description: 'isLoading w/o src \u2192 skeleton; isLoading w/ src \u2192 spinner overlay. Two distinct loading states.'},
-      {guidance: true, description: 'onClick adds button semantics + hover shadow \u2014 pair with lightbox for full preview.'},
-      {guidance: false, description: "Don't use for non-image files (PDF, xlsx) \u2014 use file attachment component with icon instead."},
-      {guidance: false, description: "Don't omit alt when src present \u2014 screen readers need image content description, not just label."},
+      {guidance: true, description: 'onClick adds button semantics + hover shadow; pair with lightbox for full preview.'},
+      {guidance: false, description: "Don't use for non-image files (PDF, xlsx); use file attachment component with icon instead."},
+      {guidance: false, description: "Don't omit alt when src present; screen readers need image content description, not just label."},
     ],
   },
   propDescriptions: {

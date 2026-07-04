@@ -37,6 +37,11 @@ const meta: Meta<typeof CheckboxInput> = {
       control: 'boolean',
       description: 'Whether the checkbox is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the checkbox is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the checkbox focusable via aria-disabled (toggling stays blocked). Use this instead of wrapping a disabled CheckboxInput in Tooltip.',
+    },
     isRequired: {
       control: 'boolean',
       description: 'Whether the checkbox is required',
@@ -211,11 +216,7 @@ export const AllVariations: Story = {
           gap: '16px',
           maxWidth: '400px',
         }}>
-        <CheckboxInput
-          label="Unchecked"
-          value={value1}
-          onChange={setValue1}
-        />
+        <CheckboxInput label="Unchecked" value={value1} onChange={setValue1} />
         <CheckboxInput label="Checked" value={value2} onChange={setValue2} />
         <CheckboxInput
           label="Indeterminate"
@@ -465,5 +466,31 @@ export const StatusVariations: Story = {
         />
       </div>
     );
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the checkbox to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the checkbox stays focusable (toggling is still
+// blocked). Use disabledMessage instead of wrapping a disabled CheckboxInput in
+// Tooltip: disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState<boolean | 'indeterminate'>(
+      args.value ?? false,
+    );
+    const {value: _, onChange: __, ...restArgs} = args;
+    return (
+      <CheckboxInput
+        {...restArgs}
+        value={value}
+        onChange={checked => setValue(checked)}
+      />
+    );
+  },
+  args: {
+    label: 'Accept terms',
+    isDisabled: true,
+    disabledMessage: 'Terms are managed by your administrator',
   },
 };

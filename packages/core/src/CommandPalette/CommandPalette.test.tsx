@@ -8,9 +8,10 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import {CommandPalette} from './CommandPalette';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
+import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
 
 const simpleSource = createStaticSource([
   {id: 'home', label: 'Home'},
@@ -222,5 +223,50 @@ describe('CommandPalette', () => {
     });
     dialog.dispatchEvent(escapeEvent);
     expect(handleOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('keeps the empty state mounted while a no-result search is pending', async () => {
+    // A source whose searches resolve only when we release them, so we can
+    // observe the render output while a search transition is in flight.
+    const resolvers: ((items: SearchableItem[]) => void)[] = [];
+    const source: SearchSource = {
+      bootstrap: () => [],
+      async search(): Promise<SearchableItem[]> {
+        return new Promise<SearchableItem[]>(resolve => {
+          resolvers.push(resolve);
+        });
+      },
+    };
+
+    render(
+      <CommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={source}
+        emptyBootstrapText="Type to search"
+        emptySearchText="No results"
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+
+    // First search: commits an empty result for query "z".
+    fireEvent.change(input, {target: {value: 'z'}});
+    await waitFor(() => expect(resolvers).toHaveLength(1));
+    resolvers[0]([]);
+    await waitFor(() =>
+      expect(screen.getByText('No results')).toBeInTheDocument(),
+    );
+
+    // Second keystroke while already empty: the empty state must remain in the
+    // DOM for the whole pending window — no unmount/remount flash.
+    fireEvent.change(input, {target: {value: 'zz'}});
+    expect(screen.getByText('No results')).toBeInTheDocument();
+    await waitFor(() => expect(resolvers).toHaveLength(2));
+    expect(screen.getByText('No results')).toBeInTheDocument();
+    resolvers[1]([]);
+    await waitFor(() =>
+      expect(screen.getByText('No results')).toBeInTheDocument(),
+    );
   });
 });

@@ -4,7 +4,7 @@
  * @file groupStyles.ts
  * @input Uses StyleX, theme tokens
  * @output Exports shared group-aware styles for input components
- * @position Shared styles consumed by TextInput, NumberInput when inside an InputGroup
+ * @position Shared styles consumed by InputGroup-compatible controls
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -30,10 +30,16 @@ export const groupStyles = stylex.create({
     borderStartEndRadius: {
       default: 0,
       ':last-child': radiusVars['--radius-element'],
+      ':has(+ [popover]:last-child)': radiusVars['--radius-element'],
+      ':has(+ [popover] + [popover]:last-child)':
+        radiusVars['--radius-element'],
     },
     borderEndEndRadius: {
       default: 0,
       ':last-child': radiusVars['--radius-element'],
+      ':has(+ [popover]:last-child)': radiusVars['--radius-element'],
+      ':has(+ [popover] + [popover]:last-child)':
+        radiusVars['--radius-element'],
     },
     ':focus-within': {
       zIndex: 1,

@@ -321,8 +321,19 @@ export function useLayer(
   const isOpenRef = useRef(false);
 
   const show = useCallback(() => {
-    if (popoverRef.current && !isOpenRef.current) {
-      popoverRef.current.showPopover();
+    const el = popoverRef.current;
+    if (el && !isOpenRef.current) {
+      // Finding infra-4: the Popover API is unsupported on Safari <17 and
+      // Firefox <125. On those browsers `showPopover` does not exist, so
+      // calling it unconditionally throws a TypeError and the layer never
+      // opens. Guard behind a feature check; when the API is missing, fall
+      // back to plain visibility (the [popover] attribute is inert there, so
+      // the element sits in normal flow) so the layer still becomes visible.
+      if (typeof el.showPopover === 'function') {
+        el.showPopover();
+      } else {
+        el.style.display = 'block';
+      }
       isOpenRef.current = true;
       setIsOpen(true);
       onShow?.();
@@ -331,7 +342,16 @@ export function useLayer(
 
   const hide = useCallback(() => {
     if (isOpenRef.current) {
-      popoverRef.current?.hidePopover();
+      const el = popoverRef.current;
+      // See finding infra-4 note in `show`: mirror the same guard on hide so
+      // unsupported browsers degrade gracefully instead of throwing.
+      if (el) {
+        if (typeof el.hidePopover === 'function') {
+          el.hidePopover();
+        } else {
+          el.style.display = 'none';
+        }
+      }
       isOpenRef.current = false;
       setIsOpen(false);
       onHide?.();

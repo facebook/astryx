@@ -26,7 +26,7 @@ import {stack} from '../Stack/stack.stylex';
 import {stackItem} from '../Stack/stackItem.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import type {SpacingStep} from '../utils/types';
+import type {SizeValue, SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {
   layoutPaddingOuterXVarStyles,
@@ -76,12 +76,12 @@ const styles = stylex.create({
 });
 
 const dynamicStyles = stylex.create({
-  contentWidthVar: (width: number) => ({
-    '--layout-content-width': `${width}px`,
+  contentWidthVar: (width: SizeValue) => ({
+    '--layout-content-width': typeof width === 'number' ? `${width}px` : width,
   }),
-  contentWidth: (width: number) => ({
+  contentWidth: (width: SizeValue) => ({
     width: '100%',
-    maxWidth: width,
+    maxWidth: typeof width === 'number' ? `${width}px` : width,
     marginInline: 'auto',
   }),
 });
@@ -102,11 +102,12 @@ export interface LayoutProps extends Omit<BaseProps, 'content'> {
    * panels). Dividers remain full-bleed. Content is centered with
    * `margin-inline: auto` when narrower than the available space.
    *
-   * Accepts any pixel value. Common page widths from internal patterns:
+   * Numbers are treated as pixels, strings are used as-is (e.g., '60ch').
+   * Common page widths:
    * - `640` — forms, settings, text-focused pages
    * - `960` — content pages, component demos, wider layouts
    */
-  contentWidth?: number;
+  contentWidth?: SizeValue;
 
   /**
    * End panel slot (right in LTR, left in RTL).
@@ -148,15 +149,6 @@ export interface LayoutProps extends Omit<BaseProps, 'content'> {
    * When not set, nested layouts inherit from their parent context.
    */
   defaultHasDividers?: boolean;
-
-  /**
-   * CSS class name(s) appended to the root element.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element.
-   */
-  style?: React.CSSProperties;
 
   /**
    * Children are a shorthand for the `content` slot:

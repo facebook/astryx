@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MultiSelector} from './MultiSelector';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -891,6 +891,155 @@ describe('MultiSelector', () => {
       await waitFor(() => {
         expect(politeRegion()).toHaveTextContent('Selection cleared');
       });
+    });
+  });
+
+  describe('disabledMessage', () => {
+    it('shows the reason tooltip on hover when disabled with a reason', async () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Select a table first"
+          data-testid="fruit-multi-selector"
+        />,
+      );
+
+      const container = screen.getByTestId('fruit-multi-selector');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('Select a table first');
+
+      fireEvent.mouseEnter(container);
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+
+      fireEvent.mouseLeave(container);
+      await waitFor(() => {
+        expect(tooltip).not.toHaveAttribute('popover-open');
+      });
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Select a table first"
+        />,
+      );
+
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          disabledMessage="Select a table first"
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the trigger focusable via aria-disabled when a reason is provided', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Select a table first"
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).not.toBeDisabled();
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
+      expect(trigger).toHaveAttribute('tabIndex', '0');
+    });
+
+    it('links the reason tooltip from the trigger via aria-describedby', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Select a table first"
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(trigger.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks activation while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={onChange}
+          isDisabled
+          disabledMessage="Select a table first"
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+      await user.keyboard('{Enter}');
+      await user.keyboard('{ArrowDown}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('remains non-focusable when disabled without a reason', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).toBeDisabled();
+      expect(trigger).toHaveAttribute('tabIndex', '-1');
     });
   });
 });

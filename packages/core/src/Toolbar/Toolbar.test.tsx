@@ -71,9 +71,12 @@ describe('Toolbar', () => {
     expect(screen.getByTestId('center')).toBeInTheDocument();
     expect(screen.getByTestId('end')).toBeInTheDocument();
 
-    // Three-slot layout produces 3 child divs
+    // Three-slot layout produces 3 child divs (plus the aria-hidden
+    // keyboard-hint popover, which is excluded here as an implementation detail)
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.children).toHaveLength(3);
+    expect(toolbar.querySelectorAll(':scope > :not([popover])')).toHaveLength(
+      3,
+    );
   });
 
   it('renders two-slot layout without centerContent', () => {
@@ -87,9 +90,12 @@ describe('Toolbar', () => {
     expect(screen.getByTestId('start')).toBeInTheDocument();
     expect(screen.getByTestId('end')).toBeInTheDocument();
 
-    // Two-slot layout produces 2 child divs
+    // Two-slot layout produces 2 child divs (plus the aria-hidden
+    // keyboard-hint popover, excluded here)
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.children).toHaveLength(2);
+    expect(toolbar.querySelectorAll(':scope > :not([popover])')).toHaveLength(
+      2,
+    );
   });
 
   it('renders start-only layout', () => {
@@ -101,7 +107,9 @@ describe('Toolbar', () => {
     );
     expect(screen.getByTestId('start')).toBeInTheDocument();
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.children).toHaveLength(1);
+    expect(toolbar.querySelectorAll(':scope > :not([popover])')).toHaveLength(
+      1,
+    );
   });
 
   it('renders end-only layout', () => {
@@ -113,7 +121,9 @@ describe('Toolbar', () => {
     );
     expect(screen.getByTestId('end')).toBeInTheDocument();
     const toolbar = screen.getByRole('toolbar');
-    expect(toolbar.children).toHaveLength(1);
+    expect(toolbar.querySelectorAll(':scope > :not([popover])')).toHaveLength(
+      1,
+    );
   });
 
   it('sets aria-orientation to horizontal by default', () => {
@@ -300,5 +310,53 @@ describe('Toolbar', () => {
     await user.keyboard('{ArrowRight}');
     // Caret movement stays in the input; focus is not stolen by the toolbar.
     expect(document.activeElement).toBe(inputEl);
+  });
+
+  it('composes consumer onKeyDown with internal arrow navigation', async () => {
+    const user = userEvent.setup();
+    const onKeyDown = vi.fn();
+
+    render(
+      <Toolbar
+        label="Actions"
+        onKeyDown={onKeyDown}
+        startContent={
+          <>
+            <button type="button">Cut</button>
+            <button type="button">Copy</button>
+          </>
+        }
+      />,
+    );
+
+    const buttons = screen.getAllByRole('button');
+    buttons[0].focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(onKeyDown).toHaveBeenCalled();
+    expect(buttons[1]).toHaveFocus();
+  });
+
+  it('respects preventDefault from consumer onKeyDown', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <Toolbar
+        label="Actions"
+        onKeyDown={e => e.preventDefault()}
+        startContent={
+          <>
+            <button type="button">Cut</button>
+            <button type="button">Copy</button>
+          </>
+        }
+      />,
+    );
+
+    const buttons = screen.getAllByRole('button');
+    buttons[0].focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(buttons[0]).toHaveFocus();
   });
 });

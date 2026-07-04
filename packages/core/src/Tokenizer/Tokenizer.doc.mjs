@@ -71,6 +71,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the tokenizer is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (input stays blocked). Use this instead of wrapping a disabled Tokenizer in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'status',
       type: 'InputStatus',
       description:
@@ -172,7 +178,7 @@ export const docs = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value \u2014 not an inline style object like style={{}}.',
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value; not an inline style object like style={{}}.',
     },
   ],
   theming: {
@@ -184,13 +190,14 @@ export const docs = {
     description:
       'Tokenizer is a multi-select input that lets users search, select, and manage multiple items displayed as removable chips. Use it when users need to build a set of selections from a searchable data source, like adding team members, applying tags, or choosing filters.',
     bestPractices: [
-      {guidance: true, description: 'Write a placeholder that tells users what they can search for \u2014 "Search people\u2026" or "Add tags\u2026" \u2014 so the input is not a blank mystery.'},
+      {guidance: true, description: 'Write a placeholder that tells users what they can search for, such as "Search people..." or "Add tags...", so the input is not a blank mystery.'},
       {guidance: true, description: 'Set maxEntries when the number of selections should be bounded, like limiting a review to 5 approvers.'},
       {guidance: true, description: 'Use hasCreate for free-form tagging where users need to enter values that do not exist in the search source.'},
       {guidance: true, description: 'Show validation status with the status prop so users know immediately when a selection is missing or invalid.'},
-      {guidance: false, description: 'Don\u2019t use Tokenizer for single-item selection \u2014 use Typeahead instead. Tokenizer is for building sets of two or more items.'},
-      {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer \u2014 use the default token style for visual consistency across the set.'},
-      {guidance: false, description: 'Don\u2019t hide the label \u2014 every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
+      {guidance: false, description: 'Don\'t use Tokenizer for single-item selection; use Typeahead instead. Tokenizer is for building sets of two or more items.'},
+      {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer; use the default token style for visual consistency across the set.'},
+      {guidance: false, description: 'Don\'t hide the label; every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
+      {guidance: false, description: 'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text above the input describing what the user is selecting. Also used as the accessible name.'},
@@ -269,6 +276,12 @@ export const docsZh = {
       type: 'boolean',
       description: '\u7981\u7528\u8f93\u5165\u6846\u548c\u6240\u6709\u6807\u8bb0\u4ea4\u4e92\u3002',
       default: 'false',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the tokenizer is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (input stays blocked). Use this instead of wrapping a disabled Tokenizer in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
     },
     {
       name: 'status',
@@ -361,7 +374,7 @@ export const docsZh = {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        '\u7528\u4e8e\u5e03\u5c40\u81ea\u5b9a\u4e49\u7684 StyleX \u6837\u5f0f\uff08\u5916\u8fb9\u8ddd\u3001\u5b9a\u4f4d\u3001\u5c3a\u5bf8\uff09\u3002\u5fc5\u987b\u662f stylex.create() \u7684\u503c \u2014 \u4e0d\u80fd\u662f\u5185\u8054\u6837\u5f0f\u5bf9\u8c61\u5982 style={{}}\u3002',
+        '\u7528\u4e8e\u5e03\u5c40\u81ea\u5b9a\u4e49\u7684 StyleX \u6837\u5f0f\uff08\u5916\u8fb9\u8ddd\u3001\u5b9a\u4f4d\u3001\u5c3a\u5bf8\uff09\u3002\u5fc5\u987b\u662f stylex.create() \u7684\u503c; \u4e0d\u80fd\u662f\u5185\u8054\u6837\u5f0f\u5bf9\u8c61\u5982 style={{}}\u3002',
     },
   ],
   theming: {
@@ -373,13 +386,14 @@ export const docsZh = {
     description:
       'Tokenizer is a multi-select input that lets users search, select, and manage multiple items displayed as removable chips. Use it when users need to build a set of selections from a searchable data source, like adding team members, applying tags, or choosing filters.',
     bestPractices: [
-      {guidance: true, description: 'Write a placeholder that tells users what they can search for \u2014 "Search people\u2026" or "Add tags\u2026" \u2014 so the input is not a blank mystery.'},
+      {guidance: true, description: 'Write a placeholder that tells users what they can search for, such as "Search people..." or "Add tags...", so the input is not a blank mystery.'},
       {guidance: true, description: 'Set maxEntries when the number of selections should be bounded, like limiting a review to 5 approvers.'},
       {guidance: true, description: 'Use hasCreate for free-form tagging where users need to enter values that do not exist in the search source.'},
       {guidance: true, description: 'Show validation status with the status prop so users know immediately when a selection is missing or invalid.'},
-      {guidance: false, description: 'Don\u2019t use Tokenizer for single-item selection \u2014 use Typeahead instead. Tokenizer is for building sets of two or more items.'},
-      {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer \u2014 use the default token style for visual consistency across the set.'},
-      {guidance: false, description: 'Don\u2019t hide the label \u2014 every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
+      {guidance: false, description: 'Don\'t use Tokenizer for single-item selection; use Typeahead instead. Tokenizer is for building sets of two or more items.'},
+      {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer; use the default token style for visual consistency across the set.'},
+      {guidance: false, description: 'Don\'t hide the label; every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
+      {guidance: false, description: 'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text above the input describing what the user is selecting. Also used as the accessible name.'},
@@ -399,13 +413,14 @@ export const docsDense = {
     description:
       'Multi-select input for searching and selecting multiple items as removable chips. Use for team members, tags, filters, or any set built from a searchable source.',
     bestPractices: [
-      {guidance: true, description: 'Placeholder that communicates what to search \u2014 "Search people\u2026" not blank.'},
+      {guidance: true, description: 'Placeholder that communicates what to search, such as "Search people..." rather than blank.'},
       {guidance: true, description: 'maxEntries when selections are bounded (e.g. 5 approvers max).'},
       {guidance: true, description: 'hasCreate for free-form tagging with values not in the source.'},
       {guidance: true, description: 'status prop for immediate validation feedback.'},
-      {guidance: false, description: 'Don\u2019t use for single-item selection \u2014 use Typeahead instead.'},
-      {guidance: false, description: 'Avoid custom token colors \u2014 default style for consistency.'},
-      {guidance: false, description: 'Don\u2019t hide the label unless context makes purpose obvious.'},
+      {guidance: false, description: 'Don\'t use for single-item selection; use Typeahead instead.'},
+      {guidance: false, description: 'Avoid custom token colors; default style for consistency.'},
+      {guidance: false, description: 'Don\'t hide the label unless context makes purpose obvious.'},
+      {guidance: false, description: 'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
     ],
   },
   propDescriptions: {

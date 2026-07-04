@@ -4,13 +4,15 @@
 
 /**
  * @file MultiSelector.tsx
- * @input Uses React, StyleX, usePopover, CheckboxInput, Field, Badge, Icon
+ * @input Uses React, StyleX, usePopover, useTooltip, CheckboxInput, Field, Badge, Icon, InputGroupContext
  * @output Exports MultiSelector component
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
  * - /packages/core/src/MultiSelector/MultiSelector.doc.mjs
+ * - /packages/core/src/MultiSelector/MultiSelector.test.tsx
  * - /packages/core/src/MultiSelector/index.ts
+ * - /apps/storybook/stories/InputGroup.stories.tsx
  * - /packages/cli/templates/blocks/components/MultiSelector/ (showcase blocks)
  */
 
@@ -27,6 +29,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
+import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import type {IconName} from '../Icon';
 import {
@@ -64,12 +67,15 @@ import {
   getSelectableOptions,
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
-import {mergeProps} from '../utils';
+import {getInputARIA, mergeProps} from '../utils';
 import {useAnnounce} from '../hooks/useAnnounce';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 // Sentinel value for the select-all item in keyboard navigation
 const SELECT_ALL_VALUE = '__xds_select_all__';
@@ -399,6 +405,30 @@ export interface MultiSelectorProps<
   isDisabled?: boolean;
 
   /**
+   * Explains why the selector is disabled. When set together with
+   * `isDisabled`, the selector shows a tooltip with this text on hover and
+   * keyboard focus, and the trigger stays focusable (via `aria-disabled`)
+   * so the reason is discoverable by keyboard and assistive technology.
+   * Activation stays blocked.
+   *
+   * Use this instead of wrapping a disabled selector in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <MultiSelector
+   *   label="Columns"
+   *   options={columns}
+   *   value={selected}
+   *   onChange={setSelected}
+   *   isDisabled
+   *   disabledMessage="Select a table first"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
+
+  /**
    * The options to display in the selector.
    * Can be strings, objects, dividers, or sections.
    */
@@ -546,6 +576,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  disabledMessage,
   options,
   value,
   onChange,
@@ -576,9 +607,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+  const inputLabelId = useId();
   const searchId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -593,14 +626,29 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
-  // Build aria-describedby
-  const ariaDescribedBy =
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the trigger container (which already exists)
+  // and the trigger button stays perceivable via aria-disabled instead of the
+  // disabled attribute. Activation is blocked by the isDisabled guards in
+  // useMultiCombobox (onTriggerClick / onKeyDown).
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The container div is not naturally focusable; focusin bubbles up from
+    // the trigger button, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    inputLabelId,
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+    ],
+    inputGroup,
+  );
 
   // Flatten options for keyboard navigation
   const selectableItems = useMemo(
@@ -1166,30 +1214,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     return elements;
   }, [options, renderItem, sortedItems, searchQuery, hasSelectAll]);
 
-  return (
-    <Field
-      label={label}
-      isLabelHidden={isLabelHidden}
-      description={description}
-      inputID={triggerId}
-      descriptionID={description ? descriptionId : undefined}
-      isOptional={isOptional}
-      isRequired={isRequired}
-      isDisabled={isDisabled}
-      status={
-        status
-          ? {
-              type: status.type,
-              message: status.message,
-              messageID: status.message ? statusMessageId : undefined,
-            }
-          : undefined
-      }
-      labelTooltip={labelTooltip}
-      width={width}>
+  const multiSelectorContent = (
+    <>
       <div
         ref={el => {
           popover.triggerRef(el);
+          // Anchor + hover/focus listeners for the disabled-message tooltip.
+          // Handlers are gated internally by isEnabled, and anchor names
+          // compose, so attaching unconditionally is safe.
+          disabledMessageTooltip.ref(el);
         }}
         onClick={onTriggerClick}
         data-testid={testId}
@@ -1203,6 +1236,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             optimisticValue.length === 0 && styles.triggerPlaceholder,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
+            inputGroup && groupStyles.inGroup,
             xstyle,
           ),
           className,
@@ -1210,6 +1244,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         )}>
         {startIcon &&
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+        {inputGroup && (
+          <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>
+        )}
         <button
           ref={triggerRef}
           id={triggerId}
@@ -1227,12 +1264,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               : undefined
           }
           aria-describedby={ariaDescribedBy}
+          aria-labelledby={ariaLabelledBy}
           aria-required={isRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
-          disabled={isDisabled}
+          // With a disabledMessage the trigger keeps focusability via
+          // aria-disabled so the reason is focus-discoverable; activation is
+          // still blocked by the isDisabled guards in useMultiCombobox.
+          disabled={isDisabled && !showsDisabledMessage}
+          aria-disabled={showsDisabledMessage ? 'true' : undefined}
           onKeyDown={onKeyDown}
-          tabIndex={isDisabled ? -1 : 0}
+          tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerContent)}>
             {renderTriggerContent()}
@@ -1283,6 +1325,38 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           xstyle: styles.popover,
         },
       )}
+
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
+    </>
+  );
+
+  if (inputGroup) {
+    return multiSelectorContent;
+  }
+
+  return (
+    <Field
+      label={label}
+      isLabelHidden={isLabelHidden}
+      description={description}
+      inputID={triggerId}
+      descriptionID={description ? descriptionId : undefined}
+      isOptional={isOptional}
+      isRequired={isRequired}
+      isDisabled={isDisabled}
+      status={
+        status
+          ? {
+              type: status.type,
+              message: status.message,
+              messageID: status.message ? statusMessageId : undefined,
+            }
+          : undefined
+      }
+      labelTooltip={labelTooltip}
+      width={width}>
+      {multiSelectorContent}
     </Field>
   );
 }

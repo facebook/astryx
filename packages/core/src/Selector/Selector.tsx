@@ -4,13 +4,15 @@
 
 /**
  * @file Selector.tsx
- * @input Uses React, StyleX, usePopover, Icon
+ * @input Uses React, StyleX, usePopover, useTooltip, Icon, InputGroupContext
  * @output Exports Selector component
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Selector/Selector.doc.mjs
+ * - /packages/core/src/Selector/Selector.test.tsx
  * - /packages/core/src/Selector/index.ts
+ * - /apps/storybook/stories/InputGroup.stories.tsx
  * - /packages/cli/templates/blocks/components/Selector/ (showcase blocks)
  */
 
@@ -27,6 +29,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
+import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import type {IconName} from '../Icon';
 import {
@@ -61,11 +64,14 @@ import {
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {SelectorOption} from './SelectorOption';
-import {mergeProps} from '../utils';
+import {getInputARIA, mergeProps} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
@@ -370,6 +376,28 @@ interface SelectorPropsBase<
   isDisabled?: boolean;
 
   /**
+   * Explains why the selector is disabled. When set together with
+   * `isDisabled`, the selector shows a tooltip with this text on hover and
+   * keyboard focus, and the trigger stays focusable (via `aria-disabled`)
+   * so the reason is discoverable by keyboard and assistive technology.
+   * Activation stays blocked.
+   *
+   * Use this instead of wrapping a disabled selector in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <Selector
+   *   label="Owner"
+   *   options={owners}
+   *   isDisabled
+   *   disabledMessage="You need the Editor role to change this"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
+
+  /**
    * The options to display in the selector.
    * Can be strings, objects, dividers, or sections.
    */
@@ -525,6 +553,7 @@ export function Selector<T extends SelectorOptionType>(
     isOptional = false,
     isRequired = false,
     isDisabled = false,
+    disabledMessage,
     options,
     value,
     onChange,
@@ -557,9 +586,11 @@ export function Selector<T extends SelectorOptionType>(
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+  const inputLabelId = useId();
   const searchId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -567,14 +598,29 @@ export function Selector<T extends SelectorOptionType>(
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
   const isBusy = isLoading || optimisticValue !== normalizedValue;
 
-  // Build aria-describedby
-  const ariaDescribedBy =
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the trigger container (which already exists)
+  // and the trigger button stays perceivable via aria-disabled instead of the
+  // disabled attribute. Activation is blocked by the isDisabled guards in
+  // useCombobox (onTriggerClick / onKeyDown).
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The container div is not naturally focusable; focusin bubbles up from
+    // the trigger button, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    inputLabelId,
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+    ],
+    inputGroup,
+  );
 
   // Flatten options for keyboard navigation
   const selectableItems = useMemo(
@@ -878,30 +924,15 @@ export function Selector<T extends SelectorOptionType>(
     return elements;
   }, [options, renderItem, hasSearch, searchQuery, filteredItems]);
 
-  return (
-    <Field
-      label={label}
-      isLabelHidden={isLabelHidden}
-      description={description}
-      inputID={triggerId}
-      descriptionID={description ? descriptionId : undefined}
-      isOptional={isOptional}
-      isRequired={isRequired}
-      isDisabled={isDisabled}
-      status={
-        status
-          ? {
-              type: status.type,
-              message: status.message,
-              messageID: status.message ? statusMessageId : undefined,
-            }
-          : undefined
-      }
-      labelTooltip={labelTooltip}
-      width={width}>
+  const selectorContent = (
+    <>
       <div
         ref={el => {
           popover.triggerRef(el);
+          // Anchor + hover/focus listeners for the disabled-message tooltip.
+          // Handlers are gated internally by isEnabled, and anchor names
+          // compose, so attaching unconditionally is safe.
+          disabledMessageTooltip.ref(el);
         }}
         onClick={onTriggerClick}
         data-testid={testId}
@@ -915,6 +946,7 @@ export function Selector<T extends SelectorOptionType>(
             !selectedItem && styles.triggerPlaceholder,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
+            inputGroup && groupStyles.inGroup,
             xstyle,
           ),
           className,
@@ -922,6 +954,9 @@ export function Selector<T extends SelectorOptionType>(
         )}>
         {startIcon &&
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+        {inputGroup && (
+          <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>
+        )}
         <button
           ref={triggerRef}
           id={triggerId}
@@ -940,12 +975,17 @@ export function Selector<T extends SelectorOptionType>(
               : undefined
           }
           aria-describedby={ariaDescribedBy}
+          aria-labelledby={ariaLabelledBy}
           aria-required={isRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
-          disabled={isDisabled}
+          // With a disabledMessage the trigger keeps focusability via
+          // aria-disabled so the reason is focus-discoverable; activation is
+          // still blocked by the isDisabled guards in useCombobox.
+          disabled={isDisabled && !showsDisabledMessage}
+          aria-disabled={showsDisabledMessage ? 'true' : undefined}
           onKeyDown={onKeyDown}
-          tabIndex={isDisabled ? -1 : 0}
+          tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerLabel)}>
             {selectedItem?.label ?? placeholder}
@@ -1012,6 +1052,38 @@ export function Selector<T extends SelectorOptionType>(
           style: popoverOffsetStyle,
         },
       )}
+
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
+    </>
+  );
+
+  if (inputGroup) {
+    return selectorContent;
+  }
+
+  return (
+    <Field
+      label={label}
+      isLabelHidden={isLabelHidden}
+      description={description}
+      inputID={triggerId}
+      descriptionID={description ? descriptionId : undefined}
+      isOptional={isOptional}
+      isRequired={isRequired}
+      isDisabled={isDisabled}
+      status={
+        status
+          ? {
+              type: status.type,
+              message: status.message,
+              messageID: status.message ? statusMessageId : undefined,
+            }
+          : undefined
+      }
+      labelTooltip={labelTooltip}
+      width={width}>
+      {selectorContent}
     </Field>
   );
 }

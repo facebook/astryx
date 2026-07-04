@@ -50,6 +50,13 @@ export const docs = {
       required: false,
     },
     {
+      name: 'options.hasRovingTabIndex',
+      type: 'boolean',
+      description: 'When true, the hook owns a single roving tab stop across the visible treeitems (stamps tabindex 0/-1, repairs on mount, moves with navigation). Preserves an existing tabindex="0" seed on mount. Attach the returned `handleFocus` to keep the stop in sync after clicks.',
+      default: 'false',
+      required: false,
+    },
+    {
       name: 'options.typeahead',
       type: 'boolean',
       description: 'Whether typeahead (jump to next item whose text starts with the typed characters) is enabled.',
@@ -69,6 +76,11 @@ export const docs = {
       description: 'Key down handler to attach to the tree container.',
     },
     {
+      name: 'handleFocus',
+      type: '(e: React.FocusEvent) => void',
+      description: 'Focus handler to attach to the container\'s onFocus. Keeps the roving tab stop in sync when hasRovingTabIndex is enabled; a no-op otherwise, so always safe to attach.',
+    },
+    {
       name: 'focusFirst',
       type: '() => void',
       description: 'Focus the first enabled visible treeitem.',
@@ -85,7 +97,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use for hierarchical tree widgets: wire onToggleExpand to your expansion state and onActiveChange to a single roving tab stop.' },
       { guidance: true, description: 'Attach both treeRef and handleKeyDown to the role="tree" container element.' },
-      { guidance: false, description: 'Use for linear lists (prefer useListFocus) or 2D grids (prefer useGridFocus) — those traversals differ from a tree.' },
+      { guidance: false, description: 'Use for linear lists (prefer useListFocus) or 2D grids (prefer useGridFocus); those traversals differ from a tree.' },
     ],
   },
   relatedComponents: ['TreeList'],
@@ -106,11 +118,13 @@ export const docsDense = {
     'options.onToggleExpand': 'expand/collapse treeitem by id (ArrowRight collapsed parent, ArrowLeft expanded parent, Enter/Space parent w/o own action).',
     'options.onActivate': 'called on Enter/Space activation. Return true when handled; else hook falls back to toggling expansion.',
     'options.onActiveChange': 'notified when focus moves to a treeitem. Use to move a single roving tab stop.',
+    'options.hasRovingTabIndex': 'hook owns a single roving tab stop (stamps tabindex 0/-1, repairs on mount, moves w/ nav). Preserves an existing tabindex="0" seed. Attach handleFocus to sync after clicks.',
     'options.typeahead': 'enable typeahead (jump to next item whose text starts with typed chars).',
   },
   returnDescriptions: {
     treeRef: 'ref to attach to tree container (role="tree").',
     handleKeyDown: 'key down handler for tree container.',
+    handleFocus: 'onFocus handler; keeps roving tab stop in sync when hasRovingTabIndex on (no-op otherwise).',
     focusFirst: 'focus first enabled visible treeitem.',
     focusLast: 'focus last enabled visible treeitem.',
   },

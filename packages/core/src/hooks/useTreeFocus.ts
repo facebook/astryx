@@ -4,7 +4,7 @@
 
 /**
  * @file useTreeFocus.ts
- * @input Uses React useCallback, useRef
+ * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect
  * @output Exports useTreeFocus hook for WAI-ARIA tree keyboard navigation
  * @position Core hook; used by TreeList for roving tabindex + APG tree keyboard model
  *
@@ -15,6 +15,7 @@
  */
 
 import {useCallback, useRef} from 'react';
+import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 
 /** Keys handled by the tree keyboard model (used to gate typeahead). */
 const NAVIGATION_KEYS = new Set([
@@ -109,7 +110,10 @@ export interface UseTreeFocusOptions {
    * @param item The focused treeitem element.
    * @param id The treeitem's id (per `getItemId`), if any.
    */
-  onActivate?: (item: HTMLElement, id: string | undefined) => boolean | undefined;
+  onActivate?: (
+    item: HTMLElement,
+    id: string | undefined,
+  ) => boolean | undefined;
 
   /**
    * Whether typeahead (jump to next item whose text starts with the typed
@@ -126,6 +130,25 @@ export interface UseTreeFocusOptions {
    * TreeList uses this to move its single roving tab stop.
    */
   onActiveChange?: (id: string | undefined) => void;
+
+  /**
+   * Roving-tabindex ownership. When true, the hook manages a single tab stop
+   * across the visible treeitems: exactly one enabled treeitem carries
+   * `tabindex="0"` and the rest `tabindex="-1"`. The tab stop is repaired on
+   * mount and whenever items mount/unmount or toggle disabled, and moves with
+   * keyboard navigation. Attach the returned {@link UseTreeFocusReturn.handleFocus}
+   * to the container's `onFocus` to keep the stop in sync after clicks or
+   * programmatic focus.
+   *
+   * On mount the hook preserves an existing `tabindex="0"` treeitem (so a
+   * consumer can seed the active item in its render); if none exists it
+   * promotes the first enabled treeitem.
+   *
+   * When false (the default), the hook only *moves* focus (`.focus()`) and
+   * never touches `tabindex` — the caller owns tab-stop management.
+   * @default false
+   */
+  hasRovingTabIndex?: boolean;
 }
 
 /**
@@ -137,6 +160,13 @@ export interface UseTreeFocusReturn<T extends HTMLElement = HTMLElement> {
 
   /** Key down handler to attach to the tree container. */
   handleKeyDown: (e: React.KeyboardEvent) => void;
+
+  /**
+   * Focus handler to attach to the container's `onFocus`. Keeps the roving tab
+   * stop in sync when `hasRovingTabIndex` is enabled; a no-op otherwise, so it
+   * is always safe to attach.
+   */
+  handleFocus: (e: React.FocusEvent) => void;
 
   /** Focus the first enabled visible treeitem. */
   focusFirst: () => void;
@@ -167,12 +197,12 @@ export interface UseTreeFocusReturn<T extends HTMLElement = HTMLElement> {
  *
  * @example
  * ```
- * const {treeRef, handleKeyDown} = useTreeFocus<HTMLUListElement>({
+ * const {treeRef, handleKeyDown, handleFocus} = useTreeFocus<HTMLUListElement>({
  *   onToggleExpand: id => toggle(id),
- *   onActiveChange: id => setActiveId(id),
+ *   hasRovingTabIndex: true,
  * });
  *
- * <ul ref={treeRef} role="tree" onKeyDown={handleKeyDown}>
+ * <ul ref={treeRef} role="tree" onKeyDown={handleKeyDown} onFocus={handleFocus}>
  *   {items.map(item => <li role="treeitem" tabIndex={-1}>{item.label}</li>)}
  * </ul>
  * ```
@@ -192,6 +222,7 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
     typeahead = true,
     typeaheadResetMs = DEFAULT_TYPEAHEAD_RESET_MS,
     onActiveChange,
+    hasRovingTabIndex = false,
   } = options;
 
   const treeRef = useRef<T>(null);
@@ -245,16 +276,68 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
     [getItemId],
   );
 
+  // --- Roving tabindex ownership (opt-in via `hasRovingTabIndex`) -------------
+
+  /**
+   * Set `tabindex` on a treeitem, but only when it differs (avoids redundant
+   * DOM writes).
+   */
+  const setTabIndex = useCallback((el: HTMLElement, value: 0 | -1) => {
+    if (el.getAttribute('tabindex') !== String(value)) {
+      el.setAttribute('tabindex', String(value));
+    }
+  }, []);
+
+  /**
+   * Make `target` the sole tabbable treeitem: 0 on it, -1 on every other
+   * visible treeitem.
+   */
+  const moveTabStop = useCallback(
+    (items: HTMLElement[], target: HTMLElement) => {
+      for (const el of items) {
+        setTabIndex(el, el === target ? 0 : -1);
+      }
+    },
+    [setTabIndex],
+  );
+
+  /**
+   * Repair the roving tab stop: exactly one enabled treeitem is tabbable (0),
+   * the rest are -1. Prefer an existing `tabindex="0"` treeitem (so a consumer
+   * can seed the active item in its render); otherwise promote the first
+   * enabled treeitem.
+   */
+  const syncTabStops = useCallback(() => {
+    const items = getItems();
+    const enabled = items.filter(el => !itemDisabled(el));
+    if (enabled.length === 0) {
+      return;
+    }
+    const current = enabled.find(el => el.getAttribute('tabindex') === '0');
+    moveTabStop(items, current ?? enabled[0]);
+  }, [getItems, itemDisabled, moveTabStop]);
+
+  // Keep the tab stop valid across renders (items added/removed, disabled
+  // toggled). Runs after every commit but only when roving tabindex is on.
+  useIsomorphicLayoutEffect(() => {
+    if (hasRovingTabIndex) {
+      syncTabStops();
+    }
+  });
+
   /** Move focus to a treeitem and notify the active-change listener. */
   const focusItem = useCallback(
     (el: HTMLElement | undefined) => {
       if (el == null) {
         return;
       }
+      if (hasRovingTabIndex) {
+        moveTabStop(getItems(), el);
+      }
       onActiveChange?.(idOf(el));
       el.focus();
     },
-    [idOf, onActiveChange],
+    [idOf, onActiveChange, hasRovingTabIndex, moveTabStop, getItems],
   );
 
   /**
@@ -455,9 +538,21 @@ export function useTreeFocus<T extends HTMLElement = HTMLElement>(
     ],
   );
 
+  /**
+   * Keep the roving stop pointing at whatever ended up focused (e.g. a click
+   * or programmatic focus) so the next Tab behaves correctly. No-op unless
+   * roving tabindex is enabled.
+   */
+  const handleFocus = useCallback(() => {
+    if (hasRovingTabIndex) {
+      syncTabStops();
+    }
+  }, [hasRovingTabIndex, syncTabStops]);
+
   return {
     treeRef,
     handleKeyDown,
+    handleFocus,
     focusFirst,
     focusLast,
   };

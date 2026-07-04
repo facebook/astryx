@@ -9,11 +9,38 @@
  * SYNC: When RadioList.tsx or RadioListItem.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
+
+// Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
+// reflects its open state via a `popover-open` attribute the tests can assert.
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+});
 
 describe('RadioList', () => {
   it('renders with label', () => {
@@ -453,6 +480,100 @@ describe('RadioList', () => {
       outside.focus();
       optionC.focus();
       expect(optionB).toHaveFocus();
+    });
+  });
+
+  describe('disabledMessage', () => {
+    const h = {hidden: true} as const;
+
+    function renderGroup(props?: {onChange?: (v: string) => void}) {
+      return render(
+        <RadioList
+          label="Plan"
+          value="free"
+          onChange={props?.onChange ?? (() => {})}
+          isDisabled
+          disabledMessage="Upgrade your account to change plans">
+          <RadioListItem label="Free" value="free" />
+          <RadioListItem label="Pro" value="pro" />
+        </RadioList>,
+      );
+    }
+
+    it('shows the reason tooltip on hover when the group is disabled with a reason', async () => {
+      renderGroup();
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('Upgrade your account to change plans');
+      const group = screen.getByRole('radiogroup');
+      fireEvent.mouseEnter(group);
+      await waitFor(() => expect(tooltip).toHaveAttribute('popover-open'));
+      fireEvent.mouseLeave(group);
+      await waitFor(() => expect(tooltip).not.toHaveAttribute('popover-open'));
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      renderGroup();
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      await waitFor(() => expect(tooltip).toHaveAttribute('popover-open'));
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <RadioList
+          label="Plan"
+          value="free"
+          onChange={() => {}}
+          disabledMessage="Upgrade your account to change plans">
+          <RadioListItem label="Free" value="free" />
+        </RadioList>,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(
+        <RadioList label="Plan" value="free" onChange={() => {}} isDisabled>
+          <RadioListItem label="Free" value="free" />
+        </RadioList>,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps radios focusable via aria-disabled when a reason is provided', () => {
+      renderGroup();
+      for (const radio of screen.getAllByRole('radio', h)) {
+        expect(radio).not.toBeDisabled();
+        expect(radio).toHaveAttribute('aria-disabled', 'true');
+      }
+    });
+
+    it('links the reason tooltip from the group via aria-describedby', () => {
+      renderGroup();
+      const group = screen.getByRole('radiogroup');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(group.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks selection while focusable-disabled', () => {
+      const onChange = vi.fn();
+      renderGroup({onChange});
+      const pro = screen.getByRole('radio', {name: 'Pro', hidden: true});
+      fireEvent.click(pro);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('keeps radios natively disabled when disabled without a reason', () => {
+      render(
+        <RadioList label="Plan" value="free" onChange={() => {}} isDisabled>
+          <RadioListItem label="Free" value="free" />
+          <RadioListItem label="Pro" value="pro" />
+        </RadioList>,
+      );
+      for (const radio of screen.getAllByRole('radio', h)) {
+        expect(radio).toBeDisabled();
+      }
     });
   });
 });

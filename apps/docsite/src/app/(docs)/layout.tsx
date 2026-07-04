@@ -1,31 +1,22 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {headers} from 'next/headers';
 import {DocsShell} from '../../components/DocsShell';
 import {SiteFooter} from '../../components/SiteFooter';
-import {components} from '../../generated/componentRegistry';
+import {getCopyrightYear} from '../../lib/copyrightYear';
 import {packages} from '../../generated/packageRegistry';
 import {docTopics} from '../../generated/docsRegistry';
-import {templates} from '../../generated/templateRegistry';
 
 export default async function DocsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const headersList = await headers();
-  const ua = headersList.get('user-agent') ?? '';
-  const defaultIsMobile = /mobile|android|iphone|ipad/i.test(ua);
+  const year = await getCopyrightYear();
 
   return (
-    <DocsShell
-      components={components}
-      packages={packages}
-      docTopics={docTopics}
-      templates={templates}
-      defaultIsMobile={defaultIsMobile}>
+    <DocsShell packages={packages} docTopics={docTopics}>
       {children}
-      <SiteFooter />
+      <SiteFooter year={year} />
     </DocsShell>
   );
 }

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Metadata} from 'next';
-import {Analytics} from '@vercel/analytics/react';
+import {Analytics} from '@vercel/analytics/next';
 import './globals.css';
 import {Providers} from './providers';
 // Public origin and identity live in lib/siteConfig so the sitemap and
@@ -39,6 +39,11 @@ export const metadata: Metadata = {
   applicationName: SITE_NAME,
   icons: {
     icon: '/favicon.svg',
+  },
+  alternates: {
+    types: {
+      'application/rss+xml': '/rss.xml',
+    },
   },
   verification: {
     google: '2R11kontqme-N-8WuDSR0MZ1YVbKX3IQg3OM08UO_e0',

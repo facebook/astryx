@@ -409,18 +409,36 @@ describe('ChatComposerInput', () => {
   });
 
   describe('accessibility', () => {
-    it('has aria-haspopup on the textbox', () => {
+    it('exposes role=combobox when triggers are configured', () => {
       const triggers = [createMentionTrigger()];
       render(<ChatComposerInput triggers={triggers} />);
-      const textbox = screen.getByRole('textbox');
-      expect(textbox).toHaveAttribute('aria-haspopup', 'listbox');
+      // aria-expanded/haspopup/controls/activedescendant are only valid on
+      // role="combobox", so the editable element must be a combobox (not a
+      // plain textbox) whenever trigger-menu behavior is wired.
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    });
+
+    it('has aria-haspopup on the combobox', () => {
+      const triggers = [createMentionTrigger()];
+      render(<ChatComposerInput triggers={triggers} />);
+      const combobox = screen.getByRole('combobox');
+      expect(combobox).toHaveAttribute('aria-haspopup', 'listbox');
     });
 
     it('has aria-expanded=false when menu is closed', () => {
       const triggers = [createMentionTrigger()];
       render(<ChatComposerInput triggers={triggers} />);
-      const textbox = screen.getByRole('textbox');
-      expect(textbox).toHaveAttribute('aria-expanded', 'false');
+      const combobox = screen.getByRole('combobox');
+      expect(combobox).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('stays role=textbox with no combobox attributes when no triggers are configured', () => {
+      render(<ChatComposerInput label="Message" />);
+      const textbox = screen.getByRole('textbox', {name: 'Message'});
+      // A plain textbox must not carry combobox-only ARIA (axe: aria-allowed-attr).
+      expect(textbox).not.toHaveAttribute('aria-expanded');
+      expect(textbox).not.toHaveAttribute('aria-haspopup');
     });
   });
 
@@ -590,7 +608,8 @@ describe('ChatComposerInput', () => {
       const result = render(
         <ChatComposerInput triggers={triggers} onChange={onChange} />,
       );
-      const textbox = screen.getByRole('textbox');
+      // With triggers configured the editable is a combobox, not a textbox.
+      const textbox = screen.getByRole('combobox');
       textbox.focus();
       return {...result, textbox, onChange};
     }
@@ -684,7 +703,7 @@ describe('ChatComposerInput', () => {
           onChange={onChange}
         />,
       );
-      const textbox = screen.getByRole('textbox');
+      const textbox = screen.getByRole('combobox');
       textbox.focus();
 
       setCursorAfterText(textbox, 'hello @');

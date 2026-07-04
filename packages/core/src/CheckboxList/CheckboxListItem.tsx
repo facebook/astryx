@@ -201,9 +201,6 @@ export function CheckboxListItem({
       endContent={endContent}
       isDisabled={effectiveDisabled}
       onClick={isInteractive ? handleToggle : undefined}
-      aria-checked={
-        resolvedChecked === 'indeterminate' ? 'mixed' : resolvedChecked
-      }
       aria-busy={isBusy || undefined}
       xstyle={
         [

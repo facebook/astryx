@@ -129,8 +129,9 @@ function discoverComponents(): ComponentInfo[] {
 
   for (const dir of dirs) {
     const dirPath = join(SRC_DIR, dir);
+    const dirEntries = readdirSync(dirPath);
     // Find source files with component vars (.tsx and .ts, excluding tests/docs)
-    const sourceFiles = readdirSync(dirPath)
+    const sourceFiles = dirEntries
       .filter(
         f =>
           (f.endsWith('.tsx') || f.endsWith('.ts')) &&
@@ -150,14 +151,15 @@ function discoverComponents(): ComponentInfo[] {
       continue;
     }
 
-    // Only check component directories (those with a doc file)
-    // Make the existence check case-sensitive to prevent matching Theme.doc.mjs for the lowercase theme directory on Windows.
-    const docFile = `${dir}.doc.mjs`;
-    const dirFiles = readdirSync(dirPath);
-    if (!dirFiles.includes(docFile)) {
+    // Only check component directories (those with a doc file named after the
+    // directory). Match against the on-disk listing rather than existsSync so
+    // the comparison is case-exact everywhere — on case-insensitive
+    // filesystems (macOS, Windows) existsSync('theme/theme.doc.mjs') matches
+    // theme/Theme.doc.mjs and pulls in a directory that CI never checks.
+    if (!dirEntries.includes(`${dir}.doc.mjs`)) {
       continue;
     }
-    const docPath = join(dirPath, docFile);
+    const docPath = join(dirPath, `${dir}.doc.mjs`);
 
     let docVars: string[] = [];
     let docDerived: DerivedDocEntry[] = [];

@@ -43,12 +43,14 @@ import {
 } from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
+import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
@@ -92,17 +94,6 @@ const styles = stylex.create({
   },
   counterError: {
     color: colorVars['--color-error'],
-  },
-  srOnly: {
-    position: 'absolute',
-    width: '1px',
-    height: '1px',
-    padding: 0,
-    margin: '-1px',
-    overflow: 'hidden',
-    clip: 'rect(0,0,0,0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
   },
   statusIcon: {
     position: 'absolute',
@@ -200,6 +191,27 @@ export interface TextAreaProps extends Omit<
    */
   isDisabled?: boolean;
   /**
+   * Explains why the textarea is disabled. When set together with
+   * `isDisabled`, the textarea shows a tooltip with this text on hover and
+   * keyboard focus, and stays focusable (via `aria-disabled`) so the reason is
+   * discoverable by keyboard and assistive technology. The field cannot be
+   * edited (it becomes read-only) while disabled.
+   *
+   * Use this instead of wrapping a disabled textarea in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <TextArea
+   *   label="Notes"
+   *   value={notes}
+   *   isDisabled
+   *   disabledMessage="Notes are locked after submission"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
+  /**
    * Status indicator for the textarea.
    * When set, displays a colored border and status icon.
    * If message is provided, displays a floating message box below the textarea.
@@ -284,6 +296,7 @@ export function TextArea({
   placeholder,
   rows = 3,
   isDisabled = false,
+  disabledMessage,
   status,
   labelTooltip,
   startIcon,
@@ -314,6 +327,20 @@ export function TextArea({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the textarea container (which already exists)
+  // and the textarea stays perceivable via aria-disabled instead of the native
+  // disabled attribute. The field is made read-only so it can't be typed into,
+  // and value mutation is blocked by the isDisabled guard in handleChange.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The container div is not naturally focusable; focusin bubbles up from
+    // the textarea, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
   const statusIconMap: Record<TextAreaStatusType, IconName> = {
     warning: 'warning',
     error: 'error',
@@ -334,11 +361,18 @@ export function TextArea({
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
       maxLength != null ? counterID : null,
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
 
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    // Value can't change while showing a disabled message (the field is
+    // read-only and non-native-disabled), but guard the handler too so the
+    // optimistic value and callbacks never fire.
+    if (isDisabled) {
+      return;
+    }
     const newValue = e.target.value;
     onChange?.(newValue, e);
     if (changeAction && !e.defaultPrevented) {
@@ -381,7 +415,13 @@ export function TextArea({
       labelTooltip={labelTooltip}
       width={width}>
       <div
-        ref={containerRef}
+        ref={el => {
+          containerRef.current = el;
+          // Anchor + hover/focus listeners for the disabled-message tooltip.
+          // Handlers are gated internally by isEnabled, and anchor names
+          // compose, so attaching unconditionally is safe.
+          disabledMessageTooltip.ref(el);
+        }}
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
@@ -413,7 +453,12 @@ export function TextArea({
           onBlur={onBlur}
           placeholder={placeholder}
           rows={rows}
-          disabled={isDisabled}
+          // With a disabledMessage the textarea keeps focusability via
+          // aria-disabled so the reason is focus-discoverable; readOnly + the
+          // handleChange guard keep the value from changing.
+          disabled={isDisabled && !showsDisabledMessage}
+          aria-disabled={showsDisabledMessage ? 'true' : undefined}
+          readOnly={showsDisabledMessage || undefined}
           spellCheck={hasSpellCheck}
           autoFocus={hasAutoFocus}
           data-autofocus={hasAutoFocus || undefined}
@@ -451,15 +496,17 @@ export function TextArea({
             optimisticValue.length > maxLength && styles.counterError,
           )}>
           {optimisticValue.length}/{maxLength}
-          <span aria-live="polite" {...stylex.props(styles.srOnly)}>
+          <VisuallyHidden aria-live="polite">
             {optimisticValue.length >= maxLength * COUNTER_WARNING_THRESHOLD
               ? optimisticValue.length > maxLength
                 ? `${optimisticValue.length - maxLength} characters over limit`
                 : `${maxLength - optimisticValue.length} characters remaining`
               : ''}
-          </span>
+          </VisuallyHidden>
         </div>
       )}
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }

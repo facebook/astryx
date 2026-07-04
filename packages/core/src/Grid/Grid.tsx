@@ -84,6 +84,18 @@ export interface GridProps extends BaseProps<HTMLDivElement> {
   height?: SizeValue;
 
   /**
+   * Maximum width of the grid container.
+   * Numbers are treated as pixels, strings are used as-is (e.g., '100%').
+   */
+  maxWidth?: SizeValue;
+
+  /**
+   * Minimum height of the grid container.
+   * Numbers are treated as pixels, strings are used as-is (e.g., '100%').
+   */
+  minHeight?: SizeValue;
+
+  /**
    * Spacing between all grid items (both row and column).
    * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
    */
@@ -138,6 +150,19 @@ const baseStyles = stylex.create({
   grid: {
     display: 'grid',
   },
+});
+
+// Dynamic track values compile to CSS variables + a class-level declaration
+// (grid-template-columns: var(--x)) instead of a raw inline style, so
+// consumer `xstyle` overrides — including ones inside @media queries — can
+// still win. A raw inline `grid-template-columns` would beat any class.
+const dynamicStyles = stylex.create({
+  templateColumns: (value: string) => ({
+    gridTemplateColumns: value,
+  }),
+  autoRows: (value: number) => ({
+    gridAutoRows: `${value}px`,
+  }),
 });
 
 const alignStyles = stylex.create({
@@ -346,6 +371,8 @@ export function Grid({
   rowHeight,
   width,
   height,
+  maxWidth,
+  minHeight,
   gap,
   rowGap,
   columnGap,
@@ -399,15 +426,21 @@ export function Grid({
     gridTemplateColumns = '1fr';
   }
 
-  // Build inline style for dynamic values
+  // Build inline style for dynamic values. Track templates go through
+  // dynamicStyles (CSS-var indirection) so xstyle/@media overrides work;
+  // width/height stay inline as explicit caller-set dimensions.
   const inlineStyle: React.CSSProperties = {
-    gridTemplateColumns,
-    ...(rowHeight != null && {gridAutoRows: `${rowHeight}px`}),
     ...(width != null && {
       width: typeof width === 'number' ? `${width}px` : width,
     }),
     ...(height != null && {
       height: typeof height === 'number' ? `${height}px` : height,
+    }),
+    ...(maxWidth != null && {
+      maxWidth: typeof maxWidth === 'number' ? `${maxWidth}px` : maxWidth,
+    }),
+    ...(minHeight != null && {
+      minHeight: typeof minHeight === 'number' ? `${minHeight}px` : minHeight,
     }),
   };
 
@@ -426,6 +459,8 @@ export function Grid({
         themeProps('grid', {columns: columnsVariant, gap, align, justify}),
         stylex.props(
           baseStyles.grid,
+          dynamicStyles.templateColumns(gridTemplateColumns),
+          rowHeight != null && dynamicStyles.autoRows(rowHeight),
           gap != null && gapStyles[gap],
           rowGap != null && rowGapStyles[rowGap],
           columnGap != null && columnGapStyles[columnGap],
