@@ -62,6 +62,33 @@ function installPkg(name, version = '1.0.0') {
   return dir;
 }
 
+/**
+ * Mirror pnpm's layout: the real package lives under node_modules/.pnpm and
+ * the entry in the scope directory is a symlink to it.
+ */
+function installPkgPnpmStyle(name, version = '1.0.0') {
+  const realDir = path.join(
+    tmpDir,
+    'node_modules',
+    '.pnpm',
+    `${name.replace('/', '+')}@${version}`,
+    'node_modules',
+    ...name.split('/'),
+  );
+  fs.mkdirSync(realDir, {recursive: true});
+  fs.writeFileSync(
+    path.join(realDir, 'package.json'),
+    JSON.stringify({name, version, main: 'index.js'}),
+  );
+  fs.writeFileSync(path.join(realDir, 'index.js'), 'module.exports = {};');
+  const linkPath = path.join(tmpDir, 'node_modules', ...name.split('/'));
+  fs.mkdirSync(path.dirname(linkPath), {recursive: true});
+  // 'junction' keeps this working on Windows without elevated permissions;
+  // it is ignored on posix.
+  fs.symlinkSync(realDir, linkPath, 'junction');
+  return linkPath;
+}
+
 function find(checks, id) {
   return checks.find(c => c.id === id);
 }
@@ -116,6 +143,13 @@ describe('doctor — individual checks', () => {
     installPkg('@astryxdesign/theme-neutral', '0.0.14');
     const res = checkThemes({cwd: tmpDir, configTheme: 'default'});
     expect(res.status).toBe('pass');
+  });
+
+  it('themes: detects pnpm-style symlinked theme packages (#3530)', () => {
+    installPkgPnpmStyle('@astryxdesign/theme-neutral', '0.1.2');
+    const res = checkThemes({cwd: tmpDir, configTheme: 'default'});
+    expect(res.status).toBe('pass');
+    expect(res.message).toContain('@astryxdesign/theme-neutral');
   });
 
   it('config: INFO when no astryx.config.mjs', async () => {
