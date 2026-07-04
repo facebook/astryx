@@ -195,3 +195,17 @@ Observations recorded in `docs/sprints/sprint-01-design-language.md`:
 ## Acceptance Verdict
 
 **PASS** — Foundation Program merged to `main` via PR #1.
+
+---
+
+## Post-Foundation Gates (2026-07-04)
+
+| Gate | Sprint | Status | Evidence |
+|------|--------|--------|----------|
+| Gate 1 — Design Language Research & Validation | Sprint 2 | **PASS** | [sprint-02-design-language-research.md](./sprints/sprint-02-design-language-research.md), [ADR-003](./adrs/ADR-003-token-change-policy.md) |
+| Architecture Freeze | — | **PASS** | [ARCHITECTURE-FREEZE.md](./ARCHITECTURE-FREEZE.md) |
+| Gate 2 — Platform Health | Sprint 3 | **PASS** | [PLATFORM-HEALTH.md](./PLATFORM-HEALTH.md), 40 tests, `pnpm verify` |
+| Gate 3 — Reference Consumer Validation | Sprint 4 | **PASS** | [APPS.md](./APPS.md), `check-app-boundaries` PASS |
+| Gate 4 — Platform Expansion | Sprint 5+ | **Deferred** | Awaiting explicit feature development kickoff |
+
+**Platform status:** Architecture frozen. Platform measurable. Platform proven via public-API consumers.

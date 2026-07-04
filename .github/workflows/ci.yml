@@ -19,8 +19,4 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm test
-      - run: pnpm build
-      - run: pnpm check:boundaries
-      - run: pnpm check:app-boundaries
       - run: pnpm verify
