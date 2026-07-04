@@ -471,6 +471,7 @@ export function useLayer(
           id={id}
           role={role}
           popover={lightDismiss ? 'auto' : 'manual'}
+          data-state={isOpen ? 'open' : 'closed'}
           className={combinedClassName}
           style={{...stylexResult.style, ...anchorStyle, ...extraStyle}}
           onMouseEnter={onMouseEnter}
@@ -479,7 +480,7 @@ export function useLayer(
         </Container>
       );
     },
-    [anchorId, id, lightDismiss, popoverRefCallback],
+    [anchorId, id, isOpen, lightDismiss, popoverRefCallback],
   );
 
   // Render function for fixed mode
@@ -509,13 +510,14 @@ export function useLayer(
           ref={popoverRefCallback}
           id={id}
           popover={lightDismiss ? 'auto' : 'manual'}
+          data-state={isOpen ? 'open' : 'closed'}
           className={combinedClassName}
           style={{...stylexResult.style, ...positionStyle, ...extraStyle}}>
           {children}
         </div>
       );
     },
-    [popoverRefCallback, id, lightDismiss],
+    [popoverRefCallback, id, isOpen, lightDismiss],
   );
 
   if (mode === 'context') {

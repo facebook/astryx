@@ -160,6 +160,23 @@ describe('HoverCard', () => {
     expect(describedBy).toContain('existing-id');
   });
 
+  it('reflects open state on the layer via data-state', async () => {
+    render(
+      <HoverCard content={<span>Card content</span>} delay={0}>
+        <button type="button">Trigger</button>
+      </HoverCard>,
+    );
+
+    const layer = screen.getByRole('dialog', {hidden: true});
+    expect(layer).toHaveAttribute('data-state', 'closed');
+
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    fireEvent.mouseEnter(trigger);
+    await waitFor(() => {
+      expect(layer).toHaveAttribute('data-state', 'open');
+    });
+  });
+
   it('calls onOpenChange(true) when shown', async () => {
     const onOpenChange = vi.fn();
     render(

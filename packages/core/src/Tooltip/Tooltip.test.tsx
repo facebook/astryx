@@ -68,6 +68,28 @@ describe('Tooltip', () => {
     expect(trigger.getAttribute('aria-describedby')).toBe(layer.id);
   });
 
+  it('reflects open state on the layer via data-state', async () => {
+    render(
+      <Tooltip content="Tooltip text" delay={0} hideDelay={0}>
+        <button type="button">Trigger</button>
+      </Tooltip>,
+    );
+
+    const layer = screen.getByRole('tooltip', {hidden: true});
+    expect(layer).toHaveAttribute('data-state', 'closed');
+
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    fireEvent.mouseEnter(trigger);
+    await waitFor(() => {
+      expect(layer).toHaveAttribute('data-state', 'open');
+    });
+
+    fireEvent.mouseLeave(trigger);
+    await waitFor(() => {
+      expect(layer).toHaveAttribute('data-state', 'closed');
+    });
+  });
+
   it('calls onOpenChange(true) when shown via hover', async () => {
     const onOpenChange = vi.fn();
     render(
