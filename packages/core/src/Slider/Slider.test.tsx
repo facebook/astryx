@@ -37,6 +37,12 @@ beforeEach(() => {
     if (selector === ':popover-open') {
       return this.hasAttribute('popover-open');
     }
+    // jsdom does not derive :focus-visible from keyboard focus for a
+    // div[role="slider"] thumb; treat the focused thumb as focus-visible so the
+    // disabled-reason tooltip's keyboard-focus path can be exercised.
+    if (selector === ':focus-visible') {
+      return this === document.activeElement;
+    }
     return originalMatches.call(this, selector);
   };
 });
