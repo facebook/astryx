@@ -14,7 +14,6 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DateInput} from './DateInput';
 import {InputGroup, InputGroupText} from '../InputGroup';
-import type {ISODateString} from '../Calendar';
 
 describe('DateInput', () => {
   it('renders with label', () => {
@@ -782,7 +781,7 @@ describe('DateInput', () => {
           <DateInput
             label="Departure date"
             isLabelHidden
-            value={'2026-07-04' as ISODateString}
+            value={'2026-07-04'}
             onChange={() => {}}
           />
         </InputGroup>,
@@ -818,7 +817,7 @@ describe('DateInput', () => {
           <DateInput
             label="Departure date"
             isLabelHidden
-            value={'2026-07-04' as ISODateString}
+            value={'2026-07-04'}
             onChange={() => {}}
             description="Weekdays only"
             status={{type: 'error', message: 'Departure date is required'}}
@@ -851,7 +850,7 @@ describe('DateInput', () => {
           <DateInput
             label="Departure date"
             isLabelHidden
-            value={'2026-07-04' as ISODateString}
+            value={'2026-07-04'}
             onChange={() => {}}
           />
         </InputGroup>,
@@ -870,7 +869,7 @@ describe('DateInput', () => {
           <DateInput
             label="Departure date"
             isLabelHidden
-            value={'2026-07-04' as ISODateString}
+            value={'2026-07-04'}
             onChange={() => {}}
             status={{type: 'error', message: 'Departure date is required'}}
           />
@@ -891,7 +890,7 @@ describe('DateInput', () => {
           <DateInput
             label="Departure date"
             isLabelHidden
-            value={'2026-07-04' as ISODateString}
+            value={'2026-07-04'}
             onChange={() => {}}
           />
         </InputGroup>,
