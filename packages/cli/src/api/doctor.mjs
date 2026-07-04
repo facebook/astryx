@@ -104,22 +104,47 @@ function findNodeModules(startDir) {
  */
 function findThemePackages(cwd) {
   const nm = findNodeModules(cwd);
+
   const found = [];
   if (!nm) return found;
+
   const scopeDir = path.join(nm, '@astryxdesign');
+
   if (!fs.existsSync(scopeDir)) return found;
+
   let entries;
   try {
     entries = fs.readdirSync(scopeDir, {withFileTypes: true});
   } catch {
     return found;
   }
+
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    if (!entry.name.startsWith('theme-')) continue;
-    const name = `@astryxdesign/${entry.name}`;
-    found.push({name, version: pkgVersion(path.join(scopeDir, entry.name))});
+  const fullPath = path.join(scopeDir, entry.name);
+
+  let stat;
+  try {
+    stat = fs.statSync(fullPath);
+  } catch {
+    continue;
   }
+
+  if (!stat.isDirectory()) {
+    continue;
+  }
+
+  if (!entry.name.startsWith('theme-')) {
+    continue;
+  }
+
+  const name = `@astryxdesign/${entry.name}`;
+
+  found.push({
+    name,
+    version: pkgVersion(fullPath),
+  });
+}
+
   return found;
 }
 
