@@ -47,10 +47,8 @@ describe('pageMetadata', () => {
   });
 
   it('re-states the branded social image on both cards', () => {
-    expect(JSON.stringify(meta.openGraph?.images)).toContain(
-      'astryx-og-banner',
-    );
-    expect(JSON.stringify(meta.twitter?.images)).toContain('astryx-og-banner');
+    expect(JSON.stringify(meta.openGraph?.images)).toContain('Astryx-Banner');
+    expect(JSON.stringify(meta.twitter?.images)).toContain('Astryx-Banner');
   });
 
   it('defaults the OpenGraph type to website', () => {

@@ -9,11 +9,38 @@
  * SYNC: When RadioList.tsx or RadioListItem.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {RadioList} from './RadioList';
 import {RadioListItem} from './RadioListItem';
+
+// Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
+// reflects its open state via a `popover-open` attribute the tests can assert.
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+});
 
 describe('RadioList', () => {
   it('renders with label', () => {
@@ -104,11 +131,7 @@ describe('RadioList', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     render(
-      <RadioList
-        label="Preference"
-        value=""
-        onChange={handleChange}
-        isDisabled>
+      <RadioList label="Preference" value="" onChange={handleChange} isDisabled>
         <RadioListItem label="Option A" value="a" />
       </RadioList>,
     );
@@ -257,11 +280,7 @@ describe('RadioList', () => {
   it('supports data-testid on RadioListItem', () => {
     render(
       <RadioList label="Preference" value="" onChange={() => {}}>
-        <RadioListItem
-          label="Option A"
-          value="a"
-          data-testid="my-radio-item"
-        />
+        <RadioListItem label="Option A" value="a" data-testid="my-radio-item" />
       </RadioList>,
     );
     expect(screen.getByTestId('my-radio-item')).toBeInTheDocument();
@@ -279,11 +298,32 @@ describe('RadioList', () => {
     );
     const label = screen.getByText('Hidden label');
     expect(label).toBeInTheDocument();
-    // The radiogroup should still be labeled
-    expect(screen.getByRole('radiogroup')).toHaveAttribute(
-      'aria-label',
-      'Hidden label',
+    // The radiogroup is named by the label element via aria-labelledby (not a
+    // duplicated aria-label), so its accessible name is still "Hidden label".
+    expect(
+      screen.getByRole('radiogroup', {name: 'Hidden label'}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('radiogroup')).toHaveAttribute('aria-labelledby');
+    expect(screen.getByRole('radiogroup')).not.toHaveAttribute('aria-label');
+  });
+
+  it('renders the group label as a span, not a label element (forms-14)', () => {
+    render(
+      <RadioList label="Plan" value="" onChange={() => {}}>
+        <RadioListItem label="Free" value="free" />
+        <RadioListItem label="Pro" value="pro" />
+      </RadioList>,
     );
+    // A radiogroup's accessible name must not come from a literal `<label>`
+    // element — a `<label>` names a single control and can't be associated
+    // with a group. It is rendered as a `<span>` and referenced via
+    // aria-labelledby (with no orphaned htmlFor).
+    const labelEl = screen.getByText('Plan');
+    expect(labelEl.tagName).toBe('SPAN');
+    expect(labelEl.closest('label')).toBeNull();
+    expect(labelEl).not.toHaveAttribute('for');
+    const group = screen.getByRole('radiogroup', {name: 'Plan'});
+    expect(group.getAttribute('aria-labelledby')).toBe(labelEl.id);
   });
 
   it('renders description on items', () => {
@@ -339,5 +379,201 @@ describe('RadioList', () => {
       'aria-required',
       'true',
     );
+  });
+
+  describe('focus management (no-selection tab stop)', () => {
+    it('keeps focus on the selected radio when a value is selected', () => {
+      render(
+        <RadioList label="Preference" value="b" onChange={() => {}}>
+          <RadioListItem label="Option A" value="a" />
+          <RadioListItem label="Option B" value="b" />
+          <RadioListItem label="Option C" value="c" />
+        </RadioList>,
+      );
+      const selected = screen.getByLabelText('Option B');
+      // A selected value provides a deterministic native tab stop; focusing it
+      // must not be redirected elsewhere.
+      selected.focus();
+      expect(selected).toHaveFocus();
+    });
+
+    it('redirects to the first radio when focus enters an unselected group forward', () => {
+      render(
+        <>
+          <button type="button">before</button>
+          <RadioList label="Preference" value="" onChange={() => {}}>
+            <RadioListItem label="Option A" value="a" />
+            <RadioListItem label="Option B" value="b" />
+            <RadioListItem label="Option C" value="c" />
+          </RadioList>
+        </>,
+      );
+      const radios = screen.getAllByRole('radio');
+      const outside = screen.getByText('before');
+      outside.focus();
+      // Forward entry: the browser lands on a leading radio; the group keeps the
+      // first radio as the deterministic tab stop.
+      radios[0].focus();
+      expect(radios[0]).toHaveFocus();
+
+      // Landing on a middle radio from outside is normalized to the first.
+      outside.focus();
+      radios[1].focus();
+      expect(radios[0]).toHaveFocus();
+    });
+
+    it('redirects to the last radio when focus enters an unselected group backward', () => {
+      render(
+        <>
+          <RadioList label="Preference" value="" onChange={() => {}}>
+            <RadioListItem label="Option A" value="a" />
+            <RadioListItem label="Option B" value="b" />
+            <RadioListItem label="Option C" value="c" />
+          </RadioList>
+          <button type="button">after</button>
+        </>,
+      );
+      const radios = screen.getAllByRole('radio');
+      const outside = screen.getByText('after');
+      outside.focus();
+      // Backward (Shift+Tab) entry: the browser focuses the last radio; the
+      // group keeps it as the deterministic tab stop rather than jumping away.
+      radios[radios.length - 1].focus();
+      expect(radios[radios.length - 1]).toHaveFocus();
+    });
+
+    it('does not hijack focus moving between radios within the group', () => {
+      render(
+        <RadioList label="Preference" value="" onChange={() => {}}>
+          <RadioListItem label="Option A" value="a" />
+          <RadioListItem label="Option B" value="b" />
+          <RadioListItem label="Option C" value="c" />
+        </RadioList>,
+      );
+      const radios = screen.getAllByRole('radio');
+      // Enter the group from outside, then move to a middle radio as arrow-key
+      // navigation would. Intra-group movement must not be redirected back.
+      radios[0].focus();
+      radios[1].focus();
+      expect(radios[1]).toHaveFocus();
+      radios[2].focus();
+      expect(radios[2]).toHaveFocus();
+    });
+
+    it('skips disabled radios when choosing the deterministic tab stop', () => {
+      render(
+        <>
+          <button type="button">before</button>
+          <RadioList label="Preference" value="" onChange={() => {}}>
+            <RadioListItem label="Option A" value="a" isDisabled />
+            <RadioListItem label="Option B" value="b" />
+            <RadioListItem label="Option C" value="c" />
+            <RadioListItem label="Option D" value="d" />
+          </RadioList>
+        </>,
+      );
+      const outside = screen.getByText('before');
+      const optionB = screen.getByLabelText('Option B');
+      const optionC = screen.getByLabelText('Option C');
+      // A middle enabled radio (C) entered from outside is normalized to the
+      // first *enabled* radio (B) — the disabled Option A is skipped.
+      outside.focus();
+      optionC.focus();
+      expect(optionB).toHaveFocus();
+    });
+  });
+
+  describe('disabledMessage', () => {
+    const h = {hidden: true} as const;
+
+    function renderGroup(props?: {onChange?: (v: string) => void}) {
+      return render(
+        <RadioList
+          label="Plan"
+          value="free"
+          onChange={props?.onChange ?? (() => {})}
+          isDisabled
+          disabledMessage="Upgrade your account to change plans">
+          <RadioListItem label="Free" value="free" />
+          <RadioListItem label="Pro" value="pro" />
+        </RadioList>,
+      );
+    }
+
+    it('shows the reason tooltip on hover when the group is disabled with a reason', async () => {
+      renderGroup();
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('Upgrade your account to change plans');
+      const group = screen.getByRole('radiogroup');
+      fireEvent.mouseEnter(group);
+      await waitFor(() => expect(tooltip).toHaveAttribute('popover-open'));
+      fireEvent.mouseLeave(group);
+      await waitFor(() => expect(tooltip).not.toHaveAttribute('popover-open'));
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      renderGroup();
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      await waitFor(() => expect(tooltip).toHaveAttribute('popover-open'));
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <RadioList
+          label="Plan"
+          value="free"
+          onChange={() => {}}
+          disabledMessage="Upgrade your account to change plans">
+          <RadioListItem label="Free" value="free" />
+        </RadioList>,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(
+        <RadioList label="Plan" value="free" onChange={() => {}} isDisabled>
+          <RadioListItem label="Free" value="free" />
+        </RadioList>,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps radios focusable via aria-disabled when a reason is provided', () => {
+      renderGroup();
+      for (const radio of screen.getAllByRole('radio', h)) {
+        expect(radio).not.toBeDisabled();
+        expect(radio).toHaveAttribute('aria-disabled', 'true');
+      }
+    });
+
+    it('links the reason tooltip from the group via aria-describedby', () => {
+      renderGroup();
+      const group = screen.getByRole('radiogroup');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(group.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks selection while focusable-disabled', () => {
+      const onChange = vi.fn();
+      renderGroup({onChange});
+      const pro = screen.getByRole('radio', {name: 'Pro', hidden: true});
+      fireEvent.click(pro);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('keeps radios natively disabled when disabled without a reason', () => {
+      render(
+        <RadioList label="Plan" value="free" onChange={() => {}} isDisabled>
+          <RadioListItem label="Free" value="free" />
+          <RadioListItem label="Pro" value="pro" />
+        </RadioList>,
+      );
+      for (const radio of screen.getAllByRole('radio', h)) {
+        expect(radio).toBeDisabled();
+      }
+    });
   });
 });

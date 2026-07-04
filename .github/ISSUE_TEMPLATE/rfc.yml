@@ -1,7 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 name: "RFC: Component or Feature Proposal"
-description: Propose a new component, feature, or significant API change for XDS.
+description: Propose a new component, feature, or significant API change for Astryx.
 title: "[RFC] "
 labels: ["enhancement"]
 body:
@@ -43,7 +43,7 @@ body:
     attributes:
       label: Why Existing Components Don't Cover This
       description: |
-        What have you tried with current XDS components? Show the composition attempt and where it breaks down. "I tried X but it requires Y lines of boilerplate / breaks accessibility / doesn't theme correctly."
+        What have you tried with current Astryx components? Show the composition attempt and where it breaks down. "I tried X but it requires Y lines of boilerplate / breaks accessibility / doesn't theme correctly."
       placeholder: "I attempted to compose this using Card + VStack + ... but ..."
     validations:
       required: true
@@ -95,7 +95,7 @@ body:
           required: true
         - label: I have read the [API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)
           required: true
-        - label: I have checked that existing XDS components cannot compose to solve this
+        - label: I have checked that existing Astryx components cannot compose to solve this
           required: true
         - label: This is a general-purpose UI pattern (not specific to one product)
           required: true

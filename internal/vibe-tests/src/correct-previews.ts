@@ -66,7 +66,7 @@ function getComponentDocs(code: string, target: string): string {
     return '';
   }
 
-  // Extract XDS component names used in the file
+  // Extract legacy XDS-prefixed component names used in the file
   const components = new Set<string>();
   const re = /\bXDS\w+/g;
   let m: RegExpExecArray | null;
@@ -91,7 +91,7 @@ function getComponentDocs(code: string, target: string): string {
   }
 
   return docs.length > 0
-    ? `\n## XDS Component API Reference\n\n${docs.join('\n\n')}`
+    ? `\n## Astryx Component API Reference\n\n${docs.join('\n\n')}`
     : '';
 }
 

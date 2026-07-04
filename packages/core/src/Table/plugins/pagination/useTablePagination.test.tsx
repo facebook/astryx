@@ -184,6 +184,22 @@ describe('useTablePagination', () => {
       ).toBeTruthy();
     });
 
+    it('guards pageSize 0 against Infinity page counts', () => {
+      render(<PaginatedTable data={generateItems(5)} pageSize={0} />);
+      expect(
+        screen.getByRole('navigation', {name: 'Table pagination'}),
+      ).toBeInTheDocument();
+      // pageSize is coerced to 1, so 5 items produce 5 pages, not Infinity,
+      // and page 1 shows the first item instead of an empty slice
+      expect(
+        screen.queryByRole('button', {name: 'Go to page Infinity'}),
+      ).toBeNull();
+      expect(
+        screen.getByRole('button', {name: 'Go to page 5'}),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Item 1')).toBeInTheDocument();
+    });
+
     it('transformTableContext renders Pagination above table', () => {
       render(
         <PaginatedTable

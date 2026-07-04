@@ -92,10 +92,10 @@ SMOKE_ID="smoke-$(date +%s)"
 
 # Generate skill doc
 check "generate-skill-doc.sh runs" bash scripts/generate-skill-doc.sh
-check "skill doc generated" test -f .generated/xds-skill.md
+check "skill doc generated" test -f .generated/astryx-skill.md
 
 # Create tasks for 1 prompt
-OUTPUT=$(pnpm --silent interactive --target xds --persona naive --sample 1 2>&1)
+OUTPUT=$(pnpm --silent interactive --target astryx --persona naive --sample 1 2>&1)
 ITER_ID=$(echo "$OUTPUT" | grep "^Iteration:" | awk '{print $2}')
 
 if [ -z "$ITER_ID" ]; then
@@ -129,20 +129,20 @@ if [ -n "$ITER_ID" ]; then
   mkdir -p "results/$ITER_ID/results"
 
   cat > "results/$ITER_ID/results/$PROMPT_ID.tsx" << 'FIXTURE'
-import {XDSCard} from '@astryxdesign/core';
-import {XDSText} from '@astryxdesign/core';
-import {XDSHeading} from '@astryxdesign/core';
-import {XDSVStack} from '@astryxdesign/core';
+import {Card} from '@astryxdesign/core';
+import {Text} from '@astryxdesign/core';
+import {Heading} from '@astryxdesign/core';
+import {VStack} from '@astryxdesign/core';
 
 export default function MetricsCard() {
   return (
-    <XDSCard>
-      <XDSVStack gap={2}>
-        <XDSText type="label">Total Revenue</XDSText>
-        <XDSHeading level={2}>$12,340.56</XDSHeading>
-        <XDSText type="detail" color="secondary">+12% from last month</XDSText>
-      </XDSVStack>
-    </XDSCard>
+    <Card>
+      <VStack gap={2}>
+        <Text type="label">Total Revenue</Text>
+        <Heading level={2}>$12,340.56</Heading>
+        <Text type="detail" color="secondary">+12% from last month</Text>
+      </VStack>
+    </Card>
   );
 }
 FIXTURE
@@ -264,7 +264,7 @@ FIXTURE2_META
     check "baseline universal.json created" test -f "results/$ITER_ID2/universal.json"
 
     # Run compare
-    CMP_OUTPUT=$(pnpm --silent compare --xds "$ITER_ID" --baseline "$ITER_ID2" 2>&1)
+    CMP_OUTPUT=$(pnpm --silent compare --astryx "$ITER_ID" --baseline "$ITER_ID2" 2>&1)
     CMP_EXIT=$?
     
     if [ $CMP_EXIT -eq 0 ]; then

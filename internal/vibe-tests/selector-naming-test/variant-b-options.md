@@ -1,18 +1,18 @@
-# XDSSelector — Dropdown Selector Component
+# Selector — Dropdown Selector Component
 
 A dropdown selector for choosing from a list of options. Supports simple strings, rich options with icons/descriptions, sections, and dividers.
 
 ## Import
 
 ```tsx
-import {XDSSelector, XDSSelectorOption} from '@astryxdesign/core';
+import {Selector, SelectorOption} from '@astryxdesign/core';
 ```
 
 ## Basic Usage
 
 ```tsx
 // Simple string options
-<XDSSelector
+<Selector
   label="Fruit"
   options={['Apple', 'Banana', 'Orange']}
   value={fruit}
@@ -21,7 +21,7 @@ import {XDSSelector, XDSSelectorOption} from '@astryxdesign/core';
 />
 
 // Rich options with icons and descriptions
-<XDSSelector
+<Selector
   label="Status"
   options={[
     { value: 'active', label: 'Active', icon: 'checkCircle' },
@@ -33,7 +33,7 @@ import {XDSSelector, XDSSelectorOption} from '@astryxdesign/core';
 />
 
 // Sections and dividers
-<XDSSelector
+<Selector
   label="Action"
   options={[
     { type: 'section', title: 'Edit', options: [
@@ -54,13 +54,13 @@ import {XDSSelector, XDSSelectorOption} from '@astryxdesign/core';
 ## Custom Option Rendering
 
 ```tsx
-<XDSSelector
+<Selector
   label="User"
   options={users.map(u => ({value: u.id, label: u.name, icon: 'user'}))}
   value={selectedUser}
   onChange={setSelectedUser}
   renderOption={option => (
-    <XDSSelectorOption
+    <SelectorOption
       icon={option.icon}
       label={option.label}
       description={option.email}
@@ -71,7 +71,7 @@ import {XDSSelector, XDSSelectorOption} from '@astryxdesign/core';
 
 ## Props
 
-### XDSSelector
+### Selector
 
 | Prop          | Type                                                          | Default     | Description                           |
 | ------------- | ------------------------------------------------------------- | ----------- | ------------------------------------- |
@@ -90,14 +90,14 @@ import {XDSSelector, XDSSelectorOption} from '@astryxdesign/core';
 | status        | { type: 'warning' \| 'error' \| 'success', message?: string } | —           | Validation status                     |
 | renderOption  | (option: OptionData) => ReactNode                             | —           | Custom option renderer                |
 
-### XDSSelectorOption (for custom rendering)
+### SelectorOption (for custom rendering)
 
-| Prop        | Type        | Description        |
-| ----------- | ----------- | ------------------ |
-| icon        | XDSIconType | Leading icon       |
-| label       | ReactNode   | Primary text       |
-| description | ReactNode   | Secondary text     |
-| children    | ReactNode   | Additional content |
+| Prop        | Type      | Description        |
+| ----------- | --------- | ------------------ |
+| icon        | IconType  | Leading icon       |
+| label       | ReactNode | Primary text       |
+| description | ReactNode | Secondary text     |
+| children    | ReactNode | Additional content |
 
 ### Option Types
 
@@ -106,7 +106,7 @@ type OptionData = {
   value: string;
   label?: string;
   disabled?: boolean;
-  icon?: XDSIconType;
+  icon?: IconType;
 };
 type Divider = {type: 'divider'};
 type Section = {type: 'section'; title?: string; options: OptionData[]};

@@ -28,6 +28,24 @@ describe('ChatMessageList', () => {
     expect(el.getAttribute('role')).toBe('log');
   });
 
+  it('is not aria-busy by default', () => {
+    render(
+      <ChatMessageList data-testid="list">
+        <div>msg</div>
+      </ChatMessageList>,
+    );
+    expect(screen.getByTestId('list')).not.toHaveAttribute('aria-busy');
+  });
+
+  it('marks the log aria-busy while streaming', () => {
+    render(
+      <ChatMessageList data-testid="list" isStreaming>
+        <div>msg</div>
+      </ChatMessageList>,
+    );
+    expect(screen.getByTestId('list')).toHaveAttribute('aria-busy', 'true');
+  });
+
   it('renders empty state when no children', () => {
     render(
       <ChatMessageList emptyState={<div>No messages yet</div>}>

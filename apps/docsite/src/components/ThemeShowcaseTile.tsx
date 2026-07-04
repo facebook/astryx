@@ -557,7 +557,7 @@ export function ThemeShowcaseTile({
                 vertical space so tall tiles (Butter, Y2K) don't
                 leave an empty band at the bottom; falls back to a
                 170px floor on short tiles. Raw <img> intentionally:
-                XDS provides Thumbnail but it's purpose-built
+                Astryx provides Thumbnail but it's purpose-built
                 for file-attachment UX (square 64px default,
                 remove/click affordances, upload-style skeleton).
                 Tinted gradient fallback covers themes whose

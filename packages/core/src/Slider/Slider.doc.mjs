@@ -96,6 +96,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the slider is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the thumb focusable via aria-disabled (value changes stay blocked). Use this instead of wrapping a disabled Slider in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'isOptional',
       type: 'boolean',
       description: 'Whether the field is optional.',
@@ -151,6 +157,7 @@ export const docs = {
       {guidance: true, description: 'Format values with meaningful units like "$50" or "75%" instead of raw numbers.'},
       {guidance: false, description: 'Use for precise numeric entry; pair with a text input or use NumberInput instead.'},
       {guidance: false, description: 'Set a step size so large that only a few positions are possible; use SegmentedControl or radio buttons instead.'},
+      {guidance: false, description: 'Wrap a disabled slider in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
     ],
   },
 };
@@ -238,6 +245,12 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the slider is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the thumb focusable via aria-disabled (value changes stay blocked). Use this instead of wrapping a disabled Slider in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'isOptional',
       type: 'boolean',
       description: '字段是否为可选。',
@@ -293,6 +306,7 @@ export const docsZh = {
       {guidance: true, description: 'Format values with meaningful units like "$50" or "75%" instead of raw numbers.'},
       {guidance: false, description: 'Use for precise numeric entry; pair with a text input or use NumberInput instead.'},
       {guidance: false, description: 'Set a step size so large that only a few positions are possible; use SegmentedControl or radio buttons instead.'},
+      {guidance: false, description: 'Wrap a disabled slider in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
     ],
   },
 };
@@ -307,6 +321,7 @@ export const docsDense = {
       {guidance: true, description: 'Format values with meaningful units like "$50" or "75%" instead of raw numbers.'},
       {guidance: false, description: 'Use for precise numeric entry; pair with a text input or use NumberInput instead.'},
       {guidance: false, description: 'Set a step size so large that only a few positions are possible; use SegmentedControl or radio buttons instead.'},
+      {guidance: false, description: 'Wrap a disabled slider in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
     ],
   },
   propDescriptions: {

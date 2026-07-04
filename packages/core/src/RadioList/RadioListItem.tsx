@@ -230,6 +230,12 @@ export function RadioListItem({
   const id = useId();
   const descriptionID = useId();
   const isDisabled = context.isDisabled || isItemDisabled;
+  // When the whole group is disabled with a disabledMessage, radios stay
+  // focusable via aria-disabled (instead of native `disabled`) so the group's
+  // reason tooltip is keyboard-discoverable. Per-item disabling is unaffected
+  // and always uses the native disabled attribute.
+  const keepsFocusableForMessage =
+    context.hasDisabledMessage && !isItemDisabled;
   const isChecked = context.value === value;
   const size = context.size;
 
@@ -246,9 +252,15 @@ export function RadioListItem({
         name={context.name}
         value={value}
         checked={isChecked}
-        disabled={isDisabled}
+        disabled={isDisabled && !keepsFocusableForMessage}
+        aria-disabled={keepsFocusableForMessage ? 'true' : undefined}
         required={context.isRequired}
-        onChange={() => context.onChange(value)}
+        onChange={() => {
+          if (isDisabled) {
+            return;
+          }
+          context.onChange(value);
+        }}
         aria-describedby={description ? descriptionID : undefined}
         {...stylex.props(
           styles.input,

@@ -1,8 +1,8 @@
-# XDS Example: Next.js (Dist)
+# Astryx Example: Next.js (Dist)
 
 Reference application for consuming **@astryxdesign/core** as a pre-built dist package in a Next.js project.
 
-No StyleX build plugin needed; XDS ships pre-compiled CSS and JS. This is the simplest way to get started.
+No StyleX build plugin needed; Astryx ships pre-compiled CSS and JS. This is the simplest way to get started.
 
 ## Setup Steps
 
@@ -54,22 +54,22 @@ export function Providers({children}) {
 }
 ```
 
-`LinkProvider` wires up Next.js client-side navigation for all XDS link-based components (Link, Button with href, TopNav, SideNav, Breadcrumbs, TabList).
+`LinkProvider` wires up Next.js client-side navigation for all Astryx link-based components (Link, Button with href, TopNav, SideNav, Breadcrumbs, TabList).
 
 ## Gotchas
 
-| Issue                         | Symptom                                     | Fix                                        |
-| ----------------------------- | ------------------------------------------- | ------------------------------------------ |
-| Wrong CSS import order        | Missing theme tokens or broken layers       | Import reset → xds → theme in that order   |
-| No `'use client'` on provider | Server component error from `createContext` | Mark the provider file with `'use client'` |
+| Issue                         | Symptom                                     | Fix                                         |
+| ----------------------------- | ------------------------------------------- | ------------------------------------------- |
+| Wrong CSS import order        | Missing theme tokens or broken layers       | Import reset → astryx → theme in that order |
+| No `'use client'` on provider | Server component error from `createContext` | Mark the provider file with `'use client'`  |
 
 ## Testing outside the monorepo
 
-This example lives in the XDS monorepo for convenience, but it should be representative of a real app consuming `@astryxdesign/core` from npm. Monorepo workspace resolution can silently bypass issues that external consumers hit.
+This example lives in the Astryx monorepo for convenience, but it should be representative of a real app consuming `@astryxdesign/core` from npm. Monorepo workspace resolution can silently bypass issues that external consumers hit.
 
 **Before merging changes to this example, test it as an external consumer.** See the [Testing Example Apps](https://github.com/facebook/astryx/wiki/Testing-Example-Apps) wiki page for the full procedure.
 
 ## Related
 
 - [Issue #145: Add example-nextjs project](https://github.com/facebook/astryx/issues/145)
-- [XDS + Tailwind example](../example-nextjs-tailwind/): same dist approach with Tailwind for custom layout styles
+- [Astryx + Tailwind example](../example-nextjs-tailwind/): same dist approach with Tailwind for custom layout styles

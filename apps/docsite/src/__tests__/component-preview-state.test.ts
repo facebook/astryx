@@ -147,6 +147,30 @@ describe('component detail preview state', () => {
     expect(getMissingRequiredProps(knobs, state)).toEqual([]);
   });
 
+  it("satisfies Citation's required, non-generatable source prop via playground defaults", () => {
+    const knobs = pickPrimaryProps('Citation', [
+      prop({name: 'source', type: 'CitationSource', required: true}),
+      prop({name: 'number', type: 'number', required: true}),
+    ]);
+
+    // Without a playground default the custom-object `source` prop cannot be
+    // generated, so the properties tab shows the missing-props placeholder
+    // instead of an interactive preview.
+    expect(getMissingRequiredProps(knobs, buildInitialState(knobs))).toEqual([
+      'source',
+    ]);
+
+    // The doc's playground default seeds a renderable source object.
+    const state = buildInitialState(knobs, {
+      defaults: {
+        source: {title: 'Astryx Design', url: 'https://example.com'},
+        number: 1,
+      },
+    });
+    expect(state.source).toMatchObject({title: 'Astryx Design'});
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
   it('gives Timestamp a valid date value via playground defaults', () => {
     const knobs = pickPrimaryProps('Timestamp', [
       prop({name: 'value', type: 'string | number', required: true}),

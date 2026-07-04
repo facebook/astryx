@@ -228,7 +228,7 @@ export function ComponentTokensPanel({
             <HStack gap={2} vAlign="end">
               <StackItem size="fill" xstyle={styles.rowLabel}>
                 <Text type="supporting" color="secondary" maxLines={1}>
-                  .xds-{override.component} → {override.property}
+                  .astryx-{override.component} → {override.property}
                 </Text>
               </StackItem>
               <Button

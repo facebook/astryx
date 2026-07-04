@@ -362,7 +362,7 @@ const features: Record<string, Feature> = {
     description:
       'Accessible and themeable React components with built-in spacing, dark mode, and flexible styling.',
     href: '/components',
-    // Live, theme-aware sampler of real XDS components instead of a
+    // Live, theme-aware sampler of real Astryx components instead of a
     // baked PNG — the old /feature-components.png stayed light on the
     // dark surface; ComponentsPreview re-themes for dark mode.
     preview: <ComponentsPreview />,

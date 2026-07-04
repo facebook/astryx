@@ -33,6 +33,11 @@ const meta: Meta<typeof Tokenizer> = {
     label: {control: 'text'},
     placeholder: {control: 'text'},
     isDisabled: {control: 'boolean'},
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the tokenizer is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (input stays blocked). Use this instead of wrapping a disabled Tokenizer in Tooltip.',
+    },
     isRequired: {control: 'boolean'},
     isOptional: {control: 'boolean'},
     hasClear: {control: 'boolean'},
@@ -282,10 +287,7 @@ export const OverflowLayer: Story = {
 
 export const WithEndContent: Story = {
   render: args => {
-    const [value, setValue] = useState<SearchableItem[]>([
-      users[0],
-      users[2],
-    ]);
+    const [value, setValue] = useState<SearchableItem[]>([users[0], users[2]]);
     return (
       <Tokenizer
         {...args}
@@ -395,4 +397,28 @@ export const CreatableWithSearch: Story = {
     label: 'Team Members',
   },
   name: 'Creatable + Search',
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the input to see
+// why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the input stays focusable (input is still blocked). Use
+// disabledMessage instead of wrapping a disabled Tokenizer in Tooltip: disabled
+// controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value] = useState([users[0], users[1]]);
+    return (
+      <Tokenizer
+        {...args}
+        searchSource={userSource}
+        value={value}
+        onChange={() => {}}
+      />
+    );
+  },
+  args: {
+    label: 'Team Members',
+    isDisabled: true,
+    disabledMessage: 'You need edit access to change members',
+  },
 };

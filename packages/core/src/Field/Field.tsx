@@ -99,9 +99,26 @@ export interface FieldProps extends Omit<
    */
   description?: string;
   /**
-   * ID for the input element (used for label's htmlFor attribute).
+   * ID of the input element this label points AT (used as the label's
+   * `htmlFor`). This is the id of the *control*, not of the label element —
+   * see `labelID` for the latter.
    */
   inputID: string;
+  /**
+   * The `id` applied TO the label element itself (distinct from `inputID`,
+   * which is the control the label points at). A grouping control
+   * (radiogroup, checkbox group) references this via `aria-labelledby` to take
+   * the label as its accessible name. Pair with `isGroupLabel`.
+   */
+  labelID?: string;
+  /**
+   * When the field wraps a group of controls rather than a single input, set
+   * this so the label renders as a non-`<label>` element (a `<span>`): a
+   * `<label>` semantically names one control and can't be associated with a
+   * group. Pair with `labelID` + `aria-labelledby` on the group.
+   * @default false
+   */
+  isGroupLabel?: boolean;
   /**
    * ID for the description element (use for aria-describedby on the input).
    */
@@ -172,6 +189,8 @@ export function Field({
   isLabelHidden = false,
   description,
   inputID,
+  labelID,
+  isGroupLabel = false,
   descriptionID,
   isOptional = false,
   isRequired = false,
@@ -206,6 +225,8 @@ export function Field({
     <FieldLabel
       label={label}
       inputID={inputID}
+      labelID={labelID}
+      isGroupLabel={isGroupLabel}
       isLabelHidden={isLabelHidden}
       isDisabled={isDisabled}
       isOptional={isOptional}
@@ -245,10 +266,7 @@ export function Field({
         <div {...stylex.props(styles.horizontalLabelAlign)}>{labelNode}</div>
         <div {...stylex.props(styles.inputStatusWrapper)}>
           {description && (
-            <Text
-              type="supporting"
-              display="block"
-              id={resolvedDescriptionID}>
+            <Text type="supporting" display="block" id={resolvedDescriptionID}>
               {description}
             </Text>
           )}

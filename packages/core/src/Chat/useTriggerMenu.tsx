@@ -40,10 +40,7 @@ import {
 import {mergeProps, groupItems} from '../utils';
 import type {SearchableItem} from '../Typeahead/types';
 import {themeProps} from '../utils/themeProps';
-import type {
-  ChatComposerTrigger,
-  ChatComposerToken,
-} from './ChatComposerInput';
+import type {ChatComposerTrigger, ChatComposerToken} from './ChatComposerInput';
 
 // =============================================================================
 // Types
@@ -296,6 +293,9 @@ export function useTriggerMenu(
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
+    // The popup's own role="listbox" is the exposed semantics; focus stays in
+    // the contenteditable composer, so a modal dialog wrapper is incorrect.
+    role: 'none',
   });
 
   // Cleanup on unmount

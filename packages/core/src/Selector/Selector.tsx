@@ -4,7 +4,7 @@
 
 /**
  * @file Selector.tsx
- * @input Uses React, StyleX, usePopover, Icon
+ * @input Uses React, StyleX, usePopover, useTooltip, Icon
  * @output Exports Selector component
  * @position Core implementation; consumed by index.ts
  *
@@ -27,6 +27,7 @@ import React, {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {usePopover} from '../Popover/usePopover';
+import {useTooltip} from '../Tooltip';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import type {IconName} from '../Icon';
 import {
@@ -370,6 +371,28 @@ interface SelectorPropsBase<
   isDisabled?: boolean;
 
   /**
+   * Explains why the selector is disabled. When set together with
+   * `isDisabled`, the selector shows a tooltip with this text on hover and
+   * keyboard focus, and the trigger stays focusable (via `aria-disabled`)
+   * so the reason is discoverable by keyboard and assistive technology.
+   * Activation stays blocked.
+   *
+   * Use this instead of wrapping a disabled selector in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <Selector
+   *   label="Owner"
+   *   options={owners}
+   *   isDisabled
+   *   disabledMessage="You need the Editor role to change this"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
+
+  /**
    * The options to display in the selector.
    * Can be strings, objects, dividers, or sections.
    */
@@ -474,34 +497,30 @@ type SelectorPropsNonClearable<
   changeAction?: (value: string) => void | Promise<void>;
 };
 
-type SelectorPropsClearable<
-  T extends SelectorOptionType = SelectorOptionType,
-> = SelectorPropsBase<T> & {
-  /**
-   * Whether to show a clear button when a value is selected.
-   * When clicked, resets the value to `null` and returns focus to the trigger.
-   *
-   * When enabled, `value` and `onChange` widen to include `null`.
-   */
-  hasClear: true;
-  value: string | null;
-  onChange?: (value: string | null) => void;
-  changeAction?: (value: string | null) => void | Promise<void>;
-};
+type SelectorPropsClearable<T extends SelectorOptionType = SelectorOptionType> =
+  SelectorPropsBase<T> & {
+    /**
+     * Whether to show a clear button when a value is selected.
+     * When clicked, resets the value to `null` and returns focus to the trigger.
+     *
+     * When enabled, `value` and `onChange` widen to include `null`.
+     */
+    hasClear: true;
+    value: string | null;
+    onChange?: (value: string | null) => void;
+    changeAction?: (value: string | null) => void | Promise<void>;
+  };
 
-export type SelectorProps<
-  T extends SelectorOptionType = SelectorOptionType,
-> = SelectorPropsNonClearable<T> | SelectorPropsClearable<T>;
+export type SelectorProps<T extends SelectorOptionType = SelectorOptionType> =
+  | SelectorPropsNonClearable<T>
+  | SelectorPropsClearable<T>;
 
 /**
  * Default option renderer
  */
 function DefaultOption({option}: {option: SelectorOptionData}) {
   return (
-    <SelectorOption
-      icon={option.icon}
-      label={option.label ?? option.value}
-    />
+    <SelectorOption icon={option.icon} label={option.label ?? option.value} />
   );
 }
 
@@ -529,6 +548,7 @@ export function Selector<T extends SelectorOptionType>(
     isOptional = false,
     isRequired = false,
     isDisabled = false,
+    disabledMessage,
     options,
     value,
     onChange,
@@ -571,11 +591,26 @@ export function Selector<T extends SelectorOptionType>(
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
   const isBusy = isLoading || optimisticValue !== normalizedValue;
 
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the trigger container (which already exists)
+  // and the trigger button stays perceivable via aria-disabled instead of the
+  // disabled attribute. Activation is blocked by the isDisabled guards in
+  // useCombobox (onTriggerClick / onKeyDown).
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The container div is not naturally focusable; focusin bubbles up from
+    // the trigger button, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
   // Build aria-describedby
   const ariaDescribedBy =
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -622,6 +657,9 @@ export function Selector<T extends SelectorOptionType>(
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,
+    // The popup's own role="listbox" is the exposed semantics; the trigger
+    // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
+    role: 'none',
   });
 
   // Open dropdown on mount when isDefaultOpen is true
@@ -652,6 +690,18 @@ export function Selector<T extends SelectorOptionType>(
     selectedItemOffset > 0
       ? {marginBlockStart: `-${selectedItemOffset}px`}
       : undefined;
+
+  // Clear the current value. Shared by the clear button and the keyboard
+  // Delete/Backspace path so clearing is reachable without a mouse.
+  const clearValue = useCallback(() => {
+    onChange?.(null);
+    if (changeAction) {
+      startTransition(async () => {
+        setOptimisticValue(undefined);
+        await changeAction(null);
+      });
+    }
+  }, [onChange, changeAction, startTransition, setOptimisticValue]);
 
   // Selector behavior (keyboard nav, typeahead, selection)
   const {
@@ -689,22 +739,30 @@ export function Selector<T extends SelectorOptionType>(
       },
       [onChange, changeAction, startTransition, setOptimisticValue],
     ),
+    onClear: hasClear ? clearValue : undefined,
     listboxId,
   });
+
+  // Keep the highlighted option visible during keyboard navigation. The
+  // listbox is a fixed-height scroll container, so without this the virtual
+  // cursor walks off-screen once navigation passes the visible window. Mirrors
+  // CommandPaletteItem's scrollIntoView({block: 'nearest'}) behavior.
+  useEffect(() => {
+    if (!popover.isOpen || highlightedIndex < 0) {
+      return;
+    }
+    document
+      .getElementById(getItemId(highlightedIndex))
+      ?.scrollIntoView?.({block: 'nearest'});
+  }, [popover.isOpen, highlightedIndex, getItemId]);
 
   // Handle clear button click
   const handleClear = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation(); // Don't open dropdown
-      onChange?.(null);
-      if (changeAction) {
-        startTransition(async () => {
-          setOptimisticValue(undefined);
-          await changeAction(null);
-        });
-      }
+      clearValue();
     },
-    [onChange, changeAction, startTransition, setOptimisticValue],
+    [clearValue],
   );
 
   // Render search input
@@ -717,16 +775,30 @@ export function Selector<T extends SelectorOptionType>(
         <input
           ref={searchRef}
           id={searchId}
-          role="searchbox"
+          // When hasSearch is set, focus moves into this input on open, so it —
+          // not the trigger — must be the combobox that reports the highlighted
+          // option via aria-activedescendant (comboboxes-4). A bare searchbox
+          // left the highlight silent to screen readers.
+          role="combobox"
+          aria-expanded={popover.isOpen}
           aria-controls={listboxId}
+          aria-autocomplete="list"
+          aria-activedescendant={
+            popover.isOpen && highlightedIndex >= 0
+              ? getItemId(highlightedIndex)
+              : undefined
+          }
           aria-label="Search options"
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           onKeyDown={e => {
+            // Arrow keys navigate options; Enter selects; Escape/Tab close.
+            // Home/End are left to the input for caret movement.
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
+              e.key === 'Enter' ||
               e.key === 'Escape' ||
               e.key === 'Tab'
             ) {
@@ -745,6 +817,9 @@ export function Selector<T extends SelectorOptionType>(
     searchQuery,
     searchPlaceholder,
     onKeyDown,
+    popover.isOpen,
+    highlightedIndex,
+    getItemId,
   ]);
 
   // Render an individual item
@@ -812,9 +887,7 @@ export function Selector<T extends SelectorOptionType>(
       const option = options[i];
 
       if (isDivider(option)) {
-        elements.push(
-          <Divider key={`divider-${i}`} xstyle={styles.divider} />,
-        );
+        elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
       } else if (isSection(option)) {
         const sectionItems: ReactNode[] = [];
         for (const opt of option.options) {
@@ -868,6 +941,10 @@ export function Selector<T extends SelectorOptionType>(
       <div
         ref={el => {
           popover.triggerRef(el);
+          // Anchor + hover/focus listeners for the disabled-message tooltip.
+          // Handlers are gated internally by isEnabled, and anchor names
+          // compose, so attaching unconditionally is safe.
+          disabledMessageTooltip.ref(el);
         }}
         onClick={onTriggerClick}
         data-testid={testId}
@@ -892,13 +969,16 @@ export function Selector<T extends SelectorOptionType>(
           ref={triggerRef}
           id={triggerId}
           type="button"
-          role="combobox"
+          // In hasSearch mode the popup's search input is the combobox (it owns
+          // focus + aria-activedescendant, comboboxes-4), so the trigger is a
+          // plain button that opens the listbox — not a second combobox.
+          role={hasSearch ? undefined : 'combobox'}
           {...rest}
           aria-haspopup="listbox"
           aria-expanded={popover.isOpen}
           aria-controls={listboxId}
           aria-activedescendant={
-            popover.isOpen && highlightedIndex >= 0
+            !hasSearch && popover.isOpen && highlightedIndex >= 0
               ? getItemId(highlightedIndex)
               : undefined
           }
@@ -906,9 +986,13 @@ export function Selector<T extends SelectorOptionType>(
           aria-required={isRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
-          disabled={isDisabled}
+          // With a disabledMessage the trigger keeps focusability via
+          // aria-disabled so the reason is focus-discoverable; activation is
+          // still blocked by the isDisabled guards in useCombobox.
+          disabled={isDisabled && !showsDisabledMessage}
+          aria-disabled={showsDisabledMessage ? 'true' : undefined}
           onKeyDown={onKeyDown}
-          tabIndex={isDisabled ? -1 : 0}
+          tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerLabel)}>
             {selectedItem?.label ?? placeholder}
@@ -975,6 +1059,9 @@ export function Selector<T extends SelectorOptionType>(
           style: popoverOffsetStyle,
         },
       )}
+
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }

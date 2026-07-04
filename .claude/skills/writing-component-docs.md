@@ -2,7 +2,7 @@
 
 ## Overview
 
-Every component directory has a `{Name}.doc.mjs` file with structured documentation. The XDS CLI reads these files to generate agent-friendly docs, skill files, and reference material.
+Every component directory has a `{Name}.doc.mjs` file with structured documentation. The Astryx CLI reads these files to generate agent-friendly docs, skill files, and reference material.
 
 ## Exports
 
@@ -40,7 +40,7 @@ See `docs-types.ts` for the full type definition.
 export const docs = {
   name: 'Button',
   description:
-    'XDSButton component with multiple variants, sizes, and isLoading state.',
+    'Button component with multiple variants, sizes, and isLoading state.',
   features: [
     'Variants: primary, secondary, ghost, destructive',
     'Sizes: sm (28px), md (32px), lg (36px)',
@@ -60,11 +60,11 @@ export const docs = {
     },
   ],
   examples: [
-    {label: 'Basic', code: '<XDSButton label="Save" variant="primary" />'},
+    {label: 'Basic', code: '<Button label="Save" variant="primary" />'},
   ],
   accessibility: ['Uses native <button> with proper ARIA attributes.'],
   keyboard: 'Enter/Space activates; Tab moves focus.',
-  notes: ['Prefer XDSButton over <div onClick> for accessibility.'],
+  notes: ['Prefer Button over <div onClick> for accessibility.'],
 };
 ```
 

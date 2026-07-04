@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {NavHeadingMenu} from './NavHeadingMenu';
 import {NavHeadingMenuItem} from './NavHeadingMenuItem';
@@ -248,6 +248,37 @@ describe('keyboard navigation', () => {
 
     await user.keyboard('{Enter}');
     expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('typeahead focuses the item matching the typed character (menus-11)', () => {
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="Cut" />
+        <NavHeadingMenuItem label="Paste" />
+      </NavHeadingMenu>,
+    );
+    const menu = screen.getByRole('menu');
+    fireEvent.keyDown(menu, {key: 'p'});
+    expect(screen.getByRole('menuitem', {name: 'Paste'})).toHaveFocus();
+  });
+
+  it('typeahead skips a disabled menuitem (menus-11)', () => {
+    render(
+      <NavHeadingMenu>
+        <NavHeadingMenuItem label="Cut" />
+        <NavHeadingMenuItem label="Paste (disabled)" isDisabled />
+        <NavHeadingMenuItem label="Paste special" />
+      </NavHeadingMenu>,
+    );
+    const menu = screen.getByRole('menu');
+    // Typing "p" must land on the enabled "Paste special", never the disabled
+    // "Paste (disabled)" — the disabled item is excluded from the typeahead
+    // selector entirely.
+    fireEvent.keyDown(menu, {key: 'p'});
+    expect(screen.getByRole('menuitem', {name: 'Paste special'})).toHaveFocus();
+    expect(
+      screen.getByRole('menuitem', {name: 'Paste (disabled)'}),
+    ).not.toHaveFocus();
   });
 });
 

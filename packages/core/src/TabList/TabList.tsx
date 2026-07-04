@@ -4,9 +4,11 @@
 
 /**
  * @file TabList.tsx
- * @input Uses React, StyleX, TabListContext
+ * @input Uses React, StyleX, TabListContext, useListFocus, useKeyboardHint
  * @output Exports TabList component and TabListProps type
- * @position Nav wrapper; provides TabListContext to Tab and TabMenu children
+ * @position Nav wrapper; provides TabListContext to Tab and TabMenu children.
+ *   Owns roving-tabindex keyboard navigation (Arrow/Home/End) across the tab
+ *   strip via the shared useListFocus hook so it is a single Tab stop.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/TabList/TabList.doc.mjs
@@ -15,21 +17,27 @@
  * - /packages/cli/templates/blocks/components/TabList/ (showcase blocks)
  */
 
-import React, {useMemo, type ReactNode} from 'react';
+import React, {useCallback, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {TabListContext} from './TabListContext';
-import type {TabListSize} from './TabListContext';
+import type {TabListOrientation, TabListSize} from './TabListContext';
 import {useSize} from '../SizeContext/SizeContext';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
+import {useListFocus} from '../hooks/useListFocus';
+import {useKeyboardHint} from '../hooks/useKeyboardHint';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
 
-export interface TabListProps extends Omit<
-  BaseProps<HTMLElement>,
-  'onChange'
-> {
+/**
+ * Selector matching the focusable stops in the tab strip: every Tab
+ * (`[data-tab-value]`) and every TabMenu trigger (`[data-tab-menu]`),
+ * in DOM order. Disabled stops are filtered out by the handler.
+ */
+const TAB_STOP_SELECTOR = '[data-tab-value],[data-tab-menu]';
+
+export interface TabListProps extends Omit<BaseProps<HTMLElement>, 'onChange'> {
   ref?: React.Ref<HTMLElement>;
   /**
    * The currently selected tab value.
@@ -57,6 +65,15 @@ export interface TabListProps extends Omit<
    * @default false
    */
   hasDivider?: boolean;
+  /**
+   * Orientation of the tab strip, controlling which arrow keys move
+   * focus between tabs.
+   * - `'horizontal'` (default): ArrowLeft / ArrowRight (ArrowUp / ArrowDown
+   *   also work per the WAI-ARIA APG).
+   * - `'vertical'`: ArrowUp / ArrowDown (ArrowLeft / ArrowRight also work).
+   * @default 'horizontal'
+   */
+  orientation?: TabListOrientation;
   /**
    * Tab and TabMenu children.
    */
@@ -104,26 +121,98 @@ export function TabList({
   size: sizeProp,
   layout = 'hug',
   hasDivider = false,
+  orientation = 'horizontal',
   xstyle,
   className,
   style,
   children,
+  onKeyDown: onKeyDownProp,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
+  'aria-label': ariaLabel = 'Tabs',
+  'aria-orientation': _ariaOrientation,
+  [EDGE_COMP_ATTR]: _edgeCompAttr,
   ...restProps
 }: TabListProps) {
   const size = useSize(sizeProp, 'md');
+
+  // Roving-tabindex keyboard navigation across the tab strip via the shared
+  // hook. `orientation: 'both'` accepts both arrow axes per the WAI-ARIA APG
+  // allowance for tab strips (ArrowRight/ArrowDown advance, ArrowLeft/ArrowUp
+  // retreat) regardless of the component's `orientation` prop, which only
+  // drives the reported `aria-orientation`.
+  //
+  // `hasRovingTabIndex` makes the hook own the single tab stop: it stamps
+  // tabindex 0/-1, repairs the stop on mount and as stops mount/unmount or
+  // toggle disabled, and — via `handleFocus` on the nav — keeps the stop in
+  // sync after clicks or programmatic focus. Individual Tabs still render
+  // `tabIndex={isSelected ? 0 : -1}` (see Tab.tsx) as the initial source of
+  // truth; the hook's repair preserves an existing tab stop and only promotes
+  // the first enabled stop when none is tabbable.
+  const {listRef, handleKeyDown, handleFocus} = useListFocus<HTMLElement>({
+    itemSelector: TAB_STOP_SELECTOR,
+    orientation: 'both',
+    hasRovingTabIndex: true,
+  });
+
+  const {
+    hintElement,
+    onKeyDown: onHintKeyDown,
+    onFocus: onHintFocus,
+    onBlur: onHintBlur,
+  } = useKeyboardHint({orientation});
 
   const contextValue = useMemo(
     () => ({value, onChange, size, layout}),
     [value, onChange, size, layout],
   );
 
+  const handleRootKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLElement>) => {
+      onKeyDownProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      onHintKeyDown(e);
+      handleKeyDown(e);
+    },
+    [onKeyDownProp, onHintKeyDown, handleKeyDown],
+  );
+
+  const handleRootFocus = useCallback(
+    (e: React.FocusEvent<HTMLElement>) => {
+      onFocusProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      onHintFocus(e);
+      handleFocus(e);
+    },
+    [onFocusProp, onHintFocus, handleFocus],
+  );
+
+  const handleRootBlur = useCallback(
+    (e: React.FocusEvent<HTMLElement>) => {
+      onBlurProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
+      onHintBlur(e);
+    },
+    [onBlurProp, onHintBlur],
+  );
+
   return (
     <TabListContext value={contextValue}>
       <nav
-        ref={ref}
-        aria-label="Tabs"
-        {...{[EDGE_COMP_ATTR]: ''}}
+        ref={mergeRefs(ref, listRef)}
         {...restProps}
+        aria-label={ariaLabel}
+        aria-orientation={orientation}
+        onKeyDown={handleRootKeyDown}
+        onFocus={handleRootFocus}
+        onBlur={handleRootBlur}
+        {...{[EDGE_COMP_ATTR]: ''}}
         {...mergeProps(
           themeProps('tab-list', {size}),
           stylex.props(
@@ -136,6 +225,7 @@ export function TabList({
           style,
         )}>
         {children}
+        {hintElement}
       </nav>
     </TabListContext>
   );

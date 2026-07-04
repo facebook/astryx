@@ -23,6 +23,17 @@ interface UseMultiComboboxOptions {
   onOpen: () => void;
   onClose: () => void;
   onToggle: (itemValue: string) => void;
+  /**
+   * Clear all selected values. When provided, pressing Delete or Backspace on
+   * the closed trigger clears the selection — a keyboard equivalent of the
+   * clear button (comboboxes-2). No-op when the popup is open or search is on.
+   */
+  onClear?: () => void;
+  /**
+   * Whether at least one value is selected (i.e. there is something to clear).
+   * The Delete/Backspace clear path is skipped when false.
+   */
+  hasValue?: boolean;
   listboxId: string;
 }
 
@@ -49,6 +60,8 @@ export function useMultiCombobox({
   onOpen,
   onClose,
   onToggle,
+  onClear,
+  hasValue = false,
   listboxId,
 }: UseMultiComboboxOptions): UseMultiComboboxResult {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
@@ -179,6 +192,18 @@ export function useMultiCombobox({
           }
           break;
 
+        case 'Delete':
+        case 'Backspace':
+          // Keyboard equivalent of the clear button (comboboxes-2): clear all
+          // selected values from the closed trigger so clearing is not
+          // mouse-only. Skipped in search mode (keys edit the query) and while
+          // the popup is open (arrow navigation owns interaction).
+          if (!hasSearch && !isOpen && onClear != null && hasValue) {
+            e.preventDefault();
+            onClear();
+          }
+          break;
+
         default:
           // Typeahead only when search is not present
           if (!hasSearch && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
@@ -218,6 +243,8 @@ export function useMultiCombobox({
       getEnabledIndices,
       typeahead,
       hasSearch,
+      onClear,
+      hasValue,
     ],
   );
 

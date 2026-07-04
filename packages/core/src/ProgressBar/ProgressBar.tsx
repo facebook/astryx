@@ -31,6 +31,7 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 /**
  * Extensible variant map for ProgressBar.
@@ -313,14 +314,12 @@ export function ProgressBar({
           )}
         </div>
       ) : (
-        <span id={labelId} {...stylex.props(styles.visuallyHidden)}>
-          {label}
-        </span>
+        <VisuallyHidden id={labelId}>{label}</VisuallyHidden>
       )}
 
       {/* Progress track */}
       <div
-        role={isIndeterminate ? 'progressbar' : 'meter'}
+        role="progressbar"
         aria-valuenow={isIndeterminate ? undefined : clampedValue}
         aria-valuemin={isIndeterminate ? undefined : 0}
         aria-valuemax={isIndeterminate ? undefined : max}

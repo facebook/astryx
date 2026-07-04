@@ -7,8 +7,21 @@ export const docs = {
   displayName: 'Typeahead',
   group: 'Typeahead',
   category: 'Data Input',
-  keywords: ["typeahead","autocomplete","combobox","searchbox","autosuggest","select","dropdown","lookup","searchable","suggestion","picker"],
-  description: 'Styled typeahead with label, description, validation, and all field features. Wraps BaseTypeahead with Field for the primary use case.',
+  keywords: [
+    'typeahead',
+    'autocomplete',
+    'combobox',
+    'searchbox',
+    'autosuggest',
+    'select',
+    'dropdown',
+    'lookup',
+    'searchable',
+    'suggestion',
+    'picker',
+  ],
+  description:
+    'Styled typeahead with label, description, validation, and all field features. Wraps BaseTypeahead with Field for the primary use case.',
   props: [
     {
       name: 'label',
@@ -19,7 +32,8 @@ export const docs = {
     {
       name: 'searchSource',
       type: 'SearchSource<T>',
-      description: 'Data source providing search and bootstrap methods for populating the dropdown.',
+      description:
+        'Data source providing search and bootstrap methods for populating the dropdown.',
       required: true,
     },
     {
@@ -58,6 +72,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled Typeahead in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'maxMenuItems',
       type: 'number',
       description: 'Maximum number of dropdown items to display.',
@@ -66,12 +86,14 @@ export const docs = {
     {
       name: 'status',
       type: 'InputStatus',
-      description: 'Validation status object with type and message for error/warning/success states.',
+      description:
+        'Validation status object with type and message for error/warning/success states.',
     },
     {
       name: 'renderItem',
       type: '(item: T) => ReactNode',
-      description: 'Custom render function for dropdown items. Default renders TypeaheadItem.',
+      description:
+        'Custom render function for dropdown items. Default renders TypeaheadItem.',
     },
     {
       name: 'isLabelHidden',
@@ -122,7 +144,8 @@ export const docs = {
     {
       name: 'debounceMs',
       type: 'number',
-      description: 'Debounce delay in ms before triggering search. Set to 0 for synchronous sources.',
+      description:
+        'Debounce delay in ms before triggering search. Set to 0 for synchronous sources.',
       default: '150',
     },
     {
@@ -138,13 +161,11 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
-  components: [
-    {name: 'BaseTypeahead'},
-    {name: 'TypeaheadItem'},
-  ],
+  components: [{name: 'BaseTypeahead'}, {name: 'TypeaheadItem'}],
   theming: {
     targets: [
       {className: 'astryx-typeahead', visualProps: ['status']},
@@ -156,12 +177,40 @@ export const docs = {
     description:
       'A searchable input for selecting a single item from a large or dynamic dataset. Results appear as the user types, with support for async data sources, debounced search, and custom item rendering. Use it when the option list is too large for a Selector dropdown.',
     bestPractices: [
-      {guidance: true, description: 'Provide descriptive placeholder text that hints at what users can search for.'},
-      {guidance: true, description: 'Show suggestions on focus when users benefit from seeing popular or recent options before typing.'},
-      {guidance: true, description: 'Add a search delay for remote data sources to avoid excessive network requests.'},
-      {guidance: false, description: 'Use for short, static option lists; use Selector for better discoverability.'},
-      {guidance: false, description: 'Use for multi-selection; use Tokenizer instead.'},
-      {guidance: false, description: 'Place multiple Typeaheads adjacent to each other without clear labels differentiating them.'},
+      {
+        guidance: true,
+        description:
+          'Provide descriptive placeholder text that hints at what users can search for.',
+      },
+      {
+        guidance: true,
+        description:
+          'Show suggestions on focus when users benefit from seeing popular or recent options before typing.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add a search delay for remote data sources to avoid excessive network requests.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use for short, static option lists; use Selector for better discoverability.',
+      },
+      {
+        guidance: false,
+        description: 'Use for multi-selection; use Tokenizer instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Place multiple Typeaheads adjacent to each other without clear labels differentiating them.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled Typeahead in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
 };
@@ -172,29 +221,86 @@ export const docsZh = {
     description:
       'A searchable input for selecting a single item from a large or dynamic dataset. Results appear as the user types, with support for async data sources, debounced search, and custom item rendering. Use it when the option list is too large for a Selector dropdown.',
     bestPractices: [
-      {guidance: true, description: 'Provide descriptive placeholder text that hints at what users can search for.'},
-      {guidance: true, description: 'Show suggestions on focus when users benefit from seeing popular or recent options before typing.'},
-      {guidance: true, description: 'Add a search delay for remote data sources to avoid excessive network requests.'},
-      {guidance: false, description: 'Use for short, static option lists; use Selector for better discoverability.'},
-      {guidance: false, description: 'Use for multi-selection; use Tokenizer instead.'},
-      {guidance: false, description: 'Place multiple Typeaheads adjacent to each other without clear labels differentiating them.'},
+      {
+        guidance: true,
+        description:
+          'Provide descriptive placeholder text that hints at what users can search for.',
+      },
+      {
+        guidance: true,
+        description:
+          'Show suggestions on focus when users benefit from seeing popular or recent options before typing.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add a search delay for remote data sources to avoid excessive network requests.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use for short, static option lists; use Selector for better discoverability.',
+      },
+      {
+        guidance: false,
+        description: 'Use for multi-selection; use Tokenizer instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Place multiple Typeaheads adjacent to each other without clear labels differentiating them.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled Typeahead in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Searchable dropdown for single-item selection w/ keyboard navigation. Supports async+sync search via searchSource interface.',
+  description:
+    'Searchable dropdown for single-item selection w/ keyboard navigation. Supports async+sync search via searchSource interface.',
   usage: {
     description:
       'A searchable input for selecting a single item from a large or dynamic dataset. Results appear as the user types, with support for async data sources, debounced search, and custom item rendering. Use it when the option list is too large for a Selector dropdown.',
     bestPractices: [
-      {guidance: true, description: 'Provide descriptive placeholder text that hints at what users can search for.'},
-      {guidance: true, description: 'Show suggestions on focus when users benefit from seeing popular or recent options before typing.'},
-      {guidance: true, description: 'Add a search delay for remote data sources to avoid excessive network requests.'},
-      {guidance: false, description: 'Use for short, static option lists; use Selector for better discoverability.'},
-      {guidance: false, description: 'Use for multi-selection; use Tokenizer instead.'},
-      {guidance: false, description: 'Place multiple Typeaheads adjacent to each other without clear labels differentiating them.'},
+      {
+        guidance: true,
+        description:
+          'Provide descriptive placeholder text that hints at what users can search for.',
+      },
+      {
+        guidance: true,
+        description:
+          'Show suggestions on focus when users benefit from seeing popular or recent options before typing.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add a search delay for remote data sources to avoid excessive network requests.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use for short, static option lists; use Selector for better discoverability.',
+      },
+      {
+        guidance: false,
+        description: 'Use for multi-selection; use Tokenizer instead.',
+      },
+      {
+        guidance: false,
+        description:
+          'Place multiple Typeaheads adjacent to each other without clear labels differentiating them.',
+      },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled Typeahead in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
 };

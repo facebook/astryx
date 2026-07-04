@@ -39,13 +39,23 @@ export const docs = {
     },
     {
       name: 'width',
-      type: 'number | string',
-      description: 'Container width.',
+      type: 'SizeValue',
+      description: 'Container width. Numbers are treated as pixels, strings are used as-is.',
     },
     {
       name: 'height',
-      type: 'number | string',
-      description: 'Container height.',
+      type: 'SizeValue',
+      description: 'Container height. Numbers are treated as pixels, strings are used as-is.',
+    },
+    {
+      name: 'maxWidth',
+      type: 'SizeValue',
+      description: 'Maximum container width. Numbers are treated as pixels, strings are used as-is.',
+    },
+    {
+      name: 'minHeight',
+      type: 'SizeValue',
+      description: 'Minimum container height. Numbers are treated as pixels, strings are used as-is.',
     },
     {
       name: 'gap',

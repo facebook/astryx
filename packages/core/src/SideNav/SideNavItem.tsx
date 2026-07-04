@@ -612,16 +612,14 @@ export function SideNavItem({
 
   if (hasIndependentToggle) {
     itemElement = (
-      <div
-        aria-current={isSelected ? ('page' as const) : undefined}
-        data-testid={testId}
-        {...navItemStyleProps}>
+      <div data-testid={testId} {...navItemStyleProps}>
         <NavItemElement
           ref={ref}
           href={href}
           as={as}
           isDisabled={isDisabled}
           onClick={handleClick}
+          aria-current={isSelected ? ('page' as const) : undefined}
           {...stylex.props(styles.splitAction)}>
           {itemContent}
         </NavItemElement>

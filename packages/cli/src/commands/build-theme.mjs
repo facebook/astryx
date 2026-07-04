@@ -15,6 +15,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL, fileURLToPath} from 'node:url';
+import {spawn} from 'node:child_process';
 import {createJiti} from 'jiti';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {
@@ -597,6 +598,104 @@ function validatePrivateVars(themeDef) {
   return errors;
 }
 
+/**
+ * Path to this CLI's real entry (bin/astryx.mjs), resolved from this module's
+ * location (src/commands/build-theme.mjs → ../../bin/astryx.mjs). Used to
+ * re-invoke `theme build` as a child process in watch mode.
+ */
+function resolveCliBin() {
+  const commandsDir = path.dirname(fileURLToPath(import.meta.url));
+  return path.resolve(commandsDir, '../../bin/astryx.mjs');
+}
+
+/**
+ * Run a single `theme build` as a child process, reusing the exact
+ * single-build code path (and its error handling) rather than duplicating it.
+ * Resolves with the child's exit code; never rejects.
+ *
+ * @param {string} file - The theme file argument, as the user passed it.
+ * @param {object} options - Parsed command options (only `out` is forwarded).
+ * @returns {Promise<number>}
+ */
+function runThemeBuildOnceChild(file, options) {
+  const cliBin = resolveCliBin();
+  const args = [cliBin, 'theme', 'build', file];
+  if (options.out) args.push('--out', options.out);
+  return new Promise(resolve => {
+    const child = spawn(process.execPath, args, {
+      stdio: 'inherit',
+      env: process.env,
+    });
+    child.on('close', code => resolve(code ?? 0));
+    child.on('error', () => resolve(1));
+  });
+}
+
+/**
+ * Watch a theme file and rebuild on change. Runs an initial build, then
+ * rebuilds (debounced) whenever the file changes, until interrupted with
+ * Ctrl-C. Each rebuild runs in a child process so a build error (which the
+ * single-build path reports via a hard exit) is contained and the watcher
+ * keeps running.
+ *
+ * @param {string} file - The theme file argument, as the user passed it.
+ * @param {string} filePath - Absolute path to the theme file.
+ * @param {object} options - Parsed command options.
+ * @returns {Promise<void>} Resolves when the watcher is stopped (Ctrl-C).
+ */
+async function runThemeBuildWatch(file, filePath, options) {
+  const rel = path.relative(process.cwd(), filePath);
+
+  // Initial build.
+  await runThemeBuildOnceChild(file, options);
+
+  humanLog(`\n👀 Watching ${rel} for changes — press Ctrl-C to stop.`);
+
+  let building = false;
+  let queued = false;
+  let debounce = null;
+
+  const rebuild = async () => {
+    if (building) {
+      // Coalesce changes that land mid-build into a single follow-up run.
+      queued = true;
+      return;
+    }
+    building = true;
+    humanLog(`\n♻️  Change detected — rebuilding ${rel}...`);
+    await runThemeBuildOnceChild(file, options);
+    building = false;
+    humanLog(`\n👀 Watching ${rel} for changes — press Ctrl-C to stop.`);
+    if (queued) {
+      queued = false;
+      rebuild();
+    }
+  };
+
+  // Some editors replace the file (rename) rather than writing in place, which
+  // can drop the watch. Watch the containing directory and filter to our file
+  // so edits survive atomic-save/rename.
+  const watchDir = path.dirname(filePath);
+  const baseName = path.basename(filePath);
+  const watcher = fs.watch(watchDir, (_eventType, changed) => {
+    if (changed && changed !== baseName) return;
+    clearTimeout(debounce);
+    // Debounce: editors often emit several events per save.
+    debounce = setTimeout(rebuild, 100);
+  });
+
+  await new Promise(resolve => {
+    const stop = () => {
+      clearTimeout(debounce);
+      watcher.close();
+      humanLog('\nStopped watching.');
+      resolve();
+    };
+    process.once('SIGINT', stop);
+    process.once('SIGTERM', stop);
+  });
+}
+
 export function registerTheme(program) {
   const theme = program
     .command('theme')
@@ -621,12 +720,30 @@ export function registerTheme(program) {
     .command('build <file>')
     .description('Compile a defineTheme file to CSS + JS')
     .option('-o, --out <path>', 'Output CSS file path')
+    .option(
+      '-w, --watch',
+      'Rebuild automatically when the theme file changes (Ctrl-C to stop)',
+    )
     .action(async (file, options) => {
       const filePath = path.resolve(process.cwd(), file);
       const json = program.opts().json || false;
 
       if (!fs.existsSync(filePath)) {
         cliError(`File not found: ${filePath}`, {code: ERROR_CODES.ERR_FILE_NOT_FOUND});
+        return;
+      }
+
+      // Watch mode: run an initial build, then rebuild on every change to the
+      // theme file. Watch is a human-interactive, long-running mode — it is not
+      // supported in --json (machine) mode, which expects a single envelope.
+      if (options.watch) {
+        if (json) {
+          cliError('--watch is not supported with --json', {
+            code: ERROR_CODES.ERR_THEME_INVALID,
+          });
+          return;
+        }
+        await runThemeBuildWatch(file, filePath, options);
         return;
       }
 

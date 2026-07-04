@@ -18,6 +18,7 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useListFocus} from '../hooks/useListFocus';
+import {useTypeahead} from '../hooks/useTypeahead';
 import {themeProps} from '../utils/themeProps';
 import {
   NavHeadingMenuContext,
@@ -98,8 +99,31 @@ export function NavHeadingMenu({
   const closeCtx = useNavHeadingCloseContext();
   const closeMenu = closeCtx?.closeMenu;
 
-  const {listRef, handleKeyDown} = useListFocus({
+  const {listRef, handleKeyDown, focusItem} = useListFocus({
+    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
     onEscape: closeMenu,
+  });
+
+  // First-character typeahead over the (enabled) menu items (menus-11).
+  const getMenuItems = useCallback(
+    (): HTMLElement[] =>
+      listRef.current
+        ? Array.from(
+            listRef.current.querySelectorAll<HTMLElement>(
+              '[role="menuitem"]:not([aria-disabled="true"])',
+            ),
+          )
+        : [],
+    [listRef],
+  );
+  const typeahead = useTypeahead({
+    getItemLabels: () => getMenuItems().map(el => el.textContent),
+    onMatch: focusItem,
+    getCurrentIndex: () =>
+      getMenuItems().findIndex(
+        el =>
+          el === document.activeElement || el.contains(document.activeElement),
+      ),
   });
 
   // Extend useListFocus with Enter/Space activation. Items rendered without an
@@ -116,9 +140,13 @@ export function NavHeadingMenu({
           return;
         }
       }
+      if (typeahead.onKeyDown(e)) {
+        e.preventDefault();
+        return;
+      }
       handleKeyDown(e);
     },
-    [handleKeyDown],
+    [handleKeyDown, typeahead],
   );
 
   const ctx = useMemo(

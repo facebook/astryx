@@ -47,10 +47,12 @@ import {
   inputStatusFocusWithinStyles,
 } from '../Field';
 import {Icon} from '../Icon';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {Spinner} from '../Spinner';
 import {Calendar, type ISODateString, type CalendarHandle} from '../Calendar';
 import {useCalendarConstraints} from '../Calendar/hooks';
 import {usePopover} from '../Popover';
+import {useTooltip} from '../Tooltip';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {
   type ISOTimeString,
@@ -210,6 +212,29 @@ export interface DateTimeInputProps extends Omit<
   isDisabled?: boolean;
 
   /**
+   * Explains why the input is disabled. When set together with
+   * `isDisabled`, the input shows a tooltip with this text on hover and
+   * keyboard focus, and the date and time fields stay focusable (via
+   * `aria-disabled`) so the reason is discoverable by keyboard and assistive
+   * technology. Typing and calendar activation stay blocked.
+   *
+   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <DateTimeInput
+   *   label="Meeting time"
+   *   value={dateTime}
+   *   onChange={setDateTime}
+   *   isDisabled
+   *   disabledMessage="You need the Editor role to change this"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
+
+  /**
    * The selected datetime in ISO 8601 format ("YYYY-MM-DDTHH:MM" or "YYYY-MM-DDTHH:MM:SS").
    */
   value?: ISODateTimeString;
@@ -284,6 +309,13 @@ export interface DateTimeInputProps extends Omit<
    * @default "Select a time"
    */
   timePlaceholder?: string;
+
+  /**
+   * Accessible label for the time portion of the field. Defaults to
+   * `"{label} time"` so it is tied to the field's own label and localizable,
+   * rather than a hardcoded English "Time".
+   */
+  timeLabel?: string;
 
   /**
    * The size of the inputs.
@@ -375,6 +407,7 @@ export function DateTimeInput({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  disabledMessage,
   value,
   onChange,
   changeAction,
@@ -388,6 +421,7 @@ export function DateTimeInput({
   hasClear = false,
   placeholder = 'Select a date',
   timePlaceholder = 'Select a time',
+  timeLabel,
   size: sizeProp,
   status,
   labelTooltip,
@@ -415,6 +449,22 @@ export function DateTimeInput({
   const isBusy = isLoading || optimisticValue !== value;
   const isEffectivelyDisabled = isDisabled || isBusy;
 
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the outer row container (which already exists)
+  // and both the date and time inputs stay perceivable via aria-disabled
+  // instead of the disabled attribute. Typing is blocked with readOnly and the
+  // value mutation guards; calendar activation is blocked by the
+  // isEffectivelyDisabled guards. Only the persistent isDisabled state (not the
+  // transient busy state) surfaces a reason.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The container div is not naturally focusable; focusin bubbles up from
+    // the inputs, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
   const statusIconMap: Record<InputStatusType, IconName> = {
     warning: 'warning',
     error: 'error',
@@ -434,6 +484,7 @@ export function DateTimeInput({
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -601,6 +652,11 @@ export function DateTimeInput({
 
   const handleDateInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      // With a disabledMessage the input drops `disabled` for focusability, so
+      // guard value mutation explicitly (readOnly also blocks typing).
+      if (isEffectivelyDisabled) {
+        return;
+      }
       const text = e.target.value;
       setDatePendingInput(text);
 
@@ -616,7 +672,7 @@ export function DateTimeInput({
         calendarRef.current?.navigateTo(parsedISO);
       }
     },
-    [valueParts.date, isDateDisabled, handleDateChange],
+    [valueParts.date, isDateDisabled, handleDateChange, isEffectivelyDisabled],
   );
 
   const commitDatePendingInput = useCallback(() => {
@@ -669,6 +725,11 @@ export function DateTimeInput({
   // --- Time handlers ---
   const handleTimeInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      // With a disabledMessage the input drops `disabled` for focusability, so
+      // guard value mutation explicitly (readOnly also blocks typing).
+      if (isEffectivelyDisabled) {
+        return;
+      }
       const text = e.target.value;
       setTimePendingInput(text);
 
@@ -693,10 +754,19 @@ export function DateTimeInput({
       valueParts.time,
       valueParts.date,
       fireChange,
+      isEffectivelyDisabled,
     ],
   );
 
-  const handleTimeFocus = useCallback(() => setIsTimeFocused(true), []);
+  const handleTimeFocus = useCallback(() => {
+    // A disabled/busy input stays focusable (via aria-disabled) so its reason
+    // is discoverable, but it must not present editing affordances — keep the
+    // static placeholder rather than swapping in the format hint.
+    if (isEffectivelyDisabled) {
+      return;
+    }
+    setIsTimeFocused(true);
+  }, [isEffectivelyDisabled]);
 
   const handleTimeBlur = useCallback(() => {
     setIsTimeFocused(false);
@@ -791,6 +861,7 @@ export function DateTimeInput({
       statusVariant="detached"
       width={width}>
       <div
+        ref={disabledMessageTooltip.ref}
         {...rest}
         {...mergeProps(
           themeProps('date-time-input', {
@@ -835,10 +906,18 @@ export function DateTimeInput({
             onClick={handleDateInputClick}
             onKeyDown={handleDateKeyDown}
             placeholder={placeholder}
-            disabled={isEffectivelyDisabled}
+            // With a disabledMessage the input keeps focusability via
+            // aria-disabled so the reason is focus-discoverable; typing is
+            // blocked with readOnly and the mutation guards, and calendar
+            // activation is blocked by the isEffectivelyDisabled guards.
+            disabled={isEffectivelyDisabled && !showsDisabledMessage}
+            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            readOnly={showsDisabledMessage || undefined}
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
-            aria-invalid={status?.type === 'error' ? 'true' : undefined}
+            aria-invalid={
+              status?.type === 'error' || !isDateInputValid ? 'true' : undefined
+            }
             aria-busy={isBusy || undefined}
             aria-expanded={popover.isOpen}
             aria-haspopup="dialog"
@@ -851,6 +930,15 @@ export function DateTimeInput({
               !isDateInputValid && styles.inputInvalid,
             )}
           />
+          {/*
+            Live region announcing invalid typed date input to assistive
+            technology. The value silently reverts on blur, so without this a
+            screen-reader user would get no feedback that their entry was
+            rejected (WCAG 3.3.1).
+          */}
+          <VisuallyHidden as="div" role="alert" aria-live="assertive">
+            {!isDateInputValid ? 'Invalid date' : ''}
+          </VisuallyHidden>
           {hasClear && value !== undefined && !isEffectivelyDisabled && (
             <button
               type="button"
@@ -897,16 +985,30 @@ export function DateTimeInput({
             onBlur={handleTimeBlur}
             onKeyDown={handleTimeKeyDown}
             placeholder={resolvedTimePlaceholder}
-            disabled={isEffectivelyDisabled}
-            aria-label="Time"
+            // With a disabledMessage the input keeps focusability via
+            // aria-disabled so the reason is focus-discoverable; typing is
+            // blocked with readOnly and the mutation guards.
+            disabled={isEffectivelyDisabled && !showsDisabledMessage}
+            aria-disabled={showsDisabledMessage ? 'true' : undefined}
+            readOnly={showsDisabledMessage || undefined}
+            aria-label={timeLabel ?? `${label} time`}
             aria-required={isRequired === true ? 'true' : undefined}
-            aria-invalid={status?.type === 'error' ? 'true' : undefined}
+            aria-invalid={
+              status?.type === 'error' || !isTimeInputValid ? 'true' : undefined
+            }
             {...stylex.props(
               styles.input,
               isEffectivelyDisabled && styles.inputDisabled,
               !isTimeInputValid && styles.inputInvalid,
             )}
           />
+          {/*
+            Live region announcing invalid typed time input to assistive
+            technology (WCAG 3.3.1).
+          */}
+          <VisuallyHidden as="div" role="alert" aria-live="assertive">
+            {!isTimeInputValid ? 'Invalid time' : ''}
+          </VisuallyHidden>
         </div>
       </div>
 
@@ -923,6 +1025,9 @@ export function DateTimeInput({
         />,
         {placement: 'below', alignment: 'start'},
       )}
+
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }

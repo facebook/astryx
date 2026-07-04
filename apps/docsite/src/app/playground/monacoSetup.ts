@@ -3,10 +3,10 @@
 /**
  * @file monacoSetup.ts
  * @input The Monaco runtime instance passed to the editor's onMount
- * @output Self-hosted loader config + TypeScript-service setup with XDS typedefs
+ * @output Self-hosted loader config + TypeScript-service setup with Astryx typedefs
  * @position Playground Code editor — keeps Monaco wiring out of PlaygroundClient.
  *
- * Configures Monaco's TypeScript service with real XDS type definitions loaded
+ * Configures Monaco's TypeScript service with real Astryx type definitions loaded
  * from a pre-built JSON bundle (generated at build time), so the editor offers
  * accurate autocomplete and diagnostics for @astryxdesign/core, React, StyleX, and icons.
  */
@@ -40,7 +40,7 @@ export type MonacoInstance = typeof MonacoTypes & {
 };
 
 /**
- * Configure Monaco's TypeScript service with real XDS type definitions.
+ * Configure Monaco's TypeScript service with real Astryx type definitions.
  * Loads .d.ts files from a pre-built JSON bundle (generated at build time).
  */
 export function configureMonaco(monaco: MonacoInstance) {
@@ -119,10 +119,10 @@ export function configureMonaco(monaco: MonacoInstance) {
         );
       }
 
-      const xdsFiles = packages['@astryxdesign/core'] ?? {};
+      const coreFiles = packages['@astryxdesign/core'] ?? {};
       const submoduleReexports: string[] = [];
 
-      for (const [relPath, content] of Object.entries(xdsFiles)) {
+      for (const [relPath, content] of Object.entries(coreFiles)) {
         ts.addExtraLib(
           content,
           `file:///node_modules/@astryxdesign/core/dist/${relPath}`,

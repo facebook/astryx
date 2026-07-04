@@ -47,7 +47,7 @@ export const docs = {
     {
       name: 'pageSize',
       type: 'number',
-      description: 'Number of items per page.',
+      description: 'Number of items per page. Coerced to a positive integer; non-finite values fall back to the default.',
       default: '10',
     },
     {
@@ -175,7 +175,7 @@ export const docsZh = {
     {
       name: 'pageSize',
       type: 'number',
-      description: '每页项目数。',
+      description: '每页项目数。强制转换为正整数；非有限值回退到默认值。',
       default: '10',
     },
     {
@@ -277,7 +277,7 @@ export const docsDense = {
     totalItems: 'Total items. Calculates page count. Precedence over totalPages.',
     totalPages: 'Total pages. Use when page count known but not item count.',
     hasMore: 'More pages exist after current. For cursor-based pagination.',
-    pageSize: 'Items per page.',
+    pageSize: 'Items per page; coerced to positive integer, non-finite falls back to default',
     pageSizeOptions: 'Page size options. Shows selector dropdown when provided.',
     onPageSizeChange: 'Called on page size change. Auto resets to page 1.',
     variant: 'Display between prev/next buttons.',

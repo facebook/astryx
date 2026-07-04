@@ -64,6 +64,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the checkbox is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the checkbox focusable via aria-disabled (toggling stays blocked). Use this instead of wrapping a disabled CheckboxInput in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'isReadOnly',
       type: 'boolean',
       description:
@@ -124,6 +130,7 @@ export const docs = {
       { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
       { guidance: false, description: 'Use a checkbox for mutually exclusive choices; use RadioList when only one option can be selected.' },
       { guidance: false, description: 'Use a checkbox for actions that take effect immediately; use a toggle switch or button instead.' },
+      { guidance: false, description: 'Wrap a disabled checkbox in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
     anatomy: [
       { name: 'Checkbox', required: true, description: 'The check box itself: unchecked, checked, or indeterminate.' },
@@ -146,6 +153,7 @@ export const docsZh = {
       { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
       { guidance: false, description: 'Use a checkbox for mutually exclusive choices; use RadioList when only one option can be selected.' },
       { guidance: false, description: 'Use a checkbox for actions that take effect immediately; use a toggle switch or button instead.' },
+      { guidance: false, description: 'Wrap a disabled checkbox in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
   },
   props: [
@@ -163,6 +171,7 @@ export const docsZh = {
     },
     {name: 'isLoading', type: 'boolean', description: '复选框是否处于加载状态。显示旋转器并阻止交互。', default: 'false'},
     {name: 'isDisabled', type: 'boolean', description: '复选框是否禁用。', default: 'false'},
+    {name: 'disabledMessage', type: 'string', description: 'Explains why the checkbox is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the checkbox focusable via aria-disabled (toggling stays blocked). Use this instead of wrapping a disabled CheckboxInput in Tooltip — disabled controls swallow the hover events an external Tooltip needs.'},
     {name: 'isReadOnly', type: 'boolean', description: '复选框是否为只读。以完整不透明度显示当前状态但阻止交互。与 isDisabled 不同，只读复选框不会变暗。', default: 'false'},
     {name: 'isOptional', type: 'boolean', description: '字段是否可选。与 isRequired 互斥。', default: 'false'},
     {name: 'isRequired', type: 'boolean', description: '复选框是否必填。与 isOptional 互斥。', default: 'false'},
@@ -200,6 +209,7 @@ export const docsDense = {
       { guidance: true, description: 'Use the indeterminate state for "select all" checkboxes when only some items in a group are selected.' },
       { guidance: false, description: 'Use a checkbox for mutually exclusive choices; use RadioList when only one option can be selected.' },
       { guidance: false, description: 'Use a checkbox for actions that take effect immediately; use a toggle switch or button instead.' },
+      { guidance: false, description: 'Wrap a disabled checkbox in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
   },
   propDescriptions: {

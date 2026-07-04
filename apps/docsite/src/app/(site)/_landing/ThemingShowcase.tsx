@@ -50,7 +50,7 @@ const themePackages = packages
     return ai - bi;
   });
 
-// Re-set XDS's structural tokens (spacing, radii, font sizes) back to
+// Re-set Astryx's structural tokens (spacing, radii, font sizes) back to
 // the defaults exported from @astryxdesign/core. Each <Theme> wrapper sets a
 // full token bundle including these structural slots, which would make
 // gallery tiles visually inconsistent (different button heights, badge
@@ -80,7 +80,7 @@ const CARD_WIDTH = 800;
 // content and tiles render at visibly different heights based on
 // which theme is showing. 620px chosen empirically as the smallest
 // height that fits all themes' right-column content without clipping
-// at base XDS sizing.
+// at base Astryx sizing.
 const CARD_HEIGHT = 620;
 
 // Horizontal gutter that defines the page's content rim. The
@@ -257,10 +257,8 @@ function ShowcaseHeading() {
         type="body"
         color="secondary"
         xstyle={styles.descriptionWidth}>
-        
-        Astryx makes it easy to apply your brand; no rewrites needed.
-        Customize your theme at the token level: color, typography, radius, and
-        motion.
+        Astryx makes it easy to apply your brand; no rewrites needed. Customize
+        your theme at the token level: color, typography, radius, and motion.
       </Text>
     </VStack>
   );
@@ -274,11 +272,7 @@ function HeaderLinks() {
         label="Create a custom theme"
         href="/docs/theme"
       />
-      <Button
-        variant="secondary"
-        label="Explore all themes"
-        href="/themes"
-      />
+      <Button variant="secondary" label="Explore all themes" href="/themes" />
     </HStack>
   );
 }

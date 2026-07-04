@@ -170,6 +170,38 @@ describe('Link', () => {
     expect(link.querySelector('svg')).toBeInTheDocument();
   });
 
+  it('announces the new-tab context via screen-reader text (obs-4)', () => {
+    render(
+      <Link href="https://example.com" isExternalLink>
+        Docs
+      </Link>,
+    );
+    // The link's accessible name includes the new-tab hint (the icon is
+    // decorative).
+    expect(
+      screen.getByRole('link', {name: 'Docs (opens in new tab)'}),
+    ).toBeInTheDocument();
+  });
+
+  it('supports a custom newTabLabel for localization', () => {
+    render(
+      <Link
+        href="https://example.com"
+        isExternalLink
+        newTabLabel="(new window)">
+        Docs
+      </Link>,
+    );
+    expect(
+      screen.getByRole('link', {name: 'Docs (new window)'}),
+    ).toBeInTheDocument();
+  });
+
+  it('does not add new-tab text to non-external links', () => {
+    render(<Link href="/internal">Internal</Link>);
+    expect(screen.getByRole('link', {name: 'Internal'})).toBeInTheDocument();
+  });
+
   it('renders external link with existing rel merged', () => {
     render(
       <Link href="https://example.com" isExternalLink rel="sponsored">

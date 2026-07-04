@@ -42,6 +42,7 @@ export * from './Collapsible';
 export * from './RadioList';
 export * from './Resizable';
 export * from './Divider';
+export * from './VisuallyHidden';
 export * from './EmptyState';
 export * from './Lightbox';
 export * from './Link';

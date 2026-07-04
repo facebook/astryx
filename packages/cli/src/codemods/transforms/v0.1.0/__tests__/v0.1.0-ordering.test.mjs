@@ -41,6 +41,29 @@ describe('v0.1.0 codemod manifest ordering', () => {
     expect(entry.optional).toBeFalsy();
   });
 
+  it('orders declare-module and CSS codemods after migrate-xds-module-specifiers', async () => {
+    const {default: manifest} = await import('../index.mjs');
+    const names = manifest.map(entry => entry.name);
+    expect(names).toEqual([
+      'drop-xds-prefix-imports',
+      'migrate-xds-module-specifiers',
+      'migrate-xds-declare-module',
+      'migrate-xds-css-surfaces',
+    ]);
+  });
+
+  it('marks migrate-xds-declare-module and migrate-xds-css-surfaces mandatory', async () => {
+    const {default: manifest} = await import('../index.mjs');
+    for (const name of [
+      'migrate-xds-declare-module',
+      'migrate-xds-css-surfaces',
+    ]) {
+      const entry = manifest.find(e => e.name === name);
+      expect(entry, name).toBeDefined();
+      expect(entry.optional).toBeFalsy();
+    }
+  });
+
   it('un-prefixes useXDSTheme from @xds/core/theme AND renames the scope to @astryxdesign', async () => {
     const input = [
       "import {useXDSTheme} from '@xds/core/theme';",

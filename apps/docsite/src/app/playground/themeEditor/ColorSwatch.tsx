@@ -25,7 +25,7 @@ const s = stylex.create({
   swatchInteractive: {
     cursor: 'pointer',
   },
-  // Native color input overlaid transparently on the swatch (XDS has no color
+  // Native color input overlaid transparently on the swatch (Astryx has no color
   // picker), so clicking the swatch opens the OS picker.
   colorInput: {
     position: 'absolute',

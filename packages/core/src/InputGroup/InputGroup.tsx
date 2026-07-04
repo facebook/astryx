@@ -4,8 +4,8 @@
 
 /**
  * @file InputGroup.tsx
- * @input Uses React, StyleX, theme tokens, InputGroupContext
- * @output Exports InputGroup component
+ * @input Uses React, StyleX, theme tokens, InputGroupContext, Field
+ * @output Exports InputGroup component with group label/description ARIA wiring
  * @position Groups input with prefix/suffix addons; consumed by index.ts
  *
  * Children (TextInput, NumberInput) consume the InputGroup context
@@ -156,9 +156,22 @@ export function InputGroup({
 }: InputGroupProps) {
   const size = useSize(sizeProp, 'md');
   const inputId = useId();
+  const labelID = useId();
+  const descriptionID = useId();
   const statusMessageId = useId();
 
-  const contextValue = useMemo(() => ({isInGroup: true as const}), []);
+  const describedByIDs =
+    [
+      description ? descriptionID : null,
+      status?.message ? statusMessageId : null,
+    ]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
+  const contextValue = useMemo(
+    () => ({isInGroup: true as const, labelID, describedByIDs}),
+    [labelID, describedByIDs],
+  );
 
   return (
     <InputGroupContext value={contextValue}>
@@ -168,6 +181,9 @@ export function InputGroup({
           isLabelHidden={isLabelHidden}
           description={description}
           inputID={inputId}
+          labelID={labelID}
+          descriptionID={description ? descriptionID : undefined}
+          isGroupLabel
           isOptional={isOptional}
           isRequired={isRequired}
           isDisabled={isDisabled}
@@ -185,7 +201,8 @@ export function InputGroup({
           <div
             ref={ref}
             role="group"
-            aria-label={label}
+            aria-labelledby={labelID}
+            aria-describedby={describedByIDs}
             data-testid={testId}
             {...rest}
             {...mergeProps(

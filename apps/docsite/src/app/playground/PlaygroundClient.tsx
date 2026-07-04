@@ -4,12 +4,12 @@
  * @file PlaygroundClient.tsx
  * @input URL hash (shared code), user edits, knob edits
  * @output Full-page two-panel playground (editor + live preview)
- * @position app/playground — the interactive XDS code playground.
+ * @position app/playground — the interactive Astryx code playground.
  *
  * AppShell: side-nav-only shell; desktop nav is controlled collapsed to
  * an icon rail while AppShell owns the mobile top bar and drawer.
  * Left panel: Monaco editor (Code) or knobs (Properties).
- *   - Code: Monaco editor (controlled) with real XDS .d.ts typedefs.
+ *   - Code: Monaco editor (controlled) with real Astryx .d.ts typedefs.
  *   - Property: component selector + instance picker + knobs that edit the code.
  * Right panel: toolbar (dark mode · target element · viewport
  *   segmented control · share · expand) over a responsive

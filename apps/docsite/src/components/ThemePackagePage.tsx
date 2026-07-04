@@ -293,7 +293,7 @@ const styles = stylex.create({
   // Per-theme bespoke picker artwork — one rule per theme that
   // has a custom photo (vs. the multi-radial-gradient default).
   // Each rule sets the picker card's background to a dedicated
-  // theme-<slug>-picker.png banner hosted on the XDS asset CDN
+  // theme-<slug>-picker.png banner hosted on the Astryx asset CDN
   // (see PICKER_CDN). These are SEPARATE files from the
   // theme-<slug>-preview.png images used on the /themes overview +
   // detail page hero — these picker assets are sized and

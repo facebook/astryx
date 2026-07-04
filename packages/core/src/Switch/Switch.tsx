@@ -4,7 +4,7 @@
 
 /**
  * @file Switch.tsx
- * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus
+ * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip
  * @output Exports Switch component, SwitchProps, SwitchLabelPosition, SwitchLabelSpacing
  * @position Core implementation; consumed by index.ts, tested by Switch.test.tsx
  *
@@ -39,11 +39,13 @@ import {FieldStatus} from '../FieldStatus/FieldStatus';
 import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
-import {mergeProps} from '../utils';
+import {useTooltip} from '../Tooltip';
+import {mergeProps, mergeRefs} from '../utils';
 import {switchScope} from './switch.markers.stylex';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 // Fixed dimensions: 40px width, 24px height, 16px thumb (off), 20px thumb (on)
 const SWITCH_WIDTH = 40;
@@ -179,17 +181,6 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     color: colorVars['--color-text-secondary'],
   },
-  srOnly: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    padding: 0,
-    margin: -1,
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
-  },
 });
 
 export type SwitchLabelPosition = 'start' | 'end';
@@ -237,6 +228,27 @@ export interface SwitchProps extends Omit<BaseProps, 'onChange'> {
    * @default false
    */
   isDisabled?: boolean;
+  /**
+   * Explains why the switch is disabled. When set together with `isDisabled`,
+   * the switch shows a tooltip with this text on hover and keyboard focus, and
+   * the control stays focusable (via `aria-disabled`) so the reason is
+   * discoverable by keyboard and assistive technology. Activation stays
+   * blocked.
+   *
+   * Use this instead of wrapping a disabled switch in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <Switch
+   *   label="Enable notifications"
+   *   value={enabled}
+   *   isDisabled
+   *   disabledMessage="Notifications are turned off org-wide"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
   /**
    * Whether the field is optional. Mutually exclusive with isRequired.
    * @default false
@@ -322,6 +334,7 @@ export function Switch({
   isLoading = false,
   value,
   isDisabled = false,
+  disabledMessage,
   isOptional = false,
   isRequired = false,
   onFocus,
@@ -347,6 +360,19 @@ export function Switch({
 
   const isOn = optimisticValue === true;
 
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the switch row (which already exists) and the
+  // native checkbox stays perceivable via aria-disabled instead of the disabled
+  // attribute. Toggling is blocked by the isDisabled guard in onChange.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The container row is not naturally focusable; focusin bubbles up from the
+    // native input, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
   // Build aria-describedby from description and status message
   // Only include descriptionID when the element actually renders
   const describedByParts: string[] = [];
@@ -356,21 +382,28 @@ export function Switch({
   if (status?.message) {
     describedByParts.push(statusMessageID);
   }
+  if (showsDisabledMessage) {
+    describedByParts.push(disabledMessageTooltip.describedBy);
+  }
   const ariaDescribedBy =
     describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
   const switchElement = (
     <div {...stylex.props(styles.switchWrapper)}>
       <input
-        ref={ref}
+        ref={mergeRefs(ref, disabledMessageTooltip.positionRef)}
         id={id}
         type="checkbox"
         role="switch"
         checked={isOn}
-        disabled={isDisabled}
+        // With a disabledMessage the switch keeps focusability via aria-disabled
+        // so the reason is focus-discoverable; toggling is still blocked by the
+        // isDisabled guard in onChange below.
+        disabled={isDisabled && !showsDisabledMessage}
+        aria-disabled={showsDisabledMessage ? 'true' : undefined}
         required={isRequired}
         onChange={e => {
-          if (isBusy) {
+          if (isDisabled || isBusy) {
             return;
           }
           const checked = e.target.checked;
@@ -416,11 +449,7 @@ export function Switch({
           {isBusy && <Spinner size="sm" />}
         </div>
       </div>
-      {isBusy && (
-        <span {...stylex.props(styles.srOnly)} role="status">
-          Loading
-        </span>
-      )}
+      {isBusy && <VisuallyHidden role="status">Loading</VisuallyHidden>}
     </div>
   );
 
@@ -453,6 +482,15 @@ export function Switch({
         style,
       )}>
       <div
+        ref={el => {
+          // Interaction (hover/focus) listeners for the disabled-message
+          // tooltip attach to the whole row for a larger trigger target;
+          // positioning anchors on the switch itself (above) so the tooltip
+          // appears next to the control, not the far edge of the row.
+          // Handlers are gated internally by isEnabled, so attaching
+          // unconditionally is safe.
+          disabledMessageTooltip.interactionRef(el);
+        }}
         {...stylex.props(
           styles.container,
           labelSpacing === 'spread' && styles.containerSpread,
@@ -481,6 +519,8 @@ export function Switch({
           />
         </div>
       )}
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </div>
   );
 }

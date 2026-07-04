@@ -189,6 +189,17 @@ describe('Markdown', () => {
     expect(document.querySelectorAll('td')).toHaveLength(2);
   });
 
+  it('makes the table scroll wrapper keyboard-focusable', () => {
+    render(<Markdown>{'| A | B |\n| --- | --- |\n| 1 | 2 |'}</Markdown>);
+    const table = document.querySelector('table');
+    expect(table).toBeInTheDocument();
+    // The GFM table's outer overflow wrapper is keyboard-focusable so keyboard
+    // users can horizontally scroll a wide table.
+    const wrapper = table!.closest('[role="region"][tabindex="0"]');
+    expect(wrapper).toBeTruthy();
+    expect(wrapper).toHaveAttribute('aria-label', 'Table');
+  });
+
   it('renders horizontal rules', () => {
     render(<Markdown>{'---'}</Markdown>);
     expect(document.querySelector('hr')).toBeInTheDocument();

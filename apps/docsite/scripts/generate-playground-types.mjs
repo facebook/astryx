@@ -47,8 +47,8 @@ if (!existsSync(distDir)) {
   process.exit(0);
 }
 
-const xdsTypes = collectDts(distDir);
-const fileCount = Object.keys(xdsTypes).length;
+const astryxTypes = collectDts(distDir);
+const fileCount = Object.keys(astryxTypes).length;
 
 // Also generate a minimal React types stub
 const reactJsxRuntimeTypes = `
@@ -183,7 +183,7 @@ console.log(
 );
 
 const output = {
-  '@astryxdesign/core': xdsTypes,
+  '@astryxdesign/core': astryxTypes,
   react: {'index.d.ts': reactTypes, 'jsx-runtime.d.ts': reactJsxRuntimeTypes},
   '@stylexjs/stylex': {'index.d.ts': stylexTypes},
   '@heroicons/react': heroiconTypes,
@@ -191,4 +191,4 @@ const output = {
 
 const json = JSON.stringify(output);
 writeFileSync(join(outDir, 'playground-types.json'), json);
-console.log(`Generated playground-types.json: ${fileCount} XDS type files, ${(json.length / 1024).toFixed(0)}KB`);
+console.log(`Generated playground-types.json: ${fileCount} Astryx type files, ${(json.length / 1024).toFixed(0)}KB`);

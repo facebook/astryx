@@ -93,6 +93,38 @@ describe('Field', () => {
     expect(label).toBeVisible();
   });
 
+  it('renders a single-control label as a <label> with htmlFor', () => {
+    render(
+      <Field label="Email" inputID="email-input">
+        <input id="email-input" />
+      </Field>,
+    );
+    const labelEl = screen.getByText('Email');
+    expect(labelEl.tagName).toBe('LABEL');
+    expect(labelEl).toHaveAttribute('for', 'email-input');
+  });
+
+  it('renders a group label as a <span> (not <label>) with no htmlFor', () => {
+    render(
+      <Field
+        label="Plan"
+        inputID="plan-group"
+        labelID="plan-label"
+        isGroupLabel>
+        <div role="radiogroup" aria-labelledby="plan-label" />
+      </Field>,
+    );
+    const labelEl = screen.getByText('Plan');
+    // A group's accessible-name element must not be a literal <label>.
+    expect(labelEl.tagName).toBe('SPAN');
+    expect(labelEl.closest('label')).toBeNull();
+    expect(labelEl).not.toHaveAttribute('for');
+    // labelID is applied to the label element and referenced by the group.
+    expect(labelEl).toHaveAttribute('id', 'plan-label');
+    const group = screen.getByRole('radiogroup', {name: 'Plan'});
+    expect(group.getAttribute('aria-labelledby')).toBe(labelEl.id);
+  });
+
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(
@@ -105,10 +137,7 @@ describe('Field', () => {
 
   it('renders description without ID attribute when descriptionID is not provided', () => {
     render(
-      <Field
-        label="Email"
-        inputID="email-input"
-        description="Description text">
+      <Field label="Email" inputID="email-input" description="Description text">
         <input id="email-input" />
       </Field>,
     );

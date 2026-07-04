@@ -633,6 +633,16 @@ describe('Table', () => {
     expect(wrapper!.className).toContain('astryx-table-scroll-wrapper');
   });
 
+  it('makes the scroll container keyboard-focusable', () => {
+    render(<Table data={users} columns={columns} />);
+    const table = screen.getByRole('table');
+    const wrapper = table.parentElement;
+    expect(wrapper).toBeTruthy();
+    expect(wrapper!).toHaveAttribute('tabindex', '0');
+    expect(wrapper!).toHaveAttribute('role', 'region');
+    expect(wrapper!).toHaveAttribute('aria-label', 'Table');
+  });
+
   it('uses table-layout: auto in children mode', () => {
     const {container} = render(
       <Table dividers="rows">

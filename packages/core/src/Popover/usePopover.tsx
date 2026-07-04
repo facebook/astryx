@@ -130,9 +130,34 @@ export interface UsePopoverOptions {
 
   /**
    * Accessible label for the dialog.
-   * Required for screen readers to announce the dialog purpose.
+   * Required for screen readers to announce the dialog purpose
+   * (only applies when `role` is `'dialog'`).
    */
   dialogLabel?: string;
+
+  /**
+   * ARIA role stamped on the popover content wrapper.
+   *
+   * - `'dialog'` (default): the wrapper is a `role="dialog"` and, when
+   *   `isModal` is true, carries `aria-modal`. Use for genuine dialog content.
+   * - `'none'`: the wrapper carries no role or `aria-modal`, so the popup's own
+   *   content role (e.g. a child `role="listbox"` or `role="menu"`) is the
+   *   exposed semantics. Use for comboboxes, listboxes, and menus — their
+   *   trigger keeps DOM focus, so announcing an unnamed modal dialog around
+   *   them is incorrect.
+   *
+   * @default 'dialog'
+   */
+  role?: 'dialog' | 'none';
+
+  /**
+   * Whether the dialog is modal (`aria-modal`). Only applies when `role` is
+   * `'dialog'`. Set to `false` for non-modal dialogs that do not inert the rest
+   * of the page.
+   *
+   * @default true
+   */
+  isModal?: boolean;
 
   /**
    * Whether to apply the default popover surface (background, border-radius,
@@ -215,7 +240,7 @@ export interface UsePopoverReturn {
    * ARIA attributes to spread on the trigger element
    */
   triggerProps: {
-    'aria-haspopup': 'dialog';
+    'aria-haspopup': 'dialog' | 'true';
     'aria-expanded': boolean;
     'aria-controls': string;
   };
@@ -261,9 +286,7 @@ export interface UsePopoverReturn {
  * }
  * ```
  */
-export function usePopover(
-  options: UsePopoverOptions = {},
-): UsePopoverReturn {
+export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
   const {
     onShow,
     onHide,
@@ -274,6 +297,8 @@ export function usePopover(
     hasCloseButton = true,
     closeButtonLabel = 'Close popover',
     dialogLabel,
+    role = 'dialog',
+    isModal = true,
   } = options;
 
   // Track the trigger element for returning focus
@@ -339,10 +364,25 @@ export function usePopover(
 
   // ARIA attributes for the trigger
   const triggerProps = {
-    'aria-haspopup': 'dialog' as const,
+    'aria-haspopup':
+      role === 'dialog' ? ('dialog' as const) : ('true' as const),
     'aria-expanded': layer.isOpen,
     'aria-controls': layer.id,
   };
+
+  // Dev-time guardrail: a dialog popover should always be labeled. Warn once
+  // per hook instance (in an effect) rather than on every render.
+  const warnedUnnamedDialogRef = useRef(false);
+  useEffect(() => {
+    if (role === 'dialog' && !dialogLabel && !warnedUnnamedDialogRef.current) {
+      warnedUnnamedDialogRef.current = true;
+      console.warn(
+        'usePopover: role="dialog" without a `dialogLabel` renders an unnamed ' +
+          'dialog. Pass `dialogLabel`, or use `role: "none"` for listbox/menu ' +
+          'popups whose content already carries its own role.',
+      );
+    }
+  }, [role, dialogLabel]);
 
   // Wrapped render function that includes surface styles and optional hidden close button
   const render = useCallback(
@@ -350,9 +390,9 @@ export function usePopover(
       return layer.render(
         <div
           ref={contentRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label={dialogLabel}
+          role={role === 'dialog' ? 'dialog' : undefined}
+          aria-modal={role === 'dialog' && isModal ? true : undefined}
+          aria-label={role === 'dialog' ? dialogLabel : undefined}
           {...stylex.props(
             styles.contentWrapper,
             hasSurface && styles.surface,
@@ -379,6 +419,8 @@ export function usePopover(
       closeButtonLabel,
       contentRef,
       dialogLabel,
+      role,
+      isModal,
       xstyle,
     ],
   );

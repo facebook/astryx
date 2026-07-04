@@ -30,6 +30,7 @@ import {
 import {Icon} from '../Icon';
 import {Tooltip} from '../Tooltip';
 import {Text} from '../Text';
+import {VisuallyHidden} from '../VisuallyHidden';
 import type {
   TextType,
   TextSize,
@@ -106,10 +107,20 @@ const styles = stylex.create({
  */
 const linkColorStyles = stylex.create({
   primary: {
-    color: colorVars['--color-text-primary'],
+    color: {
+      default: colorVars['--color-text-primary'],
+      ':hover': {
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-text-primary']}, ${colorVars['--color-tint-hover']} 15%)`,
+      },
+    },
   },
   secondary: {
-    color: colorVars['--color-text-secondary'],
+    color: {
+      default: colorVars['--color-text-secondary'],
+      ':hover': {
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-text-secondary']}, ${colorVars['--color-tint-hover']} 15%)`,
+      },
+    },
   },
   disabled: {
     color: colorVars['--color-text-disabled'],
@@ -118,7 +129,12 @@ const linkColorStyles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   accent: {
-    color: colorVars['--color-text-accent'],
+    color: {
+      default: colorVars['--color-text-accent'],
+      ':hover': {
+        '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-text-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
+      },
+    },
   },
   inherit: {
     color: 'inherit',
@@ -167,6 +183,12 @@ export interface LinkProps extends BaseProps<
    * @default false
    */
   isExternalLink?: boolean;
+  /**
+   * Screen-reader text appended to an external link to announce that it opens
+   * in a new tab (the visual icon is decorative). Override for localization.
+   * @default '(opens in new tab)'
+   */
+  newTabLabel?: string;
   /**
    * Where to open the linked document.
    * Overridden to "_blank" when isExternalLink is true.
@@ -266,6 +288,7 @@ export function Link({
   hasUnderline = false,
   isDisabled = false,
   isExternalLink = false,
+  newTabLabel = '(opens in new tab)',
   target: targetFromProps,
   onClick,
   tooltip,
@@ -309,7 +332,10 @@ export function Link({
         {children}
       </Text>
       {isExternalLink && !renderAsButton && (
-        <Icon icon="externalLink" size="xsm" color="inherit" />
+        <>
+          <Icon icon="externalLink" size="xsm" color="inherit" />
+          <VisuallyHidden>{newTabLabel}</VisuallyHidden>
+        </>
       )}
     </>
   );

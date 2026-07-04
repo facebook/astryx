@@ -9,12 +9,45 @@
  * SYNC: When CheckboxList.tsx or CheckboxListItem.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent, within} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {CheckboxList} from './CheckboxList';
 import {CheckboxListItem} from './CheckboxListItem';
 import {List} from '../List/List';
+
+// Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
+// reflects its open state via a `popover-open` attribute the tests can assert.
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+});
 
 describe('CheckboxList', () => {
   it('renders with label', () => {
@@ -24,6 +57,25 @@ describe('CheckboxList', () => {
       </CheckboxList>,
     );
     expect(screen.getByText('Preferences')).toBeInTheDocument();
+  });
+
+  it('wraps items in a group named by the label (forms audit: group role)', () => {
+    render(
+      <CheckboxList label="Preferences" value={[]} onChange={() => {}}>
+        <CheckboxListItem label="Option A" value="a" />
+      </CheckboxList>,
+    );
+    // The checkboxes are wrapped in a role="group" whose accessible name comes
+    // from the field label (via aria-labelledby). The label is rendered as a
+    // <span> (not a literal <label>, which can't name a group) with no
+    // orphaned htmlFor.
+    const group = screen.getByRole('group', {name: 'Preferences'});
+    expect(group).toBeInTheDocument();
+    const label = screen.getByText('Preferences');
+    expect(label.tagName).toBe('SPAN');
+    expect(label.closest('label')).toBeNull();
+    expect(label).not.toHaveAttribute('for');
+    expect(group.getAttribute('aria-labelledby')).toBe(label.id);
   });
 
   it('renders checkbox items', () => {
@@ -39,10 +91,7 @@ describe('CheckboxList', () => {
 
   it('checks the correct items based on value prop', () => {
     render(
-      <CheckboxList
-        label="Preferences"
-        value={['a', 'c']}
-        onChange={() => {}}>
+      <CheckboxList label="Preferences" value={['a', 'c']} onChange={() => {}}>
         <CheckboxListItem label="Option A" value="a" />
         <CheckboxListItem label="Option B" value="b" />
         <CheckboxListItem label="Option C" value="c" />
@@ -58,10 +107,7 @@ describe('CheckboxList', () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
     render(
-      <CheckboxList
-        label="Preferences"
-        value={['a']}
-        onChange={handleChange}>
+      <CheckboxList label="Preferences" value={['a']} onChange={handleChange}>
         <CheckboxListItem label="Option A" value="a" />
         <CheckboxListItem label="Option B" value="b" />
       </CheckboxList>,
@@ -272,11 +318,7 @@ describe('CheckboxList', () => {
           isChecked={false}
           onCheck={handleSelectAll}
         />
-        <CheckboxListItem
-          label="Name"
-          isChecked={true}
-          onCheck={handleCheck}
-        />
+        <CheckboxListItem label="Name" isChecked={true} onCheck={handleCheck} />
         <CheckboxListItem
           label="Email"
           isChecked={false}
@@ -347,8 +389,15 @@ describe('CheckboxListItem standalone mode', () => {
         <CheckboxListItem label="Partial" isChecked="indeterminate" />
       </List>,
     );
+    // The inner native checkbox exposes mixed state via the indeterminate DOM
+    // property (not a redundant aria-checked, forms-16); the list row still
+    // carries aria-checked="mixed" for its own listitem semantics.
     const checkbox = screen.getByRole('checkbox');
-    expect(checkbox).toHaveAttribute('aria-checked', 'mixed');
+    expect(checkbox).toBeInstanceOf(HTMLInputElement);
+    if (checkbox instanceof HTMLInputElement) {
+      expect(checkbox.indeterminate).toBe(true);
+    }
+    expect(checkbox).not.toHaveAttribute('aria-checked');
   });
 
   it('calls onCheck with true when clicking indeterminate item', async () => {
@@ -499,5 +548,109 @@ describe('CheckboxListItem ARIA props', () => {
     const item = screen.getByRole('listitem');
     expect(item).toHaveAttribute('aria-describedby', 'help-text');
     expect(item).toHaveAttribute('aria-label', 'custom label');
+  });
+
+  describe('disabledMessage', () => {
+    const h = {hidden: true} as const;
+
+    function renderGroup(props?: {onChange?: (v: string[]) => void}) {
+      return render(
+        <CheckboxList
+          label="Notifications"
+          value={['email']}
+          onChange={props?.onChange ?? (() => {})}
+          isDisabled
+          disabledMessage="Notifications are managed by your administrator">
+          <CheckboxListItem label="Email" value="email" />
+          <CheckboxListItem label="SMS" value="sms" />
+        </CheckboxList>,
+      );
+    }
+
+    it('shows the reason tooltip on hover when the group is disabled with a reason', async () => {
+      renderGroup();
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent(
+        'Notifications are managed by your administrator',
+      );
+      const group = screen.getByRole('group');
+      fireEvent.mouseEnter(group);
+      await waitFor(() => expect(tooltip).toHaveAttribute('popover-open'));
+      fireEvent.mouseLeave(group);
+      await waitFor(() => expect(tooltip).not.toHaveAttribute('popover-open'));
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      renderGroup();
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      await waitFor(() => expect(tooltip).toHaveAttribute('popover-open'));
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <CheckboxList
+          label="Notifications"
+          value={['email']}
+          onChange={() => {}}
+          disabledMessage="Notifications are managed by your administrator">
+          <CheckboxListItem label="Email" value="email" />
+        </CheckboxList>,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(
+        <CheckboxList
+          label="Notifications"
+          value={['email']}
+          onChange={() => {}}
+          isDisabled>
+          <CheckboxListItem label="Email" value="email" />
+        </CheckboxList>,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps checkboxes focusable via aria-disabled when a reason is provided', () => {
+      renderGroup();
+      for (const checkbox of screen.getAllByRole('checkbox', h)) {
+        expect(checkbox).not.toBeDisabled();
+        expect(checkbox).toHaveAttribute('aria-disabled', 'true');
+      }
+    });
+
+    it('links the reason tooltip from the group via aria-describedby', () => {
+      renderGroup();
+      const group = screen.getByRole('group');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(group.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks toggling while focusable-disabled', () => {
+      const onChange = vi.fn();
+      renderGroup({onChange});
+      const sms = screen.getByRole('checkbox', {name: 'SMS', hidden: true});
+      fireEvent.click(sms);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('keeps checkboxes natively disabled when disabled without a reason', () => {
+      render(
+        <CheckboxList
+          label="Notifications"
+          value={['email']}
+          onChange={() => {}}
+          isDisabled>
+          <CheckboxListItem label="Email" value="email" />
+          <CheckboxListItem label="SMS" value="sms" />
+        </CheckboxList>,
+      );
+      for (const checkbox of screen.getAllByRole('checkbox', h)) {
+        expect(checkbox).toBeDisabled();
+      }
+    });
   });
 });

@@ -9,8 +9,9 @@
  * SYNC: When DateInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {DateInput} from './DateInput';
 
 describe('DateInput', () => {
@@ -108,6 +109,43 @@ describe('DateInput', () => {
     fireEvent.change(input, {target: {value: 'invalid'}});
 
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('sets aria-invalid="true" when typed input is unparseable', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '13/45/2024'}});
+
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('does not set aria-invalid when typed input is a valid date', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+
+    expect(input).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('announces an alert message when typed input is invalid', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '13/45/2024'}});
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Invalid date');
+  });
+
+  it('does not announce an alert message when input is valid', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: '03/15/2026'}});
+
+    expect(screen.getByRole('alert')).toHaveTextContent('');
+    expect(screen.queryByText('Invalid date')).not.toBeInTheDocument();
   });
 
   it('reverts to previous value on blur when input is invalid', async () => {
@@ -278,6 +316,28 @@ describe('DateInput', () => {
       'aria-expanded',
       'false',
     );
+  });
+
+  it('opens the calendar popover on ArrowDown (keyboard, forms-13)', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('opens the calendar popover on Alt+ArrowDown (keyboard, forms-13)', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, {key: 'ArrowDown', altKey: true});
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not open on ArrowDown when disabled', () => {
+    render(<DateInput label="Date" isDisabled onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('input has aria-haspopup="dialog"', () => {
@@ -583,6 +643,132 @@ describe('DateInput', () => {
 
       // Pending input should be cleared, showing the new formatted value
       expect(input).toHaveValue('March 20, 2026');
+    });
+  });
+  describe('disabledMessage', () => {
+    // jsdom does not implement the Popover API used by the tooltip, so mock
+    // showPopover/hidePopover to toggle a `popover-open` attribute the tests
+    // can assert on.
+    beforeEach(() => {
+      HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+        this.setAttribute('popover-open', '');
+      });
+      HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+        this.removeAttribute('popover-open');
+      });
+    });
+
+    // jsdom popover content is in the DOM but not "visible" in the
+    // accessibility tree; use hidden: true to find it.
+    const h = {hidden: true} as const;
+
+    it('shows the reason tooltip on hover when disabled with a reason', async () => {
+      render(
+        <DateInput
+          label="Date"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const container = screen.getByRole('combobox')
+        .parentElement as HTMLElement;
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('You need the Editor role');
+
+      fireEvent.mouseEnter(container);
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+
+      fireEvent.mouseLeave(container);
+      await waitFor(() => {
+        expect(tooltip).not.toHaveAttribute('popover-open');
+      });
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(
+        <DateInput
+          label="Date"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <DateInput label="Date" disabledMessage="You need the Editor role" />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(<DateInput label="Date" isDisabled />);
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the input focusable via aria-disabled when a reason is provided', () => {
+      render(
+        <DateInput
+          label="Date"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      expect(input).not.toBeDisabled();
+      expect(input).toHaveAttribute('aria-disabled', 'true');
+      expect(input).toHaveAttribute('readonly');
+    });
+
+    it('links the reason tooltip from the input via aria-describedby', () => {
+      render(
+        <DateInput
+          label="Date"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks value changes and opening while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <DateInput
+          label="Date"
+          onChange={onChange}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+      await user.type(input, '2026-03-15');
+      expect(input).toHaveValue('');
+      expect(input).toHaveAttribute('aria-expanded', 'false');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('remains natively disabled when disabled without a reason', () => {
+      render(<DateInput label="Date" isDisabled />);
+      const input = screen.getByRole('combobox');
+      expect(input).toBeDisabled();
+      expect(input).not.toHaveAttribute('aria-disabled');
     });
   });
 });

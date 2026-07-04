@@ -78,4 +78,24 @@ describe('Carousel', () => {
     expect(screen.getByLabelText('Scroll left')).toBeInTheDocument();
     expect(screen.getByLabelText('Scroll right')).toBeInTheDocument();
   });
+
+  it('disables edge scroll buttons instead of removing them from the tab order', () => {
+    // In jsdom there is no measurable overflow, so both edges are at rest and
+    // the scroll buttons are in their hidden/inert state. They must stay
+    // mounted but be disabled — a disabled <button> is skipped by the tab
+    // order and hidden from the a11y tree, so keyboard users don't focus an
+    // invisible control (WCAG 2.4.7).
+    render(
+      <Carousel aria-label="Edge state">
+        <div>Item 1</div>
+        <div>Item 2</div>
+      </Carousel>,
+    );
+    const left = screen.getByLabelText('Scroll left');
+    const right = screen.getByLabelText('Scroll right');
+    expect(left).toBeInTheDocument();
+    expect(right).toBeInTheDocument();
+    expect(left).toBeDisabled();
+    expect(right).toBeDisabled();
+  });
 });

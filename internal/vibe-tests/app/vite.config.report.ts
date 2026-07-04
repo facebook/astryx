@@ -13,7 +13,7 @@ const repoRoot = path.resolve(__dirname, '../../..');
  * Vite config for building reports ONLY — no StyleX plugin required.
  *
  * Reports use pre-compiled CSS from @astryxdesign/core/dist/astryx.css and
- * @astryxdesign/theme-neutral/dist/theme.css. XDS component JS is loaded from
+ * @astryxdesign/theme-neutral/dist/theme.css. Astryx component JS is loaded from
  * the built dist (which has stylex.create already compiled away by tsup).
  * Report-specific styles live in plain CSS (report.css).
  *
@@ -24,7 +24,7 @@ const repoRoot = path.resolve(__dirname, '../../..');
 /**
  * Browser targets for lightningcss.
  * Prevents lowering native light-dark() into --lightningcss-light/--lightningcss-dark
- * polyfill variables. XDS tokens use native light-dark() which is baseline 2024:
+ * polyfill variables. Astryx tokens use native light-dark() which is baseline 2024:
  * Chrome 123+, Firefox 120+, Safari 17.5+
  *
  * Must match the targets in apps/storybook/.storybook/main.ts
@@ -64,11 +64,11 @@ export default defineConfig({
     alias: [
       // Pre-compiled CSS — no StyleX build needed
       {
-        find: 'xds-css',
+        find: 'astryx-css',
         replacement: path.resolve(repoRoot, 'packages/core/dist/astryx.css'),
       },
       {
-        find: 'xds-theme-css',
+        find: 'astryx-theme-css',
         replacement: path.resolve(
           repoRoot,
           'packages/themes/neutral/dist/theme.css',

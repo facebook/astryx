@@ -63,6 +63,16 @@ const styles = stylex.create({
       '@media (min-width: 900px)': 'span 1',
     },
   },
+  // Two equal cards, side by side when there's room and stacked otherwise.
+  // `min(480px, 100%)` clamps the track to the container so it never forces a
+  // 480px column wider than a small viewport (which overflowed the page).
+  twoUpGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(480px, 100%), 1fr))',
+    gap: spacingVars['--spacing-8'],
+    width: '100%',
+    alignItems: 'start',
+  },
 });
 
 // Section shell shared by both layouts:
@@ -96,14 +106,10 @@ export function BlogShowcase() {
     const [first, second] = blogPosts;
     return (
       <BlogSection>
-        <Grid
-          columns={{minWidth: 480, repeat: 'fit'}}
-          gap={8}
-          width="100%"
-          align="start">
+        <div {...stylex.props(styles.twoUpGrid)}>
           <BlogCard post={first} feature />
           <BlogCard post={second} feature />
-        </Grid>
+        </div>
       </BlogSection>
     );
   }

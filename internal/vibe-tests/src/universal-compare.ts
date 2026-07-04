@@ -90,7 +90,7 @@ function winnerIcon(w: WinnerType): string {
     case 'html':
       return '🟡 HTML';
     case 'astryx-tailwind':
-      return '🟣 XDS+TW';
+      return '🟣 Astryx+TW';
     case 'tie':
       return '⚪ Tie';
   }
@@ -197,7 +197,7 @@ function toMarkdown(opts: {
   if (twData) {
     const twRow = dimOrder.map(d => twData.averages[d]).join(' | ');
     lines.push(
-      `| **XDS+TW** | \`${astryxTailwindId}\` | ${twData.overall} | ${twRow} |`,
+      `| **Astryx+TW** | \`${astryxTailwindId}\` | ${twData.overall} | ${twRow} |`,
     );
   }
 
@@ -229,7 +229,7 @@ function toMarkdown(opts: {
       parts.push(`HTML ${hWins}`);
     }
     if (twData) {
-      parts.push(`XDS+TW ${twWins}`);
+      parts.push(`Astryx+TW ${twWins}`);
     }
     parts.push(`Tie ${ties}`);
     lines.push(
@@ -247,7 +247,7 @@ function toMarkdown(opts: {
     dmParts.push(`HTML ${htmlData.darkModeRate}%`);
   }
   if (twData) {
-    dmParts.push(`XDS+TW ${twData.darkModeRate}%`);
+    dmParts.push(`Astryx+TW ${twData.darkModeRate}%`);
   }
   lines.push(`**Dark mode:** ${dmParts.join(' · ')}`);
 
@@ -380,7 +380,7 @@ async function main() {
     targetNames.push('HTML');
   }
   if (isFourWay) {
-    targetNames.push('XDS+TW');
+    targetNames.push('Astryx+TW');
   }
 
   const title = `📊 Universal Comparison: ${targetNames.join(' vs ')}`;
@@ -397,7 +397,7 @@ async function main() {
     targets.push({label: 'HTML', data: htmlData});
   }
   if (isFourWay && twData != null) {
-    targets.push({label: 'XDS+TW', data: twData});
+    targets.push({label: 'Astryx+TW', data: twData});
   }
 
   // Use markdown-style table for CLI (simpler than box-drawing for N targets)
@@ -552,7 +552,7 @@ async function main() {
       } else if (data.winner === 'html') {
         winCounts['HTML']++;
       } else if (data.winner === 'astryx-tailwind') {
-        winCounts['XDS+TW']++;
+        winCounts['Astryx+TW']++;
       } else {
         winCounts['Tie']++;
       }

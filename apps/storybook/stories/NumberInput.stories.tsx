@@ -50,6 +50,11 @@ const meta: Meta<typeof NumberInput> = {
       control: 'boolean',
       description: 'Whether the input is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled NumberInput in Tooltip.',
+    },
     status: {
       control: 'object',
       description:
@@ -232,11 +237,7 @@ export const AllVariations: Story = {
           onChange={setValue2}
           placeholder="Hidden label input"
         />
-        <NumberInput
-          label="With value"
-          value={value3}
-          onChange={setValue3}
-        />
+        <NumberInput label="With value" value={value3} onChange={setValue3} />
         <NumberInput
           label="Optional field"
           isOptional
@@ -309,6 +310,24 @@ export const Disabled: Story = {
   args: {
     label: 'Locked Amount',
     isDisabled: true,
+    value: 100,
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the input to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the input stays focusable (editing is still blocked).
+// Use disabledMessage instead of wrapping a disabled NumberInput in Tooltip:
+// disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState<number | null>(args.value ?? 100);
+    return <NumberInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Quantity',
+    isDisabled: true,
+    disabledMessage: 'Editing is locked while the order is processing',
     value: 100,
   },
 };
@@ -516,9 +535,7 @@ export const WithEventHandlers: Story = {
 export const Clearable: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 42);
-    return (
-      <NumberInput {...args} value={value} onChange={setValue} hasClear />
-    );
+    return <NumberInput {...args} value={value} onChange={setValue} hasClear />;
   },
   args: {
     label: 'Quantity',
@@ -529,9 +546,7 @@ export const Clearable: Story = {
 export const ClearableWithUnits: Story = {
   render: args => {
     const [value, setValue] = useState<number | null>(args.value ?? 75);
-    return (
-      <NumberInput {...args} value={value} onChange={setValue} hasClear />
-    );
+    return <NumberInput {...args} value={value} onChange={setValue} hasClear />;
   },
   args: {
     label: 'Progress',

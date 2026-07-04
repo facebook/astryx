@@ -9,10 +9,19 @@
  * SYNC: When MultiSelector.tsx API changes, update these tests.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MultiSelector} from './MultiSelector';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+// Module-level constants to satisfy @eslint-react/no-unstable-default-props.
+const ANNOUNCE_OPTIONS = ['Apple', 'Banana', 'Orange'] as const;
+const EMPTY_VALUE: string[] = [];
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -38,6 +47,10 @@ beforeEach(() => {
     }
     return originalMatches.call(this, selector);
   };
+});
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
 });
 
 // Helper: jsdom popover content is in the DOM but may not be
@@ -496,8 +509,10 @@ describe('MultiSelector', () => {
       />,
     );
 
-    await user.click(screen.getByRole('combobox'));
-    expect(screen.getByRole('searchbox', h)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const searchInput = screen.getByRole('combobox', h);
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toHaveAttribute('aria-autocomplete', 'list');
   });
 
   it('filters options when searching', async () => {
@@ -512,8 +527,8 @@ describe('MultiSelector', () => {
       />,
     );
 
-    await user.click(screen.getByRole('combobox'));
-    const searchInput = screen.getByRole('searchbox', h);
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const searchInput = screen.getByRole('combobox', h);
     await user.type(searchInput, 'app');
 
     const options = screen.getAllByRole('option', h);
@@ -532,8 +547,8 @@ describe('MultiSelector', () => {
       />,
     );
 
-    await user.click(screen.getByRole('combobox'));
-    const searchInput = screen.getByRole('searchbox', h);
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const searchInput = screen.getByRole('combobox', h);
     await user.type(searchInput, 'xyz');
 
     expect(screen.getByText('No results found')).toBeInTheDocument();
@@ -733,6 +748,298 @@ describe('MultiSelector', () => {
       );
       const clear = screen.getByRole('button', {name: 'Clear all Fruit'});
       expect(clear).not.toHaveAttribute('tabIndex', '-1');
+    });
+
+    it('scrolls the highlighted option into view during arrow navigation', async () => {
+      const scrollIntoView = vi.fn();
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: scrollIntoView,
+      });
+      try {
+        const user = userEvent.setup();
+        const longOptions = Array.from(
+          {length: 20},
+          (_, i) => `Option ${i + 1}`,
+        );
+        render(
+          <MultiSelector
+            label="Fruit"
+            options={longOptions}
+            value={[]}
+            onChange={() => {}}
+          />,
+        );
+
+        const trigger = screen.getByRole('combobox');
+        await user.click(trigger);
+        scrollIntoView.mockClear();
+        await user.keyboard('{ArrowDown}');
+        await user.keyboard('{ArrowDown}');
+
+        expect(scrollIntoView).toHaveBeenCalledWith({block: 'nearest'});
+      } finally {
+        delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
+          .scrollIntoView;
+      }
+    });
+
+    it('clears all values via Delete on the focused trigger', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={['Apple', 'Banana']}
+          onChange={onChange}
+          hasClear
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      trigger.focus();
+      await user.keyboard('{Delete}');
+      expect(onChange).toHaveBeenCalledWith([]);
+    });
+
+    it('clears all values via Backspace on the focused trigger', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={['Apple', 'Banana']}
+          onChange={onChange}
+          hasClear
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      trigger.focus();
+      await user.keyboard('{Backspace}');
+      expect(onChange).toHaveBeenCalledWith([]);
+    });
+
+    it('does not clear via Delete when nothing is selected', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={onChange}
+          hasClear
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      trigger.focus();
+      await user.keyboard('{Delete}');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('announcements', () => {
+    it('announces the selection count politely when toggling an option', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={[...ANNOUNCE_OPTIONS]}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+        />,
+      );
+      await user.click(screen.getByRole('combobox'));
+      const options = screen.getAllByRole('option', {hidden: true});
+      await user.click(options[0]);
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('1 of 3 selected');
+      });
+    });
+
+    it('announces "All selected" when select-all selects everything', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={[...ANNOUNCE_OPTIONS]}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSelectAll
+        />,
+      );
+      await user.click(screen.getByRole('combobox'));
+      await user.click(screen.getByText('Select all'));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('All selected');
+      });
+    });
+
+    it('announces "Selection cleared" when clearing', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={[...ANNOUNCE_OPTIONS]}
+          value={['Apple', 'Banana']}
+          onChange={() => {}}
+          hasClear
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Clear all Fruit'}));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Selection cleared');
+      });
+    });
+  });
+
+  describe('disabledMessage', () => {
+    it('shows the reason tooltip on hover when disabled with a reason', async () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Select a table first"
+          data-testid="fruit-multi-selector"
+        />,
+      );
+
+      const container = screen.getByTestId('fruit-multi-selector');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('Select a table first');
+
+      fireEvent.mouseEnter(container);
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+
+      fireEvent.mouseLeave(container);
+      await waitFor(() => {
+        expect(tooltip).not.toHaveAttribute('popover-open');
+      });
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Select a table first"
+        />,
+      );
+
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          disabledMessage="Select a table first"
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the trigger focusable via aria-disabled when a reason is provided', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Select a table first"
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).not.toBeDisabled();
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
+      expect(trigger).toHaveAttribute('tabIndex', '0');
+    });
+
+    it('links the reason tooltip from the trigger via aria-describedby', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Select a table first"
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(trigger.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks activation while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={onChange}
+          isDisabled
+          disabledMessage="Select a table first"
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+      await user.keyboard('{Enter}');
+      await user.keyboard('{ArrowDown}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('remains non-focusable when disabled without a reason', () => {
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={[]}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).toBeDisabled();
+      expect(trigger).toHaveAttribute('tabIndex', '-1');
     });
   });
 });

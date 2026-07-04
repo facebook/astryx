@@ -1,6 +1,6 @@
 # @astryxdesign/core
 
-Core UI components, theme system, and utilities for the XDS design system. For project setup, see [Quick Start](#quick-start) below.
+Core UI components, theme system, and utilities for the Astryx design system. For project setup, see [Quick Start](#quick-start) below.
 
 ## Component Docs
 
@@ -15,9 +15,9 @@ node node_modules/@astryxdesign/core/docs.mjs --list --brief  # brief summaries
 ## Page Layouts
 
 Building a full page? Start with a template rather than composing from scratch.
-Templates are content-only; they compose `XDSLayout` with header, content, and
+Templates are content-only; they compose `Layout` with header, content, and
 panel slots into common page patterns (dashboards, settings, forms, detail pages).
-Wrap them in your own app chrome (`XDSAppShell`, `XDSTopNav`, `XDSSideNav`) to add
+Wrap them in your own app chrome (`AppShell`, `TopNav`, `SideNav`) to add
 global navigation.
 
 Requires `@astryxdesign/cli` (`npm install -D @astryxdesign/cli`):
@@ -28,7 +28,7 @@ npx astryx template dashboard           # emit full page source
 npx astryx template settings --skeleton # layout skeleton with spatial annotations
 ```
 
-## XDS CLI
+## Astryx CLI
 
 The CLI (`@astryxdesign/cli`) provides additional tooling:
 
@@ -38,11 +38,11 @@ npx astryx component Button             # full docs + related block templates
 npx astryx docs                         # reference docs (principles, tokens, theming, styling)
 npx astryx docs theme                   # theming guide (Theme, defineTheme, light/dark)
 npx astryx docs tokens                  # spacing, color, radius, typography token reference
-npx astryx init                         # initialize XDS in your project
+npx astryx init                         # initialize Astryx in your project
 npx astryx theme build                  # build theme CSS for production
 npx astryx swizzle Button               # eject component source for customization
 npx astryx upgrade --apply              # run codemods to migrate between versions
-npx astryx discover                     # discover external XDS packages
+npx astryx discover                     # discover external Astryx packages
 npx astryx gap-report                   # report a missing capability
 ```
 
@@ -62,7 +62,7 @@ npx astryx gap-report                   # report a missing capability
 
 ## Quick Start
 
-Install XDS and a theme:
+Install Astryx and a theme:
 
 ```bash
 npm install @astryxdesign/core @astryxdesign/theme-neutral
@@ -122,7 +122,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
 
 ### Next.js + Tailwind
 
-No build plugins needed; XDS ships pre-built CSS that works alongside Tailwind.
+No build plugins needed; Astryx ships pre-built CSS that works alongside Tailwind.
 
 **`src/app/globals.css`**
 
@@ -150,7 +150,7 @@ The `tailwind-theme.css` import maps system tokens to Tailwind utilities via `@t
 
 Some useful mappings:
 
-| Tailwind class                                            | XDS token                                         |
+| Tailwind class                                            | Astryx token                                      |
 | --------------------------------------------------------- | ------------------------------------------------- |
 | `text-primary` / `text-secondary`                         | `--color-text-primary` / `--color-text-secondary` |
 | `bg-surface` / `bg-card` / `bg-body`                      | `--color-background-surface` / `card` / `body`    |
@@ -160,7 +160,7 @@ Some useful mappings:
 | `rounded-sm` / `rounded-md` / `rounded-lg`                | `--radius-inner` / `element` / `container`        |
 | `shadow-sm` / `shadow-md` / `shadow-lg`                   | `--shadow-low` / `med` / `high`                   |
 
-Spacing references `var(--spacing-1)` as the base unit, so `p-4` = 16px, matching XDS's `--spacing-4`. Arbitrary values still work as an escape hatch: `bg-[var(--color-background-surface)]`.
+Spacing references `var(--spacing-1)` as the base unit, so `p-4` = 16px, matching Astryx's `--spacing-4`. Arbitrary values still work as an escape hatch: `bg-[var(--color-background-surface)]`.
 
 **`src/app/providers.tsx`**
 
@@ -204,7 +204,7 @@ That's it. Start using components:
 import {Button} from '@astryxdesign/core/Button';
 
 export default function Page() {
-  return <Button label="Hello XDS" variant="primary" />;
+  return <Button label="Hello Astryx" variant="primary" />;
 }
 ```
 
@@ -232,7 +232,7 @@ Providers and layout are the same as the Tailwind example (use `@astryxdesign/th
 npm install @astryxdesign/core @astryxdesign/theme-neutral
 ```
 
-Same CSS imports and providers as above. No build plugins needed; XDS ships pre-built.
+Same CSS imports and providers as above. No build plugins needed; Astryx ships pre-built.
 
 ### No build step (CDN)
 

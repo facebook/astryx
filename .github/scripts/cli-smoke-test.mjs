@@ -5,7 +5,7 @@
  * CLI smoke test — auto-discovers every command and checks for output + clean exit.
  *
  * Nothing is hardcoded. Components are discovered from `astryx component --list`,
- * doc topics from `astryx docs`, and detail levels from `xds --help`.
+ * doc topics from `astryx docs`, and detail levels from `astryx --help`.
  *
  * Catches regressions like:
  *   - astryx component <name> crashing on bad imports

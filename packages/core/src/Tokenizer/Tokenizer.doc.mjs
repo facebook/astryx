@@ -71,6 +71,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the tokenizer is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (input stays blocked). Use this instead of wrapping a disabled Tokenizer in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'status',
       type: 'InputStatus',
       description:
@@ -191,6 +197,7 @@ export const docs = {
       {guidance: false, description: 'Don\u2019t use Tokenizer for single-item selection \u2014 use Typeahead instead. Tokenizer is for building sets of two or more items.'},
       {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer \u2014 use the default token style for visual consistency across the set.'},
       {guidance: false, description: 'Don\u2019t hide the label \u2014 every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
+      {guidance: false, description: 'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text above the input describing what the user is selecting. Also used as the accessible name.'},
@@ -269,6 +276,12 @@ export const docsZh = {
       type: 'boolean',
       description: '\u7981\u7528\u8f93\u5165\u6846\u548c\u6240\u6709\u6807\u8bb0\u4ea4\u4e92\u3002',
       default: 'false',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the tokenizer is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (input stays blocked). Use this instead of wrapping a disabled Tokenizer in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
     },
     {
       name: 'status',
@@ -380,6 +393,7 @@ export const docsZh = {
       {guidance: false, description: 'Don\u2019t use Tokenizer for single-item selection \u2014 use Typeahead instead. Tokenizer is for building sets of two or more items.'},
       {guidance: false, description: 'Avoid applying custom colors to individual tokens inside a Tokenizer \u2014 use the default token style for visual consistency across the set.'},
       {guidance: false, description: 'Don\u2019t hide the label \u2014 every Tokenizer needs a visible label so users understand what they are selecting. Use isLabelHidden only when surrounding context makes the purpose obvious.'},
+      {guidance: false, description: 'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text above the input describing what the user is selecting. Also used as the accessible name.'},
@@ -406,6 +420,7 @@ export const docsDense = {
       {guidance: false, description: 'Don\u2019t use for single-item selection \u2014 use Typeahead instead.'},
       {guidance: false, description: 'Avoid custom token colors \u2014 default style for consistency.'},
       {guidance: false, description: 'Don\u2019t hide the label unless context makes purpose obvious.'},
+      {guidance: false, description: 'Wrap a disabled Tokenizer in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
     ],
   },
   propDescriptions: {

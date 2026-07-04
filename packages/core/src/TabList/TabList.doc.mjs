@@ -56,6 +56,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'orientation',
+      type: "'horizontal' | 'vertical'",
+      description: "Orientation of the tab strip, controlling which arrow keys move focus between tabs and the reported aria-orientation. 'horizontal': ArrowLeft/ArrowRight. 'vertical': ArrowUp/ArrowDown. Both axes' arrows are accepted regardless.",
+      default: "'horizontal'",
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description: 'Tab and TabMenu items to render inside the nav.',

@@ -37,6 +37,11 @@ const meta: Meta<typeof CheckboxList> = {
       control: 'boolean',
       description: 'Whether all checkbox items are disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the group is disabled (whole-group state, not per item). With isDisabled, shows a tooltip on hover/keyboard focus and keeps the checkboxes focusable via aria-disabled (toggling stays blocked). Use this instead of wrapping a disabled CheckboxList in Tooltip.',
+    },
   },
 };
 
@@ -104,11 +109,7 @@ export const DynamicItems: Story = {
     return (
       <CheckboxList {...restArgs} value={value} onChange={setValue}>
         {items.map(item => (
-          <CheckboxListItem
-            key={item.id}
-            label={item.label}
-            value={item.id}
-          />
+          <CheckboxListItem key={item.id} label={item.label} value={item.id} />
         ))}
       </CheckboxList>
     );
@@ -352,10 +353,7 @@ export const AllVariations: Story = {
           <CheckboxListItem label="Option A" value="a" />
           <CheckboxListItem label="Option B" value="b" />
         </CheckboxList>
-        <CheckboxList
-          label="Pre-selected"
-          value={value2}
-          onChange={setValue2}>
+        <CheckboxList label="Pre-selected" value={value2} onChange={setValue2}>
           <CheckboxListItem label="Email" value="email" />
           <CheckboxListItem label="SMS" value="sms" />
         </CheckboxList>
@@ -458,5 +456,30 @@ export const InsideCardWithDividers: Story = {
         </Card>
       </div>
     );
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the group to see
+// why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the checkboxes stay focusable (toggling is still
+// blocked). disabledMessage applies to the whole-group disabled state. Use it
+// instead of wrapping a disabled CheckboxList in Tooltip: disabled controls
+// swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState<string[]>(['email']);
+    const {value: _value, onChange: _onChange, ...restArgs} = args;
+    return (
+      <CheckboxList {...restArgs} value={value} onChange={setValue}>
+        <CheckboxListItem label="Email" value="email" />
+        <CheckboxListItem label="SMS" value="sms" />
+        <CheckboxListItem label="Push notification" value="push" />
+      </CheckboxList>
+    );
+  },
+  args: {
+    label: 'Notification preferences',
+    isDisabled: true,
+    disabledMessage: 'Notifications are managed by your administrator',
   },
 };

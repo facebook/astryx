@@ -37,6 +37,13 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 
+/**
+ * Grace period (ms) before hiding on pointer-leave when no explicit `hideDelay`
+ * is set, so the pointer can travel across the small gap from the trigger onto
+ * the tooltip surface without the tooltip disappearing (WCAG 1.4.13 hoverable).
+ */
+const HOVER_BRIDGE_DELAY = 100;
+
 const styles = stylex.create({
   // Base container styles - inverted colors for high contrast
   container: {
@@ -291,20 +298,28 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     }, delay);
   }, [isEnabled, isOpen, clearTimeouts, layer, delay]);
 
-  // Schedule hide with delay (suppressed when isOpen is true)
+  // Schedule hide with delay (suppressed when isOpen is true).
+  // A small hover bridge (when hideDelay is 0) lets the pointer travel from the
+  // trigger onto the tooltip surface without the tooltip vanishing — required
+  // for WCAG 1.4.13 (Content on Hover or Focus: hoverable).
   const scheduleHide = useCallback(() => {
     if (isOpen === true) {
       return;
     }
     clearTimeouts();
-    if (hideDelay > 0) {
-      hideTimeoutRef.current = setTimeout(() => {
-        layer.hide();
-      }, hideDelay);
-    } else {
+    const effectiveHideDelay = hideDelay > 0 ? hideDelay : HOVER_BRIDGE_DELAY;
+    hideTimeoutRef.current = setTimeout(() => {
       layer.hide();
-    }
+    }, effectiveHideDelay);
   }, [isOpen, clearTimeouts, layer, hideDelay]);
+
+  // Cancel a pending hide (e.g. the pointer entered the tooltip surface).
+  const cancelHide = useCallback(() => {
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  }, []);
 
   // Event handlers
   const handleMouseEnter = useCallback(() => {
@@ -420,6 +435,32 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
     }
   }, [isOpen, clearTimeouts, layer]);
 
+  // Dismiss on Escape (WCAG 1.4.13 — dismissible). Uncontrolled tooltips only;
+  // a controlled tooltip's visibility is owned by the consumer. The listener is
+  // mounted for the lifetime of an uncontrolled tooltip rather than gated on
+  // `layer.isOpen` (React state, which can lag a frame behind the DOM) —
+  // `layer.hide()` self-guards and no-ops when the layer is already closed.
+  // Guarded against IME composition-cancel.
+  useEffect(() => {
+    if (isOpen !== undefined) {
+      return;
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') {
+        return;
+      }
+      if (e.isComposing || e.keyCode === 229) {
+        return;
+      }
+      clearTimeouts();
+      layer.hide();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, layer, clearTimeouts]);
+
   // Render function that wraps layer.render with tooltip styling
   const renderTooltip = useCallback(
     (children: ReactNode, props?: ContextRenderProps): ReactNode => {
@@ -430,6 +471,12 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
         role: 'tooltip',
         xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
         className: themeProps('tooltip').className,
+        // Keep the tooltip open while the pointer is over the surface itself
+        // (WCAG 1.4.13 hoverable). These sit on the layer container — the
+        // element the user actually hovers — not the inner content div, since
+        // mouseenter/leave do not bubble.
+        onMouseEnter: cancelHide,
+        onMouseLeave: scheduleHide,
       };
 
       return layer.render(
@@ -437,7 +484,7 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
         renderProps,
       );
     },
-    [layer, placement, alignment, popoverXstyle],
+    [layer, placement, alignment, popoverXstyle, cancelHide, scheduleHide],
   );
 
   return {

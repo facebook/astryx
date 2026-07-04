@@ -10,11 +10,42 @@
  */
 
 import {useState} from 'react';
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
 import {TextArea} from './TextArea';
+
+// Mock showPopover/hidePopover since jsdom does not implement them. Used by the
+// disabledMessage tooltip.
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+});
+
+// jsdom popover content is in the DOM but may not be "visible" in the
+// accessibility tree. Use hidden: true to find it.
+const h = {hidden: true} as const;
 
 describe('TextArea', () => {
   it('renders with label', () => {
@@ -39,9 +70,7 @@ describe('TextArea', () => {
   it('calls onChange with value and event when typing', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
-    render(
-      <TextArea label="Description" value="" onChange={handleChange} />,
-    );
+    render(<TextArea label="Description" value="" onChange={handleChange} />);
 
     const textarea = screen.getByRole('textbox');
     await user.type(textarea, 'Hi');
@@ -73,24 +102,14 @@ describe('TextArea', () => {
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(
-      <TextArea
-        ref={ref}
-        label="Description"
-        value=""
-        onChange={() => {}}
-      />,
+      <TextArea ref={ref} label="Description" value="" onChange={() => {}} />,
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLTextAreaElement));
   });
 
   it('visually hides label when isLabelHidden is true', () => {
     render(
-      <TextArea
-        label="Comments"
-        isLabelHidden
-        value=""
-        onChange={() => {}}
-      />,
+      <TextArea label="Comments" isLabelHidden value="" onChange={() => {}} />,
     );
     const label = screen.getByText('Comments');
     expect(label).toBeInTheDocument();
@@ -133,12 +152,7 @@ describe('TextArea', () => {
 
   it('is disabled when isDisabled is true', () => {
     render(
-      <TextArea
-        label="Description"
-        isDisabled
-        value=""
-        onChange={() => {}}
-      />,
+      <TextArea label="Description" isDisabled value="" onChange={() => {}} />,
     );
     expect(screen.getByRole('textbox')).toBeDisabled();
   });
@@ -150,12 +164,7 @@ describe('TextArea', () => {
 
   it('shows aria-busy when isLoading is true', () => {
     render(
-      <TextArea
-        label="Description"
-        isLoading
-        value=""
-        onChange={() => {}}
-      />,
+      <TextArea label="Description" isLoading value="" onChange={() => {}} />,
     );
     expect(screen.getByRole('textbox')).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('textbox')).not.toBeDisabled();
@@ -340,12 +349,7 @@ describe('TextArea', () => {
 
   it('renders with size="lg"', () => {
     render(
-      <TextArea
-        label="Description"
-        value=""
-        onChange={() => {}}
-        size="lg"
-      />,
+      <TextArea label="Description" value="" onChange={() => {}} size="lg" />,
     );
     expect(screen.getByLabelText('Description')).toBeInTheDocument();
   });
@@ -593,6 +597,134 @@ describe('TextArea', () => {
 
       fireEvent.click(wrapper);
       expect(textarea).toHaveFocus();
+    });
+  });
+
+  describe('disabledMessage', () => {
+    it('shows the reason tooltip on hover when disabled with a reason', async () => {
+      render(
+        <TextArea
+          label="Notes"
+          value=""
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const textarea = screen.getByRole('textbox');
+      const container = textarea.parentElement as HTMLElement;
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('You need the Editor role');
+
+      fireEvent.mouseEnter(container);
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+
+      fireEvent.mouseLeave(container);
+      await waitFor(() => {
+        expect(tooltip).not.toHaveAttribute('popover-open');
+      });
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(
+        <TextArea
+          label="Notes"
+          value=""
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      expect(screen.getByRole('textbox')).toHaveFocus();
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <TextArea
+          label="Notes"
+          value=""
+          onChange={() => {}}
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(
+        <TextArea label="Notes" value="" onChange={() => {}} isDisabled />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the textarea focusable via aria-disabled when a reason is provided', () => {
+      render(
+        <TextArea
+          label="Notes"
+          value=""
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const textarea = screen.getByRole('textbox');
+      expect(textarea).not.toBeDisabled();
+      expect(textarea).toHaveAttribute('aria-disabled', 'true');
+      expect(textarea).toHaveAttribute('readonly');
+    });
+
+    it('links the reason tooltip from the textarea via aria-describedby', () => {
+      render(
+        <TextArea
+          label="Notes"
+          value=""
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const textarea = screen.getByRole('textbox');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(textarea.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks value changes while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <TextArea
+          label="Notes"
+          value=""
+          onChange={onChange}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const textarea = screen.getByRole('textbox');
+      await user.click(textarea);
+      await user.keyboard('hello');
+      expect(onChange).not.toHaveBeenCalled();
+      expect(textarea).toHaveValue('');
+    });
+
+    it('remains natively disabled when disabled without a reason', () => {
+      render(
+        <TextArea label="Notes" value="" onChange={() => {}} isDisabled />,
+      );
+      const textarea = screen.getByRole('textbox');
+      expect(textarea).toBeDisabled();
+      expect(textarea).not.toHaveAttribute('aria-disabled');
     });
   });
 });

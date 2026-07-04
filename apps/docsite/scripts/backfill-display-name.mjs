@@ -28,7 +28,7 @@
  *     - Otherwise treat as PascalCase / camelCase and space-separate the
  *       words while preserving capitalization
  *       (`ChatMessageMetadata` -> `Chat Message Metadata`,
- *        `Button`         -> `XDS Button`).
+ *        `Button`         -> `Button`).
  *
  * Run from the repo root:
  *   node apps/docsite/scripts/backfill-display-name.mjs
@@ -81,7 +81,7 @@ function findDocFiles(root, out = []) {
  *  - Otherwise treat as PascalCase / camelCase, insert spaces between
  *    word boundaries while preserving capitalization:
  *    `ChatMessageMetadata` -> `Chat Message Metadata`.
- *    `Button`           -> `XDS Button`.
+ *    `Button`           -> `Button`.
  */
 function deriveDisplayName(name) {
   if (!name) return name;

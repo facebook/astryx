@@ -60,6 +60,13 @@ export const docs = {
           default: 'false',
         },
         {
+          name: 'newTabLabel',
+          type: 'string',
+          description:
+            'Screen-reader text announcing that an external link opens in a new tab. Override for localization.',
+          default: "'(opens in new tab)'",
+        },
+        {
           name: 'target',
           type: 'string',
           description:
@@ -186,6 +193,12 @@ export const docsZh = {
           default: 'false',
         },
         {
+          name: 'newTabLabel',
+          type: 'string',
+          description: '向屏幕阅读器announce外部链接将在新标签页打开的文本。可覆盖以本地化。',
+          default: "'(opens in new tab)'",
+        },
+        {
           name: 'target',
           type: 'string',
           description:
@@ -296,6 +309,7 @@ export const docsDense = {
         hasUnderline: 'Always show underline',
         isDisabled: 'Disables link',
         isExternalLink: 'Opens new tab w/ external icon and safe rel tokens',
+        newTabLabel: 'SR text announcing an external link opens in a new tab',
         target:
           'Where to open linked document. target="_blank" auto-adds noopener noreferrer.',
         rel: 'Link relationship tokens. noopener noreferrer are merged for target="_blank".',

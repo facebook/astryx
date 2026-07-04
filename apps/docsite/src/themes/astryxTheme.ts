@@ -20,7 +20,7 @@
  * The only other overrides are the cream body color, Figtree typography, a
  * +4px radius bump, semibold display headings, and pill buttons. The neutral
  * gray ramp (surfaces, borders, secondary/disabled text, skeleton/track,
- * categorical gray) is intentionally left at the XDS defaults — Astryx is a
+ * categorical gray) is intentionally left at the Astryx defaults — Astryx is a
  * thin brand layer of primary + accent + body on top of the design system.
  */
 
@@ -61,7 +61,7 @@ export const astryxTheme = defineTheme({
   // scale config — the scale runs HCT derivation across the whole palette
   // and bleeds the accent's hue into neutrals (which made all the "gray"
   // surfaces come out brown). Setting --color-accent directly leaves every
-  // other token at the XDS default.
+  // other token at the Astryx default.
   tokens: {
     // --- ACCENT tokens → PRIMARY ---
     // The brand blue is reserved for the logo, so every accent token resolves
@@ -76,11 +76,11 @@ export const astryxTheme = defineTheme({
     // On-accent (the label/icon ON a filled accent surface, e.g. primary
     // button text) must invert with the accent: PRIMARY is near-black in light
     // and near-white in dark, so the on-accent ink is white in light and
-    // near-black in dark. Without this it stays the XDS default white and
+    // near-black in dark. Without this it stays the Astryx default white and
     // becomes unreadable on the light dark-mode accent fill.
     '--color-on-accent': 'light-dark(#FFFFFF, #15110C)',
     // Mode-aware so the page background flips with dark mode. Light keeps the
-    // warm Astryx cream; dark falls back to the XDS default body color
+    // warm Astryx cream; dark falls back to the Astryx default body color
     // (a flat static value here would freeze the page in light mode).
     '--color-background-body': 'light-dark(#F8F4ED, #111112)',
 
@@ -88,12 +88,12 @@ export const astryxTheme = defineTheme({
     // Both primary foreground tokens point at the single PRIMARY decision
     // above (which also drives the accent tokens). Secondary, disabled, and the
     // rest of the neutral gray ramp (surfaces, borders, skeleton/track,
-    // categorical gray) are intentionally left at the XDS defaults — only the
+    // categorical gray) are intentionally left at the Astryx defaults — only the
     // primary ink is a brand decision.
     '--color-text-primary': PRIMARY,
     '--color-icon-primary': PRIMARY,
 
-    // Astryx display headings render semibold (XDS default is normal weight).
+    // Astryx display headings render semibold (Astryx default is normal weight).
     '--text-display-1-weight': 'var(--font-weight-semibold)',
     '--text-display-2-weight': 'var(--font-weight-semibold)',
     '--text-display-3-weight': 'var(--font-weight-semibold)',

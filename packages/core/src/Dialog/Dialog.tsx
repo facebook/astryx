@@ -20,6 +20,7 @@ import {useEffect, useMemo, useRef, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
+import {hasActiveFocusTrapEscape, isImeKeyEvent} from '../hooks/useFocusTrap';
 import {
   colorVars,
   radiusVars,
@@ -422,6 +423,12 @@ export function Dialog({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        // Ignore IME composition-cancel, and defer to any popover/menu layered
+        // on top of this dialog so a single Escape closes only the top-most
+        // layer (the popover's own focus trap handles it and stops propagation).
+        if (isImeKeyEvent(event) || hasActiveFocusTrapEscape()) {
+          return;
+        }
         event.preventDefault();
         if (allowEscape) {
           onOpenChange(false);
@@ -447,6 +454,11 @@ export function Dialog({
   // Handle native cancel event (browser Escape handling)
   const handleCancel = (event: React.SyntheticEvent<HTMLDialogElement>) => {
     event.preventDefault();
+    // Defer to a popover/menu layered on top of this dialog; it will dismiss
+    // itself on the same Escape press.
+    if (hasActiveFocusTrapEscape()) {
+      return;
+    }
     if (allowEscape) {
       onOpenChange(false);
     }

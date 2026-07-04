@@ -17,7 +17,7 @@
   overflow: auto;
   border-radius: var(--radius-container);
   border: var(--border-width) solid var(--color-border);
-  /* Templates are content-only (no XDSAppShell) and render transparent, so
+  /* Templates are content-only (no AppShell) and render transparent, so
      the preview host supplies the page background. Use the surface color so
      templates read as a real themed app surface. */
   background-color: var(--color-background-surface);

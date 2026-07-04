@@ -9,8 +9,8 @@
  * SYNC: When TimeInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TimeInput} from './TimeInput';
 import type {ISOTimeString} from '../utils';
@@ -23,11 +23,7 @@ describe('TimeInput', () => {
 
   it('renders with placeholder', () => {
     render(
-      <TimeInput
-        label="Time"
-        onChange={() => {}}
-        placeholder="Pick a time"
-      />,
+      <TimeInput label="Time" onChange={() => {}} placeholder="Pick a time" />,
     );
     expect(screen.getByPlaceholderText('Pick a time')).toBeInTheDocument();
   });
@@ -209,5 +205,146 @@ describe('TimeInput', () => {
     // with wrapper as both target and currentTarget
     fireEvent.click(wrapper);
     expect(input).toHaveFocus();
+  });
+  describe('disabledMessage', () => {
+    // jsdom does not implement the Popover API used by the tooltip, so mock
+    // showPopover/hidePopover to toggle a `popover-open` attribute the tests
+    // can assert on.
+    beforeEach(() => {
+      HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+        this.setAttribute('popover-open', '');
+      });
+      HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+        this.removeAttribute('popover-open');
+      });
+    });
+
+    // jsdom popover content is in the DOM but not "visible" in the
+    // accessibility tree; use hidden: true to find it.
+    const h = {hidden: true} as const;
+
+    it('shows the reason tooltip on hover when disabled with a reason', async () => {
+      render(
+        <TimeInput
+          label="Time"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const container = screen.getByLabelText('Time')
+        .parentElement as HTMLElement;
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('You need the Editor role');
+
+      fireEvent.mouseEnter(container);
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+
+      fireEvent.mouseLeave(container);
+      await waitFor(() => {
+        expect(tooltip).not.toHaveAttribute('popover-open');
+      });
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(
+        <TimeInput
+          label="Time"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      expect(screen.getByLabelText('Time')).toHaveFocus();
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <TimeInput label="Time" disabledMessage="You need the Editor role" />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(<TimeInput label="Time" isDisabled />);
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the input focusable via aria-disabled when a reason is provided', () => {
+      render(
+        <TimeInput
+          label="Time"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const input = screen.getByLabelText('Time');
+      expect(input).not.toBeDisabled();
+      expect(input).toHaveAttribute('aria-disabled', 'true');
+      expect(input).toHaveAttribute('readonly');
+    });
+
+    it('links the reason tooltip from the input via aria-describedby', () => {
+      render(
+        <TimeInput
+          label="Time"
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const input = screen.getByLabelText('Time');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks typing and arrow-key changes while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <TimeInput
+          label="Time"
+          onChange={onChange}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const input = screen.getByLabelText('Time');
+      await user.type(input, '2:30 PM');
+      expect(input).toHaveValue('');
+      input.focus();
+      fireEvent.keyDown(input, {key: 'ArrowUp'});
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('remains natively disabled when disabled without a reason', () => {
+      render(<TimeInput label="Time" isDisabled />);
+      const input = screen.getByLabelText('Time');
+      expect(input).toBeDisabled();
+      expect(input).not.toHaveAttribute('aria-disabled');
+    });
+
+    it('does not swap in the format-hint placeholder on focus while disabled', () => {
+      render(
+        <TimeInput
+          label="Time"
+          isDisabled
+          disabledMessage="You need the Editor role"
+          placeholder="Select a time"
+        />,
+      );
+      const input = screen.getByLabelText('Time');
+      input.focus();
+      fireEvent.focus(input);
+      expect(input).toHaveAttribute('placeholder', 'Select a time');
+    });
   });
 });

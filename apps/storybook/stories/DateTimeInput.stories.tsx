@@ -41,6 +41,11 @@ const meta: Meta<typeof DateTimeInput> = {
       control: 'boolean',
       description: 'Whether the input is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the field focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled DateTimeInput in Tooltip.',
+    },
     size: {
       control: 'radio',
       options: ['sm', 'md', 'lg'],
@@ -217,6 +222,25 @@ export const Disabled: Story = {
   args: {
     label: 'Locked time',
     isDisabled: true,
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the field to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the field stays focusable (activation is still
+// blocked). Use disabledMessage instead of wrapping a disabled DateTimeInput in Tooltip:
+// disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>(
+      undefined,
+    );
+    return <DateTimeInput {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Meeting time',
+    isDisabled: true,
+    disabledMessage: 'You need the Editor role to change this',
   },
 };
 

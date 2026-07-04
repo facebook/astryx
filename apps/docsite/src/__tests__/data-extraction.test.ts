@@ -284,6 +284,18 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('Citation satisfies its required source prop via playground defaults', () => {
+    const core = components['@astryxdesign/core'];
+    const citation = core.find(c => c.name === 'Citation');
+    expect(citation).toBeDefined();
+    // `source` is a custom object type the preview cannot auto-generate;
+    // without these defaults the properties tab has no interactive preview.
+    expect(citation!.playground?.defaults).toMatchObject({
+      source: {title: 'Astryx Design', url: 'https://example.com'},
+      number: 1,
+    });
+  });
+
   it('MetadataListItem declares a playground wrapper for realistic preview structure', () => {
     const core = components['@astryxdesign/core'];
     const metadataListItem = core.find(c => c.name === 'MetadataListItem');
@@ -366,7 +378,7 @@ describe('componentRegistry', () => {
     const core = components['@astryxdesign/core'];
     // Public hooks (useTheme, useToast, useTableSortable, …) ship example
     // blocks; internal utility hooks (useFocusTrap, useScrollLock, …) do not.
-    // Post un-prefix migration (P2380608025) the doc `name` is bare for both,
+    // Post un-prefix migration the doc `name` is bare for both,
     // so the public set is identified by having an example-registry entry
     // rather than by a name prefix.
     const hooks = core.filter(
@@ -907,5 +919,34 @@ describe('Card playground defaults', () => {
     expect(typeof defaults!.isSelected).toBe('boolean');
     expect(defaults!.children).toBeTruthy();
     expect(typeof defaults!.children).toBe('object');
+  });
+});
+
+// ── Vertical ToggleButtonGroup example (#2707) ─────────────────────────────
+// ToggleButtonGroup supports orientation="vertical", but no docsite example
+// demonstrated it — the prop was undiscoverable without reading the API
+// table. A dedicated vertical example block must exist and actually use the
+// vertical orientation.
+describe('ToggleButtonGroup vertical example', () => {
+  it('discovers the ToggleButtonGroupVertical block', () => {
+    const block = blocks.find(b => b.dirName === 'ToggleButtonGroupVertical');
+    expect(block).toBeDefined();
+    expect(block!.exampleFor).toBe('ToggleButtonGroup');
+    expect(block!.isShowcase).toBe(false);
+    expect(block!.name).toBe('ToggleButtonGroup — Vertical');
+  });
+
+  it('registers it among the ToggleButtonGroup examples', () => {
+    const examples = exampleRegistry['ToggleButtonGroup'] ?? [];
+    const vertical = examples.find(e => /Vertical/i.test(e.name));
+    expect(vertical).toBeDefined();
+    expect(vertical!.source).toContain('orientation="vertical"');
+  });
+
+  it('demonstrates both single-select and multi-select stacks', () => {
+    const examples = exampleRegistry['ToggleButtonGroup'] ?? [];
+    const vertical = examples.find(e => /Vertical/i.test(e.name));
+    expect(vertical).toBeDefined();
+    expect(vertical!.source).toContain('type="multiple"');
   });
 });

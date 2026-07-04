@@ -3,7 +3,10 @@
 import React, {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {PowerSearch} from '@astryxdesign/core/PowerSearch';
-import type {PowerSearchConfig, PowerSearchFilter} from '@astryxdesign/core/PowerSearch';
+import type {
+  PowerSearchConfig,
+  PowerSearchFilter,
+} from '@astryxdesign/core/PowerSearch';
 import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
 import {Button} from '@astryxdesign/core/Button';
 import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
@@ -308,6 +311,11 @@ const meta: Meta<typeof PowerSearch> = {
   argTypes: {
     placeholder: {control: 'text'},
     isDisabled: {control: 'boolean'},
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the search is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (input stays blocked). Use this instead of wrapping a disabled PowerSearch in Tooltip.',
+    },
     isReadOnly: {control: 'boolean'},
     hasClear: {control: 'boolean'},
     maxTokenLength: {control: 'number'},
@@ -1340,4 +1348,30 @@ export const WithCustomComponents: Story = {
     ),
   ],
   name: 'Custom Components Map',
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the input to see
+// why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the input stays focusable (input is still blocked). Use
+// disabledMessage instead of wrapping a disabled PowerSearch in Tooltip:
+// disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const filters: PowerSearchFilter[] = [
+      {field: 'status', operator: 'is', value: {type: 'enum', value: 'open'}},
+    ];
+    return (
+      <PowerSearch
+        {...args}
+        config={basicConfig}
+        filters={filters}
+        onChange={() => {}}
+        isDisabled
+        disabledMessage="You need edit access to search"
+      />
+    );
+  },
+  args: {
+    placeholder: 'Search...',
+  },
 };

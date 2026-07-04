@@ -5,7 +5,7 @@
  * @file Build live preview pages from vibe test results
  *
  * Takes .tsx result files and builds each into a standalone HTML page
- * that renders the component. Supports XDS, baseline, and raw HTML targets.
+ * that renders the component. Supports Astryx, baseline, and raw HTML targets.
  *
  * Usage:
  *   tsx src/build-previews.ts --iterations 8734233a,d4ff8c2c,68ef2a62
@@ -32,7 +32,7 @@ const REPO_ROOT = path.resolve(VIBE_DIR, '../..');
 /**
  * Browser targets for lightningcss.
  * Prevents lowering native light-dark() into --lightningcss-light/--lightningcss-dark
- * polyfill variables. XDS tokens use native light-dark() which is baseline 2024:
+ * polyfill variables. Astryx tokens use native light-dark() which is baseline 2024:
  * Chrome 123+, Firefox 120+, Safari 17.5+
  *
  * Must match the targets in apps/storybook/.storybook/main.ts and
@@ -45,8 +45,8 @@ const LIGHTNINGCSS_TARGETS_JS = `{
 }`;
 
 /**
- * Fix missing XDS component imports in AI-generated .tsx files.
- * Scans for XDS* identifiers used in JSX that aren't imported,
+ * Fix missing Astryx component imports in AI-generated .tsx files.
+ * Scans for Astryx* identifiers used in JSX that aren't imported,
  * and prepends the missing import. Returns list of auto-imported components.
  */
 function fixMissingXDSImports(filePath: string): string[] {
@@ -84,7 +84,7 @@ function fixMissingXDSImports(filePath: string): string[] {
 }
 
 /**
- * Validate a built preview HTML for unresolved XDS component references.
+ * Validate a built preview HTML for unresolved Astryx component references.
  * Returns list of unresolved component names (empty if clean).
  */
 function validatePreviewHtml(htmlPath: string): string[] {
@@ -153,7 +153,7 @@ function createEntryFile(
 ): string {
   const entryPath = path.join(tmpDir, 'entry.tsx');
 
-  // For XDS and XDS+Tailwind targets, wrap in theme provider and import reset
+  // For Astryx and Astryx+Tailwind targets, wrap in theme provider and import reset
   if (target === 'astryx' || target === 'astryx-tailwind') {
     const tailwindImport =
       target === 'astryx-tailwind'
@@ -164,15 +164,15 @@ function createEntryFile(
       `import React from 'react';
 import {createRoot} from 'react-dom/client';
 import '@astryxdesign/core/reset.css';${tailwindImport}
-import {XDSTheme} from '@astryxdesign/core/theme';
+import {Theme} from '@astryxdesign/core/theme';
 import {neutralTheme} from '@astryxdesign/theme/neutral';
 import Component from '${componentPath.replace(/\\/g, '/')}';
 
 function App() {
   return (
-    <XDSTheme theme={neutralTheme} mode="light">
+    <Theme theme={neutralTheme} mode="light">
       <Component />
-    </XDSTheme>
+    </Theme>
   );
 }
 
@@ -291,7 +291,7 @@ function createIndexHtml(
 function createViteConfig(tmpDir: string, target: string): string {
   const configPath = path.join(tmpDir, 'vite.config.ts');
 
-  // For XDS and XDS+Tailwind previews, the generated component may use
+  // For Astryx and Astryx+Tailwind previews, the generated component may use
   // patterns that StyleX's babel plugin rejects (e.g. createTheme with
   // type casts). We use a pre-transform plugin to strip TypeScript type
   // assertions before StyleX processes the file.
@@ -375,7 +375,7 @@ import {viteSingleFile} from 'vite-plugin-singlefile';`
       : `import react from '@vitejs/plugin-react';
 import {viteSingleFile} from 'vite-plugin-singlefile';`;
 
-  const xdsAliases = `
+  const astryxAliases = `
     alias: {
       '@astryxdesign/core/theme/tokens.stylex': '${path
         .resolve(REPO_ROOT, 'packages/core/src/theme/tokens.stylex.ts')
@@ -390,7 +390,7 @@ import {viteSingleFile} from 'vite-plugin-singlefile';`;
 
   const aliases =
     target === 'astryx' || target === 'astryx-tailwind'
-      ? xdsAliases
+      ? astryxAliases
       : target === 'baseline'
         ? `
     alias: {
@@ -421,7 +421,7 @@ export default defineConfig({
     emptyOutDir: true,
     // Don't use lightningcss for minification — it lowers light-dark()
     // into --lightningcss-light/--lightningcss-dark polyfill variables
-    // which breaks XDS theming.
+    // which breaks Astryx theming.
     cssMinify: false,
   },
   logLevel: 'warn',
@@ -746,12 +746,12 @@ async function main() {
 
       const ok = buildPreview(componentPath, target, promptId, previewPath);
       if (ok) {
-        // Post-build validation: ensure no unresolved XDS references
+        // Post-build validation: ensure no unresolved Astryx references
         if (target === 'astryx' || target === 'astryx-tailwind') {
           const unresolved = validatePreviewHtml(previewPath);
           if (unresolved.length > 0) {
             console.error(
-              `  ⚠ Unresolved XDS components in ${previewFile}: ${unresolved.join(', ')}`,
+              `  ⚠ Unresolved Astryx components in ${previewFile}: ${unresolved.join(', ')}`,
             );
           }
         }
@@ -788,7 +788,7 @@ async function main() {
     const fixesPath = path.join(outDir, 'import-fixes.json');
     writeJson(fixesPath, importFixes);
     console.log(
-      `\n⚠ ${Object.keys(importFixes).length} prompt(s) had missing XDS imports (auto-fixed):`,
+      `\n⚠ ${Object.keys(importFixes).length} prompt(s) had missing Astryx imports (auto-fixed):`,
     );
     for (const [promptId, components] of Object.entries(importFixes)) {
       console.log(`   ${promptId}: ${components.join(', ')}`);

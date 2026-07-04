@@ -72,10 +72,28 @@ describe('Kbd', () => {
     expect(screen.getByText('Esc')).toBeInTheDocument();
   });
 
-  it('is aria-hidden', () => {
-    const {container} = render(<Kbd keys="mod+k" />);
-    const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper.getAttribute('aria-hidden')).toBe('true');
+  it('exposes a spoken accessible name and hides the glyphs (obs-1)', () => {
+    render(<Kbd keys="mod+shift+k" />);
+    // The wrapper carries a screen-reader name built from spoken key labels
+    // (jsdom is non-Mac, so mod → "Control").
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('aria-label', 'Control + Shift + K');
+    // The visual glyph elements are hidden from assistive tech.
+    const glyphs = img.querySelectorAll('kbd');
+    glyphs.forEach(g => expect(g).toHaveAttribute('aria-hidden', 'true'));
+    expect(img).not.toHaveAttribute('aria-hidden');
+  });
+
+  it('uses "Command" in the accessible name for mod on Mac', () => {
+    Object.defineProperty(navigator, 'platform', {
+      value: 'MacIntel',
+      configurable: true,
+    });
+    render(<Kbd keys="mod+k" />);
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'aria-label',
+      'Command + K',
+    );
   });
 
   it('uppercases unknown keys', () => {

@@ -1,0 +1,101 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# When a reviewer requests changes, GitHub keeps that review state sticky after
+# new commits. This workflow mirrors the manual "Re-request review" button for
+# those blocking reviewers whenever the PR is updated.
+#
+# This intentionally uses pull_request_target so it can re-request reviewers on
+# fork PRs. Do not add checkout or run PR-controlled code here.
+name: Re-request review on update
+
+on:
+  pull_request_target:
+    branches: ["main"]
+    types: [synchronize, ready_for_review, reopened]
+
+permissions: {}
+
+concurrency:
+  group: rerequest-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  rerequest-review:
+    name: Re-request blocking reviewers
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Re-request review from users who requested changes
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const pull_number = context.payload.pull_request.number;
+
+            const {data: pullRequest} = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number,
+            });
+
+            const author = pullRequest.user?.login;
+            const alreadyRequested = new Set(
+              (pullRequest.requested_reviewers ?? []).map((reviewer) => reviewer.login),
+            );
+
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner,
+              repo,
+              pull_number,
+              per_page: 100,
+            });
+
+            const latestReviewByUser = new Map();
+            for (const review of reviews) {
+              const reviewer = review.user;
+              if (reviewer == null) {
+                continue;
+              }
+
+              if (!['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED'].includes(review.state)) {
+                continue;
+              }
+
+              latestReviewByUser.set(reviewer.login, {
+                state: review.state,
+                type: reviewer.type,
+              });
+            }
+
+            const reviewersToRequest = [...latestReviewByUser.entries()]
+              .filter(([login, review]) => review.state === 'CHANGES_REQUESTED'
+                && review.type !== 'Bot'
+                && login !== author
+                && !alreadyRequested.has(login))
+              .map(([login]) => login);
+
+            if (reviewersToRequest.length === 0) {
+              core.info('No changes-requested reviewers need to be re-requested.');
+              return;
+            }
+
+            for (const reviewer of reviewersToRequest) {
+              try {
+                await github.rest.pulls.requestReviewers({
+                  owner,
+                  repo,
+                  pull_number,
+                  reviewers: [reviewer],
+                });
+                core.info(`Re-requested review from ${reviewer}.`);
+              } catch (error) {
+                if (error.status === 404 || error.status === 422) {
+                  core.warning(`Could not re-request ${reviewer}: ${error.message}`);
+                  continue;
+                }
+
+                throw error;
+              }
+            }

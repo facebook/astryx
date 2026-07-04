@@ -1,6 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-# CLI smoke test — runs every xds command to catch regressions
+# CLI smoke test — runs every astryx command to catch regressions
 # Auto-discovers components and doc topics, nothing hardcoded.
 name: CLI Smoke Test
 

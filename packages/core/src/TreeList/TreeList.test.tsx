@@ -61,6 +61,44 @@ const deepItems: TreeListItemData[] = [
   },
 ];
 
+// APG keyboard fixtures (module-level to satisfy no-unstable-default-props).
+const flatItems: TreeListItemData[] = [
+  {id: 'a', label: 'Apple'},
+  {id: 'b', label: 'Banana'},
+  {id: 'c', label: 'Cherry'},
+];
+
+const withDisabledItems: TreeListItemData[] = [
+  {id: 'a', label: 'Apple'},
+  {id: 'b', label: 'Banana', isDisabled: true},
+  {id: 'c', label: 'Cherry'},
+];
+
+const collapsedParentItems: TreeListItemData[] = [
+  {
+    id: 'parent',
+    label: 'Parent',
+    children: [
+      {id: 'child-1', label: 'Child 1'},
+      {id: 'child-2', label: 'Child 2'},
+    ],
+  },
+  {id: 'sibling', label: 'Sibling'},
+];
+
+const expandedParentItems: TreeListItemData[] = [
+  {
+    id: 'parent',
+    label: 'Parent',
+    isExpanded: true,
+    children: [
+      {id: 'child-1', label: 'Child 1'},
+      {id: 'child-2', label: 'Child 2'},
+    ],
+  },
+  {id: 'sibling', label: 'Sibling'},
+];
+
 describe('TreeList', () => {
   // ===========================================================================
   // Basic rendering
@@ -160,6 +198,26 @@ describe('TreeList', () => {
     expect(item).not.toHaveAttribute('aria-expanded');
   });
 
+  it('renders a keyboard-focusable toggle button for parents without onClick/href', () => {
+    render(<TreeList items={nestedItems} />);
+    const toggle = screen.getByRole('button', {name: 'Toggle children'});
+    expect(toggle).toBeInTheDocument();
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('expands a parent from the keyboard via the toggle button', async () => {
+    const user = userEvent.setup();
+    render(<TreeList items={nestedItems} />);
+    // Collapsed: children are not rendered.
+    expect(screen.queryByText('Child 1')).not.toBeInTheDocument();
+    const toggle = screen.getByRole('button', {name: 'Toggle children'});
+    toggle.focus();
+    expect(toggle).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByText('Child 1')).toBeInTheDocument();
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('renders group role for nested children', () => {
     render(<TreeList items={nestedItemsExpanded} />);
     const groups = document.querySelectorAll('[role="group"]');
@@ -210,18 +268,14 @@ describe('TreeList', () => {
   it('fires onClick when invisible button is clicked', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
-    const items: TreeListItemData[] = [
-      {id: 'a', label: 'Clickable', onClick},
-    ];
+    const items: TreeListItemData[] = [{id: 'a', label: 'Clickable', onClick}];
     render(<TreeList items={items} />);
     await user.click(screen.getByRole('button'));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
   it('renders an invisible anchor when href is provided', () => {
-    const items: TreeListItemData[] = [
-      {id: 'a', label: 'Link', href: '/docs'},
-    ];
+    const items: TreeListItemData[] = [{id: 'a', label: 'Link', href: '/docs'}];
     const {container} = render(<TreeList items={items} />);
     const anchor = container.querySelector('a');
     expect(anchor).toBeInTheDocument();
@@ -316,5 +370,240 @@ describe('TreeList', () => {
     render(<TreeList items={simpleItems} data-testid="tree" />);
     const root = screen.getByTestId('tree');
     expect(root.className).toContain('astryx-tree-list');
+  });
+
+  // ===========================================================================
+  // APG structural ARIA (aria-level / aria-posinset / aria-setsize)
+  // ===========================================================================
+
+  it('sets aria-level, aria-posinset, and aria-setsize at the top level', () => {
+    render(<TreeList items={flatItems} />);
+    const apple = screen.getByText('Apple').closest('li');
+    expect(apple).toHaveAttribute('aria-level', '1');
+    expect(apple).toHaveAttribute('aria-posinset', '1');
+    expect(apple).toHaveAttribute('aria-setsize', '3');
+
+    const cherry = screen.getByText('Cherry').closest('li');
+    expect(cherry).toHaveAttribute('aria-posinset', '3');
+    expect(cherry).toHaveAttribute('aria-setsize', '3');
+  });
+
+  it('sets aria-level/posinset/setsize correctly at deeper levels', () => {
+    render(<TreeList items={expandedParentItems} />);
+    const parent = screen.getByText('Parent').closest('li');
+    expect(parent).toHaveAttribute('aria-level', '1');
+    expect(parent).toHaveAttribute('aria-setsize', '2');
+
+    const child1 = screen.getByText('Child 1').closest('li');
+    expect(child1).toHaveAttribute('aria-level', '2');
+    expect(child1).toHaveAttribute('aria-posinset', '1');
+    expect(child1).toHaveAttribute('aria-setsize', '2');
+
+    const child2 = screen.getByText('Child 2').closest('li');
+    expect(child2).toHaveAttribute('aria-level', '2');
+    expect(child2).toHaveAttribute('aria-posinset', '2');
+  });
+
+  it('sets aria-level across three depths', () => {
+    render(<TreeList items={deepItems} />);
+    expect(screen.getByText('Root').closest('li')).toHaveAttribute(
+      'aria-level',
+      '1',
+    );
+    expect(screen.getByText('Mid').closest('li')).toHaveAttribute(
+      'aria-level',
+      '2',
+    );
+    expect(screen.getByText('Leaf').closest('li')).toHaveAttribute(
+      'aria-level',
+      '3',
+    );
+  });
+
+  // ===========================================================================
+  // Roving tabindex
+  // ===========================================================================
+
+  it('makes exactly one treeitem tabbable by default (the first enabled)', () => {
+    render(<TreeList items={flatItems} />);
+    const treeitems = screen.getAllByRole('treeitem');
+    const tabbable = treeitems.filter(
+      el => el.getAttribute('tabindex') === '0',
+    );
+    expect(tabbable).toHaveLength(1);
+    expect(tabbable[0]).toBe(screen.getByText('Apple').closest('li'));
+    expect(screen.getByText('Banana').closest('li')).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+  });
+
+  it('defaults the tab stop to the selected item when one is selected', () => {
+    const items: TreeListItemData[] = [
+      {id: 'a', label: 'Apple'},
+      {id: 'b', label: 'Banana', isSelected: true},
+      {id: 'c', label: 'Cherry'},
+    ];
+    render(<TreeList items={items} />);
+    expect(screen.getByText('Banana').closest('li')).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
+    expect(screen.getByText('Apple').closest('li')).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+  });
+
+  it('moves the single tab stop when focus moves via keyboard', async () => {
+    const user = userEvent.setup();
+    render(<TreeList items={flatItems} />);
+    const apple = screen.getByText('Apple').closest('li')!;
+    apple.focus();
+    await user.keyboard('{ArrowDown}');
+    const treeitems = screen.getAllByRole('treeitem');
+    const tabbable = treeitems.filter(
+      el => el.getAttribute('tabindex') === '0',
+    );
+    expect(tabbable).toHaveLength(1);
+    expect(tabbable[0]).toBe(screen.getByText('Banana').closest('li'));
+  });
+
+  // ===========================================================================
+  // APG keyboard navigation
+  // ===========================================================================
+
+  it('ArrowDown / ArrowUp move focus between visible treeitems', async () => {
+    const user = userEvent.setup();
+    render(<TreeList items={flatItems} />);
+    const apple = screen.getByText('Apple').closest('li')!;
+    apple.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(document.activeElement).toBe(
+      screen.getByText('Banana').closest('li'),
+    );
+    await user.keyboard('{ArrowDown}');
+    expect(document.activeElement).toBe(
+      screen.getByText('Cherry').closest('li'),
+    );
+    await user.keyboard('{ArrowUp}');
+    expect(document.activeElement).toBe(
+      screen.getByText('Banana').closest('li'),
+    );
+  });
+
+  it('ArrowDown / ArrowUp skip disabled treeitems', async () => {
+    const user = userEvent.setup();
+    render(<TreeList items={withDisabledItems} />);
+    const apple = screen.getByText('Apple').closest('li')!;
+    apple.focus();
+    await user.keyboard('{ArrowDown}');
+    // Banana is disabled → skipped, lands on Cherry.
+    expect(document.activeElement).toBe(
+      screen.getByText('Cherry').closest('li'),
+    );
+    await user.keyboard('{ArrowUp}');
+    expect(document.activeElement).toBe(
+      screen.getByText('Apple').closest('li'),
+    );
+  });
+
+  it('ArrowRight expands a collapsed parent, then enters the first child', async () => {
+    const user = userEvent.setup();
+    render(<TreeList items={collapsedParentItems} />);
+    const parent = screen.getByText('Parent').closest('li')!;
+    parent.focus();
+    expect(screen.queryByText('Child 1')).not.toBeInTheDocument();
+    await user.keyboard('{ArrowRight}');
+    // First ArrowRight expands.
+    expect(screen.getByText('Child 1')).toBeInTheDocument();
+    expect(document.activeElement).toBe(parent);
+    await user.keyboard('{ArrowRight}');
+    // Second ArrowRight moves into first child.
+    expect(document.activeElement).toBe(
+      screen.getByText('Child 1').closest('li'),
+    );
+  });
+
+  it('ArrowRight on a leaf is a no-op', async () => {
+    const user = userEvent.setup();
+    render(<TreeList items={flatItems} />);
+    const apple = screen.getByText('Apple').closest('li')!;
+    apple.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(apple);
+  });
+
+  it('ArrowLeft collapses an expanded parent, then moves to parent', async () => {
+    const user = userEvent.setup();
+    render(<TreeList items={expandedParentItems} />);
+    const parent = screen.getByText('Parent').closest('li')!;
+    // Focus a child first.
+    const child1 = screen.getByText('Child 1').closest('li')!;
+    child1.focus();
+    await user.keyboard('{ArrowLeft}');
+    // Child is a leaf → ArrowLeft moves to parent.
+    expect(document.activeElement).toBe(parent);
+    await user.keyboard('{ArrowLeft}');
+    // Parent is expanded → ArrowLeft collapses it.
+    expect(screen.queryByText('Child 1')).not.toBeInTheDocument();
+  });
+
+  it('Home and End move to the first and last visible treeitems', async () => {
+    const user = userEvent.setup();
+    render(<TreeList items={flatItems} />);
+    const banana = screen.getByText('Banana').closest('li')!;
+    banana.focus();
+    await user.keyboard('{End}');
+    expect(document.activeElement).toBe(
+      screen.getByText('Cherry').closest('li'),
+    );
+    await user.keyboard('{Home}');
+    expect(document.activeElement).toBe(
+      screen.getByText('Apple').closest('li'),
+    );
+  });
+
+  it('Enter activates the item onClick', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    const items: TreeListItemData[] = [{id: 'a', label: 'Apple', onClick}];
+    render(<TreeList items={items} />);
+    const apple = screen.getByText('Apple').closest('li')!;
+    apple.focus();
+    await user.keyboard('{Enter}');
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('Space activates the item onClick', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    const items: TreeListItemData[] = [{id: 'a', label: 'Apple', onClick}];
+    render(<TreeList items={items} />);
+    const apple = screen.getByText('Apple').closest('li')!;
+    apple.focus();
+    await user.keyboard(' ');
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('Enter toggles expansion for a parent without its own action', async () => {
+    const user = userEvent.setup();
+    render(<TreeList items={collapsedParentItems} />);
+    const parent = screen.getByText('Parent').closest('li')!;
+    parent.focus();
+    expect(screen.queryByText('Child 1')).not.toBeInTheDocument();
+    await user.keyboard('{Enter}');
+    expect(screen.getByText('Child 1')).toBeInTheDocument();
+  });
+
+  it('typeahead moves focus to the next item matching typed characters', async () => {
+    const user = userEvent.setup();
+    render(<TreeList items={flatItems} />);
+    const apple = screen.getByText('Apple').closest('li')!;
+    apple.focus();
+    await user.keyboard('c');
+    expect(document.activeElement).toBe(
+      screen.getByText('Cherry').closest('li'),
+    );
   });
 });

@@ -113,6 +113,12 @@ export const docs = {
           description: 'Disables the selector.',
         },
         {
+          name: 'disabledMessage',
+          type: 'string',
+          description:
+            'Explains why the selector is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the trigger focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled MultiSelector in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
+        },
+        {
           name: 'isLabelHidden',
           type: 'boolean',
           description: 'Visually hides the label while keeping it accessible.',
@@ -189,6 +195,11 @@ export const docs = {
         guidance: false,
         description: 'Show more than ~20 options without enabling search.',
       },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled MultiSelector in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
 };
@@ -217,6 +228,8 @@ export const docsZh = {
         hasSearch: '是否显示用于过滤选项的搜索输入。',
         searchPlaceholder: '搜索输入的占位文本。',
         isDisabled: '禁用选择器。',
+        disabledMessage:
+          '解释选择器被禁用的原因。与 isDisabled 一起使用时，悬停/键盘聚焦时显示工具提示，并通过 aria-disabled 保持触发器可聚焦（仍无法激活）。请使用此属性，而不是用 Tooltip 包裹被禁用的选择器。',
         isLabelHidden: '视觉上隐藏标签同时保持其可访问性。',
         description: '标签下方显示的辅助文本。',
         isOptional: '将字段标记为可选。',
@@ -261,6 +274,11 @@ export const docsZh = {
         guidance: false,
         description: 'Show more than ~20 options without enabling search.',
       },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled MultiSelector in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
 };
@@ -301,6 +319,11 @@ export const docsDense = {
         guidance: false,
         description: 'Show more than ~20 options without enabling search.',
       },
+      {
+        guidance: false,
+        description:
+          'Wrap a disabled MultiSelector in Tooltip to explain why it is disabled; disabled triggers swallow the hover events the wrapper needs. Use the disabledMessage prop instead.',
+      },
     ],
   },
   components: [
@@ -324,6 +347,8 @@ export const docsDense = {
         hasSearch: 'show search input',
         searchPlaceholder: 'search placeholder',
         isDisabled: 'disables selector',
+        disabledMessage:
+          'why disabled; w/ isDisabled shows tooltip on hover/focus, trigger stays focusable via aria-disabled; use instead of Tooltip wrapper',
         isLabelHidden: 'visually hides label',
         description: 'helper text below label',
         isOptional: 'marks optional',

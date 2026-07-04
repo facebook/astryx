@@ -63,6 +63,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useTooltip} from '../Tooltip';
 import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
@@ -184,6 +185,29 @@ export interface TimeInputProps extends Omit<
   isDisabled?: boolean;
 
   /**
+   * Explains why the input is disabled. When set together with
+   * `isDisabled`, the input shows a tooltip with this text on hover and
+   * keyboard focus, and the field stays focusable (via `aria-disabled`)
+   * so the reason is discoverable by keyboard and assistive technology.
+   * Typing and arrow-key adjustment stay blocked.
+   *
+   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <TimeInput
+   *   label="Start time"
+   *   value={time}
+   *   onChange={setTime}
+   *   isDisabled
+   *   disabledMessage="You need the Editor role to change this"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
+
+  /**
    * The selected time in ISO format (HH:MM or HH:MM:SS).
    */
   value?: ISOTimeString;
@@ -301,6 +325,7 @@ export function TimeInput({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  disabledMessage,
   value,
   onChange,
   changeAction,
@@ -334,6 +359,19 @@ export function TimeInput({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the input container (which already exists) and
+  // the input stays perceivable via aria-disabled instead of the disabled
+  // attribute. Typing is blocked with readOnly and value mutation guards.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The container div is not naturally focusable; focusin bubbles up from
+    // the input, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
   // Status icon mapping
   const statusIconMap: Record<InputStatusType, IconName> = {
     warning: 'warning',
@@ -354,6 +392,7 @@ export function TimeInput({
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -415,6 +454,11 @@ export function TimeInput({
   // Handle input text change - update immediately if valid
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
+      // With a disabledMessage the input drops `disabled` for focusability, so
+      // guard value mutation explicitly (readOnly also blocks typing).
+      if (isDisabled) {
+        return;
+      }
       const newValue = e.target.value;
       setPendingInput(newValue);
 
@@ -424,13 +468,19 @@ export function TimeInput({
         fireChange(parsed);
       }
     },
-    [hasSeconds, min, max, value, fireChange],
+    [hasSeconds, min, max, value, fireChange, isDisabled],
   );
 
   // Handle focus
   const handleFocus = useCallback(() => {
+    // A disabled input stays focusable (via aria-disabled) so its reason is
+    // discoverable, but it must not present editing affordances — keep the
+    // static placeholder rather than swapping in the format hint.
+    if (isDisabled) {
+      return;
+    }
     setIsFocused(true);
-  }, []);
+  }, [isDisabled]);
 
   // Handle blur - validate and clear pending input
   const handleBlur = useCallback(
@@ -466,6 +516,11 @@ export function TimeInput({
   // Handle keyboard navigation on input
   const handleInputKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
+      // Arrow-key adjustment mutates the value; block it while showing a
+      // disabled reason (the input keeps focusability via aria-disabled).
+      if (isDisabled) {
+        return;
+      }
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
 
@@ -492,7 +547,7 @@ export function TimeInput({
         }
       }
     },
-    [value, hasSeconds, increment, min, max, fireChange],
+    [value, hasSeconds, increment, min, max, fireChange, isDisabled],
   );
 
   // Handle clear button click
@@ -531,7 +586,13 @@ export function TimeInput({
       labelTooltip={labelTooltip}
       width={width}>
       <div
-        ref={containerRef}
+        ref={el => {
+          containerRef.current = el;
+          // Anchor + hover/focus listeners for the disabled-message tooltip.
+          // Handlers are gated internally by isEnabled, so attaching
+          // unconditionally is safe.
+          disabledMessageTooltip.ref(el);
+        }}
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
@@ -561,7 +622,12 @@ export function TimeInput({
           onBlur={handleBlur}
           onKeyDown={handleInputKeyDown}
           placeholder={displayPlaceholder}
-          disabled={isDisabled}
+          // With a disabledMessage the input keeps focusability via
+          // aria-disabled so the reason is focus-discoverable; typing and
+          // arrow-key adjustment are blocked with readOnly and the guards.
+          disabled={isDisabled && !showsDisabledMessage}
+          aria-disabled={showsDisabledMessage ? 'true' : undefined}
+          readOnly={showsDisabledMessage || undefined}
           autoFocus={hasAutoFocus}
           data-autofocus={hasAutoFocus || undefined}
           aria-describedby={ariaDescribedBy}
@@ -592,6 +658,9 @@ export function TimeInput({
           />
         )}
       </div>
+
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }

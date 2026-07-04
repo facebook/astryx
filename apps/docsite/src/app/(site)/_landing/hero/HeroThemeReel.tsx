@@ -136,7 +136,7 @@ const styles = stylex.create({
   //
   // The extra MUST match the showcase overlay's corner radius, which is the
   // docsite (Astryx) --radius-page = 32px. We can't read --radius-page here
-  // because this fill renders inside <XDSTheme theme={active}>, where the
+  // because this fill renders inside <Theme theme={active}>, where the
   // active theme overrides it — e.g. Y2K sets --radius-page: 0, which left the
   // fill 32px short and exposed the docsite body color in the rounded corners.
   // Hence a fixed 32px tied to the overlay radius rather than the theme token.
@@ -229,6 +229,9 @@ export function HeroReelProvider({children}: {children: ReactNode}) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  // Auto-advance is desktop-only; on mobile the reel stays manual (swipe + dots)
+  // so the cards don't move on their own while the user reads/scrolls.
+  const isNarrow = useMediaQuery('(max-width: 1023px)');
   const {themeMode: userMode} = useThemeMode();
 
   const goTo = useCallback(
@@ -282,14 +285,20 @@ export function HeroReelProvider({children}: {children: ReactNode}) {
   );
 
   useEffect(() => {
-    if (!AUTOPLAY_ENABLED || reduceMotion || paused || slides.length <= 1) {
+    if (
+      !AUTOPLAY_ENABLED ||
+      reduceMotion ||
+      isNarrow ||
+      paused ||
+      slides.length <= 1
+    ) {
       return;
     }
     const id = window.setInterval(() => {
       setIndex(i => (i + 1) % slides.length);
     }, ADVANCE_INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, [reduceMotion, paused, slides.length]);
+  }, [reduceMotion, isNarrow, paused, slides.length]);
 
   useEffect(() => {
     const onVisibility = () => setPaused(document.hidden);

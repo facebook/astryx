@@ -19,8 +19,8 @@ import type {ElementDescriptor} from '../../generated/componentRegistry';
 type AnyComponent = ComponentType<any>;
 
 export function getComponent(name: string): AnyComponent | null {
-  // Resolve by bare name first (canonical post un-prefix migration
-  // P2380608025), falling back to the legacy XDS-prefixed export.
+  // Resolve by bare name first (canonical post un-prefix
+  // migration), falling back to the legacy XDS-prefixed export.
   // Reads are wrapped because a strict module mock throws on undefined keys
   // rather than returning undefined.
   const readExport = (key: string): unknown => {

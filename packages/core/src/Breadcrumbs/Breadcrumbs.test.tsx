@@ -180,12 +180,31 @@ describe('BreadcrumbItem', () => {
         <BreadcrumbItem>Last Item</BreadcrumbItem>
       </Breadcrumbs>,
     );
-    // aria-current is set via useEffect, so we need to wait for it
-    const lastLi = screen.getByText('Last Item').closest('li')!;
+    // aria-current is set via useEffect on the content element (matching the
+    // explicit isCurrent path), not the outer <li>.
+    const lastContent = screen.getByText('Last Item');
     await waitFor(() => {
-      expect(lastLi).toHaveAttribute('aria-current', 'page');
+      expect(lastContent).toHaveAttribute('aria-current', 'page');
     });
-    expect(screen.getByText('Last Item').tagName).toBe('SPAN');
+    expect(lastContent.tagName).toBe('SPAN');
+    // The <li> wrapper must NOT carry aria-current.
+    expect(lastContent.closest('li')).not.toHaveAttribute('aria-current');
+  });
+
+  it('auto-detects aria-current on the anchor when the last item is a link', async () => {
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem href="/">Home</BreadcrumbItem>
+        <BreadcrumbItem href="/projects/current">Current</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    const lastLink = screen.getByText('Current');
+    await waitFor(() => {
+      expect(lastLink).toHaveAttribute('aria-current', 'page');
+    });
+    // aria-current is on the anchor itself, not the <li>.
+    expect(lastLink.tagName).toBe('A');
+    expect(lastLink.closest('li')).not.toHaveAttribute('aria-current');
   });
 
   it('does not auto-detect when isCurrent is explicitly set', async () => {
@@ -270,11 +289,12 @@ describe('BreadcrumbItem', () => {
         <BreadcrumbItem>Only Item</BreadcrumbItem>
       </Breadcrumbs>,
     );
-    const li = screen.getByText('Only Item').closest('li')!;
+    const content = screen.getByText('Only Item');
     await waitFor(() => {
-      expect(li).toHaveAttribute('aria-current', 'page');
+      expect(content).toHaveAttribute('aria-current', 'page');
     });
-    expect(screen.getByText('Only Item').tagName).toBe('SPAN');
+    expect(content.tagName).toBe('SPAN');
+    expect(content.closest('li')).not.toHaveAttribute('aria-current');
   });
 
   it('auto-detects last child as current with supporting variant', async () => {
@@ -284,11 +304,12 @@ describe('BreadcrumbItem', () => {
         <BreadcrumbItem>Last</BreadcrumbItem>
       </Breadcrumbs>,
     );
-    const li = screen.getByText('Last').closest('li')!;
+    const content = screen.getByText('Last');
     await waitFor(() => {
-      expect(li).toHaveAttribute('aria-current', 'page');
+      expect(content).toHaveAttribute('aria-current', 'page');
     });
-    expect(screen.getByText('Last').tagName).toBe('SPAN');
+    expect(content.tagName).toBe('SPAN');
+    expect(content.closest('li')).not.toHaveAttribute('aria-current');
   });
 
   it('renders custom component for non-current items when as is provided', () => {

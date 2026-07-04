@@ -566,6 +566,11 @@
       "types": "./dist/VStack/index.d.ts",
       "default": "./dist/VStack/index.js"
     },
+    "./VisuallyHidden": {
+      "source": "./src/VisuallyHidden/index.ts",
+      "types": "./dist/VisuallyHidden/index.d.ts",
+      "default": "./dist/VisuallyHidden/index.js"
+    },
     "./hooks": {
       "source": "./src/hooks/index.ts",
       "types": "./dist/hooks/index.d.ts",

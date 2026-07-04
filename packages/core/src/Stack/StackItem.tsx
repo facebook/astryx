@@ -14,7 +14,6 @@
 import {createElement, type ElementType, type ReactNode, type Ref} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {
   stackItem,
   type StackItemCrossAlignSelf,
@@ -22,6 +21,12 @@ import {
 } from './stackItem.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+
+const overflowStyles = stylex.create({
+  scrollable: {
+    overflow: 'auto',
+  },
+});
 
 export interface StackItemProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
@@ -42,32 +47,22 @@ export interface StackItemProps extends BaseProps<HTMLElement> {
   size?: StackItemSize;
 
   /**
+   * Enables scrollable overflow (`overflow: auto`) for the item.
+   *
+   * StackItem already applies the flex `min-height: 0` / `min-width: 0`
+   * reset, so `<StackItem size="fill" isScrollable>` is a complete scroll
+   * region — it grows to fill the stack and scrolls its own overflow with
+   * no extra style plumbing. Matches `isScrollable` on `LayoutContent`
+   * and `LayoutPanel`.
+   * @default false
+   */
+  isScrollable?: boolean;
+
+  /**
    * The element type to render.
    * @default 'div'
    */
   as?: ElementType;
-
-  /**
-   * StyleX styles created via `stylex.create()`. Merged with the component's
-   * base styles inside a single `stylex.props()` call for optimal deduplication.
-   *
-   * @example
-   * ```
-   * const overrides = stylex.create({ root: { marginBottom: 8 } });
-   * <Component xstyle={overrides.root} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /**
-   * CSS class name(s) appended to the root element.
-   * If you're using StyleX, prefer `xstyle` for optimal style deduplication.
-   */
-  className?: string;
-  /**
-   * Inline styles to apply to the root element. Spread after StyleX
-   * inline styles, so these values take priority.
-   */
-  style?: React.CSSProperties;
 
   /**
    * Content to render inside the stack item.
@@ -92,6 +87,7 @@ export interface StackItemProps extends BaseProps<HTMLElement> {
 export function StackItem({
   crossAlignSelf,
   size,
+  isScrollable,
   as: element = 'div',
   xstyle,
   className,
@@ -102,6 +98,7 @@ export function StackItem({
 }: StackItemProps) {
   const stylexProps = stylex.props(
     ...stackItem({crossAlignSelf, size}),
+    isScrollable && overflowStyles.scrollable,
     xstyle,
   );
 

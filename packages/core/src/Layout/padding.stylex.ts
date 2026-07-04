@@ -221,6 +221,58 @@ export const layoutPaddingOuterYVarStyles = stylex.create({
 });
 
 /**
+ * Inline-only padding styles.
+ * Use when a component needs to set inline (horizontal) padding independently
+ * of block padding — e.g. the `paddingX` prop on Stack.
+ */
+export const paddingInlineStyles = stylex.create({
+  0: {
+    paddingInlineStart: spacingVars['--spacing-0'],
+    paddingInlineEnd: spacingVars['--spacing-0'],
+  },
+  0.5: {
+    paddingInlineStart: spacingVars['--spacing-0-5'],
+    paddingInlineEnd: spacingVars['--spacing-0-5'],
+  },
+  1: {
+    paddingInlineStart: spacingVars['--spacing-1'],
+    paddingInlineEnd: spacingVars['--spacing-1'],
+  },
+  1.5: {
+    paddingInlineStart: spacingVars['--spacing-1-5'],
+    paddingInlineEnd: spacingVars['--spacing-1-5'],
+  },
+  2: {
+    paddingInlineStart: spacingVars['--spacing-2'],
+    paddingInlineEnd: spacingVars['--spacing-2'],
+  },
+  3: {
+    paddingInlineStart: spacingVars['--spacing-3'],
+    paddingInlineEnd: spacingVars['--spacing-3'],
+  },
+  4: {
+    paddingInlineStart: spacingVars['--spacing-4'],
+    paddingInlineEnd: spacingVars['--spacing-4'],
+  },
+  5: {
+    paddingInlineStart: spacingVars['--spacing-5'],
+    paddingInlineEnd: spacingVars['--spacing-5'],
+  },
+  6: {
+    paddingInlineStart: spacingVars['--spacing-6'],
+    paddingInlineEnd: spacingVars['--spacing-6'],
+  },
+  8: {
+    paddingInlineStart: spacingVars['--spacing-8'],
+    paddingInlineEnd: spacingVars['--spacing-8'],
+  },
+  10: {
+    paddingInlineStart: spacingVars['--spacing-10'],
+    paddingInlineEnd: spacingVars['--spacing-10'],
+  },
+});
+
+/**
  * Block-only padding override styles.
  * Use when a component needs to override block padding independently
  * of inline padding (e.g., Toolbar sets tight block padding while

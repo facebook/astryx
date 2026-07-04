@@ -40,7 +40,7 @@ const MATCHA_CONTENT: ThemeShowcaseContent = {
   images: MATCHA_IMAGES,
   products: [
     {
-      name: 'Iced Matcha Latte',
+      name: 'Matcha',
       description: 'Stone-ground ceremonial matcha over cold milk.',
       badge: 'Classic',
       badgeVariant: 'green',
@@ -61,7 +61,7 @@ const MATCHA_CONTENT: ThemeShowcaseContent = {
   inventory: [
     {
       id: 'a',
-      name: 'Iced Matcha Latte',
+      name: 'Matcha',
       meta: 'Ceremonial grade, oat or whole',
       available: 64,
       location: 'Bar 1',
@@ -149,7 +149,7 @@ const BUTTER_CONTENT: ThemeShowcaseContent = {
       badgeVariant: 'yellow',
     },
     {
-      name: 'Buttermilk Pancakes',
+      name: 'Pancakes',
       description: 'Stacked tall with a melting pat of butter.',
       badge: 'Popular',
       badgeVariant: 'orange',
@@ -175,7 +175,7 @@ const BUTTER_CONTENT: ThemeShowcaseContent = {
     },
     {
       id: 'b',
-      name: 'Buttermilk Pancakes',
+      name: 'Pancakes',
       meta: 'Stack of three',
       available: 38,
       location: 'Griddle',
@@ -347,7 +347,7 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
   images: Y2K_IMAGES,
   products: [
     {
-      name: 'Holo Flip Phone',
+      name: 'Phone',
       description: 'Iridescent clamshell with a rainbow screen.',
       badge: 'Retro',
       badgeVariant: 'blue',
@@ -359,7 +359,7 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
       badgeVariant: 'green',
     },
     {
-      name: 'Glitter Butterfly',
+      name: 'Butterfly',
       description: 'Sparkly stick-on in pastel chrome.',
       badge: 'New',
       badgeVariant: 'purple',
@@ -368,7 +368,7 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
   inventory: [
     {
       id: 'a',
-      name: 'Holo Flip Phone',
+      name: 'Phone',
       meta: 'Iridescent, rainbow LCD',
       available: 64,
       location: 'Bin 1',
@@ -390,7 +390,7 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
     },
     {
       id: 'c',
-      name: 'Glitter Butterfly',
+      name: 'Butterfly',
       meta: 'Stick-on, pastel chrome',
       available: 51,
       location: 'Bin 2',
@@ -449,7 +449,7 @@ const GOTHIC_CONTENT: ThemeShowcaseContent = {
   images: GOTHIC_IMAGES,
   products: [
     {
-      name: 'Dried Sea Holly',
+      name: 'Sea Holly',
       description: 'A single preserved thistle stem with a steely bloom.',
       badge: 'New',
       badgeVariant: 'blue',
@@ -461,7 +461,7 @@ const GOTHIC_CONTENT: ThemeShowcaseContent = {
       badgeVariant: 'red',
     },
     {
-      name: 'Lilac Ranunculus',
+      name: 'Ranunculus',
       description: 'Layered petals in a soft mauve.',
       badge: 'Limited',
       badgeVariant: 'purple',
@@ -470,7 +470,7 @@ const GOTHIC_CONTENT: ThemeShowcaseContent = {
   inventory: [
     {
       id: 'a',
-      name: 'Dried Sea Holly',
+      name: 'Sea Holly',
       meta: 'Preserved, single stem',
       available: 64,
       location: 'Cooler 1',
@@ -492,13 +492,13 @@ const GOTHIC_CONTENT: ThemeShowcaseContent = {
     },
     {
       id: 'c',
-      name: 'Lilac Ranunculus',
+      name: 'Ranunculus',
       meta: 'Fresh cut, mauve',
       available: 51,
       location: 'Cooler 2',
       tags: [{label: 'Limited', variant: 'purple'}],
       imageKey: 'backpack',
-      thumbnailFallback: 'L',
+      thumbnailFallback: 'R',
       selected: false,
     },
     {

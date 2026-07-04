@@ -185,9 +185,14 @@ jobs:
             "
           done
 
-          # Publish each package with --tag canary. No `|| true`: canary is its
-          # own job here, so a failed publish surfaces (fails the job) instead of
-          # being silently swallowed.
+          # Publish each package with --tag canary. Failures are collected and
+          # the job still fails at the end (never `|| true`-swallowed), but one
+          # rejected publish no longer aborts the loop: when lab's first OIDC
+          # publish was rejected (no npm package/trust bootstrapped yet), every
+          # package after it in the loop (all seven themes) stopped receiving
+          # canaries. Publishes are per-package and idempotent, so attempting
+          # the rest is always safe.
+          FAILED=""
           for pkg_dir in packages/* packages/themes/*; do
             [ -f "$pkg_dir/package.json" ] || continue
             # canaryOnly packages are publishable here (the stamp step above
@@ -196,8 +201,16 @@ jobs:
             if [ "$IS_PUBLISHABLE" = "yes" ]; then
               NAME=$(node -p "require('./$pkg_dir/package.json').name")
               echo "Publishing ${NAME}@${CANARY_VERSION}"
-              pnpm publish "./$pkg_dir" --tag canary --provenance --access public --no-git-checks
+              if ! pnpm publish "./$pkg_dir" --tag canary --provenance --access public --no-git-checks; then
+                echo "::error::Canary publish failed for ${NAME}@${CANARY_VERSION}"
+                FAILED="${FAILED} ${NAME}"
+              fi
             fi
           done
+
+          if [ -n "$FAILED" ]; then
+            echo "::error::Canary publish failed for:${FAILED}"
+            exit 1
+          fi
 
           echo "Canary published: npm install @astryxdesign/core@${CANARY_VERSION}"

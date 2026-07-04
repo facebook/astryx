@@ -3,13 +3,13 @@
 
 /**
  * @file Accessibility Manifest Generator
- * @description Generates accessibility manifests from official sources for XDS and baseline (Radix/shadcn)
+ * @description Generates accessibility manifests from official sources for Astryx and baseline (Radix/shadcn)
  *
  * Usage:
  *   pnpm -F @astryxdesign/vibe-tests generate-a11y-manifest
  *
  * This script:
- * 1. Parses XDS component README.md files for accessibility info
+ * 1. Parses Astryx component README.md files for accessibility info
  * 2. Fetches Radix accessibility docs from official sources
  * 3. Generates structured manifests for fair quality assessment
  */
@@ -44,9 +44,9 @@ interface A11yManifest {
 }
 
 /**
- * Parse an XDS component README for accessibility information
+ * Parse an Astryx component README for accessibility information
  */
-function parseXDSReadme(readmePath: string): ComponentA11yInfo | null {
+function parseAstryxReadme(readmePath: string): ComponentA11yInfo | null {
   if (!fs.existsSync(readmePath)) {
     return null;
   }
@@ -164,9 +164,9 @@ function parseXDSReadme(readmePath: string): ComponentA11yInfo | null {
 }
 
 /**
- * Generate XDS accessibility manifest from component README files
+ * Generate Astryx accessibility manifest from component README files
  */
-function generateXDSManifest(): A11yManifest {
+function generateAstryxManifest(): A11yManifest {
   const manifest: A11yManifest = {
     source: 'packages/core/src/*/README.md',
     generatedAt: new Date().toISOString(),
@@ -199,10 +199,10 @@ function generateXDSManifest(): A11yManifest {
   };
 
   const readmePaths = findReadmes(CORE_DIR);
-  console.log(`Found ${readmePaths.length} XDS component README files`);
+  console.log(`Found ${readmePaths.length} Astryx component README files`);
 
   for (const readmePath of readmePaths) {
-    const info = parseXDSReadme(readmePath);
+    const info = parseAstryxReadme(readmePath);
     if (info) {
       manifest.components[info.component] = info;
     }
@@ -578,13 +578,16 @@ async function main(): Promise<void> {
 
   console.log('Generating accessibility manifests...\n');
 
-  // Generate XDS manifest
-  console.log('📦 Parsing XDS component README files...');
-  const astryxManifest = generateXDSManifest();
+  // Generate Astryx manifest
+  console.log('📦 Parsing Astryx component README files...');
+  const astryxManifest = generateAstryxManifest();
   const astryxJsonPath = path.join(MANIFESTS_DIR, 'astryx.json');
   const astryxMdPath = path.join(MANIFESTS_DIR, 'astryx.md');
   fs.writeFileSync(astryxJsonPath, JSON.stringify(astryxManifest, null, 2));
-  fs.writeFileSync(astryxMdPath, formatManifestAsMarkdown(astryxManifest, 'Astryx'));
+  fs.writeFileSync(
+    astryxMdPath,
+    formatManifestAsMarkdown(astryxManifest, 'Astryx'),
+  );
   console.log(
     `  ✓ Found ${Object.keys(astryxManifest.components).length} components with a11y info`,
   );

@@ -121,6 +121,27 @@ cd apps/storybook
 pnpm dev
 ```
 
+### Running the Doc Site
+
+The doc site (`apps/docsite/`) is a Next.js app that renders the component
+documentation at https://astryx.dev. To run it locally:
+
+```bash
+# First time only — build the workspace packages it depends on
+pnpm build
+
+# Start the doc site (Next dev server, defaults to localhost:3000)
+pnpm docsite
+```
+
+`pnpm docsite` is a thin alias for `pnpm -F @astryxdesign/docsite dev`,
+which runs the doc site's `generate` step (theme CSS, registries,
+playground scope) before booting Next.
+
+> **Note:** `pnpm docs` collides with the `npm docs` builtin, which
+> tries to open the package's npm page in a browser. Use `pnpm docsite`
+> instead.
+
 ## Project Structure
 
 ```

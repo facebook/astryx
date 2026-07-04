@@ -56,7 +56,7 @@ function getInstallSteps(pkgName: string): InstallStep[] {
 }
 
 /** Sections to remove from the @astryxdesign/core README on the package page. */
-const CORE_STRIP_SECTIONS = ['Quick Start', 'Resources', 'XDS CLI'];
+const CORE_STRIP_SECTIONS = ['Quick Start', 'Resources', 'Astryx CLI'];
 
 export function generateStaticParams() {
   return [

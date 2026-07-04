@@ -38,6 +38,7 @@ import {
   inputStatusFocusWithinStyles,
 } from '../Field';
 import {Token} from '../Token';
+import {useTooltip} from '../Tooltip';
 import {renderIconSlot, type IconType} from '../Icon';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
@@ -101,6 +102,29 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
   isDisabled?: boolean;
+  /**
+   * Explains why the input is disabled. When set together with `isDisabled`,
+   * the input shows a tooltip with this text on hover and keyboard focus, and
+   * the field stays focusable (via `aria-disabled`) so the reason is
+   * discoverable by keyboard and assistive technology. Editing and selection
+   * stay blocked.
+   *
+   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <Typeahead
+   *   label="Assignee"
+   *   searchSource={userSource}
+   *   value={assignee}
+   *   onChange={setAssignee}
+   *   isDisabled
+   *   disabledMessage="You need the Editor role to change this"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
   /** Show clear button. @default true */
   hasClear?: boolean;
   /** Auto-focus on mount. @default false */
@@ -209,6 +233,7 @@ export function Typeahead<T extends SearchableItem>({
   maxMenuItems,
   emptySearchResultsText,
   isDisabled = false,
+  disabledMessage,
   hasClear = true,
   hasAutoFocus,
   size: sizeProp,
@@ -229,6 +254,21 @@ export function Typeahead<T extends SearchableItem>({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const tokenRef = useRef<HTMLElement>(null);
+
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the input wrapper (which already exists) and
+  // the input stays perceivable via aria-disabled + readOnly instead of the
+  // disabled attribute. Editing and selection stay blocked by the isDisabled
+  // guards (handleWrapperClick, handleEnterEditMode, and BaseTypeahead's own
+  // focus/change guards).
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The wrapper div is not naturally focusable; focusin bubbles up from the
+    // input, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
 
   // Edit mode: when the user clicks the token to edit the selected value
   const [isEditing, setIsEditing] = useState(false);
@@ -339,6 +379,7 @@ export function Typeahead<T extends SearchableItem>({
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -371,7 +412,13 @@ export function Typeahead<T extends SearchableItem>({
       className={className}
       style={style}>
       <div
-        ref={wrapperRef}
+        ref={el => {
+          wrapperRef.current = el;
+          // Anchor + hover/focus listeners for the disabled-message tooltip.
+          // Handlers are gated internally by isEnabled, so attaching
+          // unconditionally is safe.
+          disabledMessageTooltip.ref(el);
+        }}
         data-testid={testId}
         onClick={handleWrapperClick}
         onBlur={handleBlur}
@@ -411,6 +458,7 @@ export function Typeahead<T extends SearchableItem>({
           emptySearchResultsText={emptySearchResultsText}
           isDisabled={isDisabled}
           hasAutoFocus={hasAutoFocus}
+          isFocusableDisabled={showsDisabledMessage}
           inputId={inputId}
           ariaDescribedBy={ariaDescribedBy}
           onChangeQuery={onChangeQuery}
@@ -432,6 +480,9 @@ export function Typeahead<T extends SearchableItem>({
           />
         )}
       </div>
+
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }
