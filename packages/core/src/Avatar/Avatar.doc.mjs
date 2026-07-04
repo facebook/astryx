@@ -55,8 +55,8 @@ export const docs = {
     },
     {
       name: 'size',
-      type: 'AvatarSize',
-      description: 'Avatar size (named or numeric pixel value).',
+      type: "'tiny' | 'xsmall' | 'small' | 'medium' | 'large' | number",
+      description: "Avatar size. Use a named size ('tiny', 'xsmall', 'small', 'medium', 'large') or a numeric pixel value. Note: short names like 'sm', 'md', 'lg' are NOT valid — use the full words.",
       default: "'small'",
     },
     {

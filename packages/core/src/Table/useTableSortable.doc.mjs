@@ -6,7 +6,20 @@ export const docs = {
   name: 'useTableSortable',
   subComponentOf: 'Table',
   displayName: 'useTableSortable',
-  description: 'Headless multi-sort plugin for Table. The consumer owns sort state and provides a callback. Shift+click enables secondary sort columns. Sort indicators render in header cells automatically.',
+  description: 'Headless multi-sort plugin for Table. Call with a config object: `useTableSortable({ sort, onSortChange })`. Returns a TablePlugin to pass to `<Table plugins={{ sort: sortPlugin }} />`.',
+  usage: {
+    description: 'Call useTableSortable with a config object containing sort state and callback. Pass the returned plugin to Table via the plugins prop.',
+    examples: [
+      {
+        label: 'Basic usage',
+        code: `const [sort, setSort] = useState<TableSortState>([
+  { sortKey: 'name', direction: 'ascending' },
+]);
+const sortPlugin = useTableSortable({ sort, onSortChange: setSort });
+<Table data={data} columns={columns} plugins={{ sort: sortPlugin }} />`,
+      },
+    ],
+  },
   props: [
     {
       name: 'sort',
