@@ -189,6 +189,7 @@ function GalleryEditor({
           value={value}
           onChange={setValue}
           language="typescript"
+          label="Code editor"
           hasLineNumbers
         />
       </div>

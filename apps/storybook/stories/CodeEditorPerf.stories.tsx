@@ -209,6 +209,7 @@ function TypingLatencyImpl() {
         value={code}
         onChange={handleChange}
         language="typescript"
+        label="Code editor"
         hasLineNumbers
         maxHeight={600}
       />
