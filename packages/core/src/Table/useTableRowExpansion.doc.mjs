@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableRowExpansion',
   description:
-    'Hook that returns a TablePlugin implementing expandable rows with inherited columns. Child rows use the same columns as their parents, indented by depth. Clicking the chevron (or right-click context menu) toggles expansion.',
+    'Hook that returns a TablePlugin implementing expandable rows with inherited columns. Child rows use the same columns as their parents, indented by depth. Clicking the chevron (or right-click context menu) toggles expansion. Pair with useTableRowExpansionState, which flattens the tree and derives this config (expand/collapse handlers + expand-all state) from a single expandedKeys set.',
   props: [
     {
       name: 'expandedKeys',
@@ -44,7 +44,7 @@ export const docs = {
       description: 'Control which rows are expandable. Defaults to checking getChildren length.',
     },
     {
-      name: 'expandOnRowClick',
+      name: 'hasRowClickExpansion',
       type: 'boolean',
       description: 'When true, clicking anywhere on the row toggles expansion.',
       default: 'false',

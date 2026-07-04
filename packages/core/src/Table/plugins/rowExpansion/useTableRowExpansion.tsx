@@ -12,7 +12,7 @@
  * - /packages/core/src/Table/index.ts (exports)
  */
 
-import {useMemo, useRef, type ReactNode} from 'react';
+import {useCallback, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
@@ -54,7 +54,7 @@ export interface UseTableRowExpansionConfig<T extends Record<string, unknown>> {
    * When true, clicking anywhere on the row toggles expansion (in addition to
    * the chevron button). @default false — only the chevron triggers expansion.
    */
-  expandOnRowClick?: boolean;
+  hasRowClickExpansion?: boolean;
   /**
    * State of the expand-all toggle in the header. `true` = all expanded,
    * `false` = all collapsed, `'indeterminate'` = mixed. When provided
@@ -66,21 +66,78 @@ export interface UseTableRowExpansionConfig<T extends Record<string, unknown>> {
 }
 
 /**
- * Flatten a tree into a data array suitable for Table, expanding only the
- * nodes in `expandedKeys`. Returns `{data, getDepth}` — pass `data` to
- * `<Table data>` and `getDepth` to the plugin config.
+ * Configuration for {@link useTableRowExpansionState}.
+ *
+ * Mirrors the shape of {@link useTableSelectionState}: you own the
+ * `expandedKeys` set (via `useState`), and the hook derives everything the
+ * plugin needs — the flattened `data`, per-row depth, expand/collapse
+ * handlers, and the expand-all toggle state.
+ */
+export interface UseTableRowExpansionStateConfig<
+  T extends Record<string, unknown>,
+> {
+  /** The full, un-flattened tree. */
+  baseData: T[];
+  /** Return the children of a row. Leaf rows return an empty array. */
+  getChildren: (item: T) => T[];
+  /** Derive a stable unique key from a row item. */
+  getRowKey: (item: T) => string;
+  /**
+   * Should this row be expandable? Rows that return `false` never show a
+   * chevron and are skipped by expand-all. @default rows with children
+   */
+  getIsItemExpandable?: (item: T) => boolean;
+  /** Controlled set of currently-expanded row keys. */
+  expandedKeys: Set<string>;
+  /** Setter for the controlled expanded keys. */
+  setExpandedKeys: React.Dispatch<React.SetStateAction<Set<string>>>;
+}
+
+export interface UseTableRowExpansionStateResult<
+  T extends Record<string, unknown>,
+> {
+  /** The flattened, currently-visible rows. Pass to `<Table data>`. */
+  data: T[];
+  /** Ready-to-use config for {@link useTableRowExpansion}. */
+  expansionConfig: UseTableRowExpansionConfig<T>;
+}
+
+/**
+ * Manages row-expansion state and derives the config for
+ * {@link useTableRowExpansion}. This is the recommended entry point — it
+ * removes the boilerplate of flattening the tree, tracking depth, and
+ * computing the expand-all state.
+ *
+ * @example
+ * ```tsx
+ * const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+ * const {data, expansionConfig} = useTableRowExpansionState({
+ *   baseData: tree,
+ *   getChildren: item => item.children ?? [],
+ *   getRowKey: item => item.id,
+ *   expandedKeys,
+ *   setExpandedKeys,
+ * });
+ * const expansion = useTableRowExpansion(expansionConfig);
+ * <Table data={data} columns={columns} idKey="id" plugins={{expansion}} />;
+ * ```
  */
 export function useTableRowExpansionState<T extends Record<string, unknown>>({
   baseData,
   getChildren,
   getRowKey,
+  getIsItemExpandable,
   expandedKeys,
-}: {
-  baseData: T[];
-  getChildren: (item: T) => T[];
-  getRowKey: (item: T) => string;
-  expandedKeys: Set<string>;
-}): {data: T[]; getDepth: (item: T) => number} {
+  setExpandedKeys,
+}: UseTableRowExpansionStateConfig<T>): UseTableRowExpansionStateResult<T> {
+  const isExpandable = useCallback(
+    (item: T): boolean =>
+      getIsItemExpandable
+        ? getIsItemExpandable(item)
+        : getChildren(item).length > 0,
+    [getIsItemExpandable, getChildren],
+  );
+
   const depthMap = useMemo(() => {
     const map = new Map<string, number>();
     function walk(items: T[], depth: number) {
@@ -111,9 +168,88 @@ export function useTableRowExpansionState<T extends Record<string, unknown>>({
     return result;
   }, [baseData, getChildren, getRowKey, expandedKeys]);
 
-  const getDepth = (item: T) => depthMap.get(getRowKey(item)) ?? 0;
+  // Every expandable key across the whole tree (drives expand-all).
+  const allExpandableKeys = useMemo(() => {
+    const keys: string[] = [];
+    function walk(items: T[]) {
+      for (const item of items) {
+        if (isExpandable(item)) {
+          keys.push(getRowKey(item));
+          walk(getChildren(item));
+        }
+      }
+    }
+    walk(baseData);
+    return keys;
+  }, [baseData, getChildren, getRowKey, isExpandable]);
 
-  return {data, getDepth};
+  const getDepth = useCallback(
+    (item: T) => depthMap.get(getRowKey(item)) ?? 0,
+    [depthMap, getRowKey],
+  );
+
+  const onToggle = useCallback(
+    (key: string) => {
+      setExpandedKeys(prev => {
+        const next = new Set(prev);
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+        return next;
+      });
+    },
+    [setExpandedKeys],
+  );
+
+  const isAllExpanded: boolean | 'indeterminate' = useMemo(() => {
+    if (allExpandableKeys.length === 0) {
+      return false;
+    }
+    const expandedCount = allExpandableKeys.filter(k =>
+      expandedKeys.has(k),
+    ).length;
+    if (expandedCount === 0) {
+      return false;
+    }
+    if (expandedCount === allExpandableKeys.length) {
+      return true;
+    }
+    return 'indeterminate';
+  }, [allExpandableKeys, expandedKeys]);
+
+  const onToggleExpandAll = useCallback(
+    (expand: boolean) => {
+      setExpandedKeys(expand ? new Set(allExpandableKeys) : new Set());
+    },
+    [setExpandedKeys, allExpandableKeys],
+  );
+
+  const expansionConfig = useMemo(
+    (): UseTableRowExpansionConfig<T> => ({
+      expandedKeys,
+      onToggle,
+      getRowKey,
+      getChildren,
+      getDepth,
+      getIsItemExpandable,
+      isAllExpanded,
+      onToggleExpandAll,
+    }),
+    [
+      expandedKeys,
+      onToggle,
+      getRowKey,
+      getChildren,
+      getDepth,
+      getIsItemExpandable,
+      isAllExpanded,
+      onToggleExpandAll,
+    ],
+  );
+
+  return {data, expansionConfig};
 }
 
 // =============================================================================
@@ -227,7 +363,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
     getChildren,
     getDepth,
     getIsItemExpandable,
-    expandOnRowClick = false,
+    hasRowClickExpansion = false,
     isAllExpanded,
     onToggleExpandAll,
   } = config;
@@ -418,7 +554,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       },
 
       transformBodyRow(props: BodyRowRenderProps, item: T): BodyRowRenderProps {
-        if (!expandOnRowClick) {
+        if (!hasRowClickExpansion) {
           return props;
         }
         const expandable = getIsItemExpandable
@@ -445,7 +581,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       getChildren,
       getDepth,
       getIsItemExpandable,
-      expandOnRowClick,
+      hasRowClickExpansion,
       isAllExpanded,
       onToggleExpandAll,
       expansionColumn,

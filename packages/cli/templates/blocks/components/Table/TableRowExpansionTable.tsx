@@ -2,7 +2,7 @@
 
 'use client';
 
-import {useState, useCallback} from 'react';
+import {useState} from 'react';
 import {
   Table,
   useTableRowExpansion,
@@ -76,32 +76,16 @@ export default function TableRowExpansionTable() {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
     new Set(['src']),
   );
-  const handleToggle = useCallback((key: string) => {
-    setExpandedKeys(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  }, []);
 
-  const {data, getDepth} = useTableRowExpansionState<FileNode>({
+  const {data, expansionConfig} = useTableRowExpansionState<FileNode>({
     baseData: fileTree,
     getChildren: item => item.children ?? [],
     getRowKey: item => item.id,
     expandedKeys,
+    setExpandedKeys,
   });
 
-  const expansion = useTableRowExpansion<FileNode>({
-    expandedKeys,
-    onToggle: handleToggle,
-    getRowKey: item => item.id,
-    getChildren: item => item.children ?? [],
-    getDepth,
-  });
+  const expansion = useTableRowExpansion(expansionConfig);
 
   return (
     <Table

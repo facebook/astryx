@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState, useCallback, useMemo} from 'react';
+import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   Table,
@@ -164,69 +164,18 @@ export const InheritedColumns: Story = {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
       new Set(['src']),
     );
-    const handleToggle = useCallback((key: string) => {
-      setExpandedKeys(prev => {
-        const next = new Set(prev);
-        if (next.has(key)) {
-          next.delete(key);
-        } else {
-          next.add(key);
-        }
-        return next;
-      });
-    }, []);
 
-    // Flatten the tree into a flat data array based on expanded state.
-    const {data, getDepth} = useTableRowExpansionState<FileNode>({
+    // The state hook flattens the tree, tracks depth, and derives the
+    // expand/collapse + expand-all handlers — no boilerplate in the consumer.
+    const {data, expansionConfig} = useTableRowExpansionState<FileNode>({
       baseData: fileTree,
       getChildren: item => item.children ?? [],
       getRowKey: item => item.id,
       expandedKeys,
+      setExpandedKeys,
     });
 
-    // Compute expand-all state: collect all expandable keys from the full tree.
-    const allExpandableKeys = useMemo(() => {
-      const keys: string[] = [];
-      function walk(items: FileNode[]) {
-        for (const item of items) {
-          const children = item.children ?? [];
-          if (children.length > 0) {
-            keys.push(item.id);
-            walk(children);
-          }
-        }
-      }
-      walk(fileTree);
-      return keys;
-    }, []);
-    const isAllExpanded =
-      allExpandableKeys.length > 0 &&
-      allExpandableKeys.every(k => expandedKeys.has(k))
-        ? true
-        : expandedKeys.size > 0
-          ? ('indeterminate' as const)
-          : false;
-
-    const handleToggleExpandAll = useCallback(
-      (expand: boolean) => {
-        if (expand) {
-          setExpandedKeys(new Set(allExpandableKeys));
-        } else {
-          setExpandedKeys(new Set());
-        }
-      },
-      [allExpandableKeys],
-    );
-
-    const expansion = useTableRowExpansion<FileNode>({
-      expandedKeys,
-      onToggle: handleToggle,
-      getRowKey: item => item.id,
-      getChildren: item => item.children ?? [],
-      getDepth,
-      isAllExpanded,
-      onToggleExpandAll: handleToggleExpandAll,
-    });
+    const expansion = useTableRowExpansion(expansionConfig);
 
     return (
       <Table
@@ -249,63 +198,18 @@ export const LeafNodesNotExpandable: Story = {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
       new Set(['src', 'src/components']),
     );
-    const handleToggle = useCallback((key: string) => {
-      setExpandedKeys(prev => {
-        const next = new Set(prev);
-        if (next.has(key)) {
-          next.delete(key);
-        } else {
-          next.add(key);
-        }
-        return next;
-      });
-    }, []);
 
-    const {data, getDepth} = useTableRowExpansionState<FileNode>({
+    // `getIsItemExpandable` restricts expandability (and expand-all) to folders.
+    const {data, expansionConfig} = useTableRowExpansionState<FileNode>({
       baseData: fileTree,
       getChildren: item => item.children ?? [],
       getRowKey: item => item.id,
-      expandedKeys,
-    });
-
-    // Expand-all (only folders count as expandable)
-    const allExpandableKeys = useMemo(() => {
-      const keys: string[] = [];
-      function walk(items: FileNode[]) {
-        for (const item of items) {
-          if (item.type === 'folder') {
-            keys.push(item.id);
-            walk(item.children ?? []);
-          }
-        }
-      }
-      walk(fileTree);
-      return keys;
-    }, []);
-    const isAllExpanded =
-      allExpandableKeys.length > 0 &&
-      allExpandableKeys.every(k => expandedKeys.has(k))
-        ? true
-        : expandedKeys.size > 0
-          ? ('indeterminate' as const)
-          : false;
-    const handleToggleExpandAll = useCallback(
-      (expand: boolean) => {
-        setExpandedKeys(expand ? new Set(allExpandableKeys) : new Set());
-      },
-      [allExpandableKeys],
-    );
-
-    const expansion = useTableRowExpansion<FileNode>({
-      expandedKeys,
-      onToggle: handleToggle,
-      getRowKey: item => item.id,
-      getChildren: item => item.children ?? [],
-      getDepth,
       getIsItemExpandable: item => item.type === 'folder',
-      isAllExpanded,
-      onToggleExpandAll: handleToggleExpandAll,
+      expandedKeys,
+      setExpandedKeys,
     });
+
+    const expansion = useTableRowExpansion(expansionConfig);
 
     return (
       <Table
@@ -320,69 +224,25 @@ export const LeafNodesNotExpandable: Story = {
 };
 
 /**
- * `expandOnRowClick: true` — clicking anywhere on the row toggles expansion
+ * `hasRowClickExpansion: true` — clicking anywhere on the row toggles expansion
  * (in addition to the chevron). The row shows a pointer cursor.
  */
 export const ExpandOnRowClick: Story = {
   render: () => {
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
-    const handleToggle = useCallback((key: string) => {
-      setExpandedKeys(prev => {
-        const next = new Set(prev);
-        if (next.has(key)) {
-          next.delete(key);
-        } else {
-          next.add(key);
-        }
-        return next;
-      });
-    }, []);
 
-    const {data, getDepth} = useTableRowExpansionState<FileNode>({
+    const {data, expansionConfig} = useTableRowExpansionState<FileNode>({
       baseData: fileTree,
       getChildren: item => item.children ?? [],
       getRowKey: item => item.id,
       expandedKeys,
+      setExpandedKeys,
     });
 
-    // Expand-all state
-    const allExpandableKeys = useMemo(() => {
-      const keys: string[] = [];
-      function walk(items: FileNode[]) {
-        for (const item of items) {
-          const children = item.children ?? [];
-          if (children.length > 0) {
-            keys.push(item.id);
-            walk(children);
-          }
-        }
-      }
-      walk(fileTree);
-      return keys;
-    }, []);
-    const isAllExpanded =
-      allExpandableKeys.length > 0 &&
-      allExpandableKeys.every(k => expandedKeys.has(k))
-        ? true
-        : expandedKeys.size > 0
-          ? ('indeterminate' as const)
-          : false;
-    const handleToggleExpandAll = useCallback(
-      (expand: boolean) => {
-        setExpandedKeys(expand ? new Set(allExpandableKeys) : new Set());
-      },
-      [allExpandableKeys],
-    );
-
-    const expansion = useTableRowExpansion<FileNode>({
-      expandedKeys,
-      onToggle: handleToggle,
-      getRowKey: item => item.id,
-      getChildren: item => item.children ?? [],
-      getDepth,
-      expandOnRowClick: true,
-      isAllExpanded,
-      onToggleExpandAll: handleToggleExpandAll,
+    // Opt into row-click expansion by extending the derived config.
+    const expansion = useTableRowExpansion({
+      ...expansionConfig,
+      hasRowClickExpansion: true,
     });
 
     return (

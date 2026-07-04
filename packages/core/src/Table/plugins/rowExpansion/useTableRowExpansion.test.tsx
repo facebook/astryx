@@ -2,7 +2,7 @@
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {useState, useCallback} from 'react';
+import {useState} from 'react';
 import {Table} from '../../Table';
 import type {TableColumn} from '../../types';
 import {
@@ -69,30 +69,14 @@ function Harness({
   initialExpanded?: Set<string>;
 }) {
   const [expandedKeys, setExpandedKeys] = useState(initialExpanded);
-  const handleToggle = useCallback((key: string) => {
-    setExpandedKeys(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  }, []);
-  const {data, getDepth} = useTableRowExpansionState<TreeItem>({
+  const {data, expansionConfig} = useTableRowExpansionState<TreeItem>({
     baseData: treeData,
     getChildren: item => item.children,
     getRowKey: item => item.id,
     expandedKeys,
+    setExpandedKeys,
   });
-  const expansion = useTableRowExpansion<TreeItem>({
-    expandedKeys,
-    onToggle: handleToggle,
-    getRowKey: item => item.id,
-    getChildren: item => item.children,
-    getDepth,
-  });
+  const expansion = useTableRowExpansion(expansionConfig);
   return (
     <Table data={data} columns={columns} idKey="id" plugins={{expansion}} />
   );
@@ -142,5 +126,30 @@ describe('useTableRowExpansion', () => {
     expect(
       screen.getAllByRole('button', {name: /expand row|collapse row/i}).length,
     ).toBe(2);
+  });
+
+  it('renders an expand-all toggle in the header', () => {
+    render(<Harness />);
+    expect(
+      screen.getByRole('button', {name: /expand all rows/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('expand-all toggle expands every expandable row', () => {
+    render(<Harness />);
+    expect(screen.queryByText('File A1')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: /expand all rows/i}));
+    // Both folders' children become visible.
+    expect(screen.getByText('File A1')).toBeInTheDocument();
+    expect(screen.getByText('File A2')).toBeInTheDocument();
+    expect(screen.getByText('File B1')).toBeInTheDocument();
+  });
+
+  it('collapse-all toggle collapses every row', () => {
+    render(<Harness initialExpanded={new Set(['a', 'b'])} />);
+    expect(screen.getByText('File A1')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: /collapse all rows/i}));
+    expect(screen.queryByText('File A1')).not.toBeInTheDocument();
+    expect(screen.queryByText('File B1')).not.toBeInTheDocument();
   });
 });
