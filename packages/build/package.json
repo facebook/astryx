@@ -37,7 +37,7 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "prepack": "npm run build"
+    "prepack": "pnpm build"
   },
   "peerDependencies": {
     "@stylexjs/babel-plugin": ">=0.18.0",
