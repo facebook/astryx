@@ -62,6 +62,7 @@ Core is the only tier referencing raw values. Semantic is the default for compon
 ## Related ADRs
 
 - ADR-002 — Layer boundaries (editorial exclusion)
+- ADR-003 — Design language change policy (when tiers may evolve)
 
 ## References
 

@@ -1,4 +1,4 @@
-import { color, spacing, radius, font, elevation, motion } from '../core';
+import { color, spacing, radius, font, elevation } from '../core';
 import type { ThemeContract } from '../types';
 
 export const semanticLight = {
@@ -22,6 +22,9 @@ export const semanticLight = {
   },
   focus: {
     ring: color.blue[500],
+  },
+  interactive: {
+    hover: color.gray[100],
   },
   status: {
     success: color.green[600],
@@ -51,6 +54,73 @@ export const semanticDark = {
   },
   focus: {
     ring: color.blue[400],
+  },
+  interactive: {
+    hover: color.gray[800],
+  },
+  status: {
+    success: color.green[500],
+    warning: color.amber[500],
+    error: color.red[500],
+  },
+} as const;
+
+export const semanticHighContrastLight = {
+  surface: {
+    primary: color.white,
+    secondary: color.gray[100],
+    tertiary: color.gray[200],
+    inverse: color.black,
+  },
+  text: {
+    primary: color.black,
+    secondary: color.gray[700],
+    tertiary: color.gray[600],
+    inverse: color.white,
+    link: color.blue[700],
+  },
+  border: {
+    subtle: color.gray[400],
+    default: color.gray[600],
+    strong: color.gray[800],
+  },
+  focus: {
+    ring: color.blue[700],
+  },
+  interactive: {
+    hover: color.gray[200],
+  },
+  status: {
+    success: color.green[600],
+    warning: color.amber[500],
+    error: color.red[600],
+  },
+} as const;
+
+export const semanticHighContrastDark = {
+  surface: {
+    primary: color.black,
+    secondary: color.gray[900],
+    tertiary: color.gray[800],
+    inverse: color.white,
+  },
+  text: {
+    primary: color.white,
+    secondary: color.gray[300],
+    tertiary: color.gray[400],
+    inverse: color.black,
+    link: color.blue[400],
+  },
+  border: {
+    subtle: color.gray[600],
+    default: color.gray[500],
+    strong: color.gray[300],
+  },
+  focus: {
+    ring: color.blue[400],
+  },
+  interactive: {
+    hover: color.gray[700],
   },
   status: {
     success: color.green[500],
@@ -89,6 +159,13 @@ export const themeContracts: ThemeContract[] = [
   { mode: 'light', semantic: flattenSemantic(semanticLight) },
   { mode: 'dark', semantic: flattenSemantic(semanticDark) },
 ];
+
+export const highContrastThemeContracts: ThemeContract[] = [
+  { mode: 'light', semantic: flattenSemantic(semanticHighContrastLight) },
+  { mode: 'dark', semantic: flattenSemantic(semanticHighContrastDark) },
+];
+
+export const highContrastThemeContractName = 'jedi-high-contrast';
 
 function flattenSemantic(
   obj: Record<string, unknown>,

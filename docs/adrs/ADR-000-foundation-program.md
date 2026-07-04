@@ -92,6 +92,7 @@ Capability → Architecture → API → Implementation
 
 - ADR-001 — Token architecture (depends on this re-foundation)
 - ADR-002 — Layer boundaries (depends on this re-foundation)
+- ADR-003 — Design language change policy (Gate 1 evolvability rules)
 
 ## References
 

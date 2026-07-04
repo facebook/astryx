@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getAllCssVars } from '@jedi/tokens';
-import { createTheme, defaultTheme } from './index';
+import { createTheme, defaultTheme, highContrastTheme } from './index';
 
 describe('@jedi/themes', () => {
   it('creates default theme', () => {
@@ -33,5 +33,12 @@ describe('@jedi/themes', () => {
 
   it('getAllCssVars matches theme output', () => {
     expect(defaultTheme.getCssVars('light')).toEqual(getAllCssVars('light'));
+  });
+
+  it('creates high-contrast theme without default semantic values', () => {
+    expect(highContrastTheme.name).toBe('jedi-high-contrast');
+    const vars = highContrastTheme.getCssVars('light');
+    expect(vars['--jedi-semantic-text-primary']).toBe('#000000');
+    expect(defaultTheme.getCssVars('light')['--jedi-semantic-text-primary']).toBe('#111827');
   });
 });

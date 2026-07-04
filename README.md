@@ -39,6 +39,7 @@ pnpm dev:examples
 - [LIFECYCLE.md](./docs/LIFECYCLE.md)
 - [CAPABILITY-MATRIX.md](./docs/CAPABILITY-MATRIX.md)
 - [ACCEPTANCE.md](./docs/ACCEPTANCE.md)
+- [ARCHITECTURE-FREEZE.md](./docs/ARCHITECTURE-FREEZE.md)
 - [UPSTREAM.md](./docs/upstream/UPSTREAM.md)
 
 ## Branch Strategy

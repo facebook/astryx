@@ -28,8 +28,12 @@ const ALLOWED_DEPS = {
 /** Packages that may depend on @jedi/icons (icons consumed only via react). */
 const ICON_CONSUMERS = new Set(['react']);
 
-const FORBIDDEN_ASTRYX = ['@astryxdesign/core', '@astryxdesign/themes', '@astryxdesign/'];
+/** Allowed re-export sources per package (short names). */
+const ALLOWED_REEXPORTS = {
+  react: ['icons'],
+};
 
+const FORBIDDEN_ASTRYX = ['@astryxdesign/core', '@astryxdesign/themes', '@astryxdesign/'];
 const TOKENS_FORBIDDEN = ['react', '@types/react'];
 
 function getPackageJsons() {
@@ -63,8 +67,32 @@ function toShortName(jediDep) {
   return jediDep.replace('@jedi/', '');
 }
 
-let failed = false;
+function detectCycles(graph) {
+  const visiting = new Set();
+  const visited = new Set();
+  const cycles = [];
 
+  function dfs(node, path) {
+    if (visiting.has(node)) {
+      cycles.push([...path, node]);
+      return;
+    }
+    if (visited.has(node)) return;
+    visiting.add(node);
+    for (const dep of graph[node] ?? []) {
+      dfs(dep, [...path, node]);
+    }
+    visiting.delete(node);
+    visited.add(node);
+  }
+
+  for (const node of Object.keys(graph)) {
+    dfs(node, []);
+  }
+  return cycles;
+}
+
+let failed = false;
 const packages = getPackageJsons();
 
 for (const pkg of packages) {
@@ -112,29 +140,36 @@ for (const pkg of packages) {
   }
 }
 
-/** Detect forbidden re-exports of sibling @jedi packages from entry files. */
-const FORBIDDEN_REEXPORTS = {
-  docs: ['@jedi/tokens'],
-};
+const cycleGraph = {};
+for (const [pkg, allowed] of Object.entries(ALLOWED_DEPS)) {
+  cycleGraph[pkg] = allowed;
+}
+const cycles = detectCycles(cycleGraph);
+if (cycles.length > 0) {
+  for (const cycle of cycles) {
+    console.error(`FAIL [cycle]: dependency cycle detected: ${cycle.join(' → ')}`);
+  }
+  failed = true;
+}
 
 for (const pkg of packages) {
-  const forbiddenTargets = FORBIDDEN_REEXPORTS[pkg.name];
-  if (!forbiddenTargets) continue;
-
+  const allowedReexports = ALLOWED_REEXPORTS[pkg.name] ?? [];
   for (const entry of ['src/index.ts', 'src/index.tsx']) {
     const entryPath = join(packagesDir, pkg.name, entry);
     try {
       if (!statSync(entryPath).isFile()) continue;
       const content = readFileSync(entryPath, 'utf8');
-      for (const target of forbiddenTargets) {
-        const reexportPattern = new RegExp(`export\\s*\\{[^}]*\\}\\s*from\\s*['"]${target.replace('/', '\\/')}['"]`);
-        if (reexportPattern.test(content)) {
+      const reexports = content.matchAll(/export\s*\{[^}]*\}\s*from\s*['"](@jedi\/[^'"]+)['"]/g);
+      for (const match of reexports) {
+        const target = match[1];
+        const short = toShortName(target);
+        if (!allowedReexports.includes(short)) {
           console.error(`FAIL [public-api]: @jedi/${pkg.name} re-exports from ${target}`);
           failed = true;
         }
       }
     } catch {
-      // skip missing entry
+      // skip
     }
   }
 }

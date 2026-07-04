@@ -4,8 +4,12 @@ export {
   semantic,
   semanticLight,
   semanticDark,
+  semanticHighContrastLight,
+  semanticHighContrastDark,
   component,
   themeContracts,
+  highContrastThemeContracts,
+  highContrastThemeContractName,
   getSemantic,
   getComponent,
 } from './semantic';
@@ -31,6 +35,7 @@ import {
   flattenTokens,
   tokensToCssVars,
   tokenToCssVar,
+  type ThemeContract,
 } from './types';
 
 export function getCoreCssVars(): Record<string, string> {
@@ -79,5 +84,28 @@ export function resolveToken(path: string, mode: 'light' | 'dark' = 'light'): st
   if (path in componentFlat) return String(componentFlat[path]);
 
   return undefined;
+}
+
+function contractSemanticToCssVars(semantic: Record<string, string>): Record<string, string> {
+  const withTier: Record<string, string> = {};
+  for (const [key, value] of Object.entries(semantic)) {
+    withTier[`semantic.${key}`] = value;
+  }
+  return tokensToCssVars(withTier);
+}
+
+export function getCssVarsForContracts(
+  contracts: ThemeContract[],
+  mode: 'light' | 'dark',
+): Record<string, string> {
+  const match = contracts.find((c) => c.mode === mode);
+  if (!match) {
+    return getAllCssVars(mode);
+  }
+  return {
+    ...getCoreCssVars(),
+    ...contractSemanticToCssVars(match.semantic),
+    ...getComponentCssVars(),
+  };
 }
 

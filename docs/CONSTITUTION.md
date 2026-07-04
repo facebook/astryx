@@ -37,6 +37,18 @@ Order enforced:
 Capability → Architecture → API → Implementation
 ```
 
+## Design Language Evolvability
+
+The Design Language (token taxonomy, naming convention, hierarchy, public schema) remains **intentionally evolvable during Gate 1** (Sprint 2 — Design Language Research & Validation).
+
+At **Architecture Freeze**, the design language becomes the platform contract alongside package boundaries and public APIs. After freeze, changes follow [ADR-003](./adrs/ADR-003-token-change-policy.md).
+
+### Gate 1 Decision Filter
+
+> **Every architectural change during Gate 1 must either eliminate uncertainty or reduce future migration cost. If it does neither, it belongs after the freeze.**
+
+Platform architecture (packages, dependency graph, Constitution principles) does not reopen without ADR.
+
 ## Engineering Pillars
 
 Every sprint must satisfy all three:

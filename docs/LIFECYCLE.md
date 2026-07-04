@@ -22,11 +22,24 @@ May change without notice. No semver contract. Not recommended for production co
 
 ### Foundation
 
-Architecture frozen. APIs may evolve within phase boundaries. Current state of all v0.2–v0.4 packages.
+Platform scaffold established. Two freeze levels apply during Gate 1:
 
-- Tier model and dependency graph are fixed (see [ARCHITECTURE.md](./ARCHITECTURE.md))
-- Public APIs may gain features; breaking changes require ADR
-- Packages ship with tests and documentation artifacts
+**Platform architecture (frozen after Foundation Acceptance):**
+
+- Package boundaries and dependency graph (see [ARCHITECTURE.md](./ARCHITECTURE.md))
+- Constitution principles
+- Changes require ADR
+
+**Design language (evolvable until Architecture Freeze):**
+
+- Token hierarchy, naming, taxonomy (see [ADR-003](./adrs/ADR-003-token-change-policy.md))
+- Breaking token changes allowed during Gate 1 with sprint research log
+- Locked at Architecture Freeze → becomes Stable contract at v1.0
+
+**Public APIs:**
+
+- Audited during Gate 1; frozen at Architecture Freeze
+- May gain features before freeze; breaking changes require ADR after freeze
 
 ### Stable
 
@@ -60,7 +73,7 @@ No longer published. Consumers must have migrated.
 | Package | Prototype in branch | v0.x workspace packages | v1.0+ published | README deprecation banner | Unpublished |
 | API | Unexported or `_internal` | Exported, may evolve | Semver-locked | JSDoc `@deprecated` | Export removed |
 | Component | Draft in playground | Shipped in package | API frozen at Stable | Alias or wrapper provided | Deleted |
-| Token | Draft in core tier | Classified per ADR-001 | Frozen at Stable | Alias maintained | Deleted with migration |
+| Token | Draft in core tier | Evolvable until Architecture Freeze (ADR-003) | Frozen at Architecture Freeze / v1.0 | Alias maintained | Deleted with migration |
 
 ---
 
@@ -99,3 +112,5 @@ Target: all packages reach **Stable** at Foundation Program v1.0 merge to `main`
 - [CONSTITUTION.md](./CONSTITUTION.md)
 - [CAPABILITY-MATRIX.md](./CAPABILITY-MATRIX.md)
 - [ADR-000-foundation-program.md](./adrs/ADR-000-foundation-program.md)
+- [ADR-003-token-change-policy.md](./adrs/ADR-003-token-change-policy.md)
+- [ARCHITECTURE-FREEZE.md](./ARCHITECTURE-FREEZE.md)

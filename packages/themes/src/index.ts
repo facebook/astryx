@@ -2,9 +2,13 @@ import {
   createThemeContract,
   defaultThemeContractName,
   getAllCssVars,
+  getCssVarsForContracts,
   themeContracts,
+  highContrastThemeContracts,
+  highContrastThemeContractName,
   cssVarsToStyleBlock,
   type JediThemeContract,
+  type ThemeContract,
 } from '@jedi/tokens';
 
 export interface JediTheme {
@@ -15,34 +19,41 @@ export interface JediTheme {
   toStyleTag(mode: 'light' | 'dark', selector?: string): string;
 }
 
-export function createTheme(name: string = defaultThemeContractName): JediTheme {
-  const contract = createThemeContract(name, themeContracts);
+export function createTheme(
+  name: string = defaultThemeContractName,
+  contracts: ThemeContract[] = themeContracts,
+): JediTheme {
+  const contract = createThemeContract(name, contracts);
+  const resolveVars = (mode: 'light' | 'dark') =>
+    contracts === themeContracts ? getAllCssVars(mode) : getCssVarsForContracts(contracts, mode);
+
   return {
     name,
     contract,
-    getCssVars(mode) {
-      return getAllCssVars(mode);
-    },
+    getCssVars: resolveVars,
     toStyleBlock(mode) {
-      return cssVarsToStyleBlock(getAllCssVars(mode));
+      return cssVarsToStyleBlock(resolveVars(mode));
     },
     toStyleTag(mode, selector = ':root') {
-      return `${selector} {\n${cssVarsToStyleBlock(getAllCssVars(mode))}\n}`;
+      return `${selector} {\n${cssVarsToStyleBlock(resolveVars(mode))}\n}`;
     },
   };
 }
 
 export const defaultTheme = createTheme();
+export const highContrastTheme = createTheme(highContrastThemeContractName, highContrastThemeContracts);
 
 export function applyTheme(
   mode: 'light' | 'dark',
   element: HTMLElement = document.documentElement,
+  theme: JediTheme = defaultTheme,
 ): void {
-  const vars = getAllCssVars(mode);
+  const vars = theme.getCssVars(mode);
   for (const [key, value] of Object.entries(vars)) {
     element.style.setProperty(key, value);
   }
   element.setAttribute('data-jedi-theme', mode);
+  element.setAttribute('data-jedi-theme-name', theme.name);
 }
 
 export function getThemeMode(element: HTMLElement = document.documentElement): 'light' | 'dark' {
@@ -56,4 +67,4 @@ export function toggleTheme(element: HTMLElement = document.documentElement): 'l
   return next;
 }
 
-export { defaultThemeContractName };
+export { defaultThemeContractName, highContrastThemeContractName };
