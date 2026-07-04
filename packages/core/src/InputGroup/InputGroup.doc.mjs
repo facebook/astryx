@@ -29,7 +29,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'InputGroupText and compatible input children: TextInput, NumberInput, TimeInput, DateInput, Typeahead, or Selector.',
+        'InputGroupText and compatible input children: TextInput, NumberInput, TimeInput, DateInput, Typeahead, Selector, or MultiSelector.',
       required: true,
     },
     {
@@ -112,7 +112,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'Use InputGroup with compatible single-line inputs: TextInput, NumberInput, TimeInput, DateInput, Typeahead, and Selector.',
+          'Use InputGroup with compatible single-line inputs: TextInput, NumberInput, TimeInput, DateInput, Typeahead, Selector, and MultiSelector.',
       },
       {
         guidance: true,
@@ -146,7 +146,7 @@ export const docs = {
         name: 'Input',
         required: true,
         description:
-          'The main input element (TextInput, NumberInput, TimeInput, or DateInput).',
+          'The main input element (TextInput, NumberInput, TimeInput, DateInput, Typeahead, Selector, or MultiSelector).',
       },
       {
         name: 'Suffix addon',
@@ -183,7 +183,7 @@ export const docsDense = {
       {
         guidance: true,
         description:
-          'Use InputGroup with compatible single-line inputs: TextInput, NumberInput, TimeInput, DateInput, Typeahead, and Selector.',
+          'Use InputGroup with compatible single-line inputs: TextInput, NumberInput, TimeInput, DateInput, Typeahead, Selector, and MultiSelector.',
       },
       {
         guidance: true,

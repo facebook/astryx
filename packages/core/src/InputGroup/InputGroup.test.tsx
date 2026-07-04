@@ -19,6 +19,7 @@ import {DateInput} from '../DateInput';
 import {Typeahead} from '../Typeahead';
 import type {SearchableItem, SearchSource} from '../Typeahead';
 import {Selector} from '../Selector';
+import {MultiSelector} from '../MultiSelector';
 
 const fruits: SearchableItem[] = [
   {id: '1', label: 'Apple'},
@@ -216,6 +217,41 @@ describe('InputGroup', () => {
     expect(labelledByIDs[0]).toBe(groupLabelID);
     expect(document.getElementById(labelledByIDs[1])).toHaveTextContent(
       'Channel',
+    );
+    expect(trigger).not.toHaveAttribute('aria-label');
+    expect(trigger).toHaveAttribute(
+      'aria-describedby',
+      group.getAttribute('aria-describedby'),
+    );
+  });
+
+  it('labels grouped MultiSelector from the group and selector labels', () => {
+    render(
+      <InputGroup label="Destinations" description="Where alerts are sent">
+        <InputGroupText>#</InputGroupText>
+        <MultiSelector
+          label="Channels"
+          isLabelHidden
+          options={['General', 'Support']}
+          value={[]}
+          onChange={() => {}}
+          placeholder="Choose channels"
+        />
+      </InputGroup>,
+    );
+
+    const group = screen.getByRole('group', {name: 'Destinations'});
+    const groupLabelID = group.getAttribute('aria-labelledby');
+    const trigger = screen.getByRole('combobox', {
+      name: 'Destinations Channels',
+    });
+    const labelledByIDs =
+      trigger.getAttribute('aria-labelledby')?.split(' ') ?? [];
+
+    expect(labelledByIDs).toHaveLength(2);
+    expect(labelledByIDs[0]).toBe(groupLabelID);
+    expect(document.getElementById(labelledByIDs[1])).toHaveTextContent(
+      'Channels',
     );
     expect(trigger).not.toHaveAttribute('aria-label');
     expect(trigger).toHaveAttribute(

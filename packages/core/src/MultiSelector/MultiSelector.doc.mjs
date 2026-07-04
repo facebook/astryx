@@ -188,6 +188,11 @@ export const docs = {
           'Enable select-all when most users will want all or nearly all options selected.',
       },
       {
+        guidance: true,
+        description:
+          'Use inside InputGroup only when the control needs a short prefix or suffix addon as part of one decorated input surface; prefer count or labels trigger display so the group stays single-line.',
+      },
+      {
         guidance: false,
         description: 'Use for single-value selection; use Selector instead.',
       },

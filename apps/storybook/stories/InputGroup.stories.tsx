@@ -12,6 +12,7 @@ import type {ISODateString} from '@astryxdesign/core/Calendar';
 import {Typeahead} from '@astryxdesign/core/Typeahead';
 import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 import {Selector} from '@astryxdesign/core/Selector';
+import {MultiSelector} from '@astryxdesign/core/MultiSelector';
 import {Icon} from '@astryxdesign/core/Icon';
 import type {ISOTimeString} from '@astryxdesign/core';
 
@@ -252,6 +253,29 @@ export const WithSelector: Story = {
   },
   args: {
     label: 'Default owner',
+  },
+};
+
+export const WithMultiSelector: Story = {
+  render: args => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <InputGroup {...args}>
+        <InputGroupText>Teams</InputGroupText>
+        <MultiSelector
+          label="Owners"
+          isLabelHidden
+          options={TEAM_OPTIONS}
+          value={value}
+          onChange={setValue}
+          placeholder="Choose owners"
+        />
+      </InputGroup>
+    );
+  },
+  args: {
+    label: 'Default owners',
+    description: 'Select one or more teams',
   },
 };
 

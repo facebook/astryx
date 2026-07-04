@@ -4,13 +4,15 @@
 
 /**
  * @file MultiSelector.tsx
- * @input Uses React, StyleX, usePopover, useTooltip, CheckboxInput, Field, Badge, Icon
+ * @input Uses React, StyleX, usePopover, useTooltip, CheckboxInput, Field, Badge, Icon, InputGroupContext
  * @output Exports MultiSelector component
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
  * - /packages/core/src/MultiSelector/MultiSelector.doc.mjs
+ * - /packages/core/src/MultiSelector/MultiSelector.test.tsx
  * - /packages/core/src/MultiSelector/index.ts
+ * - /apps/storybook/stories/InputGroup.stories.tsx
  * - /packages/cli/templates/blocks/components/MultiSelector/ (showcase blocks)
  */
 
@@ -65,12 +67,15 @@ import {
   getSelectableOptions,
 } from '../Selector/utils';
 import {useMultiCombobox} from './hooks';
-import {mergeProps} from '../utils';
+import {getInputARIA, mergeProps} from '../utils';
 import {useAnnounce} from '../hooks/useAnnounce';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 // Sentinel value for the select-all item in keyboard navigation
 const SELECT_ALL_VALUE = '__xds_select_all__';
@@ -602,9 +607,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+  const inputLabelId = useId();
   const searchId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -633,15 +640,15 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     isEnabled: showsDisabledMessage,
   });
 
-  // Build aria-describedby
-  const ariaDescribedBy =
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    inputLabelId,
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+    ],
+    inputGroup,
+  );
 
   // Flatten options for keyboard navigation
   const selectableItems = useMemo(
@@ -1207,27 +1214,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     return elements;
   }, [options, renderItem, sortedItems, searchQuery, hasSelectAll]);
 
-  return (
-    <Field
-      label={label}
-      isLabelHidden={isLabelHidden}
-      description={description}
-      inputID={triggerId}
-      descriptionID={description ? descriptionId : undefined}
-      isOptional={isOptional}
-      isRequired={isRequired}
-      isDisabled={isDisabled}
-      status={
-        status
-          ? {
-              type: status.type,
-              message: status.message,
-              messageID: status.message ? statusMessageId : undefined,
-            }
-          : undefined
-      }
-      labelTooltip={labelTooltip}
-      width={width}>
+  const multiSelectorContent = (
+    <>
       <div
         ref={el => {
           popover.triggerRef(el);
@@ -1248,6 +1236,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             optimisticValue.length === 0 && styles.triggerPlaceholder,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
+            inputGroup && groupStyles.inGroup,
             xstyle,
           ),
           className,
@@ -1255,6 +1244,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         )}>
         {startIcon &&
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+        {inputGroup && (
+          <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>
+        )}
         <button
           ref={triggerRef}
           id={triggerId}
@@ -1272,6 +1264,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               : undefined
           }
           aria-describedby={ariaDescribedBy}
+          aria-labelledby={ariaLabelledBy}
           aria-required={isRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
@@ -1335,6 +1328,35 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
 
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
+    </>
+  );
+
+  if (inputGroup) {
+    return multiSelectorContent;
+  }
+
+  return (
+    <Field
+      label={label}
+      isLabelHidden={isLabelHidden}
+      description={description}
+      inputID={triggerId}
+      descriptionID={description ? descriptionId : undefined}
+      isOptional={isOptional}
+      isRequired={isRequired}
+      isDisabled={isDisabled}
+      status={
+        status
+          ? {
+              type: status.type,
+              message: status.message,
+              messageID: status.message ? statusMessageId : undefined,
+            }
+          : undefined
+      }
+      labelTooltip={labelTooltip}
+      width={width}>
+      {multiSelectorContent}
     </Field>
   );
 }

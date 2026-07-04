@@ -8,7 +8,8 @@
  * @output Exports InputGroup component with group label/description ARIA wiring
  * @position Groups input with prefix/suffix addons; consumed by index.ts
  *
- * Children (TextInput, NumberInput, DateInput) consume the InputGroup context
+ * Children (TextInput, NumberInput, TimeInput, DateInput, Typeahead,
+ * Selector, MultiSelector) consume the InputGroup context
  * to remove their own border/radius so the group container provides
  * the unified border treatment.
  *
