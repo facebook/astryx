@@ -147,6 +147,11 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   ariaDescribedBy?: string;
 
   /**
+   * Additional aria-labelledby IDs.
+   */
+  ariaLabelledBy?: string;
+
+  /**
    * Additional StyleX styles for the input element.
    */
   inputXStyle?: StyleXStyles;
@@ -308,6 +313,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   onOpenChange,
   inputId: externalInputId,
   ariaDescribedBy,
+  ariaLabelledBy,
   inputXStyle,
   anchorRef,
   onKeyDown: externalOnKeyDown,
@@ -715,6 +721,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
         aria-autocomplete="list"
         aria-describedby={ariaDescribedBy}
+        aria-labelledby={ariaLabelledBy}
         aria-disabled={isFocusableDisabled ? 'true' : undefined}
         value={query}
         onChange={handleInputChange}

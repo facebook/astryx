@@ -16,6 +16,19 @@ import {InputGroupText} from './InputGroupText';
 import {TextInput} from '../TextInput';
 import {NumberInput} from '../NumberInput';
 import {DateInput} from '../DateInput';
+import {Typeahead} from '../Typeahead';
+import type {SearchableItem, SearchSource} from '../Typeahead';
+
+const fruits: SearchableItem[] = [
+  {id: '1', label: 'Apple'},
+  {id: '2', label: 'Banana'},
+];
+
+const fruitSource: SearchSource = {
+  search: (query: string) =>
+    fruits.filter(f => f.label.toLowerCase().includes(query.toLowerCase())),
+  bootstrap: () => fruits,
+};
 
 describe('InputGroup', () => {
   it('names the group via the label element (forms-14)', () => {
@@ -85,6 +98,41 @@ describe('InputGroup', () => {
     );
     expect(input).not.toHaveAttribute('aria-label');
     expect(input).toHaveAttribute('aria-describedby', describedBy);
+  });
+
+  it('labels grouped Typeahead from the group and inner input labels', () => {
+    const {container} = render(
+      <InputGroup label="Favorite fruit" description="Pick one fruit">
+        <InputGroupText>Fruit</InputGroupText>
+        <Typeahead
+          label="Selection"
+          isLabelHidden
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+        />
+      </InputGroup>,
+    );
+
+    const group = screen.getByRole('group', {name: 'Favorite fruit'});
+    const groupLabelID = group.getAttribute('aria-labelledby');
+    const input = screen.getByRole('combobox', {
+      name: 'Favorite fruit Selection',
+    });
+    const labelledByIDs =
+      input.getAttribute('aria-labelledby')?.split(' ') ?? [];
+
+    expect(labelledByIDs).toHaveLength(2);
+    expect(labelledByIDs[0]).toBe(groupLabelID);
+    expect(document.getElementById(labelledByIDs[1])).toHaveTextContent(
+      'Selection',
+    );
+    expect(input).not.toHaveAttribute('aria-label');
+    expect(input).toHaveAttribute(
+      'aria-describedby',
+      group.getAttribute('aria-describedby'),
+    );
+    expect(container.querySelectorAll('.astryx-field')).toHaveLength(1);
   });
 
   it('labels grouped NumberInput from the group and inner input labels', () => {

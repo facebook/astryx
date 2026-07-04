@@ -4,9 +4,9 @@
 
 /**
  * @file Typeahead.tsx
- * @input Uses React, BaseTypeahead, Field, Token
+ * @input Uses React, BaseTypeahead, Field, Token, InputGroupContext
  * @output Exports Typeahead styled typeahead component
- * @position Styled wrapper; composes BaseTypeahead with Field
+ * @position Styled wrapper; composes BaseTypeahead with Field or InputGroup
  *
  * Owns the input wrapper (border, padding, status styles), selected value
  * token with spacing compensation, and edit mode behavior. Delegates
@@ -40,8 +40,11 @@ import {
 import {Token} from '../Token';
 import {useTooltip} from '../Tooltip';
 import {renderIconSlot, type IconType} from '../Icon';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {getInputARIA, mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
@@ -248,8 +251,10 @@ export function Typeahead<T extends SearchableItem>({
 }: TypeaheadProps<T>) {
   const size = useSize(sizeProp, 'md');
   const inputId = useId();
+  const inputLabelId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+  const inputGroup = useInputGroup();
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -375,16 +380,103 @@ export function Typeahead<T extends SearchableItem>({
     }
   }, [isDisabled, showToken, handleEnterEditMode]);
 
-  const ariaDescribedBy =
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    inputLabelId,
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+    ],
+    inputGroup,
+  );
 
   const sizeStyle = wrapperSizeStyles[size];
+
+  const typeaheadContent = (
+    <>
+      <div
+        ref={mergeRefs(
+          wrapperRef,
+          disabledMessageTooltip.ref,
+          inputGroup ? ref : undefined,
+        )}
+        data-testid={testId}
+        onClick={handleWrapperClick}
+        onBlur={handleBlur}
+        {...mergeProps(
+          themeProps('typeahead', {size, status: status?.type}),
+          stylex.props(
+            inputWrapperStyles.base,
+            styles.wrapper,
+            sizeStyle,
+            status && inputStatusBorderStyles[status.type],
+            status && inputStatusHoverShadowStyles[status.type],
+            status && inputStatusFocusWithinStyles[status.type],
+            isDisabled && inputWrapperStyles.disabled,
+            inputGroup && groupStyles.inGroup,
+            inputGroup && xstyle,
+          ),
+          inputGroup ? className : undefined,
+          inputGroup ? style : undefined,
+        )}>
+        {startIcon &&
+          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+        {inputGroup && (
+          <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>
+        )}
+        {showToken && (
+          <Token
+            ref={tokenRef}
+            label={value.label}
+            size={size}
+            onClick={handleEnterEditMode}
+            isDisabled={isDisabled}
+            xstyle={styles.token}
+          />
+        )}
+        <BaseTypeahead
+          ref={inputRef}
+          searchSource={searchSource}
+          value={value}
+          onChange={handleChange}
+          renderItem={renderItem}
+          placeholder={showToken ? undefined : placeholder}
+          hasEntriesOnFocus={hasEntriesOnFocus}
+          maxMenuItems={maxMenuItems}
+          emptySearchResultsText={emptySearchResultsText}
+          isDisabled={isDisabled}
+          hasAutoFocus={hasAutoFocus}
+          isFocusableDisabled={showsDisabledMessage}
+          inputId={inputId}
+          ariaDescribedBy={ariaDescribedBy}
+          ariaLabelledBy={ariaLabelledBy}
+          onChangeQuery={onChangeQuery}
+          onOpenChange={onOpenChange}
+          debounceMs={debounceMs}
+          anchorRef={wrapperRef}
+          onKeyDown={handleKeyDown}
+          inputXStyle={showToken ? styles.inputHidden : undefined}
+          size={size}
+        />
+        {hasClear && value && !isDisabled && (
+          <InputClearButton
+            label="Clear selection"
+            onClick={e => {
+              e.stopPropagation();
+              handleClear();
+            }}
+            xstyle={[styles.clearButton, size === 'sm' && styles.clearButtonSm]}
+          />
+        )}
+      </div>
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
+    </>
+  );
+
+  if (inputGroup) {
+    return typeaheadContent;
+  }
 
   return (
     <Field
@@ -411,78 +503,7 @@ export function Typeahead<T extends SearchableItem>({
       xstyle={xstyle}
       className={className}
       style={style}>
-      <div
-        ref={el => {
-          wrapperRef.current = el;
-          // Anchor + hover/focus listeners for the disabled-message tooltip.
-          // Handlers are gated internally by isEnabled, so attaching
-          // unconditionally is safe.
-          disabledMessageTooltip.ref(el);
-        }}
-        data-testid={testId}
-        onClick={handleWrapperClick}
-        onBlur={handleBlur}
-        {...mergeProps(
-          themeProps('typeahead', {size, status: status?.type}),
-          stylex.props(
-            inputWrapperStyles.base,
-            styles.wrapper,
-            sizeStyle,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
-            isDisabled && inputWrapperStyles.disabled,
-          ),
-        )}>
-        {startIcon &&
-          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
-        {showToken && (
-          <Token
-            ref={tokenRef}
-            label={value.label}
-            size={size}
-            onClick={handleEnterEditMode}
-            isDisabled={isDisabled}
-            xstyle={styles.token}
-          />
-        )}
-        <BaseTypeahead
-          ref={inputRef}
-          searchSource={searchSource}
-          value={value}
-          onChange={handleChange}
-          renderItem={renderItem}
-          placeholder={showToken ? undefined : placeholder}
-          hasEntriesOnFocus={hasEntriesOnFocus}
-          maxMenuItems={maxMenuItems}
-          emptySearchResultsText={emptySearchResultsText}
-          isDisabled={isDisabled}
-          hasAutoFocus={hasAutoFocus}
-          isFocusableDisabled={showsDisabledMessage}
-          inputId={inputId}
-          ariaDescribedBy={ariaDescribedBy}
-          onChangeQuery={onChangeQuery}
-          onOpenChange={onOpenChange}
-          debounceMs={debounceMs}
-          anchorRef={wrapperRef}
-          onKeyDown={handleKeyDown}
-          inputXStyle={showToken ? styles.inputHidden : undefined}
-          size={size}
-        />
-        {hasClear && value && !isDisabled && (
-          <InputClearButton
-            label="Clear selection"
-            onClick={e => {
-              e.stopPropagation();
-              handleClear();
-            }}
-            xstyle={[styles.clearButton, size === 'sm' && styles.clearButtonSm]}
-          />
-        )}
-      </div>
-
-      {showsDisabledMessage &&
-        disabledMessageTooltip.renderTooltip(disabledMessage)}
+      {typeaheadContent}
     </Field>
   );
 }

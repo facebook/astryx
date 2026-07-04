@@ -193,6 +193,11 @@ export const docs = {
           'Add a search delay for remote data sources to avoid excessive network requests.',
       },
       {
+        guidance: true,
+        description:
+          'Use inside InputGroup when the typeahead needs a single-line prefix or suffix addon.',
+      },
+      {
         guidance: false,
         description:
           'Use for short, static option lists; use Selector for better discoverability.',

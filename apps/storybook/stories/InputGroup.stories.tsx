@@ -9,8 +9,26 @@ import {NumberInput} from '@astryxdesign/core/NumberInput';
 import {TimeInput} from '@astryxdesign/core/TimeInput';
 import {DateInput} from '@astryxdesign/core/DateInput';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
+import {Typeahead} from '@astryxdesign/core/Typeahead';
+import type {SearchableItem, SearchSource} from '@astryxdesign/core/Typeahead';
 import {Icon} from '@astryxdesign/core/Icon';
 import type {ISOTimeString} from '@astryxdesign/core';
+
+const fruits: SearchableItem[] = [
+  {id: '1', label: 'Apple'},
+  {id: '2', label: 'Banana'},
+  {id: '3', label: 'Cherry'},
+  {id: '4', label: 'Date'},
+  {id: '5', label: 'Elderberry'},
+  {id: '6', label: 'Fig'},
+  {id: '7', label: 'Grape'},
+];
+
+const fruitSource: SearchSource = {
+  search: (query: string) =>
+    fruits.filter(f => f.label.toLowerCase().includes(query.toLowerCase())),
+  bootstrap: () => fruits.slice(0, 5),
+};
 
 const meta: Meta<typeof InputGroup> = {
   title: 'Core/InputGroup',
@@ -117,6 +135,30 @@ export const WithIconPrefix: Story = {
   args: {
     label: 'Search',
     isLabelHidden: true,
+  },
+};
+
+export const WithTypeahead: Story = {
+  render: args => {
+    const [value, setValue] = useState<SearchableItem | null>(null);
+    return (
+      <InputGroup {...args}>
+        <InputGroupText>Fruit</InputGroupText>
+        <Typeahead
+          label="Selection"
+          isLabelHidden
+          searchSource={fruitSource}
+          value={value}
+          onChange={setValue}
+          placeholder="Search fruits..."
+          hasEntriesOnFocus
+        />
+      </InputGroup>
+    );
+  },
+  args: {
+    label: 'Favorite fruit',
+    description: 'Select one fruit from the list',
   },
 };
 
@@ -312,6 +354,7 @@ export const AllVariations: Story = {
     const [v2, setV2] = useState('');
     const [v3, setV3] = useState('');
     const [v4, setV4] = useState('');
+    const [v5, setV5] = useState<SearchableItem | null>(null);
 
     return (
       <div
@@ -341,6 +384,18 @@ export const AllVariations: Story = {
             placeholder="example"
           />
           <InputGroupText>.com</InputGroupText>
+        </InputGroup>
+        <InputGroup label="Favorite fruit">
+          <InputGroupText>Fruit</InputGroupText>
+          <Typeahead
+            label="Selection"
+            isLabelHidden
+            searchSource={fruitSource}
+            value={v5}
+            onChange={setV5}
+            placeholder="Search fruits..."
+            hasEntriesOnFocus
+          />
         </InputGroup>
         <InputGroup label="Weight">
           <TextInput
