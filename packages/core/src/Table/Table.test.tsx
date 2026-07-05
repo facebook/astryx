@@ -617,6 +617,29 @@ describe('BaseTable', () => {
 // =============================================================================
 
 describe('Table', () => {
+  it('clears a cell when the field is removed from the row object (#3595)', () => {
+    const cols: TableColumn<Record<string, unknown>>[] = [
+      {key: 'name', header: 'Name'},
+      {key: 'status', header: 'Status'},
+    ];
+    const {rerender} = render(
+      <Table
+        data={[{id: '1', name: 'Alice', status: 'active'}]}
+        columns={cols}
+        idKey="id"
+      />,
+    );
+    expect(screen.getByText('active')).toBeInTheDocument();
+
+    // Clearing a field by omitting it (optimistic update / server response)
+    // must re-render the row — the memo previously only compared the keys of
+    // the NEW item, so the deleted field's stale value kept rendering.
+    rerender(
+      <Table data={[{id: '1', name: 'Alice'}]} columns={cols} idKey="id" />,
+    );
+    expect(screen.queryByText('active')).not.toBeInTheDocument();
+  });
+
   it('renders a table with correct structure', () => {
     render(<Table data={users} columns={columns} />);
     expect(screen.getByRole('table')).toBeInTheDocument();
