@@ -61,8 +61,9 @@ import {
   computeDayCellState,
   computeRangeRounding,
   computePreviewRounding,
+  computeDayNeighborContinuity,
   isEndpoint,
-  isRangeHighlighted,
+  type DayNeighborContinuity,
 } from './dayCellUtils';
 
 // =============================================================================
@@ -786,32 +787,20 @@ function MonthGrid({
                 </div>
               )}
               {week.map((day, dayIndex) => {
-                const prevDay = week[dayIndex - 1];
-                const nextDay = week[dayIndex + 1];
-                // A neighbour continues the highlighted run only if it is an
-                // enabled, in-month range day. A disabled or adjacent-month
-                // (outside) neighbour breaks continuity, so this day gets an
-                // end cap on that side (#2715).
-                const prevInRange = prevDay
-                  ? isRangeHighlighted({
-                      date: prevDay.date,
-                      mode,
-                      rangeStart,
-                      rangeEnd,
-                      isDisabled: isDateDisabled(prevDay.date),
-                      isOutside: prevDay.isOutside,
-                    })
-                  : false;
-                const nextInRange = nextDay
-                  ? isRangeHighlighted({
-                      date: nextDay.date,
-                      mode,
-                      rangeStart,
-                      rangeEnd,
-                      isDisabled: isDateDisabled(nextDay.date),
-                      isOutside: nextDay.isOutside,
-                    })
-                  : false;
+                // Whether the previous/next day in this week row continues the
+                // highlighted run (range and preview). A disabled or
+                // adjacent-month neighbour breaks continuity, so this day gets
+                // an end cap on that side (#2715).
+                const neighbors = computeDayNeighborContinuity({
+                  week,
+                  dayIndex,
+                  mode,
+                  rangeStart,
+                  rangeEnd,
+                  previewStart,
+                  previewEnd,
+                  isDisabled: isDateDisabled,
+                });
                 return (
                   <DayCell
                     key={day.iso}
@@ -826,8 +815,7 @@ function MonthGrid({
                     today={today}
                     hasOutsideDays={hasOutsideDays}
                     isDisabled={isDateDisabled(day.date)}
-                    isPrevInRange={prevInRange}
-                    isNextInRange={nextInRange}
+                    neighbors={neighbors}
                     isTabbable={day.iso === seedTabbableIso}
                     onDayClick={onDayClick}
                     onDayHover={onDayHover}
@@ -860,11 +848,10 @@ interface DayCellProps {
   isDisabled: boolean;
   /**
    * Whether the previous/next day in the same week continues the highlighted
-   * range. When a neighbour is disabled or outside the month it breaks the run,
-   * so this day gets an end cap on that side (#2715).
+   * run (range and preview). When a neighbour is disabled or outside the month
+   * it breaks the run, so this day gets an end cap on that side (#2715).
    */
-  isPrevInRange: boolean;
-  isNextInRange: boolean;
+  neighbors: DayNeighborContinuity;
   /**
    * Whether this day seeds the initial roving tab stop. useGridFocus
    * (`hasRovingTabIndex`) owns the live tab stop thereafter — it honors an
@@ -887,8 +874,7 @@ function DayCell({
   today,
   hasOutsideDays,
   isDisabled,
-  isPrevInRange,
-  isNextInRange,
+  neighbors,
   isTabbable: isTabbableDay,
   onDayClick,
   onDayHover,
@@ -917,10 +903,13 @@ function DayCell({
 
   const endpoint = isEndpoint(state);
   const rangeRounding = computeRangeRounding(state, {
-    prevInRange: isPrevInRange,
-    nextInRange: isNextInRange,
+    prevInRange: neighbors.prevInRange,
+    nextInRange: neighbors.nextInRange,
   });
-  const previewRounding = computePreviewRounding(state);
+  const previewRounding = computePreviewRounding(state, {
+    prevInPreview: neighbors.prevInPreview,
+    nextInPreview: neighbors.nextInPreview,
+  });
 
   return (
     <div role="gridcell" {...stylex.props(dayCellStyles.cell)}>

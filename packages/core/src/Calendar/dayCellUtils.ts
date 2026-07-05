@@ -128,11 +128,23 @@ export function computeRangeRounding(
   };
 }
 
-/** Edge rounding for preview background. */
-export function computePreviewRounding(state: DayCellState) {
+/**
+ * Rounding for the preview background (the transient highlight shown while
+ * hovering during range selection). Mirrors {@link computeRangeRounding}: it
+ * rounds at the preview endpoints and grid row edges, and caps the highlight
+ * where the preview run meets a disabled or adjacent-month (outside) day so the
+ * hover highlight terminates cleanly at the gap just like the committed range
+ * does (#2715).
+ */
+export function computePreviewRounding(
+  state: DayCellState,
+  neighbors?: {prevInPreview?: boolean; nextInPreview?: boolean},
+) {
+  const prevBreaks = neighbors ? neighbors.prevInPreview === false : false;
+  const nextBreaks = neighbors ? neighbors.nextInPreview === false : false;
   return {
-    roundLeft: state.isPreviewStart || state.isFirstColumn,
-    roundRight: state.isPreviewEnd || state.isLastColumn,
+    roundLeft: state.isPreviewStart || state.isFirstColumn || prevBreaks,
+    roundRight: state.isPreviewEnd || state.isLastColumn || nextBreaks,
   };
 }
 
@@ -143,9 +155,10 @@ export function isEndpoint(state: DayCellState): boolean {
 
 /**
  * Whether a day participates in the continuous range highlight — i.e. it is a
- * range day whose background actually paints. Outside (adjacent-month) and
- * disabled days break the run, so the highlighted day beside them gets an end
- * cap (see `computeRangeRounding`). Used to derive a neighbour's continuity.
+ * range day whose background actually paints as part of an unbroken run.
+ * Outside (adjacent-month) and disabled days break the run, so the highlighted
+ * day beside them gets an end cap (see {@link computeRangeRounding}). Used to
+ * derive a neighbour's continuity.
  */
 export function isRangeHighlighted(input: {
   date: PlainDate;
@@ -164,4 +177,103 @@ export function isRangeHighlighted(input: {
     rangeEnd &&
     plainDateIsInRange(date, [rangeStart, rangeEnd])
   );
+}
+
+/**
+ * Preview-span counterpart of {@link isRangeHighlighted}: whether a day is part
+ * of an unbroken preview-highlight run (enabled, in-month, inside the preview
+ * span). Used to cap the preview highlight at disabled / outside neighbours.
+ */
+export function isPreviewHighlighted(input: {
+  date: PlainDate;
+  previewStart: PlainDate | null;
+  previewEnd: PlainDate | null;
+  isDisabled: boolean;
+  isOutside: boolean;
+}): boolean {
+  const {date, previewStart, previewEnd, isDisabled, isOutside} = input;
+  return !!(
+    !isOutside &&
+    !isDisabled &&
+    previewStart &&
+    previewEnd &&
+    plainDateIsInRange(date, [previewStart, previewEnd])
+  );
+}
+
+/**
+ * Continuity of the highlighted run through a day's immediate neighbours in the
+ * same week row, for both the committed range and the hover preview. A day gets
+ * an end cap on whichever side its neighbour does not continue the run (see
+ * {@link computeRangeRounding} / {@link computePreviewRounding}).
+ */
+export interface DayNeighborContinuity {
+  prevInRange: boolean;
+  nextInRange: boolean;
+  prevInPreview: boolean;
+  nextInPreview: boolean;
+}
+
+/** Minimal shape needed from a week's day cells to derive neighbour continuity. */
+export interface NeighborDay {
+  date: PlainDate;
+  isOutside: boolean;
+}
+
+/**
+ * Derives whether the previous/next day in the same week row continues the
+ * highlighted run, for both range and preview. Broken out from the render path
+ * so the neighbour logic is unit-testable in isolation.
+ */
+export function computeDayNeighborContinuity(input: {
+  week: ReadonlyArray<NeighborDay>;
+  dayIndex: number;
+  mode: 'single' | 'range';
+  rangeStart: PlainDate | null;
+  rangeEnd: PlainDate | null;
+  previewStart: PlainDate | null;
+  previewEnd: PlainDate | null;
+  isDisabled: (date: PlainDate) => boolean;
+}): DayNeighborContinuity {
+  const {
+    week,
+    dayIndex,
+    mode,
+    rangeStart,
+    rangeEnd,
+    previewStart,
+    previewEnd,
+    isDisabled,
+  } = input;
+
+  const prev = week[dayIndex - 1];
+  const next = week[dayIndex + 1];
+
+  const rangeContinues = (day: NeighborDay | undefined): boolean =>
+    day != null &&
+    isRangeHighlighted({
+      date: day.date,
+      mode,
+      rangeStart,
+      rangeEnd,
+      isDisabled: isDisabled(day.date),
+      isOutside: day.isOutside,
+    });
+
+  const previewContinues = (day: NeighborDay | undefined): boolean =>
+    day != null &&
+    isPreviewHighlighted({
+      date: day.date,
+      previewStart,
+      previewEnd,
+      isDisabled: isDisabled(day.date),
+      isOutside: day.isOutside,
+    });
+
+  return {
+    prevInRange: rangeContinues(prev),
+    nextInRange: rangeContinues(next),
+    prevInPreview: previewContinues(prev),
+    nextInPreview: previewContinues(next),
+  };
 }

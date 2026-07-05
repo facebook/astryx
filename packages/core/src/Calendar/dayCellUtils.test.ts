@@ -5,11 +5,13 @@ import {
   computeDayCellState,
   computeRangeRounding,
   computePreviewRounding,
+  computeDayNeighborContinuity,
   isEndpoint,
   isRangeHighlighted,
+  isPreviewHighlighted,
   type DayCellStateInput,
 } from './dayCellUtils';
-import {plainDateFromISO} from '../utils/plainDate';
+import {plainDateFromISO, plainDateIsEqual} from '../utils/plainDate';
 
 function makeInput(
   overrides: Partial<DayCellStateInput> = {},
@@ -308,6 +310,175 @@ describe('computePreviewRounding', () => {
     const rounding = computePreviewRounding(state);
     expect(rounding.roundLeft).toBe(true);
     expect(rounding.roundRight).toBe(false);
+  });
+
+  // #2715: the hover preview needs the same disabled/outside caps as the
+  // committed range, so the transient highlight terminates cleanly at the gap.
+  it('caps the right edge when the next day breaks the preview run', () => {
+    const state = computeDayCellState(
+      makeInput({
+        date: plainDateFromISO('2024-03-17'),
+        dayIndex: 3,
+        previewStart: plainDateFromISO('2024-03-15'),
+        previewEnd: plainDateFromISO('2024-03-20'),
+      }),
+    );
+    const rounding = computePreviewRounding(state, {
+      prevInPreview: true,
+      nextInPreview: false,
+    });
+    expect(rounding.roundLeft).toBe(false);
+    expect(rounding.roundRight).toBe(true);
+  });
+
+  it('caps the left edge when the previous day breaks the preview run', () => {
+    const state = computeDayCellState(
+      makeInput({
+        date: plainDateFromISO('2024-03-17'),
+        dayIndex: 3,
+        previewStart: plainDateFromISO('2024-03-15'),
+        previewEnd: plainDateFromISO('2024-03-20'),
+      }),
+    );
+    const rounding = computePreviewRounding(state, {
+      prevInPreview: false,
+      nextInPreview: true,
+    });
+    expect(rounding.roundLeft).toBe(true);
+    expect(rounding.roundRight).toBe(false);
+  });
+
+  it('does not cap a mid-preview day when both neighbours continue', () => {
+    const state = computeDayCellState(
+      makeInput({
+        date: plainDateFromISO('2024-03-17'),
+        dayIndex: 3,
+        previewStart: plainDateFromISO('2024-03-15'),
+        previewEnd: plainDateFromISO('2024-03-20'),
+      }),
+    );
+    const rounding = computePreviewRounding(state, {
+      prevInPreview: true,
+      nextInPreview: true,
+    });
+    expect(rounding.roundLeft).toBe(false);
+    expect(rounding.roundRight).toBe(false);
+  });
+});
+
+describe('isPreviewHighlighted', () => {
+  const base = {
+    date: plainDateFromISO('2024-03-17'),
+    previewStart: plainDateFromISO('2024-03-15'),
+    previewEnd: plainDateFromISO('2024-03-20'),
+    isDisabled: false,
+    isOutside: false,
+  };
+
+  it('true for an enabled in-month day inside the preview span', () => {
+    expect(isPreviewHighlighted(base)).toBe(true);
+  });
+
+  it('false for a disabled day', () => {
+    expect(isPreviewHighlighted({...base, isDisabled: true})).toBe(false);
+  });
+
+  it('false for an adjacent-month (outside) day', () => {
+    expect(isPreviewHighlighted({...base, isOutside: true})).toBe(false);
+  });
+
+  it('false outside the preview bounds', () => {
+    expect(
+      isPreviewHighlighted({...base, date: plainDateFromISO('2024-03-25')}),
+    ).toBe(false);
+  });
+
+  it('false with no preview span', () => {
+    expect(
+      isPreviewHighlighted({...base, previewStart: null, previewEnd: null}),
+    ).toBe(false);
+  });
+});
+
+describe('computeDayNeighborContinuity', () => {
+  // A week row of 5 consecutive in-month days, Mar 15–19.
+  const week = (
+    [
+      '2024-03-15',
+      '2024-03-16',
+      '2024-03-17',
+      '2024-03-18',
+      '2024-03-19',
+    ] as const
+  ).map(iso => ({
+    date: plainDateFromISO(iso),
+    isOutside: false,
+  }));
+
+  const baseInput = {
+    week,
+    mode: 'range' as const,
+    rangeStart: plainDateFromISO('2024-03-15'),
+    rangeEnd: plainDateFromISO('2024-03-19'),
+    previewStart: null,
+    previewEnd: null,
+    isDisabled: () => false,
+  };
+
+  it('reports both range neighbours continuing for a mid-range day', () => {
+    const c = computeDayNeighborContinuity({...baseInput, dayIndex: 2});
+    expect(c.prevInRange).toBe(true);
+    expect(c.nextInRange).toBe(true);
+  });
+
+  it('breaks continuity where a neighbour is disabled', () => {
+    // Disable Mar 18 (index 3): its neighbour Mar 17 (index 2) sees a break to
+    // the right.
+    const disabledDay = plainDateFromISO('2024-03-18');
+    const c = computeDayNeighborContinuity({
+      ...baseInput,
+      dayIndex: 2,
+      isDisabled: date => plainDateIsEqual(date, disabledDay),
+    });
+    expect(c.prevInRange).toBe(true);
+    expect(c.nextInRange).toBe(false);
+  });
+
+  it('breaks continuity where a neighbour is an outside day', () => {
+    const weekWithOutside = week.map((d, i) =>
+      i === 3 ? {...d, isOutside: true} : d,
+    );
+    const c = computeDayNeighborContinuity({
+      ...baseInput,
+      week: weekWithOutside,
+      dayIndex: 2,
+    });
+    expect(c.nextInRange).toBe(false);
+  });
+
+  it('treats a missing neighbour (row edge) as a break', () => {
+    const first = computeDayNeighborContinuity({...baseInput, dayIndex: 0});
+    expect(first.prevInRange).toBe(false);
+    const last = computeDayNeighborContinuity({
+      ...baseInput,
+      dayIndex: week.length - 1,
+    });
+    expect(last.nextInRange).toBe(false);
+  });
+
+  it('derives preview continuity independently of range', () => {
+    const c = computeDayNeighborContinuity({
+      ...baseInput,
+      rangeStart: null,
+      rangeEnd: null,
+      previewStart: plainDateFromISO('2024-03-15'),
+      previewEnd: plainDateFromISO('2024-03-19'),
+      dayIndex: 2,
+    });
+    expect(c.prevInRange).toBe(false);
+    expect(c.nextInRange).toBe(false);
+    expect(c.prevInPreview).toBe(true);
+    expect(c.nextInPreview).toBe(true);
   });
 });
 
