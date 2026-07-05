@@ -14,7 +14,17 @@
 import {type ReactNode} from 'react';
 import {Theme} from '@astryxdesign/core/theme';
 import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+import {registerIcons} from '@astryxdesign/core/Icon';
 import {useThemeMode} from '../../app/providers';
+
+// Register theme icons at module load time so the globalIconRegistry is
+// consistent between SSR and client hydration. Without this, the server's
+// module-level registry may already have Lucide icons (from a warm process),
+// while the client starts with default icons — causing an SVG strokeWidth
+// mismatch for any Icon that renders before Theme's render-time registerIcons call.
+if (neutralTheme.icons) {
+  registerIcons(neutralTheme.icons);
+}
 
 export function ComponentPreviewTheme({children}: {children: ReactNode}) {
   const {mode} = useThemeMode();
