@@ -867,3 +867,48 @@ describe('NumberInput', () => {
     });
   });
 });
+
+describe('keyboard clearing with hasClear (#3599)', () => {
+  it('commits null when the input is emptied and blurred', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput label="Qty" hasClear value={42} onChange={onChange} />,
+    );
+    const input = screen.getByLabelText('Qty');
+    fireEvent.change(input, {target: {value: ''}});
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('commits null when the input is emptied and Enter is pressed', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput label="Qty" hasClear value={42} onChange={onChange} />,
+    );
+    const input = screen.getByLabelText('Qty');
+    fireEvent.change(input, {target: {value: ''}});
+    fireEvent.keyDown(input, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('does not fire when emptied and blurred with no prior value', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput label="Qty" hasClear value={null} onChange={onChange} />,
+    );
+    const input = screen.getByLabelText('Qty');
+    fireEvent.change(input, {target: {value: ''}});
+    fireEvent.blur(input);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('still reverts on blur when hasClear is not set', () => {
+    const onChange = vi.fn();
+    render(<NumberInput label="Qty" value={42} onChange={onChange} />);
+    const input = screen.getByLabelText('Qty');
+    fireEvent.change(input, {target: {value: ''}});
+    fireEvent.blur(input);
+    expect(onChange).not.toHaveBeenCalled();
+    expect((input as HTMLInputElement).value).toBe('42');
+  });
+});
