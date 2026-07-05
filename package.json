@@ -93,7 +93,9 @@
       "tmp": ">=0.2.6",
       "esbuild": ">=0.28.1",
       "@babel/core": "^7.29.6",
-      "hono": "^4.12.25"
+      "hono": "^4.12.25",
+      "read-yaml-file>js-yaml": "^3.15.0",
+      "@changesets/parse>js-yaml": ">=4.2.0"
     },
     "onlyBuiltDependencies": [
       "esbuild",
