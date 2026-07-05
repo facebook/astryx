@@ -132,6 +132,19 @@ describe('paginateData', () => {
     expect(paginateData([], 1, 10)).toEqual([]);
   });
 
+  it('clamps invalid page numbers to the first page (#3593)', () => {
+    const data = generateItems(30);
+    // Negative pages previously fed a negative index to Array.slice, which
+    // counts from the END of the data — the tail dressed up as a page.
+    expect(paginateData(data, -1, 10)[0].id).toBe('1');
+    expect(paginateData(data, 0, 10)[0].id).toBe('1');
+    expect(paginateData(data, NaN, 10)[0].id).toBe('1');
+    // Fractional pages floor to the containing page instead of straddling two.
+    expect(paginateData(data, 1.5, 10).map(i => i.id)).toEqual(
+      paginateData(data, 1, 10).map(i => i.id),
+    );
+  });
+
   it('returns empty array when page exceeds data', () => {
     const data = generateItems(10);
     expect(paginateData(data, 5, 10)).toEqual([]);
