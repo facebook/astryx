@@ -56,5 +56,3 @@ if (typeof window.matchMedia === 'undefined') {
     }),
   });
 }
-
-
