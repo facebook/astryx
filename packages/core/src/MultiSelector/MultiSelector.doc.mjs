@@ -317,6 +317,11 @@ export const docsDense = {
           'Enable select-all when most users will want all or nearly all options selected.',
       },
       {
+        guidance: true,
+        description:
+          'Use inside InputGroup only for a short prefix or suffix addon; prefer count or labels trigger display so the group stays single-line.',
+      },
+      {
         guidance: false,
         description: 'Use for single-value selection; use Selector instead.',
       },

@@ -347,6 +347,11 @@ export const docsDense = {
           'Set a meaningful placeholder that hints at the expected selection (e.g. "Choose a country" not "Select...").',
       },
       {
+        guidance: true,
+        description:
+          'Use inside InputGroup only when the selector needs a short prefix or suffix addon.',
+      },
+      {
         guidance: false,
         description:
           'Use for action menus; use Dropdown Menu for triggering commands or navigation.',
