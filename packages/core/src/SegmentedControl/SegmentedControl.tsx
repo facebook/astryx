@@ -208,6 +208,15 @@ export function SegmentedControl({
       if (isDisabled) {
         return;
       }
+      // Only select when focus moved WITHIN the group (arrow/Home/End — APG
+      // selection-follows-focus). When focus is entering from outside, Tab
+      // must stay a pure focus move: with an unmatched or disabled-selected
+      // value the roving tab stop falls back to the first enabled radio, and
+      // selecting it here would rewrite the form value on mere traversal.
+      // Clicks are unaffected: the item's own handleClick selects.
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+        return;
+      }
       const focused = (e.target as HTMLElement | null)?.closest<HTMLElement>(
         '[role="radio"][data-value]',
       );

@@ -259,6 +259,56 @@ describe('SegmentedControl', () => {
 });
 
 describe('SegmentedControl keyboard navigation', () => {
+  describe('tab-through is a pure focus move (#3597)', () => {
+    it('does not fire onChange when tabbing in with an unmatched value', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <>
+          <button type="button">before</button>
+          <SegmentedControl label="View" value="archived" onChange={onChange}>
+            <SegmentedControlItem value="grid" label="Grid" />
+            <SegmentedControlItem value="list" label="List" />
+          </SegmentedControl>
+        </>,
+      );
+      screen.getByText('before').focus();
+      await user.tab();
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('does not fire onChange when tabbing in while the selected item is disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <>
+          <button type="button">before</button>
+          <SegmentedControl label="View" value="list" onChange={onChange}>
+            <SegmentedControlItem value="grid" label="Grid" />
+            <SegmentedControlItem value="list" label="List" isDisabled />
+          </SegmentedControl>
+        </>,
+      );
+      screen.getByText('before').focus();
+      await user.tab();
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('still selects on arrow-key navigation within the group', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <SegmentedControl label="View" value="grid" onChange={onChange}>
+          <SegmentedControlItem value="grid" label="Grid" />
+          <SegmentedControlItem value="list" label="List" />
+        </SegmentedControl>,
+      );
+      screen.getByRole('radio', {name: 'Grid'}).focus();
+      await user.keyboard('{ArrowRight}');
+      expect(onChange).toHaveBeenCalledWith('list');
+    });
+  });
+
   it('navigates with ArrowRight and selects', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
