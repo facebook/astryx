@@ -86,6 +86,7 @@ const styles = stylex.create({
     transitionProperty: 'opacity',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
+    userSelect: 'none',
   },
   popover: {
     minWidth: '160px',
@@ -393,6 +394,7 @@ export function ContextMenu({
           role="menu"
           aria-label={label}
           onKeyDown={listKeyDown}
+          onContextMenu={e => e.preventDefault()}
           {...mergeProps(
             themeProps('context-menu'),
             stylex.props(styles.menu, xstyle),

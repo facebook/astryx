@@ -172,6 +172,21 @@ describe('ContextMenu', () => {
     expect(preventDefault).toHaveBeenCalled();
   });
 
+  it('prevents default context menu on the opened menu container', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'));
+    const menu = screen.getByRole('menu', {hidden: true});
+    const event = new MouseEvent('contextmenu', {bubbles: true});
+    const preventDefault = vi.spyOn(event, 'preventDefault');
+    menu.dispatchEvent(event);
+    expect(preventDefault).toHaveBeenCalled();
+  });
+
   it('does not open when isDisabled is true', () => {
     render(
       <ContextMenu items={[{label: 'Item 1'}]} isDisabled>
