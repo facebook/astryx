@@ -70,6 +70,7 @@ const styles = stylex.create({
   canvas: {
     backfaceVisibility: 'hidden',
     display: 'block',
+    willChange: 'transform',
     // Slow the rotation dramatically under reduced-motion rather than freezing
     // it (a frozen spinner reads as broken), matching ProgressBar's approach.
     // The role="status" + "Loading" label still convey busy state (obs-6).
