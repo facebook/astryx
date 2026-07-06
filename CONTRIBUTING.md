@@ -53,7 +53,7 @@ npm install -g pnpm@10
 brew install pnpm
 
 # Via standalone installer (no npm or Node.js required)
-curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=10.33.4 sh -
+curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=10.34.1 sh -
 
 # Via GitHub releases (single binary, no dependencies)
 # https://github.com/pnpm/pnpm/releases/latest
