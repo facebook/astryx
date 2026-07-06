@@ -505,12 +505,12 @@ export const docsDense = {
       {
         guidance: false,
         description:
-          'Don\u2019t use for date-and-time; pair with DateInput instead.',
+          'Don\'t use for date-and-time; pair with DateInput instead.',
       },
       {
         guidance: false,
         description:
-          'Don\u2019t hide the label; keep it visible for clarity.',
+          'Don\'t hide the label; keep it visible for clarity.',
       },
       {
         guidance: false,
