@@ -198,6 +198,19 @@ export function buildInitialState(
   return state;
 }
 
+/**
+ * True when an overlay-mode component (`playground.overlay`) is closed in the
+ * current preview state. The component renders nothing inline while closed
+ * (e.g. a `showModal()` drawer), so the stage shows an open-trigger
+ * placeholder instead of an empty box.
+ */
+export function isOverlayPreviewClosed(
+  playground: PlaygroundConfig | null | undefined,
+  state: Record<string, unknown>,
+): boolean {
+  return playground?.overlay === true && state.isOpen !== true;
+}
+
 export function getMissingRequiredProps(
   knobs: KnobProp[],
   state: Record<string, unknown>,

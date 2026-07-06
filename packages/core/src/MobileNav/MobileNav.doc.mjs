@@ -14,6 +14,26 @@ export const docs = {
       name: 'MobileNav',
       displayName: 'Mobile Nav',
       description: 'A slide-out drawer for mobile navigation. Accepts SideNav children.',
+      // The drawer opens via showModal() and renders nothing while closed —
+      // overlay mode gives the Properties preview an open trigger instead of
+      // an empty stage (#2706). Declared on this entry (not the directory
+      // doc) so MobileNavToggle does not inherit it.
+      playground: {
+        overlay: true,
+        defaults: {
+          isOpen: false,
+          header: 'Navigation',
+          children: {
+            __element: 'SideNavSection',
+            props: {title: 'Main'},
+            children: [
+              {__element: 'SideNavItem', props: {label: 'Dashboard', isSelected: true}},
+              {__element: 'SideNavItem', props: {label: 'Projects'}},
+              {__element: 'SideNavItem', props: {label: 'Settings'}},
+            ],
+          },
+        },
+      },
       props: [
         {
           name: 'isOpen',

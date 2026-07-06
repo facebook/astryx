@@ -217,6 +217,11 @@ export interface ComponentEntry {
   examples?: ExampleDoc[];
   /** When true, this sub-component is excluded from the overview page. */
   isHiddenFromOverview?: boolean;
+  /** Playground configuration for this specific component. Falls back to
+   *  the directory doc's `playground` when omitted — declare one here when
+   *  siblings must not share it (e.g. an overlay drawer whose toggle
+   *  sub-component should not inherit `overlay: true`). */
+  playground?: PlaygroundConfig;
 }
 
 /**
@@ -390,6 +395,13 @@ export interface PlaygroundConfig {
   /** Initial prop values for the playground preview.
    *  Keys are prop names. Values are primitives or ElementDescriptors. */
   defaults?: Record<string, unknown>;
+  /** The component opens as a full-viewport overlay (e.g. via
+   *  `dialog.showModal()`) and renders nothing inline while closed. The
+   *  interactive preview shows an open-trigger placeholder instead of an
+   *  empty stage while `isOpen` is false, and lets the real overlay render
+   *  when opened. Include `isOpen: false` in `defaults` so the preview can
+   *  bridge `onOpenChange` back into playground state. */
+  overlay?: boolean;
   /** Required parent wrapper for sub-components that depend on a parent
    *  context provider (e.g. `Tab` calls `useTabListContext()` and throws
    *  standalone). The preview wraps the component in this parent before
