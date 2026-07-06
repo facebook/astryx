@@ -112,6 +112,7 @@ export function Code({
   return (
     <code
       ref={ref}
+      {...props}
       {...mergeProps(
         themeProps('code', {color}),
         stylex.props(
@@ -122,8 +123,7 @@ export function Code({
         ),
         className,
         style,
-      )}
-      data-testid={props['data-testid']}>
+      )}>
       {children}
     </code>
   );
