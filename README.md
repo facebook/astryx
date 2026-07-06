@@ -58,7 +58,7 @@ Then use it as `npm run astryx -- component --list`. This avoids path errors whe
 | [`@astryxdesign/build`](packages/build)    | Build plugins for StyleX source builds                                                               | [README](packages/build/README.md) |
 | [`@astryxdesign/theme-*`](packages/themes) | Seven ready-made, fully customizable themes (neutral, butter, chocolate, matcha, stone, gothic, y2k) | [README](packages/themes)          |
 
-> `@astryxdesign/lab` (experimental components) and `@astryxdesign/vega` (Vega/Vega-Lite chart wrapper) are used internally for Storybook and the sandbox; they are not yet published to npm.
+> `@astryxdesign/lab` (experimental components) is used internally for Storybook and the sandbox and is not published to npm. `@astryxdesign/vega` (Vega/Vega-Lite chart wrapper) is published to npm only under the `@canary` dist-tag — there is no stable release yet.
 
 ## Principles
 

@@ -315,6 +315,85 @@ describe('Calendar', () => {
     expect(day15).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('caps the range highlight next to a disabled mid-range day (#2715)', () => {
+    // Disable Jan 13. With Jan 10–15 selected, day 12 (immediately before the
+    // disabled day) should get a rounded end cap on its right edge, and day 14
+    // (immediately after) a rounded cap on its left edge — so the highlight
+    // reads as terminating at the disabled gap rather than running square-edged
+    // into it.
+    const disableJan13 = (d: Date) =>
+      !(d.getFullYear() === 2026 && d.getMonth() === 0 && d.getDate() === 13);
+    render(
+      <Calendar
+        mode="range"
+        value={{start: '2026-01-10', end: '2026-01-15'}}
+        focusDate="2026-01-01"
+        dateConstraints={[disableJan13]}
+      />,
+    );
+
+    // The range background is an absolutely-positioned sibling div inside the
+    // same gridcell as the day button.
+    const rangeBgFor = (day: number): HTMLElement => {
+      const button = getDayButton(day);
+      const cell = button.closest('[role="gridcell"]') as HTMLElement;
+      // First child div is the range background (rendered before the button).
+      return cell.firstElementChild as HTMLElement;
+    };
+
+    const day12Bg = rangeBgFor(12);
+    const day14Bg = rangeBgFor(14);
+
+    // Capped edges have a border radius; the un-capped edge stays square.
+    expect(getComputedStyle(day12Bg).borderTopRightRadius).not.toBe('');
+    expect(getComputedStyle(day12Bg).borderTopRightRadius).not.toBe('0px');
+    expect(getComputedStyle(day14Bg).borderTopLeftRadius).not.toBe('');
+    expect(getComputedStyle(day14Bg).borderTopLeftRadius).not.toBe('0px');
+  });
+
+  it('does not range-highlight adjacent-month spillover days in two-month view', () => {
+    // #2715: with July 1–31 selected and July+August visible, July 26–31 also
+    // render as outside days in the August pane. Those spillover copies must
+    // not carry the range-highlight state (data-in-range) even though their
+    // dates fall inside the selected range.
+    render(
+      <Calendar
+        mode="range"
+        numberOfMonths={2}
+        focusDate="2026-07-01"
+        value={{start: '2026-07-01', end: '2026-07-31'}}
+      />,
+    );
+
+    const spillover = [
+      '2026-07-26',
+      '2026-07-27',
+      '2026-07-28',
+      '2026-07-29',
+      '2026-07-30',
+      '2026-07-31',
+    ];
+
+    const allDayButtons = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('button[data-date]'),
+    );
+
+    for (const iso of spillover) {
+      const matches = allDayButtons.filter(
+        b => b.getAttribute('data-date') === iso,
+      );
+      // Renders once in the July pane and once as a spillover in August.
+      expect(matches.length).toBeGreaterThanOrEqual(2);
+      const outsideCopies = matches.filter(
+        b => b.getAttribute('aria-disabled') === 'true',
+      );
+      expect(outsideCopies.length).toBeGreaterThanOrEqual(1);
+      for (const b of outsideCopies) {
+        expect(b).not.toHaveAttribute('data-in-range');
+      }
+    }
+  });
+
   // ─── Accessibility ───────────────────────────────────────────
 
   it('has accessible grid structure', () => {

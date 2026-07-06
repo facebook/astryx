@@ -87,6 +87,62 @@ const densityStyles = stylex.create({
   },
 });
 
+// When a cell owns a context menu, its padding moves from the `<td>` onto the
+// right-click trigger wrapper so the *entire* cell (padding included) opens the
+// menu. Without this, right-clicking the padding ring near a cell edge falls
+// through to the browser's native menu. Paired with `contextMenuCellStyles` on
+// the `<td>` (font/box-sizing only — no padding).
+const densityTextStyles = stylex.create({
+  compact: {
+    fontSize: typeScaleVars['--text-body-size'],
+    boxSizing: 'border-box',
+  },
+  balanced: {
+    fontSize: typeScaleVars['--text-body-size'],
+    boxSizing: 'border-box',
+  },
+  spacious: {
+    fontSize: typeScaleVars['--text-body-size'],
+    boxSizing: 'border-box',
+  },
+});
+
+const densityPaddingStyles = stylex.create({
+  compact: {
+    paddingBlock: spacingVars['--spacing-1'],
+    paddingInline: spacingVars['--spacing-2'],
+  },
+  balanced: {
+    paddingBlock: spacingVars['--spacing-2'],
+    paddingInline: spacingVars['--spacing-3'],
+  },
+  spacious: {
+    paddingBlock: spacingVars['--spacing-3'],
+    paddingInline: spacingVars['--spacing-4'],
+  },
+});
+
+// The trigger wrapper fills the whole cell (a `<td>` child with height:100%
+// stretches to the row height) so a right-click anywhere in the cell opens the
+// menu. It carries the density padding relocated off the `<td>`.
+const triggerFillStyles = stylex.create({
+  fill: {
+    display: 'block',
+    boxSizing: 'border-box',
+    blockSize: '100%',
+    inlineSize: '100%',
+  },
+});
+
+// `height:100%` on the `<td>` is the CSS trick that lets a block child resolve
+// its own `height:100%` against the row height — so the trigger fills the cell
+// vertically (top/bottom padding included) and is fully right-clickable.
+const contextMenuCellStyles = stylex.create({
+  cell: {
+    blockSize: '100%',
+  },
+});
+
 const dividerRowStyles = stylex.create({
   cell: {
     borderBottomWidth: {
@@ -151,22 +207,45 @@ export function TableCell({
 }: TableCellProps) {
   const ctx = useTableContext();
 
-  // Standalone (no table context) renders plain, with no density/divider styles.
+  const hasContextMenu =
+    typeof contextMenuActions === 'function' ||
+    (Array.isArray(contextMenuActions) && contextMenuActions.length > 0);
+
+  // When the cell owns a context menu, its density padding is relocated onto
+  // the right-click trigger wrapper (see `content` below) so the entire cell —
+  // padding included — opens the menu. Otherwise padding lives on the `<td>`.
   const cellStyles: StyleXStyles[] = ctx
     ? [
-        densityStyles[ctx.density],
-        ctx.textOverflow === 'truncate'
-          ? overflowStyles.cell
-          : wrapStyles.cell,
+        hasContextMenu
+          ? densityTextStyles[ctx.density]
+          : densityStyles[ctx.density],
+        ctx.textOverflow === 'truncate' ? overflowStyles.cell : wrapStyles.cell,
         containerEdgeStyles[ctx.density],
         verticalAlignStyles[ctx.verticalAlign],
-        ...buildDividerStyles(ctx, dividerRowStyles.cell, dividerColumnStyles.cell),
+        ...buildDividerStyles(
+          ctx,
+          dividerRowStyles.cell,
+          dividerColumnStyles.cell,
+        ),
+        ...(hasContextMenu ? [contextMenuCellStyles.cell] : []),
       ]
     : [];
 
   // The cell owns the context-menu wrapper so it controls how the menu
-  // interacts with its padding / content. No-op when no actions.
-  const content = wrapInTableContextMenu(children, contextMenuActions);
+  // interacts with its padding / content. No-op when no actions. When actions
+  // exist we make the trigger fill the cell and carry the density padding so a
+  // right-click anywhere in the cell (including the padding ring) opens it.
+  const triggerXstyle =
+    hasContextMenu && ctx
+      ? [triggerFillStyles.fill, densityPaddingStyles[ctx.density]]
+      : hasContextMenu
+        ? triggerFillStyles.fill
+        : undefined;
+  const content = wrapInTableContextMenu(
+    children,
+    contextMenuActions,
+    triggerXstyle,
+  );
 
   return (
     <td

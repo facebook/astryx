@@ -55,6 +55,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import type {StyleXStyles} from '../theme/types';
 import {themeProps} from '../utils/themeProps';
 import type {
   DropdownMenuOption,
@@ -114,6 +115,13 @@ export type ContextMenuOption = DropdownMenuOption;
 interface ContextMenuBaseProps extends BaseProps {
   /** Ref forwarded to the trigger wrapper element. */
   ref?: React.Ref<HTMLDivElement>;
+  /**
+   * Styles applied to the trigger wrapper element (the right-click target).
+   * By default the trigger is a plain block that hugs its content — pass a
+   * fill style (e.g. `width/height: 100%`) when the whole parent area should
+   * be right-clickable (as the Table does for full-cell context menus).
+   */
+  triggerXstyle?: StyleXStyles | StyleXStyles[];
   /** The trigger area — right-click on this to open the menu. */
   children: ReactNode;
   /** Custom menu width. @default '160px' */
@@ -184,6 +192,7 @@ export function ContextMenu({
   className,
   style,
   xstyle,
+  triggerXstyle,
   'data-testid': testId,
   ...props
 }: ContextMenuProps) {
@@ -382,7 +391,14 @@ export function ContextMenu({
         onContextMenu={handleContextMenu}
         {...longPressHandlers}
         data-testid={testId}
-        {...stylex.props(styles.trigger)}>
+        {...stylex.props(
+          styles.trigger,
+          ...(triggerXstyle
+            ? Array.isArray(triggerXstyle)
+              ? triggerXstyle
+              : [triggerXstyle]
+            : []),
+        )}>
         {children}
       </div>
 
