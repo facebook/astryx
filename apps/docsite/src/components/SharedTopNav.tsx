@@ -69,6 +69,28 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
   },
+  // Theme-toggle icons. Both Moon and Sun are always in the DOM; while the mode
+  // is still unresolved ('system'), a pure CSS prefers-color-scheme query decides
+  // which one shows so the first paint matches the OS — otherwise the icon starts
+  // as Moon (resolvedMode's 'light' default) and visibly swaps to Sun on a
+  // dark-OS machine after hydration. Once the mode resolves to a concrete value
+  // (OS-detected or a manual toggle) React forces the icon explicitly; for the
+  // OS-following case that matches what the media query already showed, so
+  // nothing visibly changes.
+  moonWhenSystem: {
+    display: {
+      default: 'inline-flex',
+      '@media (prefers-color-scheme: dark)': 'none',
+    },
+  },
+  sunWhenSystem: {
+    display: {
+      default: 'none',
+      '@media (prefers-color-scheme: dark)': 'inline-flex',
+    },
+  },
+  iconShown: {display: 'inline-flex'},
+  iconHidden: {display: 'none'},
 });
 
 // Primary navigation links, shared by the desktop bar and the mobile drawer.
@@ -84,7 +106,7 @@ export function SharedTopNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
-  const {mode, toggleMode} = useThemeMode();
+  const {mode, themeMode, toggleMode} = useThemeMode();
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -188,7 +210,30 @@ export function SharedTopNav() {
                 }
                 variant="ghost"
                 isIconOnly
-                icon={mode === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                icon={
+                  <>
+                    <Moon
+                      size={20}
+                      {...stylex.props(
+                        themeMode === 'system'
+                          ? styles.moonWhenSystem
+                          : mode === 'light'
+                            ? styles.iconShown
+                            : styles.iconHidden,
+                      )}
+                    />
+                    <Sun
+                      size={20}
+                      {...stylex.props(
+                        themeMode === 'system'
+                          ? styles.sunWhenSystem
+                          : mode === 'dark'
+                            ? styles.iconShown
+                            : styles.iconHidden,
+                      )}
+                    />
+                  </>
+                }
                 onClick={toggleMode}
               />
               <Button
