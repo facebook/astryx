@@ -98,7 +98,7 @@ export const stoneTheme = defineTheme({
     '--color-neutral': ['#25252a0f', '#f3f3f51a'], // light: Stone Neutral T15 · 6% / dark: T96 · 10%
     '--color-background-surface': ['#ffffff', '#1b1b1f'], // dark: Stone Neutral T10
     '--color-background-body': ['#f3f3f5', '#111015'], // dark: Stone Neutral T5
-    '--color-overlay': ['#25252a80', '#28282a'], // light: Stone Neutral T15 · 50%
+    '--color-overlay': ['#25252a80', '#28282acc'], // light: Stone Neutral T15 · 50% / dark: 80%
     '--color-overlay-hover': ['#25252a0d', '#f3f3f5'], // light: Stone Neutral T15 · 5%
     '--color-overlay-pressed': ['#25252a1a', '#f3f3f5'], // light: Stone Neutral T15 · 10%
     '--color-background-muted': ['#e2e2e8', '#3b3b3f'], // light: Stone Neutral T90
@@ -136,12 +136,12 @@ export const stoneTheme = defineTheme({
     '--color-warning-muted': ['#f4e1b7', '#d7c59c'], // Yellow T90 / T80
 
     // Border — H=291
-    '--color-border': ['#e2e2e8', '#f3f3f5'], // light: Stone Neutral T90
+    '--color-border': ['#e2e2e8', '#f3f3f51a'], // light: Stone Neutral T90 / dark: T96 · 10%
     '--color-border-emphasized': ['#83838a', '#5e5e61'], // T55 C=4 / T40 C=2
 
     // Effects — H=291
     '--color-skeleton': ['#d4d4da', '#5e5e64'], // T85 / T40 from H=291 C=3
-    '--color-shadow': ['#25252a1a', '#000000'], // light: Stone Neutral T15 · 10%
+    '--color-shadow': ['#25252a1a', '#0000004d'], // light: Stone Neutral T15 · 10% / dark: 30%
     '--color-tint-hover': ['black', 'white'],
 
     // Typography override
