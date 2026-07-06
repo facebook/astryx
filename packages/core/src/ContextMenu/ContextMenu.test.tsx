@@ -199,16 +199,6 @@ describe('ContextMenu', () => {
       </ContextMenu>,
     );
     const trigger = screen.getByTestId('ctx');
-    // Anchor the trigger box so the rect fallback has a position to read.
-    trigger.getBoundingClientRect = () =>
-      ({
-        left: 40,
-        top: 10,
-        bottom: 30,
-        right: 100,
-        width: 60,
-        height: 20,
-      }) as DOMRect;
     // Keyboard-initiated contextmenu: coords are (0,0) and detail is 0.
     fireEvent.contextMenu(trigger, {clientX: 0, clientY: 0, detail: 0});
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();

@@ -3,12 +3,13 @@
 
 /**
  * @file ContextMenu.tsx
- * @input Uses React, StyleX, useLayer (fixed mode), useListFocus
+ * @input Uses React, StyleX, useLayer (context mode), useListFocus
  * @output Exports ContextMenu component
  * @position Core implementation; consumed by index.ts
  *
- * Right-click context menu positioned at cursor coordinates.
- * Reuses DropdownMenu item rendering and keyboard navigation.
+ * Right-click context menu anchored to the trigger element via CSS anchor
+ * positioning (scroll-follow + auto-flip) — same display:contents wrapper
+ * pattern as Tooltip and HoverCard for ref preservation.
  *
  * Supports two content modes with a single keyboard/focus path:
  * - **Data-driven**: pass `items` array (converted to components internally)
@@ -36,6 +37,7 @@ import React, {
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useLayer} from '../Layer/useLayer';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {renderDropdownItems} from '../DropdownMenu/renderDropdownItems';
 import {
   DropdownMenuContext,
@@ -65,10 +67,14 @@ import type {
 } from '../DropdownMenu/DropdownMenu';
 
 const styles = stylex.create({
-  // Trigger wrapper: suppress the iOS long-press callout/selection so the
-  // long-press opens our context menu instead of the native text/callout UI.
+  // Trigger wrapper: invisible (display:contents) — the child element is the
+  // effective right-click target. Only sets the iOS long-press callout guard.
   trigger: {
+    display: 'contents',
     WebkitTouchCallout: 'none',
+  },
+  wrapperInline: {
+    display: 'inline',
   },
   menu: {
     boxSizing: 'border-box',
@@ -116,10 +122,9 @@ interface ContextMenuBaseProps extends BaseProps {
   /** Ref forwarded to the trigger wrapper element. */
   ref?: React.Ref<HTMLDivElement>;
   /**
-   * Styles applied to the trigger wrapper element (the right-click target).
-   * By default the trigger is a plain block that hugs its content — pass a
-   * fill style (e.g. `width/height: 100%`) when the whole parent area should
-   * be right-clickable (as the Table does for full-cell context menus).
+   * @deprecated No longer needed — the trigger wrapper uses display:contents
+   * so no extra box is introduced. The child element is the effective
+   * right-click target and fills its container naturally.
    */
   triggerXstyle?: StyleXStyles | StyleXStyles[];
   /** The trigger area — right-click on this to open the menu. */
@@ -181,6 +186,10 @@ export type ContextMenuProps = ContextMenuDataProps | ContextMenuCompoundProps;
  * </ContextMenu>
  * ```
  */
+function isTextOnly(children: ReactNode): boolean {
+  return typeof children === 'string' || typeof children === 'number';
+}
+
 export function ContextMenu({
   children,
   menuWidth,
@@ -192,7 +201,6 @@ export function ContextMenu({
   className,
   style,
   xstyle,
-  triggerXstyle,
   'data-testid': testId,
   ...props
 }: ContextMenuProps) {
@@ -200,7 +208,6 @@ export function ContextMenu({
   const menuContent = 'menuContent' in props ? props.menuContent : undefined;
 
   const menuId = useId();
-  const positionRef = useRef({x: 0, y: 0});
   // Element focused before the menu opened, restored when it closes so focus
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
@@ -208,7 +215,7 @@ export function ContextMenu({
   const [isOpen, setIsOpen] = useState(false);
 
   const layer = useLayer({
-    mode: 'fixed',
+    mode: 'context',
     onHide: useCallback(() => {
       setIsOpen(false);
       onOpenChange?.(false);
@@ -332,18 +339,6 @@ export function ContextMenu({
         return;
       }
       e.preventDefault();
-      // A keyboard-initiated contextmenu (Shift+F10 / the Menu key) fires a
-      // `contextmenu` event whose coordinates are (0, 0) in several browsers.
-      // Detect that and anchor the menu to the trigger's box instead, so the
-      // menu is reachable without a pointer (menus-8).
-      const isKeyboardInvoked =
-        e.clientX === 0 && e.clientY === 0 && e.detail === 0;
-      if (isKeyboardInvoked && e.currentTarget instanceof HTMLElement) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        positionRef.current = {x: rect.left, y: rect.bottom};
-      } else {
-        positionRef.current = {x: e.clientX, y: e.clientY};
-      }
       // Remember the element focused before opening so we can restore it on
       // close (Escape or outside-click), instead of dropping focus to <body>.
       triggerFocusRef.current =
@@ -358,13 +353,13 @@ export function ContextMenu({
 
   // Touch long-press invocation (menus-8). iOS Safari never synthesizes a
   // `contextmenu` event on long-press, so a context menu is otherwise
-  // unreachable on touch. Open the menu at the touch point once the press is
-  // held long enough (see useLongPress for timer/move-cancel/cleanup logic).
+  // unreachable on touch. Open the menu once the press is held long enough
+  // (see useLongPress for timer/move-cancel/cleanup logic). Position is
+  // handled by CSS anchor positioning on the trigger element.
   const longPressHandlers = useLongPress({
     disabled: isDisabled,
     onLongPress: useCallback(
-      (point: {x: number; y: number}) => {
-        positionRef.current = {x: point.x, y: point.y};
+      (_point: {x: number; y: number}) => {
         layer.show();
         requestAnimationFrame(() => focusFirst());
       },
@@ -384,24 +379,80 @@ export function ContextMenu({
   const resolvedMenuContent =
     props.items !== undefined ? renderDropdownItems(items) : menuContent;
 
+  // --- Trigger wrapper ---
+  // display:contents so no extra box is introduced — matches Tooltip and
+  // HoverCard. The child element becomes the effective right-click target.
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const textOnly = isTextOnly(children);
+
+  useIsomorphicLayoutEffect(() => {
+    if (textOnly) {
+      return;
+    }
+    const wrapper = wrapperRef.current;
+    if (!wrapper) {
+      return;
+    }
+    const firstChild = wrapper.firstElementChild as HTMLElement | null;
+    if (!firstChild) {
+      return;
+    }
+    layer.ref(firstChild);
+    return () => {
+      layer.ref(null);
+    };
+  }, [textOnly, layer.ref]);
+
+  // Text-only children: wrap in an inline span with the ref directly
+  if (textOnly) {
+    return (
+      <>
+        <span
+          ref={layer.ref}
+          onContextMenu={handleContextMenu}
+          {...longPressHandlers}
+          data-testid={testId}
+          {...stylex.props(styles.trigger, styles.wrapperInline)}>
+          {children}
+        </span>
+        {layer.render(
+          <div
+            ref={listRef}
+            id={menuId}
+            role="menu"
+            aria-label={label}
+            onKeyDown={listKeyDown}
+            {...mergeProps(
+              themeProps('context-menu'),
+              stylex.props(styles.menu, xstyle),
+              className,
+              style,
+            )}>
+            <DropdownMenuContext value={contextValue}>
+              {resolvedMenuContent}
+            </DropdownMenuContext>
+          </div>,
+          {
+            placement: 'below',
+            alignment: 'start',
+            xstyle: [popoverXstyle, layerAnimations.below],
+          },
+        )}
+      </>
+    );
+  }
+
+  // Element children: use display:contents wrapper, ref on first child
   return (
     <>
       <div
-        ref={ref}
+        ref={wrapperRef}
         onContextMenu={handleContextMenu}
         {...longPressHandlers}
         data-testid={testId}
-        {...stylex.props(
-          styles.trigger,
-          ...(triggerXstyle
-            ? Array.isArray(triggerXstyle)
-              ? triggerXstyle
-              : [triggerXstyle]
-            : []),
-        )}>
+        {...stylex.props(styles.trigger)}>
         {children}
       </div>
-
       {layer.render(
         <div
           ref={listRef}
@@ -420,8 +471,8 @@ export function ContextMenu({
           </DropdownMenuContext>
         </div>,
         {
-          x: positionRef.current.x,
-          y: positionRef.current.y,
+          placement: 'below',
+          alignment: 'start',
           xstyle: [popoverXstyle, layerAnimations.below],
         },
       )}

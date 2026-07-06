@@ -21,7 +21,7 @@ export const docs = {
       {property: 'padding', vars: ['--_dropdown-menu-padding']},
     ],
   },
-  description: 'A context menu that appears on right-click at the cursor position. Wraps trigger content as children.',
+  description: 'A context menu anchored to the trigger element via CSS anchor positioning (scroll-follow + auto-flip). Uses display:contents wrapper so no extra box is introduced.',
   props: [
     {
       name: 'children',
