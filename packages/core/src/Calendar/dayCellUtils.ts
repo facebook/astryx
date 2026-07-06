@@ -104,48 +104,58 @@ export function computeDayCellState(input: DayCellStateInput): DayCellState {
 }
 
 /**
- * Rounding for the range background.
+ * Generic rounding for a highlight run (range or preview).
  *
- * Rounds at the range endpoints and the grid row edges, and also caps the
- * highlight where the range meets a break in continuity — a neighbouring cell
- * that is disabled or an adjacent-month (outside) day. Without a cap the
- * highlight would run with a hard square edge straight into the disabled/gap
- * cell; capping it reads as a proper end of the highlighted run (#2715).
- *
- * `neighbors` describes whether the day immediately before/after (in the same
- * week row) continues the highlighted range. When omitted, only the endpoint
- * and grid-edge rounding applies (backwards compatible).
+ * Rounds at the run's endpoints and the grid row edges, and also caps the
+ * highlight where the run meets a break in continuity — a neighbouring cell
+ * that is disabled or an adjacent-month (outside) day (#2715).
  */
+function computeHighlightRounding(input: {
+  isStart: boolean;
+  isEnd: boolean;
+  isFirstColumn: boolean;
+  isLastColumn: boolean;
+  prevContinues?: boolean;
+  nextContinues?: boolean;
+}) {
+  const prevBreaks =
+    input.prevContinues !== undefined ? !input.prevContinues : false;
+  const nextBreaks =
+    input.nextContinues !== undefined ? !input.nextContinues : false;
+  return {
+    roundLeft: input.isStart || input.isFirstColumn || prevBreaks,
+    roundRight: input.isEnd || input.isLastColumn || nextBreaks,
+  };
+}
+
+/** Rounding for the committed range background. */
 export function computeRangeRounding(
   state: DayCellState,
   neighbors?: {prevInRange?: boolean; nextInRange?: boolean},
 ) {
-  const prevBreaks = neighbors ? neighbors.prevInRange === false : false;
-  const nextBreaks = neighbors ? neighbors.nextInRange === false : false;
-  return {
-    roundLeft: state.isRangeStart || state.isFirstColumn || prevBreaks,
-    roundRight: state.isRangeEnd || state.isLastColumn || nextBreaks,
-  };
+  return computeHighlightRounding({
+    isStart: state.isRangeStart,
+    isEnd: state.isRangeEnd,
+    isFirstColumn: state.isFirstColumn,
+    isLastColumn: state.isLastColumn,
+    prevContinues: neighbors?.prevInRange,
+    nextContinues: neighbors?.nextInRange,
+  });
 }
 
-/**
- * Rounding for the preview background (the transient highlight shown while
- * hovering during range selection). Mirrors {@link computeRangeRounding}: it
- * rounds at the preview endpoints and grid row edges, and caps the highlight
- * where the preview run meets a disabled or adjacent-month (outside) day so the
- * hover highlight terminates cleanly at the gap just like the committed range
- * does (#2715).
- */
+/** Rounding for the hover-preview background. */
 export function computePreviewRounding(
   state: DayCellState,
   neighbors?: {prevInPreview?: boolean; nextInPreview?: boolean},
 ) {
-  const prevBreaks = neighbors ? neighbors.prevInPreview === false : false;
-  const nextBreaks = neighbors ? neighbors.nextInPreview === false : false;
-  return {
-    roundLeft: state.isPreviewStart || state.isFirstColumn || prevBreaks,
-    roundRight: state.isPreviewEnd || state.isLastColumn || nextBreaks,
-  };
+  return computeHighlightRounding({
+    isStart: state.isPreviewStart,
+    isEnd: state.isPreviewEnd,
+    isFirstColumn: state.isFirstColumn,
+    isLastColumn: state.isLastColumn,
+    prevContinues: neighbors?.prevInPreview,
+    nextContinues: neighbors?.nextInPreview,
+  });
 }
 
 /** Whether a day is a selection endpoint (selected, range start, or range end). */
@@ -154,12 +164,27 @@ export function isEndpoint(state: DayCellState): boolean {
 }
 
 /**
- * Whether a day participates in the continuous range highlight — i.e. it is a
- * range day whose background actually paints as part of an unbroken run.
- * Outside (adjacent-month) and disabled days break the run, so the highlighted
- * day beside them gets an end cap (see {@link computeRangeRounding}). Used to
- * derive a neighbour's continuity.
+ * Whether a day is part of an unbroken highlight run (enabled, in-month, inside
+ * the given span). Outside and disabled days break the run, producing end caps.
  */
+function isSpanHighlighted(input: {
+  date: PlainDate;
+  spanStart: PlainDate | null;
+  spanEnd: PlainDate | null;
+  isDisabled: boolean;
+  isOutside: boolean;
+}): boolean {
+  const {date, spanStart, spanEnd, isDisabled, isOutside} = input;
+  return !!(
+    !isOutside &&
+    !isDisabled &&
+    spanStart &&
+    spanEnd &&
+    plainDateIsInRange(date, [spanStart, spanEnd])
+  );
+}
+
+/** Whether a day participates in the continuous committed-range highlight. */
 export function isRangeHighlighted(input: {
   date: PlainDate;
   mode: 'single' | 'range';
@@ -168,22 +193,17 @@ export function isRangeHighlighted(input: {
   isDisabled: boolean;
   isOutside: boolean;
 }): boolean {
-  const {date, mode, rangeStart, rangeEnd, isDisabled, isOutside} = input;
-  return !!(
-    mode === 'range' &&
-    !isOutside &&
-    !isDisabled &&
-    rangeStart &&
-    rangeEnd &&
-    plainDateIsInRange(date, [rangeStart, rangeEnd])
-  );
+  if (input.mode !== 'range') {return false;}
+  return isSpanHighlighted({
+    date: input.date,
+    spanStart: input.rangeStart,
+    spanEnd: input.rangeEnd,
+    isDisabled: input.isDisabled,
+    isOutside: input.isOutside,
+  });
 }
 
-/**
- * Preview-span counterpart of {@link isRangeHighlighted}: whether a day is part
- * of an unbroken preview-highlight run (enabled, in-month, inside the preview
- * span). Used to cap the preview highlight at disabled / outside neighbours.
- */
+/** Whether a day participates in the continuous hover-preview highlight. */
 export function isPreviewHighlighted(input: {
   date: PlainDate;
   previewStart: PlainDate | null;
@@ -191,14 +211,13 @@ export function isPreviewHighlighted(input: {
   isDisabled: boolean;
   isOutside: boolean;
 }): boolean {
-  const {date, previewStart, previewEnd, isDisabled, isOutside} = input;
-  return !!(
-    !isOutside &&
-    !isDisabled &&
-    previewStart &&
-    previewEnd &&
-    plainDateIsInRange(date, [previewStart, previewEnd])
-  );
+  return isSpanHighlighted({
+    date: input.date,
+    spanStart: input.previewStart,
+    spanEnd: input.previewEnd,
+    isDisabled: input.isDisabled,
+    isOutside: input.isOutside,
+  });
 }
 
 /**
