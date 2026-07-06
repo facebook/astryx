@@ -22,7 +22,7 @@
  * - /packages/cli/templates/blocks/components/ChatLayout/ (block examples)
  */
 
-import {type ReactNode, useMemo, useRef} from 'react';
+import {type ReactNode, useCallback, useMemo, useRef, useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
@@ -112,15 +112,11 @@ const styles = stylex.create({
     flex: 1,
   },
   rootScrollable: {
-    // Single-cell grid: the message area and the sticky dock occupy the SAME
-    // grid cell (both `grid-row/column: 1`), so the dock overlaps the tail of
-    // the messages instead of adding its own flow height on top. That removes
-    // the phantom scrollbar (previously the container overflowed by exactly the
-    // dock height) while keeping the dock `position: sticky` so the composer
-    // stays pinned to the bottom as messages stream in (#2573).
-    display: 'grid',
-    gridTemplateColumns: '1fr',
-    gridTemplateRows: '1fr',
+    // Self-scroll mode: simple overflow container. The dock sits after the
+    // message area in normal flow with `position: sticky; bottom: 0` so it
+    // stays pinned without capturing scroll events. The message area reserves
+    // space via dynamic padding-bottom equal to the dock height so all content
+    // can scroll into view (#2573).
     overflowY: 'auto',
     overflowX: 'hidden',
     // Hide scrollbar during programmatic scroll animation
@@ -140,12 +136,10 @@ const styles = stylex.create({
     maxWidth: '100%',
     paddingInline: 0,
   },
-  // Self-scroll only: share the single grid cell with the dock and fill it, so
-  // short content still pushes the composer to the bottom (empty space sits
-  // above it) without stacking full height on top of the in-flow dock.
+  // Self-scroll only: the message area fills the viewport height and reserves
+  // bottom padding equal to the dock height, so messages scroll into view
+  // without being hidden behind the sticky composer.
   messageAreaSelfScroll: {
-    gridRow: 1,
-    gridColumn: 1,
     minHeight: '100%',
   },
 
@@ -170,14 +164,12 @@ const styles = stylex.create({
     position: 'fixed',
   },
   dockContainerSticky: {
-    // Shares the single grid cell with the message area (same row/column) and
-    // aligns to the bottom, so it overlaps the tail of the messages rather than
-    // adding flow height. `position: sticky` keeps it pinned to the bottom of
-    // the scroll viewport as content grows (#2573).
+    // Normal flow after the message area; sticky keeps the composer pinned to
+    // the bottom of the scroll viewport. Negative margin-top (set inline) pulls
+    // the dock back into the message area's padding so it adds no extra scroll
+    // height and doesn't capture scroll events (#2573).
     position: 'sticky',
-    gridRow: 1,
-    gridColumn: 1,
-    alignSelf: 'end',
+    bottom: 0,
   },
 
   blurLayer: {
@@ -297,6 +289,24 @@ export function ChatLayout({
   const scrollContainerRef = externalScrollRef ?? rootRef;
   const isSelfScrolling = !externalScrollRef;
 
+  // Measure dock height so the message area can reserve equivalent padding
+  // and the negative margin-top pulls the dock back into that space.
+  const [dockHeight, setDockHeight] = useState(0);
+  const dockResizeRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el || typeof ResizeObserver === 'undefined') {return;}
+    const observer = new ResizeObserver(entries => {
+      const entry = entries[0];
+      if (!entry) {return;}
+      const height =
+        entry.borderBoxSize?.[0]?.blockSize ??
+        entry.contentRect?.height ??
+        el.offsetHeight;
+      setDockHeight(height);
+    });
+    observer.observe(el, {box: 'border-box'});
+    return () => observer.disconnect();
+  }, []);
+
   // --- Default scroll behavior ---
   const scroll = useChatStreamScroll({scrollRef: scrollContainerRef});
   const newMsgs = useChatNewMessages({
@@ -364,10 +374,14 @@ export function ChatLayout({
         )}>
         {/* Message area */}
         <div
-          {...stylex.props(
-            styles.messageArea,
-            isSelfScrolling && styles.messageAreaSelfScroll,
-            currentDensity.messageArea,
+          {...mergeProps(
+            stylex.props(
+              styles.messageArea,
+              isSelfScrolling && styles.messageAreaSelfScroll,
+              currentDensity.messageArea,
+            ),
+            undefined,
+            isSelfScrolling ? {paddingBottom: dockHeight} : undefined,
           )}>
           {showEmpty && emptyState ? (
             <div {...stylex.props(styles.emptyState)}>{emptyState}</div>
@@ -378,11 +392,16 @@ export function ChatLayout({
 
         {/* Dock container — sticky/fixed, holds blur + scroll button + composer */}
         <div
-          {...stylex.props(
-            styles.dockContainer,
-            isSelfScrolling
-              ? styles.dockContainerSticky
-              : styles.dockContainerFixed,
+          ref={isSelfScrolling ? dockResizeRef : undefined}
+          {...mergeProps(
+            stylex.props(
+              styles.dockContainer,
+              isSelfScrolling
+                ? styles.dockContainerSticky
+                : styles.dockContainerFixed,
+            ),
+            undefined,
+            isSelfScrolling ? {marginTop: -dockHeight} : undefined,
           )}>
           {/* Scroll-to-bottom button */}
           {scrollButton === undefined ? defaultScrollButton : scrollButton}

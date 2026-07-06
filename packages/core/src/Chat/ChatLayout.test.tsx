@@ -116,17 +116,14 @@ describe('ChatLayout self-scroll overflow (#2573)', () => {
     // The dock stays sticky so the composer pins to the bottom on scroll.
     expect(getComputedStyle(dock).position).toBe('sticky');
 
-    // The message area and the dock share a single grid cell (both grid-row/
-    // column: 1), so the dock overlaps the message tail instead of adding its
-    // own flow height. Previously the message area was min-height:100% AND the
-    // dock added its height on top, overflowing by exactly the dock height.
-    expect(getComputedStyle(messageArea).gridRow).toBe('1');
-    expect(getComputedStyle(messageArea).gridColumn).toBe('1');
-    expect(getComputedStyle(dock).gridRow).toBe('1');
-    expect(getComputedStyle(dock).gridColumn).toBe('1');
+    // The message area fills the viewport height and reserves bottom padding
+    // equal to the dock height, so messages can scroll into view without being
+    // hidden behind the sticky composer. The dock uses negative margin-top to
+    // pull itself back into that padding space, avoiding extra scroll height.
+    expect(getComputedStyle(messageArea).minHeight).toBe('100%');
   });
 
-  it('overlaps the sticky dock in a single grid cell so the composer stays at the bottom', () => {
+  it('keeps the composer docked at the bottom with short content', () => {
     const {container} = render(
       <ChatLayout composer={<div>c</div>}>
         <div>short message</div>
@@ -136,13 +133,11 @@ describe('ChatLayout self-scroll overflow (#2573)', () => {
     const messageArea = root.firstElementChild as HTMLElement;
     const dock = root.children[1] as HTMLElement;
 
-    // Root is a single-cell grid in self-scroll mode.
-    expect(getComputedStyle(root).display).toBe('grid');
-    // Message area fills the cell so short content still pushes the composer to
-    // the bottom (empty space sits above it), keeping the composer position
-    // stable as messages stream in.
+    // Root is the scroll container.
+    expect(getComputedStyle(root).overflowY).toBe('auto');
+    // Message area fills viewport so dock is pushed to the bottom.
     expect(getComputedStyle(messageArea).minHeight).toBe('100%');
-    // The dock aligns to the bottom of the shared cell and overlaps the tail.
-    expect(getComputedStyle(dock).alignSelf).toBe('end');
+    // Dock is sticky at bottom — stays pinned regardless of content length.
+    expect(getComputedStyle(dock).position).toBe('sticky');
   });
 });
