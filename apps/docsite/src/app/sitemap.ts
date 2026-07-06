@@ -27,6 +27,13 @@ import {packages} from '../generated/packageRegistry';
 import {templates} from '../generated/templateRegistry';
 import {blogPosts} from '../generated/blogRegistry';
 
+// The canary static export (output:'export') needs the sitemap emitted as a
+// file; force-static guarantees that. The latest (server) build leaves it
+// 'auto' so its `'use cache'` caching model applies. Gated on the target so the
+// two build modes don't fight over the route's rendering strategy.
+export const dynamic =
+  process.env.DOCSITE_TARGET === 'canary' ? 'force-static' : 'auto';
+
 // Theme packages don't get a /docs/[topic] reference page (see the docs route's
 // own filter); keep the sitemap aligned with what actually renders.
 function isThemePackage(name: string): boolean {
@@ -37,11 +44,20 @@ function url(path: string): string {
   return new URL(path, SITE_URL).toString();
 }
 
-async function getLastModified(): Promise<Date> {
+async function getLastModifiedCached(): Promise<Date> {
   'use cache';
   cacheLife('days');
   return new Date();
 }
+
+// The canary build is a static export (output:'export'), which cannot enable
+// cacheComponents, so `'use cache'` is invalid there. Use a plain function for
+// that target; the latest (server) build keeps the cached variant. See
+// next.config.mjs / scripts/build-versioned.mjs.
+const getLastModified =
+  process.env.DOCSITE_TARGET === 'canary'
+    ? async (): Promise<Date> => new Date()
+    : getLastModifiedCached;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = await getLastModified();
