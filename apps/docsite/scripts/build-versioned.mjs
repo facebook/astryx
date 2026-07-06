@@ -151,10 +151,25 @@ function injectForceStaticIfMetadataRoute(rel, src) {
   return lines.join('\n');
 }
 
-const useCacheFiles = [];
-function stripUseCacheForExport() {
+const canaryPatchedFiles = [];
+/**
+ * Apply the canary-only source transforms, stashing each original for restore:
+ *  1. strip `'use cache'`/cacheLife from every file that uses them (invalid
+ *     under output:'export' — see stripUseCache), and
+ *  2. inject `dynamic='force-static'` into metadata routes (sitemap.ts,
+ *     robots.ts) so they emit as static files under export.
+ * These are independent: a metadata route may need (2) without having (1)
+ * (robots.ts has no `'use cache'`), so both file sets are unioned.
+ */
+function applyCanarySourceTransforms() {
   rmrf(CACHE_STASH);
-  for (const file of findFilesWithUseCache(SRC_DIR)) {
+  const targets = new Set(findFilesWithUseCache(SRC_DIR));
+  // Add metadata routes that need force-static even without `'use cache'`.
+  for (const name of ['sitemap.ts', 'robots.ts']) {
+    const p = path.join(APP_DIR, name);
+    if (fs.existsSync(p)) targets.add(p);
+  }
+  for (const file of targets) {
     const rel = path.relative(SRC_DIR, file);
     const stash = path.join(CACHE_STASH, rel);
     fs.mkdirSync(path.dirname(stash), {recursive: true});
@@ -162,18 +177,18 @@ function stripUseCacheForExport() {
     let transformed = stripUseCache(fs.readFileSync(file, 'utf-8'));
     transformed = injectForceStaticIfMetadataRoute(rel, transformed);
     fs.writeFileSync(file, transformed);
-    useCacheFiles.push({file, rel});
+    canaryPatchedFiles.push({file, rel});
   }
-  if (useCacheFiles.length) {
+  if (canaryPatchedFiles.length) {
     console.log(
-      `Stripped 'use cache' for the export from: ${useCacheFiles
+      `Applied canary source transforms (strip use-cache / inject force-static) to: ${canaryPatchedFiles
         .map(f => f.rel)
         .join(', ')}`,
     );
   }
 }
-function restoreUseCache() {
-  for (const {file, rel} of useCacheFiles) {
+function restoreCanarySourceTransforms() {
+  for (const {file, rel} of canaryPatchedFiles) {
     const stash = path.join(CACHE_STASH, rel);
     if (fs.existsSync(stash)) fs.copyFileSync(stash, file);
   }
@@ -217,9 +232,10 @@ function restoreRouteHandlers() {
   }
   rmrf(ROUTE_STASH);
 }
-// `'use cache'` is invalid under output:'export' (see stripUseCacheForExport);
-// strip it for the canary pass, restored with the routes below.
-stripUseCacheForExport();
+// Canary-only source transforms (invalid under output:'export' otherwise):
+// strip `'use cache'` and inject force-static into metadata routes. Restored
+// alongside the route handlers below.
+applyCanarySourceTransforms();
 try {
   // --webpack: Next 16 defaults to Turbopack, which hard-errors when it sees
   // the `webpack` config key (used for @xds/core ESM resolution + theme CSS
@@ -228,7 +244,7 @@ try {
   run('pnpm generate && next build --webpack', {DOCSITE_TARGET: 'canary'});
 } finally {
   restoreRouteHandlers();
-  restoreUseCache();
+  restoreCanarySourceTransforms();
 }
 if (!fs.existsSync(OUT)) {
   throw new Error('Canary export did not produce out/. Aborting.');
