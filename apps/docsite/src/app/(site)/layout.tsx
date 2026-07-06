@@ -14,7 +14,11 @@ export default async function MarketingLayout({
   const year = await getCopyrightYear();
 
   return (
-    <AppShell variant="surface" height="auto" topNav={<SharedTopNav />}>
+    <AppShell
+      variant="surface"
+      height="auto"
+      mobileNav={false}
+      topNav={<SharedTopNav />}>
       <div className={styles.shell}>
         <div className={styles.main}>{children}</div>
         <div className={styles.footer}>

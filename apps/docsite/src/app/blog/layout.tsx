@@ -19,7 +19,11 @@ export default async function BlogLayout({
   const year = await getCopyrightYear();
 
   return (
-    <AppShell variant="surface" height="auto" topNav={<SharedTopNav />}>
+    <AppShell
+      variant="surface"
+      height="auto"
+      mobileNav={false}
+      topNav={<SharedTopNav />}>
       {children}
       <SiteFooter year={year} />
     </AppShell>

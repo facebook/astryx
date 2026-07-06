@@ -4,10 +4,18 @@
 
 import {useEffect, useState} from 'react';
 import {usePathname} from 'next/navigation';
-import {TopNav, TopNavHeading, TopNavItem} from '@astryxdesign/core/TopNav';
+import * as stylex from '@stylexjs/stylex';
+import {
+  TopNav,
+  TopNavHeading,
+  TopNavItem,
+  TopNavRenderContext,
+} from '@astryxdesign/core/TopNav';
+import {MobileNav} from '@astryxdesign/core/MobileNav';
 import {Button} from '@astryxdesign/core/Button';
 import {HStack} from '@astryxdesign/core/Layout';
-import {Search, HeartHandshake, Sun, Moon} from 'lucide-react';
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {Search, HeartHandshake, Sun, Moon, Menu} from 'lucide-react';
 import {GITHUB_REPO} from '../constants';
 import {AstryxIcon} from './logos';
 import {SearchPalette} from './SearchPalette';
@@ -35,8 +43,46 @@ const GitHubIcon = ({
   </svg>
 );
 
+// Responsive helpers. The desktop links and the mobile hamburger both live in
+// the DOM at all times; a pure CSS @media query decides which is visible so the
+// server-rendered HTML is correct on first paint (no post-hydration flip).
+const MOBILE_BREAKPOINT = '@media (max-width: 768px)';
+
+const styles = stylex.create({
+  desktopNav: {
+    display: {
+      default: 'flex',
+      [MOBILE_BREAKPOINT]: 'none',
+    },
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+  },
+  mobileToggle: {
+    display: {
+      default: 'none',
+      [MOBILE_BREAKPOINT]: 'flex',
+    },
+    alignItems: 'center',
+  },
+  drawerItems: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacingVars['--spacing-0-5'],
+  },
+});
+
+// Primary navigation links, shared by the desktop bar and the mobile drawer.
+const NAV_ITEMS = [
+  {key: 'docs', label: 'Docs', href: '/docs/getting-started'},
+  {key: 'components', label: 'Components', href: '/components'},
+  {key: 'templates', label: 'Templates', href: '/templates'},
+  {key: 'themes', label: 'Themes', href: '/themes'},
+  {key: 'playground', label: 'Playground', href: '/playground'},
+] as const;
+
 export function SharedTopNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const {mode, toggleMode} = useThemeMode();
 
@@ -104,33 +150,16 @@ export function SharedTopNav() {
           />
         }
         centerContent={
-          <>
-            <TopNavItem
-              label="Docs"
-              href="/docs/getting-started"
-              isSelected={getActiveItem() === 'docs'}
-            />
-            <TopNavItem
-              label="Components"
-              href="/components"
-              isSelected={getActiveItem() === 'components'}
-            />
-            <TopNavItem
-              label="Templates"
-              href="/templates"
-              isSelected={getActiveItem() === 'templates'}
-            />
-            <TopNavItem
-              label="Themes"
-              href="/themes"
-              isSelected={getActiveItem() === 'themes'}
-            />
-            <TopNavItem
-              label="Playground"
-              href="/playground"
-              isSelected={getActiveItem() === 'playground'}
-            />
-          </>
+          <div {...stylex.props(styles.desktopNav)}>
+            {NAV_ITEMS.map(item => (
+              <TopNavItem
+                key={item.key}
+                label={item.label}
+                href={item.href}
+                isSelected={getActiveItem() === item.key}
+              />
+            ))}
+          </div>
         }
         endContent={
           <HStack gap={2}>
@@ -188,6 +217,16 @@ export function SharedTopNav() {
                 trackClickCta({page: 'landing', target: 'get_started'})
               }
             />
+            <div {...stylex.props(styles.mobileToggle)}>
+              <Button
+                label="Open menu"
+                tooltip="Menu"
+                variant="ghost"
+                isIconOnly
+                icon={<Menu size={20} />}
+                onClick={() => setIsMenuOpen(true)}
+              />
+            </div>
           </HStack>
         }
       />
@@ -199,6 +238,34 @@ export function SharedTopNav() {
         docTopics={docTopics}
         templates={templates}
       />
+      <MobileNav
+        isOpen={isMenuOpen}
+        onOpenChange={setIsMenuOpen}
+        side="end"
+        label="Astryx navigation"
+        header={
+          <AstryxIcon
+            width={24}
+            height={24}
+            role="img"
+            aria-label="Astryx"
+            style={{display: 'block', color: 'var(--color-brand)'}}
+          />
+        }>
+        <TopNavRenderContext value="drawer">
+          <div {...stylex.props(styles.drawerItems)}>
+            {NAV_ITEMS.map(item => (
+              <TopNavItem
+                key={item.key}
+                label={item.label}
+                href={item.href}
+                isSelected={getActiveItem() === item.key}
+                onClick={() => setIsMenuOpen(false)}
+              />
+            ))}
+          </div>
+        </TopNavRenderContext>
+      </MobileNav>
     </>
   );
 }
