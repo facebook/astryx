@@ -37,7 +37,9 @@ const DOCSITE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const OUT = path.join(DOCSITE, 'out');
 const PUBLIC_CANARY = path.join(DOCSITE, 'public', 'canary');
 const APP_DIR = path.join(DOCSITE, 'src', 'app');
+const SRC_DIR = path.join(DOCSITE, 'src');
 const ROUTE_STASH = path.join(DOCSITE, '.route-stash');
+const CACHE_STASH = path.join(DOCSITE, '.use-cache-stash');
 
 function run(cmd, env) {
   console.log(`\n$ ${cmd}`);
@@ -81,6 +83,103 @@ function pruneEmptyDirsUpward(dir, stopAt) {
   }
 }
 
+/**
+ * Next 16 `'use cache'` (Cache Components / dynamicIO) is a COMPILE-TIME
+ * directive: its mere presence in a module errors ("To use 'use cache', enable
+ * cacheComponents") under the canary `output:'export'` build, which cannot
+ * enable cacheComponents. A runtime DOCSITE_TARGET branch can't help — the
+ * compiler scans the source regardless. So for the canary pass we physically
+ * strip the directive, its `cacheLife()` calls, and the now-unused `cacheLife`
+ * import from every source file, stashing originals to restore afterward. The
+ * latest (server) build keeps them intact (cacheComponents is on there).
+ * Auto-discovered so a `'use cache'` added on main can't silently break export.
+ */
+function findFilesWithUseCache(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === '__tests__' || entry.name === 'node_modules') continue;
+      out.push(...findFilesWithUseCache(full));
+    } else if (/\.(ts|tsx)$/.test(entry.name)) {
+      const body = fs.readFileSync(full, 'utf-8');
+      if (/['"]use cache['"]/.test(body)) out.push(full);
+    }
+  }
+  return out;
+}
+
+function stripUseCache(src) {
+  return src
+    .split('\n')
+    .filter(line => {
+      const t = line.trim();
+      if (t === "'use cache';" || t === '"use cache";') return false;
+      if (/^cacheLife\(/.test(t)) return false;
+      if (/^import\s*\{\s*cacheLife\s*\}\s*from\s*['"]next\/cache['"];?$/.test(t))
+        return false;
+      return true;
+    })
+    .join('\n');
+}
+
+/**
+ * A metadata route (sitemap.ts/robots.ts) that dropped its `'use cache'` must
+ * still be emitted as a static file under output:'export'; Next requires an
+ * explicit `export const dynamic = 'force-static'` for that. We inject it for
+ * the canary pass only (after the imports) when the file is a metadata route
+ * and doesn't already declare `dynamic`. The source stays main-identical (no
+ * dynamic export), so the latest build is unaffected.
+ */
+function injectForceStaticIfMetadataRoute(rel, src) {
+  const base = path.basename(rel);
+  const isMetadataRoute = base === 'sitemap.ts' || base === 'robots.ts';
+  if (!isMetadataRoute || /export const dynamic\b/.test(src)) return src;
+  const lines = src.split('\n');
+  // Insert after the last top-level import line.
+  let lastImport = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^import\b/.test(lines[i])) lastImport = i;
+  }
+  const inject = [
+    '',
+    "// Injected by build-versioned.mjs for the canary static export: a",
+    "// metadata route must be force-static under output:'export'.",
+    "export const dynamic = 'force-static';",
+  ];
+  lines.splice(lastImport + 1, 0, ...inject);
+  return lines.join('\n');
+}
+
+const useCacheFiles = [];
+function stripUseCacheForExport() {
+  rmrf(CACHE_STASH);
+  for (const file of findFilesWithUseCache(SRC_DIR)) {
+    const rel = path.relative(SRC_DIR, file);
+    const stash = path.join(CACHE_STASH, rel);
+    fs.mkdirSync(path.dirname(stash), {recursive: true});
+    fs.copyFileSync(file, stash);
+    let transformed = stripUseCache(fs.readFileSync(file, 'utf-8'));
+    transformed = injectForceStaticIfMetadataRoute(rel, transformed);
+    fs.writeFileSync(file, transformed);
+    useCacheFiles.push({file, rel});
+  }
+  if (useCacheFiles.length) {
+    console.log(
+      `Stripped 'use cache' for the export from: ${useCacheFiles
+        .map(f => f.rel)
+        .join(', ')}`,
+    );
+  }
+}
+function restoreUseCache() {
+  for (const {file, rel} of useCacheFiles) {
+    const stash = path.join(CACHE_STASH, rel);
+    if (fs.existsSync(stash)) fs.copyFileSync(stash, file);
+  }
+  rmrf(CACHE_STASH);
+}
+
 // ── 1. Canary static export ──────────────────────────────────────────────
 console.log('=== [1/3] Building canary (static export → /canary) ===');
 rmrf(OUT);
@@ -118,10 +217,18 @@ function restoreRouteHandlers() {
   }
   rmrf(ROUTE_STASH);
 }
+// `'use cache'` is invalid under output:'export' (see stripUseCacheForExport);
+// strip it for the canary pass, restored with the routes below.
+stripUseCacheForExport();
 try {
-  run('pnpm generate && next build', {DOCSITE_TARGET: 'canary'});
+  // --webpack: Next 16 defaults to Turbopack, which hard-errors when it sees
+  // the `webpack` config key (used for @xds/core ESM resolution + theme CSS
+  // aliases in next.config.mjs). Matches the package.json `build`/`dev`
+  // scripts, which also pin --webpack.
+  run('pnpm generate && next build --webpack', {DOCSITE_TARGET: 'canary'});
 } finally {
   restoreRouteHandlers();
+  restoreUseCache();
 }
 if (!fs.existsSync(OUT)) {
   throw new Error('Canary export did not produce out/. Aborting.');
@@ -136,7 +243,7 @@ console.log(`Copied out/ → public/canary/ (${fs.readdirSync(PUBLIC_CANARY).len
 
 // ── 3. Latest server build (serves / and /canary/* + /mcp) ────────────────
 console.log('\n=== [3/3] Building latest (server, serves / + /canary) ===');
-run('pnpm generate && next build', {DOCSITE_TARGET: 'latest'});
+run('pnpm generate && next build --webpack', {DOCSITE_TARGET: 'latest'});
 
 console.log('\n✅ Dual-version build complete. One deployment serves:');
 console.log('   /          → latest (server, v-pinned) + /mcp');

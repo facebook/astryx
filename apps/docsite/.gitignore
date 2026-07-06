@@ -26,3 +26,4 @@ src/themes/astryx.d.ts
 out/
 public/canary/
 .route-stash/
+.use-cache-stash/
