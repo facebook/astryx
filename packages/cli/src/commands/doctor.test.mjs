@@ -4,6 +4,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import {fileURLToPath} from 'node:url';
 import {Command} from 'commander';
 
 import {registerDoctor} from './doctor.mjs';
@@ -128,7 +129,7 @@ describe('doctor — individual checks', () => {
     // serve a file written to an arbitrary tmp path at runtime. Write the
     // fixture inside the package tree so Vite can resolve it, then clean up.
     const fixtureDir = fs.mkdtempSync(
-      path.join(path.dirname(new URL(import.meta.url).pathname), '__doctor_cfg_'),
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '__doctor_cfg_'),
     );
     const configPath = path.join(fixtureDir, 'astryx.config.mjs');
     try {
@@ -145,7 +146,7 @@ describe('doctor — individual checks', () => {
 
   it('config: FAIL when astryx.config.mjs throws on import', async () => {
     const fixtureDir = fs.mkdtempSync(
-      path.join(path.dirname(new URL(import.meta.url).pathname), '__doctor_cfg_'),
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '__doctor_cfg_'),
     );
     const configPath = path.join(fixtureDir, 'astryx.config.mjs');
     try {
@@ -160,7 +161,7 @@ describe('doctor — individual checks', () => {
 
   it('config: FAIL when default export is not an object', async () => {
     const fixtureDir = fs.mkdtempSync(
-      path.join(path.dirname(new URL(import.meta.url).pathname), '__doctor_cfg_'),
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '__doctor_cfg_'),
     );
     const configPath = path.join(fixtureDir, 'astryx.config.mjs');
     try {
