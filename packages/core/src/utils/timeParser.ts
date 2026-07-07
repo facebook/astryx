@@ -361,13 +361,10 @@ export function adjustTime(
     return time;
   }
 
-  let totalMinutes = parsed.hour * 60 + parsed.minute + deltaMinutes;
+  if (!Number.isFinite(deltaMinutes)) {return time;}
 
-  // Wrap around midnight
-  while (totalMinutes < 0) {
-    totalMinutes += 24 * 60;
-  }
-  totalMinutes = totalMinutes % (24 * 60);
+  const totalMinutes =
+    (((parsed.hour * 60 + parsed.minute + deltaMinutes) % 1440) + 1440) % 1440;
 
   const newHour = Math.floor(totalMinutes / 60);
   const newMinute = totalMinutes % 60;
