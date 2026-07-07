@@ -770,6 +770,9 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
+      '@astryxdesign/charts':
+        specifier: '*'
+        version: link:../charts
       '@astryxdesign/core':
         specifier: '*'
         version: link:../core

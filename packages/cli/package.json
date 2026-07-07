@@ -80,12 +80,16 @@
     "zod": "^4.4.3"
   },
   "peerDependencies": {
+    "@astryxdesign/charts": "*",
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
     "@astryxdesign/theme-neutral": "*",
     "gpt-tokenizer": "^2.0.0"
   },
   "peerDependenciesMeta": {
+    "@astryxdesign/charts": {
+      "optional": true
+    },
     "@astryxdesign/core": {
       "optional": true
     },
@@ -97,6 +101,7 @@
     }
   },
   "devDependencies": {
+    "@astryxdesign/charts": "*",
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
     "@astryxdesign/theme-neutral": "*",
