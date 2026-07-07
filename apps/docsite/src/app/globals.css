@@ -82,6 +82,17 @@ body:has([data-home-page]) #astryx-app-shell-main {
   padding-top: 0;
 }
 
+/* The docs/components sidebar is a desktop affordance. AppShell renders it
+   server-side (desktop HTML), so below the mobile breakpoint we hide it with
+   pure CSS — it never paints on a phone, no JS flip. The :where(:not(...))
+   guard scopes this to the OUTERMOST AppShell so sidenavs inside nested
+   AppShell examples/previews keep their own responsive behavior. */
+@media (max-width: 768px) {
+  .astryx-app-shell-sidenav:where(:not(.astryx-app-shell .astryx-app-shell *)) {
+    display: none;
+  }
+}
+
 /* Translucent top nav — frosted glass effect.
 
    The :where(:not(.astryx-app-shell .astryx-app-shell *)) guard scopes every frost
