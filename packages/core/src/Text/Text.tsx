@@ -32,6 +32,7 @@ import type {
 import {
   colorStyles,
   defaultWeightByTypeStyles,
+  sizeStyles,
   sizeByTypeStyles,
   weightStyles,
   displayStyles,
@@ -201,7 +202,7 @@ function resolveStyleType(type: TextType): BuiltinTextType {
  */
 export function Text({
   type = 'body',
-  size: _size,
+  size,
   color,
   weight,
   display = 'inline',
@@ -254,10 +255,11 @@ export function Text({
       <Component
         ref={mergeRefs(ref, truncation.ref, textRef)}
         {...mergeProps(
-          themeProps('text', {type, color: resolvedColor}),
+          themeProps('text', {type, size, color: resolvedColor}),
           stylex.props(
             colorStyles[resolvedColor],
             sizeByTypeStyles[styleType],
+            size && sizeStyles[size],
             defaultWeightByTypeStyles[styleType],
             weight && weightStyles[weight],
             // Display: use truncation styles when maxLines > 0
