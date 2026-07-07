@@ -20,7 +20,9 @@ import {
   typeScaleVars,
   typographyVars,
 } from '../theme/tokens.stylex';
+import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import {themeProps} from '../utils/themeProps';
 
 const styles = stylex.create({
   empty: {
@@ -64,9 +66,21 @@ export interface CommandPaletteEmptyProps extends BaseProps<HTMLDivElement> {
 export function CommandPaletteEmpty({
   ref,
   children,
+  xstyle,
+  className,
+  style,
+  ...props
 }: CommandPaletteEmptyProps) {
   return (
-    <div ref={ref} {...stylex.props(styles.empty)}>
+    <div
+      ref={ref}
+      {...mergeProps(
+        themeProps('command-palette-empty'),
+        stylex.props(styles.empty, xstyle),
+        className,
+        style,
+      )}
+      {...props}>
       {children}
     </div>
   );
