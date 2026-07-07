@@ -2,6 +2,7 @@
 
 import type {Metadata} from 'next';
 import {Analytics} from '@vercel/analytics/next';
+import {SpeedInsights} from '@vercel/speed-insights/next';
 import './globals.css';
 import {Providers} from './providers';
 // Public origin and identity live in lib/siteConfig so the sitemap and
@@ -92,6 +93,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
       </head>
       <body>
         <Analytics />
+        <SpeedInsights />
         <Providers>{children}</Providers>
       </body>
     </html>
