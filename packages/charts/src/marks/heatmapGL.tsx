@@ -16,7 +16,7 @@ import {
   sizeCanvas,
   mountCanvasOverSVG,
   createProgram,
-} from '../../Chart/webgl';
+} from '../webgl';
 
 export interface HeatmapGLOptions {
   xKey: string;

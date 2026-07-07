@@ -14,6 +14,7 @@ import {
 } from 'd3-shape';
 import type {SeriesDef, ResolvedPoint} from '../types';
 import type {ScaleBand} from 'd3-scale';
+import {seriesFill} from '../markColor';
 
 const CURVES = {
   linear: curveLinear,
@@ -32,12 +33,12 @@ export interface LineOptions {
 }
 
 export function line(dataKey: string, options: LineOptions = {}): SeriesDef {
-  const color = options.color ?? 'var(--color-chart-1)';
+  const color = options.color;
   const curve = options.curve ?? 'monotone';
   const strokeWidth = options.strokeWidth ?? 2;
   const dots = options.dots ?? false;
 
-  return {
+  const seriesDef: SeriesDef = {
     type: 'line',
     key: dataKey,
     dataKeys: [dataKey],
@@ -75,20 +76,29 @@ export function line(dataKey: string, options: LineOptions = {}): SeriesDef {
         .curve(curveFactory);
 
       const pathD = pathGen(resolved) ?? '';
+      const strokeColor = seriesFill(seriesDef, color);
       return (
         <g>
           <path
             d={pathD}
             fill="none"
-            stroke={color}
+            stroke={strokeColor}
             strokeWidth={strokeWidth}
           />
           {dots &&
-            resolved.map((p, i) => (
-              <circle key={i} cx={p.px} cy={p.py} r={3} fill={color} />
+            resolved.map(p => (
+              <circle
+                key={p.dataIndex}
+                cx={p.px}
+                cy={p.py}
+                r={3}
+                fill={strokeColor}
+              />
             ))}
         </g>
       );
     },
   };
+
+  return seriesDef;
 }

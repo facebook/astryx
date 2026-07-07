@@ -5,7 +5,7 @@
  * @output Grouped chart tooltip — shows all series values at the hovered x-position.
  *         Composable: drop into `<Chart tooltip>` or render directly inside a chart
  *         to take full control of props.
- * @position Reads from ChartV2Context — must render inside an <Chart>.
+ * @position Reads from ChartContext — must render inside an <Chart>.
  *
  * @example
  * ```
@@ -43,7 +43,7 @@ import {
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {Text} from '@astryxdesign/core';
 import {VStack, HStack} from '@astryxdesign/core';
-import {useChartV2} from './ChartV2Context';
+import {useChart} from './ChartContext';
 import {ChartSwatch, swatchVariantForType} from './ChartSwatch';
 import {
   deriveTooltipSeriesValues,
@@ -128,8 +128,8 @@ const DefaultTooltipContent = memo(function DefaultTooltipContent({
         <Text type="supporting">{String(rows[0].value)}</Text>
       ) : (
         <VStack gap={1}>
-          {rows.map(row => (
-            <HStack key={row.key} gap={2} vAlign="center">
+          {rows.map((row, i) => (
+            <HStack key={`${row.key}-${i}`} gap={2} vAlign="center">
               <ChartSwatch
                 color={row.color}
                 variant={swatchVariantForType(row.type)}
@@ -170,7 +170,7 @@ export function ChartTooltip({
     xScale,
     width,
     height,
-  } = useChartV2();
+  } = useChart();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -263,19 +263,21 @@ export function ChartTooltip({
       if (!shouldRenderHoverDot(s.type)) {
         continue;
       }
-      const points = resolved.get(s.key);
+      const points = s._uid ? resolved.get(s._uid) : undefined;
       const point = points?.find(p => p.dataIndex === hoveredIndex);
       if (!point) {
         continue;
       }
       elements.push(
         <circle
-          key={s.key}
+          key={s._uid}
           cx={point.px}
           cy={point.py}
           r={4}
           fill="var(--color-background-surface)"
-          stroke={s.color ?? 'var(--color-border-emphasized)'}
+          stroke={
+            s.color ?? s._resolvedColor ?? 'var(--color-border-emphasized)'
+          }
           strokeWidth={2}
           pointerEvents="none"
         />,

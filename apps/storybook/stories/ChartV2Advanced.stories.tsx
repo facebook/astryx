@@ -1,9 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {useMemo, useRef, useEffect, type MutableRefObject} from 'react';
 import {
-  ChartV2 as Chart,
+  useMemo,
+  useRef,
+  useEffect,
+  useState,
+  type MutableRefObject,
+} from 'react';
+import {
+  Chart,
   bar,
   line,
   band,
@@ -14,11 +20,9 @@ import {
   heatmapGL,
   streamGL,
   type StreamGLHandle,
-} from '@astryxdesign/lab';
-import {
-  ChartV2Grid as ChartGrid,
-  ChartV2Axis as ChartAxis,
-} from '@astryxdesign/lab';
+  ChartGrid,
+  ChartAxis,
+} from '@astryxdesign/charts';
 
 const meta: Meta<typeof Chart> = {
   title: 'Lab/ChartV2Advanced',
@@ -287,6 +291,11 @@ export const StreamingLine: StoryObj = {
     const handleRef = useRef<StreamGLHandle | null>(
       null,
     ) as MutableRefObject<StreamGLHandle | null>;
+    // Slide a fixed-width window as data arrives (v1 "stable streaming window").
+    // streamGL reads the chart's x/y scales, so an explicit domain is required —
+    // without it, empty `data` yields a degenerate scale and nothing renders.
+    const WINDOW = 60;
+    const [windowEnd, setWindowEnd] = useState(WINDOW);
     useEffect(() => {
       let t = 0;
       const interval = setInterval(() => {
@@ -295,6 +304,7 @@ export const StreamingLine: StoryObj = {
           50 + Math.sin(t / 10) * 30 + Math.random() * 10,
         );
         t++;
+        setWindowEnd(Math.max(WINDOW, t));
       }, 200);
       return () => clearInterval(interval);
     }, []);
@@ -303,6 +313,8 @@ export const StreamingLine: StoryObj = {
       <Chart
         data={[]}
         xKey="x"
+        xDomain={[Math.max(0, windowEnd - WINDOW), windowEnd]}
+        yDomain={[0, 100]}
         series={[streamGL({handleRef, color: '#3b82f6'})]}
         grid={<ChartGrid />}
         axes={

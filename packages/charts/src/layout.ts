@@ -17,7 +17,15 @@ import type {
   ChartScale,
   ResolvedPoint,
   SeriesContext,
+  YBaseline,
 } from './types';
+
+/**
+ * Fraction of the data range added as padding above/below for continuous-only
+ * charts (no bar/area zero baseline), so endpoints and curve overshoot don't
+ * glue to the plot edges.
+ */
+const CONTINUOUS_HEADROOM = 0.08;
 
 export interface LayoutInput {
   data: Record<string, unknown>[];
@@ -25,6 +33,15 @@ export interface LayoutInput {
   series: SeriesDef[];
   width: number;
   height: number;
+  /** How the y-domain is derived when `yDomain` is not provided. Default 'auto'. */
+  yBaseline?: YBaseline;
+  /** Explicit y-domain [min, max]. Authoritative — no baseline/headroom/nice(). */
+  yDomain?: [number, number];
+  /**
+   * Explicit x-domain [min, max] for numeric/linear x. Authoritative and honored
+   * even when `data` is empty (stable streaming window). Ignored for band scales.
+   */
+  xDomain?: [number, number];
 }
 
 export interface LayoutResult {
@@ -39,6 +56,9 @@ export function computeLayout({
   series,
   width,
   height,
+  yBaseline,
+  yDomain,
+  xDomain,
 }: LayoutInput): LayoutResult {
   // ─── 1. X scale ──────────────────────────────────────────────────────
   const xValues = data.map(d => d[xKey]);
@@ -46,7 +66,11 @@ export function computeLayout({
     xValues.length > 0 && xValues.every(v => typeof v === 'number');
 
   let xScale: ChartScale;
-  if (isNumericX) {
+  if (xDomain) {
+    // Explicit domain is authoritative (no .nice()) — enables a stable
+    // streaming window and a valid scale even when `data` is empty.
+    xScale = scaleLinear().domain(xDomain).range([0, width]);
+  } else if (isNumericX) {
     const nums = xValues as number[];
     xScale = scaleLinear()
       .domain([Math.min(...nums), Math.max(...nums)])
@@ -125,15 +149,57 @@ export function computeLayout({
     }
   }
 
-  if (includeZero) {
-    if (yMin > 0) {
+  // ─── Resolve the final y-domain ──────────────────────────────────────
+  let yDomainFinal: [number, number];
+  let applyNice = true;
+
+  if (yDomain) {
+    // Caller owns the exact domain (e.g. zoom/streaming). No baseline,
+    // headroom, or .nice() — rounding here would cause visual ratcheting.
+    yDomainFinal = yDomain;
+    applyNice = false;
+  } else {
+    // Degenerate: no finite values (empty data / all non-numeric).
+    if (!Number.isFinite(yMin) || !Number.isFinite(yMax)) {
       yMin = 0;
+      yMax = 1;
     }
-    if (yMax < 0) {
-      yMax = 0;
+    // Degenerate: zero range (single point / all-equal) — expand so the mark
+    // is visible and ticks are sane.
+    if (yMin === yMax) {
+      const pad = Math.abs(yMin) * 0.5 || 1;
+      yMin -= pad;
+      yMax += pad;
     }
+
+    const mode: YBaseline = yBaseline ?? 'auto';
+    if (mode === 'zero') {
+      const abs = Math.max(Math.abs(yMin), Math.abs(yMax));
+      yMin = -abs;
+      yMax = abs;
+    } else if (mode === 'data') {
+      // Tight fit — no zero forcing, no headroom.
+    } else {
+      // 'auto': bar/area marks pin an honest zero baseline; continuous-only
+      // charts get headroom so endpoints/overshoot don't glue to the edges.
+      if (includeZero) {
+        if (yMin > 0) {
+          yMin = 0;
+        }
+        if (yMax < 0) {
+          yMax = 0;
+        }
+      } else {
+        const pad = (yMax - yMin || 1) * CONTINUOUS_HEADROOM;
+        yMin -= pad;
+        yMax += pad;
+      }
+    }
+    yDomainFinal = [yMin, yMax];
   }
-  const yScale = scaleLinear().domain([yMin, yMax]).range([height, 0]).nice();
+
+  const yScaleBase = scaleLinear().domain(yDomainFinal).range([height, 0]);
+  const yScale = applyNice ? yScaleBase.nice() : yScaleBase;
 
   // ─── 3. Stacking ─────────────────────────────────────────────────────
   const stackGroups = new Map<string, string[]>();
@@ -192,7 +258,12 @@ export function computeLayout({
     }
   }
 
-  for (const s of series) {
+  for (let seriesIndex = 0; seriesIndex < series.length; seriesIndex++) {
+    const s = series[seriesIndex];
+    // Assign a collision-free identity from array position. Two series sharing
+    // a dataKey (and thus `key`) still get distinct uids, so neither the
+    // resolved map nor React keys silently drop one of them.
+    s._uid = `${seriesIndex}:${s.key}`;
     const stackOffsets = stackedData.get(s.dataKeys[0]);
 
     // Mark whether this series is the topmost in its stack
@@ -216,7 +287,7 @@ export function computeLayout({
     }
 
     const points = s.resolve(ctx, stackOffsets, groupInfo);
-    resolved.set(s.key, points);
+    resolved.set(s._uid, points);
   }
 
   return {xScale, yScale, resolved};

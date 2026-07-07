@@ -20,17 +20,18 @@ import {
   useCallback,
   useLayoutEffect,
 } from 'react';
-import type {SeriesDef} from './types';
-import type {ChartV2Context, ChartMargin, ChartPointerEvent} from './types';
+import type {SeriesDef, YBaseline} from './types';
+import type {ChartContext, ChartMargin, ChartPointerEvent} from './types';
 import {computeLayout} from './layout';
-import {ChartV2Provider} from './ChartV2Context';
-import {ChartProvider} from '../Chart/ChartContext';
+import {ChartProvider} from './ChartContext';
 import {Text} from '@astryxdesign/core';
 import {VStack, HStack} from '@astryxdesign/core';
 import * as stylex from '@stylexjs/stylex';
 import {ChartLegend, type ChartLegendProps} from './ChartLegend';
 import {deriveLegendItems} from './legend';
 import {ChartTooltip, type ChartTooltipProps} from './ChartTooltip';
+import {useChartColors} from './useChartColors';
+import {isUtilityMarkType} from './types';
 
 export interface ChartProps {
   data: Record<string, unknown>[];
@@ -38,6 +39,15 @@ export interface ChartProps {
   series: SeriesDef[];
   height?: number;
   margin?: Partial<ChartMargin>;
+  /** How the y-domain is derived when `yDomain` is not set. Default `'auto'`. */
+  yBaseline?: YBaseline;
+  /** Explicit y-domain [min, max]. Authoritative — disables baseline/headroom. */
+  yDomain?: [number, number];
+  /**
+   * Explicit x-domain [min, max] for numeric/linear x. Honored even when `data`
+   * is empty (stable streaming window). Ignored for categorical (band) scales.
+   */
+  xDomain?: [number, number];
   grid?: ReactNode;
   axes?: ReactNode;
   legend?: boolean | ChartLegendProps;
@@ -70,6 +80,9 @@ export function Chart({
   series,
   height = 300,
   margin: marginOverride,
+  yBaseline,
+  yDomain,
+  xDomain,
   grid,
   axes,
   legend,
@@ -81,6 +94,8 @@ export function Chart({
 }: ChartProps) {
   const chartId = useId();
   const descId = `${chartId}-desc`;
+  // useId() can contain ':' which is invalid in an SVG url(#id) reference.
+  const clipId = `plot-${chartId.replace(/:/g, '')}`;
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -109,6 +124,21 @@ export function Chart({
   const innerWidth = Math.max(0, containerWidth - margin.left - margin.right);
   const innerHeight = Math.max(0, height - margin.top - margin.bottom);
 
+  // ─── Color assignment ─────────────────────────────────────────────────
+  // Give every primary series that doesn't supply a static color (auto-colored
+  // or accessor-colored) a distinct color from the theme's categorical palette.
+  // Utility marks (band/errorBar/referenceLine) don't consume palette slots.
+  const chartColors = useChartColors();
+  useMemo(() => {
+    const needsColor = series.filter(
+      s => !isUtilityMarkType(s.type) && s.color == null,
+    );
+    const palette = chartColors.categorical(Math.max(needsColor.length, 1));
+    needsColor.forEach((s, i) => {
+      s._resolvedColor = palette[i % palette.length];
+    });
+  }, [series, chartColors]);
+
   // ─── Layout pass ──────────────────────────────────────────────────────
   const layout = useMemo(
     () =>
@@ -118,8 +148,11 @@ export function Chart({
         series,
         width: innerWidth,
         height: innerHeight,
+        yBaseline,
+        yDomain,
+        xDomain,
       }),
-    [data, xKey, series, innerWidth, innerHeight],
+    [data, xKey, series, innerWidth, innerHeight, yBaseline, yDomain, xDomain],
   );
 
   const seriesCtx = useMemo(
@@ -185,7 +218,7 @@ export function Chart({
   }, [dispatch]);
 
   // ─── Context for interactions + v1 chrome ─────────────────────────────
-  const ctx: ChartV2Context = useMemo(
+  const ctx: ChartContext = useMemo(
     () => ({
       width: innerWidth,
       height: innerHeight,
@@ -199,33 +232,6 @@ export function Chart({
       svgRef,
     }),
     [innerWidth, innerHeight, margin, data, xKey, layout, onPointer],
-  );
-
-  // Bridge v1 context for ChartGrid/Axis compatibility
-  const v1Ctx = useMemo(
-    () => ({
-      width: innerWidth,
-      height: innerHeight,
-      margin,
-      xKey,
-      data,
-      xScale: layout.xScale,
-      yScale: layout.yScale,
-      svgRef,
-      pointerToData: () => ({
-        x: null as string | number | null,
-        y: 0,
-        px: 0,
-        py: 0,
-      }),
-      pixelToData: (px: number, py: number) => ({
-        x: null as string | number | null,
-        y: 0,
-        px,
-        py,
-      }),
-    }),
-    [innerWidth, innerHeight, margin, xKey, data, layout, svgRef],
   );
 
   // ─── Legend ────────────────────────────────────────────────────────────
@@ -270,25 +276,23 @@ export function Chart({
           )}
         </div>
       )}
-      <ChartV2Provider value={ctx}>
-        <ChartProvider value={v1Ctx}>
-          {legendConfig == null ? (
-            renderSvg()
-          ) : isLegendHorizontal ? (
-            <HStack gap={4}>
-              {legendPosition === 'start' && legendElement}
-              <div {...stylex.props(styles.chartArea)}>{renderSvg()}</div>
-              {legendPosition === 'end' && legendElement}
-            </HStack>
-          ) : (
-            <VStack gap={4}>
-              {legendPosition === 'top' && legendElement}
-              {renderSvg()}
-              {legendPosition === 'bottom' && legendElement}
-            </VStack>
-          )}
-        </ChartProvider>
-      </ChartV2Provider>
+      <ChartProvider value={ctx}>
+        {legendConfig == null ? (
+          renderSvg()
+        ) : isLegendHorizontal ? (
+          <HStack gap={4}>
+            {legendPosition === 'start' && legendElement}
+            <div {...stylex.props(styles.chartArea)}>{renderSvg()}</div>
+            {legendPosition === 'end' && legendElement}
+          </HStack>
+        ) : (
+          <VStack gap={4}>
+            {legendPosition === 'top' && legendElement}
+            {renderSvg()}
+            {legendPosition === 'bottom' && legendElement}
+          </VStack>
+        )}
+      </ChartProvider>
     </div>
   );
 
@@ -302,18 +306,26 @@ export function Chart({
         aria-describedby={subtitle ? descId : undefined}>
         {title && <title>{title}</title>}
         {subtitle && <desc id={descId}>{subtitle}</desc>}
+        <defs>
+          <clipPath id={clipId}>
+            <rect x={0} y={0} width={innerWidth} height={innerHeight} />
+          </clipPath>
+        </defs>
         <g transform={`translate(${margin.left},${margin.top})`}>
           {/* 1. Grid */}
           {grid}
 
-          {/* 2. Marks — each series renders itself */}
-          {series.map(s => {
-            const resolved = layout.resolved.get(s.key);
-            if (!resolved) {
-              return null;
-            }
-            return <g key={s.key}>{s.render(resolved, seriesCtx)}</g>;
-          })}
+          {/* 2. Marks — each series renders itself. Clipped to the plot area so
+              curve overshoot (monotone/natural) can't escape into the margins. */}
+          <g clipPath={`url(#${clipId})`}>
+            {series.map(s => {
+              const resolved = s._uid ? layout.resolved.get(s._uid) : undefined;
+              if (!resolved) {
+                return null;
+              }
+              return <g key={s._uid}>{s.render(resolved, seriesCtx)}</g>;
+            })}
+          </g>
 
           {/* 3. Axes */}
           {axes}

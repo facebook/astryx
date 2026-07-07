@@ -2,7 +2,7 @@
   "name": "@astryxdesign/charts",
   "version": "0.1.4",
   "private": true,
-  "description": "Astryx chart components — thin, themeable wrappers over a peer charting engine. Published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
+  "description": "Astryx charts — a config-model data visualization library (d3-based). Published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
@@ -39,12 +39,16 @@
       "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./charts.css": {
+      "default": "./dist/charts.css"
     }
   },
   "scripts": {
     "prepack": "pnpm build",
-    "build": "rm -rf dist && pnpm build:esm && tsc --project tsconfig.build.json",
+    "build": "rm -rf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css",
     "build:esm": "babel src --out-dir dist --extensions '.ts,.tsx' --out-file-extension '.js' --ignore '**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts' --config-file ./babel.config.js",
+    "build:css": "node ../../scripts/build-css.mjs --package charts",
     "dev": "babel src --watch --out-dir dist --extensions '.ts,.tsx' --out-file-extension '.js' --ignore '**/*.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css*' --config-file ./babel.config.js",
     "test": "vitest run --root ../..",
     "test:watch": "vitest --root ../..",
@@ -56,5 +60,15 @@
     "@astryxdesign/core": "0.1.4",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
+  },
+  "dependencies": {
+    "d3-array": "^3.2.4",
+    "d3-scale": "^4.0.2",
+    "d3-shape": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/d3-array": "^3.2.2",
+    "@types/d3-scale": "^4.0.9",
+    "@types/d3-shape": "^3.1.8"
   }
 }

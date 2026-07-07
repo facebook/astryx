@@ -46,13 +46,14 @@ export function deriveTooltipSeriesValues(
     if (isUtilityMarkType(s.type)) {
       continue;
     }
-    if (!resolvedKeys.has(s.key)) {
+    // resolvedKeys holds layout-assigned _uids (collision-free), not `key`.
+    if (!s._uid || !resolvedKeys.has(s._uid)) {
       continue;
     }
     out.push({
       key: s.key,
       label: s.label ?? s.key,
-      color: s.color ?? 'var(--color-text-primary)',
+      color: s.color ?? s._resolvedColor ?? 'var(--color-text-primary)',
       type: s.type,
       value: datum[s.dataKeys[0]],
     });

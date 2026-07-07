@@ -8,7 +8,7 @@
 import {useRef, useEffect, useCallback} from 'react';
 import type {SeriesDef, ResolvedPoint} from '../types';
 import type {ScaleBand} from 'd3-scale';
-import {useChartV2} from '../ChartV2Context';
+import {useChart} from '../ChartContext';
 import {
   hexToGL,
   getWebGLContext,
@@ -17,7 +17,7 @@ import {
   mountCanvasOverSVG,
   createProgram,
   POINT_SIZE_COMPENSATION,
-} from '../../Chart/webgl';
+} from '../webgl';
 
 export interface DotGLOptions {
   color: string;
@@ -52,7 +52,7 @@ const FRAG = `
 
 /**
  * Inline component returned by render() — manages the WebGL canvas lifecycle.
- * Needs access to svgRef from ChartV2Context to mount the canvas outside SVG.
+ * Needs access to svgRef from ChartContext to mount the canvas outside SVG.
  */
 function DotGLCanvas({
   resolved,
@@ -69,7 +69,7 @@ function DotGLCanvas({
   width: number;
   height: number;
 }) {
-  const {svgRef: _svgRef} = useChartV2();
+  const {svgRef: _svgRef} = useChart();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);

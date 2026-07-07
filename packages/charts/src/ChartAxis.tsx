@@ -13,11 +13,11 @@
  * Ticks use CSS transitions for smooth sliding during streaming updates.
  */
 
-import {useMemo} from 'react';
+import {useCallback, useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '@astryxdesign/core/theme/tokens.stylex';
-import {useChart} from '../Chart/ChartContext';
-import {isBandScale} from '../Chart/utils';
+import {useChart} from './ChartContext';
+import {isBandScale} from './utils';
 import type {ScaleLinear, ScaleTime} from 'd3-scale';
 
 export interface ChartAxisProps {
@@ -86,6 +86,16 @@ export function ChartAxis({
   const isHorizontal = position === 'top' || position === 'bottom';
   const scale = isHorizontal ? xScale : yScale;
 
+  const format = useCallback(
+    (value: unknown): string => {
+      const str = (tickFormat ?? String)(value);
+      return truncate && str.length > truncate
+        ? str.slice(0, truncate) + '\u2026'
+        : str;
+    },
+    [tickFormat, truncate],
+  );
+
   const ticks = useMemo(() => {
     let allTicks: {value: unknown; offset: number}[];
     if (isBandScale(scale)) {
@@ -95,22 +105,33 @@ export function ChartAxis({
       }));
     } else {
       const linearScale = scale as
-        | ScaleLinear<number, number>
-        | ScaleTime<number, number>;
+        ScaleLinear<number, number> | ScaleTime<number, number>;
       allTicks = linearScale.ticks(tickCount).map(d => ({
         value: d,
         offset: linearScale(d as number & Date),
       }));
     }
 
-    // Auto-skip: show every Nth label if maxTicks is exceeded
-    if (maxTicks && allTicks.length > maxTicks) {
-      const step = Math.ceil(allTicks.length / maxTicks);
+    // Cap the number of labels. An explicit maxTicks wins; otherwise, for a
+    // horizontal axis, derive a cap from the available width and the widest
+    // label so dense band axes (e.g. 30 daily categories) don't overlap into
+    // an unreadable smear.
+    let cap = maxTicks;
+    if (cap == null && isHorizontal && allTicks.length > 1 && width > 0) {
+      const widestChars = allTicks.reduce(
+        (m, t) => Math.max(m, format(t.value).length),
+        1,
+      );
+      const approxLabelPx = widestChars * 7 + 16;
+      cap = Math.max(1, Math.floor(width / approxLabelPx));
+    }
+    if (cap && allTicks.length > cap) {
+      const step = Math.ceil(allTicks.length / cap);
       allTicks = allTicks.filter((_, i) => i % step === 0);
     }
 
     return allTicks;
-  }, [scale, tickCount, maxTicks]);
+  }, [scale, tickCount, maxTicks, isHorizontal, width, format]);
 
   const transform =
     position === 'bottom'
@@ -131,14 +152,6 @@ export function ChartAxis({
     }
     return 0;
   })();
-
-  const baseFormat = tickFormat ?? String;
-  const format = truncate
-    ? (value: unknown) => {
-        const str = baseFormat(value);
-        return str.length > truncate ? str.slice(0, truncate) + '\u2026' : str;
-      }
-    : baseFormat;
 
   const tickTransition = animated
     ? 'transform 150ms linear, opacity 150ms ease'

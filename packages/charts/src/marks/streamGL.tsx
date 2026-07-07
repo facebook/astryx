@@ -16,7 +16,7 @@ import {
   type MutableRefObject,
 } from 'react';
 import type {SeriesDef} from '../types';
-import {useChartV2} from '../ChartV2Context';
+import {useChart} from '../ChartContext';
 import {
   hexToGL,
   getWebGLContext,
@@ -24,7 +24,7 @@ import {
   sizeCanvas,
   mountCanvasOverSVG,
   createProgram,
-} from '../../Chart/webgl';
+} from '../webgl';
 
 export interface StreamGLHandle {
   push(x: number, y: number): void;
@@ -79,7 +79,7 @@ function StreamGLCanvas({
   height: number;
   handleRef?: MutableRefObject<StreamGLHandle | null>;
 }) {
-  const {xScale, yScale} = useChartV2();
+  const {xScale, yScale} = useChart();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);

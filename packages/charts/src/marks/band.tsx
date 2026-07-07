@@ -6,7 +6,11 @@
  */
 
 import {area as d3Area, curveMonotoneX} from 'd3-shape';
-import type {SeriesDef, ResolvedPoint} from '../types';
+import {
+  DEFAULT_SERIES_COLOR,
+  type SeriesDef,
+  type ResolvedPoint,
+} from '../types';
 import type {ScaleBand} from 'd3-scale';
 
 export interface BandOptions {
@@ -17,7 +21,7 @@ export interface BandOptions {
 }
 
 export function band(options: BandOptions): SeriesDef {
-  const color = options.color ?? 'var(--color-chart-1)';
+  const color = options.color ?? DEFAULT_SERIES_COLOR;
   const opacity = options.opacity ?? 0.15;
 
   return {

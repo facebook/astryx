@@ -1,12 +1,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {ChartV2 as Chart, bar, line} from '@astryxdesign/lab';
 import {
-  ChartV2Grid as ChartGrid,
-  ChartV2Axis as ChartAxis,
+  Chart,
+  bar,
+  line,
+  ChartGrid,
+  ChartAxis,
   currency,
-} from '@astryxdesign/lab';
+} from '@astryxdesign/charts';
 
 const meta: Meta = {
   title: 'Lab/ChartV2Tooltip',

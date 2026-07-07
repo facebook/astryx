@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {ChartV2Legend} from '@astryxdesign/lab';
+import {ChartLegend} from '@astryxdesign/charts';
 
 const sampleItems = [
   {label: 'Revenue', color: '#3b82f6', type: 'bar'},
@@ -9,9 +9,9 @@ const sampleItems = [
   {label: 'Trend', color: '#f59e0b', type: 'line'},
 ];
 
-const meta: Meta<typeof ChartV2Legend> = {
+const meta: Meta<typeof ChartLegend> = {
   title: 'Lab/ChartV2Legend',
-  component: ChartV2Legend,
+  component: ChartLegend,
   argTypes: {
     position: {
       control: 'inline-radio',
@@ -27,7 +27,7 @@ const meta: Meta<typeof ChartV2Legend> = {
     items: sampleItems,
     alignment: 'start',
   },
-  render: args => <ChartV2Legend {...args} />,
+  render: args => <ChartLegend {...args} />,
 };
 export default meta;
 

@@ -15,6 +15,7 @@ import {
 import {line as d3Line} from 'd3-shape';
 import type {SeriesDef, ResolvedPoint} from '../types';
 import type {ScaleBand} from 'd3-scale';
+import {seriesFill} from '../markColor';
 
 const CURVES = {
   linear: curveLinear,
@@ -34,13 +35,13 @@ export interface AreaOptions {
 }
 
 export function area(dataKey: string, options: AreaOptions = {}): SeriesDef {
-  const color = options.color ?? 'var(--color-chart-1)';
+  const color = options.color;
   const opacity = options.opacity ?? 0.3;
   const curve = options.curve ?? 'monotone';
   const gradient = options.gradient ?? false;
   const stroke = options.stroke ?? true;
 
-  return {
+  const seriesDef: SeriesDef = {
     type: 'area',
     key: dataKey,
     dataKeys: [dataKey],
@@ -94,29 +95,37 @@ export function area(dataKey: string, options: AreaOptions = {}): SeriesDef {
         .curve(curveFactory);
       const strokeD = lineGen(resolved) ?? '';
 
-      const gradientId = `area-grad-${dataKey}`;
+      // Unique per series instance so two areas over the same dataKey don't
+      // share a gradient id (which would make one steal the other's fill).
+      const gradientId = `area-grad-${(seriesDef._uid ?? dataKey).replace(
+        /[^a-zA-Z0-9_-]/g,
+        '-',
+      )}`;
+      const fillColor = seriesFill(seriesDef, color);
 
       return (
         <g>
           {gradient && (
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={color} stopOpacity={opacity} />
-                <stop offset="100%" stopColor={color} stopOpacity={0} />
+                <stop offset="0%" stopColor={fillColor} stopOpacity={opacity} />
+                <stop offset="100%" stopColor={fillColor} stopOpacity={0} />
               </linearGradient>
             </defs>
           )}
           <path
             d={pathD}
-            fill={gradient ? `url(#${gradientId})` : color}
+            fill={gradient ? `url(#${gradientId})` : fillColor}
             fillOpacity={gradient ? 1 : opacity}
             stroke="none"
           />
           {stroke && (
-            <path d={strokeD} fill="none" stroke={color} strokeWidth={2} />
+            <path d={strokeD} fill="none" stroke={fillColor} strokeWidth={2} />
           )}
         </g>
       );
     },
   };
+
+  return seriesDef;
 }

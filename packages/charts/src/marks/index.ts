@@ -9,6 +9,9 @@ export {candlestick, type CandlestickOptions} from './candlestick';
 export {errorBar, type ErrorBarOptions} from './errorBar';
 export {referenceLine, type ReferenceLineOptions} from './referenceLine';
 export {dotGL, type DotGLOptions} from './dotGL';
-export {dotGLInteractive, type DotGLInteractiveOptions} from './dotGLInteractive';
+export {
+  dotGLInteractive,
+  type DotGLInteractiveOptions,
+} from './dotGLInteractive';
 export {heatmapGL, type HeatmapGLOptions} from './heatmapGL';
 export {streamGL, type StreamGLOptions, type StreamGLHandle} from './streamGL';

@@ -11,6 +11,32 @@ import type {ScaleLinear, ScaleBand} from 'd3-scale';
 
 export type ChartScale = ScaleLinear<number, number> | ScaleBand<string>;
 
+/**
+ * A color for a mark: either a constant CSS color/token, or an accessor that
+ * returns a color per datum (for per-element coloring, e.g. positive/negative).
+ */
+export type ColorAccessor =
+  string | ((datum: Record<string, unknown>, index: number) => string);
+
+/**
+ * Fallback series color used when a mark has neither an explicit color nor a
+ * palette color assigned by the chart root. Uses an EMITTED core token
+ * (`--color-accent`) — the data-viz `--color-data-*` tokens are JS-only values
+ * (resolved via useChartColors), not CSS custom properties, so `var(--color-data-*)`
+ * would render nothing. The chart root normally assigns a resolved palette color,
+ * so this is only a last-resort fallback.
+ */
+export const DEFAULT_SERIES_COLOR = 'var(--color-accent)';
+
+/**
+ * Controls how the y-axis domain is derived when no explicit `yDomain` is given:
+ * - `'auto'` (default) — bar/area marks pin an honest zero baseline; continuous-
+ *   only charts (line/dot/…) get a little headroom so points don't touch edges.
+ * - `'zero'` — symmetric around zero (good for +/- data like profit/loss).
+ * - `'data'` — tight fit to the data extent (no zero forcing, no headroom).
+ */
+export type YBaseline = 'auto' | 'zero' | 'data';
+
 export interface ChartMargin {
   top: number;
   right: number;
@@ -50,14 +76,31 @@ export interface SeriesContext {
 export interface SeriesDef {
   /** Mark type identifier */
   readonly type: string;
-  /** Unique key for this series (typically the dataKey) */
+  /**
+   * Semantic key for this series — typically the dataKey. Used as a
+   * human-readable label fallback and for stack/group coordination. It is NOT
+   * guaranteed unique (two series can share a dataKey), so it must never be
+   * used as a Map key or React key — use `_uid` for identity instead.
+   */
   readonly key: string;
   /** Data keys this series reads from — used to compute y domain */
   readonly dataKeys: string[];
+  /**
+   * Collision-free per-instance identity, assigned by the layout pass from the
+   * series' position in the `series` array. This is the key used for the
+   * resolved map, React keys, and tooltip/hover lookups. Never set it yourself.
+   */
+  _uid?: string;
   /** Whether this series is the topmost in its stack (set during layout) */
   _isTopOfStack?: boolean;
   /** Static color for legend display. Undefined if color is dynamic (accessor function). */
   readonly color?: string;
+  /**
+   * Palette color assigned by the chart root for series that don't supply a
+   * static color (auto-colored or accessor-colored). Used as the render fallback
+   * and the legend/tooltip representative color. Never set it yourself.
+   */
+  _resolvedColor?: string;
   /** Human-readable label for legend. Falls back to key if not provided. */
   readonly label?: string;
   /** Layout hints the chart root uses for cross-series coordination */
@@ -99,7 +142,7 @@ export interface ChartPointerEvent {
 }
 
 /** Context provided by Chart to interaction children */
-export interface ChartV2Context {
+export interface ChartContext {
   width: number;
   height: number;
   margin: ChartMargin;

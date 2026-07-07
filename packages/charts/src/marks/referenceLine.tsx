@@ -67,8 +67,11 @@ export function referenceLine(options: ReferenceLineOptions): SeriesDef {
       // Horizontal reference line or band
       if (options.y != null) {
         const py = yScale(options.y);
-        const textW = label ? label.length * 5.5 + 8 : 0;
-        const bx = labelPosition === 'end' ? width - textW - 2 : 2;
+        // Generous width estimate + clamp so the badge always stays inside the
+        // plot (it's rendered inside the plot clip, so an overhang gets cut).
+        const textW = label ? label.length * 6.5 + 12 : 0;
+        const desiredBx = labelPosition === 'end' ? width - textW - 2 : 2;
+        const bx = Math.max(2, Math.min(desiredBx, width - textW - 2));
 
         // Band mode: shaded region between y and y2
         if (options.y2 != null) {
@@ -174,8 +177,10 @@ export function referenceLine(options: ReferenceLineOptions): SeriesDef {
       // Vertical reference line
       if (options.x != null && !('bandwidth' in xScale)) {
         const px = (xScale as ScaleLinear<number, number>)(options.x);
-        const textW = label ? label.length * 5.5 + 8 : 0;
+        const textW = label ? label.length * 6.5 + 12 : 0;
         const by = labelPosition === 'end' ? 4 : height - badgeH - 4;
+        // Keep the centered badge within the plot (it's inside the plot clip).
+        const bx = Math.max(2, Math.min(px - textW / 2, width - textW - 2));
         return (
           <g>
             <line
@@ -188,9 +193,7 @@ export function referenceLine(options: ReferenceLineOptions): SeriesDef {
               strokeDasharray={strokeDasharray}
             />
             {label && (
-              <g
-                transform={`translate(${px - textW / 2},${by})`}
-                pointerEvents="none">
+              <g transform={`translate(${bx},${by})`} pointerEvents="none">
                 <rect
                   x={0}
                   y={0}

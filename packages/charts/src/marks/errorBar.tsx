@@ -48,7 +48,9 @@ export function errorBar(options: ErrorBarOptions): SeriesDef {
         const d = data[i];
         let px: number;
         if ('bandwidth' in xScale) {
-          px = ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) + (xScale as ScaleBand<string>).bandwidth() / 2;
+          px =
+            ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) +
+            (xScale as ScaleBand<string>).bandwidth() / 2;
         } else {
           px = xScale(d[xKey] as number);
         }
@@ -63,22 +65,34 @@ export function errorBar(options: ErrorBarOptions): SeriesDef {
       const half = capWidth / 2;
       return (
         <g>
-          {resolved.map((p, i) => (
-            <g key={i}>
+          {resolved.map(p => (
+            <g key={p.dataIndex}>
               {/* Vertical stem */}
               <line
-                x1={p.px} x2={p.px} y1={p.py} y2={p.py0}
-                stroke={color} strokeWidth={strokeWidth}
+                x1={p.px}
+                x2={p.px}
+                y1={p.py}
+                y2={p.py0}
+                stroke={color}
+                strokeWidth={strokeWidth}
               />
               {/* Upper cap */}
               <line
-                x1={p.px - half} x2={p.px + half} y1={p.py} y2={p.py}
-                stroke={color} strokeWidth={strokeWidth}
+                x1={p.px - half}
+                x2={p.px + half}
+                y1={p.py}
+                y2={p.py}
+                stroke={color}
+                strokeWidth={strokeWidth}
               />
               {/* Lower cap */}
               <line
-                x1={p.px - half} x2={p.px + half} y1={p.py0} y2={p.py0}
-                stroke={color} strokeWidth={strokeWidth}
+                x1={p.px - half}
+                x2={p.px + half}
+                y1={p.py0}
+                y2={p.py0}
+                stroke={color}
+                strokeWidth={strokeWidth}
               />
             </g>
           ))}

@@ -6,12 +6,11 @@
  * @position Standalone mark; chart root calls resolve() then render()
  */
 
-import type {SeriesDef, ResolvedPoint} from '../types';
+import type {SeriesDef, ResolvedPoint, ColorAccessor} from '../types';
 import type {ScaleBand} from 'd3-scale';
+import {pointFill} from '../markColor';
 
-export type ColorAccessor =
-  | string
-  | ((datum: Record<string, unknown>, index: number) => string);
+export type {ColorAccessor};
 
 export interface BarOptions {
   color?: ColorAccessor;
@@ -69,7 +68,7 @@ function roundedBottomRect(
 }
 
 export function bar(dataKey: string, options: BarOptions = {}): SeriesDef {
-  const color = options.color ?? 'var(--color-chart-1)';
+  const color = options.color;
   const opacity = options.opacity ?? 1;
   const radius = options.radius ?? 4;
 
@@ -135,10 +134,9 @@ export function bar(dataKey: string, options: BarOptions = {}): SeriesDef {
 
       return (
         <g opacity={opacity}>
-          {resolved.map((p, i) => {
+          {resolved.map(p => {
             const d = data[p.dataIndex];
-            const fill =
-              typeof color === 'function' ? color(d, p.dataIndex) : color;
+            const fill = pointFill(seriesDef, color, d, p.dataIndex);
             const x = p.px - barWidth / 2;
             const y = Math.min(p.py, p.py0);
             const h = Math.max(0, Math.abs(p.py0 - p.py));
@@ -148,7 +146,7 @@ export function bar(dataKey: string, options: BarOptions = {}): SeriesDef {
               ? roundedTopRect(x, y, barWidth, h, r)
               : roundedBottomRect(x, y, barWidth, h, r);
 
-            return <path key={i} d={d_attr} fill={fill} />;
+            return <path key={p.dataIndex} d={d_attr} fill={fill} />;
           })}
         </g>
       );

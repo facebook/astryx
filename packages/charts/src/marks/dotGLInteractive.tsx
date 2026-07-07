@@ -18,7 +18,7 @@ import {
 } from 'react';
 import type {SeriesDef, ResolvedPoint} from '../types';
 import type {ScaleBand} from 'd3-scale';
-import {hexToGL} from '../../Chart/webgl';
+import {hexToGL} from '../webgl';
 
 export interface DotGLInteractiveOptions {
   color: string;

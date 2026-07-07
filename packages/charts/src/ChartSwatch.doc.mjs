@@ -5,7 +5,7 @@
 export const docs = {
   name: 'ChartSwatch',
   displayName: 'Chart Swatch',
-  group: 'ChartV2',
+  group: 'Charts',
   category: 'Data Visualization',
   isHiddenFromOverview: true,
 

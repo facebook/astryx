@@ -18,8 +18,9 @@ export interface CandlestickOptions {
 }
 
 export function candlestick(options: CandlestickOptions): SeriesDef {
-  const upColor = options.upColor ?? 'var(--color-positive)';
-  const downColor = options.downColor ?? 'var(--color-negative)';
+  // Emitted core semantic tokens (data-viz --color-data-* tokens aren't CSS vars).
+  const upColor = options.upColor ?? 'var(--color-success)';
+  const downColor = options.downColor ?? 'var(--color-error)';
 
   return {
     type: 'candlestick',
@@ -59,7 +60,7 @@ export function candlestick(options: CandlestickOptions): SeriesDef {
 
       return (
         <g>
-          {resolved.map((p, i) => {
+          {resolved.map(p => {
             const d = data[p.dataIndex];
             const o =
               typeof d[options.open] === 'number'
@@ -80,7 +81,7 @@ export function candlestick(options: CandlestickOptions): SeriesDef {
             const isUp = c >= o;
             const col = isUp ? upColor : downColor;
             return (
-              <g key={i}>
+              <g key={p.dataIndex}>
                 <line
                   x1={p.px}
                   x2={p.px}

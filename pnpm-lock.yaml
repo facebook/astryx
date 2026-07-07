@@ -519,6 +519,9 @@ importers:
 
   apps/storybook:
     dependencies:
+      '@astryxdesign/charts':
+        specifier: '*'
+        version: link:../../packages/charts
       '@astryxdesign/core':
         specifier: '*'
         version: link:../../packages/core
@@ -717,12 +720,31 @@ importers:
       '@stylexjs/stylex':
         specifier: '>=0.10.0'
         version: 0.18.3
+      d3-array:
+        specifier: ^3.2.4
+        version: 3.2.4
+      d3-scale:
+        specifier: ^4.0.2
+        version: 4.0.2
+      d3-shape:
+        specifier: ^3.2.0
+        version: 3.2.0
       react:
         specifier: '>=19.0.0'
         version: 19.2.7
       react-dom:
         specifier: '>=19.0.0'
         version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@types/d3-array':
+        specifier: ^3.2.2
+        version: 3.2.2
+      '@types/d3-scale':
+        specifier: ^4.0.9
+        version: 4.0.9
+      '@types/d3-shape':
+        specifier: ^3.1.8
+        version: 3.1.8
 
   packages/cli:
     dependencies:

@@ -1,12 +1,16 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {ChartV2 as Chart, bar, line, area} from '@astryxdesign/lab';
 import {
-  ChartV2Grid as ChartGrid,
-  ChartV2Axis as ChartAxis,
+  Chart,
+  bar,
+  line,
+  area,
+  dot,
+  ChartGrid,
+  ChartAxis,
   currency,
-} from '@astryxdesign/lab';
+} from '@astryxdesign/charts';
 
 const meta: Meta<typeof Chart> = {
   title: 'Lab/ChartV2',
@@ -248,6 +252,111 @@ export const NegativeValues: StoryObj = {
         bar('profit', {color: '#3b82f6'}),
         line('trend', {color: '#f59e0b', dots: true, strokeWidth: 2}),
       ]}
+      grid={<ChartGrid />}
+      axes={
+        <>
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+        </>
+      }
+      height={300}
+    />
+  ),
+};
+
+/**
+ * No colors specified — the chart auto-assigns distinct colors from the theme's
+ * categorical palette (blue, orange, purple…) and every series shows in the
+ * legend. This is what a bare `bar('revenue')` should look like.
+ */
+export const AutoColors: StoryObj = {
+  render: () => (
+    <Chart
+      data={monthlyData}
+      xKey="month"
+      title="Auto palette"
+      subtitle="No colors passed — assigned from the theme palette"
+      series={[
+        bar('revenue', {group: 'g'}),
+        bar('costs', {group: 'g'}),
+        line('trend'),
+      ]}
+      legend
+      grid={<ChartGrid />}
+      axes={
+        <>
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+        </>
+      }
+      height={300}
+    />
+  ),
+};
+
+const stripData = [
+  {group: 'A', value: 12},
+  {group: 'A', value: 15},
+  {group: 'A', value: 13},
+  {group: 'A', value: 16},
+  {group: 'A', value: 14},
+  {group: 'B', value: 22},
+  {group: 'B', value: 20},
+  {group: 'B', value: 25},
+  {group: 'B', value: 21},
+  {group: 'C', value: 17},
+  {group: 'C', value: 18},
+  {group: 'C', value: 15},
+  {group: 'C', value: 19},
+  {group: 'C', value: 16},
+  {group: 'C', value: 20},
+];
+
+/**
+ * Plain SVG `dot` scatter (not the WebGL variant). `dodge` spreads points that
+ * land on the same category so they don't overlap into a single blob.
+ */
+export const DotScatter: StoryObj = {
+  name: 'Dot Scatter (SVG, dodged)',
+  render: () => (
+    <Chart
+      data={stripData}
+      xKey="group"
+      title="Values by group"
+      series={[dot('value', {dodge: true, radius: 5})]}
+      grid={<ChartGrid />}
+      axes={
+        <>
+          <ChartAxis position="bottom" />
+          <ChartAxis position="left" />
+        </>
+      }
+      height={300}
+    />
+  ),
+};
+
+/**
+ * Accessor-colored series (per-datum color) now appear in the legend using their
+ * assigned palette color as the representative swatch — previously they silently
+ * dropped out of the legend.
+ */
+export const AccessorColored: StoryObj = {
+  render: () => (
+    <Chart
+      data={profitLossData}
+      xKey="month"
+      title="Accessor color (green when positive, red when negative)"
+      series={[
+        bar('profit', {
+          color: d =>
+            (d.profit as number) >= 0
+              ? 'var(--color-success)'
+              : 'var(--color-error)',
+          label: 'Profit',
+        }),
+      ]}
+      legend
       grid={<ChartGrid />}
       axes={
         <>
