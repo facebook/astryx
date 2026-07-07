@@ -10,28 +10,20 @@ const sampleItems = [
 ];
 
 const meta: Meta<typeof ChartLegend> = {
-  title: 'Lab/ChartV2Legend',
+  title: 'Charts/Chrome/Legend',
   component: ChartLegend,
   argTypes: {
     position: {
       control: 'inline-radio',
       options: ['top', 'bottom', 'start', 'end'],
     },
-    alignment: {
-      control: 'inline-radio',
-      options: ['start', 'center', 'end'],
-    },
+    alignment: {control: 'inline-radio', options: ['start', 'center', 'end']},
     items: {table: {disable: true}},
   },
-  args: {
-    items: sampleItems,
-    alignment: 'start',
-  },
+  args: {items: sampleItems, position: 'bottom', alignment: 'start'},
   render: args => <ChartLegend {...args} />,
 };
 export default meta;
 
-/** Standalone chart legend. Use the Controls panel to switch position and alignment. */
-export const Legend: StoryObj = {
-  args: {position: 'bottom'},
-};
+/** Standalone legend. Swatch shape follows the mark type (square for bar). */
+export const Default: StoryObj = {};
