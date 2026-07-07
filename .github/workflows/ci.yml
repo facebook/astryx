@@ -277,13 +277,42 @@ jobs:
           path: analysis.json
           retention-days: 1
 
+      # Metadata bridge for the privileged pr-comment workflow (triggered on
+      # workflow_run). That workflow runs in the base-repo context and cannot
+      # read these job outputs, and github.event.workflow_run.pull_requests is
+      # empty for fork runs — so the PR number and preview URLs are handed over
+      # as a trusted, data-only artifact instead.
+      - name: Write PR metadata
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        run: |
+          cat > pr-meta.json <<EOF
+          {
+            "pr_number": "${{ steps.urls.outputs.pr_number }}",
+            "short_hash": "${{ steps.urls.outputs.short_hash }}",
+            "head_sha": "${{ github.event.pull_request.head.sha }}",
+            "is_fork": "${{ github.event.pull_request.head.repo.full_name != github.repository }}",
+            "storybook_url": "${{ steps.urls.outputs.storybook_url }}",
+            "sandbox_url": "${{ steps.urls.outputs.sandbox_url }}"
+          }
+          EOF
+
+      - name: Upload PR metadata artifact
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: pr-meta
+          path: pr-meta.json
+          retention-days: 1
+
   # Deploy PR preview to GitHub Pages.
   # Uses a per-PR concurrency group so multiple PRs deploy in parallel.
   # Instead of peaceiris/actions-gh-pages (which can conflict with main's
   # force-push), we do a manual git push with retry-on-conflict.
   # Fork PRs run with a read-only GITHUB_TOKEN, so the `git push origin gh-pages`
-  # below would 403. Skip on forks (neutral, not failing). A maintainer can deploy
-  # a trusted fork PR's preview manually via the Re-deploy Preview workflow.
+  # below would 403. Skip on forks here (neutral, not failing) — fork previews
+  # are deployed by the privileged pr-comment workflow (pr-comment.yml), which
+  # runs on workflow_run in the base-repo context with a write token and only
+  # ever downloads the already-built artifacts (never runs fork code).
   deploy-preview:
     if: >-
       github.event_name == 'pull_request' &&
@@ -356,7 +385,9 @@ jobs:
   # Does NOT wait for test or a11y — those update the comment later
   # Posting a comment needs `pull-requests: write`, which fork PRs don't get
   # (their GITHUB_TOKEN is read-only). Skip on forks so the check stays neutral
-  # instead of failing. The analysis artifact is still uploaded by `build`.
+  # instead of failing. Fork PRs are handled by the privileged pr-comment
+  # workflow (pr-comment.yml) on workflow_run, which posts the same analysis
+  # comment from the base-repo context after CI completes.
   pr-comment:
     if: >-
       github.event_name == 'pull_request' &&

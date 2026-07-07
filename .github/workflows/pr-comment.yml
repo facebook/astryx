@@ -1,0 +1,257 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Privileged companion to CI for fork pull requests.
+#
+# Fork PRs run CI with a read-only GITHUB_TOKEN and no secrets, so the CI
+# workflow itself cannot post the PR Analysis Report comment or deploy the
+# preview (see the skipped pr-comment / deploy-preview jobs in ci.yml). This
+# workflow closes that gap using GitHub's recommended pattern for acting on
+# untrusted PRs:
+#
+#   * It triggers on `workflow_run` (CI completed), so it runs in the BASE
+#     repository context with a normal write-capable token — NOT in the fork's
+#     read-only context.
+#   * It never checks out or executes the PR's code. It only downloads the
+#     data-only artifacts CI already produced (analysis.json, pr-meta.json,
+#     the optional a11y report, and the pre-built static preview) and runs the
+#     comment generator from the base ref (this workflow's own checkout of
+#     main), which is trusted.
+#   * PR identity comes from the trusted `pr-meta` artifact, not from
+#     attacker-influenced event fields (github.event.workflow_run.pull_requests
+#     is empty for fork runs anyway).
+#
+# Because no fork-controlled code runs with the elevated token, the write scope
+# and the gh-pages deploy cannot be hijacked by a malicious PR.
+#
+# Same-repo PRs already get their comment + preview directly from ci.yml, so
+# this workflow no-ops on them (guarded by is_fork) to avoid double-posting.
+name: PR Analysis Comment
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: "pr-comment-${{ github.event.workflow_run.id }}"
+  cancel-in-progress: true
+
+jobs:
+  comment:
+    # Only for PR-triggered CI runs that finished cleanly. `completed` fires for
+    # cancelled/failed runs too, so gate on a successful conclusion.
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    outputs:
+      is_fork: ${{ steps.meta.outputs.is_fork }}
+      pr_number: ${{ steps.meta.outputs.pr_number }}
+      short_hash: ${{ steps.meta.outputs.short_hash }}
+    steps:
+      # Checkout the BASE repo at the default branch — the trusted source for
+      # generate-pr-comment.js. Never the PR head.
+      - name: Checkout base repo
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      # download-artifact with run-id pulls artifacts from the *triggering* CI
+      # run. These are data-only (JSON) — they are never executed.
+      - name: Download PR metadata
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-meta
+          path: pr-meta
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read PR metadata
+        id: meta
+        run: |
+          META="pr-meta/pr-meta.json"
+          PR_NUMBER=$(jq -r '.pr_number' "$META")
+          SHORT_HASH=$(jq -r '.short_hash' "$META")
+          IS_FORK=$(jq -r '.is_fork' "$META")
+          STORYBOOK_URL=$(jq -r '.storybook_url' "$META")
+          SANDBOX_URL=$(jq -r '.sandbox_url' "$META")
+
+          # Defence in depth: PR number must be digits before it is used in an
+          # API call or a filesystem path.
+          if ! [[ "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid PR number in metadata: $PR_NUMBER"
+            exit 1
+          fi
+
+          {
+            echo "pr_number=$PR_NUMBER"
+            echo "short_hash=$SHORT_HASH"
+            echo "is_fork=$IS_FORK"
+            echo "storybook_url=$STORYBOOK_URL"
+            echo "sandbox_url=$SANDBOX_URL"
+          } >> "$GITHUB_OUTPUT"
+
+      # Same-repo PRs are already served by ci.yml; nothing more to do here.
+      - name: Skip same-repo PRs
+        if: steps.meta.outputs.is_fork != 'true'
+        run: echo "Same-repo PR — comment + preview handled by ci.yml. Skipping."
+
+      - name: Download analysis artifact
+        if: steps.meta.outputs.is_fork == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-analysis
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # a11y only runs when components change, so its artifact may be absent.
+      - name: Download a11y artifact
+        if: steps.meta.outputs.is_fork == 'true'
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: a11y-report
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate PR comment
+        if: steps.meta.outputs.is_fork == 'true'
+        env:
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          STORYBOOK_URL: ${{ steps.meta.outputs.storybook_url }}
+          SANDBOX_URL: ${{ steps.meta.outputs.sandbox_url }}
+          PR_NUMBER: ${{ steps.meta.outputs.pr_number }}
+        run: |
+          if [ ! -f a11y-report.json ]; then
+            echo '{"components":{},"summary":{"componentsAudited":0,"totalViolations":0}}' > a11y-report.json
+          fi
+
+          COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
+            --analysis analysis.json \
+            --a11y a11y-report.json \
+            --storybook-url "$STORYBOOK_URL" \
+            --sandbox-url "$SANDBOX_URL" \
+            --run-url "$RUN_URL" \
+            --pr-number "$PR_NUMBER")
+
+          echo "$COMMENT_BODY" > pr-comment.md
+
+      - name: Comment on PR
+        if: steps.meta.outputs.is_fork == 'true'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('pr-comment.md', 'utf8');
+            const prNumber = Number('${{ steps.meta.outputs.pr_number }}');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('PR Analysis Report')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
+
+  # Deploy the fork PR's already-built Storybook + Sandbox to GitHub Pages.
+  # Mirrors the same-repo deploy-preview job in ci.yml, but runs here (base
+  # context, write token). It only copies the pre-built static output from the
+  # trusted CI artifacts — it never builds or runs fork code.
+  deploy-preview:
+    needs: [comment]
+    if: needs.comment.outputs.is_fork == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    concurrency:
+      group: "pr-preview-${{ needs.comment.outputs.pr_number }}"
+      cancel-in-progress: true
+    steps:
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.comment.outputs.short_hash }}
+          path: storybook-dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Sandbox artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: sandbox-${{ needs.comment.outputs.short_hash }}
+          path: sandbox-dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy PR preview to GitHub Pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ needs.comment.outputs.pr_number }}
+        run: |
+          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          MAX_ATTEMPTS=5
+          WORK_DIR="$PWD"
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "::group::Attempt $attempt of $MAX_ATTEMPTS"
+            cd "$WORK_DIR"
+
+            rm -rf /tmp/gh-pages
+            git clone --depth=1 --single-branch --branch gh-pages "$REPO_URL" /tmp/gh-pages
+
+            rm -rf /tmp/gh-pages/pr/${PR_NUMBER}
+            mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}
+            cp -r storybook-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/
+            mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}/sandbox
+            cp -r sandbox-dist/* /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/
+
+            cd /tmp/gh-pages
+            git add -A
+            git commit -m "Deploy PR #${PR_NUMBER} preview" || { echo "Nothing to commit"; echo "::endgroup::"; exit 0; }
+
+            if git push origin gh-pages; then
+              echo "Deployed successfully on attempt $attempt"
+              echo "::endgroup::"
+              exit 0
+            fi
+
+            echo "Push failed (likely concurrent update), retrying in $((attempt * 2))s..."
+            echo "::endgroup::"
+            sleep $((attempt * 2))
+          done
+
+          echo "::error::Failed to deploy PR preview after $MAX_ATTEMPTS attempts"
+          exit 1
