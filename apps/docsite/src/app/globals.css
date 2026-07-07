@@ -17,9 +17,8 @@
 html {
   overscroll-behavior-y: none;
 
-  /* Reserve the viewport scrollbar's space at all times so content width stays
-     constant — no horizontal jump between short and long pages, or when a
-     modal/drawer (MobileNav's <dialog>) locks body scroll on open/close. */
+  /* Reserve scrollbar space so content width stays constant across pages and
+     when a modal/drawer locks body scroll. */
   scrollbar-gutter: stable;
 }
 
