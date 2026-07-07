@@ -21,13 +21,18 @@ import {Section} from '@astryxdesign/core/Section';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Selector} from '@astryxdesign/core/Selector';
 import {Outline, type OutlineItem} from '@astryxdesign/core/Outline';
-import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {
   colorVars,
   spacingVars,
   typeScaleVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {layout} from '../../layout.stylex';
+
+// The outline aside and the mobile jump-menu both render at all times; a pure
+// @media query decides which one paints so the server HTML is correct on first
+// paint (no useMediaQuery flip). Below this width the aside is hidden and the
+// Selector shows.
+const TOC_BREAKPOINT = '@media (max-width: 1024px)';
 
 const styles = stylex.create({
   // Centered article when there is no outline aside (original behavior).
@@ -48,9 +53,13 @@ const styles = stylex.create({
   },
   // Article that shares the row with a sticky outline aside. Mirrors the
   // larger/airier article body typography from sectionCentered so pages with
-  // an outline keep the same readable prose.
+  // an outline keep the same readable prose. Below the breakpoint the aside is
+  // hidden, so the article re-centers to fill the row.
   sectionInRow: {
-    marginInline: 0,
+    marginInline: {
+      default: 0,
+      [TOC_BREAKPOINT]: 'auto',
+    },
     flexShrink: 1,
     minWidth: 0,
     [typeScaleVars['--text-body-size']]: '1.0625rem', // 17px
@@ -65,6 +74,11 @@ const styles = stylex.create({
     width: '100%',
   },
   aside: {
+    // Desktop only — hidden below the breakpoint where the Selector takes over.
+    display: {
+      default: 'block',
+      [TOC_BREAKPOINT]: 'none',
+    },
     position: 'sticky',
     top: 'calc(var(--appshell-header-height, 0px) + 24px)',
     alignSelf: 'flex-start',
@@ -74,8 +88,12 @@ const styles = stylex.create({
   // Mobile on-this-page selector: pinned below the app header while scrolling.
   // Lives directly in the article column so its sticky range spans the article;
   // an opaque background + bottom border keep content readable as it scrolls
-  // underneath.
+  // underneath. Shown only below the breakpoint.
   mobileOutline: {
+    display: {
+      default: 'none',
+      [TOC_BREAKPOINT]: 'block',
+    },
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
     zIndex: 1,
@@ -84,6 +102,15 @@ const styles = stylex.create({
     borderBottomWidth: 1,
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
+  },
+  // Title divider. On outline pages the mobile Selector carries its own bottom
+  // border, so the divider is hidden below the breakpoint to avoid a doubled
+  // separator (applied only when an outline is present).
+  titleDivider: {
+    display: {
+      default: 'block',
+      [TOC_BREAKPOINT]: 'none',
+    },
   },
 });
 
@@ -104,9 +131,6 @@ export function DocPageLayout({
   outline?: OutlineItem[];
 }) {
   const hasOutline = outline != null && outline.length > 0;
-  const isNarrow = useMediaQuery('(max-width: 1024px)');
-  const showAside = hasOutline && !isNarrow;
-  const showSelector = hasOutline && isNarrow;
 
   const [activeId, setActiveId] = useState<string | undefined>(
     outline?.[0]?.id,
@@ -150,7 +174,7 @@ export function DocPageLayout({
     <Section
       maxWidth={layout.proseMaxWidth}
       padding={6}
-      xstyle={showAside ? styles.sectionInRow : styles.sectionCentered}>
+      xstyle={hasOutline ? styles.sectionInRow : styles.sectionCentered}>
       <VStack gap={10}>
         <VStack gap={4}>
           <Heading level={1} type="display-1">
@@ -161,11 +185,11 @@ export function DocPageLayout({
               {description}
             </Text>
           ) : null}
-          {/* When the mobile selector is shown it carries its own bottom border,
-              so the title divider is dropped to avoid a doubled separator. */}
-          {showSelector ? null : <Divider />}
+          <div {...stylex.props(hasOutline && styles.titleDivider)}>
+            <Divider />
+          </div>
         </VStack>
-        {showSelector ? (
+        {hasOutline ? (
           <div ref={selectorRef} {...stylex.props(styles.mobileOutline)}>
             <Selector
               label="On this page"
@@ -198,16 +222,14 @@ export function DocPageLayout({
   return (
     <div className={rowProps.className} style={rowStyle}>
       {article}
-      {showAside ? (
-        <aside {...stylex.props(styles.aside)}>
-          <Outline
-            items={outline}
-            label="On this page"
-            density="compact"
-            onActiveIdChange={setActiveId}
-          />
-        </aside>
-      ) : null}
+      <aside {...stylex.props(styles.aside)}>
+        <Outline
+          items={outline}
+          label="On this page"
+          density="compact"
+          onActiveIdChange={setActiveId}
+        />
+      </aside>
     </div>
   );
 }
