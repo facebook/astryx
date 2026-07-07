@@ -437,6 +437,9 @@ importers:
 
   apps/sandbox:
     dependencies:
+      '@astryxdesign/charts':
+        specifier: '*'
+        version: link:../../packages/charts
       '@astryxdesign/cli':
         specifier: '*'
         version: link:../../packages/cli
