@@ -18,6 +18,7 @@
     "@monaco-editor/react": "^4.7.0",
     "@stylexjs/stylex": "^0.18.3",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^1.2.0",
     "@astryxdesign/charts": "*",
     "@astryxdesign/cli": "*",
     "@astryxdesign/core": "*",
