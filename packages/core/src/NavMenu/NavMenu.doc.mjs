@@ -10,6 +10,15 @@ export const docs = {
   isHiddenFromOverview: true,
   hidden: false,
   keywords: ['nav', 'menu', 'navigation', 'heading', 'menu-item', 'popover'],
+  playground: {
+    defaults: {
+      children: [
+        {__element: 'NavHeadingMenuItem', props: {label: 'Dashboard', description: 'Metrics and reporting', href: '#'}},
+        {__element: 'NavHeadingMenuItem', props: {label: 'Analytics', href: '#'}},
+        {__element: 'NavHeadingMenuItem', props: {label: 'Settings', href: '#'}},
+      ],
+    },
+  },
   usage: {
     description:
       'Accessible menu container and items for nav heading popovers. ' +
