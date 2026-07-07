@@ -18,7 +18,14 @@ import {
   afterAll,
   beforeEach,
 } from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Typeahead} from './Typeahead';
 import {BaseTypeahead} from './BaseTypeahead';
@@ -76,6 +83,19 @@ const fruitSource: SearchSource = {
   bootstrap: () => fruits.slice(0, 3),
 };
 
+type Deferred<T> = {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+};
+
+function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>(res => {
+    resolve = res;
+  });
+  return {promise, resolve};
+}
+
 describe('BaseTypeahead', () => {
   it('renders input with combobox role', () => {
     render(
@@ -128,6 +148,52 @@ describe('BaseTypeahead', () => {
     await waitFor(() => {
       expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
     });
+  });
+
+  it('ignores stale async search results that resolve after a newer query', async () => {
+    const apple = {id: 'apple', label: 'Apple'};
+    const avocado = {id: 'avocado', label: 'Avocado'};
+    const apricot = {id: 'apricot', label: 'Apricot'};
+    const searches = new Map<string, Deferred<SearchableItem[]>>();
+    const searchSource: SearchSource = {
+      search: async (query: string) => {
+        const deferred = createDeferred<SearchableItem[]>();
+        searches.set(query, deferred);
+        return deferred.promise;
+      },
+      bootstrap: () => [],
+    };
+
+    render(
+      <BaseTypeahead
+        searchSource={searchSource}
+        value={null}
+        onChange={() => {}}
+        debounceMs={0}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    fireEvent.change(input, {target: {value: 'a'}});
+    fireEvent.change(input, {target: {value: 'ap'}});
+
+    await act(async () => {
+      searches.get('ap')?.resolve([apple]);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Apple')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      searches.get('a')?.resolve([avocado, apricot]);
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('Apple')).toBeInTheDocument();
+    expect(screen.queryByText('Avocado')).not.toBeInTheDocument();
+    expect(screen.queryByText('Apricot')).not.toBeInTheDocument();
   });
 
   it('announces the result count to a live region (comboboxes-6)', async () => {
@@ -703,7 +769,11 @@ describe('BaseTypeahead paste behavior', () => {
     await user.paste('xyz');
 
     await waitFor(() => {
-      expect(screen.getByText('No results found')).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('listbox', {hidden: true})).getByText(
+          'No results found',
+        ),
+      ).toBeInTheDocument();
     });
   });
 
