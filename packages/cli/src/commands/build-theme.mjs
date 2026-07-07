@@ -846,19 +846,11 @@ export function registerTheme(program) {
         if (component.length > 0) {
           const componentInner = component.join('\n\n');
           const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
-          // Native CSS light-dark() resolves against the used value of
-          // `color-scheme`, so any bundle containing light-dark() values
-          // needs a `color-scheme` declaration to land correctly. A bare
-          // `:root { color-scheme: light dark }` alone defeats
-          // `<Theme mode="light|dark">` forcing: this @layer (astryx-theme) is
-          // declared after reset.css's `html[data-theme]` -> color-scheme mapping
-          // in layer order, so it always wins regardless of specificity,
-          // permanently pinning the page to "light dark" (system) even when a
-          // mode is forced. Mirroring reset.css's own attribute-keyed mapping
-          // here (rather than a single unconditional :root rule) keeps
-          // light-dark() resolving correctly while making the override agree
-          // with whatever mode is actually active on <html data-theme="...">,
-          // including the no-attribute "system" case.
+          // light-dark() needs a color-scheme declaration in this bundle, but a
+          // bare `:root { color-scheme: light dark }` outranks reset.css's
+          // `html[data-theme]` mapping (astryx-theme layer comes after reset),
+          // silently defeating `<Theme mode>` forcing on <html>. Mirror the
+          // attribute-keyed mapping so the declaration follows the active mode.
           const colorSchemeDecl = componentScope.includes('light-dark(')
             ? '  :root { color-scheme: light dark; }\n' +
               '  html[data-theme="light"] { color-scheme: light; }\n' +
