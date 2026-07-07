@@ -61,3 +61,20 @@ export const docs = {
     },
   ],
 };
+
+/** @type {import('../docs-types').TranslationDoc} */
+export const docsDense = {
+  description:
+    'Returns a TablePlugin for expandable rows w/ inherited columns. Child rows reuse parent columns, indented by depth. Chevron click (or right-click menu) toggles expansion. Pair w/ useTableRowExpansionState, which flattens the tree + derives this config from one expandedKeys set.',
+  propDescriptions: {
+    expandedKeys: 'Set of currently-expanded row keys.',
+    onToggle: 'Called when a row expansion is toggled.',
+    getRowKey: 'Derive a stable unique key from a row item.',
+    getChildren: 'Return children of a row; determines expandability.',
+    getDepth: 'Return depth of a row (0 = top-level). Used for indentation.',
+    getIsItemExpandable: 'Control which rows are expandable. Defaults to checking getChildren length.',
+    hasRowClickExpansion: 'If true, clicking anywhere on the row toggles expansion. Default false.',
+    isAllExpanded: 'State of the expand-all header toggle. Enables the header toggle button.',
+    onToggleExpandAll: 'Callback when the expand-all header toggle is clicked.',
+  },
+};
