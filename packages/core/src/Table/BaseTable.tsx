@@ -284,6 +284,8 @@ function areRowPropsEqual<T extends Record<string, unknown>>(
   const nextItem = nextProps.item;
   const keys = Object.keys(nextItem);
 
+  if (Object.keys(prevItem).length !== keys.length) {return false;}
+
   for (const key of keys) {
     if (prevItem[key] !== nextItem[key]) {
       return false;
