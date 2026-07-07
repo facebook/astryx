@@ -27,7 +27,17 @@ export type {
   ListFocusOrientation,
 } from './useListFocus';
 
+export {useTreeFocus} from './useTreeFocus';
+export type {UseTreeFocusOptions, UseTreeFocusReturn} from './useTreeFocus';
+
 export {useTypeahead} from './useTypeahead';
+
+export {useKeyboardHint} from './useKeyboardHint';
+export type {
+  UseKeyboardHintOptions,
+  UseKeyboardHintReturn,
+  KeyboardHintOrientation,
+} from './useKeyboardHint';
 export type {UseTypeaheadOptions, UseTypeaheadReturn} from './useTypeahead';
 
 export {useMediaQuery} from './useMediaQuery';
@@ -51,7 +61,10 @@ export type {
 export {useImageMode} from './useImageMode';
 export type {ImageSampleRegion, UseImageModeOptions} from './useImageMode';
 
-export {useClickableContainer, INTERACTIVE_SELECTORS} from './useClickableContainer';
+export {
+  useClickableContainer,
+  INTERACTIVE_SELECTORS,
+} from './useClickableContainer';
 export type {
   UseClickableContainerOptions,
   ClickableContainerResult,
@@ -67,7 +80,4 @@ export type {
 } from './useInteractiveRole';
 
 export {useLongPress} from './useLongPress';
-export type {
-  UseLongPressOptions,
-  UseLongPressHandlers,
-} from './useLongPress';
+export type {UseLongPressOptions, UseLongPressHandlers} from './useLongPress';

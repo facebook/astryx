@@ -71,6 +71,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the textarea is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the textarea focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled TextArea in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'isLoading',
       type: 'boolean',
       description:
@@ -174,6 +180,7 @@ export const docs = {
       { guidance: false, description: 'Avoid using TextArea for short, single-line values like names or emails; use TextInput instead.' },
       { guidance: false, description: 'Don\'t rely solely on placeholder text to communicate the purpose of the field; placeholders disappear on focus and are not accessible labels.' },
       { guidance: false, description: 'Don\'t show a status message without also setting the status type; the colored border and icon are what draw the user\'s attention to the message.' },
+      { guidance: false, description: 'Don\'t wrap a disabled TextArea in Tooltip to explain why it\'s disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
   },
 };
@@ -238,6 +245,12 @@ export const docsZh = {
       type: 'boolean',
       description: '禁用文本域，阻止交互。',
       default: 'false',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        '说明文本域被禁用的原因。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示工具提示，并通过 aria-disabled 保持文本域可聚焦（字段变为只读）。请使用此属性，而不是用 Tooltip 包裹已禁用的 TextArea。',
     },
     {
       name: 'isLoading',
@@ -336,6 +349,7 @@ export const docsZh = {
       { guidance: false, description: 'Avoid using TextArea for short, single-line values like names or emails; use TextInput instead.' },
       { guidance: false, description: 'Don\'t rely solely on placeholder text to communicate the purpose of the field; placeholders disappear on focus and are not accessible labels.' },
       { guidance: false, description: 'Don\'t show a status message without also setting the status type; the colored border and icon are what draw the user\'s attention to the message.' },
+      { guidance: false, description: 'Don\'t wrap a disabled TextArea in Tooltip to explain why it\'s disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
   },
 };
@@ -354,6 +368,7 @@ export const docsDense = {
       { guidance: false, description: 'Avoid TextArea for single-line values; use TextInput.' },
       { guidance: false, description: 'Don\'t use placeholder as only label; disappears on focus, not accessible.' },
       { guidance: false, description: 'Don\'t show status message without status type; border and icon draw attention.' },
+      { guidance: false, description: 'Don\'t wrap a disabled TextArea in Tooltip to explain the disabled state; use the disabledMessage prop instead.' },
     ],
   },
   propDescriptions: {
@@ -367,6 +382,8 @@ export const docsDense = {
     isOptional: 'Shows "Optional" indicator. Mutually exclusive w/ isRequired.',
     isRequired: 'Shows "Required" indicator+sets aria-required. Mutually exclusive w/ isOptional.',
     isDisabled: 'Disables textarea, prevents interaction.',
+    disabledMessage:
+      'Explains why textarea is disabled. With isDisabled, shows tooltip on hover/focus + keeps textarea focusable via aria-disabled (field becomes read-only). Use instead of wrapping a disabled TextArea in Tooltip.',
     isLoading: 'Loading state w/ spinner inside input.',
     placeholder: 'Placeholder when textarea empty.',
     rows: 'Visible text rows.',

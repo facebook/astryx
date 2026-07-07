@@ -10,10 +10,11 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
+import {InputGroup, InputGroupText} from '../InputGroup';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -384,6 +385,59 @@ describe('Selector', () => {
       expect(onChange).toHaveBeenCalledWith(null);
     });
 
+    it('clears the value via Delete on the focused trigger', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={onChange}
+          hasClear
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      trigger.focus();
+      await user.keyboard('{Delete}');
+      expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it('clears the value via Backspace on the focused trigger', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={onChange}
+          hasClear
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      trigger.focus();
+      await user.keyboard('{Backspace}');
+      expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it('does not clear via Delete when hasClear is not set', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={onChange}
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      trigger.focus();
+      await user.keyboard('{Delete}');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('shows placeholder after clearing', () => {
       render(
         <Selector
@@ -649,6 +703,190 @@ describe('Selector', () => {
         delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
           .scrollIntoView;
       }
+    });
+  });
+
+  describe('InputGroup integration', () => {
+    it('uses the group Field chrome and composes group and selector labels', () => {
+      render(
+        <InputGroup
+          label="Destination"
+          description="Where the alert should route"
+          status={{type: 'error', message: 'Destination is required'}}>
+          <InputGroupText>#</InputGroupText>
+          <Selector
+            label="Channel"
+            isLabelHidden
+            options={OPTIONS}
+            placeholder="Choose a channel"
+          />
+        </InputGroup>,
+      );
+
+      const group = screen.getByRole('group', {name: 'Destination'});
+      const groupLabelID = group.getAttribute('aria-labelledby');
+      const trigger = screen.getByRole('combobox', {
+        name: 'Destination Channel',
+      });
+      const labelledByIDs =
+        trigger.getAttribute('aria-labelledby')?.split(' ') ?? [];
+
+      expect(labelledByIDs).toHaveLength(2);
+      expect(labelledByIDs[0]).toBe(groupLabelID);
+      expect(document.getElementById(labelledByIDs[1])).toHaveTextContent(
+        'Channel',
+      );
+      expect(trigger).toHaveAttribute(
+        'aria-describedby',
+        group.getAttribute('aria-describedby'),
+      );
+      expect(screen.getByText('#')).toBeInTheDocument();
+    });
+
+    it('keeps disabled reasons described when grouped', () => {
+      render(
+        <InputGroup label="Destination">
+          <InputGroupText>#</InputGroupText>
+          <Selector
+            label="Channel"
+            isLabelHidden
+            options={OPTIONS}
+            isDisabled
+            disabledMessage="Choose a project first"
+          />
+        </InputGroup>,
+      );
+
+      const trigger = screen.getByRole('combobox', {
+        name: 'Destination Channel',
+      });
+      const tooltip = screen.getByRole('tooltip', h);
+
+      expect(trigger).not.toBeDisabled();
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
+      expect(trigger.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+  });
+
+  describe('disabledMessage', () => {
+    it('shows the reason tooltip on hover when disabled with a reason', async () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          isDisabled
+          disabledMessage="You need the Editor role"
+          data-testid="fruit-selector"
+        />,
+      );
+
+      const container = screen.getByTestId('fruit-selector');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('You need the Editor role');
+
+      fireEvent.mouseEnter(container);
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+
+      fireEvent.mouseLeave(container);
+      await waitFor(() => {
+        expect(tooltip).not.toHaveAttribute('popover-open');
+      });
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(<Selector label="Fruit" options={OPTIONS} isDisabled />);
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the trigger focusable via aria-disabled when a reason is provided', () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).not.toBeDisabled();
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
+      expect(trigger).toHaveAttribute('tabIndex', '0');
+    });
+
+    it('links the reason tooltip from the trigger via aria-describedby', () => {
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const trigger = screen.getByRole('combobox');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(trigger.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks activation while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          onChange={onChange}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+      await user.keyboard('{Enter}');
+      await user.keyboard('{ArrowDown}');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('remains non-focusable when disabled without a reason', () => {
+      render(<Selector label="Fruit" options={OPTIONS} isDisabled />);
+      const trigger = screen.getByRole('combobox');
+      expect(trigger).toBeDisabled();
+      expect(trigger).toHaveAttribute('tabIndex', '-1');
     });
   });
 });

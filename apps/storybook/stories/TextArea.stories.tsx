@@ -54,6 +54,11 @@ const meta: Meta<typeof TextArea> = {
       control: 'boolean',
       description: 'Whether the textarea is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the textarea is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the textarea focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled TextArea in Tooltip.',
+    },
     status: {
       control: 'object',
       description:
@@ -274,6 +279,26 @@ export const Disabled: Story = {
     label: 'Disabled Field',
     isDisabled: true,
     value: 'This textarea is disabled and cannot be edited.',
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the textarea to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the textarea stays focusable (editing is still
+// blocked). Use disabledMessage instead of wrapping a disabled TextArea in
+// Tooltip: disabled controls swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: args => {
+    const [value, setValue] = useState(
+      args.value ?? 'These notes are locked after submission.',
+    );
+    return <TextArea {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Notes',
+    isDisabled: true,
+    disabledMessage: 'Notes are locked after submission',
+    value: 'These notes are locked after submission.',
   },
 };
 

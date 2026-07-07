@@ -55,6 +55,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
+import type {StyleXStyles} from '../theme/types';
 import {themeProps} from '../utils/themeProps';
 import type {
   DropdownMenuOption,
@@ -114,6 +115,13 @@ export type ContextMenuOption = DropdownMenuOption;
 interface ContextMenuBaseProps extends BaseProps {
   /** Ref forwarded to the trigger wrapper element. */
   ref?: React.Ref<HTMLDivElement>;
+  /**
+   * Styles applied to the trigger wrapper element (the right-click target).
+   * By default the trigger is a plain block that hugs its content — pass a
+   * fill style (e.g. `width/height: 100%`) when the whole parent area should
+   * be right-clickable (as the Table does for full-cell context menus).
+   */
+  triggerXstyle?: StyleXStyles | StyleXStyles[];
   /** The trigger area — right-click on this to open the menu. */
   children: ReactNode;
   /** Custom menu width. @default '160px' */
@@ -125,12 +133,6 @@ interface ContextMenuBaseProps extends BaseProps {
    * @default 'Context menu'
    */
   label?: string;
-  /**
-   * Whether to auto-focus the first menu item when the menu opens.
-   * Set to `false` for inline showcases or documentation previews.
-   * @default true
-   */
-  hasAutoFocus?: boolean;
   /** When true, right-click shows the native browser context menu instead. */
   isDisabled?: boolean;
   /** Called when the menu opens or closes. */
@@ -184,13 +186,13 @@ export function ContextMenu({
   menuWidth,
   size = 'md',
   label = 'Context menu',
-  hasAutoFocus = true,
   isDisabled = false,
   onOpenChange,
   ref,
   className,
   style,
   xstyle,
+  triggerXstyle,
   'data-testid': testId,
   ...props
 }: ContextMenuProps) {
@@ -282,10 +284,9 @@ export function ContextMenu({
   }, [isOpen, closeMenu, listRef]);
 
   // Dismiss on Escape from anywhere while open. The menu div's own onKeyDown
-  // only fires when focus is inside the menu, which never happens when the
-  // menu is opened with hasAutoFocus={false} (e.g. table context menus), so a
-  // document-level listener is required for a reliable Escape path. Guards
-  // against IME composition-cancel.
+  // only fires when focus is inside the menu; a document-level listener is
+  // kept as a reliable fallback Escape path (e.g. if focus has moved out of
+  // the menu). Guards against IME composition-cancel.
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -350,11 +351,9 @@ export function ContextMenu({
           ? document.activeElement
           : (e.currentTarget as HTMLElement);
       layer.show();
-      if (hasAutoFocus) {
-        requestAnimationFrame(() => focusFirst());
-      }
+      requestAnimationFrame(() => focusFirst());
     },
-    [isDisabled, layer, hasAutoFocus, focusFirst],
+    [isDisabled, layer, focusFirst],
   );
 
   // Touch long-press invocation (menus-8). iOS Safari never synthesizes a
@@ -367,11 +366,9 @@ export function ContextMenu({
       (point: {x: number; y: number}) => {
         positionRef.current = {x: point.x, y: point.y};
         layer.show();
-        if (hasAutoFocus) {
-          requestAnimationFrame(() => focusFirst());
-        }
+        requestAnimationFrame(() => focusFirst());
       },
-      [layer, hasAutoFocus, focusFirst],
+      [layer, focusFirst],
     ),
   });
 
@@ -394,7 +391,14 @@ export function ContextMenu({
         onContextMenu={handleContextMenu}
         {...longPressHandlers}
         data-testid={testId}
-        {...stylex.props(styles.trigger)}>
+        {...stylex.props(
+          styles.trigger,
+          ...(triggerXstyle
+            ? Array.isArray(triggerXstyle)
+              ? triggerXstyle
+              : [triggerXstyle]
+            : []),
+        )}>
         {children}
       </div>
 

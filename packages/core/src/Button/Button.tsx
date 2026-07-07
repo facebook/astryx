@@ -21,6 +21,7 @@
 import {useRef, useTransition, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
+import {useTooltip} from '../Tooltip/useTooltip';
 import {
   colorVars,
   sizeVars,
@@ -32,13 +33,13 @@ import {
   fontWeightVars,
   typeScaleVars,
 } from '../theme/tokens.stylex';
-import {Tooltip} from '../Tooltip/Tooltip';
 import {Spinner} from '../Spinner';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {useSize} from '../SizeContext/SizeContext';
 import {useButtonGroup} from '../ButtonGroup/ButtonGroupContext';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
@@ -123,17 +124,6 @@ const styles = stylex.create({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     minWidth: 0,
-  },
-  visuallyHidden: {
-    position: 'absolute',
-    width: '1px',
-    height: '1px',
-    padding: 0,
-    margin: '-1px',
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
   },
   link: {
     textDecoration: 'none',
@@ -590,6 +580,16 @@ export function Button({
   // for keyboard users to reach the tooltip. Otherwise use native disabled.
   const useAriaDisabled = tooltip != null && buttonDisabled;
 
+  // Attach tooltip behavior via the hook rather than wrapping the button in a
+  // <Tooltip> element. The hook adds hover/focus triggers to the button itself,
+  // so no extra DOM node is inserted — the button stays a direct child of its
+  // container (no layout shift, and edge-compensation markers remain
+  // discoverable through the container's direct-child `:has()` selector).
+  const tooltipHook = useTooltip({
+    placement: 'above',
+    isEnabled: tooltip != null,
+  });
+
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     // The ref guard dedupes fire-once actions. Interruptible callers skip it so
     // a re-click while pending starts a fresh action that interrupts the prior.
@@ -690,12 +690,9 @@ export function Button({
         )}
       </span>
       {/* Live region for loading state announcements */}
-      <span
-        {...stylex.props(styles.visuallyHidden)}
-        role="status"
-        aria-live="polite">
+      <VisuallyHidden role="status" aria-live="polite">
         {isLoadingState ? 'Loading' : ''}
-      </span>
+      </VisuallyHidden>
     </>
   );
 
@@ -709,18 +706,39 @@ export function Button({
     (children != null && children !== label);
   const ariaLabelProp = needsAriaLabel ? {'aria-label': label} : null;
 
+  // When a tooltip is attached via the hook, point aria-describedby at the
+  // tooltip content (composing with any consumer-provided value).
+  const describedByProp =
+    tooltip != null
+      ? {
+          'aria-describedby':
+            [props['aria-describedby'], tooltipHook.describedBy]
+              .filter(Boolean)
+              .join(' ') || undefined,
+        }
+      : null;
+
+  // Merge the consumer ref with the tooltip hook's trigger ref so both point at
+  // the same element. mergeRefs tolerates undefined, so this is a no-op for the
+  // tooltip side when no tooltip is set.
+  const mergedButtonRef = mergeRefs(
+    ref,
+    tooltip != null ? tooltipHook.ref : undefined,
+  );
+
   let element: ReactNode;
 
   if (renderAsLink) {
     element = (
       <LinkComponent
-        ref={ref as React.Ref<HTMLAnchorElement>}
+        ref={mergedButtonRef as React.Ref<HTMLAnchorElement>}
         href={href}
         target={target}
         rel={rel}
         {...sharedMergedProps}
         {...props}
         {...ariaLabelProp}
+        {...describedByProp}
         {...edgeCompAttr}
         onClick={handleClick}>
         {buttonContent}
@@ -729,12 +747,13 @@ export function Button({
   } else {
     element = (
       <button
-        ref={ref}
+        ref={mergedButtonRef}
         type={type}
         disabled={useAriaDisabled ? undefined : buttonDisabled}
         {...sharedMergedProps}
         {...props}
         {...ariaLabelProp}
+        {...describedByProp}
         {...edgeCompAttr}
         aria-busy={isLoadingState || undefined}
         aria-disabled={useAriaDisabled || undefined}
@@ -747,9 +766,10 @@ export function Button({
 
   if (tooltip) {
     return (
-      <Tooltip content={tooltip} placement="above">
+      <>
         {element}
-      </Tooltip>
+        {tooltipHook.renderTooltip(tooltip)}
+      </>
     );
   }
 

@@ -65,11 +65,7 @@ const TrashIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function DropdownMenuItemShowcase() {
   return (
-    <DropdownMenu
-      button={{label: 'Actions'}}
-      isMenuOpen
-      hasAutoFocus={false}
-      onOpenChange={() => {}}>
+    <DropdownMenu button={{label: 'Actions'}}>
       <DropdownMenuItem
         icon={PencilIcon}
         label="Edit"

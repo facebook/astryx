@@ -124,14 +124,14 @@ function App() {
           type: 'table',
           headers: ['Prop', 'Type', 'Default', 'Description'],
           rows: [
-            ['theme', 'DefinedTheme', '—', 'Theme object (required)'],
+            ['theme', 'DefinedTheme', '-', 'Theme object (required)'],
             [
               'mode',
               "'system' | 'light' | 'dark'",
               "'system'",
               'Color mode. system follows OS preference.',
             ],
-            ['children', 'ReactNode', '—', 'App content'],
+            ['children', 'ReactNode', '-', 'App content'],
           ],
         },
       ],

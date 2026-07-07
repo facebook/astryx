@@ -43,10 +43,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
-import {
-  useChatComposerTokens,
-  isCustomToken,
-} from './useChatComposerTokens';
+import {useChatComposerTokens, isCustomToken} from './useChatComposerTokens';
 import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
 import {ChatPastedTextToken} from './ChatPastedTextToken';
 import {
@@ -632,7 +629,6 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       )}
       <div
         ref={editableRef}
-        role="textbox"
         aria-multiline="true"
         aria-label={label}
         contentEditable={!isDisabled}
@@ -680,11 +676,7 @@ ChatComposerInput.displayName = 'ChatComposerInput';
 // Token element helper (for custom rendering in stories/consumers)
 // =============================================================================
 
-export function ChatComposerTokenElement({
-  token,
-}: {
-  token: ChatComposerToken;
-}) {
+export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
   return (
     <span
       data-astryx-token=""
@@ -694,11 +686,7 @@ export function ChatComposerTokenElement({
       {isCustomToken(token) ? (
         token.render()
       ) : (
-        <Badge
-          label={token.label}
-          variant={token.variant}
-          icon={token.icon}
-        />
+        <Badge label={token.label} variant={token.variant} icon={token.icon} />
       )}
     </span>
   );

@@ -32,7 +32,6 @@ import {useGridFocus} from '../hooks';
 import {
   useCalendarDays,
   useCalendarConstraints,
-  useCalendarRovingTabindex,
   type CalendarDay,
 } from './hooks';
 import {
@@ -62,7 +61,9 @@ import {
   computeDayCellState,
   computeRangeRounding,
   computePreviewRounding,
+  computeDayNeighborContinuity,
   isEndpoint,
+  type DayNeighborContinuity,
 } from './dayCellUtils';
 
 // =============================================================================
@@ -554,14 +555,34 @@ function MonthGrid({
     return null;
   }, [mode, value]);
 
-  const {isTabbable} = useCalendarRovingTabindex({
-    days,
-    today,
-    year,
-    month: month.month,
-    isDateDisabled,
-    selectedDate: selectedDateForTabindex,
-  });
+  // Seed the initial roving tab stop for this month. useGridFocus owns the
+  // live tab stop (see `hasRovingTabIndex` below) — it honors an existing
+  // `tabindex="0"` and repairs/moves it thereafter — so this only decides
+  // which day button starts tabbable. Priority: selected date (if visible and
+  // enabled) > today (if visible and enabled) > first enabled in-month day.
+  const seedTabbableIso = useMemo((): ISODateString | null => {
+    if (selectedDateForTabindex) {
+      const isSelectedInMonth =
+        selectedDateForTabindex.year === year &&
+        selectedDateForTabindex.month === month.month;
+      if (isSelectedInMonth && !isDateDisabled(selectedDateForTabindex)) {
+        return plainDateToISO(selectedDateForTabindex);
+      }
+    }
+
+    const isTodayInMonth = today.year === year && today.month === month.month;
+    if (isTodayInMonth && !isDateDisabled(today)) {
+      return plainDateToISO(today);
+    }
+
+    for (const day of days) {
+      if (!day.isOutside && !isDateDisabled(day.date)) {
+        return day.iso;
+      }
+    }
+
+    return null;
+  }, [days, today, year, month.month, isDateDisabled, selectedDateForTabindex]);
 
   // Helper to get the focused date from the currently focused element.
   // Reads the machine-readable `data-date` (ISO) attribute rather than parsing
@@ -628,18 +649,22 @@ function MonthGrid({
   // focus (the day button inside the cell). Arrow keys move to the target
   // row/column and, if that cell is disabled, continue in the same direction to
   // the next enabled cell.
-  const {gridRef, handleKeyDown: handleGridKeyDown} =
-    useGridFocus<HTMLDivElement>({
-      columns: 7,
-      cellSelector: '[role="gridcell"]',
-      isCellFocusable: cell =>
-        cell.querySelector('button:not([disabled])') !== null,
-      getFocusTarget: cell => cell.querySelector<HTMLElement>('button'),
-      onNavigateBefore: handleNavigatePrevious,
-      onNavigateAfter: handleNavigateNext,
-      onPageUp: handlePageUp,
-      onPageDown: handlePageDown,
-    });
+  const {
+    gridRef,
+    handleKeyDown: handleGridKeyDown,
+    handleFocus: handleGridFocus,
+  } = useGridFocus<HTMLDivElement>({
+    columns: 7,
+    cellSelector: '[role="gridcell"]',
+    isCellFocusable: cell =>
+      cell.querySelector('button:not([disabled])') !== null,
+    getFocusTarget: cell => cell.querySelector<HTMLElement>('button'),
+    hasRovingTabIndex: true,
+    onNavigateBefore: handleNavigatePrevious,
+    onNavigateAfter: handleNavigateNext,
+    onPageUp: handlePageUp,
+    onPageDown: handlePageDown,
+  });
 
   // Handle pending focus after month navigation
   useEffect(() => {
@@ -719,6 +744,7 @@ function MonthGrid({
         role="grid"
         aria-label={monthLabel}
         onKeyDown={handleGridKeyDown}
+        onFocus={handleGridFocus}
         {...stylex.props(
           monthGridStyles.daysGrid,
           hasWeekNumbers && monthGridStyles.daysGridWithNumbers,
@@ -760,25 +786,42 @@ function MonthGrid({
                   {weekNum}
                 </div>
               )}
-              {week.map((day, dayIndex) => (
-                <DayCell
-                  key={day.iso}
-                  day={day}
-                  dayIndex={dayIndex}
-                  mode={mode}
-                  selectedDate={selectedDate}
-                  rangeStart={rangeStart}
-                  rangeEnd={rangeEnd}
-                  previewStart={previewStart}
-                  previewEnd={previewEnd}
-                  today={today}
-                  hasOutsideDays={hasOutsideDays}
-                  isDisabled={isDateDisabled(day.date)}
-                  isTabbable={isTabbable(day.iso)}
-                  onDayClick={onDayClick}
-                  onDayHover={onDayHover}
-                />
-              ))}
+              {week.map((day, dayIndex) => {
+                // Whether the previous/next day in this week row continues the
+                // highlighted run (range and preview). A disabled or
+                // adjacent-month neighbour breaks continuity, so this day gets
+                // an end cap on that side (#2715).
+                const neighbors = computeDayNeighborContinuity({
+                  week,
+                  dayIndex,
+                  mode,
+                  rangeStart,
+                  rangeEnd,
+                  previewStart,
+                  previewEnd,
+                  isDisabled: isDateDisabled,
+                });
+                return (
+                  <DayCell
+                    key={day.iso}
+                    day={day}
+                    dayIndex={dayIndex}
+                    mode={mode}
+                    selectedDate={selectedDate}
+                    rangeStart={rangeStart}
+                    rangeEnd={rangeEnd}
+                    previewStart={previewStart}
+                    previewEnd={previewEnd}
+                    today={today}
+                    hasOutsideDays={hasOutsideDays}
+                    isDisabled={isDateDisabled(day.date)}
+                    neighbors={neighbors}
+                    isTabbable={day.iso === seedTabbableIso}
+                    onDayClick={onDayClick}
+                    onDayHover={onDayHover}
+                  />
+                );
+              })}
             </div>
           );
         })}
@@ -803,6 +846,17 @@ interface DayCellProps {
   today: PlainDate;
   hasOutsideDays: boolean;
   isDisabled: boolean;
+  /**
+   * Whether the previous/next day in the same week continues the highlighted
+   * run (range and preview). When a neighbour is disabled or outside the month
+   * it breaks the run, so this day gets an end cap on that side (#2715).
+   */
+  neighbors: DayNeighborContinuity;
+  /**
+   * Whether this day seeds the initial roving tab stop. useGridFocus
+   * (`hasRovingTabIndex`) owns the live tab stop thereafter — it honors an
+   * existing `tabindex="0"` and repairs/moves it on navigation and focus.
+   */
   isTabbable: boolean;
   onDayClick: (date: PlainDate) => void;
   onDayHover: (date: PlainDate | null) => void;
@@ -820,6 +874,7 @@ function DayCell({
   today,
   hasOutsideDays,
   isDisabled,
+  neighbors,
   isTabbable: isTabbableDay,
   onDayClick,
   onDayHover,
@@ -847,8 +902,14 @@ function DayCell({
   });
 
   const endpoint = isEndpoint(state);
-  const rangeRounding = computeRangeRounding(state);
-  const previewRounding = computePreviewRounding(state);
+  const rangeRounding = computeRangeRounding(state, {
+    prevInRange: neighbors.prevInRange,
+    nextInRange: neighbors.nextInRange,
+  });
+  const previewRounding = computePreviewRounding(state, {
+    prevInPreview: neighbors.prevInPreview,
+    nextInPreview: neighbors.nextInPreview,
+  });
 
   return (
     <div role="gridcell" {...stylex.props(dayCellStyles.cell)}>
@@ -894,6 +955,7 @@ function DayCell({
         aria-selected={state.isSelected || state.isInRange || undefined}
         aria-disabled={state.effectivelyDisabled || undefined}
         disabled={isDisabled}
+        // Initial roving tab-stop seed; useGridFocus owns it after mount.
         tabIndex={isTabbableDay ? 0 : -1}
         onClick={() => !state.effectivelyDisabled && onDayClick(date)}
         onMouseEnter={() => !state.effectivelyDisabled && onDayHover(date)}

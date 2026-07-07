@@ -48,6 +48,7 @@ import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
 import {Calendar, type ISODateString, type DateRange} from '../Calendar';
 import {usePopover} from '../Popover';
+import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -241,6 +242,29 @@ export interface DateRangeInputProps extends Omit<
   isDisabled?: boolean;
 
   /**
+   * Explains why the input is disabled. When set together with
+   * `isDisabled`, the input shows a tooltip with this text on hover and
+   * keyboard focus, and the trigger stays focusable (via `aria-disabled`)
+   * so the reason is discoverable by keyboard and assistive technology.
+   * Activation stays blocked.
+   *
+   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <DateRangeInput
+   *   label="Reporting period"
+   *   value={range}
+   *   onChange={setRange}
+   *   isDisabled
+   *   disabledMessage="You need the Editor role to change this"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
+
+  /**
    * The selected date range, or null if no range is selected.
    */
   value: DateRange | null;
@@ -347,6 +371,7 @@ export function DateRangeInput({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  disabledMessage,
   value,
   onChange,
   changeAction,
@@ -378,6 +403,21 @@ export function DateRangeInput({
   const isBusy = isLoading || optimisticValue !== value;
   const isEffectivelyDisabled = isDisabled || isBusy;
 
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the trigger container (which already exists)
+  // and the trigger button stays perceivable via aria-disabled instead of the
+  // disabled attribute. Activation is blocked by the isEffectivelyDisabled
+  // guard in handleToggle. Only the persistent isDisabled state (not the
+  // transient busy state) surfaces a reason.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The container div is not naturally focusable; focusin bubbles up from
+    // the trigger button, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
   const statusIconMap: Record<InputStatusType, IconName> = {
     warning: 'warning',
     error: 'error',
@@ -397,6 +437,7 @@ export function DateRangeInput({
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -487,7 +528,13 @@ export function DateRangeInput({
       labelTooltip={labelTooltip}
       width={width}>
       <div
-        ref={popover.triggerRef}
+        ref={el => {
+          popover.triggerRef(el);
+          // Anchor + hover/focus listeners for the disabled-message tooltip.
+          // Handlers are gated internally by isEnabled, and anchor names
+          // compose, so attaching unconditionally is safe.
+          disabledMessageTooltip.ref(el);
+        }}
         {...rest}
         {...mergeProps(
           themeProps('date-range-input', {
@@ -523,7 +570,11 @@ export function DateRangeInput({
           id={id}
           type="button"
           onClick={handleToggle}
-          disabled={isEffectivelyDisabled}
+          // With a disabledMessage the trigger keeps focusability via
+          // aria-disabled so the reason is focus-discoverable; activation is
+          // still blocked by the isEffectivelyDisabled guard in handleToggle.
+          disabled={isEffectivelyDisabled && !showsDisabledMessage}
+          aria-disabled={showsDisabledMessage ? 'true' : undefined}
           aria-label={triggerAriaLabel}
           aria-describedby={ariaDescribedBy}
           aria-required={isRequired === true ? 'true' : undefined}
@@ -600,6 +651,9 @@ export function DateRangeInput({
         </div>,
         {placement: 'below', alignment: 'start'},
       )}
+
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }

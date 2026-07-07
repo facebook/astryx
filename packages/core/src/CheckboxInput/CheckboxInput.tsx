@@ -4,7 +4,7 @@
 
 /**
  * @file CheckboxInput.tsx
- * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus
+ * @input Uses React, useId, ChangeEvent, FieldLabel, FieldStatus, IconType, InputStatus, useTooltip
  * @output Exports CheckboxInput component, CheckboxInputProps
  * @position Core implementation; consumed by index.ts, tested by CheckboxInput.test.tsx
  *
@@ -19,6 +19,7 @@
 import {
   useId,
   useCallback,
+  use,
   useOptimistic,
   useTransition,
   type ChangeEvent,
@@ -44,9 +45,11 @@ import {FieldStatus} from '../FieldStatus/FieldStatus';
 import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
 import {Spinner} from '../Spinner';
+import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs} from '../utils';
 import {checkboxScope} from './checkbox.markers.stylex';
 import {themeProps} from '../utils/themeProps';
+import {CheckboxListContext} from '../CheckboxList/CheckboxListContext';
 
 const styles = stylex.create({
   container: {
@@ -270,6 +273,27 @@ export interface CheckboxInputProps extends Omit<BaseProps, 'onChange'> {
    */
   isDisabled?: boolean;
   /**
+   * Explains why the checkbox is disabled. When set together with
+   * `isDisabled`, the checkbox shows a tooltip with this text on hover and
+   * keyboard focus, and the control stays focusable (via `aria-disabled`) so
+   * the reason is discoverable by keyboard and assistive technology.
+   * Activation stays blocked.
+   *
+   * Use this instead of wrapping a disabled checkbox in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <CheckboxInput
+   *   label="Accept terms"
+   *   value={accepted}
+   *   isDisabled
+   *   disabledMessage="Terms are managed by your administrator"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
+  /**
    * Whether the checkbox is read-only.
    * Displays the current state at full opacity but prevents interaction.
    * Unlike `isDisabled`, read-only checkboxes are not visually dimmed.
@@ -350,6 +374,7 @@ export function CheckboxInput({
   isLoading = false,
   value,
   isDisabled = false,
+  disabledMessage,
   isReadOnly = false,
   isOptional = false,
   isRequired = false,
@@ -371,6 +396,29 @@ export function CheckboxInput({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the checkbox row (which already exists) and the
+  // native checkbox stays perceivable via aria-disabled instead of the disabled
+  // attribute. Value mutation is blocked by the isDisabled guard in onChange.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  // Keep the native checkbox focusable via aria-disabled either when it renders
+  // its own reason tooltip, or when it sits in a CheckboxList whose whole-group
+  // `disabledMessage` (shown on the group container) needs each checkbox to
+  // stay keyboard-perceivable. The group signals this through context rather
+  // than a public prop.
+  const checkboxListContext = use(CheckboxListContext);
+  const isFocusableDisabled =
+    isDisabled &&
+    (showsDisabledMessage ||
+      (checkboxListContext?.hasDisabledMessage ?? false));
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The container row is not naturally focusable; focusin bubbles up from the
+    // native checkbox, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
 
   const isIndeterminate = optimisticValue === 'indeterminate';
   const isChecked = optimisticValue === true;
@@ -398,6 +446,9 @@ export function CheckboxInput({
   if (status?.message) {
     describedByParts.push(statusMessageID);
   }
+  if (showsDisabledMessage) {
+    describedByParts.push(disabledMessageTooltip.describedBy);
+  }
   const ariaDescribedBy =
     describedByParts.length > 0 ? describedByParts.join(' ') : undefined;
 
@@ -410,6 +461,15 @@ export function CheckboxInput({
         style,
       )}>
       <div
+        ref={el => {
+          // Interaction (hover/focus) listeners for the disabled-message
+          // tooltip attach to the whole row for a larger trigger target;
+          // positioning anchors on the checkbox itself (below) so the tooltip
+          // appears next to the control, not the far edge of the row.
+          // Handlers are gated internally by isEnabled, so attaching
+          // unconditionally is safe.
+          disabledMessageTooltip.interactionRef(el);
+        }}
         {...stylex.props(
           styles.container,
           isLabelHidden && styles.containerLabelHidden,
@@ -417,15 +477,23 @@ export function CheckboxInput({
         )}>
         <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
           <input
-            ref={mergeRefs(ref, indeterminateRef)}
+            ref={mergeRefs(
+              ref,
+              indeterminateRef,
+              disabledMessageTooltip.positionRef,
+            )}
             id={id}
             type="checkbox"
             checked={isChecked}
-            disabled={isDisabled}
+            // With a disabledMessage the checkbox keeps focusability via
+            // aria-disabled so the reason is focus-discoverable; toggling is
+            // still blocked by the isDisabled guard in onChange below.
+            disabled={isDisabled && !isFocusableDisabled}
+            aria-disabled={isFocusableDisabled ? 'true' : undefined}
             readOnly={isReadOnly}
             required={isRequired}
             onChange={e => {
-              if (isBusy || isReadOnly) {
+              if (isDisabled || isBusy || isReadOnly) {
                 return;
               }
               const checked = e.target.checked;
@@ -527,6 +595,8 @@ export function CheckboxInput({
           variant="detached"
         />
       )}
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </div>
   );
 }

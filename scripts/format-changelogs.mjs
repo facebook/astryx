@@ -100,6 +100,65 @@ function splitBullets(body) {
   return bullets;
 }
 
+// Reflow a bullet's continuation body into consistent line wrapping.
+//
+// Changeset authors wrap prose inconsistently — some write one long line, some
+// hard-wrap mid-sentence at ~75 chars. Since the release notes are compiled
+// verbatim from these entries, that inconsistency shows up in the published
+// changelog. This collapses each soft-wrapped prose paragraph into a single
+// line (Markdown reflows visually), indents continuation content two spaces so
+// it stays inside the list item, and leaves structural content untouched:
+// blank lines (paragraph breaks), fenced code blocks, and sub-bullets.
+function reflowBulletBody(rest) {
+  if (!rest) return '';
+  const lines = rest.split('\n');
+  const out = [];
+  let para = [];
+  let inFence = false;
+
+  const flush = () => {
+    if (para.length) {
+      out.push('  ' + para.join(' '));
+      para = [];
+    }
+  };
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, '');
+    const trimmed = line.trim();
+
+    if (/^```/.test(trimmed)) {
+      flush();
+      out.push('  ' + trimmed);
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) {
+      // Preserve code verbatim, but keep it inside the list item.
+      out.push('  ' + line.replace(/^ {0,2}/, ''));
+      continue;
+    }
+    if (trimmed === '') {
+      flush();
+      out.push('');
+      continue;
+    }
+    // Sub-bullets keep their own line; flush preceding prose first.
+    if (/^[-*]\s+/.test(trimmed)) {
+      flush();
+      out.push('  ' + trimmed);
+      continue;
+    }
+    para.push(trimmed);
+  }
+  flush();
+
+  return out
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/\n+$/, '');
+}
+
 // Parse one rendered bullet: "- [cat] headline — thanks @a, @b"
 function parseBullet(bullet) {
   const firstNl = bullet.indexOf('\n');
@@ -123,7 +182,7 @@ function parseBullet(bullet) {
     })
     .trim();
 
-  return {category, text, contributors, extra: rest.trimEnd()};
+  return {category, text, contributors, extra: reflowBulletBody(rest)};
 }
 
 function formatVersionBlock(version, body) {
@@ -254,4 +313,9 @@ function main() {
   else console.log('✓ no CHANGELOGs needed formatting');
 }
 
-main();
+// Run as a script, but stay importable for unit tests.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main();
+}
+
+export {reflowBulletBody, formatVersionBlock};

@@ -34,7 +34,7 @@ export const docs = {
       name: 'dictation',
       type: 'UseSpeechRecognitionReturn',
       description:
-        'The return value from useChatDictation or useSpeechRecognition. Controls all button state \u2014 listening, volume, bands, and toggle.',
+        'The return value from useChatDictation or useSpeechRecognition. Controls all button state: listening, volume, bands, and toggle.',
       required: true,
     },
     {

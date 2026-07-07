@@ -223,12 +223,8 @@ const s = stylex.create({
   },
 });
 
-interface PlaygroundClientProps {
-  defaultIsMobile?: boolean;
-}
-
-export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
-  const isMobile = useMediaQuery(MOBILE_BREAKPOINT_QUERY, defaultIsMobile);
+export function PlaygroundClient() {
+  const isMobile = useMediaQuery(MOBILE_BREAKPOINT_QUERY);
   // The editor chrome follows the docsite's own light/dark mode, not the OS
   // (operator) color-scheme preference.
   const {mode: siteMode} = useThemeMode();
@@ -774,7 +770,7 @@ export function PlaygroundClient({defaultIsMobile}: PlaygroundClientProps) {
       variant="section"
       height="fill"
       contentPadding={0}
-      mobileNav={isMobile ? false : {defaultIsMobile}}
+      mobileNav={isMobile ? false : {}}
       topNav={mobileTopNav}
       sideNav={playgroundSideNav}>
       {/* Playground content */}

@@ -4,7 +4,7 @@
 
 /**
  * @file TextInput.tsx
- * @input Uses React, useId, ChangeEvent, Field, Icon
+ * @input Uses React, useId, ChangeEvent, Field, Icon, InputGroupContext
  * @output Exports TextInput component, TextInputProps
  * @position Core implementation; consumed by index.ts, tested by TextInput.test.tsx
  *
@@ -47,6 +47,9 @@ import {
 } from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
+import {useTooltip} from '../Tooltip';
+import {VisuallyHidden} from '../VisuallyHidden';
+import {getInputARIA} from '../utils';
 
 const styles = stylex.create({
   clearButton: {
@@ -163,6 +166,27 @@ export interface TextInputProps extends Omit<
    */
   isDisabled?: boolean;
   /**
+   * Explains why the input is disabled. When set together with `isDisabled`,
+   * the input shows a tooltip with this text on hover and keyboard focus, and
+   * stays focusable (via `aria-disabled`) so the reason is discoverable by
+   * keyboard and assistive technology. The field cannot be edited (it becomes
+   * read-only) while disabled.
+   *
+   * Use this instead of wrapping a disabled input in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <TextInput
+   *   label="Owner"
+   *   value={owner}
+   *   isDisabled
+   *   disabledMessage="You need the Editor role to change this"
+   * />
+   * ```
+   */
+  disabledMessage?: string;
+  /**
    * Icon to display at the start of the input.
    * Accepts a ReactNode (e.g. `<Icon icon={SearchIcon} />`) or an SVG icon component directly.
    */
@@ -252,6 +276,7 @@ export function TextInput({
   isOptional = false,
   isRequired = false,
   isDisabled = false,
+  disabledMessage,
   startIcon,
   status,
   size: sizeProp,
@@ -276,6 +301,7 @@ export function TextInput({
   const size = useSize(sizeProp, 'md');
 
   const id = useId();
+  const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -285,6 +311,20 @@ export function TextInput({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the input container (which already exists) and
+  // the input stays perceivable via aria-disabled instead of the native
+  // disabled attribute. The field is made read-only so it can't be typed into,
+  // and value mutation is blocked by the isDisabled guard in handleChange.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The container div is not naturally focusable; focusin bubbles up from
+    // the input, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
 
   const statusIconMap: Record<InputStatusType, IconName> = {
     warning: 'warning',
@@ -301,15 +341,23 @@ export function TextInput({
     success: 'success',
   };
 
-  const ariaDescribedBy =
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    inputLabelID,
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
+    ],
+    inputGroup,
+  );
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    // Value can't change while showing a disabled message (the field is
+    // read-only and non-native-disabled), but guard the handler too so the
+    // optimistic value and callbacks never fire.
+    if (isDisabled) {
+      return;
+    }
     const newValue = e.target.value;
     onChange?.(newValue, e);
     if (changeAction && !e.defaultPrevented) {
@@ -336,7 +384,13 @@ export function TextInput({
 
   const inputWrapper = (
     <div
-      ref={containerRef}
+      ref={el => {
+        containerRef.current = el;
+        // Anchor + hover/focus listeners for the disabled-message tooltip.
+        // Handlers are gated internally by isEnabled, and anchor names
+        // compose, so attaching unconditionally is safe.
+        disabledMessageTooltip.ref(el);
+      }}
       onClick={handleWrapperClick}
       onMouseUp={handleWrapperMouseUp}
       {...mergeProps(
@@ -355,6 +409,7 @@ export function TextInput({
         style,
       )}>
       {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+      {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       <input
         {...rest}
         ref={mergeRefs(ref, inputRef)}
@@ -374,14 +429,19 @@ export function TextInput({
             : undefined
         }
         placeholder={placeholder}
-        disabled={isDisabled}
+        // With a disabledMessage the input keeps focusability via aria-disabled
+        // so the reason is focus-discoverable; readOnly + the handleChange guard
+        // keep the value from changing.
+        disabled={isDisabled && !showsDisabledMessage}
+        aria-disabled={showsDisabledMessage ? 'true' : undefined}
+        readOnly={showsDisabledMessage || undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         aria-describedby={ariaDescribedBy}
         aria-required={isRequired === true ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
         aria-busy={isBusy || undefined}
-        aria-label={inputGroup ? label : undefined}
+        aria-labelledby={ariaLabelledBy}
         {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
       />
       {hasClear && value !== '' && !isDisabled && (
@@ -405,7 +465,13 @@ export function TextInput({
   );
 
   if (inputGroup) {
-    return inputWrapper;
+    return (
+      <>
+        {inputWrapper}
+        {showsDisabledMessage &&
+          disabledMessageTooltip.renderTooltip(disabledMessage)}
+      </>
+    );
   }
 
   return (
@@ -430,6 +496,8 @@ export function TextInput({
       labelTooltip={labelTooltip}
       width={width}>
       {inputWrapper}
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }

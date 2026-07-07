@@ -7,9 +7,20 @@
 import {discoverComponents, findComponentReadme, resolveImportPath} from './component-discovery.mjs';
 import {loadDocs} from './component-loader.mjs';
 
-/** Derive the theme component key from a theming target (strips 'xds-' prefix). */
+/**
+ * Derive the `defineTheme` component-override key from a theming target.
+ *
+ * Override keys are the component's stable class name with the `astryx-`
+ * namespace prefix stripped — `generateThemeRules` re-adds the prefix when it
+ * builds the `.astryx-*` selector. So `astryx-base-table` → key `base-table`
+ * (→ `.astryx-base-table`), and `astryx-button` → key `button`.
+ *
+ * Keep the `astryx-` literal in sync with packages/core/src/naming.ts
+ * (NAMESPACE / classPrefix), the same way build-theme.mjs mirrors it.
+ * <!-- SYNC: packages/core/src/naming.ts (namespace prefix source of truth) -->
+ */
 function targetKey(target) {
-  return target.className.replace(/^xds-/, '');
+  return target.className.replace(/^astryx-/, '');
 }
 
 function dataAttrForName(name) {

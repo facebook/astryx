@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "pnpm -F @astryxdesign/build build && pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/lab build && pnpm -F @astryxdesign/vega build && pnpm -F @astryxdesign/theme-neutral build && pnpm -F @astryxdesign/theme-matcha build && pnpm -F @astryxdesign/theme-stone build && pnpm -F @astryxdesign/theme-gothic build && pnpm -F @astryxdesign/theme-chocolate build && pnpm -F @astryxdesign/theme-y2k build && pnpm -F @astryxdesign/theme-butter build && pnpm bundle:cli-themes",
+    "build": "pnpm -F @astryxdesign/build build && pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/lab build && pnpm -F @astryxdesign/charts build && pnpm -F @astryxdesign/vega build && pnpm -F @astryxdesign/theme-neutral build && pnpm -F @astryxdesign/theme-matcha build && pnpm -F @astryxdesign/theme-stone build && pnpm -F @astryxdesign/theme-gothic build && pnpm -F @astryxdesign/theme-chocolate build && pnpm -F @astryxdesign/theme-y2k build && pnpm -F @astryxdesign/theme-butter build && pnpm bundle:cli-themes",
     "bundle:cli-themes": "node scripts/generate-cli-themes.mjs",
     "dev": "pnpm -F @astryxdesign/storybook dev",
     "test": "vitest run",
@@ -53,6 +53,7 @@
     "husky": "^9.1.7",
     "jscodeshift": "^17.3.0",
     "jsdom": "^27.4.0",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -63,6 +64,12 @@
     "vitest": "^2.1.0"
   },
   "packageManager": "pnpm@10.34.1",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "onFail": "error"
+    }
+  },
   "workspaces": [
     "apps/*",
     "packages/*",

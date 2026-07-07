@@ -46,14 +46,7 @@ export const docs = {
       type: 'boolean',
       description: 'Whether the menu trigger is disabled.',
       default: 'false',
-    },
-    {
-      name: 'hasAutoFocus',
-      type: 'boolean',
-      description: 'Whether to auto-focus the first menu item when the menu opens. Set to false for inline showcases or documentation previews.',
-      default: 'true',
-    },
-    {
+    },    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -126,14 +119,7 @@ export const docsZh = {
       type: 'boolean',
       description: '菜单触发器是否禁用。',
       default: 'false',
-    },
-    {
-      name: 'hasAutoFocus',
-      type: 'boolean',
-      description: '菜单打开时是否自动聚焦第一个菜单项。内联展示或文档预览设为 false。',
-      default: 'true',
-    },
-    {
+    },    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -176,7 +162,6 @@ export const docsDense = {
     size: 'Trigger button size.',
     icon: 'Override default three-dot icon. Accepts any ReactNode.',
     isDisabled: 'Whether menu trigger disabled.',
-    hasAutoFocus: 'Auto-focus first item on open; false for showcases.',
     xstyle:
       'StyleX styles for layout customization (margins, positioning, sizing). Must be stylex.create() value.',
   },

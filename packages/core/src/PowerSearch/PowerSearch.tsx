@@ -359,6 +359,16 @@ export interface PowerSearchProps extends Omit<
   /** Whether the input is disabled. @default false */
   isDisabled?: boolean;
   /**
+   * Explains why the search is disabled. When set together with `isDisabled`,
+   * the search shows a tooltip with this text on hover and keyboard focus, and
+   * the input stays focusable (via `aria-disabled`) so the reason is
+   * discoverable by keyboard and assistive technology. Input stays blocked.
+   *
+   * Use this instead of wrapping a disabled PowerSearch in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   */
+  disabledMessage?: string;
+  /**
    * Icon to display at the start of the input.
    * Accepts a ReactNode (e.g. `<Icon icon={SearchIcon} />`) or an SVG icon component directly.
    */
@@ -508,6 +518,7 @@ export function PowerSearch({
   hasClear = true,
   isReadOnly = false,
   isDisabled = false,
+  disabledMessage,
   startIcon,
   onFocus,
   onBlur,
@@ -798,9 +809,7 @@ export function PowerSearch({
         filter.value.value[0].photo
       ) {
         const entity = filter.value.value[0];
-        tokenIcon = (
-          <Avatar src={entity.photo} name={entity.label} size={16} />
-        );
+        tokenIcon = <Avatar src={entity.photo} name={entity.label} size={16} />;
       }
 
       return (
@@ -985,6 +994,7 @@ export function PowerSearch({
           startIcon={startIcon}
           endContent={combinedEndContent}
           isDisabled={isDisabled}
+          disabledMessage={disabledMessage}
           size={size}
           tokenOverflowBehavior={tokenOverflowBehavior}
           hasEntriesOnFocus

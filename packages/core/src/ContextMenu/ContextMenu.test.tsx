@@ -62,9 +62,7 @@ describe('ContextMenu', () => {
 
   it('typeahead focuses the matching menu item (menus-11)', () => {
     render(
-      <ContextMenu
-        items={[{label: 'Cut'}, {label: 'Copy'}, {label: 'Paste'}]}
-        hasAutoFocus={false}>
+      <ContextMenu items={[{label: 'Cut'}, {label: 'Copy'}, {label: 'Paste'}]}>
         <div>Right-click me</div>
       </ContextMenu>,
     );
@@ -121,7 +119,7 @@ describe('ContextMenu', () => {
 
   it('closes on Escape even when opened without auto-focus', () => {
     render(
-      <ContextMenu items={[{label: 'Item 1'}]} hasAutoFocus={false}>
+      <ContextMenu items={[{label: 'Item 1'}]}>
         <div>Right-click me</div>
       </ContextMenu>,
     );
@@ -135,7 +133,7 @@ describe('ContextMenu', () => {
 
   it('ignores Escape during IME composition', () => {
     render(
-      <ContextMenu items={[{label: 'Item 1'}]} hasAutoFocus={false}>
+      <ContextMenu items={[{label: 'Item 1'}]}>
         <div>Right-click me</div>
       </ContextMenu>,
     );
@@ -147,7 +145,7 @@ describe('ContextMenu', () => {
 
   it('restores focus to the trigger on close', () => {
     render(
-      <ContextMenu items={[{label: 'Item 1'}]} hasAutoFocus={false}>
+      <ContextMenu items={[{label: 'Item 1'}]}>
         <button type="button">Right-click me</button>
       </ContextMenu>,
     );

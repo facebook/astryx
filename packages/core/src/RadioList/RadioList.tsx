@@ -28,6 +28,7 @@ import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {Field} from '../Field/Field';
 import type {InputStatus} from '../Field/types';
+import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
@@ -43,6 +44,13 @@ export interface RadioListContextValue {
   value: string;
   onChange: (value: string) => void;
   isDisabled: boolean;
+  /**
+   * True when the whole group is disabled *and* a `disabledMessage` is set. In
+   * that mode radios stay focusable via `aria-disabled` (instead of the native
+   * `disabled` attribute) so the disabled-reason tooltip is keyboard- and
+   * AT-discoverable; selection is still blocked in the item's onChange guard.
+   */
+  hasDisabledMessage: boolean;
   isRequired: boolean;
   size: RadioListSize;
   status?: InputStatus;
@@ -103,6 +111,17 @@ export interface RadioListProps extends Omit<
    * @default false
    */
   isDisabled?: boolean;
+  /**
+   * Explains why the radio group is disabled. Applies to the whole-group
+   * disabled state (`isDisabled`), not individual items. When set together with
+   * `isDisabled`, the group shows a tooltip with this text on hover and keyboard
+   * focus, and its radios stay focusable (via `aria-disabled`) so the reason is
+   * discoverable by keyboard and assistive technology. Selection stays blocked.
+   *
+   * Use this instead of wrapping a disabled group in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   */
+  disabledMessage?: string;
   /**
    * Whether the radio group is required.
    * @default false
@@ -169,6 +188,7 @@ export function RadioList({
   onChange,
   orientation = 'vertical',
   isDisabled = false,
+  disabledMessage,
   isRequired = false,
   isOptional = false,
   size = 'md',
@@ -183,15 +203,47 @@ export function RadioList({
 }: RadioListProps) {
   const name = useId();
   const inputID = useId();
-  const labelElementID = useId();
+  const labelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
 
   const groupRef = useRef<HTMLDivElement>(null);
 
+  // Disabled-reason tooltip. Applies to the whole-group disabled state. Disabled
+  // controls swallow pointer events, so the tooltip listeners attach to the
+  // radiogroup container and the radios stay perceivable via aria-disabled
+  // instead of the disabled attribute. Selection is blocked in the item's
+  // onChange guard.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The radiogroup container is not naturally focusable; focusin bubbles up
+    // from the radios, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
   const contextValue = useMemo<RadioListContextValue>(
-    () => ({name, value, onChange, isDisabled, isRequired, size, status}),
-    [name, value, onChange, isDisabled, isRequired, size, status],
+    () => ({
+      name,
+      value,
+      onChange,
+      isDisabled,
+      hasDisabledMessage: showsDisabledMessage,
+      isRequired,
+      size,
+      status,
+    }),
+    [
+      name,
+      value,
+      onChange,
+      isDisabled,
+      showsDisabledMessage,
+      isRequired,
+      size,
+      status,
+    ],
   );
 
   /**
@@ -284,7 +336,7 @@ export function RadioList({
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={inputID}
-      labelElementID={labelElementID}
+      labelID={labelID}
       isGroupLabel
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
@@ -306,14 +358,21 @@ export function RadioList({
       className={className}
       style={style}>
       <div
-        ref={groupRef}
+        ref={el => {
+          groupRef.current = el;
+          // Anchor + hover/focus listeners for the disabled-message tooltip.
+          // Handlers are gated internally by isEnabled, so attaching
+          // unconditionally is safe.
+          disabledMessageTooltip.ref(el);
+        }}
         role="radiogroup"
-        aria-labelledby={labelElementID}
+        aria-labelledby={labelID}
         onFocus={handleFocus}
         aria-describedby={
           [
             description ? descriptionID : null,
             status?.message ? statusMessageID : null,
+            showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
           ]
             .filter(Boolean)
             .join(' ') || undefined
@@ -329,6 +388,8 @@ export function RadioList({
         )}>
         <RadioListContext value={contextValue}>{children}</RadioListContext>
       </div>
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }

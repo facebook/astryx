@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file index.ts
  * @input Imports from Table component files
@@ -28,6 +26,10 @@ export {useTableColumnSettings} from './plugins/columnSettings';
 export {useTableColumnSettingsState} from './plugins/columnSettings';
 export {useTableColumnResize} from './plugins/columnResize';
 export {useTableStickyColumns} from './plugins/stickyColumns';
+export {
+  useTableRowExpansion,
+  useTableRowExpansionState,
+} from './plugins/rowExpansion';
 export {resolveContextActions} from './tableContextMenu';
 export {
   useTableFiltering,
@@ -99,6 +101,7 @@ export type {
 } from './plugins/columnSettings';
 export type {UseTableColumnResizeConfig} from './plugins/columnResize';
 export type {UseTableStickyColumnsConfig} from './plugins/stickyColumns';
+export type {UseTableRowExpansionConfig} from './plugins/rowExpansion';
 export type {
   UseTableFilteringConfig,
   TableFilterState,

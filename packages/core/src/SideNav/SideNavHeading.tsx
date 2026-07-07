@@ -652,7 +652,10 @@ export function SideNavHeading({
           )}>
           {icon &&
             (headingHref ? (
-              <LinkComponent href={headingHref} {...stylex.props(styles.icon)}>
+              <LinkComponent
+                href={headingHref}
+                aria-label={heading}
+                {...stylex.props(styles.icon)}>
                 {icon}
               </LinkComponent>
             ) : (
@@ -709,7 +712,10 @@ export function SideNavHeading({
         {...props}>
         {icon &&
           (headingHref ? (
-            <LinkComponent href={headingHref} {...stylex.props(styles.icon)}>
+            <LinkComponent
+              href={headingHref}
+              aria-label={heading}
+              {...stylex.props(styles.icon)}>
               {icon}
             </LinkComponent>
           ) : (

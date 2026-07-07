@@ -4,16 +4,17 @@
 
 /**
  * @file useGridFocus.ts
- * @input Uses React useCallback, useRef
+ * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect
  * @output Exports useGridFocus hook for grid keyboard navigation
  * @position Core hook; used by Calendar for date grid navigation
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
- * - /packages/core/src/hooks/useGridFocus.test.ts
+ * - /packages/core/src/hooks/useGridFocus.test.tsx
  */
 
 import {useCallback, useRef} from 'react';
+import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 
 /**
  * Configuration for grid focus behavior
@@ -83,6 +84,34 @@ export interface UseGridFocusOptions {
    * Callback for Page Down key (e.g., next month).
    */
   onPageDown?: () => void;
+
+  /**
+   * Whether the grid is in a right-to-left context. When true, ArrowLeft and
+   * ArrowRight are swapped so horizontal navigation follows visual direction.
+   * @default false
+   */
+  isRtl?: boolean;
+
+  /**
+   * Roving-tabindex ownership. When true, the hook manages a single tab stop
+   * across the grid: exactly one focusable cell carries `tabindex="0"` and the
+   * rest `tabindex="-1"`. The tab stop is stamped on mount and repaired
+   * whenever cells mount/unmount or toggle focusable, and moves with arrow
+   * navigation. Attach the returned {@link UseGridFocusReturn.handleFocus} to
+   * the container's `onFocus` to keep the stop in sync after clicks or
+   * programmatic focus.
+   *
+   * The tab stop is stamped on the resolved focus target (see
+   * {@link UseGridFocusOptions.getFocusTarget}), not the cell wrapper, so it
+   * works when the focusable element is a descendant of the cell. An existing
+   * `tabindex="0"` on a focus target is honored, letting the caller seed which
+   * cell is initially tabbable.
+   *
+   * When false (the default), the hook only *moves* focus (`.focus()`) and
+   * never touches `tabindex` — the caller owns tab-stop management.
+   * @default false
+   */
+  hasRovingTabIndex?: boolean;
 }
 
 /**
@@ -98,6 +127,13 @@ export interface UseGridFocusReturn<T extends HTMLElement = HTMLElement> {
    * Key down handler to attach to the grid container.
    */
   handleKeyDown: (e: React.KeyboardEvent) => void;
+
+  /**
+   * Focus handler to attach to the container's `onFocus`. Keeps the roving tab
+   * stop in sync when `hasRovingTabIndex` is enabled; a no-op otherwise, so it
+   * is always safe to attach.
+   */
+  handleFocus: (e: React.FocusEvent) => void;
 
   /**
    * Focus a specific cell by index.
@@ -132,6 +168,12 @@ export interface UseGridFocusReturn<T extends HTMLElement = HTMLElement> {
  * non-focusable cell (per `isCellFocusable`), it continues in the same
  * direction to the next focusable cell.
  *
+ * By default the hook only *moves* focus and leaves `tabindex` management to
+ * the caller. Opt into {@link UseGridFocusOptions.hasRovingTabIndex} for a hook
+ * that owns a single tab stop (roving tabindex) across the grid — stamping and
+ * repairing it as cells mount/unmount or toggle focusable, and moving it with
+ * arrow navigation.
+ *
  * @example
  * ```
  * const {gridRef, handleKeyDown} = useGridFocus({
@@ -142,6 +184,24 @@ export interface UseGridFocusReturn<T extends HTMLElement = HTMLElement> {
  *
  * <div ref={gridRef} role="grid" onKeyDown={handleKeyDown}>
  *   {cells.map(cell => <button role="gridcell">{cell}</button>)}
+ * </div>
+ * ```
+ *
+ * Roving-tabindex grid (e.g. a date picker where the cell is a wrapper around
+ * a focusable button):
+ *
+ * @example
+ * ```
+ * const {gridRef, handleKeyDown, handleFocus} = useGridFocus({
+ *   columns: 7,
+ *   cellSelector: '[role="gridcell"]',
+ *   isCellFocusable: cell => cell.querySelector('button:not([disabled])') != null,
+ *   getFocusTarget: cell => cell.querySelector('button'),
+ *   hasRovingTabIndex: true,
+ * });
+ *
+ * <div ref={gridRef} role="grid" onKeyDown={handleKeyDown} onFocus={handleFocus}>
+ *   {cells}
  * </div>
  * ```
  */
@@ -157,6 +217,8 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
     onNavigateAfter,
     onPageUp,
     onPageDown,
+    isRtl = false,
+    hasRovingTabIndex = false,
   } = options;
 
   const gridRef = useRef<T>(null);
@@ -200,20 +262,101 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
     [getFocusTarget],
   );
 
+  // --- Roving tabindex ownership (opt-in via `hasRovingTabIndex`) -------------
+
   /**
-   * Focus a cell (resolving to its focus target).
+   * Set `tabindex` on an element, but only when it differs (avoids redundant
+   * DOM writes). Uses setAttribute so the value reflects even for elements
+   * (like `<button>`) whose default tabIndex is already 0.
    */
-  const focusCellElement = useCallback(
+  const setTabIndex = useCallback((el: HTMLElement, value: 0 | -1) => {
+    if (el.getAttribute('tabindex') !== String(value)) {
+      el.setAttribute('tabindex', String(value));
+    }
+  }, []);
+
+  /**
+   * The resolved focus targets of all focusable cells, in DOM order. These are
+   * the elements that carry the roving tab stop (a descendant of each cell when
+   * `getFocusTarget` is provided, otherwise the cell itself).
+   */
+  const getFocusTargets = useCallback((): HTMLElement[] => {
+    return getCells()
+      .filter(cell => cellFocusable(cell))
+      .map(cell => resolveFocusTarget(cell))
+      .filter((el): el is HTMLElement => el !== null);
+  }, [getCells, cellFocusable, resolveFocusTarget]);
+
+  /**
+   * Stamp the roving tab stop: exactly one focus target is tabbable (0), the
+   * rest are -1. Prefer keeping the currently-tabbable target if it is still
+   * focusable; otherwise promote the first focusable one (tab-stop repair).
+   */
+  const syncTabStops = useCallback(() => {
+    const targets = getFocusTargets();
+    if (targets.length === 0) {
+      return;
+    }
+    const current = targets.find(el => el.getAttribute('tabindex') === '0');
+    const tabbable = current ?? targets[0];
+    for (const el of targets) {
+      setTabIndex(el, el === tabbable ? 0 : -1);
+    }
+  }, [getFocusTargets, setTabIndex]);
+
+  // Keep the tab stop valid across renders (cells added/removed, focusability
+  // toggled). Runs after every commit but only when roving tabindex is on.
+  useIsomorphicLayoutEffect(() => {
+    if (hasRovingTabIndex) {
+      syncTabStops();
+    }
+  });
+
+  /**
+   * Move the roving tab stop so `target` becomes the sole tabbable focus
+   * target, then focus it. No-op on tab stops unless roving tabindex is on.
+   */
+  const focusTarget = useCallback(
+    (target: HTMLElement | null) => {
+      if (!target) {
+        return;
+      }
+      if (hasRovingTabIndex) {
+        for (const el of getFocusTargets()) {
+          setTabIndex(el, el === target ? 0 : -1);
+        }
+      }
+      target.focus();
+    },
+    [hasRovingTabIndex, getFocusTargets, setTabIndex],
+  );
+
+  /**
+   * Focus a cell by resolving and focusing its target, moving the roving tab
+   * stop when enabled.
+   */
+  const focusCellWithStop = useCallback(
     (cell: HTMLElement | undefined): boolean => {
       const target = resolveFocusTarget(cell);
-      if (target) {
-        target.focus();
-        return true;
+      if (!target) {
+        return false;
       }
-      return false;
+      focusTarget(target);
+      return true;
     },
-    [resolveFocusTarget],
+    [resolveFocusTarget, focusTarget],
   );
+
+  /**
+   * Keep the roving stop pointing at whatever ended up focused (e.g. a click
+   * or programmatic focus) so the next Tab behaves correctly. No-op unless
+   * roving tabindex is enabled.
+   */
+  const handleFocus = useCallback(() => {
+    if (hasRovingTabIndex) {
+      syncTabStops();
+    }
+  }, [hasRovingTabIndex, syncTabStops]);
 
   /**
    * Get the currently focused cell index within the full cell set.
@@ -261,10 +404,10 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
         target = findFocusableInDirection(cells, clampedIndex, -1);
       }
       if (target !== -1) {
-        focusCellElement(cells[target]);
+        focusCellWithStop(cells[target]);
       }
     },
-    [getCells, findFocusableInDirection, focusCellElement],
+    [getCells, findFocusableInDirection, focusCellWithStop],
   );
 
   /**
@@ -274,9 +417,9 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
     const cells = getCells();
     const index = findFocusableInDirection(cells, 0, 1);
     if (index !== -1) {
-      focusCellElement(cells[index]);
+      focusCellWithStop(cells[index]);
     }
-  }, [getCells, findFocusableInDirection, focusCellElement]);
+  }, [getCells, findFocusableInDirection, focusCellWithStop]);
 
   /**
    * Focus the last focusable cell.
@@ -285,9 +428,9 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
     const cells = getCells();
     const index = findFocusableInDirection(cells, cells.length - 1, -1);
     if (index !== -1) {
-      focusCellElement(cells[index]);
+      focusCellWithStop(cells[index]);
     }
-  }, [getCells, findFocusableInDirection, focusCellElement]);
+  }, [getCells, findFocusableInDirection, focusCellWithStop]);
 
   /**
    * Handle keyboard navigation.
@@ -310,12 +453,23 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
 
       let handled = true;
 
-      switch (e.key) {
+      // In RTL, ArrowLeft/ArrowRight are swapped so horizontal navigation
+      // follows visual direction. Vertical keys (Up/Down) are unaffected.
+      let key = e.key;
+      if (isRtl) {
+        if (key === 'ArrowLeft') {
+          key = 'ArrowRight';
+        } else if (key === 'ArrowRight') {
+          key = 'ArrowLeft';
+        }
+      }
+
+      switch (key) {
         case 'ArrowRight': {
           // Move right, skipping non-focusable cells in the same direction.
           const target = findFocusableInDirection(cells, currentIndex + 1, 1);
           if (target !== -1) {
-            focusCellElement(cells[target]);
+            focusCellWithStop(cells[target]);
           } else {
             onNavigateAfter?.((currentCol + 1) % columns, 1);
           }
@@ -325,7 +479,7 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
         case 'ArrowLeft': {
           const target = findFocusableInDirection(cells, currentIndex - 1, -1);
           if (target !== -1) {
-            focusCellElement(cells[target]);
+            focusCellWithStop(cells[target]);
           } else {
             onNavigateBefore?.(
               currentCol === 0 ? columns - 1 : currentCol - 1,
@@ -345,7 +499,7 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
               columns,
             );
             if (target !== -1) {
-              focusCellElement(cells[target]);
+              focusCellWithStop(cells[target]);
             } else {
               onNavigateAfter?.(currentCol, columns);
             }
@@ -363,7 +517,7 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
               -columns,
             );
             if (target !== -1) {
-              focusCellElement(cells[target]);
+              focusCellWithStop(cells[target]);
             } else {
               onNavigateBefore?.(currentCol, columns);
             }
@@ -383,7 +537,7 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
             const rowEnd = Math.min(rowStart + columns - 1, cells.length - 1);
             const target = findFocusableInDirection(cells, rowStart, 1);
             if (target !== -1 && target <= rowEnd) {
-              focusCellElement(cells[target]);
+              focusCellWithStop(cells[target]);
             }
           }
           break;
@@ -398,7 +552,7 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
             const rowEnd = Math.min(rowStart + columns - 1, cells.length - 1);
             const target = findFocusableInDirection(cells, rowEnd, -1);
             if (target !== -1 && target >= rowStart) {
-              focusCellElement(cells[target]);
+              focusCellWithStop(cells[target]);
             }
           }
           break;
@@ -423,11 +577,12 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
     [
       columns,
       findFocusableInDirection,
-      focusCellElement,
+      focusCellWithStop,
       focusFirst,
       focusLast,
       getCells,
       getCurrentIndex,
+      isRtl,
       onNavigateAfter,
       onNavigateBefore,
       onPageDown,
@@ -438,6 +593,7 @@ export function useGridFocus<T extends HTMLElement = HTMLElement>(
   return {
     gridRef,
     handleKeyDown,
+    handleFocus,
     focusCell,
     focusFirst,
     focusLast,

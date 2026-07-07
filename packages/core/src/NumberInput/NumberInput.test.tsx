@@ -9,11 +9,42 @@
  * SYNC: When NumberInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {HashtagIcon} from '@heroicons/react/24/outline';
 import {NumberInput} from './NumberInput';
+
+// Mock showPopover/hidePopover since jsdom does not implement them. Used by the
+// disabledMessage tooltip.
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+});
+
+// jsdom popover content is in the DOM but may not be "visible" in the
+// accessibility tree. Use hidden: true to find it.
+const h = {hidden: true} as const;
 
 describe('NumberInput', () => {
   it('renders with label', () => {
@@ -696,6 +727,143 @@ describe('NumberInput', () => {
 
       fireEvent.click(wrapper);
       expect(input).toHaveFocus();
+    });
+  });
+
+  describe('disabledMessage', () => {
+    it('shows the reason tooltip on hover when disabled with a reason', async () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      const container = input.parentElement as HTMLElement;
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('You need the Editor role');
+
+      fireEvent.mouseEnter(container);
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+
+      fireEvent.mouseLeave(container);
+      await waitFor(() => {
+        expect(tooltip).not.toHaveAttribute('popover-open');
+      });
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      expect(screen.getByRole('spinbutton')).toHaveFocus();
+      await waitFor(() => {
+        expect(tooltip).toHaveAttribute('popover-open');
+      });
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the input focusable via aria-disabled when a reason is provided', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      expect(input).not.toBeDisabled();
+      expect(input).toHaveAttribute('aria-disabled', 'true');
+      expect(input).toHaveAttribute('readonly');
+    });
+
+    it('links the reason tooltip from the input via aria-describedby', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks value changes while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={onChange}
+          isDisabled
+          disabledMessage="You need the Editor role"
+        />,
+      );
+
+      const input = screen.getByRole('spinbutton');
+      await user.click(input);
+      await user.keyboard('9');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('remains natively disabled when disabled without a reason', () => {
+      render(
+        <NumberInput
+          label="Quantity"
+          value={5}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      expect(input).toBeDisabled();
+      expect(input).not.toHaveAttribute('aria-disabled');
     });
   });
 });

@@ -18,13 +18,23 @@ export const docs = {
     },
     {
       name: 'width',
-      type: 'number | string',
+      type: 'SizeValue',
       description: 'Container width (px or CSS value).',
     },
     {
       name: 'height',
-      type: 'number | string',
+      type: 'SizeValue',
       description: 'Container height (px or CSS value).',
+    },
+    {
+      name: 'maxWidth',
+      type: 'SizeValue',
+      description: 'Maximum container width (px or CSS value).',
+    },
+    {
+      name: 'minHeight',
+      type: 'SizeValue',
+      description: 'Minimum container height (px or CSS value).',
     },
     {
       name: 'isInline',

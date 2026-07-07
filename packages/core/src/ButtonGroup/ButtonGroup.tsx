@@ -141,7 +141,6 @@ export function ButtonGroup({
           role="group"
           aria-label={label}
           onKeyDown={handleKeyDown}
-          aria-orientation={orientation}
           aria-disabled={isDisabled || undefined}
           data-testid={testId}
           {...mergeProps(

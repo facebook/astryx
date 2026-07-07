@@ -4,7 +4,7 @@
 
 /**
  * @file TreeList.tsx
- * @input Uses React, StyleX, theme tokens, TreeListItem, TreeListTypes
+ * @input Uses React, StyleX, theme tokens, TreeListItem, TreeListTypes, useTreeFocus
  * @output Exports TreeList component, TreeListProps type
  * @position Core implementation; consumed by index.ts
  *
@@ -23,6 +23,7 @@ import type {BaseProps} from '../BaseProps';
 import {TreeListItem} from './TreeListItem';
 import type {TreeListItemData, TreeListDensity} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
+import {useTreeFocus} from '../hooks/useTreeFocus';
 
 // =============================================================================
 // Types
@@ -97,6 +98,35 @@ function collectExpandedKeys(items: TreeListItemData[]): string[] {
   return keys;
 }
 
+/**
+ * Compute the initial roving-tabindex seed: the first selected enabled item in
+ * document order, else the first enabled item, else the first item. The hook
+ * (useTreeFocus with hasRovingTabIndex) takes ownership after mount — it
+ * preserves this seeded `tabindex="0"` on its repair pass and moves the stop
+ * with keyboard navigation.
+ */
+function findInitialTabbableId(items: TreeListItemData[]): string | undefined {
+  let firstEnabled: string | undefined;
+  const walk = (list: TreeListItemData[]): string | undefined => {
+    for (const item of list) {
+      if (item.isSelected && item.isDisabled !== true) {
+        return item.id;
+      }
+      if (firstEnabled == null && item.isDisabled !== true) {
+        firstEnabled = item.id;
+      }
+      if (item.children != null && item.children.length > 0) {
+        const selected = walk(item.children);
+        if (selected != null) {
+          return selected;
+        }
+      }
+    }
+    return undefined;
+  };
+  return walk(items) ?? firstEnabled ?? items[0]?.id;
+}
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -160,6 +190,42 @@ export function TreeList({
     [expandedKeysFromProps],
   );
 
+  // ---------------------------------------------------------------------------
+  // Roving tabindex + APG tree keyboard model (via useTreeFocus)
+  // ---------------------------------------------------------------------------
+
+  // The hook (hasRovingTabIndex) owns the tree's single tab stop: it repairs
+  // the stop on mount and moves it with keyboard navigation. We only seed the
+  // initially-tabbable treeitem in the render (selected item or first enabled);
+  // the hook's repair pass preserves that seeded `tabindex="0"`.
+  const initialTabbableId = useMemo(
+    () => findInitialTabbableId(items),
+    [items],
+  );
+
+  // Enter/Space activation: prefer the treeitem's own inner action (link or
+  // button); return true when handled so the hook does not also toggle. Scoped
+  // to this treeitem's own row — never a descendant treeitem's action inside an
+  // expanded group.
+  const activateItem = useCallback((current: HTMLElement): boolean => {
+    const candidates = current.querySelectorAll<HTMLElement>(
+      'a[href], button:not([aria-label="Toggle children"])',
+    );
+    for (const candidate of candidates) {
+      if (candidate.closest('[role="treeitem"]') === current) {
+        candidate.click();
+        return true;
+      }
+    }
+    return false;
+  }, []);
+
+  const {treeRef, handleKeyDown, handleFocus} = useTreeFocus<HTMLUListElement>({
+    onToggleExpand: handleToggle,
+    onActivate: activateItem,
+    hasRovingTabIndex: true,
+  });
+
   function renderItems(
     items: TreeListItemData[],
     nestedLevel: number,
@@ -206,6 +272,9 @@ export function TreeList({
           onToggle={handleToggle}
           density={density}
           renderedChildren={renderedChildren}
+          posInSet={index + 1}
+          setSize={items.length}
+          isTabbable={item.id === initialTabbableId}
         />
       );
     });
@@ -227,8 +296,11 @@ export function TreeList({
         </div>
       )}
       <ul
+        ref={treeRef}
         role="tree"
         aria-labelledby={header != null ? headerId : undefined}
+        onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
         {...stylex.props(styles.list)}>
         {renderItems(items, 0, [])}
       </ul>

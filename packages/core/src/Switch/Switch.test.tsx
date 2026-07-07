@@ -9,41 +9,56 @@
  * SYNC: When Switch.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Switch} from './Switch';
+
+// Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
+// reflects its open state via a `popover-open` attribute the tests can assert.
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+});
 
 describe('Switch', () => {
   it('renders with label', () => {
     render(
-      <Switch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-      />,
+      <Switch label="Enable notifications" value={false} onChange={() => {}} />,
     );
     expect(screen.getByLabelText('Enable notifications')).toBeInTheDocument();
   });
 
   it('renders as off by default', () => {
     render(
-      <Switch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-      />,
+      <Switch label="Enable notifications" value={false} onChange={() => {}} />,
     );
     expect(screen.getByRole('switch')).not.toBeChecked();
   });
 
   it('renders as on when value prop is true', () => {
     render(
-      <Switch
-        label="Enable notifications"
-        value={true}
-        onChange={() => {}}
-      />,
+      <Switch label="Enable notifications" value={true} onChange={() => {}} />,
     );
     expect(screen.getByRole('switch')).toBeChecked();
   });
@@ -184,11 +199,7 @@ describe('Switch', () => {
 
   it('shows label visually by default', () => {
     render(
-      <Switch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-      />,
+      <Switch label="Enable notifications" value={false} onChange={() => {}} />,
     );
     const label = screen.getByText('Enable notifications');
     expect(label).toBeVisible();
@@ -230,11 +241,7 @@ describe('Switch', () => {
 
   it('has role="switch" for accessibility', () => {
     render(
-      <Switch
-        label="Enable notifications"
-        value={false}
-        onChange={() => {}}
-      />,
+      <Switch label="Enable notifications" value={false} onChange={() => {}} />,
     );
     expect(screen.getByRole('switch')).toBeInTheDocument();
   });
@@ -335,4 +342,132 @@ describe('Switch', () => {
     expect(screen.getByRole('switch')).toBeRequired();
   });
 
+  describe('disabledMessage', () => {
+    const h = {hidden: true} as const;
+
+    function getRow(): HTMLElement {
+      return screen.getByRole('switch', h).closest('div')!.parentElement!;
+    }
+
+    it('shows the reason tooltip on hover when disabled with a reason', async () => {
+      render(
+        <Switch
+          label="Enable notifications"
+          value={false}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Notifications are turned off org-wide"
+        />,
+      );
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent(
+        'Notifications are turned off org-wide',
+      );
+      fireEvent.mouseEnter(getRow());
+      await waitFor(() => expect(tooltip).toHaveAttribute('popover-open'));
+      fireEvent.mouseLeave(getRow());
+      await waitFor(() => expect(tooltip).not.toHaveAttribute('popover-open'));
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(
+        <Switch
+          label="Enable notifications"
+          value={false}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Notifications are turned off org-wide"
+        />,
+      );
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      expect(screen.getByRole('switch', h)).toHaveFocus();
+      await waitFor(() => expect(tooltip).toHaveAttribute('popover-open'));
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <Switch
+          label="Enable notifications"
+          value={false}
+          onChange={() => {}}
+          disabledMessage="Notifications are turned off org-wide"
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(
+        <Switch
+          label="Enable notifications"
+          value={false}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the switch focusable via aria-disabled when a reason is provided', () => {
+      render(
+        <Switch
+          label="Enable notifications"
+          value={false}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Notifications are turned off org-wide"
+        />,
+      );
+      const control = screen.getByRole('switch', h);
+      expect(control).not.toBeDisabled();
+      expect(control).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('links the reason tooltip via aria-describedby', () => {
+      render(
+        <Switch
+          label="Enable notifications"
+          value={false}
+          onChange={() => {}}
+          isDisabled
+          disabledMessage="Notifications are turned off org-wide"
+        />,
+      );
+      const control = screen.getByRole('switch', h);
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(control.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks toggling while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Switch
+          label="Enable notifications"
+          value={false}
+          onChange={onChange}
+          isDisabled
+          disabledMessage="Notifications are turned off org-wide"
+        />,
+      );
+      const control = screen.getByRole('switch', h);
+      await user.click(control);
+      expect(onChange).not.toHaveBeenCalled();
+      expect(control).not.toBeChecked();
+    });
+
+    it('remains natively disabled when disabled without a reason', () => {
+      render(
+        <Switch
+          label="Enable notifications"
+          value={false}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      expect(screen.getByRole('switch')).toBeDisabled();
+    });
+  });
 });

@@ -84,7 +84,7 @@ export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
   /**
    * ID of the input element this label points AT (rendered as `htmlFor` on the
    * label). This is *not* the id of the label element itself — see
-   * `labelElementID` for that.
+   * `labelID` for that.
    */
   inputID: string;
   /**
@@ -93,14 +93,14 @@ export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
    * reference this via `aria-labelledby` to take the label as its accessible
    * name.
    */
-  labelElementID?: string;
+  labelID?: string;
   /**
    * When true, the field wraps a *group* of controls (e.g. a radiogroup)
    * rather than a single input. In that case the label is rendered as a
    * `<span>` instead of a `<label>` — a `<label>` semantically names one form
    * control and can't be associated with a group, so it must not be a literal
    * label element. The group takes the label as its name via
-   * `labelElementID` + `aria-labelledby`.
+   * `labelID` + `aria-labelledby`.
    * @default false
    */
   isGroupLabel?: boolean;
@@ -161,7 +161,7 @@ export interface FieldLabelProps extends BaseProps<HTMLLabelElement> {
 export function FieldLabel({
   label,
   inputID,
-  labelElementID,
+  labelID,
   isGroupLabel = false,
   isLabelHidden = false,
   isDisabled = false,
@@ -203,7 +203,7 @@ export function FieldLabel({
     <>
       <LabelElement
         ref={ref}
-        id={labelElementID}
+        id={labelID}
         // `htmlFor` only applies to a real `<label>` associating with a single
         // control; a group label (span) has no `htmlFor`.
         htmlFor={isGroupLabel ? undefined : inputID}

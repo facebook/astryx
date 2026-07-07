@@ -83,6 +83,10 @@ const styles = stylex.create({
       },
     },
     color: {
+      // Explicit default: without it, this hover-only conditional replaces
+      // the base secondary color from `label` (last-wins property merge),
+      // leaving linked citations to inherit the surrounding text color.
+      default: colorVars['--color-text-secondary'],
       ':hover': {
         '@media (hover: hover)': colorVars['--color-text-primary'],
       },
@@ -96,7 +100,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     fontWeight: fontWeightVars['--font-weight-semibold'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
-    color: colorVars['--color-text-accent'],
+    color: colorVars['--color-text-secondary'],
     backgroundColor: colorVars['--color-accent-muted'],
     borderRadius: radiusVars['--radius-full'],
     minWidth: spacingVars['--spacing-5'],
@@ -110,6 +114,10 @@ const styles = stylex.create({
   },
   numberHover: {
     backgroundColor: {
+      // Explicit default for the same reason as labelHover's color: a
+      // hover-only conditional replaces the base accent-muted pill from
+      // `number` on merge, leaving linked badges transparent.
+      default: colorVars['--color-accent-muted'],
       ':hover': {
         '@media (hover: hover)': colorVars['--color-overlay-hover'],
       },
@@ -150,6 +158,10 @@ export function Citation({
   const href = source.url;
   const icon = source.icon;
   const Tag = href ? 'a' : 'span';
+  // `doc-noteref` is a reference role — only appropriate on the interactive
+  // link form. On a plain (unlinked) span it is not a permitted role
+  // (axe: aria-allowed-role), so omit it there; the aria-label still names it.
+  const noteRole = href ? ('doc-noteref' as const) : undefined;
   const linkProps = href
     ? {
         href,
@@ -168,7 +180,7 @@ export function Citation({
       <Tag
         {...rest}
         ref={elementRef}
-        role="doc-noteref"
+        role={noteRole}
         aria-label={`Citation ${number}: ${title}`}
         data-testid={testId}
         {...linkProps}
@@ -191,7 +203,7 @@ export function Citation({
     <Tag
       {...rest}
       ref={elementRef}
-      role="doc-noteref"
+      role={noteRole}
       aria-label={`Citation ${number}: ${title}`}
       data-testid={testId}
       {...linkProps}

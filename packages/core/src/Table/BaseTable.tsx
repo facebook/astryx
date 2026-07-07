@@ -225,7 +225,7 @@ function TableRowInner<T extends Record<string, unknown>>({
     rowIndex,
   );
 
-  return (
+  const row = (
     <RowComponent
       key={rowKey}
       ref={rowRenderProps.ref}
@@ -234,6 +234,8 @@ function TableRowInner<T extends Record<string, unknown>>({
       {rowRenderProps.children}
     </RowComponent>
   );
+
+  return row;
 }
 
 /**

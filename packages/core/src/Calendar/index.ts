@@ -26,7 +26,6 @@ export {
   useCalendarDays,
   useCalendarConstraints,
   useCalendarNavigation,
-  useCalendarRovingTabindex,
 } from './hooks';
 export type {
   CalendarDay,
@@ -36,8 +35,6 @@ export type {
   UseCalendarConstraintsReturn,
   UseCalendarNavigationOptions,
   UseCalendarNavigationReturn,
-  UseCalendarRovingTabindexOptions,
-  UseCalendarRovingTabindexReturn,
 } from './hooks';
 
 // Re-export calendar-specific utilities for advanced usage

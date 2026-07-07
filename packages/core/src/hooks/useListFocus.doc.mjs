@@ -145,6 +145,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: "Set orientation to 'horizontal' for toolbars + tab bars, 'vertical' for dropdown menus." },
       { guidance: true, description: 'Provide onEscape callback for menus/dropdowns to return focus to trigger.' },
+      { guidance: true, description: 'Enable hasRovingTabIndex (+ hasCaretGuard when widget can contain text inputs) for toolbar-style composites that should be a single tab stop.' },
       { guidance: false, description: 'Use for 2D grid navigation; prefer useGridFocus for grids + calendars.' },
     ],
   },

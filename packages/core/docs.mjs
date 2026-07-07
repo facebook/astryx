@@ -12,9 +12,9 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {pathToFileURL} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 
-const coreDir = path.dirname(new URL(import.meta.url).pathname);
+const coreDir = path.dirname(fileURLToPath(import.meta.url));
 const srcDir = path.join(coreDir, 'src');
 
 // ── Discovery ────────────────────────────────────────────────────────

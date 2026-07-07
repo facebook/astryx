@@ -9,11 +9,38 @@
  * SYNC: When SegmentedControl components change, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {SegmentedControl} from './SegmentedControl';
 import {SegmentedControlItem} from './SegmentedControlItem';
+
+// Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
+// reflects its open state via a `popover-open` attribute the tests can assert.
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+});
 
 describe('SegmentedControl', () => {
   it('renders a radiogroup with radio buttons', () => {
@@ -458,5 +485,106 @@ describe('SegmentedControl disabled state', () => {
     // Should skip disabled "List" and go to "Table"
     expect(handleChange).toHaveBeenCalledWith('table');
     expect(screen.getByRole('radio', {name: 'Table'})).toHaveFocus();
+  });
+
+  describe('disabledMessage', () => {
+    const h = {hidden: true} as const;
+
+    function renderControl(props?: {onChange?: (v: string) => void}) {
+      return render(
+        <SegmentedControl
+          value="grid"
+          onChange={props?.onChange ?? (() => {})}
+          label="View mode"
+          isDisabled
+          disabledMessage="Choose a project to switch views">
+          <SegmentedControlItem value="grid" label="Grid" />
+          <SegmentedControlItem value="list" label="List" />
+        </SegmentedControl>,
+      );
+    }
+
+    it('shows the reason tooltip on hover when the control is disabled with a reason', async () => {
+      renderControl();
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('Choose a project to switch views');
+      const group = screen.getByRole('radiogroup');
+      fireEvent.mouseEnter(group);
+      await waitFor(() => expect(tooltip).toHaveAttribute('popover-open'));
+      fireEvent.mouseLeave(group);
+      await waitFor(() => expect(tooltip).not.toHaveAttribute('popover-open'));
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      renderControl();
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      await waitFor(() => expect(tooltip).toHaveAttribute('popover-open'));
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <SegmentedControl
+          value="grid"
+          onChange={() => {}}
+          label="View mode"
+          disabledMessage="Choose a project to switch views">
+          <SegmentedControlItem value="grid" label="Grid" />
+        </SegmentedControl>,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(
+        <SegmentedControl
+          value="grid"
+          onChange={() => {}}
+          label="View mode"
+          isDisabled>
+          <SegmentedControlItem value="grid" label="Grid" />
+        </SegmentedControl>,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the selected segment focusable when a reason is provided', () => {
+      renderControl();
+      const selected = screen.getByRole('radio', {name: 'Grid', hidden: true});
+      expect(selected).toHaveAttribute('aria-disabled', 'true');
+      expect(selected).toHaveAttribute('tabindex', '0');
+    });
+
+    it('links the reason tooltip from the group via aria-describedby', () => {
+      renderControl();
+      const group = screen.getByRole('radiogroup');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(group.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks selection while focusable-disabled', () => {
+      const onChange = vi.fn();
+      renderControl({onChange});
+      const list = screen.getByRole('radio', {name: 'List', hidden: true});
+      fireEvent.click(list);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('drops all segments from the tab order when disabled without a reason', () => {
+      render(
+        <SegmentedControl
+          value="grid"
+          onChange={() => {}}
+          label="View mode"
+          isDisabled>
+          <SegmentedControlItem value="grid" label="Grid" />
+          <SegmentedControlItem value="list" label="List" />
+        </SegmentedControl>,
+      );
+      for (const radio of screen.getAllByRole('radio', h)) {
+        expect(radio).toHaveAttribute('tabindex', '-1');
+      }
+    });
   });
 });
