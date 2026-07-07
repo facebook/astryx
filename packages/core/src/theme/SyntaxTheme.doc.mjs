@@ -50,9 +50,9 @@ export const docs = {
           'Syntax themes support light-dark() tuples: each token can have different values for light and dark mode, resolved automatically by the color scheme.',
       },
       {
-        guidance: false,
+        guidance: true,
         description:
-          'Look for a syntaxTheme prop on CodeBlock: no such prop exists. Wrapping in SyntaxTheme is the supported per-instance override, even for a single CodeBlock.',
+          'For a single CodeBlock, pass the syntaxTheme prop directly — it is shorthand for wrapping that block in SyntaxTheme. Use the SyntaxTheme wrapper when theming a whole region of code components.',
       },
     ],
   },
@@ -96,9 +96,9 @@ export const docsDense = {
           'Syntax themes support light-dark() tuples: each token can have different values for light/dark mode, resolved automatically by color scheme.',
       },
       {
-        guidance: false,
+        guidance: true,
         description:
-          'Look for syntaxTheme prop on CodeBlock: no such prop exists. Wrapping w/ SyntaxTheme is the supported per-instance override, even for single CodeBlock.',
+          'Single CodeBlock: pass syntaxTheme prop (shorthand for wrapping in SyntaxTheme). Whole region of code components: wrap w/ SyntaxTheme.',
       },
     ],
   },
