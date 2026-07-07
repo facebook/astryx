@@ -16,7 +16,7 @@
     "@astryxdesign/vega": "*",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "unplugin": "^3.0.0",
+    "unplugin": "^3.3.0",
     "vega": "^6.2.0",
     "vega-datasets": "^3.2.1",
     "vega-lite": "^6.4.3"
