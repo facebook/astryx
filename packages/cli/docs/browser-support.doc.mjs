@@ -15,11 +15,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Astryx is built on modern web platform features — the Popover API, CSS anchor positioning, and CSS `light-dark()`. These let components stay small, accessible, and dependency-free, but they also set a floor on which browsers render everything correctly.',
+          text: 'Astryx is built on modern web platform features: the Popover API, CSS anchor positioning, and CSS `light-dark()`. These let components stay small, accessible, and dependency-free, but they also set a floor on which browsers render everything correctly.',
         },
         {
           type: 'prose',
-          text: 'A design system does not own its traffic — the products built on it do. Their audiences range from evergreen-Chrome-only internal tools to public sites with meaningful older-Safari share. So Astryx does not declare a single hard browser floor the way an app would. Instead it defines tiers that describe what works at each level, and hands the final decision to you. Pick the tier that matches your audience.',
+          text: 'A design system does not own its traffic; the products built on it do. Their audiences range from evergreen-Chrome-only internal tools to public sites with meaningful older-Safari share. So Astryx does not declare a single hard browser floor the way an app would. Instead it defines tiers that describe what works at each level, and hands the final decision to you. Pick the tier that matches your audience.',
         },
       ],
     },
@@ -35,19 +35,19 @@ export const docs = {
           headers: ['Tier', 'Baseline', 'Representative versions', 'What your users experience'],
           rows: [
             [
-              'Tier 1 — Full fidelity',
+              'Tier 1: Full fidelity',
               'Current Baseline (2026)',
               'Chrome 125+, Edge 125+, Safari 26+, Firefox 147+',
               'Everything works, including CSS anchor positioning. This is the reference target.',
             ],
             [
-              'Tier 2 — Functional',
+              'Tier 2: Functional',
               'Baseline − 2 years (2024)',
               'Chrome 114+, Edge 114+, Safari 17+, Firefox 125+',
               'Components open, dismiss, and are fully usable. Only anchor positioning is missing, so layered surfaces (tooltips, menus, popovers) may not be positioned next to their trigger.',
             ],
             [
-              'Tier 3 — Below Tier 2',
+              'Tier 3: Below Tier 2',
               'Older than Baseline − 2',
               'Anything older',
               'Best-effort. The only guarantee is "does not crash." `light-dark()` is unavailable, so theme colors may fall back to defaults.',
@@ -70,7 +70,7 @@ export const docs = {
             [
               'CSS Anchor Positioning',
               'Positions layered surfaces relative to their trigger (tooltips, menus, popovers, dropdowns).',
-              'Baseline 2026 — the tightest requirement.',
+              'Baseline 2026: the tightest requirement.',
             ],
             [
               'Popover API',
@@ -86,7 +86,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'The gap that matters is between Tier 1 and Tier 2: the Popover API and `light-dark()` reached wide availability well before anchor positioning. So in Tier 2 browsers, layered surfaces open and dismiss correctly — they just are not positioned. This is the one feature most consumers will need to reason about.',
+          text: 'The gap that matters is between Tier 1 and Tier 2: the Popover API and `light-dark()` reached wide availability well before anchor positioning. So in Tier 2 browsers, layered surfaces open and dismiss correctly; they just are not positioned. This is the one feature most consumers will need to reason about.',
         },
       ],
     },
@@ -95,7 +95,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'The browser requirement is concentrated in the layered-surface components — anything that renders content in an overlay positioned against a trigger:',
+          text: 'The browser requirement is concentrated in the layered-surface components: anything that renders content in an overlay positioned against a trigger:',
         },
         {
           type: 'list',
@@ -112,7 +112,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'If your product does not use any of these, it has no anchor-positioning requirement at all — it needs only `light-dark()` (Tier 2 and up) for correct theme colors. Layout, typography, forms, buttons, cards, tables, and navigation all work down to Tier 2 with no special handling.',
+          text: 'If your product does not use any of these, it has no anchor-positioning requirement at all; it needs only `light-dark()` (Tier 2 and up) for correct theme colors. Layout, typography, forms, buttons, cards, tables, and navigation all work down to Tier 2 with no special handling.',
         },
       ],
     },
@@ -132,7 +132,7 @@ export const docs = {
           type: 'list',
           style: 'dont',
           items: [
-            'Astryx does not guarantee correct layer positioning below Tier 1 (anchor positioning). Closing that gap for a Tier 2 audience is a consumer choice — see below.',
+            'Astryx does not guarantee correct layer positioning below Tier 1 (anchor positioning). Closing that gap for a Tier 2 audience is a consumer choice; see below.',
             'Astryx does not ship a `light-dark()` fallback, so theme colors are not guaranteed below Tier 2.',
           ],
         },
@@ -143,7 +143,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'If your audience includes Tier 2 browsers and you need correct layer positioning, you have three options, cheapest first. All of them are decisions you make for your audience — Astryx does not impose one.',
+          text: 'If your audience includes Tier 2 browsers and you need correct layer positioning, you have three options, cheapest first. All of them are decisions you make for your audience; Astryx does not impose one.',
         },
         {
           type: 'list',
@@ -192,7 +192,7 @@ const hasLightDark = CSS.supports('color', 'light-dark(#000, #fff)');`,
         },
         {
           type: 'prose',
-          text: 'This is not an arbitrary window: Baseline − 2 is close to where anchor positioning stops being available while the Popover API and `light-dark()` still are — so the tier boundary tracks a real capability edge, not a guessed date. The version floors above are reviewed and advanced roughly once a year as new Baseline years land. Always feature-detect rather than hardcoding version numbers, so your app adapts automatically as the platform moves.',
+          text: 'This is not an arbitrary window: Baseline − 2 is close to where anchor positioning stops being available while the Popover API and `light-dark()` still are, so the tier boundary tracks a real capability edge, not a guessed date. The version floors above are reviewed and advanced roughly once a year as new Baseline years land. Always feature-detect rather than hardcoding version numbers, so your app adapts automatically as the platform moves.',
         },
       ],
     },
