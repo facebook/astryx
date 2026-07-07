@@ -2,7 +2,7 @@
 
 'use client';
 
-import {Collapsible} from '@astryxdesign/core/Collapsible';
+import {Collapsible, CollapsibleGroup} from '@astryxdesign/core/Collapsible';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Text} from '@astryxdesign/core/Text';
 import {VStack} from '@astryxdesign/core/Layout';
@@ -10,26 +10,28 @@ import {VStack} from '@astryxdesign/core/Layout';
 export default function CollapsibleWithoutCard() {
   return (
     <VStack gap={3} style={{width: '100%', maxWidth: 400}}>
-      <Collapsible trigger="Deployment Details">
-        <Text type="body">
-          Last deployed on April 18, 2026 at 3:42 PM by Sarah Chen. Build
-          duration was 2m 14s with zero warnings.
-        </Text>
-      </Collapsible>
-      <Divider />
-      <Collapsible trigger="Environment Variables" defaultIsOpen={false}>
-        <Text type="body">
-          12 variables configured. Last updated March 30, 2026. All secrets are
-          encrypted at rest with AES-256.
-        </Text>
-      </Collapsible>
-      <Divider />
-      <Collapsible trigger="Build Logs" defaultIsOpen={false}>
-        <Text type="body">
-          Build completed successfully. 847 modules compiled, 0 errors, 0
-          warnings. Bundle size: 142 KB gzipped.
-        </Text>
-      </Collapsible>
+      <CollapsibleGroup type="single">
+        <Collapsible value="deployment" trigger="Deployment Details">
+          <Text type="body">
+            Last deployed on April 18, 2026 at 3:42 PM by Sarah Chen. Build
+            duration was 2m 14s with zero warnings.
+          </Text>
+        </Collapsible>
+        <Divider />
+        <Collapsible value="environment" trigger="Environment Variables">
+          <Text type="body">
+            12 variables configured. Last updated March 30, 2026. All secrets are
+            encrypted at rest with AES-256.
+          </Text>
+        </Collapsible>
+        <Divider />
+        <Collapsible value="build" trigger="Build Logs">
+          <Text type="body">
+            Build completed successfully. 847 modules compiled, 0 errors, 0
+            warnings. Bundle size: 142 KB gzipped.
+          </Text>
+        </Collapsible>
+      </CollapsibleGroup>
     </VStack>
   );
 }
