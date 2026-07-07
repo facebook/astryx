@@ -33,11 +33,12 @@ export function paginateData<T>(
   pageSize: number,
 ): T[] {
   // Same coercion as Pagination and useTablePagination: a 0/NaN/negative
-  // pageSize would slice every page empty while the pagination chrome still
-  // renders page buttons.
+  // page or pageSize would slice every page empty while the pagination chrome
+  // still renders page buttons.
+  const currentPage = Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1;
   const size = Number.isFinite(pageSize)
     ? Math.max(1, Math.floor(pageSize))
     : 10;
-  const start = (page - 1) * size;
+  const start = (currentPage - 1) * size;
   return data.slice(start, start + size);
 }

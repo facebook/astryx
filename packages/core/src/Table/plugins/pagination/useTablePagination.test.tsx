@@ -132,6 +132,27 @@ describe('paginateData', () => {
     expect(paginateData([], 1, 10)).toEqual([]);
   });
 
+  it('coerces negative page values to first page', () => {
+    const data = generateItems(100);
+    const sliced = paginateData(data, -1, 10);
+    expect(sliced).toHaveLength(10);
+    expect(sliced[0].id).toBe('1');
+    expect(sliced[9].id).toBe('10');
+  });
+
+  it('coerces fractional pages to previous integer page', () => {
+    const data = generateItems(100);
+    const sliced = paginateData(data, 1.5, 10);
+    expect(sliced).toHaveLength(10);
+    expect(sliced[0].id).toBe('1');
+    expect(sliced[9].id).toBe('10');
+  });
+
+  it('falls back to page 1 for non-finite page values', () => {
+    const data = generateItems(100);
+    expect(paginateData(data, Number.POSITIVE_INFINITY, 10)[0].id).toBe('1');
+  });
+
   it('returns empty array when page exceeds data', () => {
     const data = generateItems(10);
     expect(paginateData(data, 5, 10)).toEqual([]);
