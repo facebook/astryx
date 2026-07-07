@@ -18,6 +18,10 @@
  *   [data-xds-media         (media attribute selector)
  *   @layer xds-theme        (cascade layer name — incl. comma-separated
  *   @layer xds-base          `@layer a, b;` statement lists and nested blocks)
+ *   @import '@xds/...'      (package stylesheet imports — scope rewrite, plus
+ *                            the @xds/core/xds.css -> @astryxdesign/core/
+ *                            astryx.css file rename and the theme-default /
+ *                            theme-daily -> theme-neutral collapse)
  *
  * It deliberately does NOT blindly replace every `xds` substring: a bare
  * `xds` in a comment, a custom-property value, or an unrelated identifier is
@@ -30,9 +34,10 @@ export const meta = {
   description:
     'Rewrites the documented XDS CSS surfaces to their Astryx equivalents: ' +
     'the `.xds-*` class-selector prefix, `[data-xds-theme]` / ' +
-    '`[data-xds-theme-prose]` / `[data-xds-media]` attribute selectors, and ' +
-    '`@layer xds-theme` / `@layer xds-base` cascade-layer names all become ' +
-    'their `astryx-*` / `data-astryx-*` forms.',
+    '`[data-xds-theme-prose]` / `[data-xds-media]` attribute selectors, ' +
+    '`@layer xds-theme` / `@layer xds-base` cascade-layer names, and ' +
+    '`@import` of @xds/* package stylesheets (scope rewrite, xds.css->astryx.css, ' +
+    'theme-default/theme-daily->theme-neutral) all become their Astryx forms.',
   pr: '#3092',
   fileExtensions: ['.css', '.scss'],
 };
@@ -52,6 +57,32 @@ function rewriteLayerPrelude(prelude) {
   );
 }
 
+// Rewrite a single @import package-stylesheet specifier value (without quotes)
+// from an @xds/* path to its @astryxdesign/* equivalent. Handles the two
+// non-mechanical cases beyond the scope swap:
+//   @xds/core/xds.css            -> @astryxdesign/core/astryx.css   (file rename)
+//   @xds/theme-default/*         -> @astryxdesign/theme-neutral/*   (collapse)
+//   @xds/theme-daily/*           -> @astryxdesign/theme-neutral/*   (collapse)
+// Returns the original value unchanged if it is not an @xds/* specifier.
+function rewriteImportSpecifier(spec) {
+  if (!spec.startsWith('@xds/')) return spec;
+  // Theme package collapse (default/daily -> neutral).
+  let next = spec
+    .replace(/^@xds\/theme-default(\/|$)/, '@astryxdesign/theme-neutral$1')
+    .replace(/^@xds\/theme-daily(\/|$)/, '@astryxdesign/theme-neutral$1');
+  if (next === spec) {
+    // Not a collapsed theme — plain scope swap.
+    next = spec.replace(/^@xds\//, '@astryxdesign/');
+  }
+  // Core stylesheet file rename: xds.css -> astryx.css (only the core bundle;
+  // reset.css and others keep their names).
+  next = next.replace(
+    /^@astryxdesign\/core\/xds\.css$/,
+    '@astryxdesign/core/astryx.css',
+  );
+  return next;
+}
+
 // Ordered, non-overlapping replacements. Each pattern is intentionally narrow
 // so we never touch a bare `xds` substring outside these surfaces.
 const REPLACEMENTS = [
@@ -62,6 +93,15 @@ const REPLACEMENTS = [
   // Cascade-layer preludes: `@layer <names>` up to the block `{` or `;`.
   // Rewrite only the recognized xds-* layer tokens inside the prelude.
   {re: /@layer\b[^{;]*/g, to: match => rewriteLayerPrelude(match)},
+  // Package stylesheet imports: `@import '@xds/...'` or `@import url('@xds/...')`.
+  // Rewrite only the quoted @xds/* specifier, preserving the quote style.
+  {
+    re: /@import\s+(?:url\(\s*)?(['"])(@xds\/[^'"]+)\1/g,
+    to: (match, quote, spec) => {
+      const next = rewriteImportSpecifier(spec);
+      return next === spec ? match : match.replace(spec, next);
+    },
+  },
 ];
 
 export default function transformer(file /*, api */) {

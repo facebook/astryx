@@ -85,35 +85,87 @@ export default function transformer(file, api) {
   // local alias and only the imported name is rewritten.
   const localRenames = new Map();
 
+  // Collision detection: un-prefixing `XDSCodeBlock` -> `CodeBlock` breaks if
+  // the file already has a top-level binding named `CodeBlock` (e.g. its own
+  // `export function CodeBlock`). Collect every existing top-level binding name
+  // up front so we can alias to `Astryx<Name>` instead of producing a duplicate
+  // declaration. We gather: import locals, and top-level function/class/var
+  // declaration names (the realistic collision sources for component wrappers).
+  const existingBindings = new Set();
+  root.find(j.ImportDeclaration).forEach(path => {
+    for (const spec of path.node.specifiers || []) {
+      if (spec.local && spec.local.name) existingBindings.add(spec.local.name);
+    }
+  });
+  const collectDeclName = node => {
+    if (!node) return;
+    if (
+      (node.type === 'FunctionDeclaration' ||
+        node.type === 'ClassDeclaration') &&
+      node.id
+    ) {
+      existingBindings.add(node.id.name);
+    } else if (node.type === 'VariableDeclaration') {
+      for (const d of node.declarations) {
+        if (d.id && d.id.type === 'Identifier') existingBindings.add(d.id.name);
+      }
+    }
+  };
+  root.find(j.Program).forEach(path => {
+    for (const stmt of path.node.body) {
+      collectDeclName(stmt);
+      // Unwrap `export function X` / `export const X`.
+      if (stmt.type === 'ExportNamedDeclaration' && stmt.declaration) {
+        collectDeclName(stmt.declaration);
+      }
+      if (stmt.type === 'ExportDefaultDeclaration' && stmt.declaration) {
+        collectDeclName(stmt.declaration);
+      }
+    }
+  });
+
   // 1. Rewrite import specifiers from @xds/core
   root.find(j.ImportDeclaration).forEach(path => {
     const source = path.node.source.value;
     if (typeof source !== 'string' || !XDS_CORE_SOURCE.test(source)) return;
 
-    for (const spec of path.node.specifiers || []) {
-      if (spec.type !== 'ImportSpecifier') continue; // skip default/namespace
+    path.node.specifiers = (path.node.specifiers || []).map(spec => {
+      if (spec.type !== 'ImportSpecifier') return spec; // default/namespace
       const importedName = spec.imported.name;
       const bare = bareName(importedName);
-      if (!bare) continue;
+      if (!bare) return spec;
 
       const localName = spec.local.name;
       const wasAliased = localName !== importedName;
 
-      // Rewrite the imported name to the bare alias.
-      spec.imported.name = bare;
-
+      // We REPLACE the specifier node (rather than mutating .imported/.local)
+      // because recast preserves the original printed form of a mutated
+      // ImportSpecifier and will drop a newly-introduced `as local` alias.
+      // Building a fresh node makes recast print the full `imported as local`.
       if (wasAliased) {
         // `import {XDSButton as Btn}` -> `import {Button as Btn}`.
-        // Local binding unchanged, so no usage rewrites needed.
         hasChanges = true;
-      } else {
-        // `import {XDSButton}` -> `import {Button}`. The local binding is the
-        // prefixed name; rename it and all its references.
-        spec.local.name = bare;
-        localRenames.set(importedName, bare);
-        hasChanges = true;
+        return j.importSpecifier(j.identifier(bare), j.identifier(localName));
       }
-    }
+      if (bare !== importedName && existingBindings.has(bare)) {
+        // COLLISION: the bare name is already a top-level binding in this file
+        // (e.g. a local `export function CodeBlock` alongside imported
+        // `XDSCodeBlock`). Un-prefixing directly would create a duplicate
+        // declaration, so alias the import to `Astryx<Name>` and rename the
+        // import's references to that alias, leaving the local binding intact.
+        const alias = `Astryx${bare}`;
+        localRenames.set(importedName, alias);
+        existingBindings.add(alias);
+        hasChanges = true;
+        return j.importSpecifier(j.identifier(bare), j.identifier(alias));
+      }
+      // `import {XDSButton}` -> `import {Button}`. The local binding is the
+      // prefixed name; rename it and all its references.
+      localRenames.set(importedName, bare);
+      existingBindings.add(bare);
+      hasChanges = true;
+      return j.importSpecifier(j.identifier(bare), j.identifier(bare));
+    });
   });
 
   // 2. Rewrite re-exports from @xds/core
