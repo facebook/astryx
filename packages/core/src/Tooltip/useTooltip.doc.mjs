@@ -24,7 +24,7 @@ export const docs = {
     {name: 'interactionRef', type: 'RefCallback<HTMLElement>', description: 'Ref for the hover/focus interaction element.'},
     {name: 'anchorId', type: 'string', description: 'CSS anchor name for advanced positioning cases.'},
     {name: 'describedBy', type: 'string', description: 'ID to compose into aria-describedby on the trigger.'},
-    {name: 'renderTooltip', type: '(children: ReactNode, props?: ContextRenderProps) => ReactNode', description: 'Render function for the anchor-positioned tooltip content.'},
+    {name: 'renderTooltip', type: "(children: ReactNode, props?: Omit<ContextRenderProps, 'positioning'>) => ReactNode", description: 'Render function for the anchor-positioned tooltip content. The positioning opt-out is excluded: the tooltip always derives its position from placement/alignment.'},
   ],
   usage: {
     description: 'Headless hook for hover/focus-triggered tooltips. Builds on useLayer with hover intent, keyboard focus handling, and accessible aria-describedby linking. Use for custom trigger elements that need tooltip behavior without the wrapper component.',

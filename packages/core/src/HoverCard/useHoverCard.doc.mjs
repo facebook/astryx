@@ -24,7 +24,7 @@ export const docs = {
     {name: 'interactionRef', type: 'RefCallback<HTMLElement>', description: 'Ref for the hover/focus interaction element. Use with positionRef for split trigger patterns.'},
     {name: 'anchorId', type: 'string', description: 'CSS anchor name for advanced positioning cases.'},
     {name: 'describedBy', type: 'string', description: 'ID to compose into aria-describedby on the trigger.'},
-    {name: 'renderHoverCard', type: '(children: ReactNode, props?: ContextRenderProps) => ReactNode', description: 'Render function for the anchor-positioned hover card content.'},
+    {name: 'renderHoverCard', type: "(children: ReactNode, props?: Omit<ContextRenderProps, 'positioning'>) => ReactNode", description: 'Render function for the anchor-positioned hover card content. The positioning opt-out is excluded: the hover card always derives its position from placement/alignment.'},
     {name: 'show', type: '() => void', description: 'Imperatively show the hover card immediately.'},
     {name: 'hide', type: '() => void', description: 'Imperatively hide the hover card immediately.'},
   ],

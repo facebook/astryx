@@ -9,11 +9,15 @@
  * SYNC: When useLayer.tsx changes, update tests accordingly
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {render} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useLayer} from './useLayer';
-import type {LayerPlacement, LayerAlignment} from './useLayer';
+import type {
+  LayerPlacement,
+  LayerAlignment,
+  ContextRenderProps,
+} from './useLayer';
 
 /**
  * Harness that owns the trigger element. Direction is set on the trigger
@@ -136,6 +140,258 @@ describe('useLayer context positioning', () => {
       );
       expect(style).toContain('position-area: bottom span-left');
       expect(style).toContain('justify-self: right');
+    });
+  });
+
+  describe("positioning='custom' (consumer-authored position styles)", () => {
+    // Consumers like Carousel and Tokenizer keep useLayer's popover behavior
+    // and anchor wiring but position the layer themselves. The opt-out must
+    // suppress every placement-derived style — position-area, the try
+    // fallbacks, and the RTL justify-self — so those consumers never need to
+    // know which properties the hook would have emitted.
+    function CustomHarness({
+      triggerStyle,
+      renderProps,
+    }: {
+      triggerStyle?: React.CSSProperties;
+      renderProps: ContextRenderProps;
+    }) {
+      const layer = useLayer({mode: 'context'});
+      return (
+        <>
+          <button
+            type="button"
+            ref={layer.ref}
+            style={triggerStyle}
+            onClick={layer.isOpen ? layer.hide : layer.show}>
+            trigger
+          </button>
+          {layer.render(<span>content</span>, renderProps)}
+        </>
+      );
+    }
+
+    it('keeps the anchor wiring but derives no placement styles', async () => {
+      const style = await openAndGetStyle(
+        <CustomHarness
+          renderProps={{
+            positioning: 'custom',
+            style: {positionArea: 'center'},
+          }}
+        />,
+      );
+      expect(style).toContain('position-anchor');
+      // The consumer-authored area is the only one present…
+      expect(style).toContain('position-area: center');
+      // …and no placement-derived styles leak through.
+      expect(style).not.toContain('position-try-fallbacks');
+      expect(style).not.toContain('justify-self');
+    });
+
+    it('ignores placement and alignment when positioning is custom, even in RTL', async () => {
+      // placement/alignment are documented as ignored under custom. Derived
+      // output would be position-area "bottom span-left" with justify-self
+      // "right" under RTL; none of it may appear.
+      const style = await openAndGetStyle(
+        <CustomHarness
+          triggerStyle={{direction: 'rtl'}}
+          renderProps={{
+            positioning: 'custom',
+            placement: 'below',
+            alignment: 'start',
+            style: {positionArea: 'center'},
+          }}
+        />,
+      );
+      expect(style).toContain('position-anchor');
+      expect(style).toContain('position-area: center');
+      expect(style).not.toContain('position-area: bottom');
+      expect(style).not.toContain('justify-self');
+      expect(style).not.toContain('position-try-fallbacks');
+    });
+
+    it('emits only the anchor wiring when custom positioning passes no style at all', async () => {
+      // The strongest suppression probe: with no consumer style in the merge
+      // (Tokenizer's insets-only shape reduces to this in jsdom), nothing can
+      // clobber a leaked derived value — any position-area, justify-self, or
+      // try-fallbacks in the output is a genuine leak.
+      const style = await openAndGetStyle(
+        <CustomHarness
+          triggerStyle={{direction: 'rtl'}}
+          renderProps={{positioning: 'custom'}}
+        />,
+      );
+      expect(style).toContain('position-anchor');
+      expect(style).not.toContain('position-area');
+      expect(style).not.toContain('justify-self');
+      expect(style).not.toContain('position-try-fallbacks');
+    });
+  });
+
+  describe('synchronous style application before showPopover()', () => {
+    // setIsRtl only schedules a re-render; showPopover() promotes the
+    // popover to the top layer immediately. Without a synchronous style
+    // application the first open paints — and any @starting-style entry
+    // animation starts — with the previous render's mapping. These tests
+    // capture the style attribute at the exact moment showPopover() runs.
+    function captureStyleAtShow() {
+      const stylesAtShow: string[] = [];
+      const original = HTMLElement.prototype.showPopover;
+      const spy = vi
+        .spyOn(HTMLElement.prototype, 'showPopover')
+        .mockImplementation(function (this: HTMLElement) {
+          stylesAtShow.push(this.getAttribute('style') ?? '');
+          return original.call(this);
+        });
+      return {stylesAtShow, spy};
+    }
+
+    it('first RTL open: mirrored styles are committed before showPopover()', async () => {
+      const {stylesAtShow, spy} = captureStyleAtShow();
+      try {
+        const user = userEvent.setup();
+        const {getByRole} = render(
+          <Harness
+            placement="below"
+            alignment="start"
+            triggerStyle={{direction: 'rtl'}}
+          />,
+        );
+        await user.click(getByRole('button', {name: 'trigger'}));
+
+        expect(stylesAtShow).toHaveLength(1);
+        expect(stylesAtShow[0]).toContain('position-area: bottom span-left');
+        expect(stylesAtShow[0]).toContain('justify-self: right');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('reopen after an rtl→ltr flip: stale RTL styles are cleared before showPopover()', async () => {
+      const {stylesAtShow, spy} = captureStyleAtShow();
+      try {
+        const user = userEvent.setup();
+        const {getByRole, rerender} = render(
+          <Harness
+            placement="below"
+            alignment="start"
+            triggerStyle={{direction: 'rtl'}}
+          />,
+        );
+        const trigger = getByRole('button', {name: 'trigger'});
+        await user.click(trigger); // open in RTL
+        await user.click(trigger); // close
+
+        rerender(
+          <Harness
+            placement="below"
+            alignment="start"
+            triggerStyle={{direction: 'ltr'}}
+          />,
+        );
+        await user.click(trigger); // reopen in LTR
+
+        expect(stylesAtShow).toHaveLength(2);
+        expect(stylesAtShow[1]).toContain('position-area: bottom span-right');
+        expect(stylesAtShow[1]).not.toContain('justify-self');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('respects the explicit-undefined nulling idiom in consumer style', async () => {
+      // Spread semantics: an own key with an explicit `undefined` value wins
+      // the render merge and React emits nothing — the suppression idiom
+      // consumers used before positioning:'custom' existed (and still
+      // type-legal for external consumers). show()'s synchronous application
+      // must honor key PRESENCE, not value: writing the derived styles here
+      // would stick forever, because React's style diff (undefined ===
+      // undefined) never emits a clearing write.
+      const {stylesAtShow, spy} = captureStyleAtShow();
+      try {
+        function NullingHarness() {
+          const layer = useLayer({mode: 'context'});
+          return (
+            <>
+              <button
+                type="button"
+                ref={layer.ref}
+                style={{direction: 'rtl'}}
+                onClick={layer.isOpen ? layer.hide : layer.show}>
+                trigger
+              </button>
+              {layer.render(<span>content</span>, {
+                placement: 'below',
+                alignment: 'start',
+                style: {
+                  positionArea: undefined,
+                  justifySelf: undefined,
+                  top: 'anchor(top)',
+                },
+              })}
+            </>
+          );
+        }
+
+        const user = userEvent.setup();
+        const {container, getByRole} = render(<NullingHarness />);
+        await user.click(getByRole('button', {name: 'trigger'}));
+
+        expect(stylesAtShow[0]).not.toContain('position-area:');
+        expect(stylesAtShow[0]).not.toContain('justify-self');
+        const finalStyle =
+          container.querySelector('[popover]')?.getAttribute('style') ?? '';
+        expect(finalStyle).not.toContain('position-area:');
+        expect(finalStyle).not.toContain('justify-self');
+        // (No positive assertion on `top: anchor(top)` — jsdom's cssstyle
+        // rejects anchor() values for known properties, so it never reaches
+        // the style attribute here; the two suppressions above are the
+        // regression under test.)
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('never clobbers consumer style overrides of the derived properties', async () => {
+      // Documented merge order: consumer `style` wins over derived styles.
+      // The synchronous application must leave consumer-authored values
+      // alone — both at showPopover() time and after the post-open render.
+      const {stylesAtShow, spy} = captureStyleAtShow();
+      try {
+        function OverrideHarness() {
+          const layer = useLayer({mode: 'context'});
+          return (
+            <>
+              <button
+                type="button"
+                ref={layer.ref}
+                style={{direction: 'rtl'}}
+                onClick={layer.isOpen ? layer.hide : layer.show}>
+                trigger
+              </button>
+              {layer.render(<span>content</span>, {
+                placement: 'below',
+                alignment: 'start',
+                style: {positionArea: 'center', justifySelf: 'center'},
+              })}
+            </>
+          );
+        }
+
+        const user = userEvent.setup();
+        const {container, getByRole} = render(<OverrideHarness />);
+        await user.click(getByRole('button', {name: 'trigger'}));
+
+        expect(stylesAtShow[0]).toContain('position-area: center');
+        expect(stylesAtShow[0]).toContain('justify-self: center');
+        const finalStyle =
+          container.querySelector('[popover]')?.getAttribute('style') ?? '';
+        expect(finalStyle).toContain('position-area: center');
+        expect(finalStyle).toContain('justify-self: center');
+        expect(finalStyle).not.toContain('justify-self: right');
+      } finally {
+        spy.mockRestore();
+      }
     });
   });
 

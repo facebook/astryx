@@ -650,13 +650,11 @@ export function Tokenizer<T extends SearchableItem>({
     );
   });
 
+  // Self-authored position styles (positioning: 'custom' below): explicit
+  // anchor() insets pin the expanded layer over the field itself.
+  // `left` is physical, so this popover does not yet mirror in RTL —
+  // known follow-up from #3389.
   const popoverOverrideStyle: React.CSSProperties = {
-    positionArea: undefined,
-    positionTryFallbacks: undefined,
-    // Also null the RTL justify-self useLayer may emit: with explicit insets
-    // (no position-area) it would re-align the box inside the inset-modified
-    // containing block instead of hugging the anchor.
-    justifySelf: undefined,
     top: 'anchor(top)',
     left: 'anchor(start)',
   };
@@ -797,8 +795,7 @@ export function Tokenizer<T extends SearchableItem>({
             {wrapperContent}
           </div>,
           {
-            placement: 'below',
-            alignment: 'start',
+            positioning: 'custom',
             xstyle: styles.layerPopover,
             style: popoverOverrideStyle,
           },

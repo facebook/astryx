@@ -318,11 +318,10 @@ export function Carousel({
           : null
     : null;
 
+  // Self-authored position styles (positioning: 'custom' below): a cover
+  // centered on the anchor, sized to it — direction-neutral by construction.
   const coverStyle: React.CSSProperties = {
     positionArea: 'center',
-    // Null the RTL justify-self useLayer may emit — the anchor-size cover
-    // must stay centered on the anchor with no self-alignment offset.
-    justifySelf: undefined,
     width: 'anchor-size(width)',
     height: 'anchor-size(height)',
   };
@@ -400,8 +399,7 @@ export function Carousel({
             </div>
           </>,
           {
-            placement: 'below',
-            alignment: 'center',
+            positioning: 'custom',
             style: coverStyle,
             xstyle: styles.buttonOverlay,
           },

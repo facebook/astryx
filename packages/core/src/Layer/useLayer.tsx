@@ -18,6 +18,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -68,7 +69,32 @@ export type LayerAlignment = 'start' | 'center' | 'end';
  * Render props for context mode (anchor positioning)
  */
 export interface ContextRenderProps {
+  /**
+   * Who authors the layer's position styles.
+   *
+   * `'anchor'` (default): the hook derives CSS anchor-positioning styles —
+   * `position-area`, `position-try-fallbacks`, and an RTL-only `justify-self`
+   * — from the logical `placement`/`alignment`.
+   *
+   * `'custom'`: the consumer authors its own position styles via `style`
+   * (e.g. explicit `anchor()` insets or an `anchor-size()` cover). The hook
+   * keeps the popover behavior and the `position-anchor` wiring but emits no
+   * placement-derived styles — including the RTL adjustments, so direction
+   * handling becomes the consumer's responsibility. `placement`/`alignment`
+   * are ignored.
+   *
+   * @default 'anchor'
+   */
+  positioning?: 'anchor' | 'custom';
+  /**
+   * Logical placement relative to the anchor. Ignored when `positioning`
+   * is `'custom'`.
+   */
   placement?: LayerPlacement;
+  /**
+   * Alignment along the placement axis. Ignored when `positioning`
+   * is `'custom'`.
+   */
   alignment?: LayerAlignment;
   /**
    * ARIA role applied to the popover container (e.g. `'tooltip'`). Lets
@@ -369,18 +395,92 @@ export function useLayer(
   // stale-closure reads of the previous isOpen value.
   const isOpenRef = useRef(false);
 
+  // Latest context render() position props, stashed so show() can re-derive
+  // the direction-dependent styles synchronously. setIsRtl only schedules a
+  // re-render while showPopover() promotes the popover immediately, so
+  // without this the first RTL open would paint — and any @starting-style
+  // entry animation would start — with the previous render's LTR mapping.
+  // (flushSync is not an option: show() is called from passive effects —
+  // Carousel, Selector isDefaultOpen — where it warns and degrades back to
+  // the async behavior.)
+  //
+  // Two refs: render-prop functions only see their args at render time, but
+  // a concurrent render pass can be discarded (aborted transition, Suspense
+  // retry) after writing the stash. show() must only apply COMMITTED values —
+  // a write derived from an abandoned render would stick forever, because
+  // React's style diff never saw those values and won't emit a repair. So
+  // renders write `pending`, and commit-time code (the popover ref callback
+  // and the promote layout effect below) copies it to `committed`.
+  //
+  // Invariant this relies on: render() is invoked inline in the owner's JSX
+  // on every render. Do NOT memoize the render() output (useMemo/memo child) —
+  // a discarded pass could then refresh `pending` while the committed pass
+  // reuses the memo, and the promote would publish never-committed values.
+  type ContextPositionStash = {
+    placement: LayerPlacement;
+    alignment: LayerAlignment;
+    positioning: 'anchor' | 'custom';
+    style?: React.CSSProperties;
+  };
+  const pendingContextPositionRef = useRef<ContextPositionStash>({
+    placement: 'above',
+    alignment: 'center',
+    positioning: 'anchor',
+  });
+  const contextPositionRef = useRef<ContextPositionStash>(
+    pendingContextPositionRef.current,
+  );
+
   const show = useCallback(() => {
-    if (popoverRef.current && !isOpenRef.current) {
-      setIsRtl(
-        triggerRef.current != null &&
-          getComputedStyle(triggerRef.current).direction === 'rtl',
-      );
-      popoverRef.current.showPopover();
+    const popover = popoverRef.current;
+    if (popover && !isOpenRef.current) {
+      if (mode === 'context') {
+        const isRtlNow =
+          triggerRef.current != null &&
+          getComputedStyle(triggerRef.current).direction === 'rtl';
+        setIsRtl(isRtlNow);
+        const {
+          placement,
+          alignment,
+          positioning,
+          style: consumerStyle,
+        } = contextPositionRef.current;
+        if (positioning !== 'custom') {
+          // Write the direction-dependent styles before showPopover() so the
+          // first paint is direction-correct; the post-open render re-emits
+          // the same values, keeping the DOM and React's style prop in sync.
+          // Consumer `style` merges after the derived styles in render, and
+          // spread semantics make an OWN key authored even when its value is
+          // an explicit `undefined` (the nulling idiom) — so guard on key
+          // presence, not value. Writing over an explicit-undefined key
+          // would stick forever: React's style diff (undefined === undefined)
+          // never emits a clearing write.
+          if (consumerStyle == null || !('positionArea' in consumerStyle)) {
+            popover.style.positionArea = getPositionArea(
+              placement,
+              alignment,
+              isRtlNow,
+            );
+          }
+          if (consumerStyle == null || !('justifySelf' in consumerStyle)) {
+            const justifySelf = isRtlNow
+              ? getRtlJustifySelf(placement, alignment)
+              : undefined;
+            if (justifySelf != null) {
+              popover.style.justifySelf = justifySelf;
+            } else {
+              // Clear a previous RTL open's value after a direction flip.
+              popover.style.removeProperty('justify-self');
+            }
+          }
+        }
+      }
+      popover.showPopover();
       isOpenRef.current = true;
       setIsOpen(true);
       onShow?.();
     }
-  }, [onShow]);
+  }, [mode, onShow]);
 
   const hide = useCallback(() => {
     if (isOpenRef.current) {
@@ -465,10 +565,27 @@ export function useLayer(
   const popoverRefCallback = useCallback(
     (el: HTMLElement | null) => {
       popoverRef.current = el;
+      if (el) {
+        // Ref callbacks run at commit, before effects — promote the stash
+        // here too so a show() fired between first mount and the first
+        // promote-effect run still sees this render's committed values.
+        contextPositionRef.current = pendingContextPositionRef.current;
+      }
       bindToggleListener(el, handleToggle);
     },
     [handleToggle, bindToggleListener],
   );
+
+  // Promote the render-time position stash on every commit. Discarded
+  // concurrent render passes write `pending` but never commit — this effect
+  // only runs for committed renders. A LAYOUT effect specifically: it runs
+  // synchronously inside the commit, before paint, so no event handler (and
+  // no consumer passive effect) can ever call show() between a commit and
+  // its promote — a passive effect would leave a gap where show() stamps the
+  // previous commit's values and React's style diff never repairs them.
+  useLayoutEffect(() => {
+    contextPositionRef.current = pendingContextPositionRef.current;
+  });
 
   // Re-bind when the handler identity changes while the element stays mounted,
   // and detach on unmount.
@@ -494,6 +611,7 @@ export function useLayer(
       const {
         placement = 'above',
         alignment = 'center',
+        positioning = 'anchor',
         role,
         xstyle,
         className: extraClassName,
@@ -503,16 +621,32 @@ export function useLayer(
         onMouseLeave,
       } = props || {};
 
+      // Keep show()'s synchronous style application working from the same
+      // values as this render. Render passes write the PENDING stash only;
+      // commit-time code promotes it (see the refs' declaration).
+      pendingContextPositionRef.current = {
+        placement,
+        alignment,
+        positioning,
+        style: extraStyle,
+      };
+
       // CSS anchor positioning (dynamic, not in StyleX)
       const rtlJustifySelf = isRtl
         ? getRtlJustifySelf(placement, alignment)
         : undefined;
-      const anchorStyle: React.CSSProperties = {
-        positionAnchor: anchorId,
-        positionArea: getPositionArea(placement, alignment, isRtl),
-        positionTryFallbacks: 'flip-block, flip-inline, flip-block flip-inline',
-        ...(rtlJustifySelf != null && {justifySelf: rtlJustifySelf}),
-      };
+      const anchorStyle: React.CSSProperties =
+        positioning === 'custom'
+          ? // Consumer authors its own position styles via `style` — keep
+            // only the anchor wiring, derive nothing from placement.
+            {positionAnchor: anchorId}
+          : {
+              positionAnchor: anchorId,
+              positionArea: getPositionArea(placement, alignment, isRtl),
+              positionTryFallbacks:
+                'flip-block, flip-inline, flip-block flip-inline',
+              ...(rtlJustifySelf != null && {justifySelf: rtlJustifySelf}),
+            };
 
       const stylexResult = stylex.props(styles.base, xstyle);
       const combinedClassName = extraClassName

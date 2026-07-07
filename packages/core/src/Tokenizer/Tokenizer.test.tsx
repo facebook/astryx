@@ -480,11 +480,11 @@ describe('Tokenizer', () => {
     });
 
     it('unfocusedLayer: RTL emits no justify-self into the inset-positioned popover', () => {
-      // The popover overrides useLayer's position-area with explicit
-      // anchor() insets (popoverOverrideStyle), so the RTL justify-self
-      // useLayer emits must stay nulled — with insets and no position-area
-      // it would re-align the box inside the inset-modified containing
-      // block instead of hugging the anchor.
+      // The popover positions itself with explicit anchor() insets
+      // (positioning: 'custom'), so none of useLayer's placement-derived
+      // styles may reach it — an RTL justify-self with insets and no
+      // position-area would re-align the box inside the inset-modified
+      // containing block instead of hugging the anchor.
       const original = window.getComputedStyle;
       let root: HTMLElement | null = null;
       const spy = vi
@@ -527,6 +527,7 @@ describe('Tokenizer', () => {
         expect(style).toContain('position-anchor');
         expect(style).not.toContain('justify-self');
         expect(style).not.toContain('position-area');
+        expect(style).not.toContain('position-try-fallbacks');
       } finally {
         spy.mockRestore();
       }
