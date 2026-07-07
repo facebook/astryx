@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/charts",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Astryx chart components — thin, themeable wrappers over a peer charting engine. Published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
   "author": "Meta Open Source",
@@ -53,7 +53,7 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.1.3",
+    "@astryxdesign/core": "0.1.4",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
   }

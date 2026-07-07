@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/core",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "displayName": "XDS Core",
   "description": "The component library. Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling.",
   "author": "Meta Open Source",
