@@ -27,7 +27,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-field'},
+      {className: 'astryx-field', visualProps: ['layout']},
       {className: 'astryx-field-label'},
       {className: 'astryx-field-status', visualProps: ['type', 'variant']},
     ],
