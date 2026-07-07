@@ -1,0 +1,60 @@
+; Copyright (c) Meta Platforms, Inc. and affiliates.
+;
+; Flow runs as a SECOND, opt-in type checker alongside tsc — it does not
+; replace TypeScript. Astryx source stays authored in .ts/.tsx; Flow parses
+; those same files directly (Flow's syntax has converged with TypeScript's).
+; See docs/flow.md for the interop model, current baseline, and burn-down plan.
+
+[ignore]
+.*/node_modules/.*
+.*/dist/.*
+.*/build/.*
+.*/coverage/.*
+.*/storybook-static/.*
+.*/\.next/.*
+.*/out/.*
+.*/\.astryx-docs/.*
+
+[include]
+
+[libs]
+flow-typed
+
+[lints]
+all=off
+
+[options]
+; --- TypeScript interop: let Flow parse the .ts/.tsx sources directly ---
+module.file_ext=.js
+module.file_ext=.jsx
+module.file_ext=.mjs
+module.file_ext=.cjs
+module.file_ext=.json
+module.file_ext=.ts
+module.file_ext=.tsx
+
+; Every TS file is checkable; TS sources carry no @flow pragma.
+all=true
+
+; React 19 automatic runtime (mirrors tsconfig "jsx": "react-jsx").
+react.runtime=automatic
+
+; --- Module resolution ---
+; node_modules ships only built dist/ for @astryxdesign/* workspace packages,
+; which Flow ignores; map the bare + subpath specifiers back to TS source so
+; Flow checks the real implementation. (This is Flow's equivalent of the TS
+; "paths"/project-references wiring.)
+module.name_mapper='^@astryxdesign/core$' -> '<PROJECT_ROOT>/packages/core/src/index.ts'
+module.name_mapper='^@astryxdesign/core/\(.*\)$' -> '<PROJECT_ROOT>/packages/core/src/\1'
+module.name_mapper='^@astryxdesign/lab$' -> '<PROJECT_ROOT>/packages/lab/src/index.ts'
+module.name_mapper='^@astryxdesign/charts$' -> '<PROJECT_ROOT>/packages/charts/src/index.ts'
+module.name_mapper='^@astryxdesign/vega$' -> '<PROJECT_ROOT>/packages/vega/src/index.ts'
+module.name_mapper='^@astryxdesign/build$' -> '<PROJECT_ROOT>/packages/build/src/index.ts'
+
+module.system=node
+module.system.node.resolve_dirname=node_modules
+
+; --- TS-aligned strictness knobs (direct tsconfig equivalents) ---
+use_unknown_in_catch_variables=true
+
+[strict]

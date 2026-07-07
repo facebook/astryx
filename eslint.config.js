@@ -33,6 +33,9 @@ export default tseslint.config(
       "**/dist/**",
       "**/node_modules/**",
       ".claude/**",
+      // Flow libdefs are written in Flow syntax (`declare module`, etc.), not
+      // TypeScript — the typescript-eslint parser can't read them.
+      "flow-typed/**",
       "**/internal/eslint-plugin-astryx/**",
       ".github/scripts/**",
       "scripts/**",
