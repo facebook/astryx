@@ -72,7 +72,7 @@ import {
   plainDateFormat,
   DATE_FORMAT_LONG,
 } from '../utils/plainDate';
-import type {StyleXStyles} from '@stylexjs/stylex';
+
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
@@ -344,11 +344,6 @@ export interface DateTimeInputProps extends Omit<
    * @default 1
    */
   numberOfMonths?: 1 | 2;
-
-  /**
-   * Style overrides applied to the outer row container.
-   */
-  xstyle?: StyleXStyles;
 }
 
 function splitDateTime(dt: ISODateTimeString | undefined): {
