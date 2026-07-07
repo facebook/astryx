@@ -16,19 +16,6 @@
    show through past the top/bottom of the page. */
 html {
   overscroll-behavior-y: none;
-
-  /* Reserve scrollbar space so content width stays constant across pages and
-     when a modal/drawer locks body scroll. */
-  scrollbar-gutter: stable;
-}
-
-/* A modal <dialog> (MobileNav drawer, search palette) locks the page with
-   `overflow: clip` on <html>, which isn't a scroll container — so the reserved
-   gutter above no longer applies and the page shifts. Drop the gutter for the
-   duration any modal is open; :modal matches only showModal() dialogs, so this
-   is self-driving and route-agnostic (no per-component JS). */
-html:has(dialog:modal) {
-  scrollbar-gutter: auto;
 }
 
 /* Marketing-only custom properties for the docsite home page. These are
