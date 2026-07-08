@@ -3,10 +3,10 @@
 
 /**
  * Source check: verify files using React client APIs have "use client"
- * as their FIRST LINE (before any comments or JSDoc).
- *
- * This ensures the Babel CLI 1:1 build preserves the directive
- * in each output file.
+ * as their first statement — only comments (copyright header, JSDoc) and
+ * blank lines may precede it, matching the directive-prologue rules that
+ * React and bundlers apply. The Babel CLI 1:1 build preserves a directive
+ * in this position.
  *
  * Usage: node scripts/check-use-client.mjs
  */
@@ -74,6 +74,33 @@ function isUseClientLine(line) {
   return trimmed === "'use client';" || trimmed === '"use client";';
 }
 
+// Index of the first line that is code — skipping blank lines, line
+// comments, and block comments (including JSDoc). A directive is only
+// effective when it appears before any statement, so this is where
+// "use client" must sit.
+function firstStatementLine(lines) {
+  let inBlockComment = false;
+  for (let i = 0; i < lines.length; i++) {
+    let rest = lines[i].trim();
+    while (rest !== '') {
+      if (inBlockComment) {
+        const end = rest.indexOf('*/');
+        if (end === -1) break;
+        inBlockComment = false;
+        rest = rest.slice(end + 2).trim();
+      } else if (rest.startsWith('//')) {
+        break;
+      } else if (rest.startsWith('/*')) {
+        inBlockComment = true;
+        rest = rest.slice(2);
+      } else {
+        return i;
+      }
+    }
+  }
+  return -1;
+}
+
 const files = walk(SRC_DIR);
 const errors = [];
 let checked = 0;
@@ -97,10 +124,10 @@ for (const file of files) {
     errors.push({file: rel, issue: 'missing directive'});
   } else if (directiveLines.length > 1) {
     errors.push({file: rel, issue: `duplicate directives (lines ${directiveLines.map(l => l + 1).join(', ')})`});
-  } else if (directiveLines[0] !== 0) {
+  } else if (directiveLines[0] !== firstStatementLine(lines)) {
     errors.push({
       file: rel,
-      issue: `directive on line ${directiveLines[0] + 1} — must be the first line`,
+      issue: `directive on line ${directiveLines[0] + 1} — must be the first statement (only comments and blank lines may precede it)`,
     });
   }
 }
@@ -111,11 +138,11 @@ if (errors.length > 0) {
     console.error(`  ${file}: ${issue}`);
   }
   console.error(
-    `\n${errors.length} error(s). Fix: 'use client' must be line 1, no duplicates.`,
+    `\n${errors.length} error(s). Fix: 'use client' must be the first statement, no duplicates.`,
   );
   process.exit(1);
 }
 
 console.log(
-  `✅ ${checked} client-API files checked — all have "use client" on line 1.`,
+  `✅ ${checked} client-API files checked — all have "use client" as their first statement.`,
 );
