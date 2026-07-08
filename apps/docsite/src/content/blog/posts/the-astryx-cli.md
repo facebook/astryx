@@ -18,7 +18,7 @@ relatedDocs:
     href: '/docs/cli'
 ---
 
-This is the first in a series on the Astryx CLI. It is the tool an agent uses to build with Astryx. We put a lot of thought into getting it right.
+This is the first in a series on the Astryx CLI. It is the tool an agent uses to build with Astryx or as we like to think of it the interface for the machine. We put a lot of thought into getting it right.
 
 ## The CLI is the docs
 
@@ -28,17 +28,17 @@ Docs are only part of it. The CLI also serves templates that show an agent how t
 
 ## The tour
 
-Here is the fun part. You do not really need any of it. Your agent will know it all. But in case you are curious, I will walk you through every part of the CLI you might reach for. We go from an empty folder to a shipped app. I am keeping it high level for now. Future posts go deep on each one.
+Here is the fun part. You do not really need any of it. Your agent will know it all. But in case you are curious, I will walk you through every part of the CLI you might reach for. We go from an empty folder to a shipped app. I am keeping it high level.
 
 **Set up.** `astryx init` installs the packages and writes your agent file. You do not even need to maintain that file. We do. You can still change it if you want. And `upgrade` keeps it current as the system changes.
 
 **Learn.** `astryx search` ranks results across components, hooks, docs, and templates at once. `astryx component` prints the props, examples, and source for a component. `astryx hook` does the same for hooks. `astryx docs` covers reference topics like tokens, color, type, motion, and our principles.
 
-**Compose.** `astryx build` is going to be your best friend. Tell it what you are making. It points your agent at the closest template, the right blocks, and the components to fill the gaps. `astryx template` drops a page template straight into your project.
+**Compose.** `astryx build` is going to be your best friend. Tell it what you are making. It points your agent at the closest template, the right blocks, and the components to fill the gaps. `astryx template` drops a page template straight into your project. `astryx layout` sketches a page's structure from a short expression before you fill it in.
 
 **Make it yours.** `astryx theme build` compiles a theme to production CSS and JS. `astryx swizzle` ejects a component's full source when you want to own it.
 
-**Keep it current.** `astryx upgrade` runs codemods that migrate your code between versions. It refreshes the agent docs too. `astryx doctor` finds problems and tells you the fix. `astryx gap-report` lets your agent file a gap straight to our GitHub. So you do not have to.
+**Keep it current.** `astryx upgrade` runs codemods that migrate your code between versions. It refreshes the agent docs too. `astryx doctor` finds problems and tells you the fix.
 
 ## One surface, many readers
 
