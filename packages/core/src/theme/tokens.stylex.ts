@@ -12,6 +12,12 @@
  *
  * Domain tokens (syntax highlighting, data visualization) live separately in
  * /packages/core/src/theme/domainTokens/ — they're tree-shaken from core components.
+ *
+ * Contrast promises: core color defaults satisfy the WCAG 2.1 AA contract in
+ * internal/theme-contrast (4.5:1 text, 3:1 icons) in BOTH modes. Dark-mode
+ * status fills stay bright, so their on-X pairs use dark text (#0A1317) —
+ * same dark-on-bright approach as warning badges. --color-text-disabled /
+ * --color-icon-disabled are intentionally ~2:1 and exempt.
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -24,7 +30,9 @@ export const colorDefaults = {
   // Core semantic
   '--color-accent': 'light-dark(#0064E0, #2694FE)',
   '--color-accent-muted': 'light-dark(#0082FB33, #0082FB3F)',
-  '--color-on-accent': 'light-dark(#FFFFFF, #FFFFFF)',
+  // Dark accent is bright, so on-accent flips to dark text there (6.0:1);
+  // white on #2694FE is only 3.1:1.
+  '--color-on-accent': 'light-dark(#FFFFFF, #0A1317)',
   '--color-neutral':
     'light-dark(rgba(5, 54, 89, 0.1), rgba(223, 226, 229, 0.2))',
   '--color-background-surface': 'light-dark(#FFFFFF, #1F1F22)',
@@ -36,7 +44,9 @@ export const colorDefaults = {
 
   // Text
   '--color-text-primary': 'light-dark(#0A1317, #DFE2E5)',
-  '--color-text-secondary': 'light-dark(#4E606F, #AAAFB5)',
+  // Dark side lifted from #AAAFB5 so secondary text holds 4.5:1 on the
+  // neutral wash (Button secondary, Badge neutral, segmented tracks).
+  '--color-text-secondary': 'light-dark(#4E606F, #B5BABF)',
   '--color-text-disabled': 'light-dark(#A4B0BC, #6F747C)',
   '--color-text-accent': 'light-dark(#0064E0, #3E9EFB)',
   '--color-on-dark': 'light-dark(#FFFFFF, #FFFFFF)',
@@ -55,13 +65,20 @@ export const colorDefaults = {
   '--color-background-error-inverted': 'light-dark(#AA071E, #E3193B)',
 
   // Status/Sentiment
-  '--color-success': 'light-dark(#0D8626, #0D8626)',
+  // Status colors double as 12px text on surfaces (counters, stats), so the
+  // dark sides sit at ≥4.8:1 on --color-background-surface. That keeps them
+  // bright, so dark-mode on-success/on-error use dark text (dark-on-bright,
+  // like on-warning has always been).
+  '--color-success': 'light-dark(#0D8626, #26A756)', // Green 600 / icon-green dark stop
   '--color-success-muted': 'light-dark(#0B991F33, #0B991F3F)',
-  '--color-on-success': 'light-dark(#FFFFFF, #FFFFFF)',
-  '--color-error': 'light-dark(#E3193B, #F5394F)',
+  '--color-on-success': 'light-dark(#FFFFFF, #0A1317)',
+  '--color-error': 'light-dark(#E3193B, #F64E61)', // dark lifted from #F5394F for 4.8:1 text
   '--color-error-muted': 'light-dark(#E3193B33, #F5394F3F)',
-  '--color-on-error': 'light-dark(#FFFFFF, #FFFFFF)',
-  '--color-warning': 'light-dark(#E9AF08, #F2C00B)',
+  '--color-on-error': 'light-dark(#FFFFFF, #0A1317)',
+  // Light warning is a 3:1 icon against its muted tint (Banner) while still
+  // carrying on-warning dark text at 4.7:1+ — #A37A06 is the overlap of
+  // those two windows at the palette's warning hue.
+  '--color-warning': 'light-dark(#A37A06, #F2C00B)',
   '--color-warning-muted': 'light-dark(#E2A40033, #E2A4003F)',
   '--color-on-warning': 'light-dark(#0A1317, #0A1317)',
 
@@ -89,7 +106,7 @@ export const colorDefaults = {
   // Cyan
   '--color-background-cyan': 'light-dark(#03A7D733, #03A7D733)',
   '--color-border-cyan': 'light-dark(#089DD0, #0171A4)', // Cyan 500 / 650
-  '--color-icon-cyan': 'light-dark(#00ACC1, #26C6DA)',
+  '--color-icon-cyan': 'light-dark(#0091A3, #26C6DA)', // light darkened for 3:1 icons on body
   '--color-text-cyan': 'light-dark(#014975, #A1EEF9)',
 
   // Gray
@@ -107,7 +124,7 @@ export const colorDefaults = {
   // Orange
   '--color-background-orange': 'light-dark(#F2790233, #F2790233)',
   '--color-border-orange': 'light-dark(#EB6E00, #B34A01)', // Orange 500 / 650
-  '--color-icon-orange': 'light-dark(#E9690B, #FB8C00)',
+  '--color-icon-orange': 'light-dark(#D9620A, #FB8C00)', // light darkened for 3:1 icons on body
   '--color-text-orange': 'light-dark(#6B2203, #FDB876)',
 
   // Pink
@@ -137,7 +154,7 @@ export const colorDefaults = {
   // Yellow
   '--color-background-yellow': 'light-dark(#E2A40033, #E2A40033)',
   '--color-border-yellow': 'light-dark(#C58600, #B47700)', // Yellow 500 / 550
-  '--color-icon-yellow': 'light-dark(#FBC02D, #FFEE58)',
+  '--color-icon-yellow': 'light-dark(#B47700, #FFEE58)', // Yellow 550 light for 3:1 icons on body
   '--color-text-yellow': 'light-dark(#753F07, #FBCE03)',
 
   // Syntax highlighting

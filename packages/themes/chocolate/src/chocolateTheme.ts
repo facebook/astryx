@@ -6,28 +6,43 @@
  * A warm, cozy theme inspired by rich chocolate and caramel tones.
  * Core palette: #8C5927, #B88859, #C4AC95, #EDE4D4, #FFFCF7
  * Uses Fraunces for headings and Albert Sans for body text.
+ *
+ * Contrast (WCAG 2.1 AA, checked by internal/theme-contrast):
+ * - Light-mode secondary text/icons use the deep caramel stop #7d5935;
+ *   #B88859 stays for borders and dark-mode secondary but is too light to
+ *   carry text on the cream surfaces (3.1:1 on #FFFCF7).
+ * - Status solids hold 4.5:1+ both as text on #FFFCF7 and under their white
+ *   badge labels. Warning stays sunny #FFB600 with dark chocolate labels
+ *   (dark-on-bright, like the neutral theme); Banner rebinds its warning
+ *   icon to the deep amber icon stop instead (see components.banner).
+ * - Categorical --color-text-* stops hold 4.5:1+ on their own tinted badge
+ *   backgrounds over both surface and card.
  */
 
 import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {chocolateIconRegistry} from './icons';
 
-/** Chocolate syntax palette — warm browns and amber tones. */
+/**
+ * Chocolate syntax palette — warm browns and amber tones.
+ * Dim stops (comment/operator/punctuation) sit just past 4.5:1 on the
+ * parchment/espresso code backgrounds; everything else is stronger.
+ */
 const chocolateSyntax = defineSyntaxTheme({
   name: 'xds-chocolate',
   tokens: {
     keyword: ['#8C5927', '#d4a06a'],
     string: ['#2e6b4a', '#7bc49e'],
-    comment: ['#B88859', '#B88859'],
+    comment: ['#91673e', '#B88859'],
     number: ['#a06018', '#d4b870'],
     function: ['#3a5e8c', '#7ba8d4'],
     type: ['#6b4a8c', '#b08ed4'],
     variable: ['#4a3520', '#EDE4D4'],
-    operator: ['#B88859', '#c4a882'],
+    operator: ['#91673e', '#c4a882'],
     constant: ['#a06018', '#d4b870'],
     tag: ['#8c3a3a', '#d47a7a'],
     attribute: ['#8C5927', '#d4a06a'],
     property: ['#3a7c6b', '#70c4b0'],
-    punctuation: ['#B88859', '#6b5540'],
+    punctuation: ['#91673e', '#a07f5f'],
     background: ['#FFFCF7', '#1c1610'],
   },
 });
@@ -44,8 +59,7 @@ export const chocolateTheme = defineTheme({
     },
     heading: {
       family: 'Fraunces',
-      fallbacks:
-        'Georgia, "Times New Roman", Times, serif',
+      fallbacks: 'Georgia, "Times New Roman", Times, serif',
       weights: {3: 'bold', 4: 'bold'},
     },
     code: {
@@ -77,20 +91,20 @@ export const chocolateTheme = defineTheme({
 
     // Text
     '--color-text-primary': ['#4a3520', '#EDE4D4'],
-    '--color-text-secondary': ['#B88859', '#c4a882'],
+    '--color-text-secondary': ['#7d5935', '#c4a882'],
     '--color-text-disabled': ['#C4AC95', '#6b5540'],
     '--color-text-accent': ['#8C5927', '#d4a06a'],
     '--color-on-dark': '#FFFCF7',
     '--color-on-light': '#4a3520',
     '--color-on-accent': ['#FFFFFF', '#4a3520'],
     '--color-on-success': ['#FFFFFF', '#4a3520'],
-    '--color-on-error': ['#FFFFFF', '#4a3520'],
+    '--color-on-error': ['#FFFFFF', '#332413'],
     '--color-on-warning': ['#4a3520', '#4a3520'],
 
     // Icon
     '--color-icon-accent': ['#8C5927', '#d4a06a'],
     '--color-icon-primary': ['#4a3520', '#EDE4D4'],
-    '--color-icon-secondary': ['#B88859', '#c4a882'],
+    '--color-icon-secondary': ['#7d5935', '#c4a882'],
     '--color-icon-disabled': ['#C4AC95', '#6b5540'],
 
     // Surface variants
@@ -98,10 +112,11 @@ export const chocolateTheme = defineTheme({
     '--color-background-popover': ['#FFFCF7', '#2a2018'],
     '--color-background-inverted': ['#4a3520', '#EDE4D4'],
 
-    // Status / Sentiment
-    '--color-success': ['#709900', '#96bf2a'],
+    // Status / Sentiment (solids darkened for 4.5:1 text + white labels;
+    // muted washes keep the original brighter tints)
+    '--color-success': ['#597900', '#96bf2a'],
     '--color-success-muted': ['#70990020', '#96bf2a20'],
-    '--color-error': ['#FD0000', '#ff5c5c'],
+    '--color-error': ['#e00000', '#ff5c5c'],
     '--color-error-muted': ['#FD000020', '#ff5c5c20'],
     '--color-warning': ['#FFB600', '#ffc940'],
     '--color-warning-muted': ['#FFB60020', '#ffc94020'],
@@ -125,7 +140,7 @@ export const chocolateTheme = defineTheme({
     '--color-background-cyan': ['#3a7c7c33', '#3a7c7c33'],
     '--color-border-cyan': ['#3a7c7c', '#70c4c4'],
     '--color-icon-cyan': ['#3a7c7c', '#70c4c4'],
-    '--color-text-cyan': ['#2e6060', '#82d4d4'],
+    '--color-text-cyan': ['#2a5858', '#82d4d4'],
 
     // Categorical — Gray
     '--color-background-gray': ['#B8885933', '#6b554033'],
@@ -137,19 +152,19 @@ export const chocolateTheme = defineTheme({
     '--color-background-green': ['#70990033', '#96bf2a33'],
     '--color-border-green': ['#709900', '#96bf2a'],
     '--color-icon-green': ['#709900', '#96bf2a'],
-    '--color-text-green': ['#5a7a00', '#a8d43a'],
+    '--color-text-green': ['#445c00', '#a8d43a'],
 
     // Categorical — Orange
     '--color-background-orange': ['#c4762033', '#d4903a33'],
     '--color-border-orange': ['#c47620', '#d4903a'],
     '--color-icon-orange': ['#c47620', '#d4903a'],
-    '--color-text-orange': ['#a06018', '#e0a04a'],
+    '--color-text-orange': ['#784812', '#e0a04a'],
 
     // Categorical — Pink
     '--color-background-pink': ['#c44a7033', '#e07a9a33'],
     '--color-border-pink': ['#c44a70', '#e07a9a'],
     '--color-icon-pink': ['#c44a70', '#e07a9a'],
-    '--color-text-pink': ['#a03a5a', '#f08aaa'],
+    '--color-text-pink': ['#89324d', '#f08aaa'],
 
     // Categorical — Purple
     '--color-background-purple': ['#6b4a8c33', '#b08ed433'],
@@ -161,7 +176,7 @@ export const chocolateTheme = defineTheme({
     '--color-background-red': ['#FD000033', '#ff5c5c33'],
     '--color-border-red': ['#FD0000', '#ff5c5c'],
     '--color-icon-red': ['#FD0000', '#ff5c5c'],
-    '--color-text-red': ['#cc0000', '#ff7a7a'],
+    '--color-text-red': ['#9c0000', '#ff7a7a'],
 
     // Categorical — Teal
     '--color-background-teal': ['#2e6b5a33', '#5ab89833'],
@@ -169,11 +184,12 @@ export const chocolateTheme = defineTheme({
     '--color-icon-teal': ['#2e6b5a', '#5ab898'],
     '--color-text-teal': ['#245546', '#6ccaaa'],
 
-    // Categorical — Yellow
+    // Categorical — Yellow (light border/icon use the deep amber stop —
+    // #FFB600 is 1.7:1 on the cream surface, invisible as an icon)
     '--color-background-yellow': ['#FFB60033', '#ffc94033'],
-    '--color-border-yellow': ['#FFB600', '#ffc940'],
-    '--color-icon-yellow': ['#FFB600', '#ffc940'],
-    '--color-text-yellow': ['#cc9200', '#ffd960'],
+    '--color-border-yellow': ['#ab7a00', '#ffc940'],
+    '--color-icon-yellow': ['#ab7a00', '#ffc940'],
+    '--color-text-yellow': ['#755400', '#ffd960'],
 
     // =========================================================================
     // Radius — soft and rounded
@@ -188,12 +204,9 @@ export const chocolateTheme = defineTheme({
     // =========================================================================
     // Shadows — warm-toned
     // =========================================================================
-    '--shadow-low':
-      '0 2px 4px #4a35200D, 0 4px 8px #4a35201A',
-    '--shadow-med':
-      '0 2px 4px #4a35200D, 0 4px 12px #4a35201A',
-    '--shadow-high':
-      '0 4px 6px #4a35201A, 0 12px 24px #4a352026',
+    '--shadow-low': '0 2px 4px #4a35200D, 0 4px 8px #4a35201A',
+    '--shadow-med': '0 2px 4px #4a35200D, 0 4px 12px #4a35201A',
+    '--shadow-high': '0 4px 6px #4a35201A, 0 12px 24px #4a352026',
     '--shadow-inset-hover': 'inset 0px 0px 0px 2px #8C592730',
     '--shadow-inset-selected': 'inset 0px 0px 0px 2px #8C592750',
     '--shadow-inset-success': 'inset 0px 0px 0px 2px #70990050',
@@ -202,6 +215,13 @@ export const chocolateTheme = defineTheme({
   },
 
   components: {
+    banner: {
+      // The sunny #FFB600 warning solid stays for Badge (dark chocolate
+      // label on bright amber) but is far too light as a hairline icon on
+      // the warning wash — rebind the Banner icon to the deep amber stop.
+      'status:warning': {'--color-warning': 'var(--color-icon-yellow)'},
+    },
+
     button: {
       base: {
         borderRadius: 'var(--radius-full)',
