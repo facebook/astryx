@@ -8,6 +8,10 @@ export const docs = {
   group: 'Dialog',
   category: 'Overlay',
   keywords: ["dialog","modal","popup","overlay","lightbox","alert","confirm","prompt","backdrop","focus trap","imperative"],
+  // Intentionally a contained isInline preview, not playground.overlay: the
+  // component stays visible on load and knobs stay live, whereas a real
+  // showModal() overlay makes the page inert — see PlaygroundConfig.overlay
+  // in docs-types.ts (#3657).
   playground: {
     defaults: {
       isOpen: true,

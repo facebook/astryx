@@ -400,7 +400,13 @@ export interface PlaygroundConfig {
    *  interactive preview shows an open-trigger placeholder instead of an
    *  empty stage while `isOpen` is false, and lets the real overlay render
    *  when opened. Include `isOpen: false` in `defaults` so the preview can
-   *  bridge `onOpenChange` back into playground state. */
+   *  bridge `onOpenChange` back into playground state.
+   *
+   *  Only for components with no inline containment (MobileNav, Lightbox).
+   *  Components with an `isInline` docs-preview prop (Dialog, AlertDialog,
+   *  CommandPalette) intentionally keep contained inline previews instead:
+   *  the component is visible on load and knobs stay usable, whereas a real
+   *  top-layer modal makes the rest of the page inert (#3657). */
   overlay?: boolean;
   /** Required parent wrapper for sub-components that depend on a parent
    *  context provider (e.g. `Tab` calls `useTabListContext()` and throws
@@ -610,9 +616,7 @@ export interface SubComponentDoc extends Omit<BaseDoc, 'usage'> {
  * in its own file inside its parent's directory.
  */
 export type ComponentDoc =
-  | SingleComponentDoc
-  | MultiComponentDoc
-  | SubComponentDoc;
+  SingleComponentDoc | MultiComponentDoc | SubComponentDoc;
 
 /**
  * Translation overlay for component documentation.
@@ -782,9 +786,7 @@ export interface ReferenceTranslationDoc {
     /** Content block overrides. Only prose and list blocks need entries.
      *  Use null for blocks that don't change (code, table). */
     content: (
-      | {type: 'prose'; text: string}
-      | {type: 'list'; items: string[]}
-      | null
+      {type: 'prose'; text: string} | {type: 'list'; items: string[]} | null
     )[];
   }[];
 }
