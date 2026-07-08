@@ -96,6 +96,18 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        'The HTML name attribute for form submissions. Renders hidden inputs carrying the current value (two entries in range mode).',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the slider is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the thumb focusable via aria-disabled (value changes stay blocked). Use this instead of wrapping a disabled Slider in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'isOptional',
       type: 'boolean',
       description: 'Whether the field is optional.',
@@ -151,6 +163,7 @@ export const docs = {
       {guidance: true, description: 'Format values with meaningful units like "$50" or "75%" instead of raw numbers.'},
       {guidance: false, description: 'Use for precise numeric entry; pair with a text input or use NumberInput instead.'},
       {guidance: false, description: 'Set a step size so large that only a few positions are possible; use SegmentedControl or radio buttons instead.'},
+      {guidance: false, description: 'Wrap a disabled slider in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
     ],
   },
 };
@@ -238,6 +251,17 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description: '用于表单提交的 HTML name 属性。渲染携带当前值的隐藏输入（范围模式下为两个条目）。',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the slider is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the thumb focusable via aria-disabled (value changes stay blocked). Use this instead of wrapping a disabled Slider in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+    },
+    {
       name: 'isOptional',
       type: 'boolean',
       description: '字段是否为可选。',
@@ -293,6 +317,7 @@ export const docsZh = {
       {guidance: true, description: 'Format values with meaningful units like "$50" or "75%" instead of raw numbers.'},
       {guidance: false, description: 'Use for precise numeric entry; pair with a text input or use NumberInput instead.'},
       {guidance: false, description: 'Set a step size so large that only a few positions are possible; use SegmentedControl or radio buttons instead.'},
+      {guidance: false, description: 'Wrap a disabled slider in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
     ],
   },
 };
@@ -307,6 +332,7 @@ export const docsDense = {
       {guidance: true, description: 'Format values with meaningful units like "$50" or "75%" instead of raw numbers.'},
       {guidance: false, description: 'Use for precise numeric entry; pair with a text input or use NumberInput instead.'},
       {guidance: false, description: 'Set a step size so large that only a few positions are possible; use SegmentedControl or radio buttons instead.'},
+      {guidance: false, description: 'Wrap a disabled slider in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.'},
     ],
   },
   propDescriptions: {
@@ -323,6 +349,7 @@ export const docsDense = {
     marks: 'Tick marks at specified positions w/ optional labels.',
     minStepsBetweenThumbs: 'Min steps between thumbs in range mode; prevents overlap.',
     isDisabled: 'Whether slider is disabled.',
+    htmlName: 'HTML name attr; hidden inputs carry the value (two in range mode).',
     isOptional: 'Whether field is optional.',
     isRequired: 'Whether field is required.',
     isLabelHidden: 'Visually hide label.',

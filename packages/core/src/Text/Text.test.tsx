@@ -114,6 +114,17 @@ describe('Text', () => {
       expect(screen.getByText('Bold text')).toBeInTheDocument();
     });
 
+    it('reflects explicit size overrides for styling and theming', () => {
+      render(
+        <Text type="code" size="2xs">
+          Tiny code
+        </Text>,
+      );
+      const element = screen.getByText('Tiny code');
+      expect(element).toHaveAttribute('data-size', '2xs');
+      expect(element.className).toContain('size-2xs');
+    });
+
     it('accepts display prop', () => {
       render(
         <Text type="body" display="block">

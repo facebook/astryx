@@ -215,6 +215,12 @@ export interface TopNavHeadingProps extends BaseProps<HTMLElement> {
    */
   logo?: ReactNode;
   /**
+   * Accessible name for the logo when it links somewhere (`headingHref`) and
+   * has no adjacent text to name it (for example a logo-only heading). Defaults
+   * to `heading` when available. Ignored when the logo is not a link.
+   */
+  logoLabel?: string;
+  /**
    * Product/app name.
    */
   heading?: string;
@@ -295,6 +301,7 @@ export interface TopNavHeadingProps extends BaseProps<HTMLElement> {
 export function TopNavHeading({
   as,
   logo,
+  logoLabel,
   heading,
   headingHref: headingHrefProp,
   href,
@@ -314,6 +321,10 @@ export function TopNavHeading({
   const LinkComponent = useLinkComponent(as);
   // Support both headingHref and legacy href
   const headingHref = headingHrefProp ?? href;
+  // When the logo is wrapped in a link it needs its own accessible name (the
+  // logo image itself is decorative). Prefer an explicit logoLabel, fall back
+  // to the heading text. axe: link-name.
+  const logoLinkLabel = logoLabel ?? heading;
 
   const rootRef = useRef<HTMLElement>(null);
 
@@ -425,6 +436,7 @@ export function TopNavHeading({
       <Element
         ref={ref as React.Ref<HTMLAnchorElement & HTMLDivElement>}
         href={headingHref}
+        aria-label={headingHref ? logoLabel : undefined}
         data-testid={testId}
         {...mergeProps(
           themeProps('top-nav-heading'),
@@ -533,6 +545,7 @@ export function TopNavHeading({
             (headingHref ? (
               <LinkComponent
                 href={headingHref}
+                aria-label={logoLinkLabel}
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 {...stylex.props(styles.logo)}>
                 {logo}
@@ -593,7 +606,10 @@ export function TopNavHeading({
         {...props}>
         {logo &&
           (headingHref ? (
-            <LinkComponent href={headingHref} {...stylex.props(styles.logo)}>
+            <LinkComponent
+              href={headingHref}
+              aria-label={logoLinkLabel}
+              {...stylex.props(styles.logo)}>
               {logo}
             </LinkComponent>
           ) : (

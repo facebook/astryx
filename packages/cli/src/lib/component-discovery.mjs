@@ -335,10 +335,13 @@ export function resolveImportPath(coreDir, componentName) {
     ? JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
     : null;
 
+  const exportKeys = Object.keys(pkg?.exports || {});
+
   // Priority 1: exact subpath export matching the component name (e.g. ./Heading)
   // This allows convenience re-export directories to win over the source directory.
-  if (pkg?.exports?.[`./${componentName}`]) {
-    return `@astryxdesign/core/${componentName}`;
+  const exactMatch = exportKeys.find(k => k.toLowerCase() === `./${componentName}`.toLowerCase());
+  if (exactMatch) {
+    return `@astryxdesign/core/${exactMatch.slice(2)}`;
   }
 
   const sourcePath = findComponentSource(coreDir, componentName);
@@ -348,8 +351,9 @@ export function resolveImportPath(coreDir, componentName) {
   const relToSrc = path.relative(srcDir, sourcePath);
   const topDir = relToSrc.split(path.sep)[0];
 
-  if (pkg?.exports?.[`./${topDir}`]) {
-    return `@astryxdesign/core/${topDir}`;
+  const topMatch = exportKeys.find(k => k.toLowerCase() === `./${topDir}`.toLowerCase());
+  if (topMatch) {
+    return `@astryxdesign/core/${topMatch.slice(2)}`;
   }
 
   return '@astryxdesign/core';

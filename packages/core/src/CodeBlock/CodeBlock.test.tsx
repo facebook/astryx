@@ -3,7 +3,7 @@
 /**
  * @file CodeBlock.test.tsx
  * @input Uses vitest, @testing-library/react, CodeBlock component
- * @output Unit tests for CodeBlock (copy button, collapse, scroll region a11y)
+ * @output Unit tests for CodeBlock (copy button, collapse, scroll region a11y, syntaxTheme)
  * @position Testing; validates CodeBlock implementation
  *
  * SYNC: When CodeBlock.tsx changes, update tests to match new behavior
@@ -12,6 +12,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {CodeBlock} from './CodeBlock';
+import {dracula} from '../theme/syntax';
 
 // A code sample long enough to exceed the default collapsible threshold (10).
 const LONG_CODE = Array.from(
@@ -34,14 +35,14 @@ describe('CodeBlock', () => {
 
   it('makes the scroll container keyboard-focusable', () => {
     render(<CodeBlock code="const x = 1;" language="javascript" />);
-    const region = screen.getByRole('region');
+    const region = screen.getByRole('group');
     expect(region).toHaveAttribute('tabindex', '0');
     expect(region).toHaveAttribute('aria-label', 'javascript');
   });
 
   it('labels the scroll region "Code" when no language label is shown', () => {
     render(<CodeBlock code="hello" hasLanguageLabel={false} />);
-    const region = screen.getByRole('region');
+    const region = screen.getByRole('group');
     expect(region).toHaveAttribute('tabindex', '0');
     expect(region).toHaveAttribute('aria-label', 'Code');
   });
@@ -111,5 +112,27 @@ describe('CodeBlock', () => {
     expect(header).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(header);
     expect(header).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('applies a per-instance syntax theme via the syntaxTheme prop', () => {
+    const {container} = render(
+      <CodeBlock
+        code="const x = 1;"
+        language="javascript"
+        syntaxTheme={dracula}
+      />,
+    );
+    const wrapper = container.querySelector('[data-astryx-syntax-theme]');
+    expect(wrapper).not.toBeNull();
+    expect(wrapper).toHaveAttribute('data-astryx-syntax-theme', 'dracula');
+    expect(wrapper!.querySelector('pre')).not.toBeNull();
+  });
+
+  it('renders no syntax theme wrapper when syntaxTheme is not set', () => {
+    const {container} = render(
+      <CodeBlock code="const x = 1;" language="javascript" />,
+    );
+    expect(container.querySelector('[data-astryx-syntax-theme]')).toBeNull();
+    expect(container.firstElementChild?.tagName).toBe('PRE');
   });
 });

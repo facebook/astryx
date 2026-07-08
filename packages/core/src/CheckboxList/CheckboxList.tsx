@@ -30,6 +30,7 @@ import {Field} from '../Field/Field';
 import type {InputStatus} from '../Field/types';
 import {List} from '../List/List';
 import type {ListDensity} from '../List/ListContext';
+import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {
@@ -94,6 +95,18 @@ export interface CheckboxListProps extends Omit<
    */
   isDisabled?: boolean;
   /**
+   * Explains why the checkbox group is disabled. Applies to the whole-group
+   * disabled state (`isDisabled`), not individual items. When set together with
+   * `isDisabled`, the group shows a tooltip with this text on hover and keyboard
+   * focus, and its checkboxes stay focusable (via `aria-disabled`) so the reason
+   * is discoverable by keyboard and assistive technology. Toggling stays
+   * blocked.
+   *
+   * Use this instead of wrapping a disabled group in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   */
+  disabledMessage?: string;
+  /**
    * Whether all checkbox items are read-only.
    * Displays the current state at full opacity but prevents interaction.
    * Unlike `isDisabled`, read-only checkboxes are not visually dimmed.
@@ -141,6 +154,7 @@ export function CheckboxList({
   density = 'balanced',
   hasDividers = false,
   isDisabled = false,
+  disabledMessage,
   isReadOnly = false,
   children,
   ref,
@@ -162,6 +176,19 @@ export function CheckboxList({
   // Tracks which item has a pending `changeAction`. Auto-reverts to null when
   // the transition settles, so the spinner clears without manual cleanup.
   const [loadingValue, setLoadingValue] = useOptimistic<string | null>(null);
+
+  // Disabled-reason tooltip. Applies to the whole-group disabled state. Disabled
+  // controls swallow pointer events, so the tooltip listeners attach to the
+  // group container and the checkboxes stay perceivable via aria-disabled
+  // instead of the disabled attribute. Toggling is blocked in the item.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The group container is not naturally focusable; focusin bubbles up from
+    // the checkboxes, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
 
   const handleChange = useCallback(
     (newValues: string[], toggledValue?: string) => {
@@ -190,6 +217,7 @@ export function CheckboxList({
       value: isCollectionMode ? optimisticValue : undefined,
       onChange: isCollectionMode ? handleChange : undefined,
       isDisabled,
+      hasDisabledMessage: showsDisabledMessage,
       isReadOnly,
       loadingValue,
     }),
@@ -198,6 +226,7 @@ export function CheckboxList({
       optimisticValue,
       handleChange,
       isDisabled,
+      showsDisabledMessage,
       isReadOnly,
       loadingValue,
     ],
@@ -230,12 +259,19 @@ export function CheckboxList({
       {...mergeProps(themeProps('checkbox-list'), {className, style})}>
       <CheckboxListContext value={contextValue}>
         <div
+          ref={el => {
+            // Anchor + hover/focus listeners for the disabled-message tooltip.
+            // Handlers are gated internally by isEnabled, so attaching
+            // unconditionally is safe.
+            disabledMessageTooltip.ref(el);
+          }}
           role="group"
           aria-labelledby={labelID}
           aria-describedby={
             [
               description ? descriptionID : null,
               status?.message ? statusMessageID : null,
+              showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
             ]
               .filter(Boolean)
               .join(' ') || undefined
@@ -245,6 +281,8 @@ export function CheckboxList({
           </List>
         </div>
       </CheckboxListContext>
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }

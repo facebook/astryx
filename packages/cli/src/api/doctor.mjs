@@ -115,10 +115,21 @@ function findThemePackages(cwd) {
     return found;
   }
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
     if (!entry.name.startsWith('theme-')) continue;
+    const dir = path.join(scopeDir, entry.name);
+    // pnpm installs packages as symlinks into node_modules/.pnpm, and a
+    // symlink dirent reports isDirectory() as false — stat the target instead.
+    let isDir = entry.isDirectory();
+    if (!isDir && entry.isSymbolicLink()) {
+      try {
+        isDir = fs.statSync(dir).isDirectory();
+      } catch {
+        isDir = false;
+      }
+    }
+    if (!isDir) continue;
     const name = `@astryxdesign/${entry.name}`;
-    found.push({name, version: pkgVersion(path.join(scopeDir, entry.name))});
+    found.push({name, version: pkgVersion(dir)});
   }
   return found;
 }

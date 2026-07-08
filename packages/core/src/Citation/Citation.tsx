@@ -158,6 +158,10 @@ export function Citation({
   const href = source.url;
   const icon = source.icon;
   const Tag = href ? 'a' : 'span';
+  // `doc-noteref` is a reference role — only appropriate on the interactive
+  // link form. On a plain (unlinked) span it is not a permitted role
+  // (axe: aria-allowed-role), so omit it there; the aria-label still names it.
+  const noteRole = href ? ('doc-noteref' as const) : undefined;
   const linkProps = href
     ? {
         href,
@@ -176,7 +180,7 @@ export function Citation({
       <Tag
         {...rest}
         ref={elementRef}
-        role="doc-noteref"
+        role={noteRole}
         aria-label={`Citation ${number}: ${title}`}
         data-testid={testId}
         {...linkProps}
@@ -199,7 +203,7 @@ export function Citation({
     <Tag
       {...rest}
       ref={elementRef}
-      role="doc-noteref"
+      role={noteRole}
       aria-label={`Citation ${number}: ${title}`}
       data-testid={testId}
       {...linkProps}

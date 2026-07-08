@@ -676,7 +676,9 @@ function ResizeHandle({
     <div
       role="separator"
       aria-orientation="vertical"
-      aria-valuenow={currentWidth ?? undefined}
+      // A focusable role="separator" requires a numeric aria-valuenow, so fall
+      // back to the column's minWidth before the width has been measured.
+      aria-valuenow={currentWidth ?? minWidth}
       aria-valuemin={minWidth}
       aria-valuemax={maxWidth === Infinity ? undefined : maxWidth}
       aria-label={ariaLabel}

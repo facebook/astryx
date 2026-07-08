@@ -24,12 +24,7 @@ import {
   type ReactNode,
 } from 'react';
 import {Dialog} from '../Dialog';
-import {
-  Layout,
-  LayoutHeader,
-  LayoutContent,
-  LayoutFooter,
-} from '../Layout';
+import {Layout, LayoutHeader, LayoutContent, LayoutFooter} from '../Layout';
 import type {SearchSource, SearchableItem} from '../Typeahead';
 import {useCombobox} from '../Selector';
 import type {SelectorOptionData} from '../Selector';
@@ -133,9 +128,7 @@ function getGroup(item: SearchableItem): string | undefined {
  * When groups are present, items are ordered by group (preserving insertion order),
  * with ungrouped items at the end — matching the DefaultRenderer layout.
  */
-function buildSelectableItems(
-  items: SearchableItem[],
-): SelectorOptionData[] {
+function buildSelectableItems(items: SearchableItem[]): SelectorOptionData[] {
   const hasGroups = items.some(item => getGroup(item) != null);
 
   if (!hasGroups) {
@@ -258,9 +251,7 @@ function ItemRenderer<T extends SearchableItem>({
  * />
  * ```
  */
-export function CommandPalette<
-  T extends SearchableItem = SearchableItem,
->({
+export function CommandPalette<T extends SearchableItem = SearchableItem>({
   ref,
   isOpen,
   isInline,
@@ -488,13 +479,12 @@ export function CommandPalette<
     ],
   );
 
-  // Empty state uses committed search (= what current results correspond to),
-  // not optimisticSearch (= what the user typed).
-  // While the transition is pending, search stays at '' so showEmptyBootstrap
-  // remains true even after the user has started typing.
+  // `search` is the committed query the on-screen results correspond to (it
+  // still holds the previous query while a transition is pending). Keeping both
+  // flags ungated by `isPending` makes them exhaustive over the empty case, so
+  // the empty state is never unmounted and re-added mid-search (which flashed).
   const showEmptyBootstrap = search === '' && optimisticResults.length === 0;
-  const showEmptySearch =
-    !isPending && search !== '' && optimisticResults.length === 0;
+  const showEmptySearch = search !== '' && optimisticResults.length === 0;
 
   let listContent: ReactNode;
   if (showEmptyBootstrap) {
@@ -502,9 +492,7 @@ export function CommandPalette<
       <CommandPaletteEmpty>{emptyBootstrapText}</CommandPaletteEmpty>
     );
   } else if (showEmptySearch) {
-    listContent = (
-      <CommandPaletteEmpty>{emptySearchText}</CommandPaletteEmpty>
-    );
+    listContent = <CommandPaletteEmpty>{emptySearchText}</CommandPaletteEmpty>;
   } else {
     listContent = (
       <ItemRenderer

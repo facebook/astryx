@@ -15,6 +15,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {pathToFileURL, fileURLToPath} from 'node:url';
+import {spawn} from 'node:child_process';
 import {createJiti} from 'jiti';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {
@@ -175,13 +176,84 @@ async function getKnownValues(componentName) {
 }
 
 /**
+ * Resolve `@astryxdesign/core`'s package root relative to the CLI package. Core
+ * and the CLI ship as siblings (`@astryxdesign/core`, `@astryxdesign/cli`), so
+ * `../../../core` from `src/commands/` reaches core whether installed from npm
+ * or run inside the monorepo. Returns null if it can't be found.
+ */
+function resolveCoreRoot() {
+  const cliDir = path.dirname(fileURLToPath(import.meta.url));
+  const coreRoot = path.resolve(cliDir, '../../../core');
+  return fs.existsSync(coreRoot) ? coreRoot : null;
+}
+
+/**
+ * Read the type declarations `@astryxdesign/core/<Component>` exposes so we can
+ * check whether a given augmentation-target interface actually exists before
+ * generating a module augmentation against it.
+ *
+ * Reads the shipped `dist/<Component>/index.d.ts` (what a consumer's TypeScript
+ * actually sees), falling back to the `src/<Component>/index.ts` in the
+ * monorepo. Returns the file contents, or '' if nothing is found.
+ */
+const _componentDeclCache = new Map();
+function readComponentDeclarations(pascalName) {
+  if (_componentDeclCache.has(pascalName)) {
+    return _componentDeclCache.get(pascalName);
+  }
+  let contents = '';
+  const coreRoot = resolveCoreRoot();
+  if (coreRoot) {
+    const candidates = [
+      path.join(coreRoot, 'dist', pascalName, 'index.d.ts'),
+      path.join(coreRoot, 'src', pascalName, 'index.ts'),
+    ];
+    for (const file of candidates) {
+      try {
+        if (fs.existsSync(file)) {
+          contents = fs.readFileSync(file, 'utf-8');
+          break;
+        }
+      } catch {
+        // ignore and try the next candidate
+      }
+    }
+  }
+  _componentDeclCache.set(pascalName, contents);
+  return contents;
+}
+
+/**
+ * Determine whether `@astryxdesign/core/<Component>` exports an interface named
+ * `interfaceName` that can be augmented via module augmentation.
+ *
+ * Only interfaces are extension points — closed literal-union types (e.g.
+ * `HeadingType`, `ButtonSize`) are NOT augmentable, so a generated augmentation
+ * against them is dead code. We check that the name is exported (directly or
+ * re-exported) as a type/interface.
+ */
+function componentHasAugmentableInterface(pascalName, interfaceName) {
+  const decl = readComponentDeclarations(pascalName);
+  if (!decl) return false;
+  // Word-boundary match so `ButtonVariantMap` doesn't match `XButtonVariantMap`.
+  const re = new RegExp(`\\b${interfaceName}\\b`);
+  return re.test(decl);
+}
+
+/**
  * Generate TypeScript declaration content with module augmentation for custom
  * component prop values found in the theme's `components` keys. Reads known
  * values from doc files to filter out base prop values.
  *
- * Interface naming convention: Astryx + PascalCase(component) + PascalCase(prop) + Map
- *   banner + status → XDSBannerStatusMap
- *   button + variant → XDSButtonVariantMap
+ * Interface naming convention: PascalCase(component) + PascalCase(prop) + Map
+ *   banner + status → BannerStatusMap
+ *   button + variant → ButtonVariantMap
+ *
+ * An augmentation is only emitted when `@astryxdesign/core/<Component>` actually
+ * exports a matching interface. Props backed by closed literal-union types
+ * (e.g. Button `size`, Heading `type`/`level`) have no augmentation point, so
+ * generating a `declare module` block for them would be dead code — those are
+ * skipped.
  *
  * @param {object} themeDef - Theme definition (resolved by defineTheme)
  * @returns {Promise<string|null>} TypeScript declaration content, or null if no augmentations needed
@@ -233,7 +305,14 @@ async function generateVariantDeclarationsAsync(themeDef) {
       const pascal = toPascalCase(component);
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
       const modulePath = `@astryxdesign/core/${pascal}`;
-      const interfaceName = `XDS${pascal}${propPascal}Map`;
+      const interfaceName = `${pascal}${propPascal}Map`;
+
+      // Only augment interfaces that actually exist as an extension point in
+      // core. Props backed by closed literal-union types (e.g. Button `size`,
+      // Heading `type`/`level`) have no `*Map` interface — a `declare module`
+      // block against a non-existent interface just creates a new, unused
+      // interface and never extends the component's prop union, so skip it.
+      if (!componentHasAugmentableInterface(pascal, interfaceName)) continue;
 
       sections.push(`declare module '${modulePath}' {`);
       sections.push(`  interface ${interfaceName} {`);
@@ -245,6 +324,13 @@ async function generateVariantDeclarationsAsync(themeDef) {
       sections.push('');
     }
   }
+
+  // If every custom value targeted a non-augmentable prop, there's nothing to
+  // emit beyond the header — return null so no `.variants.d.ts` is written.
+  const hasEmittedAugmentation = sections.some(line =>
+    line.startsWith('declare module'),
+  );
+  if (!hasEmittedAugmentation) return null;
 
   return sections.join('\n');
 }
@@ -432,13 +518,21 @@ ${iconReExport}`;
 /**
  * Generate TypeScript declarations for a built theme module.
  */
-function generateBuiltTypes(themeDef, iconInfo) {
+function generateBuiltTypes(themeDef, iconInfo, variantsFileName) {
   const iconType = iconInfo
     ? `import type { IconRegistry } from '@astryxdesign/core/Icon';
 export declare const ${iconInfo.exportName}: IconRegistry;
 `
     : '';
-  return `import type { DefinedTheme } from '@astryxdesign/core/theme';
+  // Pull in the generated custom-variant augmentations so that importing the
+  // theme's types also loads the module augmentations (otherwise the
+  // `.variants.d.ts` is emitted but never referenced, and the custom variants
+  // never widen the component prop unions for consumers).
+  const variantsRef = variantsFileName
+    ? `/// <reference path="./${variantsFileName}" />
+`
+    : '';
+  return `${variantsRef}import type { DefinedTheme } from '@astryxdesign/core/theme';
 ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedTheme;
 `;
 }
@@ -597,6 +691,104 @@ function validatePrivateVars(themeDef) {
   return errors;
 }
 
+/**
+ * Path to this CLI's real entry (bin/astryx.mjs), resolved from this module's
+ * location (src/commands/build-theme.mjs → ../../bin/astryx.mjs). Used to
+ * re-invoke `theme build` as a child process in watch mode.
+ */
+function resolveCliBin() {
+  const commandsDir = path.dirname(fileURLToPath(import.meta.url));
+  return path.resolve(commandsDir, '../../bin/astryx.mjs');
+}
+
+/**
+ * Run a single `theme build` as a child process, reusing the exact
+ * single-build code path (and its error handling) rather than duplicating it.
+ * Resolves with the child's exit code; never rejects.
+ *
+ * @param {string} file - The theme file argument, as the user passed it.
+ * @param {object} options - Parsed command options (only `out` is forwarded).
+ * @returns {Promise<number>}
+ */
+function runThemeBuildOnceChild(file, options) {
+  const cliBin = resolveCliBin();
+  const args = [cliBin, 'theme', 'build', file];
+  if (options.out) args.push('--out', options.out);
+  return new Promise(resolve => {
+    const child = spawn(process.execPath, args, {
+      stdio: 'inherit',
+      env: process.env,
+    });
+    child.on('close', code => resolve(code ?? 0));
+    child.on('error', () => resolve(1));
+  });
+}
+
+/**
+ * Watch a theme file and rebuild on change. Runs an initial build, then
+ * rebuilds (debounced) whenever the file changes, until interrupted with
+ * Ctrl-C. Each rebuild runs in a child process so a build error (which the
+ * single-build path reports via a hard exit) is contained and the watcher
+ * keeps running.
+ *
+ * @param {string} file - The theme file argument, as the user passed it.
+ * @param {string} filePath - Absolute path to the theme file.
+ * @param {object} options - Parsed command options.
+ * @returns {Promise<void>} Resolves when the watcher is stopped (Ctrl-C).
+ */
+async function runThemeBuildWatch(file, filePath, options) {
+  const rel = path.relative(process.cwd(), filePath);
+
+  // Initial build.
+  await runThemeBuildOnceChild(file, options);
+
+  humanLog(`\n👀 Watching ${rel} for changes — press Ctrl-C to stop.`);
+
+  let building = false;
+  let queued = false;
+  let debounce = null;
+
+  const rebuild = async () => {
+    if (building) {
+      // Coalesce changes that land mid-build into a single follow-up run.
+      queued = true;
+      return;
+    }
+    building = true;
+    humanLog(`\n♻️  Change detected — rebuilding ${rel}...`);
+    await runThemeBuildOnceChild(file, options);
+    building = false;
+    humanLog(`\n👀 Watching ${rel} for changes — press Ctrl-C to stop.`);
+    if (queued) {
+      queued = false;
+      rebuild();
+    }
+  };
+
+  // Some editors replace the file (rename) rather than writing in place, which
+  // can drop the watch. Watch the containing directory and filter to our file
+  // so edits survive atomic-save/rename.
+  const watchDir = path.dirname(filePath);
+  const baseName = path.basename(filePath);
+  const watcher = fs.watch(watchDir, (_eventType, changed) => {
+    if (changed && changed !== baseName) return;
+    clearTimeout(debounce);
+    // Debounce: editors often emit several events per save.
+    debounce = setTimeout(rebuild, 100);
+  });
+
+  await new Promise(resolve => {
+    const stop = () => {
+      clearTimeout(debounce);
+      watcher.close();
+      humanLog('\nStopped watching.');
+      resolve();
+    };
+    process.once('SIGINT', stop);
+    process.once('SIGTERM', stop);
+  });
+}
+
 export function registerTheme(program) {
   const theme = program
     .command('theme')
@@ -621,12 +813,30 @@ export function registerTheme(program) {
     .command('build <file>')
     .description('Compile a defineTheme file to CSS + JS')
     .option('-o, --out <path>', 'Output CSS file path')
+    .option(
+      '-w, --watch',
+      'Rebuild automatically when the theme file changes (Ctrl-C to stop)',
+    )
     .action(async (file, options) => {
       const filePath = path.resolve(process.cwd(), file);
       const json = program.opts().json || false;
 
       if (!fs.existsSync(filePath)) {
         cliError(`File not found: ${filePath}`, {code: ERROR_CODES.ERR_FILE_NOT_FOUND});
+        return;
+      }
+
+      // Watch mode: run an initial build, then rebuild on every change to the
+      // theme file. Watch is a human-interactive, long-running mode — it is not
+      // supported in --json (machine) mode, which expects a single envelope.
+      if (options.watch) {
+        if (json) {
+          cliError('--watch is not supported with --json', {
+            code: ERROR_CODES.ERR_THEME_INVALID,
+          });
+          return;
+        }
+        await runThemeBuildWatch(file, filePath, options);
         return;
       }
 
@@ -777,18 +987,22 @@ export function registerTheme(program) {
 
       const iconInfo = extractIconInfo(filePath);
 
-      // Generate all file contents in memory first.
-      const cssContent = generatedHeader(sourceRelative, 'css', buildCommand) + css;
-      const jsContent = generatedHeader(sourceRelative, 'js', buildCommand) + generateBuiltModule(resolvedTheme || themeDef, iconInfo);
-      const dtsContent = generatedHeader(sourceRelative, 'ts', buildCommand) + generateBuiltTypes(themeDef, iconInfo);
-
-      // Type augmentation .d.ts if theme has custom prop values
+      // Type augmentation .d.ts if theme has custom prop values. Computed
+      // before the main .d.ts so the latter can reference it (see below).
       const augmentationSource = resolvedTheme || themeDef;
       const variantDecl = await generateVariantDeclarationsAsync(augmentationSource);
-      const variantDtsPath = variantDecl ? path.join(outDir, `${baseName}.variants.d.ts`) : null;
+      const variantsFileName = variantDecl ? `${baseName}.variants.d.ts` : null;
+      const variantDtsPath = variantDecl ? path.join(outDir, variantsFileName) : null;
       const variantContent = variantDecl
         ? generatedHeader(sourceRelative, 'ts', buildCommand) + variantDecl
         : null;
+
+      // Generate all file contents in memory first. The main .d.ts references
+      // the variants file (when present) via a triple-slash directive so
+      // importing the theme also loads the custom-variant augmentations.
+      const cssContent = generatedHeader(sourceRelative, 'css', buildCommand) + css;
+      const jsContent = generatedHeader(sourceRelative, 'js', buildCommand) + generateBuiltModule(resolvedTheme || themeDef, iconInfo);
+      const dtsContent = generatedHeader(sourceRelative, 'ts', buildCommand) + generateBuiltTypes(themeDef, iconInfo, variantsFileName);
 
       // Atomic-ish write: stage every file as `<dest>.tmp`, then rename
       // each into place. If any stage step fails we clean up partials and

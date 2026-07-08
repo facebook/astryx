@@ -1042,4 +1042,37 @@ describe('MultiSelector', () => {
       expect(trigger).toHaveAttribute('tabIndex', '-1');
     });
   });
+  describe('form participation', () => {
+    it('submits one entry per selected value under htmlName', () => {
+      const {container} = render(
+        <form>
+          <MultiSelector
+            label="Fruit"
+            htmlName="fruit"
+            options={['Apple', 'Banana', 'Orange']}
+            value={['Apple', 'Orange']}
+            onChange={() => {}}
+          />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.getAll('fruit')).toEqual(['Apple', 'Orange']);
+    });
+
+    it('is excluded from form data when disabled', () => {
+      const {container} = render(
+        <form>
+          <MultiSelector
+            label="Fruit"
+            htmlName="fruit"
+            options={['Apple']}
+            value={['Apple']}
+            onChange={() => {}}
+            isDisabled
+          />
+        </form>,
+      );
+      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+    });
+  });
 });

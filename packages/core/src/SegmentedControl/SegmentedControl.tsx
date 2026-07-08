@@ -21,6 +21,7 @@ import {colorVars, spacingVars, radiusVars} from '../theme/tokens.stylex';
 import {SegmentedControlContext} from './SegmentedControlContext';
 import {useListFocus} from '../hooks/useListFocus';
 import {useKeyboardHint} from '../hooks/useKeyboardHint';
+import {useTooltip} from '../Tooltip';
 import type {
   SegmentedControlSize,
   SegmentedControlLayout,
@@ -65,6 +66,17 @@ export interface SegmentedControlProps extends Omit<
    */
   isDisabled?: boolean;
   /**
+   * Explains why the control is disabled. Applies to the whole-group disabled
+   * state (`isDisabled`), not individual segments. When set together with
+   * `isDisabled`, the control shows a tooltip with this text on hover and
+   * keyboard focus, and stays focusable (via `aria-disabled`) so the reason is
+   * discoverable by keyboard and assistive technology. Selection stays blocked.
+   *
+   * Use this instead of wrapping a disabled control in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   */
+  disabledMessage?: string;
+  /**
    * SegmentedControlItem children.
    */
   children: ReactNode;
@@ -90,6 +102,12 @@ const styles = stylex.create({
   disabled: {
     opacity: 0.5,
     pointerEvents: 'none',
+  },
+  // Disabled *with* a disabledMessage: keep the dimmed look but leave pointer
+  // events on so the group can receive hover and surface the reason tooltip.
+  // Selection is still blocked by the isDisabled guards.
+  disabledWithMessage: {
+    opacity: 0.5,
   },
 });
 
@@ -129,12 +147,27 @@ export function SegmentedControl({
   size: sizeProp,
   layout = 'hug',
   isDisabled = false,
+  disabledMessage,
   children,
   xstyle,
   className,
   style,
 }: SegmentedControlProps) {
   const size = useSize(sizeProp, 'md');
+
+  // Disabled-reason tooltip. Applies to the whole-group disabled state. Disabled
+  // controls swallow pointer events, so the tooltip listeners attach to the
+  // radiogroup container (and the container keeps pointer events on in this
+  // mode) while the radios stay perceivable via aria-disabled. Selection is
+  // blocked by the isDisabled guards in the click/focus handlers.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The radiogroup container is not naturally focusable; focusin bubbles up
+    // from the radios, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
 
   // Roving tabindex + arrow/Home/End navigation is owned by the shared
   // useListFocus primitive: it stamps a single tab stop (tabIndex 0/-1) across
@@ -190,17 +223,27 @@ export function SegmentedControl({
   );
 
   const contextValue = useMemo(
-    () => ({value, onChange, size, layout, isDisabled}),
-    [value, onChange, size, layout, isDisabled],
+    () => ({
+      value,
+      onChange,
+      size,
+      layout,
+      isDisabled,
+      hasDisabledMessage: showsDisabledMessage,
+    }),
+    [value, onChange, size, layout, isDisabled, showsDisabledMessage],
   );
 
   return (
     <SegmentedControlContext value={contextValue}>
       <div
-        ref={mergeRefs(ref, listRef)}
+        ref={mergeRefs(ref, listRef, disabledMessageTooltip.ref)}
         role="radiogroup"
         aria-label={label}
         aria-disabled={isDisabled || undefined}
+        aria-describedby={
+          showsDisabledMessage ? disabledMessageTooltip.describedBy : undefined
+        }
         onKeyDown={handleContainerKeyDown}
         onFocus={handleContainerFocus}
         onBlur={hint.onBlur}
@@ -210,7 +253,10 @@ export function SegmentedControl({
             styles.container,
             sizeStyles[size],
             layout === 'fill' && styles.fill,
-            isDisabled && styles.disabled,
+            isDisabled &&
+              (showsDisabledMessage
+                ? styles.disabledWithMessage
+                : styles.disabled),
             xstyle,
           ),
           className,
@@ -219,6 +265,8 @@ export function SegmentedControl({
         {children}
         {hint.hintElement}
       </div>
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </SegmentedControlContext>
   );
 }

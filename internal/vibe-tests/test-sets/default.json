@@ -966,6 +966,47 @@
         "Add autoplay for videos when they become the active item in the gallery",
         "Add a filmstrip thumbnail bar at the bottom of the lightbox for quick navigation"
       ]
+    },
+    {
+      "id": "dd-8",
+      "category": "data-display",
+      "prompt": "Show a content library table where each row has a small colored pill for its type — Article, Video, Podcast, Newsletter, and Course each need their own distinct color so they're easy to tell apart at a glance. The colors should stay consistent everywhere a type appears.",
+      "expectedComponents": [
+        "XDSBadge",
+        "XDSTable"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add two more types — Webinar and Case Study — with their own colors that don't clash with the existing five",
+        "Make the pills smaller so they fit comfortably in a dense table row"
+      ]
+    },
+    {
+      "id": "tc-10",
+      "category": "theme-customization",
+      "prompt": "My docs page is light-themed, but I want the install command snippet to look like a real terminal — dark background with light syntax colors — and have a copy button. Only that snippet should be dark; the rest of the page stays light.",
+      "expectedComponents": [
+        "XDSCodeBlock",
+        "XDSSyntaxTheme"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add a second snippet below it showing the command's output, using the same dark terminal look",
+        "Swap the dark look for a different dark preset to match our brand — something like Dracula"
+      ]
+    },
+    {
+      "id": "fwc-15",
+      "category": "feature-with-constraint",
+      "prompt": "Build a compact filter bar above a results table with a multi-select dropdown for filtering by tag. There's no room for a visible label above the control — the placeholder text 'Filter by tags' does the work visually — but screen reader users still need to know what the field is.",
+      "expectedComponents": [
+        "XDSMultiSelector"
+      ],
+      "complexity": "simple",
+      "followUps": [
+        "Add a second unlabeled multi-select for filtering by owner, using the same accessible pattern",
+        "Show a count of active filters next to the bar and add a 'Clear all' button"
+      ]
     }
   ],
   "holdout": [

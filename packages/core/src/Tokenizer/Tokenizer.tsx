@@ -42,6 +42,7 @@ import {Token} from '../Token';
 import {renderIconSlot, type IconType} from '../Icon';
 import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
+import {useTooltip} from '../Tooltip';
 import {
   colorVars,
   spacingVars,
@@ -127,6 +128,12 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   searchSource: SearchSource<T>;
   /** Currently selected items. */
   value: T[];
+
+  /**
+   * The HTML name attribute for form submissions. When set, hidden inputs
+   * carry one entry per selected item's id under this name.
+   */
+  htmlName?: string;
   /** Callback when selection changes. Includes change metadata. */
   onChange: (items: T[], change: TokenizerChange<T>) => void;
   /** Render function for dropdown items. Default: TypeaheadItem. */
@@ -145,6 +152,17 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   emptySearchResultsText?: string;
   /** Whether the input is disabled. @default false */
   isDisabled?: boolean;
+  /**
+   * Explains why the tokenizer is disabled. When set together with
+   * `isDisabled`, the tokenizer shows a tooltip with this text on hover and
+   * keyboard focus, and the input stays focusable (via `aria-disabled`) so the
+   * reason is discoverable by keyboard and assistive technology. Input stays
+   * blocked.
+   *
+   * Use this instead of wrapping a disabled tokenizer in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   */
+  disabledMessage?: string;
   /** Show clear button (clears all tokens). @default false */
   hasClear?: boolean;
   /**
@@ -365,6 +383,8 @@ export function Tokenizer<T extends SearchableItem>({
   maxMenuItems,
   emptySearchResultsText,
   isDisabled = false,
+  htmlName,
+  disabledMessage,
   hasClear = false,
   endContent,
   hasAutoFocus,
@@ -389,6 +409,19 @@ export function Tokenizer<T extends SearchableItem>({
   const statusMessageId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
+  // tooltip listeners attach to the input wrapper and the typeahead input stays
+  // perceivable via aria-disabled instead of the disabled attribute. Input is
+  // blocked by the isDisabled guards in BaseTypeahead and handleWrapperClick.
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledMessageTooltip = useTooltip({
+    placement: 'above',
+    // The wrapper is not naturally focusable; focusin bubbles up from the
+    // input, so always attach focus listeners.
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
 
   useImperativeHandle(handleRef, () => ({
     focus() {
@@ -620,6 +653,7 @@ export function Tokenizer<T extends SearchableItem>({
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
+      showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
       .join(' ') || undefined;
@@ -659,7 +693,13 @@ export function Tokenizer<T extends SearchableItem>({
 
   const wrapperContent = (
     <div
-      ref={wrapperRef}
+      ref={el => {
+        wrapperRef.current = el;
+        // Anchor + hover/focus listeners for the disabled-message tooltip.
+        // Handlers are gated internally by isEnabled, so attaching
+        // unconditionally is safe.
+        disabledMessageTooltip.ref(el);
+      }}
       role="group"
       aria-label={label}
       onClick={handleWrapperClick}
@@ -710,6 +750,7 @@ export function Tokenizer<T extends SearchableItem>({
         maxMenuItems={maxMenuItems}
         emptySearchResultsText={emptySearchResultsText}
         isDisabled={isDisabled}
+        isFocusableDisabled={showsDisabledMessage}
         hasAutoFocus={hasAutoFocus}
         inputId={inputId}
         ariaDescribedBy={ariaDescribedBy}
@@ -726,6 +767,18 @@ export function Tokenizer<T extends SearchableItem>({
               : undefined
         }
       />
+      {htmlName != null &&
+        value.map(item => (
+          <input
+            key={item.id}
+            type="hidden"
+            name={htmlName}
+            value={item.id}
+            // Disabled native controls are excluded from form submission;
+            // mirror that for the hidden carriers.
+            disabled={isDisabled}
+          />
+        ))}
       {(endContent || (hasClear && value.length > 0 && !isDisabled)) && (
         <div {...stylex.props(styles.endSection, endSectionSizeStyles[size])}>
           {endContent}
@@ -831,6 +884,8 @@ export function Tokenizer<T extends SearchableItem>({
       className={className}
       style={style}>
       {tokenizerContent}
+      {showsDisabledMessage &&
+        disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>
   );
 }

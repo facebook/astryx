@@ -200,6 +200,56 @@ describe('TopNavHeading', () => {
     expect(screen.getByTestId('logo')).toBeInTheDocument();
   });
 
+  describe('logo link accessible name', () => {
+    const logo = <img src="/logo.png" alt="" />;
+
+    // A logo image is decorative; when the logo is wrapped in a link the link
+    // itself needs an accessible name, otherwise axe reports link-name.
+    it('names the logo link in the independent-links config', () => {
+      render(
+        <TopNavHeading
+          logo={logo}
+          superheading="Suite"
+          superheadingHref="/suite"
+          heading="Product"
+          headingHref="/product"
+        />,
+      );
+      // No link should have an empty accessible name.
+      for (const link of screen.getAllByRole('link')) {
+        expect(link).toHaveAccessibleName();
+      }
+      // The logo link is named from the heading.
+      expect(
+        screen.getAllByRole('link', {name: 'Product'}).length,
+      ).toBeGreaterThanOrEqual(1);
+    });
+
+    it('names the logo link in the menu + hrefs config', () => {
+      render(
+        <TopNavHeading
+          logo={logo}
+          superheading="Suite"
+          superheadingHref="/suite"
+          heading="Product"
+          headingHref="/product"
+          menu={<a href="#menu">Menu item</a>}
+        />,
+      );
+      for (const link of screen.getAllByRole('link')) {
+        expect(link).toHaveAccessibleName();
+      }
+    });
+
+    it('names a logo-only link via logoLabel', () => {
+      render(<TopNavHeading logo={logo} headingHref="/home" logoLabel="Home" />);
+      expect(screen.getByRole('link', {name: 'Home'})).toHaveAttribute(
+        'href',
+        '/home',
+      );
+    });
+  });
+
   it('renders as anchor when href is provided', () => {
     render(<TopNavHeading heading="Home" href="/" />);
     const link = screen.getByRole('link');

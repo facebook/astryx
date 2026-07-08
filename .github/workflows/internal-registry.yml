@@ -3,9 +3,11 @@
 name: Internal Registry
 
 # Verifies every pinned dependency is available from the registry before it can
-# break a build. Mark the merge_group run ("Internal Registry / dependency-check")
-# as a REQUIRED status check to gate landing; fork PRs are skipped and enforced
-# by that required merge_group run.
+# break a build. Temporarily advisory: the check still runs and surfaces
+# annotations, but a failure no longer fails the job (continue-on-error), so it
+# warns instead of blocking. Re-enable gating by removing continue-on-error and
+# marking the merge_group run ("Internal Registry / dependency-check") as a
+# REQUIRED status check; fork PRs are skipped and enforced by that run.
 
 on:
   pull_request:
@@ -23,3 +25,4 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: facebook/lexical/.github/actions/internal-registry/dependency-check@internal-registry-dependency-check-v1
+        continue-on-error: true

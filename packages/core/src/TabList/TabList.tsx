@@ -140,7 +140,9 @@ export function TabList({
   // hook. `orientation: 'both'` accepts both arrow axes per the WAI-ARIA APG
   // allowance for tab strips (ArrowRight/ArrowDown advance, ArrowLeft/ArrowUp
   // retreat) regardless of the component's `orientation` prop, which only
-  // drives the reported `aria-orientation`.
+  // drives the keyboard hint badge (see useKeyboardHint below). We do not set
+  // `aria-orientation` on the `<nav>`: that attribute is invalid on the
+  // navigation role and triggers an axe `aria-allowed-attr` violation.
   //
   // `hasRovingTabIndex` makes the hook own the single tab stop: it stamps
   // tabindex 0/-1, repairs the stop on mount and as stops mount/unmount or
@@ -208,7 +210,6 @@ export function TabList({
         ref={mergeRefs(ref, listRef)}
         {...restProps}
         aria-label={ariaLabel}
-        aria-orientation={orientation}
         onKeyDown={handleRootKeyDown}
         onFocus={handleRootFocus}
         onBlur={handleRootBlur}

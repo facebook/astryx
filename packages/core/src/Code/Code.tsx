@@ -42,9 +42,46 @@ const styles = stylex.create({
   },
 });
 
+const colorStyles = stylex.create({
+  primary: {
+    color: colorVars['--color-text-primary'],
+  },
+  secondary: {
+    color: colorVars['--color-text-secondary'],
+  },
+  inherit: {
+    color: 'inherit',
+  },
+});
+
+const sizeStyles = stylex.create({
+  // Adopt the surrounding text's font-size and line-height, for inline code
+  // that should match differently-sized text around it.
+  inherit: {
+    fontSize: 'inherit',
+    lineHeight: 'inherit',
+  },
+});
+
+/** Text color for {@link Code}, mirroring the primary/secondary/inherit subset of Text. */
+export type CodeColor = 'primary' | 'secondary' | 'inherit';
+
+/** Font size for {@link Code}. `'inherit'` adopts the surrounding text size. */
+export type CodeSize = 'inherit';
+
 export interface CodeProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element */
   ref?: React.Ref<HTMLElement>;
+  /**
+   * Text color. Mirrors the Text color subset.
+   * @default 'primary'
+   */
+  color?: CodeColor;
+  /**
+   * Font size. Set to `'inherit'` to adopt the surrounding text's font-size
+   * and line-height (useful for inline code inside larger/smaller text).
+   */
+  size?: CodeSize;
   /** Code content */
   children: ReactNode;
 }
@@ -64,6 +101,8 @@ export interface CodeProps extends BaseProps<HTMLElement> {
  */
 export function Code({
   children,
+  color = 'primary',
+  size,
   xstyle,
   className,
   style,
@@ -73,13 +112,18 @@ export function Code({
   return (
     <code
       ref={ref}
+      {...props}
       {...mergeProps(
-        themeProps('code'),
-        stylex.props(styles.base, xstyle),
+        themeProps('code', {color}),
+        stylex.props(
+          styles.base,
+          colorStyles[color],
+          size && sizeStyles[size],
+          xstyle,
+        ),
         className,
         style,
-      )}
-      data-testid={props['data-testid']}>
+      )}>
       {children}
     </code>
   );

@@ -64,6 +64,17 @@ const DEMO_IMAGE_PATTERNS = [
 ];
 
 /**
+ * Normalize path into Unix path (using forward slashes) for consistent comparison
+ * across Windows, macOS, and Linux.
+ *
+ * @param {string} p - The file path to normalize.
+ * @returns {string} The normalized Unix path.
+ */
+function toPosixPath(p) {
+  return p.replace(/\\/g, '/');
+}
+
+/**
  * Replace demo image references with a self-contained placeholder data URI so
  * scaffolded pages render with zero setup. Builders drop in their own images.
  *
@@ -144,7 +155,7 @@ async function discoverBlocks() {
     const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
     if (!fs.existsSync(tsxPath)) continue;
     const doc = await loadDocModule(docPath);
-    const relPath = path.relative(BLOCKS_DIR, path.dirname(docPath));
+    const relPath = toPosixPath(path.relative(BLOCKS_DIR, path.dirname(docPath)));
     blocks.push({
       type: 'block',
       dirName: basename,
@@ -180,7 +191,7 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
       const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
       if (!fs.existsSync(tsxPath)) continue;
       const doc = await loadDocModule(docPath);
-      const relPath = path.relative(ext.blocksDir, path.dirname(docPath));
+      const relPath = toPosixPath(path.relative(ext.blocksDir, path.dirname(docPath)));
       blocks.push({
         type: 'block',
         dirName: basename,
@@ -428,7 +439,7 @@ export async function findShowcase(componentName, cwd, options) {
 
   // Priority 1: own directory (components/Badge/ for "Badge")
   const dirMatch = showcases.find(b => {
-    const catDir = b.category.split('/').pop()?.toLowerCase();
+    const catDir = path.basename(b.category).toLowerCase();
     return catDir === lc;
   });
   if (dirMatch) return toResult(dirMatch);

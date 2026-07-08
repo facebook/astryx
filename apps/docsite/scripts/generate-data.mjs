@@ -574,7 +574,15 @@ async function generateComponentRegistry() {
                 ? sub.relatedComponents || (doc.name ? [doc.name] : null)
                 : null,
               relatedHooks: isHookEntry ? sub.relatedHooks || null : null,
-              playground: isHookEntry ? null : playground,
+              // Sub-components may declare their own playground (e.g. an
+              // overlay drawer whose sibling toggle must not inherit it);
+              // fall back to the parent doc's playground otherwise — same
+              // override rule as extracted subComponentOf docs.
+              playground: isHookEntry
+                ? null
+                : sub.playground
+                  ? sanitizeForJson(sub.playground)
+                  : playground,
             });
           }
         } else if (doc.params) {
@@ -767,6 +775,7 @@ export interface ElementDescriptor {
 
 export interface PlaygroundConfig {
   defaults?: Record<string, unknown>;
+  overlay?: boolean;
   wrapper?: {
     component: string;
     props?: Record<string, unknown>;

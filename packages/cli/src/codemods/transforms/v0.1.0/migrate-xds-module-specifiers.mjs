@@ -51,12 +51,57 @@ function rewriteLiteral(node) {
   return true;
 }
 
+// @xds/theme-default and @xds/theme-daily both collapse to
+// @astryxdesign/theme-neutral, whose exported theme binding is `neutralTheme`
+// (not `defaultTheme`). When we rewrite an import from one of those packages,
+// remap a `defaultTheme` named import to `neutralTheme`, aliasing back to the
+// original local name so downstream usages keep working unchanged:
+//   import {defaultTheme} from '@xds/theme-default'
+//     -> import {neutralTheme as defaultTheme} from '@astryxdesign/theme-neutral'
+// An already-aliased `{defaultTheme as x}` just has its imported name remapped.
+const THEME_EXPORT_RENAMES = new Map([['defaultTheme', 'neutralTheme']]);
+const COLLAPSED_THEME_SOURCES = new Set([
+  '@xds/theme-default',
+  '@xds/theme-daily',
+]);
+
+function isCollapsedThemeSource(value) {
+  if (typeof value !== 'string') return false;
+  for (const src of COLLAPSED_THEME_SOURCES) {
+    if (value === src || value.startsWith(src + '/')) return true;
+  }
+  return false;
+}
+
+function remapThemeExportNames(importPath, j) {
+  let changed = false;
+  importPath.node.specifiers = (importPath.node.specifiers || []).map(spec => {
+    if (spec.type !== 'ImportSpecifier') return spec;
+    const importedName = spec.imported.name;
+    const renamed = THEME_EXPORT_RENAMES.get(importedName);
+    if (!renamed) return spec;
+    // Preserve the original local binding (so downstream usages keep working),
+    // remapping only the imported name. Build a FRESH specifier node: recast
+    // preserves the printed form of a mutated ImportSpecifier and would drop a
+    // newly-introduced `as local` alias, so mutating in place loses it.
+    const localName = spec.local.name;
+    changed = true;
+    return j.importSpecifier(j.identifier(renamed), j.identifier(localName));
+  });
+  return changed;
+}
+
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
   root.find(j.ImportDeclaration).forEach(path => {
+    // Remap collapsed-theme export names BEFORE rewriting the source specifier
+    // (the check keys off the original @xds/theme-default|daily path).
+    if (isCollapsedThemeSource(path.node.source.value)) {
+      hasChanges = remapThemeExportNames(path, j) || hasChanges;
+    }
     hasChanges = rewriteLiteral(path.node.source) || hasChanges;
   });
 

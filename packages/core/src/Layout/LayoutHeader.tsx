@@ -22,7 +22,7 @@ import * as stylex from '@stylexjs/stylex';
 import {LayoutDividerContext} from './LayoutDividerContext';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
-import type {SpacingStep} from '../utils/types';
+import type {SizeValue, SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {
   paddingStyles,
@@ -71,7 +71,7 @@ const styles = stylex.create({
 
 // Dynamic styles for sizing props
 const dynamicStyles = stylex.create({
-  sizing: (height: number | string | null) => ({
+  sizing: (height: SizeValue | null) => ({
     height,
   }),
 });
@@ -95,7 +95,7 @@ export interface LayoutHeaderProps extends BaseProps<HTMLDivElement> {
    * Height of the header.
    * Numbers are treated as pixels, strings are used as-is.
    */
-  height?: number | string;
+  height?: SizeValue;
 
   /**
    * Internal padding of the header using the spacing scale.

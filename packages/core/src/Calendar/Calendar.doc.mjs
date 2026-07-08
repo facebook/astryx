@@ -19,7 +19,7 @@ export const docs = {
       {guidance: false, description: 'Disable large blocks of dates without context. The user should understand why dates are unavailable.'},
     ],
     anatomy: [
-      {name: 'Month header', required: true, description: 'The month name and year with navigation arrows to move between months.'},
+      {name: 'Month header', required: true, description: 'The month name and year with navigation arrows to move between months. The arrows mirror automatically under dir="rtl".'},
       {name: 'Day grid', required: true, description: 'A 7-column grid of days with column headers for the day names.'},
       {name: 'Selected day', required: false, description: 'The currently selected date, highlighted. In range mode, the start and end dates plus the days between them.'},
       {name: 'Today marker', required: false, description: 'A subtle indicator on the current date for orientation.'},

@@ -61,7 +61,11 @@ describe('Citation', () => {
         data-testid="citation"
       />,
     );
-    expect(screen.getByTestId('citation').tagName).toBe('SPAN');
+    const el = screen.getByTestId('citation');
+    expect(el.tagName).toBe('SPAN');
+    // doc-noteref is a reference role that is not permitted on a plain
+    // (unlinked) span (axe: aria-allowed-role), so it must be omitted here.
+    expect(el).not.toHaveAttribute('role');
   });
 
   it('renders astryx-* class names for theme targeting', () => {

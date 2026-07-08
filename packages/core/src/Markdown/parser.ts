@@ -81,6 +81,13 @@ export type ParseOptions = {
 type ResolvedOptions = {
   readonly sourceIds: ReadonlySet<string> | undefined;
   readonly autolink: 'gfm' | undefined;
+  /**
+   * Link reference definitions (`[label]: url`) collected from the whole
+   * document, keyed by normalized label. Internal only — populated by the
+   * block parser, never by the public `ParseOptions`. Enables `parseInlineImpl`
+   * to resolve full/collapsed/shortcut reference links and images.
+   */
+  readonly linkDefs?: ReadonlyMap<string, string>;
 };
 
 const EMPTY_OPTS: ResolvedOptions = {sourceIds: undefined, autolink: undefined};
@@ -101,6 +108,228 @@ function resolveOptions(
   }
   const opts = arg as ParseOptions;
   return {sourceIds: opts.sourceIds, autolink: opts.autolink};
+}
+
+// ---------------------------------------------------------------------------
+// Link reference definitions
+// ---------------------------------------------------------------------------
+
+// A CommonMark link reference definition line: up to 3 leading spaces, a
+// bracketed label, `:`, a destination (bare or `<...>`), and an optional
+// same-line title (captured as group 4 so a title-less definition can absorb a
+// title on the following line). `^`-leading labels (`[^1]:`) are footnote
+// definitions — a separate, unsupported feature — and are excluded so they
+// pass through verbatim.
+const LINK_DEFINITION_RE =
+  /^ {0,3}\[([^\]^](?:\\.|[^\]\\])*)\]:[ \t]*(?:<([^<>\n]*)>|(\S+))([ \t]+(?:"[^"\n]*"|'[^'\n]*'|\([^()\n]*\)))?[ \t]*$/;
+
+// A line that is nothing but a title — the continuation form allowed when a
+// definition's destination is followed by its title on the next line.
+const LINK_TITLE_ONLY_RE = /^ {0,3}(?:"[^"\n]*"|'[^'\n]*'|\([^()\n]*\))[ \t]*$/;
+
+// CommonMark matches reference labels case-insensitively with leading/trailing
+// whitespace stripped and internal whitespace runs collapsed to one space.
+function normalizeLinkLabel(label: string): string {
+  return label.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+function matchLinkDefinition(
+  line: string,
+): {label: string; destination: string; hasTitle: boolean} | null {
+  const match = LINK_DEFINITION_RE.exec(line);
+  if (match == null) {
+    return null;
+  }
+  const label = normalizeLinkLabel(match[1]);
+  // `match[2]` is the `<...>` destination (present but possibly empty, e.g.
+  // `<>` → empty href, valid per CommonMark); `match[3]` is the bare
+  // destination (always non-empty). One of the two always matches.
+  const destination = match[2] != null ? match[2] : match[3];
+  if (label === '' || destination == null) {
+    return null;
+  }
+  return {label, destination, hasTitle: match[4] != null};
+}
+
+/**
+ * Collect link reference definitions from the whole document and return the
+ * input with the definition lines removed. A definition is recognized at a
+ * block boundary — document start, after a blank line, after another
+ * definition, or after a self-contained block (heading / thematic break /
+ * closed fenced code) — but never inside a fenced code block or as a lazy
+ * continuation of a paragraph, honoring CommonMark's rule that a definition
+ * cannot interrupt a paragraph. First definition wins, and definitions produce
+ * no output so stripping unreferenced ones is correct.
+ *
+ * Scope limit: definitions are collected at the top level only, and a
+ * definition directly following a list, blockquote, or table (with no blank
+ * line between) is not recognized. A definition nested inside a blockquote or
+ * list item resolves within that container (via the recursive parse) but is
+ * not exposed to references elsewhere in the document, unlike full CommonMark
+ * where every definition is global. Separating a footer definition block with
+ * a blank line — the usual form — always works.
+ */
+function extractLinkDefinitions(input: string): {
+  defs: ReadonlyMap<string, string>;
+  cleaned: string;
+} {
+  const lines = input.split('\n');
+  const defs = new Map<string, string>();
+  const keep = new Array<boolean>(lines.length).fill(true);
+  let atBoundary = true;
+  let inFence = false;
+  let fenceMarker = '';
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    if (inFence) {
+      if (line.startsWith(fenceMarker)) {
+        inFence = false;
+        fenceMarker = '';
+        // The line after a closed fence begins a new block.
+        atBoundary = true;
+      } else {
+        atBoundary = false;
+      }
+      continue;
+    }
+    const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+    if (fenceMatch) {
+      inFence = true;
+      fenceMarker = fenceMatch[1];
+      atBoundary = false;
+      continue;
+    }
+    if (line.trim() === '') {
+      atBoundary = true;
+      continue;
+    }
+    if (atBoundary) {
+      const def = matchLinkDefinition(line);
+      if (def != null) {
+        if (!defs.has(def.label)) {
+          defs.set(def.label, def.destination);
+        }
+        keep[index] = false;
+        // A title-less definition absorbs a title on the following line
+        // (CommonMark), which then also produces no output.
+        if (
+          !def.hasTitle &&
+          index + 1 < lines.length &&
+          LINK_TITLE_ONLY_RE.test(lines[index + 1])
+        ) {
+          keep[index + 1] = false;
+          index++;
+        }
+        // Consecutive definitions stay at a block boundary.
+        continue;
+      }
+    }
+    // A heading or thematic break is a self-contained single-line block, so
+    // the next line begins a new block where a definition may appear.
+    atBoundary = /^ {0,3}#{1,6}(?: |\t|$)/.test(line) || isHorizontalRule(line);
+  }
+
+  if (defs.size === 0) {
+    return {defs, cleaned: input};
+  }
+  const cleaned = lines.filter((_, index) => keep[index]).join('\n');
+  return {defs, cleaned};
+}
+
+/** Order-independent signature of a link-definition set, for cache checks. */
+function linkDefsSignature(defs: ReadonlyMap<string, string>): string {
+  if (defs.size === 0) {
+    return '';
+  }
+  return [...defs]
+    .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
+    .map(([label, dest]) => `${label}\u0000${dest}`)
+    .join('\u0001');
+}
+
+/**
+ * Resolve a full (`[text][label]`), collapsed (`[text][]`), or shortcut
+ * (`[text]`) reference at `start` (which points at `[`) against `linkDefs`.
+ * Returns the node plus the index just past the reference, or null when it is
+ * not a resolvable reference (caller falls through to literal handling).
+ */
+function matchReferenceLink(
+  text: string,
+  start: number,
+  linkDefs: ReadonlyMap<string, string>,
+  opts: ResolvedOptions,
+): {node: InlineNode; end: number} | null {
+  const textClose = text.indexOf(']', start + 1);
+  if (textClose === -1) {
+    return null;
+  }
+  const linkText = text.slice(start + 1, textClose);
+  // Full `[text][label]` / collapsed `[text][]` — a matching definition wins.
+  if (text[textClose + 1] === '[') {
+    const labelClose = text.indexOf(']', textClose + 2);
+    if (labelClose !== -1) {
+      const rawLabel = text.slice(textClose + 2, labelClose);
+      // Only truly-empty brackets are the collapsed form; a whitespace-only
+      // label (`[ ]`) is a full reference whose normalized label is empty and
+      // matches nothing.
+      const label = rawLabel === '' ? linkText : rawLabel;
+      const href = linkDefs.get(normalizeLinkLabel(label));
+      if (href != null) {
+        return {
+          node: {type: 'link', href, children: parseInlineImpl(linkText, opts)},
+          end: labelClose + 1,
+        };
+      }
+      // No match — fall back to a shortcut `[text]` (CommonMark back-off),
+      // leaving the trailing `[label]` to be parsed separately.
+    }
+  }
+  // Shortcut: `[text]`.
+  if (linkText.trim() === '') {
+    return null;
+  }
+  const href = linkDefs.get(normalizeLinkLabel(linkText));
+  if (href == null) {
+    return null;
+  }
+  return {
+    node: {type: 'link', href, children: parseInlineImpl(linkText, opts)},
+    end: textClose + 1,
+  };
+}
+
+/** Reference-image equivalent of {@link matchReferenceLink} (`![alt][label]`). */
+function matchReferenceImage(
+  text: string,
+  start: number,
+  linkDefs: ReadonlyMap<string, string>,
+): {node: InlineNode; end: number} | null {
+  const altClose = text.indexOf(']', start + 2);
+  if (altClose === -1) {
+    return null;
+  }
+  const alt = text.slice(start + 2, altClose);
+  if (text[altClose + 1] === '[') {
+    const labelClose = text.indexOf(']', altClose + 2);
+    if (labelClose !== -1) {
+      const rawLabel = text.slice(altClose + 2, labelClose);
+      const label = rawLabel === '' ? alt : rawLabel;
+      const src = linkDefs.get(normalizeLinkLabel(label));
+      if (src != null) {
+        return {node: {type: 'image', src, alt}, end: labelClose + 1};
+      }
+      // No match — fall back to a shortcut `![alt]`.
+    }
+  }
+  if (alt.trim() === '') {
+    return null;
+  }
+  const src = linkDefs.get(normalizeLinkLabel(alt));
+  if (src == null) {
+    return null;
+  }
+  return {node: {type: 'image', src, alt}, end: altClose + 1};
 }
 
 // ---------------------------------------------------------------------------
@@ -260,6 +489,16 @@ function parseInlineImpl(text: string, opts: ResolvedOptions): InlineNode[] {
       }
     }
 
+    // --- Reference image ![alt][label] / ![alt][] / ![alt] ---
+    if (opts.linkDefs != null && text[i] === '!' && text[i + 1] === '[') {
+      const ref = matchReferenceImage(text, i, opts.linkDefs);
+      if (ref) {
+        nodes.push(ref.node);
+        i = ref.end;
+        continue;
+      }
+    }
+
     // --- Citation: bracket [id] (before link — link requires `(` after `]`) ---
     {
       const citation = matchBracketCitation(text, i, opts);
@@ -284,6 +523,16 @@ function parseInlineImpl(text: string, opts: ResolvedOptions): InlineNode[] {
           i = urlClose + 1;
           continue;
         }
+      }
+    }
+
+    // --- Reference link [text][label] / [text][] / [text] ---
+    if (opts.linkDefs != null && text[i] === '[') {
+      const ref = matchReferenceLink(text, i, opts.linkDefs, opts);
+      if (ref) {
+        nodes.push(ref.node);
+        i = ref.end;
+        continue;
       }
     }
 
@@ -971,8 +1220,30 @@ export function parseMarkdown(
   return parseMarkdownImpl(input, resolveOptions(arg));
 }
 
-function parseMarkdownImpl(input: string, opts: ResolvedOptions): BlockNode[] {
-  const lines = input.split('\n');
+function parseMarkdownImpl(
+  input: string,
+  baseOpts: ResolvedOptions,
+): BlockNode[] {
+  // Collect this input's link reference definitions and strip their lines,
+  // then merge them with any definitions inherited from an enclosing parse
+  // (the incremental parser passes the whole document's definitions in; a
+  // recursive blockquote/list parse inherits the outer definitions). Inherited
+  // definitions win on conflict, matching CommonMark's first-definition-wins
+  // in document order; locally-nested definitions still resolve within this
+  // parse.
+  const {defs, cleaned} = extractLinkDefinitions(input);
+  const inherited = baseOpts.linkDefs;
+  let linkDefs: ReadonlyMap<string, string> | undefined;
+  if (defs.size === 0) {
+    linkDefs = inherited;
+  } else if (inherited == null) {
+    linkDefs = defs;
+  } else {
+    linkDefs = new Map<string, string>([...defs, ...inherited]);
+  }
+  const opts: ResolvedOptions =
+    linkDefs != null ? {...baseOpts, linkDefs} : baseOpts;
+  const lines = cleaned.split('\n');
   const blocks: BlockNode[] = [];
   let index = 0;
 
@@ -1106,6 +1377,13 @@ export interface IncrementalState {
    * with newly-arriving content.
    */
   autolink?: 'gfm';
+  /**
+   * Signature of the link reference definitions the cached `settledBlocks`
+   * were parsed with. Definitions are document-global and typically arrive
+   * (in a footer) after the references that use them, so when the set changes
+   * the settled cache is invalidated to let earlier references resolve.
+   */
+  linkDefsKey?: string;
 }
 
 export function createIncrementalState(): IncrementalState {
@@ -1434,8 +1712,25 @@ export function parseMarkdownIncremental(
     state.settledText = '';
     state.settledBlocks = [];
     state.settledUpTo = 0;
+    state.linkDefsKey = undefined;
     return [];
   }
+
+  // Link reference definitions are document-global and usually stream in
+  // (as a footer) after the references that use them, so collect them from the
+  // whole input and pass them into every slice parse. When the set changes,
+  // invalidate the settled cache so already-settled references re-resolve.
+  const {defs: linkDefs} = extractLinkDefinitions(input);
+  const linkDefsKey = linkDefsSignature(linkDefs);
+  if (state.linkDefsKey !== linkDefsKey) {
+    state.prevInput = '';
+    state.settledText = '';
+    state.settledBlocks = [];
+    state.settledUpTo = 0;
+    state.linkDefsKey = linkDefsKey;
+  }
+  const parseOpts: ResolvedOptions =
+    linkDefs.size > 0 ? {...opts, linkDefs} : opts;
 
   const lines = input.split('\n');
   const boundary = findSettledBoundary(lines);
@@ -1443,7 +1738,7 @@ export function parseMarkdownIncremental(
   if (boundary < 0) {
     // Inside an unclosed fence or no blank-line boundary — full re-parse
     state.prevInput = input;
-    return parseMarkdownImpl(input, opts);
+    return parseMarkdownImpl(input, parseOpts);
   }
 
   const settledText = lines.slice(0, boundary).join('\n');
@@ -1461,15 +1756,15 @@ export function parseMarkdownIncremental(
   ) {
     // Settled portion grew — parse only the new delta
     const delta = settledText.slice(state.settledText.length);
-    const deltaBlocks = parseMarkdownImpl(delta, opts);
+    const deltaBlocks = parseMarkdownImpl(delta, parseOpts);
     settledBlocks = mergeSettledBlocks(state.settledBlocks, deltaBlocks);
   } else {
     // Content before the boundary changed — full re-parse of settled portion
-    settledBlocks = parseMarkdownImpl(settledText, opts);
+    settledBlocks = parseMarkdownImpl(settledText, parseOpts);
   }
 
   const unsettledBlocks = unsettledText
-    ? parseMarkdownImpl(unsettledText, opts)
+    ? parseMarkdownImpl(unsettledText, parseOpts)
     : [];
 
   state.settledText = settledText;

@@ -38,6 +38,19 @@ describe('Carousel', () => {
     expect(region).toHaveAttribute('aria-roledescription', 'carousel');
   });
 
+  it('makes the scroll container keyboard-focusable', () => {
+    render(
+      <Carousel aria-label="Photos">
+        <div>Item</div>
+      </Carousel>,
+    );
+    // The inner scroll container overflows, so it must be reachable by
+    // keyboard (axe: scrollable-region-focusable).
+    const region = screen.getByRole('region', {name: 'Photos'});
+    const scroller = region.firstElementChild;
+    expect(scroller).toHaveAttribute('tabindex', '0');
+  });
+
   it('applies data-testid', () => {
     render(
       <Carousel data-testid="my-carousel">

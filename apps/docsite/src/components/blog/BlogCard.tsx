@@ -13,6 +13,7 @@ import {Link} from '@astryxdesign/core/Link';
 import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import type {BlogPost} from '../../lib/blog/schema';
 import {AuthorByline} from './AuthorByline';
+import {BlogCoverArt} from './BlogCoverArt';
 import css from './BlogCard.module.css';
 
 const styles = stylex.create({
@@ -73,7 +74,7 @@ export function BlogCard({post, feature = false}: BlogCardProps) {
               {...stylex.props(styles.coverImg)}
             />
           ) : (
-            <div aria-hidden="true" />
+            <BlogCoverArt seed={post.slug} feature={feature} />
           )}
         </AspectRatio>
         <VStack gap={3}>

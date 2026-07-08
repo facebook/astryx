@@ -234,6 +234,38 @@ describe('SideNavHeading', () => {
     expect(links[1]).toHaveAttribute('href', '/product');
   });
 
+  it('gives every link an accessible name with superheadingHref, headingHref, and menu', () => {
+    render(
+      <SideNavHeading
+        icon={<span>Icon</span>}
+        superheading="Suite Name"
+        superheadingHref="/suite"
+        heading="Product Name"
+        headingHref="/product"
+        menu={<div>Analytics</div>}
+      />,
+    );
+    // The icon link to /product previously rendered with no text and no
+    // aria-label, producing an empty accessible name (axe rule: link-name).
+    // Every link pointing at /product must now expose "Product Name".
+    const productLinks = screen
+      .getAllByRole('link', {name: 'Product Name'})
+      .filter(link => link.getAttribute('href') === '/product');
+    expect(productLinks.length).toBeGreaterThan(0);
+    for (const link of productLinks) {
+      expect(link).toHaveAccessibleName('Product Name');
+    }
+    // The independent superheading link is unaffected.
+    expect(screen.getByRole('link', {name: 'Suite Name'})).toHaveAttribute(
+      'href',
+      '/suite',
+    );
+    // No link should be missing an accessible name.
+    for (const link of screen.getAllByRole('link')) {
+      expect(link).toHaveAccessibleName();
+    }
+  });
+
   it('shows chevron when menu is provided', () => {
     render(<SideNavHeading heading="My App" menu={<div>Menu content</div>} />);
     // The chevron SVG should be rendered

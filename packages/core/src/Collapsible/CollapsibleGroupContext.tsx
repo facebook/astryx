@@ -5,8 +5,10 @@
 /**
  * @file CollapsibleGroupContext.tsx
  * @input Uses React createContext
- * @output Exports CollapsibleGroupContext and CollapsibleGroupContextValue type
- * @position Context definition for collapsible group coordination
+ * @output Exports CollapsibleGroupContext, CollapsibleGroupContextValue,
+ *   CollapsibleGroupPresentationContext, CollapsibleGroupPresentationValue,
+ *   CollapsibleGroupDividers, and CollapsibleGroupDensity types
+ * @position Context definitions for collapsible group coordination and presentation
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Collapsible/CollapsibleGroup.tsx (provider)
@@ -33,3 +35,41 @@ export interface CollapsibleGroupContextValue {
 export const CollapsibleGroupContext =
   createContext<CollapsibleGroupContextValue | null>(null);
 CollapsibleGroupContext.displayName = 'CollapsibleGroupContext';
+
+/**
+ * Divider style rendered around the items of a CollapsibleGroup.
+ * - 'between': hairlines between adjacent items only.
+ * - 'all': hairlines between items plus the group's top and bottom edges.
+ * - 'none': no dividers (default).
+ */
+export type CollapsibleGroupDividers = 'between' | 'all' | 'none';
+
+/**
+ * Row density for the items of a CollapsibleGroup, controlling trigger and
+ * content block padding. Shares the repo-wide density vocabulary
+ * (Table, List, Item).
+ */
+export type CollapsibleGroupDensity = 'compact' | 'balanced' | 'spacious';
+
+/**
+ * Presentation value provided by CollapsibleGroup so each Collapsible can
+ * draw its own group chrome (StyleX has no child selectors, so the group
+ * cannot style items from the outside).
+ */
+export interface CollapsibleGroupPresentationValue {
+  /** Resolved divider style for the group's items. */
+  dividers: CollapsibleGroupDividers;
+  /** Resolved row density, or null to keep the default (unpadded) look. */
+  density: CollapsibleGroupDensity | null;
+}
+
+/**
+ * Context for collapsible group presentation (dividers, density).
+ * Kept separate from CollapsibleGroupContext so the public useCollapsible
+ * state API is unaffected. Collapsible resets this context around its
+ * children so nested collapsibles never inherit row chrome.
+ */
+export const CollapsibleGroupPresentationContext =
+  createContext<CollapsibleGroupPresentationValue | null>(null);
+CollapsibleGroupPresentationContext.displayName =
+  'CollapsibleGroupPresentationContext';

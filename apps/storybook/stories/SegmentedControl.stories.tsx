@@ -27,6 +27,11 @@ const meta: Meta<typeof SegmentedControl> = {
       control: 'boolean',
       description: 'Whether the entire control is disabled',
     },
+    disabledMessage: {
+      control: 'text',
+      description:
+        'Explains why the control is disabled (whole-group state, not per segment). With isDisabled, shows a tooltip on hover/keyboard focus and keeps the control focusable via aria-disabled (selection stays blocked). Use this instead of wrapping a disabled SegmentedControl in Tooltip.',
+    },
   },
 };
 
@@ -196,6 +201,30 @@ export const DisabledItem: Story = {
         <SegmentedControlItem value="hourly" label="Hourly" />
         <SegmentedControlItem value="daily" label="Daily" />
         <SegmentedControlItem value="weekly" label="Weekly" isDisabled />
+      </SegmentedControl>
+    );
+  },
+};
+
+// Disabled with an explanation tooltip. Hover or keyboard-focus the control to
+// see why it's disabled — the reason is announced to assistive tech via
+// aria-describedby, and the selected segment stays focusable (selection is still
+// blocked). disabledMessage applies to the whole-group disabled state. Use it
+// instead of wrapping a disabled SegmentedControl in Tooltip: disabled controls
+// swallow the pointer events a Tooltip wrapper needs.
+export const DisabledWithMessage: Story = {
+  render: () => {
+    const [value, setValue] = useState('all');
+    return (
+      <SegmentedControl
+        value={value}
+        onChange={setValue}
+        label="Filter"
+        isDisabled
+        disabledMessage="Choose a project to filter tasks">
+        <SegmentedControlItem value="all" label="All" />
+        <SegmentedControlItem value="active" label="Active" />
+        <SegmentedControlItem value="completed" label="Completed" />
       </SegmentedControl>
     );
   },

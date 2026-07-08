@@ -25,6 +25,7 @@ export default defineConfig({
             '@stylexjs/babel-plugin',
             {
               dev: true,
+              enableDebugDataProp: false,
               runtimeInjection: true,
               genConditionalClasses: true,
               treeshakeCompensation: true,

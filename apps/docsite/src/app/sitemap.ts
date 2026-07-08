@@ -19,6 +19,7 @@
  */
 
 import type {MetadataRoute} from 'next';
+import {cacheLife} from 'next/cache';
 import {SITE_URL} from '../lib/siteConfig';
 import {flattenComponentSidebarEntries} from '../components/componentSidebarData';
 import {docTopics} from '../generated/docsRegistry';
@@ -36,8 +37,14 @@ function url(path: string): string {
   return new URL(path, SITE_URL).toString();
 }
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
+async function getLastModified(): Promise<Date> {
+  'use cache';
+  cacheLife('days');
+  return new Date();
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = await getLastModified();
 
   // Static, hand-authored pages. `priority` is a relative hint to crawlers;
   // the home page and primary galleries rank highest.

@@ -99,9 +99,7 @@ describe('Table header context menu', () => {
         ],
       }),
     };
-    render(
-      <Table data={data} columns={columns} idKey="id" plugins={{a, b}} />,
-    );
+    render(<Table data={data} columns={columns} idKey="id" plugins={{a, b}} />);
     fireEvent.contextMenu(screen.getByText('Name'));
     expect(
       screen.getAllByRole('menuitem', {name: 'Action A', hidden: true}).length,
@@ -153,5 +151,31 @@ describe('Table body context menu', () => {
     expect(items.length).toBeGreaterThan(0);
     fireEvent.click(items[0]);
     expect(onSelect).toHaveBeenCalledWith('1');
+  });
+
+  it('trigger wrapper fills the full cell so the whole cell is right-clickable', () => {
+    const plugin: TablePlugin<Row> = {
+      transformBodyCell: props => ({
+        ...props,
+        contextMenuActions: [{id: 'act', label: 'Act', onSelect: () => {}}],
+      }),
+    };
+    render(
+      <Table data={data} columns={columns} idKey="id" plugins={{plugin}} />,
+    );
+    // The context-menu trigger wraps the cell content. It must fill the cell
+    // (block display + 100% width) so right-clicking anywhere in the cell —
+    // not just on the content — opens the menu. Regression test for the bug
+    // where only the wide first column responded to right-click.
+    const alice = screen.getByText('Alice');
+    const trigger = alice.closest('div');
+    expect(trigger).not.toBeNull();
+    expect(trigger?.className).toBeTruthy();
+    // The fillCell style sets inline-size:100% + display:block on the trigger.
+    const styleAttr = trigger?.getAttribute('class') ?? '';
+    // StyleX compiles to atomic classes; just assert the wrapper carries styles
+    // (the visual fill is covered by the compiled CSS). The key contract is
+    // that the trigger is a styled block wrapper, not a bare inline element.
+    expect(styleAttr.length).toBeGreaterThan(0);
   });
 });

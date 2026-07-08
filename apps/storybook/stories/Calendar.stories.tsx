@@ -21,11 +21,7 @@ export const Default: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(undefined);
     return (
-      <Calendar
-        mode="single"
-        value={value}
-        onChange={val => setValue(val)}
-      />
+      <Calendar mode="single" value={value} onChange={val => setValue(val)} />
     );
   },
 };
@@ -183,6 +179,30 @@ export const MondayStart: Story = {
         focusDate="2026-01-01"
       />
     );
+  },
+};
+
+export const RTL: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(undefined);
+    return (
+      <div dir="rtl">
+        <Calendar
+          mode="single"
+          value={value}
+          onChange={val => setValue(val)}
+          focusDate="2026-01-01"
+        />
+      </div>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Under dir="rtl" the header flips: "Previous month" sits on the visual right with its chevron mirrored to point right (outward), "Next month" on the visual left pointing left (#3388).',
+      },
+    },
   },
 };
 

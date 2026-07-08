@@ -225,7 +225,7 @@ function TableRowInner<T extends Record<string, unknown>>({
     rowIndex,
   );
 
-  return (
+  const row = (
     <RowComponent
       key={rowKey}
       ref={rowRenderProps.ref}
@@ -234,6 +234,8 @@ function TableRowInner<T extends Record<string, unknown>>({
       {rowRenderProps.children}
     </RowComponent>
   );
+
+  return row;
 }
 
 /**
@@ -281,6 +283,12 @@ function areRowPropsEqual<T extends Record<string, unknown>>(
   const prevItem = prevProps.item;
   const nextItem = nextProps.item;
   const keys = Object.keys(nextItem);
+
+  // A key deleted from nextItem would never be visited by the loop below,
+  // and the row would keep rendering the removed field's stale value.
+  if (Object.keys(prevItem).length !== keys.length) {
+    return false;
+  }
 
   for (const key of keys) {
     if (prevItem[key] !== nextItem[key]) {

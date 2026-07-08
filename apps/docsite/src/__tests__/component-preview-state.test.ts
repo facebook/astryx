@@ -5,6 +5,7 @@ import {
   buildInitialState,
   buildRuntimePreviewState,
   getMissingRequiredProps,
+  isOverlayPreviewClosed,
   pickPrimaryProps,
 } from '../components/component-detail/interactiveState';
 import type {PropDoc} from '../generated/componentRegistry';
@@ -324,5 +325,39 @@ describe('component detail preview state', () => {
     });
     (withOptIn.onOpenChange as (isOpen: boolean) => void)(false);
     expect(onPropChange).toHaveBeenCalledWith('isOpen', false);
+  });
+
+  it('keeps an explicit isOpen: false playground default in preview state', () => {
+    const knobs = pickPrimaryProps('MobileNav', [
+      prop({name: 'isOpen', type: 'boolean'}),
+      prop({name: 'onOpenChange', type: '(isOpen: boolean) => void'}),
+      prop({name: 'children', type: 'ReactNode', required: true}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      overlay: true,
+      defaults: {isOpen: false, children: 'nav items'},
+    });
+
+    // isOpen must be present (not undefined) so buildRuntimePreviewState can
+    // bridge onOpenChange back into playground state for the open trigger.
+    expect(state.isOpen).toBe(false);
+
+    const onPropChange = vi.fn();
+    const runtimeState = buildRuntimePreviewState(state, onPropChange, {
+      knobs,
+      canControlOpenState: true,
+    });
+    (runtimeState.onOpenChange as (isOpen: boolean) => void)(true);
+    expect(onPropChange).toHaveBeenCalledWith('isOpen', true);
+  });
+
+  it('flags closed overlay previews only for overlay-mode playgrounds', () => {
+    expect(isOverlayPreviewClosed({overlay: true}, {isOpen: false})).toBe(true);
+    expect(isOverlayPreviewClosed({overlay: true}, {})).toBe(true);
+    expect(isOverlayPreviewClosed({overlay: true}, {isOpen: true})).toBe(false);
+    expect(isOverlayPreviewClosed({}, {isOpen: false})).toBe(false);
+    expect(isOverlayPreviewClosed(null, {isOpen: false})).toBe(false);
+    expect(isOverlayPreviewClosed(undefined, {})).toBe(false);
   });
 });

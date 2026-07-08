@@ -54,7 +54,8 @@ export const categories: SandboxCategory[] = [
       {
         name: 'Card Examples',
         href: '/pages/example-cards/',
-        description: 'Astryx components showcased in realistic card compositions',
+        description:
+          'Astryx components showcased in realistic card compositions',
       },
       {
         name: 'Table Overview',
@@ -158,7 +159,8 @@ export const categories: SandboxCategory[] = [
   {
     label: 'Tools',
     slug: 'tools',
-    description: 'Interactive tools for building and exploring Astryx components.',
+    description:
+      'Interactive tools for building and exploring Astryx components.',
     pages: [
       {
         name: 'Layout DSL',
@@ -170,6 +172,12 @@ export const categories: SandboxCategory[] = [
         name: 'CodeBlock Perf',
         href: '/pages/codeblock-perf/',
         description: 'Compare highlight modes and scroll performance',
+      },
+      {
+        name: 'Table Lab',
+        href: '/pages/table-lab/',
+        description:
+          'Test any combination of Table plugins with live scroll FPS, dropped-frame, and re-render metrics',
       },
       {
         name: 'Foundations',

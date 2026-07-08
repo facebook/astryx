@@ -4,13 +4,15 @@
 
 /**
  * @file Selector.tsx
- * @input Uses React, StyleX, usePopover, useTooltip, Icon
+ * @input Uses React, StyleX, usePopover, useTooltip, Icon, InputGroupContext
  * @output Exports Selector component
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Selector/Selector.doc.mjs
+ * - /packages/core/src/Selector/Selector.test.tsx
  * - /packages/core/src/Selector/index.ts
+ * - /apps/storybook/stories/InputGroup.stories.tsx
  * - /packages/cli/templates/blocks/components/Selector/ (showcase blocks)
  */
 
@@ -62,11 +64,14 @@ import {
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {SelectorOption} from './SelectorOption';
-import {mergeProps} from '../utils';
+import {getInputARIA, mergeProps} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {groupStyles} from '../InputGroup/groupStyles';
+import {useInputGroup} from '../InputGroup/InputGroupContext';
+import {VisuallyHidden} from '../VisuallyHidden';
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
@@ -479,6 +484,13 @@ interface SelectorPropsBase<
   isDefaultOpen?: boolean;
 
   /**
+   * The HTML name attribute for form submissions. When set, a hidden input
+   * carries the selected value under this name, matching how a native
+   * select serializes.
+   */
+  htmlName?: string;
+
+  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -559,6 +571,7 @@ export function Selector<T extends SelectorOptionType>(
     status,
     labelTooltip,
     startIcon,
+    htmlName,
     renderOption,
     hasSearch = false,
     searchPlaceholder = 'Search...',
@@ -581,9 +594,11 @@ export function Selector<T extends SelectorOptionType>(
   const listboxId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
+  const inputLabelId = useId();
   const searchId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const inputGroup = useInputGroup();
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -605,15 +620,15 @@ export function Selector<T extends SelectorOptionType>(
     isEnabled: showsDisabledMessage,
   });
 
-  // Build aria-describedby
-  const ariaDescribedBy =
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    inputLabelId,
     [
       description ? descriptionId : null,
       status?.message ? statusMessageId : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+    ],
+    inputGroup,
+  );
 
   // Flatten options for keyboard navigation
   const selectableItems = useMemo(
@@ -917,27 +932,8 @@ export function Selector<T extends SelectorOptionType>(
     return elements;
   }, [options, renderItem, hasSearch, searchQuery, filteredItems]);
 
-  return (
-    <Field
-      label={label}
-      isLabelHidden={isLabelHidden}
-      description={description}
-      inputID={triggerId}
-      descriptionID={description ? descriptionId : undefined}
-      isOptional={isOptional}
-      isRequired={isRequired}
-      isDisabled={isDisabled}
-      status={
-        status
-          ? {
-              type: status.type,
-              message: status.message,
-              messageID: status.message ? statusMessageId : undefined,
-            }
-          : undefined
-      }
-      labelTooltip={labelTooltip}
-      width={width}>
+  const selectorContent = (
+    <>
       <div
         ref={el => {
           popover.triggerRef(el);
@@ -958,6 +954,7 @@ export function Selector<T extends SelectorOptionType>(
             !selectedItem && styles.triggerPlaceholder,
             status && inputStatusBorderStyles[status.type],
             status && inputStatusHoverShadowStyles[status.type],
+            inputGroup && groupStyles.inGroup,
             xstyle,
           ),
           className,
@@ -965,6 +962,9 @@ export function Selector<T extends SelectorOptionType>(
         )}>
         {startIcon &&
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+        {inputGroup && (
+          <VisuallyHidden id={inputLabelId}>{label}</VisuallyHidden>
+        )}
         <button
           ref={triggerRef}
           id={triggerId}
@@ -983,6 +983,7 @@ export function Selector<T extends SelectorOptionType>(
               : undefined
           }
           aria-describedby={ariaDescribedBy}
+          aria-labelledby={ariaLabelledBy}
           aria-required={isRequired ? 'true' : undefined}
           aria-invalid={status?.type === 'error' ? 'true' : undefined}
           aria-busy={isBusy || undefined}
@@ -998,6 +999,16 @@ export function Selector<T extends SelectorOptionType>(
             {selectedItem?.label ?? placeholder}
           </span>
         </button>
+        {htmlName != null && (
+          <input
+            type="hidden"
+            name={htmlName}
+            value={value ?? ''}
+            // Disabled native controls are excluded from form submission;
+            // mirror that for the hidden carrier.
+            disabled={isDisabled}
+          />
+        )}
         {isBusy && <Spinner size="sm" />}
         {hasClear && value != null && !isDisabled && (
           <button
@@ -1062,6 +1073,35 @@ export function Selector<T extends SelectorOptionType>(
 
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
+    </>
+  );
+
+  if (inputGroup) {
+    return selectorContent;
+  }
+
+  return (
+    <Field
+      label={label}
+      isLabelHidden={isLabelHidden}
+      description={description}
+      inputID={triggerId}
+      descriptionID={description ? descriptionId : undefined}
+      isOptional={isOptional}
+      isRequired={isRequired}
+      isDisabled={isDisabled}
+      status={
+        status
+          ? {
+              type: status.type,
+              message: status.message,
+              messageID: status.message ? statusMessageId : undefined,
+            }
+          : undefined
+      }
+      labelTooltip={labelTooltip}
+      width={width}>
+      {selectorContent}
     </Field>
   );
 }

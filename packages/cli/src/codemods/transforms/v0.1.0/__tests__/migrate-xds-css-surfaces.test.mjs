@@ -64,4 +64,40 @@ describe('migrate-xds-css-surfaces', () => {
     const output = await applyTransform(input);
     expect(output).toBe(input);
   });
+
+  it('rewrites @import of @xds/* package stylesheets', async () => {
+    const input = [
+      `@import '@xds/core/reset.css';`,
+      `@import '@xds/core/xds.css';`,
+      `@import '@xds/theme-default/theme.css';`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    expect(output).toContain(`@import '@astryxdesign/core/reset.css';`);
+    // xds.css is renamed to astryx.css (file rename, not just scope swap).
+    expect(output).toContain(`@import '@astryxdesign/core/astryx.css';`);
+    // theme-default collapses to theme-neutral.
+    expect(output).toContain(
+      `@import '@astryxdesign/theme-neutral/theme.css';`,
+    );
+    expect(output).not.toContain('@xds/');
+  });
+
+  it('collapses theme-daily @import to theme-neutral and preserves quote style', async () => {
+    const input = `@import "@xds/theme-daily/theme.css";`;
+    const output = await applyTransform(input);
+    expect(output).toBe(`@import "@astryxdesign/theme-neutral/theme.css";`);
+  });
+
+  it('rewrites @import url() form', async () => {
+    const input = `@import url('@xds/core/reset.css');`;
+    const output = await applyTransform(input);
+    expect(output).toContain(`@astryxdesign/core/reset.css`);
+    expect(output).not.toContain('@xds/');
+  });
+
+  it('does not touch @import of non-xds packages', async () => {
+    const input = `@import '@acme/widgets/styles.css';`;
+    const output = await applyTransform(input);
+    expect(output).toBe(input);
+  });
 });

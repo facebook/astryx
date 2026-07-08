@@ -87,10 +87,16 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        'The HTML name attribute for form submissions. Renders a hidden input carrying the selected value, like a native select.',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
-        'Explains why the selector is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the trigger focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled Selector in Tooltip — disabled controls swallow the hover events an external Tooltip needs.',
+        'Explains why the selector is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the trigger focusable via aria-disabled (activation stays blocked). Use this instead of wrapping a disabled Selector in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
     },
     {
       name: 'isLabelHidden',
@@ -156,6 +162,11 @@ export const docs = {
         guidance: true,
         description:
           'Set a meaningful placeholder that hints at the expected selection (e.g. "Choose a country" not "Select...").',
+      },
+      {
+        guidance: true,
+        description:
+          'Use inside InputGroup only when the selector needs a short prefix or suffix addon as part of one decorated input surface.',
       },
       {
         guidance: false,
@@ -340,6 +351,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Set a meaningful placeholder that hints at the expected selection (e.g. "Choose a country" not "Select...").',
+      },
+      {
+        guidance: true,
+        description:
+          'Use inside InputGroup only when the selector needs a short prefix or suffix addon.',
       },
       {
         guidance: false,

@@ -4,7 +4,7 @@
 
 /**
  * @file TextInput.tsx
- * @input Uses React, useId, ChangeEvent, Field, Icon
+ * @input Uses React, useId, ChangeEvent, Field, Icon, InputGroupContext
  * @output Exports TextInput component, TextInputProps
  * @position Core implementation; consumed by index.ts, tested by TextInput.test.tsx
  *
@@ -48,6 +48,8 @@ import {
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
+import {VisuallyHidden} from '../VisuallyHidden';
+import {getInputARIA} from '../utils';
 
 const styles = stylex.create({
   clearButton: {
@@ -299,6 +301,7 @@ export function TextInput({
   const size = useSize(sizeProp, 'md');
 
   const id = useId();
+  const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -338,14 +341,15 @@ export function TextInput({
     success: 'success',
   };
 
-  const ariaDescribedBy =
+  const {ariaLabelledBy, ariaDescribedBy} = getInputARIA(
+    inputLabelID,
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
-    ]
-      .filter(Boolean)
-      .join(' ') || undefined;
+    ],
+    inputGroup,
+  );
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     // Value can't change while showing a disabled message (the field is
@@ -405,6 +409,7 @@ export function TextInput({
         style,
       )}>
       {startIcon && renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+      {inputGroup && <VisuallyHidden id={inputLabelID}>{label}</VisuallyHidden>}
       <input
         {...rest}
         ref={mergeRefs(ref, inputRef)}
@@ -436,7 +441,7 @@ export function TextInput({
         aria-required={isRequired === true ? 'true' : undefined}
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
         aria-busy={isBusy || undefined}
-        aria-label={inputGroup ? label : undefined}
+        aria-labelledby={ariaLabelledBy}
         {...stylex.props(styles.input, isDisabled && styles.inputDisabled)}
       />
       {hasClear && value !== '' && !isDisabled && (

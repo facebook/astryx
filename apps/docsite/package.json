@@ -5,8 +5,8 @@
   "scripts": {
     "build:theme": "astryx theme build src/themes/astryxTheme.ts --out src/themes/astryx.css",
     "generate": "pnpm build:theme && node scripts/generate-data.mjs && node scripts/generate-scope.mjs && node scripts/generate-playground-types.mjs && node scripts/copy-vendor.mjs",
-    "dev": "pnpm generate && next dev",
-    "build": "pnpm generate && next build",
+    "dev": "pnpm generate && next dev --webpack",
+    "build": "pnpm generate && next build --webpack",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -18,6 +18,8 @@
     "@monaco-editor/react": "^4.7.0",
     "@stylexjs/stylex": "^0.18.3",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^1.2.0",
+    "@astryxdesign/charts": "*",
     "@astryxdesign/cli": "*",
     "@astryxdesign/core": "*",
     "@astryxdesign/theme-butter": "*",
@@ -31,7 +33,7 @@
     "lz-string": "^1.5.0",
     "mcp-handler": "^1.1.0",
     "monaco-editor": "^0.55.1",
-    "next": "^15.5.16",
+    "next": "16.3.0-preview.5",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zod": "^4.4.3"
@@ -44,7 +46,7 @@
     "@types/lz-string": "^1.5.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "autoprefixer": "^10.4.0",
+    "autoprefixer": "^10.5.2",
     "typescript": "^6.0.3",
     "vitest": "^3.2.1"
   },

@@ -104,6 +104,16 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   isDisabled?: boolean;
 
   /**
+   * When disabled with a reason, keeps the input focusable via `aria-disabled`
+   * (instead of the native `disabled` attribute) and `readOnly` so an
+   * associated disabled-reason tooltip stays discoverable by keyboard and
+   * assistive technology. Value mutation is still blocked by the `isDisabled`
+   * guards. Consumers (Typeahead) own the tooltip and wrapper.
+   * @default false
+   */
+  isFocusableDisabled?: boolean;
+
+  /**
    * Auto-focus on mount.
    * @default false
    */
@@ -135,6 +145,11 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
    * Additional aria-describedby IDs.
    */
   ariaDescribedBy?: string;
+
+  /**
+   * Additional aria-labelledby IDs.
+   */
+  ariaLabelledBy?: string;
 
   /**
    * Additional StyleX styles for the input element.
@@ -292,11 +307,13 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   maxMenuItems = 10,
   emptySearchResultsText = 'No results found',
   isDisabled = false,
+  isFocusableDisabled = false,
   hasAutoFocus = false,
   onChangeQuery,
   onOpenChange,
   inputId: externalInputId,
   ariaDescribedBy,
+  ariaLabelledBy,
   inputXStyle,
   anchorRef,
   onKeyDown: externalOnKeyDown,
@@ -704,6 +721,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         }
         aria-autocomplete="list"
         aria-describedby={ariaDescribedBy}
+        aria-labelledby={ariaLabelledBy}
+        aria-disabled={isFocusableDisabled ? 'true' : undefined}
         value={query}
         onChange={handleInputChange}
         onPointerDown={() => {
@@ -720,7 +739,11 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        disabled={isDisabled}
+        // When a disabled-reason tooltip is shown the input keeps focusability
+        // via aria-disabled + readOnly instead of the native disabled
+        // attribute; value mutation stays blocked by the isDisabled guards.
+        disabled={isDisabled && !isFocusableDisabled}
+        readOnly={isFocusableDisabled || undefined}
         autoFocus={hasAutoFocus}
         data-autofocus={hasAutoFocus || undefined}
         autoComplete="off"

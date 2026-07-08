@@ -88,27 +88,27 @@ interface GalleryImage {
 
 const IMAGES: GalleryImage[] = [
   {
-    src: 'https://picsum.photos/seed/xds-travel/600/800',
+    src: 'https://picsum.photos/seed/astryx-travel/600/800',
     title: 'Going places',
     category: 'Travel',
   },
   {
-    src: 'https://picsum.photos/seed/xds-home/600/400',
+    src: 'https://picsum.photos/seed/astryx-home/600/400',
     title: 'Making memories',
     category: 'Home',
   },
   {
-    src: 'https://picsum.photos/seed/xds-lifestyle/600/600',
+    src: 'https://picsum.photos/seed/astryx-lifestyle/600/600',
     title: 'Seeing things',
     category: 'Lifestyle',
   },
   {
-    src: 'https://picsum.photos/seed/xds-ideas/600/900',
+    src: 'https://picsum.photos/seed/astryx-ideas/600/900',
     title: 'Sharing ideas',
     category: 'Lifestyle',
   },
   {
-    src: 'https://picsum.photos/seed/xds-nature/600/700',
+    src: 'https://picsum.photos/seed/astryx-nature/600/700',
     title: 'Being free',
     category: 'Nature',
   },

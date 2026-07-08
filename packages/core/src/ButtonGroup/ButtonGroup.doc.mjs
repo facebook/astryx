@@ -15,7 +15,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-button-group'},
+      {className: 'astryx-button-group', visualProps: ['size', 'orientation']},
     ],
   },
   components: [

@@ -3,7 +3,7 @@
 'use client';
 /**
  * @file CodeBlock.tsx
- * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API
+ * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API, SyntaxTheme provider
  * @output Exports CodeBlock component and CodeBlockProps
  * @position Core implementation; read-only syntax-highlighted code display
  */
@@ -43,6 +43,7 @@ import type {SyntaxToken, TokenLine} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
 import {themeProps} from '../utils/themeProps';
+import {SyntaxTheme, type SyntaxThemeDefinition} from '../theme/syntax';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -382,6 +383,14 @@ export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
     language: string,
   ) => {type: string; start: number; end: number}[];
   highlightMode?: 'auto' | 'ranges' | 'spans';
+  /**
+   * Per-instance syntax theme override. Shorthand for wrapping this block in
+   * `<SyntaxTheme theme={...}>` — accepts a preset from
+   * `@astryxdesign/core/theme/syntax` or a theme created with
+   * `defineSyntaxTheme()`. Without it, the block uses the theme-level syntax
+   * colors from the nearest SyntaxTheme ancestor or `defineTheme({ syntax })`.
+   */
+  syntaxTheme?: SyntaxThemeDefinition;
 }
 
 // ---------------------------------------------------------------------------
@@ -633,6 +642,7 @@ export function CodeBlock({
   container = 'card',
   tokenizer: customTokenizer,
   highlightMode = 'auto',
+  syntaxTheme,
   xstyle,
   className,
   style,
@@ -755,9 +765,11 @@ export function CodeBlock({
     <div
       ref={scrollContainerRef}
       // The scroll container is keyboard-focusable so keyboard users can
-      // scroll long or wide code that overflows the viewport.
+      // scroll long or wide code that overflows the viewport. Uses
+      // role="group" (not "region") so multiple code blocks on a page don't
+      // create duplicate same-named landmarks (axe: landmark-unique).
       tabIndex={0}
-      role="region"
+      role="group"
       aria-label={languageLabel ?? 'Code'}
       {...mergeProps(stylex.props(styles.scrollContainer), {
         style: scrollStyle,
@@ -800,7 +812,7 @@ export function CodeBlock({
     </div>
   );
 
-  return (
+  const block = (
     <pre
       ref={ref}
       {...mergeProps(
@@ -829,6 +841,12 @@ export function CodeBlock({
       )}
       {!showHeader && copyButtonEl}
     </pre>
+  );
+
+  return syntaxTheme ? (
+    <SyntaxTheme theme={syntaxTheme}>{block}</SyntaxTheme>
+  ) : (
+    block
   );
 }
 

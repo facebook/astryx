@@ -48,4 +48,45 @@ describe('migrate-xds-module-specifiers', () => {
     const output = await applyTransform(input, 'test.ts');
     expect(output).toBe(input);
   });
+
+  it('remaps defaultTheme -> neutralTheme when collapsing theme-default', async () => {
+    const output = await applyTransform(
+      `import {defaultTheme} from '@xds/theme-default';`,
+      'test.ts',
+    );
+    // Package collapses to theme-neutral; binding aliased so local usage works.
+    expect(output).toContain('neutralTheme as defaultTheme');
+    expect(output).toContain('@astryxdesign/theme-neutral');
+    expect(output).not.toContain('@xds/');
+    expect(output).not.toContain('theme-default');
+  });
+
+  it('remaps defaultTheme -> neutralTheme for theme-daily and /built subpath', async () => {
+    const output = await applyTransform(
+      `import {defaultTheme} from '@xds/theme-daily/built';`,
+      'test.ts',
+    );
+    expect(output).toContain('neutralTheme as defaultTheme');
+    expect(output).toContain('@astryxdesign/theme-neutral/built');
+  });
+
+  it('preserves an existing alias when remapping defaultTheme', async () => {
+    const output = await applyTransform(
+      `import {defaultTheme as dt} from '@xds/theme-default';`,
+      'test.ts',
+    );
+    expect(output).toContain('neutralTheme as dt');
+    expect(output).toContain('@astryxdesign/theme-neutral');
+  });
+
+  it('does NOT remap neutralTheme import from theme-neutral (no rename needed)', async () => {
+    const output = await applyTransform(
+      `import {neutralTheme} from '@xds/theme-neutral';`,
+      'test.ts',
+    );
+    expect(output).toContain('neutralTheme');
+    expect(output).toContain('@astryxdesign/theme-neutral');
+    expect(output).not.toContain('defaultTheme');
+    expect(output).not.toContain('neutralTheme as');
+  });
 });

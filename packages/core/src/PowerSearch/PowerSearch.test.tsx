@@ -11,7 +11,7 @@
 
 import {useState} from 'react';
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
-import {render, screen, act} from '@testing-library/react';
+import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {PowerSearch} from './PowerSearch';
 import type {PowerSearchConfig, PowerSearchFilter} from './types';
@@ -197,6 +197,102 @@ describe('PowerSearch', () => {
         .map(el => el.textContent);
 
       expect(pasteResults).toEqual(typeResults);
+    });
+  });
+
+  describe('disabledMessage', () => {
+    const h = {hidden: true} as const;
+    const isOpen = (el: Element) => el.matches(':popover-open');
+
+    function renderSearch(props?: {onChange?: () => void}) {
+      return render(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={props?.onChange ?? (() => {})}
+          isDisabled
+          disabledMessage="You need edit access to search"
+        />,
+      );
+    }
+
+    it('shows the reason tooltip on hover when disabled with a reason', async () => {
+      renderSearch();
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(tooltip).toHaveTextContent('You need edit access to search');
+      const wrapper = screen.getByRole('group');
+      fireEvent.mouseEnter(wrapper);
+      await waitFor(() => expect(isOpen(tooltip)).toBe(true));
+      fireEvent.mouseLeave(wrapper);
+      await waitFor(() => expect(isOpen(tooltip)).toBe(false));
+    });
+
+    it('shows the reason tooltip on keyboard focus', async () => {
+      const user = userEvent.setup();
+      renderSearch();
+      const tooltip = screen.getByRole('tooltip', h);
+      await user.tab();
+      expect(screen.getByRole('combobox')).toHaveFocus();
+      await waitFor(() => expect(isOpen(tooltip)).toBe(true));
+    });
+
+    it('does not render a tooltip when not disabled', () => {
+      render(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          disabledMessage="You need edit access to search"
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('does not render a tooltip when disabled without a reason', () => {
+      render(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
+    });
+
+    it('keeps the input focusable via aria-disabled when a reason is provided', () => {
+      renderSearch();
+      const input = screen.getByRole('combobox');
+      expect(input).not.toBeDisabled();
+      expect(input).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('links the reason tooltip via aria-describedby', () => {
+      renderSearch();
+      const input = screen.getByRole('combobox');
+      const tooltip = screen.getByRole('tooltip', h);
+      expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+
+    it('blocks input while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      renderSearch();
+      const input = screen.getByRole('combobox');
+      input.focus();
+      await user.keyboard('open');
+      expect((input as HTMLInputElement).value).toBe('');
+    });
+
+    it('keeps the input natively disabled when disabled without a reason', () => {
+      render(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          isDisabled
+        />,
+      );
+      expect(screen.getByRole('combobox')).toBeDisabled();
     });
   });
 });

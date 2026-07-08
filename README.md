@@ -58,7 +58,7 @@ Then use it as `npm run astryx -- component --list`. This avoids path errors whe
 | [`@astryxdesign/build`](packages/build)    | Build plugins for StyleX source builds                                                               | [README](packages/build/README.md) |
 | [`@astryxdesign/theme-*`](packages/themes) | Seven ready-made, fully customizable themes (neutral, butter, chocolate, matcha, stone, gothic, y2k) | [README](packages/themes)          |
 
-> `@astryxdesign/lab` (experimental components) and `@astryxdesign/vega` (Vega/Vega-Lite chart wrapper) are used internally for Storybook and the sandbox; they are not yet published to npm.
+> `@astryxdesign/lab` (experimental components) is used internally for Storybook and the sandbox and is not published to npm. `@astryxdesign/vega` (Vega/Vega-Lite chart wrapper) and `@astryxdesign/charts` (chart components) are published to npm only under the `@canary` dist-tag — there is no stable release yet.
 
 ## Principles
 
@@ -95,12 +95,19 @@ Battle-tested design solutions for common interactions and workflows: table page
 
 We welcome contributions! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide.
 
-Quick start for contributors: this repo uses **pnpm 10** via [Corepack](https://nodejs.org/api/corepack.html). Enable it once and the right pnpm version installs automatically:
+Quick start for contributors: this repo uses **Node 22+ on an active LTS line**
+and **pnpm 10**. Install pnpm directly, or enable
+[Corepack](https://nodejs.org/api/corepack.html) once so the pinned pnpm version
+installs automatically:
 
 ```bash
 corepack enable
 pnpm install
 ```
+
+If `corepack` is missing, install pnpm directly or install Corepack manually;
+see the troubleshooting notes in
+[CONTRIBUTING.md](CONTRIBUTING.md#troubleshooting).
 
 ## License
 

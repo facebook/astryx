@@ -14,6 +14,7 @@ import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
+import {InputGroup, InputGroupText} from '../InputGroup';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -163,7 +164,9 @@ describe('Selector', () => {
     // role="listbox" and must not be wrapped in a role="dialog" aria-modal
     // element, which would tell AT the focused trigger is inert.
     expect(screen.getByRole('listbox', {hidden: true})).toBeInTheDocument();
-    expect(screen.queryByRole('dialog', {hidden: true})).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('dialog', {hidden: true}),
+    ).not.toBeInTheDocument();
     expect(
       document.querySelector('[aria-modal="true"]'),
     ).not.toBeInTheDocument();
@@ -653,6 +656,68 @@ describe('Selector', () => {
     });
   });
 
+  describe('InputGroup integration', () => {
+    it('uses the group Field chrome and composes group and selector labels', () => {
+      render(
+        <InputGroup
+          label="Destination"
+          description="Where the alert should route"
+          status={{type: 'error', message: 'Destination is required'}}>
+          <InputGroupText>#</InputGroupText>
+          <Selector
+            label="Channel"
+            isLabelHidden
+            options={OPTIONS}
+            placeholder="Choose a channel"
+          />
+        </InputGroup>,
+      );
+
+      const group = screen.getByRole('group', {name: 'Destination'});
+      const groupLabelID = group.getAttribute('aria-labelledby');
+      const trigger = screen.getByRole('combobox', {
+        name: 'Destination Channel',
+      });
+      const labelledByIDs =
+        trigger.getAttribute('aria-labelledby')?.split(' ') ?? [];
+
+      expect(labelledByIDs).toHaveLength(2);
+      expect(labelledByIDs[0]).toBe(groupLabelID);
+      expect(document.getElementById(labelledByIDs[1])).toHaveTextContent(
+        'Channel',
+      );
+      expect(trigger).toHaveAttribute(
+        'aria-describedby',
+        group.getAttribute('aria-describedby'),
+      );
+      expect(screen.getByText('#')).toBeInTheDocument();
+    });
+
+    it('keeps disabled reasons described when grouped', () => {
+      render(
+        <InputGroup label="Destination">
+          <InputGroupText>#</InputGroupText>
+          <Selector
+            label="Channel"
+            isLabelHidden
+            options={OPTIONS}
+            isDisabled
+            disabledMessage="Choose a project first"
+          />
+        </InputGroup>,
+      );
+
+      const trigger = screen.getByRole('combobox', {
+        name: 'Destination Channel',
+      });
+      const tooltip = screen.getByRole('tooltip', h);
+
+      expect(trigger).not.toBeDisabled();
+      expect(trigger).toHaveAttribute('aria-disabled', 'true');
+      expect(trigger.getAttribute('aria-describedby')).toContain(tooltip.id);
+    });
+  });
+
   describe('disabledMessage', () => {
     it('shows the reason tooltip on hover when disabled with a reason', async () => {
       render(
@@ -772,6 +837,36 @@ describe('Selector', () => {
       const trigger = screen.getByRole('combobox');
       expect(trigger).toBeDisabled();
       expect(trigger).toHaveAttribute('tabIndex', '-1');
+    });
+  });
+  describe('form participation', () => {
+    it('submits the selected value under htmlName', () => {
+      const {container} = render(
+        <form>
+          <Selector label="Fruit" htmlName="fruit" options={OPTIONS} value="Banana" />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('fruit')).toBe('Banana');
+    });
+
+    it('submits an empty string when nothing is selected', () => {
+      const {container} = render(
+        <form>
+          <Selector label="Fruit" htmlName="fruit" options={OPTIONS} />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('fruit')).toBe('');
+    });
+
+    it('is excluded from form data when disabled', () => {
+      const {container} = render(
+        <form>
+          <Selector label="Fruit" htmlName="fruit" options={OPTIONS} value="Banana" isDisabled />
+        </form>,
+      );
+      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
     });
   });
 });

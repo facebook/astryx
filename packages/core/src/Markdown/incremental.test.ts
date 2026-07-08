@@ -650,3 +650,39 @@ describe('streaming end-to-end: no raw syntax visible', () => {
     });
   });
 });
+
+describe('parseMarkdownIncremental link reference definitions', () => {
+  function firstLinkHref(blocks: BlockNode[]): string | undefined {
+    for (const block of blocks) {
+      if (block.type === 'paragraph') {
+        for (const node of block.children) {
+          if (node.type === 'link') {
+            return node.href;
+          }
+        }
+      }
+    }
+    return undefined;
+  }
+
+  it('resolves a footer reference streamed across chunks (matches full parse)', () => {
+    const text = 'See [the docs][d] here.\n\n[d]: https://example.com/d\n';
+    const {final} = simulateStreaming(text, 5);
+    expect(final).toEqual(parseMarkdown(text));
+    expect(firstLinkHref(final)).toBe('https://example.com/d');
+  });
+
+  it('re-resolves an already-settled reference once its definition arrives', () => {
+    const state = createIncrementalState();
+    // The reference paragraph settles (blank line) before the definition.
+    parseMarkdownIncremental('See [d] here.\n\n', state);
+    const before = parseMarkdownIncremental('See [d] here.\n\n[d', state);
+    expect(firstLinkHref(before)).toBeUndefined();
+    // Definition completes — the settled paragraph must pick up the link.
+    const after = parseMarkdownIncremental(
+      'See [d] here.\n\n[d]: /docs\n',
+      state,
+    );
+    expect(firstLinkHref(after)).toBe('/docs');
+  });
+});

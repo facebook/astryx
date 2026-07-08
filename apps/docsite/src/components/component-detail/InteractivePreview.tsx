@@ -25,6 +25,7 @@ import {
   buildInitialState,
   buildRuntimePreviewState,
   getMissingRequiredProps,
+  isOverlayPreviewClosed,
   pickPrimaryProps,
   type KnobProp,
 } from './interactiveState';
@@ -354,6 +355,29 @@ export function InteractivePreviewStage({
             <PreviewErrorBoundary
               resetKeys={[Component, runtimeState, WrapperComponent]}>
               {renderPreview(createElement(Component, runtimeState))}
+              {isOverlayPreviewClosed(playground, state) && (
+                <VStack
+                  gap={2}
+                  style={{
+                    alignItems: 'center',
+                    paddingBlock: 24,
+                    paddingInline: 16,
+                    textAlign: 'center',
+                  }}>
+                  <Text type="supporting" color="secondary">
+                    Opens as a full-screen overlay — nothing renders while it is
+                    closed.
+                  </Text>
+                  {onPropChange != null && canControlOpenState && (
+                    <Button
+                      label="Open preview"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => onPropChange('isOpen', true)}
+                    />
+                  )}
+                </VStack>
+              )}
             </PreviewErrorBoundary>
           </Center>
         )}

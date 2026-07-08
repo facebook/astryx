@@ -4,6 +4,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import {fileURLToPath} from 'node:url';
 import {Command} from 'commander';
 
 import {registerDoctor} from './doctor.mjs';
@@ -62,6 +63,33 @@ function installPkg(name, version = '1.0.0') {
   return dir;
 }
 
+/**
+ * Mirror pnpm's layout: the real package lives under node_modules/.pnpm and
+ * the entry in the scope directory is a symlink to it.
+ */
+function installPkgPnpmStyle(name, version = '1.0.0') {
+  const realDir = path.join(
+    tmpDir,
+    'node_modules',
+    '.pnpm',
+    `${name.replace('/', '+')}@${version}`,
+    'node_modules',
+    ...name.split('/'),
+  );
+  fs.mkdirSync(realDir, {recursive: true});
+  fs.writeFileSync(
+    path.join(realDir, 'package.json'),
+    JSON.stringify({name, version, main: 'index.js'}),
+  );
+  fs.writeFileSync(path.join(realDir, 'index.js'), 'module.exports = {};');
+  const linkPath = path.join(tmpDir, 'node_modules', ...name.split('/'));
+  fs.mkdirSync(path.dirname(linkPath), {recursive: true});
+  // 'junction' keeps this working on Windows without elevated permissions;
+  // it is ignored on posix.
+  fs.symlinkSync(realDir, linkPath, 'junction');
+  return linkPath;
+}
+
 function find(checks, id) {
   return checks.find(c => c.id === id);
 }
@@ -118,6 +146,13 @@ describe('doctor — individual checks', () => {
     expect(res.status).toBe('pass');
   });
 
+  it('themes: detects pnpm-style symlinked theme packages (#3530)', () => {
+    installPkgPnpmStyle('@astryxdesign/theme-neutral', '0.1.2');
+    const res = checkThemes({cwd: tmpDir, configTheme: 'default'});
+    expect(res.status).toBe('pass');
+    expect(res.message).toContain('@astryxdesign/theme-neutral');
+  });
+
   it('config: INFO when no astryx.config.mjs', async () => {
     const res = await checkConfig({cwd: tmpDir, configPath: null});
     expect(res.status).toBe('info');
@@ -128,7 +163,7 @@ describe('doctor — individual checks', () => {
     // serve a file written to an arbitrary tmp path at runtime. Write the
     // fixture inside the package tree so Vite can resolve it, then clean up.
     const fixtureDir = fs.mkdtempSync(
-      path.join(path.dirname(new URL(import.meta.url).pathname), '__doctor_cfg_'),
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '__doctor_cfg_'),
     );
     const configPath = path.join(fixtureDir, 'astryx.config.mjs');
     try {
@@ -145,7 +180,7 @@ describe('doctor — individual checks', () => {
 
   it('config: FAIL when astryx.config.mjs throws on import', async () => {
     const fixtureDir = fs.mkdtempSync(
-      path.join(path.dirname(new URL(import.meta.url).pathname), '__doctor_cfg_'),
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '__doctor_cfg_'),
     );
     const configPath = path.join(fixtureDir, 'astryx.config.mjs');
     try {
@@ -160,7 +195,7 @@ describe('doctor — individual checks', () => {
 
   it('config: FAIL when default export is not an object', async () => {
     const fixtureDir = fs.mkdtempSync(
-      path.join(path.dirname(new URL(import.meta.url).pathname), '__doctor_cfg_'),
+      path.join(path.dirname(fileURLToPath(import.meta.url)), '__doctor_cfg_'),
     );
     const configPath = path.join(fixtureDir, 'astryx.config.mjs');
     try {
