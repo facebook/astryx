@@ -1,7 +1,7 @@
 ---
-'@astryxdesign/core': patch
+'@astryxdesign/lab': patch
 ---
 
-[feat] Chat family additions: `ChatReactionBar` (reaction pills + emoji-picker popover with grid keyboard nav), `ChatUnreadDivider`, and `ChatTypingIndicator` — the messaging affordances every chat product otherwise hand-rolls.
+[feat] Add experimental chat affordances to lab: `ChatReactionBar`, `ChatEmojiPicker`, `ChatUnreadDivider`, and `ChatTypingIndicator`.
 
 @thedjpetersen

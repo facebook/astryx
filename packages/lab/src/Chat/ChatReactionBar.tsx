@@ -4,7 +4,7 @@
 
 /**
  * @file ChatReactionBar.tsx
- * @input Uses React, StyleX, theme tokens, Tooltip, ChatEmojiPicker, icon registry
+ * @input Uses React, StyleX, theme tokens, Tooltip, ChatEmojiPicker
  * @output Exports ChatReactionBar component, ChatReactionBarProps, ChatReaction
  * @position Row of emoji reaction pills under a chat message
  *
@@ -15,10 +15,9 @@
  * and new reactions via `onAdd`.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/core/src/Chat/ChatReactionBar.doc.mjs
- * - /packages/core/src/Chat/Chat.doc.mjs (components list)
- * - /packages/cli/templates/blocks/components/ChatReactionBar/ (block examples)
+ * - /packages/lab/src/Chat/index.ts (exports)
+ * - /packages/lab/src/Chat/ChatReactionBar.doc.mjs
+ * - /apps/storybook/stories/ChatAdditions.stories.tsx (examples)
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -31,12 +30,11 @@ import {
   typographyVars,
   typeScaleVars,
   fontWeightVars,
-} from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
-import {themeProps} from '../utils/themeProps';
-import type {BaseProps} from '../BaseProps';
-import {Tooltip} from '../Tooltip';
-import {getIcon} from '../Icon/globalIconRegistry';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import type {BaseProps} from '@astryxdesign/core';
+import {mergeProps} from '@astryxdesign/core/utils';
+import {themeProps} from '@astryxdesign/core/utils';
+import {Tooltip} from '@astryxdesign/core/Tooltip';
 import {ChatEmojiPicker} from './ChatEmojiPicker';
 import type {ChatEmojiOption} from './ChatEmojiPicker';
 
@@ -280,7 +278,7 @@ export function ChatReactionBar({
               type="button"
               aria-label={addLabel}
               {...stylex.props(styles.addButton)}>
-              {getIcon('faceSmile')}
+              +
             </button>
           </Tooltip>
         </ChatEmojiPicker>

@@ -27,6 +27,7 @@ export {
   ChatReasoning,
   type ChatReasoningProps,
 } from './ChatReasoning/ChatReasoning';
+export * from './Chat';
 
 // Schedule — experimental full-calendar views
 export * from './Schedule';

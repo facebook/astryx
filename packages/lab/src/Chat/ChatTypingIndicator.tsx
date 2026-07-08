@@ -14,10 +14,9 @@
  * Renders dots only when no names are provided.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/core/src/Chat/ChatTypingIndicator.doc.mjs
- * - /packages/core/src/Chat/Chat.doc.mjs (components list)
- * - /packages/cli/templates/blocks/components/ChatTypingIndicator/ (block examples)
+ * - /packages/lab/src/Chat/index.ts (exports)
+ * - /packages/lab/src/Chat/ChatTypingIndicator.doc.mjs
+ * - /apps/storybook/stories/ChatAdditions.stories.tsx (examples)
  */
 
 import * as stylex from '@stylexjs/stylex';
@@ -28,10 +27,10 @@ import {
   durationVars,
   typographyVars,
   typeScaleVars,
-} from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
-import {themeProps} from '../utils/themeProps';
-import type {BaseProps} from '../BaseProps';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import type {BaseProps} from '@astryxdesign/core';
+import {mergeProps} from '@astryxdesign/core/utils';
+import {themeProps} from '@astryxdesign/core/utils';
 
 export interface ChatTypingIndicatorProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */

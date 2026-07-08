@@ -57,18 +57,6 @@ export type {
   ChatSystemMessageVariant,
 } from './ChatSystemMessage';
 
-export {ChatReactionBar} from './ChatReactionBar';
-export type {ChatReactionBarProps, ChatReaction} from './ChatReactionBar';
-
-export {ChatEmojiPicker, DEFAULT_CHAT_EMOJIS} from './ChatEmojiPicker';
-export type {ChatEmojiPickerProps, ChatEmojiOption} from './ChatEmojiPicker';
-
-export {ChatUnreadDivider} from './ChatUnreadDivider';
-export type {ChatUnreadDividerProps} from './ChatUnreadDivider';
-
-export {ChatTypingIndicator} from './ChatTypingIndicator';
-export type {ChatTypingIndicatorProps} from './ChatTypingIndicator';
-
 export {useChatStreamScroll} from './useChatStreamScroll';
 export type {
   UseChatStreamScrollOptions,

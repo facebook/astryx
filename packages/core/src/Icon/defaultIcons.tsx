@@ -261,13 +261,4 @@ export const defaultIcons: IconRegistry = {
       <path d="M12 18v4m-4 0h8" />
     </svg>
   ),
-
-  /** 🙂 — smiling face (emoji picker, add reaction) */
-  faceSmile: (
-    <svg {...svgProps}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M9 9.75h.008v.008H9V9.75zm6 0h.008v.008H15V9.75z" />
-      <path d="M8.5 14.25a4.5 4.5 0 007 0" />
-    </svg>
-  ),
 };

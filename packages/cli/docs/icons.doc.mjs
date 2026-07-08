@@ -51,7 +51,6 @@ export const docs = {
             ['wrench', 'Settings, configuration'],
             ['stop', 'Stop/cancel action'],
             ['microphone', 'Voice input, audio recording'],
-            ['faceSmile', 'Emoji picker, add reaction'],
           ],
         },
       ],

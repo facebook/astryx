@@ -40,7 +40,6 @@ import {
   Wrench,
   Square,
   Mic,
-  Smile,
 } from 'lucide-react';
 
 const iconProps = {
@@ -75,5 +74,4 @@ export const gothicIconRegistry: IconRegistry = {
   wrench: <Wrench {...iconProps} />,
   stop: <Square {...iconProps} />,
   microphone: <Mic {...iconProps} />,
-  faceSmile: <Smile {...iconProps} />,
 };

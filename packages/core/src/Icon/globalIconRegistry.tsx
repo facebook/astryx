@@ -50,8 +50,7 @@ export type IconName =
   | 'checkDouble'
   | 'wrench'
   | 'stop'
-  | 'microphone'
-  | 'faceSmile';
+  | 'microphone';
 
 /**
  * Icon registry mapping semantic names to React nodes.

@@ -16,9 +16,9 @@
  * trigger. Ships with a small default emoji set; pass `emojis` to override.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/core/src/Chat/ChatEmojiPicker.doc.mjs
- * - /packages/core/src/Chat/Chat.doc.mjs (components list)
+ * - /packages/lab/src/Chat/index.ts (exports)
+ * - /packages/lab/src/Chat/ChatEmojiPicker.doc.mjs
+ * - /apps/storybook/stories/ChatAdditions.stories.tsx (examples)
  */
 
 import type {ReactNode} from 'react';
@@ -32,13 +32,13 @@ import {
   easeVars,
   typographyVars,
   typeScaleVars,
-} from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
-import {themeProps} from '../utils/themeProps';
-import type {BaseProps} from '../BaseProps';
-import {Popover} from '../Popover';
-import {TextInput} from '../TextInput';
-import {useGridFocus} from '../hooks/useGridFocus';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import type {BaseProps} from '@astryxdesign/core';
+import {mergeProps} from '@astryxdesign/core/utils';
+import {themeProps} from '@astryxdesign/core/utils';
+import {Popover} from '@astryxdesign/core/Popover';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {useGridFocus} from '@astryxdesign/core/hooks';
 
 export interface ChatEmojiOption {
   /** The emoji character, e.g. "🎉". */
