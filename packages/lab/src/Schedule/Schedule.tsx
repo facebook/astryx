@@ -56,6 +56,8 @@ export interface ScheduleProps<
   timezoneID?: string;
   /** Header/rendering plugins. Defaults to pagination controls. */
   plugins?: ReadonlyArray<SchedulePlugin>;
+  /** Heading level for sub-headings (day labels, weekday headers) within the schedule. @default 3 */
+  headingLevel?: 2 | 3 | 4 | 5 | 6;
 }
 
 interface EventRecord {
@@ -158,6 +160,7 @@ function ScheduleViewContent<Options extends ScheduleViewOptions>({
   onNextDate,
   nextDateLabel,
   plugins,
+  headingLevel,
 }: {
   view: ScheduleView<Options>;
   eventSource: ScheduleEventSource;
@@ -171,6 +174,7 @@ function ScheduleViewContent<Options extends ScheduleViewOptions>({
   onNextDate: () => void;
   nextDateLabel: string;
   plugins: ReadonlyArray<SchedulePlugin>;
+  headingLevel: 2 | 3 | 4 | 5 | 6;
 }) {
   const Component = view.component;
   const range = getRange(view, date);
@@ -195,6 +199,7 @@ function ScheduleViewContent<Options extends ScheduleViewOptions>({
         nextDateLabel,
         view,
         plugins,
+        headingLevel,
       }}>
       <Component options={view.options} />
     </ScheduleContext.Provider>
@@ -210,6 +215,7 @@ export function Schedule({
   onChangeDate,
   timezoneID: timezoneIDProp,
   plugins = defaultSchedulePlugins,
+  headingLevel = 3,
   xstyle,
   className,
   style,
@@ -285,6 +291,7 @@ export function Schedule({
             onNextDate={onNextDate}
             nextDateLabel={nextDateRange.label}
             plugins={plugins}
+            headingLevel={headingLevel}
           />
         }>
         <ScheduleViewContent
@@ -300,6 +307,7 @@ export function Schedule({
           onNextDate={onNextDate}
           nextDateLabel={nextDateRange.label}
           plugins={plugins}
+          headingLevel={headingLevel}
         />
       </Suspense>
     </div>

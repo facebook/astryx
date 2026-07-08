@@ -75,6 +75,7 @@ function ThemedEditor({
   return (
     <SyntaxThemeProvider theme={theme}>
       <CodeEditor
+        label="Code editor"
         value={value}
         onChange={setValue}
         language="typescript"
@@ -188,6 +189,7 @@ function GalleryEditor({
           value={value}
           onChange={setValue}
           language="typescript"
+          label="Code editor"
           hasLineNumbers
         />
       </div>
