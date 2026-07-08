@@ -185,9 +185,7 @@ export function DocPageLayout({
               {description}
             </Text>
           ) : null}
-          <div {...stylex.props(hasOutline && styles.titleDivider)}>
-            <Divider />
-          </div>
+          <Divider xstyle={hasOutline && styles.titleDivider} />
         </VStack>
         {hasOutline ? (
           <div ref={selectorRef} {...stylex.props(styles.mobileOutline)}>
