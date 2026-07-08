@@ -64,8 +64,13 @@ export const docs = {
       { guidance: false, description: 'Nest interactive content inside captions; keep them plain text.' },
     ],
   },
+  // The lightbox opens via showModal() and renders nothing while closed —
+  // overlay mode gives the Properties preview an open trigger instead of an
+  // empty stage, mirroring MobileNav (#3616).
   playground: {
+    overlay: true,
     defaults: {
+      isOpen: false,
       media: {
         src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
         alt: 'Coastal shoreline with ocean waves',
