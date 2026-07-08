@@ -198,7 +198,7 @@ export function registerInit(program) {
     .option('--features <list>', 'Comma-separated features to install (agents, theme, template)')
     .option('--all', 'Install all features, no prompts')
     .option('--remove-agents', 'Remove AI agent docs from all agent doc files')
-    .option('--agent <tool>', 'Target AI tool for agent docs: claude, cursor, codex, all')
+    .option('--agent <tool>', 'Target AI tool for agent docs: claude, cursor, codex, hermes, all')
     .option('--agent-docs-path <path...>', 'Explicit file path(s) for agent docs')
     .action(async (options) => {
       const targetDir = process.cwd();
