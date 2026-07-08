@@ -378,27 +378,25 @@ describe('Collapsible', () => {
   });
 
   describe('group presentation (dividers + density)', () => {
-    it('reflects group dividers and density as data attributes on items', () => {
+    it('reflects group density as a data attribute on items when dividers are enabled', () => {
       render(
-        <CollapsibleGroup type="single" dividers="between" density="compact">
+        <CollapsibleGroup type="single" hasDividers density="compact">
           <Collapsible trigger="A" value="a" data-testid="item-a">
             Body A
           </Collapsible>
         </CollapsibleGroup>,
       );
       const item = screen.getByTestId('item-a');
-      expect(item).toHaveAttribute('data-dividers', 'between');
       expect(item).toHaveAttribute('data-density', 'compact');
     });
 
-    it('omits divider data attributes when standalone (no group)', () => {
+    it('omits density data attribute when standalone (no group)', () => {
       render(
         <Collapsible trigger="A" data-testid="item">
           Body
         </Collapsible>,
       );
       const item = screen.getByTestId('item');
-      expect(item).not.toHaveAttribute('data-dividers');
       expect(item).not.toHaveAttribute('data-density');
     });
   });

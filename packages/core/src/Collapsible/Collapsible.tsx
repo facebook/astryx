@@ -14,7 +14,7 @@
  * the trigger to its content region), and chevron indicator.
  *
  * Works standalone or coordinated by CollapsibleGroup via the `value` prop.
- * When the surrounding CollapsibleGroup enables `dividers`, each Collapsible
+ * When the surrounding CollapsibleGroup sets `hasDividers`, each Collapsible
  * draws its own row chrome (borderBlockStart suppressed on :first-child, plus
  * density padding) from CollapsibleGroupPresentationContext — StyleX has no
  * child selectors, so the group cannot draw it from outside. The presentation
@@ -245,7 +245,7 @@ export function Collapsible({
   });
 
   const presentation = use(CollapsibleGroupPresentationContext);
-  const isDivided = presentation != null && presentation.dividers !== 'none';
+  const isDivided = presentation?.hasDividers ?? false;
   const density = presentation?.density ?? null;
 
   const chevronIcon = getIcon('chevronDown');
@@ -259,7 +259,6 @@ export function Collapsible({
       ref={ref}
       {...mergeProps(
         themeProps('collapsible', {
-          dividers: isDivided ? presentation.dividers : undefined,
           density: density ?? undefined,
         }),
         stylex.props(styles.root, isDivided && styles.divided, xstyle),
