@@ -855,7 +855,7 @@ export function useTableColumnResize<T extends Record<string, unknown>>(
               {handle}
             </>
           ),
-          styles: [...props.styles, headerCellRelative.base],
+          xstyle: [...props.xstyle, headerCellRelative.base],
         };
       },
     }),

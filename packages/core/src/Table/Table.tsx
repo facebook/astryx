@@ -135,7 +135,8 @@ const scrollWrapperStyles = stylex.create({
 function TableScrollWrapper({
   children,
   htmlProps,
-  styles: pluginStyles,
+  xstyle: pluginStyles,
+  styles: deprecatedStyles,
   beforeTable,
   afterTable,
 }: {
@@ -143,10 +144,14 @@ function TableScrollWrapper({
   htmlProps?: React.HTMLAttributes<HTMLDivElement> & {
     ref?: React.Ref<HTMLDivElement>;
   };
+  xstyle?: StyleXStyles[];
+  /** @deprecated Use xstyle instead */
   styles?: StyleXStyles[];
   beforeTable?: React.ReactNode;
   afterTable?: React.ReactNode;
 }) {
+  // Support deprecated styles prop
+  const resolvedPluginStyles = pluginStyles ?? deprecatedStyles ?? [];
   const {ref, ...restHtmlProps} = htmlProps ?? {};
   return (
     <div
@@ -165,7 +170,7 @@ function TableScrollWrapper({
         stylex.props(
           scrollWrapperStyles.base,
           scrollWrapperStyles.containerBleed,
-          ...(pluginStyles ?? []),
+          ...resolvedPluginStyles,
         ),
       )}>
       {beforeTable}
@@ -194,7 +199,7 @@ function buildTableStylePlugin<
             ? `${existingClass} ${tableClass}`
             : tableClass,
         },
-        styles: [...props.styles, tableStyles.base],
+        xstyle: [...props.xstyle, tableStyles.base],
       };
     },
   };

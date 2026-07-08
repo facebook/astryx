@@ -162,7 +162,7 @@ function TableRowInner<T extends Record<string, unknown>>({
 
     const initialBodyCellRenderProps: BodyCellRenderProps = {
       htmlProps: initialCellHtmlProps,
-      styles: [],
+      xstyle: [],
       columnIndex,
       columns: columns as ReadonlyArray<TableColumn<Record<string, unknown>>>,
     };
@@ -206,7 +206,7 @@ function TableRowInner<T extends Record<string, unknown>>({
         key={col.key}
         {...cellRenderProps.htmlProps}
         contextMenuActions={cellRenderProps.contextMenuActions}
-        xstyle={cellRenderProps.styles}>
+        xstyle={cellRenderProps.xstyle}>
         {content}
       </CellComponent>
     );
@@ -218,7 +218,7 @@ function TableRowInner<T extends Record<string, unknown>>({
     p => p.transformBodyRow,
     {
       htmlProps: {},
-      styles: [],
+      xstyle: [],
       children: <>{cells}</>,
     } satisfies BodyRowRenderProps,
     item,
@@ -230,7 +230,7 @@ function TableRowInner<T extends Record<string, unknown>>({
       key={rowKey}
       ref={rowRenderProps.ref}
       {...rowRenderProps.htmlProps}
-      xstyle={rowRenderProps.styles}>
+      xstyle={rowRenderProps.xstyle}>
       {rowRenderProps.children}
     </RowComponent>
   );
@@ -317,10 +317,23 @@ function BaseTableInner<T extends Record<string, unknown>>({
   textOverflow = 'wrap',
   scrollWrapper: ScrollWrapper,
   emptyState,
+  xstyle,
+  className,
+  style,
   ref,
+  ...rest
 }: BaseTableProps<T> & {ref?: Ref<HTMLTableElement>}): ReactElement {
   // Use stable empty array when no plugins provided
   const plugins = pluginsProp ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
+
+  // Deprecation warning for tableProps — warns once per instance
+  const tablePropsWarned = useRef(false);
+  if (userTableProps && !tablePropsWarned.current) {
+    tablePropsWarned.current = true;
+    console.warn(
+      '[Table] tableProps is deprecated. Pass className, style, aria-*, data-*, and other HTML attributes directly to <Table>.',
+    );
+  }
 
   const RowComponent = TableRow as React.ComponentType<TableRowComponentProps>;
   const CellComponent =
@@ -358,7 +371,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
   // --- Plugin pipeline: table ---
   const tableRenderProps = applyPlugins(plugins, p => p.transformTable, {
     htmlProps: {...userTableProps},
-    styles: children ? [styles.table, styles.tableAutoLayout] : [styles.table],
+    xstyle: children ? [styles.table, styles.tableAutoLayout] : [styles.table],
   } satisfies TableRenderProps);
 
   // --- Plugin pipeline: header cells ---
@@ -375,7 +388,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
 
     const initialHeaderRenderProps: HeaderCellRenderProps = {
       htmlProps: initialHeaderHtmlProps,
-      styles: [],
+      xstyle: [],
       content: headerContent,
       columnIndex,
       columns: resolvedColumns as ReadonlyArray<
@@ -436,7 +449,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
         {...mergedHtmlProps}
         {...headerTitleProp}
         contextMenuActions={cellRenderProps.contextMenuActions}
-        xstyle={cellRenderProps.styles}>
+        xstyle={cellRenderProps.xstyle}>
         {headerInner}
       </HeaderCellComponent>
     );
@@ -448,7 +461,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
     p => p.transformHeaderRow,
     {
       htmlProps: {},
-      styles: [],
+      xstyle: [],
       children: <>{headerCells}</>,
     } satisfies HeaderRowRenderProps,
   );
@@ -457,8 +470,24 @@ function BaseTableInner<T extends Record<string, unknown>>({
   const hasData = data != null && data.length > 0;
   const hasColumns = resolvedColumns.length > 0;
 
+  // Merge deprecated tableProps className/style into consumer values (consumer wins)
+  const mergedLegacyClassName = userTableProps
+    ? [userTableProps.className, className].filter(Boolean).join(' ') ||
+      undefined
+    : className;
+  const mergedLegacyStyle = userTableProps
+    ? ({...userTableProps.style, ...style})
+    : style;
+
+  // Combine pipeline htmlProps.className with consumer className
+  const mergedClassName =
+    [tableRenderProps.htmlProps.className, mergedLegacyClassName]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
   const tableStyle: React.CSSProperties = {
     ...tableRenderProps.htmlProps.style,
+    ...mergedLegacyStyle,
     minWidth:
       resolvedWidths.tableMinWidth > 0
         ? `${resolvedWidths.tableMinWidth}px`
@@ -469,10 +498,11 @@ function BaseTableInner<T extends Record<string, unknown>>({
     <table
       ref={ref}
       {...tableRenderProps.htmlProps}
+      {...rest}
       {...mergeProps(
         themeProps('base-table'),
-        stylex.props(...tableRenderProps.styles),
-        tableRenderProps.htmlProps.className,
+        stylex.props(...tableRenderProps.xstyle, xstyle),
+        mergedClassName,
       )}
       style={tableStyle}>
       {children ? (
@@ -484,7 +514,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
               <RowComponent
                 {...headerRowRenderProps.htmlProps}
                 isHeaderRow
-                xstyle={headerRowRenderProps.styles}>
+                xstyle={headerRowRenderProps.xstyle}>
                 {headerRowRenderProps.children}
               </RowComponent>
             </TableHeader>
@@ -540,14 +570,14 @@ function BaseTableInner<T extends Record<string, unknown>>({
       p => p.transformScrollWrapper,
       {
         htmlProps: {},
-        styles: [],
+        xstyle: [],
       } satisfies ScrollWrapperRenderProps,
     );
 
     tableElement = (
       <ScrollWrapper
         htmlProps={scrollWrapperRenderProps.htmlProps}
-        styles={scrollWrapperRenderProps.styles}
+        xstyle={scrollWrapperRenderProps.xstyle}
         beforeTable={scrollWrapperRenderProps.beforeTable}
         afterTable={scrollWrapperRenderProps.afterTable}>
         {tableElement}

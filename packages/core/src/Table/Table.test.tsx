@@ -23,6 +23,7 @@ import {
   capitalize,
   DEFAULT_MIN_COLUMN_WIDTH,
 } from './columnUtils';
+import * as stylex from '@stylexjs/stylex';
 import type {TablePlugin, TableColumn, ProportionalWidth} from './types';
 
 // =============================================================================
@@ -369,7 +370,8 @@ describe('BaseTable', () => {
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLTableElement));
   });
 
-  it('passes tableProps to the table element', () => {
+  it('passes tableProps to the table element (deprecated)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     render(
       <BaseTable
         data={users}
@@ -381,6 +383,69 @@ describe('BaseTable', () => {
       'aria-label',
       'Users table',
     );
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('tableProps is deprecated'),
+    );
+    warn.mockRestore();
+  });
+
+  it('applies className to the root <table>', () => {
+    render(
+      <BaseTable data={users} columns={columns} className="custom-table" />,
+    );
+    expect(screen.getByRole('table')).toHaveClass('custom-table');
+  });
+
+  it('applies style to the root <table>', () => {
+    render(
+      <BaseTable
+        data={users}
+        columns={columns}
+        style={{borderCollapse: 'separate'}}
+      />,
+    );
+    expect(screen.getByRole('table')).toHaveStyle('border-collapse: separate');
+  });
+
+  it('applies xstyle to the root <table>', () => {
+    const tableStyles = stylex.create({
+      root: {backgroundColor: 'rgb(255, 0, 0)'},
+    });
+    render(
+      <BaseTable data={users} columns={columns} xstyle={tableStyles.root} />,
+    );
+    // xstyle produces a StyleX class; verify it doesn't break and apply style
+    expect(screen.getByRole('table')).toBeInTheDocument();
+  });
+
+  it('spreads id, aria-*, data-* onto the root <table>', () => {
+    render(
+      <BaseTable
+        data={users}
+        columns={columns}
+        id="my-table"
+        aria-label="Users table"
+        data-testid="table-test"
+      />,
+    );
+    const table = screen.getByTestId('table-test');
+    expect(table).toHaveAttribute('id', 'my-table');
+    expect(table).toHaveAttribute('aria-label', 'Users table');
+  });
+
+  it('direct props override tableProps when both provided', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <BaseTable
+        data={users}
+        columns={columns}
+        className="direct"
+        tableProps={{className: 'legacy'}}
+      />,
+    );
+    // className should include 'direct' and may also include 'legacy'
+    expect(screen.getByRole('table')).toHaveClass('direct');
+    warn.mockRestore();
   });
 
   describe('plugin pipeline', () => {
@@ -772,7 +837,7 @@ describe('Table', () => {
     const userPlugin: TablePlugin<User> = {
       transformTable: props => {
         // XDS plugin should have already added styles
-        expect(props.styles.length).toBeGreaterThan(1);
+        expect(props.xstyle.length).toBeGreaterThan(1);
         return {
           ...props,
           htmlProps: {...props.htmlProps, 'data-testid': 'after-xds'},

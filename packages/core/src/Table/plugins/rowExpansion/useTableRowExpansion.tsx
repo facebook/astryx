@@ -570,7 +570,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
             ...props.htmlProps,
             onClick: () => onToggle(key),
           },
-          styles: [...props.styles, expansionStyles.clickableRow],
+          xstyle: [...props.xstyle, expansionStyles.clickableRow],
         };
       },
     }),
