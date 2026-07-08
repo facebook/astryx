@@ -11,7 +11,7 @@ export const docs = {
     {
       name: 'content',
       type: 'ReactNode',
-      description: 'Content to display in the tooltip. Typically short, non-interactive text. Mirrors Tooltip’s content prop.',
+      description: 'Content to display in the tooltip. Typically short, non-interactive text. Mirrors Tooltip\'s content prop.',
       required: true,
     },
     {

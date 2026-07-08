@@ -70,7 +70,7 @@ export const docs = {
   usage: {
     description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in CollapsibleGroup for accordion behavior. For custom collapsible components, use the `useCollapsible` hook directly (`astryx hook useCollapsible`).',
     bestPractices: [
-      { guidance: true, description: 'Use dividers="between" on CollapsibleGroup for FAQ-style lists — built-in row hairlines with themed border tokens, no hand-rolled borders.' },
+      { guidance: true, description: 'Use dividers="between" on CollapsibleGroup for FAQ-style lists: built-in row hairlines with themed border tokens, no hand-rolled borders.' },
       { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation in accordion layouts, or use CollapsibleGroup dividers for flat lists; don\'t combine both.' },
       { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare content across sections, like feature lists or pricing tiers.' },
@@ -92,7 +92,7 @@ export const docsZh = {
   usage: {
     description: 'Collapsible hides and reveals content behind a trigger button. Use it in settings panels, FAQ pages, or detail views to keep the page scannable while letting users drill into sections they care about. Wrap multiple collapsibles in CollapsibleGroup for accordion behavior.',
     bestPractices: [
-      { guidance: true, description: 'Use dividers="between" on CollapsibleGroup for FAQ-style lists — built-in row hairlines with themed border tokens, no hand-rolled borders.' },
+      { guidance: true, description: 'Use dividers="between" on CollapsibleGroup for FAQ-style lists: built-in row hairlines with themed border tokens, no hand-rolled borders.' },
       { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation in accordion layouts, or use CollapsibleGroup dividers for flat lists; don\'t combine both.' },
       { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare content across sections, like feature lists or pricing tiers.' },
@@ -110,7 +110,7 @@ export const docsDense = {
   usage: {
     description: 'Collapsible hides and reveals content behind a trigger button. Use in settings, FAQs, or detail views. Wrap in CollapsibleGroup for accordion behavior.',
     bestPractices: [
-      { guidance: true, description: 'Use dividers="between" on CollapsibleGroup for FAQ-style lists — built-in row hairlines, no hand-rolled borders.' },
+      { guidance: true, description: 'Use dividers="between" on CollapsibleGroup for FAQ-style lists: built-in row hairlines, no hand-rolled borders.' },
       { guidance: true, description: 'Wrap each Collapsible in an Card for visual separation, or use CollapsibleGroup dividers for flat lists; not both.' },
       { guidance: true, description: 'Use CollapsibleGroup with type="single" for settings or FAQ pages where only one section should be open at a time.' },
       { guidance: true, description: 'Use type="multiple" when users need to compare across sections.' },
