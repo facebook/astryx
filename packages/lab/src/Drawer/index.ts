@@ -4,7 +4,7 @@
  * @file index.ts
  * @input Drawer.tsx
  * @output Re-exports Drawer component and DrawerProps type
- * @position Public entry point for the Drawer directory
+ * @position Lab entry point for the Drawer directory
  */
 
 export {Drawer} from './Drawer';

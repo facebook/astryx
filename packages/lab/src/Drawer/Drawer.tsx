@@ -6,7 +6,7 @@
  * @file Drawer.tsx
  * @input Uses React, StyleX, theme tokens, Icon/IconButton, useScrollLock, BaseProps, mergeProps/mergeRefs, themeProps
  * @output Exports Drawer component and DrawerProps
- * @position Core implementation; consumed by index.ts, tested by Drawer.test.tsx
+ * @position Lab implementation; consumed by index.ts, tested by Drawer.test.tsx, demonstrated in Storybook
  *
  * Edge-anchored overlay panel for inspectors, detail views, and sheets —
  * the "click a table row, see its details" pattern. Slides in from any of
@@ -29,10 +29,10 @@
  * last-opened-on-top via registry-assigned z-indexes.
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Drawer/Drawer.doc.mjs (props table, features, usage)
- * - /packages/core/src/Drawer/Drawer.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/Drawer/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/Drawer/ (showcase blocks)
+ * - /packages/lab/src/Drawer/Drawer.doc.mjs (props table, features, usage)
+ * - /packages/lab/src/Drawer/Drawer.test.tsx (tests for new/changed behavior)
+ * - /packages/lab/src/Drawer/index.ts (exports if types change)
+ * - /apps/storybook/stories/Drawer.stories.tsx (examples and visual coverage)
  */
 
 import {
@@ -44,7 +44,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {BaseProps} from '../BaseProps';
+import type {BaseProps} from '@astryxdesign/core';
 import {
   borderVars,
   colorVars,
@@ -53,12 +53,11 @@ import {
   shadowVars,
   spacingVars,
   typeScaleVars,
-} from '../theme/tokens.stylex';
-import {Icon} from '../Icon';
-import {IconButton} from '../IconButton';
-import {useScrollLock} from '../hooks/useScrollLock';
-import {mergeProps, mergeRefs} from '../utils';
-import {themeProps} from '../utils/themeProps';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import {Icon} from '@astryxdesign/core/Icon';
+import {IconButton} from '@astryxdesign/core/IconButton';
+import {useScrollLock} from '@astryxdesign/core/hooks';
+import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
 
 // =============================================================================
 // LIFO stacking registry (internal)

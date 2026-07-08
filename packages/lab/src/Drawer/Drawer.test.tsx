@@ -4,7 +4,7 @@
  * @file Drawer.test.tsx
  * @input Uses vitest, @testing-library/react, Drawer component
  * @output Unit tests for Drawer component behavior
- * @position Testing; validates Drawer.tsx implementation
+ * @position Lab testing; validates Drawer.tsx implementation
  *
  * SYNC: When Drawer.tsx changes, update tests to match new behavior
  */

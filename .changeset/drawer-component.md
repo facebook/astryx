@@ -1,7 +1,7 @@
 ---
-'@astryxdesign/core': patch
+'@astryxdesign/lab': patch
 ---
 
-[feat] New `Drawer` component: edge-anchored overlay for inspectors, detail views, and sheets — native dialog semantics, Escape + focus restore, @starting-style entry animation, four sides (`start`/`end` panels, `top`/`bottom` sheets), `size` budget (px number or any CSS length), built-in close button (defaults on for modal drawers), collapse-to-rail for non-modal side panels (`isCollapsed`/`onCollapsedChange`), LIFO sibling stacking (last-opened on top, Escape closes topmost first), optional scrim.
+[feat] Add experimental `Drawer` component to lab: edge-anchored overlay for inspectors, detail views, and sheets with native dialog semantics, Escape + focus restore, @starting-style entry animation, four sides (`start`/`end` panels, `top`/`bottom` sheets), `size` budget, built-in close button, collapse-to-rail for non-modal side panels, LIFO sibling stacking, and optional scrim.
 
 @thedjpetersen
