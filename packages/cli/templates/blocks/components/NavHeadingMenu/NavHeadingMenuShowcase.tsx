@@ -25,21 +25,23 @@ function AppIcon() {
 
 export default function NavHeadingMenuShowcase() {
   return (
-    <SideNav
-      header={
-        <SideNavHeading
-          heading="Acme Platform"
-          icon={<AppIcon />}
-          menu={
-            <NavHeadingMenu size="lg">
-              <NavHeadingMenuItem label="Dashboard" href="/dashboard" />
-              <NavHeadingMenuItem label="Analytics" href="/analytics" />
-              <NavHeadingMenuItem label="Settings" href="/settings" />
-            </NavHeadingMenu>
-          }
-        />
-      }>
-      {null}
-    </SideNav>
+    <div style={{height: 240}}>
+      <SideNav
+        header={
+          <SideNavHeading
+            heading="Acme Platform"
+            icon={<AppIcon />}
+            menu={
+              <NavHeadingMenu size="lg">
+                <NavHeadingMenuItem label="Dashboard" href="/dashboard" />
+                <NavHeadingMenuItem label="Analytics" href="/analytics" />
+                <NavHeadingMenuItem label="Settings" href="/settings" />
+              </NavHeadingMenu>
+            }
+          />
+        }>
+        {null}
+      </SideNav>
+    </div>
   );
 }
