@@ -382,6 +382,44 @@ Labels signal what's open for contribution:
 For **pull requests**, use GitHub's native **Draft** state to signal "not ready to review/merge
 yet" — open the PR as a draft and mark it ready for review when it's done.
 
+## Pull Request Labels
+
+Open PRs are tagged along three axes so they can be routed to the right owners and reviewed
+at the right depth. A PR can carry more than one `area:` label when it spans multiple areas.
+
+**`area:*`** — where the change lives / who owns it:
+
+- `area:cli` — CLI package (`packages/cli`)
+- `area:core` — core component library (`packages/core`)
+- `area:tables` — Table component and related APIs
+- `area:charts` — charts (`packages/charts`, ChartV2)
+- `area:theming` — theme tokens, theme build, `packages/themes`
+- `area:docs` — documentation site (`apps/docsite`) and doc content
+- `area:storybook` — Storybook app (`apps/storybook`)
+- `area:examples` — example apps (`apps/example-*`)
+- `area:lab` — experimental components (`packages/lab`)
+- `area:a11y` — accessibility; cross-cutting, applied alongside the component's area
+
+**`type:*`** — what kind of change it is (a PR gets exactly one):
+
+- `type:new-component` — introduces a brand-new component
+- `type:feature` — new feature or public API addition
+- `type:fix` — bug fix
+- `type:docs` — documentation-only change
+- `type:example` — new or updated example app
+- `type:test` — tests only
+- `deps` — dependency bumps / lockfile changes
+
+**`needs:*`** — extra review a PR requires (opt-in; a PR may have both or neither):
+
+- `needs:api-review` — touches public/exported API (new components, new props, new exports);
+  review carefully.
+- `needs:design-review` — affects visuals (StyleX/styles, theme tokens, layout, Storybook);
+  Design should take a look.
+
+New PRs are labeled during triage. If your PR is missing labels, a maintainer will add them —
+you're welcome to apply the ones you're confident about when you open it.
+
 ## Pull Request Guidelines
 
 1. Create a feature branch from `main`
