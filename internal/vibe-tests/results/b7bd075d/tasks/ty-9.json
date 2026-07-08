@@ -1,0 +1,13 @@
+{
+  "promptId": "ty-9",
+  "category": "typography",
+  "prompt": "Build a comparison table header where each column has a plan name heading and a price. The 'Enterprise' plan should have visually larger display-style typography compared to the other plans.",
+  "expectedComponents": [
+    "Heading",
+    "Text"
+  ],
+  "target": "baseline",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/b7bd075d/projects/ty-9. Explore it to find available components.\n\n## Task\n\nBuild a comparison table header where each column has a plan name heading and a price. The 'Enterprise' plan should have visually larger display-style typography compared to the other plans.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/b7bd075d/projects/ty-9/ty-9.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/b7bd075d/projects/ty-9/ty-9.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-08T11:04:40.773Z"
+}

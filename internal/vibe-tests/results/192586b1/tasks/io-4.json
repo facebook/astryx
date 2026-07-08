@@ -1,0 +1,13 @@
+{
+  "promptId": "io-4",
+  "category": "integration-oriented",
+  "prompt": "Build a quantity selector for a shopping cart item. It should have a number input with increment/decrement, min of 1, max of 99. Changing the quantity should call an update API endpoint.",
+  "expectedComponents": [
+    "NumberInput",
+    "Button"
+  ],
+  "target": "html",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/192586b1/projects/io-4. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nBuild a quantity selector for a shopping cart item. It should have a number input with increment/decrement, min of 1, max of 99. Changing the quantity should call an update API endpoint.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/192586b1/projects/io-4/io-4.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/192586b1/projects/io-4/io-4.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-08T11:04:40.774Z"
+}

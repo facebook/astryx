@@ -1,0 +1,118 @@
+{
+  "iterationId": "b7bd075d",
+  "createdAt": "2026-07-08T11:04:40.770Z",
+  "config": {
+    "target": "baseline",
+    "persona": "naive",
+    "holdout": false,
+    "degradation": false,
+    "cliRetrieval": false
+  },
+  "prompts": [
+    {
+      "id": "fwc-1",
+      "category": "feature-with-constraint",
+      "prompt": "I need a banner that warns users their trial expires in X days and lets them upgrade",
+      "expectedComponents": [
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "wd-5",
+      "category": "workflow-description",
+      "prompt": "Build a feedback form that opens in a dialog. It should have a title field, a long-form text area for comments, and a submit button. Show a success state after submission.",
+      "expectedComponents": [
+        "Dialog",
+        "TextInput",
+        "TextArea",
+        "Button",
+        "Layout"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "cwm-3",
+      "category": "clone-with-modification",
+      "prompt": "Like Notion's page header with icon picker and cover image",
+      "expectedComponents": [
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "sd-3",
+      "category": "state-driven",
+      "prompt": "Form that disables submit until all required fields are valid",
+      "expectedComponents": [
+        "TextInput",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "dd-5",
+      "category": "data-display",
+      "prompt": "Build an email inbox view with a table showing sender, subject, date, and a preview snippet. Add row selection with checkboxes and a bulk actions bar that appears when items are selected.",
+      "expectedComponents": [
+        "Table",
+        "CheckboxInput",
+        "DropdownMenu",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "rc-3",
+      "category": "responsive-context",
+      "prompt": "Cards that stack vertically on mobile but show in a grid on desktop",
+      "expectedComponents": [
+        "Card"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "io-4",
+      "category": "integration-oriented",
+      "prompt": "Build a quantity selector for a shopping cart item. It should have a number input with increment/decrement, min of 1, max of 99. Changing the quantity should call an update API endpoint.",
+      "expectedComponents": [
+        "NumberInput",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ps-4",
+      "category": "page-setup",
+      "prompt": "Create a product detail page with breadcrumb navigation showing Home > Category > Subcategory > Product Name. The page should have a header, product info section, and a back button.",
+      "expectedComponents": [
+        "Breadcrumbs",
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ty-9",
+      "category": "typography",
+      "prompt": "Build a comparison table header where each column has a plan name heading and a price. The 'Enterprise' plan should have visually larger display-style typography compared to the other plans.",
+      "expectedComponents": [
+        "Heading",
+        "Text"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "tc-5",
+      "category": "theme-customization",
+      "prompt": "I want to customize the card component's appearance in my theme — add a gradient border and increase the border radius. How do I do component-level style overrides in the Astryx theme?",
+      "expectedComponents": [
+        "Theme",
+        "Card"
+      ],
+      "status": "pending"
+    }
+  ]
+}
