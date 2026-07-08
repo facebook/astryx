@@ -90,6 +90,17 @@ export function ChartAxis({
   const isHorizontal = position === 'top' || position === 'bottom';
   const scale = isHorizontal ? xScale : yScale;
 
+  // Sanitize the tick count before it reaches d3. `.ticks()` targets ~N ticks
+  // and allocates an array that large, so a huge N throws `RangeError: Invalid
+  // array length` and crashes the render; a non-finite or negative N would
+  // otherwise blank the axis. Clamp to a sane integer (0 still means "no
+  // ticks") and fall back to the default for invalid input. Shared by tick
+  // generation and the auto formatter so the two stay in sync.
+  const safeTickCount =
+    Number.isFinite(tickCount) && tickCount >= 0
+      ? Math.min(Math.floor(tickCount), 1000)
+      : 5;
+
   // Default label formatter. For continuous (linear/time) scales, use d3's own
   // tick formatter so numbers get sensible precision (no floating-point dust
   // like "0.30000000000000004") and dates render as calendar labels instead of
@@ -100,9 +111,9 @@ export function ChartAxis({
     }
     const continuous = scale as
       ScaleLinear<number, number> | ScaleTime<number, number>;
-    const fmt = continuous.tickFormat(tickCount);
+    const fmt = continuous.tickFormat(safeTickCount);
     return (v: unknown) => fmt(v as number & Date);
-  }, [tickFormat, scale, tickCount]);
+  }, [tickFormat, scale, safeTickCount]);
 
   const format = useCallback(
     (value: unknown): string => {
@@ -124,7 +135,7 @@ export function ChartAxis({
     } else {
       const linearScale = scale as
         ScaleLinear<number, number> | ScaleTime<number, number>;
-      allTicks = linearScale.ticks(tickCount).map(d => ({
+      allTicks = linearScale.ticks(safeTickCount).map(d => ({
         value: d,
         offset: linearScale(d as number & Date),
       }));
@@ -156,7 +167,7 @@ export function ChartAxis({
     }
 
     return allTicks;
-  }, [scale, tickCount, maxTicks, isHorizontal, width, height, format]);
+  }, [scale, safeTickCount, maxTicks, isHorizontal, width, height, format]);
 
   const transform =
     position === 'bottom'
