@@ -27,18 +27,45 @@ config knobs turn Flow into a checker for our TypeScript sources:
 Flow does **not** read `@types/*` packages or `.d.ts` files the way `tsc` does.
 Its equivalents are:
 
-| TypeScript mechanism                                 | Flow equivalent           | Where it lives                           |
-| ---------------------------------------------------- | ------------------------- | ---------------------------------------- |
-| `@types/*` / package `.d.ts` for third-party libs    | **libdefs**               | `flow-typed/*.js` (`declare module '…'`) |
-| First-party `.d.ts` shadowing a `.js` implementation | **declaration files**     | colocated `Foo.js.flow`                  |
-| `tsc --declaration` (emit types)                     | **`flow-api-translator`** | build tooling (installed, not yet wired) |
-| `tsconfig` `paths` / project references              | **`module.name_mapper`**  | `.flowconfig`                            |
+| TypeScript mechanism                                 | Flow equivalent           | Where it lives                            |
+| ---------------------------------------------------- | ------------------------- | ----------------------------------------- |
+| `@types/*` / package `.d.ts` for third-party libs    | **libdefs**               | `flow-typed/*.js` (`declare module '…'`)  |
+| First-party `.d.ts` shadowing a `.js` implementation | **declaration files**     | colocated `Foo.js.flow`                   |
+| `tsc --declaration` (emit types)                     | **`flow-api-translator`** | build tooling (installed, not yet wired)  |
+| `tsconfig` `paths` / project references              | **`module.name_mapper`**  | `.flowconfig`                             |
+| `lib` (built-in DOM/Node globals)                    | **environment libdefs**   | `flow-typed/environments/*.js` (vendored) |
 
 We check third-party modules Flow can't see (stylex, vitest, testing-library,
 heroicons, next, …) with starter libdefs in [`flow-typed/`](../flow-typed).
 `node_modules` ships only the built `dist/` for `@astryxdesign/*` workspace
 packages (which Flow ignores), so `.flowconfig` uses `module.name_mapper` to
 resolve those imports back to the TypeScript **source**.
+
+## DOM / Node globals: environment libdefs
+
+`HTMLElement`, `document`, `window`, `process`, and friends used to be **compiled
+into the Flow binary**. As of Flow **0.262** they are no longer bundled — Flow
+now downloads them from the community [`flow-typed`](https://github.com/flow-typed/flow-typed)
+repo. Two pieces wire this up:
+
+- **`flow-typed.config.json`** — lists the environments to install. Astryx needs
+  `node`, `dom`, **`html`** (the HTML element hierarchy lives here, _not_ in
+  `dom`), `bom`, `cssom`, `geometry`, `intl`, `indexeddb`, `serviceworkers`,
+  `web-animations`, `webassembly`, `streams`, and `jsx`.
+- **`flow-typed/environments/*.js`** — the downloaded libdefs, **vendored into the
+  repo** (they carry a `// flow-typed signature:` checksum header). Treat them
+  like generated/lockfile content: don't hand-edit; refresh with
+  `pnpm flow:install-libdefs`. `flow-typed/npm/*.js` are auto-discovered libdefs
+  for a few dev dependencies and are vendored the same way.
+
+These are **not hand-written** — they're Flow-lineage definitions maintained in
+the flow-typed community repo. The only hand-authored libdefs are
+`flow-typed/{stylex,testing,misc}.js`.
+
+Installing them cut `cannot-resolve-name` from ~3.2k to ~130 (the remainder are
+SVG element types and the deprecated `$PropertyType` utility). Note that adding
+_real_ DOM types also surfaces downstream `incompatible-type` errors that were
+previously masked while the globals were unresolved — see the burn-down notes.
 
 ## Syntax Flow can't parse
 
