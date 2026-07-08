@@ -96,7 +96,7 @@ Battle-tested design solutions for common interactions and workflows: table page
 We welcome contributions! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide.
 
 Quick start for contributors: this repo uses **Node 22+ on an active LTS line**
-and **pnpm 10**. Install pnpm directly, or enable
+and **pnpm 11**. Install pnpm directly, or enable
 [Corepack](https://nodejs.org/api/corepack.html) once so the pinned pnpm version
 installs automatically:
 
