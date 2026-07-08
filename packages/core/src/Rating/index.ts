@@ -12,4 +12,15 @@
  */
 
 export {Rating} from './Rating';
-export type {RatingProps, RatingSize, RatingColor} from './Rating';
+export type {
+  RatingProps,
+  RatingSize,
+  RatingColor,
+  RatingDensity,
+  RatingMode,
+  RatingLabelPlacement,
+  RatingAnimation,
+  RatingTooltip,
+  RatingIcons,
+  RatingIconComponent,
+} from './Rating';

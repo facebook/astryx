@@ -11,23 +11,31 @@ export const docs = {
     'stars',
     'score',
     'review',
+    'reviews',
     'feedback',
     'rank',
     'grade',
     'vote',
+    'heart',
   ],
   props: [
     {
       name: 'label',
       type: 'string',
-      description: 'Accessible label. Rendered as visible text unless hidden.',
+      description: 'Accessible label. Shown per labelPlacement unless hidden.',
       required: true,
+    },
+    {
+      name: 'mode',
+      type: "'interactive' | 'display'",
+      description:
+        'interactive: users can select (slider role). display: read-only (img role).',
+      default: "'interactive'",
     },
     {
       name: 'value',
       type: 'number',
-      description:
-        'Controlled value. Fractional values render partial icons (e.g. 3.5).',
+      description: 'Controlled value. Fractional values render partial icons.',
     },
     {
       name: 'defaultValue',
@@ -35,35 +43,39 @@ export const docs = {
       description: 'Uncontrolled initial value.',
       default: '0',
     },
+    {name: 'max', type: 'number', description: 'Number of icons.', default: '5'},
     {
-      name: 'max',
+      name: 'precision',
       type: 'number',
-      description: 'Number of icons to render.',
-      default: '5',
+      description: 'Smallest increment: 1, 0.5, 0.25, 0.1, …',
+      default: '1',
     },
     {
-      name: 'hasHalfIcons',
-      type: 'boolean',
-      description: 'Allow selecting half-icon increments when interactive.',
-      default: 'false',
+      name: 'onChange',
+      type: '(value: number) => void',
+      description: 'Called when the value changes.',
     },
     {
-      name: 'isReadOnly',
-      type: 'boolean',
-      description: 'Read-only display: renders the value without interaction.',
-      default: 'false',
+      name: 'onHoverChange',
+      type: '(value: number | null) => void',
+      description: 'Called as the hover preview changes; null on leave.',
     },
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: 'Disabled state: grays out and blocks interaction.',
+      description: 'Disabled: grays out and blocks interaction.',
+      default: 'false',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description: 'Renders a skeleton placeholder.',
       default: 'false',
     },
     {
       name: 'isClearable',
       type: 'boolean',
-      description:
-        'Allow clearing back to 0 by selecting the current value again.',
+      description: 'Selecting the current value again clears to 0.',
       default: 'true',
     },
     {
@@ -73,89 +85,127 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'density',
+      type: "'compact' | 'comfortable' | 'spacious'",
+      description: 'Spacing between icons.',
+      default: "'comfortable'",
+    },
+    {
       name: 'color',
-      type: "'warning' | 'accent' | 'neutral'",
-      description: 'Color of the filled icons.',
-      default: "'warning'",
+      type: "'gold' | 'brand' | 'warning' | 'positive' | 'neutral' | (string & {})",
+      description: 'Semantic preset or any CSS color string.',
+      default: "'gold'",
     },
     {
-      name: 'icon',
-      type: 'IconType',
+      name: 'icons',
+      type: '{ filled: Component; empty?: Component; partial?: Component }',
       description:
-        'Custom SVG icon component for filled (and empty) layers. Defaults to a star.',
+        'Icon set from the project icon system — a solid filled variant and an outline empty variant. Defaults to a star.',
     },
     {
-      name: 'emptyIcon',
-      type: 'IconType',
-      description: 'Custom SVG icon component for the empty layer only.',
+      name: 'animation',
+      type: "'none' | 'fill' | 'scale' | 'bounce'",
+      description: 'Micro-interaction on hover/press (motion-safe).',
+      default: "'none'",
     },
     {
-      name: 'hasValueLabel',
+      name: 'labelPlacement',
+      type: "'top' | 'bottom' | 'left' | 'right' | 'hidden'",
+      description: 'Where the label sits relative to the icons.',
+      default: "'top'",
+    },
+    {
+      name: 'hasValueText',
       type: 'boolean',
-      description: 'Show a text label of the current value next to the icons.',
+      description: 'Show the numeric value next to the icons.',
       default: 'false',
     },
     {
-      name: 'formatValueLabel',
+      name: 'formatValue',
       type: '(value: number, max: number) => string',
-      description:
-        'Custom formatter for the value label and aria-valuetext. Defaults to "{value} of {max}".',
+      description: 'Format the numeric value / aria-valuetext.',
     },
     {
-      name: 'onChange',
-      type: '(value: number) => void',
-      description: 'Called when the value changes.',
+      name: 'reviewCount',
+      type: 'number',
+      description: 'Show a review count, e.g. "(2,341 reviews)".',
+    },
+    {
+      name: 'formatReviewCount',
+      type: '(count: number) => string',
+      description: 'Format the review count text.',
+    },
+    {
+      name: 'descriptiveLabels',
+      type: 'string[] | ((value: number) => string)',
+      description: 'Descriptive labels per value (e.g. Poor…Excellent).',
+    },
+    {
+      name: 'hasHoverPreview',
+      type: 'boolean',
+      description: 'Show hover preview before clicking (interactive).',
+      default: 'true',
+    },
+    {
+      name: 'tooltip',
+      type: "'none' | 'value' | 'label'",
+      description: 'Tooltip content on hover/focus.',
+      default: "'none'",
     },
     {
       name: 'htmlName',
       type: 'string',
-      description:
-        'HTML name for the underlying hidden input, for native form submission.',
+      description: 'Name for the hidden form input.',
     },
     {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        'StyleX styles for layout customization. Must be a stylex.create() value, not an inline style object like style={{}}.',
     },
   ],
   theming: {
     targets: [
       {
         className: 'astryx-rating',
-        visualProps: ['size', 'color'],
-        states: ['readonly', 'disabled'],
+        visualProps: ['size', 'density'],
+        states: ['mode', 'disabled', 'loading'],
       },
     ],
   },
   usage: {
     description:
-      'A star rating control for capturing or displaying a score. Supports controlled and uncontrolled use, half-icon precision, a read-only display mode, and custom icons. Interactive ratings expose the WAI-ARIA slider role with full keyboard support.',
+      'An enterprise-grade rating control — a single source of truth for scores across products. Two modes (interactive/display), configurable max and precision, stars or any icon from the project icon system, semantic and custom colors, flexible label placement, review counts, descriptive labels, tooltips, density and animation options, RTL, loading skeletons, and full keyboard + screen-reader accessibility.',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Always provide a label, even if hidden; screen readers need it to announce what is being rated.',
+          'Always provide a label, even when hidden; screen readers need it to announce what is being rated.',
       },
       {
         guidance: true,
         description:
-          'Use isReadOnly to display an aggregate score (like an average review), and hasHalfIcons so partial values read accurately.',
+          'Use mode="display" with precision and hasValueText/reviewCount to present aggregate scores (e.g. "4.6 (2,341 reviews)").',
       },
       {
         guidance: true,
         description:
-          'Keep max small (typically 5) so each step is meaningful and easy to target.',
+          'Add descriptiveLabels (Poor…Excellent) so the score has meaning beyond the icon count.',
+      },
+      {
+        guidance: true,
+        description:
+          'Drive size, spacing, and color from tokens/props rather than forking the component per product.',
       },
       {
         guidance: false,
         description:
-          'Use a rating for binary yes/no feedback; use a Switch or a thumbs-up control instead.',
+          'Rely on color alone to convey the score; icon count and value text carry the meaning.',
       },
       {
         guidance: false,
         description:
-          'Rely on color alone to convey the score; the icon count and value text carry the meaning.',
+          'Use a rating for binary yes/no feedback; use a Switch or thumbs control instead.',
       },
     ],
   },
@@ -169,107 +219,87 @@ export const docsZh = {
     {
       name: 'label',
       type: 'string',
-      description: '无障碍标签（必填）。除非隐藏，否则显示为可见文本。',
+      description: '无障碍标签（必填）。除非隐藏，否则按 labelPlacement 显示。',
       required: true,
+    },
+    {
+      name: 'mode',
+      type: "'interactive' | 'display'",
+      description: 'interactive：可选择（slider）。display：只读（img）。',
+      default: "'interactive'",
     },
     {
       name: 'value',
       type: 'number',
-      description: '受控值。小数值会渲染部分图标（例如 3.5）。',
-    },
-    {
-      name: 'defaultValue',
-      type: 'number',
-      description: '非受控的初始值。',
-      default: '0',
+      description: '受控值。小数值渲染部分图标。',
     },
     {
       name: 'max',
       type: 'number',
-      description: '要渲染的图标数量。',
+      description: '图标数量。',
       default: '5',
     },
     {
-      name: 'hasHalfIcons',
-      type: 'boolean',
-      description: '交互时允许选择半个图标的增量。',
-      default: 'false',
-    },
-    {
-      name: 'isReadOnly',
-      type: 'boolean',
-      description: '只读展示：渲染值但不可交互。',
-      default: 'false',
-    },
-    {
-      name: 'isDisabled',
-      type: 'boolean',
-      description: '禁用状态：置灰并阻止交互。',
-      default: 'false',
-    },
-    {
-      name: 'isClearable',
-      type: 'boolean',
-      description: '允许再次选择当前值以清零。',
-      default: 'true',
-    },
-    {
-      name: 'size',
-      type: "'sm' | 'md' | 'lg'",
-      description: '图标尺寸。',
-      default: "'md'",
+      name: 'precision',
+      type: 'number',
+      description: '最小增量：1、0.5、0.25、0.1…',
+      default: '1',
     },
     {
       name: 'color',
-      type: "'warning' | 'accent' | 'neutral'",
-      description: '已填充图标的颜色。',
-      default: "'warning'",
+      type: "'gold' | 'brand' | 'warning' | 'positive' | 'neutral' | (string & {})",
+      description: '语义预设或任意 CSS 颜色。',
+      default: "'gold'",
     },
     {
-      name: 'hasValueLabel',
+      name: 'icons',
+      type: '{ filled?; empty?; partial? }',
+      description: '自定义图标集（心形、火焰、奖杯…）。',
+    },
+    {
+      name: 'labelPlacement',
+      type: "'top' | 'bottom' | 'left' | 'right' | 'hidden'",
+      description: '标签相对图标的位置。',
+      default: "'top'",
+    },
+    {
+      name: 'reviewCount',
+      type: 'number',
+      description: '显示评价数量，如“(2,341 reviews)”。',
+    },
+    {
+      name: 'isLoading',
       type: 'boolean',
-      description: '在图标旁显示当前值的文本标签。',
+      description: '渲染骨架占位。',
       default: 'false',
-    },
-    {
-      name: 'onChange',
-      type: '(value: number) => void',
-      description: '值变化时调用。',
-    },
-    {
-      name: 'xstyle',
-      type: 'StyleXStyles',
-      description:
-        '用于布局自定义的 StyleX 样式（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象如 style={{}}。',
     },
   ],
   theming: {
     targets: [
       {
         className: 'astryx-rating',
-        visualProps: ['size', 'color'],
-        states: ['readonly', 'disabled'],
+        visualProps: ['size', 'density'],
+        states: ['mode', 'disabled', 'loading'],
       },
     ],
   },
   usage: {
     description:
-      'A star rating control for capturing or displaying a score. Supports controlled and uncontrolled use, half-icon precision, a read-only display mode, and custom icons. Interactive ratings expose the WAI-ARIA slider role with full keyboard support.',
+      'An enterprise-grade rating control — a single source of truth for scores across products.',
     bestPractices: [
       {
         guidance: true,
         description:
-          'Always provide a label, even if hidden; screen readers need it to announce what is being rated.',
+          'Always provide a label, even when hidden; screen readers need it.',
       },
       {
         guidance: true,
         description:
-          'Use isReadOnly to display an aggregate score (like an average review), and hasHalfIcons so partial values read accurately.',
+          'Use mode="display" with hasValueText/reviewCount for aggregate scores.',
       },
       {
         guidance: false,
-        description:
-          'Rely on color alone to convey the score; the icon count and value text carry the meaning.',
+        description: 'Rely on color alone to convey the score.',
       },
     ],
   },
@@ -278,45 +308,52 @@ export const docsZh = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Star rating control for capturing or displaying a score, with half-icon precision and a read-only mode.',
+    'Enterprise rating control: interactive/display modes, configurable max & precision, stars or any project icon, semantic/custom colors, labels, review counts, tooltips, density, animation, RTL, loading, full a11y.',
   usage: {
     description:
-      'A star rating control for capturing or displaying a score. Supports controlled and uncontrolled use, half-icon precision, a read-only display mode, and custom icons. Interactive ratings expose the WAI-ARIA slider role with full keyboard support.',
+      'An enterprise-grade rating control — a single source of truth for scores across products.',
     bestPractices: [
       {
         guidance: true,
-        description:
-          'Always provide a label, even if hidden; screen readers need it to announce what is being rated.',
+        description: 'Always provide a label, even when hidden.',
       },
       {
         guidance: true,
         description:
-          'Use isReadOnly with hasHalfIcons to display an aggregate score accurately.',
+          'Use mode="display" with precision + hasValueText/reviewCount for aggregate scores.',
       },
       {
         guidance: false,
-        description:
-          'Rely on color alone to convey the score; icon count and value text carry the meaning.',
+        description: 'Rely on color alone to convey the score.',
       },
     ],
   },
   propDescriptions: {
     label: 'Accessible label (required).',
-    value: 'Controlled value; fractional values render partial icons.',
+    mode: 'interactive (slider) or display (read-only img).',
+    value: 'Controlled value; fractions render partial icons.',
     defaultValue: 'Uncontrolled initial value.',
     max: 'Number of icons.',
-    hasHalfIcons: 'Allow half-icon increments when interactive.',
-    isReadOnly: 'Read-only display without interaction.',
-    isDisabled: 'Disabled: grays out and blocks interaction.',
-    isClearable: 'Selecting the current value again clears to 0.',
-    size: 'Icon size.',
-    color: 'Color of the filled icons.',
-    icon: 'Custom filled/empty SVG icon. Defaults to a star.',
-    emptyIcon: 'Custom SVG icon for the empty layer only.',
-    hasValueLabel: 'Show the current value as text next to the icons.',
-    formatValueLabel: 'Custom value label / aria-valuetext formatter.',
+    precision: 'Smallest increment (1, 0.5, 0.25, 0.1).',
     onChange: 'Called when the value changes.',
+    onHoverChange: 'Called as hover preview changes.',
+    isDisabled: 'Disabled: grays out, blocks interaction.',
+    isLoading: 'Skeleton placeholder.',
+    isClearable: 'Reselecting current value clears to 0.',
+    size: 'Icon size.',
+    density: 'Spacing between icons.',
+    color: 'Semantic preset or any CSS color.',
+    icons: 'Icon set from the project icon system { filled, empty, partial }.',
+    animation: 'Hover/press micro-interaction.',
+    labelPlacement: 'top | bottom | left | right | hidden.',
+    hasValueText: 'Show numeric value.',
+    formatValue: 'Format value / aria-valuetext.',
+    reviewCount: 'Show a review count.',
+    formatReviewCount: 'Format the review count text.',
+    descriptiveLabels: 'Labels per value (Poor…Excellent).',
+    hasHoverPreview: 'Hover preview before clicking.',
+    tooltip: 'Tooltip content: none | value | label.',
     htmlName: 'Name for the hidden form input.',
-    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
+    xstyle: 'StyleX styles for layout. Must be stylex.create() value.',
   },
 };
