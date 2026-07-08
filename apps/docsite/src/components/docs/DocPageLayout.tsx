@@ -21,6 +21,7 @@ import {Section} from '@astryxdesign/core/Section';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Selector} from '@astryxdesign/core/Selector';
 import {Outline, type OutlineItem} from '@astryxdesign/core/Outline';
+import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {
   colorVars,
   spacingVars,
@@ -28,11 +29,12 @@ import {
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {layout} from '../../layout.stylex';
 
-// The outline aside and the mobile jump-menu both render at all times; a pure
-// @media query decides which one paints so the server HTML is correct on first
-// paint (no useMediaQuery flip). Below this width the aside is hidden and the
-// Selector shows.
-const TOC_BREAKPOINT = '@media (max-width: 1024px)';
+// Both the aside and the mobile jump-menu are styled for their side of this
+// breakpoint so the initial (server) render is jank-free; useMediaQuery then
+// mounts only the side the viewport needs, so the other's scroll-spy/observers
+// don't run.
+const TOC_BREAKPOINT = '(max-width: 1024px)';
+const TOC_MEDIA_QUERY = `@media ${TOC_BREAKPOINT}`;
 
 const styles = stylex.create({
   // Centered article when there is no outline aside (original behavior).
@@ -58,7 +60,7 @@ const styles = stylex.create({
   sectionInRow: {
     marginInline: {
       default: 0,
-      [TOC_BREAKPOINT]: 'auto',
+      [TOC_MEDIA_QUERY]: 'auto',
     },
     flexShrink: 1,
     minWidth: 0,
@@ -77,7 +79,7 @@ const styles = stylex.create({
     // Desktop only — hidden below the breakpoint where the Selector takes over.
     display: {
       default: 'block',
-      [TOC_BREAKPOINT]: 'none',
+      [TOC_MEDIA_QUERY]: 'none',
     },
     position: 'sticky',
     top: 'calc(var(--appshell-header-height, 0px) + 24px)',
@@ -92,7 +94,7 @@ const styles = stylex.create({
   mobileOutline: {
     display: {
       default: 'none',
-      [TOC_BREAKPOINT]: 'block',
+      [TOC_MEDIA_QUERY]: 'block',
     },
     position: 'sticky',
     top: 'var(--appshell-header-height, 0px)',
@@ -109,7 +111,7 @@ const styles = stylex.create({
   titleDivider: {
     display: {
       default: 'block',
-      [TOC_BREAKPOINT]: 'none',
+      [TOC_MEDIA_QUERY]: 'none',
     },
   },
 });
@@ -131,6 +133,9 @@ export function DocPageLayout({
   outline?: OutlineItem[];
 }) {
   const hasOutline = outline != null && outline.length > 0;
+  const isNarrow = useMediaQuery(TOC_BREAKPOINT);
+  const showAside = hasOutline && !isNarrow;
+  const showSelector = hasOutline && isNarrow;
 
   const [activeId, setActiveId] = useState<string | undefined>(
     outline?.[0]?.id,
@@ -187,7 +192,7 @@ export function DocPageLayout({
           ) : null}
           <Divider xstyle={hasOutline && styles.titleDivider} />
         </VStack>
-        {hasOutline ? (
+        {showSelector ? (
           <div ref={selectorRef} {...stylex.props(styles.mobileOutline)}>
             <Selector
               label="On this page"
@@ -220,14 +225,16 @@ export function DocPageLayout({
   return (
     <div className={rowProps.className} style={rowStyle}>
       {article}
-      <aside {...stylex.props(styles.aside)}>
-        <Outline
-          items={outline}
-          label="On this page"
-          density="compact"
-          onActiveIdChange={setActiveId}
-        />
-      </aside>
+      {showAside ? (
+        <aside {...stylex.props(styles.aside)}>
+          <Outline
+            items={outline}
+            label="On this page"
+            density="compact"
+            onActiveIdChange={setActiveId}
+          />
+        </aside>
+      ) : null}
     </div>
   );
 }
