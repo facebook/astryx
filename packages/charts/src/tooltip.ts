@@ -8,7 +8,7 @@
  *           lives in ChartTooltip.tsx.
  */
 
-import {isUtilityMarkType, type SeriesDef} from './types';
+import {DEFAULT_SERIES_COLOR, isUtilityMarkType, type SeriesDef} from './types';
 
 /**
  * One row of tooltip data — represents a single series' value at the
@@ -53,7 +53,9 @@ export function deriveTooltipSeriesValues(
     out.push({
       key: s.key,
       label: s.label ?? s.key,
-      color: s.color ?? s._resolvedColor ?? 'var(--color-text-primary)',
+      // Same representative-color precedence as the legend, so a series' tooltip
+      // swatch and legend swatch always match.
+      color: s.color ?? s._resolvedColor ?? DEFAULT_SERIES_COLOR,
       type: s.type,
       value: datum[s.dataKeys[0]],
     });

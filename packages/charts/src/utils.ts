@@ -27,5 +27,10 @@ export function xPixel(
   if (isBandScale(xScale)) {
     return (xScale(String(raw)) ?? 0) + xScale.bandwidth() / 2;
   }
-  return (xScale as (v: number) => number)(raw as number);
+  // Not a band scale → the guard narrows `xScale` to the linear scale, so no
+  // cast is needed. Coerce explicitly: numbers pass through, Date/numeric-string
+  // map as d3 would, and non-numerics become NaN (an off-canvas point) rather
+  // than a silently wrong position.
+  const value = typeof raw === 'number' ? raw : Number(raw);
+  return xScale(value);
 }

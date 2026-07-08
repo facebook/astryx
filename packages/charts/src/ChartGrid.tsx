@@ -18,6 +18,12 @@ export interface ChartGridProps {
   horizontal?: boolean;
   /** Show vertical grid lines. Default: `false`. */
   vertical?: boolean;
+  /**
+   * Approximate number of grid lines per axis. Match your `<ChartAxis>`
+   * `tickCount` so grid lines and tick labels land on the same values.
+   * Default: `5`.
+   */
+  tickCount?: number;
 }
 
 const styles = stylex.create({
@@ -42,20 +48,23 @@ const styles = stylex.create({
 export function ChartGrid({
   horizontal = true,
   vertical = false,
+  tickCount = 5,
 }: ChartGridProps) {
   const {width, height, xScale, yScale} = useChart();
 
   // Skip the y=0 line when emphasizing it via the axis. Without this we'd
-  // double-draw on top of the axis line.
+  // double-draw on top of the axis line. Each line carries its tick `value`,
+  // used as a stable React key — the pixel position can be NaN/duplicated for
+  // degenerate (zero-range / unmeasured) scales and would collide as a key.
   const hLines = useMemo(() => {
     if (!horizontal) {
       return [];
     }
     return yScale
-      .ticks(5)
+      .ticks(tickCount)
       .filter(tick => tick !== 0)
-      .map(tick => yScale(tick));
-  }, [horizontal, yScale]);
+      .map(tick => ({value: tick, pos: yScale(tick)}));
+  }, [horizontal, yScale, tickCount]);
 
   const vLines = useMemo(() => {
     if (!vertical) {
@@ -64,30 +73,32 @@ export function ChartGrid({
     if (isBandScale(xScale)) {
       return xScale
         .domain()
-        .map(d => (xScale(d) ?? 0) + xScale.bandwidth() / 2);
+        .map(d => ({value: d, pos: (xScale(d) ?? 0) + xScale.bandwidth() / 2}));
     }
     const linear = xScale as
       ScaleLinear<number, number> | ScaleTime<number, number>;
-    return linear.ticks(5).map(d => linear(d as number & Date));
-  }, [vertical, xScale]);
+    return linear
+      .ticks(tickCount)
+      .map(d => ({value: String(d), pos: linear(d as number & Date)}));
+  }, [vertical, xScale, tickCount]);
 
   return (
     <g>
-      {hLines.map(y => (
+      {hLines.map(({value, pos}) => (
         <line
-          key={`h-${y}`}
+          key={`h-${value}`}
           x1={0}
           x2={width}
-          y1={y}
-          y2={y}
+          y1={pos}
+          y2={pos}
           {...stylex.props(styles.gridLine)}
         />
       ))}
-      {vLines.map(x => (
+      {vLines.map(({value, pos}) => (
         <line
-          key={`v-${x}`}
-          x1={x}
-          x2={x}
+          key={`v-${value}`}
+          x1={pos}
+          x2={pos}
           y1={0}
           y2={height}
           {...stylex.props(styles.gridLine)}

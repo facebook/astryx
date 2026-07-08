@@ -11,6 +11,8 @@
  *   3. Provides a single event layer for interaction children
  */
 
+'use client';
+
 import {
   type ReactNode,
   useId,
@@ -128,16 +130,17 @@ export function Chart({
   // Give every primary series that doesn't supply a static color (auto-colored
   // or accessor-colored) a distinct color from the theme's categorical palette.
   // Utility marks (band/errorBar/referenceLine) don't consume palette slots.
+  // Assigned during render (like the layout pass annotates `_uid`) so the first
+  // paint is already colored; intentionally not a `useMemo` — it mutates the
+  // caller's series defs, and useMemo is allowed to drop its cached result.
   const chartColors = useChartColors();
-  useMemo(() => {
-    const needsColor = series.filter(
-      s => !isUtilityMarkType(s.type) && s.color == null,
-    );
-    const palette = chartColors.categorical(Math.max(needsColor.length, 1));
-    needsColor.forEach((s, i) => {
-      s._resolvedColor = palette[i % palette.length];
-    });
-  }, [series, chartColors]);
+  const needsColor = series.filter(
+    s => !isUtilityMarkType(s.type) && s.color == null,
+  );
+  const palette = chartColors.categorical(Math.max(needsColor.length, 1));
+  for (let i = 0; i < needsColor.length; i++) {
+    needsColor[i]._resolvedColor = palette[i % palette.length];
+  }
 
   // ─── Layout pass ──────────────────────────────────────────────────────
   const layout = useMemo(

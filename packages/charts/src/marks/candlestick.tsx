@@ -2,10 +2,11 @@
 
 /**
  * @file marks/candlestick.tsx
- * @output Candlestick (OHLC) series
+ * @output Candlestick (OHLC) series. Renders on both band and linear/time x
+ *   scales; candles missing any OHLC field are skipped rather than drawn to 0.
  */
 
-import type {SeriesDef, ResolvedPoint} from '../types';
+import type {SeriesDef, ResolvedPoint, SeriesContext} from '../types';
 import type {ScaleBand} from 'd3-scale';
 
 export interface CandlestickOptions {
@@ -15,6 +16,36 @@ export interface CandlestickOptions {
   close: string;
   upColor?: string;
   downColor?: string;
+}
+
+/** Read a datum field as a finite number, or NaN when missing/non-numeric. */
+function readNumber(d: Record<string, unknown>, key: string): number {
+  const v = d[key];
+  return typeof v === 'number' && Number.isFinite(v) ? v : NaN;
+}
+
+/**
+ * Pixel width of one candle body. On a band scale this is the bandwidth; on a
+ * linear/time scale it's derived from the smallest gap between adjacent points
+ * (falling back to a modest width when there's only one point).
+ */
+function candleSlot(resolved: ResolvedPoint[], ctx: SeriesContext): number {
+  const {xScale, width} = ctx;
+  if ('bandwidth' in xScale) {
+    return (xScale as ScaleBand<string>).bandwidth();
+  }
+  const xs = resolved
+    .map(p => p.px)
+    .filter(x => Number.isFinite(x))
+    .sort((a, b) => a - b);
+  let minGap = Infinity;
+  for (let i = 1; i < xs.length; i++) {
+    const gap = xs[i] - xs[i - 1];
+    if (gap > 0 && gap < minGap) {
+      minGap = gap;
+    }
+  }
+  return Number.isFinite(minGap) ? minGap : Math.min(width, 40);
 }
 
 export function candlestick(options: CandlestickOptions): SeriesDef {
@@ -41,45 +72,38 @@ export function candlestick(options: CandlestickOptions): SeriesDef {
         } else {
           px = xScale(d[xKey] as number);
         }
-        const close =
-          typeof d[options.close] === 'number'
-            ? (d[options.close] as number)
-            : 0;
+        const close = readNumber(d, options.close);
         points.push({px, py: yScale(close), py0: yScale(0), dataIndex: i});
       }
       return points;
     },
 
     render(resolved, ctx) {
-      const {data, xScale, yScale} = ctx;
-      if (!('bandwidth' in xScale)) {
-        return null;
-      }
-      const bw = (xScale as ScaleBand<string>).bandwidth();
-      const bodyWidth = bw * 0.6;
+      const {data, yScale} = ctx;
+      const bodyWidth = Math.max(1, candleSlot(resolved, ctx) * 0.6);
 
       return (
         <g>
           {resolved.map(p => {
             const d = data[p.dataIndex];
-            const o =
-              typeof d[options.open] === 'number'
-                ? (d[options.open] as number)
-                : 0;
-            const c =
-              typeof d[options.close] === 'number'
-                ? (d[options.close] as number)
-                : 0;
-            const h =
-              typeof d[options.high] === 'number'
-                ? (d[options.high] as number)
-                : 0;
-            const l =
-              typeof d[options.low] === 'number'
-                ? (d[options.low] as number)
-                : 0;
-            const isUp = c >= o;
-            const col = isUp ? upColor : downColor;
+            const o = readNumber(d, options.open);
+            const c = readNumber(d, options.close);
+            const h = readNumber(d, options.high);
+            const l = readNumber(d, options.low);
+            // Drop candles missing any OHLC field (or an unplaceable x) — a gap
+            // reads more honestly than a full-height candle anchored at 0.
+            if (
+              !Number.isFinite(p.px) ||
+              !Number.isFinite(o) ||
+              !Number.isFinite(c) ||
+              !Number.isFinite(h) ||
+              !Number.isFinite(l)
+            ) {
+              return null;
+            }
+            const col = c >= o ? upColor : downColor;
+            const bodyTop = yScale(Math.max(o, c));
+            const bodyHeight = Math.max(1, Math.abs(yScale(o) - yScale(c)));
             return (
               <g key={p.dataIndex}>
                 <line
@@ -92,9 +116,9 @@ export function candlestick(options: CandlestickOptions): SeriesDef {
                 />
                 <rect
                   x={p.px - bodyWidth / 2}
-                  y={yScale(Math.max(o, c))}
+                  y={bodyTop}
                   width={bodyWidth}
-                  height={Math.max(1, Math.abs(yScale(o) - yScale(c)))}
+                  height={bodyHeight}
                   fill={col}
                 />
               </g>

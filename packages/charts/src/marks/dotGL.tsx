@@ -3,12 +3,15 @@
 /**
  * @file marks/dotGL.tsx
  * @output WebGL scatter — canvas overlay, single draw call
+ *
+ * GL context, program, and vertex buffer are created once and reused across
+ * redraws; all are released (and the context eagerly lost) on unmount. Handles
+ * context loss/restore and skips non-finite points.
  */
 
-import {useRef, useEffect, useCallback} from 'react';
+import {useRef, useEffect, useMemo, useState} from 'react';
 import type {SeriesDef, ResolvedPoint} from '../types';
 import type {ScaleBand} from 'd3-scale';
-import {useChart} from '../ChartContext';
 import {
   hexToGL,
   getWebGLContext,
@@ -16,6 +19,8 @@ import {
   sizeCanvas,
   mountCanvasOverSVG,
   createProgram,
+  registerContextLossHandlers,
+  loseContext,
   POINT_SIZE_COMPENSATION,
 } from '../webgl';
 
@@ -50,9 +55,18 @@ const FRAG = `
   }
 `;
 
+type DotGLLocations = {
+  aPosition: number;
+  uResolution: WebGLUniformLocation | null;
+  uColor: WebGLUniformLocation | null;
+  uSize: WebGLUniformLocation | null;
+  uOpacity: WebGLUniformLocation | null;
+};
+
 /**
- * Inline component returned by render() — manages the WebGL canvas lifecycle.
- * Needs access to svgRef from ChartContext to mount the canvas outside SVG.
+ * Inline component returned by render() — owns the WebGL canvas lifecycle. The
+ * canvas is mounted as a sibling of the SVG (via a marker <g>) for sharp Retina
+ * output without foreignObject blur.
  */
 function DotGLCanvas({
   resolved,
@@ -69,21 +83,27 @@ function DotGLCanvas({
   width: number;
   height: number;
 }) {
-  const {svgRef: _svgRef} = useChart();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
+  const bufferRef = useRef<WebGLBuffer | null>(null);
+  const locsRef = useRef<DotGLLocations | null>(null);
   const markerRef = useRef<SVGGElement>(null);
+  // Bumped on context restore to force the draw effect to rebuild + repaint.
+  const [contextEpoch, setContextEpoch] = useState(0);
 
-  const getPositions = useCallback((): Float32Array => {
-    const positions: number[] = [];
+  const positions = useMemo(() => {
+    const out: number[] = [];
     for (const p of resolved) {
-      positions.push(p.px, p.py);
+      if (Number.isFinite(p.px) && Number.isFinite(p.py)) {
+        out.push(p.px, p.py);
+      }
     }
-    return new Float32Array(positions);
+    return new Float32Array(out);
   }, [resolved]);
 
-  // Mount canvas outside SVG
+  // Mount the canvas outside the SVG and wire context-loss recovery. The canvas
+  // element persists across resizes; only its DOM attachment is re-established.
   useEffect(() => {
     const marker = markerRef.current;
     if (!marker) {
@@ -92,10 +112,26 @@ function DotGLCanvas({
     if (!canvasRef.current) {
       canvasRef.current = document.createElement('canvas');
     }
-    return mountCanvasOverSVG(marker, canvasRef.current, width, height);
+    const canvas = canvasRef.current;
+    const detach = mountCanvasOverSVG(marker, canvas, width, height);
+    const unregister = registerContextLossHandlers(
+      canvas,
+      () => {
+        glRef.current = null;
+        programRef.current = null;
+        bufferRef.current = null;
+        locsRef.current = null;
+      },
+      () => setContextEpoch(e => e + 1),
+    );
+    return () => {
+      unregister();
+      detach?.();
+    };
   }, [width, height]);
 
-  // Draw
+  // Draw. The context, program, and buffer are created lazily once and reused;
+  // only vertex data + uniforms are re-uploaded per redraw.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || width <= 0 || height <= 0) {
@@ -108,39 +144,75 @@ function DotGLCanvas({
       glRef.current = getWebGLContext(canvas);
     }
     const gl = glRef.current;
-    if (!gl) {
+    if (!gl || gl.isContextLost()) {
       return;
     }
 
     if (!programRef.current) {
       programRef.current = createProgram(gl, VERT, FRAG);
+      locsRef.current = null;
     }
     const program = programRef.current;
     if (!program) {
       return;
     }
 
+    if (!bufferRef.current) {
+      bufferRef.current = gl.createBuffer();
+    }
+    const buffer = bufferRef.current;
+    if (!buffer) {
+      return;
+    }
+
+    if (!locsRef.current) {
+      locsRef.current = {
+        aPosition: gl.getAttribLocation(program, 'a_position'),
+        uResolution: gl.getUniformLocation(program, 'u_resolution'),
+        uColor: gl.getUniformLocation(program, 'u_color'),
+        uSize: gl.getUniformLocation(program, 'u_size'),
+        uOpacity: gl.getUniformLocation(program, 'u_opacity'),
+      };
+    }
+    const locs = locsRef.current;
+
     gl.viewport(0, 0, canvas.width, canvas.height);
     setupGLState(gl);
     gl.useProgram(program);
 
-    const positions = getPositions();
-    const posBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-    const aPos = gl.getAttribLocation(program, 'a_position');
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(locs.aPosition);
+    gl.vertexAttribPointer(locs.aPosition, 2, gl.FLOAT, false, 0, 0);
 
     const [r, g, b] = hexToGL(color);
-    gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), width, height);
-    gl.uniform3f(gl.getUniformLocation(program, 'u_color'), r, g, b);
-    gl.uniform1f(gl.getUniformLocation(program, 'u_size'), size * dpr);
-    gl.uniform1f(gl.getUniformLocation(program, 'u_opacity'), opacity);
+    gl.uniform2f(locs.uResolution, width, height);
+    gl.uniform3f(locs.uColor, r, g, b);
+    gl.uniform1f(locs.uSize, size * dpr);
+    gl.uniform1f(locs.uOpacity, opacity);
 
     gl.drawArrays(gl.POINTS, 0, positions.length / 2);
-    gl.deleteBuffer(posBuffer);
-  }, [width, height, color, size, opacity, getPositions]);
+  }, [width, height, color, size, opacity, positions, contextEpoch]);
+
+  // Release all GL resources on unmount.
+  useEffect(() => {
+    return () => {
+      const gl = glRef.current;
+      if (gl) {
+        if (bufferRef.current) {
+          gl.deleteBuffer(bufferRef.current);
+        }
+        if (programRef.current) {
+          gl.deleteProgram(programRef.current);
+        }
+        loseContext(gl);
+      }
+      glRef.current = null;
+      programRef.current = null;
+      bufferRef.current = null;
+      locsRef.current = null;
+    };
+  }, []);
 
   if (width <= 0 || height <= 0) {
     return null;

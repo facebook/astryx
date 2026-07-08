@@ -43,8 +43,10 @@ export function ChartLegend({
 
   const isVertical = position === 'start' || position === 'end';
 
-  const legendItems = items.map(item => (
-    <HStack key={item.label} gap={2} vAlign="center">
+  // Rows are stateless, but labels aren't guaranteed unique (two series can
+  // share a label), so disambiguate with the index to keep keys collision-free.
+  const legendItems = items.map((item, i) => (
+    <HStack key={`${item.label}-${i}`} gap={2} vAlign="center" role="listitem">
       <ChartSwatch
         color={item.color}
         variant={swatchVariantForType(item.type)}
@@ -55,14 +57,20 @@ export function ChartLegend({
 
   if (isVertical) {
     return (
-      <VStack gap={2} hAlign={alignment}>
+      <VStack gap={2} hAlign={alignment} role="list" aria-label="Chart legend">
         {legendItems}
       </VStack>
     );
   }
 
   return (
-    <HStack gap={4} justify={alignment} vAlign="center" wrap="wrap">
+    <HStack
+      gap={4}
+      justify={alignment}
+      vAlign="center"
+      wrap="wrap"
+      role="list"
+      aria-label="Chart legend">
       {legendItems}
     </HStack>
   );

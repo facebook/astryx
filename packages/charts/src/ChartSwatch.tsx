@@ -46,6 +46,10 @@ const styles = stylex.create({
     height: 3,
     borderRadius: 1.5,
   },
+  // Runtime color → dynamic StyleX (not an inline style), per repo convention.
+  fill: (color: string) => ({
+    backgroundColor: color,
+  }),
 });
 
 /**
@@ -60,8 +64,7 @@ function ChartSwatchImpl({color, variant = 'square'}: ChartSwatchProps) {
   return (
     <div
       aria-hidden
-      {...stylex.props(styles.base, styles[variant])}
-      style={{backgroundColor: color}}
+      {...stylex.props(styles.base, styles[variant], styles.fill(color))}
     />
   );
 }

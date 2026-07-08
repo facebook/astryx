@@ -10,6 +10,8 @@
  * - Premultiplied alpha setup (correct compositing over page)
  * - Shader compilation helpers
  * - Smoothstep circle fragment for crisp point sprites
+ * - Robust hex/shorthand color parsing (fallback instead of NaN)
+ * - Context-loss registration + eager context teardown helpers
  */
 
 /** Compile a WebGL shader, returns null on failure */
@@ -56,15 +58,41 @@ export function createProgram(
   return p;
 }
 
-/** Parse hex (#RRGGBB) to [r, g, b] floats 0-1 */
+/** Neutral fallback (mid-grey) for colors we can't parse — visible, never NaN. */
+const HEX_FALLBACK: [number, number, number] = [0.5, 0.5, 0.5];
+
+/**
+ * Parse a hex color to [r, g, b] floats in 0-1.
+ *
+ * Accepts `#rgb`, `#rgba`, `#rrggbb`, and `#rrggbbaa`, with or without the
+ * leading `#` (any alpha byte is ignored). Non-hex input — CSS custom
+ * properties, `rgb()`, named colors, or malformed strings — returns a neutral
+ * fallback rather than producing NaN, so the GPU never receives a bad uniform.
+ */
 export function hexToGL(hex: string): [number, number, number] {
-  const n = parseInt(hex.replace('#', ''), 16);
+  if (typeof hex !== 'string') {
+    return HEX_FALLBACK;
+  }
+  let h = hex.trim().replace(/^#/, '');
+  // Expand shorthand: `rgb`/`rgba` -> `rrggbb`/`rrggbbaa`.
+  if (h.length === 3 || h.length === 4) {
+    h = h.replace(/./g, c => c + c);
+  }
+  // Drop the alpha byte if present — the GL path only needs rgb.
+  if (h.length === 8) {
+    h = h.slice(0, 6);
+  }
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) {
+    return HEX_FALLBACK;
+  }
+  const n = parseInt(h, 16);
   return [(n >> 16) / 255, ((n >> 8) & 0xff) / 255, (n & 0xff) / 255];
 }
 
-/** DPR with supersampling for crisp circles */
+/** DPR with 2x supersampling for crisp circles. SSR-safe (falls back to 2). */
 export function getCanvasDPR(): number {
-  return (window.devicePixelRatio || 2) * 2;
+  const base = typeof window !== 'undefined' ? window.devicePixelRatio : 0;
+  return (base || 2) * 2;
 }
 
 /**
@@ -103,10 +131,12 @@ export function sizeCanvas(
   height: number,
 ): number {
   const dpr = getCanvasDPR();
-  canvas.width = width * dpr;
-  canvas.height = height * dpr;
-  canvas.style.width = `${width}px`;
-  canvas.style.height = `${height}px`;
+  // The drawing buffer must be a positive integer — a 0-sized (or fractional)
+  // buffer makes GL viewport/draw calls silently fail.
+  canvas.width = Math.max(1, Math.round(width * dpr));
+  canvas.height = Math.max(1, Math.round(height * dpr));
+  canvas.style.width = `${Math.max(0, width)}px`;
+  canvas.style.height = `${Math.max(0, height)}px`;
   return dpr;
 }
 
@@ -163,6 +193,47 @@ export function mountCanvasOverSVG(
       parent.removeChild(canvas);
     }
   };
+}
+
+/**
+ * Register WebGL context-loss/restore handlers on a canvas.
+ *
+ * Calling `preventDefault()` on the lost event is REQUIRED — without it the
+ * browser will never fire `webglcontextrestored`. `onLost` should drop any
+ * cached GL handles (they are all invalid after loss); `onRestored` should
+ * trigger a rebuild + redraw.
+ *
+ * Returns a cleanup that removes both listeners.
+ */
+export function registerContextLossHandlers(
+  canvas: HTMLCanvasElement,
+  onLost: () => void,
+  onRestored: () => void,
+): () => void {
+  const handleLost = (e: Event) => {
+    e.preventDefault();
+    onLost();
+  };
+  canvas.addEventListener('webglcontextlost', handleLost, false);
+  canvas.addEventListener('webglcontextrestored', onRestored, false);
+  return () => {
+    canvas.removeEventListener('webglcontextlost', handleLost, false);
+    canvas.removeEventListener('webglcontextrestored', onRestored, false);
+  };
+}
+
+/**
+ * Eagerly release a WebGL context and its GPU resources on teardown.
+ *
+ * Browsers cap the number of live contexts (~16), so freeing on unmount rather
+ * than waiting for GC prevents "too many active WebGL contexts" failures when
+ * many charts mount/unmount over a session.
+ */
+export function loseContext(gl: WebGLRenderingContext): void {
+  const ext = gl.getExtension('WEBGL_lose_context');
+  if (ext) {
+    ext.loseContext();
+  }
 }
 
 /**

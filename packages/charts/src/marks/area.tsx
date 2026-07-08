@@ -3,6 +3,11 @@
 /**
  * @file marks/area.tsx
  * @output Area series — fill under line with stacking + gradient support
+ *
+ * Missing / non-finite values (including gaps in a stacked baseline) become
+ * holes via d3's `.defined()` rather than collapsing to zero. The gradient id is
+ * salted with the series' collision-free `_uid` so overlapping areas over the
+ * same dataKey never share (and steal) each other's fill.
  */
 
 import {
@@ -14,8 +19,8 @@ import {
 } from 'd3-shape';
 import {line as d3Line} from 'd3-shape';
 import type {SeriesDef, ResolvedPoint} from '../types';
-import type {ScaleBand} from 'd3-scale';
 import {seriesFill} from '../markColor';
+import {xPixel} from '../utils';
 
 const CURVES = {
   linear: curveLinear,
@@ -34,9 +39,19 @@ export interface AreaOptions {
   label?: string;
 }
 
+/** Both edges of an area point must be finite for the span to be drawable. */
+function isFinitePoint(p: ResolvedPoint): boolean {
+  return (
+    Number.isFinite(p.px) && Number.isFinite(p.py) && Number.isFinite(p.py0)
+  );
+}
+
 export function area(dataKey: string, options: AreaOptions = {}): SeriesDef {
   const color = options.color;
-  const opacity = options.opacity ?? 0.3;
+  const opacity =
+    typeof options.opacity === 'number' && Number.isFinite(options.opacity)
+      ? Math.min(1, Math.max(0, options.opacity))
+      : 0.3;
   const curve = options.curve ?? 'monotone';
   const gradient = options.gradient ?? false;
   const stroke = options.stroke ?? true;
@@ -54,24 +69,18 @@ export function area(dataKey: string, options: AreaOptions = {}): SeriesDef {
       const points: ResolvedPoint[] = [];
       for (let i = 0; i < data.length; i++) {
         const d = data[i];
-        let px: number;
-        if ('bandwidth' in xScale) {
-          px =
-            ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) +
-            (xScale as ScaleBand<string>).bandwidth() / 2;
-        } else {
-          px = xScale(d[xKey] as number);
-        }
         let py: number, py0: number;
         if (stackOffsets) {
-          py = yScale(stackOffsets[i].y1);
-          py0 = yScale(stackOffsets[i].y0);
+          const offset = stackOffsets[i];
+          py = offset ? yScale(offset.y1) : NaN;
+          py0 = offset ? yScale(offset.y0) : NaN;
         } else {
-          const v = typeof d[dataKey] === 'number' ? (d[dataKey] as number) : 0;
+          const raw = d[dataKey];
+          const v = typeof raw === 'number' && Number.isFinite(raw) ? raw : NaN;
           py = yScale(v);
           py0 = yScale(0);
         }
-        points.push({px, py, py0, dataIndex: i});
+        points.push({px: xPixel(d, xKey, xScale), py, py0, dataIndex: i});
       }
       return points;
     },
@@ -80,9 +89,10 @@ export function area(dataKey: string, options: AreaOptions = {}): SeriesDef {
       if (resolved.length === 0) {
         return null;
       }
-      const curveFactory = CURVES[curve];
+      const curveFactory = CURVES[curve] ?? curveMonotoneX;
 
       const areaGen = d3Area<ResolvedPoint>()
+        .defined(isFinitePoint)
         .x(d => d.px)
         .y0(d => d.py0)
         .y1(d => d.py)
@@ -90,6 +100,7 @@ export function area(dataKey: string, options: AreaOptions = {}): SeriesDef {
       const pathD = areaGen(resolved) ?? '';
 
       const lineGen = d3Line<ResolvedPoint>()
+        .defined(isFinitePoint)
         .x(d => d.px)
         .y(d => d.py)
         .curve(curveFactory);

@@ -51,7 +51,7 @@ import {
   type TooltipSeriesValue,
 } from './tooltip';
 import type {SeriesDef, ChartPointerEvent} from './types';
-import type {ScaleBand} from 'd3-scale';
+import {isBandScale, xPixel} from './utils';
 
 export type ChartTooltipPlacement = 'auto' | 'right' | 'left' | 'top';
 
@@ -198,6 +198,7 @@ export function ChartTooltip({
       const cardWidth = card.offsetWidth;
       const cardHeight = card.offsetHeight;
       const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
       const gap = 8;
 
       let x: number;
@@ -222,6 +223,12 @@ export function ChartTooltip({
               : rightX;
         }
       }
+
+      // Clamp to the viewport so the card never clips off-screen — it's
+      // portaled and position:fixed, so this keeps it fully visible for every
+      // placement (pinned placements and the near-edge `auto` flip alike).
+      x = Math.max(gap, Math.min(x, viewportWidth - cardWidth - gap));
+      y = Math.max(gap, Math.min(y, viewportHeight - cardHeight - gap));
 
       card.style.left = `${x}px`;
       card.style.top = `${y}px`;
@@ -293,18 +300,17 @@ export function ChartTooltip({
     if (!hoverIndicator || hoveredIndex == null) {
       return null;
     }
-    const xv = data[hoveredIndex]?.[xKey];
-    if (xv == null) {
+    const hoveredDatum = data[hoveredIndex];
+    const xv = hoveredDatum?.[xKey];
+    if (hoveredDatum == null || xv == null) {
       return null;
     }
-    const isBandScale = 'bandwidth' in xScale;
     const hasBars = series.some(s => s.type === 'bar');
 
     // Bar charts on a band scale → soft column highlight.
-    if (hasBars && isBandScale) {
-      const bandScale = xScale as ScaleBand<string>;
-      const x = bandScale(String(xv)) ?? 0;
-      const bw = bandScale.bandwidth();
+    if (hasBars && isBandScale(xScale)) {
+      const x = xScale(String(xv)) ?? 0;
+      const bw = xScale.bandwidth();
       const pad = 8;
       const rectX = Math.max(0, x - pad);
       const rectRight = Math.min(width, x + bw + pad);
@@ -324,11 +330,9 @@ export function ChartTooltip({
       );
     }
 
-    // Line / area / dot charts → vertical crosshair through the point.
-    const px = isBandScale
-      ? ((xScale as ScaleBand<string>)(String(xv)) ?? 0) +
-        (xScale as ScaleBand<string>).bandwidth() / 2
-      : (xScale as (v: number) => number)(xv as number);
+    // Line / area / dot charts → vertical crosshair through the point
+    // (band-center or linear position, resolved by the shared helper).
+    const px = xPixel(hoveredDatum, xKey, xScale);
     return (
       <line
         x1={px}
@@ -350,6 +354,21 @@ export function ChartTooltip({
     height,
     margin.top,
   ]);
+
+  // Honor the documented contract: a custom `render` returning null hides the
+  // card (band highlight + dots still show). Without this, positionCard would
+  // leave an empty bordered box at the hovered point. Runs after commit so it
+  // also clears the frame positionCard optimistically displayed; effects never
+  // run during SSR, so `render` stays off the server path.
+  useEffect(() => {
+    if (!render || hoveredIndex == null) {
+      return;
+    }
+    const card = cardRef.current;
+    if (card && render(xValue, seriesValues) == null) {
+      card.style.display = 'none';
+    }
+  }, [render, hoveredIndex, xValue, seriesValues]);
 
   // ─── Render ────────────────────────────────────────────────────────────
   if (typeof document === 'undefined') {
@@ -374,7 +393,7 @@ export function ChartTooltip({
       {hoverIndicatorElement}
       {dots}
       {createPortal(
-        <div ref={cardRef} {...stylex.props(styles.card)}>
+        <div ref={cardRef} role="tooltip" {...stylex.props(styles.card)}>
           {cardContent}
         </div>,
         document.body,

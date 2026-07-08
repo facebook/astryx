@@ -6,6 +6,11 @@
  *
  * Each point gets a unique color encoding its index. On hover, readPixels
  * from an offscreen framebuffer decodes the hovered index — no JS iteration.
+ *
+ * Two GL contexts (visible + offscreen pick) plus their programs, buffers,
+ * framebuffer, and pick texture are created once and reused. The pick texture
+ * is re-allocated only when the drawing-buffer size changes, and everything is
+ * released (both contexts eagerly lost) on unmount. Recovers from context loss.
  */
 
 import {
@@ -18,7 +23,12 @@ import {
 } from 'react';
 import type {SeriesDef, ResolvedPoint} from '../types';
 import type {ScaleBand} from 'd3-scale';
-import {hexToGL} from '../webgl';
+import {
+  hexToGL,
+  createProgram,
+  registerContextLossHandlers,
+  loseContext,
+} from '../webgl';
 
 export interface DotGLInteractiveOptions {
   color: string;
@@ -51,48 +61,6 @@ function colorToIndex(r: number, g: number, b: number): number {
     return -1;
   }
   return ((r << 16) | (g << 8) | b) - 1;
-}
-
-function compileShader(
-  gl: WebGLRenderingContext,
-  type: number,
-  src: string,
-): WebGLShader | null {
-  const s = gl.createShader(type);
-  if (!s) {
-    return null;
-  }
-  gl.shaderSource(s, src);
-  gl.compileShader(s);
-  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-    gl.deleteShader(s);
-    return null;
-  }
-  return s;
-}
-
-function linkProgram(
-  gl: WebGLRenderingContext,
-  vert: string,
-  frag: string,
-): WebGLProgram | null {
-  const vs = compileShader(gl, gl.VERTEX_SHADER, vert);
-  const fs = compileShader(gl, gl.FRAGMENT_SHADER, frag);
-  if (!vs || !fs) {
-    return null;
-  }
-  const p = gl.createProgram();
-  if (!p) {
-    return null;
-  }
-  gl.attachShader(p, vs);
-  gl.attachShader(p, fs);
-  gl.linkProgram(p);
-  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
-    gl.deleteProgram(p);
-    return null;
-  }
-  return p;
 }
 
 // Visible pass
@@ -169,47 +137,72 @@ function DotGLInteractiveCanvas({
   const pickCanvasRef = useRef<HTMLCanvasElement>(null);
   const [hoverIndex, setHoverIndex] = useState<number>(-1);
   const [mousePos, setMousePos] = useState<{x: number; y: number} | null>(null);
+  // Bumped on context restore to force the render effect to rebuild + repaint.
+  const [contextEpoch, setContextEpoch] = useState(0);
 
   const visGLRef = useRef<{
     gl: WebGLRenderingContext;
     prog: WebGLProgram;
   } | null>(null);
+  const visBufRef = useRef<WebGLBuffer | null>(null);
   const pickGLRef = useRef<{
     gl: WebGLRenderingContext;
     prog: WebGLProgram;
     fb: WebGLFramebuffer;
     tex: WebGLTexture;
+    // Drawing-buffer size the pick texture is currently allocated for, and the
+    // DPR it was built with — used to avoid needless re-allocation and to keep
+    // hover pixel math consistent with the framebuffer.
+    texW: number;
+    texH: number;
+    dpr: number;
   } | null>(null);
+  const pickPosBufRef = useRef<WebGLBuffer | null>(null);
+  const pickColBufRef = useRef<WebGLBuffer | null>(null);
 
+  // Positions and pick colors are index-aligned with `resolved` (and thus with
+  // `data`); do NOT drop entries here or hover decode would map to wrong rows.
+  // Non-finite points get NaN clip positions and simply don't rasterize.
   const positions = useMemo(() => {
-    const pos: number[] = [];
-    for (const p of resolved) {
-      pos.push(p.px, p.py);
+    const pos = new Float32Array(resolved.length * 2);
+    for (let i = 0; i < resolved.length; i++) {
+      pos[i * 2] = resolved[i].px;
+      pos[i * 2 + 1] = resolved[i].py;
     }
-    return new Float32Array(pos);
+    return pos;
   }, [resolved]);
 
   const pickColors = useMemo(() => {
-    const colors: number[] = [];
+    const colors = new Float32Array(resolved.length * 3);
     for (let i = 0; i < resolved.length; i++) {
       const [r, g, b] = indexToColor(i);
-      colors.push(r, g, b);
+      colors[i * 3] = r;
+      colors[i * 3 + 1] = g;
+      colors[i * 3 + 2] = b;
     }
-    return new Float32Array(colors);
+    return colors;
   }, [resolved.length]);
 
-  // Render both passes
+  // Render both passes. Contexts, programs, buffers, framebuffer, and pick
+  // texture are created once and reused; only vertex data + uniforms upload per
+  // run, and the pick texture re-allocates only when the buffer size changes.
   useEffect(() => {
     if (width <= 0 || height <= 0) {
       return;
     }
     const dpr = window.devicePixelRatio || 1;
+    const bufW = Math.max(1, Math.round(width * dpr));
+    const bufH = Math.max(1, Math.round(height * dpr));
 
-    // Visible canvas
+    // ── Visible pass ──
     const visCanvas = visCanvasRef.current;
     if (visCanvas) {
-      visCanvas.width = width * dpr;
-      visCanvas.height = height * dpr;
+      if (visCanvas.width !== bufW) {
+        visCanvas.width = bufW;
+      }
+      if (visCanvas.height !== bufH) {
+        visCanvas.height = bufH;
+      }
 
       if (!visGLRef.current) {
         const gl = visCanvas.getContext('webgl', {
@@ -217,49 +210,58 @@ function DotGLInteractiveCanvas({
           premultipliedAlpha: false,
           antialias: true,
         });
-        const prog = gl ? linkProgram(gl, VERT_VIS, FRAG_VIS) : null;
+        const prog = gl ? createProgram(gl, VERT_VIS, FRAG_VIS) : null;
         if (gl && prog) {
           visGLRef.current = {gl, prog};
+          visBufRef.current = null;
         }
       }
 
       const vis = visGLRef.current;
-      if (vis) {
+      if (vis && !vis.gl.isContextLost()) {
         const {gl, prog} = vis;
-        gl.viewport(0, 0, visCanvas.width, visCanvas.height);
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        gl.useProgram(prog);
+        if (!visBufRef.current) {
+          visBufRef.current = gl.createBuffer();
+        }
+        const buf = visBufRef.current;
+        if (buf) {
+          gl.viewport(0, 0, visCanvas.width, visCanvas.height);
+          gl.clearColor(0, 0, 0, 0);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          gl.enable(gl.BLEND);
+          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+          gl.useProgram(prog);
 
-        const buf = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-        const aPos = gl.getAttribLocation(prog, 'a_position');
-        gl.enableVertexAttribArray(aPos);
-        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+          gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+          gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+          const aPos = gl.getAttribLocation(prog, 'a_position');
+          gl.enableVertexAttribArray(aPos);
+          gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-        const [r, g, b] = hexToGL(color);
-        gl.uniform2f(
-          gl.getUniformLocation(prog, 'u_resolution'),
-          width,
-          height,
-        );
-        gl.uniform3f(gl.getUniformLocation(prog, 'u_color'), r, g, b);
-        gl.uniform1f(gl.getUniformLocation(prog, 'u_size'), size * dpr);
-        gl.uniform1f(gl.getUniformLocation(prog, 'u_opacity'), opacity);
+          const [r, g, b] = hexToGL(color);
+          gl.uniform2f(
+            gl.getUniformLocation(prog, 'u_resolution'),
+            width,
+            height,
+          );
+          gl.uniform3f(gl.getUniformLocation(prog, 'u_color'), r, g, b);
+          gl.uniform1f(gl.getUniformLocation(prog, 'u_size'), size * dpr);
+          gl.uniform1f(gl.getUniformLocation(prog, 'u_opacity'), opacity);
 
-        gl.drawArrays(gl.POINTS, 0, positions.length / 2);
-        gl.deleteBuffer(buf);
+          gl.drawArrays(gl.POINTS, 0, positions.length / 2);
+        }
       }
     }
 
-    // Pick canvas (offscreen)
+    // ── Pick pass (offscreen framebuffer) ──
     const pickCanvas = pickCanvasRef.current;
     if (pickCanvas) {
-      pickCanvas.width = width * dpr;
-      pickCanvas.height = height * dpr;
+      if (pickCanvas.width !== bufW) {
+        pickCanvas.width = bufW;
+      }
+      if (pickCanvas.height !== bufH) {
+        pickCanvas.height = bufH;
+      }
 
       if (!pickGLRef.current) {
         const gl = pickCanvas.getContext('webgl', {
@@ -269,22 +271,11 @@ function DotGLInteractiveCanvas({
           preserveDrawingBuffer: true,
         });
         if (gl) {
-          const prog = linkProgram(gl, VERT_PICK, FRAG_PICK);
+          const prog = createProgram(gl, VERT_PICK, FRAG_PICK);
           const fb = gl.createFramebuffer();
           const tex = gl.createTexture();
           if (prog && fb && tex) {
             gl.bindTexture(gl.TEXTURE_2D, tex);
-            gl.texImage2D(
-              gl.TEXTURE_2D,
-              0,
-              gl.RGBA,
-              pickCanvas.width,
-              pickCanvas.height,
-              0,
-              gl.RGBA,
-              gl.UNSIGNED_BYTE,
-              null,
-            );
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
             gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
@@ -296,70 +287,165 @@ function DotGLInteractiveCanvas({
               0,
             );
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            pickGLRef.current = {gl, prog, fb, tex};
+            pickGLRef.current = {gl, prog, fb, tex, texW: 0, texH: 0, dpr};
+            pickPosBufRef.current = null;
+            pickColBufRef.current = null;
           }
         }
       }
 
       const pick = pickGLRef.current;
-      if (pick) {
+      if (pick && !pick.gl.isContextLost()) {
         const {gl, prog, fb, tex} = pick;
+        pick.dpr = dpr;
 
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.texImage2D(
-          gl.TEXTURE_2D,
-          0,
-          gl.RGBA,
-          pickCanvas.width,
-          pickCanvas.height,
-          0,
-          gl.RGBA,
-          gl.UNSIGNED_BYTE,
-          null,
-        );
+        // (Re)allocate the pick texture only when the buffer size changes.
+        if (pick.texW !== pickCanvas.width || pick.texH !== pickCanvas.height) {
+          gl.bindTexture(gl.TEXTURE_2D, tex);
+          gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGBA,
+            pickCanvas.width,
+            pickCanvas.height,
+            0,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            null,
+          );
+          pick.texW = pickCanvas.width;
+          pick.texH = pickCanvas.height;
+        }
 
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-        gl.viewport(0, 0, pickCanvas.width, pickCanvas.height);
-        gl.clearColor(0, 0, 0, 1);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        gl.disable(gl.BLEND);
-        gl.useProgram(prog);
+        if (!pickPosBufRef.current) {
+          pickPosBufRef.current = gl.createBuffer();
+        }
+        if (!pickColBufRef.current) {
+          pickColBufRef.current = gl.createBuffer();
+        }
+        const posBuf = pickPosBufRef.current;
+        const colBuf = pickColBufRef.current;
 
-        const posBuf = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-        const aPos = gl.getAttribLocation(prog, 'a_position');
-        gl.enableVertexAttribArray(aPos);
-        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+        if (posBuf && colBuf) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+          gl.viewport(0, 0, pickCanvas.width, pickCanvas.height);
+          gl.clearColor(0, 0, 0, 1);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          gl.disable(gl.BLEND);
+          gl.useProgram(prog);
 
-        const colBuf = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
-        gl.bufferData(gl.ARRAY_BUFFER, pickColors, gl.STATIC_DRAW);
-        const aCol = gl.getAttribLocation(prog, 'a_pickColor');
-        gl.enableVertexAttribArray(aCol);
-        gl.vertexAttribPointer(aCol, 3, gl.FLOAT, false, 0, 0);
+          gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+          gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+          const aPos = gl.getAttribLocation(prog, 'a_position');
+          gl.enableVertexAttribArray(aPos);
+          gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-        gl.uniform2f(
-          gl.getUniformLocation(prog, 'u_resolution'),
-          width,
-          height,
-        );
-        gl.uniform1f(
-          gl.getUniformLocation(prog, 'u_size'),
-          (size + HIT_PADDING) * dpr,
-        );
+          gl.bindBuffer(gl.ARRAY_BUFFER, colBuf);
+          gl.bufferData(gl.ARRAY_BUFFER, pickColors, gl.STATIC_DRAW);
+          const aCol = gl.getAttribLocation(prog, 'a_pickColor');
+          gl.enableVertexAttribArray(aCol);
+          gl.vertexAttribPointer(aCol, 3, gl.FLOAT, false, 0, 0);
 
-        gl.drawArrays(gl.POINTS, 0, positions.length / 2);
-        gl.deleteBuffer(posBuf);
-        gl.deleteBuffer(colBuf);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.uniform2f(
+            gl.getUniformLocation(prog, 'u_resolution'),
+            width,
+            height,
+          );
+          gl.uniform1f(
+            gl.getUniformLocation(prog, 'u_size'),
+            (size + HIT_PADDING) * dpr,
+          );
+
+          gl.drawArrays(gl.POINTS, 0, positions.length / 2);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
       }
     }
-  }, [width, height, positions, pickColors, color, size, opacity]);
+  }, [
+    width,
+    height,
+    positions,
+    pickColors,
+    color,
+    size,
+    opacity,
+    contextEpoch,
+  ]);
+
+  // Register context-loss recovery for both canvases (runs once post-mount).
+  useEffect(() => {
+    const cleanups: Array<() => void> = [];
+    const visCanvas = visCanvasRef.current;
+    if (visCanvas) {
+      cleanups.push(
+        registerContextLossHandlers(
+          visCanvas,
+          () => {
+            visGLRef.current = null;
+            visBufRef.current = null;
+          },
+          () => setContextEpoch(e => e + 1),
+        ),
+      );
+    }
+    const pickCanvas = pickCanvasRef.current;
+    if (pickCanvas) {
+      cleanups.push(
+        registerContextLossHandlers(
+          pickCanvas,
+          () => {
+            pickGLRef.current = null;
+            pickPosBufRef.current = null;
+            pickColBufRef.current = null;
+          },
+          () => setContextEpoch(e => e + 1),
+        ),
+      );
+    }
+    return () => {
+      for (const c of cleanups) {
+        c();
+      }
+    };
+  }, []);
+
+  // Release both GL contexts and all their resources on unmount.
+  useEffect(() => {
+    return () => {
+      const vis = visGLRef.current;
+      if (vis) {
+        const {gl, prog} = vis;
+        if (visBufRef.current) {
+          gl.deleteBuffer(visBufRef.current);
+        }
+        gl.deleteProgram(prog);
+        loseContext(gl);
+      }
+      const pick = pickGLRef.current;
+      if (pick) {
+        const {gl, prog, fb, tex} = pick;
+        if (pickPosBufRef.current) {
+          gl.deleteBuffer(pickPosBufRef.current);
+        }
+        if (pickColBufRef.current) {
+          gl.deleteBuffer(pickColBufRef.current);
+        }
+        gl.deleteFramebuffer(fb);
+        gl.deleteTexture(tex);
+        gl.deleteProgram(prog);
+        loseContext(gl);
+      }
+      visGLRef.current = null;
+      visBufRef.current = null;
+      pickGLRef.current = null;
+      pickPosBufRef.current = null;
+      pickColBufRef.current = null;
+    };
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<SVGRectElement>) => {
     const pick = pickGLRef.current;
-    if (!pick) {
+    if (!pick || pick.gl.isContextLost()) {
       return;
     }
 
@@ -367,27 +453,29 @@ function DotGLInteractiveCanvas({
     if (!svg) {
       return;
     }
+    const ctm = e.currentTarget.getScreenCTM();
+    if (!ctm) {
+      return;
+    }
     const pt = svg.createSVGPoint();
     pt.x = e.clientX;
     pt.y = e.clientY;
-    const local = pt.matrixTransform(e.currentTarget.getScreenCTM()?.inverse());
+    const local = pt.matrixTransform(ctm.inverse());
 
-    const dpr = window.devicePixelRatio || 1;
+    // Use the DPR the pick framebuffer was built with so pixel math stays in
+    // sync even if devicePixelRatio changed since the last render.
+    const {gl, fb, dpr, texW, texH} = pick;
     const px = Math.floor(local.x * dpr);
     const py = Math.floor(local.y * dpr);
+    if (px < 0 || py < 0 || px >= texW || py >= texH) {
+      setHoverIndex(-1);
+      setMousePos(null);
+      return;
+    }
 
-    const {gl, fb} = pick;
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
     const pixel = new Uint8Array(4);
-    gl.readPixels(
-      px,
-      gl.canvas.height - py,
-      1,
-      1,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      pixel,
-    );
+    gl.readPixels(px, texH - py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
     const idx = colorToIndex(pixel[0], pixel[1], pixel[2]);

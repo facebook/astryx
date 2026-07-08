@@ -2,7 +2,9 @@
 
 /**
  * @file marks/errorBar.tsx
- * @output Error bar (whisker) series — vertical high/low bounds
+ * @output Error bar (whisker) series — vertical high/low bounds. Bounds are
+ *   absolute (so asymmetric intervals work); a point missing either bound is
+ *   skipped rather than drawn down to the axis.
  */
 
 import type {SeriesDef, ResolvedPoint} from '../types';
@@ -54,48 +56,61 @@ export function errorBar(options: ErrorBarOptions): SeriesDef {
         } else {
           px = xScale(d[xKey] as number);
         }
-        const upper = typeof d[high] === 'number' ? (d[high] as number) : 0;
-        const lower = typeof d[low] === 'number' ? (d[low] as number) : 0;
+        // NaN for a missing bound so render() skips the whole whisker instead
+        // of anchoring a cap at the axis (a misleading zero-height error bar).
+        const hiVal = d[high];
+        const loVal = d[low];
+        const upper = Number.isFinite(hiVal) ? (hiVal as number) : NaN;
+        const lower = Number.isFinite(loVal) ? (loVal as number) : NaN;
         points.push({px, py: yScale(upper), py0: yScale(lower), dataIndex: i});
       }
       return points;
     },
 
     render(resolved) {
-      const half = capWidth / 2;
+      const half = Math.max(0, capWidth) / 2;
       return (
         <g>
-          {resolved.map(p => (
-            <g key={p.dataIndex}>
-              {/* Vertical stem */}
-              <line
-                x1={p.px}
-                x2={p.px}
-                y1={p.py}
-                y2={p.py0}
-                stroke={color}
-                strokeWidth={strokeWidth}
-              />
-              {/* Upper cap */}
-              <line
-                x1={p.px - half}
-                x2={p.px + half}
-                y1={p.py}
-                y2={p.py}
-                stroke={color}
-                strokeWidth={strokeWidth}
-              />
-              {/* Lower cap */}
-              <line
-                x1={p.px - half}
-                x2={p.px + half}
-                y1={p.py0}
-                y2={p.py0}
-                stroke={color}
-                strokeWidth={strokeWidth}
-              />
-            </g>
-          ))}
+          {resolved.map(p => {
+            if (
+              !Number.isFinite(p.px) ||
+              !Number.isFinite(p.py) ||
+              !Number.isFinite(p.py0)
+            ) {
+              return null;
+            }
+            return (
+              <g key={p.dataIndex}>
+                {/* Vertical stem */}
+                <line
+                  x1={p.px}
+                  x2={p.px}
+                  y1={p.py}
+                  y2={p.py0}
+                  stroke={color}
+                  strokeWidth={strokeWidth}
+                />
+                {/* Upper cap */}
+                <line
+                  x1={p.px - half}
+                  x2={p.px + half}
+                  y1={p.py}
+                  y2={p.py}
+                  stroke={color}
+                  strokeWidth={strokeWidth}
+                />
+                {/* Lower cap */}
+                <line
+                  x1={p.px - half}
+                  x2={p.px + half}
+                  y1={p.py0}
+                  y2={p.py0}
+                  stroke={color}
+                  strokeWidth={strokeWidth}
+                />
+              </g>
+            );
+          })}
         </g>
       );
     },

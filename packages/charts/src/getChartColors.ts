@@ -7,9 +7,16 @@
  *
  * Takes a token resolver function (or a defined theme + mode) and returns
  * the full chart colors API. The useChartColors hook wraps this.
+ *
+ * Palettes degrade gracefully for any count: the categorical scale wraps
+ * around its slots, and the sequential/diverging scales pick hand-tuned token
+ * stops when enough exist and interpolate across the ramp when more are asked
+ * for. The theme entry point resolves through the canonical token resolver, so
+ * data tokens fall back to their defaults even when a theme doesn't override
+ * them.
  */
 
-import type {DefinedTheme} from '@astryxdesign/core/theme';
+import {resolveThemeTokens, type DefinedTheme} from '@astryxdesign/core/theme';
 
 // =============================================================================
 // Types
@@ -89,33 +96,84 @@ const SEQUENTIAL_HUES: SequentialHue[] = [
   'gray',
 ];
 
-function pickFromRamp(stops: string[], n: number): string[] {
-  if (n <= 0) {
-    return [];
+/** Parse a `#rgb`, `#rrggbb`, or `#rrggbbaa` color to `[r, g, b]`; null for anything else. */
+function parseHex(color: string): [number, number, number] | null {
+  const hex = color.trim().replace(/^#/, '');
+  if (/^[0-9a-fA-F]{3}$/.test(hex)) {
+    return [
+      parseInt(hex[0] + hex[0], 16),
+      parseInt(hex[1] + hex[1], 16),
+      parseInt(hex[2] + hex[2], 16),
+    ];
   }
-  if (n >= 5) {
-    return stops;
+  if (/^[0-9a-fA-F]{6}$/.test(hex) || /^[0-9a-fA-F]{8}$/.test(hex)) {
+    return [
+      parseInt(hex.slice(0, 2), 16),
+      parseInt(hex.slice(2, 4), 16),
+      parseInt(hex.slice(4, 6), 16),
+    ];
   }
-  if (n === 1) {
-    return [stops[2]];
-  }
-  return Array.from(
-    {length: n},
-    (_, i) => stops[Math.round((i * 4) / (n - 1))],
-  );
+  return null;
 }
 
+function toHexChannel(value: number): string {
+  return Math.max(0, Math.min(255, Math.round(value)))
+    .toString(16)
+    .padStart(2, '0');
+}
+
+/** Interpolate between two hex colors in sRGB. Non-hex input falls back to the nearer endpoint. */
+function lerpHex(a: string, b: string, t: number): string {
+  const ca = parseHex(a);
+  const cb = parseHex(b);
+  if (ca === null || cb === null) {
+    return t < 0.5 ? a : b;
+  }
+  const mix = (i: number): number => ca[i] + (cb[i] - ca[i]) * t;
+  return `#${toHexChannel(mix(0))}${toHexChannel(mix(1))}${toHexChannel(mix(2))}`;
+}
+
+/**
+ * Sample `n` colors from an ordered ramp of stops.
+ * - `n <= stops.length` → picks the nearest exact stops, preserving the
+ *   hand-tuned design-token values.
+ * - `n > stops.length` → interpolates across the ramp so any count is supported
+ *   instead of silently capping at the number of stops.
+ * - `n === 1` → the middle stop, a single representative tone.
+ */
+function sampleRamp(stops: string[], n: number): string[] {
+  const len = stops.length;
+  if (n <= 0 || len === 0) {
+    return [];
+  }
+  if (n === 1) {
+    return [stops[Math.floor((len - 1) / 2)]];
+  }
+  if (len === 1) {
+    return Array.from({length: n}, () => stops[0]);
+  }
+  if (n <= len) {
+    return Array.from(
+      {length: n},
+      (_, i) => stops[Math.round((i * (len - 1)) / (n - 1))],
+    );
+  }
+  return Array.from({length: n}, (_, i) => {
+    const t = (i * (len - 1)) / (n - 1);
+    const lo = Math.floor(t);
+    const frac = t - lo;
+    return frac === 0 ? stops[lo] : lerpHex(stops[lo], stops[lo + 1], frac);
+  });
+}
+
+/** Apply an opacity to a hex color as an `rgba()` string. Non-hex input is returned unchanged. */
 function hexAlpha(hex: string, opacity: number): string {
-  const match = hex.match(
-    /^#?([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/,
-  );
-  if (!match) {
+  const rgb = parseHex(hex);
+  if (rgb === null) {
     return hex;
   }
-  const r = parseInt(match[1], 16);
-  const g = parseInt(match[2], 16);
-  const b = parseInt(match[3], 16);
-  return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, opacity))})`;
+  const a = Number.isFinite(opacity) ? Math.max(0, Math.min(1, opacity)) : 1;
+  return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 }
 
 // =============================================================================
@@ -148,12 +206,10 @@ export function getChartColorsFromResolver(
     if (n === 1) {
       return [midpoint];
     }
-    const neg = ramp(negHue);
-    const pos = ramp(posHue);
     const half = Math.floor(n / 2);
     const hasCenter = n % 2 === 1;
-    const negSide = pickFromRamp(neg, half);
-    const posSide = pickFromRamp(pos, half).reverse();
+    const negSide = sampleRamp(ramp(negHue), half);
+    const posSide = sampleRamp(ramp(posHue), half).reverse();
     if (hasCenter) {
       return [...negSide, midpoint, ...posSide];
     }
@@ -162,21 +218,20 @@ export function getChartColorsFromResolver(
 
   return {
     categorical(n: number): string[] {
-      if (n <= 0) {
+      if (n <= 0 || categorical.length === 0) {
         return [];
       }
-      return categorical.slice(0, Math.min(n, categorical.length));
+      // Wrap around the palette so any series count gets a deterministic color.
+      return Array.from(
+        {length: n},
+        (_, i) => categorical[i % categorical.length],
+      );
     },
 
     sequential: Object.fromEntries(
       SEQUENTIAL_HUES.map(hue => [
         hue,
-        (n: number): string[] => {
-          if (n <= 0) {
-            return [];
-          }
-          return pickFromRamp(ramp(hue), n);
-        },
+        (n: number): string[] => sampleRamp(ramp(hue), n),
       ]),
     ) as Record<SequentialHue, (n: number) => string[]>,
 
@@ -214,6 +269,10 @@ export function getChartColorsFromResolver(
  *
  * Use this in non-React contexts — WebGL setup, SSR, tests, Node scripts.
  *
+ * Resolves through the canonical theme token resolver, so data tokens fall back
+ * to their defaults when the theme doesn't override them, and both
+ * `light-dark()` strings and `[light, dark]` tuples are handled for `mode`.
+ *
  * @example
  * ```
  * import { neutralTheme } from '@astryxdesign/theme-neutral';
@@ -225,25 +284,6 @@ export function getChartColors(
   theme: DefinedTheme,
   mode: 'light' | 'dark' = 'light',
 ): ChartColorsAPI {
-  // Build a resolver from the theme's token map
-  const resolve: TokenResolver = (name: string) => {
-    // Check theme token overrides first, then fall back to defaults
-    const raw = theme.tokens?.[name] ?? '';
-    if (!raw) {
-      return '';
-    }
-    // Resolve light-dark() for the given mode
-    if (raw.startsWith('light-dark(') && raw.endsWith(')')) {
-      const inner = raw.slice(11, -1);
-      const commaIdx = inner.indexOf(',');
-      if (commaIdx !== -1) {
-        const light = inner.slice(0, commaIdx).trim();
-        const dark = inner.slice(commaIdx + 1).trim();
-        return mode === 'light' ? light : dark;
-      }
-    }
-    return raw;
-  };
-
-  return getChartColorsFromResolver(resolve);
+  const tokens = resolveThemeTokens(theme, {mode});
+  return getChartColorsFromResolver(name => tokens[name] ?? '');
 }

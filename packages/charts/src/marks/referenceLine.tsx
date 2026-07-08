@@ -2,7 +2,9 @@
 
 /**
  * @file marks/referenceLine.tsx
- * @output Horizontal or vertical reference line/band annotation
+ * @output Horizontal or vertical reference line/band annotation. Labels are
+ *   clamped to stay fully inside the plot (which is clipped) for both
+ *   orientations, and non-finite y/x values render nothing.
  */
 
 import type {SeriesDef} from '../types';
@@ -29,6 +31,66 @@ export interface ReferenceLineOptions {
   bandOpacity?: number;
 }
 
+// Badge dimensions — matches crosshair label style.
+const BADGE_H = 14;
+const BADGE_RX = 3;
+const LABEL_FONT_SIZE = 10;
+// Rough per-glyph advance + horizontal padding for width estimation.
+const LABEL_CHAR_W = 6.5;
+const LABEL_PAD = 12;
+
+const clamp = (v: number, lo: number, hi: number): number =>
+  Math.max(lo, Math.min(v, hi));
+
+/** Estimated badge width for a label (0 when there's no label). */
+function labelWidth(label: string | undefined): number {
+  return label ? label.length * LABEL_CHAR_W + LABEL_PAD : 0;
+}
+
+/**
+ * The label badge, positioned by its top-left corner so callers can clamp it
+ * into the plot uniformly regardless of orientation.
+ */
+function ReferenceLabel({
+  x,
+  topY,
+  width,
+  color,
+  text,
+}: {
+  x: number;
+  topY: number;
+  width: number;
+  color: string;
+  text: string;
+}) {
+  return (
+    <g transform={`translate(${x},${topY})`} pointerEvents="none">
+      <rect
+        x={0}
+        y={0}
+        width={width}
+        height={BADGE_H}
+        rx={BADGE_RX}
+        fill="var(--color-background-popover)"
+        fillOpacity={0.85}
+        stroke={color}
+        strokeWidth={0.5}
+      />
+      <text
+        x={width / 2}
+        y={BADGE_H / 2}
+        dy="0.35em"
+        textAnchor="middle"
+        fontSize={LABEL_FONT_SIZE}
+        fontWeight={500}
+        fill={color}>
+        {text}
+      </text>
+    </g>
+  );
+}
+
 /**
  * Reference line or band annotation. Not a data series — renders at fixed values.
  *
@@ -45,10 +107,7 @@ export function referenceLine(options: ReferenceLineOptions): SeriesDef {
   const labelPosition = options.labelPosition ?? 'end';
   const bandOpacity = options.bandOpacity ?? 0.1;
 
-  // Badge dimensions — matches crosshair label style
-  const badgeH = 14;
-  const badgeRx = 3;
-  const fontSize = 10;
+  const textW = labelWidth(label);
 
   return {
     type: 'referenceLine',
@@ -63,18 +122,24 @@ export function referenceLine(options: ReferenceLineOptions): SeriesDef {
 
     render(_resolved, ctx) {
       const {width, height, xScale, yScale} = ctx;
+      // Keep the badge fully inside the (clipped) plot on both axes.
+      const bxMax = width - textW - 2;
 
       // Horizontal reference line or band
       if (options.y != null) {
+        if (!Number.isFinite(options.y)) {
+          return null;
+        }
         const py = yScale(options.y);
-        // Generous width estimate + clamp so the badge always stays inside the
-        // plot (it's rendered inside the plot clip, so an overhang gets cut).
-        const textW = label ? label.length * 6.5 + 12 : 0;
-        const desiredBx = labelPosition === 'end' ? width - textW - 2 : 2;
-        const bx = Math.max(2, Math.min(desiredBx, width - textW - 2));
+        if (!Number.isFinite(py)) {
+          return null;
+        }
+        const desiredBx = labelPosition === 'end' ? bxMax : 2;
+        const bx = clamp(desiredBx, 2, bxMax);
+        const labelTopY = clamp(py - BADGE_H / 2, 0, height - BADGE_H);
 
         // Band mode: shaded region between y and y2
-        if (options.y2 != null) {
+        if (options.y2 != null && Number.isFinite(options.y2)) {
           const py2 = yScale(options.y2);
           const top = Math.min(py, py2);
           const bandHeight = Math.abs(py2 - py);
@@ -107,28 +172,13 @@ export function referenceLine(options: ReferenceLineOptions): SeriesDef {
                 strokeDasharray={strokeDasharray}
               />
               {label && (
-                <g transform={`translate(${bx},${py})`} pointerEvents="none">
-                  <rect
-                    x={0}
-                    y={-badgeH / 2}
-                    width={textW}
-                    height={badgeH}
-                    rx={badgeRx}
-                    fill="var(--color-background-popover)"
-                    fillOpacity={0.85}
-                    stroke={color}
-                    strokeWidth={0.5}
-                  />
-                  <text
-                    x={textW / 2}
-                    dy="0.35em"
-                    textAnchor="middle"
-                    fontSize={fontSize}
-                    fontWeight={500}
-                    fill={color}>
-                    {label}
-                  </text>
-                </g>
+                <ReferenceLabel
+                  x={bx}
+                  topY={labelTopY}
+                  width={textW}
+                  color={color}
+                  text={label}
+                />
               )}
             </g>
           );
@@ -147,40 +197,31 @@ export function referenceLine(options: ReferenceLineOptions): SeriesDef {
               strokeDasharray={strokeDasharray}
             />
             {label && (
-              <g transform={`translate(${bx},${py})`} pointerEvents="none">
-                <rect
-                  x={0}
-                  y={-badgeH / 2}
-                  width={textW}
-                  height={badgeH}
-                  rx={badgeRx}
-                  fill="var(--color-background-popover)"
-                  fillOpacity={0.85}
-                  stroke={color}
-                  strokeWidth={0.5}
-                />
-                <text
-                  x={textW / 2}
-                  dy="0.35em"
-                  textAnchor="middle"
-                  fontSize={fontSize}
-                  fontWeight={500}
-                  fill={color}>
-                  {label}
-                </text>
-              </g>
+              <ReferenceLabel
+                x={bx}
+                topY={labelTopY}
+                width={textW}
+                color={color}
+                text={label}
+              />
             )}
           </g>
         );
       }
 
-      // Vertical reference line
+      // Vertical reference line (linear x only — a band scale has no pixel
+      // position for an arbitrary numeric x).
       if (options.x != null && !('bandwidth' in xScale)) {
+        if (!Number.isFinite(options.x)) {
+          return null;
+        }
         const px = (xScale as ScaleLinear<number, number>)(options.x);
-        const textW = label ? label.length * 6.5 + 12 : 0;
-        const by = labelPosition === 'end' ? 4 : height - badgeH - 4;
-        // Keep the centered badge within the plot (it's inside the plot clip).
-        const bx = Math.max(2, Math.min(px - textW / 2, width - textW - 2));
+        if (!Number.isFinite(px)) {
+          return null;
+        }
+        const desiredTopY = labelPosition === 'end' ? 4 : height - BADGE_H - 4;
+        const labelTopY = clamp(desiredTopY, 0, height - BADGE_H);
+        const bx = clamp(px - textW / 2, 2, bxMax);
         return (
           <g>
             <line
@@ -193,29 +234,13 @@ export function referenceLine(options: ReferenceLineOptions): SeriesDef {
               strokeDasharray={strokeDasharray}
             />
             {label && (
-              <g transform={`translate(${bx},${by})`} pointerEvents="none">
-                <rect
-                  x={0}
-                  y={0}
-                  width={textW}
-                  height={badgeH}
-                  rx={badgeRx}
-                  fill="var(--color-background-popover)"
-                  fillOpacity={0.85}
-                  stroke={color}
-                  strokeWidth={0.5}
-                />
-                <text
-                  x={textW / 2}
-                  y={badgeH / 2}
-                  dy="0.35em"
-                  textAnchor="middle"
-                  fontSize={fontSize}
-                  fontWeight={500}
-                  fill={color}>
-                  {label}
-                </text>
-              </g>
+              <ReferenceLabel
+                x={bx}
+                topY={labelTopY}
+                width={textW}
+                color={color}
+                text={label}
+              />
             )}
           </g>
         );

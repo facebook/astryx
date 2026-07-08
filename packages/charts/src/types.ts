@@ -72,6 +72,11 @@ export interface SeriesContext {
  * The standardized shape every mark helper returns.
  * Each mark type is self-contained: it knows how to resolve positions
  * and how to render itself. The chart root just iterates and calls.
+ *
+ * A SeriesDef instance is single-use: the layout/render pass annotates it in
+ * place (`_uid`, `_isTopOfStack`, `_resolvedColor`), so a given def must belong
+ * to exactly one <Chart>. Build a fresh series array per chart rather than
+ * sharing the same mark objects across charts.
  */
 export interface SeriesDef {
   /** Mark type identifier */

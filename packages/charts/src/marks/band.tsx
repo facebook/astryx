@@ -2,7 +2,9 @@
 
 /**
  * @file marks/band.tsx
- * @output Band (confidence interval) series
+ * @output Band (confidence interval) series — area between upper/lower bounds.
+ *   Non-numeric/NaN bounds break the area into gaps instead of collapsing to a
+ *   false zero baseline.
  */
 
 import {area as d3Area, curveMonotoneX} from 'd3-shape';
@@ -43,14 +45,12 @@ export function band(options: BandOptions): SeriesDef {
         } else {
           px = xScale(d[xKey] as number);
         }
-        const upper =
-          typeof d[options.upper] === 'number'
-            ? (d[options.upper] as number)
-            : 0;
-        const lower =
-          typeof d[options.lower] === 'number'
-            ? (d[options.lower] as number)
-            : 0;
+        // NaN for missing/non-numeric bounds so render() can gap the area
+        // rather than draw a spike down to the axis.
+        const upperVal = d[options.upper];
+        const lowerVal = d[options.lower];
+        const upper = Number.isFinite(upperVal) ? (upperVal as number) : NaN;
+        const lower = Number.isFinite(lowerVal) ? (lowerVal as number) : NaN;
         points.push({px, py: yScale(upper), py0: yScale(lower), dataIndex: i});
       }
       return points;
@@ -61,11 +61,20 @@ export function band(options: BandOptions): SeriesDef {
         return null;
       }
       const areaGen = d3Area<ResolvedPoint>()
+        .defined(
+          d =>
+            Number.isFinite(d.px) &&
+            Number.isFinite(d.py) &&
+            Number.isFinite(d.py0),
+        )
         .x(d => d.px)
         .y0(d => d.py0)
         .y1(d => d.py)
         .curve(curveMonotoneX);
       const pathD = areaGen(resolved) ?? '';
+      if (!pathD) {
+        return null;
+      }
       return (
         <path d={pathD} fill={color} fillOpacity={opacity} stroke="none" />
       );

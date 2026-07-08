@@ -6,6 +6,11 @@
  *
  * Data is pushed imperatively via the returned handle, not from the static dataset.
  * The chart's xScale/yScale map pushed values to pixel coordinates.
+ *
+ * Draws are coalesced onto a single requestAnimationFrame so a burst of pushes
+ * repaints once per frame. The GL context, program, and vertex buffer are made
+ * once and reused; all are released (rAF cancelled, context eagerly lost) on
+ * unmount. Redraws on resize / scale change and recovers from context loss.
  */
 
 import {
@@ -13,6 +18,7 @@ import {
   useEffect,
   useImperativeHandle,
   useCallback,
+  useState,
   type MutableRefObject,
 } from 'react';
 import type {SeriesDef} from '../types';
@@ -24,6 +30,8 @@ import {
   sizeCanvas,
   mountCanvasOverSVG,
   createProgram,
+  registerContextLossHandlers,
+  loseContext,
 } from '../webgl';
 
 export interface StreamGLHandle {
@@ -59,6 +67,13 @@ const FRAG = `
   }
 `;
 
+type StreamGLLocations = {
+  aPosition: number;
+  uResolution: WebGLUniformLocation | null;
+  uColor: WebGLUniformLocation | null;
+  uOpacity: WebGLUniformLocation | null;
+};
+
 /**
  * Inline component — manages the ring buffer, canvas, and rAF draw loop.
  */
@@ -84,50 +99,51 @@ function StreamGLCanvas({
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
   const bufRef = useRef<WebGLBuffer | null>(null);
+  const locsRef = useRef<StreamGLLocations | null>(null);
   const markerRef = useRef<SVGGElement>(null);
+  const rafRef = useRef<number | null>(null);
+  // Bumped on context restore to force a rebuild + repaint.
+  const [contextEpoch, setContextEpoch] = useState(0);
 
-  const ring = useRef({
+  // Ring buffer + a reusable scratch array for the pixel-space draw data. The
+  // capacity is captured on the ring itself so head/count math stays consistent
+  // even if the `bufferSize` prop changes (handled by the resize effect below).
+  const ringRef = useRef({
     data: new Float32Array(bufferSize * 2),
     head: 0,
     count: 0,
+    capacity: bufferSize,
   });
+  const scratchRef = useRef<Float32Array>(new Float32Array(bufferSize * 2));
 
-  // Mount canvas outside SVG
+  // Re-allocate the ring if bufferSize changes (rare — resets the stream).
   useEffect(() => {
-    const marker = markerRef.current;
-    if (!marker) {
-      return;
+    const ring = ringRef.current;
+    if (ring.capacity !== bufferSize) {
+      ring.data = new Float32Array(bufferSize * 2);
+      ring.head = 0;
+      ring.count = 0;
+      ring.capacity = bufferSize;
+      scratchRef.current = new Float32Array(bufferSize * 2);
     }
-    if (!canvasRef.current) {
-      canvasRef.current = document.createElement('canvas');
-    }
-    return mountCanvasOverSVG(marker, canvasRef.current, width, height);
-  }, [width, height]);
-
-  // Size canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || width <= 0 || height <= 0) {
-      return;
-    }
-    sizeCanvas(canvas, width, height);
-  }, [width, height]);
+  }, [bufferSize]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) {
+    if (!canvas || width <= 0 || height <= 0) {
       return;
     }
     if (!glRef.current) {
       glRef.current = getWebGLContext(canvas);
     }
     const gl = glRef.current;
-    if (!gl) {
+    if (!gl || gl.isContextLost()) {
       return;
     }
 
     if (!programRef.current) {
       programRef.current = createProgram(gl, VERT, FRAG);
+      locsRef.current = null;
     }
     const program = programRef.current;
     if (!program) {
@@ -137,65 +153,179 @@ function StreamGLCanvas({
     if (!bufRef.current) {
       bufRef.current = gl.createBuffer();
     }
+    const buffer = bufRef.current;
+    if (!buffer) {
+      return;
+    }
 
-    const {data: ringData, head, count} = ring.current;
+    if (!locsRef.current) {
+      locsRef.current = {
+        aPosition: gl.getAttribLocation(program, 'a_position'),
+        uResolution: gl.getUniformLocation(program, 'u_resolution'),
+        uColor: gl.getUniformLocation(program, 'u_color'),
+        uOpacity: gl.getUniformLocation(program, 'u_opacity'),
+      };
+    }
+    const locs = locsRef.current;
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    setupGLState(gl);
+
+    const {data: ringData, head, count, capacity} = ringRef.current;
     if (count < 2) {
+      // Buffer already cleared above — nothing to stroke yet.
       return;
     }
 
     const linearX = xScale as (v: number) => number;
-    const drawBuf = new Float32Array(count * 2);
+    const drawBuf = scratchRef.current;
     for (let i = 0; i < count; i++) {
-      const idx = ((head - count + i + bufferSize) % bufferSize) * 2;
+      const idx = ((head - count + i + capacity) % capacity) * 2;
       drawBuf[i * 2] = linearX(ringData[idx]);
       drawBuf[i * 2 + 1] = yScale(ringData[idx + 1]);
     }
 
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    setupGLState(gl);
     gl.useProgram(program);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, bufRef.current);
-    gl.bufferData(gl.ARRAY_BUFFER, drawBuf, gl.DYNAMIC_DRAW);
-
-    const aPos = gl.getAttribLocation(program, 'a_position');
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      drawBuf.subarray(0, count * 2),
+      gl.DYNAMIC_DRAW,
+    );
+    gl.enableVertexAttribArray(locs.aPosition);
+    gl.vertexAttribPointer(locs.aPosition, 2, gl.FLOAT, false, 0, 0);
 
     const [r, g, b] = hexToGL(color);
-    gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), width, height);
-    gl.uniform3f(gl.getUniformLocation(program, 'u_color'), r, g, b);
-    gl.uniform1f(gl.getUniformLocation(program, 'u_opacity'), opacity);
+    gl.uniform2f(locs.uResolution, width, height);
+    gl.uniform3f(locs.uColor, r, g, b);
+    gl.uniform1f(locs.uOpacity, opacity);
 
     gl.lineWidth(lineWidth);
     gl.drawArrays(gl.LINE_STRIP, 0, count);
-  }, [width, height, color, lineWidth, opacity, bufferSize, xScale, yScale]);
+  }, [width, height, color, lineWidth, opacity, xScale, yScale]);
 
-  // Expose push/clear handle via ref
+  // Keep the latest draw reachable from the single coalesced rAF callback, so a
+  // frame scheduled before a scale/size change still paints with current state.
+  const drawRef = useRef(draw);
+  useEffect(() => {
+    drawRef.current = draw;
+  }, [draw]);
+
+  // Coalesce redraws onto one rAF so a burst of pushes paints once per frame.
+  // Stable identity keeps the imperative push/clear handle from churning.
+  const scheduleDraw = useCallback(() => {
+    if (rafRef.current != null) {
+      return;
+    }
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      drawRef.current();
+    });
+  }, []);
+
+  // Mount the canvas outside the SVG and wire context-loss recovery.
+  useEffect(() => {
+    const marker = markerRef.current;
+    if (!marker) {
+      return;
+    }
+    if (!canvasRef.current) {
+      canvasRef.current = document.createElement('canvas');
+    }
+    const canvas = canvasRef.current;
+    const detach = mountCanvasOverSVG(marker, canvas, width, height);
+    const unregister = registerContextLossHandlers(
+      canvas,
+      () => {
+        if (rafRef.current != null) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
+        glRef.current = null;
+        programRef.current = null;
+        bufRef.current = null;
+        locsRef.current = null;
+      },
+      () => setContextEpoch(e => e + 1),
+    );
+    return () => {
+      unregister();
+      detach?.();
+    };
+  }, [width, height]);
+
+  // Size the canvas when the plot area changes.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || width <= 0 || height <= 0) {
+      return;
+    }
+    sizeCanvas(canvas, width, height);
+  }, [width, height]);
+
+  // Redraw the retained buffer when scales, size, or the GL context change so a
+  // paused stream doesn't leave a stale frame after a resize or window slide.
+  useEffect(() => {
+    scheduleDraw();
+  }, [draw, scheduleDraw, contextEpoch]);
+
+  // Expose push/clear handle via ref.
   useImperativeHandle(
     handleRef as MutableRefObject<StreamGLHandle | null>,
     () => ({
       push(x: number, y: number) {
-        const r = ring.current;
-        const idx = r.head * 2;
-        r.data[idx] = x;
-        r.data[idx + 1] = y;
-        r.head = (r.head + 1) % bufferSize;
-        r.count = Math.min(r.count + 1, bufferSize);
-        draw();
+        if (!Number.isFinite(x) || !Number.isFinite(y)) {
+          return;
+        }
+        const ring = ringRef.current;
+        const idx = ring.head * 2;
+        ring.data[idx] = x;
+        ring.data[idx + 1] = y;
+        ring.head = (ring.head + 1) % ring.capacity;
+        ring.count = Math.min(ring.count + 1, ring.capacity);
+        scheduleDraw();
       },
       clear() {
-        ring.current.head = 0;
-        ring.current.count = 0;
+        const ring = ringRef.current;
+        ring.head = 0;
+        ring.count = 0;
+        if (rafRef.current != null) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
+        }
         const gl = glRef.current;
-        if (gl) {
+        if (gl && !gl.isContextLost()) {
           gl.clearColor(0, 0, 0, 0);
           gl.clear(gl.COLOR_BUFFER_BIT);
         }
       },
     }),
-    [bufferSize, draw],
+    [scheduleDraw],
   );
+
+  // Cancel any pending frame and release all GL resources on unmount.
+  useEffect(() => {
+    return () => {
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      const gl = glRef.current;
+      if (gl) {
+        if (bufRef.current) {
+          gl.deleteBuffer(bufRef.current);
+        }
+        if (programRef.current) {
+          gl.deleteProgram(programRef.current);
+        }
+        loseContext(gl);
+      }
+      glRef.current = null;
+      programRef.current = null;
+      bufRef.current = null;
+      locsRef.current = null;
+    };
+  }, []);
 
   if (width <= 0 || height <= 0) {
     return null;

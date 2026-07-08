@@ -10,6 +10,10 @@
  * `<ChartGrid>`). To stay consistent with most charts, the bottom axis
  * draws its edge line by default and other positions don't.
  *
+ * Labels use d3's native tick formatter for continuous scales by default (clean
+ * numbers/dates) unless a `tickFormat` is supplied, and are auto-thinned to the
+ * available width (horizontal) or height (vertical) to avoid overlap.
+ *
  * Ticks use CSS transitions for smooth sliding during streaming updates.
  */
 
@@ -86,14 +90,28 @@ export function ChartAxis({
   const isHorizontal = position === 'top' || position === 'bottom';
   const scale = isHorizontal ? xScale : yScale;
 
+  // Default label formatter. For continuous (linear/time) scales, use d3's own
+  // tick formatter so numbers get sensible precision (no floating-point dust
+  // like "0.30000000000000004") and dates render as calendar labels instead of
+  // `String(Date)`. Band scales keep their category strings.
+  const autoFormat = useMemo<((v: unknown) => string) | null>(() => {
+    if (tickFormat || isBandScale(scale)) {
+      return null;
+    }
+    const continuous = scale as
+      ScaleLinear<number, number> | ScaleTime<number, number>;
+    const fmt = continuous.tickFormat(tickCount);
+    return (v: unknown) => fmt(v as number & Date);
+  }, [tickFormat, scale, tickCount]);
+
   const format = useCallback(
     (value: unknown): string => {
-      const str = (tickFormat ?? String)(value);
+      const str = (tickFormat ?? autoFormat ?? String)(value);
       return truncate && str.length > truncate
         ? str.slice(0, truncate) + '\u2026'
         : str;
     },
-    [tickFormat, truncate],
+    [tickFormat, autoFormat, truncate],
   );
 
   const ticks = useMemo(() => {
@@ -112,18 +130,25 @@ export function ChartAxis({
       }));
     }
 
-    // Cap the number of labels. An explicit maxTicks wins; otherwise, for a
-    // horizontal axis, derive a cap from the available width and the widest
-    // label so dense band axes (e.g. 30 daily categories) don't overlap into
-    // an unreadable smear.
+    // Cap label count to avoid overlap. An explicit `maxTicks` always wins.
+    // Otherwise derive a cap from the available space and label size so dense
+    // axes don't smear into an unreadable blur: width ÷ widest-label for
+    // horizontal (e.g. 30 daily categories), height ÷ line-height for vertical
+    // (e.g. a categorical y-axis on a horizontal bar chart). Labels are then
+    // evenly skipped down to the cap.
     let cap = maxTicks;
-    if (cap == null && isHorizontal && allTicks.length > 1 && width > 0) {
-      const widestChars = allTicks.reduce(
-        (m, t) => Math.max(m, format(t.value).length),
-        1,
-      );
-      const approxLabelPx = widestChars * 7 + 16;
-      cap = Math.max(1, Math.floor(width / approxLabelPx));
+    if (cap == null && allTicks.length > 1) {
+      if (isHorizontal && width > 0) {
+        const widestChars = allTicks.reduce(
+          (m, t) => Math.max(m, format(t.value).length),
+          1,
+        );
+        const approxLabelPx = widestChars * 7 + 16;
+        cap = Math.max(1, Math.floor(width / approxLabelPx));
+      } else if (!isHorizontal && height > 0) {
+        // ~12px glyph + breathing room keeps stacked labels from touching.
+        cap = Math.max(1, Math.floor(height / 18));
+      }
     }
     if (cap && allTicks.length > cap) {
       const step = Math.ceil(allTicks.length / cap);
@@ -131,7 +156,7 @@ export function ChartAxis({
     }
 
     return allTicks;
-  }, [scale, tickCount, maxTicks, isHorizontal, width, format]);
+  }, [scale, tickCount, maxTicks, isHorizontal, width, height, format]);
 
   const transform =
     position === 'bottom'
@@ -158,7 +183,7 @@ export function ChartAxis({
     : undefined;
 
   return (
-    <g transform={transform}>
+    <g transform={transform} role="group" aria-label={`${position} axis`}>
       {renderAxisLine && (
         <line
           x1={0}
@@ -170,6 +195,9 @@ export function ChartAxis({
       )}
       {ticks.map(({value, offset}) => {
         const label = format(value);
+        // Key off the raw tick value, not the formatted label: distinct ticks
+        // can format (or truncate) to the same string and would collide as keys.
+        const key = String(value);
         const isVisible = isHorizontal
           ? offset >= -10 && offset <= width + 10
           : offset >= -10 && offset <= height + 10;
@@ -178,7 +206,7 @@ export function ChartAxis({
           const y = position === 'bottom' ? TICK_SIZE : -TICK_SIZE;
           return (
             <g
-              key={label}
+              key={key}
               style={{
                 transform: `translateX(${offset}px)`,
                 transition: tickTransition,
@@ -199,7 +227,7 @@ export function ChartAxis({
         const x = position === 'left' ? -TICK_SIZE : TICK_SIZE;
         return (
           <g
-            key={label}
+            key={key}
             style={{
               transform: `translateY(${offset}px)`,
               transition: tickTransition,

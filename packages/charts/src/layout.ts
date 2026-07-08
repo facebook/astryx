@@ -50,6 +50,41 @@ export interface LayoutResult {
   resolved: Map<string, ResolvedPoint[]>;
 }
 
+/** True only when both ends of an explicit domain are usable finite numbers. */
+function isFiniteDomain(domain: [number, number]): boolean {
+  return Number.isFinite(domain[0]) && Number.isFinite(domain[1]);
+}
+
+/**
+ * Finite [min, max] of a numeric column, robust to the two failure modes of
+ * `Math.min(...arr)` / `Math.max(...arr)`: a NaN/Infinity poisoning the result,
+ * and a call-stack overflow when spreading a very large array (GL marks push
+ * hundreds of thousands of points). Empty or degenerate (all-equal) extents are
+ * expanded so the resulting scale never collapses onto a single pixel.
+ */
+function finiteExtent(nums: number[]): [number, number] {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const v of nums) {
+    if (Number.isFinite(v)) {
+      if (v < lo) {
+        lo = v;
+      }
+      if (v > hi) {
+        hi = v;
+      }
+    }
+  }
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) {
+    return [0, 1];
+  }
+  if (lo === hi) {
+    const pad = Math.abs(lo) * 0.5 || 1;
+    return [lo - pad, hi + pad];
+  }
+  return [lo, hi];
+}
+
 export function computeLayout({
   data,
   xKey,
@@ -66,16 +101,15 @@ export function computeLayout({
     xValues.length > 0 && xValues.every(v => typeof v === 'number');
 
   let xScale: ChartScale;
-  if (xDomain) {
+  if (xDomain && isFiniteDomain(xDomain)) {
     // Explicit domain is authoritative (no .nice()) — enables a stable
-    // streaming window and a valid scale even when `data` is empty.
+    // streaming window and a valid scale even when `data` is empty. Trusted
+    // only when finite; a NaN/Infinity domain would collapse the scale.
     xScale = scaleLinear().domain(xDomain).range([0, width]);
   } else if (isNumericX) {
-    const nums = xValues as number[];
-    xScale = scaleLinear()
-      .domain([Math.min(...nums), Math.max(...nums)])
-      .range([0, width])
-      .nice();
+    // NaN passes `typeof === 'number'`, so derive the extent defensively.
+    const [lo, hi] = finiteExtent(xValues as number[]);
+    xScale = scaleLinear().domain([lo, hi]).range([0, width]).nice();
   } else {
     xScale = scaleBand<string>()
       .domain(xValues.map(String))
@@ -84,8 +118,12 @@ export function computeLayout({
   }
 
   // ─── 2. Y domain from all series dataKeys ────────────────────────────
+  // One pass collects the union of data keys, whether any mark wants a zero
+  // baseline, and the stack groupings. `stackGroups` is reused verbatim by the
+  // stacking pass below (§3) — previously these groups were built twice.
   const allKeys = new Set<string>();
   let includeZero = false;
+  const stackGroups = new Map<string, string[]>();
   for (const s of series) {
     for (const k of s.dataKeys) {
       allKeys.add(k);
@@ -93,24 +131,22 @@ export function computeLayout({
     if (s.layout.includeZero) {
       includeZero = true;
     }
-  }
-
-  // Collect which keys are stacked together so we can compute stacked extents
-  const stackGroupKeys = new Map<string, string[]>();
-  for (const s of series) {
-    if (s.layout.stack) {
-      const group = stackGroupKeys.get(s.layout.stack) ?? [];
-      group.push(s.dataKeys[0]);
-      stackGroupKeys.set(s.layout.stack, group);
+    const primaryKey = s.dataKeys[0];
+    if (s.layout.stack && primaryKey != null) {
+      const group = stackGroups.get(s.layout.stack) ?? [];
+      group.push(primaryKey);
+      stackGroups.set(s.layout.stack, group);
     }
   }
 
   let yMin = Infinity,
     yMax = -Infinity;
 
-  // For stacked series, compute the sum at each data point
+  // Stacked series contribute their per-datum accumulated total. `Number.isFinite`
+  // (not `typeof === 'number'`) so a stray NaN/Infinity can't corrupt the domain
+  // into a NaN/Infinity scale.
   const stackedKeys = new Set<string>();
-  for (const [, keys] of stackGroupKeys) {
+  for (const [, keys] of stackGroups) {
     for (const k of keys) {
       stackedKeys.add(k);
     }
@@ -118,8 +154,8 @@ export function computeLayout({
       let sum = 0;
       for (const k of keys) {
         const v = d[k];
-        if (typeof v === 'number') {
-          sum += v;
+        if (Number.isFinite(v)) {
+          sum += v as number;
         }
       }
       if (sum > yMax) {
@@ -131,19 +167,20 @@ export function computeLayout({
     }
   }
 
-  // For non-stacked series, use individual values
+  // Non-stacked series contribute their individual finite values.
   for (const d of data) {
     for (const k of allKeys) {
       if (stackedKeys.has(k)) {
         continue;
       } // already handled above
       const v = d[k];
-      if (typeof v === 'number') {
-        if (v < yMin) {
-          yMin = v;
+      if (Number.isFinite(v)) {
+        const n = v as number;
+        if (n < yMin) {
+          yMin = n;
         }
-        if (v > yMax) {
-          yMax = v;
+        if (n > yMax) {
+          yMax = n;
         }
       }
     }
@@ -153,9 +190,10 @@ export function computeLayout({
   let yDomainFinal: [number, number];
   let applyNice = true;
 
-  if (yDomain) {
+  if (yDomain && isFiniteDomain(yDomain)) {
     // Caller owns the exact domain (e.g. zoom/streaming). No baseline,
     // headroom, or .nice() — rounding here would cause visual ratcheting.
+    // Trusted only when finite; a NaN/Infinity domain falls through to auto.
     yDomainFinal = yDomain;
     applyNice = false;
   } else {
@@ -202,15 +240,7 @@ export function computeLayout({
   const yScale = applyNice ? yScaleBase.nice() : yScaleBase;
 
   // ─── 3. Stacking ─────────────────────────────────────────────────────
-  const stackGroups = new Map<string, string[]>();
-  for (const s of series) {
-    if (s.layout.stack) {
-      const group = stackGroups.get(s.layout.stack) ?? [];
-      group.push(s.dataKeys[0]);
-      stackGroups.set(s.layout.stack, group);
-    }
-  }
-
+  // Reuses `stackGroups` collected during the domain pass (§2).
   const stackedData = new Map<string, {y0: number; y1: number}[]>();
   for (const [, keys] of stackGroups) {
     const stackGen = d3Stack<Record<string, unknown>>()
