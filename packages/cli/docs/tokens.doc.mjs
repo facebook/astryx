@@ -41,7 +41,7 @@ export const docs = {
             [
               "--color-on-accent",
               "#FFFFFF",
-              "#FFFFFF"
+              "#0A1317"
             ],
             [
               "--color-neutral",
@@ -86,7 +86,7 @@ export const docs = {
             [
               "--color-text-secondary",
               "#4E606F",
-              "#AAAFB5"
+              "#B5BABF"
             ],
             [
               "--color-text-disabled",
@@ -151,7 +151,7 @@ export const docs = {
             [
               "--color-success",
               "#0D8626",
-              "#0D8626"
+              "#26A756"
             ],
             [
               "--color-success-muted",
@@ -161,12 +161,12 @@ export const docs = {
             [
               "--color-on-success",
               "#FFFFFF",
-              "#FFFFFF"
+              "#0A1317"
             ],
             [
               "--color-error",
               "#E3193B",
-              "#F5394F"
+              "#F64E61"
             ],
             [
               "--color-error-muted",
@@ -176,11 +176,11 @@ export const docs = {
             [
               "--color-on-error",
               "#FFFFFF",
-              "#FFFFFF"
+              "#0A1317"
             ],
             [
               "--color-warning",
-              "#E9AF08",
+              "#A37A06",
               "#F2C00B"
             ],
             [
@@ -255,7 +255,7 @@ export const docs = {
             ],
             [
               "--color-icon-cyan",
-              "#00ACC1",
+              "#0091A3",
               "#26C6DA"
             ],
             [
@@ -315,7 +315,7 @@ export const docs = {
             ],
             [
               "--color-icon-orange",
-              "#E9690B",
+              "#D9620A",
               "#FB8C00"
             ],
             [
@@ -415,7 +415,7 @@ export const docs = {
             ],
             [
               "--color-icon-yellow",
-              "#FBC02D",
+              "#B47700",
               "#FFEE58"
             ],
             [

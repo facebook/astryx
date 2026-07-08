@@ -25,7 +25,12 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
+import {
+  colorVars,
+  radiusVars,
+  spacingVars,
+  typeScaleVars,
+} from '../theme/tokens.stylex';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
 import {useScrollLock} from '../hooks/useScrollLock';
@@ -187,8 +192,14 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-large-size'],
     lineHeight: typeScaleVars['--text-large-leading'],
     textAlign: 'center',
-    paddingBlockStart: spacingVars['--spacing-2'],
-    paddingBlockEnd: 0,
+    // Media chrome sits over arbitrary content: a fixed dark chip keeps
+    // on-dark text >= 4.5:1 even over white media, on any theme's scrim.
+    // SYNC: chip alpha is asserted by internal/theme-contrast/contract.ts.
+    // eslint-disable-next-line @astryx/no-hardcoded-styles -- media chrome is theme-invariant: fixed dark chip guarantees on-dark text >=4.5:1 over any media (SYNC: internal/theme-contrast/contract.ts)
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: radiusVars['--radius-inner'],
+    marginBlockStart: spacingVars['--spacing-2'],
+    paddingBlock: spacingVars['--spacing-1'],
     paddingInline: spacingVars['--spacing-3'],
     maxWidth: '600px',
     flexShrink: 0,
@@ -218,10 +229,17 @@ const styles = stylex.create({
     color: colorVars['--color-on-dark'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],
+    // eslint-disable-next-line @astryx/no-hardcoded-styles -- media chrome is theme-invariant: fixed dark chip guarantees on-dark text >=4.5:1 over any media (SYNC: internal/theme-contrast/contract.ts)
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: radiusVars['--radius-inner'],
+    paddingBlock: spacingVars['--spacing-0-5'],
+    paddingInline: spacingVars['--spacing-2'],
     zIndex: 1,
   },
   controlButton: {
     color: colorVars['--color-on-dark'],
+    // eslint-disable-next-line @astryx/no-hardcoded-styles -- media chrome is theme-invariant: fixed dark chip guarantees on-dark text >=4.5:1 over any media (SYNC: internal/theme-contrast/contract.ts)
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
 });
 

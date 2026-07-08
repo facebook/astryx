@@ -84,7 +84,10 @@ const styles = stylex.create({
   },
 });
 
-// Background variant styles — each maps to a design token
+// Background variant styles — each maps to a design token.
+// Tinted variants also re-bind the text tokens to the matching hue text
+// color (same treatment Banner statuses use): neutral gray text does not
+// reliably clear WCAG AA on hue-tinted surfaces across themes (#3654).
 const variantStyles = stylex.create({
   default: {
     backgroundColor: colorVars['--color-background-card'],
@@ -97,33 +100,53 @@ const variantStyles = stylex.create({
   },
   blue: {
     backgroundColor: colorVars['--color-background-blue'],
+    '--color-text-primary': `${colorVars['--color-text-blue']}`,
+    '--color-text-secondary': `${colorVars['--color-text-blue']}`,
   },
   cyan: {
     backgroundColor: colorVars['--color-background-cyan'],
+    '--color-text-primary': `${colorVars['--color-text-cyan']}`,
+    '--color-text-secondary': `${colorVars['--color-text-cyan']}`,
   },
   gray: {
     backgroundColor: colorVars['--color-background-gray'],
+    '--color-text-primary': `${colorVars['--color-text-gray']}`,
+    '--color-text-secondary': `${colorVars['--color-text-gray']}`,
   },
   green: {
     backgroundColor: colorVars['--color-background-green'],
+    '--color-text-primary': `${colorVars['--color-text-green']}`,
+    '--color-text-secondary': `${colorVars['--color-text-green']}`,
   },
   orange: {
     backgroundColor: colorVars['--color-background-orange'],
+    '--color-text-primary': `${colorVars['--color-text-orange']}`,
+    '--color-text-secondary': `${colorVars['--color-text-orange']}`,
   },
   pink: {
     backgroundColor: colorVars['--color-background-pink'],
+    '--color-text-primary': `${colorVars['--color-text-pink']}`,
+    '--color-text-secondary': `${colorVars['--color-text-pink']}`,
   },
   purple: {
     backgroundColor: colorVars['--color-background-purple'],
+    '--color-text-primary': `${colorVars['--color-text-purple']}`,
+    '--color-text-secondary': `${colorVars['--color-text-purple']}`,
   },
   red: {
     backgroundColor: colorVars['--color-background-red'],
+    '--color-text-primary': `${colorVars['--color-text-red']}`,
+    '--color-text-secondary': `${colorVars['--color-text-red']}`,
   },
   teal: {
     backgroundColor: colorVars['--color-background-teal'],
+    '--color-text-primary': `${colorVars['--color-text-teal']}`,
+    '--color-text-secondary': `${colorVars['--color-text-teal']}`,
   },
   yellow: {
     backgroundColor: colorVars['--color-background-yellow'],
+    '--color-text-primary': `${colorVars['--color-text-yellow']}`,
+    '--color-text-secondary': `${colorVars['--color-text-yellow']}`,
   },
 });
 

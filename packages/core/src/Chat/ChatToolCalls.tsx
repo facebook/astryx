@@ -41,11 +41,7 @@ import {themeProps} from '../utils/themeProps';
 // Types
 // =============================================================================
 
-export type ChatToolCallStatus =
-  | 'pending'
-  | 'running'
-  | 'complete'
-  | 'error';
+export type ChatToolCallStatus = 'pending' | 'running' | 'complete' | 'error';
 
 export interface ChatToolCallItem {
   /** Tool/function name. */
@@ -131,7 +127,7 @@ const styles = stylex.create({
     flexShrink: 0,
     width: '14px',
     height: '14px',
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     transition: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
   },
   chevronExpanded: {
@@ -218,7 +214,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontFamily: typographyVars['--font-family-body'],
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -229,7 +225,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontFamily: typographyVars['--font-family-body'],
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     whiteSpace: 'nowrap',
     flexShrink: 0,
   },
@@ -243,7 +239,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontFamily: typographyVars['--font-family-body'],
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     flexShrink: 0,
   },
   statsAdditions: {
@@ -264,7 +260,7 @@ const styles = stylex.create({
     flexShrink: 0,
     width: '14px',
     height: '14px',
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     transition: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
     marginInlineStart: 'auto',
   },
@@ -279,7 +275,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontFamily: typographyVars['--font-family-body'],
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     flexShrink: 0,
   },
 
@@ -306,7 +302,7 @@ const styles = stylex.create({
   },
 
   // Status colors
-  colorPending: {color: colorVars['--color-text-disabled']},
+  colorPending: {color: colorVars['--color-text-secondary']},
   colorRunning: {color: colorVars['--color-accent']},
   colorComplete: {color: colorVars['--color-success']},
   colorError: {color: colorVars['--color-error']},
@@ -399,11 +395,7 @@ function CallRow({call}: {call: ChatToolCallItem}) {
       </span>
       <span {...stylex.props(styles.callName)}>{call.name}</span>
       {call.node != null && (
-        <Badge
-          label={call.node}
-          variant="neutral"
-          xstyle={styles.nodePill}
-        />
+        <Badge label={call.node} variant="neutral" xstyle={styles.nodePill} />
       )}
       {call.target != null && (
         <span {...stylex.props(styles.callLabel)}>{call.target}</span>

@@ -357,9 +357,10 @@ export function useChatDictation(
     const span = document.createElement('span');
     span.setAttribute('data-astryx-dictation-interim', '');
     span.contentEditable = 'false';
-    span.style.color = 'var(--color-text-disabled, #999)';
+    // Interim text is visible content: secondary (not disabled) keeps it
+    // WCAG-readable; italic alone carries the "not final yet" cue.
+    span.style.color = 'var(--color-text-secondary)';
     span.style.fontStyle = 'italic';
-    span.style.opacity = '0.7';
     span.style.pointerEvents = 'none';
     editable.appendChild(span);
     interimSpanRef.current = span;
