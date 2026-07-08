@@ -88,6 +88,11 @@ export const docs = {
       default: "'label'",
     },
   ],
+  theming: {
+    targets: [
+      {className: 'astryx-citation', visualProps: ['variant']},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

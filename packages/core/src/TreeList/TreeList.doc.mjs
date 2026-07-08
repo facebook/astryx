@@ -25,7 +25,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-tree-list', visualProps: ['density']},
-      {className: 'astryx-tree-list-item', states: ['selected', 'disabled']},
+      {className: 'astryx-tree-list-item', visualProps: ['density'], states: ['selected', 'disabled']},
     ],
   },
   components: [
@@ -89,7 +89,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-tree-list', visualProps: ['density']},
-      {className: 'astryx-tree-list-item', states: ['selected', 'disabled']},
+      {className: 'astryx-tree-list-item', visualProps: ['density'], states: ['selected', 'disabled']},
     ],
   },
   components: [

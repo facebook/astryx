@@ -21,7 +21,7 @@ export const docs = {
     targets: [
       {className: 'astryx-side-nav', visualProps: ['mode']},
       {className: 'astryx-side-nav-heading'},
-      {className: 'astryx-side-nav-item'},
+      {className: 'astryx-side-nav-item', visualProps: ['size'], states: ['selected']},
       {className: 'astryx-side-nav-section'},
     ],
   },

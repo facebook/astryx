@@ -32,6 +32,12 @@ export const docs = {
     {name: 'minWidth', type: 'number | string', description: 'Minimum width override.'},
     {name: 'xstyle', type: 'StyleXStyles', description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.'},
   ],
+  theming: {
+    targets: [
+      {className: 'astryx-nav-heading-menu', visualProps: ['size']},
+      {className: 'astryx-nav-heading-menu-item', visualProps: ['size']},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

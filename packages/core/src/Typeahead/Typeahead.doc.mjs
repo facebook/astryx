@@ -168,7 +168,7 @@ export const docs = {
   components: [{name: 'BaseTypeahead'}, {name: 'TypeaheadItem'}],
   theming: {
     targets: [
-      {className: 'astryx-typeahead', visualProps: ['status']},
+      {className: 'astryx-typeahead', visualProps: ['status', 'size']},
       {className: 'astryx-typeahead-dropdown'},
       {className: 'astryx-typeahead-item'},
     ],

@@ -125,7 +125,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-checkbox-input', visualProps: ['size']},
-      {className: 'astryx-checkbox'},
+      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled']},
     ],
   },
   usage: {
@@ -200,7 +200,7 @@ export const docsZh = {
           'size',
         ],
       },
-      {className: 'astryx-checkbox'},
+      {className: 'astryx-checkbox', visualProps: ['size'], states: ['checked', 'disabled']},
     ],
   },
 };
