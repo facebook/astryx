@@ -411,6 +411,11 @@
       "types": "./dist/RadioList/index.d.ts",
       "default": "./dist/RadioList/index.js"
     },
+    "./Rating": {
+      "source": "./src/Rating/index.ts",
+      "types": "./dist/Rating/index.d.ts",
+      "default": "./dist/Rating/index.js"
+    },
     "./Resizable": {
       "source": "./src/Resizable/index.ts",
       "types": "./dist/Resizable/index.d.ts",

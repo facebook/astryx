@@ -40,6 +40,7 @@ export * from './CheckboxInput';
 export * from './CheckboxList';
 export * from './Collapsible';
 export * from './RadioList';
+export * from './Rating';
 export * from './Resizable';
 export * from './Divider';
 export * from './VisuallyHidden';
