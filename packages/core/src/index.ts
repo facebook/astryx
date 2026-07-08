@@ -88,6 +88,7 @@ export * from './TreeList';
 export * from './Kbd';
 export * from './AlertDialog';
 export * from './Dialog';
+export * from './Sheet';
 export * from './ContextMenu';
 export * from './DropdownMenu';
 export * from './MoreMenu';

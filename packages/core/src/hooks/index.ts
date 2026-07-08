@@ -81,3 +81,17 @@ export type {
 
 export {useLongPress} from './useLongPress';
 export type {UseLongPressOptions, UseLongPressHandlers} from './useLongPress';
+
+export {useOverlayStack, isTopOverlay} from './useOverlayStack';
+export type {
+  OverlayType,
+  UseOverlayStackOptions,
+  UseOverlayStackReturn,
+} from './useOverlayStack';
+
+export {useSwipeToDismiss} from './useSwipeToDismiss';
+export type {
+  SwipeDirection,
+  UseSwipeToDismissOptions,
+  UseSwipeToDismissReturn,
+} from './useSwipeToDismiss';
