@@ -142,27 +142,40 @@ export function computeLayout({
   let yMin = Infinity,
     yMax = -Infinity;
 
-  // Stacked series contribute their per-datum accumulated total. `Number.isFinite`
-  // (not `typeof === 'number'`) so a stray NaN/Infinity can't corrupt the domain
-  // into a NaN/Infinity scale.
+  // Stacked series contribute the full extent of their running cumulative — every
+  // layer boundary, not just the net total — mirroring the d3 stackOffsetNone pass
+  // in §3 that actually draws them. The 0 baseline is included because stacks are
+  // drawn from it. Tracking only the total would let the drawn bars/areas escape
+  // the scale: a mixed-sign stack whose interior peaks exceed the net total, or a
+  // 'data'-baseline stack whose bars start at 0 (below the smallest positive
+  // total), would render outside the y-domain and be clipped. `Number.isFinite`
+  // (not `typeof === 'number'`) keeps a stray NaN/Infinity from corrupting the
+  // domain into a NaN/Infinity scale; a non-finite layer carries the baseline
+  // forward (contributes nothing new) exactly as stackOffsetNone does.
   const stackedKeys = new Set<string>();
   for (const [, keys] of stackGroups) {
     for (const k of keys) {
       stackedKeys.add(k);
     }
     for (const d of data) {
-      let sum = 0;
+      let acc = 0;
+      if (acc < yMin) {
+        yMin = acc;
+      }
+      if (acc > yMax) {
+        yMax = acc;
+      }
       for (const k of keys) {
         const v = d[k];
         if (Number.isFinite(v)) {
-          sum += v as number;
+          acc += v as number;
+          if (acc < yMin) {
+            yMin = acc;
+          }
+          if (acc > yMax) {
+            yMax = acc;
+          }
         }
-      }
-      if (sum > yMax) {
-        yMax = sum;
-      }
-      if (sum < yMin) {
-        yMin = sum;
       }
     }
   }
