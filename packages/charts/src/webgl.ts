@@ -42,15 +42,30 @@ export function createProgram(
   const vs = compileShader(gl, gl.VERTEX_SHADER, vertSrc);
   const fs = compileShader(gl, gl.FRAGMENT_SHADER, fragSrc);
   if (!vs || !fs) {
+    // One shader may have compiled while the other failed — free the survivor
+    // so the failure path never leaks a shader object.
+    if (vs) {
+      gl.deleteShader(vs);
+    }
+    if (fs) {
+      gl.deleteShader(fs);
+    }
     return null;
   }
   const p = gl.createProgram();
   if (!p) {
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
     return null;
   }
   gl.attachShader(p, vs);
   gl.attachShader(p, fs);
   gl.linkProgram(p);
+  // The shaders are now linked into the program; flag them for deletion so the
+  // GPU frees them once the program is deleted instead of leaving them attached
+  // (and allocated) for the program's whole lifetime.
+  gl.deleteShader(vs);
+  gl.deleteShader(fs);
   if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
     gl.deleteProgram(p);
     return null;
