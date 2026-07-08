@@ -28,6 +28,13 @@ export interface DotGLInteractiveOptions {
   renderTooltip?: (datum: Record<string, unknown>, index: number) => ReactNode;
 }
 
+/**
+ * Extra radius (CSS px) added to each point in the pick pass only, so hover
+ * feels "magnetic" — you don't have to land pixel-perfectly on a small dot.
+ * The visible pass is unaffected, so dots still render at their real size.
+ */
+const HIT_PADDING = 16;
+
 /** Encode a point index as an RGB color (supports up to 16.7M points) */
 function indexToColor(i: number): [number, number, number] {
   const id = i + 1;
@@ -121,7 +128,7 @@ const VERT_PICK = `
   void main() {
     vec2 clip = (a_position / u_resolution) * 2.0 - 1.0;
     gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
-    gl_PointSize = u_size + 4.0;
+    gl_PointSize = u_size;
     v_pickColor = a_pickColor;
   }
 `;
@@ -337,7 +344,10 @@ function DotGLInteractiveCanvas({
           width,
           height,
         );
-        gl.uniform1f(gl.getUniformLocation(prog, 'u_size'), (size + 4) * dpr);
+        gl.uniform1f(
+          gl.getUniformLocation(prog, 'u_size'),
+          (size + HIT_PADDING) * dpr,
+        );
 
         gl.drawArrays(gl.POINTS, 0, positions.length / 2);
         gl.deleteBuffer(posBuf);
@@ -442,16 +452,28 @@ function DotGLInteractiveCanvas({
       />
 
       {datum && hoverIndex >= 0 && (
-        <circle
-          cx={positions[hoverIndex * 2]}
-          cy={positions[hoverIndex * 2 + 1]}
-          r={size / 2 + 3}
-          fill="none"
-          stroke={color}
-          strokeWidth={2}
-          strokeOpacity={0.8}
-          pointerEvents="none"
-        />
+        <g pointerEvents="none">
+          {/* Soft outer halo — reads on top of neighbouring points. */}
+          <circle
+            cx={positions[hoverIndex * 2]}
+            cy={positions[hoverIndex * 2 + 1]}
+            r={size / 2 + 7}
+            fill="none"
+            stroke={color}
+            strokeWidth={2}
+            strokeOpacity={0.35}
+          />
+          {/* Solid marker with a white outline — unmistakable "you're on this
+              point" affordance that stays visible on any background. */}
+          <circle
+            cx={positions[hoverIndex * 2]}
+            cy={positions[hoverIndex * 2 + 1]}
+            r={size / 2 + 2.5}
+            fill={color}
+            stroke="var(--color-background-body, #fff)"
+            strokeWidth={2}
+          />
+        </g>
       )}
 
       {datum && mousePos && (

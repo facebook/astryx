@@ -27,13 +27,18 @@ const axes = (
   </>
 );
 
-/** GPU scatter — one draw call, scales to tens of thousands of points. */
+/**
+ * Static, high-performance GPU scatter (`dotGL`) — one draw call, scales to
+ * tens of thousands of points. Intentionally has NO hover/tooltip; for
+ * interactivity see "Interactive scatter" below.
+ */
 export const Scatter: StoryObj = {
+  name: 'Scatter — static (high-performance)',
   render: () => (
     <Chart
       data={scatterData}
       xKey="x"
-      title="WebGL scatter (dotGL)"
+      title="WebGL scatter — static (dotGL)"
       series={[dotGL('y', {color: '#3b82f6', size: 5})]}
       grid={<ChartGrid horizontal vertical />}
       axes={axes}
@@ -42,13 +47,17 @@ export const Scatter: StoryObj = {
   ),
 };
 
-/** GPU scatter with color-picking hover — hover a point for a tooltip. */
+/**
+ * GPU scatter with color-picking hover (`dotGLInteractive`) — hover any point
+ * for a highlight + tooltip. O(1) hit detection regardless of point count.
+ */
 export const InteractiveScatter: StoryObj = {
+  name: 'Interactive scatter — hover + tooltip',
   render: () => (
     <Chart
       data={scatterData}
       xKey="x"
-      title="WebGL scatter with hover (dotGLInteractive)"
+      title="WebGL scatter — interactive hover (dotGLInteractive)"
       series={[
         dotGLInteractive('y', {
           color: '#6b1efd',
