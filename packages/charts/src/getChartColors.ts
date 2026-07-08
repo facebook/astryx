@@ -143,7 +143,9 @@ function lerpHex(a: string, b: string, t: number): string {
  */
 function sampleRamp(stops: string[], n: number): string[] {
   const len = stops.length;
-  if (n <= 0 || len === 0) {
+  // A non-finite count (e.g. Infinity) would make the Array.from calls below
+  // attempt a ~2**53 element allocation and hang, so treat it as empty.
+  if (!Number.isFinite(n) || n <= 0 || len === 0) {
     return [];
   }
   if (n === 1) {
@@ -218,7 +220,9 @@ export function getChartColorsFromResolver(
 
   return {
     categorical(n: number): string[] {
-      if (n <= 0 || categorical.length === 0) {
+      // A non-finite count (e.g. Infinity) would make the wrap-around Array.from
+      // below attempt a ~2**53 element allocation and hang, so treat it as empty.
+      if (!Number.isFinite(n) || n <= 0 || categorical.length === 0) {
         return [];
       }
       // Wrap around the palette so any series count gets a deterministic color.
