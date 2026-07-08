@@ -4,7 +4,7 @@
  * @file LogStream.tsx
  * @input Uses React, StyleX, theme tokens (color/spacing/radius/typography vars)
  * @output Exports LogStream component, LogStreamProps, LogEntry, LogStreamLevel
- * @position Core implementation; experimental streaming log viewer (lab)
+ * @position Lab implementation; experimental streaming log viewer
  *
  * Mono grid rows (timestamp | level | source? | message) with level color
  * accents, expandable detail panels, a follow-scroll live-tail mode, and an
@@ -18,6 +18,7 @@
  * - /packages/lab/src/LogStream/LogStream.doc.mjs (props table, notes)
  * - /packages/lab/src/LogStream/LogStream.test.tsx (behavior tests)
  * - /packages/lab/src/LogStream/index.ts (exports if types change)
+ * - /apps/storybook/stories/LogStream.stories.tsx (examples and visual coverage)
  */
 
 'use client';
