@@ -25,7 +25,7 @@ function AppIcon() {
 
 export default function NavHeadingMenuShowcase() {
   return (
-    <div style={{height: 240}}>
+    <div style={{height: 100}}>
       <SideNav
         header={
           <SideNavHeading
