@@ -144,9 +144,6 @@ export * from './Tooltip';
 // Skeleton loading placeholder
 export * from './Skeleton';
 
-// Stat KPI/metric display
-export * from './Stat';
-
 // Status dot indicator
 export * from './StatusDot';
 

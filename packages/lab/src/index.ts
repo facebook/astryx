@@ -28,6 +28,16 @@ export {
   type ChatReasoningProps,
 } from './ChatReasoning/ChatReasoning';
 
+// Stat — experimental KPI/metric display
+export {
+  Stat,
+  type StatProps,
+  type StatDelta,
+  type StatDeltaDirection,
+  type StatDeltaSentiment,
+  type StatSize,
+} from './Stat';
+
 // Schedule — experimental full-calendar views
 export * from './Schedule';
 

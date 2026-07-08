@@ -4,16 +4,16 @@
 
 /**
  * @file Stat.tsx
- * @input Uses React, Astryx theme tokens (StyleX)
+ * @input Uses React, StyleX, and Astryx core theme tokens/utilities
  * @output Exports Stat component, StatProps, StatDelta, StatDeltaDirection,
  *   StatDeltaSentiment, StatSize types
- * @position Core implementation; consumed by index.ts
+ * @position Lab implementation; consumed by packages/lab/src/index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/Stat/Stat.doc.mjs (props table, features, implementation notes)
- * - /packages/core/src/Stat/Stat.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/Stat/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/Stat/ (showcase blocks)
+ * - /packages/lab/src/Stat/Stat.doc.mjs (props table, features, implementation notes)
+ * - /packages/lab/src/Stat/Stat.test.tsx (tests for new/changed behavior)
+ * - /packages/lab/src/Stat/index.ts (exports if types change)
+ * - /apps/storybook/stories/Stat.stories.tsx (examples)
  */
 
 import type {ReactNode} from 'react';
@@ -25,10 +25,10 @@ import {
   textSizeVars,
   typeScaleVars,
   typographyVars,
-} from '../theme/tokens.stylex';
-import type {BaseProps} from '../BaseProps';
-import {mergeProps} from '../utils';
-import {themeProps} from '../utils/themeProps';
+} from '@astryxdesign/core/theme/tokens.stylex';
+import type {BaseProps} from '@astryxdesign/core';
+import {mergeProps} from '@astryxdesign/core/utils';
+import {themeProps} from '@astryxdesign/core/utils';
 
 /**
  * Base styles

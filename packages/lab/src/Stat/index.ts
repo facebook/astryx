@@ -6,7 +6,7 @@
  * @file index.ts
  * @input Imports from Stat component
  * @output Exports Stat component and related types
- * @position Entry point for Stat; re-exported by /packages/core/src/index.ts
+ * @position Entry point for Stat; re-exported by /packages/lab/src/index.ts
  */
 
 export {Stat} from './Stat';
