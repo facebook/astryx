@@ -510,7 +510,16 @@ export function ResizeHandle({
         ),
         className,
       )}
-      {...props}>
+      {...props}
+      // Keyboard resizing must fire from the focusable separator, not a child:
+      // keydown fires on the focused element and bubbles up, so a handler on a
+      // descendant never runs (per the WAI-ARIA window-splitter pattern).
+      // Placed after {...props} and composed with any consumer onKeyDown so
+      // this accessibility-critical handler can't be clobbered by a passed prop.
+      onKeyDown={e => {
+        props.onKeyDown?.(e);
+        handleKeyDown(e);
+      }}>
       {/* Wider invisible hit area for pointer interaction */}
       <div
         {...stylex.props(
@@ -528,7 +537,6 @@ export function ResizeHandle({
             setIsHovered(false);
           }
         }}
-        onKeyDown={handleKeyDown}
       />
       {/* Pill grip indicator — themed via .astryx-resize-handle-pill */}
       {children ?? (
