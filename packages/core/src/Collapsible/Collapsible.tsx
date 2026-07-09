@@ -64,6 +64,16 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     textAlign: 'start',
     paddingBlock: 0,
+    // `all: unset` above wipes the UA focus outline; restore a keyboard-only
+    // focus ring using the standard token/offset (WCAG 2.4.7).
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
   },
   // Capsize: trim leading from text triggers
   triggerLabel: {
