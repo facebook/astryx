@@ -26,6 +26,7 @@ import {
   type TokenName,
   type TokenValue,
 } from './defineTheme';
+import {parseColor, formatColor} from '../utils/color';
 
 /** Resolved color mode used when choosing the side of light/dark token values. */
 export type ResolvedThemeMode = 'light' | 'dark';
@@ -176,114 +177,6 @@ function findMatchingParen(input: string, openIndex: number): number {
     }
   }
   return -1;
-}
-
-const NAMED_COLORS: Record<string, RGBA> = {
-  transparent: {r: 0, g: 0, b: 0, a: 0},
-  black: {r: 0, g: 0, b: 0, a: 1},
-  white: {r: 255, g: 255, b: 255, a: 1},
-};
-
-interface RGBA {
-  r: number;
-  g: number;
-  b: number;
-  a: number;
-}
-
-/** Parse a hex color (#RGB, #RGBA, #RRGGBB, #RRGGBBAA) into RGBA. */
-function parseHexColor(hex: string): RGBA | null {
-  const h = hex.slice(1);
-  const expand = (s: string): string =>
-    s
-      .split('')
-      .map(c => c + c)
-      .join('');
-
-  let normalized: string | null = null;
-  if (h.length === 3 || h.length === 4) {
-    normalized = expand(h);
-  } else if (h.length === 6 || h.length === 8) {
-    normalized = h;
-  }
-  if (normalized === null || !/^[0-9a-fA-F]+$/.test(normalized)) {
-    return null;
-  }
-
-  const r = parseInt(normalized.slice(0, 2), 16);
-  const g = parseInt(normalized.slice(2, 4), 16);
-  const b = parseInt(normalized.slice(4, 6), 16);
-  const a =
-    normalized.length === 8 ? parseInt(normalized.slice(6, 8), 16) / 255 : 1;
-  return {r, g, b, a};
-}
-
-/** Parse an rgb()/rgba() color (comma or space separated) into RGBA. */
-function parseRgbColor(value: string): RGBA | null {
-  const open = value.indexOf('(');
-  if (open === -1 || !value.endsWith(')')) {
-    return null;
-  }
-  const body = value.slice(open + 1, -1).replace(/\//g, ' ');
-  const parts = body
-    .split(/[\s,]+/)
-    .map(p => p.trim())
-    .filter(Boolean);
-  if (parts.length < 3) {
-    return null;
-  }
-
-  const channel = (p: string): number => {
-    const n = p.endsWith('%') ? (parseFloat(p) / 100) * 255 : parseFloat(p);
-    return Math.max(0, Math.min(255, n));
-  };
-  const r = channel(parts[0]);
-  const g = channel(parts[1]);
-  const b = channel(parts[2]);
-  if ([r, g, b].some(Number.isNaN)) {
-    return null;
-  }
-  let a = 1;
-  if (parts.length >= 4) {
-    a = parts[3].endsWith('%')
-      ? parseFloat(parts[3]) / 100
-      : parseFloat(parts[3]);
-    if (Number.isNaN(a)) {
-      return null;
-    }
-    a = Math.max(0, Math.min(1, a));
-  }
-  return {r, g, b, a};
-}
-
-/** Parse a concrete CSS color string into RGBA, or null when unsupported. */
-function parseColor(value: string): RGBA | null {
-  const trimmed = value.trim();
-  const named = NAMED_COLORS[trimmed.toLowerCase()];
-  if (named) {
-    return {...named};
-  }
-  if (trimmed.startsWith('#')) {
-    return parseHexColor(trimmed);
-  }
-  if (/^rgba?\(/i.test(trimmed)) {
-    return parseRgbColor(trimmed);
-  }
-  return null;
-}
-
-/** Serialize RGBA back to a compact, JS-usable CSS color string. */
-function formatColor({r, g, b, a}: RGBA): string {
-  const round = (n: number): number => Math.round(n);
-  if (a >= 1) {
-    const hex = [r, g, b]
-      .map(c => round(c).toString(16).padStart(2, '0'))
-      .join('')
-      .toUpperCase();
-    return `#${hex}`;
-  }
-  const alpha = parseFloat(a.toFixed(4));
-  return `rgba(${round(r)}, ${round(g)}, ${round(b)}, ${alpha})`;
 }
 
 /** Split a color-mix component into its color and optional percentage. */
