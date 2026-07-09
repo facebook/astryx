@@ -11,6 +11,7 @@
 import {
   useInsertionEffect,
   useEffect,
+  useId,
   useRef,
   useState,
   useCallback,
@@ -174,6 +175,17 @@ const styles = stylex.create({
   headerCollapsible: {
     cursor: 'pointer',
     userSelect: 'none',
+    // Restore a keyboard-only focus ring with the standard token/offset so this
+    // disclosure control matches the rest of the system (Collapsible, TabMenu);
+    // otherwise it falls back to the inconsistent UA default outline.
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
   },
   gutter: {
     flexShrink: 0,
@@ -690,6 +702,11 @@ export function CodeBlock({
 
   const canCollapse = isCollapsible && lines.length >= collapsibleThreshold;
   const [isCollapsed, setIsCollapsed] = useState(false);
+  // Links the collapsible header to the code region it shows/hides so assistive
+  // tech can move from the button to its controlled content (disclosure
+  // pattern). The region stays mounted when collapsed (CSS grid animation), so
+  // this is always a resolvable reference — aria-controls can be unconditional.
+  const regionId = useId();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollStyle: CSSProperties | undefined = maxHeight
@@ -727,6 +744,7 @@ export function CodeBlock({
         role={canCollapse ? 'button' : undefined}
         tabIndex={canCollapse ? 0 : undefined}
         aria-expanded={canCollapse ? !isCollapsed : undefined}
+        aria-controls={canCollapse ? regionId : undefined}
         onClick={canCollapse ? () => setIsCollapsed(prev => !prev) : undefined}
         onKeyDown={
           canCollapse
@@ -830,6 +848,7 @@ export function CodeBlock({
       {headerEl}
       {canCollapse ? (
         <div
+          id={regionId}
           {...stylex.props(
             styles.collapseGrid,
             isCollapsed && styles.collapseGridCollapsed,

@@ -114,6 +114,49 @@ describe('CodeBlock', () => {
     expect(header).toHaveAttribute('aria-expanded', 'false');
   });
 
+  it('links the collapsible header to its code region via aria-controls', () => {
+    render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+    const controlsId = header.getAttribute('aria-controls');
+    // aria-controls must be present and point at the real code region.
+    expect(controlsId).toBeTruthy();
+    const region = document.getElementById(controlsId as string);
+    expect(region).not.toBeNull();
+    // The region contains the scrollable code body (role="group").
+    expect(region).toContainElement(screen.getByRole('group'));
+  });
+
+  it('keeps aria-controls resolvable when collapsed (region stays mounted)', () => {
+    render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+    fireEvent.click(header);
+    expect(header).toHaveAttribute('aria-expanded', 'false');
+    // The code region uses a CSS grid animation to collapse, so it stays in
+    // the DOM — aria-controls stays a valid, resolvable reference (unlike a
+    // conditionally-mounted region, which would need a conditional attribute).
+    const controlsId = header.getAttribute('aria-controls');
+    expect(controlsId).toBeTruthy();
+    expect(document.getElementById(controlsId as string)).not.toBeNull();
+  });
+
   it('applies a per-instance syntax theme via the syntaxTheme prop', () => {
     const {container} = render(
       <CodeBlock
