@@ -32,6 +32,7 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {Icon} from '../Icon';
 import {
   tokenize,
@@ -650,6 +651,7 @@ export function CodeBlock({
   ...props
 }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
+  const announce = useAnnounce();
 
   const useSpans =
     highlightMode === 'spans' ||
@@ -675,12 +677,15 @@ export function CodeBlock({
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
+      // Swapping the button's aria-label alone isn't reliably announced by
+      // screen readers, so confirm the copy via a polite live region.
+      announce('Copied');
       onCopy?.();
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard failures leave the copied state unchanged.
     }
-  }, [code, onCopy]);
+  }, [code, onCopy, announce]);
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   const gutterSizeStyle = size === 'sm' ? styles.gutterSm : styles.gutterMd;

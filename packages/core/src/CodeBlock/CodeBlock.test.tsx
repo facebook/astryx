@@ -9,10 +9,15 @@
  * SYNC: When CodeBlock.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {CodeBlock} from './CodeBlock';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {dracula} from '../theme/syntax';
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
 
 // A code sample long enough to exceed the default collapsible threshold (10).
 const LONG_CODE = Array.from(
@@ -26,6 +31,10 @@ describe('CodeBlock', () => {
     Object.assign(navigator, {
       clipboard: {writeText: vi.fn().mockResolvedValue(undefined)},
     });
+  });
+
+  afterEach(() => {
+    __resetLiveRegionsForTest();
   });
 
   it('renders the code', () => {
@@ -52,6 +61,15 @@ describe('CodeBlock', () => {
     const copyButton = screen.getByRole('button', {name: 'Copy code'});
     fireEvent.click(copyButton);
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('const x = 1;');
+  });
+
+  it('announces "Copied" to a polite live region after copying', async () => {
+    render(<CodeBlock code="const x = 1;" language="javascript" />);
+    const copyButton = screen.getByRole('button', {name: 'Copy code'});
+    fireEvent.click(copyButton);
+    await waitFor(() => {
+      expect(politeRegion()).toHaveTextContent('Copied');
+    });
   });
 
   it('does NOT collapse the block when the copy button is clicked', () => {
