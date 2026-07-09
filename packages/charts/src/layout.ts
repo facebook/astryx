@@ -268,10 +268,14 @@ export function computeLayout({
     const yBandKey = s.layout.yBandKey;
     if (yBandKey != null) {
       const cats = [...new Set(data.map(d => String(d[yBandKey])))];
+      // No band padding: heatmap rows should tile the full plot height
+      // edge-to-edge (the mark's own `cellGap` controls the thin grid lines
+      // between cells). Padding here would inset the grid and leave a sliver at
+      // the top/bottom.
       yBandScale = scaleBand<string>()
         .domain(cats)
         .range([0, height])
-        .padding(0.05);
+        .padding(0);
       break;
     }
   }

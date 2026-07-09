@@ -182,7 +182,10 @@ export function ChartAxis({
   // For the bottom axis, draw the axis line at y=0 when the domain spans
   // negative values (so the axis line still represents zero, not the chart edge).
   const axisLineY = (() => {
-    if (position !== 'bottom') {
+    // Categorical y (e.g. heatmap rows): there is no meaningful zero, and the
+    // linear yScale is degenerate — anchor the bottom edge line to the plot edge
+    // so it frames the grid instead of cutting across the cells.
+    if (position !== 'bottom' || yBandScale) {
       return 0;
     }
     const domain = yScale.domain();
