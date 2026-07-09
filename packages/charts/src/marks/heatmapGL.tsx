@@ -158,6 +158,13 @@ function HeatmapGLCanvas({
     const gap = cellGap;
     const xBW = xScale.bandwidth();
     const yBW = yBandScale.bandwidth();
+    // Heatmap cells fill their full slot (step), not just the band width. The
+    // shared x-scale carries bar-style padding (~0.2), so sizing cells to the
+    // bandwidth leaves gaps between columns while the local y-scale stays tight —
+    // an asymmetric, sparse grid. Sizing to the step and centering on the band
+    // keeps cells contiguous (a real heatmap); cellGap alone controls spacing.
+    const xStep = typeof xScale.step === 'function' ? xScale.step() : xBW;
+    const yStep = yBandScale.step();
 
     for (const d of data) {
       const xVal = xScale(String(d[xKey]));
@@ -171,10 +178,12 @@ function HeatmapGLCanvas({
       const t = (v - dMin) / range;
       const [r, g, b] = sampleRamp(ramp, t);
 
-      const x0 = xVal + gap / 2;
-      const x1 = xVal + xBW - gap / 2;
-      const y0 = yVal + gap / 2;
-      const y1 = yVal + yBW - gap / 2;
+      const xc = xVal + xBW / 2;
+      const yc = yVal + yBW / 2;
+      const x0 = xc - xStep / 2 + gap / 2;
+      const x1 = xc + xStep / 2 - gap / 2;
+      const y0 = yc - yStep / 2 + gap / 2;
+      const y1 = yc + yStep / 2 - gap / 2;
 
       positions.push(x0, y0, x1, y0, x0, y1, x1, y0, x1, y1, x0, y1);
       for (let i = 0; i < 6; i++) {
