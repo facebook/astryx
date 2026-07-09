@@ -70,11 +70,7 @@ describe('Icon', () => {
       'purple',
     ] as const;
     const {rerender} = render(
-      <Icon
-        icon={HomeIcon}
-        color={nonSemanticColors[0]}
-        data-testid="icon"
-      />,
+      <Icon icon={HomeIcon} color={nonSemanticColors[0]} data-testid="icon" />,
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
@@ -108,12 +104,7 @@ describe('Icon', () => {
 
   it('passes additional SVG props', () => {
     render(
-      <Icon
-        icon={HomeIcon}
-        data-testid="icon"
-        role="img"
-        aria-label="Home"
-      />,
+      <Icon icon={HomeIcon} data-testid="icon" role="img" aria-label="Home" />,
     );
     const icon = screen.getByTestId('icon');
     expect(icon).toHaveAttribute('role', 'img');
@@ -124,5 +115,26 @@ describe('Icon', () => {
     render(<Icon icon={HomeIcon} data-testid="icon" />);
     // The component should render without errors with defaults
     expect(screen.getByTestId('icon')).toBeInTheDocument();
+  });
+
+  it('applies aria-hidden by default in string (registry) mode', () => {
+    render(<Icon icon="check" data-testid="icon" />);
+    expect(screen.getByTestId('icon')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('lets a string-mode icon be made meaningful by overriding aria-hidden', () => {
+    render(
+      <Icon
+        icon="check"
+        data-testid="icon"
+        role="img"
+        aria-label="Done"
+        aria-hidden={false}
+      />,
+    );
+    const icon = screen.getByTestId('icon');
+    expect(icon).toHaveAttribute('role', 'img');
+    expect(icon).toHaveAttribute('aria-label', 'Done');
+    expect(icon).toHaveAttribute('aria-hidden', 'false');
   });
 });
