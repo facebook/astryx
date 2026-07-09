@@ -7,8 +7,8 @@ export const docs = {
   group: 'HoverCard',
   keywords: ['hovercard', 'hover', 'preview', 'card', 'tooltip', 'popup', 'floating', 'anchor'],
   params: [
-    {name: 'placement', type: "'above' | 'below' | 'start' | 'end'", description: "Position relative to the trigger. Logical: start/end resolve against the trigger's computed direction at open time (RTL mirrors).", default: "'above'"},
-    {name: 'alignment', type: "'start' | 'center' | 'end'", description: "Alignment along the placement axis. Logical: start/end resolve against the trigger's computed direction at open time (RTL mirrors).", default: "'center'"},
+    {name: 'placement', type: "'above' | 'below' | 'start' | 'end'", description: "Position relative to the trigger. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).", default: "'above'"},
+    {name: 'alignment', type: "'start' | 'center' | 'end'", description: "Alignment along the placement axis. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).", default: "'center'"},
     {name: 'delay', type: 'number', description: 'Delay before showing the hover card on hover, in milliseconds.', default: '300'},
     {name: 'hideDelay', type: 'number', description: 'Delay before hiding after mouse or focus leaves, in milliseconds.', default: '200'},
     {name: 'focusTrigger', type: "'auto' | 'always' | 'never'", description: 'When focus should open the hover card. auto only attaches focus listeners to naturally focusable elements.', default: "'auto'"},
@@ -46,8 +46,8 @@ export const docs = {
 export const docsDense = {
   description: 'Headless hover-triggered floating cards. Builds on useLayer w/ hover/focus intent, delays, safe hover behavior, aria-describedby. Use for rich previews when trigger/content rendering needs full control.',
   paramDescriptions: {
-    placement: 'position relative to trigger. logical: start/end follow trigger computed direction (RTL mirrors).',
-    alignment: 'alignment along placement axis. logical: start/end follow trigger computed direction (RTL mirrors).',
+    placement: 'position relative to trigger. logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
+    alignment: 'alignment along placement axis. logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
     delay: 'show delay in ms.',
     hideDelay: 'hide delay after mouse/focus leave in ms.',
     focusTrigger: 'when focus opens hover card; auto = naturally focusable elements only.',

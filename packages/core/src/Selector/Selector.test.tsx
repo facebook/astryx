@@ -186,58 +186,34 @@ describe('Selector', () => {
       .getByRole('listbox', {hidden: true})
       .closest('[popover]');
     expect(popover?.getAttribute('style')).toContain(
-      'position-area: top span-right',
+      'position-area: self-block-start span-self-inline-end',
     );
   });
 
-  it('mirrors menu placement under an RTL ancestor (#3389)', async () => {
+  it('emits the direction-independent logical mapping under an RTL ancestor (#3389)', async () => {
+    // The self-* position-area keywords resolve against the popover's own
+    // inherited direction in the browser, so RTL emits the same string as
+    // LTR and the mirroring is pure CSS — jsdom can only assert the string.
     const user = userEvent.setup();
+    render(
+      <div style={{direction: 'rtl'}}>
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+        />
+      </div>,
+    );
 
-    // jsdom's getComputedStyle does not inherit direction from ancestors
-    // (descendants of a direction:rtl wrapper report ''), so a plain wrapper
-    // would silently exercise the LTR path. Delegate to the real
-    // implementation and override only `direction` for elements inside the
-    // RTL wrapper — everything else (visibility checks etc.) stays real.
-    const original = window.getComputedStyle;
-    let wrapper: HTMLElement | null = null;
-    const spy = vi
-      .spyOn(window, 'getComputedStyle')
-      .mockImplementation((el, pseudo) => {
-        const style = original(el, pseudo);
-        if (wrapper && el instanceof Element && wrapper.contains(el)) {
-          Object.defineProperty(style, 'direction', {
-            value: 'rtl',
-            configurable: true,
-          });
-        }
-        return style;
-      });
+    await user.click(screen.getByRole('combobox'));
 
-    try {
-      const {container} = render(
-        <div style={{direction: 'rtl'}}>
-          <Selector
-            label="Fruit"
-            options={OPTIONS}
-            value="Banana"
-            onChange={() => {}}
-          />
-        </div>,
-      );
-      wrapper = container.firstElementChild as HTMLElement;
-
-      // Direction is resolved at show time, so the listbox must be opened.
-      await user.click(screen.getByRole('combobox'));
-
-      const popover = screen
-        .getByRole('listbox', {hidden: true})
-        .closest('[popover]');
-      const style = popover?.getAttribute('style') ?? '';
-      expect(style).toContain('position-area: bottom span-left');
-      expect(style).toContain('justify-self: right');
-    } finally {
-      spy.mockRestore();
-    }
+    const popover = screen
+      .getByRole('listbox', {hidden: true})
+      .closest('[popover]');
+    expect(popover?.getAttribute('style')).toContain(
+      'position-area: self-block-end span-self-inline-end',
+    );
   });
 
   it('clamps the default selected-item overlay to the viewport', async () => {

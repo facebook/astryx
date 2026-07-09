@@ -89,7 +89,7 @@ describe('DropdownMenu', () => {
       .getByRole('menu', {hidden: true})
       .closest('[popover]');
     expect(popover?.getAttribute('style')).toContain(
-      'position-area: bottom span-right',
+      'position-area: self-block-end span-self-inline-end',
     );
   });
 
@@ -105,56 +105,28 @@ describe('DropdownMenu', () => {
       .getByRole('menu', {hidden: true})
       .closest('[popover]');
     expect(popover?.getAttribute('style')).toContain(
-      'position-area: top span-right',
+      'position-area: self-block-start span-self-inline-end',
     );
   });
 
-  it('mirrors menu placement under an RTL ancestor (#3389)', async () => {
+  it('emits the direction-independent logical mapping under an RTL ancestor (#3389)', async () => {
+    // The self-* position-area keywords resolve against the popover's own
+    // inherited direction in the browser, so RTL emits the same string as
+    // LTR and the mirroring is pure CSS. jsdom can't verify the geometry —
+    // the DropdownMenu RTL Storybook story is the visual proof surface.
     const user = userEvent.setup();
+    const {container} = render(
+      <div style={{direction: 'rtl'}}>
+        <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />
+      </div>,
+    );
 
-    // jsdom's getComputedStyle does not inherit direction from ancestors
-    // (descendants of a direction:rtl wrapper report ''), so a plain wrapper
-    // would silently exercise the LTR path. Delegate to the real
-    // implementation and override only `direction` for elements inside the
-    // RTL wrapper — everything else (visibility checks etc.) stays real.
-    const original = window.getComputedStyle;
-    let wrapper: HTMLElement | null = null;
-    const spy = vi
-      .spyOn(window, 'getComputedStyle')
-      .mockImplementation((el, pseudo) => {
-        const style = original(el, pseudo);
-        if (wrapper && el instanceof Element && wrapper.contains(el)) {
-          Object.defineProperty(style, 'direction', {
-            value: 'rtl',
-            configurable: true,
-          });
-        }
-        return style;
-      });
+    await user.click(screen.getByRole('button', {name: /Actions/}));
 
-    try {
-      const {container} = render(
-        <div style={{direction: 'rtl'}}>
-          <DropdownMenu
-            button={{label: 'Actions'}}
-            items={[{label: 'Item 1'}]}
-          />
-        </div>,
-      );
-      wrapper = container.firstElementChild as HTMLElement;
-
-      // Direction is resolved at show time, so the menu must be opened.
-      await user.click(screen.getByRole('button', {name: /Actions/}));
-
-      const popover = screen
-        .getByRole('menu', {hidden: true})
-        .closest('[popover]');
-      const style = popover?.getAttribute('style') ?? '';
-      expect(style).toContain('position-area: bottom span-left');
-      expect(style).toContain('justify-self: right');
-    } finally {
-      spy.mockRestore();
-    }
+    const popover = container.querySelector('[popover]');
+    expect(popover?.getAttribute('style')).toContain(
+      'position-area: self-block-end span-self-inline-end',
+    );
   });
 
   it('has aria-haspopup and aria-expanded attributes', () => {
@@ -280,61 +252,6 @@ describe('DropdownMenu controlled mode', () => {
     );
 
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
-  });
-
-  it('mirrors menu placement when opened via isMenuOpen under an RTL ancestor (#3389)', () => {
-    // Same jsdom caveat as the click-path RTL test above: delegate to the
-    // real getComputedStyle and override only `direction` inside the wrapper.
-    const original = window.getComputedStyle;
-    let wrapper: HTMLElement | null = null;
-    const spy = vi
-      .spyOn(window, 'getComputedStyle')
-      .mockImplementation((el, pseudo) => {
-        const style = original(el, pseudo);
-        if (wrapper && el instanceof Element && wrapper.contains(el)) {
-          Object.defineProperty(style, 'direction', {
-            value: 'rtl',
-            configurable: true,
-          });
-        }
-        return style;
-      });
-
-    try {
-      const {container, rerender} = render(
-        <div style={{direction: 'rtl'}}>
-          <DropdownMenu
-            button={{label: 'Actions'}}
-            items={[{label: 'Item 1'}]}
-            isMenuOpen={false}
-            onOpenChange={() => {}}
-          />
-        </div>,
-      );
-      wrapper = container.firstElementChild as HTMLElement;
-
-      // The controlled open runs show() from an effect (no click), which must
-      // resolve the trigger's direction the same way the click path does.
-      rerender(
-        <div style={{direction: 'rtl'}}>
-          <DropdownMenu
-            button={{label: 'Actions'}}
-            items={[{label: 'Item 1'}]}
-            isMenuOpen={true}
-            onOpenChange={() => {}}
-          />
-        </div>,
-      );
-
-      const popover = screen
-        .getByRole('menu', {hidden: true})
-        .closest('[popover]');
-      const style = popover?.getAttribute('style') ?? '';
-      expect(style).toContain('position-area: bottom span-left');
-      expect(style).toContain('justify-self: right');
-    } finally {
-      spy.mockRestore();
-    }
   });
 
   it('calls onOpenChange when button is clicked', async () => {

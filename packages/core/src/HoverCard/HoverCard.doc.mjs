@@ -46,13 +46,13 @@ export const docs = {
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: "Position relative to the anchor element. Logical: start/end resolve against the trigger's computed direction at open time (RTL mirrors).",
+          description: "Position relative to the anchor element. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).",
           default: "'above'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: "Alignment along the placement axis. Logical: start/end resolve against the trigger's computed direction at open time (RTL mirrors).",
+          description: "Alignment along the placement axis. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).",
           default: "'center'",
         },
         {
@@ -155,13 +155,13 @@ export const docsZh = {
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: '相对于锚点元素的位置。逻辑值：start/end 在打开时根据触发器的计算方向解析（RTL 镜像）。',
+          description: '相对于锚点元素的位置。逻辑值：start/end 根据弹出层自身继承的方向解析（RTL 镜像）。',
           default: "'above'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: '沿放置轴的对齐方式。逻辑值：start/end 在打开时根据触发器的计算方向解析（RTL 镜像）。',
+          description: '沿放置轴的对齐方式。逻辑值：start/end 根据弹出层自身继承的方向解析（RTL 镜像）。',
           default: "'center'",
         },
         {
@@ -246,8 +246,8 @@ export const docsDense = {
       propDescriptions: {
         children: 'Trigger element; must accept ref.',
         content: 'Hover card content.',
-        placement: 'Position relative to anchor element. Logical: start/end follow trigger computed direction (RTL mirrors).',
-        alignment: 'Alignment along placement axis. Logical: start/end follow trigger computed direction (RTL mirrors).',
+        placement: 'Position relative to anchor element. Logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
+        alignment: 'Alignment along placement axis. Logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
         delay: 'Show delay in ms.',
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger hover card.',
