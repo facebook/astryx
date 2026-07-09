@@ -3,6 +3,7 @@
 import {describe, it, expect} from 'vitest';
 import {expandColorScale} from './expandColorScale';
 import {defineTheme} from './defineTheme';
+import {generateThemeRules} from './generateThemeRules';
 
 describe('expandColorScale', () => {
   it('produces all expected token keys', () => {
@@ -60,6 +61,19 @@ describe('expandColorScale', () => {
     expect(warm['--color-neutral']).not.toBe(neutral['--color-neutral']);
   });
 
+  it('emits derived accent tokens as references to --color-accent', () => {
+    const tokens = expandColorScale({accent: '#0064E0'});
+    // Reference tokens follow a scoped --color-accent override at runtime.
+    expect(tokens['--color-text-accent']).toBe('var(--color-accent)');
+    expect(tokens['--color-icon-accent']).toBe('var(--color-accent)');
+    expect(tokens['--color-accent-muted']).toBe(
+      'light-dark(color-mix(in srgb, var(--color-accent) 20%, transparent), color-mix(in srgb, var(--color-accent) 25%, transparent))',
+    );
+    // The base token and the contrast-computed on-accent stay resolved.
+    expect(tokens['--color-accent']).toMatch(/^light-dark\(#/);
+    expect(tokens['--color-on-accent']).toMatch(/^light-dark\(#/);
+  });
+
   it('contrast high produces different --color-text-primary than standard', () => {
     const standard = expandColorScale({
       accent: '#0064E0',
@@ -80,5 +94,20 @@ describe('expandColorScale + defineTheme integration', () => {
       tokens: {'--color-accent': 'red'},
     });
     expect(theme.tokens['--color-accent']).toBe('red');
+  });
+
+  it('generated theme CSS keeps the accent references (#3495)', () => {
+    const theme = defineTheme({
+      name: 'test-accent-refs',
+      color: {accent: '#DC2626'},
+    });
+    const css = generateThemeRules(theme).join('\n');
+    expect(css).toContain('--color-text-accent: var(--color-accent);');
+    expect(css).toContain('--color-icon-accent: var(--color-accent);');
+    expect(css).toContain(
+      '--color-accent-muted: light-dark(color-mix(in srgb, var(--color-accent) 20%, transparent), color-mix(in srgb, var(--color-accent) 25%, transparent));',
+    );
+    // The base token itself stays a resolved color pair.
+    expect(css).toMatch(/--color-accent: light-dark\(#/);
   });
 });

@@ -928,7 +928,10 @@ function DayCell({
   });
 
   return (
-    <div role="gridcell" {...stylex.props(dayCellStyles.cell)}>
+    <div
+      role="gridcell"
+      aria-selected={state.isSelected || state.isInRange || undefined}
+      {...stylex.props(dayCellStyles.cell)}>
       {/* Range background */}
       {state.isInRange && (
         <div
@@ -968,7 +971,6 @@ function DayCell({
         type="button"
         data-date={day.iso}
         aria-label={plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY)}
-        aria-selected={state.isSelected || state.isInRange || undefined}
         aria-disabled={state.effectivelyDisabled || undefined}
         disabled={isDisabled}
         // Initial roving tab-stop seed; useGridFocus owns it after mount.

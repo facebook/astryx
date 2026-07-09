@@ -52,7 +52,7 @@ export interface ScheduleListViewOptions {
 function ScheduleListView(
   _props: ScheduleViewComponentProps<ScheduleListViewOptions>,
 ) {
-  const {events, timezoneID, range, isLoading} = useScheduleContext();
+  const {events, timezoneID, range, isLoading, headingLevel} = useScheduleContext();
   const days = enumerateDates(range.startDate, range.endDate);
   const currentTime = useCurrentTime();
   const currentPlainDate = plainDateFromInstant(currentTime, timezoneID);
@@ -97,6 +97,7 @@ function ScheduleListView(
               day={day}
               isCurrentDay={isCurrentDay}
               timezoneID={timezoneID}
+              headingLevel={headingLevel}
             />
             <div {...stylex.props(styles.listEvents)}>
               {renderListRows({
@@ -117,14 +118,16 @@ function ListDayHeading({
   day,
   isCurrentDay,
   timezoneID,
+  headingLevel,
 }: {
   day: PlainDate;
   isCurrentDay: boolean;
   timezoneID: string;
+  headingLevel: 2 | 3 | 4 | 5 | 6;
 }) {
   return (
     <Heading
-      level={4}
+      level={headingLevel}
       color="secondary"
       display="block"
       aria-label={formatFullDate(day, timezoneID)}

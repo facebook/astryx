@@ -118,6 +118,7 @@ function StressTestImpl() {
         )}
       </div>
       <CodeEditor
+        label="Code editor"
         value={code}
         onChange={setCode}
         language="typescript"
@@ -208,6 +209,7 @@ function TypingLatencyImpl() {
         value={code}
         onChange={handleChange}
         language="typescript"
+        label="Code editor"
         hasLineNumbers
         maxHeight={600}
       />

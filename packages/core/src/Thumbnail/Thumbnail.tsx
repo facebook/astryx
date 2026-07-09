@@ -58,8 +58,9 @@ export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
   alt?: string;
   /**
    * Accessible label for the thumbnail (e.g. file name).
-   * Not rendered visually — shown in a tooltip on hover and used
-   * as accessible name for the remove button.
+   * Not rendered visually — shown in a tooltip on hover, exposed as the
+   * accessible name of the thumbnail group, and used as the accessible
+   * name for the remove button.
    */
   label?: string;
   /**
@@ -296,6 +297,7 @@ export function Thumbnail({
     <div
       ref={ref}
       data-testid={testId}
+      role="group"
       aria-label={accessibleName}
       {...mergeProps(
         themeProps('thumbnail'),

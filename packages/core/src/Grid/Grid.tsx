@@ -38,9 +38,10 @@ export type GridAlignment = 'start' | 'center' | 'end' | 'stretch';
  *   - `minWidth` — minimum width (px) for each column track
  *   - `repeat` — `'fill'` (default) preserves empty tracks for consistent widths;
  *     `'fit'` collapses empty tracks so items stretch to fill
- *   - `max` — caps the maximum number of columns by limiting track max size.
- *     The grid stretches to 100% of its parent; `max` only limits how many
- *     columns appear.
+ *   - `max` — caps the maximum number of columns. The grid stretches to 100%
+ *     of its parent and the columns that are present always fill the row, so a
+ *     layout collapsing to a single column on mobile stretches to full width
+ *     (no dead space on the right).
  */
 export type GridColumns =
   | number
@@ -321,9 +322,20 @@ const spacingVarNames: Record<SpacingStep, string> = {
 };
 
 /**
- * Build a grid-template-columns value that caps columns at `max` by
- * limiting each track's max size to `(100% - (max-1) * gap) / max`.
- * The grid stays 100% width; the track-max prevents more than `max` columns.
+ * Build a grid-template-columns value that caps the column *count* at `max`
+ * while still letting the columns that are actually present stretch to fill
+ * the row.
+ *
+ * The cap lives on the track's **min** size, not its max: each track is at
+ * least `perColumn = (100% - (max-1) * gap) / max`, so more than `max` columns
+ * can never fit. The track **max** stays `1fr`, so whenever fewer than `max`
+ * columns fit (most importantly a lone column on mobile) they still grow to
+ * fill the whole row — no dead space on the right.
+ *
+ * The track min is `max(minWidth, perColumn)` so an explicit `minWidth` is
+ * still honored, wrapped in `min(100%, …)` so a single column on a viewport
+ * narrower than `minWidth`/`perColumn` shrinks to the container instead of
+ * overflowing it.
  */
 function buildCappedTemplate(
   minWidth: number,
@@ -339,12 +351,17 @@ function buildCappedTemplate(
         ? spacingVarNames[gap]
         : null;
 
-  // trackMax = (100% - (maxCols - 1) * gap) / maxCols
-  const trackMax = gapVar
+  // perColumn = (100% - (maxCols - 1) * gap) / maxCols — the width a track
+  // would have if exactly `maxCols` columns were present. Used as a floor so
+  // the grid never fits more than `maxCols` columns.
+  const perColumn = gapVar
     ? `calc((100% - ${maxCols - 1} * var(${gapVar})) / ${maxCols})`
     : `calc(100% / ${maxCols})`;
 
-  return `repeat(${repeatMode}, minmax(${minWidth}px, ${trackMax}))`;
+  // Track min caps the count; track max stays 1fr so present columns fill.
+  const trackMin = `min(100%, max(${minWidth}px, ${perColumn}))`;
+
+  return `repeat(${repeatMode}, minmax(${trackMin}, 1fr))`;
 }
 
 /**

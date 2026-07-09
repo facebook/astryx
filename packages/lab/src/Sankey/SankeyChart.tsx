@@ -202,6 +202,9 @@ export function SankeyChart({
     <div ref={containerRef} style={{width: '100%'}}>
       {ctx && (
         <div
+          role={needsScroll ? 'group' : undefined}
+          aria-label={needsScroll ? 'Sankey chart' : undefined}
+          tabIndex={needsScroll ? 0 : undefined}
           style={
             needsScroll ? {overflowX: 'auto', overflowY: 'hidden'} : undefined
           }>
