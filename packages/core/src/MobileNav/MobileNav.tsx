@@ -29,6 +29,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -295,6 +296,10 @@ export function MobileNav({
   // Read from AppShell context as fallback
   const appShellMobile = useAppShellMobile();
   const isOpen = isOpenProp ?? appShellMobile.isMobileNavOpen;
+  // Share the id from AppShell context so the toggle's aria-controls resolves to
+  // this drawer; fall back to a locally generated id when used standalone.
+  const fallbackId = useId();
+  const dialogId = appShellMobile.mobileNavId || fallbackId;
   const onOpenChange = useMemo(
     () =>
       onOpenChangeProp ??
@@ -411,6 +416,7 @@ export function MobileNav({
   return (
     <dialog
       ref={mergeRefs(ref, dialogRef)}
+      id={dialogId}
       {...mergeProps(
         themeProps('mobile-nav', {side: resolvedSide}),
         stylex.props(
