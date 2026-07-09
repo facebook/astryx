@@ -19,8 +19,6 @@ relatedDocs:
     href: '/community'
 ---
 
-_A note from Liya_
-
 Two weeks ago, we did something that had been years in the making but still felt like stepping off a ledge. We took the design system we had quietly refined inside Meta for the better part of a decade, and we gave it to the world as **Astryx**: free, open, and ready for anyone to build with.
 
 When you spend that long living inside a piece of software, you lose the ability to see it clearly. You know every rough edge and every compromise, and it becomes very hard to imagine that strangers on the other side of the world might look at it and feel the same excitement you felt on your best days building it. So in the quiet before launch, the honest question in the back of our minds was not "how big will this be." It was simply, "will anyone care?"
