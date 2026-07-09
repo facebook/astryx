@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
+import {FOCUSABLE_SELECTOR} from './focusableSelector';
 import {useFocusTrap} from './useFocusTrap';
 
 function Trap({children}: {children: React.ReactNode}) {
@@ -84,6 +85,48 @@ describe('useFocusTrap tabbable model (infra-8)', () => {
   });
 });
 
+describe('FOCUSABLE_SELECTOR href matching', () => {
+  // Only real links (<a href>/<area href>) are focusable via href. A bare
+  // [href] term also matched non-focusable elements carrying href (e.g. a
+  // <link> in the head, or a custom element), which useFocusTrap would then
+  // treat as tab stops when computing trap boundaries.
+  it('matches real links but not other elements carrying href', () => {
+    const container = document.createElement('div');
+    container.innerHTML =
+      '<a href="#a" data-testid="anchor">Anchor</a>' +
+      '<map name="m">' +
+      '<area href="#area" shape="rect" coords="0,0,1,1" data-testid="area" />' +
+      '</map>' +
+      '<span href="#span" data-testid="span">Span</span>' +
+      '<link href="#link" data-testid="link" />';
+
+    const matches = Array.from(
+      container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    );
+    const byTestId = (id: string) =>
+      container.querySelector(`[data-testid="${id}"]`);
+
+    // Real links are focusable via href.
+    expect(matches).toContain(byTestId('anchor'));
+    expect(matches).toContain(byTestId('area'));
+    // Non-link elements carrying href are not focusable and must be excluded.
+    expect(matches).not.toContain(byTestId('span'));
+    expect(matches).not.toContain(byTestId('link'));
+  });
+
+  it('treats an <a href> inside a trap as focusable (focusFirst lands on it)', () => {
+    render(
+      <Trap>
+        <a href="#link" data-testid="anchor">
+          Link
+        </a>
+      </Trap>,
+    );
+    fireEvent.click(screen.getByTestId('focus-first'));
+    expect(screen.getByTestId('anchor')).toHaveFocus();
+  });
+});
+
 describe('useFocusTrap Escape coordination', () => {
   it('calls onEscape for a single active trap', () => {
     const onEscape = vi.fn();
@@ -125,7 +168,9 @@ describe('useFocusTrap Escape coordination', () => {
     const {rerender} = render(
       <EscapeTrap isActive onEscape={onEscape} label="toggle" />,
     );
-    rerender(<EscapeTrap isActive={false} onEscape={onEscape} label="toggle" />);
+    rerender(
+      <EscapeTrap isActive={false} onEscape={onEscape} label="toggle" />,
+    );
     fireEvent.keyDown(document, {key: 'Escape'});
     expect(onEscape).not.toHaveBeenCalled();
   });
