@@ -425,7 +425,14 @@ const streamingStyles = stylex.create({
   fadeIn: {
     opacity: 1,
     transitionProperty: 'opacity',
-    transitionDuration: durationVars['--duration-medium'],
+    // Collapse the entry fade to an instant swap under reduced motion. The
+    // 0s duration makes the @starting-style opacity jump non-animated (the
+    // media query can't nest inside @starting-style), mirroring the
+    // conditional-duration form in Spinner (Spinner.tsx).
+    transitionDuration: {
+      default: durationVars['--duration-medium'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
     '@starting-style': {
       opacity: 0,
@@ -1049,12 +1056,7 @@ function renderBlock(
   switch (node.type) {
     case 'heading': {
       const level = Math.min(node.level + headingLevelStart - 1, 6) as
-        | 1
-        | 2
-        | 3
-        | 4
-        | 5
-        | 6;
+        1 | 2 | 3 | 4 | 5 | 6;
       const headingChildren = node.children.map((c, i) =>
         renderInline(
           c,
