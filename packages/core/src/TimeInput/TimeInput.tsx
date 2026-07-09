@@ -635,7 +635,9 @@ export function TimeInput({
         data-autofocus={hasAutoFocus || undefined}
         aria-describedby={ariaDescribedBy}
         aria-required={isRequired === true ? 'true' : undefined}
-        aria-invalid={status?.type === 'error' ? 'true' : undefined}
+        aria-invalid={
+          status?.type === 'error' || !isInputValid ? 'true' : undefined
+        }
         aria-busy={isBusy || undefined}
         aria-labelledby={ariaLabelledBy}
         {...stylex.props(
@@ -644,6 +646,14 @@ export function TimeInput({
           !isInputValid && styles.inputInvalid,
         )}
       />
+      {/*
+          Live region announcing invalid typed input to assistive technology.
+          The value silently reverts on blur, so without this a screen-reader
+          user would get no feedback that their entry was rejected (WCAG 3.3.1).
+        */}
+      <VisuallyHidden as="div" role="alert" aria-live="assertive">
+        {!isInputValid ? 'Invalid time' : ''}
+      </VisuallyHidden>
       {isBusy && <Spinner size="sm" />}
       {hasClear && value && !isDisabled && (
         <button
