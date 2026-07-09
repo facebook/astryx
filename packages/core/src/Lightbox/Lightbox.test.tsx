@@ -1,8 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {Lightbox} from './Lightbox';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 // Mock showModal/close for jsdom
 beforeEach(() => {
@@ -15,6 +16,16 @@ beforeEach(() => {
     this.removeAttribute('open');
   });
 });
+
+// useAnnounce mounts singleton live regions on <body>; reset between tests so
+// stale announcements from one test don't leak into the next.
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
 
 describe('Lightbox', () => {
   it('renders as a dialog element', () => {
@@ -297,6 +308,116 @@ describe('Lightbox', () => {
       expect(onIndexChange).toHaveBeenCalledWith(2);
       fireEvent.keyDown(dialog, {key: 'ArrowLeft'});
       expect(onIndexChange).toHaveBeenCalledWith(0);
+    });
+  });
+
+  describe('screen-reader announcements', () => {
+    const media = [
+      {src: '/a.jpg', alt: 'Image A', caption: 'First'},
+      {src: '/b.jpg', alt: 'Image B', caption: 'Second'},
+      {src: '/c.jpg', alt: 'Image C'},
+    ];
+
+    it('announces the new image and position when navigating next via button', async () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          defaultIndex={0}
+        />,
+      );
+      fireEvent.click(screen.getByLabelText('Next'));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Image B, 2 of 3');
+      });
+    });
+
+    it('announces the new image and position when navigating via arrow keys', async () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          defaultIndex={1}
+        />,
+      );
+      const dialog = document.querySelector('dialog')!;
+      fireEvent.keyDown(dialog, {key: 'ArrowRight'});
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Image C, 3 of 3');
+      });
+    });
+
+    it('announces the new image and position when navigating prev', async () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          defaultIndex={2}
+        />,
+      );
+      fireEvent.click(screen.getByLabelText('Previous'));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Image B, 2 of 3');
+      });
+    });
+
+    it('falls back to a positional label when the image has no alt', async () => {
+      const unlabeled = [
+        {src: '/a.jpg', alt: 'Image A'},
+        {src: '/b.jpg', alt: ''},
+      ];
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={unlabeled}
+          defaultIndex={0}
+        />,
+      );
+      fireEvent.click(screen.getByLabelText('Next'));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Image 2 of 2');
+      });
+    });
+
+    it('does not announce on initial open', async () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          defaultIndex={1}
+        />,
+      );
+      // Allow any scheduled rAF to flush; nothing should have been announced.
+      await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
+      // The dialog's aria-label already names the current image on open, so no
+      // live region is created (announce is never called).
+      expect(politeRegion()).toBeNull();
+    });
+
+    it('does not announce when the lightbox opens at a new index', async () => {
+      const {rerender} = render(
+        <Lightbox
+          isOpen={false}
+          onOpenChange={() => {}}
+          media={media}
+          index={0}
+        />,
+      );
+      rerender(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={media}
+          index={2}
+        />,
+      );
+      await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
+      expect(politeRegion()).toBeNull();
     });
   });
 

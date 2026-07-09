@@ -19,6 +19,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
@@ -28,6 +29,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {Icon} from '../Icon';
 import {IconButton} from '../IconButton';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useScrollLock} from '../hooks/useScrollLock';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeProps, mergeRefs} from '../utils';
@@ -306,7 +308,10 @@ export function Lightbox({
   const dragStartRef = useRef({x: 0, y: 0, panX: 0, panY: 0});
 
   // Resolve current media item
-  const mediaArray = Array.isArray(media) ? media : [media];
+  const mediaArray = useMemo(
+    () => (Array.isArray(media) ? media : [media]),
+    [media],
+  );
   const isGallery = mediaArray.length > 1;
   const currentItem =
     mediaArray.length > 0
@@ -328,6 +333,29 @@ export function Lightbox({
     // eslint-disable-next-line @eslint-react/set-state-in-effect
     setPan({x: 0, y: 0});
   }, [index, currentItem?.src]);
+
+  // Announce gallery navigation to screen readers. Moving between images only
+  // updates the visual counter, which is silent to assistive tech, so mirror
+  // each change in a polite live region ("<alt>, 3 of 12", or "Image 3 of 12"
+  // when the image has no alt). Announce only when the image changes during an
+  // already-open session — not on mount, not when opening (even at a new
+  // index, since the dialog's aria-label already names the current image), and
+  // not on close.
+  const announce = useAnnounce();
+  const prevIndexRef = useRef(index);
+  const wasOpenRef = useRef(isOpen);
+  useEffect(() => {
+    const indexChanged = prevIndexRef.current !== index;
+    const wasOpen = wasOpenRef.current;
+    prevIndexRef.current = index;
+    wasOpenRef.current = isOpen;
+    if (!indexChanged || !isOpen || !wasOpen) {
+      return;
+    }
+    const item = mediaArray[Math.min(index, mediaArray.length - 1)];
+    const position = `${index + 1} of ${mediaArray.length}`;
+    announce(item?.alt ? `${item.alt}, ${position}` : `Image ${position}`);
+  }, [index, isOpen, announce, mediaArray]);
 
   // Open/close dialog
   useIsomorphicLayoutEffect(() => {
