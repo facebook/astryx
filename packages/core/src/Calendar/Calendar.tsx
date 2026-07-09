@@ -972,6 +972,9 @@ function DayCell({
         data-date={day.iso}
         aria-label={plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY)}
         aria-disabled={state.effectivelyDisabled || undefined}
+        // Mark today's cell programmatically (APG date-picker pattern), not just
+        // visually, so screen-reader users can identify the current date.
+        aria-current={state.isToday ? 'date' : undefined}
         disabled={isDisabled}
         // Initial roving tab-stop seed; useGridFocus owns it after mount.
         tabIndex={isTabbableDay ? 0 : -1}

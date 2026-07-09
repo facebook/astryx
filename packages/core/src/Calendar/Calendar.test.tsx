@@ -73,6 +73,24 @@ describe('Calendar', () => {
     expect(screen.getByText(expectedLabel)).toBeInTheDocument();
   });
 
+  it("marks today's cell with aria-current='date'", () => {
+    render(<Calendar />);
+
+    const now = new Date();
+    const iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    const todayCell = document.querySelector(`button[data-date="${iso}"]`);
+    expect(todayCell).not.toBeNull();
+    expect(todayCell).toHaveAttribute('aria-current', 'date');
+
+    // Only today's cell is marked current.
+    const others = Array.from(
+      document.querySelectorAll('button[data-date]'),
+    ).filter(el => el.getAttribute('data-date') !== iso);
+    expect(others.length).toBeGreaterThan(0);
+    others.forEach(el => expect(el).not.toHaveAttribute('aria-current'));
+  });
+
   it('displays day names', () => {
     render(<Calendar />);
 
