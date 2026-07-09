@@ -9,9 +9,9 @@
  * Output: dist/xds-core-{version}.tgz
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+const { execSync } = require('node:child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const CORE_DIR = path.join(ROOT, 'packages', 'core');

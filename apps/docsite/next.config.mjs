@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {readdirSync} from 'fs';
-import {resolve} from 'path';
+import {readdirSync} from 'node:fs';
+import {resolve} from 'node:path';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

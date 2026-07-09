@@ -2,8 +2,8 @@
 
 import type {StorybookConfig} from '@storybook/react-vite';
 import {astryxStylex} from '@astryxdesign/build/vite';
-import path from 'path';
-import {fileURLToPath} from 'url';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../../..');

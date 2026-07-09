@@ -3,8 +3,8 @@
 import type {Plugin, UserConfig} from 'vite';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
 import stylex from '@stylexjs/unplugin';
-import path from 'path';
-import {fileURLToPath} from 'url';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -189,7 +189,7 @@ export function astryxStylex(
       // strips stylex.create/defineVars calls and causes runtime errors.
       let xdsPackages: string[] = ['@astryxdesign/core'];
       try {
-        const fs = require('fs');
+        const fs = require('node:fs');
         const xdsDir = path.resolve(rootDir, 'node_modules/@astryxdesign');
         if (fs.existsSync(xdsDir)) {
           xdsPackages = fs

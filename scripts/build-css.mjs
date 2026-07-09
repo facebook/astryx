@@ -21,9 +21,9 @@
 
 import {transformAsync} from '@babel/core';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
-import fs from 'fs/promises';
-import path from 'path';
-import {fileURLToPath} from 'url';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {glob} from 'glob';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

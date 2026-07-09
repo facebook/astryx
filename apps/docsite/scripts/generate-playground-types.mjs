@@ -12,9 +12,9 @@
  * Also runs as part of the prebuild/predev scripts.
  */
 
-import {readdirSync, readFileSync, statSync, writeFileSync, existsSync, mkdirSync} from 'fs';
-import {join, dirname, relative} from 'path';
-import {fileURLToPath} from 'url';
+import {readdirSync, readFileSync, statSync, writeFileSync, existsSync, mkdirSync} from 'node:fs';
+import {join, dirname, relative} from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');

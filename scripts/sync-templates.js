@@ -12,8 +12,8 @@
  * Run: node scripts/sync-templates.js
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const COPYRIGHT = '// Copyright (c) Meta Platforms, Inc. and affiliates.\n\n';
 const ROOT = path.resolve(__dirname, '..');
