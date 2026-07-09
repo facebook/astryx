@@ -1,10 +1,10 @@
 ---
 title: 'Two Weeks of Astryx: Thank You'
-description: 'A thank-you note from the Astryx team after the first two weeks in the open.'
+description: "A thank-you note from Liya after Astryx's first two weeks in the open."
 date: '2026-07-08'
 type: 'perspective'
 authors:
-  - 'team'
+  - 'liyalabubu'
 tags:
   - 'Community'
   - 'AI'
@@ -19,7 +19,7 @@ relatedDocs:
     href: '/community'
 ---
 
-_A note from the team behind Astryx_
+_A note from Liya_
 
 Two weeks ago, we did something that had been years in the making but still felt like stepping off a ledge. We took the design system we had quietly refined inside Meta for the better part of a decade, and we gave it to the world as **Astryx**: free, open, and ready for anyone to build with.
 
