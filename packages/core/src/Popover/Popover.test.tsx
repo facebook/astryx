@@ -354,4 +354,69 @@ describe('Popover', () => {
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
     });
   });
+
+  describe('focus restoration', () => {
+    it('returns focus to the trigger when closed via Escape', () => {
+      render(
+        <Popover
+          content={
+            <button type="button" data-testid="inside-content">
+              Inside
+            </button>
+          }
+          label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const trigger = screen.getByRole('button', {name: 'Open'});
+      trigger.focus();
+      expect(trigger).toHaveFocus();
+
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      // Move focus into the open popover, as a keyboard user would.
+      const inside = screen.getByTestId('inside-content');
+      inside.focus();
+      expect(inside).toHaveFocus();
+
+      fireEvent.keyDown(document, {key: 'Escape'});
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(trigger).toHaveFocus();
+    });
+
+    it('returns focus to the trigger on light dismiss', () => {
+      render(
+        <Popover
+          content={
+            <button type="button" data-testid="inside-content">
+              Inside
+            </button>
+          }
+          label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const trigger = screen.getByRole('button', {name: 'Open'});
+      trigger.focus();
+
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      const inside = screen.getByTestId('inside-content');
+      inside.focus();
+      expect(inside).toHaveFocus();
+
+      // Simulate the browser's light dismiss for popover="auto": clicking
+      // outside fires a `toggle` event with newState "closed".
+      const popoverEl = document.querySelector('[popover]');
+      expect(popoverEl).not.toBeNull();
+      const toggleEvent = new Event('toggle');
+      Object.defineProperty(toggleEvent, 'newState', {value: 'closed'});
+      fireEvent(popoverEl as HTMLElement, toggleEvent);
+
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(trigger).toHaveFocus();
+    });
+  });
 });
