@@ -133,9 +133,32 @@ apps/docsite/
 | `pnpm typecheck`  | Run `tsc --noEmit`                              |
 | `pnpm test`       | Run vitest                                      |
 | `pnpm test:watch` | Run vitest in watch mode                        |
+| `pnpm test:smoke` | Crawl every route for runtime errors            |
 
 ## Testing
 
 Tests live in `src/__tests__/data-extraction.test.ts` and validate the generated
 registries: package discovery, component extraction, theme wiring, etc. Run
 `pnpm generate` before running tests since they import from `src/generated/`.
+
+### Page-load smoke test
+
+`pnpm test:smoke` boots the production server (`next start`), enumerates every
+route from the site's own `/sitemap.xml` — the same generated registries that
+drive the pages, so new components, docs, templates, and blog posts are covered
+automatically — and visits each URL in a headless browser. A route fails if it
+returns a non-OK document status, throws an uncaught exception, or logs a
+`console.error`. This catches "the page white-screens / throws at runtime"
+regressions the unit tests can't see.
+
+It requires a production build and a Chromium browser:
+
+```bash
+pnpm build                              # from repo root — themes must be built
+pnpm -F @astryxdesign/docsite build
+pnpm exec playwright install chromium
+pnpm -F @astryxdesign/docsite test:smoke
+```
+
+Point it at an already-running server with `--base` (skips `next start`), or
+narrow the crawl with `--routes /,/components`.
