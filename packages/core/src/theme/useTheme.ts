@@ -31,8 +31,8 @@ import {useMediaQuery} from '../hooks/useMediaQuery';
  * @internal
  */
 export interface ThemeContextValue {
-  /** The defined theme object */
-  theme: DefinedTheme;
+  /** The defined theme object, or null when a provider knows only the mode */
+  theme: DefinedTheme | null;
   /** The color mode prop passed to Theme */
   mode: ThemeMode;
 }
