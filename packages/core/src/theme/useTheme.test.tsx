@@ -122,4 +122,24 @@ describe('useTheme', () => {
       resolveThemeTokens(testTheme, {mode: 'dark'}),
     );
   });
+
+  it('resolves derived accent tokens to raw values, not var()/color-mix', () => {
+    const brandTheme = defineTheme({name: 'brand', color: {accent: '#0064E0'}});
+    const {result} = renderHook(() => useTheme(), {
+      wrapper: ({children}) => (
+        <Theme theme={brandTheme} mode="light">
+          {children}
+        </Theme>
+      ),
+    });
+
+    const accent = result.current.token('--color-accent');
+    expect(result.current.token('--color-text-accent')).toBe(accent);
+    expect(result.current.token('--color-icon-accent')).toBe(accent);
+    expect(result.current.token('--color-accent-muted')).toMatch(/^(#|rgb)/);
+    expect(result.current.token('--color-accent-muted')).not.toContain('var(');
+    expect(result.current.token('--color-accent-muted')).not.toContain(
+      'color-mix',
+    );
+  });
 });
