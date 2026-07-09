@@ -101,6 +101,13 @@ export function computeLayout({
   yDomain,
   xDomain,
 }: LayoutInput): LayoutResult {
+  // A categorical y-axis (heatmap) means BOTH axes are categorical: columns
+  // should tile the plot edge-to-edge just like the rows. Drop the bar-style
+  // outer padding on the x band scale for these charts so the grid meets the
+  // x/y axis lines flush on every side (no asymmetric gap).
+  const yBandKey = series.find(s => s.layout.yBandKey != null)?.layout.yBandKey;
+  const isCategoricalGrid = yBandKey != null;
+
   // ─── 1. X scale ──────────────────────────────────────────────────────
   const xValues = data.map(d => d[xKey]);
   const isNumericX =
@@ -120,7 +127,7 @@ export function computeLayout({
     xScale = scaleBand<string>()
       .domain(xValues.map(String))
       .range([0, width])
-      .padding(0.2);
+      .padding(isCategoricalGrid ? 0 : 0.2);
   }
 
   // ─── 2. Y domain from all series dataKeys ────────────────────────────
@@ -263,21 +270,13 @@ export function computeLayout({
   // categorical: build one band scale over that key's unique values so the
   // marks and the left axis share the same row layout. The linear yScale above
   // is left in place but goes unused for these charts.
+  // No band padding: heatmap rows should tile the full plot height edge-to-edge
+  // (the mark's own `cellGap` draws the thin grid lines between cells). Padding
+  // here would inset the grid and leave a sliver at the top/bottom.
   let yBandScale: ReturnType<typeof scaleBand<string>> | undefined;
-  for (const s of series) {
-    const yBandKey = s.layout.yBandKey;
-    if (yBandKey != null) {
-      const cats = [...new Set(data.map(d => String(d[yBandKey])))];
-      // No band padding: heatmap rows should tile the full plot height
-      // edge-to-edge (the mark's own `cellGap` controls the thin grid lines
-      // between cells). Padding here would inset the grid and leave a sliver at
-      // the top/bottom.
-      yBandScale = scaleBand<string>()
-        .domain(cats)
-        .range([0, height])
-        .padding(0);
-      break;
-    }
+  if (yBandKey != null) {
+    const cats = [...new Set(data.map(d => String(d[yBandKey])))];
+    yBandScale = scaleBand<string>().domain(cats).range([0, height]).padding(0);
   }
 
   // ─── 3. Stacking ─────────────────────────────────────────────────────
