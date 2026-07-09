@@ -1,6 +1,6 @@
 ---
 title: 'Two Weeks of Astryx: Thank You'
-description: "A thank-you note from Liya after Astryx's first two weeks in the open."
+description: "A thank-you note after Astryx's first two weeks in the open."
 date: '2026-07-08'
 type: 'perspective'
 authors:
