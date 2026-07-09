@@ -77,6 +77,22 @@ describe('Collapsible', () => {
     expect(screen.getByText('Hidden content')).not.toBeVisible();
   });
 
+  it('links the trigger to its content region via aria-controls', () => {
+    render(
+      <Collapsible trigger="Details">
+        <p>Region content</p>
+      </Collapsible>,
+    );
+
+    const trigger = screen.getByRole('button', {name: /Details/});
+    const controlsId = trigger.getAttribute('aria-controls');
+    // aria-controls must be present and point at the real content region.
+    expect(controlsId).toBeTruthy();
+    const region = document.getElementById(controlsId as string);
+    expect(region).not.toBeNull();
+    expect(region).toContainElement(screen.getByText('Region content'));
+  });
+
   it('respects controlled isOpen/onOpenChange', async () => {
     const onOpenChange = vi.fn();
     const user = userEvent.setup();

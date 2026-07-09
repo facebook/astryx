@@ -10,7 +10,8 @@
  *
  * Collapsible is a standalone primitive that makes any content collapsible.
  * It renders a trigger area (always visible) and a content area that toggles.
- * Handles state management, accessibility (aria-expanded), and chevron indicator.
+ * Handles state management, accessibility (aria-expanded + aria-controls linking
+ * the trigger to its content region), and chevron indicator.
  *
  * Works standalone or coordinated by CollapsibleGroup via the `value` prop.
  * When the surrounding CollapsibleGroup enables `dividers`, each Collapsible
@@ -26,7 +27,7 @@
  * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
-import {use, type ReactNode} from 'react';
+import {use, useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   borderVars,
@@ -239,6 +240,10 @@ export function Collapsible({
 
   const chevronIcon = getIcon('chevronDown');
 
+  // Links the trigger to the region it shows/hides so assistive tech can move
+  // from the button to its controlled content (disclosure pattern).
+  const contentId = useId();
+
   return (
     <div
       ref={ref}
@@ -256,6 +261,7 @@ export function Collapsible({
         type="button"
         onClick={toggle}
         aria-expanded={isOpen}
+        aria-controls={contentId}
         {...stylex.props(
           styles.trigger,
           density != null && triggerDensity[density],
@@ -270,6 +276,7 @@ export function Collapsible({
         </span>
       </button>
       <div
+        id={contentId}
         {...stylex.props(
           styles.content,
           density != null && contentDensity[density],
