@@ -47,6 +47,12 @@ export interface LayoutInput {
 export interface LayoutResult {
   xScale: ChartScale;
   yScale: ReturnType<typeof scaleLinear<number, number>>;
+  /**
+   * Categorical y band scale, built when a series declares `layout.yBandKey`
+   * (e.g. a heatmap's rows). When present the y-axis is categorical and the
+   * linear `yScale` is unused.
+   */
+  yBandScale?: ReturnType<typeof scaleBand<string>>;
   resolved: Map<string, ResolvedPoint[]>;
 }
 
@@ -252,6 +258,24 @@ export function computeLayout({
   const yScaleBase = scaleLinear().domain(yDomainFinal).range([height, 0]);
   const yScale = applyNice ? yScaleBase.nice() : yScaleBase;
 
+  // ─── 2b. Categorical y band scale ────────────────────────────────────
+  // If any series declares a `yBandKey` (e.g. a heatmap's rows), the y-axis is
+  // categorical: build one band scale over that key's unique values so the
+  // marks and the left axis share the same row layout. The linear yScale above
+  // is left in place but goes unused for these charts.
+  let yBandScale: ReturnType<typeof scaleBand<string>> | undefined;
+  for (const s of series) {
+    const yBandKey = s.layout.yBandKey;
+    if (yBandKey != null) {
+      const cats = [...new Set(data.map(d => String(d[yBandKey])))];
+      yBandScale = scaleBand<string>()
+        .domain(cats)
+        .range([0, height])
+        .padding(0.05);
+      break;
+    }
+  }
+
   // ─── 3. Stacking ─────────────────────────────────────────────────────
   // Reuses `stackGroups` collected during the domain pass (§2).
   const stackedData = new Map<string, {y0: number; y1: number}[]>();
@@ -289,7 +313,15 @@ export function computeLayout({
   }
 
   // ─── 5. Resolve each series ──────────────────────────────────────────
-  const ctx: SeriesContext = {data, xKey, xScale, yScale, width, height};
+  const ctx: SeriesContext = {
+    data,
+    xKey,
+    xScale,
+    yScale,
+    yBandScale,
+    width,
+    height,
+  };
   const resolved = new Map<string, ResolvedPoint[]>();
 
   // Determine which series is the topmost in each stack group
@@ -333,5 +365,5 @@ export function computeLayout({
     resolved.set(s._uid, points);
   }
 
-  return {xScale, yScale, resolved};
+  return {xScale, yScale, yBandScale, resolved};
 }

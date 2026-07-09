@@ -10,7 +10,6 @@
  */
 
 import {useRef, useEffect, useMemo, useState} from 'react';
-import {scaleBand} from 'd3-scale';
 import type {SeriesDef, ResolvedPoint} from '../types';
 import type {ScaleBand} from 'd3-scale';
 import {
@@ -82,7 +81,8 @@ type HeatmapGLLocations = {
 };
 
 /**
- * Inline component — manages the heatmap WebGL canvas and its own y band scale.
+ * Inline component — manages the heatmap WebGL canvas. Rows use the chart's
+ * shared y band scale so cells stay aligned with the left axis' category labels.
  */
 function HeatmapGLCanvas({
   data,
@@ -90,6 +90,7 @@ function HeatmapGLCanvas({
   yKey,
   valueKey,
   xScale,
+  yBandScale,
   colorRange,
   domain: domainProp,
   cellGap,
@@ -101,6 +102,7 @@ function HeatmapGLCanvas({
   yKey: string;
   valueKey: string;
   xScale: ScaleBand<string>;
+  yBandScale: ScaleBand<string>;
   colorRange: string[];
   domain?: [number, number];
   cellGap: number;
@@ -118,11 +120,6 @@ function HeatmapGLCanvas({
   const [contextEpoch, setContextEpoch] = useState(0);
 
   const ramp = useMemo(() => colorRange.map(hexToGL), [colorRange]);
-
-  const yBandScale = useMemo(() => {
-    const cats = [...new Set(data.map(d => String(d[yKey])))];
-    return scaleBand<string>().domain(cats).range([0, height]).padding(0.05);
-  }, [data, yKey, height]);
 
   const domain = useMemo((): [number, number] => {
     if (domainProp) {
@@ -323,7 +320,11 @@ function HeatmapGLCanvas({
 
 /**
  * WebGL heatmap. Renders a 2D grid of colored cells using triangles.
- * Manages its own y band scale for rows; uses the chart's x band scale for columns.
+ *
+ * The rows are categorical: declaring `layout.yBandKey` makes the chart build a
+ * shared y band scale over `yKey`, so a left `<ChartAxis>` renders the row
+ * labels aligned to each cell (instead of a meaningless linear value axis).
+ * Columns use the chart's x band scale.
  *
  * @example
  * ```
@@ -340,30 +341,35 @@ export function heatmapGL(options: HeatmapGLOptions): SeriesDef {
   return {
     type: 'heatmapGL',
     key: `heatmap-${valueKey}`,
-    dataKeys: [valueKey],
-    layout: {},
+    // The value drives cell COLOR, not a linear y-domain — no data keys keeps the
+    // heatmap out of the shared linear y-scale / left axis / value tooltip.
+    // `yBandKey` makes the chart build a categorical y band scale over the rows
+    // so the left axis shows the row labels aligned to each cell.
+    dataKeys: [],
+    layout: {yBandKey: yKey},
 
     resolve(ctx) {
-      // Heatmap doesn't resolve per-point positions the standard way —
-      // the canvas component handles its own cell layout.
-      const {data, xScale, yScale} = ctx;
+      // The canvas handles its own cell layout; resolve only exposes row/column
+      // centers (for hover) using the shared band scales.
+      const {data, xScale, yBandScale} = ctx;
       const points: ResolvedPoint[] = [];
-      if (!('bandwidth' in xScale)) {
+      if (!('bandwidth' in xScale) || !yBandScale) {
         return points;
       }
+      const xs = xScale as ScaleBand<string>;
       for (let i = 0; i < data.length; i++) {
         const d = data[i];
-        const px =
-          ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) +
-          (xScale as ScaleBand<string>).bandwidth() / 2;
-        const v = typeof d[valueKey] === 'number' ? (d[valueKey] as number) : 0;
-        points.push({px, py: yScale(v), py0: yScale(0), dataIndex: i});
+        const px = (xs(String(d[xKey])) ?? 0) + xs.bandwidth() / 2;
+        const py =
+          (yBandScale(String(d[yKey])) ?? 0) + yBandScale.bandwidth() / 2;
+        points.push({px, py, py0: py, dataIndex: i});
       }
       return points;
     },
 
     render(_resolved, ctx) {
-      if (!('bandwidth' in ctx.xScale)) {
+      // Needs a categorical x (columns) and the shared y band scale (rows).
+      if (!('bandwidth' in ctx.xScale) || !ctx.yBandScale) {
         return null;
       }
       return (
@@ -373,6 +379,7 @@ export function heatmapGL(options: HeatmapGLOptions): SeriesDef {
           yKey={yKey}
           valueKey={valueKey}
           xScale={ctx.xScale as ScaleBand<string>}
+          yBandScale={ctx.yBandScale}
           colorRange={colorRange}
           domain={options.domain}
           cellGap={cellGap}

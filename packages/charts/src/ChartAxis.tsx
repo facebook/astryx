@@ -85,10 +85,13 @@ export function ChartAxis({
   // Tick marks need an axis line to anchor against; force it on when ticks
   // are enabled so the two visuals stay coherent.
   const renderAxisLine = showAxisLine || showTicks;
-  const {width, height, xScale, yScale} = useChart();
+  const {width, height, xScale, yScale, yBandScale} = useChart();
 
   const isHorizontal = position === 'top' || position === 'bottom';
-  const scale = isHorizontal ? xScale : yScale;
+  // A categorical y-axis (e.g. heatmap rows) is exposed as `yBandScale`; prefer
+  // it over the linear `yScale` so a left/right axis renders the row categories
+  // (days) aligned to each band instead of meaningless value ticks.
+  const scale = isHorizontal ? xScale : (yBandScale ?? yScale);
 
   // Sanitize the tick count before it reaches d3. `.ticks()` targets ~N ticks
   // and allocates an array that large, so a huge N throws `RangeError: Invalid
