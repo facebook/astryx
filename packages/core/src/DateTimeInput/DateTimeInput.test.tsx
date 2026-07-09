@@ -214,6 +214,21 @@ describe('DateTimeInput', () => {
     expect(screen.getByRole('combobox')).not.toHaveAttribute('aria-busy');
   });
 
+  it('sets aria-busy on the time input when isLoading is true', () => {
+    render(<DateTimeInput label="Meeting" isLoading onChange={() => {}} />);
+    expect(screen.getByLabelText('Meeting time')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+  });
+
+  it('does not set aria-busy on the time input when not loading', () => {
+    render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+    expect(screen.getByLabelText('Meeting time')).not.toHaveAttribute(
+      'aria-busy',
+    );
+  });
+
   it('renders status icon for error status', () => {
     render(
       <DateTimeInput
@@ -268,6 +283,61 @@ describe('DateTimeInput', () => {
       return el?.textContent?.includes('Invalid datetime');
     });
     expect(found).toBe(true);
+  });
+
+  it('links the description to the time input via aria-describedby', () => {
+    render(
+      <DateTimeInput
+        label="Meeting"
+        description="Pick the meeting datetime"
+        onChange={() => {}}
+      />,
+    );
+    // The description covers both halves of the field, so the time input must
+    // carry it too — a screen-reader user tabbing into the time half should
+    // not lose the field's description.
+    const timeInput = screen.getByLabelText('Meeting time');
+    const describedBy = timeInput.getAttribute('aria-describedby')!;
+    const ids = describedBy.split(' ');
+    const found = ids.some(id =>
+      document
+        .getElementById(id)
+        ?.textContent?.includes('Pick the meeting datetime'),
+    );
+    expect(found).toBe(true);
+  });
+
+  it('links the status message to the time input via aria-describedby', () => {
+    render(
+      <DateTimeInput
+        label="Meeting"
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid datetime'}}
+      />,
+    );
+    const timeInput = screen.getByLabelText('Meeting time');
+    const describedBy = timeInput.getAttribute('aria-describedby')!;
+    const ids = describedBy.split(' ');
+    const found = ids.some(id =>
+      document.getElementById(id)?.textContent?.includes('Invalid datetime'),
+    );
+    expect(found).toBe(true);
+  });
+
+  it('links the disabled reason to the time input via aria-describedby', () => {
+    HTMLElement.prototype.showPopover = vi.fn();
+    HTMLElement.prototype.hidePopover = vi.fn();
+    render(
+      <DateTimeInput
+        label="When"
+        onChange={() => {}}
+        isDisabled
+        disabledMessage="You need the Editor role"
+      />,
+    );
+    const timeInput = screen.getByLabelText('When time');
+    const tooltip = screen.getByRole('tooltip', {hidden: true});
+    expect(timeInput.getAttribute('aria-describedby')).toContain(tooltip.id);
   });
 
   it('handles Escape keydown on date input without error', () => {

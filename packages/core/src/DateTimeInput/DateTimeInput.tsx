@@ -987,10 +987,12 @@ export function DateTimeInput({
             aria-disabled={showsDisabledMessage ? 'true' : undefined}
             readOnly={showsDisabledMessage || undefined}
             aria-label={timeLabel ?? `${label} time`}
+            aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={
               status?.type === 'error' || !isTimeInputValid ? 'true' : undefined
             }
+            aria-busy={isBusy || undefined}
             {...stylex.props(
               styles.input,
               isEffectivelyDisabled && styles.inputDisabled,
