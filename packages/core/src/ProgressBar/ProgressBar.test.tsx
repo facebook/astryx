@@ -140,6 +140,16 @@ describe('ProgressBar', () => {
     expect(progressbar).toHaveAttribute('aria-valuemax', '0');
   });
 
+  it('does not render NaN in the value label when max is zero', () => {
+    render(<ProgressBar value={0} max={0} label="Empty" hasValueLabel />);
+    expect(screen.queryByText(/NaN|Infinity/)).not.toBeInTheDocument();
+    const progressbar = screen.getByRole('progressbar');
+    expect(progressbar.getAttribute('aria-valuetext') ?? '').not.toMatch(
+      /NaN|Infinity/,
+    );
+    expect(screen.getByText('0%')).toBeInTheDocument();
+  });
+
   // Disabled state
   describe('disabled state', () => {
     it('renders with isDisabled', () => {
