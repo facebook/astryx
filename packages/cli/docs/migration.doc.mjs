@@ -33,6 +33,7 @@ export const docs = {
             'Install the design system and run init so the project has package scripts, theme CSS, and agent docs.',
             'Wrap the app root with Theme and choose the initial light, dark, or system mode behavior.',
             'Make Tailwind and design system CSS layer order explicit before replacing components.',
+            'Render the foundation smoke test page and confirm primitives keep their padding before migrating any surface.',
             'Move the persistent frame first: AppShell, TopNav, SideNav, page content, and mobile navigation.',
             'Replace shared primitives: Button, IconButton, TextInput, NumberInput, Switch, CheckboxInput, RadioList, Selector, Tabs, Dialog, AlertDialog, Banner, Toast, Badge, Card, Table, and ListItem.',
             'Replace global workflows: command palette, settings popover, theme toggle, search, filters, create flows, and destructive confirmation dialogs.',
@@ -124,6 +125,92 @@ export function AppRoot({children}: {children: React.ReactNode}) {
 @import "@astryxdesign/theme-neutral/theme.css";
 @import "@astryxdesign/core/tailwind-theme.css";
 @import "tailwindcss/utilities.css" layer(utilities);`,
+        },
+      ],
+    },
+    {
+      title: 'Cascade Layer Safety',
+      content: [
+        {
+          type: 'prose',
+          text: 'With @layer, layer position decides the winner before specificity is ever evaluated. A zero-specificity reset like `* { padding: 0 }` always loses in an unlayered stylesheet, but it beats every component style the moment it sits in a layer declared after astryx-base. Same CSS, opposite outcome, and no error or warning when it happens.',
+        },
+        {
+          type: 'prose',
+          text: 'This is the most common way an adoption breaks. A legacy app reset gets imported without an explicit layer(), silently inherits a consumer layer that sits above astryx-base, and strips padding or borders from every component on every page. Audit the layers around the design system with this checklist before building screens.',
+        },
+        {
+          type: 'list',
+          style: 'unordered',
+          items: [
+            'Declare the canonical @layer order once in the global stylesheet, before any @import.',
+            'Audit every pre-existing global or reset stylesheet and assign each one to a layer deliberately. Never let an @import pick up a surrounding layer implicitly.',
+            'Remove or demote the app legacy reset. The design system ships its own :where() reset in the lowest layer, so any app reset belongs in that same reset layer and never in a layer above astryx-base.',
+            'Import Tailwind preflight with layer(base). Unlayered preflight sits above every layer and silently overrides theme CSS.',
+            'Set moduleResolution to bundler or node16 and newer so subpath imports like @astryxdesign/core/reset.css resolve.',
+            'Theme with defineTheme and the accent family API instead of hand-writing individual color tokens. Derived tokens like --color-on-accent are generated from the accent scale automatically and stay unset when tokens are written by hand.',
+            'Run the foundation smoke test below and view a few components in both light and dark mode before migrating any route.',
+          ],
+        },
+        {
+          type: 'prose',
+          text: 'One more mental model shift: a className or utility class you write on a component still reaches the DOM either way, but whether it overrides the component is a layer question, not a source order question. Keep app utilities in the utilities layer so they keep winning.',
+        },
+      ],
+    },
+    {
+      title: 'Foundation Smoke Test',
+      content: [
+        {
+          type: 'prose',
+          text: 'A broken layer order fails silently and identically on every page, so catch it before feature work instead of after N migrated screens. Render one throwaway page with a few primitives as the first migration step.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Foundation check page',
+          code: `import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Table} from '@astryxdesign/core/Table';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {VStack} from '@astryxdesign/core/VStack';
+
+export default function FoundationCheck() {
+  return (
+    <VStack gap={4}>
+      <Button label="Primary action" variant="primary" />
+      <TextInput label="Email" placeholder="you@example.com" />
+      <Card>One card with default padding</Card>
+      <Table
+        data={[{name: 'Foundation', status: 'ok'}]}
+        columns={[
+          {key: 'name', header: 'Name'},
+          {key: 'status', header: 'Status'},
+        ]}
+      />
+    </VStack>
+  );
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'If the button renders with visible padding, a filled primary background, and the input and card have borders and internal spacing, the foundation is sound. For an assertion that can run in any test runner or a dev-only effect, check that a primitive keeps non-zero padding:',
+        },
+        {
+          type: 'code',
+          lang: 'ts',
+          label: 'Foundation assertion',
+          code: `const button = document.querySelector('button');
+if (getComputedStyle(button).paddingInline === '0px') {
+  throw new Error(
+    'Foundation broken: a later cascade layer is overriding component ' +
+      'styles. Check that no app reset sits in a layer above astryx-base.',
+  );
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'When this fails, the fix is almost always in the layer order: find the stylesheet that zeroes padding, and move it into the reset layer or delete it.',
         },
       ],
     },
