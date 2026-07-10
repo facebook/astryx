@@ -28,6 +28,7 @@ export {useTableColumnResize} from './plugins/columnResize';
 export {useTableStickyColumns} from './plugins/stickyColumns';
 export {useTableGroupedRows} from './plugins/groupedRows';
 export {useTableRowIndex} from './plugins/rowIndex';
+export {useTableRowStatus} from './plugins/rowStatus';
 export {
   useTableRowExpansion,
   useTableRowExpansionState,
@@ -109,6 +110,10 @@ export type {
   UseTableGroupedRowsConfig,
   UseTableGroupedRowsResult,
 } from './plugins/groupedRows';
+export type {
+  UseTableRowStatusConfig,
+  TableRowStatus,
+} from './plugins/rowStatus';
 export type {
   UseTableFilteringConfig,
   TableFilterState,
