@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi} from 'vitest';
-import {renderHook} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {render, renderHook, act, waitFor} from '@testing-library/react';
 import React from 'react';
 import {Theme} from './Theme';
 import {defineTheme} from './defineTheme';
@@ -121,5 +121,109 @@ describe('useTheme', () => {
     expect(result.current.tokens).toEqual(
       resolveThemeTokens(testTheme, {mode: 'dark'}),
     );
+  });
+});
+
+// Covers the fallback used when a component calls useTheme() with no
+// ThemeContext ancestor reachable — e.g. a detached tree (useToast's
+// fallback viewport, other portals appended straight to document.body).
+// Root Theme instances sync their mode to <html data-theme> specifically so
+// this fallback can resolve the app's actual mode instead of jumping
+// straight to OS preference (see Theme.tsx's useRootThemeSync).
+describe('useTheme mode resolution without a ThemeContext ancestor', () => {
+  afterEach(async () => {
+    // The hook from each `it` below is still mounted and subscribed to the
+    // shared MutationObserver when this runs (RTL's own cleanup — which
+    // unmounts it — is registered after this file's afterEach), so removing
+    // the attribute here triggers a live state update; flush it inside act
+    // so React doesn't warn about an update outside one.
+    await act(async () => {
+      document.documentElement.removeAttribute('data-theme');
+    });
+  });
+
+  it('resolves mode from <html data-theme> when set', () => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    const {result} = renderHook(() => useTheme());
+    expect(result.current.mode).toBe('dark');
+  });
+
+  it('falls back to OS preference when <html data-theme> is absent', () => {
+    // useMediaQuery is mocked to false (light) at the top of this file.
+    const {result} = renderHook(() => useTheme());
+    expect(result.current.mode).toBe('light');
+  });
+
+  it('stays live when <html data-theme> changes after mount', async () => {
+    const {result} = renderHook(() => useTheme());
+    expect(result.current.mode).toBe('light');
+
+    act(() => {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    });
+
+    await waitFor(() => expect(result.current.mode).toBe('dark'));
+  });
+});
+
+// Covers the singleton MutationObserver + no-op gating in useRootThemeModeAttr:
+// provider-path consumers (a ThemeContext ancestor is reachable) must not
+// create an observer or react to <html data-theme> at all, and every
+// no-context consumer must share exactly one observer, refcounted down to
+// zero as they unmount.
+describe('useTheme root-attribute observer lifecycle', () => {
+  afterEach(() => {
+    document.documentElement.removeAttribute('data-theme');
+    // vi.stubGlobal'd MutationObserver stubs below are torn down here even if
+    // a test fails partway through, instead of relying on a manual restore
+    // line at the end of each test that a mid-test throw would skip.
+    vi.unstubAllGlobals();
+  });
+
+  it('creates no observer and does not re-render provider-path consumers when <html data-theme> changes', () => {
+    const ObserverSpy = vi.fn();
+    vi.stubGlobal('MutationObserver', ObserverSpy);
+
+    const renders = {count: 0};
+    function Consumer() {
+      useTheme();
+      renders.count++;
+      return null;
+    }
+
+    render(
+      <Theme theme={testTheme} mode="light">
+        <Consumer />
+      </Theme>,
+    );
+
+    expect(ObserverSpy).not.toHaveBeenCalled();
+
+    const before = renders.count;
+    act(() => {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    });
+    expect(renders.count).toBe(before);
+  });
+
+  it('shares one observer across multiple no-context consumers and disconnects once all unmount', () => {
+    const observe = vi.fn();
+    const disconnect = vi.fn();
+    const ObserverSpy = vi
+      .fn()
+      .mockImplementation(() => ({observe, disconnect}));
+    vi.stubGlobal('MutationObserver', ObserverSpy);
+
+    const first = renderHook(() => useTheme());
+    const second = renderHook(() => useTheme());
+
+    expect(ObserverSpy).toHaveBeenCalledTimes(1);
+    expect(observe).toHaveBeenCalledTimes(1);
+
+    first.unmount();
+    expect(disconnect).not.toHaveBeenCalled();
+
+    second.unmount();
+    expect(disconnect).toHaveBeenCalledTimes(1);
   });
 });

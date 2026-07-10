@@ -2,12 +2,11 @@
 
 'use client';
 
-import {useCallback, use, useEffect, useMemo, useRef, useState} from 'react';
-import type {ReactNode} from 'react';
+import {useCallback, use, useEffect, useRef} from 'react';
 import {createRoot} from 'react-dom/client';
+import {dataAttr} from '../naming';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import {ToastViewport} from './ToastViewport';
-import {ThemeContext, type ThemeContextValue} from '../theme';
 import type {
   ToastOptions,
   ToastDismissFn,
@@ -20,39 +19,30 @@ let fallbackContext: ToastContextValue | null = null;
 let fallbackRoot: ReturnType<typeof createRoot> | null = null;
 let fallbackWarned = false;
 
-// Reads the root Theme's mode off <html> (synced there since #1587).
-// Absent means mode="system", where useTheme's OS fallback is already correct.
-function readRootThemeMode(): 'light' | 'dark' | null {
-  const attr = document.documentElement.getAttribute('data-theme');
-  return attr === 'light' || attr === 'dark' ? attr : null;
-}
+const ROOT_THEME_ATTRS = ['data-theme', dataAttr('theme')] as const;
 
-// The fallback tree is disconnected from the app, so ThemeContext can't
-// reach it and useTheme() would resolve mode from OS preference. Re-provides
-// the mode read off <html>, kept live via MutationObserver.
-function FallbackThemeProvider({children}: {children: ReactNode}) {
-  const [mode, setMode] = useState(readRootThemeMode);
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => setMode(readRootThemeMode()));
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme'],
-    });
-    return () => observer.disconnect();
-  }, []);
-
-  // Always render the same Provider (only its value toggles) — omitting it
-  // conditionally would change the tree shape on mode changes and remount
-  // ToastViewport, dropping visible toasts. theme is null because only mode
-  // is reflected to the DOM; the theme object exists solely in React
-  // context. useTheme resolves a null theme to default tokens, same as the
-  // no-provider path today.
-  const value = useMemo<ThemeContextValue | null>(
-    () => (mode == null ? null : {mode, theme: null}),
-    [mode],
-  );
-  return <ThemeContext value={value}>{children}</ThemeContext>;
+// The fallback container is a detached tree with no ThemeContext, so this
+// mirrors <html>'s theme attributes onto it directly (live via
+// MutationObserver) for the theme's @scope'd CSS to reach it. It's a
+// lifetime-of-app singleton that's never torn down, so there's nothing to
+// disconnect — this returns void.
+function syncRootThemeAttrs(container: HTMLElement): void {
+  const sync = () => {
+    for (const attr of ROOT_THEME_ATTRS) {
+      const value = document.documentElement.getAttribute(attr);
+      if (value == null) {
+        container.removeAttribute(attr);
+      } else {
+        container.setAttribute(attr, value);
+      }
+    }
+  };
+  sync();
+  const observer = new MutationObserver(sync);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: [...ROOT_THEME_ATTRS],
+  });
 }
 
 function getFallbackContext(): ToastContextValue {
@@ -78,6 +68,7 @@ function getFallbackContext(): ToastContextValue {
   const container = document.createElement('div');
   container.setAttribute('data-astryx-toast-fallback', '');
   document.body.appendChild(container);
+  syncRootThemeAttrs(container);
 
   let resolveCtx: ((ctx: ToastContextValue) => void) | undefined;
   const ctxReady = new Promise<ToastContextValue>(r => {
@@ -99,11 +90,9 @@ function getFallbackContext(): ToastContextValue {
 
   fallbackRoot = createRoot(container);
   fallbackRoot.render(
-    <FallbackThemeProvider>
-      <ToastViewport>
-        <FallbackCapture />
-      </ToastViewport>
-    </FallbackThemeProvider>,
+    <ToastViewport>
+      <FallbackCapture />
+    </ToastViewport>,
   );
 
   // Proxy that queues calls until real context is captured

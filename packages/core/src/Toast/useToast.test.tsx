@@ -4,13 +4,19 @@
  * @file useToast.test.tsx
  * @input Uses vitest, @testing-library/react, useToast/ToastViewport/Theme
  * @output Unit tests for the fallback viewport's theme mode resolution
- * @position Testing; validates useToast.tsx's FallbackThemeProvider
+ * @position Testing; validates useToast.tsx's attribute mirroring onto the
+ *   fallback container, plus useTheme.ts's <html data-theme> fallback (which
+ *   is what actually resolves Toast's JS-computed mode; see useTheme.test.tsx
+ *   for direct coverage of that half)
  *
- * SYNC: When useToast.tsx's fallback theme provision changes, update these tests
+ * SYNC: When useToast.tsx's fallback container setup changes, update these tests
  *
- * The fallback viewport root is a module-level singleton, so the first two
- * tests run in order and share it (mounted by the first) — mirroring a real
- * app whose root <Theme> mode changes over time.
+ * The fallback viewport root is a module-level singleton, so it's mounted
+ * once (by whichever test runs first) and persists across every test in the
+ * file below — mirroring a real app whose root <Theme> mode changes over
+ * time. Each test dismisses its own toast in afterEach (see
+ * dismissAllFallbackToasts) so none linger as a useTheme subscriber into the
+ * next test.
  */
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
@@ -53,14 +59,49 @@ function newestMediaAttr(scope: ParentNode): string | null {
   return last ? last.getAttribute('data-astryx-media') : null;
 }
 
+// Fire the transition-end that ToastViewport listens for to unmount an
+// exiting toast (jsdom does not run CSS transitions) — mirrors
+// ToastViewport.test.tsx's completeExit helper.
+function completeExit(toastId: string) {
+  const node = document.querySelector<HTMLElement>(
+    `[data-toast-id="${toastId}"]`,
+  );
+  if (node) {
+    fireEvent.transitionEnd(node, {propertyName: 'grid-template-rows'});
+  }
+}
+
+// Dismisses every toast still mounted in the fallback viewport so none of
+// them remain subscribed to useTheme's shared MutationObserver by the time
+// RTL's own cleanup unmounts this test's <Theme> — that unmount would
+// otherwise notify a lingering subscriber outside any act scope.
+async function dismissAllFallbackToasts(): Promise<void> {
+  const fallback = document.querySelector('[data-astryx-toast-fallback]');
+  const ids = Array.from(
+    fallback?.querySelectorAll<HTMLElement>('[data-toast-id]') ?? [],
+  ).map(node => node.getAttribute('data-toast-id')!);
+
+  await act(async () => {
+    for (const id of ids) {
+      fallback
+        ?.querySelector<HTMLElement>(
+          `[data-toast-id="${id}"] button[aria-label="Dismiss notification"]`,
+        )
+        ?.click();
+    }
+  });
+
+  await act(async () => {
+    for (const id of ids) {
+      completeExit(id);
+    }
+  });
+}
+
 describe('useToast fallback viewport theme mode', () => {
   afterEach(async () => {
     mockMatchMedia(false);
-    // RTL's cleanup (unmounting each test's <Theme>) removes data-theme,
-    // which the fallback's still-live MutationObserver reacts to a tick
-    // later — flush that microtask inside an active act() so React doesn't
-    // warn about an update outside it.
-    await act(async () => {});
+    await dismissAllFallbackToasts();
   });
 
   it('resolves the app mode (light) instead of OS preference (dark) with no LayerProvider', async () => {
@@ -72,7 +113,12 @@ describe('useToast fallback viewport theme mode', () => {
       </Theme>,
     );
 
-    act(() => {
+    // This is the very first click in the whole file, so it's the one that
+    // finds the fallback proxy still pending: addToast queues the entry and
+    // kicks off the ctxReady.then(...) microtask that later delivers it to
+    // the real context. Awaiting an async act() here flushes that chain
+    // instead of letting it resolve outside any act scope.
+    await act(async () => {
       fireEvent.click(screen.getByText('Trigger'));
     });
 
@@ -102,6 +148,14 @@ describe('useToast fallback viewport theme mode', () => {
       </Theme>,
     );
 
+    // The fallback viewport is a persistent module singleton (see file
+    // header), so earlier tests may have already added toasts to it — count
+    // beforehand instead of assuming a fixed prior count, so this test
+    // survives running alone (.only, -t, shuffle) as well as in sequence.
+    const countBefore = document.querySelectorAll(
+      '[data-astryx-toast-fallback] [data-astryx-media]',
+    ).length;
+
     act(() => {
       fireEvent.click(screen.getByText('Trigger System'));
     });
@@ -110,15 +164,35 @@ describe('useToast fallback viewport theme mode', () => {
       const nodes = document.querySelectorAll(
         '[data-astryx-toast-fallback] [data-astryx-media]',
       );
-      expect(nodes.length).toBeGreaterThan(1);
+      expect(nodes.length).toBeGreaterThan(countBefore);
     });
 
-    // mode="system" means #1587 removes data-theme from <html> — the provider
-    // must not override anything, leaving useTheme's own OS-preference
-    // resolution (dark here) in place, same as before this fix.
+    // mode="system" means #1587 removes data-theme from <html> — useTheme's
+    // <html data-theme> fallback then has nothing to read, leaving its own
+    // OS-preference resolution (dark here) in place, same as before this fix.
     expect(
       newestMediaAttr(document.querySelector('[data-astryx-toast-fallback]')!),
     ).toBe('light');
+  });
+
+  it('mirrors <html data-theme> and data-astryx-theme onto the fallback container', async () => {
+    mockMatchMedia(false);
+
+    render(
+      <Theme theme={testTheme} mode="dark">
+        <ShowToastButton label="Trigger Mirror" />
+      </Theme>,
+    );
+
+    act(() => {
+      fireEvent.click(screen.getByText('Trigger Mirror'));
+    });
+
+    await waitFor(() => {
+      const fallback = document.querySelector('[data-astryx-toast-fallback]');
+      expect(fallback?.getAttribute('data-theme')).toBe('dark');
+      expect(fallback?.getAttribute('data-astryx-theme')).toBe('test');
+    });
   });
 });
 
