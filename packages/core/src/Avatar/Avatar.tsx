@@ -289,11 +289,16 @@ export function Avatar({
   ref,
   ...props
 }: AvatarProps) {
-  const [imageError, setImageError] = useState(false);
-  const [fallbackError, setFallbackError] = useState(false);
+  // Track the exact src that failed (rather than a boolean) so a changed
+  // src/fallbackSrc gets a fresh load attempt instead of the stale error.
+  const [erroredSrc, setErroredSrc] = useState<string | undefined>(undefined);
+  const [erroredFallbackSrc, setErroredFallbackSrc] = useState<
+    string | undefined
+  >(undefined);
 
-  const showImage = src && !imageError;
-  const showFallbackImage = !showImage && fallbackSrc && !fallbackError;
+  const showImage = src && erroredSrc !== src;
+  const showFallbackImage =
+    !showImage && fallbackSrc && erroredFallbackSrc !== fallbackSrc;
   const showInitials = !showImage && !showFallbackImage && name;
   const showIcon = !showImage && !showFallbackImage && !name;
 
