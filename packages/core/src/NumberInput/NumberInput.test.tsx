@@ -12,7 +12,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {HashtagIcon} from '@heroicons/react/24/outline';
+import {TestIcon} from '../__tests__/TestIcon';
 import {NumberInput} from './NumberInput';
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
@@ -174,7 +174,7 @@ describe('NumberInput', () => {
         label="Count"
         value={null}
         onChange={() => {}}
-        startIcon={HashtagIcon}
+        startIcon={TestIcon}
       />,
     );
     expect(screen.getByRole('spinbutton')).toBeInTheDocument();
@@ -707,7 +707,7 @@ describe('NumberInput', () => {
           label="Qty"
           value={0}
           onChange={() => {}}
-          startIcon={<HashtagIcon />}
+          startIcon={<TestIcon />}
         />,
       );
 

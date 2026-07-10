@@ -11,48 +11,48 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {HomeIcon} from '@heroicons/react/24/outline';
+import {TestIcon} from '../__tests__/TestIcon';
 import {Icon} from './Icon';
 
 describe('Icon', () => {
   it('renders the icon component', () => {
-    render(<Icon icon={HomeIcon} data-testid="icon" />);
+    render(<Icon icon={TestIcon} data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
   it('renders as an SVG element', () => {
-    render(<Icon icon={HomeIcon} data-testid="icon" />);
+    render(<Icon icon={TestIcon} data-testid="icon" />);
     const icon = screen.getByTestId('icon');
     expect(icon.tagName.toLowerCase()).toBe('svg');
   });
 
   it('applies aria-hidden by default', () => {
-    render(<Icon icon={HomeIcon} data-testid="icon" />);
+    render(<Icon icon={TestIcon} data-testid="icon" />);
     expect(screen.getByTestId('icon')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('renders with different color variants', () => {
     const {rerender} = render(
-      <Icon icon={HomeIcon} color="primary" data-testid="icon" />,
+      <Icon icon={TestIcon} color="primary" data-testid="icon" />,
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
-    rerender(<Icon icon={HomeIcon} color="secondary" data-testid="icon" />);
+    rerender(<Icon icon={TestIcon} color="secondary" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
-    rerender(<Icon icon={HomeIcon} color="accent" data-testid="icon" />);
+    rerender(<Icon icon={TestIcon} color="accent" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
-    rerender(<Icon icon={HomeIcon} color="success" data-testid="icon" />);
+    rerender(<Icon icon={TestIcon} color="success" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
-    rerender(<Icon icon={HomeIcon} color="error" data-testid="icon" />);
+    rerender(<Icon icon={TestIcon} color="error" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
-    rerender(<Icon icon={HomeIcon} color="warning" data-testid="icon" />);
+    rerender(<Icon icon={TestIcon} color="warning" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
-    rerender(<Icon icon={HomeIcon} color="inherit" data-testid="icon" />);
+    rerender(<Icon icon={TestIcon} color="inherit" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
@@ -70,41 +70,41 @@ describe('Icon', () => {
       'purple',
     ] as const;
     const {rerender} = render(
-      <Icon icon={HomeIcon} color={nonSemanticColors[0]} data-testid="icon" />,
+      <Icon icon={TestIcon} color={nonSemanticColors[0]} data-testid="icon" />,
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
     for (const c of nonSemanticColors.slice(1)) {
-      rerender(<Icon icon={HomeIcon} color={c} data-testid="icon" />);
+      rerender(<Icon icon={TestIcon} color={c} data-testid="icon" />);
       expect(screen.getByTestId('icon')).toBeInTheDocument();
     }
   });
 
   it('renders with different size variants', () => {
     const {rerender} = render(
-      <Icon icon={HomeIcon} size="xsm" data-testid="icon" />,
+      <Icon icon={TestIcon} size="xsm" data-testid="icon" />,
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
-    rerender(<Icon icon={HomeIcon} size="sm" data-testid="icon" />);
+    rerender(<Icon icon={TestIcon} size="sm" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
-    rerender(<Icon icon={HomeIcon} size="md" data-testid="icon" />);
+    rerender(<Icon icon={TestIcon} size="md" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
 
-    rerender(<Icon icon={HomeIcon} size="lg" data-testid="icon" />);
+    rerender(<Icon icon={TestIcon} size="lg" data-testid="icon" />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
   it('forwards ref correctly', () => {
     const ref = vi.fn();
-    render(<Icon icon={HomeIcon} ref={ref} />);
+    render(<Icon icon={TestIcon} ref={ref} />);
     expect(ref).toHaveBeenCalledWith(expect.any(SVGSVGElement));
   });
 
   it('passes additional SVG props', () => {
     render(
-      <Icon icon={HomeIcon} data-testid="icon" role="img" aria-label="Home" />,
+      <Icon icon={TestIcon} data-testid="icon" role="img" aria-label="Home" />,
     );
     const icon = screen.getByTestId('icon');
     expect(icon).toHaveAttribute('role', 'img');
@@ -112,7 +112,7 @@ describe('Icon', () => {
   });
 
   it('uses default color and size when not specified', () => {
-    render(<Icon icon={HomeIcon} data-testid="icon" />);
+    render(<Icon icon={TestIcon} data-testid="icon" />);
     // The component should render without errors with defaults
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
