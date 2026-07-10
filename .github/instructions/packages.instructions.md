@@ -115,25 +115,29 @@ into the Design Conventions page rather than decided ad hoc in the PR.
 
 ## Lifecycle & promotion
 
-Astryx components and templates move through a lifecycle
+Astryx components and templates move through a staging lifecycle
 ([Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle),
 [Component Hardening Protocol](https://github.com/facebook/astryx/wiki/Component-Hardening-Protocol)).
-New work should **not** land in its final, publicly-visible home un-hardened.
-Watch for two promotion events and treat them as high-attention — post a
-checklist rather than blocking (this is advisory):
+The thing to catch is **new work that skips staging** — landing directly in its
+final, publicly-visible home without being hardened first. Flag these as
+high-attention (post a note rather than hard-blocking — this is advisory).
 
-### New/changed component entering `core`
+### New component added directly to `core` (skipped `lab`)
 
 `@astryxdesign/lab` is the canary-only staging area (`private: true` +
-`astryx.canaryOnly`); `@astryxdesign/core` ships to stable consumers. New
-components are expected to harden in `lab` first, then graduate. Judge by the
-**destination**, not by trying to detect a move (a lab→core promotion often
-shows up as a delete under `packages/lab/src/**` plus an add under
-`packages/core/src/**`).
+`astryx.canaryOnly`) where new components develop and harden;
+`@astryxdesign/core` ships to stable consumers. The expected path is
+**lab → core after hardening**.
 
-Flag when a diff **adds a new component directory under `packages/core/src/`**
-(or promotes one from lab) and ask the author to confirm it meets the core bar
-that lab explicitly does *not* guarantee:
+**Flag a diff that adds a brand-new component directory under
+`packages/core/src/<Name>/` with no prior presence in `packages/lab/src/`.**
+That's a component skipping the staging step. (A lab→core *promotion* — a delete
+under `packages/lab/src/**` paired with the add in core — is the healthy path
+and is fine; the concern is the *net-new* component that was never in lab.)
+
+When you see a net-new core component, ask the author to confirm either that it
+went through lab, or that it genuinely meets the core bar that lab explicitly
+does *not* guarantee:
 
 - Full keyboard + a11y (ARIA contracts, focus, `:hover` guarded by
   `@media (hover: hover)`)
@@ -142,23 +146,25 @@ that lab explicitly does *not* guarantee:
 - Spec compliance with an approved spec issue, and **vibe-tested** API
 - Complete surface (see Mechanical checklist below)
 
-A component appearing in `core` with no prior lab presence isn't automatically
-wrong — small additions and spec-approved direct-to-core work happen — but the
-core bar still applies, so call it out for confirmation.
+Small additions and deliberately spec-approved direct-to-core work do happen —
+this isn't an automatic rejection — but a new core component that skipped lab
+should be called out so a human confirms it was intentional and hardened.
 
-### Template revealed in the CLI (hidden → visible)
+### New template added already-visible (not `hidden`)
 
-CLI templates/blocks start **hidden** and are revealed only after hardening. The
-CLI reads `hidden: true` and `hiddenComponents: ['Name', ...]` from a template's
-`.doc.mjs`; hidden entries are skipped in `--list`. **The promotion event is the
-diff that removes `hidden: true` or drops a name from `hiddenComponents`.**
+CLI templates/blocks are authored **hidden** and revealed only after they clear
+the template design bar. The CLI reads `hidden: true` and
+`hiddenComponents: ['Name', ...]` from a template's `.doc.mjs`; hidden entries
+are skipped from `--list`.
 
-When you see that, flag it: a template becoming publicly listed should already
-be hardened — run the template design bar (component/token purity, layout,
-realistic mock data, and the design-judge visual axes; target grade B or above,
-see [Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)
-and the Design review section above). Revealing a template that hasn't cleared
-that bar is the main thing to catch here.
+**Flag a diff that adds a *new* template/block whose `.doc.mjs` is not
+`hidden: true`** (i.e. it's publicly listed from the moment it lands). A new
+template appearing already-visible skipped the hidden-staging step and may not
+be hardened yet. Ask the author to confirm it meets the template design bar
+(component/token purity, layout, realistic mock data, and the design-judge
+visual axes; target grade B or above — see
+[Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)
+and the Design review section above), or to add `hidden: true` until it does.
 
 ## Mechanical checklist
 
