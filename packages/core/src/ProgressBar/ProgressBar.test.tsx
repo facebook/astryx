@@ -140,6 +140,26 @@ describe('ProgressBar', () => {
     expect(progressbar).toHaveAttribute('aria-valuemax', '0');
   });
 
+  it('treats a NaN value as empty progress instead of leaking "NaN"', () => {
+    // e.g. an upstream `loaded / total * 100` where total is still 0.
+    render(<ProgressBar value={NaN} label="Upload" hasValueLabel />);
+    const progressbar = screen.getByRole('progressbar');
+    expect(progressbar).toHaveAttribute('aria-valuenow', '0');
+    expect(progressbar.getAttribute('aria-valuetext')).toBe('0%');
+    expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
+    // The fill width must be a real percentage, not "NaN%".
+    const fill = progressbar.firstElementChild as HTMLElement;
+    expect(fill.style.width).toBe('0%');
+  });
+
+  it('treats a NaN max as an empty range instead of leaking "NaN"', () => {
+    render(<ProgressBar value={5} max={NaN} label="Steps" hasValueLabel />);
+    const progressbar = screen.getByRole('progressbar');
+    expect(progressbar).toHaveAttribute('aria-valuenow', '0');
+    expect(progressbar).toHaveAttribute('aria-valuemax', '0');
+    expect(screen.queryByText(/NaN/)).not.toBeInTheDocument();
+  });
+
   it('does not render NaN in the value label when max is zero', () => {
     render(<ProgressBar value={0} max={0} label="Empty" hasValueLabel />);
     expect(screen.queryByText(/NaN|Infinity/)).not.toBeInTheDocument();
