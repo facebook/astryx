@@ -51,7 +51,6 @@ export function SizeTokenTable({theme}: TokenTableProps) {
       ]}
       density="spacious"
       dividers="rows"
-      hasHover
     />
   );
 }
