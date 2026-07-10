@@ -87,6 +87,53 @@ composition as judgment. This mirrors Hardening Layer 3 — where a review
 resolves a genuinely new design question, note that it should be recorded back
 into the Design Conventions page rather than decided ad hoc in the PR.
 
+## Lifecycle & promotion
+
+Astryx components and templates move through a lifecycle
+([Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle),
+[Component Hardening Protocol](https://github.com/facebook/astryx/wiki/Component-Hardening-Protocol)).
+New work should **not** land in its final, publicly-visible home un-hardened.
+Watch for two promotion events and treat them as high-attention — post a
+checklist rather than blocking (this is advisory):
+
+### New/changed component entering `core`
+
+`@astryxdesign/lab` is the canary-only staging area (`private: true` +
+`astryx.canaryOnly`); `@astryxdesign/core` ships to stable consumers. New
+components are expected to harden in `lab` first, then graduate. Judge by the
+**destination**, not by trying to detect a move (a lab→core promotion often
+shows up as a delete under `packages/lab/src/**` plus an add under
+`packages/core/src/**`).
+
+Flag when a diff **adds a new component directory under `packages/core/src/`**
+(or promotes one from lab) and ask the author to confirm it meets the core bar
+that lab explicitly does *not* guarantee:
+
+- Full keyboard + a11y (ARIA contracts, focus, `:hover` guarded by
+  `@media (hover: hover)`)
+- Theming story + `themeProps`, semantic tokens throughout, status states
+  (error/warning/success) where it's an input
+- Spec compliance with an approved spec issue, and **vibe-tested** API
+- Complete surface (see Mechanical checklist below)
+
+A component appearing in `core` with no prior lab presence isn't automatically
+wrong — small additions and spec-approved direct-to-core work happen — but the
+core bar still applies, so call it out for confirmation.
+
+### Template revealed in the CLI (hidden → visible)
+
+CLI templates/blocks start **hidden** and are revealed only after hardening. The
+CLI reads `hidden: true` and `hiddenComponents: ['Name', ...]` from a template's
+`.doc.mjs`; hidden entries are skipped in `--list`. **The promotion event is the
+diff that removes `hidden: true` or drops a name from `hiddenComponents`.**
+
+When you see that, flag it: a template becoming publicly listed should already
+be hardened — run the template design bar (component/token purity, layout,
+realistic mock data, and the design-judge visual axes; target grade B or above,
+see [Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)
+and the Design review section above). Revealing a template that hasn't cleared
+that bar is the main thing to catch here.
+
 ## Mechanical checklist
 
 - **Full component surface.** A component under `packages/*/src/<Name>/` should
