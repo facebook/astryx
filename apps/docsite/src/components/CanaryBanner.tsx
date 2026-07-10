@@ -13,13 +13,19 @@ import {CURRENT_TARGET, DOCS_VERSIONS, urlForTarget} from '../lib/docsVersions';
  * may not exist in the published package yet. Offers a jump to the same page on
  * the stable build when that deploy is configured.
  *
- * Renders nothing on the stable (latest) build — that's the canonical site and
- * needs no disclaimer.
+ * Rendered via AppShell's `banner` slot. Callers gate the slot on
+ * `CURRENT_TARGET === 'canary'` so latest builds render no banner wrapper at
+ * all (AppShell keys its banner region off `isRenderable`, and a bare
+ * `<CanaryBanner />` element always counts as renderable even when it would
+ * return `null`). The internal target guard below is a belt-and-suspenders
+ * fallback for any caller that passes it unconditionally.
  */
 export function CanaryBanner() {
   const pathname = usePathname();
 
-  if (CURRENT_TARGET !== 'canary') {return null;}
+  if (CURRENT_TARGET !== 'canary') {
+    return null;
+  }
 
   const stableHref = urlForTarget('latest', pathname);
   const stableLabel = DOCS_VERSIONS.latest.label;

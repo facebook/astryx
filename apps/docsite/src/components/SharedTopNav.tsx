@@ -19,7 +19,6 @@ import {Search, HeartHandshake, Sun, Moon, Menu} from 'lucide-react';
 import {GITHUB_REPO} from '../constants';
 import {AstryxIcon} from './logos';
 import {SearchPalette} from './SearchPalette';
-import {CanaryBanner} from './CanaryBanner';
 import {components} from '../generated/componentRegistry';
 import {packages} from '../generated/packageRegistry';
 import {docTopics} from '../generated/docsRegistry';
@@ -276,7 +275,6 @@ export function SharedTopNav() {
           </HStack>
         }
       />
-      <CanaryBanner />
       <SearchPalette
         isOpen={isSearchOpen}
         onOpenChange={setIsSearchOpen}
