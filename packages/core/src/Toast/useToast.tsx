@@ -28,13 +28,26 @@ const ROOT_THEME_ATTRS = ['data-theme', dataAttr('theme')] as const;
 // disconnect — this returns void.
 function syncRootThemeAttrs(container: HTMLElement): void {
   const sync = () => {
+    let mirroredMode: string | null = null;
     for (const attr of ROOT_THEME_ATTRS) {
       const value = document.documentElement.getAttribute(attr);
       if (value == null) {
         container.removeAttribute(attr);
       } else {
         container.setAttribute(attr, value);
+        if (attr === 'data-theme') {
+          mirroredMode = value;
+        }
       }
+    }
+    // Pages whose built theme CSS pins color-scheme unconditionally (#3658)
+    // would otherwise resolve light-dark() tokens by OS preference while the
+    // mirrored mode above follows the app theme; the inline style wins over
+    // that CSS.
+    if (mirroredMode === 'light' || mirroredMode === 'dark') {
+      container.style.colorScheme = mirroredMode;
+    } else {
+      container.style.removeProperty('color-scheme');
     }
   };
   sync();

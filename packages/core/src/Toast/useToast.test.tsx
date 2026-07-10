@@ -178,7 +178,7 @@ describe('useToast fallback viewport theme mode', () => {
   it('mirrors <html data-theme> and data-astryx-theme onto the fallback container', async () => {
     mockMatchMedia(false);
 
-    render(
+    const {rerender} = render(
       <Theme theme={testTheme} mode="dark">
         <ShowToastButton label="Trigger Mirror" />
       </Theme>,
@@ -189,9 +189,46 @@ describe('useToast fallback viewport theme mode', () => {
     });
 
     await waitFor(() => {
-      const fallback = document.querySelector('[data-astryx-toast-fallback]');
-      expect(fallback?.getAttribute('data-theme')).toBe('dark');
-      expect(fallback?.getAttribute('data-astryx-theme')).toBe('test');
+      const fallback = document.querySelector(
+        '[data-astryx-toast-fallback]',
+      ) as HTMLElement;
+      expect(fallback.getAttribute('data-theme')).toBe('dark');
+      expect(fallback.getAttribute('data-astryx-theme')).toBe('test');
+      // Inline color-scheme must follow the mirrored mode, not <html>'s own
+      // (possibly #3658-pinned) theme CSS — see useToast.tsx's syncRootThemeAttrs.
+      expect(fallback.style.colorScheme).toBe('dark');
+    });
+
+    // Flip the app mode: the shared MutationObserver re-syncs the container,
+    // so the inline color-scheme must follow it live.
+    rerender(
+      <Theme theme={testTheme} mode="light">
+        <ShowToastButton label="Trigger Mirror" />
+      </Theme>,
+    );
+
+    await waitFor(() => {
+      const fallback = document.querySelector(
+        '[data-astryx-toast-fallback]',
+      ) as HTMLElement;
+      expect(fallback.getAttribute('data-theme')).toBe('light');
+      expect(fallback.style.colorScheme).toBe('light');
+    });
+
+    // mode="system" removes <html data-theme> entirely — the inline property
+    // must be removed too, reverting to whatever the CSS otherwise resolves.
+    rerender(
+      <Theme theme={testTheme} mode="system">
+        <ShowToastButton label="Trigger Mirror" />
+      </Theme>,
+    );
+
+    await waitFor(() => {
+      const fallback = document.querySelector(
+        '[data-astryx-toast-fallback]',
+      ) as HTMLElement;
+      expect(fallback.getAttribute('data-theme')).toBeNull();
+      expect(fallback.style.colorScheme).toBe('');
     });
   });
 });
