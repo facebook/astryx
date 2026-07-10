@@ -59,8 +59,36 @@ specific rule when something conflicts:
 
 ## Judgment
 
-Conventions passing is necessary, not sufficient. Also flag: state expressed by
-unmounting focusable elements (toggle visibility so focus/a11y survive),
-`useEffect` deriving secondary state (derive during render / `useMemo`),
-unnecessary `useState`, and excessive comments. Behavioral or agent-facing
-changes should come with vibe-test evidence.
+Conventions passing is necessary, not sufficient. Weigh the **end-user
+experience** of the change, not just whether it compiles and follows the rules.
+When something would degrade real usage even though it passes the mechanical
+checks, flag it.
+
+- **Accessibility & alerting.** Scrutinize anything that announces, focuses, or
+  interrupts — live regions (`role="alert"`/`aria-live`), toasts, focus moves,
+  and notification triggers. Look for ways the mechanism could:
+  - **Double-fire** — re-run on re-render, fire once per item in a loop, or
+    re-announce unchanged content (a common `useEffect`-without-correct-deps
+    bug). Assistive tech will read it twice.
+  - **Interrupt or bury** — steal focus mid-interaction, stack overlapping
+    announcements, or clobber a more important message. `assertive` regions
+    especially should be rare and deliberate.
+  - **Worsen the experience it's trying to help** — e.g. announcing on every
+    keystroke, or moving focus in a way that traps or disorients.
+  Prefer announcing on a real state transition, debouncing/coalescing where the
+  content is noisy, and reserving `assertive` for genuinely urgent messages.
+- **`useEffect` is a smell.** Treat a new/changed Effect as something to justify,
+  not accept by default. Most UI logic doesn't need one — look for whether it
+  belongs in an **event handler / callback** (logic that responds to a user
+  action), a **ref** (imperative work that shouldn't trigger re-render), or
+  plain **derivation during render / `useMemo`** (values computed from props or
+  state). Use React's own guidance as the bar:
+  [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
+  and [Synchronizing with Effects](https://react.dev/learn/synchronizing-with-effects).
+  Genuine Effects synchronize with an *external* system (subscriptions, the DOM,
+  network, non-React widgets) — those are fine; call out the ones that don't.
+- **Other smells.** State expressed by unmounting focusable elements (toggle
+  visibility so focus/a11y survive), unnecessary `useState` (prefer derived
+  values or refs, especially from interaction handlers), and excessive comments.
+
+Behavioral or agent-facing changes should come with vibe-test evidence.
