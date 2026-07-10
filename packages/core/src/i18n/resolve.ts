@@ -4,11 +4,7 @@
  * @file resolve.ts
  * @input Key + values + locale + catalog + overrides
  * @output Formatted message string
- * @position Shared lookup + ICU formatting core, used by both t.client.ts and t.server.ts
- *
- * The split between t.client and t.server is only about where the locale VALUE
- * lives (React context vs AsyncLocalStorage). All the actual lookup and
- * formatting happens here so behavior is identical across server/client.
+ * @position Shared lookup + ICU formatting core, used by useTranslator().
  *
  * Lookup order:
  *   1. Per-locale override for the exact locale
@@ -19,8 +15,7 @@
  *   6. The key itself (dev-visible fallback, warns once)
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/i18n/t.client.ts
- * - /packages/core/src/i18n/t.server.ts
+ * - /packages/core/src/i18n/useTranslator.ts
  * - /packages/core/src/i18n/__tests__/resolve.test.ts
  */
 
@@ -50,6 +45,9 @@ function getFormatter(message: string, locale: Locale): IntlMessageFormat {
 
 /**
  * Walk a BCP 47 tag from most-specific to least-specific.
+ * Input is canonicalized via `Intl.Locale.baseName` so `pt-br` and `PT-BR`
+ * both produce `['pt-BR', 'pt']`.
+ *
  * Examples:
  *   'pt-BR'      → ['pt-BR', 'pt']
  *   'zh-Hans-CN' → ['zh-Hans-CN', 'zh-Hans', 'zh']
@@ -59,7 +57,14 @@ function getFormatter(message: string, locale: Locale): IntlMessageFormat {
  * shipped en catalog separately as the final source-of-truth.
  */
 export function resolveLocaleChain(locale: Locale): Locale[] {
-  const parts = locale.split('-');
+  let canonical: string;
+  try {
+    canonical = new Intl.Locale(locale).baseName;
+  } catch {
+    // Malformed input — fall back to the raw string so callers still get a chain.
+    canonical = locale;
+  }
+  const parts = canonical.split('-');
   const chain: Locale[] = [];
   for (let i = parts.length; i > 0; i--) {
     chain.push(parts.slice(0, i).join('-'));
@@ -68,14 +73,14 @@ export function resolveLocaleChain(locale: Locale): Locale[] {
 }
 
 /**
- * Warn-once tracking. Missing keys and en-fallbacks each log once per
- * (locale, key) pair per process to avoid flooding the console during
- * navigation-heavy rendering. Follows the astryx convention of unguarded
- * `console.warn` (see Toast/useToast.tsx) — production consumers who don't
- * want the noise can suppress at the console filter level.
+ * Missing-key warn-once tracking. Fires ONLY when a key is missing from
+ * every source including the shipped `en` catalog — that's a real bug
+ * (typo, stale catalog, deleted key). Fallback to `en` from a non-en
+ * locale is expected and silent, matching the FormatJS / i18next default
+ * of not spamming the console when a translation simply hasn't been
+ * written yet.
  */
 const warnedMissing = new Set<string>();
-const warnedFallback = new Set<string>();
 
 function warnOnce(bucket: Set<string>, key: string, message: string): void {
   if (!bucket.has(key)) {
@@ -84,17 +89,12 @@ function warnOnce(bucket: Set<string>, key: string, message: string): void {
   }
 }
 
-interface LookupResult {
-  message: string;
-  usedFallback: boolean;
-}
-
 function lookup(
   key: string,
   locale: Locale,
   messages: MessagesByLocale,
   overrides: Overrides | undefined,
-): LookupResult | null {
+): string | null {
   const chain = resolveLocaleChain(locale);
 
   // 1 + 2. Overrides (most specific to least specific in the chain)
@@ -102,7 +102,7 @@ function lookup(
     for (const tag of chain) {
       const value = overrides[tag]?.[key];
       if (value !== undefined) {
-        return {message: value, usedFallback: false};
+        return value;
       }
     }
   }
@@ -111,14 +111,14 @@ function lookup(
   for (const tag of chain) {
     const entry = messages[tag]?.[key];
     if (entry !== undefined) {
-      return {message: entry.defaultMessage, usedFallback: false};
+      return entry.defaultMessage;
     }
   }
 
   // 5. Shipped en catalog — always present
   const enEntry = EN_CATALOG[key];
   if (enEntry !== undefined) {
-    return {message: enEntry.defaultMessage, usedFallback: true};
+    return enEntry.defaultMessage;
   }
 
   // 6. Nothing found
@@ -143,20 +143,12 @@ export function resolve(
     return key;
   }
 
-  if (result.usedFallback && locale !== 'en') {
-    warnOnce(
-      warnedFallback,
-      `${locale}::${key}`,
-      `[astryx-i18n] fallback to en: ${key} (locale: ${locale})`,
-    );
-  }
-
   if (values === undefined) {
     // Static string — skip the parser entirely for the common case
-    return result.message;
+    return result;
   }
 
-  const formatted = getFormatter(result.message, locale).format(values);
+  const formatted = getFormatter(result, locale).format(values);
   // IntlMessageFormat.format returns string | (string | React elements) — we
   // only ever pass string values so it will be a string; assert for the type
   // system.
@@ -170,5 +162,4 @@ export function resolve(
 export function __resetForTests(): void {
   formatterCache.clear();
   warnedMissing.clear();
-  warnedFallback.clear();
 }

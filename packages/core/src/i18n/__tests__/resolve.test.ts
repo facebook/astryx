@@ -34,8 +34,17 @@ describe('resolveLocaleChain', () => {
     ]);
   });
 
-  test('empty and lowercase tags handled reasonably', () => {
-    expect(resolveLocaleChain('en-us')).toEqual(['en-us', 'en']);
+  test('canonicalizes casing via Intl.Locale', () => {
+    // Consumers who pass "en-us" (lowercase region) should get the canonical
+    // BCP 47 form back so lookups match spec-canonical catalog keys.
+    expect(resolveLocaleChain('en-us')).toEqual(['en-US', 'en']);
+    expect(resolveLocaleChain('PT-br')).toEqual(['pt-BR', 'pt']);
+  });
+
+  test('malformed input falls back to the raw string chain', () => {
+    // Intl.Locale throws on invalid input; we don't want the whole render to
+    // die because a consumer passed a bad tag.
+    expect(resolveLocaleChain('not_a_locale')).toEqual(['not_a_locale']);
   });
 });
 
@@ -85,8 +94,11 @@ describe('resolve — provider messages', () => {
     expect(out).toBe('Suivant');
   });
 
-  test('falls back to en for keys not in the provider catalog', () => {
-    // pagination.previous is only in en; fr catalog has only .next
+  test('falls back to en for keys not in the provider catalog, silently', () => {
+    // pagination.previous is only in en; fr catalog has only .next.
+    // Missing translations for a locale are expected during rollout — the
+    // fallback should be silent (matches i18next / FormatJS default). We
+    // reserve console.warn for real bugs (key missing even from en).
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const out = resolve(
       '@astryx.pagination.previous',
@@ -96,9 +108,7 @@ describe('resolve — provider messages', () => {
       undefined,
     );
     expect(out).toBe('Go to previous page');
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('fallback to en'),
-    );
+    expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
 });

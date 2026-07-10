@@ -29,11 +29,7 @@
   },
   "@astryx.pagination.pageOfTotal": {
     "defaultMessage": "Page {current, number} of {total, number}",
-    "description": "Visible page-x-of-y text for the compact variant."
-  },
-  "@astryx.pagination.pageOfTotalAnnounce": {
-    "defaultMessage": "Page {current, number} of {total, number}",
-    "description": "Screen-reader announcement when a page changes and total is known."
+    "description": "Page-x-of-y text. Used as the visible compact-variant text and as the screen-reader announcement when total is known."
   },
   "@astryx.pagination.pageAnnounce": {
     "defaultMessage": "Page {current, number}",

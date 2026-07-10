@@ -2,6 +2,10 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] i18n scaffold + Pagination migration (#3641). Adds `InternationalizationProvider`, `useTranslator()`, ICU MessageFormat runtime (`intl-messageformat`), BCP 47 regional-locale fallback (`pt-BR` → `pt` → `en`), and a shipped English catalog at `packages/core/locales/en.json`. Pagination is migrated as the first component consumer — 10 hardcoded strings (aria labels, live-region announcements, visible count/compact text) now flow through the i18n system with `en` defaults preserving current behavior. A dev-only pseudo locale is generated from `en.json` at build time for QA. Provider is opt-in — consumers who never render one continue to get today's English strings unchanged. Server-side rendering (RSC) and framework adapters are deferred to a follow-up.
+[feat] Astryx components are now translatable. Wrap your app in `<InternationalizationProvider locale="...">` and pass one or more locale catalogs to render astryx UI in the language of your choice. Call `useTranslator()` inside your own components to translate your consumer strings against the active locale.
+
+Astryx ships an English catalog and BCP 47 regional fallback (e.g. `pt-BR` → `pt` → `en`), so consumers who never render a provider see today's English strings unchanged.
+
+Pagination is the first component wired up as part of this change. More components follow in subsequent releases.
 
 @nynexman4464
