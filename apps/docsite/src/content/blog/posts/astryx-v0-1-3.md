@@ -9,6 +9,8 @@ tags:
   - 'Release'
   - 'Accessibility'
   - 'Components'
+coverImage: '/blog/astryx-v0-1-3/cover.png'
+coverAlt: 'The version 0.1.3 set in white on a solid Astryx-blue field, with the Astryx mark used as the separator between digits and @astryxdesign/core beneath'
 ---
 
 Astryx v0.1.3 is out. This release is a big step forward for accessibility, keyboard navigation, and data tables. Install it with:
