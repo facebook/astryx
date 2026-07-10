@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TabList} from './TabList';
 import {Tab} from './Tab';
@@ -700,5 +700,189 @@ describe('TabMenu', () => {
       hidden: true,
     });
     expect(reportsItem).not.toHaveAttribute('aria-current');
+  });
+});
+
+describe('TabMenu keyboard navigation (roving tabindex)', () => {
+  const menuOptions = [
+    {value: 'analytics', label: 'Analytics'},
+    {value: 'reports', label: 'Reports'},
+  ];
+
+  it('exposes the overflow menu as a single Tab stop (one item tabbable, rest -1)', async () => {
+    const user = userEvent.setup();
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <TabMenu label="More" options={menuOptions} />
+      </TabList>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /More/}));
+
+    const analytics = screen.getByRole('menuitem', {
+      name: 'Analytics',
+      hidden: true,
+    });
+    const reports = screen.getByRole('menuitem', {
+      name: 'Reports',
+      hidden: true,
+    });
+
+    // Exactly one menu item is in the Tab sequence; arrow keys reach the rest.
+    expect(analytics).toHaveAttribute('tabindex', '0');
+    expect(reports).toHaveAttribute('tabindex', '-1');
+
+    const tabbable = [analytics, reports].filter(
+      el => el.getAttribute('tabindex') === '0',
+    );
+    expect(tabbable).toHaveLength(1);
+  });
+
+  it('moves focus between items with ArrowDown and ArrowUp', async () => {
+    const user = userEvent.setup();
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <TabMenu label="More" options={menuOptions} />
+      </TabList>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /More/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    const analytics = screen.getByRole('menuitem', {
+      name: 'Analytics',
+      hidden: true,
+    });
+    const reports = screen.getByRole('menuitem', {
+      name: 'Reports',
+      hidden: true,
+    });
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(analytics).toHaveFocus();
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(reports).toHaveFocus();
+
+    fireEvent.keyDown(menu, {key: 'ArrowUp'});
+    expect(analytics).toHaveFocus();
+  });
+
+  it('moves the roving tab stop with arrow navigation', async () => {
+    const user = userEvent.setup();
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <TabMenu label="More" options={menuOptions} />
+      </TabList>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /More/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    const analytics = screen.getByRole('menuitem', {
+      name: 'Analytics',
+      hidden: true,
+    });
+    const reports = screen.getByRole('menuitem', {
+      name: 'Reports',
+      hidden: true,
+    });
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'}); // focus analytics
+    fireEvent.keyDown(menu, {key: 'ArrowDown'}); // focus reports
+
+    // The tab stop follows focus, so it is still a single stop after moving.
+    expect(reports).toHaveAttribute('tabindex', '0');
+    expect(analytics).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('jumps to first and last item with Home and End', async () => {
+    const user = userEvent.setup();
+    const options = [
+      {value: 'analytics', label: 'Analytics'},
+      {value: 'reports', label: 'Reports'},
+      {value: 'exports', label: 'Exports'},
+    ];
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <TabMenu label="More" options={options} />
+      </TabList>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /More/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    const analytics = screen.getByRole('menuitem', {
+      name: 'Analytics',
+      hidden: true,
+    });
+    const exports = screen.getByRole('menuitem', {
+      name: 'Exports',
+      hidden: true,
+    });
+
+    fireEvent.keyDown(menu, {key: 'End'});
+    expect(exports).toHaveFocus();
+
+    fireEvent.keyDown(menu, {key: 'Home'});
+    expect(analytics).toHaveFocus();
+  });
+
+  it('selects an item with Enter and calls onChange', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <TabList value="home" onChange={handleChange}>
+        <Tab value="home" label="Home" />
+        <TabMenu label="More" options={menuOptions} />
+      </TabList>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /More/}));
+    const analytics = screen.getByRole('menuitem', {
+      name: 'Analytics',
+      hidden: true,
+    });
+    analytics.focus();
+    fireEvent.keyDown(analytics, {key: 'Enter'});
+
+    expect(handleChange).toHaveBeenCalledWith('analytics');
+  });
+
+  it('closes the menu when Tab is pressed inside it (APG menu-button)', async () => {
+    const user = userEvent.setup();
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <TabMenu label="More" options={menuOptions} />
+      </TabList>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /More/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+
+    const hidePopover = vi.mocked(HTMLElement.prototype.hidePopover);
+    hidePopover.mockClear();
+    fireEvent.keyDown(menu, {key: 'Tab'});
+    expect(hidePopover).toHaveBeenCalled();
+  });
+
+  it('closes the menu when Escape is pressed', async () => {
+    const user = userEvent.setup();
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <TabMenu label="More" options={menuOptions} />
+      </TabList>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /More/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+
+    const hidePopover = vi.mocked(HTMLElement.prototype.hidePopover);
+    hidePopover.mockClear();
+    fireEvent.keyDown(menu, {key: 'Escape'});
+    expect(hidePopover).toHaveBeenCalled();
   });
 });
