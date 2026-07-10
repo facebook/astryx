@@ -230,17 +230,20 @@ function parseThemeProps(source) {
 }
 
 // ---------------------------------------------------------------------------
-// Doc parsing — collect documented theming.targets from every export
+// Doc parsing — collect documented theming.targets, keyed by export
 // ---------------------------------------------------------------------------
 
-/** Import a *.doc.mjs and collect, per documented className, the union of
- *  visualProps ∪ states across ALL exports (docs, docsZh, …). */
-async function collectDocTargets(docFile) {
+/** Import a *.doc.mjs and collect, per EXPORT that carries a theming.targets
+ *  block (docs, docsZh, …), a Map of className -> Set of documented props
+ *  (visualProps ∪ states). Keeping exports separate lets us both union them
+ *  for the source diff and compare docs vs docsZh for language lockstep. */
+async function collectDocTargetsByExport(docFile) {
   const mod = await import(pathToFileURL(docFile).href);
-  const byClass = new Map(); // className -> Set<prop>
-  for (const value of Object.values(mod)) {
+  const byExport = new Map(); // exportName -> Map<className, Set<prop>>
+  for (const [name, value] of Object.entries(mod)) {
     const targets = value?.theming?.targets;
     if (!Array.isArray(targets)) continue;
+    const byClass = new Map();
     for (const t of targets) {
       if (!t?.className) continue;
       const set = byClass.get(t.className) ?? new Set();
@@ -248,64 +251,143 @@ async function collectDocTargets(docFile) {
       for (const s of t.states ?? []) set.add(s);
       byClass.set(t.className, set);
     }
+    byExport.set(name, byClass);
   }
-  return byClass;
+  return byExport;
+}
+
+/** Compare a doc file's primary `docs` theming block against its translated
+ *  `docsZh` block and push an error for every class or prop that appears in one
+ *  but not the other. No-op unless both blocks exist. */
+function lockstepErrors(docFileRel, enDocs, zhDocs, errors) {
+  if (!enDocs || !zhDocs) return;
+  const quote = keys => [...keys].map(k => `'${k}'`).join(', ');
+  for (const className of enDocs.keys()) {
+    if (!zhDocs.has(className)) {
+      errors.push(
+        `${docFileRel}: theming target "${className}" is documented in docs but ` +
+          `missing from docsZh — keep both language blocks in lockstep.`,
+      );
+      continue;
+    }
+    const en = enDocs.get(className);
+    const zh = zhDocs.get(className);
+    const missingZh = [...en].filter(p => !zh.has(p));
+    const missingEn = [...zh].filter(p => !en.has(p));
+    if (missingZh.length) {
+      errors.push(
+        `${docFileRel}: "${className}" documents ${quote(missingZh)} in docs but ` +
+          `not docsZh — keep both language blocks in lockstep.`,
+      );
+    }
+    if (missingEn.length) {
+      errors.push(
+        `${docFileRel}: "${className}" documents ${quote(missingEn)} in docsZh but ` +
+          `not docs — keep both language blocks in lockstep.`,
+      );
+    }
+  }
+  for (const className of zhDocs.keys()) {
+    if (!enDocs.has(className)) {
+      errors.push(
+        `${docFileRel}: theming target "${className}" is documented in docsZh but ` +
+          `missing from docs — keep both language blocks in lockstep.`,
+      );
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
+/** The top-level component folder a file belongs to, e.g.
+ *  packages/core/src/Table/TableBody.tsx -> "Table". The spec scopes the diff
+ *  "per component", and a component (Table, Chat, …) can span many source and
+ *  doc files under one folder, so we group by that folder. */
+function componentOf(file) {
+  return path.relative(CORE_SRC, file).split(path.sep)[0];
+}
+
 async function main() {
   const errors = [];
   const warnings = [];
 
-  // 1. Documented targets: className -> {props: Set, files: Set}
-  const documented = new Map();
+  // Group doc and source files by their component folder.
+  const byComponent = new Map(); // component -> {docFiles: [], srcFiles: []}
+  const bucket = name => {
+    let b = byComponent.get(name);
+    if (!b) byComponent.set(name, (b = {docFiles: [], srcFiles: []}));
+    return b;
+  };
   for (const docFile of walk(CORE_SRC, isDoc)) {
-    let byClass;
-    try {
-      byClass = await collectDocTargets(docFile);
-    } catch (err) {
-      errors.push(`Failed to import ${rel(docFile)}: ${err.message}`);
-      continue;
-    }
-    for (const [className, props] of byClass) {
-      const entry = documented.get(className) ?? {props: new Set(), files: new Set()};
-      for (const p of props) entry.props.add(p);
-      entry.files.add(rel(docFile));
-      documented.set(className, entry);
-    }
+    bucket(componentOf(docFile)).docFiles.push(docFile);
+  }
+  for (const srcFile of walk(CORE_SRC, isComponentSource)) {
+    bucket(componentOf(srcFile)).srcFiles.push(srcFile);
   }
 
-  // 2. Source call sites, checked against the documented surface.
   let callSites = 0;
   let dynamicCalls = 0;
-  for (const srcFile of walk(CORE_SRC, isComponentSource)) {
-    const source = fs.readFileSync(srcFile, 'utf8');
-    if (!source.includes('themeProps')) continue;
-    for (const call of parseThemeProps(source)) {
-      callSites++;
-      if (call.dynamic) dynamicCalls++;
+  let documentedClasses = 0;
 
-      const doc = documented.get(call.className);
-      if (!doc) {
-        errors.push(
-          `${rel(srcFile)}: themeProps('${call.name}') renders "${call.className}" ` +
-            `but no theming.target documents it. Add ` +
-            `{className: '${call.className}'${call.keys.size ? `, visualProps: [${[...call.keys].map(k => `'${k}'`).join(', ')}]` : ''}} ` +
-            `to the component's *.doc.mjs theming.targets.`,
-        );
+  // Diff each component in isolation: source themeProps() call sites vs the
+  // theming.targets documented by that same component's *.doc.mjs file(s).
+  for (const [, {docFiles, srcFiles}] of byComponent) {
+    // 1. Documented targets for this component: className -> {props, files}
+    const documented = new Map();
+    for (const docFile of docFiles) {
+      let byExport;
+      try {
+        byExport = await collectDocTargetsByExport(docFile);
+      } catch (err) {
+        errors.push(`Failed to import ${rel(docFile)}: ${err.message}`);
         continue;
       }
-      const missing = [...call.keys].filter(k => !doc.props.has(k));
-      if (missing.length) {
-        errors.push(
-          `${rel(srcFile)}: themeProps('${call.name}', {…}) passes ` +
-            `${missing.map(k => `'${k}'`).join(', ')} not documented on "${call.className}" ` +
-            `(documented in ${[...doc.files].join(', ')}). ` +
-            `Add ${missing.map(k => `'${k}'`).join(', ')} to visualProps or states.`,
-        );
+      // Union every export's targets — the source diff treats a class as
+      // documented if any theming block in the file lists it.
+      for (const byClass of byExport.values()) {
+        for (const [className, props] of byClass) {
+          const entry = documented.get(className) ?? {props: new Set(), files: new Set()};
+          for (const p of props) entry.props.add(p);
+          entry.files.add(rel(docFile));
+          documented.set(className, entry);
+        }
+      }
+      // Language lockstep: the translated docsZh theming block must mirror the
+      // primary docs block, so a sweep that updates one can't silently skip the
+      // other. Only compare when both blocks exist.
+      lockstepErrors(rel(docFile), byExport.get('docs'), byExport.get('docsZh'), errors);
+    }
+    documentedClasses += documented.size;
+
+    // 2. Source call sites, checked against this component's documented surface.
+    for (const srcFile of srcFiles) {
+      const source = fs.readFileSync(srcFile, 'utf8');
+      if (!source.includes('themeProps')) continue;
+      for (const call of parseThemeProps(source)) {
+        callSites++;
+        if (call.dynamic) dynamicCalls++;
+
+        const doc = documented.get(call.className);
+        if (!doc) {
+          errors.push(
+            `${rel(srcFile)}: themeProps('${call.name}') renders "${call.className}" ` +
+              `but no theming.target documents it. Add ` +
+              `{className: '${call.className}'${call.keys.size ? `, visualProps: [${[...call.keys].map(k => `'${k}'`).join(', ')}]` : ''}} ` +
+              `to the component's *.doc.mjs theming.targets.`,
+          );
+          continue;
+        }
+        const missing = [...call.keys].filter(k => !doc.props.has(k));
+        if (missing.length) {
+          errors.push(
+            `${rel(srcFile)}: themeProps('${call.name}', {…}) passes ` +
+              `${missing.map(k => `'${k}'`).join(', ')} not documented on "${call.className}" ` +
+              `(documented in ${[...doc.files].join(', ')}). ` +
+              `Add ${missing.map(k => `'${k}'`).join(', ')} to visualProps or states.`,
+          );
+        }
       }
     }
   }
@@ -329,7 +411,7 @@ async function main() {
 
   console.log(
     `✓ theming.targets in sync with themeProps() ` +
-      `(${callSites} call sites across ${documented.size} documented classes` +
+      `(${callSites} call sites across ${documentedClasses} documented classes` +
       `${dynamicCalls ? `, ${dynamicCalls} with dynamic props partially checked` : ''}).`,
   );
 }
