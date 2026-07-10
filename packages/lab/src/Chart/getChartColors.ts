@@ -10,6 +10,7 @@
  */
 
 import type {DefinedTheme} from '@astryxdesign/core/theme';
+import {parseColor, formatColor} from '@astryxdesign/core/utils';
 
 // =============================================================================
 // Types
@@ -105,17 +106,18 @@ function pickFromRamp(stops: string[], n: number): string[] {
   );
 }
 
+/**
+ * Apply an opacity to a concrete CSS color (hex, `rgb()`/`rgba()`, named).
+ * The `opacity` argument always wins over any alpha already in the color.
+ * Unparseable input (e.g. `var()`) is returned unchanged.
+ */
 function hexAlpha(hex: string, opacity: number): string {
-  const match = hex.match(
-    /^#?([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/,
-  );
-  if (!match) {
+  const rgba = parseColor(hex);
+  if (rgba === null) {
     return hex;
   }
-  const r = parseInt(match[1], 16);
-  const g = parseInt(match[2], 16);
-  const b = parseInt(match[3], 16);
-  return `rgba(${r},${g},${b},${Math.max(0, Math.min(1, opacity))})`;
+  const a = Number.isFinite(opacity) ? Math.max(0, Math.min(1, opacity)) : 1;
+  return formatColor({...rgba, a});
 }
 
 // =============================================================================

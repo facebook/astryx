@@ -4,7 +4,7 @@
  * @file color.ts
  * @input CSS color strings (hex, rgb()/rgba(), a small set of named colors)
  * @output Shared color parsing/formatting primitives used across the design system
- * @position Package utility; backs theme token resolution, HCT color math, and chart rendering
+ * @position Package utility; backs theme token resolution, HCT color math, and chart/WebGL rendering
  *
  * A single home for the color parsers that were previously duplicated across
  * the theme layer, charts, and lab. Consumers get one well-tested definition of
@@ -145,4 +145,25 @@ export function formatColor({r, g, b, a}: RGBA): string {
   }
   const round = (n: number): number => clamp(Math.round(n), 0, 255);
   return `rgba(${round(r)}, ${round(g)}, ${round(b)}, ${parseFloat(a.toFixed(4))})`;
+}
+
+/** Neutral fallback (mid-grey) for colors a GL path can't parse — visible, never NaN. */
+const GL_FALLBACK: [number, number, number] = [0.5, 0.5, 0.5];
+
+/**
+ * Convert a parsed {@link RGBA} to `[r, g, b]` floats in 0-1 for WebGL
+ * uniforms and attributes.
+ *
+ * Takes the parsed type rather than a raw string so every caller goes through
+ * one validation path ({@link parseHex} / {@link parseColor}) — compose as
+ * `toGLFloats(parseHex(color))`. Unparseable input (null) returns a neutral
+ * mid-grey fallback instead of NaN, so the GPU never receives a bad uniform.
+ * Alpha is intentionally dropped — GL chart paths blend with their own alpha.
+ */
+export function toGLFloats(color: RGBA | null): [number, number, number] {
+  if (color === null) {
+    return GL_FALLBACK;
+  }
+  const channel = (c: number): number => clamp(c, 0, 255) / 255;
+  return [channel(color.r), channel(color.g), channel(color.b)];
 }

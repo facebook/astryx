@@ -20,6 +20,7 @@ import {
 } from 'react';
 import {useChart} from './ChartContext';
 import {xPixel} from './utils';
+import {hexToGL} from './webgl';
 
 export interface ChartDotGLInteractiveProps {
   /** Which data key for the y values */
@@ -35,11 +36,6 @@ export interface ChartDotGLInteractiveProps {
    * If omitted, a default tooltip is rendered.
    */
   renderTooltip?: (datum: Record<string, unknown>, index: number) => ReactNode;
-}
-
-function hexToGL(hex: string): [number, number, number] {
-  const n = parseInt(hex.replace('#', ''), 16);
-  return [(n >> 16) / 255, ((n >> 8) & 0xff) / 255, (n & 0xff) / 255];
 }
 
 /** Encode a point index as an RGB color (supports up to 16.7M points) */
