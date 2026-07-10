@@ -1,0 +1,42 @@
+{
+  "@astryx.pagination.label": {
+    "defaultMessage": "Pagination",
+    "description": "Aria label for the pagination navigation region."
+  },
+  "@astryx.pagination.previous": {
+    "defaultMessage": "Go to previous page",
+    "description": "Aria label for the previous-page button."
+  },
+  "@astryx.pagination.next": {
+    "defaultMessage": "Go to next page",
+    "description": "Aria label for the next-page button."
+  },
+  "@astryx.pagination.goToPage": {
+    "defaultMessage": "Go to page {page, number}",
+    "description": "Aria label for an individual page-number button. `page` is 1-based."
+  },
+  "@astryx.pagination.pageIndicators": {
+    "defaultMessage": "Page indicators",
+    "description": "Aria label for the dots-variant page-indicator group."
+  },
+  "@astryx.pagination.itemsPerPage": {
+    "defaultMessage": "Items per page",
+    "description": "Label for the page-size selector."
+  },
+  "@astryx.pagination.count": {
+    "defaultMessage": "{from, number}\u2013{to, number} of {total, number}",
+    "description": "Visible range-of-total text for the count variant. `from`/`to` are 1-based item indices."
+  },
+  "@astryx.pagination.pageOfTotal": {
+    "defaultMessage": "Page {current, number} of {total, number}",
+    "description": "Visible page-x-of-y text for the compact variant."
+  },
+  "@astryx.pagination.pageOfTotalAnnounce": {
+    "defaultMessage": "Page {current, number} of {total, number}",
+    "description": "Screen-reader announcement when a page changes and total is known."
+  },
+  "@astryx.pagination.pageAnnounce": {
+    "defaultMessage": "Page {current, number}",
+    "description": "Screen-reader announcement when a page changes and total is unknown."
+  }
+}
