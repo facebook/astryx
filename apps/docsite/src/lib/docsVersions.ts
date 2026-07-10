@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Version-switcher wiring for the docsite.
+ * Version-switching wiring for the docsite.
  *
  * The docsite ships as ONE codebase built for two content targets:
  *   - `latest`  — documents the last published release (what `npm install`
@@ -9,13 +9,14 @@
  *   - `canary`  — documents `main` (work-in-progress, unreleased).
  *
  * Both are deployed from the same code; only the package sources the build-time
- * data pipeline reads from differ (see scripts/resolve-content-root.mjs). The
- * switcher lets a reader jump between the two deploys while keeping their
- * current path, so "the same page, other version" is one click away.
+ * data pipeline reads from differ (see scripts/resolve-content-root.mjs). Two
+ * UI affordances let a reader move between the deploys while keeping their
+ * current path: a low-key footer link (DocsVersionFooterLink) on every page,
+ * and — on canary only — the prominent CanaryBanner link back to latest.
  *
  * Deploy URLs are configurable via env so the same code works in production,
  * preview, and local dev. When a target's base URL is unset (e.g. local dev
- * with a single build) the switcher degrades to a no-op link to `/`.
+ * with a single build) urlForTarget degrades to a no-op link to `/`.
  */
 
 import {buildTarget, type DocsTarget} from '../generated/buildTarget';
@@ -37,8 +38,8 @@ export interface DocsVersionInfo {
  * (see scripts/build-versioned.mjs) both targets live on the SAME deployment:
  *   latest → served at "/"        (full Next server build)
  *   canary → served at "/canary"  (static export nested in public/canary/)
- * so the defaults are same-origin path prefixes and the switcher works with no
- * configuration.
+ * so the defaults are same-origin path prefixes and version switching works
+ * with no configuration.
  *
  * To split the targets across two deployments/domains instead, set absolute
  * URLs at build time (read by the client bundle, hence NEXT_PUBLIC_):
@@ -95,13 +96,4 @@ export function urlForTarget(target: DocsTarget, path: string): string | null {
   // base "" → same origin at root; base "/canary" → nested; base "https://…"
   // → other origin. All compose the same way.
   return `${base}${suffix}` || '/';
-}
-
-/**
- * The switcher is always usable in the one-deploy topology: an empty baseUrl
- * ("") is a valid "root of this origin" destination, so both targets are
- * reachable. (Kept as a function so a future config could disable a target.)
- */
-export function hasSwitchableTargets(): boolean {
-  return true;
 }
