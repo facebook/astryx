@@ -17,15 +17,20 @@ This file covers local development setup.
 
 ### Node.js
 
-Install Node.js 22+ from an active LTS line using one of these methods:
+The Node version lives in `.nvmrc` (currently the 24.x line). CI reads the same
+file via `node-version-file`, so local and CI never drift apart. Don't declare
+the version anywhere else.
 
 **Via nvm (recommended):**
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 source ~/.zshrc
-nvm install 22
+nvm install   # no argument — reads .nvmrc
 ```
+
+`fnm` and `mise` read `.nvmrc` too. `asdf` does not; its `.tool-versions` is
+git-ignored precisely so it cannot become a competing source of truth.
 
 **Via nodejs.org:**
 Download and install from https://nodejs.org

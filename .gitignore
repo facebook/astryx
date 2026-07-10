@@ -60,3 +60,11 @@ apps/example-nextjs-tailwind/.next
 # Lockfiles (pnpm is the package manager — see pnpm-workspace.yaml)
 package-lock.json
 yarn.lock
+
+# Node version managers (.nvmrc is the single source — CI reads it via
+# node-version-file). Ignored so a personal asdf/mise/nodenv file cannot drift
+# from it. If the team ever moves to one of these, delete the matching line
+# here first — otherwise the new file is silently left out of the commit.
+.node-version
+.tool-versions
+mise.toml

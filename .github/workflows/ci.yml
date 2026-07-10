@@ -59,13 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
       # docsite `generate` runs `astryx theme build`, which imports the compiled
       # @astryxdesign/core/theme entry (dist/theme/index.js). Build core first so that
@@ -113,15 +107,7 @@ jobs:
       - uses: actions/checkout@v7
         if: needs.check-scope.outputs.docsite_only != 'true'
 
-      - uses: pnpm/action-setup@v6
-        if: needs.check-scope.outputs.docsite_only != 'true'
-      - uses: actions/setup-node@v6
-        if: needs.check-scope.outputs.docsite_only != 'true'
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
         if: needs.check-scope.outputs.docsite_only != 'true'
 
       - name: Check copyright headers
@@ -164,20 +150,9 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         run: git fetch origin ${{ github.base_ref }} --depth=1
 
-      - name: Setup pnpm
+      - name: Setup Node and pnpm
         if: needs.check-scope.outputs.docsite_only != 'true'
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        if: needs.check-scope.outputs.docsite_only != 'true'
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        if: needs.check-scope.outputs.docsite_only != 'true'
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/setup
 
       - name: Build core package
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -371,10 +346,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # Node only. This job reads a downloaded artifact and posts a comment; it
+      # never installs workspace deps, so it skips the composite action and the
+      # pnpm store cache restore that comes with it.
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version-file: .nvmrc
 
       - name: Download analysis artifact
         uses: actions/download-artifact@v8
@@ -445,14 +423,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      # Dependencies are installed later, together with the Playwright browser,
+      # because the analysis artifact has to be downloaded first.
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
         with:
-          node-version: 24
-          cache: 'pnpm'
+          install: 'false'
 
       - name: Download analysis artifact
         uses: actions/download-artifact@v8
@@ -500,10 +476,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      # Node only. This job reads a downloaded artifact and posts a comment; it
+      # never installs workspace deps, so it skips the composite action and the
+      # pnpm store cache restore that comes with it.
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version-file: .nvmrc
 
       - name: Download analysis artifact
         uses: actions/download-artifact@v8
