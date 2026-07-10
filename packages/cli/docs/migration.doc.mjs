@@ -126,6 +126,26 @@ export function AppRoot({children}: {children: React.ReactNode}) {
 @import "@astryxdesign/core/tailwind-theme.css";
 @import "tailwindcss/utilities.css" layer(utilities);`,
         },
+        {
+          type: 'prose',
+          text: 'On Tailwind v3 there is no preflight.css to import, so wrap the @tailwind base directive in a named layer instead. Keep utilities unlayered so existing app utility classes still win everywhere.',
+        },
+        {
+          type: 'code',
+          lang: 'css',
+          label: 'Tailwind v3 coexistence',
+          code: `@layer reset, tw-preflight, astryx-base, astryx-theme;
+
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+
+@layer tw-preflight {
+  @tailwind base; /* layered: astryx-theme now wins over preflight */
+}
+@tailwind components;
+@tailwind utilities; /* unlayered: legacy utility classes keep winning */`,
+        },
       ],
     },
     {
@@ -133,22 +153,33 @@ export function AppRoot({children}: {children: React.ReactNode}) {
       content: [
         {
           type: 'prose',
-          text: 'With @layer, layer position decides the winner before specificity is ever evaluated. A zero-specificity reset like `* { padding: 0 }` always loses in an unlayered stylesheet, but it beats every component style the moment it sits in a layer declared after astryx-base. Same CSS, opposite outcome, and no error or warning when it happens.',
+          text: 'In a stylesheet with no layers at all, a zero-specificity reset like `* { padding: 0 }` loses to any class selector, so most developers treat resets as harmless. Layers change the rules twice: unlayered styles beat every named layer, and a later layer beats an earlier one, both regardless of specificity. The same reset therefore wins against every component style either by staying unlayered or by landing in a layer declared after astryx-base. Same CSS, opposite outcome, and no error or warning when it happens.',
         },
         {
           type: 'prose',
-          text: 'This is the most common way an adoption breaks. A legacy app reset gets imported without an explicit layer(), silently inherits a consumer layer that sits above astryx-base, and strips padding or borders from every component on every page. Audit the layers around the design system with this checklist before building screens.',
+          text: 'This is the most common way an adoption breaks, through one of two @import mechanisms. A top-level @import without the layer() keyword keeps the legacy reset unlayered, where it overrides every design system layer. And an @import nested inside a file that was itself imported into a layer inherits that surrounding layer, so a reset can silently land in a consumer layer above astryx-base. Either way the fix is the same: import the legacy reset into the lowest layer explicitly.',
+        },
+        {
+          type: 'code',
+          lang: 'css',
+          label: 'Legacy reset, explicitly layered',
+          code: `/* was: @import "./legacy-reset.css";  (unlayered: beats every layer) */
+@import "./legacy-reset.css" layer(reset);`,
+        },
+        {
+          type: 'prose',
+          text: 'Audit the layers around the design system with this checklist before building screens.',
         },
         {
           type: 'list',
           style: 'unordered',
           items: [
-            'Declare the canonical @layer order once in the global stylesheet, before any @import.',
-            'Audit every pre-existing global or reset stylesheet and assign each one to a layer deliberately. Never let an @import pick up a surrounding layer implicitly.',
+            'Declare the canonical @layer order once, before any @import. With webpack-based bundlers (including Next.js) the order declaration must live in its own CSS file imported first, such as layers.css, because webpack hoists @import content above the inline CSS that follows it.',
+            'Audit every pre-existing global or reset stylesheet and assign each one to a layer deliberately. Top-level imports without layer() stay unlayered and beat every layer; imports nested inside a layered file inherit that layer.',
             'Remove or demote the app legacy reset. The design system ships its own :where() reset in the lowest layer, so any app reset belongs in that same reset layer and never in a layer above astryx-base.',
-            'Import Tailwind preflight with layer(base). Unlayered preflight sits above every layer and silently overrides theme CSS.',
+            'Layer Tailwind preflight. On Tailwind v4, import preflight.css with layer(base). On Tailwind v3, wrap the @tailwind base directive in a named layer (see the snippet in Theme and CSS Setup). Unlayered preflight overrides theme CSS silently.',
             'Set moduleResolution to bundler or node16 and newer so subpath imports like @astryxdesign/core/reset.css resolve.',
-            'Theme with defineTheme and the accent family API instead of hand-writing individual color tokens. Derived tokens like --color-on-accent are generated from the accent scale automatically and stay unset when tokens are written by hand.',
+            'Theme with defineTheme and the accent family API instead of hand-writing individual color tokens. Derived tokens like --color-on-accent are generated from the accent scale automatically; hand-writing only --color-accent leaves --color-on-accent at its stale white default with no contrast guarantee against the new accent.',
             'Run the foundation smoke test below and view a few components in both light and dark mode before migrating any route.',
           ],
         },
@@ -169,26 +200,36 @@ export function AppRoot({children}: {children: React.ReactNode}) {
           type: 'code',
           lang: 'tsx',
           label: 'Foundation check page',
-          code: `import {Button} from '@astryxdesign/core/Button';
+          code: `import {useState} from 'react';
+import {Button} from '@astryxdesign/core/Button';
 import {Card} from '@astryxdesign/core/Card';
 import {Table} from '@astryxdesign/core/Table';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {VStack} from '@astryxdesign/core/VStack';
 
 export default function FoundationCheck() {
+  const [email, setEmail] = useState('');
+
   return (
-    <VStack gap={4}>
-      <Button label="Primary action" variant="primary" />
-      <TextInput label="Email" placeholder="you@example.com" />
-      <Card>One card with default padding</Card>
-      <Table
-        data={[{name: 'Foundation', status: 'ok'}]}
-        columns={[
-          {key: 'name', header: 'Name'},
-          {key: 'status', header: 'Status'},
-        ]}
-      />
-    </VStack>
+    <div data-foundation-check>
+      <VStack gap={4}>
+        <Button label="Primary action" variant="primary" />
+        <TextInput
+          label="Email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={setEmail}
+        />
+        <Card>One card with default padding</Card>
+        <Table
+          data={[{name: 'Foundation', status: 'ok'}]}
+          columns={[
+            {key: 'name', header: 'Name'},
+            {key: 'status', header: 'Status'},
+          ]}
+        />
+      </VStack>
+    </div>
   );
 }`,
         },
@@ -200,11 +241,17 @@ export default function FoundationCheck() {
           type: 'code',
           lang: 'ts',
           label: 'Foundation assertion',
-          code: `const button = document.querySelector('button');
+          code: `const button = document.querySelector<HTMLButtonElement>(
+  '[data-foundation-check] button',
+);
+if (!button) {
+  throw new Error('Foundation check page did not render a button.');
+}
 if (getComputedStyle(button).paddingInline === '0px') {
   throw new Error(
-    'Foundation broken: a later cascade layer is overriding component ' +
-      'styles. Check that no app reset sits in a layer above astryx-base.',
+    'Foundation broken: an unlayered reset or a later cascade layer is ' +
+      'overriding component styles. Check that no app reset sits outside ' +
+      'the reset layer.',
   );
 }`,
         },

@@ -71,7 +71,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately, because layer position beats specificity. See the Cascade Layer Safety section in `npx astryx docs migration` before building screens.',
+          text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. See the Cascade Layer Safety section in `npx astryx docs migration` before building screens.',
         },
       ],
     },
