@@ -1,0 +1,14 @@
+{
+  "promptId": "wd-3",
+  "category": "workflow-description",
+  "prompt": "Build an onboarding flow: welcome screen → profile setup → preferences → done",
+  "expectedComponents": [
+    "Card",
+    "Button",
+    "TextInput"
+  ],
+  "target": "astryx",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/efccfa9d/projects/wd-3. Explore it to find available components.\n\n## Task\n\nBuild an onboarding flow: welcome screen → profile setup → preferences → done\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/efccfa9d/projects/wd-3/wd-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/efccfa9d/projects/wd-3/wd-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-10T11:19:20.733Z"
+}

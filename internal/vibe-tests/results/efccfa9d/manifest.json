@@ -1,0 +1,119 @@
+{
+  "iterationId": "efccfa9d",
+  "createdAt": "2026-07-10T11:19:20.727Z",
+  "config": {
+    "target": "astryx",
+    "persona": "naive",
+    "holdout": false,
+    "degradation": false,
+    "cliRetrieval": true
+  },
+  "prompts": [
+    {
+      "id": "fwc-1",
+      "category": "feature-with-constraint",
+      "prompt": "I need a banner that warns users their trial expires in X days and lets them upgrade",
+      "expectedComponents": [
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "wd-3",
+      "category": "workflow-description",
+      "prompt": "Build an onboarding flow: welcome screen → profile setup → preferences → done",
+      "expectedComponents": [
+        "Card",
+        "Button",
+        "TextInput"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "cwm-1",
+      "category": "clone-with-modification",
+      "prompt": "Something like Stripe's pricing table but with monthly/annual toggle",
+      "expectedComponents": [
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "sd-3",
+      "category": "state-driven",
+      "prompt": "Form that disables submit until all required fields are valid",
+      "expectedComponents": [
+        "TextInput",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "dd-1",
+      "category": "data-display",
+      "prompt": "A table of users with sortable columns and search",
+      "expectedComponents": [
+        "TextInput"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "rc-2",
+      "category": "responsive-context",
+      "prompt": "A sidebar that becomes a bottom sheet on mobile",
+      "expectedComponents": [
+        "Card",
+        "LayoutPanel"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "io-5",
+      "category": "integration-oriented",
+      "prompt": "Build a support ticket form with a subject line input, a description text area with character count, and a priority selector. Submit should post to /api/tickets.",
+      "expectedComponents": [
+        "TextInput",
+        "TextArea",
+        "Selector",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ps-1",
+      "category": "page-setup",
+      "prompt": "Create a new page for a settings dashboard. It should have a header with the app title, a sidebar for navigation, and a main content area. Use the Astryx theme system.",
+      "expectedComponents": [
+        "Theme",
+        "Layout",
+        "LayoutHeader",
+        "LayoutContent",
+        "LayoutPanel"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ty-5",
+      "category": "typography",
+      "prompt": "Build a landing page hero with a large display heading that says 'Build faster with Astryx', a subheading paragraph, and a CTA button",
+      "expectedComponents": [
+        "Heading",
+        "Text",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "tc-3",
+      "category": "theme-customization",
+      "prompt": "I need my page background to use the wash color from the theme. Right now wrapping my app in Theme doesn't change the page background — it stays white.",
+      "expectedComponents": [
+        "Theme",
+        "Layout"
+      ],
+      "status": "pending"
+    }
+  ]
+}
