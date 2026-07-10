@@ -663,7 +663,17 @@ export function CodeBlock({
   ...props
 }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
+  const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const announce = useAnnounce();
+
+  // Clear a pending "copied" reset when the block unmounts.
+  useEffect(() => {
+    return () => {
+      if (copyResetTimerRef.current != null) {
+        clearTimeout(copyResetTimerRef.current);
+      }
+    };
+  }, []);
 
   const useSpans =
     highlightMode === 'spans' ||
@@ -693,7 +703,15 @@ export function CodeBlock({
       // screen readers, so confirm the copy via a polite live region.
       announce('Copied');
       onCopy?.();
-      setTimeout(() => setCopied(false), 2000);
+      // Restart the reset timer on every copy — otherwise a rapid re-copy
+      // is reverted early by the previous click's timer.
+      if (copyResetTimerRef.current != null) {
+        clearTimeout(copyResetTimerRef.current);
+      }
+      copyResetTimerRef.current = setTimeout(() => {
+        copyResetTimerRef.current = null;
+        setCopied(false);
+      }, 2000);
     } catch {
       // Clipboard failures leave the copied state unchanged.
     }
