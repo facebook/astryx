@@ -10,6 +10,9 @@ export const docs = {
   isHiddenFromOverview: true,
   keywords: ["checkboxlist","checkbox","checkboxgroup","multichoice","multiselect","checklist"],
   description: 'Checkbox group container with field integration for label, description, and status.',
+  theming: {
+    targets: [{className: 'astryx-checkbox-list'}],
+  },
   props: [
     {
       name: 'label',

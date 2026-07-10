@@ -7,6 +7,9 @@ export const docs = {
   displayName: 'Power Search',
   category: 'Data Input',
   keywords: ["powersearch","search","searchbar","filter","filterbar","faceted","querybuilder","structured","omnibar"],
+  theming: {
+    targets: [{className: 'astryx-power-search'}],
+  },
   props: [
     {
       name: 'config',

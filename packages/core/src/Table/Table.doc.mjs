@@ -7,7 +7,18 @@ export const docs = {
   displayName: 'Table',
   group: 'Table',
   category: 'Table & List',
-  keywords: ["table","datatable","datagrid","spreadsheet","sorting","virtualized","columns","rows","selection","pinning"],
+  keywords: [
+    'table',
+    'datatable',
+    'datagrid',
+    'spreadsheet',
+    'sorting',
+    'virtualized',
+    'columns',
+    'rows',
+    'selection',
+    'pinning',
+  ],
   playground: {
     defaults: {
       data: [
@@ -24,6 +35,8 @@ export const docs = {
   },
   theming: {
     targets: [
+      {className: 'astryx-table'},
+      {className: 'astryx-table-scroll-wrapper'},
       {className: 'astryx-base-table'},
       {className: 'astryx-table'},
       {className: 'astryx-table-scroll-wrapper'},
@@ -35,22 +48,26 @@ export const docs = {
       {className: 'astryx-table-header-cell'},
     ],
   },
-  description: 'Styled, data-driven table with density, dividers, hover highlight, striped rows, and named plugin support. T must extend Record<string, unknown>.',
+  description:
+    'Styled, data-driven table with density, dividers, hover highlight, striped rows, and named plugin support. T must extend Record<string, unknown>.',
   props: [
     {
       name: 'data',
       type: 'T[]',
-      description: 'Array of data items to render as rows. T must extend Record<string, unknown> (use `interface MyRow extends Record<string, unknown>` for custom types).',
+      description:
+        'Array of data items to render as rows. T must extend Record<string, unknown> (use `interface MyRow extends Record<string, unknown>` for custom types).',
     },
     {
       name: 'columns',
       type: 'TableColumn<T>[]',
-      description: 'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys. The `width` field is typed as `ColumnWidth` (not a number); use `proportional(n)` or `pixel(n)` helpers imported from `@astryxdesign/core/Table`. Example: `width: pixel(120)` for 120px fixed, `width: proportional(1)` for flex distribution.',
+      description:
+        'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys. The `width` field is typed as `ColumnWidth` (not a number); use `proportional(n)` or `pixel(n)` helpers imported from `@astryxdesign/core/Table`. Example: `width: pixel(120)` for 120px fixed, `width: proportional(1)` for flex distribution.',
     },
     {
       name: 'idKey',
       type: '(keyof T & string) | ((item: T) => string | number)',
-      description: 'Row key for React reconciliation. Pass a property name string or a function. Falls back to row index if omitted.',
+      description:
+        'Row key for React reconciliation. Pass a property name string or a function. Falls back to row index if omitted.',
     },
     {
       name: 'density',
@@ -73,35 +90,41 @@ export const docs = {
     {
       name: 'hasHover',
       type: 'boolean',
-      description: 'Applies a hover highlight background to rows on pointer devices.',
+      description:
+        'Applies a hover highlight background to rows on pointer devices.',
       default: 'false',
     },
     {
       name: 'verticalAlign',
       type: "'middle' | 'top' | 'bottom'",
-      description: 'Vertical alignment for body row cells. Controls `vertical-align` on the `<td>` elements.',
+      description:
+        'Vertical alignment for body row cells. Controls `vertical-align` on the `<td>` elements.',
       default: "'middle'",
     },
     {
       name: 'textOverflow',
       type: "'wrap' | 'truncate'",
-      description: "How body cell text behaves when it exceeds the column width. 'wrap' lets text wrap and the row grow taller; 'truncate' clips with an ellipsis (default-rendered cells show a tooltip on hover when truncated). Header cells always truncate.",
+      description:
+        "How body cell text behaves when it exceeds the column width. 'wrap' lets text wrap and the row grow taller; 'truncate' clips with an ellipsis (default-rendered cells show a tooltip on hover when truncated). Header cells always truncate.",
       default: "'wrap'",
     },
     {
       name: 'plugins',
       type: 'Record<string, TablePlugin<T>>',
-      description: 'Named plugins that extend table behavior via the transform pipeline. Converted to an ordered array internally.',
+      description:
+        'Named plugins that extend table behavior via the transform pipeline. Converted to an ordered array internally.',
     },
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Children mode: render TableRow/TableCell directly instead of using data-driven rendering.',
+      description:
+        'Children mode: render TableRow/TableCell directly instead of using data-driven rendering.',
     },
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [
@@ -122,21 +145,73 @@ export const docs = {
     description:
       'Table displays structured data in rows and columns with consistent dimensionality. It supports rich cell content, sorting, selection, pagination, and column management through a composable plugin system. Use Table for data sets with uniform structure; for simpler or inconsistent data, consider a list or card layout instead.',
     bestPractices: [
-      { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
-      { guidance: true, description: 'Compose rich cell content with Astryx components like Badge, StatusDot, and Avatar via renderCell.' },
-      { guidance: true, description: 'Set explicit width on every column using proportional() or pixel(). proportional(1) gives equal flex distribution with a 120px minimum that prevents columns from collapsing on narrow viewports. Omitting width skips the minimum.' },
-      { guidance: true, description: 'Use the data-driven API from React Server Components: proportional(), pixel(), and column definitions without function props are server-safe. Columns using renderCell (or any function prop) need the table wrapped in a "use client" component, since functions cannot cross the server-client boundary.' },
-      { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
-      { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
-      { guidance: false, description: 'Omit width on text-heavy columns; without an explicit proportional() width they have no minimum and can squish to near-zero on mobile.' },
+      {
+        guidance: true,
+        description:
+          'Use density and divider variants to match the information density and scanning needs of your data.',
+      },
+      {
+        guidance: true,
+        description:
+          'Compose rich cell content with Astryx components like Badge, StatusDot, and Avatar via renderCell.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set explicit width on every column using proportional() or pixel(). proportional(1) gives equal flex distribution with a 120px minimum that prevents columns from collapsing on narrow viewports. Omitting width skips the minimum.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use the data-driven API from React Server Components: proportional(), pixel(), and column definitions without function props are server-safe. Columns using renderCell (or any function prop) need the table wrapped in a "use client" component, since functions cannot cross the server-client boundary.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.',
+      },
+      {
+        guidance: false,
+        description:
+          'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.',
+      },
+      {
+        guidance: false,
+        description:
+          'Omit width on text-heavy columns; without an explicit proportional() width they have no minimum and can squish to near-zero on mobile.',
+      },
     ],
     anatomy: [
-      {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},
-      {name: 'Body Rows', required: true, description: 'Rows with consistent data structure.'},
-      {name: 'Footer', required: false, description: 'Displays summary or totals.'},
-      {name: 'Top Bar', required: false, description: 'Contains title, toolbar, and filters.'},
-      {name: 'Bottom Bar', required: false, description: 'Contains pagination controls.'},
-      {name: 'Support Panels', required: false, description: 'Displays row details in a side panel.'},
+      {
+        name: 'Column Header',
+        required: true,
+        description: 'Displays titles, sorting controls, and bulk selection.',
+      },
+      {
+        name: 'Body Rows',
+        required: true,
+        description: 'Rows with consistent data structure.',
+      },
+      {
+        name: 'Footer',
+        required: false,
+        description: 'Displays summary or totals.',
+      },
+      {
+        name: 'Top Bar',
+        required: false,
+        description: 'Contains title, toolbar, and filters.',
+      },
+      {
+        name: 'Bottom Bar',
+        required: false,
+        description: 'Contains pagination controls.',
+      },
+      {
+        name: 'Support Panels',
+        required: false,
+        description: 'Displays row details in a side panel.',
+      },
     ],
   },
 };
@@ -147,44 +222,137 @@ export const docsZh = {
     description:
       'Table displays structured data in rows and columns with consistent dimensionality. It supports rich cell content, sorting, selection, pagination, and column management through a composable plugin system. Use Table for data sets with uniform structure; for simpler or inconsistent data, consider a list or card layout instead.',
     bestPractices: [
-      { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
-      { guidance: true, description: 'Compose rich cell content with Astryx components like Badge, StatusDot, and Avatar via renderCell.' },
-      { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
-      { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
+      {
+        guidance: true,
+        description:
+          'Use density and divider variants to match the information density and scanning needs of your data.',
+      },
+      {
+        guidance: true,
+        description:
+          'Compose rich cell content with Astryx components like Badge, StatusDot, and Avatar via renderCell.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.',
+      },
+      {
+        guidance: false,
+        description:
+          'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.',
+      },
     ],
     anatomy: [
-      {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},
-      {name: 'Body Rows', required: true, description: 'Rows with consistent data structure.'},
-      {name: 'Footer', required: false, description: 'Displays summary or totals.'},
-      {name: 'Top Bar', required: false, description: 'Contains title, toolbar, and filters.'},
-      {name: 'Bottom Bar', required: false, description: 'Contains pagination controls.'},
-      {name: 'Support Panels', required: false, description: 'Displays row details in a side panel.'},
+      {
+        name: 'Column Header',
+        required: true,
+        description: 'Displays titles, sorting controls, and bulk selection.',
+      },
+      {
+        name: 'Body Rows',
+        required: true,
+        description: 'Rows with consistent data structure.',
+      },
+      {
+        name: 'Footer',
+        required: false,
+        description: 'Displays summary or totals.',
+      },
+      {
+        name: 'Top Bar',
+        required: false,
+        description: 'Contains title, toolbar, and filters.',
+      },
+      {
+        name: 'Bottom Bar',
+        required: false,
+        description: 'Contains pagination controls.',
+      },
+      {
+        name: 'Support Panels',
+        required: false,
+        description: 'Displays row details in a side panel.',
+      },
     ],
   },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
-  description: 'Data-driven table w/ rich cell content via renderCell. Compose cells w/ Badge, StatusDot, Text, Avatar, layout primitives. BaseTable provides unstyled structural core w/ composable plugin pipeline.',
+  description:
+    'Data-driven table w/ rich cell content via renderCell. Compose cells w/ Badge, StatusDot, Text, Avatar, layout primitives. BaseTable provides unstyled structural core w/ composable plugin pipeline.',
   usage: {
     description:
       'Table displays structured data in rows and columns with consistent dimensionality. It supports rich cell content, sorting, selection, pagination, and column management through a composable plugin system. Use Table for data sets with uniform structure; for simpler or inconsistent data, consider a list or card layout instead.',
     bestPractices: [
-      { guidance: true, description: 'Use density and divider variants to match the information density and scanning needs of your data.' },
-      { guidance: true, description: 'Compose rich cell content with Astryx components like Badge, StatusDot, and Avatar via renderCell.' },
-      { guidance: true, description: 'Set explicit width on every column via proportional() or pixel(). proportional(1) = equal flex w/ 120px min preventing collapse on narrow viewports. Omitting width skips the minimum.' },
-      { guidance: true, description: 'Data-driven API is RSC-safe: proportional(), pixel(), column defs w/o function props work in Server Components. renderCell (any function prop) requires a "use client" wrapper.' },
-      { guidance: false, description: 'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.' },
-      { guidance: false, description: 'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.' },
-      { guidance: false, description: 'Omit width on text-heavy columns; w/o explicit proportional() width they have no minimum and can squish to near-zero on mobile.' },
+      {
+        guidance: true,
+        description:
+          'Use density and divider variants to match the information density and scanning needs of your data.',
+      },
+      {
+        guidance: true,
+        description:
+          'Compose rich cell content with Astryx components like Badge, StatusDot, and Avatar via renderCell.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set explicit width on every column via proportional() or pixel(). proportional(1) = equal flex w/ 120px min preventing collapse on narrow viewports. Omitting width skips the minimum.',
+      },
+      {
+        guidance: true,
+        description:
+          'Data-driven API is RSC-safe: proportional(), pixel(), column defs w/o function props work in Server Components. renderCell (any function prop) requires a "use client" wrapper.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use a table for data without consistent columns. Use a list or card layout for heterogeneous content.',
+      },
+      {
+        guidance: false,
+        description:
+          'Enable every plugin at once. Add only the features your use case requires to keep the interface focused.',
+      },
+      {
+        guidance: false,
+        description:
+          'Omit width on text-heavy columns; w/o explicit proportional() width they have no minimum and can squish to near-zero on mobile.',
+      },
     ],
     anatomy: [
-      {name: 'Column Header', required: true, description: 'Displays titles, sorting controls, and bulk selection.'},
-      {name: 'Body Rows', required: true, description: 'Rows with consistent data structure.'},
-      {name: 'Footer', required: false, description: 'Displays summary or totals.'},
-      {name: 'Top Bar', required: false, description: 'Contains title, toolbar, and filters.'},
-      {name: 'Bottom Bar', required: false, description: 'Contains pagination controls.'},
-      {name: 'Support Panels', required: false, description: 'Displays row details in a side panel.'},
+      {
+        name: 'Column Header',
+        required: true,
+        description: 'Displays titles, sorting controls, and bulk selection.',
+      },
+      {
+        name: 'Body Rows',
+        required: true,
+        description: 'Rows with consistent data structure.',
+      },
+      {
+        name: 'Footer',
+        required: false,
+        description: 'Displays summary or totals.',
+      },
+      {
+        name: 'Top Bar',
+        required: false,
+        description: 'Contains title, toolbar, and filters.',
+      },
+      {
+        name: 'Bottom Bar',
+        required: false,
+        description: 'Contains pagination controls.',
+      },
+      {
+        name: 'Support Panels',
+        required: false,
+        description: 'Displays row details in a side panel.',
+      },
     ],
   },
 };

@@ -43,6 +43,9 @@ export const docs = {
     },
   },
   description: 'A modal dialog that asks the user to confirm a destructive action.',
+  theming: {
+    targets: [{className: 'astryx-alert-dialog'}],
+  },
   props: [
     {
       name: 'isOpen',
