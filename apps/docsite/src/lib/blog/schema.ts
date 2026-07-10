@@ -67,6 +67,11 @@ export interface BlogPost {
   coverImage: string | null;
   /** Alt text for the cover image (required when coverImage is set). */
   coverAlt: string | null;
+  /**
+   * Package label shown on the generated release cover (defaults to
+   * @astryxdesign/core). Only used for release posts (a version in the title).
+   */
+  releasePackage: string | null;
   /** Optional curated related-doc links. */
   relatedDocs: RelatedDoc[] | null;
   /** Markdown body (frontmatter stripped). */
