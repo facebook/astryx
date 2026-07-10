@@ -607,6 +607,15 @@ export function FileInput({
   const handleDragLeave = useCallback((e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    // Moving over the dropzone's own children (icon, text) fires dragleave on
+    // the container too — only a leave that actually exits the dropzone ends
+    // the drag-over state, otherwise the highlight flickers mid-drag.
+    if (
+      e.relatedTarget instanceof Node &&
+      e.currentTarget.contains(e.relatedTarget)
+    ) {
+      return;
+    }
     setIsDragOver(false);
   }, []);
 
