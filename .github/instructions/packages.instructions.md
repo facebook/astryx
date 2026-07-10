@@ -34,6 +34,59 @@ specific rule when something conflicts:
 - **[API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)** —
   how API design questions get resolved.
 
+## Design review
+
+Some package changes are also *design* changes. When a diff affects how a
+component **looks or behaves visually**, review it against
+**[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** —
+the design-side sibling of API Conventions — in addition to the checks below.
+
+**When to apply (detect a design review is needed).** Treat a change as
+design-affecting when it touches any of: `.stylex.ts` files or `stylex.*`
+styling; token usage (color, spacing, radius, shadow, typography, motion,
+elevation/z-index); a new component, variant, or `size`/`density` prop; visual
+state handling (rest/hover/focus/active/disabled/loading, selected, or
+`status`); layout/structure, borders, or overlays/popovers. Pure logic, types,
+tests, or docs with no visual effect do **not** need a design pass — say so and
+move on.
+
+When it does apply, evaluate against the Design Conventions foundations and
+flag the concrete "smells" that page names:
+
+- **Tokens, not raw values** — every visual value references a token; a raw
+  color/space/radius/shadow in core is fixed by using the right token, never by
+  swapping one raw value for another.
+- **Spacing (relationship hierarchy)** — 4px grid; gaps step up with grouping
+  (`label→input < fields < groups < sections`); flag monotonous spacing,
+  inverted nesting (child gap wider than parent), off-grid values, nested cards.
+- **Concentric radius** — `r_inner ≈ r_outer − gap`; radius from a role token;
+  flag non-concentric nesting, thick accent borders / side-tab stripes on
+  rounded corners.
+- **Vertical rhythm (size/density)** — fixed-height (`size`) and variable-height
+  (`density`) controls tuned together to share a baseline; ~44px hit area
+  without inflating the visual; flag off-scale heights (not 28/32/36) and
+  cramped padding.
+- **Elevation** — shadow tier matches stacking order (base < dropdown < sticky <
+  overlay/modal < toast < tooltip); popovers escape `overflow:hidden`; flag
+  arbitrary z-index and hairline-border-plus-diffuse-shadow or colored glows.
+- **Typography** — role tokens; hierarchy ≥1.25 size ratio; body ≥12px; leading
+  ≥1.3; flag flat hierarchy, all-caps/justified/gradient body, lines >~75ch.
+- **Color** — every fg/bg pair passes WCAG AA in light *and* dark; interaction
+  tints are alpha overlays (not opaque); status pairs color with an icon (never
+  color alone); one clear primary action; no pure `#000`/`#fff`.
+- **Motion** — duration matches the change's weight; only `transform`/`opacity`
+  animate (never layout props); `--ease-standard`, no bounce/elastic; honor
+  `prefers-reduced-motion`.
+- **State representation** — reuse an existing approved representation for a
+  state before inventing a new one; every relevant state (rest/hover/focus/
+  active/disabled/loading/status/selected) is designed.
+
+Run the objectively-checkable items (tokens, grid, concentric radius, contrast,
+z-index, motion properties) as pass/fail; treat proportions, density, and
+composition as judgment. This mirrors Hardening Layer 3 — where a review
+resolves a genuinely new design question, note that it should be recorded back
+into the Design Conventions page rather than decided ad hoc in the PR.
+
 ## Mechanical checklist
 
 - **Full component surface.** A component under `packages/*/src/<Name>/` should
