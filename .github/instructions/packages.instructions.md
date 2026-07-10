@@ -34,6 +34,32 @@ specific rule when something conflicts:
 - **[API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)** —
   how API design questions get resolved.
 
+### Adding a new prop — converge, don't diverge
+
+When a diff **adds a new prop** (or a new variant/enum value) to a component,
+don't evaluate it in isolation. First check whether other components already
+express the same capability, and push to converge on the existing shape:
+
+- **Search for prior art.** Look for existing components with a prop of similar
+  *purpose* or *behavior* — the same axis of variation, even under a different
+  name (e.g. `size` vs `scale`, `isLoading` vs `busy`, `tone` vs `variant` vs
+  `color`, `density` vs `compact`). Comparable components should already be
+  siblings in the same family; check those first, then the wider system.
+- **Prefer the established name and value shape.** If the capability exists
+  elsewhere, reuse that prop name, type, default, and value vocabulary. Flag a
+  new prop that reinvents an existing one under a different name or a different
+  value shape (booleans following `is`/`has`; validation via
+  `status={type, message?}`), and suggest converging on the existing convention.
+- **Flag near-duplicates that should unify.** If the new prop and an existing
+  one are ~80% the same intent, call that out — the right outcome is often one
+  shared prop across both components, not two subtly-different ones. Divergent
+  sibling APIs are exactly the drift these conventions exist to prevent.
+- **When no prior art exists,** the prop is genuinely new API surface — hold it
+  to the API Conventions principles above (orthogonal axis, prop independence,
+  guidance-over-enforcement) and note that new API should be spec'd and
+  vibe-tested rather than settled in the PR (route naming disputes to
+  [API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)).
+
 ## Design review
 
 Some package changes are also *design* changes. When a diff affects how a
