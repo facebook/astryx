@@ -153,10 +153,6 @@ const fmt = (n: number) => `$${n.toFixed(2)}`;
 // :root by `@astryxdesign/core/astryx.css`). No StyleX compiler required.
 
 const fullWidth: CSSProperties = {width: '100%'};
-// LayoutContent clips overflow by default, which traps position:sticky
-// children (the sticky order summary). With height="auto" the page scrolls
-// at the window, so let overflow be visible here so sticky can pin.
-const visibleOverflow: CSSProperties = {overflow: 'visible'};
 // Form column flex-basis so the two checkout columns share width evenly.
 const formColBasis: CSSProperties = {flexBasis: 0};
 // Space the Order Summary content below its collapsible trigger title.
@@ -266,9 +262,9 @@ export default function PaymentFormPage() {
 
   return (
     <Layout
-      height="auto"
+      height="fill"
       content={
-        <LayoutContent padding={0} style={visibleOverflow}>
+        <LayoutContent padding={0}>
           <Center axis="horizontal">
             <Section
               variant="transparent"
