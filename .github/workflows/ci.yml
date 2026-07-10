@@ -133,6 +133,10 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: node scripts/generate-token-docs.mjs --check
 
+      - name: Check theming targets are in sync
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: node scripts/check-theming-targets.mjs
+
       - run: pnpm test
         if: needs.check-scope.outputs.docsite_only != 'true'
 
