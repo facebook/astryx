@@ -360,7 +360,12 @@ export function Timestamp({
   const [now, setNow] = useState(() => new Date());
 
   const date = parseValue(value);
-  const isoString = date.toISOString();
+  // An unparseable value (a malformed date string, or a NaN timestamp from
+  // missing data) yields an Invalid Date, and formatting one throws "Invalid
+  // time value" — crashing the whole tree. Compute nothing from it here and
+  // bail out below (after the hooks) instead.
+  const isValidDate = !Number.isNaN(date.getTime());
+  const isoString = isValidDate ? date.toISOString() : '';
 
   // Determine effective format
   const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
@@ -372,19 +377,20 @@ export function Timestamp({
       : format;
 
   // Format the display text
-  const displayText =
-    effectiveFormat === 'relative'
+  const displayText = !isValidDate
+    ? ''
+    : effectiveFormat === 'relative'
       ? getRelativeTimeString(date, now)
       : isAbsoluteFormat(effectiveFormat)
         ? formatTimestamp(date, effectiveFormat, isTimezoneShown)
         : '';
 
   // Full absolute text for tooltip and aria-label
-  const fullAbsoluteText = getFullAbsoluteString(date);
+  const fullAbsoluteText = isValidDate ? getFullAbsoluteString(date) : '';
 
   // Live updates
   useEffect(() => {
-    if (!isLive || effectiveFormat !== 'relative') {
+    if (!isLive || !isValidDate || effectiveFormat !== 'relative') {
       return;
     }
 
@@ -394,7 +400,15 @@ export function Timestamp({
     }, interval);
 
     return () => clearInterval(timer);
-  }, [isLive, effectiveFormat, diffSeconds]);
+  }, [isLive, isValidDate, effectiveFormat, diffSeconds]);
+
+  // Placed after all hooks so the hook order stays stable across renders.
+  if (!isValidDate) {
+    console.warn(
+      `Timestamp: could not parse value ${JSON.stringify(value)} as a date. Rendering nothing.`,
+    );
+    return null;
+  }
 
   const showTooltip = hasTooltip && effectiveFormat === 'relative';
 
