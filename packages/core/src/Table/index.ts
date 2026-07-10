@@ -26,6 +26,7 @@ export {useTableColumnSettings} from './plugins/columnSettings';
 export {useTableColumnSettingsState} from './plugins/columnSettings';
 export {useTableColumnResize} from './plugins/columnResize';
 export {useTableStickyColumns} from './plugins/stickyColumns';
+export {useTableGroupedRows} from './plugins/groupedRows';
 export {
   useTableRowExpansion,
   useTableRowExpansionState,
@@ -102,6 +103,10 @@ export type {
 export type {UseTableColumnResizeConfig} from './plugins/columnResize';
 export type {UseTableStickyColumnsConfig} from './plugins/stickyColumns';
 export type {UseTableRowExpansionConfig} from './plugins/rowExpansion';
+export type {
+  UseTableGroupedRowsConfig,
+  UseTableGroupedRowsResult,
+} from './plugins/groupedRows';
 export type {
   UseTableFilteringConfig,
   TableFilterState,
