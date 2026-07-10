@@ -156,12 +156,13 @@ const GL_FALLBACK: [number, number, number] = [0.5, 0.5, 0.5];
  *
  * Takes the parsed type rather than a raw string so every caller goes through
  * one validation path ({@link parseHex} / {@link parseColor}) — compose as
- * `toGLFloats(parseHex(color))`. Unparseable input (null) returns a neutral
- * mid-grey fallback instead of NaN, so the GPU never receives a bad uniform.
- * Alpha is intentionally dropped — GL chart paths blend with their own alpha.
+ * `toGLFloats(parseHex(color))`. Unparseable input (null) and non-finite
+ * channels return a neutral mid-grey fallback, so the GPU never receives a
+ * NaN uniform. Alpha is intentionally dropped — GL chart paths blend with
+ * their own alpha.
  */
 export function toGLFloats(color: RGBA | null): [number, number, number] {
-  if (color === null) {
+  if (color === null || ![color.r, color.g, color.b].every(Number.isFinite)) {
     return GL_FALLBACK;
   }
   const channel = (c: number): number => clamp(c, 0, 255) / 255;

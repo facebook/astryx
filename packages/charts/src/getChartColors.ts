@@ -147,12 +147,15 @@ function sampleRamp(stops: string[], n: number): string[] {
 }
 
 /**
- * Apply an opacity to a concrete CSS color (hex, `rgb()`/`rgba()`, named).
- * The `opacity` argument always wins over any alpha already in the color.
- * Unparseable input (e.g. `var()`) is returned unchanged.
+ * Apply an opacity to a concrete CSS color (hex — with or without the leading
+ * `#` — `rgb()`/`rgba()`, named). The `opacity` argument always wins over any
+ * alpha already in the color. Unparseable input (e.g. `var()`) is returned
+ * unchanged.
  */
 function hexAlpha(hex: string, opacity: number): string {
-  const rgba = parseColor(hex);
+  // parseColor requires the `#` for hex; fall back to parseHex so bare hex
+  // strings (`0064E0`) keep working as they did before #3739.
+  const rgba = parseColor(hex) ?? parseHex(hex);
   if (rgba === null) {
     return hex;
   }

@@ -162,6 +162,11 @@ describe('toGLFloats', () => {
     ]);
   });
 
+  it('returns the fallback for hand-constructed non-finite channels', () => {
+    expect(toGLFloats({r: NaN, g: 0, b: 0, a: 1})).toEqual(GL_FALLBACK);
+    expect(toGLFloats({r: 0, g: Infinity, b: 0, a: 1})).toEqual(GL_FALLBACK);
+  });
+
   // Conformance table for the GL hex path (#3739): pins the behavior of the
   // previously duplicated `hexToGL` copies in charts/lab, standardized on the
   // robust charts implementation. Composed as `toGLFloats(parseHex(input))`,
@@ -193,15 +198,19 @@ describe('toGLFloats', () => {
 });
 
 describe('alpha application (conformance for charts/lab `colors.alpha`)', () => {
-  // The charts/lab `hexAlpha` helpers are rebuilt on parseColor + formatColor
-  // (#3739). These pin the composed behavior they rely on.
+  // The charts/lab `hexAlpha` helpers are rebuilt on parseColor + parseHex +
+  // formatColor (#3739). These pin the composed behavior they rely on.
   const applyAlpha = (color: string, opacity: number): string => {
-    const rgba = parseColor(color);
+    const rgba = parseColor(color) ?? parseHex(color);
     return rgba === null ? color : formatColor({...rgba, a: opacity});
   };
 
   it('applies opacity to an opaque hex color', () => {
     expect(applyAlpha('#0064E0', 0.2)).toBe('rgba(0, 100, 224, 0.2)');
+  });
+
+  it('applies opacity to bare hex without the leading #', () => {
+    expect(applyAlpha('0064E0', 0.2)).toBe('rgba(0, 100, 224, 0.2)');
   });
 
   it('opacity argument wins over an existing alpha byte', () => {

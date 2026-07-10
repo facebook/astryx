@@ -60,6 +60,11 @@ describe('getChartColorsFromResolver', () => {
       expect(colors.alpha('#0064E0', 0.2)).toBe('rgba(0, 100, 224, 0.2)');
     });
 
+    it('applies opacity to bare hex without the leading # (pre-#3739 behavior)', () => {
+      const colors = getChartColorsFromResolver(resolve);
+      expect(colors.alpha('0064E0', 0.2)).toBe('rgba(0, 100, 224, 0.2)');
+    });
+
     it('applies opacity to rgba() input, overriding its alpha', () => {
       const colors = getChartColorsFromResolver(resolve);
       expect(colors.alpha('rgba(0, 100, 224, 0.9)', 0.2)).toBe(
