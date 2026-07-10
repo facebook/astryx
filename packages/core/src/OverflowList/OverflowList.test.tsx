@@ -97,9 +97,15 @@ describe('OverflowList', () => {
           data-w="1000"
           data-testid="ov"
           overflowRenderer={indicator('more:')}>
-          <button data-w="40">A</button>
-          <button data-w="40">B</button>
-          <button data-w="40">C</button>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
         </OverflowList>,
       );
       const vis = visibleContainer();
@@ -119,9 +125,15 @@ describe('OverflowList', () => {
           data-w="100"
           data-testid="ov"
           overflowRenderer={indicator('more:')}>
-          <button data-w="40">A</button>
-          <button data-w="40">B</button>
-          <button data-w="40">C</button>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
         </OverflowList>,
       );
       const vis = visibleContainer();
@@ -140,9 +152,15 @@ describe('OverflowList', () => {
           data-w="110"
           data-testid="ov"
           overflowRenderer={indicator('more:', 20)}>
-          <button data-w="40">A</button>
-          <button data-w="40">B</button>
-          <button data-w="40">C</button>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
         </OverflowList>,
       );
       const vis = visibleContainer();
@@ -161,9 +179,15 @@ describe('OverflowList', () => {
           data-w="100"
           data-testid="ov"
           overflowRenderer={indicator('more:')}>
-          <button data-w="40">A</button>
-          <button data-w="40">B</button>
-          <button data-w="40">C</button>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
         </OverflowList>,
       );
       const vis = visibleContainer();
@@ -180,9 +204,15 @@ describe('OverflowList', () => {
           data-w="100"
           data-testid="ov"
           overflowRenderer={indicator('more:')}>
-          <button data-w="40">A</button>
-          <button data-w="40">B</button>
-          <button data-w="40">C</button>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
         </OverflowList>,
       );
       const vis = visibleContainer();
@@ -205,9 +235,15 @@ describe('OverflowList', () => {
           data-w="100"
           data-testid="ov"
           overflowRenderer={indicator('more:')}>
-          <button data-w="40">A</button>
-          <button data-w="40">B</button>
-          <button data-w="40">C</button>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
         </OverflowList>,
       );
       const vis = visibleContainer();
@@ -223,9 +259,15 @@ describe('OverflowList', () => {
     it('drops overflowing items but renders no indicator', () => {
       render(
         <OverflowList gap={0} data-w="100" data-testid="ov">
-          <button data-w="40">A</button>
-          <button data-w="40">B</button>
-          <button data-w="40">C</button>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
         </OverflowList>,
       );
       const vis = visibleContainer();
@@ -244,9 +286,15 @@ describe('OverflowList', () => {
           data-w="100"
           data-testid="ov"
           overflowRenderer={indicator('more:')}>
-          <button data-w="40">A</button>
-          <button data-w="40">B</button>
-          <button data-w="40">C</button>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
         </OverflowList>,
       );
       const measure = measureContainer();
@@ -265,9 +313,15 @@ describe('OverflowList', () => {
           data-w="100"
           data-testid="ov"
           overflowRenderer={indicator('more:')}>
-          <button data-w="40">A</button>
-          <button data-w="40">B</button>
-          <button data-w="40">C</button>
+          <button type="button" data-w="40">
+            A
+          </button>
+          <button type="button" data-w="40">
+            B
+          </button>
+          <button type="button" data-w="40">
+            C
+          </button>
         </OverflowList>,
       );
       // The measurement indicator reflects every index (0,1,2), reserving the
@@ -281,7 +335,9 @@ describe('OverflowList', () => {
     it('renders the stable astryx-overflow-list class on the visible container', () => {
       render(
         <OverflowList data-w="1000" data-testid="ov">
-          <button data-w="10">A</button>
+          <button type="button" data-w="10">
+            A
+          </button>
         </OverflowList>,
       );
       expect(visibleContainer()).toHaveClass('astryx-overflow-list');
@@ -291,7 +347,9 @@ describe('OverflowList', () => {
       const ref = vi.fn();
       render(
         <OverflowList ref={ref} data-w="1000" data-testid="ov">
-          <button data-w="10">A</button>
+          <button type="button" data-w="10">
+            A
+          </button>
         </OverflowList>,
       );
       expect(ref).toHaveBeenCalledWith(expect.any(HTMLDivElement));
@@ -302,14 +360,18 @@ describe('OverflowList', () => {
     it('applies a different gap class as the gap prop changes', () => {
       const {rerender} = render(
         <OverflowList gap={0} data-w="1000" data-testid="ov">
-          <button data-w="10">A</button>
+          <button type="button" data-w="10">
+            A
+          </button>
         </OverflowList>,
       );
       const gap0 = visibleContainer().getAttribute('class');
 
       rerender(
         <OverflowList gap={4} data-w="1000" data-testid="ov">
-          <button data-w="10">A</button>
+          <button type="button" data-w="10">
+            A
+          </button>
         </OverflowList>,
       );
       const gap4 = visibleContainer().getAttribute('class');
@@ -336,7 +398,9 @@ describe('OverflowList', () => {
           data-w="1000"
           data-testid="ov"
           aria-label="Toolbar actions">
-          <button data-w="10">A</button>
+          <button type="button" data-w="10">
+            A
+          </button>
         </OverflowList>,
       );
       expect(visibleContainer()).toHaveAttribute(
