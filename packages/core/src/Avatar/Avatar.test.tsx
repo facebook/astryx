@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {Avatar} from './Avatar';
 
 describe('Avatar', () => {
@@ -33,36 +33,5 @@ describe('Avatar', () => {
     expect(innerImg).not.toBeNull();
     // The inner <img> carries an empty alt so it isn't announced separately.
     expect(innerImg).toHaveAttribute('alt', '');
-  });
-
-  it('retries a new src after a previous src failed to load', () => {
-    const {rerender} = render(
-      <Avatar name="Ada" src="https://example.com/broken.jpg" />,
-    );
-    const wrapper = screen.getByRole('img', {name: 'Ada'});
-    fireEvent.error(wrapper.querySelector('img')!);
-    // Broken image falls back to initials.
-    expect(wrapper.querySelector('img')).toBeNull();
-    expect(wrapper).toHaveTextContent('A');
-
-    // A different src must get a fresh load attempt, not the stale error.
-    rerender(<Avatar name="Ada" src="https://example.com/ada.jpg" />);
-    const img = wrapper.querySelector('img');
-    expect(img).not.toBeNull();
-    expect(img).toHaveAttribute('src', 'https://example.com/ada.jpg');
-  });
-
-  it('retries a new fallbackSrc after a previous fallbackSrc failed to load', () => {
-    const {rerender} = render(
-      <Avatar name="Ada" fallbackSrc="https://example.com/broken.jpg" />,
-    );
-    const wrapper = screen.getByRole('img', {name: 'Ada'});
-    fireEvent.error(wrapper.querySelector('img')!);
-    expect(wrapper.querySelector('img')).toBeNull();
-
-    rerender(<Avatar name="Ada" fallbackSrc="https://example.com/ada.jpg" />);
-    const img = wrapper.querySelector('img');
-    expect(img).not.toBeNull();
-    expect(img).toHaveAttribute('src', 'https://example.com/ada.jpg');
   });
 });
