@@ -67,12 +67,6 @@
     "vitest": "^4.1.9"
   },
   "packageManager": "pnpm@11.10.0",
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "packages/themes/*",
-    "internal/*"
-  ],
   "lint-staged": {
     "*.{ts,tsx}": "eslint --cache --fix",
     "*.{ts,tsx,md}": "prettier --write"

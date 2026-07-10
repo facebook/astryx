@@ -46,6 +46,8 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
 
+import {expandWorkspaceDirs} from './lib/workspace-globs.mjs';
+
 const require = createRequire(import.meta.url);
 const {
   CATEGORIES,
@@ -57,25 +59,10 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = process.argv.includes('--check');
 
 function discoverChangelogs() {
-  const ws = fs.readFileSync(path.join(ROOT, 'pnpm-workspace.yaml'), 'utf8');
-  const globs = [...ws.matchAll(/^\s*-\s*["']?([^"'\n]+)["']?/gm)].map(m =>
-    m[1].trim(),
-  );
   const files = [];
-  for (const g of globs) {
-    const base = g.replace(/\/\*+$/, '');
-    const abs = path.join(ROOT, base);
-    if (!fs.existsSync(abs)) continue;
-    const dirs = g.endsWith('*')
-      ? fs
-          .readdirSync(abs, {withFileTypes: true})
-          .filter(d => d.isDirectory())
-          .map(d => path.join(abs, d.name))
-      : [abs];
-    for (const dir of dirs) {
-      const cl = path.join(dir, 'CHANGELOG.md');
-      if (fs.existsSync(cl)) files.push(cl);
-    }
+  for (const dir of expandWorkspaceDirs(ROOT)) {
+    const cl = path.join(dir, 'CHANGELOG.md');
+    if (fs.existsSync(cl)) files.push(cl);
   }
   return files;
 }

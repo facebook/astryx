@@ -23,6 +23,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolveContentRoot} from './resolve-content-root.mjs';
+import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCSITE_ROOT = path.resolve(__dirname, '..');
@@ -222,33 +223,18 @@ function resolveImportPathForPkg(pkgDir, directory) {
 
 /**
  * Auto-discover packages from the monorepo workspace globs.
- * Reads the root package.json "workspaces" field and expands globs.
+ * Reads the `packages:` block of CONTENT_ROOT's pnpm-workspace.yaml — the live
+ * workspace on canary, the materialized release snapshot on latest (see
+ * resolve-content-root.mjs, which writes a synthetic pnpm-workspace.yaml into
+ * the snapshot) — and expands the globs.
  * Skips apps/* and internal/* — only surfaces packages/*.
  */
 function discoverPackageDirs() {
-  const rootPkg = JSON.parse(fs.readFileSync(path.join(CONTENT_ROOT, 'package.json'), 'utf-8'));
-  const workspaces = rootPkg.workspaces || [];
-  const dirs = [];
-
-  for (const pattern of workspaces) {
-    // Only include packages/*, not apps/* or internal/*
-    if (!pattern.startsWith('packages')) continue;
-
-    // Expand glob: packages/* or packages/themes/*
-    const base = pattern.replace('/*', '');
-    const baseDir = path.join(CONTENT_ROOT, base);
-    if (!fs.existsSync(baseDir)) continue;
-
-    for (const entry of fs.readdirSync(baseDir, {withFileTypes: true})) {
-      if (!entry.isDirectory()) continue;
-      const pkgJsonPath = path.join(baseDir, entry.name, 'package.json');
-      if (fs.existsSync(pkgJsonPath)) {
-        dirs.push(path.join(base, entry.name));
-      }
-    }
-  }
-
-  return dirs.sort();
+  return expandWorkspaceDirs(CONTENT_ROOT)
+    .map(abs => path.relative(CONTENT_ROOT, abs))
+    .filter(rel => rel.startsWith('packages'))
+    .filter(rel => fs.existsSync(path.join(CONTENT_ROOT, rel, 'package.json')))
+    .sort();
 }
 
 // ── 1. Package Registry ────────────────────────────────────────────────

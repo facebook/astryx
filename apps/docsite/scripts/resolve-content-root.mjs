@@ -139,14 +139,18 @@ function latestPublishedVersion() {
  *
  * Layout produced (mirrors a real monorepo release so generate-data.mjs's
  * workspace discovery works unchanged):
- *   <cache>/package.json                 — synthetic root (workspaces globs)
+ *   <cache>/pnpm-workspace.yaml          — synthetic layout declaration
+ *   <cache>/package.json                 — synthetic private root manifest
  *   <cache>/packages/core/…              — @astryxdesign/core tarball
  *   <cache>/packages/themes/<name>/…     — @astryxdesign/theme-<name> tarballs
  */
 function materializeFromNpm(version, packages) {
   const cacheRoot = path.join(DOCSITE_ROOT, '.content-cache', `npm-${version}`);
   const stamp = path.join(cacheRoot, '.stamp');
-  const stampValue = `npm-${version}:${packages
+  // v2: layout is declared by a synthetic pnpm-workspace.yaml (not a
+  // package.json `workspaces` array) — bump invalidates caches from the
+  // pre-#3752 layout, which the new discovery can't read.
+  const stampValue = `v2:npm-${version}:${packages
     .map(p => p.name)
     .sort()
     .join(',')}`;
@@ -159,8 +163,14 @@ function materializeFromNpm(version, packages) {
   fs.rmSync(cacheRoot, {recursive: true, force: true});
   fs.mkdirSync(cacheRoot, {recursive: true});
 
-  // Synthetic root package.json so discoverPackageDirs() expands the same
-  // workspace globs it would in the real monorepo.
+  // Synthetic root manifests mirroring the real monorepo: pnpm-workspace.yaml
+  // declares the layout (the single source of truth discoverPackageDirs()
+  // expands — the root package.json no longer carries a `workspaces` array),
+  // and a minimal package.json marks the cache root as a private package.
+  fs.writeFileSync(
+    path.join(cacheRoot, 'pnpm-workspace.yaml'),
+    ["packages:", "  - 'packages/*'", "  - 'packages/themes/*'", ''].join('\n'),
+  );
   fs.writeFileSync(
     path.join(cacheRoot, 'package.json'),
     JSON.stringify(
@@ -168,7 +178,6 @@ function materializeFromNpm(version, packages) {
         name: 'astryx-pinned-content',
         private: true,
         version,
-        workspaces: ['packages/*', 'packages/themes/*'],
       },
       null,
       2,
@@ -212,7 +221,7 @@ function materializeFromNpm(version, packages) {
 
 /**
  * Returns {target, contentRoot, cliRoot, version} for the current target.
- * contentRoot mirrors REPO_ROOT layout (has packages/* and package.json).
+ * contentRoot mirrors REPO_ROOT layout (has packages/* and pnpm-workspace.yaml).
  */
 export function resolveContentRoot() {
   const target = getTarget();
