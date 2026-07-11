@@ -18,12 +18,15 @@
  * Canonical order:
  *   1. columnSettings — column filtering (future: transformColumns)
  *   2. sort           — header cell sort controls
- *   3. selection      — checkbox column + row selection
- *   4. pagination     — pagination controls around the table
+ *   3. tree           — indent + expander on the tree column
+ *   4. selection      — checkbox column + row selection
+ *   5. pagination     — pagination controls around the table
  *
  * Rationale:
  * - columnSettings filters columns before sort/selection see them
  * - sort adds header cell UI before selection adds its header column
+ * - tree wraps the first *user* column before selection prepends its
+ *   checkbox column, so the expander never lands in the checkbox column
  * - selection adds its column after sort so the checkbox header
  *   doesn't get a sort button
  * - pagination wraps the table in context last (outermost provider)
@@ -46,6 +49,7 @@ import type {TablePlugin} from './types';
 const PLUGIN_ORDER: ReadonlyArray<string> = [
   'columnSettings',
   'sort',
+  'tree',
   'selection',
   'pagination',
 ];

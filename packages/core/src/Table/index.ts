@@ -30,6 +30,7 @@ export {
   useTableRowExpansion,
   useTableRowExpansionState,
 } from './plugins/rowExpansion';
+export {useTableTreeData, useTableTreeState} from './plugins/tree';
 export {resolveContextActions} from './tableContextMenu';
 export {
   useTableFiltering,
@@ -102,6 +103,12 @@ export type {
 export type {UseTableColumnResizeConfig} from './plugins/columnResize';
 export type {UseTableStickyColumnsConfig} from './plugins/stickyColumns';
 export type {UseTableRowExpansionConfig} from './plugins/rowExpansion';
+export type {
+  TableTreeRowMeta,
+  UseTableTreeDataConfig,
+  UseTableTreeStateConfig,
+  UseTableTreeStateResult,
+} from './plugins/tree';
 export type {
   UseTableFilteringConfig,
   TableFilterState,

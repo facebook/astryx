@@ -106,6 +106,8 @@ export const docs = {
     {name: 'useTableSelection'},
     {name: 'useTableSelectionState'},
     {name: 'useTableSortable'},
+    {name: 'useTableTreeData'},
+    {name: 'useTableTreeState'},
     {name: 'useTablePagination'},
     {name: 'useTableColumnSettings'},
     {name: 'useTableFiltering'},
