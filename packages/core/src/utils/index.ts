@@ -81,3 +81,6 @@ export {observeResize, unobserveResize} from './sharedResizeObserver';
 export {isRenderable} from './isRenderable';
 export {getInputARIA} from './inputAria';
 export type {InputARIA, InputARIAInputGroup} from './inputAria';
+
+export {parseHex, parseRgb, parseColor, formatHex, formatColor} from './color';
+export type {RGBA} from './color';

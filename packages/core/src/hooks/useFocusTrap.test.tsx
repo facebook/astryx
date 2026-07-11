@@ -11,6 +11,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
+import {FOCUSABLE_SELECTOR} from './focusableSelector';
 import {useFocusTrap} from './useFocusTrap';
 
 function Trap({children}: {children: React.ReactNode}) {
@@ -49,6 +50,41 @@ function EscapeTrap({
   );
 }
 
+function RestoreTrap({isActive}: {isActive: boolean}) {
+  const {containerRef} = useFocusTrap<HTMLDivElement>({isActive});
+  return (
+    <div ref={containerRef} data-testid="restore-trap">
+      <button type="button" data-testid="inside">
+        Inside trap
+      </button>
+    </div>
+  );
+}
+
+function RestoreFixture({
+  isActive,
+  showPrev = true,
+  showTrap = true,
+}: {
+  isActive: boolean;
+  showPrev?: boolean;
+  showTrap?: boolean;
+}) {
+  return (
+    <div>
+      {showPrev && (
+        <button type="button" data-testid="prev">
+          Previously focused
+        </button>
+      )}
+      <button type="button" data-testid="other">
+        Other outside
+      </button>
+      {showTrap && <RestoreTrap isActive={isActive} />}
+    </div>
+  );
+}
+
 describe('useFocusTrap tabbable model (infra-8)', () => {
   it('treats a contenteditable as focusable (focusFirst lands on it)', () => {
     render(
@@ -81,6 +117,48 @@ describe('useFocusTrap tabbable model (infra-8)', () => {
     fireEvent.click(screen.getByTestId('focus-first'));
     // Focus skips the inert button and lands on the real one.
     expect(screen.getByTestId('real-btn')).toHaveFocus();
+  });
+});
+
+describe('FOCUSABLE_SELECTOR href matching', () => {
+  // Only real links (<a href>/<area href>) are focusable via href. A bare
+  // [href] term also matched non-focusable elements carrying href (e.g. a
+  // <link> in the head, or a custom element), which useFocusTrap would then
+  // treat as tab stops when computing trap boundaries.
+  it('matches real links but not other elements carrying href', () => {
+    const container = document.createElement('div');
+    container.innerHTML =
+      '<a href="#a" data-testid="anchor">Anchor</a>' +
+      '<map name="m">' +
+      '<area href="#area" shape="rect" coords="0,0,1,1" data-testid="area" />' +
+      '</map>' +
+      '<span href="#span" data-testid="span">Span</span>' +
+      '<link href="#link" data-testid="link" />';
+
+    const matches = Array.from(
+      container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    );
+    const byTestId = (id: string) =>
+      container.querySelector(`[data-testid="${id}"]`);
+
+    // Real links are focusable via href.
+    expect(matches).toContain(byTestId('anchor'));
+    expect(matches).toContain(byTestId('area'));
+    // Non-link elements carrying href are not focusable and must be excluded.
+    expect(matches).not.toContain(byTestId('span'));
+    expect(matches).not.toContain(byTestId('link'));
+  });
+
+  it('treats an <a href> inside a trap as focusable (focusFirst lands on it)', () => {
+    render(
+      <Trap>
+        <a href="#link" data-testid="anchor">
+          Link
+        </a>
+      </Trap>,
+    );
+    fireEvent.click(screen.getByTestId('focus-first'));
+    expect(screen.getByTestId('anchor')).toHaveFocus();
   });
 });
 
@@ -125,8 +203,78 @@ describe('useFocusTrap Escape coordination', () => {
     const {rerender} = render(
       <EscapeTrap isActive onEscape={onEscape} label="toggle" />,
     );
-    rerender(<EscapeTrap isActive={false} onEscape={onEscape} label="toggle" />);
+    rerender(
+      <EscapeTrap isActive={false} onEscape={onEscape} label="toggle" />,
+    );
     fireEvent.keyDown(document, {key: 'Escape'});
     expect(onEscape).not.toHaveBeenCalled();
+  });
+});
+
+describe('useFocusTrap focus restoration', () => {
+  it('restores focus to the previously-focused element when deactivated', () => {
+    const {rerender} = render(<RestoreFixture isActive={false} />);
+    const prev = screen.getByTestId('prev');
+    prev.focus();
+    expect(prev).toHaveFocus();
+
+    // Activate the trap (captures `prev` as the restore target) and move focus
+    // inside it, as auto-focus or a keyboard user would.
+    rerender(<RestoreFixture isActive={true} />);
+    screen.getByTestId('inside').focus();
+    expect(screen.getByTestId('inside')).toHaveFocus();
+
+    // Deactivating returns focus to where it was before the trap opened.
+    rerender(<RestoreFixture isActive={false} />);
+    expect(prev).toHaveFocus();
+  });
+
+  it('does not steal focus when it was moved elsewhere outside the trap', () => {
+    const {rerender} = render(<RestoreFixture isActive={false} />);
+    const prev = screen.getByTestId('prev');
+    prev.focus();
+
+    rerender(<RestoreFixture isActive={true} />);
+    // The user (or a consumer that self-restores) moves focus to a different
+    // outside control while the trap is open.
+    const other = screen.getByTestId('other');
+    other.focus();
+
+    rerender(<RestoreFixture isActive={false} />);
+    // Focus is left where the user put it — not yanked back to `prev`.
+    expect(other).toHaveFocus();
+    expect(prev).not.toHaveFocus();
+  });
+
+  it('does not crash or restore when the captured element was removed', () => {
+    const {rerender} = render(<RestoreFixture isActive={false} />);
+    const prev = screen.getByTestId('prev');
+    prev.focus();
+
+    rerender(<RestoreFixture isActive={true} />);
+    screen.getByTestId('inside').focus();
+
+    // Remove the captured element from the DOM before the trap deactivates.
+    rerender(<RestoreFixture isActive={true} showPrev={false} />);
+    expect(() =>
+      rerender(<RestoreFixture isActive={false} showPrev={false} />),
+    ).not.toThrow();
+  });
+
+  it('restores focus when the trap unmounts while active', () => {
+    const {rerender} = render(
+      <RestoreFixture isActive={true} showTrap={false} />,
+    );
+    const prev = screen.getByTestId('prev');
+    prev.focus();
+
+    // Mounting the trap active captures `prev`; then focus moves inside it.
+    rerender(<RestoreFixture isActive={true} showTrap={true} />);
+    screen.getByTestId('inside').focus();
+    expect(screen.getByTestId('inside')).toHaveFocus();
+
+    // Unmounting the trap (cleanup path, not an isActive flip) still restores.
+    rerender(<RestoreFixture isActive={true} showTrap={false} />);
+    expect(prev).toHaveFocus();
   });
 });

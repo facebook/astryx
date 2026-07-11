@@ -16,6 +16,7 @@
 
 import React, {
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -38,6 +39,7 @@ import type {IconType} from '../Icon';
 import type {IconName} from '../Icon/globalIconRegistry';
 import type {InputStatus} from '../Field';
 import {usePopover} from '../Popover/usePopover';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {
   spacingVars,
   colorVars,
@@ -945,23 +947,42 @@ export function PowerSearch({
     isReadOnly,
   ]);
 
+  // Plain-text form of the result count, shared by the visible label and the
+  // screen-reader announcement so the two never drift.
+  const resultCountText = useMemo((): string | null => {
+    if (resultCount == null) {
+      return null;
+    }
+    if (typeof resultCount === 'number') {
+      const formatted = new Intl.NumberFormat().format(resultCount);
+      return `${formatted} ${resultCount === 1 ? 'result' : 'results'}`;
+    }
+    return resultCount;
+  }, [resultCount]);
+
+  // Announce result-count changes to screen readers through a polite live
+  // region, mirroring the way Typeahead announces its dropdown result count.
+  // The count is otherwise only shown visually and stays silent to assistive
+  // tech. Skip the first run so the count already present on mount isn't
+  // announced unprompted — only user-driven changes are spoken.
+  const announce = useAnnounce();
+  const hasMountedRef = useRef(false);
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+    if (resultCountText != null) {
+      announce(resultCountText);
+    }
+  }, [resultCountText, announce]);
+
   // Build combined endContent from resultCount + endContent props
   const combinedEndContent = useMemo((): React.ReactNode => {
-    let resultCountNode: React.ReactNode = null;
-    if (resultCount != null) {
-      if (typeof resultCount === 'number') {
-        const formatted = new Intl.NumberFormat().format(resultCount);
-        resultCountNode = (
-          <span {...stylex.props(resultCountStyles.text)}>
-            {formatted} {resultCount === 1 ? 'result' : 'results'}
-          </span>
-        );
-      } else {
-        resultCountNode = (
-          <span {...stylex.props(resultCountStyles.text)}>{resultCount}</span>
-        );
-      }
-    }
+    const resultCountNode =
+      resultCountText != null ? (
+        <span {...stylex.props(resultCountStyles.text)}>{resultCountText}</span>
+      ) : null;
 
     if (resultCountNode && endContent) {
       return (
@@ -972,7 +993,7 @@ export function PowerSearch({
       );
     }
     return resultCountNode || endContent || undefined;
-  }, [resultCount, endContent]);
+  }, [resultCountText, endContent]);
 
   return (
     <>

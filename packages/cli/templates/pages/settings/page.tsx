@@ -70,7 +70,7 @@ export default function SettingsTemplate() {
 
   return (
     <Layout
-      height="auto"
+      height="fill"
       contentWidth={1440}
       header={
         <LayoutHeader hasDivider>

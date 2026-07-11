@@ -616,7 +616,9 @@ export interface SubComponentDoc extends Omit<BaseDoc, 'usage'> {
  * in its own file inside its parent's directory.
  */
 export type ComponentDoc =
-  SingleComponentDoc | MultiComponentDoc | SubComponentDoc;
+  | SingleComponentDoc
+  | MultiComponentDoc
+  | SubComponentDoc;
 
 /**
  * Translation overlay for component documentation.
@@ -786,7 +788,9 @@ export interface ReferenceTranslationDoc {
     /** Content block overrides. Only prose and list blocks need entries.
      *  Use null for blocks that don't change (code, table). */
     content: (
-      {type: 'prose'; text: string} | {type: 'list'; items: string[]} | null
+      | {type: 'prose'; text: string}
+      | {type: 'list'; items: string[]}
+      | null
     )[];
   }[];
 }
@@ -861,6 +865,7 @@ export type TemplateCategory =
   | 'Tools - File Explorer'
   | 'Tools - Page Editor'
   | 'Tools - IDE'
+  | 'Tools - Incident Console'
   | 'Tools - Kanban Board'
   | 'Tools - Notebook/Report Page'
   | 'Tools - Diff Compare Viewer'
@@ -891,6 +896,7 @@ export type TemplateCategory =
   | 'Shell - Top Nav'
   | 'Shell - Top Nav + Left Sidebar'
   | 'Shell - Breadcrumb Driven Layout'
+  | 'Shell - Messaging'
   | 'Shell - Blank';
 
 interface BaseTemplateDoc {

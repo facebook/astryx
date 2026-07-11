@@ -17,7 +17,7 @@
 
 /* global module, require, __dirname */
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const path = require('path');
+const path = require('node:path');
 
 const rootDir = path.resolve(__dirname, '../..');
 

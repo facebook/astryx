@@ -91,6 +91,11 @@ export const docs = {
       description: 'Custom tokenizer override for unsupported languages.',
     },
     {
+      name: 'syntaxTheme',
+      type: 'SyntaxThemeDefinition',
+      description: 'Per-instance syntax theme override. Shorthand for wrapping the block in <SyntaxTheme theme={...}>. Accepts a preset from @astryxdesign/core/theme/syntax or a theme created with defineSyntaxTheme(). Defaults to the nearest SyntaxTheme ancestor or the theme-level syntax colors.',
+    },
+    {
       name: 'isCollapsible',
       type: 'boolean',
       description: 'Allow collapsing the code body into just the header bar. Starts expanded; the header becomes clickable to toggle. Only shows the toggle when the code exceeds collapsibleThreshold lines.',
@@ -135,8 +140,8 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-code'},
-      {className: 'astryx-codeblock', visualProps: ['size', 'language']},
+      {className: 'astryx-code', visualProps: ['color']},
+      {className: 'astryx-codeblock', visualProps: ['size', 'language', 'container']},
     ],
   },
   usage: {

@@ -8,7 +8,7 @@
  * @output Formatted markdown comment body to stdout
  */
 
-const fs = require('fs');
+const fs = require('node:fs');
 const { buildA11ySection } = require('./lib/a11y-format');
 
 const args = process.argv.slice(2);

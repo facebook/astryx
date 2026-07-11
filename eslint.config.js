@@ -1,5 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import { defineConfig } from "eslint/config";
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import eslintReact from "@eslint-react/eslint-plugin";
@@ -25,9 +26,23 @@ const isStrictMode = process.env.ASTRYX_STRICT_LINT === '1' || process.env.CI ==
 const astryxConfig = isStrictMode ? astryxPlugin.configs.strict : astryxPlugin.configs.recommended;
 const reactSeverity = isStrictMode ? 'error' : 'warn';
 
-export default tseslint.config(
+// The internal plugin is plain untyped JS (kept out of the lint/type surface),
+// so its inferred shape doesn't satisfy ESLint's strict `Plugin` type. One
+// localized assertion here keeps every `plugins` entry below type-checked.
+const astryxEslintPlugin = /** @type {import('eslint').ESLint.Plugin} */ (
+  /** @type {unknown} */ (astryxPlugin)
+);
+
+// typescript-eslint ≥8.62 types its presets with loose cross-version
+// "compatibility" shapes (`CompatibleConfig` = `{name?, rules?: object}`);
+// normalize back to ESLint's own config type for `defineConfig`.
+const tseslintRecommended = /** @type {import('eslint').Linter.Config[]} */ (
+  tseslint.configs.recommended
+);
+
+export default defineConfig(
   js.configs.recommended,
-  ...tseslint.configs.recommended,
+  tseslintRecommended,
   {
     ignores: [
       "**/dist/**",
@@ -137,7 +152,7 @@ export default tseslint.config(
     files: ["**/*.{ts,tsx}"],
     ignores: ["**/*.d.ts", "**/dist/**"],
     plugins: {
-      '@astryx': astryxPlugin,
+      '@astryx': astryxEslintPlugin,
     },
     rules: {
       '@astryx/copyright-header': 'error',
@@ -292,7 +307,7 @@ export default tseslint.config(
   {
     files: ["packages/cli/src/**/*.mjs", "packages/cli/bin/**/*.mjs"],
     plugins: {
-      '@astryx': astryxPlugin,
+      '@astryx': astryxEslintPlugin,
     },
     languageOptions: {
       sourceType: "module",
@@ -338,7 +353,7 @@ export default tseslint.config(
   {
     files: ["packages/cli/src/**/*.mjs", "packages/cli/bin/**/*.mjs"],
     plugins: {
-      '@astryx': astryxPlugin,
+      '@astryx': astryxEslintPlugin,
     },
     rules: {
       '@astryx/copyright-header': 'error',

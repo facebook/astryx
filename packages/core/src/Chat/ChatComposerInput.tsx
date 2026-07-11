@@ -283,12 +283,13 @@ function serialize(node: Node): string {
 
 export function ChatComposerInput(props: ChatComposerInputProps) {
   const composerCtx = useChatComposerContext();
+  const hasControlledValueProp = props.value !== undefined;
 
   const {
     ref,
     handleRef,
     value: controlledValue = composerCtx?.value,
-    onChange = composerCtx?.onChange,
+    onChange: onChangeProp,
     placeholder = composerCtx?.placeholder ?? 'Type a message\u2026',
     maxRows = 8,
     triggers,
@@ -305,6 +306,21 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     style,
     ...rest
   } = props;
+
+  const composerOnChange = composerCtx?.onChange;
+  const onChange = useCallback(
+    (nextValue: string) => {
+      if (hasControlledValueProp) {
+        onChangeProp?.(nextValue);
+        return;
+      }
+      composerOnChange?.(nextValue);
+      if (onChangeProp !== composerOnChange) {
+        onChangeProp?.(nextValue);
+      }
+    },
+    [composerOnChange, hasControlledValueProp, onChangeProp],
+  );
 
   const editableRef = useRef<HTMLDivElement>(null);
   const selfRef = useRef<ChatComposerInputHandle>(null);

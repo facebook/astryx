@@ -249,6 +249,19 @@ describe('isTimeInRange', () => {
 });
 
 describe('adjustTime', () => {
+  it('returns the input unchanged for non-finite deltas', () => {
+    // -Infinity previously spun the wrap-around loop forever;
+    // NaN previously produced the corrupt string "NaN:NaN".
+    expect(adjustTime('10:00' as ISOTimeString, -Infinity)).toBe('10:00');
+    expect(adjustTime('10:00' as ISOTimeString, Infinity)).toBe('10:00');
+    expect(adjustTime('10:00' as ISOTimeString, NaN)).toBe('10:00');
+  });
+
+  it('wraps large negative deltas in constant time', () => {
+    expect(adjustTime('10:00' as ISOTimeString, -1440 * 1e7)).toBe('10:00');
+    expect(adjustTime('10:00' as ISOTimeString, -1440 * 1e7 - 30)).toBe('09:30');
+  });
+
   it('adds minutes', () => {
     expect(adjustTime('14:30' as ISOTimeString, 15)).toBe('14:45');
     expect(adjustTime('14:30' as ISOTimeString, 30)).toBe('15:00');

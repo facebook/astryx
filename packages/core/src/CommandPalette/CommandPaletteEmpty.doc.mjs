@@ -16,6 +16,11 @@ export const docs = {
       required: true,
     },
   ],
+  playground: {
+    defaults: {
+      children: 'No results found. Try a different search.',
+    },
+  },
 };
 
 export const docsZh = {

@@ -238,7 +238,8 @@ export const CappedResponsive: Story = {
   render: () => (
     <div {...stylex.props(styles.container)}>
       <Text type="supporting" xstyle={styles.sectionLabel}>
-        Responsive with max 3 columns (min 250px per item, capped via track-max)
+        Responsive with max 3 columns (min 250px per item; column count is
+        capped but present columns always fill)
       </Text>
       <Grid columns={{minWidth: 250, max: 3}} gap={4}>
         <GridItem>Item 1</GridItem>
@@ -248,6 +249,25 @@ export const CappedResponsive: Story = {
         <GridItem>Item 5</GridItem>
         <GridItem>Item 6</GridItem>
       </Grid>
+    </div>
+  ),
+};
+
+export const CappedCollapsesToFullWidth: Story = {
+  name: 'Capped — fills when collapsed (#3391)',
+  render: () => (
+    <div {...stylex.props(styles.container)}>
+      <Text type="supporting" xstyle={styles.sectionLabel}>
+        columns={'{{minWidth: 360, max: 2}}'} — resize the viewport narrow
+        enough that only one column fits. The lone column stretches to full
+        width (no dead space on the right); on wider viewports it caps at 2.
+      </Text>
+      <div style={{maxWidth: 520, resize: 'horizontal', overflow: 'auto'}}>
+        <Grid columns={{minWidth: 360, max: 2}} gap={4}>
+          <GridItem>Left block</GridItem>
+          <GridItem>Right block</GridItem>
+        </Grid>
+      </div>
     </div>
   ),
 };

@@ -12,7 +12,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {HashtagIcon} from '@heroicons/react/24/outline';
+import {TestIcon} from '../__tests__/TestIcon';
 import {NumberInput} from './NumberInput';
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
@@ -174,7 +174,7 @@ describe('NumberInput', () => {
         label="Count"
         value={null}
         onChange={() => {}}
-        startIcon={HashtagIcon}
+        startIcon={TestIcon}
       />,
     );
     expect(screen.getByRole('spinbutton')).toBeInTheDocument();
@@ -707,7 +707,7 @@ describe('NumberInput', () => {
           label="Qty"
           value={0}
           onChange={() => {}}
-          startIcon={<HashtagIcon />}
+          startIcon={<TestIcon />}
         />,
       );
 
@@ -865,5 +865,50 @@ describe('NumberInput', () => {
       expect(input).toBeDisabled();
       expect(input).not.toHaveAttribute('aria-disabled');
     });
+  });
+});
+
+describe('keyboard clearing with hasClear (#3599)', () => {
+  it('commits null when the input is emptied and blurred', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput label="Qty" hasClear value={42} onChange={onChange} />,
+    );
+    const input = screen.getByLabelText('Qty');
+    fireEvent.change(input, {target: {value: ''}});
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('commits null when the input is emptied and Enter is pressed', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput label="Qty" hasClear value={42} onChange={onChange} />,
+    );
+    const input = screen.getByLabelText('Qty');
+    fireEvent.change(input, {target: {value: ''}});
+    fireEvent.keyDown(input, {key: 'Enter'});
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('does not fire when emptied and blurred with no prior value', () => {
+    const onChange = vi.fn();
+    render(
+      <NumberInput label="Qty" hasClear value={null} onChange={onChange} />,
+    );
+    const input = screen.getByLabelText('Qty');
+    fireEvent.change(input, {target: {value: ''}});
+    fireEvent.blur(input);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('still reverts on blur when hasClear is not set', () => {
+    const onChange = vi.fn();
+    render(<NumberInput label="Qty" value={42} onChange={onChange} />);
+    const input = screen.getByLabelText('Qty');
+    fireEvent.change(input, {target: {value: ''}});
+    fireEvent.blur(input);
+    expect(onChange).not.toHaveBeenCalled();
+    expect((input as HTMLInputElement).value).toBe('42');
   });
 });

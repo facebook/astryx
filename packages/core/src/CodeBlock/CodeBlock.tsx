@@ -3,7 +3,7 @@
 'use client';
 /**
  * @file CodeBlock.tsx
- * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API
+ * @input Uses React, StyleX, theme tokens, CSS Custom Highlight API, SyntaxTheme provider
  * @output Exports CodeBlock component and CodeBlockProps
  * @position Core implementation; read-only syntax-highlighted code display
  */
@@ -11,6 +11,7 @@
 import {
   useInsertionEffect,
   useEffect,
+  useId,
   useRef,
   useState,
   useCallback,
@@ -32,6 +33,7 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {Icon} from '../Icon';
 import {
   tokenize,
@@ -43,6 +45,7 @@ import type {SyntaxToken, TokenLine} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
 import {themeProps} from '../utils/themeProps';
+import {SyntaxTheme, type SyntaxThemeDefinition} from '../theme/syntax';
 
 // ---------------------------------------------------------------------------
 // Styles
@@ -173,6 +176,17 @@ const styles = stylex.create({
   headerCollapsible: {
     cursor: 'pointer',
     userSelect: 'none',
+    // Restore a keyboard-only focus ring with the standard token/offset so this
+    // disclosure control matches the rest of the system (Collapsible, TabMenu);
+    // otherwise it falls back to the inconsistent UA default outline.
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
   },
   gutter: {
     flexShrink: 0,
@@ -382,6 +396,14 @@ export interface CodeBlockProps extends BaseProps<HTMLPreElement> {
     language: string,
   ) => {type: string; start: number; end: number}[];
   highlightMode?: 'auto' | 'ranges' | 'spans';
+  /**
+   * Per-instance syntax theme override. Shorthand for wrapping this block in
+   * `<SyntaxTheme theme={...}>` — accepts a preset from
+   * `@astryxdesign/core/theme/syntax` or a theme created with
+   * `defineSyntaxTheme()`. Without it, the block uses the theme-level syntax
+   * colors from the nearest SyntaxTheme ancestor or `defineTheme({ syntax })`.
+   */
+  syntaxTheme?: SyntaxThemeDefinition;
 }
 
 // ---------------------------------------------------------------------------
@@ -633,6 +655,7 @@ export function CodeBlock({
   container = 'card',
   tokenizer: customTokenizer,
   highlightMode = 'auto',
+  syntaxTheme,
   xstyle,
   className,
   style,
@@ -640,6 +663,17 @@ export function CodeBlock({
   ...props
 }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
+  const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const announce = useAnnounce();
+
+  // Clear a pending "copied" reset when the block unmounts.
+  useEffect(() => {
+    return () => {
+      if (copyResetTimerRef.current != null) {
+        clearTimeout(copyResetTimerRef.current);
+      }
+    };
+  }, []);
 
   const useSpans =
     highlightMode === 'spans' ||
@@ -665,12 +699,23 @@ export function CodeBlock({
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
+      // Swapping the button's aria-label alone isn't reliably announced by
+      // screen readers, so confirm the copy via a polite live region.
+      announce('Copied');
       onCopy?.();
-      setTimeout(() => setCopied(false), 2000);
+      // Restart the reset timer on every copy — otherwise a rapid re-copy
+      // is reverted early by the previous click's timer.
+      if (copyResetTimerRef.current != null) {
+        clearTimeout(copyResetTimerRef.current);
+      }
+      copyResetTimerRef.current = setTimeout(() => {
+        copyResetTimerRef.current = null;
+        setCopied(false);
+      }, 2000);
     } catch {
       // Clipboard failures leave the copied state unchanged.
     }
-  }, [code, onCopy]);
+  }, [code, onCopy, announce]);
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
   const gutterSizeStyle = size === 'sm' ? styles.gutterSm : styles.gutterMd;
@@ -680,6 +725,11 @@ export function CodeBlock({
 
   const canCollapse = isCollapsible && lines.length >= collapsibleThreshold;
   const [isCollapsed, setIsCollapsed] = useState(false);
+  // Links the collapsible header to the code region it shows/hides so assistive
+  // tech can move from the button to its controlled content (disclosure
+  // pattern). The region stays mounted when collapsed (CSS grid animation), so
+  // this is always a resolvable reference — aria-controls can be unconditional.
+  const regionId = useId();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollStyle: CSSProperties | undefined = maxHeight
@@ -717,6 +767,7 @@ export function CodeBlock({
         role={canCollapse ? 'button' : undefined}
         tabIndex={canCollapse ? 0 : undefined}
         aria-expanded={canCollapse ? !isCollapsed : undefined}
+        aria-controls={canCollapse ? regionId : undefined}
         onClick={canCollapse ? () => setIsCollapsed(prev => !prev) : undefined}
         onKeyDown={
           canCollapse
@@ -802,7 +853,7 @@ export function CodeBlock({
     </div>
   );
 
-  return (
+  const block = (
     <pre
       ref={ref}
       {...mergeProps(
@@ -820,6 +871,7 @@ export function CodeBlock({
       {headerEl}
       {canCollapse ? (
         <div
+          id={regionId}
           {...stylex.props(
             styles.collapseGrid,
             isCollapsed && styles.collapseGridCollapsed,
@@ -831,6 +883,12 @@ export function CodeBlock({
       )}
       {!showHeader && copyButtonEl}
     </pre>
+  );
+
+  return syntaxTheme ? (
+    <SyntaxTheme theme={syntaxTheme}>{block}</SyntaxTheme>
+  ) : (
+    block
   );
 }
 

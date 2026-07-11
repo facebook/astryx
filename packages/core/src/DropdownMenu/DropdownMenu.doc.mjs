@@ -11,7 +11,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-dropdown-menu'},
-      {className: 'astryx-dropdown-menu-item'},
+      {className: 'astryx-dropdown-menu-item', visualProps: ['size']},
     ],
     vars: [
       {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', private: true},

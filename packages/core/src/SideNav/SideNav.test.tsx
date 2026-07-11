@@ -162,6 +162,26 @@ describe('SideNav', () => {
       screen.getByRole('button', {name: 'Expand sidebar'}),
     ).toBeInTheDocument();
   });
+
+  it('does not render an empty footer container when collapsible.hasButton is false', () => {
+    render(
+      <SideNav data-testid="nav" collapsible={{hasButton: false}}>
+        Content
+      </SideNav>,
+    );
+
+    // The built-in collapse button is opted out (consumers render their own
+    // SideNavCollapseButton in the header), so it must not appear...
+    expect(
+      screen.queryByRole('button', {name: 'Collapse sidebar'}),
+    ).not.toBeInTheDocument();
+
+    // ...and no empty sticky-bottom container should be left behind. With no
+    // footer/footerIcons and no built-in button, the scrollable content region
+    // is the nav's only child.
+    const nav = screen.getByTestId('nav');
+    expect(nav.children).toHaveLength(1);
+  });
 });
 
 // =============================================================================

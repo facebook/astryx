@@ -65,6 +65,51 @@ export const docs = {
       default: 'true',
     },
   ],
+  playground: {
+    defaults: {
+      title: 'Delete file?',
+      subtitle: 'This action cannot be undone.',
+      hasDivider: true,
+    },
+  },
+  examples: [
+    {
+      label: 'Basic',
+      code: `
+import {DialogHeader} from '@astryxdesign/core/Dialog';
+
+<DialogHeader title="Delete file?" subtitle="This action cannot be undone." />;
+`,
+    },
+    {
+      label: 'With close button',
+      code: `
+import {useState} from 'react';
+import {DialogHeader} from '@astryxdesign/core/Dialog';
+
+function Header() {
+  const [, setIsOpen] = useState(true);
+
+  // Passing onOpenChange renders a close button that calls it with false.
+  return <DialogHeader title="Settings" onOpenChange={setIsOpen} />;
+}
+`,
+    },
+    {
+      label: 'With start and end content',
+      code: `
+import {DialogHeader} from '@astryxdesign/core/Dialog';
+import {Icon} from '@astryxdesign/core/Icon';
+import {Badge} from '@astryxdesign/core/Badge';
+
+<DialogHeader
+  title="Notifications"
+  startContent={<Icon icon="chevronLeft" size="sm" />}
+  endContent={<Badge label="3" />}
+/>;
+`,
+    },
+  ],
 };
 
 export const docsZh = {

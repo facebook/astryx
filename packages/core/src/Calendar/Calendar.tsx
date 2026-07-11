@@ -431,7 +431,14 @@ export function Calendar({ref, ...props}: CalendarProps) {
         <Button
           label="Previous month"
           variant="ghost"
-          icon={<Icon icon="chevronLeft" size="sm" color="inherit" />}
+          icon={
+            // Wrapper span (not Icon props): Icon's string mode clobbers
+            // caller classNames, so the RTL mirror must live on its own
+            // element.
+            <span {...stylex.props(calendarStyles.navIcon)}>
+              <Icon icon="chevronLeft" size="sm" color="inherit" />
+            </span>
+          }
           onClick={() => navigateMonth(-1)}
           isDisabled={!canNavigatePrevious}
           isIconOnly
@@ -444,7 +451,11 @@ export function Calendar({ref, ...props}: CalendarProps) {
         <Button
           label="Next month"
           variant="ghost"
-          icon={<Icon icon="chevronRight" size="sm" color="inherit" />}
+          icon={
+            <span {...stylex.props(calendarStyles.navIcon)}>
+              <Icon icon="chevronRight" size="sm" color="inherit" />
+            </span>
+          }
           onClick={() => navigateMonth(1)}
           isDisabled={!canNavigateNext}
           isIconOnly
@@ -917,7 +928,10 @@ function DayCell({
   });
 
   return (
-    <div role="gridcell" {...stylex.props(dayCellStyles.cell)}>
+    <div
+      role="gridcell"
+      aria-selected={state.isSelected || state.isInRange || undefined}
+      {...stylex.props(dayCellStyles.cell)}>
       {/* Range background */}
       {state.isInRange && (
         <div
@@ -957,8 +971,10 @@ function DayCell({
         type="button"
         data-date={day.iso}
         aria-label={plainDateFormat(date, DATE_FORMAT_WITH_WEEKDAY)}
-        aria-selected={state.isSelected || state.isInRange || undefined}
         aria-disabled={state.effectivelyDisabled || undefined}
+        // Mark today's cell programmatically (APG date-picker pattern), not just
+        // visually, so screen-reader users can identify the current date.
+        aria-current={state.isToday ? 'date' : undefined}
         disabled={isDisabled}
         // Initial roving tab-stop seed; useGridFocus owns it after mount.
         tabIndex={isTabbableDay ? 0 : -1}

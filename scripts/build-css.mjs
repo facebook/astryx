@@ -21,9 +21,9 @@
 
 import {transformAsync} from '@babel/core';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
-import fs from 'fs/promises';
-import path from 'path';
-import {fileURLToPath} from 'url';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {glob} from 'glob';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -47,6 +47,19 @@ const TARGETS = {
     banner: 'Astryx Lab Pre-compiled StyleX CSS — experimental components',
     // lab imports @astryxdesign/core/theme/tokens.stylex; point the resolver at
     // core's source so the cross-package token reference resolves.
+    aliases: {
+      '@astryxdesign/core/*': [path.join(ROOT, 'packages/core/src/*')],
+      '@astryxdesign/core': [path.join(ROOT, 'packages/core/src')],
+    },
+  },
+  charts: {
+    src: path.resolve(ROOT, 'packages/charts/src'),
+    dist: path.resolve(ROOT, 'packages/charts/dist'),
+    outFile: 'charts.css',
+    banner:
+      'Astryx Charts Pre-compiled StyleX CSS — data visualization components',
+    // charts imports @astryxdesign/core/theme/tokens.stylex; point the resolver
+    // at core's source so the cross-package token reference resolves.
     aliases: {
       '@astryxdesign/core/*': [path.join(ROOT, 'packages/core/src/*')],
       '@astryxdesign/core': [path.join(ROOT, 'packages/core/src')],

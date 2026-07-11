@@ -345,6 +345,149 @@ describe('Pagination', () => {
       const activeDot = screen.getByRole('button', {name: 'Go to page 3'});
       expect(activeDot).toHaveAttribute('aria-current', 'page');
     });
+
+    // -------------------------------------------------------------------------
+    // Keyboard navigation (roving tabindex + arrow keys via useListFocus).
+    // Selection follows focus: arrow/Home/End move focus and select that page.
+    // -------------------------------------------------------------------------
+
+    it('uses roving tabindex — active dot has tabIndex 0, others -1', () => {
+      render(
+        <Pagination
+          page={2}
+          onChange={() => {}}
+          totalPages={4}
+          variant="dots"
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Go to page 2'}),
+      ).toHaveAttribute('tabindex', '0');
+      expect(
+        screen.getByRole('button', {name: 'Go to page 1'}),
+      ).toHaveAttribute('tabindex', '-1');
+      expect(
+        screen.getByRole('button', {name: 'Go to page 3'}),
+      ).toHaveAttribute('tabindex', '-1');
+    });
+
+    it('ArrowRight moves focus to the next dot and selects it', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Pagination
+          page={2}
+          onChange={onChange}
+          totalPages={4}
+          variant="dots"
+        />,
+      );
+      screen.getByRole('button', {name: 'Go to page 2'}).focus();
+      await user.keyboard('{ArrowRight}');
+      expect(onChange).toHaveBeenCalledWith(3);
+      expect(screen.getByRole('button', {name: 'Go to page 3'})).toHaveFocus();
+    });
+
+    it('ArrowLeft moves focus to the previous dot and selects it', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Pagination
+          page={3}
+          onChange={onChange}
+          totalPages={4}
+          variant="dots"
+        />,
+      );
+      screen.getByRole('button', {name: 'Go to page 3'}).focus();
+      await user.keyboard('{ArrowLeft}');
+      expect(onChange).toHaveBeenCalledWith(2);
+      expect(screen.getByRole('button', {name: 'Go to page 2'})).toHaveFocus();
+    });
+
+    it('Home selects the first page, End the last', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <Pagination
+          page={3}
+          onChange={onChange}
+          totalPages={5}
+          variant="dots"
+        />,
+      );
+      screen.getByRole('button', {name: 'Go to page 3'}).focus();
+      await user.keyboard('{Home}');
+      expect(onChange).toHaveBeenCalledWith(1);
+      expect(screen.getByRole('button', {name: 'Go to page 1'})).toHaveFocus();
+
+      onChange.mockClear();
+      rerender(
+        <Pagination
+          page={3}
+          onChange={onChange}
+          totalPages={5}
+          variant="dots"
+        />,
+      );
+      screen.getByRole('button', {name: 'Go to page 3'}).focus();
+      await user.keyboard('{End}');
+      expect(onChange).toHaveBeenCalledWith(5);
+      expect(screen.getByRole('button', {name: 'Go to page 5'})).toHaveFocus();
+    });
+
+    it('wraps from the last dot to the first with ArrowRight', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Pagination
+          page={4}
+          onChange={onChange}
+          totalPages={4}
+          variant="dots"
+        />,
+      );
+      screen.getByRole('button', {name: 'Go to page 4'}).focus();
+      await user.keyboard('{ArrowRight}');
+      expect(onChange).toHaveBeenCalledWith(1);
+      expect(screen.getByRole('button', {name: 'Go to page 1'})).toHaveFocus();
+    });
+
+    it('wraps from the first dot to the last with ArrowLeft', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Pagination
+          page={1}
+          onChange={onChange}
+          totalPages={4}
+          variant="dots"
+        />,
+      );
+      screen.getByRole('button', {name: 'Go to page 1'}).focus();
+      await user.keyboard('{ArrowLeft}');
+      expect(onChange).toHaveBeenCalledWith(4);
+      expect(screen.getByRole('button', {name: 'Go to page 4'})).toHaveFocus();
+    });
+
+    it('does not navigate with arrow keys when disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Pagination
+          page={2}
+          onChange={onChange}
+          totalPages={4}
+          variant="dots"
+          isDisabled
+        />,
+      );
+      const dot = screen.getByRole('button', {name: 'Go to page 2'});
+      expect(dot).toBeDisabled();
+      dot.focus();
+      await user.keyboard('{ArrowRight}');
+      expect(onChange).not.toHaveBeenCalled();
+    });
   });
 
   // ---------------------------------------------------------------------------

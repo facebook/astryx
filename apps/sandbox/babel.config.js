@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /* global module, __dirname */
-const path = require('path');
+const path = require('node:path');
 const {babel} = require('@astryxdesign/build');
 
 // Use the dist build pattern: library files keep default 'x' prefix (matching

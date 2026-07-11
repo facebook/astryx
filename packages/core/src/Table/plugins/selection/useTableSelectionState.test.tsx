@@ -302,6 +302,29 @@ describe('useTableSelectionState with filtered data', () => {
     expect(screen.getByTestId('selected-keys')).toHaveTextContent('1,3');
   });
 
+  it('select-all is unchecked when the filter matches nothing (#3591)', async () => {
+    const user = userEvent.setup();
+    render(<FilteredSelectionTable />);
+
+    // Select Bob, then filter to an empty result set.
+    const checkboxes = screen.getAllByLabelText('Select row');
+    await user.click(checkboxes[1]);
+    expect(screen.getByTestId('selected-keys')).toHaveTextContent('2');
+
+    const input = screen.getByTestId('filter-input');
+    await user.clear(input);
+    await user.type(input, 'zzz');
+
+    // Zero visible rows must not read as "all selected" — previously the
+    // header checkbox rendered checked here and deselect-all was a no-op.
+    const selectAll = screen.getByLabelText('Select all rows');
+    expect(selectAll).not.toBeChecked();
+
+    // The hidden selection itself is preserved (frozen), as designed.
+    await user.clear(input);
+    expect(screen.getByTestId('selected-keys')).toHaveTextContent('2');
+  });
+
   it('selections persist when filter changes', async () => {
     const user = userEvent.setup();
     render(<FilteredSelectionTable />);

@@ -113,6 +113,7 @@ export const docs = {
     targets: [
       {className: 'astryx-banner', visualProps: ['container', 'status']},
       {className: 'astryx-banner-icon', visualProps: ['status']},
+      {className: 'astryx-banner-content', visualProps: ['container', 'status']},
     ],
     vars: [
       {name: '--_banner-radius', description: 'Border radius (card container only)', default: 'var(--radius-container)', private: true},
@@ -177,6 +178,13 @@ export const docsZh = {
       {
         className: 'astryx-banner-icon',
         visualProps: [
+          'status',
+        ],
+      },
+      {
+        className: 'astryx-banner-content',
+        visualProps: [
+          'container',
           'status',
         ],
       },

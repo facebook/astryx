@@ -8,6 +8,10 @@ describe('useStreamingText', () => {
   let rafCallbacks: ((time: number) => void)[];
   let originalRAF: typeof requestAnimationFrame;
   let originalCAF: typeof cancelAnimationFrame;
+  let originalMatchMedia: typeof window.matchMedia | undefined;
+  // Toggled per-test to drive the reduced-motion media query. Reset in
+  // beforeEach so the preference never leaks between tests.
+  let prefersReducedMotion: boolean;
 
   beforeEach(() => {
     rafCallbacks = [];
@@ -19,33 +23,44 @@ describe('useStreamingText', () => {
     });
     globalThis.cancelAnimationFrame = vi.fn();
 
-    // Mock matchMedia for useTheme → useMediaQuery
-    if (!window.matchMedia) {
-      Object.defineProperty(window, 'matchMedia', {
-        writable: true,
-        value: vi.fn().mockImplementation((query: string) => ({
-          matches: false,
-          media: query,
-          onchange: null,
-          addListener: vi.fn(),
-          removeListener: vi.fn(),
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn(),
-          dispatchEvent: vi.fn(),
-        })),
-      });
-    }
+    // Mock matchMedia for useTheme → useMediaQuery and the hook's own
+    // reduced-motion read. Only the reduced-motion query reflects
+    // `prefersReducedMotion`; theme media queries always report no match.
+    prefersReducedMotion = false;
+    originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes('prefers-reduced-motion')
+          ? prefersReducedMotion
+          : false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
   });
 
   afterEach(() => {
     globalThis.requestAnimationFrame = originalRAF;
     globalThis.cancelAnimationFrame = originalCAF;
+    // Restore matchMedia so the mock never leaks into other suites. jsdom
+    // has no matchMedia by default, so drop the property when there was none.
+    if (originalMatchMedia === undefined) {
+      // @ts-expect-error jsdom leaves matchMedia undefined by default
+      delete window.matchMedia;
+    } else {
+      window.matchMedia = originalMatchMedia;
+    }
   });
 
   it('returns full text when not streaming', () => {
-    const {result} = renderHook(() =>
-      useStreamingText('Hello world', false),
-    );
+    const {result} = renderHook(() => useStreamingText('Hello world', false));
     expect(result.current).toBe('Hello world');
   });
 
@@ -53,6 +68,26 @@ describe('useStreamingText', () => {
     const {result} = renderHook(() =>
       useStreamingText('Hello world', true, {speed: 'instant'}),
     );
+    expect(result.current).toBe('Hello world');
+  });
+
+  it('snaps to full text immediately when reduced motion is preferred', () => {
+    prefersReducedMotion = true;
+    const {result} = renderHook(() => useStreamingText('Hello world', true));
+    expect(result.current).toBe('Hello world');
+  });
+
+  it('keeps snapping to the full text on updates when reduced motion is preferred', () => {
+    prefersReducedMotion = true;
+    const {result, rerender} = renderHook(
+      ({text}) => useStreamingText(text, true),
+      {initialProps: {text: 'Hello'}},
+    );
+
+    expect(result.current).toBe('Hello');
+
+    // A later chunk arrives — it should appear in full, not reveal char-by-char.
+    rerender({text: 'Hello world'});
     expect(result.current).toBe('Hello world');
   });
 

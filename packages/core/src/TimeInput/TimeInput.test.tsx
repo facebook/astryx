@@ -160,6 +160,43 @@ describe('TimeInput', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('sets aria-invalid="true" when typed input is out of range', () => {
+    render(<TimeInput label="Time" onChange={() => {}} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, {target: {value: '25:99'}});
+
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('does not set aria-invalid when typed input is a valid time', () => {
+    render(<TimeInput label="Time" onChange={() => {}} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, {target: {value: '3:45 pm'}});
+
+    expect(input).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('announces an alert message when typed input is invalid', () => {
+    render(<TimeInput label="Time" onChange={() => {}} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, {target: {value: '25:99'}});
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Invalid time');
+  });
+
+  it('does not announce an alert message when input is valid', () => {
+    render(<TimeInput label="Time" onChange={() => {}} />);
+
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, {target: {value: '3:45 pm'}});
+
+    expect(screen.getByRole('alert')).toHaveTextContent('');
+    expect(screen.queryByText('Invalid time')).not.toBeInTheDocument();
+  });
+
   it('calls onChange on blur when input is valid', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

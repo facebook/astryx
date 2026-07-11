@@ -26,8 +26,8 @@
  */
 
 import {build} from 'esbuild';
-import path from 'path';
-import {fileURLToPath} from 'url';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CORE = path.resolve(__dirname, '..', 'packages/core');

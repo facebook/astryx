@@ -50,6 +50,12 @@ export const docs = {
       description: 'StyleX styles for layout customization. Must be a stylex.create() value.',
     },
   ],
+  playground: {
+    defaults: {
+      value: 'go-home',
+      children: 'Go to Dashboard',
+    },
+  },
 };
 
 export const docsZh = {

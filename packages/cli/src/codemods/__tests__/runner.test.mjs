@@ -99,5 +99,43 @@ describe('runCodemods — unified config codemod path', () => {
     expect(fs.readFileSync(path.join(srcDir, 'a.ts'), 'utf-8')).toContain(
       'const bar = 1',
     );
+    // writtenFiles must be returned (consumed by upgrade.mjs to run the
+    // post-codemod formatting/lint hooks). Regression guard: it was previously
+    // built internally but omitted from the return object, so hooks received an
+    // empty file list and silently skipped, leaving codemod output unformatted.
+    expect(result.writtenFiles).toEqual([path.join(srcDir, 'a.ts')]);
+  });
+
+  it('returns writtenFiles for every changed file (post-codemod hook input)', async () => {
+    const srcDir = path.join(tmpDir, 'src');
+    fs.mkdirSync(srcDir);
+    fs.writeFileSync(path.join(srcDir, 'a.ts'), 'const foo = 1;\n');
+    fs.writeFileSync(path.join(srcDir, 'b.ts'), 'const foo = 2;\n');
+    fs.writeFileSync(path.join(srcDir, 'c.ts'), 'const untouched = 3;\n');
+
+    const versionManifests = [
+      {
+        version: '0.1.3',
+        transforms: [
+          {
+            name: 'synthetic-code-codemod',
+            meta: {title: 'Synthetic code codemod'},
+            transform: file => file.source.replace(/foo/g, 'bar'),
+          },
+        ],
+      },
+    ];
+
+    const result = await runCodemods(versionManifests, {
+      apply: true,
+      path: './src',
+      silent: true,
+    });
+
+    expect(result.totalFilesChanged).toBe(2);
+    // Only the two files that actually changed are reported (not c.ts).
+    expect([...result.writtenFiles].sort()).toEqual(
+      [path.join(srcDir, 'a.ts'), path.join(srcDir, 'b.ts')].sort(),
+    );
   });
 });

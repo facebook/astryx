@@ -12,6 +12,9 @@
  * so the wordmark, cards, and dots — placed in different parts of the DOM by
  * page.tsx — re-skin together. Auto-advance pauses on hover/focus and when the
  * tab is hidden, and respects prefers-reduced-motion.
+ *
+ * Manual control: touch swipe (mobile) and the Pagination dots, which own
+ * keyboard navigation (arrow keys, Home/End) via the useListFocus primitive.
  */
 
 import {

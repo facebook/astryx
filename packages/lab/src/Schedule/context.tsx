@@ -34,6 +34,8 @@ export interface ScheduleContextValue {
   nextDateLabel: string;
   view: ScheduleViewBase;
   plugins: ReadonlyArray<SchedulePlugin>;
+  /** Heading level used for sub-headings within the schedule (day labels, weekday headers). */
+  headingLevel: 2 | 3 | 4 | 5 | 6;
 }
 
 export const ScheduleContext = createContext<ScheduleContextValue | null>(

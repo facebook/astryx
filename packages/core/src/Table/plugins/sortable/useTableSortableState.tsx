@@ -168,14 +168,18 @@ function defaultCompare<T extends Record<string, unknown>>(
   const aVal = a[sortKey];
   const bVal = b[sortKey];
 
-  // null/undefined sort to the end
-  if (aVal == null && bVal == null) {
+  // null/undefined/NaN sort to the end. NaN must not reach the numeric fast
+  // path: a NaN comparator result reads as "equal" to Array.sort, which makes
+  // the comparator inconsistent and corrupts the order of the other rows.
+  const aMissing = aVal == null || (typeof aVal === 'number' && Number.isNaN(aVal));
+  const bMissing = bVal == null || (typeof bVal === 'number' && Number.isNaN(bVal));
+  if (aMissing && bMissing) {
     return 0;
   }
-  if (aVal == null) {
+  if (aMissing) {
     return 1;
   }
-  if (bVal == null) {
+  if (bMissing) {
     return -1;
   }
 

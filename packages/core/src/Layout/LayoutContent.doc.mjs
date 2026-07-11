@@ -15,6 +15,12 @@ export const docs = {
       description: 'Content.',
     },
     {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description:
+        'Internal padding using the spacing scale. Overrides the default padding from the layout container.',
+    },
+    {
       name: 'isScrollable',
       type: 'boolean',
       description: 'Enable scrollable overflow.',
@@ -45,6 +51,11 @@ export const docsZh = {
       description: '内容。',
     },
     {
+      name: 'padding',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+      description: '使用间距比例的内边距。覆盖布局容器的默认内边距。',
+    },
+    {
       name: 'isScrollable',
       type: 'boolean',
       description: '启用可滚动溢出。',
@@ -70,6 +81,7 @@ export const docsDense = {
   description: 'Scrollable main content area.',
   propDescriptions: {
     children: 'Content.',
+    padding: 'Internal padding on spacing scale. Overrides layout container default.',
     isScrollable: 'Enable scrollable overflow.',
     label: 'Accessible label for landmark element.',
     role: 'ARIA landmark role.',

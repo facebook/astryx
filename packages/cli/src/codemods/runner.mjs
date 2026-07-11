@@ -178,6 +178,7 @@ function toUnifiedEntry(transformEntry, version) {
  * @param {string|undefined} options.codemod - Run only this specific transform
  * @param {Set<string>} [options.skipCodemods] - Transform names to exclude
  * @param {boolean} [options.silent] - Suppress all human-facing output (for --json)
+ * @returns {{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, writtenFiles: string[], errors: Array, skippedOptional: Array}}
  */
 export async function runCodemods(
   versionManifests,
@@ -405,6 +406,7 @@ export async function runCodemods(
     totalFilesChanged,
     totalTransformsApplied,
     totalValidationBlocked,
+    writtenFiles,
     errors,
     skippedOptional,
   };

@@ -8,6 +8,16 @@ export const docs = {
   displayName: 'Base Typeahead',
   isHiddenFromOverview: true,
   description: 'Unstyled combobox engine providing input, search, keyboard navigation, and dropdown. No wrapper div, no border styling, no token rendering. Used by Typeahead and Tokenizer for custom compositions.',
+  usage: {
+    description: 'Unstyled combobox engine providing input, search, keyboard navigation, and dropdown. No wrapper div, no border styling, no token rendering. Used by Typeahead and Tokenizer for custom compositions.',
+    bestPractices: [
+      { guidance: true, description: 'Use Typeahead or Tokenizer for standard fields; they wrap BaseTypeahead with the wrapper div, border styling, and token rendering it intentionally omits.' },
+      { guidance: true, description: 'Provide your own wrapper div with border and layout when composing directly, since BaseTypeahead renders no visual chrome of its own.' },
+      { guidance: true, description: 'Pass anchorRef pointing to your wrapper so the dropdown positions against your custom input chrome, not just the bare input element.' },
+      { guidance: false, description: 'Expect a wrapper div, border, or token rendering. BaseTypeahead is an engine only; all visual chrome is the caller\'s responsibility.' },
+      { guidance: false, description: 'Use BaseTypeahead when Typeahead or Tokenizer would suffice; the extra wrapper and styling work is only justified for truly custom compositions.' },
+    ],
+  },
   props: [
     {
       name: 'searchSource',
@@ -226,6 +236,15 @@ export const docsDense = {
   isHiddenFromOverview: true,
   displayName: 'Base Typeahead',
   description: 'Unstyled combobox engine; input+search+keyboard nav+dropdown. No wrapper/border/token. Used by Typeahead+Tokenizer.',
+  usage: {
+    bestPractices: [
+      { guidance: true, description: 'Use Typeahead or Tokenizer for standard fields; they add the wrapper, border, and token rendering BaseTypeahead omits.' },
+      { guidance: true, description: 'Provide your own wrapper div with border and layout when composing directly; BaseTypeahead renders no chrome.' },
+      { guidance: true, description: 'Pass anchorRef to your wrapper so the dropdown positions against your input chrome, not the bare input.' },
+      { guidance: false, description: 'Expect wrapper, border, or token rendering. Engine only; chrome is the caller\'s job.' },
+      { guidance: false, description: 'Use BaseTypeahead when Typeahead or Tokenizer suffice; extra work only pays off for custom compositions.' },
+    ],
+  },
   propDescriptions: {
     searchSource: 'Data source w/ search+bootstrap methods.',
     value: 'Currently selected item.',

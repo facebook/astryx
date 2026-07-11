@@ -8,7 +8,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {render, renderHook, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {Table} from '../../Table';
@@ -418,6 +418,40 @@ describe('useTableSortableState', () => {
         'Alice',
         'Charlie',
       ]);
+    });
+  });
+
+  describe('NaN handling', () => {
+    it('keeps valid numbers sorted when a NaN cell is present', () => {
+      const data: Employee[] = [
+        {id: '1', name: 'A', age: 5, department: 'X', salary: 1},
+        {id: '2', name: 'B', age: NaN, department: 'X', salary: 1},
+        {id: '3', name: 'C', age: 1, department: 'X', salary: 1},
+        {id: '4', name: 'D', age: 3, department: 'X', salary: 1},
+      ];
+      const {result} = renderHook(() =>
+        useTableSortableState({
+          data,
+          defaultSort: [{sortKey: 'age', direction: 'ascending'}],
+        }),
+      );
+      // NaN groups at the end like null; the valid numbers stay ordered.
+      expect(result.current.sortedData.map(e => e.age)).toEqual([1, 3, 5, NaN]);
+    });
+
+    it('sorts NaN to the start in descending order, like null', () => {
+      const data: Employee[] = [
+        {id: '1', name: 'A', age: 5, department: 'X', salary: 1},
+        {id: '2', name: 'B', age: NaN, department: 'X', salary: 1},
+        {id: '3', name: 'C', age: 1, department: 'X', salary: 1},
+      ];
+      const {result} = renderHook(() =>
+        useTableSortableState({
+          data,
+          defaultSort: [{sortKey: 'age', direction: 'descending'}],
+        }),
+      );
+      expect(result.current.sortedData.map(e => e.age)).toEqual([NaN, 5, 1]);
     });
   });
 

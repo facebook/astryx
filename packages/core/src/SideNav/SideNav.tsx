@@ -490,6 +490,10 @@ export function SideNav({
   // =========================================================================
   const hasStickyTop = !!(header || topContent);
   const hasStickyBottom = !!(footer || footerIcons);
+  // The built-in collapse button only renders when collapse is enabled and it
+  // hasn't been opted out via `collapsible.hasButton: false` (e.g. when the
+  // consumer places a SideNavCollapseButton in the header instead).
+  const showCollapseButton = isCollapsible && hasCollapseButton;
 
   // When resizable, override the nav width via inline style
   const resizableNavStyle: React.CSSProperties | undefined = isResizable
@@ -532,7 +536,7 @@ export function SideNav({
         )}>
         {children}
       </div>
-      {(hasStickyBottom || isCollapsible) && (
+      {(hasStickyBottom || showCollapseButton) && (
         <div
           {...stylex.props(
             styles.stickyBottom,
@@ -544,7 +548,7 @@ export function SideNav({
               styles.footerRow,
               collapsed && styles.footerRowCollapsed,
             )}>
-            {isCollapsible && hasCollapseButton && <SideNavCollapseButton />}
+            {showCollapseButton && <SideNavCollapseButton />}
             {footerIcons}
           </div>
         </div>

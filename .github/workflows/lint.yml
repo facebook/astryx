@@ -41,15 +41,7 @@ jobs:
         if: steps.scope.outputs.docsite_only == 'true'
         run: echo "Docsite-only PR — skipping lint"
 
-      - uses: pnpm/action-setup@v6
-        if: steps.scope.outputs.docsite_only != 'true'
-      - uses: actions/setup-node@v6
-        if: steps.scope.outputs.docsite_only != 'true'
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
         if: steps.scope.outputs.docsite_only != 'true'
 
       - name: Clear ESLint cache

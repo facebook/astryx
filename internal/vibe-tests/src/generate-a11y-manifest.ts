@@ -14,8 +14,8 @@
  * 3. Generates structured manifests for fair quality assessment
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const VIBE_TESTS_DIR = path.join(import.meta.dirname, '..');
 const MANIFESTS_DIR = path.join(VIBE_TESTS_DIR, 'a11y-manifests');

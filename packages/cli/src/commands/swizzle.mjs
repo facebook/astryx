@@ -26,6 +26,7 @@ import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {checkGhCli} from '../utils/github.mjs';
+import {getRunPrefix} from '../utils/package-manager.mjs';
 import {Project} from '../lib/project.mjs';
 import {
   CORE_PACKAGE,
@@ -339,6 +340,10 @@ export function registerSwizzle(program) {
       // Copy all non-test, non-doc, non-README files
       const files = fs.readdirSync(componentDir);
       let copied = 0;
+      // Track whether any copied source uses StyleX. Swizzled StyleX source
+      // needs a build-time StyleX compiler in the consumer's app or it renders
+      // unstyled with no error — so we surface a setup note after copying.
+      let usesStyleX = false;
 
       for (const file of files) {
         // Skip test files, doc files, and README
@@ -353,6 +358,13 @@ export function registerSwizzle(program) {
         // Rewrite escaping imports for .ts/.tsx files to the owner package.
         if (file.endsWith('.ts') || file.endsWith('.tsx')) {
           content = rewriteImports(content, owner.ownerPackage);
+        }
+
+        if (
+          (file.endsWith('.ts') || file.endsWith('.tsx')) &&
+          content.includes('@stylexjs/stylex')
+        ) {
+          usesStyleX = true;
         }
 
         fs.writeFileSync(path.join(outputDir, file), content);
@@ -376,6 +388,7 @@ export function registerSwizzle(program) {
           outputDir: relOutput,
           filesCopied: copied,
           files: copiedFiles.map(f => f),
+          usesStyleX,
         };
         if (feedback) payload.feedback = feedback;
         return jsonOut('swizzle.copy', payload);
@@ -386,6 +399,27 @@ export function registerSwizzle(program) {
         `Relative imports have been rewritten to use ${owner.ownerPackage}.`,
       );
       humanLog('You can now customize the component source freely.\n');
+
+      // StyleX build requirement. Swizzled components ship raw StyleX source,
+      // which needs a build-time StyleX compiler in the consumer's app to
+      // produce atomic CSS. Without it the component compiles but renders
+      // unstyled, with no error — a confusing silent failure, so call it out.
+      if (usesStyleX) {
+        humanLog(
+          '⚠ These components use StyleX and require a StyleX compiler in your build.',
+        );
+        humanLog(
+          '  Without one they render unstyled (no error). See setup per framework:',
+        );
+        humanLog(`  ${getRunPrefix()} astryx docs styling`);
+        humanLog(
+          '  Next.js note: the StyleX Babel plugin disables SWC and breaks next/font —',
+        );
+        humanLog(
+          '  use an SWC-based StyleX transform instead (covered in the guide).',
+        );
+        humanLog('');
+      }
 
       // Maintainer feedback note. If we couldn't swizzle cleanly, the team
       // wants to know — point users at the issue tracker. Skipped when the

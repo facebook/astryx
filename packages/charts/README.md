@@ -1,21 +1,41 @@
 # @astryxdesign/charts
 
-Astryx chart components. This package provides thin, themeable wrappers over a peer charting engine — it owns the design-system surface while leaving the rendering engine as a peer dependency the consumer manages.
+Astryx charts — a config-model data visualization library built on d3.
 
-It ships to npm **only under the `@canary` dist-tag** — there is never a stable (`latest`) release yet.
+```tsx
+import {Chart, bar, line} from '@astryxdesign/charts';
+
+<Chart data={data} xKey="month" series={[bar('revenue'), line('trend')]} />;
+```
+
+Marks are factory functions (`bar`, `line`, `area`, `dot`, `band`, `candlestick`,
+`errorBar`, `referenceLine`, and WebGL variants) that return config objects passed
+via the `series` prop. The chart root owns **one** x/y scale that every mark, axis,
+and grid line reads, so they can never disagree. It consumes `@astryxdesign/core`
+theme tokens directly (StyleX build mirrors `@astryxdesign/lab`).
+
+It ships to npm **only under the `@canary` dist-tag** — there is never a stable
+(`latest`) release yet.
+
+> Note: this package is the successor to the experimental `Chart` (formerly
+> `ChartV2`) that used to live in `@astryxdesign/lab`; that code has moved here and
+> d3 is a direct dependency. (Supersedes the original "thin wrappers over a peer
+> engine" framing of the bootstrap scaffold.)
 
 ## Status
 
-**Bootstrap scaffold.** The package is set up and building but ships no components yet. Add components under `src/` and export them from `src/index.ts`. The StyleX + Astryx-token build setup mirrors `@astryxdesign/lab`, so components can consume `@astryxdesign/core` theme tokens directly.
-
-> When the first component adds StyleX styles, wire up a pre-compiled stylesheet the same way `lab` does: add a `charts` target to `scripts/build-css.mjs`, restore the `build:css` script and the `./charts.css` export in `package.json`, and document the `import '@astryxdesign/charts/charts.css'` step below.
+Under active development. The config-model chart and its marks/chrome are in place;
+API and visuals are still being refined. See the repo-root `CHARTV2_*` docs for the
+plan, design research, and verification checklist.
 
 ## Usage
 
 Inside the monorepo (storybook/sandbox), imports resolve via pnpm workspaces:
 
 ```tsx
-import {} from /* ... */ '@astryxdesign/charts';
+import {Chart, bar, line, ChartGrid, ChartAxis} from '@astryxdesign/charts';
+import '@astryxdesign/core/astryx.css';
+import '@astryxdesign/charts/charts.css';
 ```
 
 ### Trying charts in your own project (canary)

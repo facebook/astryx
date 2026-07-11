@@ -65,8 +65,8 @@ export const docs = {
     ],
   },
   // The lightbox opens via showModal() and renders nothing while closed —
-  // overlay mode gives the Properties preview an open trigger instead of
-  // an empty stage (#3657, same pattern as MobileNav #2706).
+  // overlay mode gives the Properties preview an open trigger instead of an
+  // empty stage, mirroring MobileNav (#3616).
   playground: {
     overlay: true,
     defaults: {

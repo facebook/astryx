@@ -279,7 +279,8 @@ function areRowPropsEqual<T extends Record<string, unknown>>(
     return true;
   }
 
-  // Different object reference - compare values
+  // Different object reference - compare values. This is intentionally a
+  // one-level shallow compare: nested fields rely on reference identity.
   const prevItem = prevProps.item;
   const nextItem = nextProps.item;
   const keys = Object.keys(nextItem);
@@ -371,9 +372,13 @@ function BaseTableInner<T extends Record<string, unknown>>({
   const headerCells = resolvedColumns.map((col, columnIndex) => {
     const headerContent = col.header ?? col.key;
 
-    // Build initial htmlProps with column alignment if specified
+    // Build initial htmlProps with column alignment if specified.
+    // `scope: 'col'` is the default so every column header associates its
+    // data cells with the correct column for screen readers; a plugin's
+    // transformHeaderCell can override it via htmlProps.scope.
     const initialHeaderHtmlProps: Record<string, unknown> = {
       'data-column-key': col.key,
+      scope: 'col',
     };
     if (col.align) {
       initialHeaderHtmlProps.style = {textAlign: col.align};

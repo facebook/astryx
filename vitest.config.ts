@@ -9,7 +9,7 @@
  * SYNC: When modified, update this header and root README.md
  */
 
-import path from 'path';
+import path from 'node:path';
 import {defineConfig} from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
@@ -30,7 +30,9 @@ export default defineConfig({
               genConditionalClasses: true,
               treeshakeCompensation: true,
               aliases: {
-                '@astryxdesign/core/*': [path.join(rootDir, 'packages/core/src/*')],
+                '@astryxdesign/core/*': [
+                  path.join(rootDir, 'packages/core/src/*'),
+                ],
                 '@astryxdesign/core': [path.join(rootDir, 'packages/core/src')],
               },
               unstable_moduleResolution: {
@@ -48,7 +50,10 @@ export default defineConfig({
       // Map @astryxdesign/core subpath imports to source for lab package tests.
       // Must use regex to match subpaths like @astryxdesign/core/Dialog, @astryxdesign/core/theme/tokens.stylex
       // while not breaking core's own relative imports.
-      {find: /^@astryxdesign\/core\/(.*)$/, replacement: path.join(coreSrc, '$1')},
+      {
+        find: /^@astryxdesign\/core\/(.*)$/,
+        replacement: path.join(coreSrc, '$1'),
+      },
     ],
   },
   test: {

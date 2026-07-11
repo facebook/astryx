@@ -551,6 +551,19 @@ describe('useTableColumnResize', () => {
       expect(handle).toHaveAttribute('aria-valuenow', '200');
     });
 
+    it('handle has a numeric aria-valuenow on initial render (before any width is measured)', () => {
+      // A focusable role="separator" requires aria-valuenow per the ARIA spec.
+      // Before the column width has been measured there is no override width, so
+      // the handle must fall back to a defined numeric value (the column
+      // minWidth) rather than omitting the attribute.
+      render(<ResizeTable minWidth={80} />);
+      const handle = getResizeHandles()[0];
+      const valueNow = handle.getAttribute('aria-valuenow');
+      expect(valueNow).not.toBeNull();
+      expect(Number.isNaN(Number(valueNow))).toBe(false);
+      expect(valueNow).toBe('80');
+    });
+
     it('handle has aria-label with column header text', () => {
       render(<ResizeTable />);
       const handle = getResizeHandles()[0];

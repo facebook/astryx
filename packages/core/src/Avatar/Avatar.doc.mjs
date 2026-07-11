@@ -106,4 +106,15 @@ export const docsDense = {
       {guidance: false, description: 'Force a square or custom shape. Avatars are always circular.'},
     ],
   },
+  propDescriptions: {
+    src: 'primary image source URL',
+    fallbackSrc: 'fallback image when primary fails',
+    name: 'user name for initials and alt text',
+    alt: 'alt text; falls back to name',
+    size: "avatar size. Named ('tiny', 'xsmall', 'small', 'medium', 'large') or numeric px. Short names 'sm'/'md'/'lg' are NOT valid; use full words.",
+    status: 'corner content for status indicators',
+  },
+  components: [
+    {name: 'AvatarStatusDot', description: 'size-aware status indicator rendered in the Avatar corner'},
+  ],
 };

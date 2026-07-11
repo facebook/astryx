@@ -36,7 +36,7 @@ Thanks to everyone who contributed to this release:
 - Strict config + integration v1 schema (integrations, issuesUrl, hooks.postCodemod) and new @astryxdesign/cli/integration export.
 - File-based codemod API (createCodemod/createConfigCodemod) with the @astryxdesign/cli/codemod export and integration codemod discovery in upgrade.
 - component, template, and upgrade now print a one-line non-blocking warning when a configured integration has validation issues, pointing to validate-integration.
-- Add a Kanban Board page template: color-coded status columns, draggable task cards with priority tags, and board toolbar.
+- Add a Kanban Board page template: color-coded status columns, draggable task cards with priority tags, and board toolbar. Based on a design by @cg-hub18.
 - Add frame-first layout guidance: new `astryx docs layout` topic (shell choice, region budgets, app archetypes, cards-vs-rows policy, responsive contracts), layout rules in the generated agent cheat sheet, and layout anti-patterns in `docs principles`.
 - Add a v0.1.3 config codemod that migrates astryx.config layout.components to experimental.xle.components.
 - Add v0.1.0 codemods for migrating `declare module "@xds/core/..."` type augmentations and `.xds-*` / `[data-xds-theme]` / `@layer xds-theme` CSS surfaces to their `@astryxdesign`/`astryx-*` equivalents.
@@ -80,6 +80,7 @@ Thanks to everyone who contributed to this release:
 Thanks to everyone who contributed to this release:
 
 - @AKnassa
+- @cg-hub18
 - @ejhammond
 - @ernestt
 - @harshavardhan194

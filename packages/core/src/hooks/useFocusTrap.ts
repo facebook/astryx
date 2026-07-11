@@ -5,7 +5,8 @@
 /**
  * @file useFocusTrap.ts
  * @input Uses React useCallback, useEffect, useRef
- * @output Exports useFocusTrap hook for trapping focus within a container
+ * @output Exports useFocusTrap hook for trapping focus within a container and
+ *   restoring focus to the previously-focused element on deactivation
  * @position Core hook; used by dialogs, modals, date pickers
  *
  * Based on WAI-ARIA dialog pattern:
@@ -178,6 +179,9 @@ export interface UseFocusTrapReturn<T extends HTMLElement = HTMLElement> {
  * - Listens to focus events on the document
  * - Redirects focus back into the container if it escapes
  * - Handles both Tab and Shift+Tab navigation
+ * - Restores focus to the element that was focused before activation when the
+ *   trap deactivates or unmounts, unless focus was already moved elsewhere
+ *   (so consumers that restore focus themselves are unaffected)
  *
  * @example
  * ```
@@ -216,6 +220,51 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>(
       focusFirstDescendant(containerRef.current);
     }
   }, []);
+
+  /**
+   * Capture the element focused before the trap activated, and restore focus to
+   * it when the trap deactivates (or the component unmounts). Overlays are
+   * opened imperatively (e.g. `showPopover()`), so the browser's declarative
+   * popover focus restoration does not apply — without this, closing a Popover
+   * via Escape or light dismiss drops keyboard focus to `<body>`.
+   *
+   * The restore is guarded so it never steals focus a consumer moved on
+   * purpose: it only runs when focus would otherwise be lost — i.e. the active
+   * element is nothing, the document body/root, or still inside the (possibly
+   * now-unmounted) trap container. If focus already moved to some other element
+   * outside the trap (the user clicked elsewhere, or a consumer such as
+   * DropdownMenu already refocused its trigger), the restore is a no-op.
+   */
+  useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    // Snapshot the container now; by cleanup it may be detached or unmounted.
+    const container = containerRef.current;
+
+    return () => {
+      const active = document.activeElement;
+      const focusWasLost =
+        active == null ||
+        active === document.body ||
+        active === document.documentElement ||
+        (container != null && container.contains(active));
+
+      if (!focusWasLost) {
+        return;
+      }
+
+      if (
+        previouslyFocused != null &&
+        previouslyFocused.isConnected &&
+        typeof previouslyFocused.focus === 'function'
+      ) {
+        previouslyFocused.focus();
+      }
+    };
+  }, [isActive]);
 
   /**
    * Handle focus events - redirect focus back into container if it escapes.
