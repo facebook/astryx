@@ -45,9 +45,63 @@ validated YAML frontmatter (`title`, `description`, `date`, `type`, `authors`,
 new authors register in `src/content/blog/authors.ts`. Drafts
 (`draft: true`) are excluded from production output.
 
+## Idiomatic Astryx (nudge, don't block)
+
+The docsite is Astryx's own showcase — it should be built *with* Astryx, not
+around it. When a change reaches for raw HTML/CSS where an Astryx primitive
+exists, **nudge** toward the idiomatic path (a suggestion, not a hard block —
+the docsite has real app-specific needs the component set won't always cover):
+
+- Compose from Astryx components/primitives over raw elements — `VStack`/
+  `HStack`/`Grid`/`Center`/`Card` over `<div>`, `Text`/`Heading` over text tags,
+  `Button`/`Link`, `Table`, `List`, `Icon` (never raw `<svg>` as an icon).
+- Style through props + semantic tokens (`xstyle`, `gap`, `padding`, `variant`),
+  not custom CSS or raw color/spacing values. Prefer attaching behavior via the
+  system's hooks/props over adding a wrapper element (see the packages reviewer's
+  "avoid unnecessary wrappers" guidance — it applies here too).
+- If the docsite genuinely needs something the component set lacks, that's a
+  signal worth surfacing: note it as a possible gap to file upstream, rather than
+  quietly forking a bespoke pattern in page code.
+
+The bar is lighter than for `packages/**` — the docsite ships app code, not
+published components — so frame these as "here's the idiomatic way" nudges, and
+reserve firm flags for raw CSS/hardcoded tokens that have a clear Astryx
+equivalent.
+
+## Mobile-friendliness
+
+Docsite pages must hold up on small screens. Review any layout/structural change
+for how it degrades on mobile, and flag the common failure modes:
+
+- **Side panels / multi-column layouts.** A `start`/`end` `LayoutPanel`, a
+  sidebar, or a two-pane split should collapse to an **inline / stacked**
+  treatment on small screens (panel becomes a top section, a drawer, or a
+  disclosure) — not sit as a squeezed column or push content off-screen. Flag a
+  new side panel or column split with no small-screen story.
+- **Min-widths that don't shrink.** A fixed `width`/`minWidth` (or a
+  `min-content` grid track) that exceeds a phone viewport causes horizontal
+  overflow. Prefer `Grid` with `minChildWidth` (reflows automatically),
+  `max-width` over fixed `width`, and `minWidth: 0` on flex/grid children that
+  must be allowed to shrink (the classic fix for a child refusing to shrink
+  inside a flex row). Flag fixed widths on content that needs to fit narrow
+  screens.
+- **Overflow & tap targets.** Wide content (tables, code blocks, long rows)
+  should scroll within its container, not blow out the page width. Interactive
+  targets should stay comfortably tappable (~44px) at mobile sizes.
+- **Prefer CSS-first responsiveness.** The docsite leans on `useMediaQuery` /
+  `isMobile` JS in places; for *layout* that CSS can express, prefer
+  `@container` queries, `Grid` `minChildWidth`, `flex-wrap`, and
+  `clamp()`/`min()`/`max()` over JS breakpoint branching (fewer hydration/SSR
+  mismatches, no layout flash). JS breakpoints are fine when the change is
+  genuinely structural (swapping a panel for a drawer), but flag JS used for what
+  a media/container query would handle.
+
+If verifying a responsive claim needs a real viewport (does this actually reflow
+at 375px?), say so and route it to human/preview verification rather than
+asserting it works from the diff.
+
 ## Everything else
 
-Standard Astryx expectations still apply: StyleX only (no raw CSS), semantic
-tokens, compose from Astryx components rather than raw HTML, and keep code
-comments minimal. Docsite-only or CLI-docs-only changes are a light review —
-the data-from-pipeline rule and component purity are the main gates.
+Docsite-only or CLI-docs-only changes are a light review overall — the
+data-from-pipeline rule is the primary gate, plus the idiomatic-Astryx and
+mobile checks above. Keep code comments minimal.
