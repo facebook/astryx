@@ -1,0 +1,118 @@
+{
+  "iterationId": "86d8cb6d",
+  "createdAt": "2026-07-11T11:14:24.342Z",
+  "config": {
+    "target": "astryx",
+    "persona": "naive",
+    "holdout": false,
+    "degradation": false,
+    "cliRetrieval": true
+  },
+  "prompts": [
+    {
+      "id": "fwc-6",
+      "category": "feature-with-constraint",
+      "prompt": "Build a shipping method selector with three options: Standard (free, 5-7 days), Express ($9.99, 2-3 days), and Overnight ($24.99, next day). Only one can be selected.",
+      "expectedComponents": [
+        "RadioList",
+        "Card"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "wd-1",
+      "category": "workflow-description",
+      "prompt": "Build a checkout flow: cart summary → shipping → payment → confirmation",
+      "expectedComponents": [
+        "Card",
+        "Button",
+        "TextInput"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "cwm-1",
+      "category": "clone-with-modification",
+      "prompt": "Something like Stripe's pricing table but with monthly/annual toggle",
+      "expectedComponents": [
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "sd-4",
+      "category": "state-driven",
+      "prompt": "Build a terms and conditions acceptance form. Show a scrollable text area with the terms, then checkboxes for \"I agree to the Terms of Service\" and \"I agree to the Privacy Policy\". The continue button should only enable when both are checked.",
+      "expectedComponents": [
+        "CheckboxInput",
+        "Button",
+        "TextArea"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "dd-3",
+      "category": "data-display",
+      "prompt": "Show a grid of product cards with image, title, price, and add to cart button",
+      "expectedComponents": [
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "rc-2",
+      "category": "responsive-context",
+      "prompt": "A sidebar that becomes a bottom sheet on mobile",
+      "expectedComponents": [
+        "Card",
+        "LayoutPanel"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "io-4",
+      "category": "integration-oriented",
+      "prompt": "Build a quantity selector for a shopping cart item. It should have a number input with increment/decrement, min of 1, max of 99. Changing the quantity should call an update API endpoint.",
+      "expectedComponents": [
+        "NumberInput",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ps-1",
+      "category": "page-setup",
+      "prompt": "Create a new page for a settings dashboard. It should have a header with the app title, a sidebar for navigation, and a main content area. Use the Astryx theme system.",
+      "expectedComponents": [
+        "Theme",
+        "Layout",
+        "LayoutHeader",
+        "LayoutContent",
+        "LayoutPanel"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ty-8",
+      "category": "typography",
+      "prompt": "Create a profile card with the user's name as a heading, their role as a label, their bio as body text, and their join date in small supporting text",
+      "expectedComponents": [
+        "Card",
+        "Heading",
+        "Text"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "tc-2",
+      "category": "theme-customization",
+      "prompt": "I want to create a custom brand theme for my app. The primary accent color should be purple (#7B61FF), with a dark surface (#1A1A2E) and light text. Set up a proper Astryx theme with these colors.",
+      "expectedComponents": [
+        "Theme"
+      ],
+      "status": "pending"
+    }
+  ]
+}
