@@ -21,6 +21,7 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "types": [
+      "node",
       "@testing-library/jest-dom"
     ]
   },

@@ -46,7 +46,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.0",
-    "@vitest/coverage-v8": "^2.1.0",
+    "@vitest/coverage-v8": "^4.1.9",
     "esbuild": "^0.28.1",
     "eslint": "^10.6.0",
     "eslint-plugin-react-compiler": "19.1.0-rc.2",
@@ -61,7 +61,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.1",
     "vite-plugin-singlefile": "^2.3.3",
-    "vitest": "^2.1.0"
+    "vitest": "^4.1.9"
   },
   "packageManager": "pnpm@11.10.0",
   "workspaces": [
