@@ -586,7 +586,6 @@ export function Drawer({
       return;
     }
     const z = registerDrawer(drawerId, () => onCloseRef.current());
-    // eslint-disable-next-line @eslint-react/set-state-in-effect -- stack position is only known once the registry assigns it on open
     setStackZ(z);
     return () => unregisterDrawer(drawerId);
   }, [isOpen, drawerId]);
