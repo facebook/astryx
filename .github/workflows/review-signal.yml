@@ -109,7 +109,18 @@ jobs:
             ];
             const isLowRisk = (p) => LOW_RISK.some((re) => re.test(p));
             const consideredCode = paths.filter((p) => !isLowRisk(p));
-            const PUB = '(core|lab|charts|vega|build)';
+
+            // A "source barrel" is packages/<pkg>/src/**/index.ts(x). We do NOT
+            // hardcode which packages are component libraries — any package's
+            // src barrel counts, so new packages are covered automatically. The
+            // low-risk carve-out (themes, cli/templates, apps) is filtered out
+            // via consideredCode above, so those never count here.
+            const isSrcBarrel = (p) =>
+              /^packages\/[^/]+\/src\/(.+\/)?index\.tsx?$/.test(p);
+            // A NEW component/module is a newly-added top-level src dir barrel:
+            // packages/<pkg>/src/<Name>/index.ts(x).
+            const isNewComponentBarrel = (p) =>
+              /^packages\/[^/]+\/src\/[^/]+\/index\.tsx?$/.test(p) && !isLowRisk(p);
 
             // ============ HIGH-RISK CODE ============
             const codeReasons = [];
@@ -119,14 +130,11 @@ jobs:
             );
             if (newPackage) codeReasons.push('new package');
             const newComponent = files.some(
-              (f) => f.status === 'added' &&
-                new RegExp(`^packages\\/${PUB}\\/src\\/[^/]+\\/index\\.tsx?$`).test(f.filename),
+              (f) => f.status === 'added' && isNewComponentBarrel(f.filename),
             );
             if (newComponent) codeReasons.push('new component/module');
             const apiSurface = consideredCode.some(
-              (p) =>
-                new RegExp(`^packages\\/${PUB}\\/src\\/(.+\\/)?index\\.tsx?$`).test(p) ||
-                /^packages\/[^/]+\/package\.json$/.test(p),
+              (p) => isSrcBarrel(p) || /^packages\/[^/]+\/package\.json$/.test(p),
             );
             if (apiSurface && !newPackage && !newComponent) {
               codeReasons.push('public API surface change');
