@@ -6,14 +6,18 @@
 # code itself) and the PR author, then applies up to two labels:
 #
 #   needs:code-review   — HIGH-RISK code areas: a new package, a new
-#                         component/module, or public API surface, NOT confined
-#                         to low-risk areas (themes, templates, sandbox,
-#                         storybook, docsite). Requests review from CODEOWNERS.
-#                         Skipped when the author is an ENGOWNER (eng self-serves
-#                         code).
+#                         component/module (in core — NOT lab, which is the
+#                         canary staging area), any runtime change under
+#                         core/src (incl. styling — core has high blast radius),
+#                         or public API surface, NOT confined to low-risk areas
+#                         (themes, templates, sandbox, storybook, docsite).
+#                         Requests review from CODEOWNERS. Skipped when the
+#                         author is an ENGOWNER (eng self-serves code).
 #
 #   needs:design-review — DESIGN-AFFECTING changes anywhere: StyleX styling,
-#                         theme/token files, templates, a new component. NOT
+#                         theme/token files, or a template's .tsx. Keyed on
+#                         visual signals only — NOT docs and NOT "a new dir
+#                         appeared" (styleless modules don't count). NOT
 #                         area-gated — a theme/template edit is where design
 #                         lives. Requests review from DESIGNOWNERS. Skipped when
 #                         the author is a DESIGNOWNER (design self-serves design).
@@ -95,9 +99,15 @@ jobs:
             const authorIsDesign = designOwners.includes(author);
 
             // --- Changed files. ---
-            const files = await github.paginate(github.rest.pulls.listFiles, {
+            const allFiles = await github.paginate(github.rest.pulls.listFiles, {
               owner, repo, pull_number: pr.number, per_page: 100,
             });
+            // lab is the canary-only staging area — new components are EXPECTED
+            // to develop and harden there before promotion. Skip the entire
+            // packages/lab/** folder for ALL signal detection (code and design)
+            // by filtering it out once, up front.
+            const isLab = (p) => /^packages\/lab\//.test(p);
+            const files = allFiles.filter((f) => !isLab(f.filename));
             const paths = files.map((f) => f.filename);
 
             const LOW_RISK = [
@@ -113,14 +123,23 @@ jobs:
             // A "source barrel" is packages/<pkg>/src/**/index.ts(x). We do NOT
             // hardcode which packages are component libraries — any package's
             // src barrel counts, so new packages are covered automatically. The
-            // low-risk carve-out (themes, cli/templates, apps) is filtered out
-            // via consideredCode above, so those never count here.
+            // low-risk carve-out (themes, cli/templates, apps) and lab are
+            // already filtered out above, so those never count here.
             const isSrcBarrel = (p) =>
               /^packages\/[^/]+\/src\/(.+\/)?index\.tsx?$/.test(p);
-            // A NEW component/module is a newly-added top-level src dir barrel:
-            // packages/<pkg>/src/<Name>/index.ts(x).
+            // A NEW component/module is a newly-added top-level src dir barrel.
             const isNewComponentBarrel = (p) =>
-              /^packages\/[^/]+\/src\/[^/]+\/index\.tsx?$/.test(p) && !isLowRisk(p);
+              /^packages\/[^/]+\/src\/[^/]+\/index\.tsx?$/.test(p) &&
+              !isLowRisk(p);
+            // Any RUNTIME change under core/src (incl. styling .tsx) is
+            // higher-blast-radius than a leaf change — core is what everything
+            // composites over, so a change there warrants review even when it's
+            // styling-only. Docs/tests/stories are excluded (they don't gate).
+            const isCoreRuntime = (p) =>
+              /^packages\/core\/src\/.+\.tsx?$/.test(p) &&
+              !/\.test\.tsx?$/.test(p) &&
+              !/\.doc\.mjs$/.test(p) &&
+              !/\.stories\.tsx?$/.test(p);
 
             // ============ HIGH-RISK CODE ============
             const codeReasons = [];
@@ -139,15 +158,36 @@ jobs:
             if (apiSurface && !newPackage && !newComponent) {
               codeReasons.push('public API surface change');
             }
+            const coreChange = paths.some(isCoreRuntime);
+            if (coreChange && !codeReasons.includes('new component/module')) {
+              codeReasons.push('core change');
+            }
             // Eng owners self-serve code — no code tag for them.
             const codeHighRisk = codeReasons.length > 0 && !authorIsEng;
 
             // ============ DESIGN-AFFECTING ============
+            // Three tiers:
+            //   1. Design spaces — always trip (that's where design lives):
+            //      docsite (visual .tsx/.stylex, not content/tests/generated),
+            //      themes, templates.
+            //   2. Component StyleX — visual changes to shipped components.
+            //   3. Safe spaces — never trip: sandbox, storybook (lab is
+            //      already filtered out of paths entirely, above).
+            // Keyed on visual signals, NOT on "a new dir appeared" (that caught
+            // infra like i18n) and NOT on docs (.doc.mjs / .md / content).
+            const isSafeSpace = (p) => /^apps\/(sandbox|storybook)\//.test(p);
+            // Docsite is a published design surface, but only its VISUAL dirs
+            // count — app/ (pages), components/, themes/. Blog/markdown content
+            // (content/), data & config plumbing (lib/), build output
+            // (generated/), and tests are NOT design and are skipped.
+            const isDocsiteVisual = (p) =>
+              /^apps\/docsite\/src\/(app|components|themes)\/.+\.(tsx|stylex\.ts)$/.test(p) &&
+              !/\.test\.tsx?$/.test(p);
             const designReasons = [];
-            if (paths.some((p) => /\.stylex\.tsx?$/.test(p))) designReasons.push('StyleX styles');
+            if (paths.some((p) => /\.stylex\.tsx?$/.test(p) && !isSafeSpace(p))) designReasons.push('StyleX styles');
             if (paths.some((p) => /^packages\/themes\/.+\/src\/.+\.tsx?$/.test(p))) designReasons.push('theme/token change');
-            if (paths.some((p) => /^packages\/cli\/templates\/.+\.(tsx?|mjs)$/.test(p))) designReasons.push('template change');
-            if (newComponent) designReasons.push('new component');
+            if (paths.some((p) => /^packages\/cli\/templates\/.+\.tsx$/.test(p))) designReasons.push('template change');
+            if (paths.some(isDocsiteVisual)) designReasons.push('docsite visual change');
             // Design owners self-serve design — no design tag for them.
             const designAffecting = designReasons.length > 0 && !authorIsDesign;
 
