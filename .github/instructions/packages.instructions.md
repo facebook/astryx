@@ -121,6 +121,49 @@ express the same capability, and push to converge on the existing shape:
   vibe-tested rather than settled in the PR (route naming disputes to
   [API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)).
 
+### Plugins & hooks that extend a host component
+
+Some components expose a plugin/hook surface (e.g. `Table` with
+`useTable*` plugins). These extend a host, so review them for consistency *with
+that host*, not in isolation — recurring issues seen in real review:
+
+- **Mirror the host's API shape, in and out.** A plugin should accept and return
+  the same shapes the host already uses. If `Table` accepts `idKey` (a key that
+  may be a string *or* a getter, so callers avoid writing callbacks), a plugin
+  should accept the same rather than forcing a bespoke callback — and should
+  **name its outputs to match the host's props** so they compose directly.
+  Prefer `const {idKey} = usePlugin(); <Table idKey={idKey} />` over exporting
+  `getRowKey` that the caller has to remember maps to `idKey`. Flag renamed
+  or reshaped equivalents.
+- **Semantic values first, arbitrary as the escape hatch.** When a plugin/prop
+  takes a visual value (color, status, tone), the first-class API is the
+  system's **semantic tokens** (`color: 'accent'` / `'success'`), not raw values.
+  Allowing arbitrary values is fine as an escape hatch, but the *default* shape
+  should be system semantics — flag an API where the raw/arbitrary form is the
+  primary one.
+- **Decide host-level vs plugin-level deliberately** — especially for
+  accessibility. If an option affects host semantics (e.g. a row `startFrom`
+  index that changes `aria-rowindex`), it likely belongs on the **host** so the
+  semantics are correct even when nothing visible renders. Flag a11y-affecting
+  config buried in a plugin when the host is the right owner (and note
+  interactions like pagination).
+
+### Hook stability & reuse of existing data
+
+For hooks (plugins or otherwise), watch two things that bit real Table PRs:
+
+- **Dependency-set stability.** A hook whose memoized output depends on a
+  frequently-changing value (e.g. the whole `data` array) will re-compute and
+  hand consumers a new reference on every update, destabilizing everything
+  downstream. Flag dependency sets that make the return value churn; prefer
+  stable keys/refs.
+- **Don't re-derive what's already available.** If the host or the DOM already
+  exposes a value, read it instead of recomputing. Real case: a row-index plugin
+  looped over `data` to compute indices the table row already carried as
+  `aria-rowindex` — the loop (and the extra API surface) was avoidable. Flag
+  redundant full-collection loops and per-item rescans when an existing
+  value/source would do (ties into the complexity/perf smell in Judgment).
+
 ## Design review
 
 Some package changes are also *design* changes. When a diff affects how a
