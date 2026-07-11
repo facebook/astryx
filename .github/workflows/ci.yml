@@ -125,9 +125,13 @@ jobs:
       - run: pnpm test
         if: needs.check-scope.outputs.docsite_only != 'true'
 
-  # Build storybook + analyze components (parallel with test)
-  # Uploads storybook preview and analysis artifacts for downstream jobs
-  build:
+  # Build storybook + typecheck + analyze components (parallel with test and
+  # build-sandbox). Uploads the storybook preview and analysis artifacts for
+  # downstream jobs.
+  # The sandbox preview build lives in build-sandbox: it alone takes ~4min
+  # while everything here takes ~2min, so the two run in parallel and the
+  # `build` join below folds their results into the historical check name.
+  build-storybook:
     needs: [check-scope]
     runs-on: ubuntu-latest
     permissions:
@@ -178,18 +182,6 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: pnpm -F @astryxdesign/core typecheck
 
-      - name: Cache Next.js build
-        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
-        uses: actions/cache@v6
-        with:
-          path: apps/sandbox/.next/cache
-          # No restore-keys fallback — see deploy.yml for the full rationale.
-          # The Next.js module cache bakes in @astryxdesign/core's resolved export graph,
-          # so a loose fallback can restore a cache built against a different
-          # export shape and silently produce wrong builds (broke #2941's
-          # post-merge deploy). A changed key yields a cold (safe) rebuild.
-          key: nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('packages/core/dist/**') }}
-
       - name: Build Storybook
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: pnpm -F @astryxdesign/storybook build
@@ -206,19 +198,8 @@ jobs:
 
           echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
           echo "pr_number=${PR_NUMBER}" >> $GITHUB_OUTPUT
-          echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox" >> $GITHUB_OUTPUT
           echo "storybook_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/" >> $GITHUB_OUTPUT
           echo "sandbox_url=https://${REPO_OWNER}.github.io/${REPO_NAME}/pr/${PR_NUMBER}/sandbox/" >> $GITHUB_OUTPUT
-
-      - name: Build Sandbox
-        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
-        run: pnpm -F @astryxdesign/sandbox build
-        env:
-          # Must match the deployed Pages path (<owner>.github.io/<repo>/pr/<n>/sandbox).
-          # Built without the /<repo> prefix, the sandbox's root-absolute asset URLs
-          # drop that segment and 404 — breaking all styles/JS on the preview.
-          SANDBOX_BASE_PATH: ${{ steps.urls.outputs.sandbox_base_path }}
-          NODE_OPTIONS: '--max-old-space-size=8192'
 
       - name: Upload Storybook artifact
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
@@ -226,14 +207,6 @@ jobs:
         with:
           name: storybook-${{ steps.urls.outputs.short_hash }}
           path: apps/storybook/dist/
-          retention-days: 30
-
-      - name: Upload Sandbox artifact
-        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v7
-        with:
-          name: sandbox-${{ steps.urls.outputs.short_hash }}
-          path: apps/sandbox/out/
           retention-days: 30
 
       - name: Analyze components
@@ -283,6 +256,88 @@ jobs:
             pr-meta.json
           retention-days: 1
 
+  # Sandbox preview build — the single slowest piece of PR CI (~4min), run as
+  # its own job so it overlaps build-storybook instead of serializing after it.
+  # PR-only: merge_group runs never deploy previews, and docsite-only PRs skip
+  # preview builds entirely.
+  build-sandbox:
+    needs: [check-scope]
+    if: github.event_name == 'pull_request' && needs.check-scope.outputs.docsite_only != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      short_hash: ${{ steps.urls.outputs.short_hash }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+
+      - name: Build core package
+        run: pnpm build
+
+      - name: Compute sandbox preview path
+        id: urls
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          COMMIT_HASH="${{ github.event.pull_request.head.sha }}"
+          SHORT_HASH="${COMMIT_HASH:0:7}"
+          REPO_NAME="${{ github.event.repository.name }}"
+
+          echo "short_hash=${SHORT_HASH}" >> $GITHUB_OUTPUT
+          echo "sandbox_base_path=/${REPO_NAME}/pr/${PR_NUMBER}/sandbox" >> $GITHUB_OUTPUT
+
+      - name: Cache Next.js build
+        uses: actions/cache@v6
+        with:
+          path: apps/sandbox/.next/cache
+          # No restore-keys fallback — see deploy.yml for the full rationale.
+          # The Next.js module cache bakes in @astryxdesign/core's resolved export graph,
+          # so a loose fallback can restore a cache built against a different
+          # export shape and silently produce wrong builds (broke #2941's
+          # post-merge deploy). A changed key yields a cold (safe) rebuild.
+          key: nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('packages/core/dist/**') }}
+
+      - name: Build Sandbox
+        run: pnpm -F @astryxdesign/sandbox build
+        env:
+          # Must match the deployed Pages path (<owner>.github.io/<repo>/pr/<n>/sandbox).
+          # Built without the /<repo> prefix, the sandbox's root-absolute asset URLs
+          # drop that segment and 404 — breaking all styles/JS on the preview.
+          SANDBOX_BASE_PATH: ${{ steps.urls.outputs.sandbox_base_path }}
+          NODE_OPTIONS: '--max-old-space-size=8192'
+
+      - name: Upload Sandbox artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: sandbox-${{ steps.urls.outputs.short_hash }}
+          path: apps/sandbox/out/
+          retention-days: 30
+
+  # Join gate that keeps the historical `build` check name: anything keyed on
+  # "build" being green (branch protection, tooling, habit) keeps working, and
+  # it fails when either parallel build fails. build-sandbox is legitimately
+  # skipped on docsite-only PRs; a skipped build-storybook (merge_group, or a
+  # failed check-scope) skips this gate too — both match the old single-job
+  # behavior.
+  build:
+    needs: [build-storybook, build-sandbox]
+    if: ${{ !cancelled() && needs.build-storybook.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Assert parallel builds succeeded
+        run: |
+          echo "build-storybook: ${{ needs.build-storybook.result }}"
+          echo "build-sandbox:   ${{ needs.build-sandbox.result }}"
+          [ "${{ needs.build-storybook.result }}" = "success" ] || exit 1
+          case "${{ needs.build-sandbox.result }}" in
+            success|skipped) ;;
+            *) exit 1 ;;
+          esac
+
   # Deploy PR preview to GitHub Pages.
   # Uses a per-PR concurrency group so multiple PRs deploy in parallel.
   # Instead of peaceiris/actions-gh-pages (which can conflict with main's
@@ -295,30 +350,30 @@ jobs:
       github.event_name == 'pull_request' &&
       needs.check-scope.outputs.docsite_only != 'true' &&
       github.event.pull_request.head.repo.full_name == github.repository
-    needs: [build, check-scope]
+    needs: [build-storybook, build-sandbox, check-scope]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     concurrency:
-      group: "pr-preview-${{ needs.build.outputs.pr_number }}"
+      group: "pr-preview-${{ needs.build-storybook.outputs.pr_number }}"
       cancel-in-progress: true
     steps:
       - name: Download Storybook artifact
         uses: actions/download-artifact@v8
         with:
-          name: storybook-${{ needs.build.outputs.short_hash }}
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: storybook-dist
 
       - name: Download Sandbox artifact
         uses: actions/download-artifact@v8
         with:
-          name: sandbox-${{ needs.build.outputs.short_hash }}
+          name: sandbox-${{ needs.build-sandbox.outputs.short_hash }}
           path: sandbox-dist
 
       - name: Deploy PR preview to GitHub Pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ needs.build.outputs.pr_number }}
+          PR_NUMBER: ${{ needs.build-storybook.outputs.pr_number }}
         run: |
           REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
           MAX_ATTEMPTS=5
@@ -359,9 +414,11 @@ jobs:
           exit 1
 
   # Accessibility audit
-  # Skipped when no components changed.
+  # Skipped when no components changed. Depends only on build-storybook, so it
+  # starts as soon as the storybook artifact is up (~2min) instead of waiting
+  # for the slower sandbox build.
   pr-a11y:
-    needs: [build, check-components]
+    needs: [build-storybook, check-components]
     if: github.event_name == 'pull_request' && needs.check-components.outputs.has_components == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -385,7 +442,7 @@ jobs:
       - name: Download Storybook artifact
         uses: actions/download-artifact@v8
         with:
-          name: storybook-${{ needs.build.outputs.short_hash }}
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
           path: apps/storybook/dist
 
       - name: Install Playwright
