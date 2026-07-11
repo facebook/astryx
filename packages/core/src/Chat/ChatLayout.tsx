@@ -27,7 +27,10 @@ import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps, mergeRefs} from '../utils';
-import {useChatStreamScroll} from './useChatStreamScroll';
+import {
+  useChatStreamScroll,
+  type ChatScrollInitial,
+} from './useChatStreamScroll';
 import {useChatNewMessages} from './useChatNewMessages';
 import {ChatLayoutScrollButton} from './ChatLayoutScrollButton';
 import {ChatLayoutContext} from './ChatContext';
@@ -88,6 +91,25 @@ export interface ChatLayoutProps extends BaseProps<HTMLDivElement> {
    * @default 'balanced'
    */
   density?: Density;
+
+  /**
+   * How the scroll position is established when messages first appear.
+   *
+   * - `'spring'` (default): messages present at mount are positioned
+   *   instantly; messages that arrive after mount (async fetch) are
+   *   followed with the spring animation, like streaming.
+   * - `'instant'`: opening an existing conversation lands on the latest
+   *   message with no animation, even when messages load asynchronously.
+   *   Later growth (streaming) uses the spring as usual.
+   * - `false`: start at the top, with follow disengaged until the user
+   *   scrolls to the bottom — for reading-oriented surfaces. Pairs with
+   *   a top-aligned message list.
+   *
+   * Read once on mount.
+   *
+   * @default 'spring'
+   */
+  initial?: ChatScrollInitial;
 }
 
 // =============================================================================
@@ -251,6 +273,7 @@ export function ChatLayout({
   composer,
   density = 'balanced',
   emptyState,
+  initial,
   scrollButton,
   scrollRef: externalScrollRef,
   xstyle,
@@ -267,7 +290,7 @@ export function ChatLayout({
   const isSelfScrolling = !externalScrollRef;
 
   // --- Default scroll behavior ---
-  const scroll = useChatStreamScroll({scrollRef: scrollContainerRef});
+  const scroll = useChatStreamScroll({scrollRef: scrollContainerRef, initial});
   const newMsgs = useChatNewMessages({
     isLocked: scroll.isLocked,
     onResize: scroll.scrollIfLocked,
