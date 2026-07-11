@@ -20,7 +20,7 @@ export const docs = {
       name: 'getRowKey',
       type: '(item: T) => string',
       description:
-        'Optional stable key extractor. When provided, index lookup is keyed by the returned string; otherwise items are matched by reference identity.',
+        'Optional key extractor returning a unique string per row. When provided, index lookup is keyed by the returned string; otherwise items are matched by reference identity. Memoize with useCallback for a stable plugin identity.',
     },
     {
       name: 'label',
@@ -43,7 +43,7 @@ export const docsDense = {
     'Returns a TablePlugin that prepends a right-aligned monospaced row-number column. Numbering follows the rendered data order (current sort/filter/page view), 1-based by default. Pass the rendered data array; renderCell only receives the item so the plugin derives ordinals from it.',
   propDescriptions: {
     data: 'The rendered data array (post sort/filter/page). Numbering follows this order.',
-    getRowKey: 'Optional stable key extractor; otherwise items match by reference.',
+    getRowKey: 'Optional key extractor returning a unique string per row; otherwise items match by reference.',
     label: "Header label for the index column. Default '#'.",
     startFrom: 'First index value. Default 1.',
   },
