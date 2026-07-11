@@ -55,7 +55,9 @@ in what order, so effort lands where the risk is — and so the risk checks
 > **Hard stop — new props / API changes from a contributor need human judgment.**
 > If a PR adds a **new prop** or otherwise changes API surface (a new
 > component, variant, exported hook/type, or a changed/removed signature) and the
-> author is an external/community contributor, the AI reviewer must **not**
+> author is in the **contributor bucket** (see Review buckets in the root
+> instructions — not in `.github/ENGOWNERS` or `.github/DESIGNOWNERS`), the AI
+> reviewer must **not**
 > approve or merge it — even if it's clean, additive, and passing CI. Flag it as
 > **⚠️ Needs human/maintainer judgment on the API surface** and leave the
 > approve/merge decision to a human. "Additive and non-breaking" is *not*
@@ -67,6 +69,46 @@ State the category, the risk (breaking? blast radius?), and the chosen path at
 the top of the review, e.g. `Triage: bug fix · non-breaking · low blast radius →
 fast path`. This makes the depth of review legible and ensures the
 breaking-change question is answered on every PR.
+
+## Review Signal — high-risk triggers for this scope
+
+The shared **Review buckets** and **Review Signal** model lives in the root
+`copilot-instructions.md` — apply it. This section defines what counts as
+**high-risk** *within `packages/**`*, which is what drives the signal:
+
+A change in this scope is **high-risk** when it involves any of:
+
+- **Public API change** — a new/changed/removed export, prop, variant, hook,
+  type, or signature; a changed default; changed DOM/class/ARIA output (see Step
+  0 breaking-change scan and "Adding a new prop").
+- **New component or module** — a net-new component directory, especially added
+  directly to `core` (skipped `lab`) — see Lifecycle & promotion.
+- **New package** — a net-new `@astryxdesign/*` package — see Lifecycle &
+  promotion. Always human-judgment.
+- **Suspected regression** — an unintended behavior/logic change or a silent
+  breaking change to a shared type/context (see Judgment).
+
+Anything else in this scope is **low-risk** for signal purposes. The one
+explicitly low-risk *area* inside `packages/**` is **`packages/themes/**`**
+(theme values); a theme-only change does not trip the high-risk gate — though
+still apply the design blast-radius check in Judgment (a token change can
+regress everywhere it composites).
+
+The high-risk determination is also computed deterministically by
+`.github/workflows/review-signal.yml`, which applies the **`needs:code-review`**
+label and disables auto-merge on high-risk PRs. If the PR carries that label,
+lead with 🔴 and focus on the high-risk surface (see the label note in the root
+instructions). Frame the review by bucket — the bucket sets *tone*, the area
+sets the *gate*:
+
+- **Contributor** → your review is the *initial pass* that tells a code owner
+  where to focus. For a new prop / API change / new component / new package, add
+  the explicit **⚠️ Needs human/maintainer judgment on the API surface** note —
+  additive and passing CI is *not* sufficient to imply approval.
+- **Design owner** → same checks, framed for a designer: name what crosses into
+  engineering territory and needs an engineer's eye.
+- **Eng team** → assistant framing: surface the same findings as input to the
+  author's own judgment.
 
 ## Calibrate to the PR type
 
@@ -324,6 +366,26 @@ spec is the contract; a new component without one isn't ready.
 Small additions and deliberately spec-approved direct-to-core work do happen —
 this isn't an automatic rejection — but a new core component that skipped lab
 should be called out so a human confirms it was intentional and hardened.
+
+### New package (net-new `@astryxdesign/*`)
+
+A brand-new package is a bigger commitment than a new component — it adds a
+published surface the project maintains and versions indefinitely. **Flag a diff
+that adds a new top-level `packages/<name>/` directory** (a new `package.json`
+with an `@astryxdesign/*` name, new `exports`, its own build/release wiring).
+This is always a high-risk trigger — route it to human/maintainer judgment
+regardless of author, and confirm:
+
+- **The package should exist as its own package** (vs. living in an existing
+  one) — a deliberate, maintainer-level decision, not an incidental add.
+- **Publish posture is intentional** — `private: true` + `astryx.canaryOnly` for
+  staging vs. a stable public package; the `"exports"` are generated
+  (`scripts/sync-exports.js`), not hand-written; versioning joins the `fixed`
+  group.
+- **A tracking/spec issue is linked** establishing the need and scope.
+
+Never approve a net-new package on convention-cleanliness alone; whether it
+*should exist* is a human call.
 
 ### New template added already-visible (not `hidden`)
 
