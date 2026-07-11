@@ -47,7 +47,7 @@ name: Review signal
 on:
   pull_request_target:
     branches: ["main"]
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
   pull_request_review:
     types: [submitted]
   # Manual re-trigger. The App only auto-runs on the PR events above, so if it
@@ -81,7 +81,7 @@ jobs:
   # ---------------------------------------------------------------------------
   flag:
     if: >-
-      (github.event_name == 'pull_request_target' && github.event.pull_request.draft == false)
+      github.event_name == 'pull_request_target'
       || github.event_name == 'workflow_dispatch'
     name: Flag review signals
     runs-on: ubuntu-latest
@@ -120,10 +120,6 @@ jobs:
               prs = [context.payload.pull_request];
             }
 
-            // Skip drafts on the dispatch path too (the PR-event path already
-            // filters them via the job `if`).
-            prs = prs.filter((p) => !p.draft);
-
             let hadError = false;
             for (const pr of prs) {
               try {
@@ -138,6 +134,11 @@ jobs:
             // ================= per-PR detection + routing =================
             async function flagOne(pr) {
             const author = pr.user.login.toLowerCase();
+            // Bots (Dependabot, github-actions, etc.) are our own automation,
+            // not community contributors, and their PRs (dep bumps, chores) are
+            // mechanical and CI-gated. Exempt them from both the review gates
+            // and the community label entirely.
+            const authorIsBot = pr.user.type === 'Bot' || /\[bot\]$/.test(author);
 
             // --- Read owner sets from repo files at the base ref. ---
             async function handlesFrom(path, { starLineOnly = false } = {}) {
@@ -163,6 +164,35 @@ jobs:
             const codeOwners = await handlesFrom('.github/CODEOWNERS', { starLineOnly: true });
             const authorIsEng = engOwners.includes(author);
             const authorIsDesign = designOwners.includes(author);
+
+            // Bot PRs: no gate, no community label. Set the check to success so
+            // a required "review-required" doesn't block them, drop any stray
+            // gate/community labels, and stop.
+            if (authorIsBot) {
+              core.info(`@${author} is a bot — exempt from review gates.`);
+              const current = pr.labels.map((l) => l.name);
+              for (const name of [CODE, DESIGN, COMMUNITY]) {
+                if (current.includes(name)) {
+                  try {
+                    await github.rest.issues.removeLabel({
+                      owner, repo, issue_number: pr.number, name,
+                    });
+                  } catch (e) {
+                    core.warning(`Could not remove ${name}: ${e.message}`);
+                  }
+                }
+              }
+              try {
+                await github.rest.checks.create({
+                  owner, repo, name: 'review-required', head_sha: pr.head.sha,
+                  status: 'completed', conclusion: 'success',
+                  output: { title: 'No review required', summary: 'Automated (bot) PR — exempt from review gates.' },
+                });
+              } catch (e) {
+                core.warning(`Could not set review-required check: ${e.message}`);
+              }
+              return;
+            }
 
             // --- Changed files. ---
             const allFiles = await github.paginate(github.rest.pulls.listFiles, {
