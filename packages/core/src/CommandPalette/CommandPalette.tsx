@@ -328,6 +328,11 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
     selectableItems,
     value,
     isOpen: true, // Always "open" from combobox POV — the dialog handles visibility
+    // The palette's input already filters the items, and it forwards every
+    // keystroke here. Prefix typeahead on top of that would chase the same
+    // text and drag the highlight — and what Enter commits — off the user's
+    // pick, so the input stays the only thing typing drives.
+    hasTypeahead: false,
     onOpen: () => {}, // Dialog handles open
     onClose: () => {}, // We handle close via handleClose
     onSelect: (itemValue: string) => {

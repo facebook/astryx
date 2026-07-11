@@ -8,7 +8,7 @@
  * @position Internal hooks; used by Selector.tsx
  */
 
-import {useCallback, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {RefObject} from 'react';
 import type {SelectorOptionData} from './types';
@@ -145,6 +145,24 @@ interface UseComboboxOptions {
    * navigation owns those keys there) or when there is no value.
    */
   onClear?: () => void;
+  /**
+   * With `hasSearch`, printable characters typed on the trigger are appended to
+   * the search query (opening the popup if needed), so type-to-find works
+   * without a separate open step. Characters keep arriving here until focus
+   * lands in the search input, which then owns its own typing.
+   */
+  onSearchSeed?: (char: string) => void;
+  /**
+   * Whether printable characters drive typeahead matching.
+   *
+   * Consumers whose own text input already filters the items (CommandPalette)
+   * must pass `false`: that input forwards every keystroke here, and a prefix
+   * search chasing the same text drags the highlight — and therefore what Enter
+   * commits — onto an item the user never picked.
+   *
+   * @default true
+   */
+  hasTypeahead?: boolean;
   listboxId: string;
 }
 
@@ -159,6 +177,12 @@ interface UseComboboxResult {
 }
 
 /**
+ * How long the accumulated typeahead buffer survives between keystrokes
+ * before resetting, matching typical native `<select>` behavior.
+ */
+const TYPEAHEAD_RESET_MS = 500;
+
+/**
  * Handles keyboard navigation, typeahead search, and selection for combobox/listbox patterns.
  */
 export function useCombobox({
@@ -171,13 +195,31 @@ export function useCombobox({
   onClose,
   onSelect,
   onClear,
+  onSearchSeed,
+  hasTypeahead = true,
   listboxId,
 }: UseComboboxOptions): UseComboboxResult {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
-  const [typeahead, setTypeahead] = useState('');
+  // The typeahead buffer lives in a ref: it never drives rendering, and a ref
+  // keeps rapid keystrokes coherent regardless of render timing.
+  const typeaheadRef = useRef('');
   const typeaheadTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
+
+  // Drop the buffer at every interaction boundary — committing, closing, and
+  // clearing all end the "word" being typed. Without this, a stale prefix
+  // survives for up to TYPEAHEAD_RESET_MS and poisons the next keystroke:
+  // selecting Dog then typing "c" would search for "dc" and match nothing.
+  const resetTypeahead = useCallback(() => {
+    typeaheadRef.current = '';
+    if (typeaheadTimeoutRef.current) {
+      clearTimeout(typeaheadTimeoutRef.current);
+      typeaheadTimeoutRef.current = undefined;
+    }
+  }, []);
+
+  useEffect(() => resetTypeahead, [resetTypeahead]);
 
   const getItemId = useCallback(
     (index: number) => `${listboxId}-item-${index}`,
@@ -196,8 +238,9 @@ export function useCombobox({
 
   const closeAndReset = useCallback(() => {
     setHighlightedIndex(-1);
+    resetTypeahead();
     onClose();
-  }, [onClose]);
+  }, [onClose, resetTypeahead]);
 
   const selectItem = useCallback(
     (item: SelectorOptionData) => {
@@ -232,6 +275,81 @@ export function useCombobox({
       }
     },
     [],
+  );
+
+  /**
+   * Find the option matching the typeahead buffer, searching from the item
+   * after `anchorIndex` and wrapping so the anchor itself is considered last.
+   * Falls back to first-letter matching when the buffer is one character
+   * repeated ("c", "cc", …), so holding a letter cycles through its matches
+   * the way a native `<select>` does (APG getIndexByLetter).
+   */
+  const findTypeaheadMatch = useCallback(
+    (buffer: string, anchorIndex: number) => {
+      const count = selectableItems.length;
+      const start = anchorIndex >= 0 ? anchorIndex + 1 : 0;
+      const findByPrefix = (prefix: string) => {
+        for (let i = 0; i < count; i++) {
+          const index = (start + i) % count;
+          const item = selectableItems[index];
+          if (
+            !item.disabled &&
+            (item.label ?? item.value).toLowerCase().startsWith(prefix)
+          ) {
+            return index;
+          }
+        }
+        return -1;
+      };
+
+      const fullMatch = findByPrefix(buffer);
+      if (fullMatch >= 0) {
+        return fullMatch;
+      }
+      const isRepeatedChar =
+        buffer.length > 1 && buffer.split('').every(ch => ch === buffer[0]);
+      return isRepeatedChar ? findByPrefix(buffer[0]) : -1;
+    },
+    [selectableItems],
+  );
+
+  const handleTypeahead = useCallback(
+    (key: string) => {
+      typeaheadRef.current += key.toLowerCase();
+      if (typeaheadTimeoutRef.current) {
+        clearTimeout(typeaheadTimeoutRef.current);
+      }
+      typeaheadTimeoutRef.current = setTimeout(() => {
+        typeaheadRef.current = '';
+      }, TYPEAHEAD_RESET_MS);
+
+      // Cycle onward from the highlight when open, or from the current
+      // selection when closed.
+      const anchorIndex = isOpen ? highlightedIndex : findSelectedIndex();
+      const matchIndex = findTypeaheadMatch(typeaheadRef.current, anchorIndex);
+      if (matchIndex < 0) {
+        return;
+      }
+      if (isOpen) {
+        setHighlightedIndex(matchIndex);
+      } else {
+        // Native select parity: typing on the closed trigger commits the
+        // matched value directly without opening the menu.
+        const item = selectableItems[matchIndex];
+        if (item.value !== value) {
+          onSelect?.(item.value);
+        }
+      }
+    },
+    [
+      isOpen,
+      highlightedIndex,
+      findSelectedIndex,
+      findTypeaheadMatch,
+      selectableItems,
+      value,
+      onSelect,
+    ],
   );
 
   const onKeyDown = useCallback(
@@ -272,6 +390,13 @@ export function useCombobox({
 
         case ' ':
           if (hasSearch) {
+            break;
+          }
+          // A space while a typeahead buffer is live is part of the match
+          // ("new y" → "New York"), not an open/select command.
+          if (hasTypeahead && typeaheadRef.current.length > 0) {
+            e.preventDefault();
+            handleTypeahead(' ');
             break;
           }
         // falls through
@@ -327,32 +452,25 @@ export function useCombobox({
           // only handle the closed non-search case with a clearable value.
           if (!hasSearch && !isOpen && onClear != null && value != null) {
             e.preventDefault();
+            resetTypeahead();
             onClear();
           }
           break;
 
         default:
-          if (!hasSearch && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-            const newTypeahead = typeahead + e.key.toLowerCase();
-            setTypeahead(newTypeahead);
-
-            if (typeaheadTimeoutRef.current) {
-              clearTimeout(typeaheadTimeoutRef.current);
-            }
-            typeaheadTimeoutRef.current = setTimeout(() => {
-              setTypeahead('');
-            }, 500);
-
-            const matchIndex = selectableItems.findIndex(
-              item =>
-                !item.disabled &&
-                item.label?.toLowerCase().startsWith(newTypeahead),
-            );
-            if (matchIndex >= 0) {
-              if (!isOpen) {
-                onOpen();
+          if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+            if (hasSearch) {
+              // Keys land here only while the trigger holds focus — once the
+              // search input takes over it handles its own typing — so they
+              // belong in the query, including the ones racing the open.
+              if (onSearchSeed) {
+                if (!isOpen) {
+                  onOpen();
+                }
+                onSearchSeed(e.key);
               }
-              setHighlightedIndex(matchIndex);
+            } else if (hasTypeahead) {
+              handleTypeahead(e.key);
             }
           }
           break;
@@ -368,9 +486,12 @@ export function useCombobox({
       selectItem,
       findSelectedIndex,
       getEnabledIndices,
-      typeahead,
+      handleTypeahead,
+      resetTypeahead,
       hasSearch,
+      hasTypeahead,
       onClear,
+      onSearchSeed,
       value,
     ],
   );
