@@ -129,7 +129,9 @@ in packages/core`.
 
 A deterministic workflow (`.github/workflows/review-signal.yml`) applies two
 labels from the changed paths + author, and disables auto-merge when either
-fires:
+fires. **It posts no explanation of its own — that's your job.** When a PR
+carries one of these labels, explain *why* review is needed with real judgment
+(the workflow only knows the area; you assess the actual change):
 
 - **`needs:code-review`** — a high-risk **code** area (new package, new
   component/module, public API surface). **Lead with 🔴 Code review required**

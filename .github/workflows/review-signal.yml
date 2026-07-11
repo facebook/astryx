@@ -245,26 +245,11 @@ jobs:
               }
             }
 
-            // --- One explanatory comment when a gate first fires. ---
-            if (codeHighRisk || designAffecting) {
-              const marker = '<!-- review-signal:gate -->';
-              const comments = await github.paginate(github.rest.issues.listComments, {
-                owner, repo, issue_number: pr.number, per_page: 100,
-              });
-              if (!comments.some((c) => c.body && c.body.includes(marker))) {
-                const lines = [marker, '🔴 **Review required — auto-merge disabled.**', ''];
-                if (codeHighRisk) {
-                  lines.push(`- \`needs:code-review\` — high-risk: **${codeReasons.join(', ')}**. Requested review from code owners; cleared on a code owner's approval.`);
-                }
-                if (designAffecting) {
-                  lines.push(`- \`needs:design-review\` — design-affecting: **${designReasons.join(', ')}**. Requested review from design owners; cleared on a design owner's approval.`);
-                }
-                lines.push('', 'Low-risk areas (themes, templates, sandbox, storybook, docsite) are exempt from the *code* gate. Eng owners self-serve code; design owners self-serve design.');
-                await github.rest.issues.createComment({
-                  owner, repo, issue_number: pr.number, body: lines.join('\n'),
-                });
-              }
-            }
+            // No explanatory comment is posted here on purpose. The label + the
+            // auto-merge disable are the mechanical signal; the Copilot reviewer
+            // reads the label (see .github/copilot-instructions.md) and explains
+            // *why* review is needed with actual judgment — better than a static
+            // comment could.
 
   # ---------------------------------------------------------------------------
   # Clear labels on the right kind of approval.
