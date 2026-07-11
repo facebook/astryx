@@ -180,22 +180,22 @@ function getRelativeTimeString(date: Date, now: Date): string {
       return 'in a few seconds';
     }
     if (absDiff < HOUR) {
-      const mins = Math.round(absDiff / MINUTE);
+      const mins = Math.floor(absDiff / MINUTE);
       return `in ${mins} ${mins === 1 ? 'minute' : 'minutes'}`;
     }
     if (absDiff < DAY) {
-      const hours = Math.round(absDiff / HOUR);
+      const hours = Math.floor(absDiff / HOUR);
       return `in ${hours} ${hours === 1 ? 'hour' : 'hours'}`;
     }
     if (absDiff < MONTH) {
-      const days = Math.round(absDiff / DAY);
+      const days = Math.floor(absDiff / DAY);
       return `in ${days} ${days === 1 ? 'day' : 'days'}`;
     }
     if (absDiff < YEAR) {
-      const months = Math.round(absDiff / MONTH);
+      const months = Math.floor(absDiff / MONTH);
       return `in ${months} ${months === 1 ? 'month' : 'months'}`;
     }
-    const years = Math.round(absDiff / YEAR);
+    const years = Math.floor(absDiff / YEAR);
     return `in ${years} ${years === 1 ? 'year' : 'years'}`;
   }
 
@@ -203,25 +203,25 @@ function getRelativeTimeString(date: Date, now: Date): string {
     return `${diffSeconds} seconds ago`;
   }
   if (diffSeconds < HOUR) {
-    const mins = Math.round(diffSeconds / MINUTE);
+    const mins = Math.floor(diffSeconds / MINUTE);
     return `${mins} ${mins === 1 ? 'minute' : 'minutes'} ago`;
   }
   if (diffSeconds < DAY) {
-    const hours = Math.round(diffSeconds / HOUR);
+    const hours = Math.floor(diffSeconds / HOUR);
     return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
   }
   if (diffSeconds < 2 * DAY) {
     return 'yesterday';
   }
   if (diffSeconds < MONTH) {
-    const days = Math.round(diffSeconds / DAY);
+    const days = Math.floor(diffSeconds / DAY);
     return `${days} days ago`;
   }
   if (diffSeconds < YEAR) {
-    const months = Math.round(diffSeconds / MONTH);
+    const months = Math.floor(diffSeconds / MONTH);
     return `${months} ${months === 1 ? 'month' : 'months'} ago`;
   }
-  const years = Math.round(diffSeconds / YEAR);
+  const years = Math.floor(diffSeconds / YEAR);
   return `${years} ${years === 1 ? 'year' : 'years'} ago`;
 }
 
