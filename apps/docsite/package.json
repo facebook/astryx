@@ -48,7 +48,7 @@
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.5.2",
     "typescript": "^6.0.3",
-    "vitest": "^3.2.1"
+    "vitest": "^4.1.9"
   },
   "browserslist": [
     "last 1 Chrome version"
