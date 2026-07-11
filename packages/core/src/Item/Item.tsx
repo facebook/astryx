@@ -470,9 +470,9 @@ export function Item({
   return (
     <Component
       ref={ref as React.Ref<never>}
+      {...restProps}
       aria-selected={isSelected || undefined}
       aria-disabled={isDisabled || undefined}
-      {...restProps}
       {...mergeProps(
         themeProps('item', {density, align}),
         stylex.props(

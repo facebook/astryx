@@ -14,6 +14,8 @@ import {AspectRatio} from '@astryxdesign/core/AspectRatio';
 import type {BlogPost} from '../../lib/blog/schema';
 import {AuthorByline} from './AuthorByline';
 import {BlogCoverArt} from './BlogCoverArt';
+import {ReleaseCoverArt} from './ReleaseCoverArt';
+import {parseReleaseVersion} from '../../lib/blog/release';
 import css from './BlogCard.module.css';
 
 const styles = stylex.create({
@@ -63,6 +65,7 @@ export function BlogCard({
   feature = false,
   hideDescription = false,
 }: BlogCardProps) {
+  const releaseVersion = parseReleaseVersion(post.title);
   return (
     <Link
       href={`/blog/${post.slug}`}
@@ -71,13 +74,18 @@ export function BlogCard({
       display="block"
       xstyle={styles.card}
       className={css.card}>
-      <VStack gap={3} xstyle={styles.inner}>
+      <VStack gap={feature ? 4 : 3} xstyle={styles.inner}>
         <AspectRatio ratio={16 / 9} xstyle={styles.cover} className={css.cover}>
           {post.coverImage ? (
             <img
               src={post.coverImage}
               alt={post.coverAlt ?? ''}
               {...stylex.props(styles.coverImg)}
+            />
+          ) : releaseVersion ? (
+            <ReleaseCoverArt
+              version={releaseVersion}
+              packageName={post.releasePackage ?? undefined}
             />
           ) : (
             <BlogCoverArt seed={post.slug} feature={feature} />

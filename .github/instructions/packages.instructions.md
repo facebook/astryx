@@ -1,5 +1,5 @@
 ---
-applyTo: "packages/**"
+applyTo: 'packages/**'
 ---
 
 # Package review instructions
@@ -21,8 +21,8 @@ Weight the review by what the PR is trying to do:
   correct (matches the code/API/behavior on this branch). When a claim is a
   matter of best practice or judgment rather than fact, **call it out for a
   maintainer** rather than asserting it's right or wrong.
-- **New features / new components** — whether this is the *right way to expose
-  the functionality* is a human judgment call. **Do not render a verdict on the
+- **New features / new components** — whether this is the _right way to expose
+  the functionality_ is a human judgment call. **Do not render a verdict on the
   API design here.** You may still run the mechanical, convention, and
   convergence checks below, but explicitly **flag that maintainers should review
   the API surface carefully** (and that new surface should be spec'd and
@@ -41,7 +41,7 @@ Add an explicit **"⚠️ Needs engineering / human judgment"** note when the ch
 involves any of:
 
 - **New public API surface or an API-shape decision** — a new component, a new
-  prop/variant, or changing an existing prop's contract. (The *right* shape is a
+  prop/variant, or changing an existing prop's contract. (The _right_ shape is a
   human call — see New features above.)
 - **New runtime complexity** — effects, refs, observers
   (`MutationObserver`/`ResizeObserver`/`IntersectionObserver`), imperative DOM
@@ -56,15 +56,15 @@ involves any of:
 - **Escape hatches / breaking the system** — raw CSS, non-token values,
   `swizzle`d source, or overriding a system default; these need a documented
   rationale an engineer signs off on.
-- **Anything the change *asserts* works but can't be verified from the diff** —
+- **Anything the change _asserts_ works but can't be verified from the diff** —
   performance claims, cross-browser/RTL/theme behavior, SSR/hydration.
 
 Pure presentational work well within the system — composing existing components,
 using tokens and documented props, adding a story or realistic mock data — does
 **not** need this flag. Reserve it for the cases above so it stays meaningful.
 
-When you raise it, be specific: name *what* in the diff needs the deeper look and
-*why* (e.g. "the `ResizeObserver` in `X.tsx` is a runtime-complexity + perf
+When you raise it, be specific: name _what_ in the diff needs the deeper look and
+_why_ (e.g. "the `ResizeObserver` in `X.tsx` is a runtime-complexity + perf
 decision — an engineer should confirm a container query wouldn't do"), so the
 designer knows exactly what to hand off.
 
@@ -102,7 +102,7 @@ don't evaluate it in isolation. First check whether other components already
 express the same capability, and push to converge on the existing shape:
 
 - **Search for prior art.** Look for existing components with a prop of similar
-  *purpose* or *behavior* — the same axis of variation, even under a different
+  _purpose_ or _behavior_ — the same axis of variation, even under a different
   name (e.g. `size` vs `scale`, `isLoading` vs `busy`, `tone` vs `variant` vs
   `color`, `density` vs `compact`). Comparable components should already be
   siblings in the same family; check those first, then the wider system.
@@ -121,9 +121,52 @@ express the same capability, and push to converge on the existing shape:
   vibe-tested rather than settled in the PR (route naming disputes to
   [API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)).
 
+### Plugins & hooks that extend a host component
+
+Some components expose a plugin/hook surface (e.g. `Table` with
+`useTable*` plugins). These extend a host, so review them for consistency _with
+that host_, not in isolation — recurring issues seen in real review:
+
+- **Mirror the host's API shape, in and out.** A plugin should accept and return
+  the same shapes the host already uses. If `Table` accepts `idKey` (a key that
+  may be a string _or_ a getter, so callers avoid writing callbacks), a plugin
+  should accept the same rather than forcing a bespoke callback — and should
+  **name its outputs to match the host's props** so they compose directly.
+  Prefer `const {idKey} = usePlugin(); <Table idKey={idKey} />` over exporting
+  `getRowKey` that the caller has to remember maps to `idKey`. Flag renamed
+  or reshaped equivalents.
+- **Semantic values first, arbitrary as the escape hatch.** When a plugin/prop
+  takes a visual value (color, status, tone), the first-class API is the
+  system's **semantic tokens** (`color: 'accent'` / `'success'`), not raw values.
+  Allowing arbitrary values is fine as an escape hatch, but the _default_ shape
+  should be system semantics — flag an API where the raw/arbitrary form is the
+  primary one.
+- **Decide host-level vs plugin-level deliberately** — especially for
+  accessibility. If an option affects host semantics (e.g. a row `startFrom`
+  index that changes `aria-rowindex`), it likely belongs on the **host** so the
+  semantics are correct even when nothing visible renders. Flag a11y-affecting
+  config buried in a plugin when the host is the right owner (and note
+  interactions like pagination).
+
+### Hook stability & reuse of existing data
+
+For hooks (plugins or otherwise), watch two things that bit real Table PRs:
+
+- **Dependency-set stability.** A hook whose memoized output depends on a
+  frequently-changing value (e.g. the whole `data` array) will re-compute and
+  hand consumers a new reference on every update, destabilizing everything
+  downstream. Flag dependency sets that make the return value churn; prefer
+  stable keys/refs.
+- **Don't re-derive what's already available.** If the host or the DOM already
+  exposes a value, read it instead of recomputing. Real case: a row-index plugin
+  looped over `data` to compute indices the table row already carried as
+  `aria-rowindex` — the loop (and the extra API surface) was avoidable. Flag
+  redundant full-collection loops and per-item rescans when an existing
+  value/source would do (ties into the complexity/perf smell in Judgment).
+
 ## Design review
 
-Some package changes are also *design* changes. When a diff affects how a
+Some package changes are also _design_ changes. When a diff affects how a
 component **looks or behaves visually**, review it against
 **[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** —
 the design-side sibling of API Conventions — in addition to the checks below.
@@ -158,7 +201,7 @@ flag the concrete "smells" that page names:
   arbitrary z-index and hairline-border-plus-diffuse-shadow or colored glows.
 - **Typography** — role tokens; hierarchy ≥1.25 size ratio; body ≥12px; leading
   ≥1.3; flag flat hierarchy, all-caps/justified/gradient body, lines >~75ch.
-- **Color** — every fg/bg pair passes WCAG AA in light *and* dark; interaction
+- **Color** — every fg/bg pair passes WCAG AA in light _and_ dark; interaction
   tints are alpha overlays (not opaque); status pairs color with an icon (never
   color alone); one clear primary action; no pure `#000`/`#fff`.
 - **Motion** — duration matches the change's weight; only `transform`/`opacity`
@@ -192,13 +235,13 @@ high-attention (post a note rather than hard-blocking — this is advisory).
 
 **Flag a diff that adds a brand-new component directory under
 `packages/core/src/<Name>/` with no prior presence in `packages/lab/src/`.**
-That's a component skipping the staging step. (A lab→core *promotion* — a delete
+That's a component skipping the staging step. (A lab→core _promotion_ — a delete
 under `packages/lab/src/**` paired with the add in core — is the healthy path
-and is fine; the concern is the *net-new* component that was never in lab.)
+and is fine; the concern is the _net-new_ component that was never in lab.)
 
 When you see a net-new core component, ask the author to confirm either that it
 went through lab, or that it genuinely meets the core bar that lab explicitly
-does *not* guarantee:
+does _not_ guarantee:
 
 - Full keyboard + a11y (ARIA contracts, focus, `:hover` guarded by
   `@media (hover: hover)`)
@@ -228,7 +271,7 @@ the template design bar. The CLI reads `hidden: true` and
 `hiddenComponents: ['Name', ...]` from a template's `.doc.mjs`; hidden entries
 are skipped from `--list`.
 
-**Flag a diff that adds a *new* template/block whose `.doc.mjs` is not
+**Flag a diff that adds a _new_ template/block whose `.doc.mjs` is not
 `hidden: true`** (i.e. it's publicly listed from the moment it lands). A new
 template appearing already-visible skipped the hidden-staging step and may not
 be hardened yet. Ask the author to confirm it meets the template design bar
@@ -253,7 +296,39 @@ and the Design review section above), or to add `hidden: true` until it does.
   form controls — never `stylex.defaultMarker()`.
 - **Semantic tokens only** — no hardcoded color/spacing/radius/shadow;
   theme-agnostic output.
+- **Avoid unnecessary wrapper elements — prefer props and hooks.** Astryx favors
+  attaching behavior/style to existing elements over adding a new wrapper node.
+  Flag an added wrapper when a lighter path exists:
+  - _Styling:_ components extend `BaseProps` (they take `xstyle`), so apply style
+    directly — `<Divider xstyle={hasOutline && styles.titleDivider} />` — instead
+    of wrapping the component in a styled `<div>`.
+  - _Behavior:_ reach for the behavior **hook** or **prop** the system already
+    exposes rather than a wrapper component. E.g. a tooltip is available via the
+    `tooltip` prop / `useTooltip` hook, and there are hooks for many behaviors
+    (`useHoverCard`, `useClickableContainer`, `useCollapsible`, `useFocusTrap`,
+    `useEntryAnimation`, `useInteractiveRole`, …). Prefer composing the hook onto
+    the real element over introducing a wrapper that exists only to host the
+    behavior. A wrapper adds a DOM node, can break layout/flex/grid parent-child
+    relationships, and often complicates focus/ARIA — call it out when a hook or
+    prop would avoid it.
 - **Navigation** uses `useLinkComponent()`, never a hardcoded `<a>`.
+- **Reuse the existing accessibility primitives — don't hand-roll.** Astryx
+  ships shared a11y building blocks; new accessibility work should compose them
+  rather than reinvent the behavior inline. Flag hand-rolled equivalents and
+  point at the primitive:
+  - Screen-reader-only content → the **`VisuallyHidden`** component, not a custom
+    `sr-only`/clip-rect style or an off-screen `<span>`.
+  - Live-region announcements → **`useAnnounce`**, not an ad-hoc `aria-live` node
+    wired up by hand.
+  - Roving focus / arrow-key navigation → **`useListFocus`**, **`useGridFocus`**,
+    or **`useTreeFocus`**; typeahead → **`useTypeahead`**; a keyboard-shortcut
+    hint → **`useKeyboardHint`**; focus trapping → **`useFocusTrap`**; interactive
+    role/state wiring → **`useInteractiveRole`**.
+    These already implement the WAI-ARIA APG patterns and are tested, so reusing
+    them keeps behavior consistent across the system. A genuinely new a11y pattern
+    with no existing primitive is fine — but call it out for careful review (see
+    "When to flag for engineering / human judgment") rather than landing a bespoke
+    implementation quietly.
 - **Docs in sync** — JSDoc file headers, `SYNC:` reminders, and `.doc.mjs`.
   `@example` fences in JSDoc must be plain ` ``` ` (never language-tagged), or
   Storybook autodocs won't render them.
@@ -278,8 +353,8 @@ checks, flag it.
     especially should be rare and deliberate.
   - **Worsen the experience it's trying to help** — e.g. announcing on every
     keystroke, or moving focus in a way that traps or disorients.
-  Prefer announcing on a real state transition, debouncing/coalescing where the
-  content is noisy, and reserving `assertive` for genuinely urgent messages.
+    Prefer announcing on a real state transition, debouncing/coalescing where the
+    content is noisy, and reserving `assertive` for genuinely urgent messages.
 - **`useEffect` is a smell.** Treat a new/changed Effect as something to justify,
   not accept by default. Most UI logic doesn't need one — look for whether it
   belongs in an **event handler / callback** (logic that responds to a user
@@ -288,7 +363,7 @@ checks, flag it.
   state). Use React's own guidance as the bar:
   [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
   and [Synchronizing with Effects](https://react.dev/learn/synchronizing-with-effects).
-  Genuine Effects synchronize with an *external* system (subscriptions, the DOM,
+  Genuine Effects synchronize with an _external_ system (subscriptions, the DOM,
   network, non-React widgets) — those are fine; call out the ones that don't.
 - **Overly complex behavior for a simple need.** Flag heavy runtime machinery
   added where a simpler, declarative solution exists — the classic being a
@@ -302,6 +377,15 @@ checks, flag it.
   key, a container query, or a prop instead of JS observing the DOM? Prefer the
   simpler mechanism; call out the complexity and the regression risk when the
   heavy approach isn't justified.
+- **Silent breaking changes to shared types/context.** Adding a **required**
+  field to a shared type, context value, or component API is a breaking change
+  for every existing consumer — even when the PR's own feature doesn't need them
+  to change. The **tell**: unrelated tests, examples, or call sites had to be
+  updated just to satisfy the new field. When you see that, flag it and ask
+  whether the field should be **optional** (applied internally with a default)
+  instead — and whether the breaking change is worth it. (Real case: a new
+  required `aria-controls` id on a mobile-nav context forced edits to surfaces
+  that didn't otherwise need it.)
 - **Other smells.** State expressed by unmounting focusable elements (toggle
   visibility so focus/a11y survive), unnecessary `useState` (prefer derived
   values or refs, especially from interaction handlers), and excessive comments.

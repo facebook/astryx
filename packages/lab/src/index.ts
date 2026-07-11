@@ -31,6 +31,9 @@ export {
   type ChatReasoningProps,
 } from './ChatReasoning/ChatReasoning';
 
+// Drawer — experimental overlay panel
+export {Drawer, type DrawerProps} from './Drawer';
+
 // Schedule — experimental full-calendar views
 export * from './Schedule';
 
