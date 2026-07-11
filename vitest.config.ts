@@ -4,7 +4,12 @@
  * @file vitest.config.ts
  * @input Uses vitest/config, @vitejs/plugin-react
  * @output Vitest configuration with jsdom, coverage, and test setup
- * @position Root test config; applies to all packages in monorepo
+ * @position Root test config; extended by the `ui` project in
+ *   vitest.workspace.ts, which is the actual test entry point. Which files
+ *   run where is decided by the per-project include lists in the workspace
+ *   file — deliberately NOT here: workspace `extends` MERGES arrays, so an
+ *   include list in this file would leak into every extending project and
+ *   double-run files.
  *
  * SYNC: When modified, update this header and root README.md
  */
@@ -59,11 +64,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    include: [
-      'packages/**/src/**/*.test.{ts,tsx,mjs}',
-      'internal/**/*.test.{ts,tsx,mjs}',
-      'scripts/**/*.test.{ts,tsx,mjs}',
-    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
