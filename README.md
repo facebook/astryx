@@ -95,6 +95,15 @@ Battle-tested design solutions for common interactions and workflows: table page
 
 We welcome contributions! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide.
 
+Our conventions and review rubrics live in the
+[Contributing wiki](https://github.com/facebook/astryx/wiki/Contributing) —
+including [API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions),
+[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions),
+the [Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle),
+and the [Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)
+and [Blog Review](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric)
+rubrics. Read the relevant one before opening a PR.
+
 Quick start for contributors: this repo uses **Node 22+ on an active LTS line**
 and **pnpm 11**. Install pnpm directly, or enable
 [Corepack](https://nodejs.org/api/corepack.html) once so the pinned pnpm version
