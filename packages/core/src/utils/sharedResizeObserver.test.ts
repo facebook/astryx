@@ -23,7 +23,7 @@ describe('sharedResizeObserver', () => {
         unobserve: mockUnobserve,
         disconnect: mockDisconnect,
       };
-    });
+    }) as unknown as typeof ResizeObserver;
   });
 
   afterEach(() => {
