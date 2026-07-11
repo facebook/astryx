@@ -438,11 +438,13 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
   const contextValue = useMemo(
     () => ({
       // Input uses optimisticSearch — reflects keystrokes immediately.
-      // setSearch calls setOptimisticSearch for instant feedback then
-      // triggers the async search directly (no effect indirection).
+      // setSearch calls setOptimisticSearch inside a transition for instant
+      // feedback then triggers the async search directly (no effect indirection).
       search: optimisticSearch,
       setSearch: (query: string) => {
-        setOptimisticSearch(query);
+        startTransition(() => {
+          setOptimisticSearch(query);
+        });
         runSearch(query);
       },
       value,
