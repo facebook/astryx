@@ -16,7 +16,7 @@
     "@heroicons/react": "^2.2.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@monaco-editor/react": "^4.8.0-rc.3",
-    "@stylexjs/stylex": "^0.18.3",
+    "@stylexjs/stylex": "^0.19.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^1.2.0",
     "@astryxdesign/charts": "*",

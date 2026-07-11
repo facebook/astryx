@@ -20,6 +20,7 @@ minimumReleaseAgeExclude:
 # Moved from package.json's "pnpm" field: pnpm 11 no longer reads
 # pnpm.overrides / pnpm.onlyBuiltDependencies from package.json.
 overrides:
+  '@stylexjs/stylex': ^0.19.0
   prettier: ^3.9.3
   postcss: ^8.5.10
   picomatch: ^4.0.4
