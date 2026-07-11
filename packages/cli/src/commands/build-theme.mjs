@@ -939,8 +939,15 @@ export function registerTheme(program) {
         if (component.length > 0) {
           const componentInner = component.join('\n\n');
           const componentScope = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
+          // light-dark() needs a color-scheme declaration in this bundle, but a
+          // bare `:root { color-scheme: light dark }` outranks reset.css's
+          // `html[data-theme]` mapping (astryx-theme layer comes after reset),
+          // silently defeating `<Theme mode>` forcing on <html>. Mirror the
+          // attribute-keyed mapping so the declaration follows the active mode.
           const colorSchemeDecl = componentScope.includes('light-dark(')
-            ? '  :root { color-scheme: light dark; }\n\n'
+            ? '  :root { color-scheme: light dark; }\n' +
+              '  html[data-theme="light"] { color-scheme: light; }\n' +
+              '  html[data-theme="dark"] { color-scheme: dark; }\n\n'
             : '';
           cssParts.push(
             `@layer astryx-theme {\n${colorSchemeDecl}${componentScope}\n}`,
