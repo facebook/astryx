@@ -12,49 +12,13 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {computeAccessibleName} from 'dom-accessibility-api';
+// getButton/queryButton instead of getByRole('button', {name}): the closed
+// popover keeps a two-month Calendar (~85 role=button nodes) mounted, which
+// made every role+name query compute ~85 accessible names through jsdom's
+// slow getComputedStyle (~450ms per query). See fastRoleQueries.ts.
+import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateRangeInput} from './DateRangeInput';
 import type {DateRange} from './DateRangeInput';
-
-// Fast role=button lookup by accessible name.
-//
-// The closed popover keeps a two-month Calendar (~85 role=button nodes)
-// permanently mounted, and RTL's getByRole('button', {name}) computes the
-// accessible name of EVERY candidate before filtering. Each computation asks
-// jsdom's getComputedStyle about visibility, which is slow enough (~5ms/node)
-// that a single trigger lookup cost ~450ms and made this file ~10x slower
-// per test than DateInput's.
-//
-// These helpers keep the exact same name algorithm (dom-accessibility-api is
-// what RTL uses internally) but inject a constant "visible" style stub — the
-// name computation only consults display/visibility, and with {hidden: true}
-// semantics visibility must not exclude candidates anyway. Trade-off vs
-// getByRole: no uniqueness check (first match wins).
-const visibleStyleStub = {
-  getPropertyValue: (prop: string) =>
-    prop === 'display' ? 'block' : prop === 'visibility' ? 'visible' : '',
-} as CSSStyleDeclaration;
-
-function queryButton(name: string | RegExp): HTMLElement | null {
-  return (
-    screen.queryAllByRole('button', {hidden: true}).find(el => {
-      const accessibleName = computeAccessibleName(el, {
-        getComputedStyle: () => visibleStyleStub,
-      });
-      return typeof name === 'string'
-        ? accessibleName === name
-        : name.test(accessibleName);
-    }) ?? null
-  );
-}
-
-function getButton(name: string | RegExp): HTMLElement {
-  const el = queryButton(name);
-  if (!el) {
-    throw new Error(`Unable to find a role=button named ${String(name)}`);
-  }
-  return el;
-}
 
 describe('DateRangeInput', () => {
   it('renders with label', () => {
