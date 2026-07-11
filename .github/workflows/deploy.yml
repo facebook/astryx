@@ -4,7 +4,14 @@
 # This workflow is WEBSITE-ONLY — it does not publish to npm. ALL npm publishing
 # (both stable `latest` and `canary` prereleases) lives in release.yml, so a
 # single npm trusted-publisher config (release.yml) covers everything.
-# Only runs on push to main — simple and sequential: sync → test → deploy
+# Only runs on push to main.
+#
+# Shape: sync-exports, test, and build run in PARALLEL; deploy waits for test
+# and build, then only assembles the built artifacts and pushes — it builds
+# nothing itself. (The old shape was sequential — test, then a deploy job that
+# rebuilt everything from scratch — which put ~13min between a merge and the
+# site going live. Building once, in parallel with test, cuts that roughly in
+# half while test still gates the actual push.)
 #
 # Deployment layout on gh-pages:
 #   /storybook/    — stable Storybook (always latest main)
@@ -80,12 +87,13 @@ jobs:
       - name: Typecheck core (including tests)
         run: pnpm -F @astryxdesign/core typecheck
 
-  deploy:
-    needs: test
-    if: always() && !cancelled() && needs.test.result == 'success'
+  # Build everything the site needs, in parallel with `test`. The results are
+  # handed to `deploy` as artifacts, so a broken test run never publishes —
+  # test still gates the push, it just no longer serializes the build.
+  build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -130,6 +138,61 @@ jobs:
           SANDBOX_BASE_PATH: /${{ github.event.repository.name }}/sandbox
           NODE_OPTIONS: '--max-old-space-size=4096'
 
+      # The landing page (assembled in `deploy`) links these straight out of
+      # the built tree, which deploy no longer has — stage them as an artifact.
+      - name: Stage landing page assets
+        run: |
+          mkdir -p site-assets
+          cp packages/core/dist/astryx.css site-assets/astryx.css
+          cp packages/core/src/reset.css site-assets/reset.css
+          cp packages/themes/neutral/dist/theme.css site-assets/theme.css
+
+      - name: Upload Storybook artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: deploy-storybook
+          path: apps/storybook/dist/
+          retention-days: 1
+
+      - name: Upload Sandbox artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: deploy-sandbox
+          path: apps/sandbox/out/
+          retention-days: 1
+
+      - name: Upload landing assets artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: deploy-assets
+          path: site-assets/
+          retention-days: 1
+
+  deploy:
+    needs: [test, build]
+    if: always() && !cancelled() && needs.test.result == 'success' && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: deploy-storybook
+          path: storybook-dist
+
+      - name: Download Sandbox artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: deploy-sandbox
+          path: sandbox-dist
+
+      - name: Download landing assets artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: deploy-assets
+          path: site-assets
+
       - name: Preserve PR previews and reports from gh-pages
         run: |
           # Clone current gh-pages to rescue PR previews and reports
@@ -160,12 +223,12 @@ jobs:
 
           # Stable storybook
           mkdir -p deploy/storybook
-          cp -r apps/storybook/dist/* deploy/storybook/
+          cp -r storybook-dist/* deploy/storybook/
 
           # Stable sandbox (built with basePath=/<repo>/sandbox)
-          if [ -d "apps/sandbox/out" ]; then
+          if [ -d "sandbox-dist" ]; then
             mkdir -p deploy/sandbox
-            cp -r apps/sandbox/out/* deploy/sandbox/
+            cp -r sandbox-dist/* deploy/sandbox/
           fi
 
           # Restore preserved PR previews and reports
@@ -178,11 +241,11 @@ jobs:
             echo "Restored reports"
           fi
 
-          # Copy Astryx dist CSS for the landing page
+          # Astryx CSS for the landing page, staged by the build job
           mkdir -p deploy/assets
-          cp packages/core/dist/astryx.css deploy/assets/astryx.css
-          cp packages/core/src/reset.css deploy/assets/reset.css
-          cp packages/themes/neutral/dist/theme.css deploy/assets/theme.css
+          cp site-assets/astryx.css deploy/assets/astryx.css
+          cp site-assets/reset.css deploy/assets/reset.css
+          cp site-assets/theme.css deploy/assets/theme.css
 
           cat > deploy/index.html << 'LANDING_EOF'
           <!DOCTYPE html>
