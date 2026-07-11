@@ -1,7 +1,7 @@
 ---
 title: 'The best CLI is one you never run'
 description: 'What the Astryx CLI is, why it is docs-first, and a tour of every command.'
-date: '2026-07-02'
+date: '2026-07-10'
 type: 'engineering'
 authors:
   - 'josephfarina'
