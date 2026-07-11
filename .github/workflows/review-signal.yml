@@ -73,6 +73,7 @@ concurrency:
 env:
   CODE_LABEL: "needs:code-review"
   DESIGN_LABEL: "needs:design-review"
+  COMMUNITY_LABEL: "community"
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -96,6 +97,7 @@ jobs:
             const { owner, repo } = context.repo;
             const CODE = process.env.CODE_LABEL;
             const DESIGN = process.env.DESIGN_LABEL;
+            const COMMUNITY = process.env.COMMUNITY_LABEL;
 
             // Resolve which PR(s) to flag. On a PR event we get the payload PR.
             // On manual dispatch we take the `pr` input (one PR), or re-flag
@@ -271,10 +273,26 @@ jobs:
             const toAdd = [];
             if (codeHighRisk && !current.includes(CODE)) toAdd.push(CODE);
             if (designAffecting && !current.includes(DESIGN)) toAdd.push(DESIGN);
+            // A quiet "community" marker on PRs authored by someone who is not
+            // on the eng or design team, so the contribution queue is filterable
+            // (label:community) separately from the review gates. Absence = team.
+            const authorIsOwner = authorIsEng || authorIsDesign;
+            if (!authorIsOwner && !current.includes(COMMUNITY)) toAdd.push(COMMUNITY);
             if (toAdd.length) {
               await github.rest.issues.addLabels({
                 owner, repo, issue_number: pr.number, labels: toAdd,
               });
+            }
+            // Keep it accurate: if an owner's PR somehow carries it (e.g. author
+            // was added to an owners file after opening), drop it.
+            if (authorIsOwner && current.includes(COMMUNITY)) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner, repo, issue_number: pr.number, name: COMMUNITY,
+                });
+              } catch (e) {
+                core.warning(`Could not remove ${COMMUNITY}: ${e.message}`);
+              }
             }
 
             // --- Request reviewers (can't request the author; ignore 422s). ---
