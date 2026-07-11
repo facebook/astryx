@@ -28,6 +28,46 @@ Weight the review by what the PR is trying to do:
   the API surface carefully** (and that new surface should be spec'd and
   vibe-tested) rather than approving the design yourself.
 
+## When to flag for engineering / human judgment
+
+Many Astryx contributions come from designers building with an AI assistant.
+The assistant is good at composition and convention, but some changes cross into
+territory where **engineering review and human judgment are required** — and the
+review should **say so explicitly** rather than quietly approving. If you (the
+reviewer) find yourself uncertain, that uncertainty is itself the signal: name
+it, don't paper over it.
+
+Add an explicit **"⚠️ Needs engineering / human judgment"** note when the change
+involves any of:
+
+- **New public API surface or an API-shape decision** — a new component, a new
+  prop/variant, or changing an existing prop's contract. (The *right* shape is a
+  human call — see New features above.)
+- **New runtime complexity** — effects, refs, observers
+  (`MutationObserver`/`ResizeObserver`/`IntersectionObserver`), imperative DOM
+  work, event listeners, timers, async coordination, or anything touching a hot
+  path (see the complexity/perf smell in Judgment). Designers should not land
+  this class of change without an engineer confirming it's the right mechanism.
+- **Accessibility semantics** — ARIA roles/states, focus management, keyboard
+  interaction, live regions/announcements. Getting these subtly wrong is worse
+  than omitting them.
+- **State, data flow, or lifecycle** — anything beyond presentational styling:
+  controlled/uncontrolled state, deriving state, memoization, render behavior.
+- **Escape hatches / breaking the system** — raw CSS, non-token values,
+  `swizzle`d source, or overriding a system default; these need a documented
+  rationale an engineer signs off on.
+- **Anything the change *asserts* works but can't be verified from the diff** —
+  performance claims, cross-browser/RTL/theme behavior, SSR/hydration.
+
+Pure presentational work well within the system — composing existing components,
+using tokens and documented props, adding a story or realistic mock data — does
+**not** need this flag. Reserve it for the cases above so it stays meaningful.
+
+When you raise it, be specific: name *what* in the diff needs the deeper look and
+*why* (e.g. "the `ResizeObserver` in `X.tsx` is a runtime-complexity + perf
+decision — an engineer should confirm a container query wouldn't do"), so the
+designer knows exactly what to hand off.
+
 ## API guidance (the review protocol)
 
 The authoritative rules live in the Contributing wiki — apply them and cite the
@@ -166,6 +206,16 @@ does *not* guarantee:
   (error/warning/success) where it's an input
 - Spec compliance with an approved spec issue, and **vibe-tested** API
 - Complete surface (see Mechanical checklist below)
+
+**Require a linked spec issue.** A new component's PR description must link to a
+tracking issue that clearly ran the
+[Component Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)
+(the evidence-backed 9-phase process: research, use-case enumeration, drafted
+API with rationale, surface-area audit, spec review, API arbitration). Flag a
+new-component PR whose description has **no linked spec issue**, or links an
+issue that is just a feature request / "add X" with none of the protocol's
+evidence — and ask for the spec before the API is reviewed on its merits. The
+spec is the contract; a new component without one isn't ready.
 
 Small additions and deliberately spec-approved direct-to-core work do happen —
 this isn't an automatic rejection — but a new core component that skipped lab
