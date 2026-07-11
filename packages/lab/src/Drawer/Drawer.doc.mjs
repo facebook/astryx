@@ -17,7 +17,7 @@ export const docs = {
     {
       name: 'isOpen',
       type: 'boolean',
-      description: 'Whether the drawer is open. Fully controlled — pair with onClose.',
+      description: 'Whether the drawer is open. Fully controlled; pair with onClose.',
       required: true,
     },
     {
@@ -29,13 +29,13 @@ export const docs = {
     {
       name: 'label',
       type: 'string',
-      description: 'Accessible label for the drawer. Required — the drawer has no built-in heading to derive a name from. Also names the built-in collapse/expand affordances.',
+      description: 'Accessible label for the drawer. Required; the drawer has no built-in heading to derive a name from. Also names the built-in collapse/expand affordances.',
       required: true,
     },
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Drawer content, rendered inside a full-height scrollable area. Compose your own header/body/footer; an element with data-autofocus is focused on open. Children stay mounted during the exit animation — keep the last-selected item rendered instead of nulling content on close.',
+      description: 'Drawer content, rendered inside a full-height scrollable area. Compose your own header/body/footer; an element with data-autofocus is focused on open. Children stay mounted during the exit animation; keep the last-selected item rendered instead of nulling content on close.',
       required: true,
     },
     {
@@ -47,25 +47,25 @@ export const docs = {
     {
       name: 'size',
       type: 'number | string',
-      description: "Size budget along the slide axis — width for start/end, height for top/bottom. A number is pixels; a string is any CSS length ('50%', '40dvh'). On viewports smaller than the budget the drawer fills the axis.",
+      description: "Size budget along the slide axis: width for start/end, height for top/bottom. A number is pixels; a string is any CSS length ('50%', '40dvh'). On viewports smaller than the budget the drawer fills the axis.",
       default: '400',
     },
     {
       name: 'hasScrim',
       type: 'boolean',
-      description: 'Modal scrim behind the drawer. true uses showModal() (top layer, focus trap, scroll lock; clicking the scrim closes — modal only); false uses show() for a non-modal overlay that does NOT trap focus and keeps the page behind interactive.',
+      description: 'Modal scrim behind the drawer. true uses showModal() (top layer, focus trap, scroll lock; clicking the scrim closes; modal only); false uses show() for a non-modal overlay that does NOT trap focus and keeps the page behind interactive.',
       default: 'true',
     },
     {
       name: 'hasCloseButton',
       type: 'boolean',
-      description: 'Built-in close button in the top-trailing corner. Defaults to the hasScrim value: modal drawers get one, non-modal drawers don’t.',
+      description: 'Built-in close button in the top-trailing corner. Defaults to the hasScrim value: modal drawers get one, non-modal drawers don\'t.',
       default: 'hasScrim',
     },
     {
       name: 'isCollapsed',
       type: 'boolean',
-      description: 'Collapse the drawer to a narrow click-to-expand rail showing the label vertically. Only supported for non-modal (hasScrim={false}) start/end drawers; ignored with a dev warning otherwise. Controlled — pair with onCollapsedChange.',
+      description: 'Collapse the drawer to a narrow click-to-expand rail showing the label vertically. Only supported for non-modal (hasScrim={false}) start/end drawers; ignored with a dev warning otherwise. Controlled; pair with onCollapsedChange.',
     },
     {
       name: 'onCollapsedChange',
@@ -74,15 +74,15 @@ export const docs = {
     },
   ],
   usage: {
-    description: 'An edge-anchored overlay for inspectors, detail views, and sheets — the "click a table row, see its details" pattern. Escape closes the drawer and focus returns to the element that opened it. Entry/exit slide animation respects prefers-reduced-motion. Stacking contract: sibling drawers stack last-opened on top, Escape closes only the topmost, and closing peels innermost-first — render them as siblings, never nested.',
+    description: 'An edge-anchored overlay for inspectors, detail views, and sheets: the "click a table row, see its details" pattern. Escape closes the drawer and focus returns to the element that opened it. Entry/exit slide animation respects prefers-reduced-motion. Stacking contract: sibling drawers stack last-opened on top, Escape closes only the topmost, and closing peels innermost-first; render them as siblings, never nested.',
     bestPractices: [
       { guidance: true, description: 'Use for contextual detail views (row inspectors, entity details) where the user should keep the underlying list in sight.' },
       { guidance: true, description: 'Keep the caller as the source of truth: derive isOpen from selection state and clear the selection in onClose.' },
-      { guidance: true, description: 'Use hasScrim={false} for master-detail flows — non-modal drawers do not trap focus and the page behind stays interactive.' },
+      { guidance: true, description: 'Use hasScrim={false} for master-detail flows; non-modal drawers do not trap focus and the page behind stays interactive.' },
       { guidance: true, description: 'Keep the last-selected item rendered on close: children stay mounted during the exit animation, so nulling content mid-close blanks the panel while it slides out.' },
       { guidance: true, description: 'Use isCollapsed/onCollapsedChange for persistent non-modal side panels; the collapsed rail is click-to-expand.' },
-      { guidance: false, description: 'Use a Drawer for short confirmations or small forms — use Dialog or AlertDialog instead.' },
-      { guidance: false, description: 'Nest a Drawer inside another Drawer; render drawers as siblings — the last-opened stacks on top and Escape closes it first.' },
+      { guidance: false, description: 'Use a Drawer for short confirmations or small forms; use Dialog or AlertDialog instead.' },
+      { guidance: false, description: 'Nest a Drawer inside another Drawer; render drawers as siblings; the last-opened stacks on top and Escape closes it first.' },
     ],
   },
   examples: [
@@ -150,8 +150,8 @@ export const docsDense = {
       { guidance: true, description: 'Use hasScrim={false} for non-modal master-detail flows (no focus trap, page stays interactive).' },
       { guidance: true, description: 'Keep last-selected content rendered on close (children stay mounted during exit).' },
       { guidance: true, description: 'Use isCollapsed/onCollapsedChange for persistent panels; rail is click-to-expand.' },
-      { guidance: false, description: 'Use for confirmations or small forms — use Dialog instead.' },
-      { guidance: false, description: 'Nest Drawers — render as siblings; Escape closes the last-opened first.' },
+      { guidance: false, description: 'Use for confirmations or small forms; use Dialog instead.' },
+      { guidance: false, description: 'Nest Drawers: render as siblings; Escape closes the last-opened first.' },
     ],
   },
 };
