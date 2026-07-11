@@ -27,6 +27,16 @@
 # or CODEOWNER). Detection is path-based and deterministic; the Copilot reviewer
 # reads these labels to focus its review (see .github/copilot-instructions.md).
 #
+# HARD GATE: this also emits a "review-required" CHECK RUN. When gated, its
+# conclusion is action_required — which blocks a required check (GitHub treats
+# only success/skipped/neutral as passing) yet renders as an orange "Action
+# required", NOT a red failure, so the UI reads "needs review" not "broken". An
+# owner's approval flips it to success. Make "review-required" a REQUIRED status
+# check in branch protection: a required check blocks non-admin merges even for
+# internal contributors who have write access (write lets you merge a green PR,
+# not a blocked one). With this in place, native required-review count can drop
+# to 0 — the check is the author-aware gate.
+#
 # Uses pull_request_target so it can label / request reviewers / disable
 # auto-merge on fork PRs. It only reads the PR file LIST and repo owner files via
 # the API — it never checks out or runs PR-controlled code. Do not add checkout
@@ -62,6 +72,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: read
+      checks: write
     steps:
       - name: Detect signals and route
         uses: actions/github-script@v9
@@ -251,6 +262,52 @@ jobs:
             // *why* review is needed with actual judgment — better than a static
             // comment could.
 
+            // --- The blocking gate: a "review-required" check run. ---
+            // When gated, we set conclusion=action_required — which BLOCKS a
+            // required check (GitHub only treats success/skipped/neutral as
+            // passing) but renders as an orange "Action required", NOT a red
+            // failure, so the UI signal reads "needs review" rather than
+            // "something broke". An owner's approval flips it to success (see the
+            // clear job). Make this a required status check named "review-required"
+            // in branch protection so write-access internal contributors are held
+            // too — a required check blocks non-admins regardless of write access.
+            const gated = codeHighRisk || designAffecting;
+            const gateReasons = [
+              ...(codeHighRisk ? codeReasons : []),
+              ...(designAffecting ? designReasons.map((r) => `design: ${r}`) : []),
+            ];
+            try {
+              await github.rest.checks.create({
+                owner,
+                repo,
+                name: 'review-required',
+                head_sha: pr.head.sha,
+                status: 'completed',
+                conclusion: gated ? 'action_required' : 'success',
+                output: gated
+                  ? {
+                      title: 'Review required before merge',
+                      summary: [
+                        'This PR needs a human review before it can merge:',
+                        '',
+                        ...gateReasons.map((r) => `- ${r}`),
+                        '',
+                        'It clears automatically when an entitled owner approves',
+                        '(code owner for code, design owner or code owner for design).',
+                        'Eng owners self-serve code; design owners self-serve design.',
+                      ].join('\n'),
+                    }
+                  : {
+                      title: 'No review required',
+                      summary:
+                        'No high-risk code or design-affecting change was detected for this author, so no human review is required to merge.',
+                    },
+              });
+              core.info(`review-required check: ${gated ? 'action_required' : 'success'}`);
+            } catch (e) {
+              core.warning(`Could not set review-required check: ${e.message}`);
+            }
+
   # ---------------------------------------------------------------------------
   # Clear labels on the right kind of approval.
   #   needs:code-review   → cleared by a CODEOWNER approval.
@@ -263,6 +320,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: read
+      checks: write
     steps:
       - name: Remove labels the approver is entitled to clear
         uses: actions/github-script@v9
@@ -304,9 +362,47 @@ jobs:
                   owner, repo, issue_number: pr.number, name,
                 });
                 core.info(`Cleared ${name} (approved by @${reviewer}).`);
+                return true;
               } catch (e) {
                 core.warning(`Could not remove ${name}: ${e.message}`);
+                return false;
               }
             }
-            if (current.includes(CODE) && isCodeOwner) await removeLabel(CODE);
-            if (current.includes(DESIGN) && (isDesignOwner || isCodeOwner)) await removeLabel(DESIGN);
+
+            // Track what remains gated after this approval.
+            let codeStillGated = current.includes(CODE);
+            let designStillGated = current.includes(DESIGN);
+            if (codeStillGated && isCodeOwner) {
+              if (await removeLabel(CODE)) codeStillGated = false;
+            }
+            if (designStillGated && (isDesignOwner || isCodeOwner)) {
+              if (await removeLabel(DESIGN)) designStillGated = false;
+            }
+
+            // If nothing is gated anymore, flip the review-required check to
+            // success so the PR is mergeable. If a gate remains (e.g. a code
+            // owner approved but the design gate still needs a design owner),
+            // leave the check as-is — it stays action_required and keeps blocking.
+            if (!codeStillGated && !designStillGated) {
+              try {
+                await github.rest.checks.create({
+                  owner,
+                  repo,
+                  name: 'review-required',
+                  head_sha: pr.head.sha,
+                  status: 'completed',
+                  conclusion: 'success',
+                  output: {
+                    title: 'Review complete',
+                    summary: `Cleared by @${reviewer}'s approval.`,
+                  },
+                });
+                core.info(`review-required check → success (cleared by @${reviewer}).`);
+              } catch (e) {
+                core.warning(`Could not update review-required check: ${e.message}`);
+              }
+            } else {
+              core.info(
+                `Gate remains after @${reviewer}'s approval (code=${codeStillGated}, design=${designStillGated}); check stays blocking.`,
+              );
+            }
