@@ -5,6 +5,7 @@ import {ButtonGroup} from '@astryxdesign/core/ButtonGroup';
 import {Button} from '@astryxdesign/core/Button';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Icon} from '@astryxdesign/core/Icon';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
 import {
   ClipboardDocumentIcon,
   ScissorsIcon,
@@ -36,10 +37,7 @@ const iconSize = {width: 16, height: 16} as const;
 export const Horizontal: Story = {
   render: () => (
     <ButtonGroup label="Clipboard actions">
-      <Button
-        label="Copy"
-        icon={<ClipboardDocumentIcon style={iconSize} />}
-      />
+      <Button label="Copy" icon={<ClipboardDocumentIcon style={iconSize} />} />
       <Button label="Cut" icon={<ScissorsIcon style={iconSize} />} />
       <Button label="Paste" icon={<ClipboardIcon style={iconSize} />} />
     </ButtonGroup>
@@ -61,14 +59,8 @@ export const Vertical: Story = {
 export const IconOnly: Story = {
   render: () => (
     <ButtonGroup label="Text formatting">
-      <IconButton
-        label="Bold"
-        icon={<Icon icon={BoldIcon} size="sm" />}
-      />
-      <IconButton
-        label="Italic"
-        icon={<Icon icon={ItalicIcon} size="sm" />}
-      />
+      <IconButton label="Bold" icon={<Icon icon={BoldIcon} size="sm" />} />
+      <IconButton label="Italic" icon={<Icon icon={ItalicIcon} size="sm" />} />
       <IconButton
         label="Underline"
         icon={<Icon icon={UnderlineIcon} size="sm" />}
@@ -157,5 +149,47 @@ export const Mixed: Story = {
         icon={<ChevronDownIcon style={iconSize} />}
       />
     </ButtonGroup>
+  ),
+};
+
+/**
+ * Members that render their own layer compose correctly, including as the
+ * trailing member.
+ *
+ * A DropdownMenu renders `trigger + popover`, and a tooltip'd Button renders
+ * `button + tooltip layer`. Those layers are real (invisible) DOM siblings, so
+ * the trailing radius is keyed off a group-item marker rather than
+ * `:last-child` — otherwise the layer would steal the slot and the last button
+ * would keep square outer corners (#2508).
+ *
+ * The outer corners of each group below should be rounded.
+ */
+export const WithLayerRenderingMembers: Story = {
+  render: () => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
+      <ButtonGroup label="Approve action">
+        <Button label="Allow once" variant="primary" />
+        <DropdownMenu
+          hasChevron={false}
+          button={{
+            label: 'Allow options',
+            variant: 'primary',
+            isIconOnly: true,
+            icon: <Icon icon="chevronDown" />,
+          }}
+          items={[{label: 'Allow for 30 minutes'}, {label: 'Always allow'}]}
+        />
+      </ButtonGroup>
+
+      <ButtonGroup label="Text formatting">
+        <IconButton label="Bold" icon={<BoldIcon style={iconSize} />} />
+        <IconButton label="Italic" icon={<ItalicIcon style={iconSize} />} />
+        <IconButton
+          label="Underline"
+          icon={<UnderlineIcon style={iconSize} />}
+          tooltip="Underline"
+        />
+      </ButtonGroup>
+    </div>
   ),
 };

@@ -8,9 +8,15 @@
  * @output Exports ButtonGroup component, context, and types
  * @position Groups buttons with connected styling; consumed by index.ts
  *
- * Children (Button, IconButton) consume the ButtonGroup context to
- * apply position-aware styles using CSS :first-child / :last-child
- * pseudo-classes — no cloneElement or wrapper divs needed.
+ * Children (Button, IconButton) consume the ButtonGroup context to apply
+ * position-aware styles in pure CSS — no cloneElement or wrapper divs needed.
+ *
+ * The leading edge uses :first-child. The trailing edge CANNOT: members like a
+ * tooltip'd Button or a DropdownMenu render an invisible layer element after
+ * their button, which would steal the :last-child slot and leave the real
+ * trailing button with square corners (#2508). Instead, each member stamps
+ * BUTTON_GROUP_ITEM_ATTR and the trailing radius keys off
+ * :not(:has(~ [data-astryx-group-item])) — see Button.tsx.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ButtonGroup/ButtonGroup.doc.mjs (props table, features)
@@ -97,7 +103,10 @@ const styles = stylex.create({
  * handling (only on outer edges), and horizontal or vertical orientation.
  *
  * Children automatically detect the group via context and apply position-aware
- * styles using CSS :first-child / :last-child pseudo-classes.
+ * styles in pure CSS.
+ *
+ * Members that render their own layer — a Button with a `tooltip`, or a
+ * DropdownMenu — compose correctly, including as the trailing member.
  *
  * @example
  * ```
@@ -105,6 +114,17 @@ const styles = stylex.create({
  *   <Button label="Copy" />
  *   <Button label="Cut" />
  *   <Button label="Paste" />
+ * </ButtonGroup>
+ * ```
+ *
+ * @example
+ * ```
+ * <ButtonGroup label="Approve action">
+ *   <Button label="Allow once" variant="primary" />
+ *   <DropdownMenu
+ *     button={{label: 'Allow options', variant: 'primary', isIconOnly: true, icon: <Icon icon="chevronDown" />}}
+ *     items={[{label: 'Allow for 30 minutes'}, {label: 'Always allow'}]}
+ *   />
  * </ButtonGroup>
  * ```
  */
