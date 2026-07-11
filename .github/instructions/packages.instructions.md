@@ -312,6 +312,23 @@ and the Design review section above), or to add `hidden: true` until it does.
     relationships, and often complicates focus/ARIA — call it out when a hook or
     prop would avoid it.
 - **Navigation** uses `useLinkComponent()`, never a hardcoded `<a>`.
+- **Reuse the existing accessibility primitives — don't hand-roll.** Astryx
+  ships shared a11y building blocks; new accessibility work should compose them
+  rather than reinvent the behavior inline. Flag hand-rolled equivalents and
+  point at the primitive:
+  - Screen-reader-only content → the **`VisuallyHidden`** component, not a custom
+    `sr-only`/clip-rect style or an off-screen `<span>`.
+  - Live-region announcements → **`useAnnounce`**, not an ad-hoc `aria-live` node
+    wired up by hand.
+  - Roving focus / arrow-key navigation → **`useListFocus`**, **`useGridFocus`**,
+    or **`useTreeFocus`**; typeahead → **`useTypeahead`**; a keyboard-shortcut
+    hint → **`useKeyboardHint`**; focus trapping → **`useFocusTrap`**; interactive
+    role/state wiring → **`useInteractiveRole`**.
+  These already implement the WAI-ARIA APG patterns and are tested, so reusing
+  them keeps behavior consistent across the system. A genuinely new a11y pattern
+  with no existing primitive is fine — but call it out for careful review (see
+  "When to flag for engineering / human judgment") rather than landing a bespoke
+  implementation quietly.
 - **Docs in sync** — JSDoc file headers, `SYNC:` reminders, and `.doc.mjs`.
   `@example` fences in JSDoc must be plain ` ``` ` (never language-tagged), or
   Storybook autodocs won't render them.
