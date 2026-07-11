@@ -44,7 +44,7 @@ export const AsButton: Story = {
     <HStack gap={3} vAlign="center">
       <Clickable label="Add item" onClick={() => alert('Added!')}>
         <HStack gap={2} vAlign="center">
-          <Icon icon="add" size="sm" />
+          <Icon icon="search" size="sm" />
           <Text type="body">Add item</Text>
         </HStack>
       </Clickable>
@@ -64,7 +64,7 @@ export const AsLink: Story = {
   render: () => (
     <Clickable label="Go to settings" href="/settings">
       <HStack gap={2} vAlign="center">
-        <Icon icon="settings" size="sm" />
+        <Icon icon="wrench" size="sm" />
         <Text type="body">Settings</Text>
       </HStack>
     </Clickable>

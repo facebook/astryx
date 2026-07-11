@@ -41,7 +41,7 @@ type Story = StoryObj<typeof ClickableContainer>;
 export const Navigation: Story = {
   name: 'Navigation (href)',
   render: () => (
-    <ClickableContainer label="Settings" href="/settings" width={300}>
+    <ClickableContainer label="Settings" href="/settings">
       <VStack gap={1}>
         <Text type="body" weight="bold">
           Settings
@@ -67,8 +67,7 @@ export const WithOnClick: Story = {
   render: () => (
     <ClickableContainer
       label="Open modal"
-      onClick={() => alert('Container clicked!')}
-      width={300}>
+      onClick={() => alert('Container clicked!')}>
       <VStack gap={1}>
         <Text type="body" weight="bold">
           Click me
@@ -92,7 +91,7 @@ export const WithOnClick: Story = {
 export const NestedButton: Story = {
   name: 'Nested Interactive Elements',
   render: () => (
-    <ClickableContainer label="Product card" href="/product/123" width={300}>
+    <ClickableContainer label="Product card" href="/product/123">
       <VStack gap={2}>
         <Text type="body" weight="bold">
           Product Name
@@ -124,8 +123,7 @@ export const Disabled: Story = {
     <ClickableContainer
       label="Disabled container"
       onClick={() => {}}
-      isDisabled
-      width={300}>
+      isDisabled>
       <VStack gap={1}>
         <Text type="body" weight="bold">
           Disabled
@@ -152,8 +150,7 @@ export const DisabledWithMessage: Story = {
     <ClickableContainer
       label="Save container"
       isDisabled
-      disabledMessage="You need the Editor role"
-      width={300}>
+      disabledMessage="You need the Editor role">
       <VStack gap={1}>
         <Text type="body" weight="bold">
           Save
@@ -180,8 +177,7 @@ export const ReadOnly: Story = {
     <ClickableContainer
       label="Read only container"
       isReadOnly
-      onClick={() => alert('should not fire')}
-      width={300}>
+      onClick={() => alert('should not fire')}>
       <VStack gap={1}>
         <Text type="body" weight="bold">
           Read only
