@@ -82,8 +82,11 @@ dark.
 
 ## Lifecycle note
 
-A template is authored **hidden** and revealed only after it's hardened to this
-bar. A diff that removes `hidden: true` (or drops a name from `hiddenComponents`)
-from a `.doc.mjs` is a **promotion event** — confirm the template grades **B or
-above** before it becomes publicly listed. See
+Templates are authored **hidden** and revealed only after they clear this bar
+(`hidden: true` / a `hiddenComponents` entry in the `.doc.mjs` keeps a template
+out of `--list`). The thing to catch is a template that **skips hidden-staging**:
+**flag a diff that adds a *new* template/block whose `.doc.mjs` is not
+`hidden: true`** — it's publicly listed the moment it lands and may not be
+hardened yet. Ask the author to confirm it grades **B or above**, or to add
+`hidden: true` until it does. See
 [Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle#promotion-gates).
