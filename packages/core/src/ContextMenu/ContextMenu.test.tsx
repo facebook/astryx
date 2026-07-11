@@ -207,25 +207,45 @@ describe('ContextMenu', () => {
     expect(screen.getByTestId('my-context-menu')).toBeInTheDocument();
   });
 
-  it('opens from a keyboard-invoked contextmenu (Shift+F10 / Menu key)', () => {
+  it('applies tabIndex to text-only trigger wrappers for keyboard focusability', () => {
     render(
       <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
-        <div>Right-click me</div>
+        Right-click me
+      </ContextMenu>,
+    );
+    const wrapper = screen.getByTestId('ctx');
+    expect(wrapper).toHaveAttribute('tabIndex', '0');
+    wrapper.focus();
+    expect(wrapper).toHaveFocus();
+  });
+
+  it('opens from a keyboard-invoked contextmenu on a text-only trigger (Shift+F10 / Menu key)', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+        Right-click me
       </ContextMenu>,
     );
     const trigger = screen.getByTestId('ctx');
-    // Anchor the trigger box so the rect fallback has a position to read.
-    trigger.getBoundingClientRect = () =>
-      ({
-        left: 40,
-        top: 10,
-        bottom: 30,
-        right: 100,
-        width: 60,
-        height: 20,
-      }) as DOMRect;
-    // Keyboard-initiated contextmenu: coords are (0,0) and detail is 0.
     fireEvent.contextMenu(trigger, {clientX: 0, clientY: 0, detail: 0});
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+  });
+
+  it('opens from a keyboard-invoked contextmenu bubbling from an element-child trigger (Shift+F10 / Menu key)', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+        <button type="button">Right-click me</button>
+      </ContextMenu>,
+    );
+    // The wrapper receives the data-testid
+    const wrapper = screen.getByTestId('ctx');
+    const childBtn = screen.getByRole('button', {name: 'Right-click me'});
+    
+    // Keyboard context menu is triggered on the focused child element
+    childBtn.focus();
+    expect(childBtn).toHaveFocus();
+    
+    // The event bubbles up from the child button to the display:contents wrapper
+    fireEvent.contextMenu(childBtn, {clientX: 0, clientY: 0, detail: 0});
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
   });
 
