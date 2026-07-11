@@ -52,6 +52,17 @@ in what order, so effort lands where the risk is — and so the risk checks
   judgment"); note it should be spec'd + vibe-tested. Do not verdict the API
   yourself.
 
+> **Hard stop — new props / API changes from a contributor need human judgment.**
+> If a PR adds a **new prop** or otherwise changes API surface (a new
+> component, variant, exported hook/type, or a changed/removed signature) and the
+> author is an external/community contributor, the AI reviewer must **not**
+> approve or merge it — even if it's clean, additive, and passing CI. Flag it as
+> **⚠️ Needs human/maintainer judgment on the API surface** and leave the
+> approve/merge decision to a human. "Additive and non-breaking" is *not*
+> sufficient to auto-approve API surface — whether the API *should exist* and
+> take this shape is a human call. Behavior-only fixes, tests, docs, and chores
+> from contributors can still take the fast/standard path.
+
 State the category, the risk (breaking? blast radius?), and the chosen path at
 the top of the review, e.g. `Triage: bug fix · non-breaking · low blast radius →
 fast path`. This makes the depth of review legible and ensures the
