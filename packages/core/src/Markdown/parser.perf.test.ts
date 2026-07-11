@@ -69,6 +69,31 @@ function simulateStreamingIncremental(
   return parseMarkdownIncremental(fullText, state);
 }
 
+// A single wall-clock measurement is flaky when the whole suite runs in
+// parallel forks: scheduler contention can inflate a millisecond-scale
+// sample well past a tight budget (observed 30.9ms against the 20ms Small
+// budget). The fastest of a few runs approximates the un-contended cost —
+// a real regression raises the minimum too — so budgets stay tight without
+// flapping. The streaming budget tests below keep a single run: their
+// budgets carry 10x+ headroom, which contention cannot realistically eat.
+function measureBest<T>(
+  runs: number,
+  fn: () => T,
+): {elapsed: number; result: T} {
+  let elapsed = Infinity;
+  let result!: T;
+  for (let i = 0; i < runs; i++) {
+    const start = performance.now();
+    const r = fn();
+    const t = performance.now() - start;
+    if (t < elapsed) {
+      elapsed = t;
+      result = r;
+    }
+  }
+  return {elapsed, result};
+}
+
 describe('parseMarkdown performance', () => {
   const sizes = [
     {name: 'Small', paragraphs: 10, maxMs: 20},
@@ -93,9 +118,7 @@ describe('parseMarkdown performance', () => {
   for (const size of sizes) {
     it(`full re-parse ${size.name} (${size.paragraphs} paragraphs) under ${size.maxMs}ms`, () => {
       const text = generateAIResponse(size.paragraphs);
-      const start = performance.now();
-      const result = parseMarkdown(text);
-      const elapsed = performance.now() - start;
+      const {elapsed, result} = measureBest(3, () => parseMarkdown(text));
       console.log(
         `  ${size.name} full parse: ${elapsed.toFixed(2)}ms → ${result.length} blocks`,
       );
@@ -149,15 +172,14 @@ describe('parseMarkdown performance', () => {
     const text = generateAIResponse(200);
     const chunkSize = 50;
 
-    // Full re-parse timing
-    const fullStart = performance.now();
-    simulateStreamingFullReparse(text, chunkSize);
-    const fullElapsed = performance.now() - fullStart;
-
-    // Incremental timing
-    const incrStart = performance.now();
-    simulateStreamingIncremental(text, chunkSize);
-    const incrElapsed = performance.now() - incrStart;
+    // The assertion below compares a ratio of two measurements, so noise on
+    // either side can flip it — measure both as best-of-3.
+    const {elapsed: fullElapsed} = measureBest(3, () =>
+      simulateStreamingFullReparse(text, chunkSize),
+    );
+    const {elapsed: incrElapsed} = measureBest(3, () =>
+      simulateStreamingIncremental(text, chunkSize),
+    );
 
     const speedup = fullElapsed / incrElapsed;
     console.log(`\n  === Incremental vs Full Re-parse Speedup ===`);
