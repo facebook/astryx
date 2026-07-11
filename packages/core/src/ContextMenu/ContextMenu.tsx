@@ -237,7 +237,8 @@ export function ContextMenu({
     focusFirst,
     focusItem,
   } = useListFocus<HTMLDivElement>({
-    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
+    itemSelector:
+      '[role="menuitem"]:not([aria-disabled="true"]), [role="menuitemradio"]:not([aria-disabled="true"])',
     wrap: false,
     onEscape: closeMenu,
   });
@@ -313,8 +314,9 @@ export function ContextMenu({
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
-        if (focused?.getAttribute('role') === 'menuitem') {
-          focused.click();
+        const focusedRole = focused?.getAttribute('role');
+        if (focusedRole === 'menuitem' || focusedRole === 'menuitemradio') {
+          focused?.click();
         }
         return;
       }

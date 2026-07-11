@@ -33,7 +33,7 @@ export const docs = {
     {
       name: 'items',
       type: 'DropdownMenuOption[]',
-      description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?}`, a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`.',
+      description: 'Array of menu entries. Each entry is one of: an action item `{label, onClick?, icon?, isDisabled?, isSelected?}`, a divider `{type: "divider"}`, or a section `{type: "section", title?, items: [...action items]}`. When `isSelected` is defined (true or false), the item renders as `role="menuitemradio"` with `aria-checked` and shows a check indicator when selected — use for single-select menus like sort order.',
       required: true,
     },
     {
@@ -69,6 +69,27 @@ export const docs = {
   ],
   components: [
     {name: 'DropdownMenuItem'},
+  ],
+  examples: [
+    {
+      label: 'Single-select menu (menuitemradio)',
+      code: `const [sort, setSort] = useState('newest');
+
+<DropdownMenu
+  button={{label: 'Sort'}}
+  items={[
+    {
+      type: 'section',
+      title: 'Sort by',
+      items: [
+        {label: 'Newest', isSelected: sort === 'newest', onClick: () => setSort('newest')},
+        {label: 'Oldest', isSelected: sort === 'oldest', onClick: () => setSort('oldest')},
+        {label: 'Most active', isSelected: sort === 'active', onClick: () => setSort('active')},
+      ],
+    },
+  ]}
+/>`,
+    },
   ],
   usage: {
     description: 'A dropdown menu that displays a list of actionable items in a popup triggered by a button. Use to present action options as a next step in a process, or to offer contextual actions without cluttering the interface.',
