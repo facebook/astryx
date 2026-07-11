@@ -107,8 +107,8 @@ export function BlogShowcase() {
     return (
       <BlogSection>
         <div {...stylex.props(styles.twoUpGrid)}>
-          <BlogCard post={first} feature />
-          <BlogCard post={second} feature />
+          <BlogCard post={first} feature hideDescription />
+          <BlogCard post={second} feature hideDescription />
         </div>
       </BlogSection>
     );
@@ -122,12 +122,12 @@ export function BlogShowcase() {
     <BlogSection>
       <Grid columns={3} gap={8} width="100%" align="start">
         <GridSpan xstyle={styles.featureCell}>
-          <BlogCard post={featurePost} feature />
+          <BlogCard post={featurePost} feature hideDescription />
         </GridSpan>
         <GridSpan xstyle={styles.rightCell}>
           <VStack gap={6}>
             {compactPosts.map(post => (
-              <BlogCard key={post.slug} post={post} />
+              <BlogCard key={post.slug} post={post} hideDescription />
             ))}
           </VStack>
         </GridSpan>
