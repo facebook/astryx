@@ -105,32 +105,43 @@ jobs:
             // lab is the canary-only staging area — new components are EXPECTED
             // to develop and harden there before promotion. Skip the entire
             // packages/lab/** folder for ALL signal detection (code and design)
-            // by filtering it out once, up front.
+            // by filtering it out once, up front. lab is a SAFE SPACE (below).
             const isLab = (p) => /^packages\/lab\//.test(p);
             const files = allFiles.filter((f) => !isLab(f.filename));
             const paths = files.map((f) => f.filename);
 
-            const LOW_RISK = [
-              /^packages\/themes\//,
-              /^packages\/cli\/templates\//,
-              /^apps\/sandbox\//,
-              /^apps\/storybook\//,
-              /^apps\/docsite\//,
-            ];
-            const isLowRisk = (p) => LOW_RISK.some((re) => re.test(p));
-            const consideredCode = paths.filter((p) => !isLowRisk(p));
+            // Two DIFFERENT categories — do not conflate them:
+            //
+            //   SAFE SPACES — experimentation / staging. Exempt from BOTH gates.
+            //     No review of any kind is expected here.
+            //     lab (filtered above), sandbox, storybook.
+            //
+            //   DESIGN SPACES — where design work lives. Exempt from the CODE
+            //     gate (low-risk for code), but they TRIGGER the DESIGN gate.
+            //     themes, templates, docsite.
+            //
+            // Both are low-risk for the CODE gate, so the code gate ignores
+            // their union; only the design gate cares about the distinction.
+            const isSafeSpace = (p) =>
+              isLab(p) || /^apps\/(sandbox|storybook)\//.test(p);
+            const isDesignSpace = (p) =>
+              /^packages\/themes\//.test(p) ||
+              /^packages\/cli\/templates\//.test(p) ||
+              /^apps\/docsite\//.test(p);
+            // Code gate ignores both categories.
+            const isCodeExempt = (p) => isSafeSpace(p) || isDesignSpace(p);
+            const consideredCode = paths.filter((p) => !isCodeExempt(p));
 
             // A "source barrel" is packages/<pkg>/src/**/index.ts(x). We do NOT
             // hardcode which packages are component libraries — any package's
-            // src barrel counts, so new packages are covered automatically. The
-            // low-risk carve-out (themes, cli/templates, apps) and lab are
-            // already filtered out above, so those never count here.
+            // src barrel counts, so new packages are covered automatically.
+            // Safe/design spaces and lab are already excluded above.
             const isSrcBarrel = (p) =>
               /^packages\/[^/]+\/src\/(.+\/)?index\.tsx?$/.test(p);
             // A NEW component/module is a newly-added top-level src dir barrel.
             const isNewComponentBarrel = (p) =>
               /^packages\/[^/]+\/src\/[^/]+\/index\.tsx?$/.test(p) &&
-              !isLowRisk(p);
+              !isCodeExempt(p);
             // Any RUNTIME change under core/src (incl. styling .tsx) is
             // higher-blast-radius than a leaf change — core is what everything
             // composites over, so a change there warrants review even when it's
@@ -166,20 +177,16 @@ jobs:
             const codeHighRisk = codeReasons.length > 0 && !authorIsEng;
 
             // ============ DESIGN-AFFECTING ============
-            // Three tiers:
-            //   1. Design spaces — always trip (that's where design lives):
-            //      docsite (visual .tsx/.stylex, not content/tests/generated),
-            //      themes, templates.
-            //   2. Component StyleX — visual changes to shipped components.
-            //   3. Safe spaces — never trip: sandbox, storybook (lab is
-            //      already filtered out of paths entirely, above).
-            // Keyed on visual signals, NOT on "a new dir appeared" (that caught
-            // infra like i18n) and NOT on docs (.doc.mjs / .md / content).
-            const isSafeSpace = (p) => /^apps\/(sandbox|storybook)\//.test(p);
-            // Docsite is a published design surface, but only its VISUAL dirs
-            // count — app/ (pages), components/, themes/. Blog/markdown content
-            // (content/), data & config plumbing (lib/), build output
-            // (generated/), and tests are NOT design and are skipped.
+            // DESIGN SPACES trigger this gate; SAFE SPACES never do (both
+            // defined above). Keyed on visual signals, NOT on "a new dir
+            // appeared" (that caught infra like i18n) and NOT on docs
+            // (.doc.mjs / .md / content).
+            //   - Component StyleX — visual changes to shipped components,
+            //     anywhere except a safe space.
+            //   - themes / templates — design spaces (themes src, template .tsx).
+            //   - docsite — a published design surface, but only its VISUAL dirs
+            //     (app/, components/, themes/); blog/markdown content, lib/data
+            //     plumbing, generated output, and tests are skipped.
             const isDocsiteVisual = (p) =>
               /^apps\/docsite\/src\/(app|components|themes)\/.+\.(tsx|stylex\.ts)$/.test(p) &&
               !/\.test\.tsx?$/.test(p);
