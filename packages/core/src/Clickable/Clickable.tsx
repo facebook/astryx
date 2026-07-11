@@ -4,9 +4,9 @@
 
 /**
  * @file Clickable.tsx
- * @input Uses useClickable, useClickableContainer, useLinkComponent, StyleX
- * @output Exports Clickable and ClickableContainer components
- * @position Generic interactivity primitives for making elements clickable
+ * @input Uses useClickable, useLinkComponent, useTooltip, StyleX
+ * @output Exports Clickable component
+ * @position Generic interactivity primitive for making elements clickable
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Clickable/index.ts (exports if types change)
@@ -15,21 +15,20 @@
  * Three layers, smallest to largest:
  * 1. useClickable (hook) — returns spreadable a11y + handlers for a leaf element
  * 2. Clickable — button/link wrapper for a single target
- * 3. ClickableContainer — surface with safe nested interactives
+ * 3. ClickableContainer (separate file) — surface with safe nested interactives
  */
 
-import {type ReactNode, type MouseEvent, useRef, type Ref} from 'react';
+import type {ReactNode, MouseEvent, Ref} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {useClickable} from '../hooks/useClickable';
-import {useClickableContainer} from '../hooks/useClickableContainer';
 import {useLinkComponent} from '../Link/useLinkComponent';
+import {useTooltip} from '../Tooltip/useTooltip';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps, mergeRefs} from '../utils';
 
 // =============================================================================
-// Shared interactive styles
+// Interactive styles
 // =============================================================================
 
 const interactiveStyles = stylex.create({
@@ -74,20 +73,6 @@ const interactiveStyles = stylex.create({
     cursor: 'not-allowed',
     opacity: 0.5,
   },
-  srOnly: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    padding: 0,
-    margin: -1,
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderStyle: 'none',
-  },
-  block: {
-    display: 'flex',
-  },
 });
 
 // =============================================================================
@@ -121,15 +106,35 @@ export interface ClickableProps extends BaseProps {
 
   /**
    * Whether the element is disabled.
+   * Uses `aria-disabled` so the element stays focusable and announced.
    * @default false
    */
   isDisabled?: boolean;
 
   /**
-   * Whether the element should be rendered as a block-level element.
+   * Explains why the element is disabled. When set together with `isDisabled`,
+   * shows a tooltip with this text on hover and keyboard focus, and keeps the
+   * element focusable via `aria-disabled` so the reason is discoverable.
+   *
+   * Use this instead of wrapping a disabled element in `Tooltip` — disabled
+   * controls don't emit the pointer events an external tooltip needs.
+   *
+   * @example
+   * ```
+   * <Clickable label="Save" isDisabled
+   *   disabledMessage="You need the Editor role" onClick={handleSave}>
+   *   <Icon icon="save" size="md" />
+   * </Clickable>
+   * ```
+   */
+  disabledMessage?: string;
+
+  /**
+   * Whether the element is read-only.
+   * Keeps appearance and focusability but removes interaction.
    * @default false
    */
-  isBlock?: boolean;
+  isReadOnly?: boolean;
 
   /**
    * Content to render inside the clickable element.
@@ -149,7 +154,7 @@ export interface ClickableProps extends BaseProps {
  *
  * @example
  * ```
- * <Clickable label="Settings" href="/settings" isBlock>
+ * <Clickable label="Settings" href="/settings">
  *   <Badge label="3" />
  * </Clickable>
  * ```
@@ -167,7 +172,8 @@ export function Clickable({
   href,
   target,
   isDisabled = false,
-  isBlock = false,
+  isReadOnly = false,
+  disabledMessage,
   children,
   xstyle,
   className,
@@ -175,10 +181,19 @@ export function Clickable({
   ref,
   ...props
 }: ClickableProps) {
+  const showsDisabledMessage = isDisabled && !!disabledMessage;
+  const disabledTooltip = useTooltip({
+    placement: 'above',
+    focusTrigger: 'always',
+    isEnabled: showsDisabledMessage,
+  });
+
+  const effectiveOnClick = isReadOnly && onClick ? () => {} : onClick;
+
   const {clickableProps, role} = useClickable({
     label,
     href,
-    onClick,
+    onClick: effectiveOnClick,
     isDisabled,
   });
 
@@ -187,11 +202,20 @@ export function Clickable({
 
   const typeProp = role === 'button' ? {type: 'button' as const} : {};
 
+  const isLink = role === 'link';
+
+  // When a disabled link falls back to button (role='inert'), we still need
+  // aria-disabled and tabIndex so the element is announced and focusable.
+  const disabledLinkFallback =
+    isDisabled && href != null && role === 'inert'
+      ? {'aria-disabled': true as const, tabIndex: -1}
+      : {};
+
   return (
     <Component
-      ref={ref as never}
-      href={role === 'link' ? href : undefined}
-      target={role === 'link' ? target : undefined}
+      ref={mergeRefs(ref, disabledTooltip.ref) as never}
+      href={isLink ? href : undefined}
+      target={isLink ? target : undefined}
       {...typeProp}
       {...mergeProps(
         stylex.props(
@@ -200,164 +224,21 @@ export function Clickable({
           !isDisabled && interactiveStyles.overlay,
           !isDisabled && interactiveStyles.hoverOnPointer,
           isDisabled && interactiveStyles.disabled,
-          isBlock && interactiveStyles.block,
           xstyle,
         ),
         className,
         style,
       )}
       {...clickableProps}
+      {...disabledLinkFallback}
+      aria-describedby={
+        showsDisabledMessage ? disabledTooltip.describedBy : undefined
+      }
       {...props}>
       {children}
+      {showsDisabledMessage && disabledTooltip.renderTooltip(disabledMessage)}
     </Component>
   );
 }
 
 Clickable.displayName = 'Clickable';
-
-// =============================================================================
-// ClickableContainer — surface with safe nested interactives
-// =============================================================================
-
-export interface ClickableContainerProps extends BaseProps {
-  /** Ref forwarded to the root container element. */
-  ref?: Ref<HTMLDivElement>;
-
-  /**
-   * Accessibility label for the container.
-   * Required — provides the accessible name for screen readers.
-   */
-  label: string;
-
-  /**
-   * Click handler. Fires when the container surface is clicked
-   * (not when nested interactive elements are clicked).
-   */
-  onClick?: (event: MouseEvent<HTMLElement>) => void;
-
-  /**
-   * Navigation URL. When provided, clicking the container navigates.
-   * Ctrl/Cmd+click opens in a new tab.
-   */
-  href?: string;
-
-  /**
-   * Link target for href navigation.
-   */
-  target?: string;
-
-  /**
-   * Whether the container is disabled.
-   * Disabled containers remain focusable (tabIndex 0) with aria-disabled.
-   * @default false
-   */
-  isDisabled?: boolean;
-
-  /**
-   * Content to render inside the container.
-   * Can include nested interactive elements (buttons, links) — they will
-   * work independently from the container's click/navigation behavior.
-   */
-  children?: ReactNode;
-}
-
-/**
- * A clickable surface that safely handles nested interactive elements.
- *
- * Wraps children in a `<div>` with a visually-hidden `<button>` or `<a>`
- * for the accessible role and label. Nested buttons, links, and inputs
- * work independently — clicking them does NOT trigger the container's
- * onClick or navigation.
- *
- * Use for clickable cards, rows, tiles, and other surfaces that contain
- * their own interactive elements.
- *
- * @example
- * ```
- * <ClickableContainer label="View details" onClick={handleView}>
- *   <Text type="body">Card content</Text>
- *   <Button label="Action" onClick={handleAction} />
- * </ClickableContainer>
- * ```
- */
-export function ClickableContainer({
-  label,
-  onClick: onClickProp,
-  onMouseUp: onMouseUpProp,
-  href,
-  target,
-  isDisabled = false,
-  children,
-  xstyle,
-  className,
-  style,
-  ref,
-  ...props
-}: ClickableContainerProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const interactiveRef = useRef<HTMLElement | null>(null);
-  const LinkComponent = useLinkComponent();
-
-  const {onClick, onMouseUp} = useClickableContainer({
-    containerRef,
-    interactiveRef,
-    onClick: onClickProp,
-    href,
-    target,
-    disabled: isDisabled,
-  });
-
-  const handleMouseUp = onMouseUpProp
-    ? (e: MouseEvent<HTMLElement>) => {
-        onMouseUp(e);
-        onMouseUpProp(e);
-      }
-    : onMouseUp;
-
-  const isLink = href != null;
-
-  return (
-    <div
-      ref={mergeRefs(ref, containerRef)}
-      {...mergeProps(
-        stylex.props(
-          interactiveStyles.root,
-          interactiveStyles.block,
-          interactiveStyles.focusWithin,
-          !isDisabled && interactiveStyles.overlay,
-          !isDisabled && interactiveStyles.hoverOnPointer,
-          isDisabled && interactiveStyles.disabled,
-          xstyle,
-        ),
-        className,
-        style,
-      )}
-      onClick={!isDisabled ? onClick : undefined}
-      onMouseUp={!isDisabled ? handleMouseUp : undefined}
-      {...props}>
-      {isLink ? (
-        <LinkComponent
-          ref={interactiveRef as Ref<HTMLAnchorElement>}
-          href={href}
-          target={target}
-          aria-label={label}
-          aria-disabled={isDisabled || undefined}
-          tabIndex={isDisabled ? -1 : 0}
-          {...stylex.props(interactiveStyles.srOnly)}
-        />
-      ) : (
-        <button
-          ref={interactiveRef as Ref<HTMLButtonElement>}
-          type="button"
-          aria-label={label}
-          disabled={isDisabled}
-          onClick={onClickProp}
-          {...stylex.props(interactiveStyles.srOnly)}
-        />
-      )}
-      {children}
-    </div>
-  );
-}
-
-ClickableContainer.displayName = 'ClickableContainer';

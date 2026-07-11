@@ -2,10 +2,10 @@
 
 /**
  * @file index.ts
- * @input Re-exports Clickable and ClickableContainer
- * @output Exports Clickable primitives
+ * @input Re-exports Clickable
+ * @output Exports Clickable primitive
  * @position Component entry point; re-exported by /packages/core/src/index.ts
  */
 
-export {Clickable, ClickableContainer} from './Clickable';
-export type {ClickableProps, ClickableContainerProps} from './Clickable';
+export {Clickable} from './Clickable';
+export type {ClickableProps} from './Clickable';

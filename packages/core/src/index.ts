@@ -29,6 +29,7 @@ export * from './IconButton';
 export * from './Card';
 export * from './ClickableCard';
 export * from './Clickable';
+export * from './ClickableContainer';
 export * from './Carousel';
 export * from './Calendar';
 export * from './Center';
