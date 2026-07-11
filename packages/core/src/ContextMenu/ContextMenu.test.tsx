@@ -237,7 +237,6 @@ describe('ContextMenu', () => {
       </ContextMenu>,
     );
     // The wrapper receives the data-testid
-    const wrapper = screen.getByTestId('ctx');
     const childBtn = screen.getByRole('button', {name: 'Right-click me'});
     
     // Keyboard context menu is triggered on the focused child element

@@ -2,4 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-Migrated `ContextMenu` trigger to use `display: contents` and anchor positioning to resolve positioning bugs.
+[fix] Migrated `ContextMenu` trigger to use `display: contents` and anchor positioning to resolve positioning bugs.
+
+@jibin7jose
