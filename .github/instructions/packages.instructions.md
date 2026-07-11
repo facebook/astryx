@@ -436,6 +436,27 @@ checks, flag it.
   instead — and whether the breaking change is worth it. (Real case: a new
   required `aria-controls` id on a mobile-nav context forced edits to surfaces
   that didn't otherwise need it.)
+- **Unintended behavior/logic change.** Compare what the diff *actually changes*
+  against what the PR says it does. Flag behavior the author likely didn't mean
+  to touch — a value, default, condition, or output that changed as a side effect
+  of the intended edit and that the description never mentions. This is different
+  from scope contamination (unrelated *files* bundled in); here the collateral
+  change is *inside* the area the author was working on, so it's easy to miss.
+  Watch especially for:
+  - **Token/theme value shifts** — a color quietly changing from a translucent
+    `rgba()`/`color-mix()`/`light-dark()` alpha to an **opaque** value (or vice
+    versa), a radius/spacing/shadow token flipping, or a `light-dark()` pair
+    losing one side. Overlays must stay alpha so they composite over any surface
+    (see Design review); an opaque overlay is the canonical "the designer didn't
+    realize they changed it" bug. Real case: a theme edit silently swapped
+    translucent colors for opaque ones — caught by contributors, not the author.
+  - **Changed defaults / conditionals** — a default prop value, a comparison
+    (`>=` vs `>`), an early-return, or a guard that changed as a byproduct.
+  - **Generated-output drift** — a regenerated theme CSS / registry / token file
+    whose diff contains changes beyond the intended one.
+  When you spot this, don't assume malice or intent — surface it as a question:
+  "this also changes X (was `a`, now `b`) — intended?" Naming it lets the author
+  confirm or revert. The author being unaware is exactly why the reviewer checks.
 - **Other smells.** State expressed by unmounting focusable elements (toggle
   visibility so focus/a11y survive), unnecessary `useState` (prefer derived
   values or refs, especially from interaction handlers), and excessive comments.
