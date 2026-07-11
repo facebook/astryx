@@ -121,7 +121,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description: 'Status indicator for error, warning, or success states.',
     },
     {

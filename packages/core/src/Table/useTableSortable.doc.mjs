@@ -13,20 +13,20 @@ export const docs = {
   props: [
     {
       name: 'sort',
-      type: 'TableSortState<TSortKey>',
-      description: 'Current sort state. Ordered array of {sortKey, direction} entries. First entry is the primary sort.',
+      type: "Array<{sortKey: TSortKey, direction: 'ascending' | 'descending'}>",
+      description: "Current sort state (TableSortState<TSortKey>). Ordered array of entries; the first is the primary sort, the rest are tiebreakers. An empty array means unsorted. Direction is the full word — 'ascending' / 'descending', not 'asc' / 'desc'.",
       required: true,
     },
     {
       name: 'onSortChange',
-      type: '(sort: TableSortState<TSortKey>) => void',
-      description: 'Called when the user clicks a header cell to change sort.',
+      type: "(sort: Array<{sortKey: TSortKey, direction: 'ascending' | 'descending'}>) => void",
+      description: 'Called when the user clicks a header cell to change sort. Receives the next sort state.',
       required: true,
     },
     {
       name: 'allowUnsortedState',
       type: 'boolean',
-      description: 'Allow cycling back to unsorted. When true: asc, desc, unsorted. When false: asc, desc, asc.',
+      description: "Allow cycling back to unsorted. When true: 'ascending', 'descending', unsorted. When false: 'ascending', 'descending', 'ascending'.",
       default: 'false',
     },
     {
@@ -45,20 +45,20 @@ export const docsZh = {
   props: [
     {
       name: 'sort',
-      type: 'TableSortState<TSortKey>',
-      description: '当前排序状态。{sortKey, direction} 条目的有序数组。第一个条目是主排序。',
+      type: "Array<{sortKey: TSortKey, direction: 'ascending' | 'descending'}>",
+      description: "当前排序状态。{sortKey, direction} 条目的有序数组。第一个条目是主排序。方向值为完整单词 'ascending' / 'descending'，不是 'asc' / 'desc'。",
       required: true,
     },
     {
       name: 'onSortChange',
-      type: '(sort: TableSortState<TSortKey>) => void',
+      type: "(sort: Array<{sortKey: TSortKey, direction: 'ascending' | 'descending'}>) => void",
       description: '用户点击表头单元格更改排序时调用。',
       required: true,
     },
     {
       name: 'allowUnsortedState',
       type: 'boolean',
-      description: '允许循环回到未排序状态。为 true 时：升序、降序、未排序。为 false 时：升序、降序、升序。',
+      description: "允许循环回到未排序状态。为 true 时：'ascending'、'descending'、未排序。为 false 时：'ascending'、'descending'、'ascending'。",
       default: 'false',
     },
     {
@@ -75,9 +75,9 @@ export const docsDense = {
   displayName: 'useTableSortable',
   description: 'Headless multi-sort plugin. Consumer owns sort state + callback. Shift+click for secondary sort. Sort indicators auto-render in header cells.',
   propDescriptions: {
-    sort: 'Current sort state; ordered array of {sortKey, direction} entries.',
+    sort: "Current sort state; ordered array of {sortKey, direction: 'ascending'|'descending'} entries. Not 'asc'/'desc'.",
     onSortChange: 'Called on header click to change sort.',
-    allowUnsortedState: 'Allow cycling to unsorted. true: asc>desc>unsorted. false: asc>desc>asc.',
+    allowUnsortedState: "Allow cycling to unsorted. true: ascending>descending>unsorted. false: ascending>descending>ascending.",
     isMultiSortEnabled: 'Enable multi-sort via Shift+click. Regular click replaces sort state.',
   },
 };

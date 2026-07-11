@@ -24,25 +24,25 @@ export const docs = {
       props: [
         {
           name: 'gap',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Spacing step (number literal): 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10. Pass as a JSX number expression e.g. gap={4}, NOT a string like gap="4".',
         },
         {
           name: 'padding',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Inner padding on all sides, using the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10). Matches the padding prop on Card, LayoutContent, and LayoutPanel. Pass as a JSX number expression e.g. padding={3}.',
         },
         {
           name: 'paddingInline',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
         },
         {
           name: 'paddingBlock',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
         },
@@ -127,25 +127,25 @@ export const docs = {
       props: [
         {
           name: 'gap',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Spacing step (number literal): 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10. Pass as a JSX number expression e.g. gap={4}, NOT a string like gap="4".',
         },
         {
           name: 'padding',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Inner padding on all sides, using the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10). Matches the padding prop on Card, LayoutContent, and LayoutPanel. Pass as a JSX number expression e.g. padding={3}.',
         },
         {
           name: 'paddingInline',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Inline (horizontal) padding, using the spacing scale. Overrides padding on the inline axis when both are set.',
         },
         {
           name: 'paddingBlock',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             'Block (vertical) padding, using the spacing scale. Overrides padding on the block axis when both are set.',
         },
@@ -289,7 +289,7 @@ export const docsZh = {
       props: [
         {
           name: 'gap',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             '间距步进（数字字面量）：0、0.5、1、1.5、2、3、4、5、6、8、10。在 JSX 中使用数字表达式 e.g. gap={4}，不要使用字符串 gap="4"。',
         },
@@ -358,7 +358,7 @@ export const docsZh = {
       props: [
         {
           name: 'gap',
-          type: 'SpacingStep',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
           description:
             '间距步进（数字字面量）：0、0.5、1、1.5、2、3、4、5、6、8、10。在 JSX 中使用数字表达式 e.g. gap={4}，不要使用字符串 gap="4"。',
         },

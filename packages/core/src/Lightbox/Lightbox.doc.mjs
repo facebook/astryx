@@ -22,8 +22,12 @@ export const docs = {
     },
     {
       name: 'media',
+      // Left as the named type on purpose: spelling the object out makes the
+      // docsite playground parse it as an editable *string*, which would feed
+      // the preview a string where a media object belongs. The shape and its
+      // legal values live in the description instead (#1645).
       type: 'LightboxMedia | LightboxMedia[]',
-      description: 'Media to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation. Each item has src, alt, optional caption and type.',
+      description: "Media to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation. Each item is {src: string, alt: string, caption?: ReactNode, type?: 'image' | 'video'}; type defaults to 'image', and zoom/pan is disabled for 'video'.",
       required: true,
     },
     {
@@ -100,7 +104,7 @@ export const docsZh = {
     {
       name: 'media',
       type: 'LightboxMedia | LightboxMedia[]',
-      description: '要显示的媒体。传入单个对象或数组（用于画廊模式的上一张/下一张导航）。',
+      description: "要显示的媒体。传入单个对象或数组（用于画廊模式的上一张/下一张导航）。每项为 {src, alt, caption?, type?: 'image' | 'video'}；type 默认为 'image'，'video' 禁用缩放/平移。",
       required: true,
     },
     {

@@ -84,7 +84,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Validation status object with type and message for error/warning/success states.',
     },
@@ -296,7 +296,7 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         '\u9a8c\u8bc1\u72b6\u6001\u5bf9\u8c61\uff0c\u5305\u542b\u7c7b\u578b\u548c\u6d88\u606f\uff0c\u7528\u4e8e\u9519\u8bef/\u8b66\u544a/\u6210\u529f\u72b6\u6001\u3002',
     },

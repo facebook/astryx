@@ -75,7 +75,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description: 'Status indicator applied to the group border.',
     },
     {

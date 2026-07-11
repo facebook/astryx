@@ -90,7 +90,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Status indicator with type and message. Displays a colored message box below the switch and sets aria-invalid when type is "error".',
     },
@@ -236,7 +236,7 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         '带类型和消息的状态指示器。在开关下方显示彩色消息框，当类型为 "error" 时设置 aria-invalid。',
     },
