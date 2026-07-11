@@ -11,7 +11,9 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
+import * as stylex from '@stylexjs/stylex';
 import {StackItem} from './StackItem';
+import {stackItem, type StackItemOptions} from './stackItem.stylex';
 
 describe('StackItem', () => {
   it('renders children correctly', () => {
@@ -101,5 +103,144 @@ describe('StackItem', () => {
       </StackItem>,
     );
     expect(screen.getByTestId('stack-item').className).not.toBe('');
+  });
+});
+
+/**
+ * Flex-item props (issue #2623). StackItem is the canonical home for
+ * grow/shrink/basis per the layout-prop standard (#3223).
+ */
+describe('StackItem flex-item props', () => {
+  it('lets shrink override the flexShrink:0 baked into the default size', () => {
+    // `size` defaults to 'static', which always applies flexGrow:0 + flexShrink:0.
+    // An explicit `shrink` must be layered after it, or it is silently eaten.
+    render(
+      <StackItem shrink data-testid="stack-item">
+        Content
+      </StackItem>,
+    );
+    const el = screen.getByTestId('stack-item');
+    expect(el.getAttribute('style') ?? '').toContain('--x-flexShrink: 1');
+    expect(getComputedStyle(el).flexShrink).not.toBe('0');
+  });
+
+  it('lets grow override the flexGrow:0 baked into the default size', () => {
+    render(
+      <StackItem grow data-testid="stack-item">
+        Content
+      </StackItem>,
+    );
+    const el = screen.getByTestId('stack-item');
+    expect(el.getAttribute('style') ?? '').toContain('--x-flexGrow: 1');
+    expect(getComputedStyle(el).flexGrow).not.toBe('0');
+  });
+
+  it('lets grow={false} cancel size="fill"', () => {
+    render(
+      <StackItem size="fill" grow={false} data-testid="stack-item">
+        Content
+      </StackItem>,
+    );
+    const el = screen.getByTestId('stack-item');
+    expect(el.getAttribute('style')).toContain('--x-flexGrow: 0');
+    expect(getComputedStyle(el).flexGrow).not.toBe('1');
+  });
+
+  it('keeps size="fill" semantics when no explicit grow is given', () => {
+    render(
+      <StackItem size="fill" shrink={false} data-testid="stack-item">
+        Content
+      </StackItem>,
+    );
+    const el = screen.getByTestId('stack-item');
+    expect(getComputedStyle(el).flexGrow).toBe('1');
+    expect(el.getAttribute('style')).toContain('--x-flexShrink: 0');
+  });
+
+  it('accepts numeric factors and a size basis', () => {
+    render(
+      <StackItem grow={2} shrink={3} basis={320} data-testid="stack-item">
+        Content
+      </StackItem>,
+    );
+    const style = screen.getByTestId('stack-item').getAttribute('style') ?? '';
+    expect(style).toContain('--x-flexGrow: 2');
+    expect(style).toContain('--x-flexShrink: 3');
+    expect(style).toContain('--x-flexBasis: 320px');
+  });
+
+  it('accepts a string basis', () => {
+    render(
+      <StackItem basis="50%" data-testid="stack-item">
+        Content
+      </StackItem>,
+    );
+    expect(screen.getByTestId('stack-item').getAttribute('style')).toContain(
+      '--x-flexBasis: 50%',
+    );
+  });
+
+  it('emits no flex declarations by default', () => {
+    render(<StackItem data-testid="stack-item">Content</StackItem>);
+    expect(screen.getByTestId('stack-item').getAttribute('style')).toBeNull();
+  });
+
+  it('supports the overflow enum', () => {
+    render(
+      <StackItem overflow="hidden" data-testid="stack-item">
+        Content
+      </StackItem>,
+    );
+    expect(getComputedStyle(screen.getByTestId('stack-item')).overflow).toBe(
+      'hidden',
+    );
+  });
+
+  it('lets overflow take precedence over isScrollable', () => {
+    render(
+      <StackItem isScrollable overflow="hidden" data-testid="stack-item">
+        Content
+      </StackItem>,
+    );
+    expect(getComputedStyle(screen.getByTestId('stack-item')).overflow).toBe(
+      'hidden',
+    );
+  });
+
+  it('does not leak the new props to the DOM', () => {
+    render(
+      <StackItem
+        grow
+        shrink={false}
+        basis={320}
+        overflow="auto"
+        data-testid="stack-item">
+        Content
+      </StackItem>,
+    );
+    const el = screen.getByTestId('stack-item');
+    for (const attr of ['grow', 'shrink', 'basis', 'overflow']) {
+      expect(el.hasAttribute(attr)).toBe(false);
+    }
+  });
+});
+
+describe('stackItem() style utility', () => {
+  function Probe(options: StackItemOptions) {
+    return <div data-testid="probe" {...stylex.props(...stackItem(options))} />;
+  }
+
+  it('exposes grow/shrink/basis to direct stylex consumers', () => {
+    render(<Probe shrink basis={200} />);
+    const el = screen.getByTestId('probe');
+    const style = el.getAttribute('style') ?? '';
+    expect(style).toContain('--x-flexShrink: 1');
+    expect(style).toContain('--x-flexBasis: 200px');
+    expect(getComputedStyle(el).flexShrink).not.toBe('0');
+  });
+
+  it('exposes overflow to direct stylex consumers', () => {
+    render(<Probe overflow="auto" />);
+    expect(getComputedStyle(screen.getByTestId('probe')).overflow).toBe('auto');
   });
 });

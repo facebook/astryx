@@ -177,3 +177,167 @@ describe('Section', () => {
     expect(screen.getByText('Inner')).toBeInTheDocument();
   });
 });
+
+/**
+ * Overflow + flex-item props (issue #2623).
+ *
+ * Section renders two boxes:
+ * - the OUTER box is the flex child (sizing + padding-escape margins)
+ * - the INNER box is the painted surface (padding, variant background, dividers)
+ *
+ * Flex-item props must land on the outer box; overflow must land on the inner
+ * box (the inner is `height: 100%` and carries the background + dividers, so
+ * scrolling the outer would drag them out of view).
+ */
+describe('Section overflow + flex-item props', () => {
+  const boxes = (container: HTMLElement) => {
+    const outer = container.firstElementChild as HTMLElement;
+    const inner = outer.firstElementChild as HTMLElement;
+    return {outer, inner};
+  };
+
+  it('scrolls the inner painted surface, not the outer box', () => {
+    const {container} = render(<Section isScrollable>Content</Section>);
+    const {outer, inner} = boxes(container);
+    expect(getComputedStyle(inner).overflow).toBe('auto');
+    expect(getComputedStyle(outer).overflow).not.toBe('auto');
+  });
+
+  it('supports the overflow enum on the inner surface', () => {
+    const {container} = render(<Section overflow="hidden">Content</Section>);
+    const {inner} = boxes(container);
+    expect(getComputedStyle(inner).overflow).toBe('hidden');
+  });
+
+  it('lets overflow take precedence over isScrollable', () => {
+    const {container} = render(
+      <Section isScrollable overflow="hidden">
+        Content
+      </Section>,
+    );
+    const {inner} = boxes(container);
+    expect(getComputedStyle(inner).overflow).toBe('hidden');
+  });
+
+  it('applies the flex min-size reset to the outer box when scrollable', () => {
+    // Flex items default to `min-height: auto`, which refuses to shrink below
+    // content — a scroll region inside a Stack never scrolls without this.
+    const {container} = render(<Section isScrollable>Content</Section>);
+    const {outer} = boxes(container);
+    expect(getComputedStyle(outer).minHeight).toBe('0');
+    expect(getComputedStyle(outer).minWidth).toBe('0');
+  });
+
+  it('does not apply the min-size reset when overflow is visible', () => {
+    const {container} = render(<Section overflow="visible">Content</Section>);
+    const {outer} = boxes(container);
+    expect(getComputedStyle(outer).minHeight).not.toBe('0');
+  });
+
+  it('lets an explicit minHeight win over the scroll min-size reset', () => {
+    const {container} = render(
+      <Section isScrollable minHeight={200}>
+        Content
+      </Section>,
+    );
+    const {outer} = boxes(container);
+    // The reset must not clobber a minHeight the caller asked for.
+    expect(outer.getAttribute('style')).toContain('--x-minHeight: 200px');
+    expect(getComputedStyle(outer).minHeight).not.toBe('0');
+    // ...and the reset still frees the inline axis.
+    expect(getComputedStyle(outer).minWidth).toBe('0');
+  });
+
+  it('supports overflow="clip"', () => {
+    const {container} = render(<Section overflow="clip">Content</Section>);
+    const {inner} = boxes(container);
+    expect(getComputedStyle(inner).overflow).toBe('clip');
+  });
+
+  it('does not apply the min-size reset by default', () => {
+    const {container} = render(<Section>Content</Section>);
+    const {outer} = boxes(container);
+    expect(getComputedStyle(outer).minHeight).not.toBe('0');
+  });
+
+  it('puts grow/shrink/basis on the outer box (the flex child)', () => {
+    const {container} = render(
+      <Section grow shrink={false} basis={320}>
+        Content
+      </Section>,
+    );
+    const {outer, inner} = boxes(container);
+    const outerStyle = outer.getAttribute('style') ?? '';
+    expect(outerStyle).toContain('--x-flexGrow: 1');
+    expect(outerStyle).toContain('--x-flexShrink: 0');
+    expect(outerStyle).toContain('--x-flexBasis: 320px');
+    expect(inner.getAttribute('style')).toBeNull();
+  });
+
+  it('accepts numeric grow/shrink factors', () => {
+    const {container} = render(
+      <Section grow={2} shrink={3}>
+        Content
+      </Section>,
+    );
+    const outerStyle = boxes(container).outer.getAttribute('style') ?? '';
+    expect(outerStyle).toContain('--x-flexGrow: 2');
+    expect(outerStyle).toContain('--x-flexShrink: 3');
+  });
+
+  it('accepts a string basis', () => {
+    const {container} = render(<Section basis="50%">Content</Section>);
+    const outerStyle = boxes(container).outer.getAttribute('style') ?? '';
+    expect(outerStyle).toContain('--x-flexBasis: 50%');
+  });
+
+  it('emits no flex declarations by default', () => {
+    const {container} = render(<Section>Content</Section>);
+    const outerStyle = boxes(container).outer.getAttribute('style') ?? '';
+    expect(outerStyle).not.toContain('--x-flexGrow');
+    expect(outerStyle).not.toContain('--x-flexShrink');
+    expect(outerStyle).not.toContain('--x-flexBasis');
+  });
+
+  it('does not leak the new props to the DOM', () => {
+    const {container} = render(
+      <Section isScrollable overflow="auto" grow shrink={false} basis={320}>
+        Content
+      </Section>,
+    );
+    const {outer} = boxes(container);
+    for (const attr of [
+      'isscrollable',
+      'overflow',
+      'grow',
+      'shrink',
+      'basis',
+    ]) {
+      expect(outer.hasAttribute(attr)).toBe(false);
+    }
+  });
+
+  it('composes the file-explorer column recipe', () => {
+    // The dogfood case from #2623: a fixed-width, self-scrolling column with
+    // an end divider inside a horizontally scrolling strip.
+    const {container} = render(
+      <Section
+        width={240}
+        padding={2}
+        variant="transparent"
+        dividers={['end']}
+        shrink={false}
+        isScrollable>
+        Content
+      </Section>,
+    );
+    const {outer, inner} = boxes(container);
+    expect(outer.getAttribute('style')).toContain('--x-flexShrink: 0');
+    expect(outer.getAttribute('style')).toContain('--x-width: 240px');
+    expect(getComputedStyle(outer).minHeight).toBe('0');
+    expect(getComputedStyle(inner).overflow).toBe('auto');
+    // The divider still lives on the painted surface, so it stays put while
+    // the content scrolls underneath it.
+    expect(getComputedStyle(inner).borderInlineEndWidth).toBe('1px');
+  });
+});

@@ -28,14 +28,14 @@ import {
   paddingInlineStyles,
   paddingBlockStyles,
 } from '../Layout/padding.stylex';
+import {
+  flexItem,
+  overflowStyles,
+  type FlexFactor,
+  type Overflow,
+} from '../Layout/flex.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-
-const overflowStyles = stylex.create({
-  scrollable: {
-    overflow: 'auto',
-  },
-});
 
 /**
  * Alignment values accepted by Stack.
@@ -147,6 +147,15 @@ export interface StackProps extends BaseProps<HTMLElement> {
   paddingBlock?: SpacingStep;
 
   /**
+   * Overflow behavior of the stack.
+   *
+   * Takes precedence over `isScrollable` when both are set. Only the
+   * shorthand is exposed (no `overflowX`/`overflowY`): those are physical
+   * axes, and Astryx styles with logical properties.
+   */
+  overflow?: Overflow;
+
+  /**
    * Enables scrollable overflow (`overflow: auto`) for the stack.
    *
    * Matches the `isScrollable` prop on `LayoutContent` and `LayoutPanel`.
@@ -156,6 +165,24 @@ export interface StackProps extends BaseProps<HTMLElement> {
    * @default false
    */
   isScrollable?: boolean;
+
+  /**
+   * Whether the stack grows to absorb free space when it is itself a flex
+   * child (`flex-grow`). `true` is `1`; pass a number for a custom factor.
+   */
+  grow?: FlexFactor;
+
+  /**
+   * Whether the stack shrinks when space runs short (`flex-shrink`).
+   * `shrink={false}` is the "fixed size pane" idiom.
+   */
+  shrink?: FlexFactor;
+
+  /**
+   * Initial main-axis size of the stack as a flex child (`flex-basis`).
+   * Numbers are treated as pixels, strings are used as-is.
+   */
+  basis?: SizeValue;
 
   /**
    * Whether items should wrap.
@@ -212,7 +239,11 @@ export function Stack({
   padding,
   paddingInline,
   paddingBlock,
+  overflow,
   isScrollable,
+  grow,
+  shrink,
+  basis,
   width,
   height,
   maxWidth,
@@ -247,6 +278,9 @@ export function Stack({
   const resolvedPaddingInline = paddingInline ?? padding;
   const resolvedPaddingBlock = paddingBlock ?? padding;
 
+  // `isScrollable` is sugar for `overflow="auto"`; the enum wins when both are set.
+  const resolvedOverflow = overflow ?? (isScrollable ? 'auto' : undefined);
+
   const stylexProps = stylex.props(
     ...stack({
       direction,
@@ -257,7 +291,8 @@ export function Stack({
     }),
     resolvedPaddingInline != null && paddingInlineStyles[resolvedPaddingInline],
     resolvedPaddingBlock != null && paddingBlockStyles[resolvedPaddingBlock],
-    isScrollable && overflowStyles.scrollable,
+    resolvedOverflow != null && overflowStyles[resolvedOverflow],
+    ...flexItem({grow, shrink, basis}),
     xstyle,
   );
 

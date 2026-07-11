@@ -12,6 +12,8 @@
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Stack} from './Stack';
+import {HStack} from '../HStack';
+import {VStack} from '../VStack';
 
 describe('Stack', () => {
   it('defaults to vertical direction', () => {
@@ -313,5 +315,113 @@ describe('Stack', () => {
     );
     const withScroll = screen.getByTestId('stack').className;
     expect(withScroll).not.toBe(withoutScroll);
+  });
+});
+
+/**
+ * Overflow enum + flex-item props (issue #2623).
+ */
+describe('Stack overflow + flex-item props', () => {
+  it('treats isScrollable as sugar for overflow="auto"', () => {
+    render(
+      <Stack isScrollable data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    expect(getComputedStyle(screen.getByTestId('stack')).overflow).toBe('auto');
+  });
+
+  it('supports the overflow enum', () => {
+    render(
+      <Stack overflow="scroll" data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    expect(getComputedStyle(screen.getByTestId('stack')).overflow).toBe(
+      'scroll',
+    );
+  });
+
+  it('lets overflow take precedence over isScrollable', () => {
+    render(
+      <Stack isScrollable overflow="hidden" data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    expect(getComputedStyle(screen.getByTestId('stack')).overflow).toBe(
+      'hidden',
+    );
+  });
+
+  it('applies grow/shrink/basis so a Stack can be a flex child', () => {
+    render(
+      <Stack grow shrink={false} basis={320} data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    const style = screen.getByTestId('stack').getAttribute('style') ?? '';
+    expect(style).toContain('--x-flexGrow: 1');
+    expect(style).toContain('--x-flexShrink: 0');
+    expect(style).toContain('--x-flexBasis: 320px');
+  });
+
+  it('keeps sizing props working alongside the flex props', () => {
+    render(
+      <Stack grow height="100%" data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    const style = screen.getByTestId('stack').getAttribute('style') ?? '';
+    expect(style).toContain('--x-flexGrow: 1');
+    expect(style).toContain('height: 100%');
+  });
+
+  it('emits no flex declarations by default', () => {
+    render(
+      <Stack data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    const style = screen.getByTestId('stack').getAttribute('style') ?? '';
+    expect(style).not.toContain('--x-flex');
+  });
+
+  it('does not leak the new props to the DOM', () => {
+    render(
+      <Stack
+        overflow="auto"
+        grow
+        shrink={false}
+        basis={320}
+        data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    const el = screen.getByTestId('stack');
+    for (const attr of ['overflow', 'grow', 'shrink', 'basis']) {
+      expect(el.hasAttribute(attr)).toBe(false);
+    }
+  });
+
+  it('flows the new props through HStack', () => {
+    render(
+      <HStack overflow="auto" grow data-testid="hstack">
+        <div>Item</div>
+      </HStack>,
+    );
+    const el = screen.getByTestId('hstack');
+    expect(getComputedStyle(el).overflow).toBe('auto');
+    expect(el.getAttribute('style')).toContain('--x-flexGrow: 1');
+  });
+
+  it('flows the new props through VStack', () => {
+    render(
+      <VStack isScrollable shrink={false} data-testid="vstack">
+        <div>Item</div>
+      </VStack>,
+    );
+    const el = screen.getByTestId('vstack');
+    expect(getComputedStyle(el).overflow).toBe('auto');
+    expect(el.getAttribute('style')).toContain('--x-flexShrink: 0');
   });
 });
