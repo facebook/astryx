@@ -50,11 +50,24 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
   pull_request_review:
     types: [submitted]
+  # Manual re-trigger. The App only auto-runs on the PR events above, so if it
+  # ever misses one (e.g. the workflow was added after a PR was opened, leaving
+  # the required "review-required" check stuck as Expected/pending), this is the
+  # recovery lever. Leave `pr` blank to re-flag EVERY open PR (backfill); pass a
+  # number to re-flag just that one.
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "PR number to re-flag (blank = all open PRs)"
+        required: false
+        type: string
 
 permissions: {}
 
 concurrency:
-  group: review-signal-${{ github.event.pull_request.number }}
+  # One group per PR for the event/single-dispatch paths; a run-scoped group for
+  # the backfill-all dispatch so it is never cancelled by an unrelated re-run.
+  group: review-signal-${{ github.event.pull_request.number || github.event.inputs.pr || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -66,7 +79,9 @@ jobs:
   # Detect signals from changed paths + author; label, request reviewers, gate.
   # ---------------------------------------------------------------------------
   flag:
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.draft == false
+    if: >-
+      (github.event_name == 'pull_request_target' && github.event.pull_request.draft == false)
+      || github.event_name == 'workflow_dispatch'
     name: Flag review signals
     runs-on: ubuntu-latest
     permissions:
@@ -79,9 +94,47 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo;
-            const pr = context.payload.pull_request;
             const CODE = process.env.CODE_LABEL;
             const DESIGN = process.env.DESIGN_LABEL;
+
+            // Resolve which PR(s) to flag. On a PR event we get the payload PR.
+            // On manual dispatch we take the `pr` input (one PR), or re-flag
+            // every open PR when it's blank (backfill / mass recovery).
+            let prs;
+            if (context.eventName === 'workflow_dispatch') {
+              const num = (context.payload.inputs.pr || '').trim();
+              if (num) {
+                const { data } = await github.rest.pulls.get({
+                  owner, repo, pull_number: Number(num),
+                });
+                prs = [data];
+              } else {
+                prs = await github.paginate(github.rest.pulls.list, {
+                  owner, repo, state: 'open', per_page: 100,
+                });
+                core.info(`Backfill: re-flagging ${prs.length} open PR(s).`);
+              }
+            } else {
+              prs = [context.payload.pull_request];
+            }
+
+            // Skip drafts on the dispatch path too (the PR-event path already
+            // filters them via the job `if`).
+            prs = prs.filter((p) => !p.draft);
+
+            let hadError = false;
+            for (const pr of prs) {
+              try {
+                await flagOne(pr);
+              } catch (e) {
+                hadError = true;
+                core.warning(`Failed to flag PR #${pr.number}: ${e.message}`);
+              }
+            }
+            if (hadError) core.setFailed('One or more PRs failed to flag; see warnings.');
+
+            // ================= per-PR detection + routing =================
+            async function flagOne(pr) {
             const author = pr.user.login.toLowerCase();
 
             // --- Read owner sets from repo files at the base ref. ---
@@ -307,6 +360,7 @@ jobs:
             } catch (e) {
               core.warning(`Could not set review-required check: ${e.message}`);
             }
+            } // end flagOne
 
   # ---------------------------------------------------------------------------
   # Clear labels on the right kind of approval.
