@@ -268,11 +268,51 @@ jobs:
             core.info(`code: ${codeHighRisk} (${codeReasons.join(', ') || '-'})`);
             core.info(`design: ${designAffecting} (${designReasons.join(', ') || '-'})`);
 
+            // --- Resolve approvals by reading reviews (fork-safe). ---
+            // The clear job runs on pull_request_review, but that event does NOT
+            // reliably dispatch a workflow run for FORK PRs — so a fork
+            // contributor's gate would never clear via that path. Instead, read
+            // the PR's reviews here (this job runs on pull_request_target and
+            // workflow_dispatch, both of which work for forks) and treat a gate
+            // as satisfied when an entitled owner has approved:
+            //   code gate   → a CODEOWNER approval
+            //   design gate → a DESIGNOWNER or CODEOWNER approval
+            // We use each reviewer's LATEST review state so a later
+            // CHANGES_REQUESTED/DISMISSED correctly un-satisfies it.
+            let codeApproved = false;
+            let designApproved = false;
+            try {
+              const reviews = await github.paginate(github.rest.pulls.listReviews, {
+                owner, repo, pull_number: pr.number, per_page: 100,
+              });
+              const latestByUser = new Map();
+              for (const r of reviews) {
+                if (!r.user) continue;
+                // Ignore comment-only reviews; keep the latest APPROVED /
+                // CHANGES_REQUESTED / DISMISSED per reviewer.
+                if (r.state === 'COMMENTED') continue;
+                latestByUser.set(r.user.login.toLowerCase(), r.state);
+              }
+              for (const [login, state] of latestByUser) {
+                if (state !== 'APPROVED') continue;
+                if (codeOwners.includes(login)) { codeApproved = true; designApproved = true; }
+                else if (designOwners.includes(login)) { designApproved = true; }
+              }
+            } catch (e) {
+              core.warning(`Could not read reviews: ${e.message}`);
+            }
+
+            // Effective gate = detected gate minus what an entitled owner
+            // already approved.
+            const codeGated = codeHighRisk && !codeApproved;
+            const designGated = designAffecting && !designApproved;
+            core.info(`approvals: code=${codeApproved} design=${designApproved} → codeGated=${codeGated} designGated=${designGated}`);
+
             // --- Apply labels. ---
             const current = pr.labels.map((l) => l.name);
             const toAdd = [];
-            if (codeHighRisk && !current.includes(CODE)) toAdd.push(CODE);
-            if (designAffecting && !current.includes(DESIGN)) toAdd.push(DESIGN);
+            if (codeGated && !current.includes(CODE)) toAdd.push(CODE);
+            if (designGated && !current.includes(DESIGN)) toAdd.push(DESIGN);
             // A quiet "community" marker on PRs authored by someone who is not
             // on the eng or design team, so the contribution queue is filterable
             // (label:community) separately from the review gates. Absence = team.
@@ -294,6 +334,21 @@ jobs:
                 core.warning(`Could not remove ${COMMUNITY}: ${e.message}`);
               }
             }
+            // Remove gate labels an entitled owner has already approved away
+            // (fork-safe clearing — the pull_request_review clear job doesn't
+            // fire for forks, so we reconcile here from the reviews we read).
+            async function dropLabel(name) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner, repo, issue_number: pr.number, name,
+                });
+                core.info(`Cleared ${name} (approved).`);
+              } catch (e) {
+                core.warning(`Could not remove ${name}: ${e.message}`);
+              }
+            }
+            if (!codeGated && current.includes(CODE)) await dropLabel(CODE);
+            if (!designGated && current.includes(DESIGN)) await dropLabel(DESIGN);
 
             // --- Request reviewers (can't request the author; ignore 422s). ---
             async function requestReviewers(handles) {
@@ -307,11 +362,11 @@ jobs:
                 core.warning(`requestReviewers(${reviewers.join(',')}) failed: ${e.message}`);
               }
             }
-            if (codeHighRisk) await requestReviewers(codeOwners);
-            if (designAffecting) await requestReviewers(designOwners);
+            if (codeGated) await requestReviewers(codeOwners);
+            if (designGated) await requestReviewers(designOwners);
 
             // --- Either gate disables auto-merge. ---
-            if ((codeHighRisk || designAffecting) && pr.auto_merge) {
+            if ((codeGated || designGated) && pr.auto_merge) {
               try {
                 await github.graphql(
                   `mutation ($id: ID!) {
@@ -342,10 +397,10 @@ jobs:
             // clear job). Make this a required status check named "review-required"
             // in branch protection so write-access internal contributors are held
             // too — a required check blocks non-admins regardless of write access.
-            const gated = codeHighRisk || designAffecting;
+            const gated = codeGated || designGated;
             const gateReasons = [
-              ...(codeHighRisk ? codeReasons : []),
-              ...(designAffecting ? designReasons.map((r) => `design: ${r}`) : []),
+              ...(codeGated ? codeReasons : []),
+              ...(designGated ? designReasons.map((r) => `design: ${r}`) : []),
             ];
             try {
               await github.rest.checks.create({
