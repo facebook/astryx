@@ -1,10 +1,27 @@
 <!-- SYNC CONTRACT: Architecture changes require documentation updates. -->
 
+<div align="center">
+
+<img src="https://lookaside.facebook.com/assets/astryx/Astryx-Banner.png" alt="Astryx" width="100%" />
+
 # Astryx
 
-An open source design system that's fully customizable and built for how we build now — by people and the agents working alongside them.
+**An open source design system that's fully customizable and built for how we build now — by people and the agents working alongside them.**
+
+[![npm version](https://img.shields.io/npm/v/@astryxdesign/core?label=npm&color=cb3837&logo=npm)](https://www.npmjs.com/package/@astryxdesign/core)
+[![CI](https://img.shields.io/github/actions/workflow/status/facebook/astryx/ci.yml?branch=main&label=CI&logo=github)](https://github.com/facebook/astryx/actions/workflows/ci.yml)
+[![license MIT](https://img.shields.io/npm/l/@astryxdesign/core?color=blue)](LICENSE)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/facebook/astryx/wiki/Contributing)
+
+[![Docs](https://img.shields.io/badge/Docs-astryx.atmeta.com-6741d9?logo=readthedocs&logoColor=white)](https://astryx.atmeta.com)
+[![Storybook](https://img.shields.io/badge/Storybook-live-ff4785?logo=storybook&logoColor=white)](https://facebook.github.io/astryx/storybook/)
+[![Sandbox](https://img.shields.io/badge/Sandbox-playground-000000?logo=vercel&logoColor=white)](https://facebook.github.io/astryx/sandbox/)
+
+**[Docs](https://astryx.atmeta.com)** · **[Storybook](https://facebook.github.io/astryx/storybook/)** · **[Sandbox](https://facebook.github.io/astryx/sandbox/)** · **[Contributing](https://github.com/facebook/astryx/wiki/Contributing)**
 
 > **Currently in Beta** · Built on [React](https://react.dev) and [StyleX](https://stylexjs.com)
+
+</div>
 
 ## Overview
 
