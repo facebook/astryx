@@ -12,6 +12,9 @@
  * - Locked (default): content growth auto-scrolls to bottom via rAF spring
  * - Scrolling up (any source): unlocks immediately
  * - Scrolling settles at bottom: re-locks on scrollend
+ * - `initial` controls how the first fill is positioned: instant jump,
+ *   spring, or not at all (start unlocked at the top)
+ * - `scrollToBottom({instant: true})` jumps in one frame, no animation
  *
  * Uses scroll direction (lastScrollTop comparison) to detect user
  * intent — works for wheel, touch, scrollbar drag, keyboard, everything.
@@ -28,6 +31,33 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 // Types
 // =============================================================================
 
+/**
+ * How the scroll position is established when content first appears.
+ *
+ * - `'spring'`: content already present on mount is positioned instantly;
+ *   content that arrives after mount (async fetch) is followed with the
+ *   spring animation, like streaming growth.
+ * - `'instant'`: the first fill positions instantly whether the content is
+ *   present at mount or arrives later — opening an existing conversation
+ *   lands on the latest message with no animation. Subsequent growth uses
+ *   the spring as usual.
+ * - `false`: no initial positioning, and the follow lock starts disengaged —
+ *   the scroll stays at the top until the user scrolls to the bottom
+ *   (reading-oriented surfaces). The scroll-to-bottom button still works.
+ */
+export type ChatScrollInitial = 'spring' | 'instant' | false;
+
+export interface ChatScrollToBottomOptions {
+  /**
+   * Jump to the bottom in a single frame instead of running the spring
+   * animation. Use for programmatic positioning (opening a conversation,
+   * restoring a session) — keep the default animation for user-initiated
+   * scrolls like the scroll-to-bottom button.
+   * @default false
+   */
+  instant?: boolean;
+}
+
 export interface UseChatStreamScrollOptions {
   /**
    * Ref to the scrollable container element.
@@ -39,6 +69,13 @@ export interface UseChatStreamScrollOptions {
    * @default true
    */
   enabled?: boolean;
+
+  /**
+   * How the scroll position is established when content first appears.
+   * Read once on mount.
+   * @default 'spring'
+   */
+  initial?: ChatScrollInitial;
 
   /**
    * Distance from bottom (in px) within which scrollend re-locks.
@@ -81,7 +118,7 @@ export interface UseChatStreamScrollReturn {
   isLocked: boolean;
 
   /** Scroll to the bottom of the container and re-lock. */
-  scrollToBottom: () => void;
+  scrollToBottom: (options?: ChatScrollToBottomOptions) => void;
 
   /** Scroll so a specific element is at the top of the visible area. No lock change. */
   scrollToMessage: (el: HTMLElement) => void;
@@ -108,6 +145,7 @@ const SIXTY_FPS_MS = 1000 / 60;
 export function useChatStreamScroll({
   scrollRef,
   enabled = true,
+  initial = 'spring',
   lockThreshold = 10,
   buttonThreshold = 100,
   damping = 0.7,
@@ -115,9 +153,15 @@ export function useChatStreamScroll({
   mass = 1.25,
 }: UseChatStreamScrollOptions): UseChatStreamScrollReturn {
   const [isScrolledUp, setIsScrolledUp] = useState(false);
-  const [isLocked, setIsLocked] = useState(true);
+  const [isLocked, setIsLocked] = useState(initial !== false);
 
-  const lockedRef = useRef(true);
+  const lockedRef = useRef(initial !== false);
+  // Mount-time snapshot — `initial` describes how the FIRST fill is
+  // positioned, so later prop changes are deliberately ignored.
+  const initialRef = useRef(initial);
+  // True until the initial fill has been positioned ('instant' mode only) —
+  // consumed by the first scrollIfLocked that sees scrollable content.
+  const initialFillPendingRef = useRef(initial === 'instant');
   const velocityRef = useRef(0);
   const animatingRef = useRef(false);
   const lastTickRef = useRef<number | undefined>(undefined);
@@ -179,14 +223,36 @@ export function useChatStreamScroll({
     }
   }, [animate]);
 
+  // Jump to the bottom in a single frame — cancels any in-flight spring so
+  // a later animation tick can't fight the assignment.
+  const jumpToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) {
+      return;
+    }
+    animatingRef.current = false;
+    velocityRef.current = 0;
+    lastTickRef.current = undefined;
+    el.scrollTop = el.scrollHeight - el.clientHeight;
+    lastScrollTopRef.current = el.scrollTop;
+  }, [scrollRef]);
+
   // --- Public API ---
 
-  const scrollToBottom = useCallback(() => {
-    lockedRef.current = true;
-    setIsLocked(true);
-    setIsScrolledUp(false);
-    startAnimation();
-  }, [startAnimation]);
+  const scrollToBottom = useCallback(
+    (options?: ChatScrollToBottomOptions) => {
+      lockedRef.current = true;
+      setIsLocked(true);
+      setIsScrolledUp(false);
+      initialFillPendingRef.current = false;
+      if (options?.instant) {
+        jumpToBottom();
+        return;
+      }
+      startAnimation();
+    },
+    [startAnimation, jumpToBottom],
+  );
 
   const scrollToMessage = useCallback(
     (el: HTMLElement) => {
@@ -232,10 +298,25 @@ export function useChatStreamScroll({
     if (!enabled) {
       return;
     }
-    if (lockedRef.current) {
-      startAnimation();
+    if (!lockedRef.current) {
+      return;
     }
-  }, [enabled, startAnimation]);
+    // Initial fill in 'instant' mode: content appearing for the first time
+    // (e.g. an async-loaded conversation) positions in one frame instead of
+    // spring-flying from the top. Stays pending through empty/loading
+    // resizes until the container is actually scrollable.
+    const el = scrollRef.current;
+    if (
+      initialFillPendingRef.current &&
+      el &&
+      el.scrollHeight > el.clientHeight
+    ) {
+      initialFillPendingRef.current = false;
+      jumpToBottom();
+      return;
+    }
+    startAnimation();
+  }, [enabled, startAnimation, jumpToBottom, scrollRef]);
 
   // --- Event listeners ---
 
@@ -314,11 +395,14 @@ export function useChatStreamScroll({
     el.addEventListener('wheel', onWheel, {passive: true});
     el.addEventListener('touchmove', onTouchMove, {passive: true});
 
-    // Initial scroll to bottom
+    // Initial scroll to bottom — content already present at mount.
+    // Skipped entirely with `initial: false` (reading-oriented surfaces
+    // start at the top, unlocked).
     requestAnimationFrame(() => {
-      if (el.scrollHeight > el.clientHeight) {
+      if (initialRef.current !== false && el.scrollHeight > el.clientHeight) {
         el.scrollTop = el.scrollHeight - el.clientHeight;
         lastScrollTopRef.current = el.scrollTop;
+        initialFillPendingRef.current = false;
       }
     });
 
