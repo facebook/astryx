@@ -9,6 +9,11 @@ README). Review them for substance, accuracy, efficiency, craft, and voice.
 Advisory: post a scorecard and specific, quotable findings with concrete fixes;
 never rewrite the author's voice.
 
+> **Canonical rubric.** This file is the operational copy; the full rubric,
+> rationale, and sources live in the
+> [Blog Review Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric)
+> wiki page. If the two ever diverge, the wiki wins — update it there.
+
 > **Scope note.** These files also match `docsite.instructions.md` (the
 > data-from-pipeline rule). That rule is about docsite *code*, not blog prose —
 > apply the rubric below to the post content.
