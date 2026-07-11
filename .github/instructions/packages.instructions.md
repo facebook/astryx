@@ -7,6 +7,27 @@ applyTo: "packages/**"
 These paths ship as published `@astryxdesign/*` packages, so review them
 against Astryx's API guidance and component review protocol.
 
+## Calibrate to the PR type
+
+Weight the review by what the PR is trying to do:
+
+- **Bug fixes** — require **evidence in the description**. A fix should
+  demonstrate the bug first (a failing test, a reproduction, or another
+  detection method), apply the fix, then demonstrate success (the test now
+  passes). Flag a bug-fix PR that changes behavior with no failing-test-then-
+  passing evidence and ask for it — a fix without a regression test can silently
+  break again.
+- **Docs** — validate against reality. Check that the documentation is actually
+  correct (matches the code/API/behavior on this branch). When a claim is a
+  matter of best practice or judgment rather than fact, **call it out for a
+  maintainer** rather than asserting it's right or wrong.
+- **New features / new components** — whether this is the *right way to expose
+  the functionality* is a human judgment call. **Do not render a verdict on the
+  API design here.** You may still run the mechanical, convention, and
+  convergence checks below, but explicitly **flag that maintainers should review
+  the API surface carefully** (and that new surface should be spec'd and
+  vibe-tested) rather than approving the design yourself.
+
 ## API guidance (the review protocol)
 
 The authoritative rules live in the Contributing wiki — apply them and cite the
@@ -219,6 +240,18 @@ checks, flag it.
   and [Synchronizing with Effects](https://react.dev/learn/synchronizing-with-effects).
   Genuine Effects synchronize with an *external* system (subscriptions, the DOM,
   network, non-React widgets) — those are fine; call out the ones that don't.
+- **Overly complex behavior for a simple need.** Flag heavy runtime machinery
+  added where a simpler, declarative solution exists — the classic being a
+  `MutationObserver` / `ResizeObserver` / `IntersectionObserver`, imperative DOM
+  measurement, event listeners, or a `useEffect` sync loop introduced to achieve
+  something CSS (or a token/prop) already does. Watch for observers or
+  measurement in hot paths (per-row, per-keystroke, per-frame, large lists) that
+  risk performance regressions, and for reintroducing work the platform handles
+  natively (`:hover`/`@media (hover: hover)`, `@container`, `:nth-child`,
+  `@starting-style`, `position-try`, `stylex.when.*`). Ask: could this be a CSS
+  key, a container query, or a prop instead of JS observing the DOM? Prefer the
+  simpler mechanism; call out the complexity and the regression risk when the
+  heavy approach isn't justified.
 - **Other smells.** State expressed by unmounting focusable elements (toggle
   visibility so focus/a11y survive), unnecessary `useState` (prefer derived
   values or refs, especially from interaction handlers), and excessive comments.
