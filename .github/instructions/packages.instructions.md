@@ -296,11 +296,21 @@ and the Design review section above), or to add `hidden: true` until it does.
   form controls — never `stylex.defaultMarker()`.
 - **Semantic tokens only** — no hardcoded color/spacing/radius/shadow;
   theme-agnostic output.
-- **No wrapper `<div>` for styling** when the child already accepts style. Astryx
-  components extend `BaseProps` (they take `xstyle`), so apply the style directly
-  — `<Divider xstyle={hasOutline && styles.titleDivider} />` — instead of wrapping
-  the component in a styled `<div>`. Flag an added wrapper element whose only job
-  is to carry a style the child could take itself.
+- **Avoid unnecessary wrapper elements — prefer props and hooks.** Astryx favors
+  attaching behavior/style to existing elements over adding a new wrapper node.
+  Flag an added wrapper when a lighter path exists:
+  - *Styling:* components extend `BaseProps` (they take `xstyle`), so apply style
+    directly — `<Divider xstyle={hasOutline && styles.titleDivider} />` — instead
+    of wrapping the component in a styled `<div>`.
+  - *Behavior:* reach for the behavior **hook** or **prop** the system already
+    exposes rather than a wrapper component. E.g. a tooltip is available via the
+    `tooltip` prop / `useTooltip` hook, and there are hooks for many behaviors
+    (`useHoverCard`, `useClickableContainer`, `useCollapsible`, `useFocusTrap`,
+    `useEntryAnimation`, `useInteractiveRole`, …). Prefer composing the hook onto
+    the real element over introducing a wrapper that exists only to host the
+    behavior. A wrapper adds a DOM node, can break layout/flex/grid parent-child
+    relationships, and often complicates focus/ARIA — call it out when a hook or
+    prop would avoid it.
 - **Navigation** uses `useLinkComponent()`, never a hardcoded `<a>`.
 - **Docs in sync** — JSDoc file headers, `SYNC:` reminders, and `.doc.mjs`.
   `@example` fences in JSDoc must be plain ` ``` ` (never language-tagged), or
