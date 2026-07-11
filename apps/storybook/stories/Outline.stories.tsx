@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useRef, type ReactNode} from 'react';
+import {useRef, useState, type ReactNode} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {
   Outline,
@@ -44,6 +44,9 @@ const outlineItems: OutlineItem[] = [
   {id: 'component-overrides', label: 'Component overrides', level: 3},
   {id: 'accessibility', label: 'Accessibility', level: 2},
 ];
+
+/** Height of the ScrollSpy story's sticky header — fed straight to `offset`. */
+const STICKY_HEADER_HEIGHT = 48;
 
 const markdownContent = [
   '## Overview',
@@ -130,8 +133,8 @@ export const WithDocument: Story = {
         <section>
           <h2 id="installation">Installation</h2>
           <p>
-            Install the package, wrap the app with Theme, and import
-            components from their subpaths.
+            Install the package, wrap the app with Theme, and import components
+            from their subpaths.
           </p>
         </section>
         <section>
@@ -147,8 +150,9 @@ export const WithDocument: Story = {
           </p>
           <h3 id="component-overrides">Component overrides</h3>
           <p>
-            Component overrides target the stable Astryx selector surface emitted
-            by each component: astryx-* classes plus data-* prop reflections.
+            Component overrides target the stable Astryx selector surface
+            emitted by each component: astryx-* classes plus data-* prop
+            reflections.
           </p>
         </section>
         <section>
@@ -182,12 +186,7 @@ export const ExtractFromMarkdown: Story = {
           components={{
             heading: ({level, children}) => {
               const Tag = `h${level}` as
-                | 'h1'
-                | 'h2'
-                | 'h3'
-                | 'h4'
-                | 'h5'
-                | 'h6';
+                'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
               return <Tag id={storySlug(nodeText(children))}>{children}</Tag>;
             },
           }}>
@@ -283,4 +282,164 @@ export const DeepNesting: Story = {
       </div>
     );
   },
+};
+
+/**
+ * Scroll-spy scoped to a custom scroll container, under a sticky header.
+ *
+ * The content scrolls inside the pane, not the viewport — so the outline would
+ * auto-detect the wrong scroll root and its highlight would never move.
+ * `scrollContainerRef` scopes tracking to the pane.
+ *
+ * `offset` is the height of the sticky header covering the top of that pane.
+ * It moves the activation line *and* the scroll landing together, so clicking
+ * an item parks its heading just below the header instead of hidden underneath
+ * it — and the heading activates at the same line it lands on. The heading's
+ * own `scroll-margin-top` adds the breathing room below the header (8px here),
+ * so the two compose: 48 + 8 = 56px.
+ */
+export const ScrollSpy: Story = {
+  render: () => {
+    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+    return (
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 220px',
+          gap: 32,
+          maxWidth: 960,
+        }}>
+        <div
+          ref={scrollContainerRef}
+          style={{
+            overflowY: 'auto',
+            height: 360,
+            border: '1px solid rgba(128,128,128,0.3)',
+            borderRadius: 8,
+            position: 'relative',
+          }}>
+          <div
+            style={{
+              position: 'sticky',
+              top: 0,
+              height: STICKY_HEADER_HEIGHT,
+              boxSizing: 'border-box',
+              padding: '0 16px',
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--color-surface, #fff)',
+              borderBottom: '1px solid rgba(128,128,128,0.3)',
+              zIndex: 1,
+            }}>
+            <Badge label={`Sticky header (${STICKY_HEADER_HEIGHT}px)`} />
+          </div>
+          <div style={{padding: '0 16px 16px'}}>
+            {outlineItems.map(item => (
+              <section key={item.id}>
+                {/* scroll-margin-top must sit on the element the outline
+                    targets — the heading carries the id, so the browser reads
+                    it from there, not from a wrapper. */}
+                <Heading
+                  id={item.id}
+                  level={item.level === 2 ? 2 : 3}
+                  style={{scrollMarginTop: 8}}>
+                  {item.label}
+                </Heading>
+                <Text>
+                  Scroll the pane. The outline tracks the pane&apos;s scroll
+                  position, not the window&apos;s.
+                </Text>
+                <div style={{height: 160}} />
+              </section>
+            ))}
+          </div>
+        </div>
+        <aside style={{alignSelf: 'start'}}>
+          <Outline
+            items={outlineItems}
+            scrollContainerRef={scrollContainerRef}
+            offset={STICKY_HEADER_HEIGHT}
+          />
+        </aside>
+      </div>
+    );
+  },
+};
+
+/**
+ * Navigate callbacks. `onNavigateStart` fires before the smooth scroll begins
+ * and `onNavigateEnd` once it settles — here it flashes the heading on arrival.
+ *
+ * `onNavigateEnd` fires exactly once for every `onNavigateStart`, including
+ * when the user scrolls away mid-jump, so the flash state can never get stuck.
+ */
+export const NavigateCallbacks: Story = {
+  render: () => {
+    const [status, setStatus] = useState('idle');
+    const [flashId, setFlashId] = useState<string | null>(null);
+
+    return (
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) 220px',
+          gap: 32,
+          maxWidth: 960,
+        }}>
+        <article>
+          {outlineItems.map(item => (
+            <section key={item.id}>
+              {/* scroll-margin-top belongs on the heading (it carries the id
+                  the outline scrolls to), not on the section wrapper. */}
+              <Heading
+                id={item.id}
+                level={item.level === 2 ? 2 : 3}
+                style={{
+                  scrollMarginTop: 16,
+                  transition: 'background-color 600ms',
+                  backgroundColor:
+                    flashId === item.id
+                      ? 'var(--color-overlay-hover, rgba(128,128,128,0.2))'
+                      : 'transparent',
+                }}>
+                {item.label}
+              </Heading>
+              <div style={{height: 320}} />
+            </section>
+          ))}
+        </article>
+        <aside style={{position: 'sticky', top: 24, alignSelf: 'start'}}>
+          <Badge label={status} />
+          <Outline
+            items={outlineItems}
+            onNavigateStart={id => {
+              setFlashId(null);
+              setStatus(`scrolling to ${id}`);
+            }}
+            onNavigateEnd={id => {
+              setFlashId(id);
+              setStatus(`arrived at ${id}`);
+            }}
+          />
+        </aside>
+      </div>
+    );
+  },
+};
+
+/**
+ * Keyboard navigation. The outline is a single tab stop: Tab moves into it
+ * once, then Arrow keys move between headings, Home/End jump to the ends, and
+ * Enter or Space activates — a 40-heading TOC costs one Tab press, not 40.
+ */
+export const KeyboardNavigation: Story = {
+  render: () => (
+    <div
+      style={{display: 'flex', flexDirection: 'column', gap: 16, width: 240}}>
+      <button type="button">Focus me, then press Tab</button>
+      <Outline items={outlineItems} />
+      <button type="button">Tab again lands here</button>
+    </div>
+  ),
 };

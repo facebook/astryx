@@ -4,7 +4,7 @@
 
 /**
  * @file Outline.tsx
- * @input Uses React, StyleX, Astryx link provider integration, Outline hooks/types
+ * @input Uses React, StyleX, Astryx link provider integration, Outline hooks/types, useListFocus
  * @output Exports Outline component and OutlineProps type
  * @position Core implementation; consumed by index.ts
  *
@@ -12,6 +12,9 @@
  * - Sliding indicator track (vertical divider + animated active bar)
  * - Density variant (default/compact)
  * - Scroll-spy active state when uncontrolled
+ * - Roving-tabindex keyboard navigation (Arrow/Home/End, Enter/Space activate)
+ * - onNavigateStart / onNavigateEnd callbacks around the smooth scroll
+ * - Scroll scoping (offset, scrollContainerRef, hasScrollOnClick)
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Outline/Outline.doc.mjs
@@ -32,6 +35,8 @@ import {
   fontWeightVars,
 } from '../theme/tokens.stylex';
 import {useLinkComponent} from '../Link/useLinkComponent';
+import {useListFocus} from '../hooks/useListFocus';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {useScrollSpy} from './useScrollSpy';
@@ -64,6 +69,55 @@ export interface OutlineProps extends BaseProps<HTMLElement> {
    * @default 'default'
    */
   density?: 'default' | 'compact';
+
+  /**
+   * Called when navigation to an item begins, before the scroll starts.
+   * Receives the item `id`. Pair with `onNavigateEnd` to drive an arrival
+   * effect (flash, ring, pulse) on the target heading.
+   */
+  onNavigateStart?: (id: string) => void;
+
+  /**
+   * Called once when navigation to an item resolves — when the smooth scroll
+   * settles, or immediately-ish when reduced motion turns it into a jump.
+   *
+   * Fires exactly once for every `onNavigateStart`, including when the user
+   * interrupts the scroll by scrolling manually, so a "navigating" state can
+   * never leak. It does not fire if the Outline unmounts mid-scroll.
+   */
+  onNavigateEnd?: (id: string) => void;
+
+  /**
+   * Height in px of a fixed header overlaying the top of the scroll root.
+   *
+   * Shifts both the activation line *and* the scroll landing by the same
+   * amount, so a heading activates exactly where navigating to it puts it —
+   * below the header rather than hidden underneath it.
+   *
+   * It composes with each heading's own `scroll-margin-top` (the header, then
+   * the breathing room below it) rather than replacing it. When nothing
+   * overlays the content, leave this at 0 and let `scroll-margin-top` do the
+   * work — the browser already honors it.
+   *
+   * @default 0
+   */
+  offset?: number;
+
+  /**
+   * Scroll container to track, instead of auto-detecting the nearest scrollable
+   * ancestor. Use this when the content scrolls inside a split pane, modal, or
+   * dashboard panel rather than the viewport.
+   */
+  scrollContainerRef?: React.RefObject<HTMLElement | null>;
+
+  /**
+   * Whether activating an item smooth-scrolls to it. Set to false to own the
+   * scrolling yourself (virtualized content, a router) — the Outline still
+   * updates the active item, the hash, and the navigate callbacks, but performs
+   * no scroll and suppresses the anchor's default jump.
+   * @default true
+   */
+  hasScrollOnClick?: boolean;
 
   /** Test ID for testing frameworks. */
   'data-testid'?: string;
@@ -219,8 +273,15 @@ function getIndentStyle(level: number) {
  * track that animates to the active item.
  *
  * When `activeId` is omitted, it tracks scroll position and marks the last
- * heading whose top has passed its activation line (its scroll-margin-top)
- * active — defaulting to the first item at the top and the last at the bottom.
+ * heading whose top has passed its activation line — which is exactly where
+ * navigating to that heading lands it: `offset` (a fixed header overlaying the
+ * scroll root) plus the heading's own `scroll-margin-top`. It defaults to the
+ * first item at the top and the last at the bottom.
+ *
+ * Keyboard: the list is a single tab stop (roving tabindex), seated on the
+ * active heading. Arrow keys move between headings, Home/End jump to the ends,
+ * and Enter/Space activate — so a long table of contents costs one Tab press,
+ * not one per heading.
  *
  * @example
  * ```
@@ -232,6 +293,21 @@ function getIndentStyle(level: number) {
  *   ]}
  * />
  * ```
+ *
+ * Scoped to a custom scroll container, under a fixed header:
+ *
+ * @example
+ * ```
+ * const scrollContainerRef = useRef<HTMLDivElement>(null);
+ *
+ * <div ref={scrollContainerRef} style={{overflowY: 'auto'}}>...</div>
+ * <Outline
+ *   items={items}
+ *   scrollContainerRef={scrollContainerRef}
+ *   offset={64}
+ *   onNavigateEnd={id => flashHeading(id)}
+ * />
+ * ```
  */
 export function Outline({
   items,
@@ -239,6 +315,11 @@ export function Outline({
   onActiveIdChange,
   label: labelFromProps,
   density = 'default',
+  onNavigateStart,
+  onNavigateEnd,
+  offset = 0,
+  scrollContainerRef,
+  hasScrollOnClick = true,
   xstyle,
   className,
   style,
@@ -250,50 +331,114 @@ export function Outline({
   const label = labelFromProps ?? t('@astryx.outline.label');
   const rootRef = useRef<HTMLElement | null>(null);
   const LinkComponent = useLinkComponent();
-  const isControlled = activeId !== undefined;
-  const {
-    activeId: resolvedActiveId,
-    setActiveId,
-    lockActiveId,
-  } = useScrollSpy({
+  const {activeId: resolvedActiveId, scrollTo} = useScrollSpy({
     activeId,
     items,
     onActiveIdChange,
     rootRef,
+    offset,
+    scrollContainerRef,
+    hasScrollOnClick,
+    onNavigateStart,
+    onNavigateEnd,
   });
+
+  // Roving tabindex over the links: the whole outline is one tab stop, and
+  // arrows move between headings. The hook owns `tabindex` on the items.
+  const {
+    listRef,
+    handleKeyDown: handleListKeyDown,
+    handleFocus,
+  } = useListFocus<HTMLUListElement>({
+    itemSelector: 'a[href]',
+    orientation: 'vertical',
+    hasRovingTabIndex: true,
+  });
+
+  // Seat the tab stop on the *active* heading. WAI-ARIA puts the single tab
+  // stop on the current item, so tabbing into a table of contents while
+  // reading section 7 lands on section 7 — not back at section 1, which is
+  // where useListFocus would otherwise leave it (it promotes the first item on
+  // mount and then keeps whichever item already holds the stop).
+  //
+  // Only while focus is outside the list: once the reader has arrowed to an
+  // item, the stop is theirs and scroll-spy must not yank it away. Sets
+  // `tabindex` only — it never steals focus. Registered after useListFocus so
+  // it runs after the hook's own layout effect and wins; on later commits the
+  // hook then finds this item already holding the stop and keeps it.
+  useIsomorphicLayoutEffect(() => {
+    const list = listRef.current;
+    if (list == null || list.contains(document.activeElement)) {
+      return;
+    }
+    const links = Array.from(list.querySelectorAll<HTMLElement>('a[href]'));
+    const active = links.find(
+      link => link.getAttribute('aria-current') === 'true',
+    );
+    if (active == null) {
+      return;
+    }
+    for (const link of links) {
+      const tabIndex = link === active ? '0' : '-1';
+      if (link.getAttribute('tabindex') !== tabIndex) {
+        link.setAttribute('tabindex', tabIndex);
+      }
+    }
+  });
+
+  /**
+   * The single navigation path, shared by click and keyboard activation:
+   * push the hash, then hand off to the scroll-spy's `scrollTo`, which fires
+   * the navigate callbacks and moves the indicator when the scroll settles.
+   */
+  const navigate = (id: string) => {
+    if (scrollTo(id)) {
+      window.history.pushState(null, '', `#${id}`);
+    }
+  };
+
+  /** Whether an event carries a modifier chord we must leave to the browser. */
+  const hasModifier = (
+    event: React.MouseEvent<HTMLElement> | React.KeyboardEvent<HTMLElement>,
+  ) => event.metaKey || event.altKey || event.ctrlKey || event.shiftKey;
 
   const handleClick =
     (id: string) => (event: React.MouseEvent<HTMLElement>) => {
-      const target = document.getElementById(id);
-
-      // Let the browser handle modified clicks (open in new tab, etc.) and
-      // missing targets without touching the active state.
-      if (
-        target == null ||
-        event.defaultPrevented ||
-        event.metaKey ||
-        event.altKey ||
-        event.ctrlKey ||
-        event.shiftKey
-      ) {
+      // Let the browser handle modified clicks (open in new tab, etc.) without
+      // touching the active state.
+      if (event.defaultPrevented || hasModifier(event)) {
         return;
       }
 
-      event.preventDefault();
-      window.history.pushState(null, '', `#${id}`);
-
-      // Move the indicator to the clicked item in a single step. Controlled
-      // consumers own the active state (notify only); uncontrolled mode pins
-      // the active id and suppresses scroll-spy until the next manual scroll,
-      // so the click is honored — even for short/last sections — and the
-      // indicator doesn't chase the smooth scroll through other sections.
-      if (isControlled) {
-        setActiveId(id);
-      } else {
-        lockActiveId(id);
+      // With no target in the DOM — lazily-rendered or virtualized content —
+      // there is nothing to scroll to and nothing to make active. Leave the
+      // anchor to the browser's native fragment navigation (which still
+      // updates the URL) rather than swallowing the click into a dead link.
+      if (document.getElementById(id) == null) {
+        return;
       }
 
-      target.scrollIntoView({behavior: 'smooth', block: 'start'});
+      // Suppress the anchor's default jump: we own the scroll (or, with
+      // `hasScrollOnClick={false}`, deliberately leave it to the consumer).
+      event.preventDefault();
+      navigate(id);
+    };
+
+  const handleKeyDown =
+    (id: string) => (event: React.KeyboardEvent<HTMLElement>) => {
+      // Enter is a link's native activation and already produces a click.
+      // Space is not, so wire it up here to match the button-like affordance.
+      if (event.key !== ' ' && event.key !== 'Spacebar') {
+        return;
+      }
+      if (event.defaultPrevented || hasModifier(event)) {
+        return;
+      }
+
+      // preventDefault does double duty: it stops the page from scrolling, and
+      // it tells useScrollSpy this Space is an activation, not a manual scroll.
+      event.preventDefault();
+      navigate(id);
     };
 
   return (
@@ -308,7 +453,12 @@ export function Outline({
         className,
         style,
       )}>
-      <ul {...stylex.props(styles.list)} role="list">
+      <ul
+        {...stylex.props(styles.list)}
+        ref={listRef}
+        role="list"
+        onKeyDown={handleListKeyDown}
+        onFocus={handleFocus}>
         {items.map(item => {
           const isActive = item.id === resolvedActiveId;
 
@@ -318,6 +468,7 @@ export function Outline({
                 href={`#${item.id}`}
                 aria-current={isActive ? 'true' : undefined}
                 onClick={handleClick(item.id)}
+                onKeyDown={handleKeyDown(item.id)}
                 {...mergeProps(
                   themeProps('outline-item', {
                     active: isActive ? 'active' : null,
