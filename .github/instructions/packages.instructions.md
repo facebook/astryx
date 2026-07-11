@@ -296,6 +296,11 @@ and the Design review section above), or to add `hidden: true` until it does.
   form controls — never `stylex.defaultMarker()`.
 - **Semantic tokens only** — no hardcoded color/spacing/radius/shadow;
   theme-agnostic output.
+- **No wrapper `<div>` for styling** when the child already accepts style. Astryx
+  components extend `BaseProps` (they take `xstyle`), so apply the style directly
+  — `<Divider xstyle={hasOutline && styles.titleDivider} />` — instead of wrapping
+  the component in a styled `<div>`. Flag an added wrapper element whose only job
+  is to carry a style the child could take itself.
 - **Navigation** uses `useLinkComponent()`, never a hardcoded `<a>`.
 - **Docs in sync** — JSDoc file headers, `SYNC:` reminders, and `.doc.mjs`.
   `@example` fences in JSDoc must be plain ` ``` ` (never language-tagged), or
@@ -345,6 +350,15 @@ checks, flag it.
   key, a container query, or a prop instead of JS observing the DOM? Prefer the
   simpler mechanism; call out the complexity and the regression risk when the
   heavy approach isn't justified.
+- **Silent breaking changes to shared types/context.** Adding a **required**
+  field to a shared type, context value, or component API is a breaking change
+  for every existing consumer — even when the PR's own feature doesn't need them
+  to change. The **tell**: unrelated tests, examples, or call sites had to be
+  updated just to satisfy the new field. When you see that, flag it and ask
+  whether the field should be **optional** (applied internally with a default)
+  instead — and whether the breaking change is worth it. (Real case: a new
+  required `aria-controls` id on a mobile-nav context forced edits to surfaces
+  that didn't otherwise need it.)
 - **Other smells.** State expressed by unmounting focusable elements (toggle
   visibility so focus/a11y survive), unnecessary `useState` (prefer derived
   values or refs, especially from interaction handlers), and excessive comments.
