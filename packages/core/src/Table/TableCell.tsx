@@ -233,18 +233,24 @@ export function TableCell({
 
   // The cell owns the context-menu wrapper so it controls how the menu
   // interacts with its padding / content. No-op when no actions. When actions
-  // exist we make the trigger fill the cell and carry the density padding so a
+  // exist we make the child fill the cell and carry the density padding so a
   // right-click anywhere in the cell (including the padding ring) opens it.
-  const triggerXstyle =
+  const fillStyle =
     hasContextMenu && ctx
       ? [triggerFillStyles.fill, densityPaddingStyles[ctx.density]]
       : hasContextMenu
         ? triggerFillStyles.fill
         : undefined;
+
+  const innerContent = hasContextMenu ? (
+    <div {...stylex.props(fillStyle)}>{children}</div>
+  ) : (
+    children
+  );
+
   const content = wrapInTableContextMenu(
-    children,
+    innerContent,
     contextMenuActions,
-    triggerXstyle,
   );
 
   return (

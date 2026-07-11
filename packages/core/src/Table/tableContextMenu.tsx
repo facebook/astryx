@@ -16,7 +16,6 @@
 import {useState, type ReactNode} from 'react';
 import {ContextMenu, type ContextMenuOption} from '../ContextMenu';
 import {Icon} from '../Icon';
-import type {StyleXStyles} from '../theme/types';
 import type {TableContextAction, TableContextActions} from './types';
 
 /**
@@ -100,17 +99,14 @@ function toContextMenuOptions(
 function LazyTableContextMenu({
   element,
   getActions,
-  triggerXstyle,
 }: {
   element: ReactNode;
   getActions: () => TableContextAction[];
-  triggerXstyle?: StyleXStyles | StyleXStyles[];
 }): ReactNode {
   const [options, setOptions] = useState<ContextMenuOption[] | null>(null);
   return (
     <ContextMenu
       items={options ?? []}
-      triggerXstyle={triggerXstyle}
       onOpenChange={open => {
         // Resolve actions when opening; clear on close so state derived later
         // (e.g. current sort direction) is always fresh next open.
@@ -127,13 +123,13 @@ function LazyTableContextMenu({
  * getter (resolved lazily on open). When there are no actions the element is
  * returned untouched so the native browser menu passes through.
  *
- * `triggerXstyle` styles the right-click target wrapper. Cells pass a fill +
- * padding style so the entire cell (padding included) opens the menu.
+ *
+ * Cells pass a fill + padding style inside the element so the entire cell
+ * (padding included) opens the menu.
  */
 export function wrapInTableContextMenu(
   element: ReactNode,
   actions: TableContextActions | undefined,
-  triggerXstyle?: StyleXStyles | StyleXStyles[],
 ): ReactNode {
   // Getter form → resolve lazily on open.
   if (typeof actions === 'function') {
@@ -141,7 +137,6 @@ export function wrapInTableContextMenu(
       <LazyTableContextMenu
         element={element}
         getActions={actions}
-        triggerXstyle={triggerXstyle}
       />
     );
   }
@@ -152,8 +147,7 @@ export function wrapInTableContextMenu(
   // when the user arrow-keys into the menu.
   return (
     <ContextMenu
-      items={toContextMenuOptions(actions)}
-      triggerXstyle={triggerXstyle}>
+      items={toContextMenuOptions(actions)}>
       {element}
     </ContextMenu>
   );

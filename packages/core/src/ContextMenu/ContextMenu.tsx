@@ -34,6 +34,7 @@ import React, {
   useState,
 } from 'react';
 import type {ReactNode} from 'react';
+import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {useLayer} from '../Layer/useLayer';
 import {renderDropdownItems} from '../DropdownMenu/renderDropdownItems';
@@ -53,9 +54,8 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
-import type {StyleXStyles} from '../theme/types';
 import {themeProps} from '../utils/themeProps';
 import type {
   DropdownMenuOption,
@@ -67,7 +67,12 @@ import type {
 const styles = stylex.create({
   // Trigger wrapper: suppress the iOS long-press callout/selection so the
   // long-press opens our context menu instead of the native text/callout UI.
-  trigger: {
+  wrapperContents: {
+    display: 'contents',
+    WebkitTouchCallout: 'none',
+  },
+  wrapperInline: {
+    display: 'inline',
     WebkitTouchCallout: 'none',
   },
   menu: {
@@ -115,14 +120,7 @@ export type ContextMenuOption = DropdownMenuOption;
 
 interface ContextMenuBaseProps extends BaseProps {
   /** Ref forwarded to the trigger wrapper element. */
-  ref?: React.Ref<HTMLDivElement>;
-  /**
-   * Styles applied to the trigger wrapper element (the right-click target).
-   * By default the trigger is a plain block that hugs its content — pass a
-   * fill style (e.g. `width/height: 100%`) when the whole parent area should
-   * be right-clickable (as the Table does for full-cell context menus).
-   */
-  triggerXstyle?: StyleXStyles | StyleXStyles[];
+  ref?: React.Ref<HTMLElement>;
   /** The trigger area — right-click on this to open the menu. */
   children: ReactNode;
   /** Custom menu width. @default '160px' */
@@ -160,6 +158,13 @@ export type ContextMenuProps = ContextMenuDataProps | ContextMenuCompoundProps;
 // =============================================================================
 
 /**
+ * Check if children are text-only (no React elements)
+ */
+function isTextOnly(children: ReactNode): boolean {
+  return typeof children === 'string' || typeof children === 'number';
+}
+
+/**
  * A context menu component that appears on right-click at cursor position.
  *
  * Supports two modes:
@@ -193,15 +198,16 @@ export function ContextMenu({
   className,
   style,
   xstyle,
-  triggerXstyle,
   'data-testid': testId,
   ...props
 }: ContextMenuProps) {
+  const wrapperRef = useRef<HTMLElement>(null);
+  const textOnly = children != null ? isTextOnly(children) : false;
+
   const items = ('items' in props ? props.items : undefined) ?? [];
   const menuContent = 'menuContent' in props ? props.menuContent : undefined;
 
   const menuId = useId();
-  const positionRef = useRef({x: 0, y: 0});
   // Element focused before the menu opened, restored when it closes so focus
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
@@ -209,7 +215,7 @@ export function ContextMenu({
   const [isOpen, setIsOpen] = useState(false);
 
   const layer = useLayer({
-    mode: 'fixed',
+    mode: 'context',
     onHide: useCallback(() => {
       setIsOpen(false);
       onOpenChange?.(false);
@@ -230,6 +236,29 @@ export function ContextMenu({
   const closeMenu = useCallback(() => {
     layer.hide();
   }, [layer]);
+
+  useIsomorphicLayoutEffect(() => {
+    if (textOnly) {
+      return;
+    } // Skip for text-only (ref is on wrapper)
+
+    const wrapper = wrapperRef.current;
+    if (!wrapper) {
+      return;
+    }
+
+    const firstChild = wrapper.firstElementChild as HTMLElement | null;
+    if (!firstChild) {
+      return;
+    }
+
+    // Use combined ref for position + interaction
+    layer.ref(firstChild);
+
+    return () => {
+      layer.ref(null);
+    };
+  }, [textOnly, layer.ref]);
 
   const {
     listRef,
@@ -333,18 +362,6 @@ export function ContextMenu({
         return;
       }
       e.preventDefault();
-      // A keyboard-initiated contextmenu (Shift+F10 / the Menu key) fires a
-      // `contextmenu` event whose coordinates are (0, 0) in several browsers.
-      // Detect that and anchor the menu to the trigger's box instead, so the
-      // menu is reachable without a pointer (menus-8).
-      const isKeyboardInvoked =
-        e.clientX === 0 && e.clientY === 0 && e.detail === 0;
-      if (isKeyboardInvoked && e.currentTarget instanceof HTMLElement) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        positionRef.current = {x: rect.left, y: rect.bottom};
-      } else {
-        positionRef.current = {x: e.clientX, y: e.clientY};
-      }
       // Remember the element focused before opening so we can restore it on
       // close (Escape or outside-click), instead of dropping focus to <body>.
       triggerFocusRef.current =
@@ -364,8 +381,7 @@ export function ContextMenu({
   const longPressHandlers = useLongPress({
     disabled: isDisabled,
     onLongPress: useCallback(
-      (point: {x: number; y: number}) => {
-        positionRef.current = {x: point.x, y: point.y};
+      () => {
         layer.show();
         requestAnimationFrame(() => focusFirst());
       },
@@ -385,48 +401,61 @@ export function ContextMenu({
   const resolvedMenuContent =
     props.items !== undefined ? renderDropdownItems(items) : menuContent;
 
+  const triggerProps = {
+    onContextMenu: handleContextMenu,
+    ...longPressHandlers,
+    'data-testid': testId,
+  };
+
+  const renderedMenu = layer.render(
+    <div
+      ref={listRef}
+      id={menuId}
+      role="menu"
+      aria-label={label}
+      onKeyDown={listKeyDown}
+      onContextMenu={e => e.preventDefault()}
+      {...mergeProps(
+        themeProps('context-menu'),
+        stylex.props(styles.menu, xstyle),
+        className,
+        style,
+      )}>
+      <DropdownMenuContext value={contextValue}>
+        {resolvedMenuContent}
+      </DropdownMenuContext>
+    </div>,
+    {
+      placement: 'below',
+      alignment: 'start',
+      xstyle: [popoverXstyle, layerAnimations.below],
+    },
+  );
+
+  if (textOnly) {
+    return (
+      <>
+        <span
+          ref={mergeRefs(ref, wrapperRef, textOnly ? layer.ref : null)}
+          tabIndex={0}
+          {...triggerProps}
+          {...stylex.props(styles.wrapperInline)}>
+          {children}
+        </span>
+        {renderedMenu}
+      </>
+    );
+  }
+
   return (
     <>
-      <div
-        ref={ref}
-        onContextMenu={handleContextMenu}
-        {...longPressHandlers}
-        data-testid={testId}
-        {...stylex.props(
-          styles.trigger,
-          ...(triggerXstyle
-            ? Array.isArray(triggerXstyle)
-              ? triggerXstyle
-              : [triggerXstyle]
-            : []),
-        )}>
+      <span
+        ref={mergeRefs(ref, wrapperRef)}
+        {...triggerProps}
+        {...stylex.props(styles.wrapperContents)}>
         {children}
-      </div>
-
-      {layer.render(
-        <div
-          ref={listRef}
-          id={menuId}
-          role="menu"
-          aria-label={label}
-          onKeyDown={listKeyDown}
-          onContextMenu={e => e.preventDefault()}
-          {...mergeProps(
-            themeProps('context-menu'),
-            stylex.props(styles.menu, xstyle),
-            className,
-            style,
-          )}>
-          <DropdownMenuContext value={contextValue}>
-            {resolvedMenuContent}
-          </DropdownMenuContext>
-        </div>,
-        {
-          x: positionRef.current.x,
-          y: positionRef.current.y,
-          xstyle: [popoverXstyle, layerAnimations.below],
-        },
-      )}
+      </span>
+      {renderedMenu}
     </>
   );
 }
