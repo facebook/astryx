@@ -70,27 +70,40 @@ tone rotates. Resolve the author into one bucket, in this order:
 | **Design owner** | Same checks, framed for a designer — name what crosses into engineering territory and needs an engineer's eye. |
 | **Contributor** | *Initial review pass* — the first sweep, so human reviewers know where to focus scrutiny; findings are a triage map, not a verdict. |
 
-> **The merge gate is area-based, not author-based.** Buckets shape only *how
-> Copilot frames its comment*. Whether a PR is *blocked from auto-merge* is
-> decided separately and deterministically by high-risk **area** (below) — **no
-> author is exempt from the high-risk gate.** The low-risk carve-out exempts by
-> *area*, not by person.
+> **The merge gate is set by the workflow, from area + author.** Buckets shape
+> *how Copilot frames its comment*; the `review-signal` workflow decides whether
+> a PR is *blocked from auto-merge*. It applies two labels and disables
+> auto-merge when either fires:
+>
+> - **`needs:code-review`** — a high-risk **code** area (new package, new
+>   component/module, public API surface) not confined to low-risk areas.
+>   Requests review from CODEOWNERS. **Eng owners self-serve code** — their
+>   high-risk PRs are not tagged or gated.
+> - **`needs:design-review`** — a **design-affecting** change anywhere (StyleX,
+>   theme/token files, templates, a new component). Requests review from
+>   DESIGNOWNERS. **Design owners self-serve design** — their design PRs are not
+>   tagged or gated.
+>
+> So each team self-serves its own domain; the gate protects everyone else. A
+> code owner's approval clears `needs:code-review`; a design owner's (or code
+> owner's) approval clears `needs:design-review`.
 
 **High-risk vs. low-risk areas.** *High-risk* = public API changes, new
-components/modules, new packages, or a suspected regression (each path-scoped
-reviewer defines its own concrete triggers). *Low-risk* = themes
+components/modules, new packages, or a suspected regression. *Low-risk* = themes
 (`packages/themes/**`), templates (`packages/cli/templates/**`), sandbox
 (`apps/sandbox/**`), storybook (`apps/storybook/**`), and docsite
-(`apps/docsite/**`). A PR confined to low-risk areas does not trip the gate, for
-anyone.
+(`apps/docsite/**`). The low-risk carve-out applies to the **code** gate; the
+design gate is not area-gated (a theme or template edit is exactly where design
+review matters).
 
 ## Review Signal — put it at the top of every summary
 
 Open the summary comment with one signal line so posture is scannable at a
 glance:
 
-- 🔴 **Code review required** — a high-risk area was detected (the PR carries the
-  `needs:code-review` label; see below). Name the trigger(s).
+- 🔴 **Code review required** — a review-signal label is present
+  (`needs:code-review` and/or `needs:design-review`; see below). Name the
+  trigger(s).
 - 🟡 **Maintainer judgment recommended** — no hard trigger, but something crosses
   into human-judgment territory (see the per-file "engineering / human judgment"
   notes). Advisory.
@@ -112,22 +125,34 @@ in packages/core`.
   cross-cutting concern. If a finding isn't tied to a specific line, it belongs
   in the summary.
 
-## The `needs:code-review` label is a signal to you
+## The review-signal labels are signals to you
 
-A deterministic workflow (`.github/workflows/review-signal.yml`) applies the
-**`needs:code-review`** label when a PR touches a *high-risk area* — a new
-package, a new component/module, or public API surface — and disables auto-merge
-on those PRs until a code owner approves. This detection is path-based, not a
-judgment call, so treat it as authoritative for the *area-risk* question:
+A deterministic workflow (`.github/workflows/review-signal.yml`) applies two
+labels from the changed paths + author, and disables auto-merge when either
+fires:
 
-- **If the PR carries `needs:code-review`**, the high-risk determination is
-  already made. **Lead with 🔴 Code review required** and spend your review
-  explaining *what* about the high-risk surface a human should scrutinize — API
-  shape, regression/blast-radius, spec/lab coverage — rather than re-deciding
-  whether it's risky.
-- **The label sharpens your review; it never replaces your judgment.** Still
+- **`needs:code-review`** — a high-risk **code** area (new package, new
+  component/module, public API surface). **Lead with 🔴 Code review required**
+  and focus on *what* a human should scrutinize — API shape,
+  regression/blast-radius, spec/lab coverage — rather than re-deciding whether
+  it's risky.
+- **`needs:design-review`** — a **design-affecting** change (StyleX,
+  theme/token files, templates, a new component). Lead with 🔴 and evaluate the
+  change against **Design Conventions** — the checkable smells especially:
+  tokens-not-raw-values, 4px-grid spacing, concentric radius
+  (`r_inner ≈ r_outer − gap`), WCAG AA contrast in light *and* dark, alpha (not
+  opaque) interaction overlays, status paired with an icon (never color alone),
+  elevation↔z-index order, `transform`/`opacity`-only motion with reduced-motion
+  honored, and type hierarchy ≥1.25 / leading ≥1.3 / body ≥12px. The
+  path-detection only knows a design *area* was touched — you supply the design
+  critique.
+
+Both labels are path-based determinations of *area*, so treat them as
+authoritative for whether review is needed:
+
+- **The labels sharpen your review; they never replace your judgment.** Still
   raise 🟡 for regression or judgment concerns the path detection can't see
   (e.g. an unintended behavior change) even on an *unlabeled* PR.
-- **You do not set or remove this label.** The workflow applies it and a code
-  owner's approval clears it. One-way: the workflow informs you; you never gate
-  the merge.
+- **You do not set or remove these labels.** The workflow applies them and an
+  entitled owner's approval clears them. One-way: the workflow informs you; you
+  never gate the merge.
