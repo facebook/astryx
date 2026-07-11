@@ -68,7 +68,7 @@ export function BlogCard({post, feature = false}: BlogCardProps) {
       display="block"
       xstyle={styles.card}
       className={css.card}>
-      <VStack gap={3} xstyle={styles.inner}>
+      <VStack gap={feature ? 4 : 3} xstyle={styles.inner}>
         <AspectRatio ratio={16 / 9} xstyle={styles.cover} className={css.cover}>
           {post.coverImage ? (
             <img
