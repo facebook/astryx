@@ -31,14 +31,18 @@
 import {screen} from '@testing-library/react';
 import {computeAccessibleName} from 'dom-accessibility-api';
 
-const visibleStyleStub = {
-  getPropertyValue: (prop: string) =>
+// The name algorithm only reads getPropertyValue (for display/visibility/
+// content), so a Pick is all we need to type honestly — no object-literal
+// cast. The widening to CSSStyleDeclaration happens at the call site, where
+// getComputedStyle's signature demands the full type.
+const visibleStyleStub: Pick<CSSStyleDeclaration, 'getPropertyValue'> = {
+  getPropertyValue: prop =>
     prop === 'display' ? 'block' : prop === 'visibility' ? 'visible' : '',
-} as CSSStyleDeclaration;
+};
 
 function matchesName(el: Element, name: string | RegExp): boolean {
   const accessibleName = computeAccessibleName(el, {
-    getComputedStyle: () => visibleStyleStub,
+    getComputedStyle: () => visibleStyleStub as CSSStyleDeclaration,
   });
   return typeof name === 'string'
     ? accessibleName === name
