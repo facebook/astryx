@@ -17,6 +17,14 @@ minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   - '@astryxdesign/*'
 
+# Single source of truth for the workspace's vite version: every consumer
+# (root test config, example apps) declares "vite": "catalog:", so a bump
+# lands here once and cannot split the workspace across two vite majors.
+# Keep within @vitejs/plugin-react 4.x's peer range (vite <= 7) until the
+# vite 8 / vitest 4 / plugin-react 5 migration.
+catalog:
+  vite: ^7.3.6
+
 # Moved from package.json's "pnpm" field: pnpm 11 no longer reads
 # pnpm.overrides / pnpm.onlyBuiltDependencies from package.json.
 overrides:
