@@ -741,12 +741,14 @@ describe('Outline scroll scoping', () => {
     const user = userEvent.setup();
     const cleanup = mountHeadings();
     const onNavigateStart = vi.fn();
+    const onNavigateEnd = vi.fn();
 
     render(
       <Outline
         items={items}
         hasScrollOnClick={false}
         onNavigateStart={onNavigateStart}
+        onNavigateEnd={onNavigateEnd}
       />,
     );
     await user.click(screen.getByRole('link', {name: 'Installation'}));
@@ -755,6 +757,15 @@ describe('Outline scroll scoping', () => {
     expect(target.scrollIntoView).not.toHaveBeenCalled();
     // The consumer owns scrolling; they still learn where to go.
     expect(onNavigateStart).toHaveBeenCalledWith('install');
+    // There is nothing to scroll, so nothing to wait for: onNavigateEnd must
+    // resolve immediately rather than waiting out the settle timeout — an
+    // arrival effect paired with onNavigateEnd would otherwise land ~1.2s late
+    // for no reason.
+    expect(onNavigateEnd).toHaveBeenCalledWith('install');
+    expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
 
     cleanup();
   });

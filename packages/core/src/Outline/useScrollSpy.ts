@@ -418,21 +418,26 @@ export function useScrollSpy({
       }
     };
 
-    // Arm settle detection *before* scrolling so an instant jump (a target
-    // already in position, or prefers-reduced-motion collapsing the smooth
-    // scroll) cannot land before anyone is listening.
-    scrollTarget.addEventListener('scrollend', onSettle, {once: true});
-    scrollTarget.addEventListener('wheel', onManual, {passive: true});
-    scrollTarget.addEventListener('touchmove', onManual, {passive: true});
-    window.addEventListener('keydown', onKeyDown);
-    settleTimer = window.setTimeout(onSettle, SCROLL_SETTLE_TIMEOUT_MS);
-    navigationRef.current = {
-      supersede: () => finish(false, false),
-      teardown: cleanup,
-    };
-
     if (hasScrollOnClick) {
+      // Arm settle detection *before* scrolling so an instant jump (a target
+      // already in position, or prefers-reduced-motion collapsing the smooth
+      // scroll) cannot land before anyone is listening.
+      scrollTarget.addEventListener('scrollend', onSettle, {once: true});
+      scrollTarget.addEventListener('wheel', onManual, {passive: true});
+      scrollTarget.addEventListener('touchmove', onManual, {passive: true});
+      window.addEventListener('keydown', onKeyDown);
+      settleTimer = window.setTimeout(onSettle, SCROLL_SETTLE_TIMEOUT_MS);
+      navigationRef.current = {
+        supersede: () => finish(false, false),
+        teardown: cleanup,
+      };
       scrollToTarget(target, scrollRoot, scrollTarget, offset);
+    } else {
+      // The consumer owns scrolling — there is no scroll to wait for, so the
+      // navigation is already at rest. Resolving immediately (instead of
+      // waiting on the settle timeout) keeps onNavigateEnd usable for arrival
+      // effects even when hasScrollOnClick is false.
+      finish(true);
     }
 
     return true;
