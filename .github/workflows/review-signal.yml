@@ -152,7 +152,13 @@ jobs:
                     .find((l) => l.startsWith('*'));
                   text = star || '';
                 }
-                return (text.match(/@[A-Za-z0-9-]+/g) || [])
+                // Strip comment lines (# ...) so an @handle mentioned in a
+                // file header comment is not parsed as a real owner.
+                const body = text
+                  .split('\n')
+                  .filter((l) => !l.trim().startsWith('#'))
+                  .join('\n');
+                return (body.match(/@[A-Za-z0-9-]+/g) || [])
                   .map((h) => h.slice(1).toLowerCase());
               } catch (e) {
                 core.warning(`Could not read ${path}: ${e.message}`);
@@ -501,7 +507,13 @@ jobs:
                     .find((l) => l.startsWith('*'));
                   text = star || '';
                 }
-                return (text.match(/@[A-Za-z0-9-]+/g) || [])
+                // Strip comment lines (# ...) so an @handle mentioned in a
+                // file header comment is not parsed as a real owner.
+                const body = text
+                  .split('\n')
+                  .filter((l) => !l.trim().startsWith('#'))
+                  .join('\n');
+                return (body.match(/@[A-Za-z0-9-]+/g) || [])
                   .map((h) => h.slice(1).toLowerCase());
               } catch (e) {
                 core.warning(`Could not read ${path}: ${e.message}`);
