@@ -109,6 +109,11 @@ export default defineConfig({
           name: 'node',
           globals: true,
           environment: 'node',
+          // Build @astryxdesign/core once before workers fork. The build-theme
+          // suites need a compiled core; doing it here (not per-suite in
+          // parallel workers) avoids concurrent `rimraf dist && build`
+          // collisions that flake under Vitest 4's reworked pool.
+          globalSetup: ['./vitest.global-setup.node.mjs'],
           include: [
             'packages/**/src/**/*.test.{ts,tsx,mjs}',
             'internal/**/*.test.{ts,tsx,mjs}',
