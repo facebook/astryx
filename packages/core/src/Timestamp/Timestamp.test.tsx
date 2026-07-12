@@ -315,4 +315,31 @@ describe('Timestamp', () => {
     const el = screen.getByRole('time');
     expect(el.textContent).not.toContain('ago');
   });
+
+  // --- Invalid values ---
+
+  it('renders nothing instead of crashing on an unparseable string value', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const {container} = render(
+        <Timestamp value="not-a-date" data-testid="ts" />,
+      );
+      expect(container).toBeEmptyDOMElement();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('could not parse value'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('renders nothing instead of crashing on a NaN value', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const {container} = render(<Timestamp value={NaN} data-testid="ts" />);
+      expect(container).toBeEmptyDOMElement();
+    } finally {
+      warn.mockRestore();
+    }
+  });
 });
