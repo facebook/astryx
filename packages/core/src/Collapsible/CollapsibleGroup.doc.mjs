@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Collapsible',
   displayName: 'Collapsible Group',
   isHiddenFromOverview: true,
-  description: 'Coordinates multiple Collapsible instances so only one (single mode) or any number (multiple mode) can be open at a time. Renders no wrapper DOM element.',
+  description: 'Coordinates multiple Collapsible instances so only one (single mode) or any number (multiple mode) can be open at a time. Renders no wrapper DOM element unless dividers are enabled.',
   props: [
     {
       name: 'type',
@@ -31,6 +31,17 @@ export const docs = {
       description: 'Callback invoked when the set of open items changes.',
     },
     {
+      name: 'dividers',
+      type: "'between' | 'all' | 'none'",
+      description: "Divider style rendered around the group's items. 'between' draws hairlines between adjacent items; 'all' adds the group's top and bottom edges. When enabled, the group renders a wrapper div and items default to 'balanced' density. Pair with bare Collapsible children; Card-wrapped items provide their own separation.",
+      default: "'none'",
+    },
+    {
+      name: 'density',
+      type: "'compact' | 'balanced' | 'spacious'",
+      description: "Row density controlling trigger and content block padding on the group's items. Defaults to 'balanced' when dividers are shown; otherwise items keep their default unpadded look.",
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description: 'Collapsible instances to coordinate.',
@@ -52,7 +63,7 @@ export const docsZh = {
   name: 'CollapsibleGroup',
   isHiddenFromOverview: true,
   displayName: 'Collapsible Group',
-  description: '协调多个 Collapsible 实例，使同一时间只有一个（single 模式）或任意数量（multiple 模式）可以展开。不渲染包裹 DOM 元素。',
+  description: '协调多个 Collapsible 实例，使同一时间只有一个（single 模式）或任意数量（multiple 模式）可以展开。除非启用 dividers，否则不渲染包裹 DOM 元素。',
   props: [
     {
       name: 'type',
@@ -76,6 +87,17 @@ export const docsZh = {
       description: '展开项目集合变更时调用的回调。',
     },
     {
+      name: 'dividers',
+      type: "'between' | 'all' | 'none'",
+      description: "渲染在组项目周围的分隔线样式。'between' 仅在相邻项目之间绘制细线；'all' 额外绘制组的顶部和底部边缘。启用后组会渲染一个包裹 div，且项目默认使用 'balanced' 密度。适合搭配裸 Collapsible 子项使用；用 Card 包裹的项目自带视觉分隔。",
+      default: "'none'",
+    },
+    {
+      name: 'density',
+      type: "'compact' | 'balanced' | 'spacious'",
+      description: "控制组内项目触发器和内容块内边距的行密度。显示分隔线时默认为 'balanced'；否则项目保持默认的无内边距外观。",
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description: '需要协调的 Collapsible 实例。',
@@ -88,12 +110,14 @@ export const docsDense = {
   name: 'CollapsibleGroup',
   isHiddenFromOverview: true,
   displayName: 'Collapsible Group',
-  description: 'coordinates multiple Collapsible instances; single or multiple open. no wrapper DOM.',
+  description: 'coordinates multiple Collapsible instances; single or multiple open. no wrapper DOM unless dividers enabled.',
   propDescriptions: {
     type: 'one or many items open simultaneously',
     defaultValue: 'default open item(s) (uncontrolled); string for single, array for multiple',
     value: 'controlled open item(s)',
     onChange: 'callback on open items change',
+    dividers: "row hairlines: 'between' items only, 'all' adds outer edges, 'none' (default); enables wrapper div + 'balanced' density; use bare Collapsible children",
+    density: "row padding 'compact' | 'balanced' | 'spacious'; defaults 'balanced' with dividers, else unpadded",
     children: 'Collapsible instances to coordinate',
   },
 };

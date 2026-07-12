@@ -39,10 +39,11 @@ export const docs = {
   ],
   usage: {
     description:
-      'Traps focus within a container element following the WAI-ARIA dialog focus trap pattern. Listens to focus events on the document and redirects focus back into the container if it escapes via keyboard navigation. Handles both Tab and Shift+Tab wrapping. Mouse clicks outside the container are not intercepted; use a light-dismiss handler for that.',
+      'Traps focus within a container element following the WAI-ARIA dialog focus trap pattern. Listens to focus events on the document and redirects focus back into the container if it escapes via keyboard navigation. Handles both Tab and Shift+Tab wrapping. When the trap deactivates or unmounts, focus is restored to the element that was focused before activation, unless focus was already moved elsewhere. Mouse clicks outside the container are not intercepted; use a light-dismiss handler for that.',
     bestPractices: [
       { guidance: true, description: 'Call focusFirst() when opening a dialog/modal to move focus into the trapped region.' },
       { guidance: true, description: 'Provide an onEscape callback to close the dialog when Escape is pressed.' },
+      { guidance: true, description: 'Rely on the built-in focus restoration on close; only add your own onHide focus handling when you need to send focus somewhere other than the previously-focused element.' },
       { guidance: false, description: 'Use on non-modal content like tooltips or dropdowns; those need light-dismiss, not focus trapping.' },
     ],
   },
@@ -67,10 +68,11 @@ export const docsDense = {
   },
   usage: {
     description:
-      'Traps focus within container element following WAI-ARIA dialog focus trap pattern. Listens to document focus events + redirects focus back into container if it escapes via keyboard navigation. Handles both Tab + Shift+Tab wrapping. Mouse clicks outside container not intercepted; use light-dismiss handler for that.',
+      'Traps focus within container element following WAI-ARIA dialog focus trap pattern. Listens to document focus events + redirects focus back into container if it escapes via keyboard navigation. Handles both Tab + Shift+Tab wrapping. On deactivate/unmount, restores focus to the element focused before activation unless focus already moved elsewhere. Mouse clicks outside container not intercepted; use light-dismiss handler for that.',
     bestPractices: [
       { guidance: true, description: 'Call focusFirst() when opening dialog/modal to move focus into trapped region.' },
       { guidance: true, description: 'Provide onEscape callback to close dialog when Escape pressed.' },
+      { guidance: true, description: 'Rely on built-in focus restoration on close; add own onHide focus handling only to send focus somewhere other than previously-focused element.' },
       { guidance: false, description: 'Use on non-modal content like tooltips / dropdowns; those need light-dismiss, not focus trapping.' },
     ],
   },

@@ -63,6 +63,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        'The HTML name attribute for the underlying checkbox input, useful for form submissions (submits "on" when the switch is on).',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -204,6 +210,11 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description: '底层复选框输入的 HTML name 属性，用于表单提交（开启时提交 "on"）。',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -309,6 +320,7 @@ export const docsDense = {
     isLabelHidden: 'Visually hides label; still accessible to screen readers.',
     description: 'Description text below label.',
     isDisabled: 'Whether switch is disabled.',
+    htmlName: 'HTML name attr for the checkbox; submits "on" when on.',
     isOptional: 'Whether field is optional; mutually exclusive w/ isRequired.',
     isRequired: 'Whether switch is required; mutually exclusive w/ isOptional.',
     status: 'Status indicator w/ type + message; colored message box, sets aria-invalid on error.',

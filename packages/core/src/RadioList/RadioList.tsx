@@ -111,6 +111,13 @@ export interface RadioListProps extends Omit<
    * @default false
    */
   isDisabled?: boolean;
+
+  /**
+   * The HTML name attribute shared by the radio inputs in the group.
+   * Useful for form submissions; when omitted, a unique internal name is
+   * generated so the group still roves correctly.
+   */
+  htmlName?: string;
   /**
    * Explains why the radio group is disabled. Applies to the whole-group
    * disabled state (`isDisabled`), not individual items. When set together with
@@ -199,9 +206,11 @@ export function RadioList({
   className,
   style,
   'data-testid': dataTestId,
+  htmlName,
   children,
 }: RadioListProps) {
-  const name = useId();
+  const autoName = useId();
+  const name = htmlName ?? autoName;
   const inputID = useId();
   const labelID = useId();
   const descriptionID = useId();

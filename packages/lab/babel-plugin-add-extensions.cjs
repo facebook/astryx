@@ -11,8 +11,8 @@
  * Handles both file imports ('./XDSButton' → './XDSButton.js') and
  * directory imports ('./domainTokens' → './domainTokens/index.js').
  */
-const fs = require('fs');
-const nodePath = require('path');
+const fs = require('node:fs');
+const nodePath = require('node:path');
 
 module.exports = function addExtensions() {
   const SKIP = /\.(?:js|mjs|cjs|json|css)$/;

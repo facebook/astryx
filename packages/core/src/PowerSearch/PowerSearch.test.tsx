@@ -10,10 +10,11 @@
  */
 
 import {useState} from 'react';
-import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
+import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
 import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {PowerSearch} from './PowerSearch';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {PowerSearchConfig, PowerSearchFilter} from './types';
 
 // =============================================================================
@@ -57,6 +58,12 @@ beforeAll(() => {
 afterAll(() => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (HTMLElement.prototype as any).matches = originalMatches;
+});
+
+// Reset the singleton live regions between tests so result-count
+// announcements from one test don't leak into the next.
+afterEach(() => {
+  __resetLiveRegionsForTest();
 });
 
 // =============================================================================
@@ -293,6 +300,107 @@ describe('PowerSearch', () => {
         />,
       );
       expect(screen.getByRole('combobox')).toBeDisabled();
+    });
+  });
+
+  describe('result count announcements', () => {
+    const politeRegion = () =>
+      document.querySelector('[data-astryx-live-region="polite"]');
+
+    it('announces the result count to a polite live region when it changes', async () => {
+      const {rerender} = render(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          resultCount={0}
+        />,
+      );
+      rerender(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          resultCount={5}
+        />,
+      );
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('5 results');
+      });
+    });
+
+    it('announces "1 result" (singular) for a single match', async () => {
+      const {rerender} = render(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          resultCount={0}
+        />,
+      );
+      rerender(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          resultCount={1}
+        />,
+      );
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('1 result');
+      });
+      expect(politeRegion()?.textContent).not.toMatch(/results/);
+    });
+
+    it('announces a string result count verbatim', async () => {
+      const {rerender} = render(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          resultCount="0 items"
+        />,
+      );
+      rerender(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          resultCount="Showing 1.2k matches"
+        />,
+      );
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Showing 1.2k matches');
+      });
+    });
+
+    it('does not announce the result count present on initial mount', async () => {
+      render(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          resultCount={42}
+        />,
+      );
+      // Flush effects and any pending live-region rAF writes.
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      });
+      expect(politeRegion()?.textContent ?? '').not.toContain('42');
+    });
+
+    it('leaves Typeahead dropdown announcements intact and stays silent when no resultCount is set', async () => {
+      const user = userEvent.setup();
+      render(<PowerSearchWrapper config={config} />);
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+      await user.type(input, 'Status');
+      // BaseTypeahead announces the dropdown suggestion count; PowerSearch adds
+      // no result-count announcement because resultCount is unset.
+      await waitFor(() => {
+        expect(politeRegion()?.textContent).toMatch(/\d+ results?/);
+      });
     });
   });
 });

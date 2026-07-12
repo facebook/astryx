@@ -2,8 +2,8 @@
 
 import type {StorybookConfig} from '@storybook/react-vite';
 import {astryxStylex} from '@astryxdesign/build/vite';
-import path from 'path';
-import {fileURLToPath} from 'url';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../../..');
@@ -86,6 +86,12 @@ const config: StorybookConfig = {
               '@astryxdesign/core': [path.join(rootDir, 'packages/core/src')],
               '@astryxdesign/lab/*': [path.join(rootDir, 'packages/lab/src/*')],
               '@astryxdesign/lab': [path.join(rootDir, 'packages/lab/src')],
+              '@astryxdesign/charts/*': [
+                path.join(rootDir, 'packages/charts/src/*'),
+              ],
+              '@astryxdesign/charts': [
+                path.join(rootDir, 'packages/charts/src'),
+              ],
               '@astryxdesign/theme-neutral/*': [
                 path.join(rootDir, 'packages/themes/neutral/src/*'),
               ],
@@ -113,6 +119,7 @@ const config: StorybookConfig = {
           ...config.resolve?.alias,
           '@astryxdesign/core': path.resolve(rootDir, 'packages/core/src'),
           '@astryxdesign/lab': path.resolve(rootDir, 'packages/lab/src'),
+          '@astryxdesign/charts': path.resolve(rootDir, 'packages/charts/src'),
           '@astryxdesign/theme-neutral': path.resolve(
             rootDir,
             'packages/themes/neutral/src/source.ts',

@@ -128,6 +128,12 @@ export interface TokenizerProps<T extends SearchableItem> extends Omit<
   searchSource: SearchSource<T>;
   /** Currently selected items. */
   value: T[];
+
+  /**
+   * The HTML name attribute for form submissions. When set, hidden inputs
+   * carry one entry per selected item's id under this name.
+   */
+  htmlName?: string;
   /** Callback when selection changes. Includes change metadata. */
   onChange: (items: T[], change: TokenizerChange<T>) => void;
   /** Render function for dropdown items. Default: TypeaheadItem. */
@@ -377,6 +383,7 @@ export function Tokenizer<T extends SearchableItem>({
   maxMenuItems,
   emptySearchResultsText,
   isDisabled = false,
+  htmlName,
   disabledMessage,
   hasClear = false,
   endContent,
@@ -760,6 +767,18 @@ export function Tokenizer<T extends SearchableItem>({
               : undefined
         }
       />
+      {htmlName != null &&
+        value.map(item => (
+          <input
+            key={item.id}
+            type="hidden"
+            name={htmlName}
+            value={item.id}
+            // Disabled native controls are excluded from form submission;
+            // mirror that for the hidden carriers.
+            disabled={isDisabled}
+          />
+        ))}
       {(endContent || (hasClear && value.length > 0 && !isDisabled)) && (
         <div {...stylex.props(styles.endSection, endSectionSizeStyles[size])}>
           {endContent}

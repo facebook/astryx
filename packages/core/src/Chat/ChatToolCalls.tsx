@@ -18,7 +18,7 @@
  * for builders to wire up.
  */
 
-import React, {useState, useCallback, type ReactNode} from 'react';
+import React, {useState, useCallback, useId, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -41,11 +41,7 @@ import {themeProps} from '../utils/themeProps';
 // Types
 // =============================================================================
 
-export type ChatToolCallStatus =
-  | 'pending'
-  | 'running'
-  | 'complete'
-  | 'error';
+export type ChatToolCallStatus = 'pending' | 'running' | 'complete' | 'error';
 
 export interface ChatToolCallItem {
   /** Tool/function name. */
@@ -356,6 +352,7 @@ function CallRow({call}: {call: ChatToolCallItem}) {
   const status = call.status ?? 'complete';
   const hasDetail = call.resultDetail != null;
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const detailId = useId();
 
   const toggleDetail = hasDetail
     ? () => setIsDetailOpen(prev => !prev)
@@ -365,6 +362,8 @@ function CallRow({call}: {call: ChatToolCallItem}) {
     <div
       role={hasDetail ? 'button' : undefined}
       tabIndex={hasDetail ? 0 : undefined}
+      aria-expanded={hasDetail ? isDetailOpen : undefined}
+      aria-controls={hasDetail && isDetailOpen ? detailId : undefined}
       onClick={toggleDetail}
       onKeyDown={
         hasDetail
@@ -399,11 +398,7 @@ function CallRow({call}: {call: ChatToolCallItem}) {
       </span>
       <span {...stylex.props(styles.callName)}>{call.name}</span>
       {call.node != null && (
-        <Badge
-          label={call.node}
-          variant="neutral"
-          xstyle={styles.nodePill}
-        />
+        <Badge label={call.node} variant="neutral" xstyle={styles.nodePill} />
       )}
       {call.target != null && (
         <span {...stylex.props(styles.callLabel)}>{call.target}</span>
@@ -448,7 +443,7 @@ function CallRow({call}: {call: ChatToolCallItem}) {
     <div>
       {row}
       {isDetailOpen && (
-        <div {...stylex.props(styles.callDetailContent)}>
+        <div id={detailId} {...stylex.props(styles.callDetailContent)}>
           {call.resultDetail}
         </div>
       )}
@@ -497,6 +492,7 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
 
   const autoDefault = defaultIsExpanded ?? false;
   const [internalExpanded, setInternalExpanded] = useState(autoDefault);
+  const contentId = useId();
   const isControlled = controlledExpanded !== undefined;
   const isExpanded = isControlled ? controlledExpanded : internalExpanded;
 
@@ -548,6 +544,7 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
         role="button"
         tabIndex={0}
         aria-expanded={isExpanded}
+        aria-controls={contentId}
         onClick={toggle}
         onKeyDown={e => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -613,6 +610,7 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
 
       {/* Expanded: all calls with full metadata */}
       <div
+        id={contentId}
         {...stylex.props(
           styles.groupContent,
           isExpanded && styles.groupContentExpanded,

@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/theme-neutral",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "displayName": "Neutral Theme",
   "private": false,
   "description": "Restrained warm grays. Minimal and quiet, so the content stays the focus.",
@@ -52,11 +52,11 @@
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@astryxdesign/core": "0.1.3",
+    "@astryxdesign/core": "0.1.4",
     "react": ">=19"
   },
   "devDependencies": {
-    "@astryxdesign/cli": "0.1.3"
+    "@astryxdesign/cli": "0.1.4"
   },
   "module": "./dist/source.mjs"
 }

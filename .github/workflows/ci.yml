@@ -59,13 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
       # docsite `generate` runs `astryx theme build`, which imports the compiled
       # @astryxdesign/core/theme entry (dist/theme/index.js). Build core first so that
@@ -113,15 +107,7 @@ jobs:
       - uses: actions/checkout@v7
         if: needs.check-scope.outputs.docsite_only != 'true'
 
-      - uses: pnpm/action-setup@v6
-        if: needs.check-scope.outputs.docsite_only != 'true'
-      - uses: actions/setup-node@v6
-        if: needs.check-scope.outputs.docsite_only != 'true'
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
         if: needs.check-scope.outputs.docsite_only != 'true'
 
       - name: Check copyright headers
@@ -164,20 +150,9 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         run: git fetch origin ${{ github.base_ref }} --depth=1
 
-      - name: Setup pnpm
+      - name: Setup Node and pnpm
         if: needs.check-scope.outputs.docsite_only != 'true'
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        if: needs.check-scope.outputs.docsite_only != 'true'
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        if: needs.check-scope.outputs.docsite_only != 'true'
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/setup
 
       - name: Build core package
         if: needs.check-scope.outputs.docsite_only != 'true'
@@ -269,12 +244,43 @@ jobs:
             --head HEAD \
             --output analysis.json
 
+      - name: Write PR comment metadata
+        if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
+        env:
+          # Preview deploy (gh-pages) only runs for same-repo PRs — forks lack
+          # the write token. So preview URLs only exist for same-repo PRs; for
+          # forks we omit them (empty), and generate-pr-comment.js drops the
+          # preview sections rather than link to a 404.
+          IS_SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          # The pr-comment workflow runs on workflow_run (privileged token, so
+          # it can comment on fork PRs). That context does NOT know the PR
+          # number or preview URLs, so persist them in the artifact here.
+          if [ "$IS_SAME_REPO" = "true" ]; then
+            SB_URL="${{ steps.urls.outputs.storybook_url }}"
+            SBX_URL="${{ steps.urls.outputs.sandbox_url }}"
+          else
+            SB_URL=""
+            SBX_URL=""
+          fi
+          cat > pr-meta.json <<EOF
+          {
+            "prNumber": "${{ steps.urls.outputs.pr_number }}",
+            "storybookUrl": "${SB_URL}",
+            "sandboxUrl": "${SBX_URL}",
+            "runId": "${{ github.run_id }}",
+            "runUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          }
+          EOF
+
       - name: Upload analysis artifact
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
         with:
           name: pr-analysis
-          path: analysis.json
+          path: |
+            analysis.json
+            pr-meta.json
           retention-days: 1
 
   # Deploy PR preview to GitHub Pages.
@@ -352,87 +358,6 @@ jobs:
           echo "::error::Failed to deploy PR preview after $MAX_ATTEMPTS attempts"
           exit 1
 
-  # Post PR comment with preview links + analysis as soon as build finishes
-  # Does NOT wait for test or a11y — those update the comment later
-  # Posting a comment needs `pull-requests: write`, which fork PRs don't get
-  # (their GITHUB_TOKEN is read-only). Skip on forks so the check stays neutral
-  # instead of failing. The analysis artifact is still uploaded by `build`.
-  pr-comment:
-    if: >-
-      github.event_name == 'pull_request' &&
-      needs.check-scope.outputs.docsite_only != 'true' &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    needs: [build, check-scope]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - name: Download analysis artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: pr-analysis
-
-      - name: Generate PR comment
-        run: |
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-          echo '{"components":{},"summary":{"componentsAudited":0,"totalViolations":0}}' > a11y-report.json
-
-          COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
-            --analysis analysis.json \
-            --a11y a11y-report.json \
-            --storybook-url "${{ needs.build.outputs.storybook_url }}" \
-            --sandbox-url "${{ needs.build.outputs.sandbox_url }}" \
-            --run-url "$RUN_URL" \
-            --pr-number "${{ github.event.pull_request.number }}" \
-            --pending)
-
-          echo "$COMMENT_BODY" > pr-comment.md
-
-      - name: Comment on PR
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const fs = require('fs');
-            const body = fs.readFileSync('pr-comment.md', 'utf8');
-            const prNumber = ${{ github.event.pull_request.number }};
-
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-            });
-
-            const botComment = comments.find(comment =>
-              comment.user.type === 'Bot' &&
-              comment.body.includes('PR Analysis Report')
-            );
-
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: body
-              });
-            }
-
   # Accessibility audit
   # Skipped when no components changed.
   pr-a11y:
@@ -445,14 +370,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      # Dependencies are installed later, together with the Playwright browser,
+      # because the analysis artifact has to be downloaded first.
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
         with:
-          node-version: 24
-          cache: 'pnpm'
+          install: 'false'
 
       - name: Download analysis artifact
         uses: actions/download-artifact@v8
@@ -482,89 +405,3 @@ jobs:
           name: a11y-report
           path: a11y-report.json
           retention-days: 1
-
-  # Update PR comment with a11y results once they're ready.
-  # Skipped on fork PRs for the same read-only-token reason as pr-comment.
-  pr-comment-update:
-    needs: [build, check-components, pr-a11y]
-    if: >-
-      always() && github.event_name == 'pull_request' &&
-      needs.build.result == 'success' &&
-      needs.check-components.outputs.has_components == 'true' &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - name: Download analysis artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: pr-analysis
-
-      - name: Download a11y artifact
-        if: needs.pr-a11y.result == 'success'
-        uses: actions/download-artifact@v8
-        with:
-          name: a11y-report
-
-      - name: Generate updated PR comment
-        run: |
-          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-          if [ ! -f a11y-report.json ]; then
-            echo '{"components":{},"summary":{"componentsAudited":0,"totalViolations":0}}' > a11y-report.json
-          fi
-
-          COMMENT_BODY=$(node .github/scripts/generate-pr-comment.js \
-            --analysis analysis.json \
-            --a11y a11y-report.json \
-            --storybook-url "${{ needs.build.outputs.storybook_url }}" \
-            --sandbox-url "${{ needs.build.outputs.sandbox_url }}" \
-            --run-url "$RUN_URL" \
-            --pr-number "${{ github.event.pull_request.number }}")
-
-          echo "$COMMENT_BODY" > pr-comment.md
-
-      - name: Update PR comment
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const fs = require('fs');
-            const body = fs.readFileSync('pr-comment.md', 'utf8');
-            const prNumber = ${{ github.event.pull_request.number }};
-
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-            });
-
-            const botComment = comments.find(comment =>
-              comment.user.type === 'Bot' &&
-              comment.body.includes('PR Analysis Report')
-            );
-
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: body
-              });
-            }

@@ -31,7 +31,7 @@
  * - /packages/cli/templates/blocks/components/Banner/ (showcase blocks)
  */
 
-import {useState, type ReactNode} from 'react';
+import {useId, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {Button} from '../Button';
@@ -387,6 +387,11 @@ export function Banner({
 }: BannerProps) {
   const [isDismissed, setIsDismissed] = useState(false);
   const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
+  // Links the expand/collapse toggle to the content region it shows/hides so
+  // assistive tech can move from the button to its controlled content
+  // (disclosure pattern). The region is conditionally rendered, so aria-controls
+  // below is set only while it's mounted to avoid a dangling reference.
+  const contentId = useId();
   const defaultIconName = defaultIconNames[status];
   const role = statusRole[status];
   const iconColor = statusIconColor[status];
@@ -477,6 +482,7 @@ export function Banner({
                 }
                 onClick={handleToggleExpand}
                 aria-expanded={isExpanded}
+                aria-controls={showContent ? contentId : undefined}
                 isIconOnly
               />
             )}
@@ -497,6 +503,7 @@ export function Banner({
       {/* Content area: collapsible card background — theme target ('banner-content') */}
       {showContent && (
         <div
+          id={contentId}
           {...mergeProps(
             themeProps('banner-content', {container, status}),
             stylex.props(styles.contentArea, isCard && styles.contentAreaCard),

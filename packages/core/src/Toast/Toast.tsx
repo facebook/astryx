@@ -121,8 +121,14 @@ export function Toast({
   // Will be initialized by startTimer when actually used
   const startTimeRef = useRef<number | null>(null);
 
+  // Read onDismiss through a ref: the viewport re-creates it on every render
+  // (another toast arriving/exiting), and a startTimer that depends on it
+  // would restart — and un-pause — this toast's timer on unrelated renders.
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+
   const startTimer = useCallback(() => {
-    if (!isAutoHide) {
+    if (!isAutoHide || isPausedRef.current) {
       return;
     }
     if (timerRef.current) {
@@ -130,9 +136,9 @@ export function Toast({
     }
     startTimeRef.current = Date.now();
     timerRef.current = setTimeout(() => {
-      onDismiss('auto');
+      onDismissRef.current('auto');
     }, remainingRef.current);
-  }, [isAutoHide, onDismiss]);
+  }, [isAutoHide]);
 
   const pauseTimer = useCallback(() => {
     if (!isAutoHide || isPausedRef.current) {
@@ -165,6 +171,8 @@ export function Toast({
         clearTimeout(timerRef.current);
       }
     };
+    // startTimer's identity is stable per isAutoHide, so this runs on mount
+    // and on a genuine duration change — not on unrelated viewport renders.
   }, [autoHideDuration, startTimer]);
 
   // Pause the auto-hide timer while the window is not focused, so a toast

@@ -11,7 +11,7 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {StarIcon} from '@heroicons/react/24/outline';
+import {TestIcon} from '../__tests__/TestIcon';
 import {FieldLabel} from './FieldLabel';
 
 describe('FieldLabel', () => {
@@ -49,7 +49,7 @@ describe('FieldLabel', () => {
       <FieldLabel
         label="Starred"
         inputID="starred-input"
-        labelIcon={StarIcon}
+        labelIcon={TestIcon}
       />,
     );
     const svg = document.querySelector('svg');

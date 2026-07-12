@@ -229,6 +229,34 @@ describe('BaseTable', () => {
     expect(headers[2]).toHaveTextContent('Email');
   });
 
+  it('renders every column header with scope="col"', () => {
+    render(<BaseTable data={users} columns={columns} />);
+    const headers = screen.getAllByRole('columnheader');
+    expect(headers).toHaveLength(3);
+    for (const header of headers) {
+      expect(header).toHaveAttribute('scope', 'col');
+    }
+  });
+
+  it('lets a consumer override scope via header html props', () => {
+    // A `<th scope="row">` maps to the `rowheader` role, so query the DOM
+    // directly to assert the attribute regardless of the resolved ARIA role.
+    const plugin: TablePlugin<User> = {
+      transformHeaderCell: (props, column) =>
+        column.key === 'name'
+          ? {...props, htmlProps: {...props.htmlProps, scope: 'row'}}
+          : props,
+    };
+    const {container} = render(
+      <BaseTable data={users} columns={columns} plugins={[plugin]} />,
+    );
+    const headerCells = container.querySelectorAll('thead th');
+    // columns fixture order: name, age, email — plugin overrides name → 'row'
+    expect(headerCells[0]).toHaveAttribute('scope', 'row');
+    expect(headerCells[1]).toHaveAttribute('scope', 'col');
+    expect(headerCells[2]).toHaveAttribute('scope', 'col');
+  });
+
   it('renders data cells', () => {
     render(<BaseTable data={users} columns={columns} />);
     const cells = screen.getAllByRole('cell');
@@ -617,6 +645,29 @@ describe('BaseTable', () => {
 // =============================================================================
 
 describe('Table', () => {
+  it('clears a cell when the field is removed from the row object (#3595)', () => {
+    const cols: TableColumn<Record<string, unknown>>[] = [
+      {key: 'name', header: 'Name'},
+      {key: 'status', header: 'Status'},
+    ];
+    const {rerender} = render(
+      <Table
+        data={[{id: '1', name: 'Alice', status: 'active'}]}
+        columns={cols}
+        idKey="id"
+      />,
+    );
+    expect(screen.getByText('active')).toBeInTheDocument();
+
+    // Clearing a field by omitting it (optimistic update / server response)
+    // must re-render the row — the memo previously only compared the keys of
+    // the NEW item, so the deleted field's stale value kept rendering.
+    rerender(
+      <Table data={[{id: '1', name: 'Alice'}]} columns={cols} idKey="id" />,
+    );
+    expect(screen.queryByText('active')).not.toBeInTheDocument();
+  });
+
   it('renders a table with correct structure', () => {
     render(<Table data={users} columns={columns} />);
     expect(screen.getByRole('table')).toBeInTheDocument();

@@ -270,6 +270,44 @@ describe('Banner', () => {
     expect(expandIndex).toBeLessThan(dismissIndex);
   });
 
+  it('links the expand toggle to its content region via aria-controls', () => {
+    render(
+      <Banner status="info" title="Controls Test" defaultIsExpanded>
+        <div data-testid="region-content">Region content</div>
+      </Banner>,
+    );
+
+    const toggle = screen.getByRole('button', {name: 'Collapse'});
+    const controlsId = toggle.getAttribute('aria-controls');
+    // aria-controls must be present and point at the real content region.
+    expect(controlsId).toBeTruthy();
+    const region = document.getElementById(controlsId as string);
+    expect(region).not.toBeNull();
+    expect(region).toContainElement(screen.getByTestId('region-content'));
+  });
+
+  it('sets aria-controls only while the content region is mounted', async () => {
+    const user = userEvent.setup();
+    render(
+      <Banner status="info" title="Controls Toggle">
+        <div data-testid="region-content">Region content</div>
+      </Banner>,
+    );
+
+    // Collapsed: the region is unmounted, so no dangling aria-controls target.
+    const collapsedToggle = screen.getByRole('button', {name: 'Expand'});
+    expect(collapsedToggle).not.toHaveAttribute('aria-controls');
+
+    // Expanded: aria-controls resolves to the mounted region with the children.
+    await user.click(collapsedToggle);
+    const expandedToggle = screen.getByRole('button', {name: 'Collapse'});
+    const controlsId = expandedToggle.getAttribute('aria-controls');
+    expect(controlsId).toBeTruthy();
+    const region = document.getElementById(controlsId as string);
+    expect(region).not.toBeNull();
+    expect(region).toContainElement(screen.getByTestId('region-content'));
+  });
+
   it('does not render content area when no children', () => {
     const {container} = render(<Banner status="info" title="No Children" />);
     const root = container.firstElementChild;

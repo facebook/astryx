@@ -839,4 +839,34 @@ describe('Selector', () => {
       expect(trigger).toHaveAttribute('tabIndex', '-1');
     });
   });
+  describe('form participation', () => {
+    it('submits the selected value under htmlName', () => {
+      const {container} = render(
+        <form>
+          <Selector label="Fruit" htmlName="fruit" options={OPTIONS} value="Banana" />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('fruit')).toBe('Banana');
+    });
+
+    it('submits an empty string when nothing is selected', () => {
+      const {container} = render(
+        <form>
+          <Selector label="Fruit" htmlName="fruit" options={OPTIONS} />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('fruit')).toBe('');
+    });
+
+    it('is excluded from form data when disabled', () => {
+      const {container} = render(
+        <form>
+          <Selector label="Fruit" htmlName="fruit" options={OPTIONS} value="Banana" isDisabled />
+        </form>,
+      );
+      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+    });
+  });
 });

@@ -114,6 +114,9 @@ export function ToastViewport({
 
   // Show the popover on mount so it enters the top layer.
   const viewportRef = useRef<HTMLDivElement>(null);
+  // Toast ids whose exit has begun — guards onHide from double-firing (see
+  // removeToast). Mirrors exitingIds state, readable synchronously.
+  const exitingIdsRef = useRef<Set<string>>(new Set());
   // The element that was focused before the user jumped into the viewport
   // (via F6). Used to restore focus once all toasts are dismissed so focus
   // never falls to <body>.
@@ -171,6 +174,14 @@ export function ToastViewport({
   }, []);
 
   const removeToast = useCallback((id: string, reason: ToastDismissReason) => {
+    // An exiting toast stays in toastsRef until its exit transition ends, so
+    // a second dismissal inside that window (double-click, auto-timer plus
+    // manual dismiss()) would re-fire onHide. Track exiting ids in a ref —
+    // the exitingIds state dedupe below runs too late to protect onHide.
+    if (exitingIdsRef.current.has(id)) {
+      return;
+    }
+    exitingIdsRef.current.add(id);
     const entry = toastsRef.current.find(t => t.id === id);
     if (entry) {
       entry.options.onHide?.(reason);
@@ -210,6 +221,7 @@ export function ToastViewport({
   }, []);
 
   const handleExited = useCallback((id: string) => {
+    exitingIdsRef.current.delete(id);
     setExitingIds(prev => {
       if (!prev.has(id)) {
         return prev;

@@ -30,6 +30,9 @@ export type {
 export {useTreeFocus} from './useTreeFocus';
 export type {UseTreeFocusOptions, UseTreeFocusReturn} from './useTreeFocus';
 
+export {useHotkeys} from './useHotkeys';
+export type {Hotkey} from './useHotkeys';
+
 export {useTypeahead} from './useTypeahead';
 
 export {useKeyboardHint} from './useKeyboardHint';

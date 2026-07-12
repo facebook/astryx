@@ -12,8 +12,11 @@
 import {describe, it, expect, vi} from 'vitest';
 import {act, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {getButton} from '../__tests__/fastRoleQueries';
+import * as stylex from '@stylexjs/stylex';
 import {Calendar} from './Calendar';
 import type {CalendarHandle} from './Calendar';
+import {calendarStyles} from './styles';
 
 /**
  * Helper to find a day button by its day number.
@@ -24,7 +27,7 @@ import type {CalendarHandle} from './Calendar';
 function getDayButton(day: number, month = 'January', year = 2026) {
   // Match the full date pattern with the day number
   const pattern = new RegExp(`${month}\\s+${day},\\s+${year}`);
-  return screen.getByRole('button', {name: pattern});
+  return getButton(pattern);
 }
 
 describe('Calendar', () => {
@@ -71,6 +74,24 @@ describe('Calendar', () => {
     expect(screen.getByText(expectedLabel)).toBeInTheDocument();
   });
 
+  it("marks today's cell with aria-current='date'", () => {
+    render(<Calendar />);
+
+    const now = new Date();
+    const iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    const todayCell = document.querySelector(`button[data-date="${iso}"]`);
+    expect(todayCell).not.toBeNull();
+    expect(todayCell).toHaveAttribute('aria-current', 'date');
+
+    // Only today's cell is marked current.
+    const others = Array.from(
+      document.querySelectorAll('button[data-date]'),
+    ).filter(el => el.getAttribute('data-date') !== iso);
+    expect(others.length).toBeGreaterThan(0);
+    others.forEach(el => expect(el).not.toHaveAttribute('aria-current'));
+  });
+
   it('displays day names', () => {
     render(<Calendar />);
 
@@ -97,7 +118,11 @@ describe('Calendar', () => {
     render(<Calendar value="2026-01-15" focusDate="2026-01-01" />);
 
     const day15 = getDayButton(15);
-    expect(day15).toHaveAttribute('aria-selected', 'true');
+    // In an ARIA grid, selection state lives on the gridcell, not the button
+    // (a plain button role does not permit aria-selected).
+    const gridcell15 = day15.closest('[role="gridcell"]');
+    expect(gridcell15).toHaveAttribute('aria-selected', 'true');
+    expect(day15).not.toHaveAttribute('aria-selected');
   });
 
   it('calls onChange when date is selected', async () => {
@@ -123,7 +148,7 @@ describe('Calendar', () => {
     // Verify we start on February
     expect(screen.getByText('February 2026')).toBeInTheDocument();
 
-    const prevButton = screen.getByRole('button', {name: 'Previous month'});
+    const prevButton = getButton('Previous month');
     await user.click(prevButton);
 
     expect(screen.getByText('January 2026')).toBeInTheDocument();
@@ -137,7 +162,7 @@ describe('Calendar', () => {
     // Verify we start on January
     expect(screen.getByText('January 2026')).toBeInTheDocument();
 
-    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    const nextButton = getButton('Next month');
     await user.click(nextButton);
 
     expect(screen.getByText('February 2026')).toBeInTheDocument();
@@ -151,7 +176,7 @@ describe('Calendar', () => {
       <Calendar focusDate="2026-01-01" onFocusDateChange={handleFocusChange} />,
     );
 
-    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    const nextButton = getButton('Next month');
     await user.click(nextButton);
 
     expect(handleFocusChange).toHaveBeenCalledWith('2026-02-01');
@@ -209,10 +234,37 @@ describe('Calendar', () => {
 
     render(<Calendar numberOfMonths={2} focusDate="2026-01-01" />);
 
-    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    const nextButton = getButton('Next month');
     await user.click(nextButton);
 
     expect(screen.getByText(/February 2026.*March 2026/)).toBeInTheDocument();
+  });
+
+  it('clamps out-of-range numberOfMonths to a single month', () => {
+    // 1000 would otherwise try to render 1000 month grids and lock the page up.
+    render(
+      <Calendar
+        numberOfMonths={1000 as unknown as 1 | 2}
+        focusDate="2026-01-01"
+      />,
+    );
+
+    // Only the focused month renders — no second month, no range separator.
+    expect(screen.getByText('January 2026')).toBeInTheDocument();
+    expect(screen.queryByText(/February 2026/)).not.toBeInTheDocument();
+  });
+
+  it('clamps numberOfMonths={0} to a single month', () => {
+    render(
+      <Calendar
+        numberOfMonths={0 as unknown as 1 | 2}
+        focusDate="2026-01-01"
+      />,
+    );
+
+    // 0 previously rendered no months at all; now falls back to one.
+    expect(screen.getByText('January 2026')).toBeInTheDocument();
+    expect(screen.getAllByRole('gridcell').length).toBeGreaterThan(0);
   });
 
   // ─── Display Options ─────────────────────────────────────────
@@ -310,9 +362,101 @@ describe('Calendar', () => {
     const day12 = getDayButton(12);
     const day15 = getDayButton(15);
 
-    expect(day10).toHaveAttribute('aria-selected', 'true');
-    expect(day12).toHaveAttribute('aria-selected', 'true');
-    expect(day15).toHaveAttribute('aria-selected', 'true');
+    // Selection state lives on the gridcell wrapper, not the day button.
+    expect(day10.closest('[role="gridcell"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(day12.closest('[role="gridcell"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(day15.closest('[role="gridcell"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(day10).not.toHaveAttribute('aria-selected');
+    expect(day12).not.toHaveAttribute('aria-selected');
+    expect(day15).not.toHaveAttribute('aria-selected');
+  });
+
+  it('caps the range highlight next to a disabled mid-range day (#2715)', () => {
+    // Disable Jan 13. With Jan 10–15 selected, day 12 (immediately before the
+    // disabled day) should get a rounded end cap on its right edge, and day 14
+    // (immediately after) a rounded cap on its left edge — so the highlight
+    // reads as terminating at the disabled gap rather than running square-edged
+    // into it.
+    const disableJan13 = (d: Date) =>
+      !(d.getFullYear() === 2026 && d.getMonth() === 0 && d.getDate() === 13);
+    render(
+      <Calendar
+        mode="range"
+        value={{start: '2026-01-10', end: '2026-01-15'}}
+        focusDate="2026-01-01"
+        dateConstraints={[disableJan13]}
+      />,
+    );
+
+    // The range background is an absolutely-positioned sibling div inside the
+    // same gridcell as the day button.
+    const rangeBgFor = (day: number): HTMLElement => {
+      const button = getDayButton(day);
+      const cell = button.closest('[role="gridcell"]') as HTMLElement;
+      // First child div is the range background (rendered before the button).
+      return cell.firstElementChild as HTMLElement;
+    };
+
+    const day12Bg = rangeBgFor(12);
+    const day14Bg = rangeBgFor(14);
+
+    // Capped edges have a border radius; the un-capped edge stays square.
+    expect(getComputedStyle(day12Bg).borderTopRightRadius).not.toBe('');
+    expect(getComputedStyle(day12Bg).borderTopRightRadius).not.toBe('0px');
+    expect(getComputedStyle(day14Bg).borderTopLeftRadius).not.toBe('');
+    expect(getComputedStyle(day14Bg).borderTopLeftRadius).not.toBe('0px');
+  });
+
+  it('does not range-highlight adjacent-month spillover days in two-month view', () => {
+    // #2715: with July 1–31 selected and July+August visible, July 26–31 also
+    // render as outside days in the August pane. Those spillover copies must
+    // not carry the range-highlight state (data-in-range) even though their
+    // dates fall inside the selected range.
+    render(
+      <Calendar
+        mode="range"
+        numberOfMonths={2}
+        focusDate="2026-07-01"
+        value={{start: '2026-07-01', end: '2026-07-31'}}
+      />,
+    );
+
+    const spillover = [
+      '2026-07-26',
+      '2026-07-27',
+      '2026-07-28',
+      '2026-07-29',
+      '2026-07-30',
+      '2026-07-31',
+    ];
+
+    const allDayButtons = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('button[data-date]'),
+    );
+
+    for (const iso of spillover) {
+      const matches = allDayButtons.filter(
+        b => b.getAttribute('data-date') === iso,
+      );
+      // Renders once in the July pane and once as a spillover in August.
+      expect(matches.length).toBeGreaterThanOrEqual(2);
+      const outsideCopies = matches.filter(
+        b => b.getAttribute('aria-disabled') === 'true',
+      );
+      expect(outsideCopies.length).toBeGreaterThanOrEqual(1);
+      for (const b of outsideCopies) {
+        expect(b).not.toHaveAttribute('data-in-range');
+      }
+    }
   });
 
   // ─── Accessibility ───────────────────────────────────────────
@@ -397,12 +541,8 @@ describe('Calendar', () => {
   it('has navigation buttons with accessible labels', () => {
     render(<Calendar />);
 
-    expect(
-      screen.getByRole('button', {name: 'Previous month'}),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: 'Next month'}),
-    ).toBeInTheDocument();
+    expect(getButton('Previous month')).toBeInTheDocument();
+    expect(getButton('Next month')).toBeInTheDocument();
   });
 
   // ─── Bug Regression Tests ───────────────────────────────────
@@ -510,14 +650,14 @@ describe('Calendar', () => {
   it('prev button is disabled when focusDate month contains min', () => {
     render(<Calendar focusDate="2026-01-01" min="2026-01-15" />);
 
-    const prevButton = screen.getByRole('button', {name: 'Previous month'});
+    const prevButton = getButton('Previous month');
     expect(prevButton).toBeDisabled();
   });
 
   it('next button is disabled when focusDate month contains max', () => {
     render(<Calendar focusDate="2026-01-01" max="2026-01-15" />);
 
-    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    const nextButton = getButton('Next month');
     expect(nextButton).toBeDisabled();
   });
 
@@ -595,5 +735,49 @@ describe('Calendar', () => {
         expect(button).not.toHaveAttribute('role', 'gridcell');
       }
     }
+  });
+
+  // ─── RTL (#3388) ─────────────────────────────────────────────
+
+  describe('RTL month navigation', () => {
+    // jsdom does not apply compiled StyleX CSS, so the scaleX(-1) mirror
+    // itself is only observable in a browser (see the dir="rtl" Storybook
+    // story). These tests pin the structure the fix depends on: both nav
+    // chevrons render inside the navIcon wrapper that carries the
+    // ':is([dir="rtl"] *)' conditional transform.
+    it('wraps both nav chevrons in the RTL-mirroring navIcon wrapper', () => {
+      render(<Calendar focusDate="2026-01-01" />);
+
+      const {className: navIconClass} = stylex.props(calendarStyles.navIcon);
+      expect(navIconClass).toBeTruthy();
+
+      for (const name of ['Previous month', 'Next month']) {
+        const button = getButton(name);
+        const wrappers = Array.from(button.querySelectorAll('span')).filter(
+          span => span.className === navIconClass,
+        );
+        expect(wrappers.length).toBe(1);
+      }
+    });
+
+    it('keeps navigation semantics unchanged under dir="rtl"', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <div dir="rtl">
+          <Calendar focusDate="2026-02-01" />
+        </div>,
+      );
+
+      expect(screen.getByText('February 2026')).toBeInTheDocument();
+
+      // DOM order and handlers must not change in RTL: flexbox already
+      // places "Previous month" at the visual right; only the glyph mirrors.
+      await user.click(getButton('Previous month'));
+      expect(screen.getByText('January 2026')).toBeInTheDocument();
+
+      await user.click(getButton('Next month'));
+      expect(screen.getByText('February 2026')).toBeInTheDocument();
+    });
   });
 });

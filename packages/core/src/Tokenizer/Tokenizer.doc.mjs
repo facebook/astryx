@@ -71,6 +71,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        'The HTML name attribute for form submissions. Renders one hidden input per selected item id.',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -183,7 +189,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-tokenizer', visualProps: ['size']},
+      {className: 'astryx-tokenizer', visualProps: ['size', 'status']},
     ],
   },
   usage: {
@@ -276,6 +282,11 @@ export const docsZh = {
       type: 'boolean',
       description: '\u7981\u7528\u8f93\u5165\u6846\u548c\u6240\u6709\u6807\u8bb0\u4ea4\u4e92\u3002',
       default: 'false',
+    },
+    {
+      name: 'htmlName',
+      type: 'string',
+      description: '用于表单提交的 HTML name 属性。为每个已选项目的 id 渲染一个隐藏输入。',
     },
     {
       name: 'disabledMessage',
@@ -379,7 +390,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-tokenizer', visualProps: ['size']},
+      {className: 'astryx-tokenizer', visualProps: ['size', 'status']},
     ],
   },
   usage: {
@@ -435,6 +446,7 @@ export const docsDense = {
     renderToken: 'Custom token render. Default renders Token w/ label+onRemove.',
     renderItem: 'Custom dropdown item render. Default renders TypeaheadItem.',
     isDisabled: 'Disables input+all token interactions.',
+    htmlName: 'HTML name attr; one hidden input per selected item id.',
     status: 'Validation status w/ type+message for error/warning/success.',
     isLabelHidden: 'Visually hides label; keeps a11y.',
     description: 'Helper text below label.',

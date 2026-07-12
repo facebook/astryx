@@ -867,4 +867,37 @@ describe('Tokenizer', () => {
       expect(screen.getByRole('combobox')).toBeDisabled();
     });
   });
+  describe('form participation', () => {
+    it('submits one entry per token id under htmlName', () => {
+      const {container} = render(
+        <form>
+          <Tokenizer
+            label="Users"
+            htmlName="users"
+            searchSource={userSource}
+            value={[users[0], users[1]]}
+            onChange={() => {}}
+          />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.getAll('users')).toEqual([users[0].id, users[1].id]);
+    });
+
+    it('is excluded from form data when disabled', () => {
+      const {container} = render(
+        <form>
+          <Tokenizer
+            label="Users"
+            htmlName="users"
+            searchSource={userSource}
+            value={[users[0]]}
+            onChange={() => {}}
+            isDisabled
+          />
+        </form>,
+      );
+      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+    });
+  });
 });

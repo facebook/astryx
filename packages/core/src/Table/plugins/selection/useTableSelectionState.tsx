@@ -125,12 +125,17 @@ export function useTableSelectionState<T extends Record<string, unknown>>(
     [selectedKeys, selectableIDs],
   );
 
-  const getAllSelected = useCallback(
-    () =>
-      allSelectableIDs.size === selectedKeys.size &&
-      allSelectableIDs.size !== 0,
-    [allSelectableIDs, selectedKeys],
-  );
+  const getAllSelected = useCallback(() => {
+    // Require at least one actionable row: with zero visible selectable
+    // rows (e.g. a filter with no matches while a selection exists), the
+    // union-based size comparison would read any non-empty selection as
+    // "all selected" — a checked header checkbox over an empty table that
+    // deselect-all can't clear, since the invisible keys count as frozen.
+    if (selectableIDs.size === 0) {
+      return false;
+    }
+    return allSelectableIDs.size === selectedKeys.size;
+  }, [allSelectableIDs, selectableIDs, selectedKeys]);
 
   // Use refs to keep onSelectAll stable
   const frozenSelectedIDsRef = useRef(frozenSelectedIDs);

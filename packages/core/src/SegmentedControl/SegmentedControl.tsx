@@ -152,6 +152,7 @@ export function SegmentedControl({
   xstyle,
   className,
   style,
+  ...rest
 }: SegmentedControlProps) {
   const size = useSize(sizeProp, 'md');
 
@@ -238,6 +239,7 @@ export function SegmentedControl({
     <SegmentedControlContext value={contextValue}>
       <div
         ref={mergeRefs(ref, listRef, disabledMessageTooltip.ref)}
+        {...rest}
         role="radiogroup"
         aria-label={label}
         aria-disabled={isDisabled || undefined}

@@ -180,6 +180,12 @@ export const docs = {
       description: 'Ref forwarded to the overlay root element.',
     },
   ],
+  theming: {
+    targets: [
+      {className: 'astryx-overlay'},
+      {className: 'astryx-overlay-scrim', visualProps: ['position']},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

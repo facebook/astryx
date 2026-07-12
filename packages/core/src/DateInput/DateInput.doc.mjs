@@ -433,6 +433,11 @@ export const docsDense = {
           'Show a loading state with changeAction when the date triggers a server-side save.',
       },
       {
+        guidance: true,
+        description:
+          'Use inside InputGroup for a short static prefix or suffix, such as a due-date hint.',
+      },
+      {
         guidance: false,
         description:
           'Use a DateInput for free-form text that does not represent a calendar date.',

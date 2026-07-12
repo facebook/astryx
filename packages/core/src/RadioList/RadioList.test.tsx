@@ -576,4 +576,50 @@ describe('RadioList', () => {
       }
     });
   });
+  describe('form participation', () => {
+    it('submits the selected value under htmlName', () => {
+      const {container} = render(
+        <form>
+          <RadioList label="Preference" htmlName="pref" value="b" onChange={() => {}}>
+            <RadioListItem label="Option A" value="a" />
+            <RadioListItem label="Option B" value="b" />
+          </RadioList>
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('pref')).toBe('b');
+    });
+
+    it('is excluded from form data when disabled, even with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <RadioList
+            label="Preference"
+            htmlName="pref"
+            value="a"
+            onChange={() => {}}
+            isDisabled
+            disabledMessage="Locked"
+          >
+            <RadioListItem label="Option A" value="a" />
+          </RadioList>
+        </form>,
+      );
+      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+    });
+
+    it('keeps working as an isolated group when htmlName is omitted', () => {
+      const {container} = render(
+        <form>
+          <RadioList label="Preference" value="a" onChange={() => {}}>
+            <RadioListItem label="Option A" value="a" />
+          </RadioList>
+        </form>,
+      );
+      // Auto-generated internal name still groups the radios, but the field
+      // name is not part of the public form contract.
+      const input = container.querySelector('input[type="radio"]')!;
+      expect(input.getAttribute('name')).toBeTruthy();
+    });
+  });
 });

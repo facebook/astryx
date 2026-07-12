@@ -8,6 +8,7 @@
  */
 
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {findCoreDir, discoverExternalPackages} from '../utils/paths.mjs';
 import {
@@ -560,7 +561,7 @@ export async function component(name, options = {}) {
 
     // Examples: blocks in the component's own directory, or
     // componentsUsed match for sub-components without a directory.
-    const ownDir = allBlocks.filter(b => b.category.split('/').pop() === dirName);
+    const ownDir = allBlocks.filter(b => path.basename(b.category) === dirName);
     const examples = ownDir.length > 0
       ? ownDir
       : allBlocks.filter(b => b.componentsUsed?.some(c => c === dirName));

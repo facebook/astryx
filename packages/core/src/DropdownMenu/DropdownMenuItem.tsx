@@ -25,7 +25,6 @@
 
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {StyleXStyles} from '@stylexjs/stylex';
 import {renderIconSlot, type IconType} from '../Icon';
 import {Item} from '../Item';
 import {
@@ -35,6 +34,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import type {BaseProps} from '../BaseProps';
 import {useDropdownMenuContext} from './DropdownMenuContext';
 import {themeProps} from '../utils/themeProps';
 
@@ -75,7 +75,10 @@ const itemSizeStyles = stylex.create({
   lg: {},
 });
 
-export interface DropdownMenuItemProps {
+export interface DropdownMenuItemProps extends Pick<
+  BaseProps,
+  'xstyle' | 'className' | 'style'
+> {
   /** Icon to display before the label. */
   icon?: ReactNode | IconType;
   /** Primary label text. */
@@ -88,21 +91,6 @@ export interface DropdownMenuItemProps {
   isDisabled?: boolean;
   /** Additional content to render after the label/description. */
   endContent?: ReactNode;
-  /**
-   * StyleX styles for layout customization (margins, positioning, sizing).
-   * Must be a `stylex.create()` value — not an inline style object.
-   *
-   * @example
-   * ```
-   * const styles = stylex.create({ wrapper: { marginTop: 8 } });
-   * <DropdownMenuItem xstyle={styles.wrapper} />
-   * ```
-   */
-  xstyle?: StyleXStyles;
-  /** CSS class name(s) appended to the root element. */
-  className?: string;
-  /** Inline styles applied to the root element. */
-  style?: React.CSSProperties;
 }
 
 /**

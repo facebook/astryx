@@ -70,7 +70,7 @@ Documentation lives in two places:
 
 ## Quick Reference
 
-- **Package manager**: pnpm 10 (via corepack — see CONTRIBUTING.md)
+- **Package manager**: pnpm 11 (via corepack — see CONTRIBUTING.md)
 - **Testing**: Vitest (colocated tests)
 - **Components**: `packages/core/`
 - **Storybook**: `apps/storybook/`

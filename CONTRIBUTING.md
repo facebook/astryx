@@ -5,8 +5,12 @@ For the full contribution process — what we accept, how to propose new compone
 Key pages:
 
 - **[API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)** — naming, prop patterns, composition rules (read before submitting an RFC)
+- **[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** — the design-side bar: tokens, spacing, radius, elevation, type, color, motion, and state representations
 - **[Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
+- **[Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle)** — how components move from lab → core and templates from hidden → visible
 - **[API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)** — how we resolve API design questions
+- **[Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)** — building templates/blocks and the template grading rubric
+- **[Blog Review Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric)** — how docsite blog posts are reviewed
 - **[Contributing with AI](https://github.com/facebook/astryx/wiki/Contributing-with-AI-Assistants)** — safe zones, spec protocol, and working with AI tools
 
 This file covers local development setup.
@@ -17,15 +21,20 @@ This file covers local development setup.
 
 ### Node.js
 
-Install Node.js v22+ using one of these methods:
+The Node version lives in `.nvmrc` (currently the 24.x line). CI reads the same
+file via `node-version-file`, so local and CI never drift apart. Don't declare
+the version anywhere else.
 
 **Via nvm (recommended):**
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 source ~/.zshrc
-nvm install 22
+nvm install   # no argument — reads .nvmrc
 ```
+
+`fnm` and `mise` read `.nvmrc` too. `asdf` does not; its `.tool-versions` is
+git-ignored precisely so it cannot become a competing source of truth.
 
 **Via nodejs.org:**
 Download and install from https://nodejs.org
@@ -34,36 +43,43 @@ Download and install from https://nodejs.org
 
 Astryx uses [pnpm](https://pnpm.io/) as its package manager (declared in
 the `packageManager` and `devEngines.packageManager` fields of
-`package.json`). The easiest way to install it is via
-[Corepack](https://nodejs.org/api/corepack.html), which ships
-with Node.js:
-
-```bash
-corepack enable
-```
-
-This makes the `pnpm` command available with the exact version Astryx pins.
-Alternatively, install pnpm directly:
+`package.json`). You can install pnpm directly:
 
 ```bash
 # Via npm
-npm install -g pnpm@10
+npm install -g pnpm@11
 
 # Via Homebrew (macOS)
 brew install pnpm
 
 # Via standalone installer (no npm or Node.js required)
-curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=10.33.4 sh -
+curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=11.10.0 sh -
 
 # Via GitHub releases (single binary, no dependencies)
 # https://github.com/pnpm/pnpm/releases/latest
 ```
 
+Or use [Corepack](https://nodejs.org/api/corepack.html) to install the exact
+pnpm version Astryx pins:
+
+```bash
+corepack enable
+```
+
+Corepack ships with Node.js 22 and 24, but current Node.js 25+ releases no
+longer bundle it. If `corepack` is missing and you want the auto-pinning path,
+install Corepack manually first:
+
+```bash
+npm install -g corepack
+corepack enable
+```
+
 Verify installation:
 
 ```bash
-node --version   # v22.x.x
-pnpm --version   # 10.x.x
+node --version   # v22.x.x or v24.x.x
+pnpm --version   # 11.x.x
 ```
 
 ## Getting Started
@@ -392,6 +408,54 @@ yet" — open the PR as a draft and mark it ready for review when it's done.
 
 ## Troubleshooting
 
+### Setup Issues
+
+**`pnpm: command not found`**
+
+Install pnpm directly:
+
+```bash
+npm install -g pnpm@11
+```
+
+Or enable Corepack if you want to use the repository's pinned pnpm version:
+
+```bash
+corepack enable
+```
+
+**`corepack: command not found`**
+
+Install Corepack manually, then enable it:
+
+```bash
+npm install -g corepack
+corepack enable
+```
+
+Node 25+ does not include Corepack. You can either install Corepack manually or
+install pnpm directly.
+
+**Unexpected Node.js version**
+
+Check the active version before installing dependencies:
+
+```bash
+node --version
+```
+
+Use an active LTS line such as 22 or 24 if your shell selected a different
+version, such as a non-LTS `stable` release.
+
+**CLI path issues**
+
+If `astryx` is not found in a consuming app, add the package script shown in the
+root `README.md` and run it through your package manager:
+
+```bash
+pnpm astryx -- component --list
+```
+
 ### pnpm Installation Issues
 
 If `corepack enable` succeeds but `pnpm` fails to download its binary
@@ -403,7 +467,7 @@ your environment likely blocks outbound network access.
 ```bash
 brew install pnpm                        # Homebrew (macOS)
 curl -fsSL https://get.pnpm.io/install.sh | sh -  # Standalone installer
-npm install -g pnpm@10                   # Via npm
+npm install -g pnpm@11                   # Via npm
 ```
 
 You can also download the binary directly from

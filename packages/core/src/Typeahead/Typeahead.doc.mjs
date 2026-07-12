@@ -168,7 +168,7 @@ export const docs = {
   components: [{name: 'BaseTypeahead'}, {name: 'TypeaheadItem'}],
   theming: {
     targets: [
-      {className: 'astryx-typeahead', visualProps: ['status']},
+      {className: 'astryx-typeahead', visualProps: ['status', 'size']},
       {className: 'astryx-typeahead-dropdown'},
       {className: 'astryx-typeahead-item'},
     ],
@@ -286,6 +286,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Add a search delay for remote data sources to avoid excessive network requests.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use inside InputGroup when the typeahead needs a single-line prefix or suffix addon.',
       },
       {
         guidance: false,

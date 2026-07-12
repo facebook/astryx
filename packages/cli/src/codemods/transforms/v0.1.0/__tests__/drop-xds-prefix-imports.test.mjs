@@ -134,4 +134,47 @@ describe('drop-xds-prefix-imports', () => {
     expect(output).toContain(`import {useState} from 'react';`);
     expect(output).toContain('const x = 1;');
   });
+
+  it('aliases to Astryx<Name> when the bare name collides with a local export function', async () => {
+    const input = [
+      `import {XDSCodeBlock} from '@xds/core/CodeBlock';`,
+      `export function CodeBlock({code}: {code: string}) {`,
+      `  return <XDSCodeBlock code={code} />;`,
+      `}`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    // Import aliased to AstryxCodeBlock; local declaration untouched.
+    expect(output).toContain('CodeBlock as AstryxCodeBlock');
+    expect(output).toContain('@xds/core/CodeBlock');
+    expect(output).toContain('export function CodeBlock({code}');
+    expect(output).toContain('<AstryxCodeBlock code={code} />');
+    // No duplicate CodeBlock binding (not imported bare).
+    expect(output).not.toMatch(/import \{CodeBlock\}/);
+  });
+
+  it('aliases on collision with a local const/class binding', async () => {
+    const input = [
+      `import {XDSCard} from '@xds/core';`,
+      `const Card = 42;`,
+      `export const value = <XDSCard />;`,
+      `export const other = Card;`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    expect(output).toContain('import {Card as AstryxCard}');
+    expect(output).toContain('const Card = 42;');
+    expect(output).toContain('<AstryxCard />');
+    expect(output).toContain('export const other = Card;');
+  });
+
+  it('un-prefixes normally when there is NO local collision', async () => {
+    const input = [
+      `import {XDSCodeBlock} from '@xds/core/CodeBlock';`,
+      `export const App = () => <XDSCodeBlock code="x" />;`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    expect(output).toContain('{CodeBlock}');
+    expect(output).toContain('@xds/core/CodeBlock');
+    expect(output).toContain('<CodeBlock code="x" />');
+    expect(output).not.toContain('AstryxCodeBlock');
+  });
 });

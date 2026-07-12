@@ -19,13 +19,7 @@ import {Link} from '@astryxdesign/core/Link';
 import {Thumbnail} from '@astryxdesign/core/Thumbnail';
 import {Table, proportional, pixel} from '@astryxdesign/core/Table';
 import type {TableColumn} from '@astryxdesign/core/Table';
-import {
-  ChartV2 as Chart,
-  ChartGrid,
-  ChartAxis,
-  area,
-  line,
-} from '@astryxdesign/lab';
+import {Chart, ChartGrid, ChartAxis, area, line} from '@astryxdesign/charts';
 import {
   FunnelIcon,
   ArrowDownTrayIcon,
@@ -481,17 +475,13 @@ const columns: TableColumn<OrderRow>[] = [
     key: 'amount',
     header: 'Amount',
     width: pixel(90),
-    renderCell: (item: OrderRow) => (
-      <Text type="body">${item.amount}</Text>
-    ),
+    renderCell: (item: OrderRow) => <Text type="body">${item.amount}</Text>,
   },
   {
     key: 'customer',
     header: 'Customer',
     width: proportional(2),
-    renderCell: (item: OrderRow) => (
-      <Text type="body">{item.customer}</Text>
-    ),
+    renderCell: (item: OrderRow) => <Text type="body">{item.customer}</Text>,
   },
   {
     key: 'email',
@@ -523,7 +513,7 @@ const columns: TableColumn<OrderRow>[] = [
 export default function TablePageChartTemplate() {
   return (
     <Layout
-      height="auto"
+      height="fill"
       header={
         <LayoutHeader hasDivider>
           <HStack gap={2} vAlign="center">

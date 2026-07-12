@@ -12,6 +12,11 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+// getButton/queryButton instead of getByRole('button', {name}): the closed
+// popover keeps a two-month Calendar (~85 role=button nodes) mounted, which
+// made every role+name query compute ~85 accessible names through jsdom's
+// slow getComputedStyle (~450ms per query). See fastRoleQueries.ts.
+import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateRangeInput} from './DateRangeInput';
 import type {DateRange} from './DateRangeInput';
 
@@ -53,7 +58,7 @@ describe('DateRangeInput', () => {
         hasClear={false}
       />,
     );
-    const trigger = screen.getByRole('button', {name: /Range:/});
+    const trigger = getButton(/Range:/);
     expect(trigger.textContent).toMatch(/Mar/);
     expect(trigger.textContent).toMatch(/15/);
     expect(trigger.textContent).toMatch(/22/);
@@ -93,13 +98,13 @@ describe('DateRangeInput', () => {
         onChange={() => {}}
       />,
     );
-    const trigger = screen.getByRole('button', {name: /Range/});
+    const trigger = getButton(/Range/);
     expect(trigger).toHaveAttribute('aria-required', 'true');
   });
 
   it('does not set aria-required when isRequired is false', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
-    const trigger = screen.getByRole('button', {name: /Range/});
+    const trigger = getButton(/Range/);
     expect(trigger).not.toHaveAttribute('aria-required');
   });
 
@@ -112,25 +117,25 @@ describe('DateRangeInput', () => {
         onChange={() => {}}
       />,
     );
-    const trigger = screen.getByRole('button', {name: /Range/});
+    const trigger = getButton(/Range/);
     expect(trigger).toBeDisabled();
   });
 
   it('is not disabled by default', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
-    const trigger = screen.getByRole('button', {name: /Range/});
+    const trigger = getButton(/Range/);
     expect(trigger).not.toBeDisabled();
   });
 
   it('trigger has aria-haspopup="dialog"', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
-    const trigger = screen.getByRole('button', {name: /Range/});
+    const trigger = getButton(/Range/);
     expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
   });
 
   it('trigger has aria-expanded=false by default', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
-    const trigger = screen.getByRole('button', {name: /Range/});
+    const trigger = getButton(/Range/);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
@@ -143,7 +148,7 @@ describe('DateRangeInput', () => {
         status={{type: 'error', message: 'Required'}}
       />,
     );
-    const trigger = screen.getByRole('button', {name: /Range/});
+    const trigger = getButton(/Range/);
     expect(trigger).toHaveAttribute('aria-invalid', 'true');
   });
 
@@ -156,7 +161,7 @@ describe('DateRangeInput', () => {
         status={{type: 'warning', message: 'Watch out'}}
       />,
     );
-    const trigger = screen.getByRole('button', {name: /Range/});
+    const trigger = getButton(/Range/);
     expect(trigger).not.toHaveAttribute('aria-invalid');
   });
 
@@ -181,7 +186,7 @@ describe('DateRangeInput', () => {
         status={{type: 'error', message: 'Please select dates'}}
       />,
     );
-    const trigger = screen.getByRole('button', {name: /Range/});
+    const trigger = getButton(/Range/);
     const describedBy = trigger.getAttribute('aria-describedby')!;
     const ids = describedBy.split(' ');
     const found = ids.some(id => {
@@ -193,9 +198,7 @@ describe('DateRangeInput', () => {
 
   it('calendar icon button is present', () => {
     render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
-    expect(
-      screen.getByRole('button', {name: 'Open calendar'}),
-    ).toBeInTheDocument();
+    expect(getButton('Open calendar')).toBeInTheDocument();
   });
 
   it('calendar icon button is disabled when isDisabled', () => {
@@ -207,7 +210,7 @@ describe('DateRangeInput', () => {
         onChange={() => {}}
       />,
     );
-    expect(screen.getByRole('button', {name: 'Open calendar'})).toBeDisabled();
+    expect(getButton('Open calendar')).toBeDisabled();
   });
 
   it('renders with size="lg"', () => {
@@ -236,9 +239,7 @@ describe('DateRangeInput', () => {
           hasClear
         />,
       );
-      expect(
-        screen.getByRole('button', {name: 'Clear Range'}),
-      ).toBeInTheDocument();
+      expect(getButton('Clear Range')).toBeInTheDocument();
     });
 
     it('does not show clear button when value is null', () => {
@@ -250,9 +251,7 @@ describe('DateRangeInput', () => {
           hasClear
         />,
       );
-      expect(
-        screen.queryByRole('button', {name: 'Clear Range'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Range')).not.toBeInTheDocument();
     });
 
     it('does not show clear button when hasClear is false', () => {
@@ -268,9 +267,7 @@ describe('DateRangeInput', () => {
           hasClear={false}
         />,
       );
-      expect(
-        screen.queryByRole('button', {name: 'Clear Range'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Range')).not.toBeInTheDocument();
     });
 
     it('does not show clear button when disabled', () => {
@@ -287,9 +284,7 @@ describe('DateRangeInput', () => {
           isDisabled
         />,
       );
-      expect(
-        screen.queryByRole('button', {name: 'Clear Range'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Range')).not.toBeInTheDocument();
     });
 
     it('calls onChange with null when clear is clicked', () => {
@@ -306,7 +301,7 @@ describe('DateRangeInput', () => {
           hasClear
         />,
       );
-      fireEvent.click(screen.getByRole('button', {name: 'Clear Range'}));
+      fireEvent.click(getButton('Clear Range'));
       expect(onChange).toHaveBeenCalledWith(null);
     });
   });
@@ -346,9 +341,7 @@ describe('DateRangeInput', () => {
       expect(
         screen.getByRole('group', {name: 'Preset date ranges', hidden: true}),
       ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', {name: 'Last 7 days', hidden: true}),
-      ).toBeInTheDocument();
+      expect(getButton('Last 7 days')).toBeInTheDocument();
     });
 
     it('marks the applied preset with aria-current, not aria-selected', () => {
@@ -360,16 +353,10 @@ describe('DateRangeInput', () => {
           presets={presets}
         />,
       );
-      const active = screen.getByRole('button', {
-        name: 'Last 7 days',
-        hidden: true,
-      });
+      const active = getButton('Last 7 days');
       expect(active).toHaveAttribute('aria-current', 'true');
       expect(active).not.toHaveAttribute('aria-selected');
-      const inactive = screen.getByRole('button', {
-        name: 'This month',
-        hidden: true,
-      });
+      const inactive = getButton('This month');
       expect(inactive).not.toHaveAttribute('aria-current');
     });
   });
@@ -405,7 +392,7 @@ describe('DateRangeInput', () => {
     it('shows the reason tooltip on hover when disabled with a reason', async () => {
       renderDisabled({disabledMessage: 'You need the Editor role'});
 
-      const trigger = screen.getByRole('button', {name: /Range:/, ...h});
+      const trigger = getButton(/Range:/);
       const container = trigger.parentElement as HTMLElement;
       const tooltip = screen.getByRole('tooltip', h);
       expect(tooltip).toHaveTextContent('You need the Editor role');
@@ -427,7 +414,7 @@ describe('DateRangeInput', () => {
 
       const tooltip = screen.getByRole('tooltip', h);
       await user.tab();
-      expect(screen.getByRole('button', {name: /Range:/, ...h})).toHaveFocus();
+      expect(getButton(/Range:/)).toHaveFocus();
       await waitFor(() => {
         expect(tooltip).toHaveAttribute('popover-open');
       });
@@ -452,14 +439,14 @@ describe('DateRangeInput', () => {
 
     it('keeps the trigger focusable via aria-disabled when a reason is provided', () => {
       renderDisabled({disabledMessage: 'You need the Editor role'});
-      const trigger = screen.getByRole('button', {name: /Range:/, ...h});
+      const trigger = getButton(/Range:/);
       expect(trigger).not.toBeDisabled();
       expect(trigger).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('links the reason tooltip from the trigger via aria-describedby', () => {
       renderDisabled({disabledMessage: 'You need the Editor role'});
-      const trigger = screen.getByRole('button', {name: /Range:/, ...h});
+      const trigger = getButton(/Range:/);
       const tooltip = screen.getByRole('tooltip', h);
       expect(trigger.getAttribute('aria-describedby')).toContain(tooltip.id);
     });
@@ -468,7 +455,7 @@ describe('DateRangeInput', () => {
       const user = userEvent.setup();
       renderDisabled({disabledMessage: 'You need the Editor role'});
 
-      const trigger = screen.getByRole('button', {name: /Range:/, ...h});
+      const trigger = getButton(/Range:/);
       await user.click(trigger);
       expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
@@ -478,7 +465,7 @@ describe('DateRangeInput', () => {
 
     it('remains natively disabled when disabled without a reason', () => {
       renderDisabled();
-      const trigger = screen.getByRole('button', {name: /Range:/, ...h});
+      const trigger = getButton(/Range:/);
       expect(trigger).toBeDisabled();
       expect(trigger).not.toHaveAttribute('aria-disabled');
     });

@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /* global module, __dirname */
-const path = require('path');
+const path = require('node:path');
 const {postcss} = require('@astryxdesign/build');
 
 const rootDir = path.resolve(__dirname, '../..');

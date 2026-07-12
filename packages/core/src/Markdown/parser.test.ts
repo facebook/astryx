@@ -2,6 +2,7 @@
 
 import {describe, it, expect} from 'vitest';
 import {parseMarkdown, parseInline} from './parser';
+import type {InlineNode} from './parser';
 
 describe('parseInline', () => {
   it('parses plain text', () => {
@@ -944,5 +945,214 @@ describe('citation parsing', () => {
       expect(result.some(n => n.type === 'citation')).toBe(true);
       expect(result.some(n => n.type === 'link')).toBe(true);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Link reference definitions
+// ---------------------------------------------------------------------------
+
+describe('link reference definitions', () => {
+  // Collect every link/image node across a block tree for concise assertions.
+  function collectLinks(
+    nodes: InlineNode[],
+  ): {type: string; href?: string; src?: string; text: string}[] {
+    const out: {type: string; href?: string; src?: string; text: string}[] = [];
+    const textOf = (inlineNodes: InlineNode[]): string =>
+      inlineNodes
+        .map(inline =>
+          inline.type === 'text'
+            ? inline.content
+            : 'children' in inline
+              ? textOf(inline.children)
+              : '',
+        )
+        .join('');
+    for (const node of nodes) {
+      if (node.type === 'link') {
+        out.push({type: 'link', href: node.href, text: textOf(node.children)});
+      } else if (node.type === 'image') {
+        out.push({type: 'image', src: node.src, text: node.alt});
+      } else if ('children' in node) {
+        out.push(...collectLinks(node.children));
+      }
+    }
+    return out;
+  }
+
+  function paragraphLinks(input: string) {
+    const blocks = parseMarkdown(input);
+    const links = blocks.flatMap(block =>
+      block.type === 'paragraph' ? collectLinks(block.children) : [],
+    );
+    return {blocks, links};
+  }
+
+  it('resolves a full reference `[text][label]` and drops the definition', () => {
+    const {blocks, links} = paragraphLinks(
+      'See [the docs][docs] here.\n\n[docs]: https://example.com/docs\n',
+    );
+    // Only the paragraph survives; the definition line produces no block.
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe('paragraph');
+    expect(links).toEqual([
+      {type: 'link', href: 'https://example.com/docs', text: 'the docs'},
+    ]);
+  });
+
+  it('resolves a collapsed reference `[text][]`', () => {
+    const {links} = paragraphLinks(
+      'See [the docs][].\n\n[the docs]: https://example.com/docs',
+    );
+    expect(links).toEqual([
+      {type: 'link', href: 'https://example.com/docs', text: 'the docs'},
+    ]);
+  });
+
+  it('resolves a shortcut reference `[text]`', () => {
+    const {links} = paragraphLinks(
+      'See [the docs].\n\n[the docs]: https://example.com/docs',
+    );
+    expect(links).toEqual([
+      {type: 'link', href: 'https://example.com/docs', text: 'the docs'},
+    ]);
+  });
+
+  it('resolves a reference that appears before its definition', () => {
+    const {links} = paragraphLinks('[foo]\n\n[foo]: /bar');
+    expect(links).toEqual([{type: 'link', href: '/bar', text: 'foo'}]);
+  });
+
+  it('matches labels case-insensitively with collapsed whitespace', () => {
+    const {links} = paragraphLinks(
+      'See [The   Docs][DOCS].\n\n[docs]: https://example.com/d',
+    );
+    expect(links).toEqual([
+      {type: 'link', href: 'https://example.com/d', text: 'The   Docs'},
+    ]);
+  });
+
+  it('supports an angle-bracket destination and a title', () => {
+    const {links} = paragraphLinks(
+      'See [x].\n\n[x]: <https://example.com/x> "the title"',
+    );
+    expect(links).toEqual([
+      {type: 'link', href: 'https://example.com/x', text: 'x'},
+    ]);
+  });
+
+  it('absorbs a title on the line after a title-less definition', () => {
+    const {blocks, links} = paragraphLinks(
+      'See [x].\n\n[x]: https://example.com/x\n  "the title"\n',
+    );
+    // The continuation title line must not leak as its own paragraph.
+    expect(blocks).toHaveLength(1);
+    expect(links).toEqual([
+      {type: 'link', href: 'https://example.com/x', text: 'x'},
+    ]);
+  });
+
+  it('resolves an empty angle-bracket destination to an empty href', () => {
+    const {blocks, links} = paragraphLinks('[foo]\n\n[foo]: <>');
+    expect(blocks).toHaveLength(1);
+    expect(links).toEqual([{type: 'link', href: '', text: 'foo'}]);
+  });
+
+  it('recognizes a definition immediately after a heading (no blank line)', () => {
+    const {blocks, links} = paragraphLinks('# Title\n[x]: /url\n\n[x]');
+    expect(blocks.map(block => block.type)).toEqual(['heading', 'paragraph']);
+    expect(links).toEqual([{type: 'link', href: '/url', text: 'x'}]);
+  });
+
+  it('recognizes a definition immediately after a closed code fence', () => {
+    const {blocks, links} = paragraphLinks('```\ncode\n```\n[x]: /url\n\n[x]');
+    expect(blocks.map(block => block.type)).toEqual(['codeblock', 'paragraph']);
+    expect(links).toEqual([{type: 'link', href: '/url', text: 'x'}]);
+  });
+
+  it('uses the first definition when a label is defined twice', () => {
+    const {links} = paragraphLinks('[a]\n\n[a]: /first\n[a]: /second');
+    expect(links).toEqual([{type: 'link', href: '/first', text: 'a'}]);
+  });
+
+  it('resolves a blockquote-nested definition even with a top-level definition present', () => {
+    const blocks = parseMarkdown('[outer]: /o\n\n> [inner]\n>\n> [inner]: /i');
+    const quote = blocks.find(block => block.type === 'blockquote');
+    expect(quote?.type).toBe('blockquote');
+    if (quote != null && quote.type === 'blockquote') {
+      const links = quote.children.flatMap(block =>
+        block.type === 'paragraph' ? collectLinks(block.children) : [],
+      );
+      expect(links).toEqual([{type: 'link', href: '/i', text: 'inner'}]);
+    }
+  });
+
+  it('resolves a reference image `![alt][label]`', () => {
+    const {links} = paragraphLinks('![logo][l]\n\n[l]: /logo.png');
+    expect(links).toEqual([{type: 'image', src: '/logo.png', text: 'logo'}]);
+  });
+
+  it('does not treat a whitespace-only second label as collapsed', () => {
+    // `[foo][ ]` is a full reference to the empty (normalized) label and matches
+    // nothing; `[foo]` still resolves as a shortcut and `[ ]` stays literal.
+    const blocks = parseMarkdown('[foo][ ]\n\n[foo]: /f');
+    expect(blocks[0].type).toBe('paragraph');
+    if (blocks[0].type === 'paragraph') {
+      expect(collectLinks(blocks[0].children)).toEqual([
+        {type: 'link', href: '/f', text: 'foo'},
+      ]);
+      const literal = blocks[0].children
+        .map(node => (node.type === 'text' ? node.content : ''))
+        .join('');
+      expect(literal).toContain('[ ]');
+    }
+  });
+
+  it('leaves an unresolved reference as literal text', () => {
+    const {blocks, links} = paragraphLinks('See [the docs][missing].');
+    expect(links).toEqual([]);
+    expect(blocks[0].type).toBe('paragraph');
+    if (blocks[0].type === 'paragraph') {
+      expect(blocks[0].children).toContainEqual({
+        type: 'text',
+        content: 'See [the docs][missing].',
+      });
+    }
+  });
+
+  it('does not resolve a definition or reference inside a code fence', () => {
+    const blocks = parseMarkdown('```\n[x]\n[x]: /should-not-resolve\n```');
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe('codeblock');
+    if (blocks[0].type === 'codeblock') {
+      expect(blocks[0].content).toBe('[x]\n[x]: /should-not-resolve');
+    }
+  });
+
+  it('does not treat a definition-shaped line as a definition mid-paragraph', () => {
+    // CommonMark: a definition cannot interrupt a paragraph.
+    const {blocks, links} = paragraphLinks('Foo\n[bar]: /baz');
+    expect(links).toEqual([]);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe('paragraph');
+  });
+
+  it('leaves footnote markers and definitions untouched', () => {
+    const blocks = parseMarkdown(
+      'A claim.[^1]\n\n[^1]: https://example.com/note',
+    );
+    // No link nodes; the `[^1]` marker stays literal and `[^1]:` is not
+    // treated as a link reference definition (footnotes are out of scope).
+    const links = blocks.flatMap(block =>
+      block.type === 'paragraph' ? collectLinks(block.children) : [],
+    );
+    expect(links).toEqual([]);
+    expect(blocks).toHaveLength(2);
+  });
+
+  it('leaves ordinary bracketed text with no definition alone', () => {
+    const {links, blocks} = paragraphLinks('an array like [1, 2, 3] here');
+    expect(links).toEqual([]);
+    expect(blocks[0].type).toBe('paragraph');
   });
 });

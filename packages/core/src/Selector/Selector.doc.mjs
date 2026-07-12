@@ -87,6 +87,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        'The HTML name attribute for form submissions. Renders a hidden input carrying the selected value, like a native select.',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -345,6 +351,11 @@ export const docsDense = {
         guidance: true,
         description:
           'Set a meaningful placeholder that hints at the expected selection (e.g. "Choose a country" not "Select...").',
+      },
+      {
+        guidance: true,
+        description:
+          'Use inside InputGroup only when the selector needs a short prefix or suffix addon.',
       },
       {
         guidance: false,

@@ -410,7 +410,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   const performSearch = useCallback(
     async (searchQuery: string) => {
       searchSource.cancel?.();
-      const gen = searchGenRef.current;
+      // Claim a new generation so overlapping searches can't race: an
+      // in-flight response for an older query fails the gen check below
+      // instead of overwriting the newer results.
+      const gen = ++searchGenRef.current;
       setIsLoading(true);
       setHasSearched(true);
       try {
@@ -451,7 +454,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
 
   // Perform bootstrap
   const performBootstrap = useCallback(async () => {
-    const gen = searchGenRef.current;
+    const gen = ++searchGenRef.current;
     setIsLoading(true);
     try {
       const bootstrapResults = await searchSource.bootstrap();

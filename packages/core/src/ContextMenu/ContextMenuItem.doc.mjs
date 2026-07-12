@@ -35,6 +35,12 @@ export const docs = {
       description: 'StyleX styles for layout customization.',
     },
   ],
+  playground: {
+    defaults: {
+      label: 'Edit',
+      description: 'Modify this item',
+    },
+  },
 };
 
 export const docsZh = {

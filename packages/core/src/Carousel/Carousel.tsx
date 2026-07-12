@@ -340,6 +340,7 @@ export function Carousel({
       {...htmlProps}>
       <div
         ref={composedRef}
+        tabIndex={0}
         {...stylex.props(
           styles.scroller,
           gapStyles[gap],

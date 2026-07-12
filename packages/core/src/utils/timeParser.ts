@@ -361,13 +361,16 @@ export function adjustTime(
     return time;
   }
 
+  // A non-finite delta would spin the wrap-around forever (-Infinity) or
+  // produce "NaN:NaN" (NaN) — return the input unchanged instead.
+  if (!Number.isFinite(deltaMinutes)) {
+    return time;
+  }
+
   let totalMinutes = parsed.hour * 60 + parsed.minute + deltaMinutes;
 
-  // Wrap around midnight
-  while (totalMinutes < 0) {
-    totalMinutes += 24 * 60;
-  }
-  totalMinutes = totalMinutes % (24 * 60);
+  // Wrap around midnight (double-modulo handles negatives in O(1))
+  totalMinutes = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
 
   const newHour = Math.floor(totalMinutes / 60);
   const newMinute = totalMinutes % 60;

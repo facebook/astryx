@@ -120,7 +120,7 @@ export const docs = {
       name: 'resultCount',
       type: 'number | string',
       description:
-        'Number of results matching the current filters. When a number, formatted as "N results". When a string, displayed as-is.',
+        'Number of results matching the current filters. When a number, formatted as "N results". When a string, displayed as-is. Changes are announced to screen readers via a polite live region.',
     },
     {
       name: 'size',
@@ -261,7 +261,7 @@ export const docsZh = {
       name: 'resultCount',
       type: 'number | string',
       description:
-        '匹配当前过滤器的结果数量。数字类型时格式化为"N results"。字符串类型时按原样显示。',
+        '匹配当前过滤器的结果数量。数字类型时格式化为"N results"。字符串类型时按原样显示。数量变化会通过 polite 实时区域向屏幕阅读器播报。',
     },
     {
       name: 'size',

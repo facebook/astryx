@@ -13,7 +13,7 @@ import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {MagnifyingGlassIcon} from '@heroicons/react/24/outline';
+import {TestIcon} from '../__tests__/TestIcon';
 import {TextArea} from './TextArea';
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
@@ -193,7 +193,7 @@ describe('TextArea', () => {
         label="Description"
         value=""
         onChange={() => {}}
-        startIcon={MagnifyingGlassIcon}
+        startIcon={TestIcon}
       />,
     );
     expect(screen.getByRole('textbox')).toBeInTheDocument();
@@ -577,7 +577,7 @@ describe('TextArea', () => {
           label="Notes"
           value=""
           onChange={() => {}}
-          startIcon={<MagnifyingGlassIcon />}
+          startIcon={<TestIcon />}
         />,
       );
 

@@ -13,7 +13,11 @@ export default async function NotFound() {
   const year = await getCopyrightYear();
 
   return (
-    <AppShell variant="surface" height="fill" topNav={<SharedTopNav />}>
+    <AppShell
+      variant="surface"
+      height="fill"
+      mobileNav={false}
+      topNav={<SharedTopNav />}>
       <div className={styles.shell}>
         <div className={styles.content}>
           <Center axis="both" height="100%">

@@ -28,12 +28,27 @@ const styles = stylex.create({
     fontFamily: typographyVars['--font-family-body'],
     margin: 0,
   },
+  dividedContainer: {
+    maxWidth: 480,
+  },
 });
 
 const meta: Meta<typeof CollapsibleGroup> = {
   title: 'Core/Collapsible',
   component: CollapsibleGroup,
   tags: ['autodocs'],
+  argTypes: {
+    dividers: {
+      control: 'select',
+      options: ['between', 'all', 'none'],
+      description: "Divider style around the group's items",
+    },
+    density: {
+      control: 'select',
+      options: ['compact', 'balanced', 'spacious'],
+      description: 'Row density for trigger and content padding',
+    },
+  },
   decorators: [
     Story => (
       <div {...stylex.props(styles.pageWrapper)}>
@@ -87,7 +102,8 @@ export const MultipleMode: Story = {
         <Card>
           <Collapsible trigger="What is Astryx?" value="faq1">
             <p {...stylex.props(styles.text)}>
-              Astryx is a design system for building internal tools and products.
+              Astryx is a design system for building internal tools and
+              products.
             </p>
           </Collapsible>
         </Card>
@@ -171,13 +187,90 @@ export const WithoutCard: Story = {
     <VStack gap={2}>
       <Collapsible trigger="Show more details">
         <p {...stylex.props(styles.text)}>
-          
           Collapsible works anywhere; it doesn't require a card wrapper.
         </p>
       </Collapsible>
       <Collapsible trigger="Another section" defaultIsOpen={false}>
         <p {...stylex.props(styles.text)}>This section starts collapsed.</p>
       </Collapsible>
+    </VStack>
+  ),
+};
+
+export const DividersBetween: Story = {
+  name: 'Dividers — Between',
+  args: {type: 'single', dividers: 'between', defaultValue: 'q1'},
+  render: args => (
+    <div {...stylex.props(styles.dividedContainer)}>
+      <CollapsibleGroup {...args}>
+        <Collapsible trigger="How do I reset my password?" value="q1">
+          <p {...stylex.props(styles.text)}>
+            Go to Settings → Security → Change Password. You'll receive a
+            confirmation email.
+          </p>
+        </Collapsible>
+        <Collapsible trigger="Can I change my username?" value="q2">
+          <p {...stylex.props(styles.text)}>
+            Usernames can be changed once every 30 days from your profile
+            settings.
+          </p>
+        </Collapsible>
+        <Collapsible trigger="How do I delete my account?" value="q3">
+          <p {...stylex.props(styles.text)}>
+            Account deletion is permanent. Your data will be removed within 30
+            days.
+          </p>
+        </Collapsible>
+      </CollapsibleGroup>
+    </div>
+  ),
+};
+
+export const DividersAll: Story = {
+  name: 'Dividers — All',
+  args: {type: 'multiple', dividers: 'all', defaultValue: ['a']},
+  render: args => (
+    <div {...stylex.props(styles.dividedContainer)}>
+      <CollapsibleGroup {...args}>
+        <Collapsible trigger="Deployment Details" value="a">
+          <p {...stylex.props(styles.text)}>
+            Deployed 2 hours ago from the main branch.
+          </p>
+        </Collapsible>
+        <Collapsible trigger="Environment Variables" value="b">
+          <p {...stylex.props(styles.text)}>
+            12 variables configured for this environment.
+          </p>
+        </Collapsible>
+        <Collapsible trigger="Build Logs" value="c">
+          <p {...stylex.props(styles.text)}>Build completed in 43 seconds.</p>
+        </Collapsible>
+      </CollapsibleGroup>
+    </div>
+  ),
+};
+
+export const DividersDensity: Story = {
+  name: 'Dividers — Density',
+  render: () => (
+    <VStack gap={6} xstyle={styles.dividedContainer}>
+      {(['compact', 'balanced', 'spacious'] as const).map(density => (
+        <CollapsibleGroup
+          key={density}
+          type="multiple"
+          dividers="between"
+          density={density}
+          defaultValue={['one']}>
+          <Collapsible trigger={`First section (${density})`} value="one">
+            <p {...stylex.props(styles.text)}>
+              Row padding scales with density.
+            </p>
+          </Collapsible>
+          <Collapsible trigger="Second section" value="two">
+            <p {...stylex.props(styles.text)}>Collapsed by default.</p>
+          </Collapsible>
+        </CollapsibleGroup>
+      ))}
     </VStack>
   ),
 };
@@ -212,9 +305,7 @@ export const FAQ: Story = {
           </Collapsible>
         </Card>
         <Card>
-          <Collapsible
-            trigger="What payment methods are accepted?"
-            value="q4">
+          <Collapsible trigger="What payment methods are accepted?" value="q4">
             <p {...stylex.props(styles.text)}>
               We accept Visa, Mastercard, American Express, and PayPal.
             </p>

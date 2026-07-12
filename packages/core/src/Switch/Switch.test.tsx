@@ -470,4 +470,42 @@ describe('Switch', () => {
       expect(screen.getByRole('switch')).toBeDisabled();
     });
   });
+  describe('form participation', () => {
+    it('submits under htmlName when on', () => {
+      const {container} = render(
+        <form>
+          <Switch label="Notify" htmlName="notify" value={true} onChange={() => {}} />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('notify')).toBe('on');
+    });
+
+    it('is excluded from form data when disabled, even with a disabledMessage', () => {
+      const {container} = render(
+        <form>
+          <Switch
+            label="Notify"
+            htmlName="notify"
+            value={true}
+            onChange={() => {}}
+            isDisabled
+            disabledMessage="Locked"
+          />
+        </form>,
+      );
+      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+    });
+
+    it('submits nothing when off or when htmlName is omitted', () => {
+      const {container} = render(
+        <form>
+          <Switch label="Off" htmlName="off" value={false} onChange={() => {}} />
+          <Switch label="Unnamed" value={true} onChange={() => {}} />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect([...data.keys()]).toEqual([]);
+    });
+  });
 });

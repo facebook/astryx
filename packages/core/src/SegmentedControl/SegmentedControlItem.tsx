@@ -168,6 +168,7 @@ export function SegmentedControlItem({
   isLabelHidden = false,
   icon,
   isDisabled = false,
+  ...rest
 }: SegmentedControlItemProps) {
   const ctx = useSegmentedControlContext();
 
@@ -195,6 +196,7 @@ export function SegmentedControlItem({
   return (
     <button
       ref={ref}
+      {...rest}
       type="button"
       role="radio"
       aria-checked={isSelected}

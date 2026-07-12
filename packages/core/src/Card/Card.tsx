@@ -44,8 +44,10 @@ import {themeProps} from '../utils/themeProps';
  * - Non-semantic palette: `blue | cyan | gray | green | orange | pink | purple | red | teal | yellow`
  *   Each uses the corresponding `--color-background-<name>` token (20% opacity tint).
  *
- * All variants include a transparent border to prevent layout jitter
- * when switching variants. Themes can override borderWidth/borderColor.
+ * Only `default` draws a visible border. Its border width is subtracted from
+ * the padding so the total inset (border + padding) equals the padding token —
+ * keeping content geometry faithful to the spacing scale and identical to the
+ * borderless variants. Themes can override borderWidth/borderColor.
  */
 export type CardVariant =
   | 'default'
@@ -71,12 +73,18 @@ const styles = stylex.create({
     '--_card-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_card-radius)',
     overflow: 'clip',
+  },
+  // The border is drawn *inside* the padding — its width is subtracted from
+  // each side — so total inset (border + padding) equals the padding token
+  // rather than exceeding it by the border width.
+  withBorder: {
     borderWidth: borderVars['--border-width'],
     borderStyle: 'solid',
-    borderColor: 'transparent',
-  },
-  withBorder: {
     borderColor: colorVars['--color-border-emphasized'],
+    paddingInlineStart: `calc(var(--container-padding-inline-start) - ${borderVars['--border-width']})`,
+    paddingInlineEnd: `calc(var(--container-padding-inline-end) - ${borderVars['--border-width']})`,
+    paddingBlockStart: `calc(var(--container-padding-block-start) - ${borderVars['--border-width']})`,
+    paddingBlockEnd: `calc(var(--container-padding-block-end) - ${borderVars['--border-width']})`,
   },
   // Fixed-height cards scroll content; overflow: auto also clips to border-radius
   scrollable: {
@@ -266,7 +274,6 @@ export function Card({
         stylex.props(
           styles.card,
           variantStyles[variant],
-          variant === 'default' && styles.withBorder,
           hasFixedHeight && styles.scrollable,
           dynamicStyles.sizing(
             width ?? null,
@@ -296,6 +303,9 @@ export function Card({
           !useThemeDefault &&
             effectivePadding !== 4 &&
             containerPaddingBlockEndVarStyles[effectivePadding],
+          // Applied after the container padding so the border-inset calc wins;
+          // it reads the --container-padding-* vars set above.
+          variant === 'default' && styles.withBorder,
           xstyle,
         ),
         className,

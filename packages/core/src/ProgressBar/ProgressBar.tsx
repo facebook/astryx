@@ -228,7 +228,8 @@ const variantStyles = stylex.create({
 });
 
 function defaultFormatValueLabel(value: number, max: number): string {
-  return `${Math.round((value / max) * 100)}%`;
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return `${pct}%`;
 }
 
 /**
@@ -272,9 +273,15 @@ export function ProgressBar({
   ...rest
 }: ProgressBarProps) {
   const labelId = useId();
-  const clampedValue = Math.min(Math.max(0, value), max);
-  const percentage = max > 0 ? (clampedValue / max) * 100 : 0;
-  const valueText = formatValueLabel(clampedValue, max);
+  // A non-finite value or max (e.g. a NaN from an upstream `loaded / total`
+  // with total 0) would otherwise leak into aria-valuenow, the value label,
+  // and the fill width as the string "NaN". Treat it as empty progress,
+  // matching the max=0 handling below.
+  const safeValue = Number.isFinite(value) ? value : 0;
+  const safeMax = Number.isFinite(max) ? max : 0;
+  const clampedValue = Math.min(Math.max(0, safeValue), safeMax);
+  const percentage = safeMax > 0 ? (clampedValue / safeMax) * 100 : 0;
+  const valueText = formatValueLabel(clampedValue, safeMax);
 
   const showValueLabel = hasValueLabel && !isIndeterminate;
 
@@ -322,7 +329,7 @@ export function ProgressBar({
         role="progressbar"
         aria-valuenow={isIndeterminate ? undefined : clampedValue}
         aria-valuemin={isIndeterminate ? undefined : 0}
-        aria-valuemax={isIndeterminate ? undefined : max}
+        aria-valuemax={isIndeterminate ? undefined : safeMax}
         aria-labelledby={labelId}
         aria-valuetext={isIndeterminate ? undefined : valueText}
         {...mergeProps(

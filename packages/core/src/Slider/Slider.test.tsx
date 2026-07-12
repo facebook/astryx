@@ -535,4 +535,34 @@ describe('Slider', () => {
       expect(screen.getByRole('slider')).toHaveAttribute('tabindex', '-1');
     });
   });
+  describe('form participation', () => {
+    it('submits the value under htmlName', () => {
+      const {container} = render(
+        <form>
+          <Slider label="Volume" htmlName="volume" value={50} />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.get('volume')).toBe('50');
+    });
+
+    it('submits both range values under the same name', () => {
+      const {container} = render(
+        <form>
+          <Slider label="Price" htmlName="price" value={[20, 80] as [number, number]} />
+        </form>,
+      );
+      const data = new FormData(container.querySelector('form')!);
+      expect(data.getAll('price')).toEqual(['20', '80']);
+    });
+
+    it('is excluded from form data when disabled', () => {
+      const {container} = render(
+        <form>
+          <Slider label="Volume" htmlName="volume" value={50} isDisabled />
+        </form>,
+      );
+      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+    });
+  });
 });

@@ -96,6 +96,12 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        'The HTML name attribute for form submissions. Renders hidden inputs carrying the current value (two entries in range mode).',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -245,6 +251,11 @@ export const docsZh = {
       default: 'false',
     },
     {
+      name: 'htmlName',
+      type: 'string',
+      description: '用于表单提交的 HTML name 属性。渲染携带当前值的隐藏输入（范围模式下为两个条目）。',
+    },
+    {
       name: 'disabledMessage',
       type: 'string',
       description:
@@ -338,6 +349,7 @@ export const docsDense = {
     marks: 'Tick marks at specified positions w/ optional labels.',
     minStepsBetweenThumbs: 'Min steps between thumbs in range mode; prevents overlap.',
     isDisabled: 'Whether slider is disabled.',
+    htmlName: 'HTML name attr; hidden inputs carry the value (two in range mode).',
     isOptional: 'Whether field is optional.',
     isRequired: 'Whether field is required.',
     isLabelHidden: 'Visually hide label.',
