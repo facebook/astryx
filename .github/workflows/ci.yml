@@ -298,7 +298,18 @@ jobs:
           # so a loose fallback can restore a cache built against a different
           # export shape and silently produce wrong builds (broke #2941's
           # post-merge deploy). A changed key yields a cold (safe) rebuild.
-          key: nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('packages/core/dist/**') }}
+          #
+          # Keyed by PR number so PRs never share a cache with main (deploy.yml)
+          # or with other PRs: each PR builds with its own basePath
+          # (SANDBOX_BASE_PATH=/<repo>/pr/<n>/sandbox vs /<repo>/sandbox on main),
+          # and Next.js invalidates the webpack cache whenever the resolved config
+          # changes — so a cache built under a different basePath always restores
+          # as dead weight (download cost, zero reuse) and, because the shared key
+          # "hit", the PR could never save a cache for its own basePath either.
+          # Re-pushes to the same PR keep the same key and get real warm builds.
+          # (This job only runs on pull_request events — see the job-level `if:`
+          # above — so github.event.pull_request.number is always set here.)
+          key: nextjs-sandbox-pr${{ github.event.pull_request.number }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('packages/core/dist/**') }}
 
       - name: Build Sandbox
         run: pnpm -F @astryxdesign/sandbox build

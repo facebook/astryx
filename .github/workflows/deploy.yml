@@ -126,6 +126,11 @@ jobs:
           # "Element type is invalid ... undefined" prerender failures.
           # A changed key now yields a COLD cache (safe rebuild) instead of a
           # poisoned warm one.
+          #
+          # PR builds (ci.yml) deliberately use a different, PR-scoped key:
+          # they build with a per-PR basePath (/<repo>/pr/<n>/sandbox), and a
+          # basePath change makes Next.js invalidate the webpack cache — so a
+          # cache shared with this main build would never actually warm a PR.
           key: nextjs-sandbox-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('packages/core/dist/**') }}
 
       - name: Build Sandbox
