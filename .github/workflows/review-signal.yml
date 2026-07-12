@@ -51,13 +51,16 @@ on:
   pull_request_target:
     branches: ["main"]
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-  pull_request_review:
-    types: [submitted]
-  # Manual re-trigger. The App only auto-runs on the PR events above, so if it
-  # ever misses one (e.g. the workflow was added after a PR was opened, leaving
-  # the required "review-required" check stuck as Expected/pending), this is the
-  # recovery lever. Leave `pr` blank to re-flag EVERY open PR (backfill); pass a
-  # number to re-flag just that one.
+  # Reconcile sweep: periodically re-evaluate every open PR. This is how
+  # APPROVALS clear the gate — rather than a fragile per-approval workflow_run
+  # chain (which was unreliable and, being the repo's highest-volume workflow,
+  # a CI-backpressure source), the flag job re-reads approvals for all open PRs
+  # on a schedule and reconciles their status. Self-healing: a delayed tick just
+  # catches up on the next one, so a PR can never get permanently stuck.
+  schedule:
+    - cron: "*/10 * * * *"
+  # Manual re-trigger. Leave `pr` blank to re-flag EVERY open PR (same as the
+  # sweep); pass a number to re-flag just that one.
   workflow_dispatch:
     inputs:
       pr:
@@ -69,7 +72,7 @@ permissions: {}
 
 concurrency:
   # One group per PR for the event/single-dispatch paths; a run-scoped group for
-  # the backfill-all dispatch so it is never cancelled by an unrelated re-run.
+  # the sweep / backfill-all so it is never cancelled by an unrelated re-run.
   group: review-signal-${{ github.event.pull_request.number || github.event.inputs.pr || github.run_id }}
   cancel-in-progress: true
 
@@ -81,11 +84,14 @@ env:
 jobs:
   # ---------------------------------------------------------------------------
   # Detect signals from changed paths + author; label, request reviewers, gate.
+  # Runs on PR events (one PR), on schedule (all open PRs — the reconcile sweep
+  # that clears approved gates), and on manual dispatch.
   # ---------------------------------------------------------------------------
   flag:
     if: >-
       github.event_name == 'pull_request_target'
       || github.event_name == 'workflow_dispatch'
+      || github.event_name == 'schedule'
     name: Flag review signals
     runs-on: ubuntu-latest
     permissions:
@@ -104,10 +110,15 @@ jobs:
             const COMMUNITY = process.env.COMMUNITY_LABEL;
 
             // Resolve which PR(s) to flag. On a PR event we get the payload PR.
-            // On manual dispatch we take the `pr` input (one PR), or re-flag
-            // every open PR when it's blank (backfill / mass recovery).
+            // On schedule (the reconcile sweep) or a blank dispatch, re-flag
+            // every open PR. On a numbered dispatch, just that one.
             let prs;
-            if (context.eventName === 'workflow_dispatch') {
+            if (context.eventName === 'schedule') {
+              prs = await github.paginate(github.rest.pulls.list, {
+                owner, repo, state: 'open', per_page: 100,
+              });
+              core.info(`Reconcile sweep: re-flagging ${prs.length} open PR(s).`);
+            } else if (context.eventName === 'workflow_dispatch') {
               const num = (context.payload.inputs.pr || '').trim();
               if (num) {
                 const { data } = await github.rest.pulls.get({
@@ -487,18 +498,3 @@ jobs:
               core.warning(`Could not neutralize stale check-run: ${e.message}`);
             }
             } // end flagOne
-
-  # Anchor job for the review-clear chain. On a review submission the flag job
-  # is skipped (it only runs on pull_request_target / workflow_dispatch), so
-  # without a job that actually runs, the workflow run could end up "skipped"
-  # rather than "completed" and not reliably fire the review-clear workflow_run.
-  # This tiny job always runs on pull_request_review so the workflow completes,
-  # letting review-clear.yml resolve the PR and re-dispatch the fork-safe clear.
-  review-anchor:
-    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
-    name: Anchor review-clear chain
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Note approval
-        run: echo "Approval received; review-clear will re-dispatch the flag job."
