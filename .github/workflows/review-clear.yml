@@ -46,20 +46,42 @@ jobs:
             const run = context.payload.workflow_run;
             const CODE = 'needs:code-review';
 
-            // Resolve the PR from the run head SHA (pull_requests is empty on forks).
-            let pr = run.pull_requests && run.pull_requests[0];
-            if (!pr) {
+            // Resolve the PR the review belonged to.
+            //
+            // NOTE: for a workflow_run fired by a pull_request_target/
+            // pull_request_review-triggered workflow, the payload's top-level
+            // head_sha/head_branch point at the DEFAULT BRANCH (main), not the
+            // PR — and pull_requests is empty for forks. So neither the SHA nor
+            // the payload branch resolves the PR. The reliable signal is the
+            // triggering run's own head_branch (correct even for forks); find
+            // the open PR whose head branch matches.
+            let prNumber = null;
+            const prs0 = run.pull_requests || [];
+            if (prs0.length) {
+              prNumber = prs0[0].number;
+            } else if (run.head_branch) {
               try {
-                const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                  owner, repo, commit_sha: run.head_sha,
+                // head param wants OWNER:branch; head_repository is the fork/owner.
+                const headOwner = (run.head_repository && run.head_repository.owner &&
+                  run.head_repository.owner.login) || owner;
+                const list = await github.paginate(github.rest.pulls.list, {
+                  owner, repo, state: 'open',
+                  head: `${headOwner}:${run.head_branch}`, per_page: 100,
                 });
-                pr = data.find((p) => p.state === 'open') || data[0];
+                let match = list[0];
+                // Fallback: some fork setups don't match the head filter; scan by branch name.
+                if (!match) {
+                  const all = await github.paginate(github.rest.pulls.list, {
+                    owner, repo, state: 'open', per_page: 100,
+                  });
+                  match = all.find((p) => p.head && p.head.ref === run.head_branch);
+                }
+                if (match) prNumber = match.number;
               } catch (e) {
-                core.warning(`Could not resolve PR from ${run.head_sha}: ${e.message}`);
+                core.warning(`Could not resolve PR from branch ${run.head_branch}: ${e.message}`);
               }
             }
-            if (!pr) { core.info('No PR resolved for this review run.'); return; }
-            const prNumber = pr.number;
+            if (!prNumber) { core.info('No PR resolved for this review run.'); return; }
 
             // Full PR (labels + head sha).
             const { data: full } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
