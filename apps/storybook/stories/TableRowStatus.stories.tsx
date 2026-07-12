@@ -37,13 +37,13 @@ const columns: TableColumn<Job>[] = [
 function jobStatus(job: Job): TableRowStatus | null {
   switch (job.state) {
     case 'failed':
-      return {color: 'var(--color-icon-red)', label: 'Failed'};
+      return {color: 'error', icon: 'error', label: 'Failed'};
     case 'running':
-      return {color: 'var(--color-icon-orange)', label: 'Running'};
+      return {color: 'warning', icon: 'warning', label: 'Running'};
     case 'queued':
-      return {color: 'var(--color-icon-secondary)', label: 'Queued'};
+      return {color: 'gray', label: 'Queued'};
     default:
-      return null; // succeeded → no bar
+      return null; // succeeded → no indicator
   }
 }
 

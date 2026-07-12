@@ -254,13 +254,15 @@ function useLabPlugins({
   // --- row status ---
   const rowStatusPlugin = useTableRowStatus<LabRow>({
     getStatus: item => {
+      // Semantic color names map to theme tokens; an icon adds a shape
+      // differentiator so status isn't conveyed by color alone.
       if (item.status === 'Active') {
-        return {color: 'var(--color-icon-green)', label: 'Active'};
+        return {color: 'success', icon: 'success', label: 'Active'};
       }
       if (item.status === 'Away') {
-        return {color: 'var(--color-icon-orange)', label: 'Away'};
+        return {color: 'warning', icon: 'warning', label: 'Away'};
       }
-      return null; // Offline → no bar
+      return null; // Offline → no indicator
     },
   });
 

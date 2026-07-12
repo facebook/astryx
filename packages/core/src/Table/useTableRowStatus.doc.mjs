@@ -7,13 +7,13 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableRowStatus',
   description:
-    'Hook that returns a TablePlugin which prepends a narrow column rendering a full-height colored bar on each row\u2019s leading edge \u2014 a compact way to signal per-row status (error, warning, unread, etc.) without a dedicated status column. Provide getStatus to map a row to a color + optional accessible label, or null for no indicator.',
+    'Hook that returns a TablePlugin which prepends a narrow column signaling per-row status — a full-height colored bar on the leading edge, or an icon when provided (shape + color is more accessible than color alone). getStatus maps a row to a semantic color (mapped to a theme token) or raw CSS color, an optional icon, and an optional accessible label; return null for no indicator. Memoize getStatus with useCallback for a stable plugin identity.',
   props: [
     {
       name: 'getStatus',
-      type: '(item: T) => { color: string; label?: string } | null',
+      type: '(item: T) => { color: TableRowStatusColor | string; icon?: IconName; label?: string } | null',
       description:
-        'Derive the status indicator for a row: a CSS color (token or raw) and an optional accessible label. Return null for rows with no status.',
+        'Derive the status indicator for a row: a semantic color (accent/success/error/warning/red/orange/green/yellow/blue/gray, mapped to a theme token) or a raw CSS color as an escape hatch; an optional icon to signal status by shape (recommended when multiple statuses coexist); and an optional accessible label (announced via role="img" — recommended, since without it the indicator is color-only). Return null for rows with no status. Memoize with useCallback for a stable plugin identity.',
       required: true,
     },
   ],
@@ -22,9 +22,9 @@ export const docs = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Returns a TablePlugin that prepends a narrow column with a full-height colored bar on each row\u2019s leading edge \u2014 compact per-row status (error/warning/unread) without a full status column. getStatus maps a row to {color, label?} or null.',
+    'Returns a TablePlugin that prepends a narrow per-row status column — a colored bar, or an icon when provided (shape + color beats color alone for a11y). getStatus maps a row to {color, icon?, label?} or null. color is a semantic name (success/error/warning/…) mapped to a theme token, or a raw CSS color. Memoize getStatus with useCallback.',
   propDescriptions: {
     getStatus:
-      'Map a row to {color, label?} (CSS color + optional a11y label), or null for no indicator.',
+      'Map a row to {color, icon?, label?} or null. color = semantic status name (mapped to a token) or raw CSS; icon = shape signifier (a11y); label = accessible name (recommended). Memoize with useCallback.',
   },
 };
