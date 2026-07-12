@@ -325,12 +325,39 @@ function clamp(val: number, min: number, max: number): number {
   return Math.min(Math.max(val, min), max);
 }
 
+/**
+ * Number of decimal places a value carries, including values in exponent
+ * notation (e.g. 1e-7 → 7). Used to round away binary floating-point error
+ * after step arithmetic.
+ */
+function getDecimalPrecision(num: number): number {
+  if (Math.abs(num) < 1) {
+    const parts = num.toExponential().split('e-');
+    if (parts.length === 2) {
+      const mantissaDecimals = parts[0].split('.')[1]?.length ?? 0;
+      return mantissaDecimals + parseInt(parts[1], 10);
+    }
+  }
+  const decimalPart = String(num).split('.')[1];
+  return decimalPart ? decimalPart.length : 0;
+}
+
 function snapToStep(val: number, min: number, step: number): number {
   if (step <= 0) {
     return val;
   }
   const steps = Math.round((val - min) / step);
-  return min + steps * step;
+  const snapped = min + steps * step;
+  // `min + steps * step` accumulates binary floating-point error with
+  // fractional steps (0 + 3 * 0.1 → 0.30000000000000004), which leaks into
+  // onChange/onChangeEnd payloads, aria-valuenow, and the value tooltip.
+  // Snapped values can never carry more decimals than min/step combined, so
+  // rounding to that precision removes only the error.
+  const precision = Math.min(
+    Math.max(getDecimalPrecision(min), getDecimalPrecision(step)),
+    20, // toFixed() throws past 20 digits
+  );
+  return Number(snapped.toFixed(precision));
 }
 
 function getPercent(val: number, min: number, max: number): number {
