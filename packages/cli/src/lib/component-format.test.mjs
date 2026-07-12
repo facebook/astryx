@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {formatFull} from './component-format.mjs';
+import {formatBrief, formatFull} from './component-format.mjs';
 
 describe('formatFull sub-component rendering', () => {
   // Regression guard: sub-components are sometimes declared as a bare
@@ -91,5 +91,99 @@ describe('formatFull theming override keys', () => {
     // The verbatim DOM class names must not be advertised as override keys.
     expect(out).not.toContain("'astryx-base-table': {");
     expect(out).not.toContain("'astryx-table-cell': {");
+  });
+});
+
+/** Pipes that actually separate cells — a `\|` is content, not a separator. */
+function cellPipes(row) {
+  return (row.match(/(?<!\\)\|/g) || []).length;
+}
+
+describe('markdown table cells escape their pipes', () => {
+  // A prop type is a union, and a union is spelled with `|` — the very
+  // character GFM uses to separate cells. Backticks do not protect it: a row
+  // with more cells than the header has columns gets its excess *discarded*,
+  // so an unescaped `gap: 0 | 0.5 | ...` silently eats its own Default and
+  // Description columns. See packages/core/src/Markdown/parser.ts, which
+  // splits on unescaped pipes and preserves `\|` as literal.
+  it('keeps a union-typed prop row at four cells', () => {
+    const docs = {
+      name: 'Grid',
+      description: 'A grid.',
+      props: [
+        {
+          name: 'gap',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          default: '2',
+          description: 'Spacing between all items.',
+        },
+      ],
+    };
+    const row = formatFull(docs)
+      .split('\n')
+      .find(l => l.startsWith('| `gap`'));
+
+    // A 4-column row has exactly 5 separators. Unescaped, this row had 15.
+    expect(cellPipes(row)).toBe(5);
+    expect(row).toContain('\\|');
+    // The columns the unescaped pipes were swallowing.
+    expect(row).toContain('`2`');
+    expect(row).toContain('Spacing between all items.');
+  });
+
+  it('escapes pipes in a description too', () => {
+    const docs = {
+      name: 'AppShell',
+      description: 'A shell.',
+      props: [
+        {
+          name: 'mobileNav',
+          type: 'ReactNode',
+          description: "Config. breakpoint is 'sm' | 'md' | 'lg' | 'none'.",
+        },
+      ],
+    };
+    const row = formatFull(docs)
+      .split('\n')
+      .find(l => l.startsWith('| `mobileNav`'));
+
+    expect(cellPipes(row)).toBe(5);
+  });
+});
+
+describe('formatBrief signature stays terse', () => {
+  // `--detail brief` exists to be token-cheap. It hoists union-typed props into
+  // the signature because a short enum reads at a glance — but an 11-member
+  // spacing scale does not, and Stack carries four of them (gap, padding,
+  // paddingInline, paddingBlock), so the same scale got printed four times.
+  // Long unions stay in the terse prop list, exactly as they did when the type
+  // was still the bare name `SpacingStep`.
+  it('hoists a short enum but not a long scale', () => {
+    const docs = {
+      name: 'HStack',
+      description: 'A stack.',
+      props: [
+        {
+          name: 'gap',
+          type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
+          description: 'Gap.',
+        },
+        {name: 'wrap', type: "'nowrap' | 'wrap' | 'wrap-reverse'", description: 'Wrap.'},
+        {
+          name: 'hAlign',
+          type: "'start' | 'center' | 'end' | 'between' | 'around' | 'evenly'",
+          description: 'Align.',
+        },
+      ],
+    };
+    const signature = formatBrief(docs, 'HStack', '').split('\n')[0];
+
+    // Short enums still earn their place in the signature.
+    expect(signature).toContain('wrap: nowrap|wrap|wrap-reverse');
+    expect(signature).toContain('hAlign: start|center|end|between|around|evenly');
+    // The long scale does not.
+    expect(signature).not.toContain('0|0.5|1|1.5|2|3|4|5|6|8|10');
+    // But the prop is still named, so it is not lost.
+    expect(formatBrief(docs, 'HStack', '')).toContain('gap');
   });
 });

@@ -7,6 +7,7 @@ import {
   coerceEnumOption,
   parsePropType,
 } from '../components/component-detail/parsePropType';
+import {isSupportedProp} from '../app/playground/propertyEditor/isSupportedProp';
 
 describe('component detail prop controls', () => {
   it('treats InputStatus as an editable status object control', () => {
@@ -162,41 +163,51 @@ describe('component detail prop controls', () => {
       }
     });
 
-    it('keeps AppShell.mobileNav a bare ReactNode, because the hide is an exact match', () => {
-      // PropertyEditor hides a prop via UNSUPPORTED_PROP_TYPES, a Set of
-      // exact type strings containing 'ReactNode'. Widening mobileNav's doc
-      // type to its true union would no longer match that string, so the prop
-      // would reappear in the editor as an editable *string* and feed the
-      // preview a string where a config object belongs.
-      expect(parsePropType('ReactNode', 'mobileNav')).toEqual({kind: 'string'});
-      const widened = parsePropType(
-        "false | {hasToggle?: boolean, breakpoint?: 'sm' | 'md' | 'lg' | 'none'} | ReactNode",
-        'mobileNav',
-      );
-      // Still a string control — but no longer the exact 'ReactNode' string
-      // that the editor hides on, which is the trap. Its legal values live in
-      // the description instead.
-      expect(widened).toEqual({kind: 'string'});
-      expect(
-        "false | {hasToggle?: boolean, breakpoint?: 'sm' | 'md' | 'lg' | 'none'} | ReactNode",
-      ).not.toBe('ReactNode');
+    it('hides AppShell.mobileNav, and the gate is the exact type string', () => {
+      // Production never asks parsePropType about this prop without its
+      // slotElements (PropertyEditor passes all three arguments), so assert on
+      // the gate the editor actually uses rather than on a call shape it never
+      // makes.
+      const slotElements = [{__element: 'MobileNav', props: {}}];
+      const prop = (type: string) => ({
+        name: 'mobileNav',
+        type,
+        description: '',
+        slotElements,
+      });
+
+      expect(isSupportedProp(prop('ReactNode'))).toBe(false);
+
+      // Widening to the true union drops the UNSUPPORTED_PROP_TYPES
+      // exact-string match. The prop survives that only because slotElements
+      // independently resolves it to a non-editable `element` control — a
+      // second gate, not the one the doc leans on. Keep the bare `ReactNode`
+      // so the hide never depends on that coincidence.
+      const widened =
+        "false | {hasToggle?: boolean, breakpoint?: 'sm' | 'md' | 'lg' | 'none'} | ReactNode";
+      expect(parsePropType(widened, 'mobileNav', slotElements)).toMatchObject({
+        kind: 'element',
+      });
+      expect(isSupportedProp(prop(widened))).toBe(false);
     });
 
-    it('keeps Lightbox.media naming its type, because spelling it out yields a string control', () => {
-      // LightboxMedia is an object the preview must receive as an object.
-      // Spelling the shape out makes parsePropType see a ReactNode-free
-      // composite it cannot build a control for; the editor would then hand
-      // the preview raw text. Left named, it stays unknown and uneditable.
+    it('keeps Lightbox.media naming its type, because the real shape yields a string control', () => {
+      // Named, it stays unknown and uneditable, so the preview keeps receiving
+      // a real object.
       expect(parsePropType('LightboxMedia | LightboxMedia[]', 'media')).toEqual(
         {kind: 'unknown'},
       );
-      // The inlined shape is *not* a safe substitute — it does not resolve to
-      // anything that round-trips an object.
-      const inlined = parsePropType(
-        "{src: string, alt: string, caption?: string, type?: 'image' | 'video'}",
-        'media',
-      );
-      expect(inlined).not.toMatchObject({kind: 'enum'});
+      // Spelled out, the shape carries LightboxMedia's real `caption?:
+      // ReactNode` (Lightbox.tsx). That trips NODE_TYPE_RE, the prop becomes an
+      // *editable string*, and the editor hands the preview raw text where a
+      // media object belongs. Assert that exact bad outcome — a bare "not an
+      // enum" would pass for `unknown` too, and so could never catch it.
+      expect(
+        parsePropType(
+          "{src: string, alt: string, caption?: ReactNode, type?: 'image' | 'video'}",
+          'media',
+        ),
+      ).toEqual({kind: 'string'});
     });
   });
 });

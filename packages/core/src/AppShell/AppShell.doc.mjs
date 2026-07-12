@@ -45,11 +45,12 @@ export const docs = {
     },
     {
       name: 'mobileNav',
-      // Kept as the bare `ReactNode` on purpose: the docsite playground hides
-      // a prop only on an exact `ReactNode` type match, and widening this to
-      // the true `false | MobileNavConfig | ReactNode` would silently turn
-      // mobileNav into an editable slot control. The legal values live in the
-      // description instead (#1645).
+      // Kept as the bare `ReactNode`, not widened to the true
+      // `false | MobileNavConfig | ReactNode`: the docsite playground hides a
+      // prop by exact-matching the type string against UNSUPPORTED_PROP_TYPES,
+      // and widening drops that match. This prop's slotElements happen to hide
+      // it a second way today, but the hide should not rest on that
+      // coincidence. The legal values live in the description instead (#1645).
       type: 'ReactNode',
       description:
         "Mobile navigation configuration. Accepts false (disable), a config object (tune auto behavior), or ReactNode (full custom drawer). The config object is {hasToggle?: boolean, isOpen?: boolean, onOpenChange?: (isOpen: boolean) => void, content?: ReactNode, breakpoint?: 'sm' | 'md' | 'lg' | 'none', defaultIsMobile?: boolean}; breakpoint defaults to 'md'.",

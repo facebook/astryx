@@ -68,9 +68,22 @@ const ENUMERATED_IN_PROSE = new Set(['IconName']);
  */
 const TRANSPARENT_WRAPPERS = new Set(['Array', 'ReadonlyArray']);
 
-/** A union of nothing but string/number literals (plus null/undefined). */
-const LITERAL_UNION =
-  /^(?:\s*\|?\s*(?:'[^']*'|-?\d+(?:\.\d+)?|null|undefined)\s*(?:\|\s*)?)+$/;
+/**
+ * A union of nothing but string/number literals (plus null/undefined).
+ *
+ * Built so each separator has exactly ONE way to be parsed. The obvious
+ * spelling — `(?:\s*\|?\s*LITERAL\s*(?:\|\s*)?)+` — lets a repetition's
+ * trailing `(?:\|\s*)?` and the next one's leading `\|?` both claim the same
+ * pipe, so every separator doubles the parse tree. On a union that *fails* to
+ * match (a literal prefix ending in a named type, e.g. `'a' | 'b' | … |
+ * ComponentType` — an ordinary TS pattern) the engine explores all 2^n of them:
+ * measured at 1.2s for 10 members and 7.8s for 12. This form is linear, and
+ * agrees with the old one on every type alias in the package.
+ */
+const LITERAL = String.raw`(?:'[^']*'|-?\d+(?:\.\d+)?|null|undefined)`;
+const LITERAL_UNION = new RegExp(
+  String.raw`^\s*\|?\s*${LITERAL}(?:\s*\|\s*${LITERAL})*\s*$`,
+);
 
 function findFiles(dir: string, suffixes: string[]): string[] {
   const out: string[] = [];
@@ -572,6 +585,22 @@ describe('doc prop types surface their literal values (#1645)', () => {
     ).toEqual(['ReadonlyArray', 'TableSortEntry']);
   });
 
+  it('LITERAL_UNION rejects a long near-miss union in linear time', () => {
+    // Every `export type` in the package is fed to this regex, so it must stay
+    // cheap on the ones that DON'T match. The dangerous shape is a long literal
+    // prefix ending in something that isn't a literal — `'a' | 'b' | … |
+    // ComponentType`, the autocomplete escape hatch — which the regex can only
+    // reject after trying every way to parse it. An ambiguous pattern has 2^n
+    // of those. This union is 24 members long: linear, it is instant; ambiguous,
+    // it would outlive the CI job.
+    const nearMiss =
+      Array.from({length: 24}, (_, i) => `'v${i}'`).join(' | ') +
+      ' | ComponentType';
+    const start = performance.now();
+    expect(LITERAL_UNION.test(nearMiss)).toBe(false);
+    expect(performance.now() - start).toBeLessThan(100);
+  });
+
   it('no documented prop type hides its legal values', () => {
     const violations = findViolations();
     expect(
@@ -829,15 +858,17 @@ describe('doc prop types surface their literal values (#1645)', () => {
     /**
      * The two props that must NOT be inlined. Everything else in this file
      * pushes toward spelling unions out; these two push back, because the
-     * docsite playground reads `type` to choose a control and would pick a
-     * worse one. The reasons are asserted here, against the real doc, so the
-     * next person to "finish the job" trips over this instead of the preview.
+     * docsite playground reads `type` to choose a control. What each one is
+     * really protecting differs, and the specifics live next to the playground
+     * itself — see apps/docsite/src/__tests__/component-prop-controls.test.ts,
+     * which exercises the actual gate. These only pin the doc's shape, so the
+     * next person to "finish the job" trips here first.
      */
     it('AppShell.mobileNav stays a bare ReactNode (the editor hides on an exact string)', () => {
       const nav = realProp('AppShell', 'mobileNav');
-      // PropertyEditor's UNSUPPORTED_PROP_TYPES is a Set of exact type
-      // strings. Widen this and the prop reappears as an editable string
-      // control, feeding the preview text where a config object belongs.
+      // PropertyEditor's UNSUPPORTED_PROP_TYPES is a Set of exact type strings.
+      // Widening drops that match, and the prop would then be hidden only by
+      // the second, incidental gate (its slotElements). Keep the exact string.
       expect(nav.type).toBe('ReactNode');
       // The values still have to be discoverable — they live in the prose.
       expect(nav.description).toContain('breakpoint');

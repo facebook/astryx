@@ -22,10 +22,11 @@ export const docs = {
     },
     {
       name: 'media',
-      // Left as the named type on purpose: spelling the object out makes the
-      // docsite playground parse it as an editable *string*, which would feed
-      // the preview a string where a media object belongs. The shape and its
-      // legal values live in the description instead (#1645).
+      // Left as the named type on purpose: the shape carries `caption?:
+      // ReactNode`, so spelling it out makes the docsite playground parse the
+      // whole prop as an editable *string*, which would feed the preview text
+      // where a media object belongs. The shape and its legal values live in
+      // the description instead (#1645).
       type: 'LightboxMedia | LightboxMedia[]',
       description: "Media to display. Pass a single object for one item, or an array for gallery mode with prev/next navigation. Each item is {src: string, alt: string, caption?: ReactNode, type?: 'image' | 'video'}; type defaults to 'image', and zoom/pan is disabled for 'video'.",
       required: true,
