@@ -258,7 +258,7 @@ function useLabPlugins({
   return {
     data: enabled.groupedRows ? grouped.data : dataAfterPage,
     plugins,
-    idKey: enabled.groupedRows ? grouped.getRowKey : 'id',
+    idKey: enabled.groupedRows ? grouped.idKey : 'id',
     summary,
   };
 }

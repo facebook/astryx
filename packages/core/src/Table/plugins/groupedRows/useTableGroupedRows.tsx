@@ -17,7 +17,6 @@ import * as stylex from '@stylexjs/stylex';
 import {
   spacingVars,
   colorVars,
-  radiusVars,
   fontWeightVars,
 } from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
@@ -103,8 +102,12 @@ export interface UseTableGroupedRowsResult<T extends Record<string, unknown>> {
   plugin: TablePlugin<T>;
   /** Flattened rows: `[header, ...visibleRows, header, ...visibleRows]`. */
   data: T[];
-  /** Row-key resolver (also keys synthetic headers as `__group_<key>`). Pass to `<Table idKey>`. */
-  getRowKey: (item: T) => string;
+  /**
+   * Row-key resolver (also keys synthetic headers as `__group_<key>`). Pass to
+   * `<Table idKey>` — named for parallelism with the Table prop:
+   * `<Table idKey={grouped.idKey} />`.
+   */
+  idKey: (item: T) => string;
 }
 
 const styles = stylex.create({
@@ -112,39 +115,39 @@ const styles = stylex.create({
     cursor: 'pointer',
     userSelect: 'none',
     backgroundColor: colorVars['--color-background-muted'],
+    // Divider beneath each group header row (Ernest review #2).
+    borderBottomWidth: '1px',
+    borderBottomStyle: 'solid',
+    borderBottomColor: colorVars['--color-border'],
   },
   headerCell: {
     paddingBlock: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-3'],
+    // No inline start padding so the chevron aligns with the table's leading
+    // edge (Ernest review #1).
+    paddingInlineStart: spacingVars['--spacing-1'],
+    paddingInlineEnd: spacingVars['--spacing-3'],
   },
   headerInner: {
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-1'],
   },
-  chevronButton: {
+  // Standalone chevron button with no heavy chrome (transparent, borderless,
+  // zero padding) so the icon sits flush with the start of the table
+  // (Ernest review #1) while staying keyboard-operable.
+  chevron: {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '24px',
-    height: '24px',
+    flexShrink: '0',
+    padding: 0,
+    margin: 0,
     background: 'transparent',
     border: 'none',
-    borderRadius: radiusVars['--radius-inner'],
     cursor: 'pointer',
-    color: colorVars['--color-icon-secondary'],
-    transitionProperty: 'transform, color, background-color',
-    transitionDuration: '150ms',
-    padding: 0,
-    flexShrink: '0',
-    backgroundImage: {
-      default: null,
-      ':hover': {
-        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
-      },
-    },
-    ':hover': {
-      color: colorVars['--color-icon-primary'],
+    color: {
+      default: colorVars['--color-icon-secondary'],
+      ':hover': colorVars['--color-icon-primary'],
     },
   },
   chevronIcon: {
@@ -155,11 +158,13 @@ const styles = stylex.create({
   chevronExpanded: {
     transform: 'rotate(90deg)',
   },
+  // Emphasized body text — same size as body, heavier weight (Ernest #3).
   label: {
     fontWeight: fontWeightVars['--font-weight-semibold'],
     color: colorVars['--color-text-primary'],
   },
   count: {
+    fontWeight: fontWeightVars['--font-weight-normal'],
     color: colorVars['--color-text-secondary'],
   },
 });
@@ -171,7 +176,7 @@ const styles = stylex.create({
  * data rows while keeping the header visible.
  *
  * Mirrors {@link useTableRowExpansionState}: the consumer owns the
- * `collapsedGroups` set and this hook returns `{data, plugin, getRowKey}` —
+ * `collapsedGroups` set and this hook returns `{data, plugin, idKey}` —
  * pass all three to `<Table>`.
  *
  * @example
@@ -192,7 +197,7 @@ const styles = stylex.create({
  * <Table
  *   data={grouped.data}
  *   columns={columns}
- *   idKey={grouped.getRowKey}
+ *   idKey={grouped.idKey}
  *   plugins={{grouped: grouped.plugin}}
  * />;
  * ```
@@ -246,16 +251,30 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
     return out;
   }, [data, groupBy, collapsedGroups, groupOrder]);
 
-  const getRowKey = useCallback(
+  // Positional fallback index, built once per flattened array so key lookup
+  // stays O(1) instead of O(n) per row (which would make table keying O(n²)).
+  const positionByItem = useMemo(() => {
+    if (getRowKeyProp) {
+      return null;
+    }
+    const map = new Map<T, number>();
+    for (let i = 0; i < flattened.length; i++) {
+      map.set(flattened[i], i);
+    }
+    return map;
+  }, [flattened, getRowKeyProp]);
+
+  const idKey = useCallback(
     (item: T): string => {
       if (isGroupHeader(item)) {
         return `__group_${item.groupKey}`;
       }
-      return getRowKeyProp
-        ? getRowKeyProp(item)
-        : String(flattened.indexOf(item));
+      if (getRowKeyProp) {
+        return getRowKeyProp(item);
+      }
+      return String(positionByItem?.get(item) ?? -1);
     },
-    [getRowKeyProp, flattened],
+    [getRowKeyProp, positionByItem],
   );
 
   const plugin = useMemo(
@@ -280,6 +299,9 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
           ...props,
           htmlProps: {
             ...props.htmlProps,
+            // Convenience: clicking anywhere on the row toggles it. The chevron
+            // button below is the accessible, keyboard-operable control, so the
+            // row keeps its implicit `row` role (no role override here).
             onClick: toggle,
             'aria-expanded': !collapsed,
           },
@@ -290,14 +312,20 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
             // full width without the plugin knowing the column count.
             <td colSpan={999} {...stylex.props(styles.headerCell)}>
               <span {...stylex.props(styles.headerInner)}>
+                {/* Standalone chevron button, flush with the table's start
+                    edge (no heavy button chrome) — the keyboard control. */}
                 <button
                   type="button"
-                  {...stylex.props(styles.chevronButton)}
+                  {...stylex.props(styles.chevron)}
                   onClick={e => {
                     e.stopPropagation();
                     toggle();
                   }}
-                  aria-label={collapsed ? 'Expand group' : 'Collapse group'}
+                  aria-label={
+                    collapsed
+                      ? `Expand group ${header.groupKey}`
+                      : `Collapse group ${header.groupKey}`
+                  }
                   aria-expanded={!collapsed}>
                   <span
                     {...stylex.props(
@@ -317,5 +345,5 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
     [collapsedGroups, onToggleGroup, renderGroupHeader],
   );
 
-  return {plugin, data: flattened, getRowKey};
+  return {plugin, data: flattened, idKey};
 }

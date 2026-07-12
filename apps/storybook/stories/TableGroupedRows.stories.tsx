@@ -80,7 +80,7 @@ export const Default: Story = {
       <Table
         data={grouped.data}
         columns={columns}
-        idKey={grouped.getRowKey}
+        idKey={grouped.idKey}
         hasHover
         plugins={{grouped: grouped.plugin}}
       />
@@ -106,7 +106,7 @@ export const InitiallyCollapsed: Story = {
       <Table
         data={grouped.data}
         columns={columns}
-        idKey={grouped.getRowKey}
+        idKey={grouped.idKey}
         hasHover
         plugins={{grouped: grouped.plugin}}
       />
@@ -139,7 +139,7 @@ export const CustomOrderAndHeader: Story = {
       <Table
         data={grouped.data}
         columns={columns}
-        idKey={grouped.getRowKey}
+        idKey={grouped.idKey}
         hasHover
         plugins={{grouped: grouped.plugin}}
       />

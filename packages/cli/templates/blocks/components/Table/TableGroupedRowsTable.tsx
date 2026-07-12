@@ -58,7 +58,7 @@ export default function TableGroupedRowsTable() {
     <Table
       data={grouped.data}
       columns={columns}
-      idKey={grouped.getRowKey}
+      idKey={grouped.idKey}
       hasHover
       plugins={{grouped: grouped.plugin}}
     />

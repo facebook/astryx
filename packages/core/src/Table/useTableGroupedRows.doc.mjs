@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableGroupedRows',
   description:
-    'Hook that groups a flat data array into collapsible section rows. Each distinct groupBy value becomes a full-width section-header row with a chevron toggle, the group label, and a member count; collapsing hides that group\u2019s data rows while keeping the header visible. Mirrors useTableRowExpansionState: the consumer owns the collapsedGroups set and the hook returns {data, plugin, getRowKey} \u2014 pass all three to Table (data, plugins, and idKey respectively).',
+    'Hook that groups a flat data array into collapsible section rows. Each distinct groupBy value becomes a full-width section-header row with a chevron toggle, the group label, and a member count; collapsing hides that group\u2019s data rows while keeping the header visible. Mirrors useTableRowExpansionState: the consumer owns the collapsedGroups set and the hook returns {data, plugin, idKey} \u2014 pass all three to Table (data, plugins, and idKey respectively).',
   props: [
     {
       name: 'data',
@@ -58,7 +58,7 @@ export const docs = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Groups a flat data array into collapsible section rows. Each groupBy value becomes a full-width header (chevron + label + count); collapsing hides its rows. Returns {data, plugin, getRowKey} \u2014 pass to Table data / plugins / idKey. Consumer owns the collapsedGroups set.',
+    'Groups a flat data array into collapsible section rows. Each groupBy value becomes a full-width header (chevron + label + count); collapsing hides its rows. Returns {data, plugin, idKey} \u2014 pass to Table data / plugins / idKey. Consumer owns the collapsedGroups set.',
   propDescriptions: {
     data: 'The flat data to group.',
     groupBy: 'Derive a row\u2019s group key. Same key = same section.',
