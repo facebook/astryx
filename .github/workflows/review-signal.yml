@@ -27,15 +27,18 @@
 # or CODEOWNER). Detection is path-based and deterministic; the Copilot reviewer
 # reads these labels to focus its review (see .github/copilot-instructions.md).
 #
-# HARD GATE: this also emits a "review-required" CHECK RUN. When gated, its
-# conclusion is action_required — which blocks a required check (GitHub treats
-# only success/skipped/neutral as passing) yet renders as an orange "Action
-# required", NOT a red failure, so the UI reads "needs review" not "broken". An
-# owner's approval flips it to success. Make "review-required" a REQUIRED status
-# check in branch protection: a required check blocks non-admin merges even for
-# internal contributors who have write access (write lets you merge a green PR,
-# not a blocked one). With this in place, native required-review count can drop
-# to 0 — the check is the author-aware gate.
+# HARD GATE (code review only): this emits a "review-required" COMMIT STATUS.
+# When code review is needed it's set to `pending`, which blocks a required
+# status context AND renders as a neutral yellow "waiting" dot (not a red
+# failure), so a PR awaiting review doesn't add red noise to the queue. An
+# entitled owner's code approval flips it to `success`. Keep "review-required"
+# a REQUIRED status check in branch protection: it blocks non-admin merges even
+# for internal contributors who have write access.
+#
+# Design review is ADVISORY: a design-affecting change is labeled
+# needs:design-review and design owners are requested, but it does NOT block
+# the merge. All contributor (non-owner) PRs require code review; owners
+# self-serve code.
 #
 # Uses pull_request_target so it can label / request reviewers / disable
 # auto-merge on fork PRs. It only reads the PR file LIST and repo owner files via
@@ -88,7 +91,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: read
-      checks: write
+      statuses: write
     steps:
       - name: Detect signals and route
         uses: actions/github-script@v9
@@ -189,13 +192,13 @@ jobs:
                 }
               }
               try {
-                await github.rest.checks.create({
-                  owner, repo, name: 'review-required', head_sha: pr.head.sha,
-                  status: 'completed', conclusion: 'success',
-                  output: { title: 'No review required', summary: 'Automated (bot) PR — exempt from review gates.' },
+                await github.rest.repos.createCommitStatus({
+                  owner, repo, sha: pr.head.sha,
+                  context: 'review-required', state: 'success',
+                  description: 'Automated (bot) PR — exempt from review gates.',
                 });
               } catch (e) {
-                core.warning(`Could not set review-required check: ${e.message}`);
+                core.warning(`Could not set review-required status: ${e.message}`);
               }
               return;
             }
@@ -275,6 +278,15 @@ jobs:
             if (coreChange && !codeReasons.includes('new component/module')) {
               codeReasons.push('core change');
             }
+
+            // ALL contributor (non-owner) PRs require code review, not just the
+            // high-risk ones. External contributors can't self-merge anyway;
+            // this mainly holds internal contributors who have write access but
+            // are not on the eng/design team. Owners still self-serve code
+            // (gated only by the high-risk reasons above → suppressed for eng).
+            const authorIsOwner = authorIsEng || authorIsDesign;
+            if (!authorIsOwner) codeReasons.push('community contribution');
+
             // Eng owners self-serve code — no code tag for them.
             const codeHighRisk = codeReasons.length > 0 && !authorIsEng;
 
@@ -352,7 +364,7 @@ jobs:
             // A quiet "community" marker on PRs authored by someone who is not
             // on the eng or design team, so the contribution queue is filterable
             // (label:community) separately from the review gates. Absence = team.
-            const authorIsOwner = authorIsEng || authorIsDesign;
+            // (authorIsOwner is defined above.)
             if (!authorIsOwner && !current.includes(COMMUNITY)) toAdd.push(COMMUNITY);
             if (toAdd.length) {
               await github.rest.issues.addLabels({
@@ -401,8 +413,10 @@ jobs:
             if (codeGated) await requestReviewers(codeOwners);
             if (designGated) await requestReviewers(designOwners);
 
-            // --- Either gate disables auto-merge. ---
-            if ((codeGated || designGated) && pr.auto_merge) {
+            // --- Only the CODE gate blocks. Design review is advisory:
+            //     it labels + requests design owners (above) but does NOT
+            //     disable auto-merge or block the merge. ---
+            if (codeGated && pr.auto_merge) {
               try {
                 await github.graphql(
                   `mutation ($id: ID!) {
@@ -412,62 +426,43 @@ jobs:
                    }`,
                   { id: pr.node_id },
                 );
-                core.info('Disabled auto-merge (review required).');
+                core.info('Disabled auto-merge (code review required).');
               } catch (e) {
                 core.warning(`Could not disable auto-merge: ${e.message}`);
               }
             }
 
-            // No explanatory comment is posted here on purpose. The label + the
-            // auto-merge disable are the mechanical signal; the Copilot reviewer
-            // reads the label (see .github/copilot-instructions.md) and explains
-            // *why* review is needed with actual judgment — better than a static
-            // comment could.
+            // No explanatory comment is posted here on purpose. The label is the
+            // mechanical signal; the Copilot reviewer reads it and explains why
+            // review is needed with actual judgment — better than a static one.
 
-            // --- The blocking gate: a "review-required" check run. ---
-            // When gated, we set conclusion=action_required — which BLOCKS a
-            // required check (GitHub only treats success/skipped/neutral as
-            // passing) but renders as an orange "Action required", NOT a red
-            // failure, so the UI signal reads "needs review" rather than
-            // "something broke". An owner's approval flips it to success (see the
-            // clear job). Make this a required status check named "review-required"
-            // in branch protection so write-access internal contributors are held
-            // too — a required check blocks non-admins regardless of write access.
-            const gated = codeGated || designGated;
-            const gateReasons = [
-              ...(codeGated ? codeReasons : []),
-              ...(designGated ? designReasons.map((r) => `design: ${r}`) : []),
-            ];
+            // --- The blocking gate: a "review-required" COMMIT STATUS. ---
+            // We use a commit STATUS (not a check run) for two reasons:
+            //   1. Branch protection here requires the "review-required" context
+            //      as a status context ("Expected — Waiting for status to be
+            //      reported"), which only a commit status satisfies — a check
+            //      run of the same name does not clear it.
+            //   2. A pending status renders as a neutral YELLOW dot ("waiting"),
+            //      not a red failure like a check run's action_required — so a
+            //      PR awaiting review doesn't add red noise to the queue.
+            // Only the CODE gate drives it (design is advisory). pending blocks
+            // (branch protection passes only success); an owner's code approval
+            // flips it to success.
+            const gateReasons = codeGated ? codeReasons : [];
             try {
-              await github.rest.checks.create({
+              await github.rest.repos.createCommitStatus({
                 owner,
                 repo,
-                name: 'review-required',
-                head_sha: pr.head.sha,
-                status: 'completed',
-                conclusion: gated ? 'action_required' : 'success',
-                output: gated
-                  ? {
-                      title: 'Review required before merge',
-                      summary: [
-                        'This PR needs a human review before it can merge:',
-                        '',
-                        ...gateReasons.map((r) => `- ${r}`),
-                        '',
-                        'It clears automatically when an entitled owner approves',
-                        '(code owner for code, design owner or code owner for design).',
-                        'Eng owners self-serve code; design owners self-serve design.',
-                      ].join('\n'),
-                    }
-                  : {
-                      title: 'No review required',
-                      summary:
-                        'No high-risk code or design-affecting change was detected for this author, so no human review is required to merge.',
-                    },
+                sha: pr.head.sha,
+                context: 'review-required',
+                state: codeGated ? 'pending' : 'success',
+                description: codeGated
+                  ? `Waiting on code review: ${gateReasons.join(', ')}`.slice(0, 140)
+                  : 'No code review required.',
               });
-              core.info(`review-required check: ${gated ? 'action_required' : 'success'}`);
+              core.info(`review-required status: ${codeGated ? 'pending' : 'success'}`);
             } catch (e) {
-              core.warning(`Could not set review-required check: ${e.message}`);
+              core.warning(`Could not set review-required status: ${e.message}`);
             }
             } // end flagOne
 
