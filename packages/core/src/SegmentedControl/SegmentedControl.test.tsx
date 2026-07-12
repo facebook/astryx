@@ -735,3 +735,48 @@ describe('SegmentedControlItem onClick composition', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 });
+
+describe('SegmentedControl container handler forwarding', () => {
+  it('forwards a consumer onKeyDown while keeping arrow-key navigation', async () => {
+    const user = userEvent.setup();
+    const onKeyDown = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={onChange}
+        label="View mode"
+        onKeyDown={onKeyDown}>
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+
+    screen.getByRole('radio', {name: 'Grid'}).focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(onKeyDown).toHaveBeenCalled();
+    // Built-in navigation still ran.
+    expect(onChange).toHaveBeenCalledWith('list');
+  });
+
+  it('lets a consumer onKeyDown opt out of built-in navigation via preventDefault', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={onChange}
+        label="View mode"
+        onKeyDown={e => e.preventDefault()}>
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+
+    screen.getByRole('radio', {name: 'Grid'}).focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
