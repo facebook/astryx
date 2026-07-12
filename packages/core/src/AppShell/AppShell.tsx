@@ -470,6 +470,7 @@ export function AppShell({
   className,
   style,
   ref,
+  ...rest
 }: AppShellProps) {
   // =========================================================================
   // Parse mobileNav prop — normalize to config, custom element, or disabled
@@ -768,6 +769,7 @@ export function AppShell({
   return (
     <AppShellMobileContext value={mobileContextValue}>
       <div
+        {...rest}
         ref={mergeRefs(ref, shellRef)}
         data-testid={dataTestId}
         {...mergeProps(
