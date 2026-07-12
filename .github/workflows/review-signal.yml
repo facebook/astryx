@@ -51,14 +51,19 @@ on:
   pull_request_target:
     branches: ["main"]
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-  # Reconcile sweep: periodically re-evaluate every open PR. This is how
-  # APPROVALS clear the gate — rather than a fragile per-approval workflow_run
-  # chain (which was unreliable and, being the repo's highest-volume workflow,
-  # a CI-backpressure source), the flag job re-reads approvals for all open PRs
-  # on a schedule and reconciles their status. Self-healing: a delayed tick just
-  # catches up on the next one, so a PR can never get permanently stuck.
+  # Event-driven fast path: an approval fires review-anchor below, which lets
+  # review-clear.yml (workflow_run) resolve the PR and clear the gate almost
+  # immediately in the healthy case.
+  pull_request_review:
+    types: [submitted]
+  # Reconcile sweep backstop: periodically re-evaluate every open PR. The
+  # event-driven fast path above is best-effort — under GitHub Actions queue
+  # backpressure the workflow_run clear can sit queued for a long time. The
+  # sweep re-reads approvals for all open PRs on a schedule and reconciles
+  # their status, so a PR can never get permanently stuck. Self-healing: a
+  # delayed tick just catches up on the next one.
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/5 * * * *"
   # Manual re-trigger. Leave `pr` blank to re-flag EVERY open PR (same as the
   # sweep); pass a number to re-flag just that one.
   workflow_dispatch:
@@ -498,3 +503,19 @@ jobs:
               core.warning(`Could not neutralize stale check-run: ${e.message}`);
             }
             } // end flagOne
+
+  # ---------------------------------------------------------------------------
+  # Tiny anchor job so the workflow COMPLETES on pull_request_review submissions.
+  # review-clear.yml (workflow_run) fires when this workflow completes with the
+  # event pull_request_review, giving us the event-driven fast path. If the
+  # fast path is delayed or fails, the scheduled reconcile sweep above catches
+  # it — the anchor is best-effort, not load-bearing.
+  # ---------------------------------------------------------------------------
+  review-anchor:
+    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
+    name: Anchor review-clear chain
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Note approval
+        run: echo "Approval received; review-clear may re-dispatch the clear job."
