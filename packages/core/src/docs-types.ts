@@ -859,6 +859,7 @@ export type TemplateCategory =
   | 'Tools - File Explorer'
   | 'Tools - Page Editor'
   | 'Tools - IDE'
+  | 'Tools - Incident Console'
   | 'Tools - Kanban Board'
   | 'Tools - Notebook/Report Page'
   | 'Tools - Diff Compare Viewer'
@@ -889,6 +890,7 @@ export type TemplateCategory =
   | 'Shell - Top Nav'
   | 'Shell - Top Nav + Left Sidebar'
   | 'Shell - Breadcrumb Driven Layout'
+  | 'Shell - Messaging'
   | 'Shell - Blank';
 
 interface BaseTemplateDoc {

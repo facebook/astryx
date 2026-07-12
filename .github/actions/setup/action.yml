@@ -1,0 +1,41 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+name: 'Setup Node and pnpm'
+description: >-
+  Install pnpm, set up Node from .nvmrc with the pnpm store cached, and
+  optionally install workspace dependencies. Requires actions/checkout to have
+  run first — .nvmrc and the composite action itself are read from the
+  checked-out tree.
+
+inputs:
+  install:
+    description: 'Run `pnpm install --frozen-lockfile` after Node is set up.'
+    required: false
+    default: 'true'
+  registry-url:
+    description: >-
+      npm registry to authenticate against. Publishing jobs set this so
+      setup-node writes the auth config npm publish needs.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    # pnpm has to be on PATH before setup-node, otherwise `cache: pnpm` cannot
+    # resolve the store path. The version comes from package.json's
+    # `packageManager` field — never pin it here as well.
+    - uses: pnpm/action-setup@v6
+
+    # .nvmrc is the single source of truth for the Node version, shared with
+    # local nvm / fnm / mise. The 24.x line also bundles npm >= 11.5.1, which
+    # release.yml requires for OIDC trusted publishing.
+    - uses: actions/setup-node@v6
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+        registry-url: ${{ inputs.registry-url }}
+
+    - if: inputs.install == 'true'
+      run: pnpm install --frozen-lockfile
+      shell: bash

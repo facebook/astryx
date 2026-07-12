@@ -729,7 +729,7 @@ function TableCard<T extends {id: string}>({
 export default function DashboardTemplate() {
   return (
     <Layout
-      height="auto"
+      height="fill"
       content={
         <LayoutContent padding={6}>
           <VStack gap={6}>

@@ -395,6 +395,7 @@ export function CheckboxInput({
   className,
   style,
   ref,
+  ...rest
 }: CheckboxInputProps) {
   const id = useId();
   const descriptionID = useId();
@@ -484,6 +485,7 @@ export function CheckboxInput({
         )}>
         <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
           <input
+            {...rest}
             ref={mergeRefs(
               ref,
               indeterminateRef,

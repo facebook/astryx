@@ -12,6 +12,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateTimeInput} from './DateTimeInput';
 import type {ISODateTimeString} from './DateTimeInput';
 
@@ -186,14 +187,14 @@ describe('DateTimeInput', () => {
 
   it('calendar button is focusable and clickable', () => {
     render(<DateTimeInput label="Meeting" onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     expect(button).toBeInTheDocument();
     expect(button).not.toBeDisabled();
   });
 
   it('calendar button is disabled when isDisabled is true', () => {
     render(<DateTimeInput label="Meeting" isDisabled onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     expect(button).toBeDisabled();
   });
 
@@ -201,7 +202,7 @@ describe('DateTimeInput', () => {
     render(<DateTimeInput label="Meeting" isLoading onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeDisabled();
     expect(screen.getByLabelText('Meeting time')).toBeDisabled();
-    expect(screen.getByRole('button', {name: 'Open calendar'})).toBeDisabled();
+    expect(getButton('Open calendar')).toBeDisabled();
   });
 
   it('sets aria-busy when isLoading is true', () => {
@@ -433,16 +434,12 @@ describe('DateTimeInput', () => {
           hasClear
         />,
       );
-      expect(
-        screen.getByRole('button', {name: 'Clear Meeting'}),
-      ).toBeInTheDocument();
+      expect(getButton('Clear Meeting')).toBeInTheDocument();
     });
 
     it('does not show clear button when value is undefined', () => {
       render(<DateTimeInput label="Meeting" onChange={() => {}} hasClear />);
-      expect(
-        screen.queryByRole('button', {name: 'Clear Meeting'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Meeting')).not.toBeInTheDocument();
     });
 
     it('does not show clear button when hasClear is false', () => {
@@ -453,9 +450,7 @@ describe('DateTimeInput', () => {
           onChange={() => {}}
         />,
       );
-      expect(
-        screen.queryByRole('button', {name: 'Clear Meeting'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Meeting')).not.toBeInTheDocument();
     });
 
     it('does not show clear button when disabled', () => {
@@ -468,9 +463,7 @@ describe('DateTimeInput', () => {
           isDisabled
         />,
       );
-      expect(
-        screen.queryByRole('button', {name: 'Clear Meeting'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Meeting')).not.toBeInTheDocument();
     });
 
     it('calls onChange with undefined when clear is clicked', () => {
@@ -483,7 +476,7 @@ describe('DateTimeInput', () => {
           hasClear
         />,
       );
-      fireEvent.click(screen.getByRole('button', {name: 'Clear Meeting'}));
+      fireEvent.click(getButton('Clear Meeting'));
       expect(onChange).toHaveBeenCalledWith(undefined);
     });
   });
@@ -745,6 +738,45 @@ describe('DateTimeInput', () => {
       timeInput.focus();
       fireEvent.focus(timeInput);
       expect(timeInput).toHaveAttribute('placeholder', 'Select a time');
+    });
+  });
+
+  describe('timeIncrement', () => {
+    it('steps the time by timeIncrement minutes on ArrowUp', () => {
+      const onChange = vi.fn();
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          timeIncrement={15}
+          onChange={onChange}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.keyDown(timeInput, {key: 'ArrowUp'});
+
+      // 14:30 + 15min increment = 14:45
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0]).toContain('14:45');
+    });
+
+    it('defaults to a 1-minute increment', () => {
+      const onChange = vi.fn();
+      render(
+        <DateTimeInput
+          label="Meeting"
+          value={'2026-03-15T14:30' as ISODateTimeString}
+          onChange={onChange}
+        />,
+      );
+
+      const timeInput = screen.getByLabelText('Meeting time');
+      fireEvent.keyDown(timeInput, {key: 'ArrowUp'});
+
+      // 14:30 + default 1min = 14:31
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange.mock.calls[0][0]).toContain('14:31');
     });
   });
 });

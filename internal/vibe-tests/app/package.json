@@ -14,9 +14,9 @@
     "@stylexjs/stylex": "*"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.0.0",
+    "@vitejs/plugin-react": "^5.2.0",
     "@stylexjs/unplugin": "*",
-    "vite": "^6.4.2",
-    "vite-plugin-singlefile": "^2.0.0"
+    "vite": "^8.1.3",
+    "vite-plugin-singlefile": "^2.3.3"
   }
 }

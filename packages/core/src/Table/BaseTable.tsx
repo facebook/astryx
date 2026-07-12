@@ -279,7 +279,8 @@ function areRowPropsEqual<T extends Record<string, unknown>>(
     return true;
   }
 
-  // Different object reference - compare values
+  // Different object reference - compare values. This is intentionally a
+  // one-level shallow compare: nested fields rely on reference identity.
   const prevItem = prevProps.item;
   const nextItem = nextProps.item;
   const keys = Object.keys(nextItem);

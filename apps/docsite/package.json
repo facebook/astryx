@@ -16,7 +16,7 @@
     "@heroicons/react": "^2.2.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@monaco-editor/react": "^4.8.0-rc.3",
-    "@stylexjs/stylex": "^0.18.3",
+    "@stylexjs/stylex": "^0.19.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^1.2.0",
     "@astryxdesign/charts": "*",
@@ -39,7 +39,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@babel/preset-react": "^7.29.7",
+    "@babel/preset-react": "^8.0.1",
     "@babel/preset-typescript": "^7.29.7",
     "@stylexjs/babel-plugin": "^0.19.0",
     "@stylexjs/postcss-plugin": "^0.19.0",
@@ -48,7 +48,7 @@
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.5.2",
     "typescript": "^6.0.3",
-    "vitest": "^3.2.1"
+    "vitest": "^4.1.9"
   },
   "browserslist": [
     "last 1 Chrome version"

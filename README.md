@@ -1,10 +1,26 @@
 <!-- SYNC CONTRACT: Architecture changes require documentation updates. -->
 
+<div align="center">
+
+<img src="https://lookaside.facebook.com/assets/astryx/Astryx-Banner.png" alt="Astryx" width="100%" />
+
 # Astryx
 
-An open source design system that's fully customizable and built for how we build now — by people and the agents working alongside them.
+An open source design system that's fully customizable and built for how we build now: <br/> by people and the agents working alongside them.
 
-> **Currently in Beta** · Built on [React](https://react.dev) and [StyleX](https://stylexjs.com)
+**Currently in Beta** · Built on [React](https://react.dev) and [StyleX](https://stylexjs.com)
+
+[![npm version](https://img.shields.io/npm/v/@astryxdesign/core?label=npm&color=cb3837&logo=npm)](https://www.npmjs.com/package/@astryxdesign/core)
+[![license MIT](https://img.shields.io/npm/l/@astryxdesign/core?color=blue)](LICENSE)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/facebook/astryx/wiki/Contributing)
+
+[![Docs](https://img.shields.io/badge/Docs-astryx.atmeta.com-6741d9?logo=readthedocs&logoColor=white)](https://astryx.atmeta.com)
+[![Storybook](https://img.shields.io/badge/Storybook-live-ff4785?logo=storybook&logoColor=white)](https://facebook.github.io/astryx/storybook/)
+[![Sandbox](https://img.shields.io/badge/Sandbox-playground-A9792B)](https://facebook.github.io/astryx/sandbox/)
+
+**[Docs](https://astryx.atmeta.com)** · **[Storybook](https://facebook.github.io/astryx/storybook/)** · **[Sandbox](https://facebook.github.io/astryx/sandbox/)** · **[Contributing](https://github.com/facebook/astryx/wiki/Contributing)**
+
+</div>
 
 ## Overview
 
@@ -94,6 +110,15 @@ Battle-tested design solutions for common interactions and workflows: table page
 ## Contributing
 
 We welcome contributions! See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide.
+
+Our conventions and review rubrics live in the
+[Contributing wiki](https://github.com/facebook/astryx/wiki/Contributing) —
+including [API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions),
+[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions),
+the [Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle),
+and the [Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)
+and [Blog Review](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric)
+rubrics. Read the relevant one before opening a PR.
 
 Quick start for contributors: this repo uses **Node 22+ on an active LTS line**
 and **pnpm 11**. Install pnpm directly, or enable

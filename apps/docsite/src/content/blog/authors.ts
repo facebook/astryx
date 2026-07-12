@@ -58,6 +58,11 @@ export const authors = {
     github: 'cixzhang',
     role: 'Engineering',
   },
+  josephfarina: {
+    name: 'Joey',
+    github: 'josephfarina',
+    role: 'Engineering',
+  },
 } as const satisfies Record<string, AuthorProfile>;
 
 export type AuthorKey = keyof typeof authors;

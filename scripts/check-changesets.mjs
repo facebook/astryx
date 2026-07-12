@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
+import {expandWorkspaceDirs} from './lib/workspace-globs.mjs';
 
 const require = createRequire(import.meta.url);
 const {parseEntry} = require('./changeset-entry-format.cjs');
@@ -31,28 +32,13 @@ function readConfig() {
 }
 
 function discoverPackages() {
-  const ws = fs.readFileSync(path.join(ROOT, 'pnpm-workspace.yaml'), 'utf8');
-  const globs = [...ws.matchAll(/^\s*-\s*["']?([^"'\n]+)["']?/gm)].map(m =>
-    m[1].trim(),
-  );
   const pkgs = [];
-  for (const g of globs) {
-    const base = g.replace(/\/\*+$/, '');
-    const abs = path.join(ROOT, base);
-    if (!fs.existsSync(abs)) continue;
-    const dirs = g.endsWith('*')
-      ? fs
-          .readdirSync(abs, {withFileTypes: true})
-          .filter(d => d.isDirectory())
-          .map(d => path.join(abs, d.name))
-      : [abs];
-    for (const dir of dirs) {
-      const pj = path.join(dir, 'package.json');
-      if (!fs.existsSync(pj)) continue;
-      const p = JSON.parse(fs.readFileSync(pj, 'utf8'));
-      if (p.name)
-        pkgs.push({name: p.name, private: !!p.private, version: p.version});
-    }
+  for (const dir of expandWorkspaceDirs(ROOT)) {
+    const pj = path.join(dir, 'package.json');
+    if (!fs.existsSync(pj)) continue;
+    const p = JSON.parse(fs.readFileSync(pj, 'utf8'));
+    if (p.name)
+      pkgs.push({name: p.name, private: !!p.private, version: p.version});
   }
   return pkgs;
 }

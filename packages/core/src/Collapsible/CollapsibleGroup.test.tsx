@@ -127,6 +127,36 @@ describe('Collapsible', () => {
     expect(screen.getByText('Controlled content')).not.toBeVisible();
   });
 
+  it('self-toggles in uncontrolled mode even when onOpenChange is supplied', async () => {
+    // Regression: passing onOpenChange without isOpen must NOT make the
+    // component behave as controlled. Internal state should still drive
+    // visibility, and the callback should fire in addition.
+    const onOpenChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Collapsible trigger="Uncontrolled" onOpenChange={onOpenChange}>
+        <p>Uncontrolled content</p>
+      </Collapsible>,
+    );
+
+    const trigger = screen.getByRole('button', {name: /Uncontrolled/});
+    // Starts open (defaultIsOpen defaults to true).
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Uncontrolled content')).toBeVisible();
+
+    // Click collapses via internal state AND notifies.
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText('Uncontrolled content')).not.toBeVisible();
+    expect(onOpenChange).toHaveBeenNthCalledWith(1, false);
+
+    // Click again re-expands — proving the component isn't stuck.
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Uncontrolled content')).toBeVisible();
+    expect(onOpenChange).toHaveBeenNthCalledWith(2, true);
+  });
+
   it('renders chevron indicator', () => {
     render(
       <Collapsible trigger="With Chevron">

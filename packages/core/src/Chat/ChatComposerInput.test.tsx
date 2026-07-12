@@ -2,6 +2,7 @@
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
+import {ChatComposer} from './ChatComposer';
 import {ChatComposerInput} from './ChatComposerInput';
 import type {
   ChatComposerTrigger,
@@ -128,6 +129,29 @@ describe('ChatComposerInput', () => {
       const textbox = screen.getByRole('textbox');
       fireEvent.keyDown(textbox, {key: 'Enter'});
       expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('keeps parent submit flow when child onChange observes input changes', () => {
+      const onSubmit = vi.fn();
+      const onInputChange = vi.fn();
+      render(
+        <ChatComposer
+          onSubmit={onSubmit}
+          input={<ChatComposerInput onChange={onInputChange} />}
+        />,
+      );
+
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello world';
+      fireEvent.input(textbox);
+
+      expect(onInputChange).toHaveBeenLastCalledWith('hello world');
+
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+
+      expect(onSubmit).toHaveBeenCalledWith('hello world');
+      expect(onInputChange).toHaveBeenLastCalledWith('');
+      expect(textbox.textContent).toBe('');
     });
   });
 

@@ -37,6 +37,8 @@ import {execSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {createRequire} from 'node:module';
 
+import {expandWorkspaceDirs} from './lib/workspace-globs.mjs';
+
 const require = createRequire(import.meta.url);
 const {
   CATEGORIES,
@@ -83,25 +85,8 @@ function readConfig() {
 
 // ---- discover publishable packages --------------------------------------
 function discoverPackages() {
-  const ws = fs.readFileSync(path.join(ROOT, 'pnpm-workspace.yaml'), 'utf8');
-  const globs = [...ws.matchAll(/^\s*-\s*["']?([^"'\n]+)["']?/gm)].map(m =>
-    m[1].trim(),
-  );
-  const dirs = new Set();
-  for (const g of globs) {
-    const base = g.replace(/\/\*+$/, '');
-    const abs = path.join(ROOT, base);
-    if (!fs.existsSync(abs)) continue;
-    if (g.endsWith('*')) {
-      for (const d of fs.readdirSync(abs, {withFileTypes: true})) {
-        if (d.isDirectory()) dirs.add(path.join(abs, d.name));
-      }
-    } else {
-      dirs.add(abs);
-    }
-  }
   const pkgs = [];
-  for (const dir of dirs) {
+  for (const dir of expandWorkspaceDirs(ROOT)) {
     const pj = path.join(dir, 'package.json');
     if (!fs.existsSync(pj)) continue;
     const p = JSON.parse(fs.readFileSync(pj, 'utf8'));

@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {CodeBlock} from './CodeBlock';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {dracula} from '../theme/syntax';
@@ -70,6 +70,41 @@ describe('CodeBlock', () => {
     await waitFor(() => {
       expect(politeRegion()).toHaveTextContent('Copied');
     });
+  });
+
+  it('keeps the copied indicator a full 2s after a rapid re-copy', async () => {
+    vi.useFakeTimers();
+    try {
+      render(<CodeBlock code="const x = 1;" language="javascript" />);
+      fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+      // Flush the async clipboard write.
+      await act(async () => {});
+      expect(screen.getByRole('button', {name: 'Copied'})).toBeInTheDocument();
+
+      // 1.5s later the user copies again.
+      act(() => {
+        vi.advanceTimersByTime(1500);
+      });
+      fireEvent.click(screen.getByRole('button', {name: 'Copied'}));
+      await act(async () => {});
+
+      // 600ms after the second copy (2.1s after the first): the first
+      // click's timer must not have reverted the indicator early.
+      act(() => {
+        vi.advanceTimersByTime(600);
+      });
+      expect(screen.getByRole('button', {name: 'Copied'})).toBeInTheDocument();
+
+      // It resets 2s after the most recent copy.
+      act(() => {
+        vi.advanceTimersByTime(1400);
+      });
+      expect(
+        screen.getByRole('button', {name: 'Copy code'}),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('does NOT collapse the block when the copy button is clicked', () => {

@@ -11,8 +11,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
     "check:package-boundaries": "node scripts/check-package-boundaries.js",
-    "check:repo": "pnpm check:sync && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media",
+    "check:repo": "pnpm check:sync && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits",
     "check:changesets": "node scripts/check-changesets.mjs",
+    "check:executable-bits": "node scripts/check-executable-bits.mjs",
     "check:demo-media": "node scripts/check-demo-media.mjs",
     "check:sync": "node scripts/check-sync.js",
     "lint": "pnpm check:repo && eslint . --cache",
@@ -38,15 +39,16 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@changesets/cli": "^2.31.0",
-    "@eslint-react/eslint-plugin": "^5.10.0",
+    "@eslint-react/eslint-plugin": "^5.10.4",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
     "@testing-library/user-event": "^14.5.0",
     "@types/node": "^25.9.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^4.3.0",
-    "@vitest/coverage-v8": "^2.1.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "@vitest/coverage-v8": "^4.1.9",
+    "dom-accessibility-api": "^0.6.3",
     "esbuild": "^0.28.1",
     "eslint": "^10.6.0",
     "eslint-plugin-react-compiler": "19.1.0-rc.2",
@@ -60,22 +62,11 @@
     "tsup": "^8.3.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.62.1",
+    "vite": "catalog:",
     "vite-plugin-singlefile": "^2.3.3",
-    "vitest": "^2.1.0"
+    "vitest": "^4.1.9"
   },
   "packageManager": "pnpm@11.10.0",
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "onFail": "error"
-    }
-  },
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "packages/themes/*",
-    "internal/*"
-  ],
   "lint-staged": {
     "*.{ts,tsx}": "eslint --cache --fix",
     "*.{ts,tsx,md}": "prettier --write"

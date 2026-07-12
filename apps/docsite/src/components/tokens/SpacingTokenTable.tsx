@@ -51,7 +51,6 @@ export function SpacingTokenTable({theme}: TokenTableProps) {
       ]}
       density="spacious"
       dividers="rows"
-      hasHover
     />
   );
 }
