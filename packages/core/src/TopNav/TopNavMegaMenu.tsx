@@ -43,6 +43,7 @@ import {
   borderVars,
 } from '../theme/tokens.stylex';
 import {usePopover} from '../Popover/usePopover';
+import {HOVER_CLICK_GUARD_MS} from '../hooks/useMenuHover';
 import {Grid} from '../Grid/Grid';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {mergeProps, mergeRefs} from '../utils';
@@ -344,12 +345,14 @@ function DefaultMegaMenu({
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
   const clickLockedRef = useRef(false);
+  const hoverOpenedAtRef = useRef(0);
 
   const handlePopoverShow = useCallback(() => {
     onOpenChange?.(true);
   }, [onOpenChange]);
 
   const handlePopoverHide = useCallback(() => {
+    hoverOpenedAtRef.current = 0;
     onOpenChange?.(false);
   }, [onOpenChange]);
 
@@ -388,6 +391,11 @@ function DefaultMegaMenu({
   const scheduleShow = useCallback(() => {
     clearTimeouts();
     showTimeoutRef.current = setTimeout(() => {
+      // Stamp only when hover actually opens the menu, so re-entering the
+      // trigger of an already-open menu does not re-arm the click guard
+      if (!popover.isOpen) {
+        hoverOpenedAtRef.current = Date.now();
+      }
       popover.show({skipAutoFocus: true});
     }, delay);
   }, [clearTimeouts, popover, delay]);
@@ -414,6 +422,10 @@ function DefaultMegaMenu({
   const handleClick = useCallback(() => {
     clearTimeouts();
     if (popover.isOpen) {
+      // Swallow the click that naturally follows a hover-open
+      if (Date.now() - hoverOpenedAtRef.current < HOVER_CLICK_GUARD_MS) {
+        return;
+      }
       clickLockedRef.current = false;
       popover.hide();
       triggerButtonRef.current?.focus();
