@@ -28,11 +28,7 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
 export type ChatMessageStatus =
-  | 'sending'
-  | 'sent'
-  | 'delivered'
-  | 'read'
-  | 'error';
+  'sending' | 'sent' | 'delivered' | 'read' | 'error';
 
 const STATUS_CONFIG: Record<
   ChatMessageStatus,
@@ -118,6 +114,7 @@ export function ChatMessageMetadata({
   xstyle,
   className,
   style,
+  ...rest
 }: ChatMessageMetadataProps) {
   const msgContext = useChatMessageContext();
   const sender = msgContext?.sender ?? 'assistant';
@@ -142,7 +139,8 @@ export function ChatMessageMetadata({
         ),
         className,
         style,
-      )}>
+      )}
+      {...rest}>
       {timestamp != null && <span>{timestamp}</span>}
       {timestamp != null && (footer != null || statusConfig != null) && (
         <span>·</span>

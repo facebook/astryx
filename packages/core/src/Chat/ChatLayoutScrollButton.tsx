@@ -118,11 +118,13 @@ export function ChatLayoutScrollButton({
   xstyle,
   className,
   style,
+  ...rest
 }: ChatLayoutScrollButtonProps) {
   return (
     <div
       ref={ref}
-      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}>
+      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}
+      {...rest}>
       <div
         {...stylex.props(
           styles.container,
