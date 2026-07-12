@@ -13,6 +13,9 @@ import {createElement, useState} from 'react';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Divider} from '@astryxdesign/core';
+import {Button} from '@astryxdesign/core/Button';
+import {Card} from '@astryxdesign/core/Card';
+import {Popover} from '@astryxdesign/core/Popover';
 import {Switch} from '@astryxdesign/core/Switch';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {NumberInput} from '@astryxdesign/core/NumberInput';
@@ -30,7 +33,9 @@ import {resolveElementDescriptor} from './resolveElements';
 import type {
   ElementDescriptor,
   PropDoc,
+  TypeDefinition,
 } from '../../generated/componentRegistry';
+import {CodeExampleBlock} from '../CodeExampleBlock';
 import {MarkdownText} from '../MarkdownText';
 
 function formatType(type: string, defaultValue?: string): React.ReactNode {
@@ -62,6 +67,58 @@ function formatType(type: string, defaultValue?: string): React.ReactNode {
     );
   }
   return type;
+}
+
+/**
+ * "View {Type}" popovers for props whose documented type references a named
+ * type exported from the component's package (e.g. `SearchSource<T>`). Shows
+ * the extracted declaration so readers can inspect the shape without leaving
+ * the props table (#2682). Mirrors the Popover + Card + CodeExampleBlock
+ * pattern used by PackageActions.
+ */
+function PropTypeDefinitions({
+  prop,
+  typeDefs,
+}: {
+  prop: PropDoc;
+  typeDefs: TypeDefinition[];
+}) {
+  const defs = (prop.typeRefs ?? [])
+    .map(name => typeDefs.find(def => def.name === name))
+    .filter(def => def != null);
+  if (defs.length === 0) {
+    return null;
+  }
+
+  return (
+    <HStack gap={1} style={{marginTop: 6}}>
+      {defs.map(def => (
+        <Popover
+          key={def.name}
+          width={480}
+          label={`${def.name} type definition`}
+          content={
+            <VStack gap={1}>
+              <Text type="supporting" color="secondary">
+                {def.sourcePath}
+              </Text>
+              <Card padding={0}>
+                <CodeExampleBlock
+                  code={def.definition}
+                  language="typescript"
+                  size="sm"
+                  hasCopyButton
+                  maxHeight={320}
+                  width="100%"
+                />
+              </Card>
+            </VStack>
+          }>
+          <Button variant="ghost" size="sm" label={`View ${def.name}`} />
+        </Popover>
+      ))}
+    </HStack>
+  );
 }
 
 function resolveSlotElement(
@@ -468,12 +525,14 @@ function InlineControl({
 
 function PropRow({
   prop,
+  typeDefs,
   knob,
   value,
   onChange,
   isMobile,
 }: {
   prop: PropDoc;
+  typeDefs: TypeDefinition[];
   knob?: KnobProp;
   value?: unknown;
   onChange?: (next: unknown) => void;
@@ -493,6 +552,7 @@ function PropRow({
             {prop.description}
           </MarkdownText>
         )}
+        <PropTypeDefinitions prop={prop} typeDefs={typeDefs} />
         {knob && onChange && (
           <InlineControl
             control={knob.control}
@@ -521,6 +581,7 @@ function PropRow({
             {prop.description}
           </MarkdownText>
         )}
+        <PropTypeDefinitions prop={prop} typeDefs={typeDefs} />
       </div>
       {knob && onChange && (
         <div style={{flexBasis: 200, flexShrink: 0}}>
@@ -538,6 +599,7 @@ function PropRow({
 
 interface PlaygroundPropsTableProps {
   props: PropDoc[];
+  typeDefs: TypeDefinition[];
   knobs: KnobProp[];
   state: Record<string, unknown>;
   onPropChange: (name: string, value: unknown) => void;
@@ -545,6 +607,7 @@ interface PlaygroundPropsTableProps {
 
 export function PlaygroundPropsTable({
   props,
+  typeDefs,
   knobs,
   state,
   onPropChange,
@@ -569,6 +632,7 @@ export function PlaygroundPropsTable({
                 <Divider />
                 <PropRow
                   prop={prop}
+                  typeDefs={typeDefs}
                   knob={knobMap.get(prop.name)}
                   value={state[prop.name]}
                   onChange={next => onPropChange(prop.name, next)}
@@ -590,6 +654,7 @@ export function PlaygroundPropsTable({
                 <Divider />
                 <PropRow
                   prop={prop}
+                  typeDefs={typeDefs}
                   knob={knobMap.get(prop.name)}
                   value={state[prop.name]}
                   onChange={next => onPropChange(prop.name, next)}
