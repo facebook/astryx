@@ -132,6 +132,10 @@ export function TopNavMegaMenuFeaturedCard({
   linkLabel,
   linkHref,
   children,
+  xstyle,
+  className,
+  style,
+  ...rest
 }: TopNavMegaMenuFeaturedCardProps) {
   const LinkComponent = useLinkComponent();
   return (
@@ -139,8 +143,11 @@ export function TopNavMegaMenuFeaturedCard({
       ref={ref}
       {...mergeProps(
         themeProps('top-nav-mega-menu-featured-card'),
-        stylex.props(styles.root),
-      )}>
+        stylex.props(styles.root, xstyle),
+        className,
+        style,
+      )}
+      {...rest}>
       {image && (
         <img src={image} alt={imageAlt ?? ''} {...stylex.props(styles.image)} />
       )}

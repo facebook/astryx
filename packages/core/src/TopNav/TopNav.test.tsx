@@ -16,6 +16,7 @@ import {TopNav} from './TopNav';
 import {TopNavHeading} from './TopNavHeading';
 import {NavIcon} from '../NavIcon';
 import {TopNavItem} from './TopNavItem';
+import {TopNavMegaMenuFeaturedCard} from './TopNavMegaMenuFeaturedCard';
 import {LinkProvider} from '../Link/LinkProvider';
 
 function CustomLink({
@@ -397,5 +398,22 @@ describe('TopNavItem', () => {
     const link = screen.getByRole('link', {name: 'Home'});
     expect(link).toHaveAttribute('data-custom-link');
     expect(link).not.toHaveAttribute('data-another-link');
+  });
+
+  describe('TopNavMegaMenuFeaturedCard rest forwarding', () => {
+    it('forwards data-testid, id, and aria-* to the root element', () => {
+      render(
+        <TopNavMegaMenuFeaturedCard
+          title="What's new"
+          description="Details"
+          data-testid="featured-card"
+          id="card-1"
+          aria-label="Featured"
+        />,
+      );
+      const card = screen.getByTestId('featured-card');
+      expect(card).toHaveAttribute('id', 'card-1');
+      expect(card).toHaveAttribute('aria-label', 'Featured');
+    });
   });
 });

@@ -754,6 +754,17 @@ describe('SideNavSection', () => {
     const group = screen.getByRole('group');
     expect(group.style.marginTop).toBe('16px');
   });
+
+  it('forwards arbitrary pass-through attributes (id, aria-*) to root element', () => {
+    render(
+      <SideNavSection title="Main" id="section-1" aria-describedby="hint">
+        <SideNavItem label="Dashboard" />
+      </SideNavSection>,
+    );
+    const group = screen.getByRole('group');
+    expect(group).toHaveAttribute('id', 'section-1');
+    expect(group).toHaveAttribute('aria-describedby', 'hint');
+  });
 });
 
 // =============================================================================

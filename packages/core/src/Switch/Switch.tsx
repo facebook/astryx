@@ -357,6 +357,7 @@ export function Switch({
   className,
   style,
   ref,
+  ...rest
 }: SwitchProps) {
   const id = useId();
   const descriptionID = useId();
@@ -492,7 +493,8 @@ export function Switch({
         stylex.props(width != null && dynamicWidthStyles.width(width), xstyle),
         className,
         style,
-      )}>
+      )}
+      {...rest}>
       <div
         ref={el => {
           // Interaction (hover/focus) listeners for the disabled-message

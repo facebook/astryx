@@ -508,4 +508,23 @@ describe('Switch', () => {
       expect([...data.keys()]).toEqual([]);
     });
   });
+
+  describe('rest forwarding', () => {
+    it('forwards data-testid, id, and aria-* to the root element', () => {
+      const {container} = render(
+        <Switch
+          label="Notifications"
+          value={false}
+          onChange={() => {}}
+          data-testid="my-switch"
+          id="switch-1"
+          aria-label="Toggle notifications"
+        />,
+      );
+      const root = container.querySelector('[data-testid="my-switch"]');
+      expect(root).not.toBeNull();
+      expect(root).toHaveAttribute('id', 'switch-1');
+      expect(root).toHaveAttribute('aria-label', 'Toggle notifications');
+    });
+  });
 });
