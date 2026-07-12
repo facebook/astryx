@@ -201,6 +201,34 @@
   }
 
   /* ===========================================================================
+     AspectRatio Fit Baseline
+     =========================================================================== */
+
+  /*
+   * Child sizing for AspectRatio's `fit` prop — the component reflects the
+   * prop as `data-fit` and these rules size the child, so consumers don't
+   * hand-write width/height/object-fit on every media child. Same mechanism
+   * as the [data-astryx-media] baseline below: the component emits the
+   * attribute, the reset supplies the zero-specificity baseline, and any
+   * styling the child sets itself still wins. `fit="center"` needs no rules
+   * here — the component centers the child from its own wrapper.
+   */
+  :where(.astryx-aspect-ratio[data-fit="cover"], .astryx-aspect-ratio[data-fit="contain"])
+    > :where(div)
+    > :where(*) {
+    width: 100%;
+    height: 100%;
+  }
+
+  :where(.astryx-aspect-ratio[data-fit="cover"]) > :where(div) > :where(img, video) {
+    object-fit: cover;
+  }
+
+  :where(.astryx-aspect-ratio[data-fit="contain"]) > :where(div) > :where(img, video) {
+    object-fit: contain;
+  }
+
+  /* ===========================================================================
      Forms
      =========================================================================== */
 

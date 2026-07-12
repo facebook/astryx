@@ -9,7 +9,7 @@
  * SYNC: When AspectRatio.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeAll} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {AspectRatio} from './AspectRatio';
 
@@ -175,5 +175,127 @@ describe('AspectRatio', () => {
     );
     const video = screen.getByTestId('video');
     expect(video).toBeInTheDocument();
+  });
+
+  describe('fit', () => {
+    it('reflects fit="cover" as a class token and data attribute', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="cover" data-testid="aspect-ratio">
+          <img src="test.jpg" alt="Test" />
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      // The reflected surface is what the reset.css baseline rules key on.
+      expect(element.className).toContain('cover');
+      expect(element).toHaveAttribute('data-fit', 'cover');
+    });
+
+    it('reflects fit="contain" as a class token and data attribute', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="contain" data-testid="aspect-ratio">
+          <img src="test.jpg" alt="Test" />
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      expect(element.className).toContain('contain');
+      expect(element).toHaveAttribute('data-fit', 'contain');
+    });
+
+    it('emits no fit reflection when fit is omitted (back-compat)', () => {
+      render(
+        <AspectRatio ratio={16 / 9} data-testid="aspect-ratio">
+          <img src="test.jpg" alt="Test" data-testid="image" />
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      expect(element).not.toHaveAttribute('data-fit');
+      // Without data-fit, none of the reset.css fit rules can match, so
+      // existing self-styled children render exactly as before.
+      expect(screen.getByTestId('image')).not.toHaveAttribute('class');
+    });
+
+    it('never touches the child element props', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="cover">
+          <img
+            src="test.jpg"
+            alt="Test"
+            data-testid="image"
+            className="consumer-class"
+            style={{objectFit: 'contain'}}
+          />
+        </AspectRatio>,
+      );
+      const image = screen.getByTestId('image');
+      // Fit styling is pure CSS (zero-specificity reset rules); the child's
+      // own className/style pass through untouched and always win, so
+      // children that already size themselves keep their behavior.
+      expect(image.className).toBe('consumer-class');
+      expect(image.style.objectFit).toBe('contain');
+    });
+
+    it('centers the child via the wrapper with fit="center"', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="center">
+          <img src="test.jpg" alt="Test" data-testid="image" />
+        </AspectRatio>,
+      );
+      const image = screen.getByTestId('image');
+      expect(image).not.toHaveAttribute('class');
+      const wrapper = image.parentElement;
+      expect(wrapper?.className).toContain('childCenter');
+    });
+
+    it('does not center the wrapper for other fit values', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="cover">
+          <img src="test.jpg" alt="Test" data-testid="image" />
+        </AspectRatio>,
+      );
+      const wrapper = screen.getByTestId('image').parentElement;
+      expect(wrapper?.className).not.toContain('childCenter');
+    });
+  });
+
+  describe('reset.css fit baseline rules', () => {
+    // The cover/contain child sizing ships as zero-specificity baseline
+    // rules in reset.css keyed on the reflected data-fit attribute (same
+    // mechanism as the [data-astryx-media] color-scheme baseline). These
+    // assertions keep the stylesheet in sync with the component contract.
+    let resetCSS: string;
+
+    beforeAll(async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      resetCSS = fs.readFileSync(
+        path.resolve(__dirname, '../reset.css'),
+        'utf-8',
+      );
+    });
+
+    it('sizes the child to fill the box for cover and contain', () => {
+      const fillMatch = resetCSS.match(
+        /:where\(\.astryx-aspect-ratio\[data-fit="cover"\], \.astryx-aspect-ratio\[data-fit="contain"\]\)\s*>\s*:where\(div\)\s*>\s*:where\(\*\)\s*\{([^}]+)\}/,
+      );
+      expect(fillMatch).not.toBeNull();
+      expect(fillMatch![1]).toContain('width: 100%');
+      expect(fillMatch![1]).toContain('height: 100%');
+    });
+
+    it('crops media with object-fit: cover for fit="cover"', () => {
+      const coverMatch = resetCSS.match(
+        /:where\(\.astryx-aspect-ratio\[data-fit="cover"\]\)\s*>\s*:where\(div\)\s*>\s*:where\(img, video\)\s*\{([^}]+)\}/,
+      );
+      expect(coverMatch).not.toBeNull();
+      expect(coverMatch![1]).toContain('object-fit: cover');
+    });
+
+    it('letterboxes media with object-fit: contain for fit="contain"', () => {
+      const containMatch = resetCSS.match(
+        /:where\(\.astryx-aspect-ratio\[data-fit="contain"\]\)\s*>\s*:where\(div\)\s*>\s*:where\(img, video\)\s*\{([^}]+)\}/,
+      );
+      expect(containMatch).not.toBeNull();
+      expect(containMatch![1]).toContain('object-fit: contain');
+    });
   });
 });
