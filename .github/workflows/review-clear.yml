@@ -2,19 +2,22 @@
 
 # Auto-clear the review gate after an approval — including on FORK PRs.
 #
-# The review-signal "clear" job runs on pull_request_review, but for FORK PRs
-# that event's GITHUB_TOKEN is READ-ONLY, so it 403s trying to remove labels /
-# set the check — a fork approval never clears the gate on its own.
+# The gate is set by review-signal's "flag" job (label needs:code-review +
+# a pending "review-required" commit status). Clearing can't run on the raw
+# pull_request_review event for fork PRs (read-only token → 403). So this runs
+# on workflow_run after "Review signal" completes for a review submission, from
+# the base repo with a write-capable token that works for forks.
 #
-# This workflow runs on workflow_run after "Review signal" completes. It runs
-# from the base repo with the base-repo token (works for forks), resolves the
-# PR the review belonged to, and re-dispatches the review-signal "flag" logic
-# for that PR. The flag job already reads approvals and clears the gate
-# fork-safely; this just triggers it automatically instead of needing a manual
-# dispatch after every fork approval.
+# It clears DIRECTLY (no re-dispatch hop, which was unreliable): resolve the PR,
+# check whether an entitled CODEOWNER has approved, and if so drop the
+# needs:code-review label, set the review-required status to success, and
+# neutralize any stale action_required "review-required" CHECK RUN left over
+# from the pre-status gate (that stale check-run otherwise drags the status
+# rollup to FAILURE even when the status is success).
 #
-# It only reads run metadata and dispatches another workflow — it never checks
-# out or runs PR-controlled code.
+# Clearing only ever REMOVES the code gate — an approval can satisfy a gate, not
+# create one — so this needs no risk detection. It never checks out or runs
+# PR-controlled code.
 
 name: Review clear
 
@@ -26,50 +29,118 @@ on:
 permissions: {}
 
 jobs:
-  reclear:
-    # Only for review-signal runs that were triggered by a review submission.
+  clear:
     if: github.event.workflow_run.event == 'pull_request_review'
     runs-on: ubuntu-latest
     permissions:
-      actions: write
-      pull-requests: read
+      pull-requests: write
+      statuses: write
+      checks: write
+      contents: read
     steps:
-      - name: Resolve PR and re-dispatch the flag logic
+      - name: Clear the code gate if an entitled owner approved
         uses: actions/github-script@v9
         with:
           script: |
             const { owner, repo } = context.repo;
             const run = context.payload.workflow_run;
+            const CODE = 'needs:code-review';
 
-            // workflow_run.pull_requests is empty for fork PRs, so resolve the
-            // PR from the run's head SHA via the commit->PRs association.
-            let prNumber = (run.pull_requests && run.pull_requests[0] && run.pull_requests[0].number) || null;
-            if (!prNumber) {
+            // Resolve the PR from the run head SHA (pull_requests is empty on forks).
+            let pr = run.pull_requests && run.pull_requests[0];
+            if (!pr) {
               try {
                 const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
                   owner, repo, commit_sha: run.head_sha,
                 });
-                const open = data.find((p) => p.state === 'open') || data[0];
-                if (open) prNumber = open.number;
+                pr = data.find((p) => p.state === 'open') || data[0];
               } catch (e) {
                 core.warning(`Could not resolve PR from ${run.head_sha}: ${e.message}`);
               }
             }
-            if (!prNumber) {
-              core.info('No PR resolved for this review run; nothing to re-clear.');
+            if (!pr) { core.info('No PR resolved for this review run.'); return; }
+            const prNumber = pr.number;
+
+            // Full PR (labels + head sha).
+            const { data: full } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            const headSha = full.head.sha;
+            const labels = full.labels.map((l) => l.name);
+
+            // Read CODEOWNERS default owners (the `*` line), ignoring comments.
+            async function codeownerHandles() {
+              try {
+                const { data } = await github.rest.repos.getContent({
+                  owner, repo, path: '.github/CODEOWNERS', ref: full.base.ref,
+                });
+                const text = Buffer.from(data.content, 'base64').toString('utf8');
+                const star = text.split('\n').map((l) => l.trim())
+                  .filter((l) => !l.startsWith('#')).find((l) => l.startsWith('*'));
+                return ((star || '').match(/@[A-Za-z0-9-]+/g) || []).map((h) => h.slice(1).toLowerCase());
+              } catch (e) {
+                core.warning(`Could not read CODEOWNERS: ${e.message}`);
+                return [];
+              }
+            }
+            const codeOwners = await codeownerHandles();
+
+            // Did an entitled CODEOWNER approve (latest review state per user)?
+            let codeApproved = false;
+            try {
+              const reviews = await github.paginate(github.rest.pulls.listReviews, {
+                owner, repo, pull_number: prNumber, per_page: 100,
+              });
+              const latest = new Map();
+              for (const r of reviews) {
+                if (!r.user || r.state === 'COMMENTED') continue;
+                latest.set(r.user.login.toLowerCase(), r.state);
+              }
+              for (const [login, state] of latest) {
+                if (state === 'APPROVED' && codeOwners.includes(login)) codeApproved = true;
+              }
+            } catch (e) {
+              core.warning(`Could not read reviews: ${e.message}`);
+            }
+
+            if (!codeApproved) {
+              core.info(`PR #${prNumber}: no entitled code-owner approval; leaving gate as-is.`);
               return;
             }
 
-            // Re-dispatch the review-signal flag logic for this PR. The flag job
-            // reads the approval and clears the gate with a fork-safe token.
+            // Clear: drop the label (ignore if already gone), set status success,
+            // and neutralize any stale action_required review-required check run.
+            if (labels.includes(CODE)) {
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number: prNumber, name: CODE });
+                core.info(`Removed ${CODE} on #${prNumber}.`);
+              } catch (e) {
+                core.warning(`Could not remove ${CODE} (may already be gone): ${e.message}`);
+              }
+            }
             try {
-              await github.rest.actions.createWorkflowDispatch({
-                owner, repo,
-                workflow_id: 'review-signal.yml',
-                ref: 'main',
-                inputs: { pr: String(prNumber) },
+              await github.rest.repos.createCommitStatus({
+                owner, repo, sha: headSha, context: 'review-required',
+                state: 'success', description: 'Cleared by code-owner approval.',
               });
-              core.info(`Re-dispatched review-signal flag for PR #${prNumber} (approval auto-clear).`);
+              core.info(`review-required status → success on #${prNumber}.`);
             } catch (e) {
-              core.warning(`Could not dispatch review-signal for #${prNumber}: ${e.message}`);
+              core.warning(`Could not set review-required status: ${e.message}`);
+            }
+            // Neutralize stale check-run(s) of the same name so the rollup isn't
+            // dragged to failure by a pre-status action_required leftover.
+            try {
+              const { data } = await github.rest.checks.listForRef({
+                owner, repo, ref: headSha, check_name: 'review-required', per_page: 100,
+              });
+              for (const cr of data.check_runs) {
+                if (cr.conclusion && cr.conclusion !== 'success' && cr.conclusion !== 'neutral') {
+                  await github.rest.checks.update({
+                    owner, repo, check_run_id: cr.id,
+                    conclusion: 'neutral',
+                    output: { title: 'Superseded by review-required status', summary: 'Cleared by code-owner approval; see the review-required status.' },
+                  });
+                  core.info(`Neutralized stale check-run ${cr.id} on #${prNumber}.`);
+                }
+              }
+            } catch (e) {
+              core.warning(`Could not neutralize stale check-run: ${e.message}`);
             }

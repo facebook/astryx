@@ -92,6 +92,7 @@ jobs:
       pull-requests: write
       contents: read
       statuses: write
+      checks: write
     steps:
       - name: Detect signals and route
         uses: actions/github-script@v9
@@ -463,6 +464,27 @@ jobs:
               core.info(`review-required status: ${codeGated ? 'pending' : 'success'}`);
             } catch (e) {
               core.warning(`Could not set review-required status: ${e.message}`);
+            }
+            // Neutralize any stale "review-required" CHECK RUN left over from the
+            // pre-status gate. Such a leftover (conclusion action_required) drags
+            // the status rollup to FAILURE even though we now gate via a commit
+            // status — so once the status is set, clear the old check-run.
+            try {
+              const { data } = await github.rest.checks.listForRef({
+                owner, repo, ref: pr.head.sha, check_name: 'review-required', per_page: 100,
+              });
+              for (const cr of data.check_runs) {
+                if (cr.conclusion && cr.conclusion !== 'success' && cr.conclusion !== 'neutral') {
+                  await github.rest.checks.update({
+                    owner, repo, check_run_id: cr.id,
+                    conclusion: 'neutral',
+                    output: { title: 'Superseded by review-required status', summary: 'The gate is now a review-required commit status; see that context.' },
+                  });
+                  core.info(`Neutralized stale review-required check-run ${cr.id}.`);
+                }
+              }
+            } catch (e) {
+              core.warning(`Could not neutralize stale check-run: ${e.message}`);
             }
             } // end flagOne
 
