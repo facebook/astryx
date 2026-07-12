@@ -69,8 +69,8 @@ const styles: Record<string, CSSProperties> = {
   propertyActions: {
     marginTop: 'auto',
   },
-  terminalArea: {
-    height: '100%',
+  terminalPanel: {
+    flexShrink: 0,
     overflow: 'hidden',
   },
 };
@@ -301,46 +301,40 @@ export default function ResizableWorkspacePage() {
                           label="Resize terminal"
                         />
                         {!bottomPanel.isCollapsed && (
-                          <div
-                            style={{
-                              height: bottomPanel.size,
-                              flexShrink: 0,
-                              overflow: 'hidden',
-                            }}>
-                            <Stack
-                              direction="vertical"
-                              style={styles.contentFill}>
-                              <TabList
-                                value={activeTermTab}
-                                onChange={val => setActiveTermTab(val)}
+                          <Stack
+                            direction="vertical"
+                            height={bottomPanel.size}
+                            style={styles.terminalPanel}>
+                            <TabList
+                              value={activeTermTab}
+                              onChange={val => setActiveTermTab(val)}
+                              size="sm"
+                              hasDivider={false}
+                              style={styles.tabListPadding}>
+                              <Tab label="Terminal" value="terminal" />
+                              <Tab label="Problems" value="problems" />
+                              <Tab label="Output" value="output" />
+                              <Tab label="Debug" value="debug" />
+                            </TabList>
+                            <StackItem
+                              size="fill"
+                              style={styles.terminalWrapper}>
+                              <CodeBlock
+                                code={TERMINAL_OUTPUT}
+                                language="bash"
+                                container="section"
+                                hasLanguageLabel={false}
+                                hasCopyButton={false}
                                 size="sm"
-                                hasDivider={false}
-                                style={styles.tabListPadding}>
-                                <Tab label="Terminal" value="terminal" />
-                                <Tab label="Problems" value="problems" />
-                                <Tab label="Output" value="output" />
-                                <Tab label="Debug" value="debug" />
-                              </TabList>
-                              <StackItem
-                                size="fill"
-                                style={styles.terminalWrapper}>
-                                <CodeBlock
-                                  code={TERMINAL_OUTPUT}
-                                  language="bash"
-                                  container="section"
-                                  hasLanguageLabel={false}
-                                  hasCopyButton={false}
-                                  size="sm"
-                                  style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    borderWidth: 0,
-                                    borderRadius: 0,
-                                  }}
-                                />
-                              </StackItem>
-                            </Stack>
-                          </div>
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  borderWidth: 0,
+                                  borderRadius: 0,
+                                }}
+                              />
+                            </StackItem>
+                          </Stack>
                         )}
                       </Stack>
                     </LayoutContent>
