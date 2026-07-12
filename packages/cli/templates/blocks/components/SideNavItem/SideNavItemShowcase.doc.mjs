@@ -10,5 +10,5 @@ export const doc = {
   isReady: true,
   isShowcase: true,
   aspectRatio: 4 / 3,
-  componentsUsed: ['SideNav', 'SideNavItem', 'SideNavSection'],
+  componentsUsed: ['SideNav', 'SideNavItem', 'AppShell', 'Badge'],
 };
