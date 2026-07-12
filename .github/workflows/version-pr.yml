@@ -1,0 +1,134 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Scheduled "Version Packages" PR — the human-gated half of the stable release.
+#
+# WHAT THIS DOES
+#   Maintains a single long-lived version PR (branch: changeset-release/main)
+#   using the official changesets/action. The action runs `changeset version`
+#   (our `pnpm version-packages`, which also runs scripts/format-changelogs.mjs),
+#   commits the version bumps + formatted CHANGELOGs, and opens/updates ONE PR.
+#   It never publishes here — publishing stays in release.yml (workflow_dispatch).
+#
+# THE RELEASE RHYTHM
+#   - Cron opens/refreshes the PR every Monday and Thursday at 16:00 UTC.
+#   - A human reviews and merges it. Merging is the release decision.
+#   - After merge, run the stable `Release` workflow (release.yml dispatch) to
+#     publish the bumped versions. (Optional: auto-dispatch on merge — see note
+#     at the bottom.)
+#
+# WHY THIS IS SAFE FOR A FAST-MOVING REPO  (the race you flagged)
+#   The version PR is NOT a static snapshot taken at cron time. This workflow
+#   also runs on every push to main, and changesets/action FORCE-UPDATES the
+#   changeset-release/main branch each time: it re-runs `changeset version`
+#   against the CURRENT set of .changeset/*.md files on main and rewrites the
+#   branch. So any changeset that lands AFTER the Monday cut but BEFORE merge is
+#   automatically folded in, versions/changelogs are recomputed, and the PR
+#   diff always reflects main as of its latest push. You merge main-at-merge-
+#   time, never a stale main-at-cut-time. No changeset is dropped or double
+#   counted, because a changeset .md file is consumed (deleted) only by the
+#   `changeset version` commit that lands when the PR merges.
+#
+#   Concurrency below cancels an in-flight run when a newer push arrives, so the
+#   branch always converges on the latest main rather than racing itself.
+#
+# WHY A GITHUB APP TOKEN (not the default GITHUB_TOKEN)
+#   A PR opened/updated with the default GITHUB_TOKEN does NOT trigger other
+#   workflows (GitHub blocks that to avoid recursion), so ci.yml would never run
+#   on the version PR and the merge queue would have nothing to gate on. Using a
+#   GitHub App installation token makes the PR's pushes look like a real actor,
+#   so ci.yml runs normally. See setup at the bottom.
+
+name: Version PR
+run-name: Version PR (${{ github.event_name }})
+
+on:
+  schedule:
+    # Mon & Thu 16:00 UTC. Cron has no "Mon,Thu" list ambiguity here: day-of-week
+    # 1 = Monday, 4 = Thursday. Adjust the hour to your team's timezone.
+    - cron: "0 16 * * 1,4"
+  # Keep the PR continuously in sync with main between scheduled cuts — this is
+  # what folds post-cut changesets into the open PR (see race note above).
+  push:
+    branches: [main]
+  # Manual "cut it now" button.
+  workflow_dispatch:
+
+# Serialize on a single group and cancel the older run: whenever main moves, the
+# newest push wins and the version branch converges on latest main.
+concurrency:
+  group: version-pr
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  version-pr:
+    runs-on: ubuntu-latest
+    # Don't fan out on forks.
+    if: github.repository == 'facebook/astryx'
+    permissions:
+      contents: write        # push the changeset-release/main branch
+      pull-requests: write    # open/update the Version Packages PR
+    steps:
+      # A GitHub App token so the PR's commits trigger ci.yml / merge_group.
+      # Falls back to GITHUB_TOKEN if the App secrets aren't configured yet —
+      # in that fallback the PR is still created, but CI won't auto-run on it
+      # (you'd push an empty commit or re-open to kick CI). Configure the App
+      # to get the full experience.
+      - name: Mint app token
+        id: app-token
+        if: vars.RELEASE_BOT_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.RELEASE_BOT_APP_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+
+      # changesets/action:
+      #   - `version` runs our pnpm version-packages (changeset version +
+      #     format-changelogs), commits the result, and opens/updates the PR.
+      #   - We do NOT set `publish` here — publishing is release.yml's job.
+      - name: Create or update Version Packages PR
+        uses: changesets/action@v1
+        with:
+          version: pnpm version-packages
+          title: "Release: Version Packages"
+          commit: "chore(release): version packages"
+          # Only cut when there's something to release; if the branch has no
+          # pending changesets the action no-ops and closes any stale PR.
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SETUP (one-time)
+#
+# 1. GitHub App (recommended, so CI runs on the version PR):
+#      - Create a GitHub App in the facebook org (or reuse an existing release
+#        bot). Permissions: Contents: Read & write, Pull requests: Read & write.
+#      - Install it on facebook/astryx.
+#      - Add repo/org variable  RELEASE_BOT_APP_ID  = the App's numeric ID.
+#      - Add repo/org secret     RELEASE_BOT_PRIVATE_KEY = the App's PEM key.
+#    Until these exist, the workflow falls back to GITHUB_TOKEN (PR still opens,
+#    CI won't auto-trigger on it).
+#
+# 2. Allow Actions to create PRs:
+#      Repo Settings → Actions → General → "Allow GitHub Actions to create and
+#      approve pull requests" must be enabled (org policy may gate this).
+#
+# 3. Cadence: edit the cron above. Mon/Thu 16:00 UTC is the default.
+#
+# OPTIONAL — fully hands-off publish on merge:
+#   To skip the manual release.yml dispatch, add a tiny job that fires when the
+#   "Release: Version Packages" PR merges and calls the stable publish. Keeping
+#   it manual (current default) gives one last human gate before hitting the
+#   public npm registry, which is usually what you want for a consumed design
+#   system. Wire it up only once the cadence has proven stable.
+# ──────────────────────────────────────────────────────────────────────────────
