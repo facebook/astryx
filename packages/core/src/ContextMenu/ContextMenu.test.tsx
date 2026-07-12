@@ -127,11 +127,13 @@ describe('ContextMenu', () => {
     fireEvent.contextMenu(screen.getByText('Right-click me'), {
       clientX: 120,
       clientY: 80,
+      pageX: 120,
+      pageY: 80,
     });
 
     const anchor = container.querySelector('span[aria-hidden="true"]');
     expect(anchor).toHaveStyle({
-      position: 'fixed',
+      position: 'absolute',
       left: '120px',
       top: '80px',
     });
@@ -291,7 +293,7 @@ describe('ContextMenu', () => {
       expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
       const anchor = container.querySelector('span[aria-hidden="true"]');
       expect(anchor).toHaveStyle({
-        position: 'fixed',
+        position: 'absolute',
         left: '20px',
         top: '20px',
       });

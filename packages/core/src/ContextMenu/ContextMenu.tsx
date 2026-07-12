@@ -386,7 +386,7 @@ export function ContextMenu({
         setCursorAnchor(null);
         setOpenMode('trigger');
       } else {
-        setCursorAnchor({x: e.clientX, y: e.clientY});
+        setCursorAnchor({x: e.pageX, y: e.pageY});
         setOpenMode('cursor');
       }
     },
@@ -438,7 +438,7 @@ export function ContextMenu({
         ref={layer.ref}
         aria-hidden="true"
         style={{
-          position: 'fixed',
+          position: 'absolute',
           left: `${cursorAnchor.x}px`,
           top: `${cursorAnchor.y}px`,
           width: '1px',
