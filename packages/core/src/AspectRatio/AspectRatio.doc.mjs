@@ -14,6 +14,7 @@ export const docs = {
       {guidance: true, description: 'Express the ratio as a fraction like `16/9` or `4/3` for readability.'},
       {guidance: true, description: 'Use for media that needs consistent proportions across screen sizes.'},
       {guidance: true, description: 'Use `fit="cover"` for images and video so the component sizes the child; the child should not repeat `width`/`height`/`objectFit` styles.'},
+      {guidance: true, description: 'For a breakpoint-dependent ratio, override the ratio responsively: pass an `aspectRatio` rule via `xstyle` (StyleX), or set the `--astryx-aspect-ratio` CSS variable on the element under a `@media`/`@container` rule. The `ratio` prop is the fallback.'},
       {guidance: false, description: 'Use for general layout containers; use standard layout components instead.'},
       {guidance: false, description: 'Nest AspectRatio containers; one level is sufficient.'},
     ],
@@ -22,7 +23,7 @@ export const docs = {
     {
       name: 'ratio',
       type: 'number',
-      description: 'Aspect ratio as width/height (e.g. 16/9, 1).',
+      description: 'Aspect ratio as width/height (e.g. 16/9, 1). Emitted as a class-level `aspect-ratio: var(--astryx-aspect-ratio, <ratio>)` declaration (never inline), so `xstyle` rules or the `--astryx-aspect-ratio` variable can override it responsively.',
       required: true,
     },
     {
@@ -73,12 +74,13 @@ export const docsZh = {
       {guidance: true, description: 'Express the ratio as a fraction like `16/9` or `4/3` for readability.'},
       {guidance: true, description: 'Use for media that needs consistent proportions across screen sizes.'},
       {guidance: true, description: 'Use `fit="cover"` for images and video so the component sizes the child; the child should not repeat `width`/`height`/`objectFit` styles.'},
+      {guidance: true, description: 'For a breakpoint-dependent ratio, override the ratio responsively: pass an `aspectRatio` rule via `xstyle` (StyleX), or set the `--astryx-aspect-ratio` CSS variable on the element under a `@media`/`@container` rule. The `ratio` prop is the fallback.'},
       {guidance: false, description: 'Use for general layout containers; use standard layout components instead.'},
       {guidance: false, description: 'Nest AspectRatio containers; one level is sufficient.'},
     ],
   },
   props: [
-    {name: 'ratio', type: 'number', description: '宽高比，以宽/高表示（例如 16/9、1）。', required: true},
+    {name: 'ratio', type: 'number', description: '宽高比，以宽/高表示（例如 16/9、1）。以类级 `aspect-ratio: var(--astryx-aspect-ratio, <ratio>)` 声明输出（非内联样式），可通过 `xstyle` 规则或 `--astryx-aspect-ratio` 变量做响应式覆盖。', required: true},
     {
       name: 'shape',
       type: "'rectangle' | 'ellipse'",
@@ -115,12 +117,13 @@ export const docsDense = {
       {guidance: true, description: 'Express the ratio as a fraction like `16/9` or `4/3` for readability.'},
       {guidance: true, description: 'Use for media that needs consistent proportions across screen sizes.'},
       {guidance: true, description: 'Use `fit="cover"` for images and video so the component sizes the child; the child should not repeat `width`/`height`/`objectFit` styles.'},
+      {guidance: true, description: 'For a breakpoint-dependent ratio, override the ratio responsively: pass an `aspectRatio` rule via `xstyle` (StyleX), or set the `--astryx-aspect-ratio` CSS variable on the element under a `@media`/`@container` rule. The `ratio` prop is the fallback.'},
       {guidance: false, description: 'Use for general layout containers; use standard layout components instead.'},
       {guidance: false, description: 'Nest AspectRatio containers; one level is sufficient.'},
     ],
   },
   propDescriptions: {
-    ratio: 'width/height ratio (e.g. 16/9, 1)',
+    ratio: 'width/height ratio (e.g. 16/9, 1); class-level var(--astryx-aspect-ratio, <ratio>) so xstyle/@container overrides win',
     shape: "container shape: 'rectangle' (default) | 'ellipse' (circle at ratio 1)",
     fit: "child layout: 'cover' fill+crop | 'contain' fill+letterbox | 'center' natural size; omitted = child styles itself",
     children: 'content positioned absolutely to fill container',
