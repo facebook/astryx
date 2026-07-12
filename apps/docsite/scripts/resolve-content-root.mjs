@@ -71,11 +71,21 @@ export function getTarget() {
 }
 
 /**
- * The docsite's @astryxdesign/* dependencies, mapped to the monorepo-relative
- * dir each occupies (so the materialized cache mirrors REPO_ROOT's layout).
- * Themes live under packages/themes/<name>; everything else under packages/<name>.
+ * The docsite's @astryxdesign/* dependencies that are documented on the
+ * `latest` (production) site: the ones actually published to the stable npm
+ * `latest` dist-tag. Mapped to the monorepo-relative dir each occupies (so the
+ * materialized cache mirrors REPO_ROOT's layout — themes under
+ * packages/themes/<name>, everything else under packages/<name>).
+ *
+ * Packages that never reach the stable tag are EXCLUDED from `latest`:
+ *   - `private` packages, and
+ *   - `astryx.canaryOnly` packages (e.g. @astryxdesign/charts, @astryxdesign/lab)
+ *     — these publish only as canaries, so no stable version exists to document.
+ * This mirrors the publishable predicate in .github/workflows/release.yml's
+ * stable-publish step, so production documents exactly the stable release set.
+ * (On canary these still appear, sourced from the workspace like everything else.)
  */
-function docsiteAstryxPackages() {
+function latestPublishablePackages() {
   const pkg = JSON.parse(
     fs.readFileSync(path.join(DOCSITE_ROOT, 'package.json'), 'utf-8'),
   );
@@ -88,6 +98,16 @@ function docsiteAstryxPackages() {
         ? path.join('packages', 'themes', short.slice('theme-'.length))
         : path.join('packages', short);
       return {name, dir};
+    })
+    .filter(({dir}) => {
+      // Read the package's own workspace manifest for its publish flags. Same
+      // rule release.yml uses for the stable `latest` tag.
+      const manifestPath = path.join(REPO_ROOT, dir, 'package.json');
+      if (!fs.existsSync(manifestPath)) {
+        return false;
+      }
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+      return manifest.private !== true && manifest.astryx?.canaryOnly !== true;
     });
 }
 
@@ -208,7 +228,7 @@ export function resolveContentRoot() {
 
   // latest
   const version = latestPublishedVersion();
-  const packages = docsiteAstryxPackages();
+  const packages = latestPublishablePackages();
   const contentRoot = materializeFromNpm(version, packages);
   return {
     target,
