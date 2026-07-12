@@ -588,3 +588,66 @@ describe('SegmentedControl disabled state', () => {
     });
   });
 });
+
+describe('SegmentedControl data-testid forwarding', () => {
+  it('forwards data-testid to the radiogroup', () => {
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={() => {}}
+        label="View mode"
+        data-testid="view-toggle">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+
+    expect(screen.getByTestId('view-toggle')).toBe(
+      screen.getByRole('radiogroup'),
+    );
+  });
+
+  it('forwards data-testid to an individual item button', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem
+          value="grid"
+          label="Grid"
+          data-testid="opt-grid"
+        />
+        <SegmentedControlItem
+          value="list"
+          label="List"
+          data-testid="opt-list"
+        />
+      </SegmentedControl>,
+    );
+
+    expect(screen.getByTestId('opt-grid')).toBe(
+      screen.getByRole('radio', {name: 'Grid'}),
+    );
+    expect(screen.getByTestId('opt-list')).toBe(
+      screen.getByRole('radio', {name: 'List'}),
+    );
+  });
+
+  it('does not let a forwarded prop override the computed role', () => {
+    render(
+      // A consumer-supplied role must not clobber the component's own
+      // radiogroup role (the computed role is applied after {...rest}).
+      <SegmentedControl
+        value="grid"
+        onChange={() => {}}
+        label="View mode"
+        role="tablist"
+        data-testid="view-toggle">
+        <SegmentedControlItem value="grid" label="Grid" />
+      </SegmentedControl>,
+    );
+
+    expect(screen.getByTestId('view-toggle')).toHaveAttribute(
+      'role',
+      'radiogroup',
+    );
+  });
+});
