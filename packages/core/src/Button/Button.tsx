@@ -5,14 +5,8 @@
 /**
  * @file Button.tsx
  * @input Uses React, ButtonHTMLAttributes, ReactNode
- * @output Exports Button component, ButtonProps, ButtonVariant types; plus the
- *   module-internal BUTTON_GROUP_ITEM_ATTR (deliberately not re-exported by
- *   index.ts — it is a styling detail, not public API)
+ * @output Exports Button component, ButtonProps, ButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
- *
- * Inside a ButtonGroup, Button stamps BUTTON_GROUP_ITEM_ATTR on its root and keys
- * its trailing radius off that marker rather than :last-child, so members that
- * render a trailing layer (tooltip, DropdownMenu) still round correctly (#2508).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Button/Button.doc.mjs (props table, features, implementation notes)
@@ -49,36 +43,6 @@ import {mergeProps, mergeRefs} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
-
-/**
- * Marks a Button as a member of a ButtonGroup.
- *
- * ButtonGroup rounds its end caps in CSS. The trailing corner cannot be keyed
- * off `:last-child`, because several members render an invisible layer element
- * AFTER their button: a tooltip'd Button returns a fragment of button + layer,
- * and DropdownMenu renders trigger + popover. `useLayer` renders those layers
- * inline (not portaled), so the layer — not the button — becomes `:last-child`,
- * and the real trailing button silently keeps square corners (issue #2508).
- *
- * Instead, every group member stamps this attribute, and the trailing radius is
- * keyed off `:not(:has(~ [data-astryx-group-item]))` — "no marked sibling
- * follows me". Unmarked layer elements are ignored, so the last *button* wins.
- *
- * It is stamped on BOTH the `<button>` and the link (`<a>`/LinkComponent)
- * branches: a LinkProvider can render an arbitrary tag, so a tag-based selector
- * like `~ button` would silently miss link members.
- *
- * IMPORTANT: this constant must stay in this file. StyleX only statically
- * evaluates a selector-key template literal from a *same-file* const. Importing
- * it from a `.stylex.ts` file compiles silently to a mangled selector
- * (`[x13pbwiz]`), and from a plain `.ts` file it fails to resolve at all.
- *
- * @internal Exported for tests only — NOT re-exported from `./index.ts`, so it
- * stays out of the `@astryxdesign/core` public surface. Consumers must not
- * depend on the attribute name; it is an implementation detail of the group's
- * end-cap CSS.
- */
-export const BUTTON_GROUP_ITEM_ATTR = 'data-astryx-group-item';
 
 /**
  * Base button styles
@@ -470,15 +434,36 @@ const loadingStyles = stylex.create({
   },
 });
 
-// "No marked group member follows me" — i.e. I am the last member. This
-// replaces `:last-child`, which an invisible trailing layer element (tooltip
-// surface, dropdown popover) would otherwise steal. See
-// BUTTON_GROUP_ITEM_ATTR. Kept as a same-file template literal so StyleX can
-// statically evaluate it into the compiled selector.
-const IS_LAST_ITEM = `:not(:has(~ [${BUTTON_GROUP_ITEM_ATTR}]))`;
+/**
+ * "I am the last member of the group" — the trailing end cap.
+ *
+ * NOT `:last-child`: several members render an invisible layer element AFTER
+ * their button (a tooltip'd Button returns button + layer; DropdownMenu returns
+ * trigger + popover). `useLayer` renders those inline rather than portaling
+ * them, so the layer — not the button — took the `:last-child` slot and the real
+ * trailing button silently kept square corners (#2508).
+ *
+ * Layers always carry the native `popover` attribute (useLayer.tsx), and a
+ * popover is never an in-flow member — it is `display: none` until shown, then
+ * promoted to the top layer. So "last member" is: no following element sibling
+ * that isn't a popover.
+ *
+ * Reading it the other way round — marking the *buttons* and testing for a
+ * marked sibling — is the trap: it silently reclassifies anything it doesn't
+ * recognise as "not a member", so a member wrapped in a `display: contents`
+ * wrapper (Tooltip, HoverCard) or a raw child would make the button BEFORE it
+ * round mid-group. Ignoring known layers keeps the predicate conservative: an
+ * unrecognised sibling still counts, exactly as `:last-child` did, so the worst
+ * case degrades to the old behaviour instead of a wrong corner.
+ *
+ * Kept as a same-file const: StyleX only statically evaluates a selector key
+ * from a const in the same file.
+ *
+ * The leading edge still uses `:first-child` — a member's button always precedes
+ * its own layer, so the first button is genuinely `:first-child`.
+ */
+const IS_LAST_ITEM = ':not(:has(~ *:not([popover])))';
 
-// The leading edge deliberately still uses `:first-child`: a member's button
-// always precedes its own layer, so the first button is genuinely :first-child.
 const groupStyles = stylex.create({
   horizontal: {
     borderStartStartRadius: {
@@ -672,11 +657,6 @@ export function Button({
   const isFlat = variant === 'ghost';
   const edgeCompAttr = isFlat ? {[EDGE_COMP_ATTR]: ''} : null;
 
-  // Mark group members so the trailing radius can target the last *button*
-  // rather than the last DOM node (which may be an invisible layer). Stamped on
-  // both the button and link branches — see BUTTON_GROUP_ITEM_ATTR.
-  const groupItemAttr = buttonGroup ? {[BUTTON_GROUP_ITEM_ATTR]: ''} : null;
-
   // Shared StyleX props for both button and link rendering
   const sharedStylexProps = stylex.props(
     styles.base,
@@ -790,7 +770,6 @@ export function Button({
         {...ariaLabelProp}
         {...describedByProp}
         {...edgeCompAttr}
-        {...groupItemAttr}
         onClick={handleClick}>
         {buttonContent}
       </LinkComponent>
@@ -806,7 +785,6 @@ export function Button({
         {...ariaLabelProp}
         {...describedByProp}
         {...edgeCompAttr}
-        {...groupItemAttr}
         aria-busy={isLoadingState || undefined}
         aria-disabled={useAriaDisabled || undefined}
         onClick={handleClick}

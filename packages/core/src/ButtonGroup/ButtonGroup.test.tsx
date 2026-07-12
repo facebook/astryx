@@ -19,11 +19,10 @@ import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {ButtonGroup} from './ButtonGroup';
 import {Button} from '../Button';
-// Imported from the module, not the barrel: the marker is an internal styling
-// detail and is deliberately NOT part of the package's public surface.
-import {BUTTON_GROUP_ITEM_ATTR} from '../Button/Button';
 import {IconButton} from '../IconButton';
 import {DropdownMenu} from '../DropdownMenu';
+import {Tooltip} from '../Tooltip';
+import {HoverCard} from '../HoverCard';
 
 describe('ButtonGroup', () => {
   it('renders a group with aria-label', () => {
@@ -202,16 +201,10 @@ describe('ButtonGroup', () => {
   // ===========================================================================
   // Trailing radius (issue #2508)
   //
-  // ButtonGroup rounds its end caps in CSS. The trailing corner used to be keyed
-  // off `:last-child`, but several members render an invisible layer element
-  // AFTER their button (a tooltip'd Button returns a fragment of
-  // button + layer; DropdownMenu renders trigger + popover — both are rendered
-  // inline by useLayer, NOT portaled). That layer stole the `:last-child` slot,
-  // so the real trailing button silently kept square corners.
-  //
-  // The fix: every Button inside a group stamps BUTTON_GROUP_ITEM_ATTR on its
-  // root, and the trailing radius is keyed off `:not(:has(~ [marker]))` — "no
-  // marked sibling follows me" — which ignores unmarked layer elements.
+  // The trailing end cap cannot be keyed off `:last-child`: members render an
+  // invisible layer AFTER their button (tooltip'd Button, DropdownMenu), and
+  // useLayer renders it inline rather than portaling it, so the layer steals the
+  // slot. See IS_LAST_ITEM in Button.tsx.
   //
   // HOW THESE TESTS CATCH THE BUG
   // jsdom applies no StyleX CSS, so a DOM-only test cannot prove which rule
@@ -219,17 +212,14 @@ describe('ButtonGroup', () => {
   // groupStyles to `:last-child` and it still passes). So the predicate is NOT
   // hand-copied here: `compileButtonRules()` runs the REAL StyleX babel plugin
   // over Button.tsx (same config as scripts/build-css.mjs) and reads the
-  // trailing-radius rule's selector straight out of the emitted CSS. The
-  // selector is then matched against the real rendered DOM. Revert groupStyles
-  // to `:last-child` and the extracted selector becomes `:last-child`, which the
-  // tooltip'd trailing button does not match — these go red.
+  // trailing-radius rule's selector straight out of the emitted CSS, then
+  // matches it against the real rendered DOM. Revert groupStyles to
+  // `:last-child` and these go red.
   // ===========================================================================
   describe('trailing radius (#2508)', () => {
-    const MARKER = `[${BUTTON_GROUP_ITEM_ATTR}]`;
-
     /** The group members, in DOM order (excludes invisible layer siblings). */
     const items = (group: HTMLElement): Element[] =>
-      Array.from(group.querySelectorAll(MARKER));
+      Array.from(group.querySelectorAll(':scope > *:not([popover])'));
 
     // -- Compiled CSS, read from the source -----------------------------------
 
@@ -366,7 +356,7 @@ describe('ButtonGroup', () => {
     // -- The compiled CSS contract --------------------------------------------
 
     it.each(['horizontal', 'vertical'] as const)(
-      'keys the trailing radius off the group-item marker, not :last-child (%s)',
+      'keys the trailing radius off layer-skipping, not :last-child (%s)',
       orientation => {
         render(
           <ButtonGroup label="Actions" orientation={orientation}>
@@ -380,11 +370,11 @@ describe('ButtonGroup', () => {
         for (const selector of selectors) {
           // `:last-child` is the bug: an inline layer element steals the slot.
           expect(selector).not.toContain(':last-child');
-          // The marker must survive compilation *verbatim*. StyleX only
-          // statically evaluates a same-file const; a marker imported from a
-          // .stylex.ts file compiles to a mangled selector like `[x13pbwiz]`
+          // `[popover]` must survive compilation *verbatim*. StyleX only
+          // statically evaluates a selector key from a same-file const; from a
+          // .stylex.ts file it compiles to a mangled selector like `[x13pbwiz]`
           // that matches nothing in the DOM.
-          expect(selector).toContain(`[${BUTTON_GROUP_ITEM_ATTR}]`);
+          expect(selector).toContain('[popover]');
         }
       },
     );
@@ -528,51 +518,58 @@ describe('ButtonGroup', () => {
       expect(hasRoundedTrailingCorners(only)).toBe(true);
     });
 
-    // -- The marker itself ----------------------------------------------------
+    // -- Members the group does not recognise ---------------------------------
+    //
+    // The trailing predicate must stay CONSERVATIVE: a sibling the group does
+    // not understand is still a member. Otherwise the button BEFORE it wrongly
+    // takes the trailing radius and renders as a rounded notch mid-group —
+    // worse than the bug being fixed, because it is silent and visual.
 
-    it('stamps the marker on a plain Button inside a group', () => {
+    it('does not round the preceding button when a Tooltip-wrapped member follows', () => {
       render(
         <ButtonGroup label="Actions">
-          <Button label="Copy" />
+          <Button label="Save" />
+          <Tooltip content="Rich tip">
+            <Button label="More" />
+          </Tooltip>
         </ButtonGroup>,
       );
 
-      expect(screen.getByRole('button', {name: 'Copy'})).toHaveAttribute(
-        BUTTON_GROUP_ITEM_ATTR,
-      );
+      const save = screen.getByRole('button', {name: 'Save'});
+
+      // Tooltip wraps element children in a `display: contents` <div>, so the
+      // inner Button is a DESCENDANT of the wrapper, not a DOM sibling of Save.
+      expect(hasRoundedTrailingCorners(save)).toBe(false);
     });
 
-    it('stamps the marker on the link (<a>) branch, not just <button>', () => {
+    it('does not round the preceding button when a HoverCard-wrapped member follows', () => {
       render(
         <ButtonGroup label="Actions">
-          <Button label="Docs" href="https://example.com" />
+          <Button label="Save" />
+          <HoverCard content="Preview">
+            <Button label="More" />
+          </HoverCard>
         </ButtonGroup>,
       );
 
-      // A tag selector like `~ button` would silently miss this element.
-      const link = screen.getByRole('link', {name: 'Docs'});
-      expect(link.tagName).toBe('A');
-      expect(link).toHaveAttribute(BUTTON_GROUP_ITEM_ATTR);
+      const save = screen.getByRole('button', {name: 'Save'});
+
+      // Button has no `hoverCard` prop, so wrapping is the ONLY way to put a
+      // HoverCard on a group button — this composition has no alternative.
+      expect(hasRoundedTrailingCorners(save)).toBe(false);
     });
 
-    it('does not stamp the marker on a Button outside a group', () => {
-      render(<Button label="Lonely" />);
-
-      expect(screen.getByRole('button', {name: 'Lonely'})).not.toHaveAttribute(
-        BUTTON_GROUP_ITEM_ATTR,
-      );
-    });
-
-    it('stamps the marker on IconButton members', () => {
+    it('does not round the preceding button when a raw <button> follows', () => {
       render(
-        <ButtonGroup label="Format">
-          <IconButton label="Bold" icon={<span>B</span>} />
+        <ButtonGroup label="Actions">
+          <Button label="Save" />
+          <button type="button">Custom</button>
         </ButtonGroup>,
       );
 
-      expect(screen.getByRole('button', {name: 'Bold'})).toHaveAttribute(
-        BUTTON_GROUP_ITEM_ATTR,
-      );
+      const save = screen.getByRole('button', {name: 'Save'});
+
+      expect(hasRoundedTrailingCorners(save)).toBe(false);
     });
   });
 });

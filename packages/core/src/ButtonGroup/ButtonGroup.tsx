@@ -10,13 +10,8 @@
  *
  * Children (Button, IconButton) consume the ButtonGroup context to apply
  * position-aware styles in pure CSS — no cloneElement or wrapper divs needed.
- *
- * The leading edge uses :first-child. The trailing edge CANNOT: members like a
- * tooltip'd Button or a DropdownMenu render an invisible layer element after
- * their button, which would steal the :last-child slot and leave the real
- * trailing button with square corners (#2508). Instead, each member stamps
- * BUTTON_GROUP_ITEM_ATTR and the trailing radius keys off
- * :not(:has(~ [data-astryx-group-item])) — see Button.tsx.
+ * The end-cap radius rules live in Button.tsx; see IS_LAST_ITEM there for why
+ * the trailing edge cannot use :last-child (#2508).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ButtonGroup/ButtonGroup.doc.mjs (props table, features)

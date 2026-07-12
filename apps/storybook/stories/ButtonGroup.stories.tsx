@@ -55,7 +55,12 @@ export const Vertical: Story = {
   ),
 };
 
-/** Icon-only button group for compact toolbars. */
+/**
+ * Icon-only button group for compact toolbars.
+ *
+ * The trailing button carries a tooltip, which renders an invisible layer after
+ * it in the DOM — its outer corners must still round (#2508).
+ */
 export const IconOnly: Story = {
   render: () => (
     <ButtonGroup label="Text formatting">
@@ -64,6 +69,7 @@ export const IconOnly: Story = {
       <IconButton
         label="Underline"
         icon={<Icon icon={UnderlineIcon} size="sm" />}
+        tooltip="Underline"
       />
     </ButtonGroup>
   ),
@@ -153,43 +159,24 @@ export const Mixed: Story = {
 };
 
 /**
- * Members that render their own layer compose correctly, including as the
- * trailing member.
- *
- * A DropdownMenu renders `trigger + popover`, and a tooltip'd Button renders
- * `button + tooltip layer`. Those layers are real (invisible) DOM siblings, so
- * the trailing radius is keyed off a group-item marker rather than
- * `:last-child` — otherwise the layer would steal the slot and the last button
- * would keep square outer corners (#2508).
- *
- * The outer corners of each group below should be rounded.
+ * A DropdownMenu composes as a group member — the split-button pattern, with no
+ * dedicated primitive. Its popover is an invisible DOM sibling after the
+ * trigger, so the trailing corner must still round (#2508).
  */
-export const WithLayerRenderingMembers: Story = {
+export const WithDropdownMenu: Story = {
   render: () => (
-    <div style={{display: 'flex', flexDirection: 'column', gap: 24}}>
-      <ButtonGroup label="Approve action">
-        <Button label="Allow once" variant="primary" />
-        <DropdownMenu
-          hasChevron={false}
-          button={{
-            label: 'Allow options',
-            variant: 'primary',
-            isIconOnly: true,
-            icon: <Icon icon="chevronDown" />,
-          }}
-          items={[{label: 'Allow for 30 minutes'}, {label: 'Always allow'}]}
-        />
-      </ButtonGroup>
-
-      <ButtonGroup label="Text formatting">
-        <IconButton label="Bold" icon={<BoldIcon style={iconSize} />} />
-        <IconButton label="Italic" icon={<ItalicIcon style={iconSize} />} />
-        <IconButton
-          label="Underline"
-          icon={<UnderlineIcon style={iconSize} />}
-          tooltip="Underline"
-        />
-      </ButtonGroup>
-    </div>
+    <ButtonGroup label="Approve action">
+      <Button label="Allow once" variant="primary" />
+      <DropdownMenu
+        hasChevron={false}
+        button={{
+          label: 'Allow options',
+          variant: 'primary',
+          isIconOnly: true,
+          icon: <Icon icon="chevronDown" />,
+        }}
+        items={[{label: 'Allow for 30 minutes'}, {label: 'Always allow'}]}
+      />
+    </ButtonGroup>
   ),
 };
