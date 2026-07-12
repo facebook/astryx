@@ -13,6 +13,20 @@ import {describe, it, expect, vi, beforeAll} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {AspectRatio} from './AspectRatio';
 
+/**
+ * The ratio compiles to a class-level `aspect-ratio: var(--x-aspectRatio)`
+ * declaration with the value carried by a CSS variable (so xstyle/@media
+ * and `--astryx-aspect-ratio` overrides can win). `--x-aspectRatio` is the
+ * debug-mode variable name emitted for the `aspectRatio` property.
+ */
+function ratioVar(el: HTMLElement): string {
+  return el.style.getPropertyValue('--x-aspectRatio');
+}
+
+function ratioValue(ratio: number): string {
+  return `var(--astryx-aspect-ratio, ${String(ratio)})`;
+}
+
 describe('AspectRatio', () => {
   it('renders with correct aspect ratio', () => {
     render(
@@ -22,7 +36,7 @@ describe('AspectRatio', () => {
     );
     const element = screen.getByTestId('aspect-ratio');
     expect(element).toBeInTheDocument();
-    expect(element.style.aspectRatio).toBe(String(16 / 9));
+    expect(ratioVar(element)).toBe(ratioValue(16 / 9));
   });
 
   it('children fill the container', () => {
@@ -47,7 +61,7 @@ describe('AspectRatio', () => {
       </AspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe(String(ratio));
+    expect(ratioVar(element)).toBe(ratioValue(ratio));
   });
 
   it('renders with 4:3 ratio', () => {
@@ -58,7 +72,7 @@ describe('AspectRatio', () => {
       </AspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe(String(ratio));
+    expect(ratioVar(element)).toBe(ratioValue(ratio));
   });
 
   it('renders with 1:1 square ratio', () => {
@@ -68,7 +82,7 @@ describe('AspectRatio', () => {
       </AspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe('1');
+    expect(ratioVar(element)).toBe(ratioValue(1));
   });
 
   it('renders with 21:9 ultrawide ratio', () => {
@@ -79,7 +93,7 @@ describe('AspectRatio', () => {
       </AspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe(String(ratio));
+    expect(ratioVar(element)).toBe(ratioValue(ratio));
   });
 
   it('renders an ellipse that respects the ratio (circle at 1:1)', () => {
@@ -89,7 +103,7 @@ describe('AspectRatio', () => {
       </AspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe('1');
+    expect(ratioVar(element)).toBe(ratioValue(1));
     expect(element.className).toContain('ellipse');
   });
 
@@ -101,7 +115,7 @@ describe('AspectRatio', () => {
     );
     const element = screen.getByTestId('aspect-ratio');
     // Ratio is preserved — the ellipse does not force 1:1.
-    expect(element.style.aspectRatio).toBe(String(16 / 9));
+    expect(ratioVar(element)).toBe(ratioValue(16 / 9));
     expect(element.className).toContain('ellipse');
   });
 
@@ -112,7 +126,7 @@ describe('AspectRatio', () => {
       </AspectRatio>,
     );
     const element = screen.getByTestId('aspect-ratio');
-    expect(element.style.aspectRatio).toBe('1');
+    expect(ratioVar(element)).toBe(ratioValue(1));
     expect(element.className).toContain('rectangle');
     // No ellipse border-radius when shape is the default rectangle
     expect(element.style.borderRadius).toBe('');
@@ -175,6 +189,49 @@ describe('AspectRatio', () => {
     );
     const video = screen.getByTestId('video');
     expect(video).toBeInTheDocument();
+  });
+
+  describe('responsive ratio', () => {
+    it('emits the ratio as a class-level declaration, not an inline style', () => {
+      render(
+        <AspectRatio ratio={3 / 1} data-testid="aspect-ratio">
+          <div>Hero</div>
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      // No inline aspect-ratio — the declaration lives in a class reading a
+      // CSS variable, so @media/@container rules (via xstyle or the
+      // --astryx-aspect-ratio custom property) can override it.
+      expect(element.style.aspectRatio).toBe('');
+      expect(ratioVar(element)).toBe(ratioValue(3 / 1));
+    });
+
+    it('reads the --astryx-aspect-ratio custom property before the prop fallback', () => {
+      render(
+        <AspectRatio ratio={3 / 1} data-testid="aspect-ratio">
+          <div>Hero</div>
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      // The prop value is only the var() fallback; any rule setting
+      // --astryx-aspect-ratio on the element wins regardless of specificity.
+      expect(ratioVar(element)).toBe('var(--astryx-aspect-ratio, 3)');
+    });
+
+    it('lets a consumer inline style win over the class-level ratio', () => {
+      render(
+        <AspectRatio
+          ratio={3 / 1}
+          style={{aspectRatio: '3 / 2'}}
+          data-testid="aspect-ratio">
+          <div>Hero</div>
+        </AspectRatio>,
+      );
+      const element = screen.getByTestId('aspect-ratio');
+      // The consumer's style prop passes through untouched (it is no longer
+      // merged with a component-owned inline aspect-ratio).
+      expect(element.style.aspectRatio).toBe('3 / 2');
+    });
   });
 
   describe('fit', () => {
