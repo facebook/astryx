@@ -1,0 +1,75 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Auto-clear the review gate after an approval — including on FORK PRs.
+#
+# The review-signal "clear" job runs on pull_request_review, but for FORK PRs
+# that event's GITHUB_TOKEN is READ-ONLY, so it 403s trying to remove labels /
+# set the check — a fork approval never clears the gate on its own.
+#
+# This workflow runs on workflow_run after "Review signal" completes. It runs
+# from the base repo with the base-repo token (works for forks), resolves the
+# PR the review belonged to, and re-dispatches the review-signal "flag" logic
+# for that PR. The flag job already reads approvals and clears the gate
+# fork-safely; this just triggers it automatically instead of needing a manual
+# dispatch after every fork approval.
+#
+# It only reads run metadata and dispatches another workflow — it never checks
+# out or runs PR-controlled code.
+
+name: Review clear
+
+on:
+  workflow_run:
+    workflows: ["Review signal"]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  reclear:
+    # Only for review-signal runs that were triggered by a review submission.
+    if: github.event.workflow_run.event == 'pull_request_review'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      pull-requests: read
+    steps:
+      - name: Resolve PR and re-dispatch the flag logic
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const run = context.payload.workflow_run;
+
+            // workflow_run.pull_requests is empty for fork PRs, so resolve the
+            // PR from the run's head SHA via the commit->PRs association.
+            let prNumber = (run.pull_requests && run.pull_requests[0] && run.pull_requests[0].number) || null;
+            if (!prNumber) {
+              try {
+                const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                  owner, repo, commit_sha: run.head_sha,
+                });
+                const open = data.find((p) => p.state === 'open') || data[0];
+                if (open) prNumber = open.number;
+              } catch (e) {
+                core.warning(`Could not resolve PR from ${run.head_sha}: ${e.message}`);
+              }
+            }
+            if (!prNumber) {
+              core.info('No PR resolved for this review run; nothing to re-clear.');
+              return;
+            }
+
+            // Re-dispatch the review-signal flag logic for this PR. The flag job
+            // reads the approval and clears the gate with a fork-safe token.
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner, repo,
+                workflow_id: 'review-signal.yml',
+                ref: 'main',
+                inputs: { pr: String(prNumber) },
+              });
+              core.info(`Re-dispatched review-signal flag for PR #${prNumber} (approval auto-clear).`);
+            } catch (e) {
+              core.warning(`Could not dispatch review-signal for #${prNumber}: ${e.message}`);
+            }
