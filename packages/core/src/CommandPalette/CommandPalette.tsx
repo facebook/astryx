@@ -303,6 +303,11 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
   );
 
   const handleClose = useCallback(() => {
+    // Invalidate any in-flight search. Most sources don't implement cancel(),
+    // and a response that resolves after close would still pass runSearch's
+    // version check and re-commit the stale query/results into the closed
+    // palette (visible as a ghost query on reopen while bootstrap is pending).
+    searchVersionRef.current++;
     // Reset both committed and optimistic search on close
     setSearch('');
     setSearchResults([]);
