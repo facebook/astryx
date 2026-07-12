@@ -484,4 +484,4 @@ jobs:
     permissions: {}
     steps:
       - name: Note approval
-        run: echo "Approval on PR #${{ github.event.pull_request.number }} — review-clear will re-dispatch the flag job."
+        run: echo "Approval received; review-clear will re-dispatch the flag job."
