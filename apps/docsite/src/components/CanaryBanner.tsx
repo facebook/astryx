@@ -33,8 +33,8 @@ export function CanaryBanner() {
     <Banner
       container="section"
       status="warning"
-      title="You're viewing unreleased docs (main)"
-      description="This documents work in progress. Some components and props shown here may not exist in the latest published package yet."
+      title="You're viewing unreleased docs (Canary)"
+      description="This documents the canary release from main. Some components and props shown here may not exist in the latest published package yet — they ship on the @canary npm tag until the next stable release."
       endContent={
         stableHref ? (
           <Button

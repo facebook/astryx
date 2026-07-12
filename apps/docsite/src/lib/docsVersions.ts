@@ -44,8 +44,8 @@ export interface DocsVersionInfo {
 }
 
 export const DOCS_VERSIONS: Record<DocsTarget, DocsVersionInfo> = {
-  latest: {target: 'latest', label: 'Latest (stable)', baseUrl: LATEST_URL},
-  canary: {target: 'canary', label: 'Canary (main)', baseUrl: CANARY_URL},
+  latest: {target: 'latest', label: 'Latest', baseUrl: LATEST_URL},
+  canary: {target: 'canary', label: 'Canary', baseUrl: CANARY_URL},
 };
 
 /**

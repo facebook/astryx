@@ -8,10 +8,10 @@ import {CURRENT_TARGET, DOCS_VERSIONS, urlForTarget} from '../lib/docsVersions';
 import type {DocsTarget} from '../lib/docsVersions';
 
 /**
- * Footer link to the sibling content line: from the stable (latest) site over
- * to the canary (main) docs, or back again. This is the low-key, persistent way
- * to reach canary from production; on canary the prominent CanaryBanner carries
- * the primary link back to latest.
+ * Footer link to the sibling content line: from the Latest (production) site
+ * over to the Canary docs, or back again. This is the low-key, persistent way
+ * to reach Canary from production; on Canary the prominent CanaryBanner carries
+ * the primary link back to Latest.
  *
  * Renders nothing when there is no distinct sibling to link to (e.g. a local
  * build where the destination resolves to the current origin).
@@ -25,10 +25,7 @@ export function DocsVersionFooterLink() {
     return null;
   }
 
-  const label =
-    other === 'canary'
-      ? 'Canary docs (main)'
-      : `${DOCS_VERSIONS.latest.label} docs`;
+  const label = `${DOCS_VERSIONS[other].label} docs`;
 
   return (
     <Link href={href} type="supporting" color="secondary" isStandalone>

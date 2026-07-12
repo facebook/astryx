@@ -54,12 +54,13 @@ This means:
 ## Versioned Content: latest vs canary
 
 The docsite ships one codebase deployed from `main`, but the data pipeline can
-read package docs from two different sources depending on the build **target**:
+read package docs from two different sources depending on the build **target**.
+The two targets mirror the two npm dist-tags the packages publish under:
 
-| Target   | Reads package docs from            | Deploys                                |
-| -------- | ---------------------------------- | -------------------------------------- |
-| `latest` | the last **published** npm release | production (`astryx.atmeta.com`)       |
-| `canary` | the live monorepo (`main`, WIP)    | the canary site + **every PR preview** |
+| Target   | npm dist-tag | Reads package docs from            | Deploys                                |
+| -------- | ------------ | ---------------------------------- | -------------------------------------- |
+| `latest` | `@latest`    | the last **published** npm release | production (`astryx.atmeta.com`)       |
+| `canary` | `@canary`    | the live monorepo (`main`, WIP)    | the canary site + **every PR preview** |
 
 The target is derived from Vercel's `VERCEL_ENV`: the production deploy is
 `latest`; preview deploys (the `main` canary site and all PR previews) and local
@@ -76,7 +77,7 @@ always resolve `@astryxdesign/core` from the bundled workspace version.
 > and merge to `main`, those changes will **not** appear in production until the
 > next release publishes to npm. To see your merged change in a deployed site,
 > use the **canary** site or any **PR preview** (both read `main`) — or the
-> "Canary docs (main)" link in the footer. The canary banner links back to
+> "Canary docs" link in the footer. The canary banner links back to
 > production.
 
 **Local dev is unaffected.** `pnpm dev` has no `VERCEL_ENV`, so it defaults to
