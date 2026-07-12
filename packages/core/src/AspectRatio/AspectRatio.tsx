@@ -75,11 +75,12 @@ export interface AspectRatioProps extends BaseProps<HTMLDivElement> {
    * - `center`: child keeps its natural size, centered in the box.
    *
    * `cover`/`contain` child sizing ships as zero-specificity baseline rules
-   * in `reset.css`, keyed on the reflected `data-fit` attribute (the same
-   * mechanism as the `data-astryx-media` baseline). Any styles the child
-   * sets itself still win, so children that already size themselves keep
-   * their behavior. When omitted, the child is left unstyled (the
-   * pre-existing contract).
+   * in `reset.css`, keyed on the `data-astryx-aspect-ratio-override`
+   * attribute the component sets on the child's direct parent. Any styles
+   * the child sets itself still win, so children that already size
+   * themselves keep their behavior. When omitted, the child is left
+   * unstyled (the pre-existing contract). `fit` is structural, not visual,
+   * so it is not exposed on the theming surface.
    *
    * @example
    * ```
@@ -120,7 +121,8 @@ const styles = stylex.create({
   // fit="center" centers the child at its natural size from the wrapper —
   // no styles on the child itself. The `cover`/`contain` child sizing can't
   // live here (StyleX has no descendant selectors); it ships as baseline
-  // rules in reset.css keyed on the reflected `data-fit` attribute.
+  // rules in reset.css keyed on the `data-astryx-aspect-ratio-override`
+  // attribute the wrapper carries (see below).
   childCenter: {
     display: 'flex',
     alignItems: 'center',
@@ -172,7 +174,7 @@ export function AspectRatio({
     <div
       ref={ref}
       {...mergeProps(
-        themeProps('aspect-ratio', {shape, fit}),
+        themeProps('aspect-ratio', {shape}),
         stylex.props(
           styles.container,
           shape === 'ellipse' && styles.ellipse,
@@ -182,7 +184,13 @@ export function AspectRatio({
         {...style, aspectRatio: ratio},
       )}
       {...props}>
+      {/* The marker attribute carries the fit value so the reset.css child
+          sizing can use direct-child selectors on this wrapper — the child's
+          actual parent — without depending on AspectRatio's internal
+          structure or on the theming surface (fit is structural, not
+          themeable). The name is namespaced to avoid collisions. */}
       <div
+        data-astryx-aspect-ratio-override={fit}
         {...stylex.props(styles.child, fit === 'center' && styles.childCenter)}>
         {children}
       </div>

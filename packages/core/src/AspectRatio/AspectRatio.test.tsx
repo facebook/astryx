@@ -178,38 +178,57 @@ describe('AspectRatio', () => {
   });
 
   describe('fit', () => {
-    it('reflects fit="cover" as a class token and data attribute', () => {
+    it('marks the child\'s direct parent with data-astryx-aspect-ratio-override for fit="cover"', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="cover">
+          <img src="test.jpg" alt="Test" data-testid="image" />
+        </AspectRatio>,
+      );
+      // The marker sits on the child's actual parent, so the reset.css
+      // sizing rules are direct-child selectors with no dependence on
+      // AspectRatio's internal structure.
+      const wrapper = screen.getByTestId('image').parentElement;
+      expect(wrapper).toHaveAttribute(
+        'data-astryx-aspect-ratio-override',
+        'cover',
+      );
+    });
+
+    it('marks the child\'s direct parent with data-astryx-aspect-ratio-override for fit="contain"', () => {
+      render(
+        <AspectRatio ratio={16 / 9} fit="contain">
+          <img src="test.jpg" alt="Test" data-testid="image" />
+        </AspectRatio>,
+      );
+      const wrapper = screen.getByTestId('image').parentElement;
+      expect(wrapper).toHaveAttribute(
+        'data-astryx-aspect-ratio-override',
+        'contain',
+      );
+    });
+
+    it('does not expose fit on the theming surface', () => {
       render(
         <AspectRatio ratio={16 / 9} fit="cover" data-testid="aspect-ratio">
           <img src="test.jpg" alt="Test" />
         </AspectRatio>,
       );
       const element = screen.getByTestId('aspect-ratio');
-      // The reflected surface is what the reset.css baseline rules key on.
-      expect(element.className).toContain('cover');
-      expect(element).toHaveAttribute('data-fit', 'cover');
+      // fit is structural, not visual — no data-fit attribute or class
+      // token on the themeable root (only shape is a theming target).
+      expect(element).not.toHaveAttribute('data-fit');
+      expect(element.className).not.toContain('cover');
     });
 
-    it('reflects fit="contain" as a class token and data attribute', () => {
-      render(
-        <AspectRatio ratio={16 / 9} fit="contain" data-testid="aspect-ratio">
-          <img src="test.jpg" alt="Test" />
-        </AspectRatio>,
-      );
-      const element = screen.getByTestId('aspect-ratio');
-      expect(element.className).toContain('contain');
-      expect(element).toHaveAttribute('data-fit', 'contain');
-    });
-
-    it('emits no fit reflection when fit is omitted (back-compat)', () => {
+    it('emits no marker when fit is omitted (back-compat)', () => {
       render(
         <AspectRatio ratio={16 / 9} data-testid="aspect-ratio">
           <img src="test.jpg" alt="Test" data-testid="image" />
         </AspectRatio>,
       );
-      const element = screen.getByTestId('aspect-ratio');
-      expect(element).not.toHaveAttribute('data-fit');
-      // Without data-fit, none of the reset.css fit rules can match, so
+      const wrapper = screen.getByTestId('image').parentElement;
+      expect(wrapper).not.toHaveAttribute('data-astryx-aspect-ratio-override');
+      // Without the marker, none of the reset.css fit rules can match, so
       // existing self-styled children render exactly as before.
       expect(screen.getByTestId('image')).not.toHaveAttribute('class');
     });
@@ -259,8 +278,8 @@ describe('AspectRatio', () => {
 
   describe('reset.css fit baseline rules', () => {
     // The cover/contain child sizing ships as zero-specificity baseline
-    // rules in reset.css keyed on the reflected data-fit attribute (same
-    // mechanism as the [data-astryx-media] color-scheme baseline). These
+    // rules in reset.css keyed on the data-astryx-aspect-ratio-override
+    // marker the component sets on the child's direct parent. These
     // assertions keep the stylesheet in sync with the component contract.
     let resetCSS: string;
 
@@ -275,7 +294,7 @@ describe('AspectRatio', () => {
 
     it('sizes the child to fill the box for cover and contain', () => {
       const fillMatch = resetCSS.match(
-        /:where\(\.astryx-aspect-ratio\[data-fit="cover"\], \.astryx-aspect-ratio\[data-fit="contain"\]\)\s*>\s*:where\(div\)\s*>\s*:where\(\*\)\s*\{([^}]+)\}/,
+        /:where\(\[data-astryx-aspect-ratio-override="cover"\], \[data-astryx-aspect-ratio-override="contain"\]\)\s*>\s*:where\(\*\)\s*\{([^}]+)\}/,
       );
       expect(fillMatch).not.toBeNull();
       expect(fillMatch![1]).toContain('width: 100%');
@@ -284,7 +303,7 @@ describe('AspectRatio', () => {
 
     it('crops media with object-fit: cover for fit="cover"', () => {
       const coverMatch = resetCSS.match(
-        /:where\(\.astryx-aspect-ratio\[data-fit="cover"\]\)\s*>\s*:where\(div\)\s*>\s*:where\(img, video\)\s*\{([^}]+)\}/,
+        /:where\(\[data-astryx-aspect-ratio-override="cover"\]\)\s*>\s*:where\(img, video\)\s*\{([^}]+)\}/,
       );
       expect(coverMatch).not.toBeNull();
       expect(coverMatch![1]).toContain('object-fit: cover');
@@ -292,7 +311,7 @@ describe('AspectRatio', () => {
 
     it('letterboxes media with object-fit: contain for fit="contain"', () => {
       const containMatch = resetCSS.match(
-        /:where\(\.astryx-aspect-ratio\[data-fit="contain"\]\)\s*>\s*:where\(div\)\s*>\s*:where\(img, video\)\s*\{([^}]+)\}/,
+        /:where\(\[data-astryx-aspect-ratio-override="contain"\]\)\s*>\s*:where\(img, video\)\s*\{([^}]+)\}/,
       );
       expect(containMatch).not.toBeNull();
       expect(containMatch![1]).toContain('object-fit: contain');

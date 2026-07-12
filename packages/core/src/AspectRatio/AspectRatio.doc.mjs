@@ -57,7 +57,7 @@ export const docs = {
   },
   theming: {
     targets: [
-      {className: 'astryx-aspect-ratio', visualProps: ['shape', 'fit']},
+      {className: 'astryx-aspect-ratio', visualProps: ['shape']},
     ],
   },
 };
@@ -100,7 +100,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-aspect-ratio', visualProps: ['shape', 'fit']},
+      {className: 'astryx-aspect-ratio', visualProps: ['shape']},
     ],
   },
 };
