@@ -701,3 +701,37 @@ describe('SegmentedControl data-testid forwarding', () => {
     );
   });
 });
+
+describe('SegmentedControlItem onClick composition', () => {
+  it('calls a consumer onClick in addition to selecting the item', () => {
+    const onChange = vi.fn();
+    const onClick = vi.fn();
+    render(
+      <SegmentedControl value="grid" onChange={onChange} label="View mode">
+        <SegmentedControlItem value="list" label="List" onClick={onClick} />
+      </SegmentedControl>,
+    );
+
+    fireEvent.click(screen.getByRole('radio', {name: 'List'}));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('list');
+  });
+
+  it('lets a consumer onClick opt out of selection via preventDefault', () => {
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl value="grid" onChange={onChange} label="View mode">
+        <SegmentedControlItem
+          value="list"
+          label="List"
+          onClick={e => e.preventDefault()}
+        />
+      </SegmentedControl>,
+    );
+
+    fireEvent.click(screen.getByRole('radio', {name: 'List'}));
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
