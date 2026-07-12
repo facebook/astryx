@@ -471,107 +471,17 @@ jobs:
             }
             } // end flagOne
 
-  # ---------------------------------------------------------------------------
-  # Clear labels on the right kind of approval.
-  #   needs:code-review   → cleared by a CODEOWNER approval.
-  #   needs:design-review → cleared by a DESIGNOWNER or CODEOWNER approval.
-  # ---------------------------------------------------------------------------
-  clear:
+  # Anchor job for the review-clear chain. On a review submission the flag job
+  # is skipped (it only runs on pull_request_target / workflow_dispatch), so
+  # without a job that actually runs, the workflow run could end up "skipped"
+  # rather than "completed" and not reliably fire the review-clear workflow_run.
+  # This tiny job always runs on pull_request_review so the workflow completes,
+  # letting review-clear.yml resolve the PR and re-dispatch the fork-safe clear.
+  review-anchor:
     if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
-    name: Clear on approval
+    name: Anchor review-clear chain
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: read
-      checks: write
+    permissions: {}
     steps:
-      - name: Remove labels the approver is entitled to clear
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const pr = context.payload.pull_request;
-            const CODE = process.env.CODE_LABEL;
-            const DESIGN = process.env.DESIGN_LABEL;
-            const reviewer = context.payload.review.user.login.toLowerCase();
-            const current = pr.labels.map((l) => l.name);
-
-            async function handlesFrom(path, { starLineOnly = false } = {}) {
-              try {
-                const { data } = await github.rest.repos.getContent({
-                  owner, repo, path, ref: pr.base.ref,
-                });
-                let text = Buffer.from(data.content, 'base64').toString('utf8');
-                if (starLineOnly) {
-                  const star = text.split('\n').map((l) => l.trim())
-                    .find((l) => l.startsWith('*'));
-                  text = star || '';
-                }
-                // Strip comment lines (# ...) so an @handle mentioned in a
-                // file header comment is not parsed as a real owner.
-                const body = text
-                  .split('\n')
-                  .filter((l) => !l.trim().startsWith('#'))
-                  .join('\n');
-                return (body.match(/@[A-Za-z0-9-]+/g) || [])
-                  .map((h) => h.slice(1).toLowerCase());
-              } catch (e) {
-                core.warning(`Could not read ${path}: ${e.message}`);
-                return [];
-              }
-            }
-            const codeOwners = await handlesFrom('.github/CODEOWNERS', { starLineOnly: true });
-            const designOwners = await handlesFrom('.github/DESIGNOWNERS');
-            const isCodeOwner = codeOwners.includes(reviewer);
-            const isDesignOwner = designOwners.includes(reviewer);
-
-            async function removeLabel(name) {
-              try {
-                await github.rest.issues.removeLabel({
-                  owner, repo, issue_number: pr.number, name,
-                });
-                core.info(`Cleared ${name} (approved by @${reviewer}).`);
-                return true;
-              } catch (e) {
-                core.warning(`Could not remove ${name}: ${e.message}`);
-                return false;
-              }
-            }
-
-            // Track what remains gated after this approval.
-            let codeStillGated = current.includes(CODE);
-            let designStillGated = current.includes(DESIGN);
-            if (codeStillGated && isCodeOwner) {
-              if (await removeLabel(CODE)) codeStillGated = false;
-            }
-            if (designStillGated && (isDesignOwner || isCodeOwner)) {
-              if (await removeLabel(DESIGN)) designStillGated = false;
-            }
-
-            // If nothing is gated anymore, flip the review-required check to
-            // success so the PR is mergeable. If a gate remains (e.g. a code
-            // owner approved but the design gate still needs a design owner),
-            // leave the check as-is — it stays action_required and keeps blocking.
-            if (!codeStillGated && !designStillGated) {
-              try {
-                await github.rest.checks.create({
-                  owner,
-                  repo,
-                  name: 'review-required',
-                  head_sha: pr.head.sha,
-                  status: 'completed',
-                  conclusion: 'success',
-                  output: {
-                    title: 'Review complete',
-                    summary: `Cleared by @${reviewer}'s approval.`,
-                  },
-                });
-                core.info(`review-required check → success (cleared by @${reviewer}).`);
-              } catch (e) {
-                core.warning(`Could not update review-required check: ${e.message}`);
-              }
-            } else {
-              core.info(
-                `Gate remains after @${reviewer}'s approval (code=${codeStillGated}, design=${designStillGated}); check stays blocking.`,
-              );
-            }
+      - name: Note approval
+        run: echo "Approval on PR #${{ github.event.pull_request.number }} — review-clear will re-dispatch the flag job."
