@@ -21,7 +21,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.0",
     "typescript": "^6.0.3",
-    "vite": "catalog:",
+    "vite": "^7.3.6",
     "@astryxdesign/build": "*"
   },
   "browserslist": [
