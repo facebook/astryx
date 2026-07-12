@@ -45,7 +45,14 @@ overrides:
   esbuild: '>=0.28.1'
   '@babel/core': ^7.29.6
   hono: ^4.12.25
-  read-yaml-file>js-yaml: ^3.15.0
+  # read-yaml-file 1.x is hard-wired to js-yaml 3.x (`safeLoad`), which has no
+  # fix for CVE-2026-53550 — patched only in js-yaml 4.2.0. Overriding js-yaml
+  # alone breaks it (4.x renamed safeLoad -> load), so lift the package instead:
+  # read-yaml-file 2.x calls `load` and depends on js-yaml ^4. Its only consumer
+  # is @manypkg/get-packages, and 2.x keeps the same CJS surface (default export
+  # + .sync). The floor below then holds that chain on the patched 4.x line.
+  read-yaml-file: ^2.1.0
+  read-yaml-file>js-yaml: ^4.2.0
   '@changesets/parse>js-yaml': '>=4.2.0'
 
 # pnpm 11 replaced the onlyBuiltDependencies allowlist with an allowBuilds map
