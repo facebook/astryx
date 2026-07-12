@@ -13,6 +13,7 @@
  * Run: pnpm -F @astryxdesign/docsite test
  */
 
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {describe, it, expect} from 'vitest';
 import {
@@ -20,6 +21,7 @@ import {
   buildTypeDefinitionIndex,
   collectPropTypeRefs,
 } from '../lib/typeDefinitions.mjs';
+import {splitTypeRefSegments} from '../components/component-detail/parsePropType';
 import {components} from '../generated/componentRegistry';
 
 const CORE_SRC_DIR = path.resolve(__dirname, '../../../../packages/core/src');
@@ -145,6 +147,62 @@ describe('collectPropTypeRefs', () => {
     expect(collectPropTypeRefs('ReactElement<XDSButtonProps>', index)).toEqual(
       [],
     );
+  });
+});
+
+describe('splitTypeRefSegments', () => {
+  it('turns each resolved name into a ref segment, keeping syntax as text', () => {
+    expect(
+      splitTypeRefSegments('SearchSource<T> | null', ['SearchSource']),
+    ).toEqual([
+      {text: 'SearchSource', isRef: true},
+      {text: '<T> | null', isRef: false},
+    ]);
+  });
+
+  it('marks every occurrence of every resolved name independently', () => {
+    expect(
+      splitTypeRefSegments('TableColumn<T>[] | SearchSource<T>', [
+        'TableColumn',
+        'SearchSource',
+      ]),
+    ).toEqual([
+      {text: 'TableColumn', isRef: true},
+      {text: '<T>[] | ', isRef: false},
+      {text: 'SearchSource', isRef: true},
+      {text: '<T>', isRef: false},
+    ]);
+  });
+
+  it('matches on word boundaries so longer names are not split', () => {
+    expect(splitTypeRefSegments('TableColumnGroup', ['TableColumn'])).toEqual([
+      {text: 'TableColumnGroup', isRef: false},
+    ]);
+  });
+
+  it('returns the whole string as plain text when nothing resolves', () => {
+    expect(splitTypeRefSegments('string | number', [])).toEqual([
+      {text: 'string | number', isRef: false},
+    ]);
+  });
+});
+
+describe('props table trigger', () => {
+  const source = fs.readFileSync(
+    path.resolve(
+      __dirname,
+      '../components/component-detail/PlaygroundPropsTable.tsx',
+    ),
+    'utf8',
+  );
+
+  it('renders the type name itself as the definition trigger', () => {
+    expect(source).toContain('splitTypeRefSegments');
+    expect(source).toMatch(/<button type="button"[^>]*>\s*\{def\.name\}/);
+  });
+
+  it('no longer renders a separate "View {Type}" button', () => {
+    expect(source).not.toContain('View ${def.name}');
   });
 });
 

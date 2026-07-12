@@ -22,7 +22,9 @@
  * @input  TypeScript source files under a package's src/ directory
  * @output Map of exported type name → {name, definition, sourcePath}
  * @position Imported by scripts/generate-data.mjs and
- *   src/__tests__/type-definitions.test.ts
+ *   src/__tests__/type-definitions.test.ts. Node-only (reads the filesystem)
+ *   — the browser-side rendering helper lives in
+ *   components/component-detail/parsePropType.ts.
  */
 
 import * as fs from 'node:fs';
