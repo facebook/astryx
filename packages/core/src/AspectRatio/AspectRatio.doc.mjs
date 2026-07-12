@@ -76,7 +76,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-aspect-ratio'},
+      {className: 'astryx-aspect-ratio', visualProps: ['shape']},
     ],
   },
 };

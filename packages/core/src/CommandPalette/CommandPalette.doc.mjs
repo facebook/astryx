@@ -138,6 +138,7 @@ export const docs = {
   ],
   theming: {
     targets: [
+      {className: 'astryx-command-palette-empty'},
       {className: 'astryx-command-palette-footer'},
       {className: 'astryx-command-palette-group'},
       {className: 'astryx-command-palette-input'},

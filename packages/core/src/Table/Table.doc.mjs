@@ -25,6 +25,11 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-base-table'},
+      {className: 'astryx-table'},
+      {className: 'astryx-table-scroll-wrapper'},
+      {className: 'astryx-table-header'},
+      {className: 'astryx-table-body'},
+      {className: 'astryx-table-footer'},
       {className: 'astryx-table-row'},
       {className: 'astryx-table-cell'},
       {className: 'astryx-table-header-cell'},
