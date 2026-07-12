@@ -65,11 +65,6 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'overflow',
-      type: "'visible' | 'hidden' | 'clip' | 'auto' | 'scroll'",
-      description: 'Overflow behavior of the section content. Takes precedence over isScrollable when both are set.',
-    },
-    {
       name: 'grow',
       type: 'boolean | number',
       description: 'Whether the section grows to absorb free space when it is a flex child (flex-grow). true is 1; pass a number for a custom factor.',

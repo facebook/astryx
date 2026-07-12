@@ -41,9 +41,8 @@ import {
 import {
   flexItem,
   minSizeResetStyles,
-  overflowStyles,
+  scrollableStyles,
   type FlexFactor,
-  type Overflow,
 } from '../Layout/flex.stylex';
 import type {SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
@@ -215,24 +214,15 @@ export interface SectionProps extends BaseProps<HTMLElement> {
   paddingBlock?: SpacingStep;
 
   /**
-   * Overflow behavior of the section's content.
+   * Makes the section scroll its own overflow (`overflow: auto`) — the
+   * "this pane scrolls on its own" prop. Matches `isScrollable` on
+   * `LayoutContent` and `LayoutPanel`.
    *
    * Applied to the padded surface, so the background and dividers stay put
    * while the content scrolls under them, and the section's own padding is
-   * respected at the scroll extremes. Anything other than `visible` also
-   * applies the flex `min-height: 0` / `min-width: 0` reset so the section
-   * can actually shrink (and therefore scroll) inside a Stack.
-   *
-   * Takes precedence over `isScrollable` when both are set. Only the
-   * shorthand is exposed (no `overflowX`/`overflowY`): those are physical
-   * axes, and Astryx styles with logical properties.
-   */
-  overflow?: Overflow;
-
-  /**
-   * Enables scrollable overflow (`overflow: auto`) for the section — the
-   * "this pane scrolls on its own" prop. Matches `isScrollable` on
-   * `LayoutContent` and `LayoutPanel`.
+   * respected at the scroll extremes. It also applies the flex
+   * `min-height: 0` / `min-width: 0` reset, so the section can actually
+   * shrink (and therefore scroll) inside a Stack.
    *
    * The section still needs a bounded height to scroll against: give it a
    * `height`, or put it in a Stack that has one.
@@ -278,7 +268,7 @@ export interface SectionProps extends BaseProps<HTMLElement> {
  *
  * // Multi-pane: fixed column + detail column that takes the rest,
  * // each scrolling on its own inside a horizontally scrolling strip.
- * <HStack height="100%" overflow="auto">
+ * <HStack height="100%" isScrollable>
  *   <Section width={240} shrink={false} isScrollable dividers={['end']}>
  *     <List>{items}</List>
  *   </Section>
@@ -298,7 +288,6 @@ export function Section({
   dividers,
   padding,
   paddingBlock,
-  overflow,
   isScrollable,
   grow,
   shrink,
@@ -314,15 +303,12 @@ export function Section({
   const effectivePadding = padding ?? 4;
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
 
-  // `isScrollable` is sugar for `overflow="auto"`; the enum wins when both are set.
-  const resolvedOverflow = overflow ?? (isScrollable ? 'auto' : undefined);
   // A flex item's automatic minimum size (`min-height: auto`) refuses to shrink
   // below its content, so a section inside a Stack would grow instead of
   // scrolling. Scroll containers reset it — but the scroll container here is
   // the INNER box, and the flex item is the OUTER one, so it needs the reset
   // explicitly.
-  const needsMinSizeReset =
-    resolvedOverflow != null && resolvedOverflow !== 'visible';
+  const needsMinSizeReset = isScrollable === true;
 
   // The OUTER box is the flex child: sizing and flex-item props belong here.
   // The reset goes first so an explicit `minHeight` still wins over it.
@@ -393,7 +379,7 @@ export function Section({
             // (background, dividers) and it owns the padding. Scrolling the
             // outer box would slide this box — background and dividers with
             // it — out of view, and push content past the bottom padding.
-            resolvedOverflow != null && overflowStyles[resolvedOverflow],
+            isScrollable === true && scrollableStyles.scrollable,
           ),
         )}>
         {children}

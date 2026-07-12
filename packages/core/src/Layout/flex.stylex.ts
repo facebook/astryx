@@ -3,19 +3,22 @@
 /**
  * @file flex.stylex.ts
  * @input Uses @stylexjs/stylex, SizeValue
- * @output Shared overflow + flex-item StyleX styles and the flexItem() utility
+ * @output Shared scroll + flex-item StyleX styles for the layout components
  * @position Layout utility; used by Stack, StackItem and Section
  *
- * The two prop families reserved by the layout-props standard (#3223) and
- * requested by #2623:
+ * The flex-item prop family reserved by the layout-props standard (#3223) and
+ * requested by #2623 — `grow` / `shrink` / `basis`, i.e. "this column is a
+ * fixed width, this one takes the rest" — plus the `overflow: auto` style
+ * behind the existing `isScrollable` prop, which Stack and StackItem each
+ * declared for themselves before.
  *
- * - `overflow` / `isScrollable` — "this pane scrolls on its own"
- * - `grow` / `shrink` / `basis` — "this column is fixed, this one takes the rest"
- *
- * Only the `overflow` shorthand is exposed — never `overflowX`/`overflowY`.
- * Those are physical axes, and the repo styles with logical properties
- * (there is a live RTL workstream); the logical `overflow-inline` /
- * `overflow-block` longhands are not broadly supported yet.
+ * `isScrollable` is the only scroll knob these components expose. A full
+ * `overflow` enum was considered and cut: every scroll case in the repo wants
+ * `auto`, and the one place that wanted per-axis control (`overflow-x: auto` +
+ * `overflow-y: hidden`) can't be served by a shorthand anyway — Astryx styles
+ * with logical properties, and the logical `overflow-inline` / `overflow-block`
+ * longhands are not broadly supported yet. Add the enum when a case for it
+ * actually lands.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stack/Stack.doc.mjs
@@ -25,33 +28,11 @@
 import * as stylex from '@stylexjs/stylex';
 import type {SizeValue} from '../utils/types';
 
-const overflowStyles = stylex.create({
-  visible: {
-    overflow: 'visible',
-  },
-  hidden: {
-    overflow: 'hidden',
-  },
-  clip: {
-    overflow: 'clip',
-  },
-  auto: {
+const scrollableStyles = stylex.create({
+  scrollable: {
     overflow: 'auto',
   },
-  scroll: {
-    overflow: 'scroll',
-  },
 });
-
-/**
- * Overflow behavior of a layout box.
- * - `visible`: content spills out (CSS default)
- * - `hidden`: content is clipped, still programmatically scrollable
- * - `clip`: content is clipped, no scrolling at all
- * - `auto`: scrollbars appear only when content overflows
- * - `scroll`: scroll container, scrollbars always reserved
- */
-export type Overflow = keyof typeof overflowStyles;
 
 /**
  * "Resets" the min-width and min-height of a flex item to behave predictably.
@@ -65,6 +46,23 @@ const minSizeResetStyles = stylex.create({
     minHeight: 0,
     minWidth: 0,
   },
+});
+
+/**
+ * Flex factor: `true` → 1, `false` → 0, or an explicit number.
+ */
+export type FlexFactor = boolean | number;
+
+/**
+ * `grow` and `shrink` are booleans at nearly every call site, so 0 and 1 are
+ * plain static classes: no inline style attribute, no custom property, fully
+ * cacheable CSS. Only an arbitrary numeric factor needs a dynamic style.
+ */
+const flexFactorStyles = stylex.create({
+  grow0: {flexGrow: 0},
+  grow1: {flexGrow: 1},
+  shrink0: {flexShrink: 0},
+  shrink1: {flexShrink: 1},
 });
 
 /**
@@ -82,11 +80,6 @@ const flexItemStyles = stylex.create({
   shrink: (value: number) => ({flexShrink: value}),
   basis: (value: SizeValue) => ({flexBasis: value}),
 });
-
-/**
- * Flex factor: `true` → 1, `false` → 0, or an explicit number.
- */
-export type FlexFactor = boolean | number;
 
 export interface FlexItemOptions {
   /**
@@ -124,31 +117,45 @@ function toFlexFactor(value: FlexFactor | undefined): number | undefined {
   return value;
 }
 
+function growStyle(value: number) {
+  if (value === 0) {
+    return flexFactorStyles.grow0;
+  }
+  if (value === 1) {
+    return flexFactorStyles.grow1;
+  }
+  return flexItemStyles.grow(value);
+}
+
+function shrinkStyle(value: number) {
+  if (value === 0) {
+    return flexFactorStyles.shrink0;
+  }
+  if (value === 1) {
+    return flexFactorStyles.shrink1;
+  }
+  return flexItemStyles.shrink(value);
+}
+
 /**
- * StyleX utility for flex-item sizing (`flex-grow` / `flex-shrink` /
- * `flex-basis`) on any element.
+ * StyleX styles for flex-item sizing (`flex-grow` / `flex-shrink` /
+ * `flex-basis`).
  *
  * Values that are not passed emit no declaration at all, so this composes on
  * top of coarser presets (like StackItem's `size`) without clobbering them —
  * spread it *after* the preset.
  *
- * @example
- * ```
- * import { flexItem } from '@astryxdesign/core/Layout';
- *
- * <div {...stylex.props(...flexItem({ grow: 1, shrink: false, basis: 320 }))}>
- *   Detail column: takes the rest, never squeezed below 320px
- * </div>
- * ```
+ * Internal: the components own these props. Consumers styling their own
+ * elements reach for `stackItem()`, which layers this on top of `size`.
  */
 export function flexItem({grow, shrink, basis}: FlexItemOptions = {}) {
   const growFactor = toFlexFactor(grow);
   const shrinkFactor = toFlexFactor(shrink);
   return [
-    growFactor != null && flexItemStyles.grow(growFactor),
-    shrinkFactor != null && flexItemStyles.shrink(shrinkFactor),
+    growFactor != null && growStyle(growFactor),
+    shrinkFactor != null && shrinkStyle(shrinkFactor),
     basis != null && flexItemStyles.basis(basis),
   ] as const;
 }
 
-export {flexItemStyles, minSizeResetStyles, overflowStyles};
+export {minSizeResetStyles, scrollableStyles};

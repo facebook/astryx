@@ -76,9 +76,10 @@ describe('file-explorer template (dogfood for #2623)', () => {
   it('keeps the columns from being squeezed by the strip', () => {
     const {container} = render(<FileExplorerPage />);
     const [firstColumn] = getSectionBoxes(container);
-    const outerStyle = firstColumn.outer.getAttribute('style') ?? '';
-    expect(outerStyle).toContain('--x-flexShrink: 0');
-    expect(outerStyle).toContain('--x-width: 240px');
+    expect(getComputedStyle(firstColumn.outer).flexShrink).toBe('0');
+    expect(firstColumn.outer.getAttribute('style')).toContain(
+      '--x-width: 240px',
+    );
     // A flex item that cannot shrink below its content cannot scroll.
     expect(getComputedStyle(firstColumn.outer).minHeight).toBe('0');
   });
@@ -87,10 +88,11 @@ describe('file-explorer template (dogfood for #2623)', () => {
     const {container} = render(<FileExplorerPage />);
     const sections = getSectionBoxes(container);
     const detail = sections[sections.length - 1];
-    const outerStyle = detail.outer.getAttribute('style') ?? '';
-    expect(outerStyle).toContain('--x-flexGrow: 1');
-    expect(outerStyle).toContain('--x-flexShrink: 0');
-    expect(outerStyle).toContain('--x-flexBasis: 320px');
+    expect(getComputedStyle(detail.outer).flexGrow).toBe('1');
+    expect(getComputedStyle(detail.outer).flexShrink).toBe('0');
+    expect(detail.outer.getAttribute('style')).toContain(
+      '--x-flexBasis: 320px',
+    );
   });
 
   it('no longer hand-writes the layout CSS the props now cover', () => {

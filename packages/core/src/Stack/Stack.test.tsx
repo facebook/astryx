@@ -319,10 +319,15 @@ describe('Stack', () => {
 });
 
 /**
- * Overflow enum + flex-item props (issue #2623).
+ * isScrollable + flex-item props (issue #2623).
+ *
+ * `grow` / `shrink` compile to static atomic classes for the boolean (0/1)
+ * cases, so they are asserted through the computed value. Only a custom
+ * numeric factor and `basis` need a dynamic style, which lands as a CSS
+ * custom property in the style attribute.
  */
-describe('Stack overflow + flex-item props', () => {
-  it('treats isScrollable as sugar for overflow="auto"', () => {
+describe('Stack isScrollable + flex-item props', () => {
+  it('scrolls its own overflow when isScrollable is set', () => {
     render(
       <Stack isScrollable data-testid="stack">
         <div>Item</div>
@@ -331,38 +336,40 @@ describe('Stack overflow + flex-item props', () => {
     expect(getComputedStyle(screen.getByTestId('stack')).overflow).toBe('auto');
   });
 
-  it('supports the overflow enum', () => {
-    render(
-      <Stack overflow="scroll" data-testid="stack">
-        <div>Item</div>
-      </Stack>,
-    );
-    expect(getComputedStyle(screen.getByTestId('stack')).overflow).toBe(
-      'scroll',
-    );
-  });
-
-  it('lets overflow take precedence over isScrollable', () => {
-    render(
-      <Stack isScrollable overflow="hidden" data-testid="stack">
-        <div>Item</div>
-      </Stack>,
-    );
-    expect(getComputedStyle(screen.getByTestId('stack')).overflow).toBe(
-      'hidden',
-    );
-  });
-
   it('applies grow/shrink/basis so a Stack can be a flex child', () => {
     render(
       <Stack grow shrink={false} basis={320} data-testid="stack">
         <div>Item</div>
       </Stack>,
     );
+    const el = screen.getByTestId('stack');
+    expect(getComputedStyle(el).flexGrow).toBe('1');
+    expect(getComputedStyle(el).flexShrink).toBe('0');
+    expect(el.getAttribute('style')).toContain('--x-flexBasis: 320px');
+  });
+
+  it('emits no inline custom property for boolean grow/shrink', () => {
+    // The common case is a plain static class: no style attribute, no custom
+    // property, fully cacheable CSS.
+    render(
+      <Stack grow shrink={false} data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
     const style = screen.getByTestId('stack').getAttribute('style') ?? '';
-    expect(style).toContain('--x-flexGrow: 1');
-    expect(style).toContain('--x-flexShrink: 0');
-    expect(style).toContain('--x-flexBasis: 320px');
+    expect(style).not.toContain('--x-flexGrow');
+    expect(style).not.toContain('--x-flexShrink');
+  });
+
+  it('falls back to a dynamic style for a custom numeric factor', () => {
+    render(
+      <Stack grow={2} data-testid="stack">
+        <div>Item</div>
+      </Stack>,
+    );
+    expect(screen.getByTestId('stack').getAttribute('style')).toContain(
+      '--x-flexGrow: 2',
+    );
   });
 
   it('keeps sizing props working alongside the flex props', () => {
@@ -371,9 +378,9 @@ describe('Stack overflow + flex-item props', () => {
         <div>Item</div>
       </Stack>,
     );
-    const style = screen.getByTestId('stack').getAttribute('style') ?? '';
-    expect(style).toContain('--x-flexGrow: 1');
-    expect(style).toContain('height: 100%');
+    const el = screen.getByTestId('stack');
+    expect(getComputedStyle(el).flexGrow).toBe('1');
+    expect(el.getAttribute('style')).toContain('height: 100%');
   });
 
   it('emits no flex declarations by default', () => {
@@ -382,36 +389,32 @@ describe('Stack overflow + flex-item props', () => {
         <div>Item</div>
       </Stack>,
     );
-    const style = screen.getByTestId('stack').getAttribute('style') ?? '';
-    expect(style).not.toContain('--x-flex');
+    const el = screen.getByTestId('stack');
+    expect(el.getAttribute('style') ?? '').not.toContain('--x-flex');
+    expect(getComputedStyle(el).flexGrow).not.toBe('1');
   });
 
   it('does not leak the new props to the DOM', () => {
     render(
-      <Stack
-        overflow="auto"
-        grow
-        shrink={false}
-        basis={320}
-        data-testid="stack">
+      <Stack isScrollable grow shrink={false} basis={320} data-testid="stack">
         <div>Item</div>
       </Stack>,
     );
     const el = screen.getByTestId('stack');
-    for (const attr of ['overflow', 'grow', 'shrink', 'basis']) {
+    for (const attr of ['isscrollable', 'grow', 'shrink', 'basis']) {
       expect(el.hasAttribute(attr)).toBe(false);
     }
   });
 
   it('flows the new props through HStack', () => {
     render(
-      <HStack overflow="auto" grow data-testid="hstack">
+      <HStack isScrollable grow data-testid="hstack">
         <div>Item</div>
       </HStack>,
     );
     const el = screen.getByTestId('hstack');
     expect(getComputedStyle(el).overflow).toBe('auto');
-    expect(el.getAttribute('style')).toContain('--x-flexGrow: 1');
+    expect(getComputedStyle(el).flexGrow).toBe('1');
   });
 
   it('flows the new props through VStack', () => {
@@ -422,6 +425,6 @@ describe('Stack overflow + flex-item props', () => {
     );
     const el = screen.getByTestId('vstack');
     expect(getComputedStyle(el).overflow).toBe('auto');
-    expect(el.getAttribute('style')).toContain('--x-flexShrink: 0');
+    expect(getComputedStyle(el).flexShrink).toBe('0');
   });
 });

@@ -444,7 +444,7 @@ export default function FileExplorerPage() {
       content={
         <LayoutContent padding={0} isScrollable={false}>
           {/* The column strip scrolls horizontally; each column scrolls itself. */}
-          <HStack height="100%" overflow="auto">
+          <HStack height="100%" isScrollable>
             {columns.map((col, colIndex) => {
               const showDivider =
                 colIndex < columns.length - 1 || selectedFile != null;

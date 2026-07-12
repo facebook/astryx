@@ -30,9 +30,8 @@ import {
 } from '../Layout/padding.stylex';
 import {
   flexItem,
-  overflowStyles,
+  scrollableStyles,
   type FlexFactor,
-  type Overflow,
 } from '../Layout/flex.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
@@ -147,16 +146,9 @@ export interface StackProps extends BaseProps<HTMLElement> {
   paddingBlock?: SpacingStep;
 
   /**
-   * Overflow behavior of the stack.
-   *
-   * Takes precedence over `isScrollable` when both are set. Only the
-   * shorthand is exposed (no `overflowX`/`overflowY`): those are physical
-   * axes, and Astryx styles with logical properties.
-   */
-  overflow?: Overflow;
-
-  /**
-   * Enables scrollable overflow (`overflow: auto`) for the stack.
+   * Enables scrollable overflow (`overflow: auto`) for the stack — use it for
+   * a horizontally scrolling strip (a kanban board, a card rail) as well as a
+   * vertically scrolling pane.
    *
    * Matches the `isScrollable` prop on `LayoutContent` and `LayoutPanel`.
    * When the stack is itself a flex child that should scroll, pair it with
@@ -239,7 +231,6 @@ export function Stack({
   padding,
   paddingInline,
   paddingBlock,
-  overflow,
   isScrollable,
   grow,
   shrink,
@@ -278,9 +269,6 @@ export function Stack({
   const resolvedPaddingInline = paddingInline ?? padding;
   const resolvedPaddingBlock = paddingBlock ?? padding;
 
-  // `isScrollable` is sugar for `overflow="auto"`; the enum wins when both are set.
-  const resolvedOverflow = overflow ?? (isScrollable ? 'auto' : undefined);
-
   const stylexProps = stylex.props(
     ...stack({
       direction,
@@ -291,7 +279,7 @@ export function Stack({
     }),
     resolvedPaddingInline != null && paddingInlineStyles[resolvedPaddingInline],
     resolvedPaddingBlock != null && paddingBlockStyles[resolvedPaddingBlock],
-    resolvedOverflow != null && overflowStyles[resolvedOverflow],
+    isScrollable === true && scrollableStyles.scrollable,
     ...flexItem({grow, shrink, basis}),
     xstyle,
   );

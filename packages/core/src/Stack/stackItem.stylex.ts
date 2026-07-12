@@ -12,9 +12,8 @@
 import {
   flexItem,
   minSizeResetStyles,
-  overflowStyles,
+  scrollableStyles,
   type FlexItemOptions,
-  type Overflow,
 } from '../Layout/flex.stylex';
 
 import * as stylex from '@stylexjs/stylex';
@@ -88,13 +87,8 @@ export interface StackItemOptions extends FlexItemOptions {
   size?: StackItemSize;
 
   /**
-   * Overflow behavior of the item.
-   * Takes precedence over `isScrollable` when both are set.
-   */
-  overflow?: Overflow;
-
-  /**
-   * Sugar for `overflow: 'auto'`, matching `LayoutContent` / `LayoutPanel`.
+   * Makes the item scroll its own overflow (`overflow: auto`).
+   * Matches `isScrollable` on `LayoutContent` / `LayoutPanel`.
    * @default false
    */
   isScrollable?: boolean;
@@ -133,10 +127,8 @@ export function stackItem({
   grow,
   shrink,
   basis,
-  overflow,
   isScrollable,
 }: StackItemOptions = {}) {
-  const resolvedOverflow = overflow ?? (isScrollable ? 'auto' : undefined);
   return [
     minSizeResetStyles.reset,
     sizeStyles[size ?? 'static'],
@@ -144,6 +136,6 @@ export function stackItem({
     // Must stay AFTER sizeStyles: `size` always applies, so an explicit
     // grow/shrink/basis only wins if it is layered on top of it.
     ...flexItem({grow, shrink, basis}),
-    resolvedOverflow != null && overflowStyles[resolvedOverflow],
+    isScrollable === true && scrollableStyles.scrollable,
   ] as const;
 }

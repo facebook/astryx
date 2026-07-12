@@ -74,14 +74,9 @@ const meta: Meta<typeof Section> = {
       control: {type: 'range', min: 100, max: 600, step: 10},
       description: 'Height in pixels',
     },
-    overflow: {
-      control: 'select',
-      options: ['visible', 'hidden', 'clip', 'auto', 'scroll'],
-      description: 'Overflow behavior (takes precedence over isScrollable)',
-    },
     isScrollable: {
       control: 'boolean',
-      description: 'Sugar for overflow="auto"',
+      description: 'Makes the section scroll its own content (overflow: auto)',
     },
     grow: {
       control: 'boolean',
@@ -295,7 +290,7 @@ export const Scrollable: Story = {
       <h4 {...stylex.props(styles.heading)}>
         isScrollable — the section scrolls its own content
       </h4>
-      <Section variant="muted" width={320} height={200} dividers={['end']}>
+      <Section variant="section" width={320} height={200} dividers={['end']}>
         <Section variant="transparent" height="100%" isScrollable>
           <VStack gap={2}>
             {Array.from({length: 14}, (_, i) => (
@@ -326,7 +321,7 @@ export const MultiPane: Story = {
       <h4 {...stylex.props(styles.heading)}>
         Fixed sidebar + detail column that takes the rest
       </h4>
-      <HStack height={220} overflow="auto">
+      <HStack height={220} isScrollable>
         <Section
           variant="muted"
           width={180}

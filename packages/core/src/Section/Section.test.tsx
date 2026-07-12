@@ -179,7 +179,7 @@ describe('Section', () => {
 });
 
 /**
- * Overflow + flex-item props (issue #2623).
+ * isScrollable + flex-item props (issue #2623).
  *
  * Section renders two boxes:
  * - the OUTER box is the flex child (sizing + padding-escape margins)
@@ -188,8 +188,12 @@ describe('Section', () => {
  * Flex-item props must land on the outer box; overflow must land on the inner
  * box (the inner is `height: 100%` and carries the background + dividers, so
  * scrolling the outer would drag them out of view).
+ *
+ * `grow` / `shrink` are static atomic classes for the boolean (0/1) cases, so
+ * they are asserted through the computed value; a custom numeric factor and
+ * `basis` fall back to a dynamic style (a CSS custom property in `style`).
  */
-describe('Section overflow + flex-item props', () => {
+describe('Section isScrollable + flex-item props', () => {
   const boxes = (container: HTMLElement) => {
     const outer = container.firstElementChild as HTMLElement;
     const inner = outer.firstElementChild as HTMLElement;
@@ -203,22 +207,6 @@ describe('Section overflow + flex-item props', () => {
     expect(getComputedStyle(outer).overflow).not.toBe('auto');
   });
 
-  it('supports the overflow enum on the inner surface', () => {
-    const {container} = render(<Section overflow="hidden">Content</Section>);
-    const {inner} = boxes(container);
-    expect(getComputedStyle(inner).overflow).toBe('hidden');
-  });
-
-  it('lets overflow take precedence over isScrollable', () => {
-    const {container} = render(
-      <Section isScrollable overflow="hidden">
-        Content
-      </Section>,
-    );
-    const {inner} = boxes(container);
-    expect(getComputedStyle(inner).overflow).toBe('hidden');
-  });
-
   it('applies the flex min-size reset to the outer box when scrollable', () => {
     // Flex items default to `min-height: auto`, which refuses to shrink below
     // content — a scroll region inside a Stack never scrolls without this.
@@ -226,12 +214,6 @@ describe('Section overflow + flex-item props', () => {
     const {outer} = boxes(container);
     expect(getComputedStyle(outer).minHeight).toBe('0');
     expect(getComputedStyle(outer).minWidth).toBe('0');
-  });
-
-  it('does not apply the min-size reset when overflow is visible', () => {
-    const {container} = render(<Section overflow="visible">Content</Section>);
-    const {outer} = boxes(container);
-    expect(getComputedStyle(outer).minHeight).not.toBe('0');
   });
 
   it('lets an explicit minHeight win over the scroll min-size reset', () => {
@@ -248,12 +230,6 @@ describe('Section overflow + flex-item props', () => {
     expect(getComputedStyle(outer).minWidth).toBe('0');
   });
 
-  it('supports overflow="clip"', () => {
-    const {container} = render(<Section overflow="clip">Content</Section>);
-    const {inner} = boxes(container);
-    expect(getComputedStyle(inner).overflow).toBe('clip');
-  });
-
   it('does not apply the min-size reset by default', () => {
     const {container} = render(<Section>Content</Section>);
     const {outer} = boxes(container);
@@ -267,14 +243,26 @@ describe('Section overflow + flex-item props', () => {
       </Section>,
     );
     const {outer, inner} = boxes(container);
-    const outerStyle = outer.getAttribute('style') ?? '';
-    expect(outerStyle).toContain('--x-flexGrow: 1');
-    expect(outerStyle).toContain('--x-flexShrink: 0');
-    expect(outerStyle).toContain('--x-flexBasis: 320px');
+    expect(getComputedStyle(outer).flexGrow).toBe('1');
+    expect(getComputedStyle(outer).flexShrink).toBe('0');
+    expect(outer.getAttribute('style')).toContain('--x-flexBasis: 320px');
     expect(inner.getAttribute('style')).toBeNull();
   });
 
-  it('accepts numeric grow/shrink factors', () => {
+  it('emits no inline custom property for boolean grow/shrink', () => {
+    // The common case is a plain static class: no custom property, fully
+    // cacheable CSS.
+    const {container} = render(
+      <Section grow shrink={false}>
+        Content
+      </Section>,
+    );
+    const outerStyle = boxes(container).outer.getAttribute('style') ?? '';
+    expect(outerStyle).not.toContain('--x-flexGrow');
+    expect(outerStyle).not.toContain('--x-flexShrink');
+  });
+
+  it('falls back to a dynamic style for custom numeric factors', () => {
     const {container} = render(
       <Section grow={2} shrink={3}>
         Content
@@ -293,26 +281,19 @@ describe('Section overflow + flex-item props', () => {
 
   it('emits no flex declarations by default', () => {
     const {container} = render(<Section>Content</Section>);
-    const outerStyle = boxes(container).outer.getAttribute('style') ?? '';
-    expect(outerStyle).not.toContain('--x-flexGrow');
-    expect(outerStyle).not.toContain('--x-flexShrink');
-    expect(outerStyle).not.toContain('--x-flexBasis');
+    const {outer} = boxes(container);
+    expect(outer.getAttribute('style') ?? '').not.toContain('--x-flex');
+    expect(getComputedStyle(outer).flexGrow).not.toBe('1');
   });
 
   it('does not leak the new props to the DOM', () => {
     const {container} = render(
-      <Section isScrollable overflow="auto" grow shrink={false} basis={320}>
+      <Section isScrollable grow shrink={false} basis={320}>
         Content
       </Section>,
     );
     const {outer} = boxes(container);
-    for (const attr of [
-      'isscrollable',
-      'overflow',
-      'grow',
-      'shrink',
-      'basis',
-    ]) {
+    for (const attr of ['isscrollable', 'grow', 'shrink', 'basis']) {
       expect(outer.hasAttribute(attr)).toBe(false);
     }
   });
@@ -332,7 +313,7 @@ describe('Section overflow + flex-item props', () => {
       </Section>,
     );
     const {outer, inner} = boxes(container);
-    expect(outer.getAttribute('style')).toContain('--x-flexShrink: 0');
+    expect(getComputedStyle(outer).flexShrink).toBe('0');
     expect(outer.getAttribute('style')).toContain('--x-width: 240px');
     expect(getComputedStyle(outer).minHeight).toBe('0');
     expect(getComputedStyle(inner).overflow).toBe('auto');

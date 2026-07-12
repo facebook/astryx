@@ -119,9 +119,9 @@ describe('StackItem flex-item props', () => {
         Content
       </StackItem>,
     );
-    const el = screen.getByTestId('stack-item');
-    expect(el.getAttribute('style') ?? '').toContain('--x-flexShrink: 1');
-    expect(getComputedStyle(el).flexShrink).not.toBe('0');
+    expect(getComputedStyle(screen.getByTestId('stack-item')).flexShrink).toBe(
+      '1',
+    );
   });
 
   it('lets grow override the flexGrow:0 baked into the default size', () => {
@@ -130,9 +130,9 @@ describe('StackItem flex-item props', () => {
         Content
       </StackItem>,
     );
-    const el = screen.getByTestId('stack-item');
-    expect(el.getAttribute('style') ?? '').toContain('--x-flexGrow: 1');
-    expect(getComputedStyle(el).flexGrow).not.toBe('0');
+    expect(getComputedStyle(screen.getByTestId('stack-item')).flexGrow).toBe(
+      '1',
+    );
   });
 
   it('lets grow={false} cancel size="fill"', () => {
@@ -141,9 +141,9 @@ describe('StackItem flex-item props', () => {
         Content
       </StackItem>,
     );
-    const el = screen.getByTestId('stack-item');
-    expect(el.getAttribute('style')).toContain('--x-flexGrow: 0');
-    expect(getComputedStyle(el).flexGrow).not.toBe('1');
+    expect(getComputedStyle(screen.getByTestId('stack-item')).flexGrow).toBe(
+      '0',
+    );
   });
 
   it('keeps size="fill" semantics when no explicit grow is given', () => {
@@ -154,7 +154,7 @@ describe('StackItem flex-item props', () => {
     );
     const el = screen.getByTestId('stack-item');
     expect(getComputedStyle(el).flexGrow).toBe('1');
-    expect(el.getAttribute('style')).toContain('--x-flexShrink: 0');
+    expect(getComputedStyle(el).flexShrink).toBe('0');
   });
 
   it('accepts numeric factors and a size basis', () => {
@@ -185,26 +185,15 @@ describe('StackItem flex-item props', () => {
     expect(screen.getByTestId('stack-item').getAttribute('style')).toBeNull();
   });
 
-  it('supports the overflow enum', () => {
+  it('emits no inline custom property for boolean grow/shrink', () => {
+    // The common case is a plain static class: no style attribute, no custom
+    // property, fully cacheable CSS.
     render(
-      <StackItem overflow="hidden" data-testid="stack-item">
+      <StackItem grow shrink={false} data-testid="stack-item">
         Content
       </StackItem>,
     );
-    expect(getComputedStyle(screen.getByTestId('stack-item')).overflow).toBe(
-      'hidden',
-    );
-  });
-
-  it('lets overflow take precedence over isScrollable', () => {
-    render(
-      <StackItem isScrollable overflow="hidden" data-testid="stack-item">
-        Content
-      </StackItem>,
-    );
-    expect(getComputedStyle(screen.getByTestId('stack-item')).overflow).toBe(
-      'hidden',
-    );
+    expect(screen.getByTestId('stack-item').getAttribute('style')).toBeNull();
   });
 
   it('does not leak the new props to the DOM', () => {
@@ -213,13 +202,13 @@ describe('StackItem flex-item props', () => {
         grow
         shrink={false}
         basis={320}
-        overflow="auto"
+        isScrollable
         data-testid="stack-item">
         Content
       </StackItem>,
     );
     const el = screen.getByTestId('stack-item');
-    for (const attr of ['grow', 'shrink', 'basis', 'overflow']) {
+    for (const attr of ['grow', 'shrink', 'basis', 'isscrollable']) {
       expect(el.hasAttribute(attr)).toBe(false);
     }
   });
@@ -233,14 +222,12 @@ describe('stackItem() style utility', () => {
   it('exposes grow/shrink/basis to direct stylex consumers', () => {
     render(<Probe shrink basis={200} />);
     const el = screen.getByTestId('probe');
-    const style = el.getAttribute('style') ?? '';
-    expect(style).toContain('--x-flexShrink: 1');
-    expect(style).toContain('--x-flexBasis: 200px');
-    expect(getComputedStyle(el).flexShrink).not.toBe('0');
+    expect(getComputedStyle(el).flexShrink).toBe('1');
+    expect(el.getAttribute('style')).toContain('--x-flexBasis: 200px');
   });
 
-  it('exposes overflow to direct stylex consumers', () => {
-    render(<Probe overflow="auto" />);
+  it('exposes isScrollable to direct stylex consumers', () => {
+    render(<Probe isScrollable />);
     expect(getComputedStyle(screen.getByTestId('probe')).overflow).toBe('auto');
   });
 });

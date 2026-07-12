@@ -19,7 +19,7 @@ import {
   type StackItemCrossAlignSelf,
   type StackItemSize,
 } from './stackItem.stylex';
-import type {FlexFactor, Overflow} from '../Layout/flex.stylex';
+import type {FlexFactor} from '../Layout/flex.stylex';
 import type {SizeValue} from '../utils/types';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
@@ -68,15 +68,6 @@ export interface StackItemProps extends BaseProps<HTMLElement> {
    * Numbers are treated as pixels, strings are used as-is.
    */
   basis?: SizeValue;
-
-  /**
-   * Overflow behavior of the item.
-   *
-   * StackItem already applies the flex `min-height: 0` / `min-width: 0` reset,
-   * so `<StackItem size="fill" overflow="auto">` is a complete scroll region.
-   * Takes precedence over `isScrollable` when both are set.
-   */
-  overflow?: Overflow;
 
   /**
    * Enables scrollable overflow (`overflow: auto`) for the item.
@@ -128,7 +119,6 @@ export function StackItem({
   grow,
   shrink,
   basis,
-  overflow,
   isScrollable,
   as: element = 'div',
   xstyle,
@@ -145,7 +135,6 @@ export function StackItem({
       grow,
       shrink,
       basis,
-      overflow,
       isScrollable,
     }),
     xstyle,

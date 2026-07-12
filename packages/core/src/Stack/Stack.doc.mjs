@@ -54,12 +54,6 @@ export const docs = {
           default: 'false',
         },
         {
-          name: 'overflow',
-          type: "'visible' | 'hidden' | 'clip' | 'auto' | 'scroll'",
-          description:
-            'Overflow behavior of the stack. Takes precedence over isScrollable when both are set. Use overflow="auto" for a horizontally scrolling strip (a kanban board, a card rail).',
-        },
-        {
           name: 'grow',
           type: 'boolean | number',
           description:
@@ -181,12 +175,6 @@ export const docs = {
           default: 'false',
         },
         {
-          name: 'overflow',
-          type: "'visible' | 'hidden' | 'clip' | 'auto' | 'scroll'",
-          description:
-            'Overflow behavior of the stack. Takes precedence over isScrollable when both are set. Use overflow="auto" for a horizontally scrolling strip (a kanban board, a card rail).',
-        },
-        {
           name: 'grow',
           type: 'boolean | number',
           description:
@@ -284,12 +272,6 @@ export const docs = {
           description:
             'Enables scrollable overflow (overflow: auto). StackItem already applies the flex min-height/min-width reset, so <StackItem size="fill" isScrollable> is a complete scroll region. Matches isScrollable on LayoutContent and LayoutPanel.',
           default: 'false',
-        },
-        {
-          name: 'overflow',
-          type: "'visible' | 'hidden' | 'clip' | 'auto' | 'scroll'",
-          description:
-            'Overflow behavior of the item. Takes precedence over isScrollable when both are set.',
         },
         {
           name: 'grow',
