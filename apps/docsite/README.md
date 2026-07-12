@@ -51,6 +51,39 @@ This means:
 - No hand-maintained arrays of component names; use `componentRegistry`
 - No `if (pkg === '@astryxdesign/core')` switches; let the pipeline classify packages
 
+## Versioned Content: latest vs canary
+
+The docsite ships one codebase deployed from `main`, but the data pipeline can
+read package docs from two different sources depending on the build **target**:
+
+| Target   | Reads package docs from            | Deploys                                |
+| -------- | ---------------------------------- | -------------------------------------- |
+| `latest` | the last **published** npm release | production (`astryx.atmeta.com`)       |
+| `canary` | the live monorepo (`main`, WIP)    | the canary site + **every PR preview** |
+
+The target is derived from Vercel's `VERCEL_ENV`: the production deploy is
+`latest`; preview deploys (the `main` canary site and all PR previews) and local
+dev are `canary`. `scripts/resolve-content-root.mjs` maps the target to the
+filesystem root the pipeline reads from — for `latest` it downloads the
+published package tarballs from npm (their `src/` ships the `.doc.mjs` the
+pipeline needs); for `canary` it reads the live workspace. Only the documented
+**data** is version-pinned — CLI template demos are live-rendered React and
+always resolve `@astryxdesign/core` from the bundled workspace version.
+
+> **⚠️ Contributor gotcha: library changes don't show on the production site
+> until they're released.** Production (`astryx.atmeta.com`) documents the last
+> **published** release. If you add a component, change a prop, or update docs
+> and merge to `main`, those changes will **not** appear in production until the
+> next release publishes to npm. To see your merged change in a deployed site,
+> use the **canary** site or any **PR preview** (both read `main`) — or the
+> "Canary docs (main)" link in the footer. The canary banner links back to
+> production.
+
+**Local dev is unaffected.** `pnpm dev` has no `VERCEL_ENV`, so it defaults to
+`canary` and reads the live workspace — your local changes show up as expected.
+To preview the `latest` view locally, run the pipeline with
+`DOCSITE_TARGET=latest` (needs network to fetch the published tarballs).
+
 ## Adding a New Theme
 
 1. Create the theme package under `packages/themes/<name>/`

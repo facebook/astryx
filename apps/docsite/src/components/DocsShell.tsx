@@ -9,6 +9,8 @@ import {AppShell} from '@astryxdesign/core/AppShell';
 import {SideNav, SideNavItem, SideNavSection} from '@astryxdesign/core/SideNav';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {SharedTopNav} from './SharedTopNav';
+import {CanaryBanner} from './CanaryBanner';
+import {CURRENT_TARGET} from '../lib/docsVersions';
 import type {PackageMeta} from '../generated/packageRegistry';
 import type {DocTopic} from '../generated/docsRegistry';
 import type {GroupedEntry} from '../generated/groupedComponentRegistry';
@@ -33,11 +35,7 @@ const foundationsSort = (a: DocTopic, b: DocTopic) => {
 
 // ── Shell ──────────────────────────────────────────────────────────────
 
-export function DocsShell({
-  children,
-  packages,
-  docTopics,
-}: DocsShellProps) {
+export function DocsShell({children, packages, docTopics}: DocsShellProps) {
   const pathname = usePathname();
   const [componentQuery, setComponentQuery] = useState('');
 
@@ -110,6 +108,7 @@ export function DocsShell({
     <AppShell
       variant="surface"
       height="auto"
+      banner={CURRENT_TARGET === 'canary' ? <CanaryBanner /> : undefined}
       topNav={<SharedTopNav />}
       sideNav={
         <SideNav topContent={isOnComponentsRoute ? componentSearch : undefined}>
