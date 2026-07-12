@@ -18,6 +18,8 @@
  *    - While in hover mode, mouseleave closes after delay
  *    - Any close (click, Escape, outside-click) resets hover mode
  *    - Click-to-close additionally skips the next mouseenter
+ *    - A click immediately after hover-open is ignored so natural hover+click
+ *      gestures do not accidentally close the menu
  *
  * Only uses mouseenter/mouseleave (not mouseover).
  */
@@ -26,6 +28,8 @@ import {useCallback, useEffect, useRef} from 'react';
 import {useListFocus} from './useListFocus';
 import {useMediaQuery} from './useMediaQuery';
 
+export const HOVER_CLICK_GUARD_MS = 500;
+
 interface UseMenuHoverOptions {
   show: (options?: {skipAutoFocus?: boolean}) => void;
   hide: () => void;
@@ -33,6 +37,7 @@ interface UseMenuHoverOptions {
   isEnabled: boolean;
   showDelay?: number;
   hideDelay?: number;
+  hoverClickCloseDelay?: number;
 }
 
 interface UseMenuHoverReturn<T extends HTMLElement = HTMLElement> {
@@ -61,6 +66,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     isEnabled,
     showDelay = 150,
     hideDelay = 200,
+    hoverClickCloseDelay = HOVER_CLICK_GUARD_MS,
   } = options;
 
   const hasHover = useMediaQuery('(hover: hover)');
@@ -70,13 +76,18 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
   const triggerElRef = useRef<HTMLElement | null>(null);
   // Whether the menu was opened/interacted via hover (enables mouseleave-to-close)
   const hoverModeRef = useRef(false);
+  const hoverOpenedAtRef = useRef(0);
   // One-shot: skip the next mouseenter after click-to-close
   const skipNextEnterRef = useRef(false);
   const prevIsOpenRef = useRef(isOpen);
+  // Mirrors isOpen for use inside timers without re-creating them
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
 
-  // When popover closes (any reason), reset hover mode
+  // When popover closes (any reason), reset hover mode and the click guard
   if (prevIsOpenRef.current && !isOpen) {
     hoverModeRef.current = false;
+    hoverOpenedAtRef.current = 0;
   }
   prevIsOpenRef.current = isOpen;
 
@@ -110,6 +121,12 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
   const handleClick = useCallback(() => {
     clearTimeouts();
     if (isOpen) {
+      if (
+        hoverModeRef.current &&
+        Date.now() - hoverOpenedAtRef.current < hoverClickCloseDelay
+      ) {
+        return;
+      }
       skipNextEnterRef.current = true;
       hide();
     } else {
@@ -117,7 +134,7 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
       show();
       requestAnimationFrame(() => focusFirst());
     }
-  }, [isOpen, clearTimeouts, show, hide, focusFirst]);
+  }, [isOpen, clearTimeouts, show, hide, focusFirst, hoverClickCloseDelay]);
 
   // Hover: mouseenter activates hover mode and opens
   const handleMouseEnter = useCallback(() => {
@@ -132,9 +149,17 @@ export function useMenuHover<T extends HTMLElement = HTMLElement>(
     clearTimeouts();
     if (showDelay > 0) {
       showTimerRef.current = setTimeout(() => {
+        // Stamp only when hover actually opens the menu, so re-entering the
+        // trigger of an already-open menu does not re-arm the click guard
+        if (!isOpenRef.current) {
+          hoverOpenedAtRef.current = Date.now();
+        }
         show({skipAutoFocus: true});
       }, showDelay);
     } else {
+      if (!isOpenRef.current) {
+        hoverOpenedAtRef.current = Date.now();
+      }
       show({skipAutoFocus: true});
     }
   }, [hasHover, clearTimeouts, show, showDelay]);
