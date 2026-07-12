@@ -10,7 +10,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build:versioned": "node scripts/build-versioned.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

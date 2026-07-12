@@ -18,3 +18,12 @@ public/vendor/
 src/themes/astryx.js
 src/themes/astryx.css
 src/themes/astryx.d.ts
+
+# Version-pinned content sources materialized by scripts/resolve-content-root.mjs
+.content-cache/
+
+# One-deploy dual-version build artifacts (scripts/build-versioned.mjs)
+out/
+public/canary/
+.route-stash/
+.use-cache-stash/

@@ -1,0 +1,21 @@
+{
+  "$comment": "Pins which published version the 'latest' docsite build documents. The docsite CODE is always built from main; only the packages it reads CONTENT from are pinned. Canary reads the live workspace (main). For 'latest', the resolver materializes each pinned package's published tarball from npm (tarballs ship src/, so .doc.mjs docs are present) into a synthetic workspace the data pipeline reads. npm is always reachable on the Vercel build; a git tag is not (shallow checkout), which is why we pin by npm version, not by git tag. 'packages' maps each published npm package to its workspace dir so discovery (root package.json workspaces globs) matches a real release layout.",
+  "canary": {
+    "label": "Canary (main)",
+    "source": "workspace"
+  },
+  "latest": {
+    "label": "Latest (stable)",
+    "version": "0.1.2",
+    "packages": [
+      {"name": "@astryxdesign/core", "dir": "packages/core"},
+      {"name": "@astryxdesign/cli", "dir": "packages/cli"},
+      {"name": "@astryxdesign/theme-neutral", "dir": "packages/themes/neutral"},
+      {"name": "@astryxdesign/theme-stone", "dir": "packages/themes/stone"},
+      {"name": "@astryxdesign/theme-gothic", "dir": "packages/themes/gothic"},
+      {"name": "@astryxdesign/theme-matcha", "dir": "packages/themes/matcha"},
+      {"name": "@astryxdesign/theme-y2k", "dir": "packages/themes/y2k"},
+      {"name": "@astryxdesign/theme-butter", "dir": "packages/themes/butter"}
+    ]
+  }
+}

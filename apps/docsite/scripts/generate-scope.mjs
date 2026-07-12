@@ -14,10 +14,15 @@
 import {readFileSync, writeFileSync, mkdirSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {resolveContentRoot} from './resolve-content-root.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const CORE_PKG = resolve(ROOT, '../../packages/core/package.json');
+// The playground scope must expose the SAME component surface the rest of the
+// docs describe, so resolve core from the active content target (canary →
+// workspace/main, latest → pinned published version) rather than always main.
+const BUILD = resolveContentRoot();
+const CORE_PKG = resolve(BUILD.contentRoot, 'packages/core/package.json');
 const OUT = resolve(ROOT, 'src/generated/playground-scope.ts');
 
 const HEADER = `// Copyright (c) Meta Platforms, Inc. and affiliates.

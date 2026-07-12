@@ -3,14 +3,44 @@
 import {readdirSync} from 'node:fs';
 import {resolve} from 'node:path';
 
+// ── Version-aware build ──────────────────────────────────────────────────
+// ONE deployment serves BOTH content lines:
+//   • latest (default) → full Next server build, served at "/". Keeps the
+//     dynamic route handlers (e.g. /mcp) and request-time features.
+//   • canary           → STATIC EXPORT with basePath "/canary", copied into
+//     the latest build's public/canary/** so Vercel's CDN serves it at
+//     "/canary" on the SAME deployment. No second project, no second domain.
+//
+// The static export can't run dynamic route handlers, so the canary pass
+// stashes them (latest still serves them). See scripts/build-versioned.mjs.
+const IS_CANARY_STATIC = process.env.DOCSITE_TARGET === 'canary';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  cacheComponents: true,
-  // A dynamic route segment can't carry a static extension, so the public
-  // plaintext URL /blog/<slug>.txt is served by the /blog/txt/[slug] handler.
-  async rewrites() {
-    return [{source: '/blog/:slug.txt', destination: '/blog/txt/:slug'}];
-  },
+  ...(IS_CANARY_STATIC
+    ? {
+        output: 'export',
+        basePath: '/canary',
+        assetPrefix: '/canary',
+        // Vercel's CDN resolves "/canary/components/" → the exported
+        // index.html; trailing slashes make that mapping unambiguous.
+        trailingSlash: true,
+        // next/image optimization needs the server; export must opt out.
+        images: {unoptimized: true},
+        // cacheComponents (dynamicIO) and rewrites() require the server
+        // runtime and are unsupported under output:'export'; the latest
+        // (server) build below carries them.
+      }
+    : {
+        cacheComponents: true,
+        // A dynamic route segment can't carry a static extension, so the
+        // public plaintext URL /blog/<slug>.txt is served by the
+        // /blog/txt/[slug] handler. `rewrites()` requires the server runtime,
+        // so it applies to the latest (server) build only.
+        async rewrites() {
+          return [{source: '/blog/:slug.txt', destination: '/blog/txt/:slug'}];
+        },
+      }),
   webpack: config => {
     // Webpack's CSS @import resolver doesn't follow package.json "exports".
     // Map each theme's /theme.css subpath to the actual dist file.

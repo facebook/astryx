@@ -51,6 +51,38 @@ This means:
 - No hand-maintained arrays of component names; use `componentRegistry`
 - No `if (pkg === '@astryxdesign/core')` switches; let the pipeline classify packages
 
+## Versioned Content: latest vs canary
+
+The docsite ships one codebase, but the pipeline can read content from two
+different sources depending on the build **target** (`DOCSITE_TARGET`):
+
+| Target   | Reads from                      | Documents                                  |
+| -------- | ------------------------------- | ------------------------------------------ |
+| `latest` | the last **published** release  | exactly what `npm install` gives you today |
+| `canary` | the live monorepo (`main`, WIP) | unreleased work in progress                |
+
+The production deployment serves **both** from one origin:
+
+- **`/`** → `latest` — the canonical, default site.
+- **`/canary/*`** → `canary` — the unreleased `main` docs.
+
+> **⚠️ Contributor gotcha: library changes don't show on the default site until
+> they're released.** The default docsite (`/`) documents the **last published
+> release**, not `main`. If you add a component, change a prop, or update docs
+> and merge to `main`, those changes will **not** appear on the default site
+> until the next release publishes. To see your merged change in the deployed
+> docs, view the **canary** site at **`/canary`** (or use the "Canary docs (main)"
+> link in the footer). The canary banner there links back to the stable site.
+
+**Local dev is unaffected.** `pnpm dev` defaults to `DOCSITE_TARGET=canary`, so
+it reads the live workspace — your local changes show up as you'd expect. The
+`latest`/`canary` split only matters for the deployed site. To preview the
+`latest` view locally, run with `DOCSITE_TARGET=latest`.
+
+`versions.json` is the single pin for which release `latest` documents. See
+`scripts/resolve-content-root.mjs` (target → content root) and
+`scripts/build-versioned.mjs` (the one-deployment dual build).
+
 ## Adding a New Theme
 
 1. Create the theme package under `packages/themes/<name>/`
