@@ -5,7 +5,7 @@
 /**
  * @file Card.tsx
  * @input Uses container utility, StyleX
- * @output Exports Card component and CardProps
+ * @output Exports Card component, CardProps, CardVariant, CardElevation
  * @position Core card container component
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -17,7 +17,12 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {borderVars, colorVars, radiusVars} from '../theme/tokens.stylex';
+import {
+  borderVars,
+  colorVars,
+  radiusVars,
+  shadowVars,
+} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
 import {
@@ -44,9 +49,10 @@ import {themeProps} from '../utils/themeProps';
  * - Non-semantic palette: `blue | cyan | gray | green | orange | pink | purple | red | teal | yellow`
  *   Each uses the corresponding `--color-background-<name>` token (20% opacity tint).
  *
- * Only `default` draws a visible border. Its border width is subtracted from
- * the padding so the total inset (border + padding) equals the padding token —
- * keeping content geometry faithful to the spacing scale and identical to the
+ * Only `default` draws a visible border (and only while the card is flat —
+ * see `CardElevation`). Its border width is subtracted from the padding so
+ * the total inset (border + padding) equals the padding token — keeping
+ * content geometry faithful to the spacing scale and identical to the
  * borderless variants. Themes can override borderWidth/borderColor.
  */
 export type CardVariant =
@@ -63,6 +69,17 @@ export type CardVariant =
   | 'red'
   | 'teal'
   | 'yellow';
+
+/**
+ * Elevation shadow for Card.
+ * Values map 1:1 to the shadow token scale:
+ * `low` → `--shadow-low`, `med` → `--shadow-med`, `high` → `--shadow-high`.
+ *
+ * An elevated card drops the `default` variant's border — the shadow takes
+ * over as the separation cue, matching the system's other elevated surfaces
+ * (Popover, Dialog, ContextMenu, Toast), which are all borderless.
+ */
+export type CardElevation = 'low' | 'med' | 'high';
 
 // =============================================================================
 // Styles
@@ -132,6 +149,19 @@ const variantStyles = stylex.create({
   },
   yellow: {
     backgroundColor: colorVars['--color-background-yellow'],
+  },
+});
+
+// Elevation shadow styles — each maps to a shadow token
+const elevationStyles = stylex.create({
+  low: {
+    boxShadow: shadowVars['--shadow-low'],
+  },
+  med: {
+    boxShadow: shadowVars['--shadow-med'],
+  },
+  high: {
+    boxShadow: shadowVars['--shadow-high'],
   },
 });
 
@@ -208,6 +238,16 @@ export interface CardProps extends BaseProps<HTMLDivElement> {
    * @default 'default'
    */
   variant?: CardVariant;
+
+  /**
+   * Elevation shadow using the shadow token scale.
+   * - `low` / `med` / `high` map to `--shadow-low` / `--shadow-med` / `--shadow-high`
+   *
+   * An elevated card drops the `default` variant's border — the shadow
+   * replaces it as the separation cue, matching other elevated surfaces
+   * (Popover, Dialog). Omit for a flat card (no shadow).
+   */
+  elevation?: CardElevation;
 }
 
 /**
@@ -243,6 +283,13 @@ export interface CardProps extends BaseProps<HTMLDivElement> {
  *   <p>Subtle de-emphasised card</p>
  * </Card>
  * ```
+ *
+ * @example
+ * ```
+ * <Card elevation="high" width={400}>
+ *   <p>Borderless floating card over a photo or colored background</p>
+ * </Card>
+ * ```
  */
 export function Card({
   width,
@@ -252,6 +299,7 @@ export function Card({
   children,
   padding,
   variant = 'default',
+  elevation,
   xstyle,
   className,
   style,
@@ -270,10 +318,11 @@ export function Card({
     <div
       ref={ref}
       {...mergeProps(
-        themeProps('card', {variant}),
+        themeProps('card', {variant, elevation}),
         stylex.props(
           styles.card,
           variantStyles[variant],
+          elevation != null && elevationStyles[elevation],
           hasFixedHeight && styles.scrollable,
           dynamicStyles.sizing(
             width ?? null,
@@ -304,8 +353,9 @@ export function Card({
             effectivePadding !== 4 &&
             containerPaddingBlockEndVarStyles[effectivePadding],
           // Applied after the container padding so the border-inset calc wins;
-          // it reads the --container-padding-* vars set above.
-          variant === 'default' && styles.withBorder,
+          // it reads the --container-padding-* vars set above. Elevated cards
+          // skip the border — the shadow replaces it as the separation cue.
+          variant === 'default' && elevation == null && styles.withBorder,
           xstyle,
         ),
         className,
