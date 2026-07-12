@@ -117,6 +117,26 @@ describe('ContextMenu', () => {
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
   });
 
+  it('positions the menu at the right-click point', () => {
+    const {container} = render(
+      <ContextMenu items={[{label: 'Item 1'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+
+    fireEvent.contextMenu(screen.getByText('Right-click me'), {
+      clientX: 120,
+      clientY: 80,
+    });
+
+    const anchor = container.querySelector('span[aria-hidden="true"]');
+    expect(anchor).toHaveStyle({
+      position: 'fixed',
+      left: '120px',
+      top: '80px',
+    });
+  });
+
   it('closes on Escape even when opened without auto-focus', () => {
     render(
       <ContextMenu items={[{label: 'Item 1'}]}>
@@ -168,7 +188,9 @@ describe('ContextMenu', () => {
 
     const event = new MouseEvent('contextmenu', {bubbles: true});
     const preventDefault = vi.spyOn(event, 'preventDefault');
-    screen.getByText('Right-click me').dispatchEvent(event);
+    act(() => {
+      screen.getByText('Right-click me').dispatchEvent(event);
+    });
     expect(preventDefault).toHaveBeenCalled();
   });
 
@@ -220,7 +242,7 @@ describe('ContextMenu', () => {
   });
 
   it('opens from a keyboard-invoked contextmenu on a text-only trigger (Shift+F10 / Menu key)', () => {
-    render(
+    const {container} = render(
       <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
         Right-click me
       </ContextMenu>,
@@ -228,6 +250,7 @@ describe('ContextMenu', () => {
     const trigger = screen.getByTestId('ctx');
     fireEvent.contextMenu(trigger, {clientX: 0, clientY: 0, detail: 0});
     expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+    expect(container.querySelector('span[aria-hidden="true"]')).toBeNull();
   });
 
   it('opens from a keyboard-invoked contextmenu bubbling from an element-child trigger (Shift+F10 / Menu key)', () => {
@@ -251,7 +274,7 @@ describe('ContextMenu', () => {
   it('opens on touch long-press', () => {
     vi.useFakeTimers();
     try {
-      render(
+      const {container} = render(
         <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
           <div>Long-press me</div>
         </ContextMenu>,
@@ -266,6 +289,12 @@ describe('ContextMenu', () => {
         vi.advanceTimersByTime(500);
       });
       expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      const anchor = container.querySelector('span[aria-hidden="true"]');
+      expect(anchor).toHaveStyle({
+        position: 'fixed',
+        left: '20px',
+        top: '20px',
+      });
     } finally {
       vi.useRealTimers();
     }

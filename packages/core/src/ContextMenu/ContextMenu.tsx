@@ -203,6 +203,10 @@ export function ContextMenu({
 }: ContextMenuProps) {
   const wrapperRef = useRef<HTMLElement>(null);
   const textOnly = children != null ? isTextOnly(children) : false;
+  const [openMode, setOpenMode] = useState<'trigger' | 'cursor' | null>(null);
+  const [cursorAnchor, setCursorAnchor] = useState<{x: number; y: number} | null>(
+    null,
+  );
 
   const items = ('items' in props ? props.items : undefined) ?? [];
   const menuContent = 'menuContent' in props ? props.menuContent : undefined;
@@ -212,12 +216,11 @@ export function ContextMenu({
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
 
-  const [isOpen, setIsOpen] = useState(false);
-
   const layer = useLayer({
     mode: 'context',
     onHide: useCallback(() => {
-      setIsOpen(false);
+      setOpenMode(null);
+      setCursorAnchor(null);
       onOpenChange?.(false);
       // Restore focus to the element that was focused before opening.
       const toRestore = triggerFocusRef.current;
@@ -227,7 +230,6 @@ export function ContextMenu({
       }
     }, [onOpenChange]),
     onShow: useCallback(() => {
-      setIsOpen(true);
       onOpenChange?.(true);
     }, [onOpenChange]),
     lightDismiss: false,
@@ -238,27 +240,29 @@ export function ContextMenu({
   }, [layer]);
 
   useIsomorphicLayoutEffect(() => {
-    if (textOnly) {
+    if (openMode === 'cursor') {
       return;
-    } // Skip for text-only (ref is on wrapper)
+    }
 
     const wrapper = wrapperRef.current;
     if (!wrapper) {
       return;
     }
 
-    const firstChild = wrapper.firstElementChild as HTMLElement | null;
-    if (!firstChild) {
+    const triggerEl = textOnly
+      ? wrapper
+      : (wrapper.firstElementChild as HTMLElement | null);
+    if (!triggerEl) {
       return;
     }
 
     // Use combined ref for position + interaction
-    layer.ref(firstChild);
+    layer.ref(triggerEl);
 
     return () => {
       layer.ref(null);
     };
-  }, [textOnly, layer.ref]);
+  }, [textOnly, openMode, layer.ref]);
 
   const {
     listRef,
@@ -298,7 +302,7 @@ export function ContextMenu({
   // opening right-click as a dismiss event. Handling it ourselves via
   // mousedown avoids that race.
   useEffect(() => {
-    if (!isOpen) {
+    if (!layer.isOpen) {
       return;
     }
     const handleClickOutside = (e: MouseEvent) => {
@@ -311,14 +315,14 @@ export function ContextMenu({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, closeMenu, listRef]);
+  }, [layer.isOpen, closeMenu, listRef]);
 
   // Dismiss on Escape from anywhere while open. The menu div's own onKeyDown
   // only fires when focus is inside the menu; a document-level listener is
   // kept as a reliable fallback Escape path (e.g. if focus has moved out of
   // the menu). Guards against IME composition-cancel.
   useEffect(() => {
-    if (!isOpen) {
+    if (!layer.isOpen) {
       return;
     }
     const handleEscape = (e: KeyboardEvent) => {
@@ -335,7 +339,15 @@ export function ContextMenu({
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen, closeMenu]);
+  }, [layer.isOpen, closeMenu]);
+
+  useIsomorphicLayoutEffect(() => {
+    if (openMode == null) {
+      return;
+    }
+    layer.show();
+    requestAnimationFrame(() => focusFirst());
+  }, [openMode, cursorAnchor, layer, focusFirst]);
 
   const listKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -362,16 +374,23 @@ export function ContextMenu({
         return;
       }
       e.preventDefault();
+      const isKeyboardInvocation =
+        e.detail === 0 && e.clientX === 0 && e.clientY === 0;
       // Remember the element focused before opening so we can restore it on
       // close (Escape or outside-click), instead of dropping focus to <body>.
       triggerFocusRef.current =
         document.activeElement instanceof HTMLElement
           ? document.activeElement
           : (e.currentTarget as HTMLElement);
-      layer.show();
-      requestAnimationFrame(() => focusFirst());
+      if (isKeyboardInvocation) {
+        setCursorAnchor(null);
+        setOpenMode('trigger');
+      } else {
+        setCursorAnchor({x: e.clientX, y: e.clientY});
+        setOpenMode('cursor');
+      }
     },
-    [isDisabled, layer, focusFirst],
+    [isDisabled],
   );
 
   // Touch long-press invocation (menus-8). iOS Safari never synthesizes a
@@ -381,11 +400,15 @@ export function ContextMenu({
   const longPressHandlers = useLongPress({
     disabled: isDisabled,
     onLongPress: useCallback(
-      () => {
-        layer.show();
-        requestAnimationFrame(() => focusFirst());
+      (point: {x: number; y: number}) => {
+        triggerFocusRef.current =
+          document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : wrapperRef.current;
+        setCursorAnchor(point);
+        setOpenMode('cursor');
       },
-      [layer, focusFirst],
+      [],
     ),
   });
 
@@ -407,7 +430,25 @@ export function ContextMenu({
     'data-testid': testId,
   };
 
-  const renderedMenu = layer.render(
+  // Temporary anchor for pointer/touch opens so the menu still positions from
+  // the interaction point while staying in context-anchored mode.
+  const renderedCursorAnchor =
+    openMode === 'cursor' && cursorAnchor ? (
+      <span
+        ref={layer.ref}
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          left: `${cursorAnchor.x}px`,
+          top: `${cursorAnchor.y}px`,
+          width: '1px',
+          height: '1px',
+          pointerEvents: 'none',
+        }}
+      />
+    ) : null;
+
+  const menuSurface = (
     <div
       ref={listRef}
       id={menuId}
@@ -424,24 +465,31 @@ export function ContextMenu({
       <DropdownMenuContext value={contextValue}>
         {resolvedMenuContent}
       </DropdownMenuContext>
-    </div>,
-    {
+    </div>
+  );
+
+  const renderMenuSurface = (
+    menuContentNode: ReactNode,
+  ) =>
+    layer.render(menuContentNode, {
       placement: 'below',
       alignment: 'start',
       xstyle: [popoverXstyle, layerAnimations.below],
-    },
-  );
+    });
+
+  const renderedMenu = renderMenuSurface(menuSurface);
 
   if (textOnly) {
     return (
       <>
         <span
-          ref={mergeRefs(ref, wrapperRef, textOnly ? layer.ref : null)}
+          ref={mergeRefs(ref, wrapperRef)}
           tabIndex={0}
           {...triggerProps}
           {...stylex.props(styles.wrapperInline)}>
           {children}
         </span>
+        {renderedCursorAnchor}
         {renderedMenu}
       </>
     );
@@ -455,6 +503,7 @@ export function ContextMenu({
         {...stylex.props(styles.wrapperContents)}>
         {children}
       </span>
+      {renderedCursorAnchor}
       {renderedMenu}
     </>
   );
