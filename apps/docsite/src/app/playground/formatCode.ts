@@ -249,9 +249,31 @@ export function registerPrettierFormatter(
  * so the toolbar button and the keybinding share one code path. No-ops when the
  * editor isn't mounted yet, or when the action is unavailable (no formatter
  * registered for the current language).
+ *
+ * Resolves when the format has actually finished, so the caller can show
+ * progress for the duration. That matters more than it looks: the first format
+ * downloads the ~1MB TypeScript parser, and Monaco cancels an in-flight format
+ * as soon as the model or the cursor moves (`format.js`:
+ * `EditorStateCancellationTokenSource(Value | Position)`). A user given no
+ * feedback clicks into the editor to check whether anything happened — and that
+ * click is what kills the format. So the button holds a spinner instead; see
+ * PlaygroundClient's `clickAction`.
+ *
+ * Never rejects. The caller is Button's `clickAction`, which awaits inside a
+ * React transition with no `catch`, so a rejection would reach an error boundary
+ * and take the playground down over a failed tidy-up. Genuine format failures
+ * never reach here anyway — the provider above reports them itself.
  */
-export function runFormatAction(
+export async function runFormatAction(
   editor: MonacoTypes.editor.IStandaloneCodeEditor | null,
-): void {
-  void editor?.getAction(FORMAT_DOCUMENT_ACTION_ID)?.run();
+): Promise<void> {
+  const action = editor?.getAction(FORMAT_DOCUMENT_ACTION_ID);
+  if (!action) {
+    return;
+  }
+  try {
+    await action.run();
+  } catch (error) {
+    console.warn('[playground] Format code action failed.', error);
+  }
 }

@@ -267,6 +267,18 @@ describe('createPrettierFormattingProvider', () => {
 
     expect(edits).toEqual([]);
   });
+
+  it('empties a whitespace-only document, exactly as Prettier does to a blank file', async () => {
+    // A distinct path from the empty document above: Prettier returns '' here
+    // too, but it DIFFERS from the source, so this really does emit an edit and
+    // clear the buffer. Pinned so the blanking is a decision, not a surprise.
+    const provider = createPrettierFormattingProvider();
+
+    const edits = await formatVia(provider, '   \n\n\t  \n');
+
+    expect(edits).toHaveLength(1);
+    expect(edits![0].text).toBe('');
+  });
 });
 
 describe('registerPrettierFormatter', () => {
@@ -283,6 +295,23 @@ describe('registerPrettierFormatter', () => {
     expect(languages).toContain('typescript');
     expect(typeof provider.provideDocumentFormattingEdits).toBe('function');
   });
+
+  it('hands back the same disposable rather than registering a second provider', () => {
+    // A duplicate registration is not harmless: with two document formatters
+    // Monaco stops auto-picking ours and puts the format behind a "select a
+    // formatter" choice. The cached handle is what a second caller must get.
+    const monaco = fakeMonaco();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const first = registerPrettierFormatter(monaco as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const second = registerPrettierFormatter(monaco as any);
+
+    expect(second).toBe(first);
+    expect(
+      monaco.languages.registerDocumentFormattingEditProvider,
+    ).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('runFormatAction', () => {
@@ -292,20 +321,75 @@ describe('runFormatAction', () => {
     const run = vi.fn(() => Promise.resolve());
     const getAction = vi.fn(() => ({run}));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    runFormatAction({getAction} as any);
+    void runFormatAction({getAction} as any);
 
     expect(getAction).toHaveBeenCalledWith(FORMAT_DOCUMENT_ACTION_ID);
     expect(run).toHaveBeenCalledTimes(1);
   });
 
-  it('no-ops when the editor is not mounted', () => {
-    expect(() => runFormatAction(null)).not.toThrow();
+  /**
+   * The first format downloads Prettier's TypeScript parser (~1MB), so the
+   * action is genuinely slow exactly once — and Monaco CANCELS an in-flight
+   * format the moment the model or the cursor moves
+   * (format.js: `EditorStateCancellationTokenSource(Value | Position)`). A user
+   * who gets no feedback clicks into the editor to see if it worked, and that
+   * click silently kills the format. So the caller has to be able to show
+   * progress, which means waiting on the action rather than firing and
+   * forgetting it — this is what lets Button drive it with `clickAction`.
+   */
+  it('resolves only once the format has finished, so the caller can show progress', async () => {
+    const order: string[] = [];
+    let finishFormatting!: () => void;
+    const run = vi.fn(
+      () =>
+        new Promise<void>(resolve => {
+          finishFormatting = () => {
+            order.push('format finished');
+            resolve();
+          };
+        }),
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pending = runFormatAction({getAction: () => ({run})} as any);
+    expect(pending).toBeInstanceOf(Promise);
+
+    finishFormatting();
+    await pending;
+    order.push('caller resumed');
+
+    expect(order).toEqual(['format finished', 'caller resumed']);
   });
 
-  it('no-ops when the action is unavailable', () => {
+  /**
+   * The caller is Button's `clickAction`, which awaits inside a React
+   * `startTransition` with a `try/finally` and no `catch` — so a rejection here
+   * would reach an error boundary and take the whole playground down over a
+   * failed tidy-up. Report it and resolve. (Real format failures never get this
+   * far: the provider already handles them with a console warning + a toast.)
+   */
+  it('never rejects — a broken action is reported, not thrown at the caller', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const run = vi.fn(() => Promise.reject(new Error('monaco exploded')));
+
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      runFormatAction({getAction: () => ({run})} as any),
+    ).resolves.toBeUndefined();
+
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
+  it('no-ops when the editor is not mounted', async () => {
+    await expect(runFormatAction(null)).resolves.toBeUndefined();
+  });
+
+  it('no-ops when the action is unavailable', async () => {
     const getAction = vi.fn(() => null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    expect(() => runFormatAction({getAction} as any)).not.toThrow();
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      runFormatAction({getAction} as any),
+    ).resolves.toBeUndefined();
   });
 });
 
@@ -469,6 +553,33 @@ describe('format failure reporting', () => {
 
     expect(warn).toHaveBeenCalledTimes(1);
   });
+
+  /**
+   * The load is cached so only the first format pays the ~1MB download — but a
+   * FAILED load must not be. Cache the rejection and one flaky moment (a dropped
+   * connection, a stale chunk hash mid-deploy) leaves the button dead for the
+   * rest of the session, with a toast that says "try again" and a retry that can
+   * never succeed.
+   */
+  it('retries the download after a failed load instead of staying dead all session', async () => {
+    vi.resetModules();
+    let attempts = 0;
+    vi.doMock('prettier/standalone', async () => {
+      attempts += 1;
+      if (attempts === 1) {
+        throw new Error('ChunkLoadError: Loading chunk 42 failed');
+      }
+      return await vi.importActual('prettier/standalone');
+    });
+    const {formatPlaygroundCode: format} =
+      await import('../app/playground/formatCode');
+
+    await expect(format(MESSY_CODE)).rejects.toThrow();
+    await expect(format(MESSY_CODE)).resolves.toContain(
+      'const items = [1, 2, 3];',
+    );
+    expect(attempts).toBe(2);
+  });
 });
 
 /**
@@ -499,6 +610,30 @@ describe('formatShortcutHint', () => {
     expect(formatShortcutHint('Mozilla/5.0 (X11; Linux x86_64)')).toBe(
       'Ctrl+Shift+I',
     );
+  });
+
+  it('is Shift+Alt+F on iOS — platform.js folds iPad/iPhone into Macintosh', () => {
+    expect(
+      formatShortcutHint(
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+      ),
+    ).toBe('Shift+Alt+F');
+    expect(
+      formatShortcutHint(
+        'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+      ),
+    ).toBe('Shift+Alt+F');
+  });
+
+  it('is Ctrl+Shift+I on Android — its UA says Linux, and Monaco believes it', () => {
+    // Not a curiosity: Android is the one platform where the UA says one thing
+    // (Linux) and the user experiences another (a phone). Monaco reads the same
+    // string we do, so agreeing with it is what keeps the two in lockstep.
+    expect(
+      formatShortcutHint(
+        'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36',
+      ),
+    ).toBe('Ctrl+Shift+I');
   });
 
   it('falls back to Monaco’s own default (Linux) for an unknown platform', () => {

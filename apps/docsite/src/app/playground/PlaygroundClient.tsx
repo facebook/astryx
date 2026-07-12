@@ -547,9 +547,16 @@ export function PlaygroundClient() {
   // it routes through the registered Prettier provider (see ./formatCode), and
   // going through the model keeps the edit on Monaco's undo stack. The resulting
   // model change flows back into `code` via the editor's onChange.
-  const handleFormatCode = useCallback(() => {
-    runFormatAction(editorRef.current);
-  }, []);
+  //
+  // Returned, not fired-and-forgotten, so Button's `clickAction` can hold a
+  // spinner until the format lands: the first one downloads Prettier's ~1MB
+  // TypeScript parser, and Monaco silently cancels a format in flight the moment
+  // the cursor moves — so a user with no feedback clicks into the editor to see
+  // if it worked and cancels the very thing they are waiting for.
+  const handleFormatCode = useCallback(
+    () => runFormatAction(editorRef.current),
+    [],
+  );
 
   // Prettier failing to LOAD (offline, CSP, a stale chunk hash after a deploy)
   // leaves the button silently dead — the user clicks and nothing happens, with
@@ -862,7 +869,7 @@ export function PlaygroundClient() {
                   isIconOnly
                   icon={<WandSparkles size={16} />}
                   isDisabled={activeView !== 'code'}
-                  onClick={handleFormatCode}
+                  clickAction={handleFormatCode}
                 />
                 {!isMobile && (
                   <DropdownMenu
