@@ -105,6 +105,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'isFullWidth',
+      type: 'boolean',
+      description:
+        'Stretches the button to fill its container\'s full width. Use for full-width call-to-action buttons instead of a width override or a stretch wrapper.',
+      default: 'false',
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description:
@@ -205,6 +212,7 @@ export const docsZh = {
       default: 'false',
     },
     {name: 'icon', type: 'ReactNode', description: '图标元素。仅提供 icon 而不提供 children 时，按钮渲染为正方形的纯图标按钮。'},
+    {name: 'isFullWidth', type: 'boolean', description: '按钮拉伸至填满容器的全部宽度。用于全宽的行动号召按钮，无需宽度覆盖或拉伸容器。', default: 'false'},
     {name: 'children', type: 'ReactNode', description: '可选的可见内容覆盖；label 仍然是必需的（用于无障碍名称）。大多数情况使用 <Button label="Save" />。'},
     {
       name: 'endContent',
@@ -272,6 +280,7 @@ export const docsDense = {
     isLoading: 'shows spinner+disables interaction; announces via live region',
     icon: 'icon element rendered before label text',
     isIconOnly: 'when true, renders square icon-only button; label becomes aria-label',
+    isFullWidth: 'stretches button to fill container width; no width override or stretch wrapper needed',
     children: 'optional visible override; label is still required for a11y. Prefer <Button label="Save" /> over using children',
     endContent: 'trailing icon/badge after label; ignored when isIconOnly; color inherited',
     tooltip: 'tooltip on hover',

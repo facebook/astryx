@@ -243,6 +243,23 @@ describe('Button', () => {
     expect(button).toHaveAttribute('data-size', 'sm');
   });
 
+  it('stretches to full width when isFullWidth', () => {
+    render(<Button label="Sign in" isFullWidth />);
+    expect(screen.getByRole('button')).toHaveStyle({width: '100%'});
+  });
+
+  it('does not stretch to full width by default', () => {
+    render(<Button label="Sign in" />);
+    expect(screen.getByRole('button')).not.toHaveStyle({width: '100%'});
+  });
+
+  it('stretches to full width when rendered as a link via href', () => {
+    render(<Button label="Sign in" href="https://example.com" isFullWidth />);
+    expect(screen.getByRole('link', {name: 'Sign in'})).toHaveStyle({
+      width: '100%',
+    });
+  });
+
   // P0: onClick fires before clickAction, clickAction respects preventDefault
   it('fires onClick before clickAction', async () => {
     const user = userEvent.setup();
