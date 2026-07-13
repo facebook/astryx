@@ -234,19 +234,37 @@ describe('plainDateAddMonths', () => {
     });
   });
 
-  it('overflows day into next month when target month is shorter', () => {
+  it('clamps to the last day when the target month is shorter', () => {
+    // Jan 31 + 1 month lands in February (clamped), not overflowed into
+    // March — matching Temporal.PlainDate.add and date-fns addMonths.
     expect(plainDateAddMonths({year: 2026, month: 1, day: 31}, 1)).toEqual({
       year: 2026,
-      month: 3,
-      day: 3,
+      month: 2,
+      day: 28,
     });
   });
 
-  it('overflows Jan 31 + 1 month in leap year', () => {
+  it('clamps to Feb 29 in a leap year', () => {
     expect(plainDateAddMonths({year: 2024, month: 1, day: 31}, 1)).toEqual({
       year: 2024,
-      month: 3,
-      day: 2,
+      month: 2,
+      day: 29,
+    });
+  });
+
+  it('clamps when subtracting into a shorter month', () => {
+    expect(plainDateAddMonths({year: 2026, month: 3, day: 31}, -1)).toEqual({
+      year: 2026,
+      month: 2,
+      day: 28,
+    });
+  });
+
+  it('clamps a 31st onto a 30-day month', () => {
+    expect(plainDateAddMonths({year: 2026, month: 5, day: 31}, 1)).toEqual({
+      year: 2026,
+      month: 6,
+      day: 30,
     });
   });
 });
