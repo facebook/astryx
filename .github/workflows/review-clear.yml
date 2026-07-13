@@ -38,22 +38,10 @@ jobs:
       checks: write
       contents: read
     steps:
-      # Read-only, sparse checkout of our default branch — only the owner files,
-      # never PR-controlled code. Lets the entitled-approver read below hit the
-      # local filesystem instead of the content API (which has returned
-      # transient 502s on ref=main). This job runs on workflow_run, so the
-      # default branch is our own trusted code.
-      - name: Check out owner files (default branch, read-only)
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-          sparse-checkout: |
-            .github/ENGOWNERS
-            .github/CODEOWNERS
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
       - name: Clear the code gate if an entitled owner approved
         uses: actions/github-script@v9
+        env:
+          ENG_OWNERS: ${{ vars.ENGOWNERS }}
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -102,61 +90,20 @@ jobs:
             const headSha = full.head.sha;
             const labels = full.labels.map((l) => l.name);
 
-            // Read the entitled code approvers: the CODEOWNERS `*` line plus
-            // all ENGOWNERS. An approval from any of them clears the code gate
-            // (eng owns the code; CODEOWNERS is a strict review-duty subset).
-            // Prefer the local filesystem (the sparse default-branch checkout
-            // above) since the content API has returned transient 502s on
-            // ref=main; fall back to the API with retries. If a critical owner
-            // file still can't be read, DON'T clear (leave the gate as-is) and
-            // let review-signal's flag job reconcile on the next push/dispatch —
-            // declining to clear is the safe direction here.
-            const fs = require('fs');
-            async function apiRead(path) {
-              let lastErr;
-              for (let attempt = 1; attempt <= 3; attempt++) {
-                try {
-                  const { data } = await github.rest.repos.getContent({
-                    owner, repo, path, ref: full.base.ref,
-                  });
-                  return Buffer.from(data.content, 'base64').toString('utf8');
-                } catch (e) {
-                  lastErr = e;
-                  core.warning(`API read of ${path} failed (attempt ${attempt}/3): ${e.message}`);
-                  if (attempt < 3) await new Promise((r) => setTimeout(r, 500 * attempt));
-                }
-              }
-              throw new Error(`Could not read ${path} after 3 API attempts: ${lastErr && lastErr.message}`);
-            }
-            async function readOwnerFile(path) {
-              try {
-                return fs.readFileSync(path, 'utf8');
-              } catch (e) {
-                core.warning(`Local read of ${path} failed (${e.code || e.message}); falling back to API.`);
-                return apiRead(path);
-              }
-            }
-            function handlesFromText(text, { starLineOnly = false } = {}) {
-              // Drop comment lines first so a header @handle isn't parsed as an
-              // owner, then (for CODEOWNERS) keep only the `*` default line.
-              const lines = text.split('\n').filter((l) => !l.trim().startsWith('#'));
-              const src = starLineOnly
-                ? (lines.map((l) => l.trim()).find((l) => l.startsWith('*')) || '')
-                : lines.join('\n');
-              return (src.match(/@[A-Za-z0-9-]+/g) || []).map((h) => h.slice(1).toLowerCase());
-            }
-            let codeApprovers;
-            try {
-              const [codeownersText, engownersText] = await Promise.all([
-                readOwnerFile('.github/CODEOWNERS'),
-                readOwnerFile('.github/ENGOWNERS'),
-              ]);
-              codeApprovers = new Set([
-                ...handlesFromText(codeownersText, { starLineOnly: true }),
-                ...handlesFromText(engownersText),
-              ]);
-            } catch (e) {
-              core.warning(`Could not read owner files; not clearing (flag job will reconcile): ${e.message}`);
+            // Entitled code approvers come from the ENGOWNERS repo variable
+            // (passed in as env above). Any eng owner's approval clears the code
+            // gate — eng owns the code, and the GitHub-native CODEOWNERS set is
+            // a subset of ENGOWNERS, so ENGOWNERS covers it. No file read / no
+            // content API, so there is nothing to 502 on. If the variable is
+            // empty/unset, DON'T clear (leave the gate as-is) and let
+            // review-signal's flag job reconcile — declining to clear is the
+            // safe direction here; an empty list is never "everyone".
+            const codeApprovers = new Set(
+              ((process.env.ENG_OWNERS || '').match(/@?[A-Za-z0-9-]+/g) || [])
+                .map((h) => h.replace(/^@/, '').toLowerCase()),
+            );
+            if (!codeApprovers.size) {
+              core.warning('ENGOWNERS variable empty/unset; not clearing (flag job will reconcile).');
               return;
             }
 
