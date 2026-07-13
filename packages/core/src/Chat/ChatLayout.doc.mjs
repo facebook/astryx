@@ -44,11 +44,6 @@ export const docs = {
       ],
     },
     {
-      name: 'initial',
-      type: "'spring' | 'instant' | false",
-      description: "How the scroll position is established when messages first appear. 'spring' (default) follows async-loaded messages with the spring animation. 'instant' opens an existing conversation at the latest message with no animation — use for history, replay, and session switching; later streaming growth still springs. false starts at the top with follow disengaged until the user scrolls to the bottom. Read once on mount.",
-    },
-    {
       name: 'scrollButton',
       type: 'ReactNode | null',
       description: 'Scroll-to-bottom button rendered above the composer. Defaults to ChatLayoutScrollButton with auto-scroll integration. Pass null to hide.',
@@ -121,7 +116,6 @@ export const docsZh = {
     children: '消息内容，通常是 ChatMessageList。在页面中自然流动。',
     composer: '编写器元素，通常是 ChatComposer。固定在底部，带有毛玻璃底座。',
     emptyState: '子元素为空时显示的内容。',
-    initial: "消息首次出现时如何定位滚动。'spring'（默认）对异步加载的消息使用弹簧动画跟随；'instant' 打开已有会话时瞬时定位到最新消息，无动画；false 从顶部开始且不启用跟随。挂载时读取一次。",
     scrollButton: '编写器上方的滚动到底部按钮。默认使用 ChatLayoutScrollButton。传入 null 隐藏。',
     scrollRef: '外部滚动容器引用。提供时，自动滚动和滚动到底部将目标指向此元素。',
   },
@@ -144,7 +138,6 @@ export const docsDense = {
     children: 'msg content; typically ChatMessageList',
     composer: 'composer element; typically ChatComposer; fixed bottom w/ frosted glass',
     emptyState: 'content when children empty',
-    initial: "first-fill scroll positioning; 'spring' (default) animates async loads; 'instant' opens existing conversations at latest msg w/o animation; false starts at top, follow off",
     scrollButton: 'scroll-to-bottom btn; defaults to ChatLayoutScrollButton; pass null to hide',
     scrollRef: 'external scroll container ref; targets parent/body instead of layout root',
   },

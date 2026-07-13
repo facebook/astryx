@@ -104,7 +104,7 @@ describe('ChatLayout', () => {
 });
 
 // ---------------------------------------------------------------------------
-// initial — first-fill scroll positioning
+// First-fill scroll positioning
 //
 // jsdom has no layout, so geometry is stubbed and only the synchronous
 // paths are asserted (see useChatStreamScroll.test.tsx for the rationale).
@@ -141,7 +141,7 @@ class FakeResizeObserver {
   }
 }
 
-describe('ChatLayout — initial scroll positioning', () => {
+describe('ChatLayout — first-fill scroll positioning', () => {
   let rafQueue: FrameRequestCallback[] = [];
 
   beforeEach(() => {
@@ -179,12 +179,9 @@ describe('ChatLayout — initial scroll positioning', () => {
     });
   }
 
-  function renderLayout(initial?: 'spring' | 'instant' | false) {
+  function renderLayout() {
     render(
-      <ChatLayout
-        composer={<div>composer</div>}
-        data-testid="layout"
-        initial={initial}>
+      <ChatLayout composer={<div>composer</div>} data-testid="layout">
         <ChatMessageList>
           <ChatMessage sender="assistant">
             <ChatMessageBubble>Hello</ChatMessageBubble>
@@ -195,8 +192,8 @@ describe('ChatLayout — initial scroll positioning', () => {
     return screen.getByTestId('layout');
   }
 
-  it("initial='instant' positions async-loaded content synchronously", () => {
-    const root = renderLayout('instant');
+  it('positions async-loaded content synchronously on the first fill', () => {
+    const root = renderLayout();
     // Mounted while content is short (loading) — not scrollable.
     setGeometry(root, 400);
     act(() => rafQueue.splice(0).forEach(cb => cb(0)));
@@ -209,24 +206,21 @@ describe('ChatLayout — initial scroll positioning', () => {
     expect(root.scrollTop).toBe(1000);
   });
 
-  it('default (spring) does not jump on async content — animation owns it', () => {
+  it('springs on growth after the first fill — animation owns it', () => {
     const root = renderLayout();
     setGeometry(root, 400);
     act(() => rafQueue.splice(0).forEach(cb => cb(0)));
 
+    // First fill: instant.
     setGeometry(root, 1400);
     fireContentResize();
-    // Spring path: nothing moves until animation frames run.
-    expect(root.scrollTop).toBe(0);
-    expect(rafQueue.length).toBeGreaterThan(0);
-  });
+    expect(root.scrollTop).toBe(1000);
 
-  it('initial={false} stays at the top when content lands', () => {
-    const root = renderLayout(false);
-    setGeometry(root, 1400);
-    act(() => rafQueue.splice(0).forEach(cb => cb(0)));
+    // Streaming growth: nothing moves until animation frames run.
+    rafQueue.length = 0;
+    setGeometry(root, 1800);
     fireContentResize();
-    act(() => rafQueue.splice(0).forEach(cb => cb(0)));
-    expect(root.scrollTop).toBe(0);
+    expect(root.scrollTop).toBe(1000);
+    expect(rafQueue.length).toBeGreaterThan(0);
   });
 });

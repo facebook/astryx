@@ -90,8 +90,8 @@ describe('useChatStreamScroll — initial positioning', () => {
     expect(el.scrollTop).toBe(600);
   });
 
-  it("initial: 'instant' positions the first async fill in one synchronous step", () => {
-    const {api, el} = renderHook({initial: 'instant'});
+  it('positions the first async fill in one synchronous step', () => {
+    const {api, el} = renderHook();
     // Mount while loading — nothing scrollable yet.
     setGeometry(el, {scrollHeight: 400, clientHeight: 400});
     flushRaf();
@@ -110,8 +110,8 @@ describe('useChatStreamScroll — initial positioning', () => {
     expect(el.scrollTop).toBe(800);
   });
 
-  it("initial: 'instant' consumes the pending fill via the mount jump too", () => {
-    const {api, el} = renderHook({initial: 'instant'});
+  it('consumes the pending first fill via the mount jump too', () => {
+    const {api, el} = renderHook();
     // Content already present at mount.
     setGeometry(el, {scrollHeight: 1000, clientHeight: 400});
     flushRaf();
@@ -123,27 +123,13 @@ describe('useChatStreamScroll — initial positioning', () => {
     expect(el.scrollTop).toBe(600);
   });
 
-  it('initial: false starts unlocked at the top and never auto-scrolls', () => {
-    const {api, el} = renderHook({initial: false});
-    setGeometry(el, {scrollHeight: 1000, clientHeight: 400});
-    flushRaf();
-    expect(el.scrollTop).toBe(0);
-    expect(api.current!.isLocked).toBe(false);
-
-    // Content growth does nothing while unlocked.
-    setGeometry(el, {scrollHeight: 1600, clientHeight: 400});
-    act(() => api.current!.scrollIfLocked());
-    flushRaf();
-    expect(el.scrollTop).toBe(0);
-  });
-
   it('default: starts locked', () => {
     const {api} = renderHook();
     expect(api.current!.isLocked).toBe(true);
   });
 });
 
-describe('useChatStreamScroll — scrollToBottom({instant})', () => {
+describe("useChatStreamScroll — scrollToBottom({behavior: 'instant'})", () => {
   it('jumps synchronously without scheduling animation frames', () => {
     const {api, el} = renderHook();
     setGeometry(el, {scrollHeight: 1000, clientHeight: 400});
@@ -151,7 +137,7 @@ describe('useChatStreamScroll — scrollToBottom({instant})', () => {
     el.scrollTop = 100; // user scrolled up
 
     rafQueue = [];
-    act(() => api.current!.scrollToBottom({instant: true}));
+    act(() => api.current!.scrollToBottom({behavior: 'instant'}));
     expect(el.scrollTop).toBe(600);
     expect(rafQueue).toHaveLength(0);
   });
@@ -163,7 +149,7 @@ describe('useChatStreamScroll — scrollToBottom({instant})', () => {
     act(() => api.current!.unlock());
     expect(api.current!.isLocked).toBe(false);
 
-    act(() => api.current!.scrollToBottom({instant: true}));
+    act(() => api.current!.scrollToBottom({behavior: 'instant'}));
     expect(api.current!.isLocked).toBe(true);
     expect(el.scrollTop).toBe(600);
   });
