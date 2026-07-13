@@ -123,8 +123,19 @@ export function Chart({
     () => ({...DEFAULT_MARGIN, ...marginOverride}),
     [marginOverride],
   );
-  const innerWidth = Math.max(0, containerWidth - margin.left - margin.right);
-  const innerHeight = Math.max(0, height - margin.top - margin.bottom);
+  // Clamp plot dimensions to finite, non-negative values. layout.ts hardens
+  // against NaN in the *data*, but a non-finite `height` prop or margin override
+  // would still collapse every scale range — and the clipPath/event-rect
+  // geometry — into NaN. `containerWidth` is always finite (from ResizeObserver).
+  const safeHeight = Number.isFinite(height) ? Math.max(0, height) : 0;
+  const rawInnerWidth = containerWidth - margin.left - margin.right;
+  const rawInnerHeight = safeHeight - margin.top - margin.bottom;
+  const innerWidth = Number.isFinite(rawInnerWidth)
+    ? Math.max(0, rawInnerWidth)
+    : 0;
+  const innerHeight = Number.isFinite(rawInnerHeight)
+    ? Math.max(0, rawInnerHeight)
+    : 0;
 
   // ─── Color assignment ─────────────────────────────────────────────────
   // Give every primary series that doesn't supply a static color (auto-colored
@@ -164,6 +175,7 @@ export function Chart({
       xKey,
       xScale: layout.xScale,
       yScale: layout.yScale,
+      yBandScale: layout.yBandScale,
       width: innerWidth,
       height: innerHeight,
     }),
@@ -230,6 +242,7 @@ export function Chart({
       xKey,
       xScale: layout.xScale,
       yScale: layout.yScale,
+      yBandScale: layout.yBandScale,
       resolved: layout.resolved,
       onPointer,
       svgRef,
@@ -258,7 +271,7 @@ export function Chart({
       <div
         ref={containerRef}
         {...stylex.props(styles.container)}
-        style={{height}}
+        style={{height: safeHeight}}
       />
     );
   }
@@ -304,7 +317,7 @@ export function Chart({
       <svg
         ref={svgRef}
         width="100%"
-        height={height}
+        height={safeHeight}
         aria-label={title ?? undefined}
         aria-describedby={subtitle ? descId : undefined}>
         {title && <title>{title}</title>}

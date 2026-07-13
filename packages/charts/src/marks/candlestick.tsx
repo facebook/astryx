@@ -7,7 +7,7 @@
  */
 
 import type {SeriesDef, ResolvedPoint, SeriesContext} from '../types';
-import type {ScaleBand} from 'd3-scale';
+import {xPixel, isBandScale} from '../utils';
 
 export interface CandlestickOptions {
   open: string;
@@ -31,8 +31,8 @@ function readNumber(d: Record<string, unknown>, key: string): number {
  */
 function candleSlot(resolved: ResolvedPoint[], ctx: SeriesContext): number {
   const {xScale, width} = ctx;
-  if ('bandwidth' in xScale) {
-    return (xScale as ScaleBand<string>).bandwidth();
+  if (isBandScale(xScale)) {
+    return xScale.bandwidth();
   }
   const xs = resolved
     .map(p => p.px)
@@ -64,16 +64,13 @@ export function candlestick(options: CandlestickOptions): SeriesDef {
       const points: ResolvedPoint[] = [];
       for (let i = 0; i < data.length; i++) {
         const d = data[i];
-        let px: number;
-        if ('bandwidth' in xScale) {
-          px =
-            ((xScale as ScaleBand<string>)(String(d[xKey])) ?? 0) +
-            (xScale as ScaleBand<string>).bandwidth() / 2;
-        } else {
-          px = xScale(d[xKey] as number);
-        }
         const close = readNumber(d, options.close);
-        points.push({px, py: yScale(close), py0: yScale(0), dataIndex: i});
+        points.push({
+          px: xPixel(d, xKey, xScale),
+          py: yScale(close),
+          py0: yScale(0),
+          dataIndex: i,
+        });
       }
       return points;
     },
