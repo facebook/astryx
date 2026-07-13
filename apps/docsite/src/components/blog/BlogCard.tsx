@@ -51,6 +51,30 @@ const styles = stylex.create({
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
   },
+  // The feature card's title/excerpt only scale up once the index shows more
+  // than one column (>=720px, where the post grid goes two-up). Below that the
+  // page is a single stack, so the feature matches the regular cards (h3 title,
+  // body excerpt) for consistent sizing. Keeps the h1 element for semantics.
+  featureTitle: {
+    fontSize: {
+      default: 'var(--text-heading-3-size)',
+      '@media (min-width: 720px)': 'var(--text-heading-1-size)',
+    },
+    lineHeight: {
+      default: 'var(--text-heading-3-leading)',
+      '@media (min-width: 720px)': 'var(--text-heading-1-leading)',
+    },
+  },
+  featureExcerpt: {
+    fontSize: {
+      default: 'var(--text-body-size)',
+      '@media (min-width: 720px)': 'var(--text-large-size)',
+    },
+    lineHeight: {
+      default: 'var(--text-body-leading)',
+      '@media (min-width: 720px)': 'var(--text-large-leading)',
+    },
+  },
 });
 
 export interface BlogCardProps {
@@ -93,13 +117,21 @@ export function BlogCard({
         </AspectRatio>
         <VStack gap={3}>
           <VStack gap={1}>
-            <Heading level={feature ? 1 : 3}>{post.title}</Heading>
+            <Heading
+              level={feature ? 1 : 3}
+              xstyle={feature ? styles.featureTitle : undefined}>
+              {post.title}
+            </Heading>
             {hideDescription ? null : (
               <Text
                 type={feature ? 'large' : 'body'}
                 weight="normal"
                 color="secondary"
-                xstyle={styles.excerpt}
+                xstyle={
+                  feature
+                    ? [styles.excerpt, styles.featureExcerpt]
+                    : styles.excerpt
+                }
                 className={css.description}>
                 {post.description}
               </Text>
