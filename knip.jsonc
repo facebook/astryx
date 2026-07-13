@@ -1,0 +1,44 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+
+  // Dead-code detection for the Astryx monorepo. knip reads each package's
+  // `exports`/`bin` from package.json as entry points, so a package's public
+  // API is never reported as unused. This file only adds the safety rules that
+  // package.json cannot express: doc/codegen files that are real entry points,
+  // and generated or standalone trees that must not be treated as source.
+
+  // Generated output, standalone template scaffolding, and example apps are not
+  // part of the internal source graph. Templates under packages/cli are copied
+  // verbatim into user projects, so they are intentionally standalone and must
+  // never be flagged as unused.
+  "ignore": [
+    "**/dist/**",
+    "**/build/**",
+    "packages/cli/templates/**",
+    // Baseline reference fixtures for vibe tests: compared against, not imported.
+    "internal/vibe-tests/.baseline/**"
+  ],
+
+  // Trust package.json for runtime deps that static analysis misses (peer setups,
+  // plugin resolution). Runtime dependency decisions belong to the Dependencies
+  // and Quartermaster roles, not the dead-code role.
+  "ignoreDependencies": [],
+
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.{js,mjs,cjs}", ".github/scripts/**/*.js"],
+      "project": ["scripts/**/*.{js,mjs,cjs}"]
+    },
+    "packages/*": {
+      // *.doc.mjs files are consumed by the docs pipeline, not imported by
+      // source; treat them as entry points so their exports are not flagged.
+      "entry": ["**/*.doc.mjs", "**/*.stories.{ts,tsx}"]
+    },
+    "packages/themes/*": {
+      "entry": ["src/source.ts", "src/index.ts"]
+    },
+    "apps/docsite": {
+      "entry": ["src/app/**/{page,layout,route,loading,error,not-found}.{ts,tsx}", "scripts/**/*.mjs"]
+    }
+  }
+}
