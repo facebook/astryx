@@ -664,3 +664,52 @@ export function discoverOwnedComponents(coreDir, loadedIntegrations = []) {
  * Minimal cleanup for full docs (default mode).
  * Strips SYNC comments, rewrites title, collapses blank lines.
  */
+/**
+ * Parse config `hiddenComponents` entries into a lookup set for
+ * isComponentHidden().
+ *
+ * Entry forms:
+ *   'Dialog'             — hides the CORE component named Dialog
+ *   '@scope/pkg/Dialog'  — hides that package's component; the segment after
+ *                          the LAST '/' is the component name, everything
+ *                          before it is the owning package
+ *
+ * Names are normalized with the same XDS-prefix strip discovery uses, so
+ * 'XDSDialog' and 'Dialog' are equivalent. Empty/malformed entries are
+ * ignored — hiding is intentionally lenient so a stale entry can never
+ * break discovery.
+ *
+ * @param {string[]} [entries]
+ * @returns {Set<string>} keys of the form `${package} ${name}`
+ */
+export function parseHiddenComponents(entries = []) {
+  const hidden = new Set();
+  for (const entry of entries) {
+    if (typeof entry !== 'string') continue;
+    const trimmed = entry.trim();
+    if (!trimmed) continue;
+    const idx = trimmed.lastIndexOf('/');
+    const pkg = idx === -1 ? CORE_PACKAGE : trimmed.slice(0, idx);
+    const name = (idx === -1 ? trimmed : trimmed.slice(idx + 1)).replace(
+      /^XDS/,
+      '',
+    );
+    if (!pkg || !name) continue;
+    hidden.add(`${pkg} ${name}`);
+  }
+  return hidden;
+}
+
+/**
+ * Whether `name` provided by `pkg` is hidden by a parseHiddenComponents()
+ * set. Callers apply this to UNSCOPED surfaces only (list, bare-name
+ * resolution, search) — explicit --package lookups bypass hiding.
+ *
+ * @param {Set<string>} hidden parsed set from parseHiddenComponents()
+ * @param {string} pkg owning package name
+ * @param {string} name bare component name (no XDS prefix)
+ * @returns {boolean}
+ */
+export function isComponentHidden(hidden, pkg, name) {
+  return hidden.size > 0 && hidden.has(`${pkg} ${name}`);
+}

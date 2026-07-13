@@ -204,7 +204,7 @@ export class Project {
   /**
    * The validated config surface (same data loadConfig returned, minus the
    * resolved `loadedIntegrations` which is exposed separately).
-   * @returns {{integrations?: string[], issuesUrl?: string, hooks?: object, experimental?: object}}
+   * @returns {{integrations?: string[], hiddenComponents?: string[], issuesUrl?: string, hooks?: object, experimental?: object}}
    */
   get config() {
     return this.#config;
@@ -213,6 +213,15 @@ export class Project {
   /** Configured integration package names. @returns {string[]} */
   get integrations() {
     return this.#integrations;
+  }
+
+  /**
+   * Raw config `hiddenComponents` entries ('Name' or '<package>/Name').
+   * Parse with lib/component-discovery parseHiddenComponents().
+   * @returns {string[]}
+   */
+  get hiddenComponents() {
+    return this.#config.hiddenComponents ?? [];
   }
 
   /** Resolved loaded integrations (lib/integrations.mjs shape). @returns {Array<object>} */

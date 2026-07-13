@@ -45,6 +45,21 @@ export interface XleComponent {
 export interface AstryxConfig {
   /** Integration package names to load. */
   integrations?: string[];
+  /**
+   * Components to hide from unscoped CLI surfaces: `component --list`,
+   * bare `component <Name>` resolution, and `search`. Use this when an
+   * integration ships a replacement for a component, so people and agents
+   * are steered to exactly one provider instead of an ambiguity error.
+   *
+   * Entry forms: `'Dialog'` (hides the core component) or
+   * `'@scope/pkg/Dialog'` (hides that package's component — the segment
+   * after the last `/` is the component name).
+   *
+   * Hiding only affects unscoped resolution: an explicit `--package <pkg>`
+   * lookup still resolves a hidden component, so its docs and swizzle stay
+   * reachable on purpose.
+   */
+  hiddenComponents?: string[];
   /** Where to file issues/feedback for this project. */
   issuesUrl?: string;
   /** Lifecycle hooks. */

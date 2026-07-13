@@ -35,10 +35,14 @@ import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {findCoreDir, CLI_ROOT} from '../utils/paths.mjs';
 import {
+  CORE_PACKAGE,
   discoverComponents,
   findComponentReadme,
+  isComponentHidden,
+  parseHiddenComponents,
   resolveImportPath,
 } from '../lib/component-discovery.mjs';
+import {Project} from '../lib/project.mjs';
 import {discoverHooks, findHookDoc} from '../lib/hook-discovery.mjs';
 import {levenshteinDistance} from '../lib/string-utils.mjs';
 import {discoverTemplates, extractComponents} from './template.mjs';
@@ -311,12 +315,15 @@ async function loadModuleDoc(docPath, exportName = 'docs') {
 
 /**
  * Build component candidates: name + keywords + usage/description from the
- * component's .doc.mjs.
+ * component's .doc.mjs. Config-hidden components are not candidates.
  * @param {string} coreDir
+ * @param {Set<string>} [hiddenComponents] parsed lib/component-discovery set
  */
-async function gatherComponents(coreDir) {
+async function gatherComponents(coreDir, hiddenComponents = new Set()) {
   const grouped = discoverComponents(coreDir);
-  const names = Object.values(grouped).flat();
+  const names = Object.values(grouped)
+    .flat()
+    .filter(n => !isComponentHidden(hiddenComponents, CORE_PACKAGE, n));
   const candidates = [];
   for (const comp of names) {
     const readme = findComponentReadme(coreDir, comp);
@@ -521,10 +528,20 @@ export async function search(query, options = {}) {
     throw new AstryxError('Could not find @astryxdesign/core package');
   }
 
+  // Config-hidden components are excluded from search candidates. Config
+  // errors never fail search — worst case nothing is hidden.
+  let hiddenComponents = new Set();
+  try {
+    const project = await Project.load(cwd);
+    hiddenComponents = parseHiddenComponents(project.hiddenComponents);
+  } catch {
+    // defaults-only project or malformed config — nothing hidden
+  }
+
   // Gather candidates from each requested domain in parallel.
   const wants = d => !type || type === d;
   const [components, hooks, docTopics, templates] = await Promise.all([
-    wants('component') ? gatherComponents(coreDir) : [],
+    wants('component') ? gatherComponents(coreDir, hiddenComponents) : [],
     wants('hook') ? gatherHooks(coreDir) : [],
     wants('doc') ? gatherDocs() : [],
     wants('template') ? gatherTemplates(cwd) : [],

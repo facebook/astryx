@@ -21,6 +21,8 @@ import {
   findExternalComponentDoc,
   findIntegrationComponentDoc,
   findIntegrationComponentSource,
+  isComponentHidden,
+  parseHiddenComponents,
   resolveImportPath,
 } from '../lib/component-discovery.mjs';
 import {Project} from '../lib/project.mjs';
@@ -30,18 +32,22 @@ import {AstryxError} from './error.mjs';
 import {findShowcase, findRelatedBlocks} from './template.mjs';
 
 /**
- * Load the configured integrations for `cwd`, swallowing any config errors so
- * component discovery never hard-fails on a malformed/absent integration. An
- * empty list means "core only".
+ * Load the configured integrations + hidden-component set for `cwd`,
+ * swallowing any config errors so component discovery never hard-fails on a
+ * malformed/absent integration. Empty integrations means "core only"; an
+ * empty hidden set means "nothing hidden".
  * @param {string} cwd
- * @returns {Promise<Array<{name: string, components?: string, issuesUrl?: string}>>}
+ * @returns {Promise<{loadedIntegrations: Array<{name: string, components?: string, issuesUrl?: string}>, hiddenComponents: Set<string>}>}
  */
-async function loadIntegrationsSafely(cwd) {
+async function loadProjectContextSafely(cwd) {
   try {
     const project = await Project.load(cwd);
-    return project.loadedIntegrations;
+    return {
+      loadedIntegrations: project.loadedIntegrations,
+      hiddenComponents: parseHiddenComponents(project.hiddenComponents),
+    };
   } catch {
-    return [];
+    return {loadedIntegrations: [], hiddenComponents: new Set()};
   }
 }
 
@@ -113,7 +119,24 @@ export async function component(name, options = {}) {
   // ── List mode ──────────────────────────────────────────────────
 
   if (category || list || !name) {
+    const {loadedIntegrations, hiddenComponents} =
+      await loadProjectContextSafely(cwd);
     const components = discoverComponents(coreDir);
+
+    // Config-hidden core components are dropped from every list detail level
+    // (brief/compact/full and --category). Categories left empty disappear.
+    if (hiddenComponents.size > 0) {
+      for (const [cat, comps] of Object.entries(components)) {
+        const visible = comps.filter(
+          c => !isComponentHidden(hiddenComponents, CORE_PACKAGE, c),
+        );
+        if (visible.length === 0) {
+          delete components[cat];
+        } else {
+          components[cat] = visible;
+        }
+      }
+    }
 
     if (category) {
       const match = Object.entries(components).find(
@@ -224,11 +247,12 @@ export async function component(name, options = {}) {
     }
 
     // Integration components (authoritative source: loadedIntegrations).
-    const loadedIntegrations = await loadIntegrationsSafely(cwd);
     const seenIntegration = new Set();
     for (const integration of loadedIntegrations) {
       seenIntegration.add(integration.name);
-      const owned = discoverIntegrationComponents(integration);
+      const owned = discoverIntegrationComponents(integration).filter(
+        rec => !isComponentHidden(hiddenComponents, integration.name, rec.name),
+      );
       // Group integration components by their doc `group`, falling back to the
       // package name. Keys are package-qualified so they never collide with
       // core groups or each other.
@@ -262,13 +286,20 @@ export async function component(name, options = {}) {
 
       if (hasGroups) {
         for (const [group, members] of Object.entries(grouped)) {
-          listData[`${group} (${ext.name})`] = members.map(n => ({
+          const visible = members.filter(
+            n => !isComponentHidden(hiddenComponents, ext.name, n),
+          );
+          if (visible.length === 0) continue;
+          listData[`${group} (${ext.name})`] = visible.map(n => ({
             name: n,
             package: ext.name,
           }));
         }
       } else {
-        const allComps = Object.values(grouped).flat().sort();
+        const allComps = Object.values(grouped)
+          .flat()
+          .filter(n => !isComponentHidden(hiddenComponents, ext.name, n))
+          .sort();
         if (allComps.length > 0) {
           listData[`${ext.category} (${ext.name})`] = allComps.map(n => ({
             name: n,
@@ -296,7 +327,8 @@ export async function component(name, options = {}) {
   // component with this name across core + every loaded integration. This is
   // what lets the CLI disambiguate by package and expose the owner's source +
   // issuesUrl (the inputs the future integration-component swizzle needs).
-  const loadedIntegrations = await loadIntegrationsSafely(cwd);
+  const {loadedIntegrations, hiddenComponents} =
+    await loadProjectContextSafely(cwd);
   const coreDocPath = findComponentReadme(coreDir, dirName);
   /**
    * @type {Array<{
@@ -328,6 +360,15 @@ export async function component(name, options = {}) {
       integration,
     });
   }
+
+  // Config-hidden owners are excluded from UNSCOPED resolution only. An
+  // explicit --package scope still resolves them (deliberate escape hatch:
+  // hidden components keep readable docs and stay swizzleable). This is what
+  // lets a config hide core's component so an integration replacement
+  // becomes the single authoritative owner instead of an ambiguity error.
+  const visibleOwners = owners.filter(
+    o => !isComponentHidden(hiddenComponents, o.package, dirName),
+  );
 
   /**
    * Augment a loaded `component.detail` doc with ownership metadata. Adds
@@ -440,18 +481,19 @@ export async function component(name, options = {}) {
   // ambiguity set — they retain their historical core-first fallback below so
   // existing consumers (and tests) keep working. Only config-driven integration
   // ownership participates here.
-  if (owners.length > 1) {
+  if (visibleOwners.length > 1) {
     throw new AstryxError(
       `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
-      owners.map(o => ({name: o.package, reason: 'provides this component'})),
+      visibleOwners.map(o => ({name: o.package, reason: 'provides this component'})),
       ERROR_CODES.ERR_UNKNOWN_COMPONENT,
     );
   }
 
-  // Single non-core owner (an integration provides it, core does not) — resolve
-  // from that integration so the integration component is authoritative.
-  if (owners.length === 1 && owners[0].package !== CORE_PACKAGE) {
-    const owner = owners[0];
+  // Single non-core owner (an integration provides it, core does not or core
+  // is config-hidden) — resolve from that integration so the integration
+  // component is authoritative.
+  if (visibleOwners.length === 1 && visibleOwners[0].package !== CORE_PACKAGE) {
+    const owner = visibleOwners[0];
     if (source) {
       if (!owner.sourcePath) {
         throw new AstryxError(`Source for "${name}" not found`, undefined, ERROR_CODES.ERR_NO_SOURCE);
@@ -469,8 +511,12 @@ export async function component(name, options = {}) {
     return {type: 'component.detail', data: withOwnership(docs, owner, dirName)};
   }
 
+  // From here down resolution falls back to core (then legacy externals).
+  // A config-hidden core component must not resolve on these UNSCOPED paths.
+  const coreHidden = isComponentHidden(hiddenComponents, CORE_PACKAGE, dirName);
+
   if (source) {
-    const sourcePath = findComponentSource(coreDir, dirName);
+    const sourcePath = coreHidden ? null : findComponentSource(coreDir, dirName);
     if (!sourcePath) {
       throw new AstryxError(`Source for "${name}" not found`, undefined, ERROR_CODES.ERR_NO_SOURCE);
     }
@@ -492,7 +538,7 @@ export async function component(name, options = {}) {
     };
   }
 
-  let readmePath = findComponentReadme(coreDir, dirName);
+  let readmePath = coreHidden ? null : findComponentReadme(coreDir, dirName);
   let resolvedName = dirName;
   // Track the resolving owner so the detail payload can carry ownership info.
   // Defaults to core; the legacy-external fallback below may reassign it.
@@ -514,6 +560,14 @@ export async function component(name, options = {}) {
 
   if (!readmePath) {
     const components = discoverComponents(coreDir);
+    // Hidden components don't participate in fuzzy resolution/suggestions.
+    if (hiddenComponents.size > 0) {
+      for (const [cat, comps] of Object.entries(components)) {
+        components[cat] = comps.filter(
+          c => !isComponentHidden(hiddenComponents, CORE_PACKAGE, c),
+        );
+      }
+    }
     const results = await searchComponents(dirName, coreDir, components);
 
     if (results.length > 0) {

@@ -26,6 +26,7 @@ export const XleComponentSchema = z
 export const AstryxConfigSchema = z
   .object({
     integrations: z.array(z.string()).optional(),
+    hiddenComponents: z.array(z.string()).optional(),
     issuesUrl: z.string().url().optional(),
     hooks: z
       .object({
