@@ -229,9 +229,9 @@ describe('useTheme root-attribute observer lifecycle', () => {
   it('shares one observer across multiple no-context consumers and disconnects once all unmount', () => {
     const observe = vi.fn();
     const disconnect = vi.fn();
-    const ObserverSpy = vi
-      .fn()
-      .mockImplementation(() => ({observe, disconnect}));
+    const ObserverSpy = vi.fn().mockImplementation(function () {
+      return {observe, disconnect};
+    });
     vi.stubGlobal('MutationObserver', ObserverSpy);
 
     const first = renderHook(() => useTheme());
