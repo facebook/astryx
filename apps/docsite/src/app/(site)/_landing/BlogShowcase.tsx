@@ -28,11 +28,11 @@ import {ArrowRight} from 'lucide-react';
 import {Heading} from '@astryxdesign/core/Text';
 import {Icon} from '@astryxdesign/core/Icon';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
-import {Grid, GridSpan} from '@astryxdesign/core/Grid';
 import {Button} from '@astryxdesign/core/Button';
 import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {blogPosts} from '../../../generated/blogRegistry';
 import {BlogCard} from '../../../components/blog/BlogCard';
+import {BlogFeatureCard} from '../../../components/blog/BlogFeatureCard';
 
 // The featured-split layout (3+ posts) renders 1 feature (left) + 2 compact
 // (right), filled by the 3 most recent posts (blogPosts is emitted latest-first
@@ -51,17 +51,26 @@ const styles = stylex.create({
     alignItems: 'baseline',
     rowGap: spacingVars['--spacing-2'],
   },
-  featureCell: {
-    gridColumn: {
-      default: '1 / -1',
-      '@media (min-width: 900px)': 'span 2',
+  // Featured split (3+ posts): a wide feature card + a stack of two compact
+  // cards at a 2.4 : 1 ratio. align-items:stretch makes both columns equal
+  // height; collapses to one column below 1024px.
+  splitGrid: {
+    width: '100%',
+    display: 'grid',
+    gridTemplateColumns: {
+      default: '1fr',
+      '@media (min-width: 1024px)': '2.4fr 1fr',
     },
+    gap: spacingVars['--spacing-8'],
+    alignItems: 'stretch',
   },
-  rightCell: {
-    gridColumn: {
-      default: '1 / -1',
-      '@media (min-width: 900px)': 'span 1',
-    },
+  rightCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    gap: spacingVars['--spacing-6'],
+    minWidth: 0,
+    height: '100%',
   },
   // Two equal cards, side by side when there's room and stacked otherwise.
   // `min(480px, 100%)` clamps the track to the container so it never forces a
@@ -120,18 +129,14 @@ export function BlogShowcase() {
 
   return (
     <BlogSection>
-      <Grid columns={3} gap={8} width="100%" align="start">
-        <GridSpan xstyle={styles.featureCell}>
-          <BlogCard post={featurePost} feature hideDescription />
-        </GridSpan>
-        <GridSpan xstyle={styles.rightCell}>
-          <VStack gap={6}>
-            {compactPosts.map(post => (
-              <BlogCard key={post.slug} post={post} hideDescription />
-            ))}
-          </VStack>
-        </GridSpan>
-      </Grid>
+      <div {...stylex.props(styles.splitGrid)}>
+        <BlogFeatureCard post={featurePost} hideDescription />
+        <div {...stylex.props(styles.rightCol)}>
+          {compactPosts.map(post => (
+            <BlogCard key={post.slug} post={post} hideDescription />
+          ))}
+        </div>
+      </div>
     </BlogSection>
   );
 }
