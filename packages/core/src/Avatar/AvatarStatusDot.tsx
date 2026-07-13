@@ -193,6 +193,7 @@ export function AvatarStatusDot({
 
   return (
     <div
+      {...props}
       ref={ref}
       {...(label ? {role: 'img', 'aria-label': label} : undefined)}
       {...mergeProps(
@@ -205,8 +206,7 @@ export function AvatarStatusDot({
         ),
         className,
         style,
-      )}
-      {...props}>
+      )}>
       {icon && iconSize > 0 && (
         <span
           aria-hidden="true"

@@ -94,6 +94,7 @@ export function AvatarGroup({
   return (
     <AvatarGroupContext value={contextValue}>
       <div
+        {...props}
         ref={ref}
         role="group"
         aria-label={ariaLabel}
@@ -103,8 +104,7 @@ export function AvatarGroup({
           stylex.props(styles.root, xstyle),
           className,
           style,
-        )}
-        {...props}>
+        )}>
         {children}
       </div>
     </AvatarGroupContext>
