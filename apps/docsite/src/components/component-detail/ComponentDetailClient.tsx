@@ -227,6 +227,7 @@ function ComponentDetailInner({
                       <Heading level={3}>Props</Heading>
                       <PlaygroundPropsTable
                         props={comp.props}
+                        typeDefs={comp.typeDefs}
                         knobs={knobs}
                         state={state}
                         onPropChange={setProp}

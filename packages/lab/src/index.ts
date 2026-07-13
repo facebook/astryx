@@ -30,9 +30,20 @@ export {
   ChatReasoning,
   type ChatReasoningProps,
 } from './ChatReasoning/ChatReasoning';
+export * from './Chat';
 
 // Drawer — experimental overlay panel
 export {Drawer, type DrawerProps} from './Drawer';
+
+// Stat — experimental KPI/metric display
+export {
+  Stat,
+  type StatProps,
+  type StatDelta,
+  type StatDeltaDirection,
+  type StatDeltaSentiment,
+  type StatSize,
+} from './Stat';
 
 // Schedule — experimental full-calendar views
 export * from './Schedule';
@@ -210,3 +221,11 @@ export {
 // It is no longer re-exported from @astryxdesign/lab.
 export * from './Stepper';
 export * from './CircularProgress';
+
+// LogStream — experimental streaming log viewer
+export {
+  LogStream,
+  type LogStreamProps,
+  type LogEntry,
+  type LogStreamLevel,
+} from './LogStream';

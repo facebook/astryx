@@ -16,11 +16,12 @@
  * - /packages/cli/templates/blocks/components/CheckboxList/ (showcase blocks)
  */
 
-import {use, type ReactNode} from 'react';
+import {use, type MouseEvent, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
+import {composeEventHandlers} from '../utils';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
@@ -128,6 +129,7 @@ export function CheckboxListItem({
   xstyle,
   className,
   style,
+  onClick: onClickProp,
   ...restProps
 }: CheckboxListItemProps) {
   const ctx = use(CheckboxListContext);
@@ -200,7 +202,14 @@ export function CheckboxListItem({
       description={description}
       endContent={endContent}
       isDisabled={effectiveDisabled}
-      onClick={isInteractive ? handleToggle : undefined}
+      onClick={
+        isInteractive || onClickProp
+          ? composeEventHandlers<MouseEvent>(
+              onClickProp as ((event: MouseEvent) => void) | undefined,
+              isInteractive ? handleToggle : undefined,
+            )
+          : undefined
+      }
       aria-busy={isBusy || undefined}
       xstyle={
         [

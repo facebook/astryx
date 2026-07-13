@@ -186,7 +186,33 @@ describe('Selector', () => {
       .getByRole('listbox', {hidden: true})
       .closest('[popover]');
     expect(popover?.getAttribute('style')).toContain(
-      'position-area: top span-right',
+      'position-area: self-block-start span-self-inline-end',
+    );
+  });
+
+  it('emits the direction-independent logical mapping under an RTL ancestor (#3389)', async () => {
+    // The self-* position-area keywords resolve against the popover's own
+    // inherited direction in the browser, so RTL emits the same string as
+    // LTR and the mirroring is pure CSS — jsdom can only assert the string.
+    const user = userEvent.setup();
+    render(
+      <div style={{direction: 'rtl'}}>
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+        />
+      </div>,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+
+    const popover = screen
+      .getByRole('listbox', {hidden: true})
+      .closest('[popover]');
+    expect(popover?.getAttribute('style')).toContain(
+      'position-area: self-block-end span-self-inline-end',
     );
   });
 

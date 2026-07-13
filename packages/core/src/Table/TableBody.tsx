@@ -13,11 +13,24 @@ export interface TableBodyProps extends BaseProps<HTMLTableSectionElement> {
   children: ReactNode;
 }
 
-export function TableBody({ref, children, xstyle}: TableBodyProps) {
+export function TableBody({
+  ref,
+  children,
+  xstyle,
+  className,
+  style,
+  ...rest
+}: TableBodyProps) {
   return (
     <tbody
       ref={ref}
-      {...mergeProps(themeProps('table-body'), stylex.props(xstyle))}>
+      {...mergeProps(
+        themeProps('table-body'),
+        stylex.props(xstyle),
+        className,
+        style,
+      )}
+      {...rest}>
       {children}
     </tbody>
   );

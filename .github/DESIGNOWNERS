@@ -1,0 +1,15 @@
+# Design owners for the Astryx repository
+#
+# Design-team members. The Copilot reviewer reads this list to frame its review
+# for a designer (see .github/copilot-instructions.md, "Review buckets") — it
+# names what crosses into engineering territory and needs an engineer's eye.
+#
+# This only shapes the TONE of Copilot's comment. It does NOT change merge
+# rights or exempt anyone from review: the auto-merge gate is decided by
+# high-risk AREA (new package/component/API), not by who authored the PR — see
+# .github/workflows/review-signal.yml. No author is exempt from the high-risk
+# gate; the low-risk carve-out exempts by area, not by person.
+#
+# Uses the same @handle format as CODEOWNERS. Keep this list current.
+
+@rubyycheung @ernestt @kentonquatman @cvkxx

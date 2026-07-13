@@ -33,6 +33,31 @@ describe('Timestamp', () => {
     expect(screen.getByText('2 hours ago')).toBeInTheDocument();
   });
 
+  it('does not round a tier up past its own boundary', () => {
+    // Just under each threshold the count must stay within the tier, e.g.
+    // 59.98 minutes is "59 minutes ago", never "60 minutes ago".
+    const {rerender} = render(
+      <Timestamp value={Date.now() / 1000 - 3599} format="relative" />,
+    );
+    expect(screen.getByText('59 minutes ago')).toBeInTheDocument();
+
+    rerender(
+      <Timestamp value={Date.now() / 1000 - 86399} format="relative" />,
+    );
+    expect(screen.getByText('23 hours ago')).toBeInTheDocument();
+
+    rerender(
+      <Timestamp value={Date.now() / 1000 - 2591999} format="relative" />,
+    );
+    expect(screen.getByText('29 days ago')).toBeInTheDocument();
+
+    // Same guarantee on the future side.
+    rerender(
+      <Timestamp value={Date.now() / 1000 + 3599} format="relative" />,
+    );
+    expect(screen.getByText('in 59 minutes')).toBeInTheDocument();
+  });
+
   it('renders "now" for very recent times', () => {
     const fiveSecondsAgo = Date.now() / 1000 - 5;
     render(<Timestamp value={fiveSecondsAgo} format="relative" />);
@@ -289,5 +314,32 @@ describe('Timestamp', () => {
     );
     const el = screen.getByRole('time');
     expect(el.textContent).not.toContain('ago');
+  });
+
+  // --- Invalid values ---
+
+  it('renders nothing instead of crashing on an unparseable string value', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const {container} = render(
+        <Timestamp value="not-a-date" data-testid="ts" />,
+      );
+      expect(container).toBeEmptyDOMElement();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('could not parse value'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('renders nothing instead of crashing on a NaN value', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const {container} = render(<Timestamp value={NaN} data-testid="ts" />);
+      expect(container).toBeEmptyDOMElement();
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

@@ -1,0 +1,512 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Review signal — deterministic labels that route reviews and gate auto-merge.
+#
+# On PR open/update this workflow inspects the changed file paths (never the
+# code itself) and the PR author, then applies up to two labels:
+#
+#   needs:code-review   — HIGH-RISK code areas: a new package, a new
+#                         component/module (in core — NOT lab, which is the
+#                         canary staging area), any runtime change under
+#                         core/src (incl. styling — core has high blast radius),
+#                         or public API surface, NOT confined to low-risk areas
+#                         (themes, templates, sandbox, storybook, docsite).
+#                         Requests review from CODEOWNERS. Skipped when the
+#                         author is an ENGOWNER (eng self-serves code).
+#
+#   needs:design-review — DESIGN-AFFECTING changes anywhere: StyleX styling,
+#                         theme/token files, or a template's .tsx. Keyed on
+#                         visual signals only — NOT docs and NOT "a new dir
+#                         appeared" (styleless modules don't count). NOT
+#                         area-gated — a theme/template edit is where design
+#                         lives. Requests review from DESIGNOWNERS. Skipped when
+#                         the author is a DESIGNOWNER (design self-serves design).
+#
+# Either label DISABLES auto-merge so the PR can't merge unattended, and is
+# cleared when an entitled owner approves (code → CODEOWNER; design → DESIGNOWNER
+# or CODEOWNER). Detection is path-based and deterministic; the Copilot reviewer
+# reads these labels to focus its review (see .github/copilot-instructions.md).
+#
+# HARD GATE (code review only): this emits a "review-required" COMMIT STATUS.
+# When code review is needed it's set to `pending`, which blocks a required
+# status context AND renders as a neutral yellow "waiting" dot (not a red
+# failure), so a PR awaiting review doesn't add red noise to the queue. An
+# entitled owner's code approval flips it to `success`. Keep "review-required"
+# a REQUIRED status check in branch protection: it blocks non-admin merges even
+# for internal contributors who have write access.
+#
+# Design review is ADVISORY: a design-affecting change is labeled
+# needs:design-review and design owners are requested, but it does NOT block
+# the merge. All contributor (non-owner) PRs require code review; owners
+# self-serve code.
+#
+# Uses pull_request_target so it can label / request reviewers / disable
+# auto-merge on fork PRs. It reads the PR file LIST via the API and the eng/
+# design owner lists from repo VARIABLES (vars.ENGOWNERS / vars.DESIGNOWNERS) —
+# no checkout, no owner-file content API. It never checks out or runs
+# PR-controlled code. Do not add checkout or build steps here.
+
+name: Review signal
+
+on:
+  pull_request_target:
+    branches: ["main"]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+  pull_request_review:
+    types: [submitted]
+  # Manual re-trigger. The App only auto-runs on the PR events above, so if it
+  # ever misses one (e.g. the workflow was added after a PR was opened, leaving
+  # the required "review-required" check stuck as Expected/pending), this is the
+  # recovery lever. Leave `pr` blank to re-flag EVERY open PR (backfill); pass a
+  # number to re-flag just that one.
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "PR number to re-flag (blank = all open PRs)"
+        required: false
+        type: string
+
+permissions: {}
+
+concurrency:
+  # One group per PR for the event/single-dispatch paths; a run-scoped group for
+  # the backfill-all dispatch so it is never cancelled by an unrelated re-run.
+  group: review-signal-${{ github.event.pull_request.number || github.event.inputs.pr || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  CODE_LABEL: "needs:code-review"
+  DESIGN_LABEL: "needs:design-review"
+  COMMUNITY_LABEL: "community"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Detect signals from changed paths + author; label, request reviewers, gate.
+  # ---------------------------------------------------------------------------
+  flag:
+    if: >-
+      github.event_name == 'pull_request_target'
+      || github.event_name == 'workflow_dispatch'
+    name: Flag review signals
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+      statuses: write
+      checks: write
+    steps:
+      - name: Detect signals and route
+        uses: actions/github-script@v9
+        env:
+          ENG_OWNERS: ${{ vars.ENGOWNERS }}
+          DESIGN_OWNERS: ${{ vars.DESIGNOWNERS }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const CODE = process.env.CODE_LABEL;
+            const DESIGN = process.env.DESIGN_LABEL;
+            const COMMUNITY = process.env.COMMUNITY_LABEL;
+
+            // Resolve which PR(s) to flag. On a PR event we get the payload PR.
+            // On manual dispatch we take the `pr` input (one PR), or re-flag
+            // every open PR when it's blank (backfill / mass recovery).
+            let prs;
+            if (context.eventName === 'workflow_dispatch') {
+              const num = (context.payload.inputs.pr || '').trim();
+              if (num) {
+                const { data } = await github.rest.pulls.get({
+                  owner, repo, pull_number: Number(num),
+                });
+                prs = [data];
+              } else {
+                prs = await github.paginate(github.rest.pulls.list, {
+                  owner, repo, state: 'open', per_page: 100,
+                });
+                core.info(`Backfill: re-flagging ${prs.length} open PR(s).`);
+              }
+            } else {
+              prs = [context.payload.pull_request];
+            }
+
+            let hadError = false;
+            for (const pr of prs) {
+              try {
+                await flagOne(pr);
+              } catch (e) {
+                hadError = true;
+                core.warning(`Failed to flag PR #${pr.number}: ${e.message}`);
+              }
+            }
+            if (hadError) core.setFailed('One or more PRs failed to flag; see warnings.');
+
+            // ================= per-PR detection + routing =================
+            async function flagOne(pr) {
+            const author = pr.user.login.toLowerCase();
+            // Bots (Dependabot, github-actions, etc.) are our own automation,
+            // not community contributors, and their PRs (dep bumps, chores) are
+            // mechanical and CI-gated. Exempt them from both the review gates
+            // and the community label entirely.
+            const authorIsBot = pr.user.type === 'Bot' || /\[bot\]$/.test(author);
+
+            // --- Owner sets come from repo VARIABLES (vars.ENGOWNERS /
+            // vars.DESIGNOWNERS), passed in as env above. No file read, no
+            // content API — so there is nothing to 502 on. CODEOWNERS is NOT
+            // read here: it is GitHub-native and auto-requests its reviewers on
+            // every PR regardless of branch protection, which covers code
+            // review for contributor and design-owner PRs. These lists are
+            // CRITICAL: an empty/unset value would mis-bucket a real owner as a
+            // community contributor and wrongly gate them. So treat an empty
+            // owner list as a configuration error and THROW — the caller's
+            // per-PR try/catch then skips this PR, LEAVES ITS GATE UNTOUCHED
+            // (never a false success), and fails the run visibly. An unreadable
+            // owner list is never "no owners".
+            function parseHandles(text) {
+              return ((text || '').match(/@?[A-Za-z0-9-]+/g) || [])
+                .map((h) => h.replace(/^@/, '').toLowerCase());
+            }
+            function ownersFromVar(name) {
+              const handles = parseHandles(process.env[name]);
+              if (!handles.length) {
+                throw new Error(`Owner variable ${name} is empty or unset — refusing to bucket authors from an empty list.`);
+              }
+              return handles;
+            }
+            const engOwners = ownersFromVar('ENG_OWNERS');
+            const designOwners = ownersFromVar('DESIGN_OWNERS');
+            const authorIsEng = engOwners.includes(author);
+            const authorIsDesign = designOwners.includes(author);
+
+            // Bot PRs: no gate, no community label. Set the check to success so
+            // a required "review-required" doesn't block them, drop any stray
+            // gate/community labels, and stop.
+            if (authorIsBot) {
+              core.info(`@${author} is a bot — exempt from review gates.`);
+              const current = pr.labels.map((l) => l.name);
+              for (const name of [CODE, DESIGN, COMMUNITY]) {
+                if (current.includes(name)) {
+                  try {
+                    await github.rest.issues.removeLabel({
+                      owner, repo, issue_number: pr.number, name,
+                    });
+                  } catch (e) {
+                    core.warning(`Could not remove ${name}: ${e.message}`);
+                  }
+                }
+              }
+              try {
+                await github.rest.repos.createCommitStatus({
+                  owner, repo, sha: pr.head.sha,
+                  context: 'review-required', state: 'success',
+                  description: 'Automated (bot) PR — exempt from review gates.',
+                });
+              } catch (e) {
+                core.warning(`Could not set review-required status: ${e.message}`);
+              }
+              return;
+            }
+
+            // --- Changed files. ---
+            const allFiles = await github.paginate(github.rest.pulls.listFiles, {
+              owner, repo, pull_number: pr.number, per_page: 100,
+            });
+            // lab is the canary-only staging area — new components are EXPECTED
+            // to develop and harden there before promotion. Skip the entire
+            // packages/lab/** folder for ALL signal detection (code and design)
+            // by filtering it out once, up front. lab is a SAFE SPACE (below).
+            const isLab = (p) => /^packages\/lab\//.test(p);
+            const files = allFiles.filter((f) => !isLab(f.filename));
+            const paths = files.map((f) => f.filename);
+
+            // Two DIFFERENT categories — do not conflate them:
+            //
+            //   SAFE SPACES — experimentation / staging. Exempt from BOTH gates.
+            //     No review of any kind is expected here.
+            //     lab (filtered above), sandbox, storybook.
+            //
+            //   DESIGN SPACES — where design work lives. Exempt from the CODE
+            //     gate (low-risk for code), but they TRIGGER the DESIGN gate.
+            //     themes, templates, docsite.
+            //
+            // Both are low-risk for the CODE gate, so the code gate ignores
+            // their union; only the design gate cares about the distinction.
+            const isSafeSpace = (p) =>
+              isLab(p) || /^apps\/(sandbox|storybook)\//.test(p);
+            const isDesignSpace = (p) =>
+              /^packages\/themes\//.test(p) ||
+              /^packages\/cli\/templates\//.test(p) ||
+              /^apps\/docsite\//.test(p);
+            // Code gate ignores both categories.
+            const isCodeExempt = (p) => isSafeSpace(p) || isDesignSpace(p);
+            const consideredCode = paths.filter((p) => !isCodeExempt(p));
+
+            // A "source barrel" is packages/<pkg>/src/**/index.ts(x). We do NOT
+            // hardcode which packages are component libraries — any package's
+            // src barrel counts, so new packages are covered automatically.
+            // Safe/design spaces and lab are already excluded above.
+            const isSrcBarrel = (p) =>
+              /^packages\/[^/]+\/src\/(.+\/)?index\.tsx?$/.test(p);
+            // A NEW component/module is a newly-added top-level src dir barrel.
+            const isNewComponentBarrel = (p) =>
+              /^packages\/[^/]+\/src\/[^/]+\/index\.tsx?$/.test(p) &&
+              !isCodeExempt(p);
+            // Any RUNTIME change under core/src (incl. styling .tsx) is
+            // higher-blast-radius than a leaf change — core is what everything
+            // composites over, so a change there warrants review even when it's
+            // styling-only. Docs/tests/stories are excluded (they don't gate).
+            const isCoreRuntime = (p) =>
+              /^packages\/core\/src\/.+\.tsx?$/.test(p) &&
+              !/\.test\.tsx?$/.test(p) &&
+              !/\.doc\.mjs$/.test(p) &&
+              !/\.stories\.tsx?$/.test(p);
+
+            // ============ HIGH-RISK CODE ============
+            const codeReasons = [];
+            const newPackage = files.some(
+              (f) => f.status === 'added' &&
+                /^packages\/[^/]+\/package\.json$/.test(f.filename),
+            );
+            if (newPackage) codeReasons.push('new package');
+            const newComponent = files.some(
+              (f) => f.status === 'added' && isNewComponentBarrel(f.filename),
+            );
+            if (newComponent) codeReasons.push('new component/module');
+            const apiSurface = consideredCode.some(
+              (p) => isSrcBarrel(p) || /^packages\/[^/]+\/package\.json$/.test(p),
+            );
+            if (apiSurface && !newPackage && !newComponent) {
+              codeReasons.push('public API surface change');
+            }
+            const coreChange = paths.some(isCoreRuntime);
+            if (coreChange && !codeReasons.includes('new component/module')) {
+              codeReasons.push('core change');
+            }
+
+            // ALL contributor (non-owner) PRs require code review, not just the
+            // high-risk ones. External contributors can't self-merge anyway;
+            // this mainly holds internal contributors who have write access but
+            // are not on the eng/design team. Owners still self-serve code
+            // (gated only by the high-risk reasons above → suppressed for eng).
+            const authorIsOwner = authorIsEng || authorIsDesign;
+            if (!authorIsOwner) codeReasons.push('community contribution');
+
+            // Eng owners self-serve code — no code tag for them.
+            const codeHighRisk = codeReasons.length > 0 && !authorIsEng;
+
+            // ============ DESIGN-AFFECTING ============
+            // DESIGN SPACES trigger this gate; SAFE SPACES never do (both
+            // defined above). Keyed on visual signals, NOT on "a new dir
+            // appeared" (that caught infra like i18n) and NOT on docs
+            // (.doc.mjs / .md / content).
+            //   - Component StyleX — visual changes to shipped components,
+            //     anywhere except a safe space.
+            //   - themes / templates — design spaces (themes src, template .tsx).
+            //   - docsite — a published design surface, but only its VISUAL dirs
+            //     (app/, components/, themes/); blog/markdown content, lib/data
+            //     plumbing, generated output, and tests are skipped.
+            const isDocsiteVisual = (p) =>
+              /^apps\/docsite\/src\/(app|components|themes)\/.+\.(tsx|stylex\.ts)$/.test(p) &&
+              !/\.test\.tsx?$/.test(p);
+            const designReasons = [];
+            if (paths.some((p) => /\.stylex\.tsx?$/.test(p) && !isSafeSpace(p))) designReasons.push('StyleX styles');
+            if (paths.some((p) => /^packages\/themes\/.+\/src\/.+\.tsx?$/.test(p))) designReasons.push('theme/token change');
+            if (paths.some((p) => /^packages\/cli\/templates\/.+\.tsx$/.test(p))) designReasons.push('template change');
+            if (paths.some(isDocsiteVisual)) designReasons.push('docsite visual change');
+            // Design owners self-serve design — no design tag for them.
+            const designAffecting = designReasons.length > 0 && !authorIsDesign;
+
+            core.info(`author=@${author} eng=${authorIsEng} design=${authorIsDesign}`);
+            core.info(`code: ${codeHighRisk} (${codeReasons.join(', ') || '-'})`);
+            core.info(`design: ${designAffecting} (${designReasons.join(', ') || '-'})`);
+
+            // --- Resolve approvals by reading reviews (fork-safe). ---
+            // The clear job runs on pull_request_review, but that event does NOT
+            // reliably dispatch a workflow run for FORK PRs — so a fork
+            // contributor's gate would never clear via that path. Instead, read
+            // the PR's reviews here (this job runs on pull_request_target and
+            // workflow_dispatch, both of which work for forks) and treat a gate
+            // as satisfied when an entitled owner has approved:
+            //   code gate   → an ENGOWNER approval
+            //   design gate → a DESIGNOWNER approval
+            // We use each reviewer's LATEST review state so a later
+            // CHANGES_REQUESTED/DISMISSED correctly un-satisfies it.
+            let codeApproved = false;
+            let designApproved = false;
+            try {
+              const reviews = await github.paginate(github.rest.pulls.listReviews, {
+                owner, repo, pull_number: pr.number, per_page: 100,
+              });
+              const latestByUser = new Map();
+              for (const r of reviews) {
+                if (!r.user) continue;
+                // Ignore comment-only reviews; keep the latest APPROVED /
+                // CHANGES_REQUESTED / DISMISSED per reviewer.
+                if (r.state === 'COMMENTED') continue;
+                latestByUser.set(r.user.login.toLowerCase(), r.state);
+              }
+              for (const [login, state] of latestByUser) {
+                if (state !== 'APPROVED') continue;
+                // Code gate: any ENGOWNER approval satisfies it (eng owns the
+                // code; the CODEOWNERS subset is a subset of ENGOWNERS, so
+                // ENGOWNERS covers it). Design gate: only a DESIGNOWNER — an
+                // eng approval does NOT clear a design gate.
+                if (engOwners.includes(login)) codeApproved = true;
+                if (designOwners.includes(login)) designApproved = true;
+              }
+            } catch (e) {
+              core.warning(`Could not read reviews: ${e.message}`);
+            }
+
+            // Effective gate = detected gate minus what an entitled owner
+            // already approved.
+            const codeGated = codeHighRisk && !codeApproved;
+            const designGated = designAffecting && !designApproved;
+            core.info(`approvals: code=${codeApproved} design=${designApproved} → codeGated=${codeGated} designGated=${designGated}`);
+
+            // --- Apply labels. ---
+            const current = pr.labels.map((l) => l.name);
+            const toAdd = [];
+            if (codeGated && !current.includes(CODE)) toAdd.push(CODE);
+            if (designGated && !current.includes(DESIGN)) toAdd.push(DESIGN);
+            // A quiet "community" marker on PRs authored by someone who is not
+            // on the eng or design team, so the contribution queue is filterable
+            // (label:community) separately from the review gates. Absence = team.
+            // (authorIsOwner is defined above.)
+            if (!authorIsOwner && !current.includes(COMMUNITY)) toAdd.push(COMMUNITY);
+            if (toAdd.length) {
+              await github.rest.issues.addLabels({
+                owner, repo, issue_number: pr.number, labels: toAdd,
+              });
+            }
+            // Keep it accurate: if an owner's PR somehow carries it (e.g. author
+            // was added to an owners file after opening), drop it.
+            if (authorIsOwner && current.includes(COMMUNITY)) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner, repo, issue_number: pr.number, name: COMMUNITY,
+                });
+              } catch (e) {
+                core.warning(`Could not remove ${COMMUNITY}: ${e.message}`);
+              }
+            }
+            // Remove gate labels an entitled owner has already approved away
+            // (fork-safe clearing — the pull_request_review clear job doesn't
+            // fire for forks, so we reconcile here from the reviews we read).
+            async function dropLabel(name) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner, repo, issue_number: pr.number, name,
+                });
+                core.info(`Cleared ${name} (approved).`);
+              } catch (e) {
+                core.warning(`Could not remove ${name}: ${e.message}`);
+              }
+            }
+            if (!codeGated && current.includes(CODE)) await dropLabel(CODE);
+            if (!designGated && current.includes(DESIGN)) await dropLabel(DESIGN);
+
+            // --- Request reviewers (can't request the author; ignore 422s). ---
+            // Code review is left to GitHub-native CODEOWNERS auto-request (it
+            // requests the codeowners on every PR regardless of branch
+            // protection). We only add DESIGN owners, and only when a design
+            // gate actually fires — so design owners aren't pinged on every PR.
+            async function requestReviewers(handles) {
+              const reviewers = [...new Set(handles)].filter((h) => h !== author);
+              if (!reviewers.length) return;
+              try {
+                await github.rest.pulls.requestReviewers({
+                  owner, repo, pull_number: pr.number, reviewers,
+                });
+              } catch (e) {
+                core.warning(`requestReviewers(${reviewers.join(',')}) failed: ${e.message}`);
+              }
+            }
+            if (designGated) await requestReviewers(designOwners);
+
+            // --- Only the CODE gate blocks. Design review is advisory:
+            //     it labels + requests design owners (above) but does NOT
+            //     disable auto-merge or block the merge. ---
+            if (codeGated && pr.auto_merge) {
+              try {
+                await github.graphql(
+                  `mutation ($id: ID!) {
+                     disablePullRequestAutoMerge(input: { pullRequestId: $id }) {
+                       pullRequest { number }
+                     }
+                   }`,
+                  { id: pr.node_id },
+                );
+                core.info('Disabled auto-merge (code review required).');
+              } catch (e) {
+                core.warning(`Could not disable auto-merge: ${e.message}`);
+              }
+            }
+
+            // No explanatory comment is posted here on purpose. The label is the
+            // mechanical signal; the Copilot reviewer reads it and explains why
+            // review is needed with actual judgment — better than a static one.
+
+            // --- The blocking gate: a "review-required" COMMIT STATUS. ---
+            // We use a commit STATUS (not a check run) for two reasons:
+            //   1. Branch protection here requires the "review-required" context
+            //      as a status context ("Expected — Waiting for status to be
+            //      reported"), which only a commit status satisfies — a check
+            //      run of the same name does not clear it.
+            //   2. A pending status renders as a neutral YELLOW dot ("waiting"),
+            //      not a red failure like a check run's action_required — so a
+            //      PR awaiting review doesn't add red noise to the queue.
+            // Only the CODE gate drives it (design is advisory). pending blocks
+            // (branch protection passes only success); an owner's code approval
+            // flips it to success.
+            const gateReasons = codeGated ? codeReasons : [];
+            try {
+              await github.rest.repos.createCommitStatus({
+                owner,
+                repo,
+                sha: pr.head.sha,
+                context: 'review-required',
+                state: codeGated ? 'pending' : 'success',
+                description: codeGated
+                  ? `Waiting on code review: ${gateReasons.join(', ')}`.slice(0, 140)
+                  : 'No code review required.',
+              });
+              core.info(`review-required status: ${codeGated ? 'pending' : 'success'}`);
+            } catch (e) {
+              core.warning(`Could not set review-required status: ${e.message}`);
+            }
+            // Neutralize any stale "review-required" CHECK RUN left over from the
+            // pre-status gate. Such a leftover (conclusion action_required) drags
+            // the status rollup to FAILURE even though we now gate via a commit
+            // status — so once the status is set, clear the old check-run.
+            try {
+              const { data } = await github.rest.checks.listForRef({
+                owner, repo, ref: pr.head.sha, check_name: 'review-required', per_page: 100,
+              });
+              for (const cr of data.check_runs) {
+                if (cr.conclusion && cr.conclusion !== 'success' && cr.conclusion !== 'neutral') {
+                  await github.rest.checks.update({
+                    owner, repo, check_run_id: cr.id,
+                    conclusion: 'neutral',
+                    output: { title: 'Superseded by review-required status', summary: 'The gate is now a review-required commit status; see that context.' },
+                  });
+                  core.info(`Neutralized stale review-required check-run ${cr.id}.`);
+                }
+              }
+            } catch (e) {
+              core.warning(`Could not neutralize stale check-run: ${e.message}`);
+            }
+            } // end flagOne
+
+  # Anchor job for the review-clear chain. On a review submission the flag job
+  # is skipped (it only runs on pull_request_target / workflow_dispatch), so
+  # without a job that actually runs, the workflow run could end up "skipped"
+  # rather than "completed" and not reliably fire the review-clear workflow_run.
+  # This tiny job always runs on pull_request_review so the workflow completes,
+  # letting review-clear.yml resolve the PR and re-dispatch the fork-safe clear.
+  review-anchor:
+    if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
+    name: Anchor review-clear chain
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Note approval
+        run: echo "Approval received; review-clear will re-dispatch the flag job."

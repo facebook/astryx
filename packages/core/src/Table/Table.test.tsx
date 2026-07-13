@@ -15,6 +15,9 @@ import {BaseTable} from './BaseTable';
 import {Table} from './Table';
 import {TableRow} from './TableRow';
 import {TableCell} from './TableCell';
+import {TableHeader} from './TableHeader';
+import {TableBody} from './TableBody';
+import {TableFooter} from './TableFooter';
 import {
   proportional,
   pixel,
@@ -1282,5 +1285,38 @@ describe('emptyState', () => {
     );
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText('Age')).toBeInTheDocument();
+  });
+
+  describe('table section rest forwarding', () => {
+    it('forwards data-testid and id to the tbody, thead, and tfoot', () => {
+      const {container} = render(
+        <table>
+          <TableHeader data-testid="thead" id="head-1">
+            <tr>
+              <th>H</th>
+            </tr>
+          </TableHeader>
+          <TableBody data-testid="tbody" id="body-1">
+            <tr>
+              <td>B</td>
+            </tr>
+          </TableBody>
+          <TableFooter data-testid="tfoot" id="foot-1">
+            <tr>
+              <td>F</td>
+            </tr>
+          </TableFooter>
+        </table>,
+      );
+      const thead = container.querySelector('thead')!;
+      const tbody = container.querySelector('tbody')!;
+      const tfoot = container.querySelector('tfoot')!;
+      expect(thead).toHaveAttribute('data-testid', 'thead');
+      expect(thead).toHaveAttribute('id', 'head-1');
+      expect(tbody).toHaveAttribute('data-testid', 'tbody');
+      expect(tbody).toHaveAttribute('id', 'body-1');
+      expect(tfoot).toHaveAttribute('data-testid', 'tfoot');
+      expect(tfoot).toHaveAttribute('id', 'foot-1');
+    });
   });
 });

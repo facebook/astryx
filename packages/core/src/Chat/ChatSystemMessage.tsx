@@ -120,21 +120,21 @@ export function ChatSystemMessage({
   xstyle,
   className,
   style: styleProp,
-  'data-testid': testId,
   ref,
+  ...rest
 }: ChatSystemMessageProps) {
   if (variant === 'divider') {
     return (
       <div
         ref={ref}
-        role="status"
-        data-testid={testId}
         {...mergeProps(
           themeProps('chat-system-message', {variant}),
           stylex.props(styles.dividerWrap, xstyle),
           className,
           styleProp,
-        )}>
+        )}
+        {...rest}
+        role="status">
         <Divider label={children} />
       </div>
     );
@@ -143,14 +143,14 @@ export function ChatSystemMessage({
   return (
     <div
       ref={ref}
-      role="status"
-      data-testid={testId}
       {...mergeProps(
         themeProps('chat-system-message', {variant}),
         stylex.props(styles.root, xstyle),
         className,
         styleProp,
-      )}>
+      )}
+      {...rest}
+      role="status">
       <span {...stylex.props(styles.content)}>
         {icon != null && <span {...stylex.props(styles.icon)}>{icon}</span>}
         {children}

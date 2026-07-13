@@ -137,10 +137,7 @@ describe('Field', () => {
 
   it('renders description without ID attribute when descriptionID is not provided', () => {
     render(
-      <Field
-        label="Email"
-        inputID="email-input"
-        description="Description text">
+      <Field label="Email" inputID="email-input" description="Description text">
         <input id="email-input" />
       </Field>,
     );

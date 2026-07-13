@@ -79,7 +79,7 @@ Verify installation:
 
 ```bash
 node --version   # v22.x.x or v24.x.x
-pnpm --version   # 10.x.x
+pnpm --version   # 11.x.x
 ```
 
 ## Getting Started

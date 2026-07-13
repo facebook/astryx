@@ -22,6 +22,19 @@ in [Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing
 that would land below B; post findings as a scorecard (advisory — comment, don't
 hard-block).
 
+## Step 0 — Triage first
+
+Quick triage before grading. Two questions:
+
+- **New template vs. edit to an existing one?** A *new* template that lands
+  already-visible (its `.doc.mjs` isn't `hidden: true`) skipped hidden-staging —
+  flag it (see Lifecycle note) and hold it to the full B+ bar. An edit to an
+  existing template is scoped to what changed.
+- **Content-only vs. structural?** A copy/mock-data tweak is a fast grade
+  (purity + metadata); a layout/root/`AppShell` change needs the full Layout &
+  Structure pass. State it briefly, e.g. `Triage: edit to existing template,
+  layout change → full structure pass`.
+
 ## Score the 7 categories (100 pts)
 
 1. **Astryx component purity (30)** — count JSX tags; every raw lowercase HTML

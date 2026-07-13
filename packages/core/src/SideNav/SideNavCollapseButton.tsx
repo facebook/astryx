@@ -23,6 +23,7 @@ import {durationVars, easeVars} from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {Button} from '../Button';
 import type {BaseProps} from '../BaseProps';
+import {composeEventHandlers} from '../utils';
 import {
   useSideNavCollapse,
   type SideNavCollapseState,
@@ -101,6 +102,7 @@ export function SideNavCollapseButton({
   handleRef,
   label,
   children,
+  onClick: onClickProp,
   ...props
 }: SideNavCollapseButtonProps) {
   const {isCollapsed, toggle, isCollapsible} =
@@ -119,7 +121,7 @@ export function SideNavCollapseButton({
       label={label ?? (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}
       variant="ghost"
       {...props}
-      onClick={toggle}
+      onClick={composeEventHandlers(onClickProp, toggle)}
       icon={
         children ?? (
           <span
@@ -140,8 +142,7 @@ SideNavCollapseButton.displayName = 'SideNavCollapseButton';
 
 function useSideNavCollapseState(
   handleRef:
-    | React.RefObject<SideNavImperativeCollapseHandle | null>
-    | undefined,
+    React.RefObject<SideNavImperativeCollapseHandle | null> | undefined,
 ): SideNavCollapseState {
   const contextCollapseState = useSideNavCollapse();
 

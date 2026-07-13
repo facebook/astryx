@@ -30,6 +30,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-outline', visualProps: ['density']},
+      {className: 'astryx-outline-indicator'},
       {className: 'astryx-outline-item', visualProps: ['level'], states: ['active']},
     ],
   },
@@ -163,6 +164,7 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-outline', visualProps: ['density']},
+      {className: 'astryx-outline-indicator'},
       {className: 'astryx-outline-item', visualProps: ['level'], states: ['active']},
     ],
   },

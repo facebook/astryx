@@ -7,8 +7,8 @@ export const docs = {
   group: 'HoverCard',
   keywords: ['hovercard', 'hover', 'preview', 'card', 'tooltip', 'popup', 'floating', 'anchor'],
   params: [
-    {name: 'placement', type: "'above' | 'below' | 'start' | 'end'", description: 'Position relative to the trigger.', default: "'above'"},
-    {name: 'alignment', type: "'start' | 'center' | 'end'", description: 'Alignment along the placement axis.', default: "'center'"},
+    {name: 'placement', type: "'above' | 'below' | 'start' | 'end'", description: "Position relative to the trigger. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).", default: "'above'"},
+    {name: 'alignment', type: "'start' | 'center' | 'end'", description: "Alignment along the placement axis. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).", default: "'center'"},
     {name: 'delay', type: 'number', description: 'Delay before showing the hover card on hover, in milliseconds.', default: '300'},
     {name: 'hideDelay', type: 'number', description: 'Delay before hiding after mouse or focus leaves, in milliseconds.', default: '200'},
     {name: 'focusTrigger', type: "'auto' | 'always' | 'never'", description: 'When focus should open the hover card. auto only attaches focus listeners to naturally focusable elements.', default: "'auto'"},
@@ -24,7 +24,7 @@ export const docs = {
     {name: 'interactionRef', type: 'RefCallback<HTMLElement>', description: 'Ref for the hover/focus interaction element. Use with positionRef for split trigger patterns.'},
     {name: 'anchorId', type: 'string', description: 'CSS anchor name for advanced positioning cases.'},
     {name: 'describedBy', type: 'string', description: 'ID to compose into aria-describedby on the trigger.'},
-    {name: 'renderHoverCard', type: '(children: ReactNode, props?: ContextRenderProps) => ReactNode', description: 'Render function for the anchor-positioned hover card content.'},
+    {name: 'renderHoverCard', type: "(children: ReactNode, props?: Omit<ContextRenderProps, 'positioning'>) => ReactNode", description: 'Render function for the anchor-positioned hover card content. The positioning opt-out is excluded: the hover card always derives its position from placement/alignment.'},
     {name: 'show', type: '() => void', description: 'Imperatively show the hover card immediately.'},
     {name: 'hide', type: '() => void', description: 'Imperatively hide the hover card immediately.'},
   ],
@@ -46,8 +46,8 @@ export const docs = {
 export const docsDense = {
   description: 'Headless hover-triggered floating cards. Builds on useLayer w/ hover/focus intent, delays, safe hover behavior, aria-describedby. Use for rich previews when trigger/content rendering needs full control.',
   paramDescriptions: {
-    placement: 'position relative to trigger.',
-    alignment: 'alignment along placement axis.',
+    placement: 'position relative to trigger. logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
+    alignment: 'alignment along placement axis. logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
     delay: 'show delay in ms.',
     hideDelay: 'hide delay after mouse/focus leave in ms.',
     focusTrigger: 'when focus opens hover card; auto = naturally focusable elements only.',

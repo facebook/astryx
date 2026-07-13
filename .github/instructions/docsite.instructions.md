@@ -9,6 +9,21 @@ Its defining constraint is **how it handles data** — review against
 [`apps/docsite/README.md`](../../apps/docsite/README.md), specifically the
 "How It Works" and "The Rule" sections.
 
+## Step 0 — Triage first
+
+Fast triage before depth. The docsite ships app code (not published packages),
+so consumer-breaking API changes aren't the concern — **blast radius** is:
+
+- **Shared component / util** (e.g. a `components/blog/BlogCard`, a shared layout)
+  → higher stakes: a change ripples across pages. Check every call site, and
+  that a new prop is **optional** (additive) so existing usages don't break.
+- **Single page / one-off** → lower stakes, contained.
+
+Then pick depth: **fast path** for a contained single-page or copy tweak (verify
+the data rule + accuracy, approve); **standard path** for a shared-component or
+layout/structural change (full data-rule + idiomatic + mobile review below).
+State it briefly, e.g. `Triage: shared BlogCard, additive optional prop → standard`.
+
 ## The data rule (primary review focus)
 
 **All data comes from the build-time pipeline. Never hardcode package names,

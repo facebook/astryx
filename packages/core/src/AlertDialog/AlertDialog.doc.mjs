@@ -28,6 +28,10 @@ export const docs = {
       {guidance: false, description: 'Use AlertDialog for non-destructive actions; use a standard Dialog instead.'},
     ],
   },
+  // Intentionally a contained isInline preview, not playground.overlay: the
+  // component stays visible on load and knobs stay live, whereas a real
+  // showModal() overlay makes the page inert — see PlaygroundConfig.overlay
+  // in docs-types.ts (#3657).
   playground: {
     defaults: {
       isOpen: true,

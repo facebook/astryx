@@ -56,7 +56,7 @@ const meta: Meta<typeof Switch> = {
     },
     labelSpacing: {
       control: 'select',
-      options: ['default', 'spread'],
+      options: ['hug', 'spread'],
       description: 'Spacing behavior between label and switch',
     },
   },

@@ -135,6 +135,25 @@ describe('CheckboxList', () => {
     expect(handleChange).toHaveBeenCalledWith(['b']);
   });
 
+  it('fires a consumer onClick on an item in addition to toggling', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    const handleClick = vi.fn();
+    render(
+      <CheckboxList label="Preferences" value={['a']} onChange={handleChange}>
+        <CheckboxListItem label="Option A" value="a" />
+        <CheckboxListItem label="Option B" value="b" onClick={handleClick} />
+      </CheckboxList>,
+    );
+
+    // Click the interactive row (invisible-button pattern), which is where the
+    // composed onClick lives — not the inner checkbox.
+    await user.click(screen.getByRole('button', {name: 'Option B'}));
+
+    expect(handleClick).toHaveBeenCalledTimes(1);
+    expect(handleChange).toHaveBeenCalledWith(['a', 'b']);
+  });
+
   it('disables all checkboxes when group isDisabled is true', () => {
     render(
       <CheckboxList

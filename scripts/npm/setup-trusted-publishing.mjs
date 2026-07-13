@@ -53,6 +53,7 @@ import {parseArgs} from 'node:util';
 import {execFile, spawn as nodeSpawn} from 'node:child_process';
 import {promisify} from 'node:util';
 import {fileURLToPath} from 'node:url';
+import {expandWorkspaceDirs} from '../lib/workspace-globs.mjs';
 
 // This script lives in scripts/npm/, so the repo root is two levels up.
 const ROOT = path.resolve(
@@ -73,42 +74,26 @@ const RATE_LIMIT_BACKOFF_MAX_MS = 60_000;
 // ---------------------------------------------------------------------------
 // Package discovery
 //
-// Ported from scripts/check-changesets.mjs `discoverPackages()` (which is NOT
-// exported, so it is copied here). It walks the pnpm-workspace.yaml globs, reads
-// each package.json, and the publishable filter mirrors check-changesets.mjs:
+// Walks the pnpm-workspace.yaml globs (via scripts/lib/workspace-globs.mjs) and
+// reads each package.json. The publishable filter mirrors check-changesets.mjs:
 // non-private AND not in the changeset `ignore` list. There is no hardcoded
 // package list — the set is derived from the workspace + .changeset/config.json.
 // ---------------------------------------------------------------------------
 
 function discoverPackages() {
-  const ws = fs.readFileSync(path.join(ROOT, 'pnpm-workspace.yaml'), 'utf8');
-  const globs = [...ws.matchAll(/^\s*-\s*["']?([^"'\n]+)["']?/gm)].map(m =>
-    m[1].trim(),
-  );
   const pkgs = [];
-  for (const g of globs) {
-    const base = g.replace(/\/\*+$/, '');
-    const abs = path.join(ROOT, base);
-    if (!fs.existsSync(abs)) continue;
-    const dirs = g.endsWith('*')
-      ? fs
-          .readdirSync(abs, {withFileTypes: true})
-          .filter(d => d.isDirectory())
-          .map(d => path.join(abs, d.name))
-      : [abs];
-    for (const dir of dirs) {
-      const pj = path.join(dir, 'package.json');
-      if (!fs.existsSync(pj)) continue;
-      const p = JSON.parse(fs.readFileSync(pj, 'utf8'));
-      if (p.name) {
-        pkgs.push({
-          dir,
-          name: p.name,
-          private: !!p.private,
-          canaryOnly: !!p.astryx?.canaryOnly,
-          version: p.version,
-        });
-      }
+  for (const dir of expandWorkspaceDirs(ROOT)) {
+    const pj = path.join(dir, 'package.json');
+    if (!fs.existsSync(pj)) continue;
+    const p = JSON.parse(fs.readFileSync(pj, 'utf8'));
+    if (p.name) {
+      pkgs.push({
+        dir,
+        name: p.name,
+        private: !!p.private,
+        canaryOnly: !!p.astryx?.canaryOnly,
+        version: p.version,
+      });
     }
   }
   return pkgs;

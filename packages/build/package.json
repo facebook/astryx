@@ -43,7 +43,7 @@
     "@stylexjs/babel-plugin": ">=0.18.0",
     "@babel/core": ">=7.0.0",
     "@stylexjs/unplugin": ">=0.18.0",
-    "vite": ">=5.0.0"
+    "vite": "catalog:"
   },
   "dependencies": {
     "fast-glob": "^3.3.0",

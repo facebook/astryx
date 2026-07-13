@@ -12,6 +12,7 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateInput} from './DateInput';
 import {InputGroup} from '../InputGroup';
 import {InputGroupText} from '../InputGroup/InputGroupText';
@@ -92,14 +93,14 @@ describe('DateInput', () => {
 
   it('calendar button is focusable and clickable', () => {
     render(<DateInput label="Date" onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     expect(button).toBeInTheDocument();
     expect(button).not.toBeDisabled();
   });
 
   it('calendar button is disabled when isDisabled is true', () => {
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     expect(button).toBeDisabled();
   });
 
@@ -282,7 +283,7 @@ describe('DateInput', () => {
   it('disables input and button when isLoading is true', () => {
     render(<DateInput label="Date" isLoading onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeDisabled();
-    expect(screen.getByRole('button', {name: 'Open calendar'})).toBeDisabled();
+    expect(getButton('Open calendar')).toBeDisabled();
   });
 
   it('shows spinner when isLoading is true', () => {
@@ -475,7 +476,7 @@ describe('DateInput', () => {
 
   it('does not open popover when clicking calendar button while disabled', () => {
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     fireEvent.click(button);
     expect(screen.getByRole('combobox')).toHaveAttribute(
       'aria-expanded',
@@ -513,23 +514,17 @@ describe('DateInput', () => {
           hasClear
         />,
       );
-      expect(
-        screen.getByRole('button', {name: 'Clear Date'}),
-      ).toBeInTheDocument();
+      expect(getButton('Clear Date')).toBeInTheDocument();
     });
 
     it('does not show clear button when value is undefined', () => {
       render(<DateInput label="Date" onChange={() => {}} hasClear />);
-      expect(
-        screen.queryByRole('button', {name: 'Clear Date'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Date')).not.toBeInTheDocument();
     });
 
     it('does not show clear button when hasClear is false', () => {
       render(<DateInput label="Date" value="2026-01-15" onChange={() => {}} />);
-      expect(
-        screen.queryByRole('button', {name: 'Clear Date'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Date')).not.toBeInTheDocument();
     });
 
     it('does not show clear button when disabled', () => {
@@ -542,9 +537,7 @@ describe('DateInput', () => {
           isDisabled
         />,
       );
-      expect(
-        screen.queryByRole('button', {name: 'Clear Date'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Date')).not.toBeInTheDocument();
     });
 
     it('calls onChange with undefined when clear is clicked', () => {
@@ -557,7 +550,7 @@ describe('DateInput', () => {
           hasClear
         />,
       );
-      fireEvent.click(screen.getByRole('button', {name: 'Clear Date'}));
+      fireEvent.click(getButton('Clear Date'));
       expect(onChange).toHaveBeenCalledWith(undefined);
     });
   });
@@ -699,9 +692,7 @@ describe('DateInput', () => {
       expect(input).toHaveAttribute('aria-disabled', 'true');
       expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
       expect(tooltip).toHaveTextContent('Scheduling is locked');
-      expect(
-        screen.getByRole('button', {name: 'Open calendar'}),
-      ).toBeDisabled();
+      expect(getButton('Open calendar')).toBeDisabled();
     });
   });
 

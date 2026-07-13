@@ -140,7 +140,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-empty-state'},
+      {className: 'astryx-empty-state', visualProps: ['variant']},
     ],
   },
   usage: {

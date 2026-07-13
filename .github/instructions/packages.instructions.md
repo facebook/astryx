@@ -7,9 +7,112 @@ applyTo: 'packages/**'
 These paths ship as published `@astryxdesign/*` packages, so review them
 against Astryx's API guidance and component review protocol.
 
+## Step 0 — Triage first: categorize, assess risk, pick a path
+
+Before reviewing in depth, do a fast triage. It decides *how hard* to look and
+in what order, so effort lands where the risk is — and so the risk checks
+(especially breaking changes) happen **up front**, not as an afterthought.
+
+**1. Categorize the PR** (by what it changes, not just the title prefix):
+
+| Category | Signals |
+|---|---|
+| **test / docs / chore** | only `*.test.tsx`, `*.doc.mjs`, stories, CI, build config — no shipped runtime/API change |
+| **bug fix** | behavior change to existing code, no new public surface |
+| **new API surface** | new component, new prop/variant, new exported hook/type, changed signature |
+| **refactor / internal** | behavior-preserving restructure, shared-util migration |
+
+**2. Assess risk — the two questions that gate everything:**
+
+- **Is it a breaking change?** Scan for: a removed/renamed public export, prop,
+  or variant; a **new required** field on a public type/context/props; a changed
+  default; a changed function signature; or changed DOM/class/ARIA output
+  consumers may depend on. (The tell for an *accidental* breaking change:
+  unrelated tests/examples/call sites had to be edited — see the silent-breaking
+  rule in Judgment.) A real breaking change must be **intentional and signalled
+  with a `[breaking]` changeset category** (pre-1.0 stays a `patch` bump — never
+  ask for `minor`/`major`; the category is the signal), and for a
+  removed/renamed/changed public API, a **codemod** under `astryx upgrade`.
+  Flag a breaking change with no `[breaking]` changeset (and no codemod where one
+  is warranted) as blocking.
+- **What's the blast radius?** A core primitive many components build on, or a
+  shared type/context, is higher-stakes than a leaf component or a docsite tweak.
+
+**3. Pick the review path** (depth follows category × risk):
+
+- **Fast path** — test/docs/chore, or a small behavior-only bug fix with a
+  regression test, no breaking change, low blast radius. Verify accuracy (does
+  the referenced API exist / does the fix match the described bug), confirm the
+  test/changeset, and approve. Don't manufacture findings on a clean small PR.
+- **Standard path** — a normal bug fix or a contained prop/behavior change. Run
+  the full Mechanical checklist + convergence + Judgment below.
+- **Deep path** — new API surface, a breaking change, a plugin/hook that extends
+  a host, or a high-blast-radius core change. Do the full review **and** route
+  the API-design decision to a human (see "When to flag for engineering / human
+  judgment"); note it should be spec'd + vibe-tested. Do not verdict the API
+  yourself.
+
+> **Hard stop — new props / API changes from a contributor need human judgment.**
+> If a PR adds a **new prop** or otherwise changes API surface (a new
+> component, variant, exported hook/type, or a changed/removed signature) and the
+> author is in the **contributor bucket** (see Review buckets in the root
+> instructions — not in `.github/ENGOWNERS` or `.github/DESIGNOWNERS`), the AI
+> reviewer must **not**
+> approve or merge it — even if it's clean, additive, and passing CI. Flag it as
+> **⚠️ Needs human/maintainer judgment on the API surface** and leave the
+> approve/merge decision to a human. "Additive and non-breaking" is *not*
+> sufficient to auto-approve API surface — whether the API *should exist* and
+> take this shape is a human call. Behavior-only fixes, tests, docs, and chores
+> from contributors can still take the fast/standard path.
+
+State the category, the risk (breaking? blast radius?), and the chosen path at
+the top of the review, e.g. `Triage: bug fix · non-breaking · low blast radius →
+fast path`. This makes the depth of review legible and ensures the
+breaking-change question is answered on every PR.
+
+## Review Signal — high-risk triggers for this scope
+
+The shared **Review buckets** and **Review Signal** model lives in the root
+`copilot-instructions.md` — apply it. This section defines what counts as
+**high-risk** *within `packages/**`*, which is what drives the signal:
+
+A change in this scope is **high-risk** when it involves any of:
+
+- **Public API change** — a new/changed/removed export, prop, variant, hook,
+  type, or signature; a changed default; changed DOM/class/ARIA output (see Step
+  0 breaking-change scan and "Adding a new prop").
+- **New component or module** — a net-new component directory, especially added
+  directly to `core` (skipped `lab`) — see Lifecycle & promotion.
+- **New package** — a net-new `@astryxdesign/*` package — see Lifecycle &
+  promotion. Always human-judgment.
+- **Suspected regression** — an unintended behavior/logic change or a silent
+  breaking change to a shared type/context (see Judgment).
+
+Anything else in this scope is **low-risk** for signal purposes. The one
+explicitly low-risk *area* inside `packages/**` is **`packages/themes/**`**
+(theme values); a theme-only change does not trip the high-risk gate — though
+still apply the design blast-radius check in Judgment (a token change can
+regress everywhere it composites).
+
+The high-risk determination is also computed deterministically by
+`.github/workflows/review-signal.yml`, which applies the **`needs:code-review`**
+label and disables auto-merge on high-risk PRs. If the PR carries that label,
+lead with 🔴 and focus on the high-risk surface (see the label note in the root
+instructions). Frame the review by bucket — the bucket sets *tone*, the area
+sets the *gate*:
+
+- **Contributor** → your review is the *initial pass* that tells a code owner
+  where to focus. For a new prop / API change / new component / new package, add
+  the explicit **⚠️ Needs human/maintainer judgment on the API surface** note —
+  additive and passing CI is *not* sufficient to imply approval.
+- **Design owner** → same checks, framed for a designer: name what crosses into
+  engineering territory and needs an engineer's eye.
+- **Eng team** → assistant framing: surface the same findings as input to the
+  author's own judgment.
+
 ## Calibrate to the PR type
 
-Weight the review by what the PR is trying to do:
+Once triaged, weight the review by what the PR is trying to do:
 
 - **Bug fixes** — require **evidence in the description**. A fix should
   demonstrate the bug first (a failing test, a reproduction, or another
@@ -264,6 +367,26 @@ Small additions and deliberately spec-approved direct-to-core work do happen —
 this isn't an automatic rejection — but a new core component that skipped lab
 should be called out so a human confirms it was intentional and hardened.
 
+### New package (net-new `@astryxdesign/*`)
+
+A brand-new package is a bigger commitment than a new component — it adds a
+published surface the project maintains and versions indefinitely. **Flag a diff
+that adds a new top-level `packages/<name>/` directory** (a new `package.json`
+with an `@astryxdesign/*` name, new `exports`, its own build/release wiring).
+This is always a high-risk trigger — route it to human/maintainer judgment
+regardless of author, and confirm:
+
+- **The package should exist as its own package** (vs. living in an existing
+  one) — a deliberate, maintainer-level decision, not an incidental add.
+- **Publish posture is intentional** — `private: true` + `astryx.canaryOnly` for
+  staging vs. a stable public package; the `"exports"` are generated
+  (`scripts/sync-exports.js`), not hand-written; versioning joins the `fixed`
+  group.
+- **A tracking/spec issue is linked** establishing the need and scope.
+
+Never approve a net-new package on convention-cleanliness alone; whether it
+*should exist* is a human call.
+
 ### New template added already-visible (not `hidden`)
 
 CLI templates/blocks are authored **hidden** and revealed only after they clear
@@ -386,6 +509,36 @@ checks, flag it.
   instead — and whether the breaking change is worth it. (Real case: a new
   required `aria-controls` id on a mobile-nav context forced edits to surfaces
   that didn't otherwise need it.)
+- **Unintended behavior/logic change.** Compare what the diff *actually changes*
+  against what the PR says it does. Flag behavior the author likely didn't mean
+  to touch — a value, default, condition, or output that changed as a side effect
+  of the intended edit and that the description never mentions. This is different
+  from scope contamination (unrelated *files* bundled in); here the collateral
+  change is *inside* the area the author was working on, so it's easy to miss.
+  Watch especially for:
+  - **Design/token changes — judge by presentation impact, not the token type.**
+    When a change touches a token, theme value, or style, reason about **how it
+    renders and where that could break**, not just that a value changed. Ask:
+    does this alter contrast, legibility, or emphasis? Does it change how a value
+    *composites* over other surfaces or in a different theme/mode (a change that
+    looks fine on the one screen the author checked but regresses elsewhere)?
+    Does it shift layout, spacing rhythm, or elevation order? Does it hold in
+    both light and dark, and against every surface the token appears on? The
+    canonical trap: a color that reads fine in isolation but was relied on to
+    layer over other content, so the change silently degrades every place it
+    composites. (One real instance: a theme edit that made a color opaque when
+    other UI depended on it being translucent — fine where the author looked,
+    broken where they didn't.) The principle is general: a design value rarely
+    lives in one place, so weigh the change across everywhere it presents.
+  - **Changed defaults / conditionals** — a default prop value, a comparison
+    (`>=` vs `>`), an early-return, or a guard that changed as a byproduct.
+  - **Generated-output drift** — a regenerated theme CSS / registry / token file
+    whose diff contains changes beyond the intended one.
+  When you spot this, don't assume malice or intent — surface it as a question:
+  "this also changes X (was `a`, now `b`) — does that hold everywhere it's used?"
+  Naming it lets the author confirm or revert. The author being unaware, and
+  having checked only the surface they were working on, is exactly why the
+  reviewer checks the blast radius of a design change.
 - **Other smells.** State expressed by unmounting focusable elements (toggle
   visibility so focus/a11y survive), unnecessary `useState` (prefer derived
   values or refs, especially from interaction handlers), and excessive comments.

@@ -193,7 +193,9 @@ export function isRangeHighlighted(input: {
   isDisabled: boolean;
   isOutside: boolean;
 }): boolean {
-  if (input.mode !== 'range') {return false;}
+  if (input.mode !== 'range') {
+    return false;
+  }
   return isSpanHighlighted({
     date: input.date,
     spanStart: input.rangeStart,

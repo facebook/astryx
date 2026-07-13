@@ -16,6 +16,7 @@ import {TopNav} from './TopNav';
 import {TopNavHeading} from './TopNavHeading';
 import {NavIcon} from '../NavIcon';
 import {TopNavItem} from './TopNavItem';
+import {TopNavMegaMenuFeaturedCard} from './TopNavMegaMenuFeaturedCard';
 import {LinkProvider} from '../Link/LinkProvider';
 
 function CustomLink({
@@ -45,9 +46,7 @@ describe('TopNav', () => {
   });
 
   it('renders heading slot content', () => {
-    render(
-      <TopNav heading={<span data-testid="title-content">Logo</span>} />,
-    );
+    render(<TopNav heading={<span data-testid="title-content">Logo</span>} />);
     expect(screen.getByTestId('title-content')).toBeInTheDocument();
   });
 
@@ -242,7 +241,9 @@ describe('TopNavHeading', () => {
     });
 
     it('names a logo-only link via logoLabel', () => {
-      render(<TopNavHeading logo={logo} headingHref="/home" logoLabel="Home" />);
+      render(
+        <TopNavHeading logo={logo} headingHref="/home" logoLabel="Home" />,
+      );
       expect(screen.getByRole('link', {name: 'Home'})).toHaveAttribute(
         'href',
         '/home',
@@ -294,9 +295,7 @@ describe('TopNavItem', () => {
   });
 
   it('renders children instead of label when provided', () => {
-    render(
-      <TopNavItem label="Accessible name">Custom content</TopNavItem>,
-    );
+    render(<TopNavItem label="Accessible name">Custom content</TopNavItem>);
     expect(screen.getByText('Custom content')).toBeInTheDocument();
   });
 
@@ -397,5 +396,22 @@ describe('TopNavItem', () => {
     const link = screen.getByRole('link', {name: 'Home'});
     expect(link).toHaveAttribute('data-custom-link');
     expect(link).not.toHaveAttribute('data-another-link');
+  });
+
+  describe('TopNavMegaMenuFeaturedCard rest forwarding', () => {
+    it('forwards data-testid, id, and aria-* to the root element', () => {
+      render(
+        <TopNavMegaMenuFeaturedCard
+          title="What's new"
+          description="Details"
+          data-testid="featured-card"
+          id="card-1"
+          aria-label="Featured"
+        />,
+      );
+      const card = screen.getByTestId('featured-card');
+      expect(card).toHaveAttribute('id', 'card-1');
+      expect(card).toHaveAttribute('aria-label', 'Featured');
+    });
   });
 });

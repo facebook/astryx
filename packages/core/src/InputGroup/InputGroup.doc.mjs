@@ -20,6 +20,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-input-group', visualProps: ['size', 'status']},
+      {className: 'astryx-input-group-text'},
     ],
   },
   description:

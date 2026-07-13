@@ -350,6 +350,7 @@ export function Pagination({
   className,
   style,
   ref,
+  ...rest
 }: PaginationProps) {
   const [, startTransition] = useTransition();
 
@@ -610,14 +611,15 @@ export function Pagination({
   return (
     <nav
       ref={ref}
-      aria-label={label}
-      data-testid={testId}
       {...mergeProps(
         themeProps('pagination', {variant, size}),
         stylex.props(styles.root, xstyle),
         className,
         style,
-      )}>
+      )}
+      {...rest}
+      aria-label={label}
+      data-testid={testId}>
       {pageSizeOptions != null && pageSizeOptions.length > 0 && (
         <div {...stylex.props(styles.pageSizeSelector)}>
           <div {...stylex.props(styles.pageSizeSelectorControl)}>

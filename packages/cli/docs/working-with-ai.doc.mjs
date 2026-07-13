@@ -125,7 +125,7 @@ If you don't know all three, run \`npx astryx init --features agents\` to genera
           lang: 'json',
           label: 'package.json',
           code: `"scripts": {
-  "xds": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
+  "astryx": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
 }`,
         },
         {

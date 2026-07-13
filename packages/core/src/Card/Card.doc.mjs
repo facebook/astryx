@@ -131,7 +131,7 @@ export const docsZh = {
   theming: {
     container: true,
     targets: [
-      {className: 'astryx-card'},
+      {className: 'astryx-card', visualProps: ['variant']},
     ],
     vars: [
       {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},
