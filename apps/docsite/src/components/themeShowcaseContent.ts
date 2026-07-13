@@ -24,16 +24,16 @@ export interface ThemeShowcaseContent {
   inventory: InventoryRow[];
 }
 
-const IMAGE_CDN = 'https://lookaside.facebook.com/assets/astryx';
+const THEME_ASSETS = '/theme-assets';
 
 // Matcha café — matcha-drink photos.
 const MATCHA_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/matcha-product-1.png`,
-  headphones: `${IMAGE_CDN}/matcha-product-2.png`,
-  backpack: `${IMAGE_CDN}/matcha-product-3.png`,
-  wallet: `${IMAGE_CDN}/matcha-product-5.png`,
-  tumbler: `${IMAGE_CDN}/matcha-product-4.png`,
-  throw_: `${IMAGE_CDN}/matcha-product-6.png`,
+  watch: `${THEME_ASSETS}/matcha-product-1.webp`,
+  headphones: `${THEME_ASSETS}/matcha-product-2.webp`,
+  backpack: `${THEME_ASSETS}/matcha-product-3.webp`,
+  wallet: `${THEME_ASSETS}/matcha-product-5.webp`,
+  tumbler: `${THEME_ASSETS}/matcha-product-4.webp`,
+  throw_: `${THEME_ASSETS}/matcha-product-6.webp`,
 };
 
 const MATCHA_CONTENT: ThemeShowcaseContent = {
@@ -131,12 +131,12 @@ const MATCHA_CONTENT: ThemeShowcaseContent = {
 // Butter bakery — butter/breakfast photos. Only five Butter assets exist, so
 // the croissant is reused for the sixth slot.
 const BUTTER_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/Butter-Croissant.png`,
-  headphones: `${IMAGE_CDN}/Butter-Pancake.png`,
-  backpack: `${IMAGE_CDN}/Butter-Waffle.png`,
-  wallet: `${IMAGE_CDN}/Butter-Toast.png`,
-  tumbler: `${IMAGE_CDN}/Butter-Stick.png`,
-  throw_: `${IMAGE_CDN}/Butter-Croissant.png`,
+  watch: `${THEME_ASSETS}/Butter-Croissant.webp`,
+  headphones: `${THEME_ASSETS}/Butter-Pancake.webp`,
+  backpack: `${THEME_ASSETS}/Butter-Waffle.webp`,
+  wallet: `${THEME_ASSETS}/Butter-Toast.webp`,
+  tumbler: `${THEME_ASSETS}/Butter-Stick.webp`,
+  throw_: `${THEME_ASSETS}/Butter-Croissant.webp`,
 };
 
 const BUTTER_CONTENT: ThemeShowcaseContent = {
@@ -233,12 +233,12 @@ const BUTTER_CONTENT: ThemeShowcaseContent = {
 
 // Stone homeware — stoneware photos on stone plinths.
 const STONE_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/Stone-bowl.png`,
-  headphones: `${IMAGE_CDN}/Stone-cup.png`,
-  backpack: `${IMAGE_CDN}/Stone-plate.png`,
-  wallet: `${IMAGE_CDN}/Stone-servingbowl.png`,
-  tumbler: `${IMAGE_CDN}/Stone-teapot.png`,
-  throw_: `${IMAGE_CDN}/Stone-vase.png`,
+  watch: `${THEME_ASSETS}/Stone-bowl.webp`,
+  headphones: `${THEME_ASSETS}/Stone-cup.webp`,
+  backpack: `${THEME_ASSETS}/Stone-plate.webp`,
+  wallet: `${THEME_ASSETS}/Stone-servingbowl.webp`,
+  tumbler: `${THEME_ASSETS}/Stone-teapot.webp`,
+  throw_: `${THEME_ASSETS}/Stone-vase.webp`,
 };
 
 const STONE_CONTENT: ThemeShowcaseContent = {
@@ -335,12 +335,12 @@ const STONE_CONTENT: ThemeShowcaseContent = {
 
 // Y2K trinkets — iridescent/holo objects.
 const Y2K_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/Y2K-Phone.png`,
-  headphones: `${IMAGE_CDN}/Y2K-Star.png`,
-  backpack: `${IMAGE_CDN}/Y2K-Butterfly.png`,
-  wallet: `${IMAGE_CDN}/Y2K-Heart.png`,
-  tumbler: `${IMAGE_CDN}/Y2K-Flower.png`,
-  throw_: `${IMAGE_CDN}/Y2K-Couch.png`,
+  watch: `${THEME_ASSETS}/Y2K-Phone.webp`,
+  headphones: `${THEME_ASSETS}/Y2K-Star.webp`,
+  backpack: `${THEME_ASSETS}/Y2K-Butterfly.webp`,
+  wallet: `${THEME_ASSETS}/Y2K-Heart.webp`,
+  tumbler: `${THEME_ASSETS}/Y2K-Flower.webp`,
+  throw_: `${THEME_ASSETS}/Y2K-Couch.webp`,
 };
 
 const Y2K_CONTENT: ThemeShowcaseContent = {
@@ -437,12 +437,12 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
 
 // Gothic botanicals — moody single-stem floral photos.
 const GOTHIC_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/Gothic-1.png`,
-  headphones: `${IMAGE_CDN}/Gothic-2.png`,
-  backpack: `${IMAGE_CDN}/Gothic-3.png`,
-  wallet: `${IMAGE_CDN}/Gothic-4.png`,
-  tumbler: `${IMAGE_CDN}/Gothic-5.png`,
-  throw_: `${IMAGE_CDN}/Gothic-6.png`,
+  watch: `${THEME_ASSETS}/Gothic-1.webp`,
+  headphones: `${THEME_ASSETS}/Gothic-2.webp`,
+  backpack: `${THEME_ASSETS}/Gothic-3.webp`,
+  wallet: `${THEME_ASSETS}/Gothic-4.webp`,
+  tumbler: `${THEME_ASSETS}/Gothic-5.webp`,
+  throw_: `${THEME_ASSETS}/Gothic-6.webp`,
 };
 
 const GOTHIC_CONTENT: ThemeShowcaseContent = {
