@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Thumbnail} from './Thumbnail';
 
@@ -21,16 +21,19 @@ describe('Thumbnail', () => {
   });
 
   it('shows skeleton when isLoading with no src', () => {
-    const {container} = render(
-      <Thumbnail isLoading data-testid="thumb" />,
-    );
+    const {container} = render(<Thumbnail isLoading data-testid="thumb" />);
     expect(container.querySelector('.astryx-skeleton')).toBeInTheDocument();
     expect(screen.queryByRole('img')).toBeNull();
   });
 
   it('shows image with upload overlay when isLoading with src', () => {
     render(
-      <Thumbnail src="/local.jpg" alt="Uploading" isLoading data-testid="thumb" />,
+      <Thumbnail
+        src="/local.jpg"
+        alt="Uploading"
+        isLoading
+        data-testid="thumb"
+      />,
     );
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', '/local.jpg');
@@ -75,7 +78,6 @@ describe('Thumbnail', () => {
     ).toBeInTheDocument();
   });
 
-
   it('label is shown via tooltip, not as inline text', () => {
     render(<Thumbnail label="photo.png" data-testid="thumb" />);
     // Label should exist in DOM (tooltip) but not as a direct child text node
@@ -117,9 +119,7 @@ describe('Thumbnail', () => {
 
   it('is not interactive when isLoading', () => {
     const onClick = vi.fn();
-    render(
-      <Thumbnail src="/img.jpg" alt="Test" onClick={onClick} isLoading />,
-    );
+    render(<Thumbnail src="/img.jpg" alt="Test" onClick={onClick} isLoading />);
     expect(screen.queryByRole('button')).toBeNull();
   });
 
@@ -127,5 +127,28 @@ describe('Thumbnail', () => {
     const ref = vi.fn();
     render(<Thumbnail ref={ref} data-testid="thumb" />);
     expect(ref).toHaveBeenCalled();
+  });
+
+  it('shows the placeholder when the image fails to load', () => {
+    render(<Thumbnail src="/broken.jpg" alt="Broken" data-testid="thumb" />);
+
+    fireEvent.error(screen.getByRole('img'));
+
+    expect(screen.queryByRole('img')).toBeNull();
+    const root = screen.getByTestId('thumb');
+    expect(root.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('retries a changed src after a load error', () => {
+    const {rerender} = render(
+      <Thumbnail src="/broken.jpg" alt="Photo" data-testid="thumb" />,
+    );
+    fireEvent.error(screen.getByRole('img'));
+    expect(screen.queryByRole('img')).toBeNull();
+
+    rerender(<Thumbnail src="/fixed.jpg" alt="Photo" data-testid="thumb" />);
+
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', '/fixed.jpg');
   });
 });
