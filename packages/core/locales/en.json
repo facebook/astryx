@@ -34,5 +34,197 @@
   "@astryx.pagination.pageAnnounce": {
     "defaultMessage": "Page {current, number}",
     "description": "Screen-reader announcement when a page changes and total is unknown."
+  },
+  "@astryx.powersearch.editor.field": {
+    "defaultMessage": "Field",
+    "description": "Label for the field selector in the PowerSearch filter editor popover."
+  },
+  "@astryx.powersearch.editor.operator": {
+    "defaultMessage": "Operator",
+    "description": "Label for the operator selector in the PowerSearch filter editor popover."
+  },
+  "@astryx.powersearch.editor.addFilter": {
+    "defaultMessage": "+ Add filter",
+    "description": "Label for the button that appends a new filter row inside a group in the PowerSearch editor."
+  },
+  "@astryx.powersearch.editor.removeFilter": {
+    "defaultMessage": "Remove filter",
+    "description": "Aria label for the icon button that removes a filter row from a group in the PowerSearch editor."
+  },
+  "@astryx.powersearch.editor.groupOperator": {
+    "defaultMessage": "Group operator",
+    "description": "Aria label for the AND/OR selector that combines sibling filters inside a group. Visible label is provided separately by the operator itself."
+  },
+  "@astryx.powersearch.editor.group": {
+    "defaultMessage": "Group",
+    "description": "Fallback label rendered where a nested group's operator would appear if no operator is available."
+  },
+  "@astryx.powersearch.editor.delete": {
+    "defaultMessage": "Delete",
+    "description": "Label for the delete action inside the PowerSearch filter editor popover."
+  },
+  "@astryx.powersearch.editor.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Label for the cancel action inside the PowerSearch filter editor popover."
+  },
+  "@astryx.powersearch.editor.apply": {
+    "defaultMessage": "Apply",
+    "description": "Label for the save/apply action inside the PowerSearch filter editor popover. Consumers can override via the `popoverSaveButtonLabel` prop."
+  },
+  "@astryx.powersearch.valueEditor.value": {
+    "defaultMessage": "Value",
+    "description": "Label for the single-value input in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.values": {
+    "defaultMessage": "Values",
+    "description": "Label for the multi-value input in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.time": {
+    "defaultMessage": "Time",
+    "description": "Label for the time picker in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.date": {
+    "defaultMessage": "Date",
+    "description": "Label for the absolute date picker in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.relativeDate": {
+    "defaultMessage": "Relative date",
+    "description": "Label for the relative-date selector (e.g. \"Last 7 days\") in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.startDate": {
+    "defaultMessage": "Start date",
+    "description": "Label for the start of a date range in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.endDate": {
+    "defaultMessage": "End date",
+    "description": "Label for the end of a date range in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.entities": {
+    "defaultMessage": "Entities",
+    "description": "Label for the entity picker in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.searchPlaceholder": {
+    "defaultMessage": "Search…",
+    "description": "Placeholder shown in the typeahead / entity search input in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.enterValuePlaceholder": {
+    "defaultMessage": "Enter value…",
+    "description": "Placeholder shown in a free-text single-value input in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.addValuesPlaceholder": {
+    "defaultMessage": "Add values…",
+    "description": "Placeholder shown in the multi-value chip input in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.enterNumberPlaceholder": {
+    "defaultMessage": "Enter number…",
+    "description": "Placeholder shown in a numeric input in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.selectValuesPlaceholder": {
+    "defaultMessage": "Select values…",
+    "description": "Placeholder shown in the enum-list selector in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.operator.contains": {
+    "defaultMessage": "contains",
+    "description": "PowerSearch string operator: substring match."
+  },
+  "@astryx.powersearch.operator.notContains": {
+    "defaultMessage": "does not contain",
+    "description": "PowerSearch string operator: negated substring match."
+  },
+  "@astryx.powersearch.operator.startsWith": {
+    "defaultMessage": "starts with",
+    "description": "PowerSearch string operator: prefix match."
+  },
+  "@astryx.powersearch.operator.notStartsWith": {
+    "defaultMessage": "does not start with",
+    "description": "PowerSearch string operator: negated prefix match."
+  },
+  "@astryx.powersearch.operator.endsWith": {
+    "defaultMessage": "ends with",
+    "description": "PowerSearch string operator: suffix match."
+  },
+  "@astryx.powersearch.operator.notEndsWith": {
+    "defaultMessage": "does not end with",
+    "description": "PowerSearch string operator: negated suffix match."
+  },
+  "@astryx.powersearch.operator.is": {
+    "defaultMessage": "is",
+    "description": "PowerSearch equality operator (string, enum). May diverge from other equality operators (numbers, dates) at translation time."
+  },
+  "@astryx.powersearch.operator.isNot": {
+    "defaultMessage": "is not",
+    "description": "PowerSearch inequality operator (string, enum)."
+  },
+  "@astryx.powersearch.operator.equals": {
+    "defaultMessage": "is",
+    "description": "PowerSearch numeric equality operator. Ships the same English text as `is` but is a distinct entry so number translators can diverge."
+  },
+  "@astryx.powersearch.operator.notEquals": {
+    "defaultMessage": "is not",
+    "description": "PowerSearch numeric inequality operator."
+  },
+  "@astryx.powersearch.operator.greaterThan": {
+    "defaultMessage": "is greater than",
+    "description": "PowerSearch numeric operator: strictly greater than."
+  },
+  "@astryx.powersearch.operator.lessThan": {
+    "defaultMessage": "is less than",
+    "description": "PowerSearch numeric operator: strictly less than."
+  },
+  "@astryx.powersearch.operator.greaterThanOrEqual": {
+    "defaultMessage": "is greater than or equal to",
+    "description": "PowerSearch numeric operator: greater than or equal."
+  },
+  "@astryx.powersearch.operator.lessThanOrEqual": {
+    "defaultMessage": "is less than or equal to",
+    "description": "PowerSearch numeric operator: less than or equal."
+  },
+  "@astryx.powersearch.operator.before": {
+    "defaultMessage": "is before",
+    "description": "PowerSearch date operator: earlier than."
+  },
+  "@astryx.powersearch.operator.after": {
+    "defaultMessage": "is after",
+    "description": "PowerSearch date operator: later than."
+  },
+  "@astryx.powersearch.operator.between": {
+    "defaultMessage": "is between",
+    "description": "PowerSearch date operator: within a range."
+  },
+  "@astryx.powersearch.operator.isTrue": {
+    "defaultMessage": "is true",
+    "description": "PowerSearch boolean operator: true."
+  },
+  "@astryx.powersearch.operator.isFalse": {
+    "defaultMessage": "is false",
+    "description": "PowerSearch boolean operator: false."
+  },
+  "@astryx.powersearch.operator.isAnyOf": {
+    "defaultMessage": "is any of",
+    "description": "PowerSearch list operator: membership in the provided set."
+  },
+  "@astryx.powersearch.operator.isNoneOf": {
+    "defaultMessage": "is none of",
+    "description": "PowerSearch list operator: exclusion from the provided set."
+  },
+  "@astryx.powersearch.valueEditor.itemsCount": {
+    "defaultMessage": "{count, number} {count, plural, one {item} other {items}}",
+    "description": "Overflow summary shown by PowerSearch when a list-valued filter has too many items to fit on the token. Pluralized to match locale rules."
+  },
+  "@astryx.powersearch.valueEditor.entitiesCount": {
+    "defaultMessage": "{count, number} {count, plural, one {entity} other {entities}}",
+    "description": "Overflow summary shown by PowerSearch when an entity-list-valued filter has too many entities to fit on the token."
+  },
+  "@astryx.powersearch.valueEditor.dateRange": {
+    "defaultMessage": "date range",
+    "description": "Fallback text rendered by PowerSearch when a date-range filter value cannot be formatted concretely."
+  },
+  "@astryx.powersearch.valueEditor.filtersCount": {
+    "defaultMessage": "{count, number} {count, plural, one {filter} other {filters}}",
+    "description": "Summary shown by PowerSearch for a nested-filter value: N filters."
+  },
+  "@astryx.powersearch.resultCount": {
+    "defaultMessage": "{count, number} {count, plural, one {result} other {results}}",
+    "description": "Result count shown next to the PowerSearch input. Announced to screen readers on change."
   }
 }
