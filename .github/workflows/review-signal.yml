@@ -145,29 +145,51 @@ jobs:
             const authorIsBot = pr.user.type === 'Bot' || /\[bot\]$/.test(author);
 
             // --- Read owner sets from repo files at the base ref. ---
-            async function handlesFrom(path, { starLineOnly = false } = {}) {
-              try {
-                const { data } = await github.rest.repos.getContent({
-                  owner, repo, path, ref: pr.base.ref,
-                });
-                let text = Buffer.from(data.content, 'base64').toString('utf8');
-                if (starLineOnly) {
-                  const star = text.split('\n').map((l) => l.trim())
-                    .find((l) => l.startsWith('*'));
-                  text = star || '';
+            // ENGOWNERS/DESIGNOWNERS/CODEOWNERS are CRITICAL inputs: a wrong or
+            // empty read mis-buckets the author — an owner gets treated as a
+            // community contributor and wrongly gated, with no entitled
+            // approval able to clear it. GitHub's content API occasionally
+            // returns a transient fault for ONE request while adjacent requests
+            // succeed (observed: an HTML edge error page instead of JSON, i.e.
+            // a secondary-rate-limit / 5xx from the frontend, not the API). So:
+            // retry a few times, and if it STILL fails, THROW rather than fall
+            // back to []. The caller's per-PR try/catch then skips this PR,
+            // LEAVES ITS GATE UNTOUCHED (never writes a false success), and
+            // marks the run failed (visible); the next push/dispatch reconciles
+            // once the read succeeds. A failed read is never "no owners".
+            async function readOwnerFile(path) {
+              let lastErr;
+              for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                  const { data } = await github.rest.repos.getContent({
+                    owner, repo, path, ref: pr.base.ref,
+                  });
+                  return Buffer.from(data.content, 'base64').toString('utf8');
+                } catch (e) {
+                  lastErr = e;
+                  core.warning(`Read of ${path} failed (attempt ${attempt}/3): ${e.message}`);
+                  if (attempt < 3) await new Promise((r) => setTimeout(r, 500 * attempt));
                 }
-                // Strip comment lines (# ...) so an @handle mentioned in a
-                // file header comment is not parsed as a real owner.
-                const body = text
-                  .split('\n')
-                  .filter((l) => !l.trim().startsWith('#'))
-                  .join('\n');
-                return (body.match(/@[A-Za-z0-9-]+/g) || [])
-                  .map((h) => h.slice(1).toLowerCase());
-              } catch (e) {
-                core.warning(`Could not read ${path}: ${e.message}`);
-                return [];
               }
+              throw new Error(`Could not read ${path} after 3 attempts: ${lastErr && lastErr.message}`);
+            }
+            function parseHandles(text, { starLineOnly = false } = {}) {
+              let src = text;
+              if (starLineOnly) {
+                src = text.split('\n').map((l) => l.trim())
+                  .find((l) => l.startsWith('*')) || '';
+              }
+              // Strip comment lines (# ...) so an @handle mentioned in a
+              // file header comment is not parsed as a real owner.
+              const body = src
+                .split('\n')
+                .filter((l) => !l.trim().startsWith('#'))
+                .join('\n');
+              return (body.match(/@[A-Za-z0-9-]+/g) || [])
+                .map((h) => h.slice(1).toLowerCase());
+            }
+            async function handlesFrom(path, opts = {}) {
+              return parseHandles(await readOwnerFile(path), opts);
             }
             const engOwners = await handlesFrom('.github/ENGOWNERS');
             const designOwners = await handlesFrom('.github/DESIGNOWNERS');
@@ -324,7 +346,7 @@ jobs:
             // the PR's reviews here (this job runs on pull_request_target and
             // workflow_dispatch, both of which work for forks) and treat a gate
             // as satisfied when an entitled owner has approved:
-            //   code gate   → a CODEOWNER approval
+            //   code gate   → a CODEOWNER or ENGOWNER approval
             //   design gate → a DESIGNOWNER or CODEOWNER approval
             // We use each reviewer's LATEST review state so a later
             // CHANGES_REQUESTED/DISMISSED correctly un-satisfies it.
@@ -344,8 +366,12 @@ jobs:
               }
               for (const [login, state] of latestByUser) {
                 if (state !== 'APPROVED') continue;
-                if (codeOwners.includes(login)) { codeApproved = true; designApproved = true; }
-                else if (designOwners.includes(login)) { designApproved = true; }
+                // Code gate: a CODEOWNER or any ENGOWNER approval satisfies it
+                // (eng owns the code; a CODEOWNER is a strict subset). Design
+                // gate: only a DESIGNOWNER or CODEOWNER — an eng approval does
+                // NOT clear a design gate.
+                if (codeOwners.includes(login) || engOwners.includes(login)) codeApproved = true;
+                if (codeOwners.includes(login) || designOwners.includes(login)) designApproved = true;
               }
             } catch (e) {
               core.warning(`Could not read reviews: ${e.message}`);
