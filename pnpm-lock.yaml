@@ -761,10 +761,10 @@ importers:
   packages/vega:
     dependencies:
       react:
-        specifier: '>=19.0.0'
+        specifier: '>=19.2.0'
         version: 19.2.7
       react-dom:
-        specifier: '>=19.0.0'
+        specifier: '>=19.2.0'
         version: 19.2.7(react@19.2.7)
     devDependencies:
       '@types/react':
