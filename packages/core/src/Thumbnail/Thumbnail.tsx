@@ -25,6 +25,7 @@
  * - /packages/cli/templates/blocks/components/Thumbnail/ (showcase blocks)
  */
 
+import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -318,11 +319,16 @@ export function Thumbnail({
 }: ThumbnailProps) {
   const t = useTranslator();
 
+  // Track the exact src that failed (rather than a boolean) so a changed src
+  // gets a fresh load attempt instead of the stale error.
+  const [erroredSrc, setErroredSrc] = useState<string | undefined>(undefined);
+
   const hasSrc = src != null;
+  const hasError = hasSrc && erroredSrc === src;
   const showSkeleton = isLoading && !hasSrc;
-  const showImage = hasSrc && !showSkeleton;
+  const showImage = hasSrc && !showSkeleton && !hasError;
   const showUploadOverlay = isLoading && hasSrc;
-  const showPlaceholder = !isLoading && !hasSrc;
+  const showPlaceholder = (!isLoading && !hasSrc) || hasError;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
   const hasRemove = onRemove != null && !isDisabled;
   const isHoverReveal = hasRemove && showRemoveOn === 'hover';
@@ -363,6 +369,7 @@ export function Thumbnail({
           alt={alt ?? ''}
           role={isImageDecorative ? 'presentation' : undefined}
           aria-hidden={isImageDecorative || undefined}
+          onError={() => setErroredSrc(src)}
           {...stylex.props(styles.image)}
         />
       )}
