@@ -243,21 +243,31 @@ describe('Button', () => {
     expect(button).toHaveAttribute('data-size', 'sm');
   });
 
-  it('stretches to full width when isFullWidth', () => {
-    render(<Button label="Sign in" isFullWidth />);
-    expect(screen.getByRole('button')).toHaveStyle({width: '100%'});
+  it('applies string width as-is', () => {
+    render(<Button label="Sign in" width="100%" />);
+    const button = screen.getByRole('button');
+    // StyleX compiles the dynamic width to an inline CSS custom property.
+    expect(button.getAttribute('style')).toContain('100%');
+    expect(button.className).toContain('dynamicStyles.width');
   });
 
-  it('does not stretch to full width by default', () => {
+  it('applies numeric width as pixels', () => {
+    render(<Button label="Sign in" width={240} />);
+    expect(screen.getByRole('button').getAttribute('style')).toContain('240');
+  });
+
+  it('omits width styling when the prop is not provided', () => {
     render(<Button label="Sign in" />);
-    expect(screen.getByRole('button')).not.toHaveStyle({width: '100%'});
+    expect(screen.getByRole('button').className).not.toContain(
+      'dynamicStyles.width',
+    );
   });
 
-  it('stretches to full width when rendered as a link via href', () => {
-    render(<Button label="Sign in" href="https://example.com" isFullWidth />);
-    expect(screen.getByRole('link', {name: 'Sign in'})).toHaveStyle({
-      width: '100%',
-    });
+  it('applies width when rendered as a link via href', () => {
+    render(<Button label="Sign in" href="https://example.com" width="100%" />);
+    expect(
+      screen.getByRole('link', {name: 'Sign in'}).getAttribute('style'),
+    ).toContain('100%');
   });
 
   // P0: onClick fires before clickAction, clickAction respects preventDefault

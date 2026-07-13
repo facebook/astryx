@@ -105,11 +105,10 @@ export const docs = {
       default: 'false',
     },
     {
-      name: 'isFullWidth',
-      type: 'boolean',
+      name: 'width',
+      type: 'SizeValue',
       description:
-        'Stretches the button to fill its container\'s full width. Use for full-width call-to-action buttons instead of a width override or a stretch wrapper.',
-      default: 'false',
+        "Width of the button. Numbers are treated as pixels, strings are used as-is (e.g., '100%' for a full-width button). By default the button sizes to its content.",
     },
     {
       name: 'children',
@@ -212,7 +211,7 @@ export const docsZh = {
       default: 'false',
     },
     {name: 'icon', type: 'ReactNode', description: '图标元素。仅提供 icon 而不提供 children 时，按钮渲染为正方形的纯图标按钮。'},
-    {name: 'isFullWidth', type: 'boolean', description: '按钮拉伸至填满容器的全部宽度。用于全宽的行动号召按钮，无需宽度覆盖或拉伸容器。', default: 'false'},
+    {name: 'width', type: 'SizeValue', description: "按钮宽度。数字按像素处理，字符串按原样使用（如 '100%' 表示全宽按钮）。默认按内容自适应宽度。"},
     {name: 'children', type: 'ReactNode', description: '可选的可见内容覆盖；label 仍然是必需的（用于无障碍名称）。大多数情况使用 <Button label="Save" />。'},
     {
       name: 'endContent',
@@ -280,7 +279,7 @@ export const docsDense = {
     isLoading: 'shows spinner+disables interaction; announces via live region',
     icon: 'icon element rendered before label text',
     isIconOnly: 'when true, renders square icon-only button; label becomes aria-label',
-    isFullWidth: 'stretches button to fill container width; no width override or stretch wrapper needed',
+    width: "Width of button. Numbers=pixels, strings=as-is (e.g. '100%' for full-width).",
     children: 'optional visible override; label is still required for a11y. Prefer <Button label="Save" /> over using children',
     endContent: 'trailing icon/badge after label; ignored when isIconOnly; color inherited',
     tooltip: 'tooltip on hover',
