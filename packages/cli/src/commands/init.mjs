@@ -19,7 +19,7 @@ import * as fs from 'node:fs';
 import {CLI_ROOT} from '../utils/paths.mjs';
 import {PathSafetyError} from '../utils/path-safety.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
+import {installAgentDocs, removeAgentDocs, VALID_AGENTS} from './agent-docs.mjs';
 import {listTemplates} from './template.mjs';
 import {humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
@@ -212,6 +212,11 @@ export function registerInit(program) {
 
       // Non-interactive: --features or --all
       if (options.features || options.all) {
+        if (options.agent && !VALID_AGENTS.includes(options.agent)) {
+          cliError(`Unknown agent "${options.agent}". Valid: ${VALID_AGENTS.join(', ')}`, {code: ERROR_CODES.ERR_UNKNOWN_AGENT});
+          return;
+        }
+
         const features = options.all
           ? VALID_FEATURES
           : options.features.split(',').map(f => f.trim().toLowerCase());
