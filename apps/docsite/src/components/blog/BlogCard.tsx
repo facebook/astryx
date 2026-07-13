@@ -51,10 +51,8 @@ const styles = stylex.create({
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
   },
-  // The feature card's title/excerpt only scale up once the index shows more
-  // than one column (>=720px, where the post grid goes two-up). Below that the
-  // page is a single stack, so the feature matches the regular cards (h3 title,
-  // body excerpt) for consistent sizing. Keeps the h1 element for semantics.
+  // Below 720px (where the post grid becomes a single column) the feature
+  // card's title/excerpt match the regular cards' size for a consistent stack.
   featureTitle: {
     fontSize: {
       default: 'var(--text-heading-3-size)',

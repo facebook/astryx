@@ -56,9 +56,8 @@ const styles = stylex.create({
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
   },
-  // Match the compact cards' title size while BlogShowcase is a single column
-  // (<1024px, where the split stacks); scale up to the feature (h1) size only
-  // once it's the two-column split. Keeps the h1 element for semantics.
+  // Below 1024px (where the showcase split stacks) match the compact cards'
+  // title size; scale up to the feature size only in the two-column split.
   title: {
     fontSize: {
       default: 'var(--text-heading-3-size)',
