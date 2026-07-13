@@ -56,6 +56,19 @@ const styles = stylex.create({
     WebkitBoxOrient: 'vertical',
     overflow: 'hidden',
   },
+  // Match the compact cards' title size while BlogShowcase is a single column
+  // (<1024px, where the split stacks); scale up to the feature (h1) size only
+  // once it's the two-column split. Keeps the h1 element for semantics.
+  title: {
+    fontSize: {
+      default: 'var(--text-heading-3-size)',
+      '@media (min-width: 1024px)': 'var(--text-heading-1-size)',
+    },
+    lineHeight: {
+      default: 'var(--text-heading-3-leading)',
+      '@media (min-width: 1024px)': 'var(--text-heading-1-leading)',
+    },
+  },
   link: {
     position: 'absolute',
     inset: 0,
@@ -100,7 +113,9 @@ export function BlogFeatureCard({
       </AspectRatio>
       <VStack gap={3}>
         <VStack gap={1}>
-          <Heading level={1}>{post.title}</Heading>
+          <Heading level={1} xstyle={styles.title}>
+            {post.title}
+          </Heading>
           {hideDescription ? null : (
             <Text
               type="large"
