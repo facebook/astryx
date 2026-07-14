@@ -48,6 +48,7 @@ import {
   useTableRowExpansion,
   useTableRowExpansionState,
   useTableGroupedRows,
+  useTableRowIndex,
 } from '@astryxdesign/core/Table';
 import type {TablePlugin, TableSortState} from '@astryxdesign/core/Table';
 
@@ -70,7 +71,8 @@ type PluginId =
   | 'columnResize'
   | 'stickyColumns'
   | 'rowExpansion'
-  | 'groupedRows';
+  | 'groupedRows'
+  | 'rowIndex';
 
 interface PluginMeta {
   id: PluginId;
@@ -109,6 +111,11 @@ const PLUGIN_REGISTRY: PluginMeta[] = [
     id: 'groupedRows',
     label: 'Grouped Rows',
     description: 'Collapsible sections grouped by team',
+  },
+  {
+    id: 'rowIndex',
+    label: 'Row Index',
+    description: 'Prepend a monospaced row-number column',
   },
 ];
 
@@ -231,10 +238,19 @@ function useLabPlugins({
     summary.push(`${collapsedGroups.size} groups collapsed`);
   }
 
+  // --- row index ---
+  const rowIndexPlugin = useTableRowIndex<LabRow>({
+    data: dataAfterPage,
+    getRowKey: item => item.id,
+  });
+
   // Assemble enabled plugins in a stable order.
   const plugins: Record<string, TablePlugin<LabRow>> = {};
   if (enabled.groupedRows) {
     plugins.grouped = grouped.plugin;
+  }
+  if (enabled.rowIndex) {
+    plugins.rowIndex = rowIndexPlugin;
   }
   if (enabled.sortable) {
     plugins.sort = sortPlugin;
@@ -414,6 +430,7 @@ export default function TableLabPage() {
     stickyColumns: false,
     rowExpansion: false,
     groupedRows: false,
+    rowIndex: false,
   });
 
   const baseData = useMemo(() => generateRows(rowCount), [rowCount]);
