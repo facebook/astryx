@@ -26,19 +26,20 @@ import type {IconName} from '../Icon/globalIconRegistry';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export type ChatMessageStatus =
   'sending' | 'sent' | 'delivered' | 'read' | 'error';
 
 const STATUS_CONFIG: Record<
   ChatMessageStatus,
-  {icon: IconName; label: string}
+  {icon: IconName; i18nKey: string}
 > = {
-  sending: {icon: 'clock', label: 'Sending'},
-  sent: {icon: 'check', label: 'Sent'},
-  delivered: {icon: 'checkDouble', label: 'Delivered'},
-  read: {icon: 'checkDouble', label: 'Read'},
-  error: {icon: 'error', label: 'Failed'},
+  sending: {icon: 'clock', i18nKey: '@astryx.chat.status.sending'},
+  sent: {icon: 'check', i18nKey: '@astryx.chat.status.sent'},
+  delivered: {icon: 'checkDouble', i18nKey: '@astryx.chat.status.delivered'},
+  read: {icon: 'checkDouble', i18nKey: '@astryx.chat.status.read'},
+  error: {icon: 'error', i18nKey: '@astryx.chat.status.failed'},
 };
 
 const pulseKeyframes = stylex.keyframes({
@@ -116,10 +117,13 @@ export function ChatMessageMetadata({
   style,
   ...rest
 }: ChatMessageMetadataProps) {
+  const t = useTranslator();
   const msgContext = useChatMessageContext();
   const sender = msgContext?.sender ?? 'assistant';
 
   const statusConfig = status != null ? STATUS_CONFIG[status] : null;
+  const statusLabel =
+    statusConfig != null ? t(statusConfig.i18nKey) : '';
 
   const hasContent =
     timestamp != null || footer != null || statusConfig != null;
@@ -149,15 +153,17 @@ export function ChatMessageMetadata({
       {footer != null && statusConfig != null && <span>·</span>}
       {statusConfig != null && (
         <span
-          title={statusConfig.label}
-          aria-label={'Message ' + statusConfig.label.toLowerCase()}
+          title={statusLabel}
+          aria-label={t('@astryx.chat.messageAriaLabel', {
+            status: statusLabel.toLowerCase(),
+          })}
           {...stylex.props(
             styles.statusRow,
             status === 'error' && styles.statusError,
             status === 'sending' && styles.statusPulse,
           )}>
           <Icon icon={statusConfig.icon} size="xsm" color="inherit" />
-          <span>{statusConfig.label}</span>
+          <span>{statusLabel}</span>
         </span>
       )}
     </div>

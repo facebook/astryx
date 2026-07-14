@@ -35,6 +35,7 @@ import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 /**
  * Media type for lightbox items.
@@ -282,6 +283,7 @@ export function Lightbox({
   onKeyDown: onKeyDownProp,
   ...props
 }: LightboxProps) {
+  const t = useTranslator();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const imageWrapperRef = useRef<HTMLDivElement>(null);
   const triggerElementRef = useRef<Element | null>(null);
@@ -517,7 +519,7 @@ export function Lightbox({
         <div {...stylex.props(styles.closeButton)}>
           <IconButton
             icon={<Icon icon="close" size="sm" color="inherit" />}
-            label="Close"
+            label={t('@astryx.lightbox.close')}
             variant="ghost"
             onClick={handleClose}
             xstyle={styles.controlButton}
@@ -531,7 +533,7 @@ export function Lightbox({
           <div {...stylex.props(styles.navButton, styles.navPrev)}>
             <IconButton
               icon={<Icon icon="chevronLeft" size="sm" color="inherit" />}
-              label="Previous"
+              label={t('@astryx.lightbox.previous')}
               variant="ghost"
               isDisabled={!canPrev}
               onClick={goToPrev}
@@ -586,7 +588,7 @@ export function Lightbox({
           <div {...stylex.props(styles.navButton, styles.navNext)}>
             <IconButton
               icon={<Icon icon="chevronRight" size="sm" color="inherit" />}
-              label="Next"
+              label={t('@astryx.lightbox.next')}
               variant="ghost"
               isDisabled={!canNext}
               onClick={goToNext}

@@ -44,6 +44,7 @@ import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -342,6 +343,7 @@ export function SideNavHeading({
   ref,
   ...props
 }: SideNavHeadingProps) {
+  const t = useTranslator();
   const LinkComponent = useLinkComponent(as);
   const {isCollapsed} = useSideNavCollapse();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -603,7 +605,7 @@ export function SideNavHeading({
           {renderTextContent(
             <button
               type="button"
-              aria-label="Open menu"
+              aria-label={t('@astryx.sideNav.heading.openMenu')}
               onClick={e => {
                 e.stopPropagation();
                 triggerProps.onClick();
@@ -665,7 +667,7 @@ export function SideNavHeading({
             showChevron ? (
               <button
                 type="button"
-                aria-label="Open menu"
+                aria-label={t('@astryx.sideNav.heading.openMenu')}
                 onClick={e => {
                   e.stopPropagation();
                   triggerProps.onClick();

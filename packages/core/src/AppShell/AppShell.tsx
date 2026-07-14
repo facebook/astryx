@@ -53,6 +53,7 @@ import {mergeProps, mergeRefs, isRenderable} from '../utils';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const HasActivity = typeof React.Activity !== 'undefined';
 const ActivityWrapper = HasActivity
@@ -472,6 +473,7 @@ export function AppShell({
   ref,
   ...rest
 }: AppShellProps) {
+  const t = useTranslator();
   // =========================================================================
   // Parse mobileNav prop — normalize to config, custom element, or disabled
   // =========================================================================
@@ -756,7 +758,7 @@ export function AppShell({
           <div
             {...stylex.props(styles.autoMobileTopBar)}
             role="navigation"
-            aria-label="Mobile navigation">
+            aria-label={t('@astryx.appShell.mobileNavigation')}>
             <SideNavRenderContext value="topbar">
               {sideNav}
             </SideNavRenderContext>

@@ -45,6 +45,7 @@ import {mergeProps} from '../utils';
 import {EmptyState} from '../EmptyState';
 import {Text} from '../Text';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   table: {
@@ -326,6 +327,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
   emptyState,
   ref,
 }: BaseTableProps<T> & {ref?: Ref<HTMLTableElement>}): ReactElement {
+  const t = useTranslator();
   // Use stable empty array when no plugins provided
   const plugins = pluginsProp ?? (EMPTY_PLUGINS as TablePlugin<T>[]);
 
@@ -527,7 +529,12 @@ function BaseTableInner<T extends Record<string, unknown>>({
                 emptyState !== false && (
                   <tr>
                     <td colSpan={resolvedColumns.length}>
-                      {emptyState ?? <EmptyState title="No data" isCompact />}
+                      {emptyState ?? (
+                        <EmptyState
+                          title={t('@astryx.table.noData')}
+                          isCompact
+                        />
+                      )}
                     </td>
                   </tr>
                 )}

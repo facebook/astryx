@@ -44,6 +44,7 @@ import {getKey, mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -305,7 +306,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   placeholder = 'Search...',
   hasEntriesOnFocus = false,
   maxMenuItems = 10,
-  emptySearchResultsText = 'No results found',
+  emptySearchResultsText: emptySearchResultsTextFromProps,
   isDisabled = false,
   isFocusableDisabled = false,
   hasAutoFocus = false,
@@ -321,6 +322,10 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   size = 'md',
   ref,
 }: BaseTypeaheadProps<T>) {
+  const t = useTranslator();
+  const emptySearchResultsText =
+    emptySearchResultsTextFromProps ??
+    t('@astryx.typeahead.emptySearchResults');
   const generatedId = useId();
   const inputId = externalInputId ?? generatedId;
   const listboxId = useId();
@@ -759,7 +764,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       {isLoading && (
         <span
           role="status"
-          aria-label="Loading"
+          aria-label={t('@astryx.typeahead.loading')}
           {...stylex.props(styles.loadingSpinner)}>
           <Icon icon="clock" size="sm" color="secondary" />
         </span>
@@ -769,7 +774,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         <div
           id={listboxId}
           role="listbox"
-          aria-label="Search results"
+          aria-label={t('@astryx.typeahead.searchResults')}
           {...mergeProps(
             themeProps('typeahead-dropdown'),
             stylex.props(styles.dropdown),

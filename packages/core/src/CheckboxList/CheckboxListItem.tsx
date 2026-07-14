@@ -26,6 +26,7 @@ import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
 import {CheckboxListContext} from './CheckboxListContext';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -132,6 +133,7 @@ export function CheckboxListItem({
   onClick: onClickProp,
   ...restProps
 }: CheckboxListItemProps) {
+  const t = useTranslator();
   const ctx = use(CheckboxListContext);
 
   if (ctx && ctx.value !== undefined && value === undefined) {
@@ -224,7 +226,11 @@ export function CheckboxListItem({
       style={style}
       startContent={
         <CheckboxInput
-          label={typeof label === 'string' ? label : 'Checkbox'}
+          label={
+            typeof label === 'string'
+              ? label
+              : t('@astryx.checkboxList.item.checkbox')
+          }
           isLabelHidden
           value={resolvedChecked}
           onChange={() => handleToggle()}

@@ -50,6 +50,7 @@ import {
 import {mergeProps} from '../utils';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -385,6 +386,7 @@ export function Banner({
   ref,
   ...rest
 }: BannerProps) {
+  const t = useTranslator();
   const [isDismissed, setIsDismissed] = useState(false);
   const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
   // Links the expand/collapse toggle to the content region it shows/hides so
@@ -490,8 +492,8 @@ export function Banner({
               <Button
                 variant="ghost"
                 size="sm"
-                label="Dismiss"
-                tooltip="Dismiss"
+                label={t('@astryx.banner.dismiss')}
+                tooltip={t('@astryx.banner.dismiss')}
                 icon={<Icon icon="close" size="sm" color="inherit" />}
                 onClick={handleDismiss}
                 isIconOnly

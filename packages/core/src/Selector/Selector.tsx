@@ -72,6 +72,7 @@ import {themeProps} from '../utils/themeProps';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
@@ -524,8 +525,7 @@ type SelectorPropsClearable<T extends SelectorOptionType = SelectorOptionType> =
   };
 
 export type SelectorProps<T extends SelectorOptionType = SelectorOptionType> =
-  | SelectorPropsNonClearable<T>
-  | SelectorPropsClearable<T>;
+  SelectorPropsNonClearable<T> | SelectorPropsClearable<T>;
 
 /**
  * Default option renderer
@@ -574,7 +574,7 @@ export function Selector<T extends SelectorOptionType>(
     htmlName,
     renderOption,
     hasSearch = false,
-    searchPlaceholder = 'Search...',
+    searchPlaceholder: searchPlaceholderFromProps,
     placement,
     isDefaultOpen = false,
     'data-testid': testId,
@@ -585,6 +585,9 @@ export function Selector<T extends SelectorOptionType>(
     hasClear: hasClearProp,
     ...rest
   } = props as SelectorPropsClearable<T>;
+  const t = useTranslator();
+  const searchPlaceholder =
+    searchPlaceholderFromProps ?? t('@astryx.selector.searchPlaceholder');
   const hasClear = hasClearProp === true;
   const size = useSize(sizeProp, 'md');
 
@@ -803,7 +806,7 @@ export function Selector<T extends SelectorOptionType>(
               ? getItemId(highlightedIndex)
               : undefined
           }
-          aria-label="Search options"
+          aria-label={t('@astryx.selector.searchOptions')}
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
@@ -835,6 +838,7 @@ export function Selector<T extends SelectorOptionType>(
     popover.isOpen,
     highlightedIndex,
     getItemId,
+    t,
   ]);
 
   // Render an individual item

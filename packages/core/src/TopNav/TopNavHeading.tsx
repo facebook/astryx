@@ -39,6 +39,7 @@ import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -318,6 +319,7 @@ export function TopNavHeading({
   ref,
   ...props
 }: TopNavHeadingProps) {
+  const t = useTranslator();
   const LinkComponent = useLinkComponent(as);
   // Support both headingHref and legacy href
   const headingHref = headingHrefProp ?? href;
@@ -494,7 +496,7 @@ export function TopNavHeading({
           {renderTextContent(
             <button
               type="button"
-              aria-label="Open menu"
+              aria-label={t('@astryx.topNav.heading.openMenu')}
               onClick={e => {
                 e.stopPropagation();
                 triggerProps.onClick();
@@ -557,7 +559,7 @@ export function TopNavHeading({
             showChevron ? (
               <button
                 type="button"
-                aria-label="Open menu"
+                aria-label={t('@astryx.topNav.heading.openMenu')}
                 onClick={e => {
                   e.stopPropagation();
                   triggerProps.onClick();

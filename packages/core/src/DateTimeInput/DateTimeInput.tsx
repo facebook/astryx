@@ -77,6 +77,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export type ISODateTimeString = string & {
   readonly __brand: 'ISODateTimeString';
@@ -419,7 +420,7 @@ export function DateTimeInput({
   timeIncrement = 1,
   hasClear = false,
   placeholder = 'Select a date',
-  timePlaceholder = 'Select a time',
+  timePlaceholder: timePlaceholderFromProps,
   timeLabel,
   size: sizeProp,
   status,
@@ -432,6 +433,9 @@ export function DateTimeInput({
   ref,
   ...rest
 }: DateTimeInputProps) {
+  const t = useTranslator();
+  const timePlaceholder =
+    timePlaceholderFromProps ?? t('@astryx.dateTimeInput.timePlaceholder');
   const size = useSize(sizeProp, 'md');
   const dateInputId = useId();
   const timeInputId = useId();

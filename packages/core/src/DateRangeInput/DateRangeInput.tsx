@@ -54,6 +54,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export type {DateRange} from '../Calendar';
 
@@ -393,6 +394,7 @@ export function DateRangeInput({
   ref,
   ...rest
 }: DateRangeInputProps) {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const id = useId();
   const descriptionID = useId();
@@ -613,7 +615,7 @@ export function DateRangeInput({
           {presets && presets.length > 0 && (
             <div
               role="group"
-              aria-label="Preset date ranges"
+              aria-label={t('@astryx.dateRangeInput.presetDateRanges')}
               {...stylex.props(styles.presetSidebar)}>
               {presets.map(preset => {
                 const presetRange = preset.getRange();

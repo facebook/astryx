@@ -42,6 +42,7 @@ import type {
   HeaderCellRenderProps,
 } from '../../types';
 import {proportional} from '../../columnUtils';
+import {useTranslator} from '../../../i18n';
 import type {
   PowerSearchConfig,
   PowerSearchField,
@@ -263,10 +264,7 @@ function tableValueToFilterValue(
  * };
  * ```
  */
-export type TableFilterState = Record<
-  string,
-  TableFilterValue | undefined
->;
+export type TableFilterState = Record<string, TableFilterValue | undefined>;
 
 /**
  * Display variant for the filter UI.
@@ -299,10 +297,7 @@ export interface UseTableFilteringConfig {
   /** Current filter state — map from column key to filter value. */
   filters: TableFilterState;
   /** Called when the user changes a filter value. `null` clears the filter. */
-  onFilterChange: (
-    columnKey: string,
-    value: TableFilterValue | null,
-  ) => void;
+  onFilterChange: (columnKey: string, value: TableFilterValue | null) => void;
   /**
    * Display variant for filter controls.
    *
@@ -518,6 +513,7 @@ function SelectorFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
+  const t = useTranslator();
   const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
@@ -548,7 +544,7 @@ function SelectorFilterControl({
         options={options}
         value={strValue || null}
         onChange={handleChange}
-        placeholder="All"
+        placeholder={t('@astryx.table.filter.allPlaceholder')}
         size={size}
         hasClear
       />
@@ -562,7 +558,7 @@ function SelectorFilterControl({
       options={options}
       value={strValue}
       onChange={handleChange}
-      placeholder="All"
+      placeholder={t('@astryx.table.filter.allPlaceholder')}
       size={size}
     />
   );
@@ -581,6 +577,7 @@ function MultiSelectorFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
+  const t = useTranslator();
   const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
@@ -602,7 +599,7 @@ function MultiSelectorFilterControl({
           .getConfig()
           .onFilterChange(columnKey, newValue.length === 0 ? null : newValue);
       }}
-      placeholder="All"
+      placeholder={t('@astryx.table.filter.allPlaceholder')}
       size={size}
       hasSelectAll
       hasSearch={false}
@@ -821,6 +818,7 @@ function PopoverFilterTrigger({
   header: string;
   operatorValue: OperatorValue;
 }) {
+  const t = useTranslator();
   const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
@@ -890,14 +888,14 @@ function PopoverFilterTrigger({
             />
             <div {...stylex.props(filterStyles.popoverActions)}>
               <Button
-                label="Reset"
+                label={t('@astryx.table.filter.reset')}
                 variant="ghost"
                 size="sm"
                 onClick={handleClear}
               />
               <div {...stylex.props(filterStyles.popoverActionsSpacer)} />
               <Button
-                label="Apply"
+                label={t('@astryx.table.filter.apply')}
                 variant="primary"
                 size="sm"
                 onClick={handleApply}
@@ -928,9 +926,7 @@ function PopoverFilterTrigger({
 // Helper
 // =============================================================================
 
-function getHeaderString(
-  column: TableColumn<Record<string, unknown>>,
-): string {
+function getHeaderString(column: TableColumn<Record<string, unknown>>): string {
   if (typeof column.header === 'string') {
     return column.header;
   }

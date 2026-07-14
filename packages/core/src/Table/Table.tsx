@@ -31,6 +31,7 @@ import type {
   TableRenderProps,
 } from './types';
 import type {StyleXStyles} from '../theme/types';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Table Types
@@ -147,6 +148,7 @@ function TableScrollWrapper({
   beforeTable?: React.ReactNode;
   afterTable?: React.ReactNode;
 }) {
+  const t = useTranslator();
   const {ref, ...restHtmlProps} = htmlProps ?? {};
   return (
     <div
@@ -158,7 +160,7 @@ function TableScrollWrapper({
       // htmlProps.
       tabIndex={0}
       role="group"
-      aria-label="Table"
+      aria-label={t('@astryx.table.label')}
       {...restHtmlProps}
       {...mergeProps(
         themeProps('table-scroll-wrapper'),

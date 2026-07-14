@@ -31,6 +31,7 @@ import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity} from './TreeListTypes';
 import {treeItemScope} from './treeListItem.markers.stylex';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -299,6 +300,7 @@ export function TreeListItem({
   setSize,
   isTabbable,
 }: TreeListItemInternalProps) {
+  const t = useTranslator();
   const labelId = useId();
   const descriptionId = useId();
   const LinkComponent = useLinkComponent();
@@ -374,7 +376,10 @@ export function TreeListItem({
       <button
         type="button"
         aria-expanded={isExpanded}
-        aria-label="Toggle children"
+        aria-label={t('@astryx.treeList.toggleChildren')}
+        // Stable identity for TreeList's activateItem selector — do not
+        // remove without also updating TreeList.tsx.
+        data-tree-toggle=""
         disabled={isDisabled}
         // Roving tabindex lives on the treeitem row; the chevron toggle is not
         // a separate tab stop. Row-level Enter/Space forwards to this button.

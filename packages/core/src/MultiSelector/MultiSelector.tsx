@@ -76,6 +76,7 @@ import {themeProps} from '../utils/themeProps';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {useTranslator} from '../i18n';
 
 // Sentinel value for the select-all item in keyboard navigation
 const SELECT_ALL_VALUE = '__xds_select_all__';
@@ -596,9 +597,9 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   startIcon,
   hasClear = false,
   hasSelectAll = false,
-  selectAllLabel = 'Select all',
+  selectAllLabel: selectAllLabelFromProps,
   hasSearch = false,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder: searchPlaceholderFromProps,
   triggerDisplay = 'count',
   maxBadges = 3,
   renderOption,
@@ -610,6 +611,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   className,
   style,
 }: MultiSelectorProps<T>) {
+  const t = useTranslator();
+  const selectAllLabel =
+    selectAllLabelFromProps ?? t('@astryx.multiSelector.selectAll');
+  const searchPlaceholder =
+    searchPlaceholderFromProps ?? t('@astryx.multiSelector.searchPlaceholder');
   const size = useSize(sizeProp, 'md');
   const triggerId = useId();
   const listboxId = useId();
@@ -1030,7 +1036,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               ? getItemId(highlightedIndex)
               : undefined
           }
-          aria-label="Search options"
+          aria-label={t('@astryx.multiSelector.searchOptions')}
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
@@ -1063,6 +1069,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     popover.isOpen,
     highlightedIndex,
     getItemId,
+    t,
   ]);
 
   // Render an individual item (index-based)

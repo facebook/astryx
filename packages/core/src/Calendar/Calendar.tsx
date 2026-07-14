@@ -84,6 +84,7 @@ import type {
 } from '../utils/dateTypes';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 /** Imperative handle for Calendar handleRef */
 
@@ -197,6 +198,7 @@ export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
  * ```
  */
 export function Calendar({ref, ...props}: CalendarProps) {
+  const t = useTranslator();
   const {
     handleRef,
     mode = 'single',
@@ -429,7 +431,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
       {/* Header with navigation */}
       <div {...stylex.props(calendarStyles.header)}>
         <Button
-          label="Previous month"
+          label={t('@astryx.calendar.previousMonth')}
           variant="ghost"
           icon={
             // Wrapper span (not Icon props): Icon's string mode clobbers
@@ -449,7 +451,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
         </span>
 
         <Button
-          label="Next month"
+          label={t('@astryx.calendar.nextMonth')}
           variant="ghost"
           icon={
             <span {...stylex.props(calendarStyles.navIcon)}>

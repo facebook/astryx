@@ -25,6 +25,7 @@ import * as stylex from '@stylexjs/stylex';
 import {mergeProps} from '../utils';
 import {AvatarGroupContext} from './AvatarGroupContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const OVERLAP_RATIO = 0.25;
 
@@ -76,13 +77,15 @@ export function AvatarGroup({
   children,
   size = 'small',
   'data-testid': testId,
-  'aria-label': ariaLabel = 'Avatars',
+  'aria-label': ariaLabelFromProps,
   xstyle,
   className,
   style,
   ref,
   ...props
 }: AvatarGroupProps): ReactNode {
+  const t = useTranslator();
+  const ariaLabel = ariaLabelFromProps ?? t('@astryx.avatarGroup.label');
   const numericSize = resolveSize(size);
   const overlap = Math.round(numericSize * OVERLAP_RATIO);
 
