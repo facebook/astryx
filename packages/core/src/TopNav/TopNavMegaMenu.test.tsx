@@ -9,12 +9,42 @@
  * SYNC: When TopNavMegaMenu changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TopNavMegaMenu} from './TopNavMegaMenu';
 import {TopNavMegaMenuItem} from './TopNavMegaMenuItem';
 import {TopNavRenderContext} from './TopNavRenderContext';
+
+// Mock showPopover and hidePopover methods since they're not implemented in jsdom
+beforeEach(() => {
+  HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+    this.setAttribute('popover-open', '');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'open'});
+    this.dispatchEvent(event);
+  });
+  HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+    this.removeAttribute('popover-open');
+    const event = new Event('toggle', {bubbles: false});
+    Object.defineProperty(event, 'newState', {value: 'closed'});
+    this.dispatchEvent(event);
+  });
+  const originalMatches = HTMLElement.prototype.matches;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (HTMLElement.prototype as any).matches = function (
+    selector: string,
+  ): boolean {
+    if (selector === ':popover-open') {
+      return this.hasAttribute('popover-open');
+    }
+    return originalMatches.call(this, selector);
+  };
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 // =============================================================================
 // Default (desktop) mode
@@ -72,6 +102,78 @@ describe('TopNavMegaMenu — default mode', () => {
   it('renders without items or featured', () => {
     render(<TopNavMegaMenu label="Empty" />);
     expect(screen.getByRole('button', {name: 'Empty'})).toBeInTheDocument();
+  });
+
+  it('keeps a hover-open menu open on an immediate trigger click', async () => {
+    const now = vi.spyOn(Date, 'now');
+    now.mockReturnValue(1000);
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        delay={0}
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    fireEvent.mouseEnter(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+
+    now.mockReturnValue(1200);
+    fireEvent.click(trigger);
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('still allows click-to-close after the hover guard window', async () => {
+    const now = vi.spyOn(Date, 'now');
+    now.mockReturnValue(1000);
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        delay={0}
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    fireEvent.mouseEnter(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+
+    now.mockReturnValue(1601);
+    fireEvent.click(trigger);
+
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+  });
+
+  it('click-open then click-close still toggles (no hover guard)', async () => {
+    const now = vi.spyOn(Date, 'now');
+    now.mockReturnValue(1000);
+    render(
+      <TopNavMegaMenu
+        label="Products"
+        items={<TopNavMegaMenuItem title="Analytics" href="/analytics" />}
+      />,
+    );
+
+    const trigger = screen.getByRole('button', {name: 'Products'});
+    fireEvent.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+
+    now.mockReturnValue(1100);
+    fireEvent.click(trigger);
+
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
   });
 });
 
