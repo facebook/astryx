@@ -437,6 +437,276 @@ describe('Lightbox', () => {
     });
   });
 
+  describe('custom content', () => {
+    it('renders arbitrary React content when type is custom', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{
+            type: 'custom',
+            label: 'Live preview',
+            content: <div data-testid="custom-body">Hello preview</div>,
+          }}
+        />,
+      );
+      expect(screen.getByTestId('custom-body')).toBeInTheDocument();
+      expect(screen.getByText('Hello preview')).toBeInTheDocument();
+    });
+
+    it('does not render an img or video for a custom item', () => {
+      const {container} = render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{
+            type: 'custom',
+            label: 'Live preview',
+            content: <div>Body</div>,
+          }}
+        />,
+      );
+      expect(container.querySelector('img')).toBeNull();
+      expect(container.querySelector('video')).toBeNull();
+    });
+
+    it('uses the custom item label as the dialog aria-label', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{
+            type: 'custom',
+            label: 'Dashboard template preview',
+            content: <div>Body</div>,
+          }}
+        />,
+      );
+      expect(document.querySelector('dialog')).toHaveAttribute(
+        'aria-label',
+        'Dashboard template preview',
+      );
+    });
+
+    it('renders a ReactNode caption/footer for a custom item', () => {
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{
+            type: 'custom',
+            label: 'Preview',
+            content: <div>Body</div>,
+            caption: (
+              <button type="button" data-testid="footer-action">
+                Copy command
+              </button>
+            ),
+          }}
+        />,
+      );
+      expect(screen.getByTestId('footer-action')).toBeInTheDocument();
+    });
+
+    it('keeps interactive controls inside custom content interactive', () => {
+      const onClick = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={() => {}}
+          media={{
+            type: 'custom',
+            label: 'Preview',
+            content: (
+              <button type="button" data-testid="inner" onClick={onClick}>
+                Action
+              </button>
+            ),
+          }}
+        />,
+      );
+      fireEvent.click(screen.getByTestId('inner'));
+      expect(onClick).toHaveBeenCalled();
+    });
+
+    describe('zoom-pan gating', () => {
+      it('does not activate zoom for a custom item even when hasZoom is set', () => {
+        const {container} = render(
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            hasZoom
+            media={{
+              type: 'custom',
+              label: 'Preview',
+              content: <div data-testid="custom-body">Body</div>,
+            }}
+          />,
+        );
+        // A custom item has no image surface, so there is nothing to zoom/pan
+        // and no zoomable affordance is rendered.
+        expect(container.querySelector('img')).toBeNull();
+        expect(
+          container.querySelectorAll('[class*="imageWrapperZoomable"]').length,
+        ).toBe(0);
+        expect(screen.getByTestId('custom-body')).toBeInTheDocument();
+      });
+
+      it('still activates the zoom affordance for an image when hasZoom is set', () => {
+        const {container} = render(
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            hasZoom
+            media={{src: '/photo.jpg', alt: 'Photo'}}
+          />,
+        );
+        expect(
+          container.querySelectorAll('[class*="imageWrapperZoomable"]').length,
+        ).toBeGreaterThan(0);
+      });
+    });
+
+    describe('mixed media + custom galleries', () => {
+      const mixed = [
+        {src: '/a.jpg', alt: 'Image A'},
+        {
+          type: 'custom' as const,
+          label: 'Live preview',
+          content: <div data-testid="preview">Preview body</div>,
+        },
+        {src: '/c.mp4', alt: 'Clip C', type: 'video' as const},
+      ];
+
+      it('renders the media item at a media index', () => {
+        render(
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={mixed}
+            index={0}
+          />,
+        );
+        expect(screen.getByAltText('Image A')).toBeInTheDocument();
+        expect(screen.queryByTestId('preview')).not.toBeInTheDocument();
+      });
+
+      it('renders the custom item at a custom index', () => {
+        render(
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={mixed}
+            index={1}
+          />,
+        );
+        expect(screen.getByTestId('preview')).toBeInTheDocument();
+        expect(screen.queryByAltText('Image A')).not.toBeInTheDocument();
+      });
+
+      it('renders the video item at a video index', () => {
+        const {container} = render(
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={mixed}
+            index={2}
+          />,
+        );
+        expect(container.querySelector('video')).toHaveAttribute(
+          'src',
+          '/c.mp4',
+        );
+      });
+
+      it('shows the gallery counter and nav across mixed kinds', () => {
+        render(
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={mixed}
+            index={1}
+          />,
+        );
+        expect(screen.getByText('2 / 3')).toBeInTheDocument();
+        expect(screen.getByLabelText('Previous')).not.toBeDisabled();
+        expect(screen.getByLabelText('Next')).not.toBeDisabled();
+      });
+
+      it('navigates across kinds via arrow keys (controlled index)', () => {
+        const onIndexChange = vi.fn();
+        render(
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={mixed}
+            index={0}
+            onIndexChange={onIndexChange}
+          />,
+        );
+        const dialog = document.querySelector('dialog')!;
+        fireEvent.keyDown(dialog, {key: 'ArrowRight'});
+        expect(onIndexChange).toHaveBeenCalledWith(1);
+      });
+
+      it('navigates across kinds via the next button', () => {
+        const onIndexChange = vi.fn();
+        render(
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={mixed}
+            index={1}
+            onIndexChange={onIndexChange}
+          />,
+        );
+        fireEvent.click(screen.getByLabelText('Next'));
+        expect(onIndexChange).toHaveBeenCalledWith(2);
+      });
+    });
+
+    describe('announcements', () => {
+      const mixed = [
+        {src: '/a.jpg', alt: 'Image A'},
+        {
+          type: 'custom' as const,
+          label: 'Live preview',
+          content: <div>Body</div>,
+        },
+      ];
+
+      it('announces a custom item by its label on navigation', async () => {
+        render(
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={mixed}
+            defaultIndex={0}
+          />,
+        );
+        fireEvent.click(screen.getByLabelText('Next'));
+        await waitFor(() => {
+          expect(politeRegion()).toHaveTextContent('Live preview, 2 of 2');
+        });
+      });
+
+      it('announces a media item by its alt when navigating back from a custom item', async () => {
+        render(
+          <Lightbox
+            isOpen={true}
+            onOpenChange={() => {}}
+            media={mixed}
+            defaultIndex={1}
+          />,
+        );
+        fireEvent.click(screen.getByLabelText('Previous'));
+        await waitFor(() => {
+          expect(politeRegion()).toHaveTextContent('Image A, 1 of 2');
+        });
+      });
+    });
+  });
+
   it('does not crash with an empty media array', () => {
     const {container} = render(
       <Lightbox isOpen={true} onOpenChange={() => {}} media={[]} />,
