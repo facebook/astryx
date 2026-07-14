@@ -47,14 +47,11 @@ export interface ChartCandlestickProps {
  *
  * @example
  * ```
- * // Financial OHLC
  * <ChartCandlestick
  *   high="high" low="low" open="open" close="close"
  *   upColor={useChartColors().semantic.positive}
  *   downColor={useChartColors().semantic.negative}
  * />
- *
- * // OHLC bar
  * <ChartCandlestick
  *   variant="bar"
  *   high="max" low="min" open="q1" close="median"

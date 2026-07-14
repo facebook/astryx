@@ -274,8 +274,6 @@ export interface LinkProps extends BaseProps<
  * <Link href="/settings" color="secondary">Settings</Link>
  * <Link href="/privacy" hasUnderline>Privacy Policy</Link>
  * <Link label="Close dialog" href="/home"><Icon icon="x" /></Link>
- *
- * // Inline link inside text — inherits the surrounding type/size:
  * <Text type="large">
  *   Read our <Link href="/terms" type="inherit">terms</Link> first.
  * </Text>

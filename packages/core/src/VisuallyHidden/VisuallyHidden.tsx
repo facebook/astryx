@@ -79,12 +79,9 @@ const styles = stylex.create({
  *
  * @example
  * ```
- * // Accessible name for an icon-only button
  * <IconButton icon="trash" label="">
  *   <VisuallyHidden>Delete incident</VisuallyHidden>
  * </IconButton>
- *
- * // Live region for announcements
  * <VisuallyHidden as="div" aria-live="polite">
  *   {`Moved ${task} to ${column}`}
  * </VisuallyHidden>

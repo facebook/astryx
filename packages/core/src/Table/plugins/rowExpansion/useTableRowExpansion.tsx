@@ -109,7 +109,7 @@ export interface UseTableRowExpansionStateResult<
  * computing the expand-all state.
  *
  * @example
- * ```tsx
+ * ```
  * const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
  * const {data, expansionConfig} = useTableRowExpansionState({
  *   baseData: tree,

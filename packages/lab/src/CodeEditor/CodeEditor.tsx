@@ -181,7 +181,7 @@ let editorInstanceCounter = 0;
  * auto-indent, tab insertion, and bracket auto-closing.
  *
  * @example
- * ```tsx
+ * ```
  * const [code, setCode] = useState('');
  * <CodeEditor
  *   label="Source code"
