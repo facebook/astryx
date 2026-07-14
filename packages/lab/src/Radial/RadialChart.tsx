@@ -61,19 +61,14 @@ export interface RadialChartProps {
  *
  * @example
  * ```
- * // Spider
  * <RadialChart data={data} axes={['speed', 'handling', 'comfort']} height={400}>
  *   <RadialGrid rings={5} />
  *   <RadialArea dataKey="modelA" color={colors[0]} />
  *   <RadialAxis />
  * </RadialChart>
- *
- * // Pie
  * <RadialChart data={data} valueKey="revenue" labelKey="region" height={400}>
  *   <RadialSlice />
  * </RadialChart>
- *
- * // Donut
  * <RadialChart data={data} valueKey="revenue" labelKey="region" innerRadius={0.6} height={400}>
  *   <RadialSlice />
  * </RadialChart>

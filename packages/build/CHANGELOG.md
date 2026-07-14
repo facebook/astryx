@@ -1,5 +1,19 @@
 # @xds/build
 
+# 0.1.5
+
+#### Other Changes
+
+- Use node: protocol prefix for Node.js builtin imports (#3737)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @Han5991
+
+---
+
 # 0.1.4
 
 ---
