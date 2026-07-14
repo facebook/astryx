@@ -108,3 +108,9 @@ export type {
 
 export {ChatDictationButton} from './ChatDictationButton';
 export type {ChatDictationButtonProps} from './ChatDictationButton';
+
+export {useChatSpeech} from './useChatSpeech';
+export type {UseChatSpeechOptions, UseChatSpeechReturn} from './useChatSpeech';
+
+export {ChatSpeechButton} from './ChatSpeechButton';
+export type {ChatSpeechButtonProps} from './ChatSpeechButton';
