@@ -43,18 +43,10 @@ import {
 // ─── Styles ─────────────────────────────────────────────────────────────────
 import type {CSSProperties} from 'react';
 
-// The only custom CSS in this template is small optical-alignment negative
-// margins: LayoutHeader/TabList have no edge-dock prop (#2622) and List
-// has no "bleed to container edge" prop (#2626). Everything else uses props.
-// Plain inline styles — no StyleX compiler required.
+// The only custom CSS in this template is a small optical-alignment negative
+// margin: List has no "bleed to container edge" prop (#2626). Everything else
+// uses props. Plain inline styles — no StyleX compiler required.
 
-// Bleed the tab bar to the header's content edges so the active-tab underline
-// meets the header divider. No edge-dock prop on TabList (#2622).
-const tabsRow: CSSProperties = {
-  marginInline: -12,
-  marginBottom: -16,
-  marginTop: 12,
-};
 // Pull the list items' inner padding back so their content optically aligns
 // with the section heading above (ListItem insets content by ~8px). No
 // edge/inset prop on List (#2626).
@@ -258,9 +250,13 @@ function PageHeader({
           </HStack>
         )}
 
-        <HStack vAlign="center" style={tabsRow}>
+        <HStack vAlign="center">
           <StackItem size="fill">
-            <TabList value={activeTab} onChange={onTabChange} size="lg">
+            <TabList
+              value={activeTab}
+              onChange={onTabChange}
+              size="lg"
+              isFullBleed>
               <Tab value="details" label="Details" />
               <Tab value="invoices" label="Invoices" />
               <Tab value="timeline" label="Timeline" />
