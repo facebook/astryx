@@ -39,7 +39,7 @@ export const docs = {
       name: 'headingLevel',
       type: '1 | 2 | 3 | 4 | 5 | 6',
       description:
-        'Controls the rendered HTML heading tag (h1-h6) to fit the document outline.',
+        'Controls only the rendered HTML heading tag (h1-h6) so the title fits the document outline. This is a semantic change for accessibility and does not change the visual size of the title, which stays fixed regardless of level.',
       default: '3',
     },
     {
@@ -121,7 +121,7 @@ export const docsZh = {
       name: 'headingLevel',
       type: '1 | 2 | 3 | 4 | 5 | 6',
       description:
-        '控制渲染的 HTML 标题标签（h1-h6），以适配文档大纲。',
+        '仅控制渲染的 HTML 标题标签（h1-h6），使标题适配文档大纲。这是用于无障碍的语义变化，不会改变标题的视觉大小，标题大小始终固定，与级别无关。',
       default: '3',
     },
     {
@@ -173,7 +173,7 @@ export const docsDense = {
   },
   propDescriptions: {
     title: 'Primary msg rendered as heading (h1-h6) inside empty state.',
-    headingLevel: 'Controls HTML heading tag (h1-h6) for document outline.',
+    headingLevel: 'Controls only HTML heading tag (h1-h6) for document outline; does not change visual title size.',
     description: 'Optional secondary text w/ additional context below title.',
     icon: 'Optional icon/illustration above title; rendered decorative (aria-hidden="true").',
     actions: 'Optional action buttons below description; horizontal by default, vertical when isCompact.',
