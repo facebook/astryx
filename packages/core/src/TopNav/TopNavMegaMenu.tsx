@@ -354,7 +354,11 @@ function DefaultMegaMenu({
   }, [onOpenChange]);
 
   const popover = usePopover({
-    dialogLabel: label,
+    // role: 'none' — the panel exposes its own role="group" labeled by
+    // `label`. Focus stays on the trigger while the panel is open, so a
+    // role="dialog" aria-modal="true" wrapper would announce an unnamed
+    // modal dialog around a grid of links.
+    role: 'none',
     // hasSurface: false — mega menu provides its own surface (panelContainer)
     // with border-top and custom overflow. Animation is applied via the
     // render() call's xstyle prop (panelAnimation), not the hook options.
@@ -434,8 +438,7 @@ function DefaultMegaMenu({
       <button
         ref={mergeRefs(triggerButtonRef, ref)}
         type="button"
-        aria-haspopup="true"
-        aria-expanded={popover.isOpen}
+        {...popover.triggerProps}
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -454,7 +457,10 @@ function DefaultMegaMenu({
       </button>
       {popover.render(
         <div
-          role="menu"
+          // role="group" — a mega menu is a browsing grid of links, not an
+          // ARIA menu of menuitems (per the WAI-ARIA APG, the menu role is
+          // for action menus; link mega menus are the documented anti-case).
+          role="group"
           aria-label={label}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
