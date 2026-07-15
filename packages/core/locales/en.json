@@ -679,6 +679,10 @@
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that removes the selected file from a FileInput. Example: `Clear Attachment`, `Clear Résumé`."
   },
+  "@astryx.fileInput.triggerWithFiles": {
+    "defaultMessage": "{label}, {fileNames}",
+    "description": "Accessible name for a FileInput trigger that has files attached, composing the field label with the selected filenames. Example: `Attachments, report.pdf, notes.txt`."
+  },
   "@astryx.lightbox.mediaViewer": {
     "defaultMessage": "Media viewer",
     "description": "Screen-reader-only fallback name for the Lightbox dialog when the current media item has no alt text. Should rarely render — consumers should provide alt."
