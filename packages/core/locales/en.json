@@ -775,6 +775,10 @@
     "defaultMessage": "Open {accessibleName}",
     "description": "\"Open\" = launch/reveal (not \"unfold\" or the adjective). Screen-reader-only name on a clickable Thumbnail — example: `Open Sunset photo`."
   },
+  "@astryx.thumbnail.fallbackName": {
+    "defaultMessage": "Thumbnail",
+    "description": "Generic screen-reader name for a Thumbnail (image preview) that has no `alt` or `label`. Last-resort fallback so the control is never nameless; prefer a real name via `alt` or `label`."
+  },
   "@astryx.timeInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the value from a TimeInput. Example: `Clear Start time`."
