@@ -436,11 +436,7 @@ describe('List', () => {
   it('sets target on anchor when provided', () => {
     const {container} = render(
       <List>
-        <ListItem
-          label="External"
-          href="https://example.com"
-          target="_blank"
-        />
+        <ListItem label="External" href="https://example.com" target="_blank" />
       </List>,
     );
     const anchor = container.querySelector('a');
@@ -500,14 +496,16 @@ describe('List', () => {
   // Selected state
   // ===========================================================================
 
-  it('applies aria-selected when isSelected', () => {
+  it('does not apply aria-selected when isSelected', () => {
+    // aria-selected is not permitted on an li (role listitem); selection on
+    // plain list items is visual-only (axe: aria-allowed-attr).
     const {container} = render(
       <List>
         <ListItem label="Selected" isSelected onClick={() => {}} />
       </List>,
     );
     const item = container.querySelector('.astryx-item');
-    expect(item).toHaveAttribute('aria-selected', 'true');
+    expect(item).not.toHaveAttribute('aria-selected');
   });
 
   it('does not apply aria-selected when not selected', () => {
