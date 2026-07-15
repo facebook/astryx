@@ -1045,10 +1045,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           onKeyDown={e => {
             // Arrow keys navigate options; Enter toggles; Escape/Tab close.
             // Space and Home/End are left to the input (type a space / move
-            // the caret), not forwarded to option navigation.
+            // the caret) per the APG editable combobox; PageUp/PageDown are
+            // the sanctioned substitute for jumping to the first/last option.
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
+              e.key === 'PageUp' ||
+              e.key === 'PageDown' ||
               e.key === 'Enter' ||
               e.key === 'Escape' ||
               e.key === 'Tab'

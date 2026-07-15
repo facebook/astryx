@@ -503,6 +503,58 @@ describe('Selector', () => {
       expect(search).toHaveAttribute('aria-activedescendant');
     });
 
+    it('PageDown/PageUp jump the highlight to the last/first filtered option', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const search = screen.getByRole('combobox', h);
+      // Filter to Apple and Banana so "last" means last *visible* option.
+      await user.type(search, 'a');
+      const options = screen.getAllByRole('option', h);
+      expect(options).toHaveLength(2);
+      await user.keyboard('{PageDown}');
+      expect(search).toHaveAttribute(
+        'aria-activedescendant',
+        options[options.length - 1].id,
+      );
+      await user.keyboard('{PageUp}');
+      expect(search).toHaveAttribute('aria-activedescendant', options[0].id);
+    });
+
+    it('Home/End move the search caret, not the option highlight', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const search = screen.getByRole<HTMLInputElement>('combobox', h);
+      await user.type(search, 'an');
+      expect(search.selectionStart).toBe(2);
+      const activeBefore = search.getAttribute('aria-activedescendant');
+      // Home/End stay on the input for caret movement (APG editable
+      // combobox); the option highlight must not move.
+      await user.keyboard('{Home}');
+      expect(search.selectionStart).toBe(0);
+      expect(search.getAttribute('aria-activedescendant')).toBe(activeBefore);
+      await user.keyboard('{End}');
+      expect(search.selectionStart).toBe(2);
+      expect(search.getAttribute('aria-activedescendant')).toBe(activeBefore);
+    });
+
     it('does not render search input when hasSearch is false', async () => {
       const user = userEvent.setup();
       render(
@@ -720,6 +772,23 @@ describe('Selector', () => {
 
       await user.keyboard('{ArrowDown}');
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('End/Home jump the highlight to the last/first option (non-search)', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      const options = screen.getAllByRole('option', h);
+
+      await user.keyboard('{End}');
+      expect(trigger).toHaveAttribute(
+        'aria-activedescendant',
+        options[options.length - 1].id,
+      );
+      await user.keyboard('{Home}');
+      expect(trigger).toHaveAttribute('aria-activedescendant', options[0].id);
     });
 
     it('opens and selects an option with Enter (no mouse)', async () => {
