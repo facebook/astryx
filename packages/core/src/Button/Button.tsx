@@ -786,6 +786,7 @@ export function Button({
         {...ariaLabelProp}
         {...describedByProp}
         {...edgeCompAttr}
+        aria-busy={isLoadingState || undefined}
         onClick={handleClick}>
         {buttonContent}
       </LinkComponent>
