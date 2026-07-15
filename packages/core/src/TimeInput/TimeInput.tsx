@@ -69,6 +69,7 @@ import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useTooltip} from '../Tooltip';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   icon: {
@@ -341,7 +342,7 @@ export function TimeInput({
   hasAutoFocus = false,
   hourFormat = '12h',
   increment = 1,
-  placeholder = 'Select a time',
+  placeholder: placeholderFromProps,
   size: sizeProp,
   status,
   labelTooltip,
@@ -351,6 +352,9 @@ export function TimeInput({
   style,
   ref,
 }: TimeInputProps) {
+  const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.timeInput.placeholder');
   const size = useSize(sizeProp, 'md');
 
   const id = useId();

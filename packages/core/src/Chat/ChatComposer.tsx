@@ -49,6 +49,7 @@ import {ChatComposerInput} from './ChatComposerInput';
 import {ChatComposerContext} from './ChatContext';
 import {ChatSendButton} from './ChatSendButton';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -268,6 +269,7 @@ const styles = stylex.create({
  * ```
  */
 export function ChatComposer(props: ChatComposerProps) {
+  const t = useTranslator();
   const {
     ref,
     onSubmit,
@@ -275,7 +277,7 @@ export function ChatComposer(props: ChatComposerProps) {
     isStopShown = false,
     value: controlledValue,
     onChange,
-    placeholder = 'Type a message\u2026',
+    placeholder: placeholderFromProps,
     isDisabled = false,
     density = 'balanced',
     drawer,
@@ -292,6 +294,8 @@ export function ChatComposer(props: ChatComposerProps) {
     style,
     ...rest
   } = props;
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.chat.composer.placeholder');
 
   const [internalValue, setInternalValue] = useState('');
 

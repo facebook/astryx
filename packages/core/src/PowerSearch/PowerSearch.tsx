@@ -515,9 +515,9 @@ export function PowerSearch({
   config: configProp,
   filters,
   onChange,
-  label = 'Search',
+  label: labelFromProps,
   isLabelHidden = true,
-  placeholder = 'Search...',
+  placeholder: placeholderFromProps,
   hasAutoFocus = false,
   hasClear = true,
   isReadOnly = false,
@@ -528,7 +528,7 @@ export function PowerSearch({
   onBlur,
   status,
   maxTokenLength = 40,
-  popoverSaveButtonLabel = 'Apply',
+  popoverSaveButtonLabel: popoverSaveButtonLabelFromProps,
   timezoneID,
   tokenOverflowBehavior,
   endContent,
@@ -546,6 +546,11 @@ export function PowerSearch({
   const config = useInternalConfig(configProp);
   const searchSource = usePowerSearchSource(config);
   const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.powersearch.label');
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.powersearch.placeholder');
+  const popoverSaveButtonLabel =
+    popoverSaveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
   const tokenizerRef = useRef<TokenizerHandle>(null);
 
   const [popoverState, setPopoverStateRaw] = useState<PopoverState>({

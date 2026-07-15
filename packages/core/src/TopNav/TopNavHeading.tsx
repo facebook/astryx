@@ -331,7 +331,7 @@ export function TopNavHeading({
   const rootRef = useRef<HTMLElement>(null);
 
   const popover = usePopover({
-    dialogLabel: 'Navigation menu',
+    dialogLabel: t('@astryx.topNav.heading.dialogLabel'),
     hasCloseButton: false,
   });
 

@@ -137,6 +137,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export interface DateInputProps extends Omit<
   BaseProps,
@@ -311,7 +312,7 @@ export function DateInput({
   min,
   max,
   dateConstraints,
-  placeholder = 'Select a date',
+  placeholder: placeholderFromProps,
   size: sizeProp,
   status,
   labelTooltip,
@@ -324,6 +325,9 @@ export function DateInput({
   ref,
   ...rest
 }: DateInputProps) {
+  const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.dateInput.placeholder');
   const size = useSize(sizeProp, 'md');
   const id = useId();
   const inputLabelID = useId();
@@ -415,8 +419,8 @@ export function DateInput({
       : parseDateInput(pendingInput) !== null;
 
   const popover = usePopover({
-    dialogLabel: 'Choose date',
-    closeButtonLabel: 'Close calendar',
+    dialogLabel: t('@astryx.dateInput.dialogLabel'),
+    closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
     onHide: () => inputRef.current?.focus(),
   });
 

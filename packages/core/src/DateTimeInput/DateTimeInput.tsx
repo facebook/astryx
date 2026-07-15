@@ -419,7 +419,7 @@ export function DateTimeInput({
   hourFormat = '12h',
   timeIncrement = 1,
   hasClear = false,
-  placeholder = 'Select a date',
+  placeholder: placeholderFromProps,
   timePlaceholder: timePlaceholderFromProps,
   timeLabel,
   size: sizeProp,
@@ -434,6 +434,8 @@ export function DateTimeInput({
   ...rest
 }: DateTimeInputProps) {
   const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.dateTimeInput.placeholder');
   const timePlaceholder =
     timePlaceholderFromProps ?? t('@astryx.dateTimeInput.timePlaceholder');
   const size = useSize(sizeProp, 'md');
@@ -603,8 +605,8 @@ export function DateTimeInput({
 
   // --- Popover ---
   const popover = usePopover({
-    dialogLabel: 'Choose date',
-    closeButtonLabel: 'Close calendar',
+    dialogLabel: t('@astryx.dateTimeInput.dialogLabel'),
+    closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
     onHide: () => dateInputRef.current?.focus(),
   });
 

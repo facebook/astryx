@@ -590,7 +590,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   onChange,
   changeAction,
   isLoading = false,
-  placeholder = 'Select...',
+  placeholder: placeholderFromProps,
   size: sizeProp,
   status,
   labelTooltip,
@@ -612,6 +612,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   style,
 }: MultiSelectorProps<T>) {
   const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.multiSelector.selectPlaceholder');
   const selectAllLabel =
     selectAllLabelFromProps ?? t('@astryx.multiSelector.selectAll');
   const searchPlaceholder =

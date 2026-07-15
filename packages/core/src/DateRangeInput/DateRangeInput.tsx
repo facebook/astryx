@@ -382,7 +382,7 @@ export function DateRangeInput({
   dateConstraints,
   presets,
   hasClear = true,
-  placeholder = 'Select date range',
+  placeholder: placeholderFromProps,
   size: sizeProp,
   status,
   labelTooltip,
@@ -395,6 +395,8 @@ export function DateRangeInput({
   ...rest
 }: DateRangeInputProps) {
   const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.dateRangeInput.placeholder');
   const size = useSize(sizeProp, 'md');
   const id = useId();
   const descriptionID = useId();
@@ -450,8 +452,8 @@ export function DateRangeInput({
   );
 
   const popover = usePopover({
-    dialogLabel: 'Choose date range',
-    closeButtonLabel: 'Close calendar',
+    dialogLabel: t('@astryx.dateRangeInput.dialogLabel'),
+    closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
   });
 
   const fireChange = useCallback(

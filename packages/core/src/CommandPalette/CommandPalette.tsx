@@ -265,11 +265,12 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
   emptyBootstrapText: emptyBootstrapTextFromProps,
   value: controlledValue,
   onValueChange,
-  label = 'Command palette',
+  label: labelFromProps,
   width = 640,
   maxHeight = 480,
 }: CommandPaletteProps<T>) {
   const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.commandPalette.label');
   const emptySearchText =
     emptySearchTextFromProps ?? t('@astryx.commandPalette.emptySearch');
   const emptyBootstrapText =

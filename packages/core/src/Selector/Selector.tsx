@@ -553,6 +553,7 @@ function DefaultOption({option}: {option: SelectorOptionData}) {
 export function Selector<T extends SelectorOptionType>(
   props: SelectorProps<T>,
 ) {
+  const t = useTranslator();
   const {
     label,
     isLabelHidden = false,
@@ -566,7 +567,7 @@ export function Selector<T extends SelectorOptionType>(
     onChange,
     changeAction,
     isLoading = false,
-    placeholder = 'Select...',
+    placeholder: placeholderFromProps,
     size: sizeProp,
     status,
     labelTooltip,
@@ -585,7 +586,7 @@ export function Selector<T extends SelectorOptionType>(
     hasClear: hasClearProp,
     ...rest
   } = props as SelectorPropsClearable<T>;
-  const t = useTranslator();
+  const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
   const searchPlaceholder =
     searchPlaceholderFromProps ?? t('@astryx.selector.searchPlaceholder');
   const hasClear = hasClearProp === true;

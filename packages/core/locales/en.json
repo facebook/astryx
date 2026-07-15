@@ -439,6 +439,10 @@
     "defaultMessage": "Open menu",
     "description": "Aria label for the overflow menu button in a TopNav heading."
   },
+  "@astryx.topNav.landmarkLabel": {
+    "defaultMessage": "Top navigation",
+    "description": "Default accessible name (aria-label) for the <nav> landmark rendered by TopNav when no label is provided."
+  },
   "@astryx.treeList.toggleChildren": {
     "defaultMessage": "Toggle children",
     "description": "Aria label for the expand/collapse button on a TreeList item."
@@ -458,5 +462,125 @@
   "@astryx.typeahead.clearSelection": {
     "defaultMessage": "Clear selection",
     "description": "Label for the \"clear selected value\" button on a Typeahead."
+  },
+  "@astryx.breadcrumbs.label": {
+    "defaultMessage": "Breadcrumb",
+    "description": "Default aria label for the Breadcrumbs navigation landmark."
+  },
+  "@astryx.chat.composer.placeholder": {
+    "defaultMessage": "Type a message…",
+    "description": "Default placeholder for the ChatComposer input."
+  },
+  "@astryx.chat.composerDrawer.label": {
+    "defaultMessage": "Items",
+    "description": "Default label for the ChatComposerDrawer list."
+  },
+  "@astryx.chat.composerInput.label": {
+    "defaultMessage": "Message input",
+    "description": "Default aria label for the ChatComposerInput textarea."
+  },
+  "@astryx.chat.speechRecognition.noSpeechDetected": {
+    "defaultMessage": "No speech was detected.",
+    "description": "Speech-recognition error message shown when the mic captures silence."
+  },
+  "@astryx.commandPalette.label": {
+    "defaultMessage": "Command palette",
+    "description": "Default aria label for the CommandPalette landmark."
+  },
+  "@astryx.commandPalette.input.placeholder": {
+    "defaultMessage": "Search…",
+    "description": "Default placeholder for the CommandPalette search input."
+  },
+  "@astryx.commandPalette.list.label": {
+    "defaultMessage": "Commands",
+    "description": "Default aria label for the CommandPalette command list."
+  },
+  "@astryx.contextMenu.label": {
+    "defaultMessage": "Context menu",
+    "description": "Default aria label for the ContextMenu."
+  },
+  "@astryx.dateInput.placeholder": {
+    "defaultMessage": "Select a date",
+    "description": "Default placeholder for DateInput."
+  },
+  "@astryx.dateInput.dialogLabel": {
+    "defaultMessage": "Choose date",
+    "description": "Aria label for the DateInput picker dialog."
+  },
+  "@astryx.dateInput.closeCalendar": {
+    "defaultMessage": "Close calendar",
+    "description": "Aria label for the close button in the DateInput calendar popover."
+  },
+  "@astryx.dateRangeInput.placeholder": {
+    "defaultMessage": "Select date range",
+    "description": "Default placeholder for DateRangeInput."
+  },
+  "@astryx.dateRangeInput.dialogLabel": {
+    "defaultMessage": "Choose date range",
+    "description": "Aria label for the DateRangeInput picker dialog."
+  },
+  "@astryx.dateTimeInput.placeholder": {
+    "defaultMessage": "Select a date",
+    "description": "Default placeholder for DateTimeInput."
+  },
+  "@astryx.dateTimeInput.dialogLabel": {
+    "defaultMessage": "Choose date",
+    "description": "Aria label for the DateTimeInput picker dialog."
+  },
+  "@astryx.link.newTab": {
+    "defaultMessage": "(opens in new tab)",
+    "description": "Visually-hidden suffix appended to Link labels that open in a new tab."
+  },
+  "@astryx.mobileNav.toggle.open": {
+    "defaultMessage": "Open navigation",
+    "description": "Aria label for the MobileNavToggle button when the drawer is closed."
+  },
+  "@astryx.moreMenu.label": {
+    "defaultMessage": "More options",
+    "description": "Default aria label for the MoreMenu trigger button."
+  },
+  "@astryx.multiSelector.selectPlaceholder": {
+    "defaultMessage": "Select…",
+    "description": "Default placeholder on the MultiSelector trigger button."
+  },
+  "@astryx.outline.label": {
+    "defaultMessage": "Table of contents",
+    "description": "Default aria label for the Outline navigation landmark."
+  },
+  "@astryx.powersearch.label": {
+    "defaultMessage": "Search",
+    "description": "Default aria label for the PowerSearch input."
+  },
+  "@astryx.powersearch.placeholder": {
+    "defaultMessage": "Search…",
+    "description": "Default placeholder for the PowerSearch input."
+  },
+  "@astryx.resizable.handle.label": {
+    "defaultMessage": "Resize handle",
+    "description": "Aria label for the drag handle in Resizable."
+  },
+  "@astryx.selector.placeholder": {
+    "defaultMessage": "Select…",
+    "description": "Default placeholder on the Selector trigger button."
+  },
+  "@astryx.sideNav.heading.dialogLabel": {
+    "defaultMessage": "Navigation menu",
+    "description": "Aria label for the SideNavHeading dropdown dialog."
+  },
+  "@astryx.table.pagination.label": {
+    "defaultMessage": "Table pagination",
+    "description": "Default aria label for the pagination row appended to a Table."
+  },
+  "@astryx.timeInput.placeholder": {
+    "defaultMessage": "Select a time",
+    "description": "Default placeholder for TimeInput."
+  },
+  "@astryx.topNav.heading.dialogLabel": {
+    "defaultMessage": "Navigation menu",
+    "description": "Aria label for the TopNavHeading dropdown dialog."
+  },
+  "@astryx.typeahead.searchPlaceholder": {
+    "defaultMessage": "Search…",
+    "description": "Default placeholder for the Typeahead input."
   }
 }

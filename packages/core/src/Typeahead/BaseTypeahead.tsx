@@ -303,7 +303,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   value,
   onChange,
   renderItem,
-  placeholder = 'Search...',
+  placeholder: placeholderFromProps,
   hasEntriesOnFocus = false,
   maxMenuItems = 10,
   emptySearchResultsText: emptySearchResultsTextFromProps,
@@ -323,6 +323,8 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   ref,
 }: BaseTypeaheadProps<T>) {
   const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.typeahead.searchPlaceholder');
   const emptySearchResultsText =
     emptySearchResultsTextFromProps ??
     t('@astryx.typeahead.emptySearchResults');

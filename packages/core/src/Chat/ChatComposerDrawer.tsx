@@ -30,6 +30,7 @@ import {Badge} from '../Badge';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export interface ChatComposerDrawerProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -220,7 +221,7 @@ export function ChatComposerDrawer({
   ref,
   children,
   count,
-  label = 'Items',
+  label: labelFromProps,
   isCollapsed: controlledCollapsed,
   defaultIsCollapsed = false,
   onCollapsedChange,
@@ -230,6 +231,8 @@ export function ChatComposerDrawer({
   'data-testid': testId,
   ...htmlProps
 }: ChatComposerDrawerProps): React.ReactElement {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.chat.composerDrawer.label');
   const [internalCollapsed, setInternalCollapsed] =
     useState(defaultIsCollapsed);
   const isControlled = controlledCollapsed !== undefined;

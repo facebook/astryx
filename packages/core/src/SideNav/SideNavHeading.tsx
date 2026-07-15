@@ -350,7 +350,7 @@ export function SideNavHeading({
   const collapsedItemRef = useRef<HTMLElement>(null);
 
   const popover = usePopover({
-    dialogLabel: 'Navigation menu',
+    dialogLabel: t('@astryx.sideNav.heading.dialogLabel'),
     hasCloseButton: false,
   });
 
