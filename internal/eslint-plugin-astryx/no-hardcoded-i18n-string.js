@@ -154,6 +154,62 @@ function shouldIgnoreFile(filename) {
   return IGNORED_FILE_PATTERNS.some(p => p.test(filename));
 }
 
+/**
+ * Walk into an expression and report any hardcoded user-facing string
+ * literals found in the leaves. Handles the common patterns that slip past
+ * a plain-literal check:
+ *
+ *   aria-label={isOpen ? 'Close X' : 'Open X'}     // ConditionalExpression
+ *   aria-label={cond && 'Something'}                // LogicalExpression
+ *   aria-label={fallback ?? 'Default label'}        // LogicalExpression
+ *   aria-label={`Clear ${label}`}                   // TemplateLiteral
+ *   aria-label={'Static'}                           // Literal in a container
+ *
+ * Deliberately does NOT walk into call expressions, member accesses,
+ * identifiers, JSX expressions, or arbitrary function bodies — those are
+ * either already handled (t() calls) or too likely to false-positive.
+ */
+function reportUserFacingLiteralsIn(expr, name, context, isDefault) {
+  if (expr == null) return;
+  switch (expr.type) {
+    case 'Literal':
+      if (typeof expr.value === 'string' && looksUserFacing(expr.value)) {
+        context.report({
+          node: expr,
+          messageId: isDefault ? 'hardcodedDefault' : 'hardcodedString',
+          data: {value: JSON.stringify(expr.value), name},
+        });
+      }
+      return;
+    case 'TemplateLiteral':
+      for (const quasi of expr.quasis) {
+        const raw = quasi.value?.cooked ?? quasi.value?.raw ?? '';
+        if (typeof raw === 'string' && looksUserFacing(raw)) {
+          context.report({
+            node: quasi,
+            messageId: isDefault ? 'hardcodedDefault' : 'hardcodedString',
+            data: {value: JSON.stringify(raw), name},
+          });
+          return; // one report per template is enough
+        }
+      }
+      return;
+    case 'ConditionalExpression':
+      reportUserFacingLiteralsIn(expr.consequent, name, context, isDefault);
+      reportUserFacingLiteralsIn(expr.alternate, name, context, isDefault);
+      return;
+    case 'LogicalExpression':
+      // Only the right side can be a fallback/default string; the left is a
+      // condition and its string identity doesn't matter for i18n.
+      reportUserFacingLiteralsIn(expr.right, name, context, isDefault);
+      return;
+    // Anything else (CallExpression like t(...), MemberExpression,
+    // Identifier, ArrowFunctionExpression body, JSXExpression, etc.) — skip.
+    default:
+      return;
+  }
+}
+
 const rule = {
   meta: {
     type: 'problem',
@@ -187,19 +243,34 @@ const rule = {
             ? node.name.name
             : null;
         if (!isUserFacingName(name)) return;
-        // Attribute value must be a string literal (not a JSX expression)
+
+        // 1. Bare string-literal attribute: <X label="Cancel">
         if (
-          node.value?.type !== 'Literal' ||
-          typeof node.value.value !== 'string'
-        )
+          node.value?.type === 'Literal' &&
+          typeof node.value.value === 'string'
+        ) {
+          const val = node.value.value;
+          if (!looksUserFacing(val)) return;
+          context.report({
+            node: node.value,
+            messageId: 'hardcodedString',
+            data: {value: JSON.stringify(val), name},
+          });
           return;
-        const val = node.value.value;
-        if (!looksUserFacing(val)) return;
-        context.report({
-          node: node.value,
-          messageId: 'hardcodedString',
-          data: {value: JSON.stringify(val), name},
-        });
+        }
+
+        // 2. Expression container: <X aria-label={...}>. Walk the expression
+        //    for hardcoded literals nested inside ternaries, logical
+        //    expressions, or template literals — these are common i18n
+        //    smells (isOpen ? 'Close' : 'Open'; `Clear ${label}`).
+        if (node.value?.type === 'JSXExpressionContainer') {
+          reportUserFacingLiteralsIn(
+            node.value.expression,
+            name,
+            context,
+            /*isDefault*/ false,
+          );
+        }
       },
 
       // 2. Object property `label: 'Xxx'`
@@ -244,18 +315,12 @@ const rule = {
             ? property.key.value
             : null;
         if (!isUserFacingName(name)) return;
-        if (
-          node.right.type !== 'Literal' ||
-          typeof node.right.value !== 'string'
-        )
-          return;
-        const val = node.right.value;
-        if (!looksUserFacing(val)) return;
-        context.report({
-          node: node.right,
-          messageId: 'hardcodedDefault',
-          data: {value: JSON.stringify(val), name},
-        });
+        reportUserFacingLiteralsIn(
+          node.right,
+          name,
+          context,
+          /*isDefault*/ true,
+        );
       },
     };
   },
