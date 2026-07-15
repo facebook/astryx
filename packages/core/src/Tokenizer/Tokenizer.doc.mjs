@@ -31,7 +31,7 @@ export const docs = {
       name: 'onChange',
       type: '(items: T[], change: TokenizerChange<T>) => void',
       description:
-        "Called when selection changes. The change argument includes the affected item and type ('add' | 'create' | 'remove' | 'reorder').",
+        "Called when selection changes. The change argument includes the affected item and type ('add' | 'create' | 'remove' | 'reorder'). Additions and removals (including Backspace on an empty input) are announced to screen readers via a polite live region.",
       required: true,
     },
     {

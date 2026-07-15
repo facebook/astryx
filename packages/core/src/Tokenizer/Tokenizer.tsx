@@ -4,7 +4,7 @@
 
 /**
  * @file Tokenizer.tsx
- * @input Uses React, BaseTypeahead, Field, Token
+ * @input Uses React, BaseTypeahead, Field, Token, useAnnounce
  * @output Exports Tokenizer multi-select typeahead component
  * @position Composed component; forwards DOM ref and exposes focus control via
  *   handleRef
@@ -43,6 +43,7 @@ import {renderIconSlot, type IconType} from '../Icon';
 import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
 import {useTooltip} from '../Tooltip';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {
   colorVars,
   spacingVars,
@@ -560,6 +561,12 @@ export function Tokenizer<T extends SearchableItem>({
     [],
   );
 
+  // Announce token add/remove politely via the persistent live region.
+  // Tokens previously appeared and disappeared silently — Backspace on an
+  // empty input removes the trailing token, and the per-token remove buttons
+  // gave no audible feedback either.
+  const announce = useAnnounce();
+
   // Handle adding an item — detect creatable synthetic items
   const handleAdd = useCallback(
     (item: T | null) => {
@@ -584,6 +591,7 @@ export function Tokenizer<T extends SearchableItem>({
         const realItem = base as T;
         const newItems = [...value, realItem];
         onChange(newItems, {item: realItem, type: 'create'});
+        announce(`Added ${createdValue}`);
         return;
       }
 
@@ -592,18 +600,22 @@ export function Tokenizer<T extends SearchableItem>({
       }
       const newItems = [...value, item];
       onChange(newItems, {item, type: 'add'});
+      announce(`Added ${item.label}`);
     },
-    [value, onChange, isAtMax, selectedIds, hasCreate],
+    [value, onChange, isAtMax, selectedIds, hasCreate, announce],
   );
 
-  // Handle removing an item
+  // Handle removing an item. Single removal path: both Backspace on an empty
+  // input and the per-token remove buttons route through here, so the
+  // announcement covers both.
   const handleRemove = useCallback(
     (item: T) => {
       const newItems = value.filter(v => v.id !== item.id);
       onChange(newItems, {item, type: 'remove'});
+      announce(`Removed ${item.label}`);
       inputRef.current?.focus();
     },
-    [value, onChange],
+    [value, onChange, announce],
   );
 
   // Handle clearing all items
