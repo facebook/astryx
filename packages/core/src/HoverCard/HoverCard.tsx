@@ -97,6 +97,15 @@ export interface HoverCardProps extends Pick<
   isEnabled?: boolean;
 
   /**
+   * Accessible name for the hover card popup.
+   *
+   * When provided, the popup is exposed to assistive technology as a named
+   * `role="dialog"`. When omitted, the popup falls back to `role="group"` —
+   * a group may validly be unnamed, an unnamed dialog may not.
+   */
+  label?: string;
+
+  /**
    * Callback fired when hover card visibility changes.
    * Called with `true` when shown and `false` when hidden.
    */
@@ -166,6 +175,7 @@ export function HoverCard({
   hideDelay = 200,
   focusTrigger = 'auto',
   isEnabled = true,
+  label,
   onOpenChange,
   hasHoverIndication = 'auto',
   isOpen,
@@ -197,6 +207,7 @@ export function HoverCard({
     hideDelay,
     focusTrigger,
     isEnabled,
+    label,
     isOpen,
     isDefaultOpen,
     onShow: handleShow,
