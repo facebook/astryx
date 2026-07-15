@@ -131,7 +131,12 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   isHighlighted?: boolean;
 
   /**
-   * Selected state.
+   * Selected state. Always applies the selected visual styling. When `role`
+   * permits it (option, tab, row, gridcell, columnheader, rowheader, treeitem)
+   * the state is exposed as `aria-selected`; otherwise (e.g. a listitem or a
+   * bare div, where `aria-selected` is invalid ARIA) it falls back to
+   * `aria-current="true"` so assistive tech is still told which item is
+   * selected. A consumer-provided `aria-current` always wins.
    * @default false
    */
   isSelected?: boolean;
@@ -147,6 +152,24 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    */
   'data-testid'?: string;
 }
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+/**
+ * Roles on which WAI-ARIA permits the aria-selected attribute.
+ * https://www.w3.org/TR/wai-aria-1.2/#aria-selected
+ */
+const ARIA_SELECTED_ROLES = new Set([
+  'option',
+  'tab',
+  'row',
+  'gridcell',
+  'columnheader',
+  'rowheader',
+  'treeitem',
+]);
 
 // =============================================================================
 // Styles
@@ -346,6 +369,11 @@ export function Item({
   // handles keyboard access. Skip the invisible button/anchor and put
   // onClick directly on the root element instead.
   const hasParentRole = role != null;
+  // aria-selected is only valid on selectable roles (option, tab, treeitem,
+  // grid cells). On the default div/li root the attribute is invalid ARIA
+  // (axe: aria-allowed-attr), so selection stays visual-only there — callers
+  // that need selection semantics pass a permitted role.
+  const allowsAriaSelected = role != null && ARIA_SELECTED_ROLES.has(role);
 
   const isStringLabel = typeof label === 'string';
   const isStringDescription = typeof description === 'string';
@@ -471,7 +499,15 @@ export function Item({
     <Component
       ref={ref as React.Ref<never>}
       {...restProps}
-      aria-selected={isSelected || undefined}
+      aria-selected={(allowsAriaSelected && isSelected) || undefined}
+      // aria-selected is invalid on roles that don't permit it (listitem, a
+      // bare div, etc.). For those, convey selection via aria-current — valid
+      // on any element — so the state still reaches AT. Written after
+      // {...restProps} so it must defer to a consumer-provided aria-current.
+      aria-current={
+        restProps['aria-current'] ??
+        (isSelected && !allowsAriaSelected ? true : undefined)
+      }
       aria-disabled={isDisabled || undefined}
       {...mergeProps(
         themeProps('item', {density, align}),
