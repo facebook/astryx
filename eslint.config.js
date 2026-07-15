@@ -176,6 +176,15 @@ export default defineConfig(
       }],
     },
   },
+  // The i18n runtime itself defines the message strings the rest of the
+  // package resolves against; a "hardcoded string" check against it would be
+  // circular. Turn off @astryx/no-hardcoded-i18n-string just for this dir.
+  {
+    files: ["packages/core/src/i18n/**/*.{ts,tsx}"],
+    rules: {
+      '@astryx/no-hardcoded-i18n-string': 'off',
+    },
+  },
   // React bug-prevention rules - applies to core package
   // Uses @eslint-react for bugs that TypeScript alone cannot catch.
   // Children.*/cloneElement are already covered by @astryx/no-react-introspection.

@@ -29,6 +29,7 @@ import copyrightHeaderRule from './copyright-header.js';
 import noRawConsoleCliRule from './no-raw-console-cli.js';
 import requireBasePropsRule from './require-base-props.js';
 import requireRefPropRule from './require-ref-prop.js';
+import noHardcodedI18nStringRule from './no-hardcoded-i18n-string.js';
 
 // =============================================================================
 // Rule: no-hardcoded-styles
@@ -243,6 +244,7 @@ const plugin = {
     'require-ref-prop': requireRefPropRule,
     'copyright-header': copyrightHeaderRule,
     'no-raw-console-cli': noRawConsoleCliRule,
+    'no-hardcoded-i18n-string': noHardcodedI18nStringRule,
   },
   configs: {},
 };
@@ -267,6 +269,7 @@ plugin.configs.strict = {
     '@astryx/require-base-props': 'error',
     '@astryx/require-ref-prop': 'error',
     '@astryx/copyright-header': 'error',
+    '@astryx/no-hardcoded-i18n-string': 'error',
   },
 };
 
@@ -290,6 +293,7 @@ plugin.configs.recommended = {
     '@astryx/require-base-props': 'warn',
     '@astryx/require-ref-prop': 'warn',
     '@astryx/copyright-header': 'error',
+    '@astryx/no-hardcoded-i18n-string': 'warn',
   },
 };
 
