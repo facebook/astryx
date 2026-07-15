@@ -174,6 +174,10 @@ export interface LinkProps extends BaseProps<
   hasUnderline?: boolean;
   /**
    * Whether the link is disabled.
+   * A disabled link renders as a plain anchor without an href (and without
+   * target/rel/onClick), so it cannot be focused or activated — no
+   * navigation and no onClick, even via programmatic focus or assistive
+   * technology activation.
    * @default false
    */
   isDisabled?: boolean;
@@ -259,6 +263,15 @@ export interface LinkProps extends BaseProps<
    * Link content (required).
    */
   children: ReactNode;
+}
+
+/**
+ * Click handler for disabled links. The disabled anchor renders without an
+ * href, so there is no navigation to block in practice; preventDefault is a
+ * defensive guard against synthetic/programmatic clicks.
+ */
+function preventDefaultClick(event: React.MouseEvent<HTMLAnchorElement>): void {
+  event.preventDefault();
 }
 
 /**
@@ -367,6 +380,37 @@ export function Link({
         {...props}>
         {sharedContent}
       </button>
+    );
+  } else if (isDisabled) {
+    // A disabled link renders as a plain <a> with no href: an href-less
+    // anchor is not focusable and exposes no link affordance, so programmatic
+    // focus + Enter, AT activation commands, and middle-click cannot navigate
+    // or fire the consumer onClick. The router LinkComponent is deliberately
+    // skipped — a disabled link performs no navigation, and custom router
+    // links may require a live href. target/rel are omitted with the href.
+    linkElement = (
+      <a
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        onClick={preventDefaultClick}
+        aria-label={label || undefined}
+        aria-disabled={true}
+        tabIndex={-1}
+        {...mergeProps(
+          themeProps('link', {color}),
+          stylex.props(
+            styles.base,
+            linkColorStyles[color],
+            hasUnderline && styles.hasUnderline,
+            isStandalone && styles.standalone,
+            styles.disabled,
+            xstyle,
+          ),
+          className,
+          style,
+        )}
+        {...props}>
+        {sharedContent}
+      </a>
     );
   } else {
     linkElement = (
