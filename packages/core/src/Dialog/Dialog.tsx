@@ -16,7 +16,14 @@
  * - /packages/cli/templates/blocks/components/Dialog/ (showcase blocks)
  */
 
-import {useEffect, useMemo, useRef, type ReactNode} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
@@ -318,6 +325,9 @@ export interface DialogProps extends BaseProps<HTMLDialogElement> {
  *
  * Designed to be used with Layout as its child for structured content.
  * Uses the browser's built-in modal behavior for optimal accessibility.
+ * When a DialogHeader is rendered inside, its title automatically names the
+ * dialog via aria-labelledby; pass `aria-label` or `aria-labelledby` to
+ * override.
  *
  * @example
  * ```
@@ -354,9 +364,46 @@ export function Dialog({
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
 
   const isFullscreen = variant === 'fullscreen';
-  const dialogContextValue = useMemo(() => ({isInline}), [isInline]);
+
+  // Default accessible name: publish a title id through DialogContext so a
+  // DialogHeader applies it to its heading (mirrors AlertDialog's explicit
+  // useId wiring). Whether to emit the default aria-labelledby is decided
+  // imperatively in the callback ref below by checking whether the title
+  // element actually rendered — so a dialog with no header never points at a
+  // missing id, and we avoid the extra render a registration-via-state effect
+  // would cost at the dialog level.
+  const titleId = useId();
+
+  const dialogContextValue = useMemo(
+    () => ({isInline, titleId}),
+    [isInline, titleId],
+  );
+
+  // Consumer-provided labels always win over the DialogHeader default.
+  const hasConsumerName =
+    props['aria-label'] != null || props['aria-labelledby'] != null;
 
   const dialogRef = useRef<HTMLDialogElement>(null);
+
+  // Callback ref on the <dialog>: sync the default aria-labelledby from the
+  // DialogHeader title (if one rendered) in the same commit, with no second
+  // render. Consumer aria-label/aria-labelledby win — when present we leave
+  // the attribute to the {...safeProps} spread and never touch it here.
+  const attachDialog = useCallback(
+    (node: HTMLDialogElement | null) => {
+      dialogRef.current = node;
+      if (!node || hasConsumerName) {
+        return;
+      }
+      const hasTitle = node.querySelector(`#${CSS.escape(titleId)}`) != null;
+      if (hasTitle) {
+        node.setAttribute('aria-labelledby', titleId);
+      } else {
+        node.removeAttribute('aria-labelledby');
+      }
+    },
+    [titleId, hasConsumerName],
+  );
 
   // Capture the element that was focused when the dialog opened,
   // for directional animation origin and focus restoration on close.
@@ -445,6 +492,28 @@ export function Dialog({
     dialog.addEventListener('keydown', handleKeyDown);
     return () => dialog.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isInline, allowEscape, onOpenChange]);
+
+  // Dev-time guardrail: an open modal should always have an accessible name.
+  // Warn once per component instance (in an effect) rather than on every
+  // render — mirrors the unnamed-dialog warning in usePopover.
+  const warnedUnnamedDialogRef = useRef(false);
+  useEffect(() => {
+    const hasHeaderTitle =
+      dialogRef.current?.querySelector(`#${CSS.escape(titleId)}`) != null;
+    if (
+      isOpen &&
+      !isInline &&
+      !hasConsumerName &&
+      !hasHeaderTitle &&
+      !warnedUnnamedDialogRef.current
+    ) {
+      warnedUnnamedDialogRef.current = true;
+      console.warn(
+        'Dialog: open dialog has no accessible name. Add a DialogHeader ' +
+          'with a `title`, or pass `aria-label`/`aria-labelledby`.',
+      );
+    }
+  }, [isOpen, isInline, hasConsumerName, titleId]);
 
   // Handle backdrop click — when the user clicks the ::backdrop pseudo-element,
   // the event target is the <dialog> element itself; clicks on child content
@@ -551,7 +620,7 @@ export function Dialog({
 
   return (
     <dialog
-      ref={mergeRefs(ref, dialogRef)}
+      ref={mergeRefs(ref, attachDialog)}
       {...safeProps}
       {...mergeProps(
         themeProps('dialog', {variant}),
@@ -576,6 +645,9 @@ export function Dialog({
       onClick={handleClick}
       onCancel={handleCancel}
       aria-modal="true"
+      // The default aria-labelledby (from a DialogHeader title) is set
+      // imperatively in `attachDialog`; a consumer-provided aria-labelledby
+      // flows through {...safeProps} above and wins.
       {...(purpose === 'required' ? {role: 'alertdialog'} : undefined)}>
       {innerContent}
     </dialog>
