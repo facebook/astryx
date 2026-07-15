@@ -65,7 +65,9 @@ export interface DialogHeaderProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
    * The title of the dialog.
-   * This title receives focus when the dialog opens for screen reader accessibility.
+   * This title receives focus when the dialog opens for screen reader
+   * accessibility, and names the parent Dialog via aria-labelledby unless the
+   * consumer passes an explicit aria-label/aria-labelledby to the Dialog.
    */
   title: string;
 
@@ -105,7 +107,8 @@ export interface DialogHeaderProps extends BaseProps<HTMLDivElement> {
  * Renders a title that receives focus when a modal dialog opens (for screen reader accessibility)
  * and an optional close button. Inline documentation previews suppress this autofocus.
  * The title is an h2 element with tabIndex={-1} so it can be programmatically focused but
- * doesn't appear in the tab order.
+ * doesn't appear in the tab order. The title also names the parent Dialog via
+ * aria-labelledby (unless the Dialog receives an explicit aria-label/aria-labelledby).
  *
  * Uses LayoutHeader internally for consistent styling with other layout headers.
  *
@@ -137,6 +140,8 @@ export function DialogHeader({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const dialogContext = useDialogContext();
   const shouldAutoFocus = dialogContext?.isInline !== true;
+  const titleId = dialogContext?.titleId;
+  const registerTitle = dialogContext?.registerTitle;
 
   // Auto-focus the title when mounted for screen reader accessibility.
   // Inline dialogs are documentation/showcase previews, so suppress focus to
@@ -146,6 +151,11 @@ export function DialogHeader({
       titleRef.current.focus();
     }
   }, [shouldAutoFocus]);
+
+  // Tell the parent Dialog a title exists so it can point aria-labelledby at
+  // it. Registration (rather than an unconditional id reference) keeps the
+  // Dialog from emitting aria-labelledby when no DialogHeader is rendered.
+  useEffect(() => registerTitle?.(), [registerTitle]);
 
   return (
     <LayoutHeader
@@ -162,6 +172,7 @@ export function DialogHeader({
         <div {...stylex.props(styles.titleWrapper)}>
           <Heading
             ref={titleRef}
+            id={titleId}
             level={2}
             tabIndex={-1}
             xstyle={styles.titleFocusable}>
