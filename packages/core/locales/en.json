@@ -411,6 +411,10 @@
     "defaultMessage": "Select row",
     "description": "Aria label for the \"select row\" checkbox on a Table row."
   },
+  "@astryx.table.selection.selectRowNamed": {
+    "defaultMessage": "Select {label}",
+    "description": "Aria label for a Table row's selection checkbox when a per-row label is available (via getRowLabel). `label` is the row's human-readable identity, e.g. \"Alice\"."
+  },
   "@astryx.table.sort.ascending": {
     "defaultMessage": "Sort ascending",
     "description": "Screen-reader-only label on a column header button that will sort the column ascending. Part of a set with `sort.descending` and `sort.clear` — keep parallel."
