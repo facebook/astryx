@@ -13,6 +13,7 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TopNav} from './TopNav';
+import {TopNavRenderContext} from './TopNavRenderContext';
 import {TopNavHeading} from './TopNavHeading';
 import {NavIcon} from '../NavIcon';
 import {TopNavItem} from './TopNavItem';
@@ -43,6 +44,35 @@ describe('TopNav', () => {
       'aria-label',
       'Primary navigation',
     );
+  });
+
+  it('defaults the landmark label to "Top navigation" when label is omitted', () => {
+    render(<TopNav />);
+    expect(
+      screen.getByRole('navigation', {name: 'Top navigation'}),
+    ).toBeInTheDocument();
+  });
+
+  it('defaults the landmark label in mobile-bar mode', () => {
+    render(
+      <TopNavRenderContext value="mobile-bar">
+        <TopNav heading={<span>Logo</span>} />
+      </TopNavRenderContext>,
+    );
+    expect(
+      screen.getByRole('navigation', {name: 'Top navigation'}),
+    ).toBeInTheDocument();
+  });
+
+  it('custom label overrides the default in mobile-bar mode', () => {
+    render(
+      <TopNavRenderContext value="mobile-bar">
+        <TopNav label="Utility navigation" />
+      </TopNavRenderContext>,
+    );
+    expect(
+      screen.getByRole('navigation', {name: 'Utility navigation'}),
+    ).toBeInTheDocument();
   });
 
   it('renders heading slot content', () => {
