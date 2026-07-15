@@ -35,6 +35,7 @@ import {getKey, mergeProps} from '../utils';
 import {Badge} from '../Badge';
 import {Icon, type IconName} from '../Icon';
 import {Spinner} from '../Spinner';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {themeProps} from '../utils/themeProps';
 
 // =============================================================================
@@ -60,7 +61,11 @@ export interface ChatToolCallItem {
   deletions?: number;
   /** Additional info rendered after the label. Free-form ReactNode. */
   stats?: ReactNode;
-  /** Error message when status is 'error'. Shown in a tooltip on the status icon. */
+  /**
+   * Error message when status is 'error'. Rendered as visually hidden text in
+   * the row (so screen readers and keyboard users perceive it) and echoed in a
+   * hover tooltip on the status icon.
+   */
   errorMessage?: string;
   /** Unique key for React list rendering. Derived from stable metadata if omitted. */
   key?: string;
@@ -394,6 +399,13 @@ function CallRow({call}: {call: ChatToolCallItem}) {
               />
             </span>
           </>
+        )}
+        {status === 'error' && call.errorMessage != null && (
+          // The title attribute above is hover-only; expose the error detail
+          // as real text so it reaches screen readers, keyboard, and touch
+          // users. Rendering it inside the row also folds it into the
+          // accessible name of expandable (role="button") rows.
+          <VisuallyHidden>{`Error: ${call.errorMessage}`}</VisuallyHidden>
         )}
       </span>
       <span {...stylex.props(styles.callName)}>{call.name}</span>
