@@ -9,7 +9,10 @@
  * @position Horizontal scroll container with fade-edge overflow indication,
  *   optional prev/next buttons on the top layer, scroll-snap, a 1px
  *   visual bleed allowance for child selection indicators, and Shift + wheel
- *   mapping so mouse users can scroll horizontally.
+ *   mapping so mouse users can scroll horizontally. Exposes APG
+ *   carousel semantics: the root is a labelled region with
+ *   aria-roledescription="carousel" and each item wrapper is a group with
+ *   aria-roledescription="slide" named "Slide N of M".
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Carousel/index.ts (exports)
@@ -17,7 +20,14 @@
  * - /packages/cli/templates/blocks/components/Carousel/ (showcase blocks)
  */
 
-import {type ReactNode, useRef, useCallback, useEffect, Children} from 'react';
+import {
+  type ReactNode,
+  useRef,
+  useCallback,
+  useEffect,
+  Children,
+  isValidElement,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   spacingVars,
@@ -270,6 +280,11 @@ export function Carousel({
   const scrollElRef = useRef<HTMLElement | null>(null);
   const {scrollRef, overflowStart, overflowEnd} = useScrollOverflow();
 
+  // Children.toArray drops null/undefined/boolean children and assigns
+  // stable keys, so slide numbering ("Slide N of M") matches what actually
+  // renders even when some children are conditionally omitted.
+  const slides = Children.toArray(children);
+
   const layer = useLayer({
     mode: 'context',
     lightDismiss: false,
@@ -380,8 +395,23 @@ export function Carousel({
           hasSnap && styles.snap,
           fadeStyle,
         )}>
-        {Children.map(children, child => (
-          <div {...stylex.props(styles.item)}>{child}</div>
+        {slides.map((child, index) => (
+          // APG carousel pattern: each slide container is a group with
+          // aria-roledescription="slide" and an "N of M" accessible name so
+          // ATs announce slide boundaries and position instead of anonymous
+          // generics.
+          <div
+            // eslint-disable-next-line @eslint-react/no-array-index-key -- index fallback only applies to text/number children, which are positional by definition; elements keep their Children.toArray keys
+            key={isValidElement(child) ? child.key : index}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={t('@astryx.carousel.slideLabel', {
+              current: index + 1,
+              total: slides.length,
+            })}
+            {...stylex.props(styles.item)}>
+            {child}
+          </div>
         ))}
       </div>
 

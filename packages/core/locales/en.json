@@ -263,6 +263,10 @@
     "defaultMessage": "Scroll right",
     "description": "Screen-reader-only label on the right arrow button in a Carousel. Pairs with `carousel.scrollLeft`; same RTL note."
   },
+  "@astryx.carousel.slideLabel": {
+    "defaultMessage": "Slide {current, number} of {total, number}",
+    "description": "Screen-reader accessible name for one slide in a Carousel, giving its position. `current` is the 1-based slide number; `total` is the slide count."
+  },
   "@astryx.chat.status.sending": {
     "defaultMessage": "Sending",
     "description": "Chat send-status caption under an outgoing message while it is being transmitted. Part of the set sending → sent → delivered → read (or failed) — keep tense/aspect consistent."

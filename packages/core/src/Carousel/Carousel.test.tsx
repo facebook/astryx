@@ -92,6 +92,59 @@ describe('Carousel', () => {
     expect(screen.getByLabelText('Scroll right')).toBeInTheDocument();
   });
 
+  describe('slide semantics', () => {
+    it('exposes each slide as a group with aria-roledescription="slide" and a positional name', () => {
+      render(
+        <Carousel aria-label="Photos">
+          <div>One</div>
+          <div>Two</div>
+          <div>Three</div>
+        </Carousel>,
+      );
+      // APG carousel pattern: each slide container is role=group with
+      // aria-roledescription="slide" and an "N of M" accessible name.
+      const slides = screen.getAllByRole('group');
+      expect(slides).toHaveLength(3);
+      slides.forEach((slide, i) => {
+        expect(slide).toHaveAttribute('aria-roledescription', 'slide');
+        expect(slide).toHaveAccessibleName(`Slide ${i + 1} of 3`);
+      });
+    });
+
+    it('reflects the rendered child count, skipping null and boolean children', () => {
+      render(
+        <Carousel aria-label="Photos">
+          <div>One</div>
+          {null}
+          {false}
+          <div>Two</div>
+        </Carousel>,
+      );
+      const slides = screen.getAllByRole('group');
+      expect(slides).toHaveLength(2);
+      expect(
+        screen.getByRole('group', {name: 'Slide 1 of 2'}),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('group', {name: 'Slide 2 of 2'}),
+      ).toBeInTheDocument();
+    });
+
+    it('keeps the container region semantics unchanged around labelled slides', () => {
+      render(
+        <Carousel aria-label="Gallery">
+          <div>One</div>
+          <div>Two</div>
+        </Carousel>,
+      );
+      const region = screen.getByRole('region', {name: 'Gallery'});
+      expect(region).toHaveAttribute('aria-roledescription', 'carousel');
+      const slides = screen.getAllByRole('group');
+      expect(slides).toHaveLength(2);
+      slides.forEach(slide => expect(region).toContainElement(slide));
+    });
+  });
+
   it('disables edge scroll buttons instead of removing them from the tab order', () => {
     // In jsdom there is no measurable overflow, so both edges are at rest and
     // the scroll buttons are in their hidden/inert state. They must stay
