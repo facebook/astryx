@@ -32,6 +32,7 @@ import {useChatNewMessages} from './useChatNewMessages';
 import {ChatLayoutScrollButton} from './ChatLayoutScrollButton';
 import {ChatLayoutContext} from './ChatContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -258,6 +259,7 @@ export function ChatLayout({
   'data-testid': testId,
   ref,
 }: ChatLayoutProps) {
+  const t = useTranslator();
   const rootRef = useRef<HTMLDivElement>(null);
 
   const scrollContainerRef = externalScrollRef ?? rootRef;
@@ -273,7 +275,7 @@ export function ChatLayout({
   const defaultScrollButton = (
     <ChatLayoutScrollButton
       isVisible={scroll.isScrolledUp || newMsgs.hasNewMessages}
-      label={newMsgs.hasNewMessages ? 'New messages' : undefined}
+      label={newMsgs.hasNewMessages ? t('@astryx.chatLayout.newMessages') : undefined}
       onClick={() => {
         newMsgs.dismiss();
         scroll.scrollToBottom();

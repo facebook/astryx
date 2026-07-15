@@ -506,7 +506,7 @@ export function Lightbox({
         handleKeyDown(e);
         onKeyDownProp?.(e);
       }}
-      aria-label={currentItem.alt || 'Media viewer'}
+      aria-label={currentItem.alt || t('@astryx.lightbox.mediaViewer')}
       {...mergeProps(
         themeProps('lightbox'),
         stylex.props(styles.dialog, xstyle),

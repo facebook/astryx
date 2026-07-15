@@ -419,6 +419,7 @@ function TextFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
+  const t = useTranslator();
   const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
@@ -426,7 +427,7 @@ function TextFilterControl({
 
   return (
     <TextInput
-      label={`Filter ${header}`}
+      label={t('@astryx.tableFiltering.filterByColumn', {header})}
       isLabelHidden
       value={strValue}
       onChange={(newValue: string) => {
@@ -434,7 +435,7 @@ function TextFilterControl({
           .getConfig()
           .onFilterChange(columnKey, newValue === '' ? null : newValue);
       }}
-      placeholder={`Filter ${header}`}
+      placeholder={t('@astryx.tableFiltering.filterByColumn', {header})}
       size={size}
       hasClear={hasClear}
     />
@@ -454,6 +455,7 @@ function NumberFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
+  const t = useTranslator();
   const store = useFilterStore();
   const config = store.getConfig();
   const value = config.filters[columnKey];
@@ -471,11 +473,11 @@ function NumberFilterControl({
   if (hasClear) {
     return (
       <NumberInput
-        label={`Filter ${header}`}
+        label={t('@astryx.tableFiltering.filterByColumn', {header})}
         isLabelHidden
         value={numValue}
         onChange={handleChange}
-        placeholder={`Filter ${header}`}
+        placeholder={t('@astryx.tableFiltering.filterByColumn', {header})}
         min={operatorValue.minValue ?? null}
         max={operatorValue.maxValue ?? null}
         step={step}
@@ -487,11 +489,11 @@ function NumberFilterControl({
 
   return (
     <NumberInput
-      label={`Filter ${header}`}
+      label={t('@astryx.tableFiltering.filterByColumn', {header})}
       isLabelHidden
       value={numValue}
       onChange={handleChange}
-      placeholder={`Filter ${header}`}
+      placeholder={t('@astryx.tableFiltering.filterByColumn', {header})}
       min={operatorValue.minValue ?? null}
       max={operatorValue.maxValue ?? null}
       step={step}
@@ -539,7 +541,7 @@ function SelectorFilterControl({
   if (hasClear) {
     return (
       <Selector
-        label={`Filter ${header}`}
+        label={t('@astryx.tableFiltering.filterByColumn', {header})}
         isLabelHidden
         options={options}
         value={strValue || null}
@@ -553,7 +555,7 @@ function SelectorFilterControl({
 
   return (
     <Selector
-      label={`Filter ${header}`}
+      label={t('@astryx.tableFiltering.filterByColumn', {header})}
       isLabelHidden
       options={options}
       value={strValue}
@@ -590,7 +592,7 @@ function MultiSelectorFilterControl({
 
   return (
     <MultiSelector
-      label={`Filter ${header}`}
+      label={t('@astryx.tableFiltering.filterByColumn', {header})}
       isLabelHidden
       options={options}
       value={arrValue}
@@ -619,12 +621,13 @@ function DateFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
+  const t = useTranslator();
   const store = useFilterStore();
   const value = store.getConfig().filters[columnKey] as string | undefined;
 
   return (
     <DateInput
-      label={`Filter ${header}`}
+      label={t('@astryx.tableFiltering.filterByColumn', {header})}
       isLabelHidden
       value={(value as ISODateString | undefined) ?? undefined}
       onChange={newValue => {
@@ -647,12 +650,13 @@ function TimeFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
+  const t = useTranslator();
   const store = useFilterStore();
   const value = store.getConfig().filters[columnKey] as string | undefined;
 
   return (
     <TimeInput
-      label={`Filter ${header}`}
+      label={t('@astryx.tableFiltering.filterByColumn', {header})}
       isLabelHidden
       value={(value as ISOTimeString | undefined) ?? undefined}
       onChange={newValue => {
@@ -677,6 +681,7 @@ function StringListFilterControl({
   size: 'sm' | 'md';
   hasClear?: boolean;
 }) {
+  const t = useTranslator();
   const store = useFilterStore();
   const value =
     (store.getConfig().filters[columnKey] as string[] | undefined) ?? [];
@@ -696,7 +701,7 @@ function StringListFilterControl({
 
   return (
     <Tokenizer
-      label={`Filter ${header}`}
+      label={t('@astryx.tableFiltering.filterByColumn', {header})}
       isLabelHidden
       searchSource={searchSource}
       value={value.map(v => ({id: v, label: v}))}
@@ -874,7 +879,7 @@ function PopoverFilterTrigger({
     <Popover
       isOpen={isOpen}
       onOpenChange={handleOpen}
-      label={`Filter ${header}`}
+      label={t('@astryx.tableFiltering.filterByColumn', {header})}
       placement="below"
       alignment="start"
       content={
@@ -906,7 +911,7 @@ function PopoverFilterTrigger({
       }>
       <button
         type="button"
-        aria-label={`Filter ${header}`}
+        aria-label={t('@astryx.tableFiltering.filterByColumn', {header})}
         aria-haspopup="dialog"
         {...stylex.props(
           filterStyles.triggerButton,

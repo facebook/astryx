@@ -21,6 +21,7 @@ import {
 } from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import type {TablePlugin} from '../../types';
+import {useTranslator} from '../../../i18n';
 
 // A synthetic group-header row injected into the flattened data. Real rows
 // never carry this marker.
@@ -205,6 +206,7 @@ const styles = stylex.create({
 export function useTableGroupedRows<T extends Record<string, unknown>>(
   config: UseTableGroupedRowsConfig<T>,
 ): UseTableGroupedRowsResult<T> {
+  const t = useTranslator();
   const {
     data,
     groupBy,
@@ -323,8 +325,8 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
                   }}
                   aria-label={
                     collapsed
-                      ? `Expand group ${header.groupKey}`
-                      : `Collapse group ${header.groupKey}`
+                      ? t('@astryx.tableGroupedRows.expandGroup', {groupKey: header.groupKey})
+                      : t('@astryx.tableGroupedRows.collapseGroup', {groupKey: header.groupKey})
                   }
                   aria-expanded={!collapsed}>
                   <span
@@ -342,7 +344,7 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
         };
       },
     }),
-    [collapsedGroups, onToggleGroup, renderGroupHeader],
+    [collapsedGroups, onToggleGroup, renderGroupHeader, t],
   );
 
   return {plugin, data: flattened, idKey};

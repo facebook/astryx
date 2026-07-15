@@ -425,7 +425,7 @@ export function MobileNav({
       )}
       {...rest}
       data-testid={testId}
-      aria-label={label ?? (typeof header === 'string' ? header : 'Navigation')}
+      aria-label={label ?? (typeof header === 'string' ? header : t('@astryx.mobileNav.navigation'))}
       onClick={composeEventHandlers(onClickProp, handleDialogClick)}
       onCancel={handleCancel}>
       {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}

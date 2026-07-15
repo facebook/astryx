@@ -663,7 +663,7 @@ export function TimeInput({
         <button
           type="button"
           onClick={handleClear}
-          aria-label={`Clear ${label}`}
+          aria-label={t('@astryx.timeInput.clearLabel', {label})}
           {...stylex.props(styles.clearButton)}>
           <Icon icon="close" size="sm" color="secondary" />
         </button>

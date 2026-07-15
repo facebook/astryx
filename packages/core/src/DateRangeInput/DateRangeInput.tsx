@@ -561,7 +561,11 @@ export function DateRangeInput({
           type="button"
           onClick={handleToggle}
           disabled={isEffectivelyDisabled}
-          aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
+          aria-label={
+            popover.isOpen
+              ? t('@astryx.dateInput.toggleCalendarClose')
+              : t('@astryx.dateInput.openCalendar')
+          }
           tabIndex={-1}
           {...stylex.props(
             styles.iconButton,
@@ -598,7 +602,7 @@ export function DateRangeInput({
           <button
             type="button"
             onClick={handleClear}
-            aria-label={`Clear ${label}`}
+            aria-label={t('@astryx.dateInput.clear', {label})}
             {...stylex.props(styles.iconButton)}>
             <Icon icon="close" size="sm" color="secondary" />
           </button>

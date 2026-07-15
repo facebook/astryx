@@ -55,6 +55,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -425,6 +426,7 @@ export function FileInput({
   ref,
   ...rest
 }: FileInputProps) {
+  const t = useTranslator();
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
@@ -774,7 +776,7 @@ export function FileInput({
         />
         {isDropzone ? renderDropzoneContent() : renderCompactContent()}
         {hasFiles && !isDisabled && !isLoading && (
-          <InputClearButton label={`Clear ${label}`} onClick={handleClear} />
+          <InputClearButton label={t('@astryx.fileInput.clearLabel', {label})} onClick={handleClear} />
         )}
       </div>
       <div

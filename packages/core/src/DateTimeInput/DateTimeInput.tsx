@@ -893,7 +893,11 @@ export function DateTimeInput({
             type="button"
             onClick={handleCalendarToggle}
             disabled={isEffectivelyDisabled}
-            aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
+            aria-label={
+              popover.isOpen
+                ? t('@astryx.dateInput.toggleCalendarClose')
+                : t('@astryx.dateInput.openCalendar')
+            }
             {...stylex.props(
               styles.iconButton,
               isEffectivelyDisabled && styles.iconButtonDisabled,
@@ -948,7 +952,7 @@ export function DateTimeInput({
             <button
               type="button"
               onClick={handleClear}
-              aria-label={`Clear ${label}`}
+              aria-label={t('@astryx.dateInput.clear', {label})}
               {...stylex.props(styles.iconButton)}>
               <Icon icon="close" size="sm" color="secondary" />
             </button>
@@ -996,7 +1000,7 @@ export function DateTimeInput({
             disabled={isEffectivelyDisabled && !showsDisabledMessage}
             aria-disabled={showsDisabledMessage ? 'true' : undefined}
             readOnly={showsDisabledMessage || undefined}
-            aria-label={timeLabel ?? `${label} time`}
+            aria-label={timeLabel ?? t('@astryx.dateTimeInput.timeSuffix', {label})}
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={

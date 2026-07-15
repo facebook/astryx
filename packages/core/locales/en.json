@@ -511,6 +511,22 @@
     "defaultMessage": "Close calendar",
     "description": "Aria label for the close button in the DateInput calendar popover."
   },
+  "@astryx.dateInput.openCalendar": {
+    "defaultMessage": "Open calendar",
+    "description": "Aria label for the DateInput / DateRangeInput / DateTimeInput calendar toggle button when the popover is closed."
+  },
+  "@astryx.dateInput.toggleCalendarClose": {
+    "defaultMessage": "Close calendar",
+    "description": "Aria label for the DateInput / DateRangeInput / DateTimeInput calendar toggle button when the popover is open. Distinct from closeCalendar (which labels the X inside the popover) so translators can differentiate the toggle vs the close-X UI."
+  },
+  "@astryx.dateInput.clear": {
+    "defaultMessage": "Clear {label}",
+    "description": "Aria label for the clear-value button in DateInput / DateRangeInput / DateTimeInput. `{label}` is the field's own label so screen readers announce e.g. 'Clear Start date'."
+  },
+  "@astryx.dateTimeInput.timeSuffix": {
+    "defaultMessage": "{label} time",
+    "description": "Aria label suffix for the time slot in DateTimeInput. `{label}` is the field's own label."
+  },
   "@astryx.dateRangeInput.placeholder": {
     "defaultMessage": "Select date range",
     "description": "Default placeholder for DateRangeInput."
@@ -582,5 +598,149 @@
   "@astryx.typeahead.searchPlaceholder": {
     "defaultMessage": "Search…",
     "description": "Default placeholder for the Typeahead input."
+  },
+  "@astryx.banner.collapse": {
+    "defaultMessage": "Collapse",
+    "description": "Aria label and tooltip for the Banner expand/collapse toggle button when the banner is expanded."
+  },
+  "@astryx.banner.expand": {
+    "defaultMessage": "Expand",
+    "description": "Aria label and tooltip for the Banner expand/collapse toggle button when the banner is collapsed."
+  },
+  "@astryx.chatComposerDrawer.expand": {
+    "defaultMessage": "Expand {label}",
+    "description": "Aria label for the ChatComposerDrawer toggle when the drawer is collapsed. `label` is the drawer's visible label."
+  },
+  "@astryx.chatComposerDrawer.collapse": {
+    "defaultMessage": "Collapse {label}",
+    "description": "Aria label for the ChatComposerDrawer toggle when the drawer is expanded. `label` is the drawer's visible label."
+  },
+  "@astryx.chatLayout.newMessages": {
+    "defaultMessage": "New messages",
+    "description": "Label for the ChatLayout scroll-to-bottom pill when new messages have arrived below the viewport."
+  },
+  "@astryx.chatLayoutScrollButton.scrollToBottom": {
+    "defaultMessage": "Scroll to bottom",
+    "description": "Default label and aria-label for the ChatLayout scroll-to-bottom button."
+  },
+  "@astryx.chatMessage.messageFrom": {
+    "defaultMessage": "Message from {sender}",
+    "description": "Aria label for a ChatMessage article element when no visible sender name is rendered. `sender` is the sender identifier."
+  },
+  "@astryx.chatSendButton.stop": {
+    "defaultMessage": "Stop",
+    "description": "Label for the ChatSendButton while a response is streaming and the button acts as a stop control."
+  },
+  "@astryx.chatSendButton.send": {
+    "defaultMessage": "Send",
+    "description": "Label for the ChatSendButton when submitting a chat message."
+  },
+  "@astryx.chatTriggerMenu.suggestions": {
+    "defaultMessage": "Suggestions",
+    "description": "Default aria label for the trigger-menu listbox popover in the chat composer when a trigger does not supply its own menuLabel."
+  },
+  "@astryx.citation.label": {
+    "defaultMessage": "Citation {number}: {title}",
+    "description": "Aria label for a Citation element. `number` is the 1-based citation index; `title` is the source title (or the number as a string if no title is provided)."
+  },
+  "@astryx.codeBlock.copied": {
+    "defaultMessage": "Copied",
+    "description": "Aria label for the CodeBlock copy button immediately after the code has been copied."
+  },
+  "@astryx.codeBlock.copyCode": {
+    "defaultMessage": "Copy code",
+    "description": "Aria label for the CodeBlock copy button in its default (not-yet-copied) state."
+  },
+  "@astryx.codeBlock.code": {
+    "defaultMessage": "Code",
+    "description": "Fallback aria label for the CodeBlock scroll container when no language label is available."
+  },
+  "@astryx.fileInput.clearLabel": {
+    "defaultMessage": "Clear {label}",
+    "description": "Label for the FileInput clear button. `label` is the file input's own visible label."
+  },
+  "@astryx.lightbox.mediaViewer": {
+    "defaultMessage": "Media viewer",
+    "description": "Fallback aria label for the Lightbox dialog when the current media item has no alt text."
+  },
+  "@astryx.mobileNav.navigation": {
+    "defaultMessage": "Navigation",
+    "description": "Fallback aria label for the MobileNav dialog when no explicit label or string header is provided."
+  },
+  "@astryx.multiSelector.clearAll": {
+    "defaultMessage": "Clear all {label}",
+    "description": "Aria label for the MultiSelector clear-all button. `label` is the selector's own visible label."
+  },
+  "@astryx.numberInput.clearLabel": {
+    "defaultMessage": "Clear {label}",
+    "description": "Aria label for the NumberInput clear button. `label` is the input's own visible label."
+  },
+  "@astryx.selector.clearLabel": {
+    "defaultMessage": "Clear {label}",
+    "description": "Aria label for the Selector clear button. `label` is the selector's own visible label."
+  },
+  "@astryx.sideNavCollapseButton.expandSidebar": {
+    "defaultMessage": "Expand sidebar",
+    "description": "Default label for the SideNav collapse/expand button when the sidebar is currently collapsed."
+  },
+  "@astryx.sideNavCollapseButton.collapseSidebar": {
+    "defaultMessage": "Collapse sidebar",
+    "description": "Default label for the SideNav collapse/expand button when the sidebar is currently expanded."
+  },
+  "@astryx.sideNavItem.expand": {
+    "defaultMessage": "Expand {label}",
+    "description": "Aria label for the SideNavItem expand/collapse chevron when the item is collapsed. `label` is the nav item's visible label."
+  },
+  "@astryx.sideNavItem.collapse": {
+    "defaultMessage": "Collapse {label}",
+    "description": "Aria label for the SideNavItem expand/collapse chevron when the item is expanded. `label` is the nav item's visible label."
+  },
+  "@astryx.tableFiltering.filterByColumn": {
+    "defaultMessage": "Filter {header}",
+    "description": "Label, placeholder, and aria label for per-column filter controls in the Table filtering plugin. `header` is the column's header text."
+  },
+  "@astryx.tableGroupedRows.expandGroup": {
+    "defaultMessage": "Expand group {groupKey}",
+    "description": "Aria label for a Table grouped-row header chevron when the group is collapsed. `groupKey` is the group identifier."
+  },
+  "@astryx.tableGroupedRows.collapseGroup": {
+    "defaultMessage": "Collapse group {groupKey}",
+    "description": "Aria label for a Table grouped-row header chevron when the group is expanded. `groupKey` is the group identifier."
+  },
+  "@astryx.tableRowExpansion.collapseRow": {
+    "defaultMessage": "Collapse row",
+    "description": "Aria label for the Table row-expansion chevron when the row is currently expanded."
+  },
+  "@astryx.tableRowExpansion.expandRow": {
+    "defaultMessage": "Expand row",
+    "description": "Aria label for the Table row-expansion chevron when the row is currently collapsed."
+  },
+  "@astryx.tableRowExpansion.collapseAllRows": {
+    "defaultMessage": "Collapse all rows",
+    "description": "Aria label for the Table expand-all / collapse-all header button when all rows are currently expanded."
+  },
+  "@astryx.tableRowExpansion.expandAllRows": {
+    "defaultMessage": "Expand all rows",
+    "description": "Aria label for the Table expand-all / collapse-all header button when not all rows are currently expanded."
+  },
+  "@astryx.textInput.clearLabel": {
+    "defaultMessage": "Clear {label}",
+    "description": "Aria label for the TextInput clear button. `label` is the input's own visible label."
+  },
+  "@astryx.thumbnail.remove": {
+    "defaultMessage": "Remove {accessibleName}",
+    "description": "Label for the Thumbnail remove button. `accessibleName` is the thumbnail's accessible name (label, alt, or a combination)."
+  },
+  "@astryx.thumbnail.open": {
+    "defaultMessage": "Open {accessibleName}",
+    "description": "Aria label for the interactive Thumbnail's open button. `accessibleName` is the thumbnail's accessible name (label, alt, or a combination)."
+  },
+  "@astryx.timeInput.clearLabel": {
+    "defaultMessage": "Clear {label}",
+    "description": "Aria label for the TimeInput clear button. `label` is the input's own visible label."
+  },
+  "@astryx.token.remove": {
+    "defaultMessage": "Remove {label}",
+    "description": "Aria label for the Token remove button. `label` is the token's own visible label."
   }
 }

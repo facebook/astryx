@@ -1314,7 +1314,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           <button
             type="button"
             onClick={handleClear}
-            aria-label={`Clear all ${label}`}
+            aria-label={t('@astryx.multiSelector.clearAll', {label})}
             {...stylex.props(styles.clearButton)}>
             <Icon icon="close" size="sm" color="secondary" />
           </button>

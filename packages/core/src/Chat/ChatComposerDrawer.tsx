@@ -271,7 +271,11 @@ export function ChatComposerDrawer({
           role="button"
           tabIndex={0}
           aria-expanded={!isCollapsed}
-          aria-label={isCollapsed ? `Expand ${label}` : `Collapse ${label}`}
+          aria-label={
+            isCollapsed
+              ? t('@astryx.chatComposerDrawer.expand', {label})
+              : t('@astryx.chatComposerDrawer.collapse', {label})
+          }
           onClick={toggle}
           onKeyDown={e => {
             if (e.key === 'Enter' || e.key === ' ') {
