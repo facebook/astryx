@@ -554,6 +554,82 @@ describe('MultiSelector', () => {
     expect(screen.getByText('No results found')).toBeInTheDocument();
   });
 
+  describe('result announcements', () => {
+    it('announces the match count politely while searching', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      // "an" matches Banana and Orange.
+      await user.type(screen.getByRole('combobox', h), 'an');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('2 results');
+      });
+    });
+
+    it('announces the singular form when one option matches', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      // "app" matches only Apple. Anchored so it cannot pass on "1 results".
+      await user.type(screen.getByRole('combobox', h), 'app');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent(/^1 result$/);
+      });
+    });
+
+    it('announces "No results found" when nothing matches', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('No results found');
+      });
+    });
+
+    it('does not announce results until the user searches', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      // Popover closed: nothing announced.
+      expect(politeRegion()?.textContent ?? '').toBe('');
+      // Open with an empty query: still nothing announced.
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      expect(politeRegion()?.textContent ?? '').toBe('');
+    });
+  });
+
   it('renders with description', () => {
     render(
       <MultiSelector
@@ -1072,7 +1148,9 @@ describe('MultiSelector', () => {
           />
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
     });
   });
 });
