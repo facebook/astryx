@@ -180,7 +180,7 @@ const styles = stylex.create({
  * pass all three to `<Table>`.
  *
  * @example
- * ```tsx
+ * ```
  * const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
  * const grouped = useTableGroupedRows({
  *   data: rows,
