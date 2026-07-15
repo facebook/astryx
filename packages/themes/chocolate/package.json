@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/theme-chocolate",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "displayName": "Chocolate Theme",
   "private": false,
   "description": "Warm chocolate theme for Astryx — rich brown palette with Fraunces headings, Albert Sans body, and Lucide icons",
@@ -52,11 +52,11 @@
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@astryxdesign/core": "0.1.5",
+    "@astryxdesign/core": "0.1.6",
     "react": ">=19"
   },
   "devDependencies": {
-    "@astryxdesign/cli": "0.1.5"
+    "@astryxdesign/cli": "0.1.6"
   },
   "module": "./dist/source.mjs"
 }

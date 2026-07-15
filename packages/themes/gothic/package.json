@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/theme-gothic",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "displayName": "Gothic Theme",
   "private": false,
   "description": "Deep blue-grays and a signature display serif. Dramatic and editorial, for surfaces that want to be remembered.",
@@ -52,11 +52,11 @@
     "lucide-react": "^1.18.0"
   },
   "peerDependencies": {
-    "@astryxdesign/core": "0.1.5",
+    "@astryxdesign/core": "0.1.6",
     "react": ">=19"
   },
   "devDependencies": {
-    "@astryxdesign/cli": "0.1.5"
+    "@astryxdesign/cli": "0.1.6"
   },
   "module": "./dist/source.mjs"
 }

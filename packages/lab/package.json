@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/lab",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "description": "Experimental Astryx components — published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
   "author": "Meta Open Source",
@@ -57,7 +57,7 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.1.5",
+    "@astryxdesign/core": "0.1.6",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
   },

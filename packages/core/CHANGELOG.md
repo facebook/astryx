@@ -1,5 +1,29 @@
 # @xds/core
 
+# 0.1.6
+
+#### New Features
+
+- Add `useTableGroupedRows` — groups a flat data array into collapsible section rows. Each distinct `groupBy` value becomes a full-width section-header row with a chevron toggle, group label, and member count; collapsing hides that group's rows while keeping the header. Mirrors `useTableRowExpansionState`: the consumer owns the `collapsedGroups` set and the hook returns `{data, plugin, idKey}` (pass to `Table` data / plugins / idKey). Supports `renderGroupHeader` and `groupOrder`. (#3763)
+- Add `useTableRowIndex` — a plugin that prepends a right-aligned, monospaced row-number column. Numbering follows the rendered `data` order, so it reflects the current sort / filter / pagination view (pass the sorted/paged array). Provides `getRowKey` for stable keyed lookup, plus `label` and `startFrom` to customize the header and starting ordinal. (#3756)
+
+#### Fixes
+
+- Rebrand the core package `displayName` from "XDS Core" to "Astryx Core"
+  The core package's `displayName` still read "XDS Core". It surfaces in the docsite package sidebar and landing cards as the friendly package label, so this rebrands it to "Astryx Core" to match the Astryx migration. Metadata-only — the package `name` and public API are unchanged.
+- Compile dist with the production JSX transform — 0.1.5 shipped `jsxDEV`, which crashes every consumer that renders in production
+  `@babel/preset-react` 8 derives its `development` option from the Babel env name (`api.env(env => env === 'development')`), and Babel falls back to `"development"` whenever `NODE_ENV`/`BABEL_ENV` is unset. The bump from 7.29.7 to 8.0.1 therefore flipped the published build to the development JSX transform without any config change: 193 of 479 files in `@astryxdesign/core@0.1.5`'s `dist` import `react/jsx-dev-runtime` and call `jsxDEV`, which React's production build does not export.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @ejhammond
+- @fatwang2
+- @humbertovirtudes
+
+---
+
 # 0.1.5
 
 #### New Features
