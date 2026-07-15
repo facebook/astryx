@@ -9,13 +9,25 @@
  * SYNC: When FieldStatus.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {render, screen, waitFor} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
 import {FieldStatus} from './FieldStatus';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 const testStyles = stylex.create({
   custom: {color: 'rebeccapurple'},
+});
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
+function assertiveRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="assertive"]');
+}
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
 });
 
 describe('FieldStatus', () => {
@@ -29,47 +41,75 @@ describe('FieldStatus', () => {
     expect(screen.getByTestId('fs').tagName).toBe('DIV');
   });
 
-  describe('role semantics', () => {
-    // Errors are urgent — they get role="alert" so assistive tech interrupts.
-    it('uses role="alert" for error status', () => {
-      render(<FieldStatus type="error" message="msg" />);
-      expect(screen.getByRole('alert')).toHaveTextContent('msg');
-    });
-
-    // Non-error statuses are advisory — role="status" is a polite live region.
-    it('uses role="status" for warning status', () => {
-      render(<FieldStatus type="warning" message="msg" data-testid="fs" />);
-      expect(screen.getByTestId('fs')).toHaveAttribute('role', 'status');
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    });
-
-    it('uses role="status" for success status', () => {
-      render(<FieldStatus type="success" message="msg" data-testid="fs" />);
-      expect(screen.getByTestId('fs')).toHaveAttribute('role', 'status');
-    });
-  });
-
-  describe('aria-live politeness', () => {
-    // Error → assertive so screen readers announce immediately.
-    it('sets aria-live="assertive" for error', () => {
+  describe('screen-reader announcements', () => {
+    // The rendered element is NOT itself a live region: FieldStatus is
+    // conditionally mounted by every caller, and live regions born together
+    // with their content are not reliably announced. Announcements go through
+    // the persistent useAnnounce singletons instead.
+    it('does not carry role or aria-live on the rendered element', () => {
       render(<FieldStatus type="error" message="msg" data-testid="fs" />);
-      expect(screen.getByTestId('fs')).toHaveAttribute(
-        'aria-live',
-        'assertive',
-      );
+      const el = screen.getByTestId('fs');
+      expect(el).not.toHaveAttribute('role');
+      expect(el).not.toHaveAttribute('aria-live');
     });
 
-    it('sets aria-live="polite" for warning', () => {
-      render(<FieldStatus type="warning" message="msg" data-testid="fs" />);
-      expect(screen.getByTestId('fs')).toHaveAttribute('aria-live', 'polite');
+    // Errors are urgent — they interrupt via the assertive channel.
+    it('announces error messages assertively, including on first mount', async () => {
+      render(<FieldStatus type="error" message="This field is required" />);
+      await waitFor(() => {
+        expect(assertiveRegion()).toHaveTextContent('This field is required');
+      });
+      expect(politeRegion()).toHaveTextContent('');
     });
 
-    it('sets aria-live="polite" for success', () => {
-      render(<FieldStatus type="success" message="msg" data-testid="fs" />);
-      expect(screen.getByTestId('fs')).toHaveAttribute('aria-live', 'polite');
+    it('announces warning messages politely', async () => {
+      render(<FieldStatus type="warning" message="Check this value" />);
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Check this value');
+      });
+      expect(assertiveRegion()).toHaveTextContent('');
     });
 
-    // The element is a live region, never hidden from assistive tech.
+    it('announces success messages politely', async () => {
+      render(<FieldStatus type="success" message="Looks good" />);
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Looks good');
+      });
+    });
+
+    it('announces message changes', async () => {
+      const {rerender} = render(<FieldStatus type="error" message="First" />);
+      await waitFor(() => {
+        expect(assertiveRegion()).toHaveTextContent('First');
+      });
+      rerender(<FieldStatus type="error" message="Second" />);
+      await waitFor(() => {
+        expect(assertiveRegion()).toHaveTextContent('Second');
+      });
+    });
+
+    // Severity changes re-route the announcement to the matching channel.
+    it('re-routes to the polite channel when type changes from error', async () => {
+      const {rerender} = render(<FieldStatus type="error" message="msg" />);
+      await waitFor(() => {
+        expect(assertiveRegion()).toHaveTextContent('msg');
+      });
+      rerender(<FieldStatus type="success" message="msg" />);
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('msg');
+      });
+    });
+
+    it('does not announce an empty message', () => {
+      render(<FieldStatus type="error" message="" />);
+      // The live regions are created lazily on first announce; an empty
+      // message must not trigger one.
+      expect(assertiveRegion()).toBeNull();
+      expect(politeRegion()).toBeNull();
+    });
+
+    // The visible message stays perceivable by assistive tech (it is the
+    // aria-describedby target for the input).
     it('does not mark itself aria-hidden', () => {
       render(<FieldStatus type="error" message="msg" data-testid="fs" />);
       expect(screen.getByTestId('fs')).not.toHaveAttribute('aria-hidden');
@@ -245,20 +285,18 @@ describe('FieldStatus', () => {
       expect(screen.getByTestId('fs')).toHaveTextContent('Second');
     });
 
-    // Switching from error to a non-error type must relax both the role and
-    // the live-region politeness in lockstep.
-    it('relaxes role and aria-live when type changes from error', () => {
+    // The element must never regain live-region semantics when the type
+    // changes — announcements always flow through the persistent regions.
+    it('keeps the element role-free when type changes from error', () => {
       const {rerender} = render(
         <FieldStatus type="error" message="msg" data-testid="fs" />,
       );
-      let el = screen.getByTestId('fs');
-      expect(el).toHaveAttribute('role', 'alert');
-      expect(el).toHaveAttribute('aria-live', 'assertive');
+      expect(screen.getByTestId('fs')).not.toHaveAttribute('role');
 
       rerender(<FieldStatus type="success" message="msg" data-testid="fs" />);
-      el = screen.getByTestId('fs');
-      expect(el).toHaveAttribute('role', 'status');
-      expect(el).toHaveAttribute('aria-live', 'polite');
+      const el = screen.getByTestId('fs');
+      expect(el).not.toHaveAttribute('role');
+      expect(el).not.toHaveAttribute('aria-live');
     });
   });
 

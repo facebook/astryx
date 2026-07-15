@@ -4,7 +4,7 @@
 
 /**
  * @file TimeInput.tsx
- * @input Uses React, useId, useState, useCallback, useRef, Field, Icon, InputGroupContext
+ * @input Uses React, useId, useState, useCallback, useRef, Field, Icon, InputGroupContext, useAnnounce
  * @output Exports TimeInput component, TimeInputProps
  * @position Core implementation; consumed by index.ts, tested by TimeInput.test.tsx
  *
@@ -20,6 +20,7 @@ import {
   useId,
   useState,
   useCallback,
+  useEffect,
   useRef,
   useMemo,
   useOptimistic,
@@ -64,6 +65,7 @@ import {
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
@@ -369,6 +371,21 @@ export function TimeInput({
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
 
+  // In grouped mode the status message renders as a visually-hidden node that
+  // exists only for aria-describedby. Announce it through the persistent
+  // useAnnounce live regions instead of role/aria-live on that node — a live
+  // region mounted together with its content is not reliably announced.
+  // Ungrouped mode delegates to Field -> FieldStatus, which announces itself.
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (inputGroup && status?.message) {
+      announce(
+        status.message,
+        status.type === 'error' ? 'assertive' : 'polite',
+      );
+    }
+  }, [announce, inputGroup, status?.message, status?.type]);
+
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the input container (which already exists) and
   // the input stays perceivable via aria-disabled instead of the disabled
@@ -611,11 +628,7 @@ export function TimeInput({
         </VisuallyHidden>
       )}
       {inputGroup && status?.message && (
-        <VisuallyHidden
-          as="div"
-          id={statusMessageID}
-          role={status.type === 'error' ? 'alert' : 'status'}
-          aria-live={status.type === 'error' ? 'assertive' : 'polite'}>
+        <VisuallyHidden as="div" id={statusMessageID}>
           {status.message}
         </VisuallyHidden>
       )}

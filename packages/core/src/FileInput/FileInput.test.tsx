@@ -348,9 +348,10 @@ describe('FileInput', () => {
       fireEvent.change(fileInputEl(), {
         target: {files: [createFile('note.txt', 100)]},
       });
-      // A rejected selection creates no polite region (only the error goes to
-      // the existing role="status" region).
-      expect(politeRegion()).toBeNull();
+      // A rejected selection announces nothing politely. (The region pair may
+      // exist because the validation error itself is announced assertively via
+      // FieldStatus, but the polite channel must stay empty.)
+      expect(politeRegion()?.textContent ?? '').toBe('');
     });
   });
 
