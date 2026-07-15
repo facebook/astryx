@@ -25,7 +25,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {ButtonSize} from '../Button';
 import {SizeProvider, useSize} from '../SizeContext/SizeContext';
 import {useListFocus} from '../hooks/useListFocus';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {ButtonGroupContext} from './ButtonGroupContext';
 import type {ButtonGroupOrientation} from './ButtonGroupContext';
@@ -119,6 +119,7 @@ export function ButtonGroup({
   style,
   ref,
   'data-testid': testId,
+  onKeyDown,
   ...props
 }: ButtonGroupProps): ReactNode {
   const size = useSize(sizeProp, 'md');
@@ -138,11 +139,7 @@ export function ButtonGroup({
       <SizeProvider value={size}>
         <div
           ref={mergeRefs(ref, listRef)}
-          role="group"
-          aria-label={label}
-          onKeyDown={handleKeyDown}
-          aria-disabled={isDisabled || undefined}
-          data-testid={testId}
+          {...props}
           {...mergeProps(
             themeProps('button-group', {size, orientation}),
             stylex.props(
@@ -153,7 +150,11 @@ export function ButtonGroup({
             className,
             style,
           )}
-          {...props}>
+          role="group"
+          aria-label={label}
+          onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}
+          aria-disabled={isDisabled || undefined}
+          data-testid={testId}>
           {children}
         </div>
       </SizeProvider>

@@ -56,7 +56,7 @@ import {
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
-import {mergeProps} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import {
   computeDayCellState,
   computeRangeRounding,
@@ -216,6 +216,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
     xstyle,
     className,
     style,
+    onKeyDown,
     ...rest
   } = props;
 
@@ -418,14 +419,14 @@ export function Calendar({ref, ...props}: CalendarProps) {
   return (
     <div
       ref={ref}
+      {...rest}
       {...mergeProps(
         themeProps('calendar', {mode}),
         stylex.props(calendarStyles.calendar, xstyle),
         className,
         style,
       )}
-      onKeyDown={handleCalendarKeyDown}
-      {...rest}>
+      onKeyDown={composeEventHandlers(onKeyDown, handleCalendarKeyDown)}>
       {/* Header with navigation */}
       <div {...stylex.props(calendarStyles.header)}>
         <Button

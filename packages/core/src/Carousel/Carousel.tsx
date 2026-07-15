@@ -330,16 +330,16 @@ export function Carousel({
     <div
       ref={mergeRefs(ref, layer.ref as React.Ref<HTMLDivElement>)}
       data-testid={testId}
-      role="region"
-      aria-label={ariaLabel}
-      aria-roledescription="carousel"
+      {...htmlProps}
       {...mergeProps(
         themeProps('carousel'),
         stylex.props(styles.root, xstyle),
         className,
         style,
       )}
-      {...htmlProps}>
+      role="region"
+      aria-label={ariaLabel}
+      aria-roledescription="carousel">
       <div
         ref={composedRef}
         tabIndex={0}
