@@ -28,7 +28,7 @@ export default function OverlayBottomStrip() {
         ratio={16 / 9}
         style={{width: 420, maxWidth: '100%', borderRadius: 12, overflow: 'clip'}}>
         <img
-          src="https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png"
+          src="/template-assets/illustrative-horizontal-1.png"
           alt="Product highlight preview"
           style={{width: '100%', height: '100%', objectFit: 'cover'}}
         />

@@ -24,7 +24,7 @@ export default function OverlayShowcase() {
         ratio={16 / 9}
         style={{width: 520, maxWidth: '100%', borderRadius: 16, overflow: 'clip'}}>
         <img
-          src="https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png"
+          src="/template-assets/light-scene-horizontal-1.png"
           alt="Abstract landscape"
           style={{width: '100%', height: '100%', objectFit: 'cover'}}
         />

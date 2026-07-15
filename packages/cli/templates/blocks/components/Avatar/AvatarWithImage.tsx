@@ -9,22 +9,22 @@ export default function AvatarWithImage() {
   return (
     <Stack direction="horizontal" gap={4} vAlign="center">
       <Avatar
-        src="https://lookaside.facebook.com/assets/astryx/DATA-Ami-Pena.png"
+        src="/template-assets/DATA-Ami-Pena.png"
         name="Ami Pena"
         size="tiny"
       />
       <Avatar
-        src="https://lookaside.facebook.com/assets/astryx/DATA-Ana-Thomas.png"
+        src="/template-assets/DATA-Ana-Thomas.png"
         name="Ana Thomas"
         size="small"
       />
       <Avatar
-        src="https://lookaside.facebook.com/assets/astryx/DATA-Daniela-Gimenez.png"
+        src="/template-assets/DATA-Daniela-Gimenez.png"
         name="Daniela Gimenez"
         size="medium"
       />
       <Avatar
-        src="https://lookaside.facebook.com/assets/astryx/DATA-Gabriela-Fernandez.png"
+        src="/template-assets/DATA-Gabriela-Fernandez.png"
         name="Gabriela Fernandez"
         size="large"
       />

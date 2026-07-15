@@ -10,7 +10,7 @@ import {Stack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
 const BRIGHT_ROOM_IMAGE_URL =
-  'https://lookaside.facebook.com/assets/astryx/light-home-square-1.png';
+  '/template-assets/light-home-square-1.png';
 
 export default function MediaThemeLightScrim() {
   return (

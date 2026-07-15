@@ -17,7 +17,7 @@ import {Section} from '@astryxdesign/core/Section';
 import {ArrowRightIcon} from '@heroicons/react/20/solid';
 
 const IMAGE_URL =
-  'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png';
+  '/template-assets/light-scene-horizontal-1.png';
 
 const heroImage: CSSProperties = {
   width: '100%',

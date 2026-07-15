@@ -4,36 +4,50 @@ import {describe, it, expect} from 'vitest';
 import {stripTemplateAssetRefs, template} from './template.mjs';
 
 describe('stripTemplateAssetRefs', () => {
-  it('replaces a lookaside astryx image URL with an inline data URI', () => {
-    const src =
-      "const hero = 'https://lookaside.facebook.com/assets/astryx/colorful-home-horizontal-1.png';";
+  it('replaces a /template-assets image path with an inline data URI', () => {
+    const src = "const hero = '/template-assets/colorful-home-horizontal-1.png';";
     const out = stripTemplateAssetRefs(src);
-    expect(out).not.toContain('lookaside.facebook.com');
+    expect(out).not.toContain('/template-assets/');
     expect(out).toContain('data:image/svg+xml,');
   });
 
-  it('replaces a lookaside block-avatar image URL', () => {
-    const src =
-      'src="https://lookaside.facebook.com/assets/astryx/avatar-profile-05.jpg"';
+  it('replaces a /template-assets block-avatar image path', () => {
+    const src = 'src="/template-assets/avatar-profile-05.jpg"';
     const out = stripTemplateAssetRefs(src);
-    expect(out).not.toContain('lookaside.facebook.com');
+    expect(out).not.toContain('/template-assets/');
     expect(out).toContain('data:image/svg+xml,');
   });
 
-  it('replaces every lookaside reference, not just the first', () => {
+  it('replaces a /template-assets video path (non-image extension)', () => {
+    const src = "media={{src: '/template-assets/Nature-1.mp4'}}";
+    const out = stripTemplateAssetRefs(src);
+    expect(out).not.toContain('/template-assets/');
+    expect(out).toContain('data:image/svg+xml,');
+  });
+
+  it('replaces every /template-assets reference, not just the first', () => {
     const src = [
-      "'https://lookaside.facebook.com/assets/astryx/colorful-home-horizontal-1.png'",
-      "'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-3.png'",
-      "'https://lookaside.facebook.com/assets/astryx/moody-scene-horizontal-1.png'",
+      "'/template-assets/colorful-home-horizontal-1.png'",
+      "'/template-assets/illustrative-horizontal-3.png'",
+      "'/template-assets/moody-scene-horizontal-1.png'",
     ].join('\n');
     const out = stripTemplateAssetRefs(src);
-    expect(out).not.toContain('lookaside.facebook.com');
+    expect(out).not.toContain('/template-assets/');
     expect(out.match(/data:image\/svg\+xml,/g)).toHaveLength(3);
+  });
+
+  it('replaces intentionally-broken does-not-exist fixture paths', () => {
+    // AvatarFallbackChain uses these to demo the fallback chain; on scaffold
+    // they become the placeholder like any other demo asset.
+    const src = 'src="/template-assets/does-not-exist-primary.jpg"';
+    const out = stripTemplateAssetRefs(src);
+    expect(out).not.toContain('/template-assets/');
+    expect(out).toContain('data:image/svg+xml,');
   });
 
   it('preserves surrounding source structure', () => {
     const src =
-      "const data = [{src: 'https://lookaside.facebook.com/assets/astryx/x.png', alt: 'X'}];";
+      "const data = [{src: '/template-assets/x.png', alt: 'X'}];";
     const out = stripTemplateAssetRefs(src);
     expect(out).toContain("alt: 'X'");
     expect(out).toContain('const data = [{src:');

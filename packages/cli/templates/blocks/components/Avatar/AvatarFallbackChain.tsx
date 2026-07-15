@@ -11,7 +11,7 @@ export default function AvatarFallbackChain() {
     <VStack gap={4}>
       <HStack gap={3} vAlign="center">
         <Avatar
-          src="https://lookaside.facebook.com/assets/astryx/DATA-Daniela-Gimenez.png"
+          src="/template-assets/DATA-Daniela-Gimenez.png"
           name="Daniela Gimenez"
           size="medium"
         />
@@ -19,8 +19,8 @@ export default function AvatarFallbackChain() {
       </HStack>
       <HStack gap={3} vAlign="center">
         <Avatar
-          src="https://lookaside.facebook.com/assets/astryx/does-not-exist-primary.jpg"
-          fallbackSrc="https://lookaside.facebook.com/assets/astryx/DATA-Ami-Pena.png"
+          src="/template-assets/does-not-exist-primary.jpg"
+          fallbackSrc="/template-assets/DATA-Ami-Pena.png"
           name="Invalid User"
           size="medium"
         />
@@ -28,8 +28,8 @@ export default function AvatarFallbackChain() {
       </HStack>
       <HStack gap={3} vAlign="center">
         <Avatar
-          src="https://lookaside.facebook.com/assets/astryx/does-not-exist-primary.jpg"
-          fallbackSrc="https://lookaside.facebook.com/assets/astryx/does-not-exist-fallback.jpg"
+          src="/template-assets/does-not-exist-primary.jpg"
+          fallbackSrc="/template-assets/does-not-exist-fallback.jpg"
           name="Test User"
           size="medium"
         />
@@ -37,7 +37,7 @@ export default function AvatarFallbackChain() {
       </HStack>
       <HStack gap={3} vAlign="center">
         <Avatar
-          src="https://lookaside.facebook.com/assets/astryx/does-not-exist-primary.jpg"
+          src="/template-assets/does-not-exist-primary.jpg"
           size="medium"
         />
         <Text type="supporting">All invalid, no name</Text>

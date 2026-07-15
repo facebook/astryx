@@ -24,16 +24,14 @@ export interface ThemeShowcaseContent {
   inventory: InventoryRow[];
 }
 
-const IMAGE_CDN = 'https://lookaside.facebook.com/assets/astryx';
-
 // Matcha café — matcha-drink photos.
 const MATCHA_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/matcha-product-1.png`,
-  headphones: `${IMAGE_CDN}/matcha-product-2.png`,
-  backpack: `${IMAGE_CDN}/matcha-product-3.png`,
-  wallet: `${IMAGE_CDN}/matcha-product-5.png`,
-  tumbler: `${IMAGE_CDN}/matcha-product-4.png`,
-  throw_: `${IMAGE_CDN}/matcha-product-6.png`,
+  watch: '/images/matcha/preview-watch.png',
+  headphones: '/images/matcha/preview-headphones.png',
+  backpack: '/images/matcha/preview-backpack.png',
+  wallet: '/images/matcha/preview-wallet.png',
+  tumbler: '/images/matcha/preview-tumbler.png',
+  throw_: '/images/matcha/preview-throw.png',
 };
 
 const MATCHA_CONTENT: ThemeShowcaseContent = {
@@ -131,12 +129,12 @@ const MATCHA_CONTENT: ThemeShowcaseContent = {
 // Butter bakery — butter/breakfast photos. Only five Butter assets exist, so
 // the croissant is reused for the sixth slot.
 const BUTTER_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/Butter-Croissant.png`,
-  headphones: `${IMAGE_CDN}/Butter-Pancake.png`,
-  backpack: `${IMAGE_CDN}/Butter-Waffle.png`,
-  wallet: `${IMAGE_CDN}/Butter-Toast.png`,
-  tumbler: `${IMAGE_CDN}/Butter-Stick.png`,
-  throw_: `${IMAGE_CDN}/Butter-Croissant.png`,
+  watch: '/images/butter/preview-watch.png',
+  headphones: '/images/butter/preview-headphones.png',
+  backpack: '/images/butter/preview-backpack.png',
+  wallet: '/images/butter/preview-wallet.png',
+  tumbler: '/images/butter/preview-tumbler.png',
+  throw_: '/images/butter/preview-throw.png',
 };
 
 const BUTTER_CONTENT: ThemeShowcaseContent = {
@@ -233,12 +231,12 @@ const BUTTER_CONTENT: ThemeShowcaseContent = {
 
 // Stone homeware — stoneware photos on stone plinths.
 const STONE_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/Stone-bowl.png`,
-  headphones: `${IMAGE_CDN}/Stone-cup.png`,
-  backpack: `${IMAGE_CDN}/Stone-plate.png`,
-  wallet: `${IMAGE_CDN}/Stone-servingbowl.png`,
-  tumbler: `${IMAGE_CDN}/Stone-teapot.png`,
-  throw_: `${IMAGE_CDN}/Stone-vase.png`,
+  watch: '/images/stone/preview-watch.png',
+  headphones: '/images/stone/preview-headphones.png',
+  backpack: '/images/stone/preview-backpack.png',
+  wallet: '/images/stone/preview-wallet.png',
+  tumbler: '/images/stone/preview-tumbler.png',
+  throw_: '/images/stone/preview-throw.png',
 };
 
 const STONE_CONTENT: ThemeShowcaseContent = {
@@ -335,12 +333,12 @@ const STONE_CONTENT: ThemeShowcaseContent = {
 
 // Y2K trinkets — iridescent/holo objects.
 const Y2K_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/Y2K-Phone.png`,
-  headphones: `${IMAGE_CDN}/Y2K-Star.png`,
-  backpack: `${IMAGE_CDN}/Y2K-Butterfly.png`,
-  wallet: `${IMAGE_CDN}/Y2K-Heart.png`,
-  tumbler: `${IMAGE_CDN}/Y2K-Flower.png`,
-  throw_: `${IMAGE_CDN}/Y2K-Couch.png`,
+  watch: '/images/y2k/preview-watch.png',
+  headphones: '/images/y2k/preview-headphones.png',
+  backpack: '/images/y2k/preview-backpack.png',
+  wallet: '/images/y2k/preview-wallet.png',
+  tumbler: '/images/y2k/preview-tumbler.png',
+  throw_: '/images/y2k/preview-throw.png',
 };
 
 const Y2K_CONTENT: ThemeShowcaseContent = {
@@ -437,12 +435,12 @@ const Y2K_CONTENT: ThemeShowcaseContent = {
 
 // Gothic botanicals — moody single-stem floral photos.
 const GOTHIC_IMAGES: Record<string, string> = {
-  watch: `${IMAGE_CDN}/Gothic-1.png`,
-  headphones: `${IMAGE_CDN}/Gothic-2.png`,
-  backpack: `${IMAGE_CDN}/Gothic-3.png`,
-  wallet: `${IMAGE_CDN}/Gothic-4.png`,
-  tumbler: `${IMAGE_CDN}/Gothic-5.png`,
-  throw_: `${IMAGE_CDN}/Gothic-6.png`,
+  watch: '/images/gothic/preview-watch.png',
+  headphones: '/images/gothic/preview-headphones.png',
+  backpack: '/images/gothic/preview-backpack.png',
+  wallet: '/images/gothic/preview-wallet.png',
+  tumbler: '/images/gothic/preview-tumbler.png',
+  throw_: '/images/gothic/preview-throw.png',
 };
 
 const GOTHIC_CONTENT: ThemeShowcaseContent = {
