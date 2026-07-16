@@ -56,7 +56,7 @@ export function computeDayCellState(input: DayCellStateInput): DayCellState {
 
   return {
     effectivelyDisabled: isDisabled || isOutside,
-    isToday: plainDateIsEqual(date, today),
+    isToday: !isOutside && plainDateIsEqual(date, today),
     isSelected: !!(
       !isOutside &&
       mode === 'single' &&
