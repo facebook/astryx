@@ -226,7 +226,7 @@ export interface MyComponentProps extends HTMLAttributes<HTMLDivElement> {
  * Brief description of the component.
  *
  * @example
- * ```tsx
+ * ```
  * <MyComponent>Hello</MyComponent>
  * ```
  */
