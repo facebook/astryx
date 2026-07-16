@@ -191,7 +191,9 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
       const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
       if (!fs.existsSync(tsxPath)) continue;
       const doc = await loadDocModule(docPath);
-      const relPath = toPosixPath(path.relative(ext.blocksDir, path.dirname(docPath)));
+      const relPath = toPosixPath(
+        path.relative(ext.blocksDir, path.dirname(docPath)),
+      );
       blocks.push({
         type: 'block',
         dirName: basename,
@@ -210,6 +212,38 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
   }
 
   return blocks;
+}
+
+/**
+ * Blocks visible to showcase/example resolution: core blocks, legacy external
+ * blocks (package.json `astryx.blocks`), and integration `type: 'block'`
+ * templates (astryx.integration manifest). Integration blocks are folded in
+ * here — not in {@link discoverAllBlocks} — so template *resolution* (which
+ * already sees integration templates via {@link discoverIntegrationTemplates})
+ * doesn't double-count them, while showcase lookups can still find them.
+ */
+async function discoverShowcaseBlocks(cwd = process.cwd()) {
+  const [base, {templates}] = await Promise.all([
+    discoverAllBlocks(cwd),
+    discoverIntegrationTemplates(cwd),
+  ]);
+  const integrationBlocks = templates
+    .filter(t => t.type === 'block')
+    .map(t => ({
+      type: 'block',
+      dirName: t.dirName,
+      name: t.name,
+      description: t.description,
+      isReady: t.isReady ?? true,
+      aspectRatio: t.aspectRatio ?? 1,
+      componentsUsed: t.componentsUsed ?? [],
+      isShowcase: t.isShowcase ?? false,
+      filePath: t.filePath,
+      docPath: t.docPath,
+      category: t.category,
+      package: t.package,
+    }));
+  return [...base, ...integrationBlocks];
 }
 
 /**
@@ -394,6 +428,8 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       category: doc?.category || '',
       isReady: true,
       scaffold: false,
+      isShowcase: doc?.isShowcase ?? false,
+      aspectRatio: doc?.aspectRatio ?? 1,
       componentsUsed: doc?.componentsUsed ?? [],
       filePath: sourcePath,
       docPath,
@@ -405,7 +441,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
 }
 
 export async function findRelatedBlocks(componentName, cwd) {
-  const blocks = await discoverAllBlocks(cwd);
+  const blocks = await discoverShowcaseBlocks(cwd);
   return blocks.filter(b =>
     b.componentsUsed.some(c => c.toLowerCase() === componentName.toLowerCase()),
   );
@@ -418,7 +454,7 @@ export async function findRelatedBlocks(componentName, cwd) {
  *   Core blocks have no `package` field; external blocks have `package` set to the npm name.
  */
 export async function findShowcase(componentName, cwd, options) {
-  const blocks = await discoverAllBlocks(cwd);
+  const blocks = await discoverShowcaseBlocks(cwd);
   const lc = componentName.toLowerCase();
   const packageFilter = options?.package;
 

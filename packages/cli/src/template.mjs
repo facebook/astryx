@@ -35,6 +35,11 @@ export const BaseTemplateSchema = z
     category: z.string().optional(),
     componentsUsed: z.array(z.string()).optional(),
     preview: PreviewSchema.optional(),
+    // Showcase metadata (parity with core block docs). A block may mark itself
+    // the canonical showcase for the components it uses; `aspectRatio` sizes the
+    // rendered preview. Optional so ordinary example blocks omit them.
+    isShowcase: z.boolean().optional(),
+    aspectRatio: z.number().optional(),
   })
   .strict();
 

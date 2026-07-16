@@ -32,6 +32,9 @@ let tmpDir;
 const INTEGRATION_NAME = '@test/meta';
 const INTEGRATION_ISSUES = 'https://example.com/meta/issues';
 
+/** Absolute path to the CLI package so showcase docs can import /template. */
+const CLI_PKG = path.resolve(import.meta.dirname, '..', '..');
+
 /**
  * Build a consumer fixture:
  * - packages/core symlinked to the real @astryxdesign/core (loadDocs source)
@@ -40,7 +43,11 @@ const INTEGRATION_ISSUES = 'https://example.com/meta/issues';
  * Returns the absolute `components` dir so the Project.load mock can hand back a
  * resolved integration entry.
  */
-function createFixture({withSource = true, extraComponent = null} = {}) {
+function createFixture({
+  withSource = true,
+  extraComponent = null,
+  withShowcase = false,
+} = {}) {
   const realCoreDir = path.resolve(import.meta.dirname, '..', '..', '..', 'core');
   const coreDir = path.join(tmpDir, 'packages', 'core');
   fs.mkdirSync(path.dirname(coreDir), {recursive: true});
@@ -74,11 +81,37 @@ function createFixture({withSource = true, extraComponent = null} = {}) {
     );
   }
 
+  // Optional showcase block under a `templates` root, matching the CLI-served
+  // showcase model: a same-stem doc (isShowcase: true) + .tsx source, keyed to
+  // the component via componentsUsed. This is what lets an integration package
+  // contribute a component preview with no consumer-side registry.
+  let templatesDir;
+  if (withShowcase) {
+    templatesDir = path.join(intDir, 'blocks');
+    const scDir = path.join(templatesDir, 'AppShell');
+    fs.mkdirSync(scDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(scDir, 'MetaAppShellShowcase.doc.mjs'),
+      `import {createBlockTemplate} from '${CLI_PKG}/src/template.mjs';\n` +
+        `export default createBlockTemplate({\n` +
+        `  name: 'App Shell',\n` +
+        `  description: 'Showcase for MetaAppShell.',\n` +
+        `  isShowcase: true,\n` +
+        `  aspectRatio: 16 / 9,\n` +
+        `  componentsUsed: ['MetaAppShell'],\n` +
+        `});\n`,
+    );
+    fs.writeFileSync(
+      path.join(scDir, 'MetaAppShellShowcase.tsx'),
+      "'use client';\nexport default function MetaAppShellShowcase() { return null; }\n",
+    );
+  }
+
   const integration = {
     name: INTEGRATION_NAME,
     version: '1.2.3',
     components: compDir,
-    templates: undefined,
+    templates: templatesDir,
     codemods: undefined,
     issuesUrl: INTEGRATION_ISSUES,
   };
@@ -223,5 +256,36 @@ describe('component() — integration ownership via config', () => {
     expect(meta).toBeTruthy();
     expect(meta.package).toBe(INTEGRATION_NAME);
     expect(allEntries.some(e => e.package === CORE_PACKAGE)).toBe(true);
+  });
+
+  it('--showcase returns the integration showcase block for the component', async () => {
+    createFixture({withShowcase: true});
+    const result = await component('MetaAppShell', {
+      cwd: tmpDir,
+      showcase: true,
+      package: INTEGRATION_NAME,
+    });
+    expect(result.type).toBe('component.detail.showcase');
+    expect(result.data.component).toBe('MetaAppShell');
+    expect(result.data.aspectRatio).toBeCloseTo(16 / 9);
+    expect(result.data.source).toContain('MetaAppShellShowcase');
+  });
+
+  it('--showcase resolves via the integration scope even without --package', async () => {
+    createFixture({withShowcase: true});
+    const result = await component('MetaAppShell', {cwd: tmpDir, showcase: true});
+    expect(result.type).toBe('component.detail.showcase');
+    expect(result.data.component).toBe('MetaAppShell');
+  });
+
+  it('--showcase throws ERR_NO_SHOWCASE when the integration ships no showcase', async () => {
+    createFixture(); // no templates/blocks root
+    await expect(
+      component('MetaAppShell', {
+        cwd: tmpDir,
+        showcase: true,
+        package: INTEGRATION_NAME,
+      }),
+    ).rejects.toMatchObject({code: 'ERR_NO_SHOWCASE'});
   });
 });

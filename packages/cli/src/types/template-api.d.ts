@@ -35,7 +35,15 @@ export interface AstryxTemplateInput {
 /** Input accepted by {@link createPageTemplate} (no `type` field). */
 export type AstryxPageTemplateInput = AstryxTemplateInput;
 /** Input accepted by {@link createBlockTemplate} (no `type` field). */
-export type AstryxBlockTemplateInput = AstryxTemplateInput;
+export interface AstryxBlockTemplateInput extends AstryxTemplateInput {
+  /**
+   * Mark this block as the canonical showcase for the components it uses
+   * (`componentsUsed`). Docs surfaces render it as the component's hero preview.
+   */
+  isShowcase?: boolean;
+  /** Numeric aspect ratio for the rendered preview, e.g. `16 / 9`. */
+  aspectRatio?: number;
+}
 
 /** A validated page template doc. */
 export type AstryxPageTemplate = AstryxTemplateInput & {type: 'page'};

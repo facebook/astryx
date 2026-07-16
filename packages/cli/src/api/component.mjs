@@ -389,6 +389,24 @@ export async function component(name, options = {}) {
         }
         return {type: 'component.detail.source', data: {component: dirName, source: fs.readFileSync(owner.sourcePath, 'utf-8')}};
       }
+      // Showcase: served from the integration's own `templates` blocks (the
+      // same CLI-served model as core), discovered via findShowcase. This is
+      // what lets integration packages contribute component previews without a
+      // consumer-side registry.
+      if (showcase) {
+        const match = await findShowcase(dirName, cwd, {package: packageScope});
+        if (!match) {
+          throw new AstryxError(`No showcase found for "${name}" in package "${packageScope}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
+        }
+        return {
+          type: 'component.detail.showcase',
+          data: {
+            component: dirName,
+            aspectRatio: match.aspectRatio,
+            source: fs.readFileSync(match.filePath, 'utf-8'),
+          },
+        };
+      }
       const docs = await loadDocs(owner.docPath, {zh, dense, lang});
       if (props) {
         const p = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
@@ -458,8 +476,21 @@ export async function component(name, options = {}) {
       }
       return {type: 'component.detail.source', data: {component: dirName, source: fs.readFileSync(owner.sourcePath, 'utf-8')}};
     }
+    // Showcase served from the owning integration's `templates` blocks — scope
+    // the lookup to the owner so a same-named core showcase can't leak in.
     if (showcase) {
-      throw new AstryxError(`No showcase found for "${name}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
+      const match = await findShowcase(dirName, cwd, {package: owner.package});
+      if (!match) {
+        throw new AstryxError(`No showcase found for "${name}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
+      }
+      return {
+        type: 'component.detail.showcase',
+        data: {
+          component: dirName,
+          aspectRatio: match.aspectRatio,
+          source: fs.readFileSync(match.filePath, 'utf-8'),
+        },
+      };
     }
     const docs = await loadDocs(owner.docPath, {zh, dense, lang});
     if (props) {
