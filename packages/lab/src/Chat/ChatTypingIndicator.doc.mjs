@@ -6,7 +6,7 @@ export const docs = {
   name: 'ChatTypingIndicator',
   subComponentOf: 'Chat',
   displayName: 'Chat Typing Indicator',
-  description: 'Animated three-dot typing hint with a grammar-aware label: "Ana is typing…", "Ana and Ben are typing…", or "Ana and 2 others are typing…". Dots bounce with staggered stylex.keyframes delays, disabled under prefers-reduced-motion; the label is announced politely via role="status".',
+  description: 'Animated three-dot typing hint with a grammar-aware label: "Ana is typing...", "Ana and Ben are typing...", or "Ana and 2 others are typing...". Dots bounce with staggered stylex.keyframes delays, disabled under prefers-reduced-motion; the label is announced politely via role="status".',
   props: [
     {
       name: 'names',
@@ -19,7 +19,7 @@ export const docs = {
 export const docsZh = {
   name: 'ChatTypingIndicator',
   displayName: 'Chat Typing Indicator',
-  description: '带语法感知标签的三点跳动输入提示："Ana is typing…"、"Ana and Ben are typing…" 或 "Ana and 2 others are typing…"。圆点用 stylex.keyframes 交错跳动，prefers-reduced-motion 下禁用；标签通过 role="status" 礼貌播报。',
+  description: '带语法感知标签的三点跳动输入提示："Ana is typing..."、"Ana and Ben are typing..." 或 "Ana and 2 others are typing..."。圆点用 stylex.keyframes 交错跳动，prefers-reduced-motion 下禁用；标签通过 role="status" 礼貌播报。',
   propDescriptions: {
     names: '正在输入的人名。一个名字渲染 "is typing"，两个渲染双名，更多折叠为 "and N others"。省略或为空时仅渲染动画圆点。',
   },

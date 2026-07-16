@@ -147,6 +147,7 @@ export interface TopNavProps extends BaseProps<HTMLElement> {
   /**
    * Accessible label for the navigation landmark.
    * Helps screen readers identify the navigation area.
+   * @default 'Top navigation'
    */
   label?: string;
 }
@@ -176,7 +177,7 @@ export function TopNav({
   children,
   centerContent,
   endContent,
-  label,
+  label = 'Top navigation',
   xstyle,
   className,
   style,
@@ -294,9 +295,7 @@ export function TopNav({
       ) : (
         endContent && (
           <div {...stylex.props(styles.endContent)}>
-            <TopNavSlotContext value="end">
-              {endContent}
-            </TopNavSlotContext>
+            <TopNavSlotContext value="end">{endContent}</TopNavSlotContext>
           </div>
         )
       )}

@@ -23,6 +23,7 @@ import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {colorVars} from '../theme/tokens.stylex';
 
 const LazyXDSTooltip = lazy(async () =>
   import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
@@ -117,6 +118,18 @@ const styles = stylex.create({
     lineHeight: 'inherit',
     color: 'inherit',
     fontWeight: 'inherit',
+  },
+  // Visible focus ring for the tooltip tab stop, matching the repo-wide
+  // focus-visible outline treatment (see Token, Thumbnail).
+  focusable: {
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
   },
 });
 
@@ -431,8 +444,15 @@ export function Timestamp({
         aria-label={
           effectiveFormat === 'relative' ? fullAbsoluteText : undefined
         }
+        // The absolute-time tooltip is anchored here with the default 'auto'
+        // focus trigger, which only activates on focusable anchors. A bare
+        // <time> is not focusable, so without a tab stop sighted keyboard
+        // users could never reveal the tooltip (WCAG 1.4.13 / 2.1.1). Only
+        // add the tab stop while a tooltip is actually attached — no
+        // gratuitous tab stops otherwise.
+        tabIndex={showTooltip ? 0 : undefined}
         data-testid={testId}
-        {...stylex.props(styles.time)}>
+        {...stylex.props(styles.time, showTooltip && styles.focusable)}>
         {displayText}
       </time>
     </Text>

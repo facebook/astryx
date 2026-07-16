@@ -393,9 +393,11 @@ export function Switch({
   });
 
   // Build aria-describedby from description and status message
-  // Only include descriptionID when the element actually renders
+  // Only include descriptionID when the element actually renders.
+  // FieldLabel renders the description (with descriptionID) even when the
+  // label is visually hidden — it's sr-only, so keep it linked.
   const describedByParts: string[] = [];
-  if (description && !isLabelHidden) {
+  if (description) {
     describedByParts.push(descriptionID);
   }
   if (status?.message) {

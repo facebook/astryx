@@ -58,7 +58,7 @@ export const docs = {
       name: 'value',
       type: 'DateRange | null',
       description:
-        'Selected date range or null. Import the `DateRange` type from `@astryxdesign/core/DateRangeInput` — it is `{start: ISODateString, end: ISODateString}`. Do NOT redeclare your own DateRange type; use the exported one so TypeScript structurally matches.',
+        'Selected date range or null. Import the `DateRange` type from `@astryxdesign/core/DateRangeInput`; it is `{start: ISODateString, end: ISODateString}`. Do NOT redeclare your own DateRange type; use the exported one so TypeScript structurally matches.',
       required: true,
     },
     {
@@ -85,13 +85,13 @@ export const docs = {
       name: 'min',
       type: 'ISODateString',
       description:
-        'Minimum selectable date. `ISODateString` is a template literal type (`\\`${number}${number}${number}${number}-${number}${number}-${number}${number}\\``) — pass a string literal like `"2026-01-28"`, not a runtime string variable. Import it from `@astryxdesign/core/Calendar` or use `as ISODateString` if computing the value dynamically.',
+        'Minimum selectable date. `ISODateString` is a template literal type (`\\`${number}${number}${number}${number}-${number}${number}-${number}${number}\\``). Pass a string literal like `"2026-01-28"`, not a runtime string variable. Import it from `@astryxdesign/core/Calendar` or use `as ISODateString` if computing the value dynamically.',
     },
     {
       name: 'max',
       type: 'ISODateString',
       description:
-        'Maximum selectable date. Same template literal type as `min` — use a YYYY-MM-DD string literal or cast with `as ISODateString`.',
+        'Maximum selectable date. Same template literal type as `min`: use a YYYY-MM-DD string literal or cast with `as ISODateString`.',
     },
     {
       name: 'dateConstraints',
@@ -286,10 +286,10 @@ export const docsDense = {
     isDisabled: 'disable trigger+picker',
     disabledMessage:
       'reason shown in a tooltip on hover/focus when disabled; keeps trigger focusable via aria-disabled',
-    value: 'selected range {start, end} or null — import DateRange type from @astryxdesign/core/DateRangeInput (do not redeclare)',
+    value: 'selected range {start, end} or null; import DateRange type from @astryxdesign/core/DateRangeInput (do not redeclare)',
     onChange: 'callback on range change; null on clear',
-    min: 'min selectable date — ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
-    max: 'max selectable date — ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
+    min: 'min selectable date: ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
+    max: 'max selectable date: ISODateString template literal type (YYYY-MM-DD); use string literal or cast `as ISODateString`',
     dateConstraints: 'custom constraint fns to disable dates',
     presets: 'preset ranges as quick-select options',
     hasClear: 'clear button when range is set (default true)',

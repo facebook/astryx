@@ -197,6 +197,22 @@ describe('Switch', () => {
     expect(screen.getByLabelText('Toggle row')).toBeInTheDocument();
   });
 
+  it('keeps description linked via aria-describedby when isLabelHidden', () => {
+    render(
+      <Switch
+        label="Toggle row"
+        isLabelHidden
+        description="Enables sync for this row"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const switchEl = screen.getByRole('switch');
+    const description = screen.getByText('Enables sync for this row');
+    expect(description.id).not.toBe('');
+    expect(switchEl.getAttribute('aria-describedby')).toContain(description.id);
+  });
+
   it('shows label visually by default', () => {
     render(
       <Switch label="Enable notifications" value={false} onChange={() => {}} />,
