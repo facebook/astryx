@@ -30,6 +30,20 @@ export {
   ChatReasoning,
   type ChatReasoningProps,
 } from './ChatReasoning/ChatReasoning';
+export * from './Chat';
+
+// Drawer — experimental overlay panel
+export {Drawer, type DrawerProps} from './Drawer';
+
+// Stat — experimental KPI/metric display
+export {
+  Stat,
+  type StatProps,
+  type StatDelta,
+  type StatDeltaDirection,
+  type StatDeltaSentiment,
+  type StatSize,
+} from './Stat';
 
 // Schedule — experimental full-calendar views
 export * from './Schedule';
@@ -203,51 +217,15 @@ export {
   type SankeyContext,
 } from './Sankey';
 
-// Chart v2 — config model
-export {
-  Chart as ChartV2,
-  type ChartProps as ChartV2Props,
-  ChartLegend as ChartV2Legend,
-  type ChartLegendProps as ChartV2LegendProps,
-  type LegendItem as ChartV2LegendItem,
-  ChartAxis as ChartV2Axis,
-  type ChartAxisProps as ChartV2AxisProps,
-  ChartGrid as ChartV2Grid,
-  type ChartGridProps as ChartV2GridProps,
-  ChartSwatch as ChartV2Swatch,
-  swatchVariantForType as xdsChartV2SwatchVariantForType,
-  type ChartSwatchProps as ChartV2SwatchProps,
-  type ChartSwatchVariant as ChartV2SwatchVariant,
-  ChartTooltip as ChartV2Tooltip,
-  type ChartTooltipProps as ChartV2TooltipProps,
-  type ChartTooltipPlacement as ChartV2TooltipPlacement,
-  type TooltipSeriesValue as ChartV2TooltipSeriesValue,
-  bar,
-  line,
-  dot,
-  area,
-  band,
-  candlestick,
-  errorBar,
-  referenceLine,
-  dotGL,
-  dotGLInteractive,
-  heatmapGL,
-  streamGL,
-  useChartV2,
-  type SeriesDef,
-  type ChartV2Context,
-  type ChartPointerEvent,
-  type ResolvedPoint,
-  type ResolvedPositions,
-  type SeriesContext,
-  type ErrorBarOptions,
-  type ReferenceLineOptions,
-  type DotGLOptions,
-  type DotGLInteractiveOptions,
-  type HeatmapGLOptions,
-  type StreamGLOptions,
-  type StreamGLHandle,
-} from './ChartV2';
+// Chart v2 (config model) moved to its own package: @astryxdesign/charts.
+// It is no longer re-exported from @astryxdesign/lab.
 export * from './Stepper';
 export * from './CircularProgress';
+
+// LogStream — experimental streaming log viewer
+export {
+  LogStream,
+  type LogStreamProps,
+  type LogEntry,
+  type LogStreamLevel,
+} from './LogStream';

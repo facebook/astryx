@@ -6,14 +6,14 @@
  * Lists all codemods for the v0.1.5 release in the order they should run.
  */
 
-import migrateTableTablePropsToDirectProps, {
-  meta as migrateTableTablePropsToDirectPropsMeta,
-} from './migrate-table-tableprops-to-direct-props.mjs';
+import renameSwitchLabelSpacingDefaultToHug, {
+  meta as renameSwitchLabelSpacingDefaultToHugMeta,
+} from './rename-switch-label-spacing-default-to-hug.mjs';
 
 export default [
   {
-    name: 'migrate-table-tableprops-to-direct-props',
-    transform: migrateTableTablePropsToDirectProps,
-    meta: migrateTableTablePropsToDirectPropsMeta,
+    name: 'rename-switch-label-spacing-default-to-hug',
+    transform: renameSwitchLabelSpacingDefaultToHug,
+    meta: renameSwitchLabelSpacingDefaultToHugMeta,
   },
 ];

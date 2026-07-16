@@ -4,6 +4,7 @@
 
 import {useCallback, use, useEffect, useRef} from 'react';
 import {createRoot} from 'react-dom/client';
+import {dataAttr} from '../naming';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import {ToastViewport} from './ToastViewport';
 import type {
@@ -17,6 +18,45 @@ import type {
 let fallbackContext: ToastContextValue | null = null;
 let fallbackRoot: ReturnType<typeof createRoot> | null = null;
 let fallbackWarned = false;
+
+const ROOT_THEME_ATTRS = ['data-theme', dataAttr('theme')] as const;
+
+// The fallback container is a detached tree with no ThemeContext, so this
+// mirrors <html>'s theme attributes onto it directly (live via
+// MutationObserver) for the theme's @scope'd CSS to reach it. It's a
+// lifetime-of-app singleton that's never torn down, so there's nothing to
+// disconnect — this returns void.
+function syncRootThemeAttrs(container: HTMLElement): void {
+  const sync = () => {
+    let mirroredMode: string | null = null;
+    for (const attr of ROOT_THEME_ATTRS) {
+      const value = document.documentElement.getAttribute(attr);
+      if (value == null) {
+        container.removeAttribute(attr);
+      } else {
+        container.setAttribute(attr, value);
+        if (attr === 'data-theme') {
+          mirroredMode = value;
+        }
+      }
+    }
+    // Pages whose built theme CSS pins color-scheme unconditionally (#3658)
+    // would otherwise resolve light-dark() tokens by OS preference while the
+    // mirrored mode above follows the app theme; the inline style wins over
+    // that CSS.
+    if (mirroredMode === 'light' || mirroredMode === 'dark') {
+      container.style.colorScheme = mirroredMode;
+    } else {
+      container.style.removeProperty('color-scheme');
+    }
+  };
+  sync();
+  const observer = new MutationObserver(sync);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: [...ROOT_THEME_ATTRS],
+  });
+}
 
 function getFallbackContext(): ToastContextValue {
   if (fallbackContext) {
@@ -41,6 +81,7 @@ function getFallbackContext(): ToastContextValue {
   const container = document.createElement('div');
   container.setAttribute('data-astryx-toast-fallback', '');
   document.body.appendChild(container);
+  syncRootThemeAttrs(container);
 
   let resolveCtx: ((ctx: ToastContextValue) => void) | undefined;
   const ctxReady = new Promise<ToastContextValue>(r => {

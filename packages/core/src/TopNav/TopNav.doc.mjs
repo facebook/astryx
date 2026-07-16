@@ -17,7 +17,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-top-nav', states: ['mode']},
-      {className: 'astryx-top-nav-item', states: ['mode']},
+      {className: 'astryx-top-nav-item', states: ['mode', 'selected']},
       {className: 'astryx-top-nav-heading'},
       {className: 'astryx-top-nav-mega-menu', states: ['mode']},
       {className: 'astryx-top-nav-mega-menu-item', states: ['mode']},
@@ -109,6 +109,7 @@ export const docs = {
       name: 'label',
       type: 'string',
       description: 'Accessible label for the navigation landmark, applied as aria-label on the <nav> element.',
+      default: "'Top navigation'",
     },
     {
       name: 'xstyle',

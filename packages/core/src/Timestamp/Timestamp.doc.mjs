@@ -84,7 +84,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-timestamp', visualProps: ['type', 'color']},
+      {className: 'astryx-timestamp', visualProps: ['type', 'color', 'format']},
     ],
   },
   usage: {

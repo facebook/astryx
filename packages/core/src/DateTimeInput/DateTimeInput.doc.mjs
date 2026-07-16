@@ -118,7 +118,7 @@ export const docs = {
     },
     {
       name: 'timeIncrement',
-      type: 'number',
+      type: '1 | 5 | 10 | 15 | 30',
       description:
         'Minutes to add or subtract when using arrow keys in the time input.',
       default: '1',
@@ -413,7 +413,7 @@ export const docsZh = {
     },
     {
       name: 'timeIncrement',
-      type: 'number',
+      type: '1 | 5 | 10 | 15 | 30',
       description: '在时间输入中按箭头键时增减的分钟数。',
       default: '1',
     },
@@ -469,6 +469,7 @@ export const docsZh = {
       description:
         '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。',
     },
+
   ],
   theming: {
     targets: [

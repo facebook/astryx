@@ -309,6 +309,38 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('Lightbox declares an overlay playground with a closed initial state (#3657)', () => {
+    const core = components['@astryxdesign/core'];
+    const lightbox = core.find(c => c.name === 'Lightbox');
+    expect(lightbox).toBeDefined();
+    // Lightbox opens via showModal() and renders nothing while closed; without
+    // overlay mode the properties tab is an empty stage on load.
+    expect(lightbox!.playground?.overlay).toBe(true);
+    expect(lightbox!.playground?.defaults).toMatchObject({
+      isOpen: false,
+      media: {
+        src: expect.stringContaining('https://'),
+        alt: expect.any(String),
+      },
+    });
+  });
+
+  it('dialog-family components keep contained isInline previews, not overlay mode (#3657)', () => {
+    const core = components['@astryxdesign/core'];
+    for (const name of ['Dialog', 'AlertDialog', 'CommandPalette']) {
+      const entry = core.find(c => c.name === name);
+      expect(entry, name).toBeDefined();
+      // Intentional: the contained preview keeps knobs usable while the
+      // component is visible. Guard the half-migrated shape too — overlay
+      // with isOpen: true would never show the open trigger.
+      expect(entry!.playground?.overlay, name).toBeUndefined();
+      expect(entry!.playground?.defaults, name).toMatchObject({
+        isOpen: true,
+        isInline: true,
+      });
+    }
+  });
+
   it('Chat has many sub-components (standalone docs take priority over compound entries)', () => {
     const core = components['@astryxdesign/core'];
     // Chat compound doc has 14 sub-components, but ChatToolCalls and
@@ -898,8 +930,7 @@ describe('Card playground defaults', () => {
     const entry = coreComponent('ClickableCard');
     expect(entry).toBeDefined();
     const defaults = entry!.playground?.defaults as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     expect(defaults).toBeDefined();
     expect(typeof defaults!.label).toBe('string');
     expect(defaults!.href).toBeDefined();
@@ -912,8 +943,7 @@ describe('Card playground defaults', () => {
     const entry = coreComponent('SelectableCard');
     expect(entry).toBeDefined();
     const defaults = entry!.playground?.defaults as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     expect(defaults).toBeDefined();
     expect(typeof defaults!.label).toBe('string');
     expect(typeof defaults!.isSelected).toBe('boolean');

@@ -17,9 +17,13 @@ function primaryFamily(value: string): string {
   let depth = 0;
   for (let i = 0; i < value.length; i++) {
     const ch = value[i];
-    if (ch === '(') {depth++;}
-    else if (ch === ')') {depth--;}
-    else if (ch === ',' && depth === 0) {return value.slice(0, i).trim();}
+    if (ch === '(') {
+      depth++;
+    } else if (ch === ')') {
+      depth--;
+    } else if (ch === ',' && depth === 0) {
+      return value.slice(0, i).trim();
+    }
   }
   return value.trim();
 }
@@ -70,7 +74,6 @@ export function FontFamilyTokenTable({theme}: TokenTableProps) {
       ]}
       density="spacious"
       dividers="rows"
-      hasHover
     />
   );
 }
@@ -112,7 +115,6 @@ export function FontWeightTokenTable({theme}: TokenTableProps) {
       ]}
       density="spacious"
       dividers="rows"
-      hasHover
     />
   );
 }
@@ -154,7 +156,6 @@ export function FontSizeTokenTable({theme}: TokenTableProps) {
       ]}
       density="spacious"
       dividers="rows"
-      hasHover
     />
   );
 }

@@ -97,4 +97,59 @@ describe('ChatToolCalls', () => {
     );
     expect(screen.getByText('git status')).toBeInTheDocument();
   });
+
+  it('exposes no aria-expanded on a call row without resultDetail', () => {
+    const {container} = render(
+      <ChatToolCalls calls={[{name: 'bash', status: 'complete'}]} />,
+    );
+    expect(container.querySelector('[aria-expanded]')).toBeNull();
+  });
+
+  it('wires disclosure semantics on an expandable call row', () => {
+    render(
+      <ChatToolCalls
+        calls={[
+          {
+            name: 'readFile',
+            status: 'complete',
+            resultDetail: <div>file contents here</div>,
+          },
+        ]}
+      />,
+    );
+    const row = screen.getByRole('button');
+    expect(row).toHaveAttribute('aria-expanded', 'false');
+    // Detail panel is conditionally mounted, so no aria-controls while closed.
+    expect(row).not.toHaveAttribute('aria-controls');
+    expect(screen.queryByText('file contents here')).not.toBeInTheDocument();
+
+    fireEvent.click(row);
+
+    expect(row).toHaveAttribute('aria-expanded', 'true');
+    const detailId = row.getAttribute('aria-controls');
+    expect(detailId).toBeTruthy();
+    const panel = document.getElementById(detailId as string);
+    expect(panel).not.toBeNull();
+    expect(panel).toHaveTextContent('file contents here');
+  });
+
+  it('points the group header aria-controls at the content region', () => {
+    render(
+      <ChatToolCalls
+        defaultIsExpanded={true}
+        calls={[
+          {name: 'searchCode', status: 'complete'},
+          {name: 'readFile', status: 'complete'},
+        ]}
+      />,
+    );
+    const header = screen.getByRole('button');
+    expect(header).toHaveAttribute('aria-expanded', 'true');
+    const regionId = header.getAttribute('aria-controls');
+    expect(regionId).toBeTruthy();
+    const region = document.getElementById(regionId as string);
+    expect(region).not.toBeNull();
+    expect(region).toHaveTextContent('searchCode');
+    expect(region).toHaveTextContent('readFile');
+  });
 });

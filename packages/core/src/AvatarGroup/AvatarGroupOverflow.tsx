@@ -147,8 +147,8 @@ export function AvatarGroupOverflow({
         ref={ref as React.Ref<HTMLButtonElement>}
         type="button"
         onClick={onClick}
-        aria-label={label}
         {...rest}
+        aria-label={label}
         {...mergeProps(
           themeProps('avatar-group-overflow'),
           stylex.props(
@@ -171,8 +171,8 @@ export function AvatarGroupOverflow({
   return (
     <span
       ref={ref}
-      aria-label={label}
       {...rest}
+      aria-label={label}
       {...mergeProps(
         themeProps('avatar-group-overflow'),
         stylex.props(

@@ -57,7 +57,7 @@ export interface ScheduleMonthlyViewOptions {
 function ScheduleMonthlyView(
   _props: ScheduleViewComponentProps<ScheduleMonthlyViewOptions>,
 ) {
-  const {events, categories, date, focusDate, timezoneID, range, isLoading} =
+  const {events, categories, date, focusDate, timezoneID, range, isLoading, headingLevel} =
     useScheduleContext();
   const rangeDate = date.toPlainDate();
   const highlightedDate = focusDate.toPlainDate();
@@ -86,7 +86,7 @@ function ScheduleMonthlyView(
               aria-colindex={index + 1}
               {...stylex.props(styles.weekdayLabel)}>
               <Heading
-                level={4}
+                level={headingLevel}
                 color="secondary"
                 display="block"
                 xstyle={styles.weekdayHeading}>

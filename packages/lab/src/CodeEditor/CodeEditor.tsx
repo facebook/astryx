@@ -131,6 +131,8 @@ export interface CodeEditorProps extends Omit<
   onChange: (value: string) => void;
   /** Language for highlighting. @default "plaintext" */
   language?: string;
+  /** Label for the code editor — used as the accessible name of the editable region. */
+  label: string;
   /** Show line numbers. @default false */
   hasLineNumbers?: boolean;
   /** Read-only mode. @default false */
@@ -179,9 +181,10 @@ let editorInstanceCounter = 0;
  * auto-indent, tab insertion, and bracket auto-closing.
  *
  * @example
- * ```tsx
+ * ```
  * const [code, setCode] = useState('');
  * <CodeEditor
+ *   label="Source code"
  *   value={code}
  *   onChange={setCode}
  *   language="typescript"
@@ -199,6 +202,7 @@ export function CodeEditor({
   maxHeight,
   size = 'md',
   tokenizer: customTokenizer,
+  label,
   xstyle,
   className,
   style,
@@ -447,6 +451,7 @@ export function CodeEditor({
             contentEditable={isReadOnly ? false : ('plaintext-only' as any)}
             role="textbox"
             aria-multiline="true"
+            aria-label={label}
             aria-readonly={isReadOnly}
             spellCheck={false}
             onInput={handleInput}

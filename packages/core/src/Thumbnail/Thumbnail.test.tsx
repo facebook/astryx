@@ -37,10 +37,44 @@ describe('Thumbnail', () => {
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
-  it('uses label as accessible name on root', () => {
+  it('exposes the label as an accessible name via a valid group role', () => {
     render(<Thumbnail label="photo.png" data-testid="thumb" />);
-    expect(screen.getByTestId('thumb')).toHaveAttribute('aria-label', 'photo.png');
+    // The accessible name must be carried by a valid named role (group),
+    // not by a bare aria-label on a generic div (aria-prohibited-attr).
+    const group = screen.getByRole('group', {name: 'photo.png'});
+    expect(group).toBe(screen.getByTestId('thumb'));
   });
+
+  it('does not put aria-label on a generic (roleless) element', () => {
+    render(<Thumbnail label="photo.png" data-testid="thumb" />);
+    const thumb = screen.getByTestId('thumb');
+    // The labeled element must declare a role so the name is legitimate.
+    expect(thumb).toHaveAttribute('role', 'group');
+  });
+
+  it('keeps interactive children accessible while exposing the group name', () => {
+    const onRemove = vi.fn();
+    render(
+      <Thumbnail
+        src="/img.jpg"
+        alt="Clickable"
+        label="file.png"
+        onClick={vi.fn()}
+        onRemove={onRemove}
+      />,
+    );
+    // A group role (unlike img) must not hide descendant controls.
+    expect(
+      screen.getByRole('group', {name: 'file.png — Clickable'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Open file.png — Clickable'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Remove file.png — Clickable'}),
+    ).toBeInTheDocument();
+  });
+
 
   it('label is shown via tooltip, not as inline text', () => {
     render(<Thumbnail label="photo.png" data-testid="thumb" />);

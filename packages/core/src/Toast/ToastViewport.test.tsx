@@ -212,3 +212,67 @@ describe('ToastViewport region ARIA', () => {
     expect(region).not.toHaveAttribute('aria-modal');
   });
 });
+
+describe('toast timer lifecycle (#3589)', () => {
+  it('fires onHide exactly once when dismissed twice during the exit window', () => {
+    const onHide = vi.fn();
+    renderViewport(
+      <ShowToastButton options={{body: 'Once', onHide}} triggerLabel="Show" />,
+    );
+    act(() => {
+      fireEvent.click(screen.getByText('Show'));
+    });
+    const dismiss = screen.getByRole('button', {name: 'Dismiss notification'});
+    act(() => {
+      fireEvent.click(dismiss);
+    });
+    // The toast stays mounted during its exit transition; a second click
+    // lands on the same still-mounted button.
+    act(() => {
+      fireEvent.click(dismiss);
+    });
+    expect(onHide).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a window-blur pause alive when another toast arrives', () => {
+    vi.useFakeTimers();
+    try {
+      const onHide = vi.fn();
+      renderViewport(
+        <>
+          <ShowToastButton
+            options={{body: 'Paused', autoHideDuration: 3000, onHide}}
+            triggerLabel="Show A"
+          />
+          <ShowToastButton options={INFO_B} triggerLabel="Show B" />
+        </>,
+      );
+      act(() => {
+        fireEvent.click(screen.getByText('Show A'));
+      });
+      act(() => {
+        fireEvent.blur(window);
+      });
+      // A second toast arriving re-renders the viewport; the paused timer
+      // must not silently restart.
+      act(() => {
+        fireEvent.click(screen.getByText('Show B'));
+      });
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(onHide).not.toHaveBeenCalled();
+      // Focus returns: the remaining time resumes and completes normally.
+      act(() => {
+        fireEvent.focus(window);
+      });
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+      expect(onHide).toHaveBeenCalledTimes(1);
+      expect(onHide).toHaveBeenCalledWith('auto');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

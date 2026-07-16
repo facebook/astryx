@@ -189,7 +189,7 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-tokenizer', visualProps: ['size']},
+      {className: 'astryx-tokenizer', visualProps: ['size', 'status']},
     ],
   },
   usage: {
@@ -390,7 +390,7 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-tokenizer', visualProps: ['size']},
+      {className: 'astryx-tokenizer', visualProps: ['size', 'status']},
     ],
   },
   usage: {

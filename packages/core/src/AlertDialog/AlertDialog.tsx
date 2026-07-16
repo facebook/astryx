@@ -132,6 +132,7 @@ export function AlertDialog({
   className,
   style,
   'data-testid': testId,
+  ...rest
 }: AlertDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -142,6 +143,7 @@ export function AlertDialog({
 
   return (
     <Dialog
+      {...rest}
       ref={ref}
       isOpen={isOpen}
       isInline={isInline}

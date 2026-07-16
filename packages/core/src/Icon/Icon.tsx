@@ -281,12 +281,16 @@ function IconFromRegistry({
 
   return (
     <span
+      // Decorative by default, but placed BEFORE the prop spread so consumers
+      // can override it (e.g. `aria-hidden={false}` + `role="img"` +
+      // `aria-label`) to expose a meaningful standalone icon. This matches
+      // component-mode Icon, which already sets aria-hidden before its spread.
+      aria-hidden="true"
       {...(spanProps as React.HTMLAttributes<HTMLSpanElement>)}
       {...mergeProps(
         themeProps('icon', {size, color}),
         stylex.props(styles.span, colorStyles[color], spanSizeStyles[size]),
-      )}
-      aria-hidden="true">
+      )}>
       {resolvedIcon}
     </span>
   );

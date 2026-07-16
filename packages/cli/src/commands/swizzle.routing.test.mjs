@@ -277,3 +277,70 @@ describe('swizzle — ambiguous ownership', () => {
     expect(out).toContain(`from '@astryxdesign/core/theme'`);
   });
 });
+
+/**
+ * Build a fake @astryxdesign/core with a component that imports StyleX directly
+ * (so the swizzle StyleX-build note should fire) and one that doesn't.
+ */
+function buildStyleXCore(project) {
+  const core = path.join(project, 'node_modules', '@astryxdesign', 'core');
+  // StyleX component.
+  const styledDir = path.join(core, 'src', 'Styled');
+  fs.mkdirSync(styledDir, {recursive: true});
+  fs.writeFileSync(
+    path.join(core, 'package.json'),
+    '{"name":"@astryxdesign/core","version":"0.0.13"}',
+  );
+  fs.writeFileSync(
+    path.join(styledDir, 'Styled.tsx'),
+    [
+      `import * as stylex from '@stylexjs/stylex';`,
+      `const styles = stylex.create({base: {color: 'red'}});`,
+      `export const Styled = () => null;`,
+      '',
+    ].join('\n'),
+  );
+  // Plain component (no StyleX).
+  const plainDir = path.join(core, 'src', 'Plain');
+  fs.mkdirSync(plainDir, {recursive: true});
+  fs.writeFileSync(
+    path.join(plainDir, 'Plain.tsx'),
+    `export const Plain = () => null;\n`,
+  );
+  return core;
+}
+
+describe('swizzle — StyleX build setup note (#3373)', () => {
+  it('reports usesStyleX and prints a setup note for StyleX components', () => {
+    buildStyleXCore(project);
+    writeProjectPackageJson(project);
+
+    // JSON payload carries the machine-readable flag.
+    const jsonResult = runCli(['--json', 'swizzle', 'Styled', '-f'], project);
+    expect(jsonResult.code).toBe(0);
+    const env = JSON.parse(jsonResult.stdout);
+    expect(env.data.usesStyleX).toBe(true);
+
+    // Human output surfaces the compiler requirement + Next.js caveat.
+    const humanResult = runCli(['swizzle', 'Styled', '-f'], project);
+    expect(humanResult.code).toBe(0);
+    expect(humanResult.stdout).toMatch(/StyleX compiler/i);
+    expect(humanResult.stdout).toMatch(/unstyled/i);
+    expect(humanResult.stdout).toMatch(/next\/font/i);
+    expect(humanResult.stdout).toMatch(/astryx docs styling/);
+  });
+
+  it('does not print the StyleX note for components without StyleX', () => {
+    buildStyleXCore(project);
+    writeProjectPackageJson(project);
+
+    const jsonResult = runCli(['--json', 'swizzle', 'Plain', '-f'], project);
+    expect(jsonResult.code).toBe(0);
+    const env = JSON.parse(jsonResult.stdout);
+    expect(env.data.usesStyleX).toBe(false);
+
+    const humanResult = runCli(['swizzle', 'Plain', '-f'], project);
+    expect(humanResult.code).toBe(0);
+    expect(humanResult.stdout).not.toMatch(/StyleX compiler/i);
+  });
+});

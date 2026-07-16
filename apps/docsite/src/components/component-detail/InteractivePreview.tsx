@@ -134,12 +134,20 @@ function formatValue(
         if (typeof v === 'string') {
           return `${k}="${v}"`;
         }
-        return `${k}={${JSON.stringify(v)}}`;
+        try {
+          return `${k}={${JSON.stringify(v)}}`;
+        } catch {
+          return `${k}={/* ... */}`;
+        }
       })
       .join(' ');
     return `<${type} ${propStr} />`;
   }
-  return JSON.stringify(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '/* ... */';
+  }
 }
 
 function generateCode(name: string, state: Record<string, unknown>): string {

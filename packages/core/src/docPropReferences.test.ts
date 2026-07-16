@@ -16,8 +16,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {readdirSync} from 'fs';
-import {join, relative} from 'path';
+import {readdirSync} from 'node:fs';
+import {join, relative} from 'node:path';
 
 const SRC_DIR = __dirname;
 

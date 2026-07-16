@@ -479,6 +479,60 @@ describe('Tokenizer', () => {
       expect(screen.getByText('Charlie')).toBeInTheDocument();
     });
 
+    it('unfocusedLayer: RTL emits no justify-self into the inset-positioned popover', () => {
+      // The popover positions itself with explicit anchor() insets
+      // (positioning: 'custom'), so none of useLayer's placement-derived
+      // styles may reach it — an RTL justify-self with insets and no
+      // position-area would re-align the box inside the inset-modified
+      // containing block instead of hugging the anchor.
+      const original = window.getComputedStyle;
+      let root: HTMLElement | null = null;
+      const spy = vi
+        .spyOn(window, 'getComputedStyle')
+        .mockImplementation((el, pseudo) => {
+          const style = original(el, pseudo);
+          if (root && el instanceof Element && root.contains(el)) {
+            Object.defineProperty(style, 'direction', {
+              value: 'rtl',
+              configurable: true,
+            });
+          }
+          return style;
+        });
+
+      try {
+        const {container} = render(
+          <div style={{direction: 'rtl'}}>
+            <Tokenizer
+              label="Members"
+              searchSource={userSource}
+              value={[users[0], users[1], users[2]]}
+              onChange={() => {}}
+              tokenOverflowBehavior="unfocusedLayer"
+              data-testid="tokenizer"
+            />
+          </div>,
+        );
+        root = container.firstElementChild as HTMLElement;
+
+        fireEvent.focusIn(screen.getByTestId('tokenizer'));
+        expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+
+        const popover = container.querySelector('[popover]');
+        const style = popover?.getAttribute('style') ?? '';
+        // jsdom drops anchor() values for known properties (top/left), so
+        // anchor the positive check on position-anchor instead. The negative
+        // checks are meaningful: jsdom serializes both justify-self and
+        // position-area when emitted (the DropdownMenu RTL test relies on it).
+        expect(style).toContain('position-anchor');
+        expect(style).not.toContain('justify-self');
+        expect(style).not.toContain('position-area');
+        expect(style).not.toContain('position-try-fallbacks');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
     it('unfocusedLayer: collapses on blur', () => {
       const {container} = render(
         <Tokenizer

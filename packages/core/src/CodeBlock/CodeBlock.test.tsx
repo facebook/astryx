@@ -9,10 +9,15 @@
  * SYNC: When CodeBlock.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {CodeBlock} from './CodeBlock';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {dracula} from '../theme/syntax';
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
 
 // A code sample long enough to exceed the default collapsible threshold (10).
 const LONG_CODE = Array.from(
@@ -26,6 +31,10 @@ describe('CodeBlock', () => {
     Object.assign(navigator, {
       clipboard: {writeText: vi.fn().mockResolvedValue(undefined)},
     });
+  });
+
+  afterEach(() => {
+    __resetLiveRegionsForTest();
   });
 
   it('renders the code', () => {
@@ -52,6 +61,50 @@ describe('CodeBlock', () => {
     const copyButton = screen.getByRole('button', {name: 'Copy code'});
     fireEvent.click(copyButton);
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith('const x = 1;');
+  });
+
+  it('announces "Copied" to a polite live region after copying', async () => {
+    render(<CodeBlock code="const x = 1;" language="javascript" />);
+    const copyButton = screen.getByRole('button', {name: 'Copy code'});
+    fireEvent.click(copyButton);
+    await waitFor(() => {
+      expect(politeRegion()).toHaveTextContent('Copied');
+    });
+  });
+
+  it('keeps the copied indicator a full 2s after a rapid re-copy', async () => {
+    vi.useFakeTimers();
+    try {
+      render(<CodeBlock code="const x = 1;" language="javascript" />);
+      fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+      // Flush the async clipboard write.
+      await act(async () => {});
+      expect(screen.getByRole('button', {name: 'Copied'})).toBeInTheDocument();
+
+      // 1.5s later the user copies again.
+      act(() => {
+        vi.advanceTimersByTime(1500);
+      });
+      fireEvent.click(screen.getByRole('button', {name: 'Copied'}));
+      await act(async () => {});
+
+      // 600ms after the second copy (2.1s after the first): the first
+      // click's timer must not have reverted the indicator early.
+      act(() => {
+        vi.advanceTimersByTime(600);
+      });
+      expect(screen.getByRole('button', {name: 'Copied'})).toBeInTheDocument();
+
+      // It resets 2s after the most recent copy.
+      act(() => {
+        vi.advanceTimersByTime(1400);
+      });
+      expect(
+        screen.getByRole('button', {name: 'Copy code'}),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('does NOT collapse the block when the copy button is clicked', () => {
@@ -112,6 +165,49 @@ describe('CodeBlock', () => {
     expect(header).toHaveAttribute('aria-expanded', 'true');
     fireEvent.click(header);
     expect(header).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('links the collapsible header to its code region via aria-controls', () => {
+    render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+    const controlsId = header.getAttribute('aria-controls');
+    // aria-controls must be present and point at the real code region.
+    expect(controlsId).toBeTruthy();
+    const region = document.getElementById(controlsId as string);
+    expect(region).not.toBeNull();
+    // The region contains the scrollable code body (role="group").
+    expect(region).toContainElement(screen.getByRole('group'));
+  });
+
+  it('keeps aria-controls resolvable when collapsed (region stays mounted)', () => {
+    render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+    fireEvent.click(header);
+    expect(header).toHaveAttribute('aria-expanded', 'false');
+    // The code region uses a CSS grid animation to collapse, so it stays in
+    // the DOM — aria-controls stays a valid, resolvable reference (unlike a
+    // conditionally-mounted region, which would need a conditional attribute).
+    const controlsId = header.getAttribute('aria-controls');
+    expect(controlsId).toBeTruthy();
+    expect(document.getElementById(controlsId as string)).not.toBeNull();
   });
 
   it('applies a per-instance syntax theme via the syntaxTheme prop', () => {

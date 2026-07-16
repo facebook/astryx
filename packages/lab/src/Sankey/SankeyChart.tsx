@@ -107,15 +107,14 @@ function resolveColumnCount(
  * Width is responsive but enforces minColumnWidth — scrolls when needed.
  *
  * @example
- * ```tsx
+ * ```
  * <SankeyChart
  *   nodes={nodes}
  *   links={links}
  *   columns={[
  *     {ids: ['a', 'b'], label: 'Source'},
  *     {ids: ['c', 'd'], label: 'Target'},
- *   ]}
- * >
+ *   ]}>
  *   <SankeyGrid />
  *   <SankeyLink />
  *   <SankeyNode />
@@ -202,6 +201,9 @@ export function SankeyChart({
     <div ref={containerRef} style={{width: '100%'}}>
       {ctx && (
         <div
+          role={needsScroll ? 'group' : undefined}
+          aria-label={needsScroll ? 'Sankey chart' : undefined}
+          tabIndex={needsScroll ? 0 : undefined}
           style={
             needsScroll ? {overflowX: 'auto', overflowY: 'hidden'} : undefined
           }>

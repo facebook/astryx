@@ -10,8 +10,8 @@
  * package so consumers do not get parallel implementations.
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const CORE_SRC = path.join(ROOT, 'packages/core/src');

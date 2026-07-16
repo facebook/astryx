@@ -449,6 +449,17 @@ describe('installAgentDocs', () => {
     expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
   });
 
+  it('respects --agent hermes preset: creates AGENTS.md', () => {
+    setupCorePackage(tmpDir);
+
+    const written = installAgentDocs(tmpDir, {agent: 'hermes'});
+
+    expect(written).toEqual(['AGENTS.md']);
+    const content = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
+    expect(content).toContain('<!-- ASTRYX:START -->');
+    expect(fs.existsSync(path.join(tmpDir, '.claude'))).toBe(false);
+  });
+
   it('respects explicit --paths', () => {
     setupCorePackage(tmpDir);
 
@@ -547,5 +558,27 @@ describe('resolveAgentPaths', () => {
     expect(result.inject).toEqual([]);
     expect(result.create).toContain('AGENTS.md');
     expect(result.create).toContain('.claude/CLAUDE.md');
+  });
+
+  it('hermes preset creates AGENTS.md when nothing exists', () => {
+    const result = resolveAgentPaths(tmpDir, 'hermes');
+    expect(result).toEqual({inject: [], create: ['AGENTS.md']});
+  });
+
+  it('hermes preset finds existing .hermes.md', () => {
+    fs.writeFileSync(path.join(tmpDir, '.hermes.md'), '');
+    const result = resolveAgentPaths(tmpDir, 'hermes');
+    expect(result).toEqual({inject: ['.hermes.md'], create: []});
+  });
+
+  it('hermes preset finds existing HERMES.md when no .hermes.md', () => {
+    fs.writeFileSync(path.join(tmpDir, 'HERMES.md'), '');
+    const result = resolveAgentPaths(tmpDir, 'hermes');
+    expect(result).toEqual({inject: ['HERMES.md'], create: []});
+  });
+
+  it('claude preset still creates .claude/CLAUDE.md when nothing exists (hermes is additive)', () => {
+    const result = resolveAgentPaths(tmpDir, 'claude');
+    expect(result).toEqual({inject: [], create: ['.claude/CLAUDE.md']});
   });
 });

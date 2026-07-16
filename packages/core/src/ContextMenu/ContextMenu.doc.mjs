@@ -78,6 +78,21 @@ export const docs = {
       { guidance: false, description: 'Place more than 10–12 items in a single menu without grouping them into sections.' },
     ],
   },
+  playground: {
+    defaults: {
+      children: {
+        __element: 'Card',
+        props: {padding: 6},
+        children: {__element: 'Text', props: {color: 'secondary'}, children: 'Right-click this area'},
+      },
+      items: [
+        {label: 'Edit'},
+        {label: 'Duplicate'},
+        {type: 'divider'},
+        {label: 'Delete'},
+      ],
+    },
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */

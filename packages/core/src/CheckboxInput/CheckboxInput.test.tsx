@@ -167,6 +167,59 @@ describe('CheckboxInput', () => {
     expect(handleChange).not.toHaveBeenCalled();
   });
 
+  it('forwards data-testid to the input', () => {
+    render(
+      <CheckboxInput
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+        data-testid="accept-terms-checkbox"
+      />,
+    );
+    expect(screen.getByTestId('accept-terms-checkbox')).toBe(
+      screen.getByRole('checkbox'),
+    );
+  });
+
+  it('forwards arbitrary data-* attributes to the input', () => {
+    render(
+      <CheckboxInput
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+        data-tracking-id="checkbox-42"
+      />,
+    );
+    expect(screen.getByRole('checkbox')).toHaveAttribute(
+      'data-tracking-id',
+      'checkbox-42',
+    );
+  });
+
+  it('does not let rest props override checked, disabled, or type', () => {
+    // Not part of CheckboxInputProps; spread (rather than named attributes)
+    // to sidestep JSX excess-property checks the same way a real caller's
+    // spread rest-props object would arrive untyped at runtime.
+    const foreignAttrs: Record<string, unknown> = {
+      checked: false,
+      disabled: false,
+      type: 'text',
+    };
+    render(
+      <CheckboxInput
+        {...foreignAttrs}
+        label="Accept terms"
+        value={true}
+        onChange={() => {}}
+        isDisabled
+      />,
+    );
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toBeChecked();
+    expect(checkbox).toBeDisabled();
+    expect(checkbox).toHaveAttribute('type', 'checkbox');
+  });
+
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(
@@ -193,6 +246,22 @@ describe('CheckboxInput', () => {
     expect(label).toBeInTheDocument();
     // Label should still be accessible
     expect(screen.getByLabelText('Select row')).toBeInTheDocument();
+  });
+
+  it('keeps description linked via aria-describedby when isLabelHidden', () => {
+    render(
+      <CheckboxInput
+        label="Select row"
+        isLabelHidden
+        description="Selects this row for bulk actions"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const checkbox = screen.getByRole('checkbox');
+    const description = screen.getByText('Selects this row for bulk actions');
+    expect(description.id).not.toBe('');
+    expect(checkbox.getAttribute('aria-describedby')).toContain(description.id);
   });
 
   it('shows label visually by default', () => {
@@ -396,7 +465,12 @@ describe('CheckboxInput', () => {
     it('submits under htmlName when checked', () => {
       const {container} = render(
         <form>
-          <CheckboxInput label="Terms" htmlName="terms" value={true} onChange={() => {}} />
+          <CheckboxInput
+            label="Terms"
+            htmlName="terms"
+            value={true}
+            onChange={() => {}}
+          />
         </form>,
       );
       const data = new FormData(container.querySelector('form')!);
@@ -416,16 +490,25 @@ describe('CheckboxInput', () => {
           />
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
     });
 
     it('submits nothing when unchecked', () => {
       const {container} = render(
         <form>
-          <CheckboxInput label="Terms" htmlName="terms" value={false} onChange={() => {}} />
+          <CheckboxInput
+            label="Terms"
+            htmlName="terms"
+            value={false}
+            onChange={() => {}}
+          />
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
     });
   });
 });

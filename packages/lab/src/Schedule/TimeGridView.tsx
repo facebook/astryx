@@ -65,7 +65,7 @@ export function TimeGridView({
   maxHour: number;
   hourHeight: number;
 }) {
-  const {categories} = useScheduleContext();
+  const {categories, headingLevel} = useScheduleContext();
   const normalizedMinHour = Math.max(0, Math.min(23, Math.floor(minHour)));
   const normalizedMaxHour = Math.max(
     normalizedMinHour + 1,
@@ -114,7 +114,7 @@ export function TimeGridView({
                 index === days.length - 1 && styles.timeGridHeaderCellLast,
               )}>
               <Heading
-                level={4}
+                level={headingLevel}
                 color="secondary"
                 display="block"
                 xstyle={styles.timeGridHeaderHeading}>

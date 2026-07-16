@@ -9,11 +9,12 @@
  * - Claude Code: CLAUDE.md (root) or .claude/CLAUDE.md
  * - Cursor: .cursorrules
  * - Codex/generic: AGENTS.md
+ * - Hermes Agent: .hermes.md or HERMES.md (existing), else AGENTS.md
  *
  * Auto-detect: discovers existing files and updates them in place.
  * Default (no existing files): creates .claude/CLAUDE.md.
  *
- * --agent <tool>: target a specific tool preset (claude, cursor, codex, all)
+ * --agent <tool>: target a specific tool preset (claude, cursor, codex, hermes, all)
  * --agent-docs-path <path>: explicit file path(s)
  */
 
@@ -46,6 +47,7 @@ const AGENT_PRESETS = {
   claude: [CLAUDE_MD, CLAUDE_DIR_MD],
   cursor: ['.cursorrules', AGENTS_MD],
   codex: [AGENTS_MD],
+  hermes: ['.hermes.md', 'HERMES.md', AGENTS_MD],
 };
 
 /**
@@ -64,7 +66,7 @@ export function discoverAgentDocs(targetDir) {
  * Searches for existing files first, falls back to default creation path.
  *
  * @param {string} targetDir
- * @param {string} agent - Preset name: 'claude', 'cursor', 'codex', 'all'
+ * @param {string} agent - Preset name: 'claude', 'cursor', 'codex', 'hermes', 'all'
  * @returns {{inject: string[], create: string[]}} Files to inject into vs create fresh
  */
 export function resolveAgentPaths(targetDir, agent) {
@@ -386,7 +388,7 @@ export function removeAgentDocs(targetDir) {
  * @param {object} [options]
  * @param {boolean} [options.zh]
  * @param {string} [options.lang]
- * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'all'
+ * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'hermes', 'all'
  * @param {string[]} [options.paths] - Explicit paths (overrides agent/auto-detect)
  * @param {boolean} [options.onlyReplace] - Only update files that already have Astryx markers (for upgrades)
  * @returns {string[]} List of files written
@@ -468,14 +470,14 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
   return written;
 }
 
-const VALID_AGENTS = ['claude', 'cursor', 'codex', 'all'];
+const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'all'];
 
 export function registerAgentDocs(program) {
   program
     .command('agent-docs')
     .description('Install/update the component index for AI coding agents')
     .option('--remove', 'Remove the design system section from all agent doc files')
-    .option('--agent <tool>', 'Target tool: claude, cursor, codex, all')
+    .option('--agent <tool>', 'Target tool: claude, cursor, codex, hermes, all')
     .option('--agent-docs-path <path...>', 'Explicit file path(s) to write to')
     .action(options => {
       const targetDir = process.cwd();

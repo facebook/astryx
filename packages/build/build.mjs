@@ -9,7 +9,7 @@
  * so we must ship compiled JS.
  */
 import {buildSync} from 'esbuild';
-import {readFileSync, writeFileSync} from 'fs';
+import {readFileSync, writeFileSync} from 'node:fs';
 import {execSync} from 'node:child_process';
 
 buildSync({

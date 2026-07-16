@@ -46,7 +46,7 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {Heading} from '../Heading/Heading';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 
@@ -284,9 +284,11 @@ export function MobileNav({
   label,
   'data-testid': testId,
   xstyle,
-  className: _className,
-  style: _style,
+  className,
+  style,
+  onClick: onClickProp,
   ref,
+  ...rest
 }: MobileNavProps) {
   // Read from AppShell context as fallback
   const appShellMobile = useAppShellMobile();
@@ -407,10 +409,6 @@ export function MobileNav({
   return (
     <dialog
       ref={mergeRefs(ref, dialogRef)}
-      data-testid={testId}
-      aria-label={label ?? (typeof header === 'string' ? header : 'Navigation')}
-      onClick={handleDialogClick}
-      onCancel={handleCancel}
       {...mergeProps(
         themeProps('mobile-nav', {side: resolvedSide}),
         stylex.props(
@@ -420,7 +418,14 @@ export function MobileNav({
           isOpen && styles.backdropOpen,
           xstyle,
         ),
-      )}>
+        className,
+        style,
+      )}
+      {...rest}
+      data-testid={testId}
+      aria-label={label ?? (typeof header === 'string' ? header : 'Navigation')}
+      onClick={composeEventHandlers(onClickProp, handleDialogClick)}
+      onCancel={handleCancel}>
       {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}
       <div
         tabIndex={-1}

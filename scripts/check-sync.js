@@ -13,8 +13,8 @@
  * 3. Every component with a showcase dir has a SYNC reference to it
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const CORE_SRC = path.join(ROOT, 'packages/core/src');

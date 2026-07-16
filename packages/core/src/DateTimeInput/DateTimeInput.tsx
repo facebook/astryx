@@ -86,6 +86,9 @@ export type DateTimeInputHourFormat = '12h' | '24h';
 
 export type DateTimeInputSize = 'sm' | 'md' | 'lg';
 
+/** Supported minute increments for arrow-key stepping of the time field. */
+export type DateTimeInputTimeIncrement = 1 | 5 | 10 | 15 | 30;
+
 export type {
   InputStatus as DateTimeInputStatus,
   InputStatusType as DateTimeInputStatusType,
@@ -287,10 +290,11 @@ export interface DateTimeInputProps extends Omit<
   hourFormat?: DateTimeInputHourFormat;
 
   /**
-   * Time increment in minutes when using arrow keys in the time input.
+   * Minutes added or subtracted when stepping the time field with the arrow
+   * keys. Constrained to a set of sensible increments.
    * @default 1
    */
-  timeIncrement?: number;
+  timeIncrement?: DateTimeInputTimeIncrement;
 
   /**
    * Whether to show a clear button when a value is set.
@@ -987,10 +991,12 @@ export function DateTimeInput({
             aria-disabled={showsDisabledMessage ? 'true' : undefined}
             readOnly={showsDisabledMessage || undefined}
             aria-label={timeLabel ?? `${label} time`}
+            aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={
               status?.type === 'error' || !isTimeInputValid ? 'true' : undefined
             }
+            aria-busy={isBusy || undefined}
             {...stylex.props(
               styles.input,
               isEffectivelyDisabled && styles.inputDisabled,

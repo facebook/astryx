@@ -35,6 +35,7 @@ import {Icon} from '../Icon';
 import {Selector} from '../Selector';
 import {Text} from '../Text';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useListFocus} from '../hooks/useListFocus';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -349,6 +350,7 @@ export function Pagination({
   className,
   style,
   ref,
+  ...rest
 }: PaginationProps) {
   const [, startTransition] = useTransition();
 
@@ -369,6 +371,21 @@ export function Pagination({
   // Track the page optimistically so rapid prev/next clicks advance from the
   // in-flight target instead of stalling on the last committed page.
   const [optimisticPage, setOptimisticPage] = useOptimistic(page);
+
+  // Roving-tabindex + arrow/Home/End keyboard nav for the dots variant, owned
+  // by the shared useListFocus primitive (mirrors SegmentedControl). It stamps a
+  // single tab stop across the dots and moves focus horizontally; selection
+  // follows focus via handleDotsFocus so arrow keys move the active page.
+  const {
+    listRef: dotsListRef,
+    handleKeyDown: handleDotsKeyDown,
+    handleFocus: handleDotsRovingFocus,
+  } = useListFocus<HTMLDivElement>({
+    itemSelector: 'button',
+    hasRovingTabIndex: true,
+    wrap: true,
+    orientation: 'horizontal',
+  });
 
   // Compute pagination state
   const computedTotalPages =
@@ -408,6 +425,28 @@ export function Pagination({
       setOptimisticPage(newPage);
       await changeAction?.(newPage);
     });
+  };
+
+  // Selection-follows-focus for the dots (APG radiogroup pattern): useListFocus
+  // only *moves* focus, so when focus lands on a dot -- via arrow/Home/End, or a
+  // click that focuses it -- we select that dot's page. handleDotsRovingFocus
+  // keeps the roving tab stop in sync. The current page is skipped so tabbing
+  // into the group is a no-op.
+  const handleDotsFocus = (e: React.FocusEvent) => {
+    handleDotsRovingFocus(e);
+    if (isDisabled) {
+      return;
+    }
+    const focused = (e.target as HTMLElement | null)?.closest<HTMLElement>(
+      'button[data-page]',
+    );
+    if (!focused) {
+      return;
+    }
+    const nextPage = Number(focused.dataset.page);
+    if (Number.isFinite(nextPage) && nextPage !== optimisticPage) {
+      handlePageChange(nextPage);
+    }
   };
 
   const handlePrevious = () => {
@@ -518,33 +557,47 @@ export function Pagination({
         if (computedTotalPages == null) {
           return null;
         }
+
         return (
           <div
+            ref={dotsListRef}
             {...stylex.props(styles.dotsContainer)}
             role="group"
-            aria-label="Page indicators">
-            {Array.from({length: computedTotalPages}, (_, i) => (
-              <button
-                key={i + 1}
-                type="button"
-                aria-label={`Go to page ${i + 1}`}
-                aria-current={i + 1 === optimisticPage ? 'page' : undefined}
-                onClick={() => handlePageChange(i + 1)}
-                disabled={isDisabled}
-                {...mergeProps(
-                  themeProps('pagination-dot', {
-                    active: i + 1 === optimisticPage ? 'active' : null,
-                    size,
-                  }),
-                  stylex.props(
-                    styles.dot,
-                    isSm && styles.dotSm,
-                    i + 1 === optimisticPage && styles.dotActive,
-                    isDisabled && styles.dotDisabled,
-                  ),
-                )}
-              />
-            ))}
+            aria-label="Page indicators"
+            onKeyDown={handleDotsKeyDown}
+            onFocus={handleDotsFocus}>
+            {Array.from({length: computedTotalPages}, (_, i) => {
+              const isActive = i + 1 === optimisticPage;
+              return (
+                <button
+                  key={i + 1}
+                  type="button"
+                  data-page={i + 1}
+                  aria-label={`Go to page ${i + 1}`}
+                  aria-current={isActive ? 'page' : undefined}
+                  // The active dot is the single roving tab stop; useListFocus
+                  // maintains it as focus and the active page move.
+                  tabIndex={isActive ? 0 : -1}
+                  // Selection is driven by focus (handleDotsFocus); clicking only
+                  // needs to focus the dot, which some browsers (Safari) skip for
+                  // buttons, so focus it explicitly.
+                  onClick={e => e.currentTarget.focus()}
+                  disabled={isDisabled}
+                  {...mergeProps(
+                    themeProps('pagination-dot', {
+                      active: isActive ? 'active' : null,
+                      size,
+                    }),
+                    stylex.props(
+                      styles.dot,
+                      isSm && styles.dotSm,
+                      isActive && styles.dotActive,
+                      isDisabled && styles.dotDisabled,
+                    ),
+                  )}
+                />
+              );
+            })}
           </div>
         );
       }
@@ -558,14 +611,15 @@ export function Pagination({
   return (
     <nav
       ref={ref}
-      aria-label={label}
-      data-testid={testId}
       {...mergeProps(
         themeProps('pagination', {variant, size}),
         stylex.props(styles.root, xstyle),
         className,
         style,
-      )}>
+      )}
+      {...rest}
+      aria-label={label}
+      data-testid={testId}>
       {pageSizeOptions != null && pageSizeOptions.length > 0 && (
         <div {...stylex.props(styles.pageSizeSelector)}>
           <div {...stylex.props(styles.pageSizeSelectorControl)}>

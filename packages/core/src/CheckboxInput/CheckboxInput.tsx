@@ -395,6 +395,7 @@ export function CheckboxInput({
   className,
   style,
   ref,
+  ...rest
 }: CheckboxInputProps) {
   const id = useId();
   const descriptionID = useId();
@@ -445,9 +446,11 @@ export function CheckboxInput({
   );
 
   // Build aria-describedby from description and status message
-  // Only include descriptionID when the element actually renders
+  // Only include descriptionID when the element actually renders.
+  // FieldLabel renders the description (with descriptionID) even when the
+  // label is visually hidden — it's sr-only, so keep it linked.
   const describedByParts: string[] = [];
-  if (description && !isLabelHidden) {
+  if (description) {
     describedByParts.push(descriptionID);
   }
   if (status?.message) {
@@ -484,6 +487,7 @@ export function CheckboxInput({
         )}>
         <div {...stylex.props(styles.checkboxWrapper, wrapperSizeStyles[size])}>
           <input
+            {...rest}
             ref={mergeRefs(
               ref,
               indeterminateRef,

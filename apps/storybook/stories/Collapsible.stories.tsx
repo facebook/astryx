@@ -38,10 +38,9 @@ const meta: Meta<typeof CollapsibleGroup> = {
   component: CollapsibleGroup,
   tags: ['autodocs'],
   argTypes: {
-    dividers: {
-      control: 'select',
-      options: ['between', 'all', 'none'],
-      description: "Divider style around the group's items",
+    hasDividers: {
+      control: 'boolean',
+      description: "Draw hairline dividers between the group's items",
     },
     density: {
       control: 'select',
@@ -197,9 +196,9 @@ export const WithoutCard: Story = {
   ),
 };
 
-export const DividersBetween: Story = {
-  name: 'Dividers — Between',
-  args: {type: 'single', dividers: 'between', defaultValue: 'q1'},
+export const Dividers: Story = {
+  name: 'Dividers',
+  args: {type: 'single', hasDividers: true, defaultValue: 'q1'},
   render: args => (
     <div {...stylex.props(styles.dividedContainer)}>
       <CollapsibleGroup {...args}>
@@ -226,9 +225,9 @@ export const DividersBetween: Story = {
   ),
 };
 
-export const DividersAll: Story = {
-  name: 'Dividers — All',
-  args: {type: 'multiple', dividers: 'all', defaultValue: ['a']},
+export const DividersMultiple: Story = {
+  name: 'Dividers — Multiple',
+  args: {type: 'multiple', hasDividers: true, defaultValue: ['a']},
   render: args => (
     <div {...stylex.props(styles.dividedContainer)}>
       <CollapsibleGroup {...args}>
@@ -258,7 +257,7 @@ export const DividersDensity: Story = {
         <CollapsibleGroup
           key={density}
           type="multiple"
-          dividers="between"
+          hasDividers
           density={density}
           defaultValue={['one']}>
           <Collapsible trigger={`First section (${density})`} value="one">

@@ -12,6 +12,7 @@
 import {describe, it, expect, vi} from 'vitest';
 import {act, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {getButton} from '../__tests__/fastRoleQueries';
 import * as stylex from '@stylexjs/stylex';
 import {Calendar} from './Calendar';
 import type {CalendarHandle} from './Calendar';
@@ -26,7 +27,7 @@ import {calendarStyles} from './styles';
 function getDayButton(day: number, month = 'January', year = 2026) {
   // Match the full date pattern with the day number
   const pattern = new RegExp(`${month}\\s+${day},\\s+${year}`);
-  return screen.getByRole('button', {name: pattern});
+  return getButton(pattern);
 }
 
 describe('Calendar', () => {
@@ -73,6 +74,24 @@ describe('Calendar', () => {
     expect(screen.getByText(expectedLabel)).toBeInTheDocument();
   });
 
+  it("marks today's cell with aria-current='date'", () => {
+    render(<Calendar />);
+
+    const now = new Date();
+    const iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    const todayCell = document.querySelector(`button[data-date="${iso}"]`);
+    expect(todayCell).not.toBeNull();
+    expect(todayCell).toHaveAttribute('aria-current', 'date');
+
+    // Only today's cell is marked current.
+    const others = Array.from(
+      document.querySelectorAll('button[data-date]'),
+    ).filter(el => el.getAttribute('data-date') !== iso);
+    expect(others.length).toBeGreaterThan(0);
+    others.forEach(el => expect(el).not.toHaveAttribute('aria-current'));
+  });
+
   it('displays day names', () => {
     render(<Calendar />);
 
@@ -99,7 +118,11 @@ describe('Calendar', () => {
     render(<Calendar value="2026-01-15" focusDate="2026-01-01" />);
 
     const day15 = getDayButton(15);
-    expect(day15).toHaveAttribute('aria-selected', 'true');
+    // In an ARIA grid, selection state lives on the gridcell, not the button
+    // (a plain button role does not permit aria-selected).
+    const gridcell15 = day15.closest('[role="gridcell"]');
+    expect(gridcell15).toHaveAttribute('aria-selected', 'true');
+    expect(day15).not.toHaveAttribute('aria-selected');
   });
 
   it('calls onChange when date is selected', async () => {
@@ -125,7 +148,7 @@ describe('Calendar', () => {
     // Verify we start on February
     expect(screen.getByText('February 2026')).toBeInTheDocument();
 
-    const prevButton = screen.getByRole('button', {name: 'Previous month'});
+    const prevButton = getButton('Previous month');
     await user.click(prevButton);
 
     expect(screen.getByText('January 2026')).toBeInTheDocument();
@@ -139,7 +162,7 @@ describe('Calendar', () => {
     // Verify we start on January
     expect(screen.getByText('January 2026')).toBeInTheDocument();
 
-    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    const nextButton = getButton('Next month');
     await user.click(nextButton);
 
     expect(screen.getByText('February 2026')).toBeInTheDocument();
@@ -153,7 +176,7 @@ describe('Calendar', () => {
       <Calendar focusDate="2026-01-01" onFocusDateChange={handleFocusChange} />,
     );
 
-    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    const nextButton = getButton('Next month');
     await user.click(nextButton);
 
     expect(handleFocusChange).toHaveBeenCalledWith('2026-02-01');
@@ -211,7 +234,7 @@ describe('Calendar', () => {
 
     render(<Calendar numberOfMonths={2} focusDate="2026-01-01" />);
 
-    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    const nextButton = getButton('Next month');
     await user.click(nextButton);
 
     expect(screen.getByText(/February 2026.*March 2026/)).toBeInTheDocument();
@@ -339,9 +362,22 @@ describe('Calendar', () => {
     const day12 = getDayButton(12);
     const day15 = getDayButton(15);
 
-    expect(day10).toHaveAttribute('aria-selected', 'true');
-    expect(day12).toHaveAttribute('aria-selected', 'true');
-    expect(day15).toHaveAttribute('aria-selected', 'true');
+    // Selection state lives on the gridcell wrapper, not the day button.
+    expect(day10.closest('[role="gridcell"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(day12.closest('[role="gridcell"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(day15.closest('[role="gridcell"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(day10).not.toHaveAttribute('aria-selected');
+    expect(day12).not.toHaveAttribute('aria-selected');
+    expect(day15).not.toHaveAttribute('aria-selected');
   });
 
   it('caps the range highlight next to a disabled mid-range day (#2715)', () => {
@@ -505,12 +541,8 @@ describe('Calendar', () => {
   it('has navigation buttons with accessible labels', () => {
     render(<Calendar />);
 
-    expect(
-      screen.getByRole('button', {name: 'Previous month'}),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: 'Next month'}),
-    ).toBeInTheDocument();
+    expect(getButton('Previous month')).toBeInTheDocument();
+    expect(getButton('Next month')).toBeInTheDocument();
   });
 
   // ─── Bug Regression Tests ───────────────────────────────────
@@ -618,14 +650,14 @@ describe('Calendar', () => {
   it('prev button is disabled when focusDate month contains min', () => {
     render(<Calendar focusDate="2026-01-01" min="2026-01-15" />);
 
-    const prevButton = screen.getByRole('button', {name: 'Previous month'});
+    const prevButton = getButton('Previous month');
     expect(prevButton).toBeDisabled();
   });
 
   it('next button is disabled when focusDate month contains max', () => {
     render(<Calendar focusDate="2026-01-01" max="2026-01-15" />);
 
-    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    const nextButton = getButton('Next month');
     expect(nextButton).toBeDisabled();
   });
 
@@ -720,7 +752,7 @@ describe('Calendar', () => {
       expect(navIconClass).toBeTruthy();
 
       for (const name of ['Previous month', 'Next month']) {
-        const button = screen.getByRole('button', {name});
+        const button = getButton(name);
         const wrappers = Array.from(button.querySelectorAll('span')).filter(
           span => span.className === navIconClass,
         );
@@ -741,10 +773,10 @@ describe('Calendar', () => {
 
       // DOM order and handlers must not change in RTL: flexbox already
       // places "Previous month" at the visual right; only the glyph mirrors.
-      await user.click(screen.getByRole('button', {name: 'Previous month'}));
+      await user.click(getButton('Previous month'));
       expect(screen.getByText('January 2026')).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', {name: 'Next month'}));
+      await user.click(getButton('Next month'));
       expect(screen.getByText('February 2026')).toBeInTheDocument();
     });
   });

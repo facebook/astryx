@@ -259,6 +259,56 @@ describe('SegmentedControl', () => {
 });
 
 describe('SegmentedControl keyboard navigation', () => {
+  describe('tab-through is a pure focus move (#3597)', () => {
+    it('does not fire onChange when tabbing in with an unmatched value', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <>
+          <button type="button">before</button>
+          <SegmentedControl label="View" value="archived" onChange={onChange}>
+            <SegmentedControlItem value="grid" label="Grid" />
+            <SegmentedControlItem value="list" label="List" />
+          </SegmentedControl>
+        </>,
+      );
+      screen.getByText('before').focus();
+      await user.tab();
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('does not fire onChange when tabbing in while the selected item is disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <>
+          <button type="button">before</button>
+          <SegmentedControl label="View" value="list" onChange={onChange}>
+            <SegmentedControlItem value="grid" label="Grid" />
+            <SegmentedControlItem value="list" label="List" isDisabled />
+          </SegmentedControl>
+        </>,
+      );
+      screen.getByText('before').focus();
+      await user.tab();
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('still selects on arrow-key navigation within the group', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <SegmentedControl label="View" value="grid" onChange={onChange}>
+          <SegmentedControlItem value="grid" label="Grid" />
+          <SegmentedControlItem value="list" label="List" />
+        </SegmentedControl>,
+      );
+      screen.getByRole('radio', {name: 'Grid'}).focus();
+      await user.keyboard('{ArrowRight}');
+      expect(onChange).toHaveBeenCalledWith('list');
+    });
+  });
+
   it('navigates with ArrowRight and selects', async () => {
     const user = userEvent.setup();
     const handleChange = vi.fn();
@@ -586,5 +636,147 @@ describe('SegmentedControl disabled state', () => {
         expect(radio).toHaveAttribute('tabindex', '-1');
       }
     });
+  });
+});
+
+describe('SegmentedControl data-testid forwarding', () => {
+  it('forwards data-testid to the radiogroup', () => {
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={() => {}}
+        label="View mode"
+        data-testid="view-toggle">
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+
+    expect(screen.getByTestId('view-toggle')).toBe(
+      screen.getByRole('radiogroup'),
+    );
+  });
+
+  it('forwards data-testid to an individual item button', () => {
+    render(
+      <SegmentedControl value="grid" onChange={() => {}} label="View mode">
+        <SegmentedControlItem
+          value="grid"
+          label="Grid"
+          data-testid="opt-grid"
+        />
+        <SegmentedControlItem
+          value="list"
+          label="List"
+          data-testid="opt-list"
+        />
+      </SegmentedControl>,
+    );
+
+    expect(screen.getByTestId('opt-grid')).toBe(
+      screen.getByRole('radio', {name: 'Grid'}),
+    );
+    expect(screen.getByTestId('opt-list')).toBe(
+      screen.getByRole('radio', {name: 'List'}),
+    );
+  });
+
+  it('does not let a forwarded prop override the computed role', () => {
+    render(
+      // A consumer-supplied role must not clobber the component's own
+      // radiogroup role (the computed role is applied after {...rest}).
+      <SegmentedControl
+        value="grid"
+        onChange={() => {}}
+        label="View mode"
+        role="tablist"
+        data-testid="view-toggle">
+        <SegmentedControlItem value="grid" label="Grid" />
+      </SegmentedControl>,
+    );
+
+    expect(screen.getByTestId('view-toggle')).toHaveAttribute(
+      'role',
+      'radiogroup',
+    );
+  });
+});
+
+describe('SegmentedControlItem onClick composition', () => {
+  it('calls a consumer onClick in addition to selecting the item', () => {
+    const onChange = vi.fn();
+    const onClick = vi.fn();
+    render(
+      <SegmentedControl value="grid" onChange={onChange} label="View mode">
+        <SegmentedControlItem value="list" label="List" onClick={onClick} />
+      </SegmentedControl>,
+    );
+
+    fireEvent.click(screen.getByRole('radio', {name: 'List'}));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('list');
+  });
+
+  it('lets a consumer onClick opt out of selection via preventDefault', () => {
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl value="grid" onChange={onChange} label="View mode">
+        <SegmentedControlItem
+          value="list"
+          label="List"
+          onClick={e => e.preventDefault()}
+        />
+      </SegmentedControl>,
+    );
+
+    fireEvent.click(screen.getByRole('radio', {name: 'List'}));
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('SegmentedControl container handler forwarding', () => {
+  it('forwards a consumer onKeyDown while keeping arrow-key navigation', async () => {
+    const user = userEvent.setup();
+    const onKeyDown = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={onChange}
+        label="View mode"
+        onKeyDown={onKeyDown}>
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+
+    screen.getByRole('radio', {name: 'Grid'}).focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(onKeyDown).toHaveBeenCalled();
+    // Built-in navigation still ran.
+    expect(onChange).toHaveBeenCalledWith('list');
+  });
+
+  it('lets a consumer onKeyDown opt out of built-in navigation via preventDefault', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl
+        value="grid"
+        onChange={onChange}
+        label="View mode"
+        onKeyDown={e => e.preventDefault()}>
+        <SegmentedControlItem value="grid" label="Grid" />
+        <SegmentedControlItem value="list" label="List" />
+      </SegmentedControl>,
+    );
+
+    screen.getByRole('radio', {name: 'Grid'}).focus();
+    await user.keyboard('{ArrowRight}');
+
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

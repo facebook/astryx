@@ -17,13 +17,13 @@
 
 /* global module, require, __dirname */
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const path = require('path');
+const path = require('node:path');
 
 const rootDir = path.resolve(__dirname, '../..');
 
 module.exports = {
   presets: [
-    ['@babel/preset-react', {runtime: 'automatic'}],
+    ['@babel/preset-react', {runtime: 'automatic', development: false}],
     ['@babel/preset-typescript', {isTSX: true, allExtensions: true}],
   ],
   plugins: [

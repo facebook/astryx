@@ -11,26 +11,20 @@ describe('ChatSystemMessage', () => {
   });
 
   it('has role="status"', () => {
-    render(
-      <ChatSystemMessage data-testid="sys">Notice</ChatSystemMessage>,
-    );
+    render(<ChatSystemMessage data-testid="sys">Notice</ChatSystemMessage>);
     const el = screen.getByTestId('sys');
     expect(el.getAttribute('role')).toBe('status');
   });
 
   it('renders default variant without divider lines', () => {
-    const {container} = render(
-      <ChatSystemMessage>Hello</ChatSystemMessage>,
-    );
+    const {container} = render(<ChatSystemMessage>Hello</ChatSystemMessage>);
     // Divider lines have aria-hidden, so check there are none
     const hiddenElements = container.querySelectorAll('[aria-hidden]');
     expect(hiddenElements.length).toBe(0);
   });
 
   it('renders divider variant with Divider', () => {
-    render(
-      <ChatSystemMessage variant="divider">Today</ChatSystemMessage>,
-    );
+    render(<ChatSystemMessage variant="divider">Today</ChatSystemMessage>);
     expect(screen.getByText('Today')).toBeTruthy();
   });
 
@@ -54,9 +48,30 @@ describe('ChatSystemMessage', () => {
   });
 
   it('applies data-testid', () => {
-    render(
-      <ChatSystemMessage data-testid="my-sys">Hello</ChatSystemMessage>,
-    );
+    render(<ChatSystemMessage data-testid="my-sys">Hello</ChatSystemMessage>);
     expect(screen.getByTestId('my-sys')).toBeTruthy();
+  });
+
+  it('forwards rest props (data-*, id) while keeping its own role', () => {
+    render(
+      <ChatSystemMessage data-testid="sys" data-custom="x" id="sys-1">
+        Hello
+      </ChatSystemMessage>,
+    );
+    const el = screen.getByTestId('sys');
+    expect(el).toHaveAttribute('data-custom', 'x');
+    expect(el).toHaveAttribute('id', 'sys-1');
+    expect(el.getAttribute('role')).toBe('status');
+  });
+
+  it('forwards rest props in the divider variant', () => {
+    render(
+      <ChatSystemMessage variant="divider" data-testid="sys" data-custom="x">
+        Today
+      </ChatSystemMessage>,
+    );
+    const el = screen.getByTestId('sys');
+    expect(el).toHaveAttribute('data-custom', 'x');
+    expect(el.getAttribute('role')).toBe('status');
   });
 });

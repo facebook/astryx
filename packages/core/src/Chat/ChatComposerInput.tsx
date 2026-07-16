@@ -43,10 +43,7 @@ import {
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
-import {
-  useChatComposerTokens,
-  isCustomToken,
-} from './useChatComposerTokens';
+import {useChatComposerTokens, isCustomToken} from './useChatComposerTokens';
 import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
 import {ChatPastedTextToken} from './ChatPastedTextToken';
 import {
@@ -283,12 +280,13 @@ function serialize(node: Node): string {
 
 export function ChatComposerInput(props: ChatComposerInputProps) {
   const composerCtx = useChatComposerContext();
+  const hasControlledValueProp = props.value !== undefined;
 
   const {
     ref,
     handleRef,
     value: controlledValue = composerCtx?.value,
-    onChange = composerCtx?.onChange,
+    onChange: onChangeProp,
     placeholder = composerCtx?.placeholder ?? 'Type a message\u2026',
     maxRows = 8,
     triggers,
@@ -305,6 +303,21 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     style,
     ...rest
   } = props;
+
+  const composerOnChange = composerCtx?.onChange;
+  const onChange = useCallback(
+    (nextValue: string) => {
+      if (hasControlledValueProp) {
+        onChangeProp?.(nextValue);
+        return;
+      }
+      composerOnChange?.(nextValue);
+      if (onChangeProp !== composerOnChange) {
+        onChangeProp?.(nextValue);
+      }
+    },
+    [composerOnChange, hasControlledValueProp, onChangeProp],
+  );
 
   const editableRef = useRef<HTMLDivElement>(null);
   const selfRef = useRef<ChatComposerInputHandle>(null);
@@ -679,11 +692,7 @@ ChatComposerInput.displayName = 'ChatComposerInput';
 // Token element helper (for custom rendering in stories/consumers)
 // =============================================================================
 
-export function ChatComposerTokenElement({
-  token,
-}: {
-  token: ChatComposerToken;
-}) {
+export function ChatComposerTokenElement({token}: {token: ChatComposerToken}) {
   return (
     <span
       data-astryx-token=""
@@ -693,11 +702,7 @@ export function ChatComposerTokenElement({
       {isCustomToken(token) ? (
         token.render()
       ) : (
-        <Badge
-          label={token.label}
-          variant={token.variant}
-          icon={token.icon}
-        />
+        <Badge label={token.label} variant={token.variant} icon={token.icon} />
       )}
     </span>
   );

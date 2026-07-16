@@ -10,10 +10,11 @@
  *
  * Collapsible is a standalone primitive that makes any content collapsible.
  * It renders a trigger area (always visible) and a content area that toggles.
- * Handles state management, accessibility (aria-expanded), and chevron indicator.
+ * Handles state management, accessibility (aria-expanded + aria-controls linking
+ * the trigger to its content region), and chevron indicator.
  *
  * Works standalone or coordinated by CollapsibleGroup via the `value` prop.
- * When the surrounding CollapsibleGroup enables `dividers`, each Collapsible
+ * When the surrounding CollapsibleGroup sets `hasDividers`, each Collapsible
  * draws its own row chrome (borderBlockStart suppressed on :first-child, plus
  * density padding) from CollapsibleGroupPresentationContext — StyleX has no
  * child selectors, so the group cannot draw it from outside. The presentation
@@ -26,7 +27,7 @@
  * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
-import {use, type ReactNode} from 'react';
+import {use, useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   borderVars,
@@ -64,6 +65,16 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     textAlign: 'start',
     paddingBlock: 0,
+    // `all: unset` above wipes the UA focus outline; restore a keyboard-only
+    // focus ring using the standard token/offset (WCAG 2.4.7).
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
   },
   // Capsize: trim leading from text triggers
   triggerLabel: {
@@ -234,17 +245,20 @@ export function Collapsible({
   });
 
   const presentation = use(CollapsibleGroupPresentationContext);
-  const isDivided = presentation != null && presentation.dividers !== 'none';
+  const isDivided = presentation?.hasDividers ?? false;
   const density = presentation?.density ?? null;
 
   const chevronIcon = getIcon('chevronDown');
+
+  // Links the trigger to the region it shows/hides so assistive tech can move
+  // from the button to its controlled content (disclosure pattern).
+  const contentId = useId();
 
   return (
     <div
       ref={ref}
       {...mergeProps(
         themeProps('collapsible', {
-          dividers: isDivided ? presentation.dividers : undefined,
           density: density ?? undefined,
         }),
         stylex.props(styles.root, isDivided && styles.divided, xstyle),
@@ -256,6 +270,7 @@ export function Collapsible({
         type="button"
         onClick={toggle}
         aria-expanded={isOpen}
+        aria-controls={contentId}
         {...stylex.props(
           styles.trigger,
           density != null && triggerDensity[density],
@@ -270,6 +285,7 @@ export function Collapsible({
         </span>
       </button>
       <div
+        id={contentId}
         {...stylex.props(
           styles.content,
           density != null && contentDensity[density],

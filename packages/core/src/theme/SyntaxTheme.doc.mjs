@@ -52,7 +52,7 @@ export const docs = {
       {
         guidance: true,
         description:
-          'For a single CodeBlock, pass the syntaxTheme prop directly — it is shorthand for wrapping that block in SyntaxTheme. Use the SyntaxTheme wrapper when theming a whole region of code components.',
+          'For a single CodeBlock, pass the syntaxTheme prop directly: it is shorthand for wrapping that block in SyntaxTheme. Use the SyntaxTheme wrapper when theming a whole region of code components.',
       },
     ],
   },

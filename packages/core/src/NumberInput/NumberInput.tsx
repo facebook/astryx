@@ -503,13 +503,21 @@ export function NumberInput({
   const handleBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
       if (pendingInput !== null) {
-        const parsed = parseNumberInput(pendingInput, {
-          min,
-          max,
-          isIntegerOnly,
-        });
-        if (parsed !== null && parsed !== value) {
-          onChange(parsed);
+        if (hasClear && pendingInput.trim() === '') {
+          // Keyboard clearing honors the clearable contract: an emptied
+          // input commits null instead of silently reverting on blur.
+          if (value != null) {
+            onChange(null);
+          }
+        } else {
+          const parsed = parseNumberInput(pendingInput, {
+            min,
+            max,
+            isIntegerOnly,
+          });
+          if (parsed !== null && parsed !== value) {
+            onChange(parsed);
+          }
         }
       }
 
@@ -517,7 +525,7 @@ export function NumberInput({
       setPendingInput(null);
       onBlur?.(e);
     },
-    [pendingInput, value, onChange, min, max, isIntegerOnly, onBlur],
+    [pendingInput, value, onChange, min, max, isIntegerOnly, onBlur, hasClear],
   );
 
   // Handle keyboard events
@@ -526,13 +534,21 @@ export function NumberInput({
       if (e.key === 'Enter') {
         // Validate and commit on Enter
         if (pendingInput !== null) {
-          const parsed = parseNumberInput(pendingInput, {
-            min,
-            max,
-            isIntegerOnly,
-          });
-          if (parsed !== null && parsed !== value) {
-            onChange(parsed);
+          if (hasClear && pendingInput.trim() === '') {
+            // Same clearable contract as blur: Enter on an emptied input
+            // commits null instead of reverting.
+            if (value != null) {
+              onChange(null);
+            }
+          } else {
+            const parsed = parseNumberInput(pendingInput, {
+              min,
+              max,
+              isIntegerOnly,
+            });
+            if (parsed !== null && parsed !== value) {
+              onChange(parsed);
+            }
           }
         }
         onEnter?.();
@@ -548,6 +564,7 @@ export function NumberInput({
       isIntegerOnly,
       onEnter,
       onKeyDown,
+      hasClear,
     ],
   );
 

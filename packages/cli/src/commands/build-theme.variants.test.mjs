@@ -28,20 +28,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
+import {ensureCoreBuilt} from './ensure-core-built.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
-const REPO_ROOT = path.resolve(__dirname, '../../../..');
-const CORE_THEME_ENTRY = path.join(
-  REPO_ROOT,
-  'packages/core/dist/theme/index.js',
-);
-// The fix reads core's shipped component declarations to decide whether an
-// interface is augmentable; those .d.ts files come from the same core build.
-const CORE_BUTTON_DTS = path.join(
-  REPO_ROOT,
-  'packages/core/dist/Button/index.d.ts',
-);
 
 function runCli(args, cwd) {
   try {
@@ -68,14 +58,13 @@ function writeTheme(dir, contents) {
   return file;
 }
 
+// Build core through the shared lock helper — this suite previously ran its
+// own unguarded `if (!exists) pnpm -F core build`, and when Vitest scheduled
+// it alongside the other build-theme suites on a fresh checkout, the
+// concurrent builds collided on packages/core/dist (core's build starts by
+// wiping dist), nondeterministically breaking whichever suite was mid-read.
 beforeAll(() => {
-  if (!fs.existsSync(CORE_THEME_ENTRY) || !fs.existsSync(CORE_BUTTON_DTS)) {
-    execFileSync('pnpm', ['-F', '@astryxdesign/core', 'build'], {
-      cwd: REPO_ROOT,
-      stdio: 'pipe',
-      timeout: 180_000,
-    });
-  }
+  ensureCoreBuilt();
 }, 200_000);
 
 let tmpDir;

@@ -10,7 +10,9 @@ import {
   TopNavHeading,
   TopNavItem,
   TopNavRenderContext,
+  useTopNavRenderMode,
 } from '@astryxdesign/core/TopNav';
+import {useAppShellMobile} from '@astryxdesign/core/AppShell';
 import {MobileNav} from '@astryxdesign/core/MobileNav';
 import {Button} from '@astryxdesign/core/Button';
 import {HStack} from '@astryxdesign/core/Layout';
@@ -107,6 +109,10 @@ export function SharedTopNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const {mode, themeMode, toggleMode} = useThemeMode();
+  // When AppShell owns the mobile drawer (docs, which has a sideNav) we defer
+  // to its single hamburger; otherwise we render our own.
+  const {isMobileNavEnabled, closeMobileNav} = useAppShellMobile();
+  const renderMode = useTopNavRenderMode();
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -153,6 +159,17 @@ export function SharedTopNav() {
     return undefined;
   };
 
+  const navLinks = (onNavigate?: () => void) =>
+    NAV_ITEMS.map(item => (
+      <TopNavItem
+        key={item.key}
+        label={item.label}
+        href={item.href}
+        isSelected={getActiveItem() === item.key}
+        onClick={onNavigate}
+      />
+    ));
+
   return (
     <>
       <TopNav
@@ -172,16 +189,13 @@ export function SharedTopNav() {
           />
         }
         centerContent={
-          <div {...stylex.props(styles.desktopNav)}>
-            {NAV_ITEMS.map(item => (
-              <TopNavItem
-                key={item.key}
-                label={item.label}
-                href={item.href}
-                isSelected={getActiveItem() === item.key}
-              />
-            ))}
-          </div>
+          renderMode === 'drawer' ? (
+            // Bare items — AppShell's drawer supplies its own vertical list;
+            // the desktopNav wrapper would hide them (display:none) here.
+            <>{navLinks(closeMobileNav)}</>
+          ) : (
+            <div {...stylex.props(styles.desktopNav)}>{navLinks()}</div>
+          )
         }
         endContent={
           <HStack gap={2}>
@@ -262,16 +276,18 @@ export function SharedTopNav() {
                 trackClickCta({page: 'landing', target: 'get_started'})
               }
             />
-            <div {...stylex.props(styles.mobileToggle)}>
-              <Button
-                label="Open menu"
-                tooltip="Menu"
-                variant="ghost"
-                isIconOnly
-                icon={<Menu size={20} />}
-                onClick={() => setIsMenuOpen(true)}
-              />
-            </div>
+            {!isMobileNavEnabled && (
+              <div {...stylex.props(styles.mobileToggle)}>
+                <Button
+                  label="Open menu"
+                  tooltip="Menu"
+                  variant="ghost"
+                  isIconOnly
+                  icon={<Menu size={20} />}
+                  onClick={() => setIsMenuOpen(true)}
+                />
+              </div>
+            )}
           </HStack>
         }
       />
@@ -283,34 +299,28 @@ export function SharedTopNav() {
         docTopics={docTopics}
         templates={templates}
       />
-      <MobileNav
-        isOpen={isMenuOpen}
-        onOpenChange={setIsMenuOpen}
-        side="end"
-        label="Astryx navigation"
-        header={
-          <AstryxIcon
-            width={24}
-            height={24}
-            role="img"
-            aria-label="Astryx"
-            style={{display: 'block', color: 'var(--color-brand)'}}
-          />
-        }>
-        <TopNavRenderContext value="drawer">
-          <div {...stylex.props(styles.drawerItems)}>
-            {NAV_ITEMS.map(item => (
-              <TopNavItem
-                key={item.key}
-                label={item.label}
-                href={item.href}
-                isSelected={getActiveItem() === item.key}
-                onClick={() => setIsMenuOpen(false)}
-              />
-            ))}
-          </div>
-        </TopNavRenderContext>
-      </MobileNav>
+      {!isMobileNavEnabled && (
+        <MobileNav
+          isOpen={isMenuOpen}
+          onOpenChange={setIsMenuOpen}
+          side="end"
+          label="Astryx navigation"
+          header={
+            <AstryxIcon
+              width={24}
+              height={24}
+              role="img"
+              aria-label="Astryx"
+              style={{display: 'block', color: 'var(--color-brand)'}}
+            />
+          }>
+          <TopNavRenderContext value="drawer">
+            <div {...stylex.props(styles.drawerItems)}>
+              {navLinks(() => setIsMenuOpen(false))}
+            </div>
+          </TopNavRenderContext>
+        </MobileNav>
+      )}
     </>
   );
 }

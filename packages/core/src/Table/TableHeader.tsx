@@ -13,11 +13,24 @@ export interface TableHeaderProps extends BaseProps<HTMLTableSectionElement> {
   children: ReactNode;
 }
 
-export function TableHeader({ref, children, xstyle}: TableHeaderProps) {
+export function TableHeader({
+  ref,
+  children,
+  xstyle,
+  className,
+  style,
+  ...rest
+}: TableHeaderProps) {
   return (
     <thead
       ref={ref}
-      {...mergeProps(themeProps('table-header'), stylex.props(xstyle))}>
+      {...mergeProps(
+        themeProps('table-header'),
+        stylex.props(xstyle),
+        className,
+        style,
+      )}
+      {...rest}>
       {children}
     </thead>
   );

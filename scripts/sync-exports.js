@@ -22,8 +22,8 @@
  *   3. "default" — for all JS consumers (ESM-only)
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const CORE_DIR = path.resolve(__dirname, '..', 'packages', 'core');
 const SRC_DIR = path.join(CORE_DIR, 'src');

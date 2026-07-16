@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@astryxdesign/charts": "*",
     "@astryxdesign/core": "*",
     "@astryxdesign/lab": "*",
     "@astryxdesign/theme-neutral": "*",

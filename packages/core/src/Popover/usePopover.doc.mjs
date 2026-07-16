@@ -29,7 +29,7 @@ export const docs = {
     {name: 'toggle', type: '() => void', description: 'Toggle the popover open or closed.'},
     {name: 'isOpen', type: 'boolean', description: 'Whether the popover is currently open.'},
     {name: 'id', type: 'string', description: 'Unique ID for aria-describedby or aria-controls.'},
-    {name: 'render', type: '(children: ReactNode, props?: ContextRenderProps) => ReactNode', description: 'Render function for anchor-positioned popover content. Pass placement and alignment here.'},
+    {name: 'render', type: '(children: ReactNode, props?: ContextRenderProps) => ReactNode', description: 'Render function for anchor-positioned popover content. Pass placement and alignment here. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).'},
     {name: 'triggerProps', type: '{aria-haspopup: "dialog" | "true"; aria-expanded: boolean; aria-controls: string}', description: 'ARIA attributes to spread onto the trigger element. aria-haspopup reflects the popover role.'},
   ],
   usage: {

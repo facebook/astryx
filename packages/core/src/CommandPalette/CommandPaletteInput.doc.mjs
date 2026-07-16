@@ -57,6 +57,12 @@ export const docs = {
       description: 'StyleX styles for layout customization. Must be a stylex.create() value.',
     },
   ],
+  playground: {
+    defaults: {
+      placeholder: 'Search commands, files, or actions...',
+      hasAutoFocus: false,
+    },
+  },
 };
 
 export const docsZh = {

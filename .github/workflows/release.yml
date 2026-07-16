@@ -71,18 +71,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      # registry-url makes setup-node write the auth config `npm publish` reads.
+      # The Node line in .nvmrc must stay >= 24 so npm >= 11.5.1 ships with it,
+      # which OIDC trusted publishing requires.
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
         with:
-          node-version: 24 # bundles npm >= 11.5.1, required for OIDC publishing
-          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Build all packages
         run: pnpm build
@@ -136,18 +131,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      # registry-url makes setup-node write the auth config `npm publish` reads.
+      # The Node line in .nvmrc must stay >= 24 so npm >= 11.5.1 ships with it,
+      # which OIDC trusted publishing requires.
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
         with:
-          node-version: 24 # bundles npm >= 11.5.1, required for OIDC publishing
-          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Build all packages
         run: pnpm build

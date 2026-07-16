@@ -1,11 +1,60 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 packages:
-  - "apps/*"
-  - "packages/*"
-  - "packages/themes/*"
-  - "internal/*"
+  - 'apps/*'
+  # Example apps are standalone templates for the community to copy — they are
+  # never built in-repo, so they stay out of the workspace and pin their own
+  # dependency versions instead of using workspace protocols like catalog:.
+  - '!apps/example-*'
+  - 'packages/*'
+  - 'packages/themes/*'
+  - 'internal/*'
+
+# Migrated from .npmrc: pnpm 11 reads these hoisting/linker settings from
+# pnpm-workspace.yaml, not .npmrc. Keeps the flat, Yarn-1-style node_modules
+# layout that build tools (and some phantom test imports) rely on.
+nodeLinker: hoisted
+shamefullyHoist: true
+linkWorkspacePackages: true
 
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
-  - "@astryxdesign/*"
+  - '@astryxdesign/*'
+
+# Single source of truth for the workspace's vite version: every consumer
+# (root test config, packages/build) declares "vite": "catalog:", so a bump
+# lands here once and cannot split the workspace across two vite majors.
+# vite 8 requires @vitejs/plugin-react >= 5 (4.x peers stop at vite 7) —
+# bump them together. The standalone example apps and the vibe-tests
+# preview app pin their own vite; keep them on the same major by hand.
+catalog:
+  vite: ^8.1.3
+
+# Moved from package.json's "pnpm" field: pnpm 11 no longer reads
+# pnpm.overrides / pnpm.onlyBuiltDependencies from package.json.
+overrides:
+  '@stylexjs/stylex': ^0.19.0
+  prettier: ^3.9.3
+  postcss: ^8.5.10
+  picomatch: ^4.0.4
+  micromatch>picomatch: ^2.3.2
+  anymatch>picomatch: ^2.3.2
+  minimatch: ^9.0.7
+  dompurify: ^3.4.11
+  tmp: '>=0.2.6'
+  esbuild: '>=0.28.1'
+  '@babel/core': ^7.29.6
+  hono: ^4.12.25
+  read-yaml-file>js-yaml: ^3.15.0
+  '@changesets/parse>js-yaml': '>=4.2.0'
+
+# pnpm 11 replaced the onlyBuiltDependencies allowlist with an allowBuilds map
+# (managed via `pnpm approve-builds`). These are the same packages previously
+# trusted to run install/build scripts under pnpm 10's onlyBuiltDependencies.
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  core-js: true
+  esbuild: true
+  puppeteer: true
+  sharp: true

@@ -97,8 +97,15 @@ const rule = {
         }
       },
 
-      // `{as = 'p'}` — shorthand destructured prop with default.
+      // `{as = 'p'}` — shorthand destructured prop with default. In ESTree
+      // this AssignmentPattern is the `value` of a Property, which the
+      // Property visitor below already reports — skip it here so a single
+      // default isn't flagged twice. This visitor still catches non-property
+      // defaults such as a bare parameter default `function C(as = 'p')`.
       AssignmentPattern(node) {
+        if (node.parent?.type === 'Property') {
+          return;
+        }
         if (isElementTypeDefaultToP(node)) {
           context.report({node, messageId: 'defaultParagraph'});
         }

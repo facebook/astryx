@@ -31,10 +31,10 @@ export const docs = {
       description: 'Callback invoked when the set of open items changes.',
     },
     {
-      name: 'dividers',
-      type: "'between' | 'all' | 'none'",
-      description: "Divider style rendered around the group's items. 'between' draws hairlines between adjacent items; 'all' adds the group's top and bottom edges. When enabled, the group renders a wrapper div and items default to 'balanced' density. Pair with bare Collapsible children; Card-wrapped items provide their own separation.",
-      default: "'none'",
+      name: 'hasDividers',
+      type: 'boolean',
+      description: "Whether to draw hairline dividers between the group's items. When set, the group renders a wrapper div and items default to 'balanced' density. Pair with bare Collapsible children; Card-wrapped items provide their own separation.",
+      default: 'false',
     },
     {
       name: 'density',
@@ -87,10 +87,10 @@ export const docsZh = {
       description: '展开项目集合变更时调用的回调。',
     },
     {
-      name: 'dividers',
-      type: "'between' | 'all' | 'none'",
-      description: "渲染在组项目周围的分隔线样式。'between' 仅在相邻项目之间绘制细线；'all' 额外绘制组的顶部和底部边缘。启用后组会渲染一个包裹 div，且项目默认使用 'balanced' 密度。适合搭配裸 Collapsible 子项使用；用 Card 包裹的项目自带视觉分隔。",
-      default: "'none'",
+      name: 'hasDividers',
+      type: 'boolean',
+      description: "是否在组项目之间绘制细线分隔线。启用后组会渲染一个包裹 div，且项目默认使用 'balanced' 密度。适合搭配裸 Collapsible 子项使用；用 Card 包裹的项目自带视觉分隔。",
+      default: 'false',
     },
     {
       name: 'density',
@@ -116,7 +116,7 @@ export const docsDense = {
     defaultValue: 'default open item(s) (uncontrolled); string for single, array for multiple',
     value: 'controlled open item(s)',
     onChange: 'callback on open items change',
-    dividers: "row hairlines: 'between' items only, 'all' adds outer edges, 'none' (default); enables wrapper div + 'balanced' density; use bare Collapsible children",
+    hasDividers: "draw hairline dividers between items; enables wrapper div + 'balanced' density; use bare Collapsible children",
     density: "row padding 'compact' | 'balanced' | 'spacious'; defaults 'balanced' with dividers, else unpadded",
     children: 'Collapsible instances to coordinate',
   },

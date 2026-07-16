@@ -11,6 +11,7 @@
 import {
   useInsertionEffect,
   useEffect,
+  useId,
   useRef,
   useState,
   useCallback,
@@ -32,6 +33,7 @@ import {
   easeVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {Icon} from '../Icon';
 import {
   tokenize,
@@ -75,6 +77,13 @@ const dynamicStyles = stylex.create({
     width: value,
     minWidth: value === 'fit-content' ? 'min(100%, 400px)' : null,
     maxWidth: value === 'fit-content' ? '100%' : null,
+  }),
+  // Width of the line-number column, sized to the widest number. `ch` is the
+  // advance of "0" in the (monospace) code font, so N digits => N ch. Set on
+  // <code>; `--_codeblock-gutter-width` is unregistered so it inherits (with its var()
+  // substituted) down to the line divs that read it for their grid track.
+  gutterWidth: (digits: number) => ({
+    '--_codeblock-gutter-width': `${digits}ch`,
   }),
 });
 
@@ -174,22 +183,17 @@ const styles = stylex.create({
   headerCollapsible: {
     cursor: 'pointer',
     userSelect: 'none',
-  },
-  gutter: {
-    flexShrink: 0,
-    paddingBlock: spacingVars['--spacing-3'],
-    paddingInlineStart: spacingVars['--spacing-4'],
-    paddingInlineEnd: spacingVars['--spacing-3'],
-    textAlign: 'end',
-    userSelect: 'none',
-    color: 'var(--color-syntax-punctuation)',
-    borderRightWidth: borderVars['--border-width'],
-    borderRightStyle: 'solid',
-    borderRightColor: colorVars['--color-border'],
-  },
-  gutterLine: {
-    fontFamily: typographyVars['--font-family-code'],
-    lineHeight: typeScaleVars['--text-code-leading'],
+    // Restore a keyboard-only focus ring with the standard token/offset so this
+    // disclosure control matches the rest of the system (Collapsible, TabMenu);
+    // otherwise it falls back to the inconsistent UA default outline.
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
   },
   code: {
     display: 'block',
@@ -209,8 +213,52 @@ const styles = stylex.create({
     wordBreak: 'break-all',
     overflowWrap: 'break-word',
   },
+  // With line numbers on, the <code> element hosts the full-height divider
+  // between the number gutter and the code. It spans the code's block padding
+  // too (inset-block: 0), so the rule reaches the top and bottom edges the way
+  // the old separate gutter column did. The numbers themselves are drawn per
+  // line (see `lineNumbered`) — a separate column can't track wrap height.
+  codeNumbered: {
+    position: 'relative',
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      insetBlock: 0,
+      insetInlineStart: `calc(${spacingVars['--spacing-4']} + var(--_codeblock-gutter-width) + ${spacingVars['--spacing-3']})`,
+      width: 0,
+      borderInlineStartWidth: borderVars['--border-width'],
+      borderInlineStartStyle: 'solid',
+      borderInlineStartColor: colorVars['--color-border'],
+      pointerEvents: 'none',
+    },
+  },
   line: {
     lineHeight: typeScaleVars['--text-code-leading'],
+  },
+  // Per-line number gutter: a two-column grid ([number] [code]). The number is
+  // a ::before generated from the data-line attribute. Because the number and
+  // its code occupy one grid row, the row grows to fit wrapped code while the
+  // number stays pinned to the row's first visual line (alignSelf: start) —
+  // this is what keeps numbers aligned when isWrapped wraps a line.
+  lineNumbered: {
+    display: 'grid',
+    gridTemplateColumns: 'var(--_codeblock-gutter-width) 1fr',
+    columnGap: `calc(${spacingVars['--spacing-3']} + ${borderVars['--border-width']} + ${spacingVars['--spacing-4']})`,
+    '::before': {
+      content: 'attr(data-line)',
+      gridColumn: '1',
+      alignSelf: 'start',
+      textAlign: 'end',
+      color: 'var(--color-syntax-punctuation)',
+      userSelect: 'none',
+      fontFamily: typographyVars['--font-family-code'],
+    },
+  },
+  // In span mode the tokens are wrapped in this element so they form a single
+  // grid item in column 2 (otherwise each token span would flow into its own
+  // grid cell). minWidth:0 lets it shrink so long lines wrap within the track.
+  lineContent: {
+    minWidth: 0,
   },
   lineChunk: {
     contentVisibility: 'auto',
@@ -224,12 +272,6 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
   },
   sizeMd: {
-    fontSize: typeScaleVars['--text-code-size'],
-  },
-  gutterSm: {
-    fontSize: typeScaleVars['--text-supporting-size'],
-  },
-  gutterMd: {
     fontSize: typeScaleVars['--text-code-size'],
   },
   copyButton: {
@@ -272,11 +314,13 @@ const CodeChunk = React.memo(function CodeChunk({
   startIndex,
   highlightSet,
   renderLineContent,
+  lineNumbers,
 }: {
   lines: string[];
   startIndex: number;
   highlightSet: Set<number> | null;
   renderLineContent: (line: string, lineIndex: number) => React.ReactNode;
+  lineNumbers: boolean;
 }) {
   return (
     <>
@@ -288,6 +332,7 @@ const CodeChunk = React.memo(function CodeChunk({
             data-line={i + 1}
             {...stylex.props(
               styles.line,
+              lineNumbers && styles.lineNumbered,
               (highlightSet?.has(i + 1) ?? false) && styles.lineHighlighted,
             )}>
             {renderLineContent(line, i)}
@@ -302,6 +347,7 @@ function renderLines(
   lines: string[],
   highlightSet: Set<number> | null,
   renderLineContent: (line: string, lineIndex: number) => React.ReactNode,
+  lineNumbers: boolean,
   chunkSize: number = LINE_CHUNK_SIZE,
 ): React.ReactNode {
   chunkSize = Math.max(1, Math.floor(chunkSize));
@@ -313,6 +359,7 @@ function renderLines(
         startIndex={0}
         highlightSet={highlightSet}
         renderLineContent={renderLineContent}
+        lineNumbers={lineNumbers}
       />
     );
   }
@@ -334,6 +381,7 @@ function renderLines(
           startIndex={start}
           highlightSet={highlightSet}
           renderLineContent={renderLineContent}
+          lineNumbers={lineNumbers}
         />
       </div>,
     );
@@ -529,12 +577,16 @@ function SpanCodeContent({
   highlightSet,
   isWrapped,
   sizeStyle,
+  hasLineNumbers,
+  maxDigits,
 }: {
   lines: string[];
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
+  hasLineNumbers: boolean;
+  maxDigits: number;
 }) {
   useInsertionEffect(() => {
     ensureHighlightStyles();
@@ -543,7 +595,13 @@ function SpanCodeContent({
   const renderLineContent = useCallback(
     (line: string, lineIndex: number): React.ReactNode => {
       const tokens = tokenLines[lineIndex] ?? [];
-      return buildSpanLine(line, tokens);
+      // Wrap tokens in a single element so they occupy one grid cell when line
+      // numbers are on (see `lineNumbered`); an inline span is a no-op when off.
+      return (
+        <span {...stylex.props(styles.lineContent)}>
+          {buildSpanLine(line, tokens)}
+        </span>
+      );
     },
     [tokenLines],
   );
@@ -554,8 +612,10 @@ function SpanCodeContent({
         styles.code,
         sizeStyle,
         isWrapped && styles.codeWrapped,
+        hasLineNumbers && styles.codeNumbered,
+        hasLineNumbers && dynamicStyles.gutterWidth(maxDigits),
       )}>
-      {renderLines(lines, highlightSet, renderLineContent)}
+      {renderLines(lines, highlightSet, renderLineContent, hasLineNumbers)}
     </code>
   );
 }
@@ -570,12 +630,16 @@ function RangeCodeContent({
   highlightSet,
   isWrapped,
   sizeStyle,
+  hasLineNumbers,
+  maxDigits,
 }: {
   lines: string[];
   tokenLines: TokenLine[];
   highlightSet: Set<number> | null;
   isWrapped: boolean;
   sizeStyle: stylex.StyleXStyles;
+  hasLineNumbers: boolean;
+  maxDigits: number;
 }) {
   const codeRef = useRef<HTMLElement>(null);
 
@@ -593,6 +657,9 @@ function RangeCodeContent({
     return applyHighlightRangesChunked(codeEl, tokenLines);
   }, [tokenLines]);
 
+  // Range mode keeps the line's text as a bare text node (its firstChild) so
+  // applyHighlightRangesChunked can map token offsets onto it \u2014 no wrapper. The
+  // number ::before is a pseudo-element, so it never becomes a child node here.
   const renderLineContent = useCallback(
     (line: string): React.ReactNode => line || '\u200b',
     [],
@@ -605,8 +672,10 @@ function RangeCodeContent({
         styles.code,
         sizeStyle,
         isWrapped && styles.codeWrapped,
+        hasLineNumbers && styles.codeNumbered,
+        hasLineNumbers && dynamicStyles.gutterWidth(maxDigits),
       )}>
-      {renderLines(lines, highlightSet, renderLineContent)}
+      {renderLines(lines, highlightSet, renderLineContent, hasLineNumbers)}
     </code>
   );
 }
@@ -650,6 +719,17 @@ export function CodeBlock({
   ...props
 }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
+  const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const announce = useAnnounce();
+
+  // Clear a pending "copied" reset when the block unmounts.
+  useEffect(() => {
+    return () => {
+      if (copyResetTimerRef.current != null) {
+        clearTimeout(copyResetTimerRef.current);
+      }
+    };
+  }, []);
 
   const useSpans =
     highlightMode === 'spans' ||
@@ -675,21 +755,38 @@ export function CodeBlock({
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
+      // Swapping the button's aria-label alone isn't reliably announced by
+      // screen readers, so confirm the copy via a polite live region.
+      announce('Copied');
       onCopy?.();
-      setTimeout(() => setCopied(false), 2000);
+      // Restart the reset timer on every copy — otherwise a rapid re-copy
+      // is reverted early by the previous click's timer.
+      if (copyResetTimerRef.current != null) {
+        clearTimeout(copyResetTimerRef.current);
+      }
+      copyResetTimerRef.current = setTimeout(() => {
+        copyResetTimerRef.current = null;
+        setCopied(false);
+      }, 2000);
     } catch {
       // Clipboard failures leave the copied state unchanged.
     }
-  }, [code, onCopy]);
+  }, [code, onCopy, announce]);
 
   const sizeStyle = size === 'sm' ? styles.sizeSm : styles.sizeMd;
-  const gutterSizeStyle = size === 'sm' ? styles.gutterSm : styles.gutterMd;
+  // Digits in the largest line number — sizes the gutter column width.
+  const maxLineDigits = String(lines.length).length;
   const languageLabel =
     hasLanguageLabel && language !== 'plaintext' ? language : null;
   const showHeader = title != null || languageLabel != null;
 
   const canCollapse = isCollapsible && lines.length >= collapsibleThreshold;
   const [isCollapsed, setIsCollapsed] = useState(false);
+  // Links the collapsible header to the code region it shows/hides so assistive
+  // tech can move from the button to its controlled content (disclosure
+  // pattern). The region stays mounted when collapsed (CSS grid animation), so
+  // this is always a resolvable reference — aria-controls can be unconditional.
+  const regionId = useId();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const scrollStyle: CSSProperties | undefined = maxHeight
@@ -727,6 +824,7 @@ export function CodeBlock({
         role={canCollapse ? 'button' : undefined}
         tabIndex={canCollapse ? 0 : undefined}
         aria-expanded={canCollapse ? !isCollapsed : undefined}
+        aria-controls={canCollapse ? regionId : undefined}
         onClick={canCollapse ? () => setIsCollapsed(prev => !prev) : undefined}
         onKeyDown={
           canCollapse
@@ -779,18 +877,6 @@ export function CodeBlock({
           styles.codeWrapper,
           showHeader && !hasLineNumbers && styles.codeWrapperCompact,
         )}>
-        {hasLineNumbers && (
-          <div
-            {...stylex.props(styles.gutter, gutterSizeStyle)}
-            aria-hidden="true">
-            {lines.map((_, i) => (
-              // eslint-disable-next-line @eslint-react/no-array-index-key -- gutter line numbers are positional by definition
-              <div key={i} {...stylex.props(styles.gutterLine)}>
-                {i + 1}
-              </div>
-            ))}
-          </div>
-        )}
         {useSpans ? (
           <SpanCodeContent
             lines={lines}
@@ -798,6 +884,8 @@ export function CodeBlock({
             highlightSet={highlightSet}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
+            hasLineNumbers={hasLineNumbers}
+            maxDigits={maxLineDigits}
           />
         ) : (
           <RangeCodeContent
@@ -806,6 +894,8 @@ export function CodeBlock({
             highlightSet={highlightSet}
             isWrapped={isWrapped}
             sizeStyle={sizeStyle}
+            hasLineNumbers={hasLineNumbers}
+            maxDigits={maxLineDigits}
           />
         )}
       </div>
@@ -830,6 +920,7 @@ export function CodeBlock({
       {headerEl}
       {canCollapse ? (
         <div
+          id={regionId}
           {...stylex.props(
             styles.collapseGrid,
             isCollapsed && styles.collapseGridCollapsed,

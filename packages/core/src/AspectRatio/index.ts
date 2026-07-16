@@ -12,4 +12,8 @@
  */
 
 export {AspectRatio} from './AspectRatio';
-export type {AspectRatioProps, AspectRatioShape} from './AspectRatio';
+export type {
+  AspectRatioProps,
+  AspectRatioShape,
+  AspectRatioFit,
+} from './AspectRatio';

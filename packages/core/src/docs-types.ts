@@ -400,7 +400,13 @@ export interface PlaygroundConfig {
    *  interactive preview shows an open-trigger placeholder instead of an
    *  empty stage while `isOpen` is false, and lets the real overlay render
    *  when opened. Include `isOpen: false` in `defaults` so the preview can
-   *  bridge `onOpenChange` back into playground state. */
+   *  bridge `onOpenChange` back into playground state.
+   *
+   *  Only for components with no inline containment (MobileNav, Lightbox).
+   *  Components with an `isInline` docs-preview prop (Dialog, AlertDialog,
+   *  CommandPalette) intentionally keep contained inline previews instead:
+   *  the component is visible on load and knobs stay usable, whereas a real
+   *  top-layer modal makes the rest of the page inert (#3657). */
   overlay?: boolean;
   /** Required parent wrapper for sub-components that depend on a parent
    *  context provider (e.g. `Tab` calls `useTabListContext()` and throws
@@ -859,6 +865,7 @@ export type TemplateCategory =
   | 'Tools - File Explorer'
   | 'Tools - Page Editor'
   | 'Tools - IDE'
+  | 'Tools - Incident Console'
   | 'Tools - Kanban Board'
   | 'Tools - Notebook/Report Page'
   | 'Tools - Diff Compare Viewer'
@@ -889,6 +896,7 @@ export type TemplateCategory =
   | 'Shell - Top Nav'
   | 'Shell - Top Nav + Left Sidebar'
   | 'Shell - Breadcrumb Driven Layout'
+  | 'Shell - Messaging'
   | 'Shell - Blank';
 
 interface BaseTemplateDoc {

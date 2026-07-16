@@ -10,9 +10,9 @@
 
 const { chromium } = require('playwright');
 const { AxeBuilder } = require('@axe-core/playwright');
-const fs = require('fs');
-const path = require('path');
-const http = require('http');
+const fs = require('node:fs');
+const path = require('node:path');
+const http = require('node:http');
 
 const args = process.argv.slice(2);
 const getArg = (name) => {

@@ -16,6 +16,9 @@ import {BaseTable} from './BaseTable';
 import {Table} from './Table';
 import {TableRow} from './TableRow';
 import {TableCell} from './TableCell';
+import {TableHeader} from './TableHeader';
+import {TableBody} from './TableBody';
+import {TableFooter} from './TableFooter';
 import {
   proportional,
   pixel,
@@ -228,6 +231,34 @@ describe('BaseTable', () => {
     expect(headers[0]).toHaveTextContent('Name');
     expect(headers[1]).toHaveTextContent('Age');
     expect(headers[2]).toHaveTextContent('Email');
+  });
+
+  it('renders every column header with scope="col"', () => {
+    render(<BaseTable data={users} columns={columns} />);
+    const headers = screen.getAllByRole('columnheader');
+    expect(headers).toHaveLength(3);
+    for (const header of headers) {
+      expect(header).toHaveAttribute('scope', 'col');
+    }
+  });
+
+  it('lets a consumer override scope via header html props', () => {
+    // A `<th scope="row">` maps to the `rowheader` role, so query the DOM
+    // directly to assert the attribute regardless of the resolved ARIA role.
+    const plugin: TablePlugin<User> = {
+      transformHeaderCell: (props, column) =>
+        column.key === 'name'
+          ? {...props, htmlProps: {...props.htmlProps, scope: 'row'}}
+          : props,
+    };
+    const {container} = render(
+      <BaseTable data={users} columns={columns} plugins={[plugin]} />,
+    );
+    const headerCells = container.querySelectorAll('thead th');
+    // columns fixture order: name, age, email — plugin overrides name → 'row'
+    expect(headerCells[0]).toHaveAttribute('scope', 'row');
+    expect(headerCells[1]).toHaveAttribute('scope', 'col');
+    expect(headerCells[2]).toHaveAttribute('scope', 'col');
   });
 
   it('renders data cells', () => {
@@ -1385,5 +1416,38 @@ describe('emptyState', () => {
     );
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText('Age')).toBeInTheDocument();
+  });
+
+  describe('table section rest forwarding', () => {
+    it('forwards data-testid and id to the tbody, thead, and tfoot', () => {
+      const {container} = render(
+        <table>
+          <TableHeader data-testid="thead" id="head-1">
+            <tr>
+              <th>H</th>
+            </tr>
+          </TableHeader>
+          <TableBody data-testid="tbody" id="body-1">
+            <tr>
+              <td>B</td>
+            </tr>
+          </TableBody>
+          <TableFooter data-testid="tfoot" id="foot-1">
+            <tr>
+              <td>F</td>
+            </tr>
+          </TableFooter>
+        </table>,
+      );
+      const thead = container.querySelector('thead')!;
+      const tbody = container.querySelector('tbody')!;
+      const tfoot = container.querySelector('tfoot')!;
+      expect(thead).toHaveAttribute('data-testid', 'thead');
+      expect(thead).toHaveAttribute('id', 'head-1');
+      expect(tbody).toHaveAttribute('data-testid', 'tbody');
+      expect(tbody).toHaveAttribute('id', 'body-1');
+      expect(tfoot).toHaveAttribute('data-testid', 'tfoot');
+      expect(tfoot).toHaveAttribute('id', 'foot-1');
+    });
   });
 });

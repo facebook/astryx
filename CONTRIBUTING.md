@@ -5,8 +5,12 @@ For the full contribution process — what we accept, how to propose new compone
 Key pages:
 
 - **[API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)** — naming, prop patterns, composition rules (read before submitting an RFC)
+- **[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** — the design-side bar: tokens, spacing, radius, elevation, type, color, motion, and state representations
 - **[Specification Protocol](https://github.com/facebook/astryx/wiki/Component-Specification-Protocol)** — the 9-phase process for new components
+- **[Component Lifecycle](https://github.com/facebook/astryx/wiki/Component-Lifecycle)** — how components move from lab → core and templates from hidden → visible
 - **[API Arbitration](https://github.com/facebook/astryx/wiki/API-Arbitration)** — how we resolve API design questions
+- **[Contributing Templates](https://github.com/facebook/astryx/wiki/Contributing-Templates)** — building templates/blocks and the template grading rubric
+- **[Blog Review Rubric](https://github.com/facebook/astryx/wiki/Blog-Review-Rubric)** — how docsite blog posts are reviewed
 - **[Contributing with AI](https://github.com/facebook/astryx/wiki/Contributing-with-AI-Assistants)** — safe zones, spec protocol, and working with AI tools
 
 This file covers local development setup.
@@ -17,15 +21,20 @@ This file covers local development setup.
 
 ### Node.js
 
-Install Node.js 22+ from an active LTS line using one of these methods:
+The Node version lives in `.nvmrc` (currently the 24.x line). CI reads the same
+file via `node-version-file`, so local and CI never drift apart. Don't declare
+the version anywhere else.
 
 **Via nvm (recommended):**
 
 ```bash
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 source ~/.zshrc
-nvm install 22
+nvm install   # no argument — reads .nvmrc
 ```
+
+`fnm` and `mise` read `.nvmrc` too. `asdf` does not; its `.tool-versions` is
+git-ignored precisely so it cannot become a competing source of truth.
 
 **Via nodejs.org:**
 Download and install from https://nodejs.org
@@ -38,13 +47,13 @@ the `packageManager` and `devEngines.packageManager` fields of
 
 ```bash
 # Via npm
-npm install -g pnpm@10
+npm install -g pnpm@11
 
 # Via Homebrew (macOS)
 brew install pnpm
 
 # Via standalone installer (no npm or Node.js required)
-curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=10.34.1 sh -
+curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=11.10.0 sh -
 
 # Via GitHub releases (single binary, no dependencies)
 # https://github.com/pnpm/pnpm/releases/latest
@@ -70,7 +79,7 @@ Verify installation:
 
 ```bash
 node --version   # v22.x.x or v24.x.x
-pnpm --version   # 10.x.x
+pnpm --version   # 11.x.x
 ```
 
 ## Getting Started
@@ -406,7 +415,7 @@ yet" — open the PR as a draft and mark it ready for review when it's done.
 Install pnpm directly:
 
 ```bash
-npm install -g pnpm@10
+npm install -g pnpm@11
 ```
 
 Or enable Corepack if you want to use the repository's pinned pnpm version:
@@ -458,7 +467,7 @@ your environment likely blocks outbound network access.
 ```bash
 brew install pnpm                        # Homebrew (macOS)
 curl -fsSL https://get.pnpm.io/install.sh | sh -  # Standalone installer
-npm install -g pnpm@10                   # Via npm
+npm install -g pnpm@11                   # Via npm
 ```
 
 You can also download the binary directly from

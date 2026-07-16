@@ -124,10 +124,10 @@ export const docs = {
     },
     {
       name: 'labelSpacing',
-      type: "'default' | 'spread'",
+      type: "'hug' | 'spread'",
       description:
-        'Spacing behavior between label and switch. "spread" pushes them to opposite ends of the container (full width).',
-      default: "'default'",
+        'Spacing behavior between label and switch. "hug" places them next to each other; "spread" pushes them to opposite ends of the container (full width). "default" is a deprecated alias for "hug".',
+      default: "'hug'",
     },
   ],
   theming: {
@@ -270,10 +270,10 @@ export const docsZh = {
     },
     {
       name: 'labelSpacing',
-      type: "'default' | 'spread'",
+      type: "'hug' | 'spread'",
       description:
-        '标签和开关之间的间距行为。"spread" 将它们推到容器的两端（全宽）。',
-      default: "'default'",
+        '标签和开关之间的间距行为。"hug" 将它们并排放置；"spread" 将它们推到容器的两端（全宽）。"default" 是 "hug" 的已弃用别名。',
+      default: "'hug'",
     },
   ],
   theming: {
@@ -329,6 +329,6 @@ export const docsDense = {
     labelIcon: 'Icon before label text.',
     labelTooltip: 'Tooltip text in info icon at label end.',
     labelPosition: 'Which side label appears; "start" places before switch.',
-    labelSpacing: 'Spacing behavior; "spread" pushes to opposite ends (full width).',
+    labelSpacing: 'Spacing behavior; "hug" places next to each other, "spread" pushes to opposite ends (full width). "default" is deprecated alias for "hug".',
   },
 };
