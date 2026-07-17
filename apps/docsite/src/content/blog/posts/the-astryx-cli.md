@@ -12,6 +12,8 @@ tags:
 coverImage: '/blog/the-astryx-cli/cover.gif'
 coverAlt: 'A terminal running astryx init'
 relatedDocs:
+  - title: 'AI is a copycat, so we gave it good examples to copy'
+    href: '/blog/ai-is-a-copycat'
   - title: 'How Astryx works'
     href: '/blog/how-astryx-works'
   - title: 'CLI'
