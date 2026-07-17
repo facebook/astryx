@@ -5,6 +5,53 @@
  */
 
 import {pathToFileURL} from 'node:url';
+import {importUserModule} from './module-loader.mjs';
+import {formatZodError} from './config-schema.mjs';
+import {ComponentDocSchema} from '../doc.mjs';
+
+/**
+ * Load a component doc through the shared load/validation boundary.
+ *
+ * This is the typed counterpart to {@link loadDocs}: it loads `.doc.ts` via
+ * jiti (and `.doc.mjs`/`.doc.js` via native import), reads the factory
+ * default export (`export default createDoc({...})`) — the same single-export
+ * convention {@link loadModuleWithSchema} uses for config/integration/template
+ * — and validates against {@link ComponentDocSchema}. Throws a readable
+ * `formatZodError`-style message on failure. Translations (`docsZh`/
+ * `docsDense`) are merged exactly as {@link loadDocs} does so callers see
+ * identical output. The legacy loose `export const docs = {}` shape is read by
+ * the untouched {@link loadDocs} during the migration window, not here.
+ *
+ * @param {string} docPath absolute path to a `.doc.{ts,mjs,js}` file
+ * @param {{zh?: boolean, dense?: boolean, lang?: string}} [opts]
+ * @returns {Promise<object>} the validated (and optionally translated) doc
+ */
+export async function loadComponentDoc(
+  docPath,
+  {zh = false, dense = false, lang} = {},
+) {
+  const mod = await importUserModule(docPath);
+  const authored = mod?.default;
+
+  const result = ComponentDocSchema.safeParse(authored);
+  if (!result.success) {
+    throw new Error(formatZodError(docPath, result.error));
+  }
+  const docs = authored;
+
+  const locale = lang || (dense ? 'dense' : zh ? 'zh' : null);
+  if (!locale) return docs;
+
+  const translationKey =
+    locale === 'zh' ? 'docsZh' : locale === 'dense' ? 'docsDense' : null;
+  if (!translationKey || !mod[translationKey]) return docs;
+
+  const translation = mod[translationKey];
+  if (translation.props || translation.components?.some(c => c.props)) {
+    return translation;
+  }
+  return mergeTranslation(docs, translation);
+}
 
 export function mergeTranslation(docs, translation) {
   if (!translation) return docs;

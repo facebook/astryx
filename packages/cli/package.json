@@ -47,6 +47,10 @@
       "types": "./src/types/integration.d.ts",
       "import": "./src/integration.mjs"
     },
+    "./doc": {
+      "types": "./src/types/doc.d.ts",
+      "import": "./src/doc.mjs"
+    },
     "./template": {
       "types": "./src/types/template-api.d.ts",
       "import": "./src/template.mjs"
