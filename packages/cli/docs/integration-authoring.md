@@ -7,17 +7,22 @@
 An **Integration** is an npm package that contributes components, templates, and/or
 codemods to a consumer's design-system workflow. Consumers install the 3rd party
 package, add a line to their astryx.config file:
+
 ```js
+import {createConfig} from '@astryxdesign/cli/config';
+
 export default createConfig({
   integrations: ['@acme/astryx-widgets'],
   ...
 });
 ```
+
 Then the integration's components and templates will be surfaced alongside Astryx
 components in the Astryx CLI.
+
 ```sh
-astryx component AcmeCarousel props
-astryx component list --package @acme/astryx-widgets
+astryx component AcmeCarousel --props
+astryx component --list --package @acme/astryx-widgets
 ```
 
 ## The Integration File
@@ -28,6 +33,8 @@ tells Astryx where to find your components, templates, codemods, etc.
 
 ```js
 // astryx.integration.{ts,mjs,js}
+import {createIntegration} from '@astryxdesign/cli/integration';
+
 export default createIntegration({
   components: './components',
   templates: './templates',
@@ -44,6 +51,8 @@ file with the same stem e.g. `AcmeCarousel.tsx` and `AcmeCarousel.doc.ts`.
 
 ```js
 // AcmeCarousel.doc.ts
+import {createComponentDoc} from '@astryxdesign/cli/doc';
+
 export default createComponentDoc({
   name: 'AcmeCarousel',
   description: '...',
@@ -54,7 +63,7 @@ export default createComponentDoc({
 ## Templates
 
 Templates are typically not exported from the package directly, but instead accessed
-via the Astryx CLI. Consumers can look through your templates and materialize them 
+via the Astryx CLI. Consumers can look through your templates and materialize them
 into their apps.
 
 You define a template with the `createPageTemplate` (for full pages) or `createBlockTemplate`
@@ -62,6 +71,8 @@ You define a template with the `createPageTemplate` (for full pages) or `createB
 
 ```js
 // AcmeLandingPage.template.ts
+import {createPageTemplate} from '@astryxdesign/cli/template';
+
 export default createPageTemplate({
   ...
 });
@@ -85,5 +96,10 @@ Typically, this is done via the package.json `exports` key.
 In order to verify that it's working, you can test importing the template component like this:
 
 ```ts
-import('@acme/astryx-widgets/templates/pages/AcmeLandingPage.tsx');
+import('@acme/astryx-widgets/templates/AcmeLandingPage.tsx');
 ```
+
+Import **with the `.tsx` extension** — an extensionless specifier won't resolve
+under `moduleResolution: bundler`. The extensionful `"./templates/*.tsx"` export
+above is what lets that import type-check without consumers enabling
+`allowImportingTsExtensions`.
