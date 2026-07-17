@@ -63,15 +63,16 @@ const ICON_COLOR_BY_STATUS: Record<TableRowStatusColor, IconColor> = {
 /**
  * A row's status indicator. `color` accepts a semantic status color
  * (mapped to a theme token) or any raw CSS color string as an escape hatch.
- * Provide `icon` to signal status by shape as well as color — more accessible
- * when several statuses coexist. Provide `label` for an accessible name
- * (strongly recommended; without it the indicator is color-only). Return
- * `null` for rows with no status.
+ * By default the plugin renders a colored status dot. Provide `icon` to signal
+ * status by shape as well as color, which is more accessible when several
+ * statuses coexist. Provide `label` for an accessible name (strongly
+ * recommended; without it the indicator is color-only). Return `null` for
+ * rows with no status.
  */
 export interface TableRowStatus {
   /** Semantic status color (preferred) or a raw CSS color string. */
   color: TableRowStatusColor | (string & {});
-  /** Optional icon rendered as the signifier (shape as an a11y differentiator). */
+  /** Optional icon rendered as the signifier instead of the dot (shape as an a11y differentiator). */
   icon?: IconName;
   /** Accessible label; announced via role="img". Recommended. */
   label?: string;
@@ -92,9 +93,8 @@ export interface UseTableRowStatusConfig<T extends Record<string, unknown>> {
   getStatus: (item: T) => TableRowStatus | null;
 }
 
-// Bar mode overlays a 4px bar on the leading edge (needs almost no width);
-// icon mode needs room for the glyph. Reserve icon width so a mixed table
-// never clips — the extra padding is negligible for bar-only tables.
+// The status column holds a small centered dot (or an icon when provided).
+// A fixed narrow width keeps every row's indicator aligned in one gutter.
 const STATUS_COLUMN_WIDTH = {type: 'pixel' as const, value: 28};
 
 /** Resolve a semantic color name to a token, or pass a raw CSS color through. */
@@ -103,31 +103,25 @@ function resolveColor(color: string): string {
 }
 
 const styles = stylex.create({
-  // The status cell hosts a full-height bar. Zero its own padding so the bar
-  // reaches the row's vertical edges, and anchor the absolutely-positioned bar.
-  cell: {
-    position: 'relative',
-    paddingInline: 0,
-    paddingBlock: 0,
-  },
-  bar: (color: string) => ({
-    position: 'absolute',
-    insetBlock: 0,
-    insetInlineStart: 0,
-    width: '4px',
-    backgroundColor: color,
-  }),
-  iconWrap: {
+  // Centers the dot or icon within the narrow status column.
+  wrap: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  dot: (color: string) => ({
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    backgroundColor: color,
+    flexShrink: 0,
+  }),
 });
 
 /**
  * Returns a {@link TablePlugin} that prepends a narrow column signaling per-row
- * status: a full-height colored bar on the leading edge, or an icon when
- * `icon` is provided (shape + color is more accessible than color alone).
+ * status: a colored status dot by default, or an icon when `icon` is provided
+ * (shape + color is more accessible than color alone).
  *
  * @example
  * ```
@@ -165,7 +159,7 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
                 'primary';
               return (
                 <span
-                  {...stylex.props(styles.iconWrap)}
+                  {...stylex.props(styles.wrap)}
                   role={role}
                   aria-label={status.label}
                   title={status.label}>
@@ -174,23 +168,19 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
               );
             }
             return (
-              <div
-                {...stylex.props(styles.bar(resolveColor(status.color)))}
+              <span
+                {...stylex.props(styles.wrap)}
                 role={role}
                 aria-label={status.label}
-                title={status.label}
-              />
+                title={status.label}>
+                <span
+                  {...stylex.props(styles.dot(resolveColor(status.color)))}
+                />
+              </span>
             );
           },
         };
         return [statusColumn, ...columns];
-      },
-
-      transformBodyCell(props, column) {
-        if (column.key !== '__rowStatus') {
-          return props;
-        }
-        return {...props, styles: [...props.styles, styles.cell]};
       },
     }),
     [getStatus],

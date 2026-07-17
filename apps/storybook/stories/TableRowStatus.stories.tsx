@@ -43,7 +43,7 @@ function jobStatus(job: Job): TableRowStatus | null {
     case 'queued':
       return {color: 'gray', label: 'Queued'};
     default:
-      return null; // succeeded → no indicator
+      return null; // succeeded: no indicator
   }
 }
 
@@ -56,9 +56,9 @@ export default meta;
 type Story = StoryObj;
 
 /**
- * A thin colored bar on the leading edge of each row signals per-row status.
- * Rows whose `getStatus` returns `null` (here: succeeded jobs) show no bar.
- * Hover a bar to see its accessible label.
+ * A small colored dot in a leading gutter column signals per-row status.
+ * Rows whose `getStatus` returns `null` (here: succeeded jobs) show no dot.
+ * Hover a dot to see its accessible label.
  */
 export const Default: Story = {
   render: () => {
@@ -76,7 +76,7 @@ export const Default: Story = {
 };
 
 /**
- * Any CSS color works — here raw hex values instead of theme tokens.
+ * Any CSS color works: here raw hex values instead of theme tokens.
  */
 export const RawColors: Story = {
   render: () => {

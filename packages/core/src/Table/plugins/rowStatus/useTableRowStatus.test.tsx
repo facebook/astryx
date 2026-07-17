@@ -52,16 +52,23 @@ describe('useTableRowStatus', () => {
     expect(headers[0].textContent).toBe('');
   });
 
-  it('renders a labeled bar for rows with a status', () => {
+  it('renders a labeled dot for rows with a status', () => {
     render(<Harness />);
     expect(screen.getByRole('img', {name: 'Error'})).toBeInTheDocument();
     expect(screen.getByRole('img', {name: 'Warning'})).toBeInTheDocument();
   });
 
+  it('renders a dot (not an icon) by default', () => {
+    render(<Harness />);
+    // Default (no icon) renders a plain colored dot: no svg in the indicator.
+    const dot = screen.getByRole('img', {name: 'Error'});
+    expect(dot.querySelector('svg')).toBeNull();
+  });
+
   it('renders no indicator for rows returning null', () => {
     render(<Harness />);
     const rows = screen.getAllByRole('row');
-    // rows[2] is Bob (state ok) — no status indicator in his status cell.
+    // rows[2] is Bob (state ok): no status indicator in his status cell.
     const bob = rows[2];
     expect(within(bob).getByText('Bob')).toBeInTheDocument();
     expect(within(bob).queryByRole('img')).not.toBeInTheDocument();
@@ -69,9 +76,11 @@ describe('useTableRowStatus', () => {
 
   it('maps a semantic color name to its icon color token', () => {
     render(<Harness />);
-    const errorBar = screen.getByRole('img', {name: 'Error'});
-    // 'red' resolves to var(--color-icon-red); StyleX emits it on inline style.
-    expect(errorBar.getAttribute('style')).toContain('--color-icon-red');
+    const errorDot = screen.getByRole('img', {name: 'Error'});
+    // 'red' resolves to var(--color-icon-red); StyleX emits it on the inline
+    // style of the inner dot element.
+    const dot = errorDot.querySelector('span');
+    expect(dot?.getAttribute('style')).toContain('--color-icon-red');
   });
 
   it('passes through a raw CSS color as an escape hatch', () => {
@@ -82,8 +91,9 @@ describe('useTableRowStatus', () => {
         }
       />,
     );
-    const bar = screen.getByRole('img', {name: 'Raw'});
-    expect(bar.getAttribute('style')).toContain('rgb(1, 2, 3)');
+    const indicator = screen.getByRole('img', {name: 'Raw'});
+    const dot = indicator.querySelector('span');
+    expect(dot?.getAttribute('style')).toContain('rgb(1, 2, 3)');
   });
 
   it('renders an icon as the status signifier when icon is provided', () => {
@@ -99,19 +109,19 @@ describe('useTableRowStatus', () => {
     // Icon-mode still exposes the accessible label via role=img.
     const indicator = screen.getByRole('img', {name: 'Error'});
     expect(indicator).toBeInTheDocument();
-    // An SVG icon is rendered inside the indicator (bar mode has no svg).
+    // An SVG icon is rendered inside the indicator (dot mode has no svg).
     expect(indicator.querySelector('svg')).not.toBeNull();
   });
 
-  it('sets role=img only when a label is provided (bar mode)', () => {
+  it('sets role=img only when a label is provided (dot mode)', () => {
     render(
       <Harness
         statusFn={item => (item.state === 'error' ? {color: 'red'} : null)}
       />,
     );
-    // No label → no accessible name → not exposed as an img role.
+    // No label means no accessible name, so it is not exposed as an img role.
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
-    // But the row still renders (Alice present) with a color-only bar.
+    // But the row still renders (Alice present) with a color-only dot.
     expect(screen.getByText('Alice')).toBeInTheDocument();
   });
 

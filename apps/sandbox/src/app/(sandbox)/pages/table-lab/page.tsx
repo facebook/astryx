@@ -122,7 +122,7 @@ const PLUGIN_REGISTRY: PluginMeta[] = [
   {
     id: 'rowStatus',
     label: 'Row Status',
-    description: 'Leading-edge color bar (by member status)',
+    description: 'Status dot / icon (by member status)',
   },
 ];
 
@@ -262,7 +262,7 @@ function useLabPlugins({
       if (item.status === 'Away') {
         return {color: 'warning', icon: 'warning', label: 'Away'};
       }
-      return null; // Offline → no indicator
+      return null; // Offline: no indicator
     },
   });
 
