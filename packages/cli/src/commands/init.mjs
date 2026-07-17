@@ -16,10 +16,11 @@
 import * as p from '@clack/prompts';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import {CLI_ROOT} from '../utils/paths.mjs';
+import {CLI_ROOT, findCoreDir} from '../utils/paths.mjs';
 import {PathSafetyError} from '../utils/path-safety.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
-import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
+import {installAgentDocs, removeAgentDocs, getXdsVersion} from './agent-docs.mjs';
+import {buildAttribution, recordAttribution} from '../lib/attribution.mjs';
 import {listTemplates} from './template.mjs';
 import {humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
@@ -28,6 +29,15 @@ import {requireInteractive} from '../utils/interactive.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
 const run = getRunPrefix();
+
+/** Read the CLI's own version for attribution records. */
+function getCliVersion() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(CLI_ROOT, 'package.json'), 'utf-8')).version;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Build the "Next steps" lines printed at the end of `astryx init`.
@@ -70,14 +80,14 @@ function isCancel(value) {
 
 // ─── Feature: agents ─────────────────────────────────────────────────────────
 
-function runAgents(targetDir, {interactive = true, agent, agentDocsPath} = {}) {
+function runAgents(targetDir, {interactive = true, agent, agentDocsPath, attribution} = {}) {
   try {
     const paths = agentDocsPath
       ? Array.isArray(agentDocsPath)
         ? agentDocsPath
         : [agentDocsPath]
       : undefined;
-    const written = installAgentDocs(targetDir, {agent, paths});
+    const written = installAgentDocs(targetDir, {agent, paths, attribution});
     const summary = written.join(', ');
     if (interactive) {
       p.log.success(`AI agent docs installed → ${summary}`);
@@ -200,6 +210,7 @@ export function registerInit(program) {
     .option('--remove-agents', 'Remove AI agent docs from all agent doc files')
     .option('--agent <tool>', 'Target AI tool for agent docs: claude, cursor, codex, all')
     .option('--agent-docs-path <path...>', 'Explicit file path(s) for agent docs')
+    .option('--via <source>', 'Attribution: how you found the CLI (readme, types, nudge, postinstall, create, manual)')
     .action(async (options) => {
       const targetDir = process.cwd();
 
@@ -209,6 +220,21 @@ export function registerInit(program) {
         humanLog('✓ AI agent docs removed.');
         return;
       }
+
+      // Attribution — record HOW this project found the CLI so we can learn
+      // which discovery channel actually works in the wild. Local-first, no
+      // telemetry: written to .astryx/attribution.jsonl and embedded in the
+      // generated agent docs. See lib/attribution.mjs.
+      const attribution = buildAttribution({
+        via: options.via,
+        targetDir,
+        cliVersion: getCliVersion(),
+        coreVersion: getXdsVersion(findCoreDir(targetDir)),
+      });
+      const attrFile = recordAttribution(targetDir, attribution);
+      humanLog(
+        `Attribution: via=${attribution.via} invoker=${attribution.invoker} install=${attribution.installMethod} → ${path.relative(targetDir, attrFile)}`,
+      );
 
       // Non-interactive: --features or --all
       if (options.features || options.all) {
@@ -227,6 +253,7 @@ export function registerInit(program) {
             interactive: false,
             agent: options.agent,
             agentDocsPath: options.agentDocsPath,
+            attribution,
           });
           if (feature === 'theme') await runTheme({interactive: false});
           if (feature === 'template') await runTemplate(targetDir, {interactive: false});
@@ -262,7 +289,7 @@ export function registerInit(program) {
       if (shouldInstallAgents) {
         const s = p.spinner();
         s.start('Installing agent docs');
-        runAgents(targetDir);
+        runAgents(targetDir, {attribution});
         s.stop('Done');
       }
 
