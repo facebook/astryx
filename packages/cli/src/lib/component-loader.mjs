@@ -13,14 +13,20 @@ import {ComponentDocSchema} from '../doc.mjs';
  * Load a component doc through the shared load/validation boundary.
  *
  * This is the typed counterpart to {@link loadDocs}: it loads `.doc.ts` via
- * jiti (and `.doc.mjs`/`.doc.js` via native import), reads the factory
- * default export (`export default createDoc({...})`) — the same single-export
- * convention {@link loadModuleWithSchema} uses for config/integration/template
- * — and validates against {@link ComponentDocSchema}. Throws a readable
+ * jiti (and `.doc.mjs`/`.doc.js` via native import) and validates against
+ * {@link ComponentDocSchema}. That schema accepts BOTH formats, so this loader
+ * reads whichever the file uses:
+ *   - NEW: the factory default export
+ *     (`export default createComponentDoc({...})` / `createFunctionDoc` /
+ *     `createDoc`) — the same single-export convention
+ *     {@link loadModuleWithSchema} uses for config/integration/template. These
+ *     carry a stamped `type` and validate against the matching per-kind schema.
+ *   - OLD: the legacy loose `export const docs = {...}` (no `type`), validated
+ *     against the permissive legacy union.
+ * The default export wins when both are present. Throws a readable
  * `formatZodError`-style message on failure. Translations (`docsZh`/
  * `docsDense`) are merged exactly as {@link loadDocs} does so callers see
- * identical output. The legacy loose `export const docs = {}` shape is read by
- * the untouched {@link loadDocs} during the migration window, not here.
+ * identical output.
  *
  * @param {string} docPath absolute path to a `.doc.{ts,mjs,js}` file
  * @param {{zh?: boolean, dense?: boolean, lang?: string}} [opts]
@@ -31,7 +37,7 @@ export async function loadComponentDoc(
   {zh = false, dense = false, lang} = {},
 ) {
   const mod = await importUserModule(docPath);
-  const authored = mod?.default;
+  const authored = mod?.default ?? mod?.docs;
 
   const result = ComponentDocSchema.safeParse(authored);
   if (!result.success) {

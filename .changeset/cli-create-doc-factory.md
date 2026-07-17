@@ -2,5 +2,5 @@
 '@astryxdesign/cli': patch
 ---
 
-[feat] Add `createDoc()` component-doc factory, a Zod `ComponentDocSchema`, and a jiti-based loader so component docs can be authored in `.ts` with editor/type feedback and validated at the load boundary. Docs authored with `createDoc(...)` use a default export — the same single-export convention as config/integration/template. Additive: the existing loose doc loader is untouched, so current docs keep loading unchanged during migration.
+[feat] Add the finalized doc-authoring API to `@astryxdesign/cli/doc`: `createComponentDoc`, `createFunctionDoc` (any function, including hooks), and `createDoc` (generic reference/topic docs). Each factory stamps a `type` discriminant and is validated at the load boundary against a matching per-kind schema. The legacy loose `export const docs = {...}` format keeps loading unchanged, and `.ts`-authored hook/function sources now derive their import path to a tree-shakeable subpath instead of the bare package root.
 @ejhammond
