@@ -7,13 +7,13 @@
  * @position Test file; validates selection behavior (checkboxes, aria, select-all)
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, it, expect, vi} from 'vitest';
 import {useState} from 'react';
-import {render, screen, within} from '@testing-library/react';
+import {act, render, renderHook, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Table} from '../../Table';
 import {useTableSelection} from './useTableSelection';
-import type {TableColumn} from '../../types';
+import type {BodyRowRenderProps, TableColumn} from '../../types';
 
 // =============================================================================
 // Test Data
@@ -193,5 +193,63 @@ describe('useTableSelection', () => {
     const headerRow = screen.getAllByRole('row')[0];
     const headers = within(headerRow).getAllByRole('columnheader');
     expect(headers).toHaveLength(3);
+  });
+
+  it('unsubscribes detached row refs instead of accumulating listeners', () => {
+    const getIsItemSelected = vi.fn(() => false);
+    const {result, rerender} = renderHook(() =>
+      useTableSelection<SelectableUser>({
+        getIsItemSelected,
+        onSelectItem: vi.fn(),
+        onSelectAll: vi.fn(),
+        getIsAllSelected: () => false,
+      }),
+    );
+
+    const initialProps: BodyRowRenderProps = {
+      htmlProps: {},
+      styles: [],
+      children: null,
+    };
+    const row = document.createElement('tr');
+    document.body.append(row);
+
+    let detach: (() => void) | undefined;
+
+    // Simulate React replacing the callback ref as this row re-renders.
+    // Each detach must unsubscribe the previous ref before the next attaches.
+    for (let i = 0; i < 3; i++) {
+      act(() => {
+        detach?.();
+      });
+
+      const transformed = result.current.transformBodyRow?.(
+        initialProps,
+        selectableUsers[0],
+        0,
+      );
+      expect(transformed?.ref).toBeTypeOf('function');
+
+      act(() => {
+        const cleanup = (
+          transformed?.ref as React.RefCallback<HTMLTableRowElement>
+        )(row);
+        expect(cleanup).toBeTypeOf('function');
+        detach = cleanup as () => void;
+      });
+    }
+
+    getIsItemSelected.mockClear();
+    rerender();
+    expect(getIsItemSelected).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      detach?.();
+    });
+    getIsItemSelected.mockClear();
+    rerender();
+    expect(getIsItemSelected).not.toHaveBeenCalled();
+
+    row.remove();
   });
 });

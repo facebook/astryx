@@ -45,11 +45,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../../../theme/tokens.stylex';
 import {CheckboxInput} from '../../../CheckboxInput';
 import {mergeRefs} from '../../../utils';
-import type {
-  TablePlugin,
-  TableColumn,
-  BodyRowRenderProps,
-} from '../../types';
+import type {TablePlugin, TableColumn, BodyRowRenderProps} from '../../types';
 import {pixel} from '../../columnUtils';
 
 // =============================================================================
@@ -354,6 +350,9 @@ export function useTableSelection<T extends Record<string, unknown>>(
               store.getConfig().getIsItemSelected(item),
             );
           });
+          return () => {
+            unsub();
+          };
         };
 
         return {
