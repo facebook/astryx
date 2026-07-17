@@ -44,8 +44,11 @@ export const syntaxTokenDefaults = {
   '--color-syntax-attribute': 'var(--color-text-teal)',
   // property -> cyan text (object properties)
   '--color-syntax-property': 'var(--color-text-cyan)',
-  // punctuation -> disabled text (brackets, semicolons)
-  '--color-syntax-punctuation': 'var(--color-text-disabled)',
+  // punctuation -> dimmest AA-compliant gray (brackets, semicolons).
+  // Code is text, so even punctuation must clear 4.5:1 on the syntax
+  // background; --color-text-disabled (~2:1 by design) is not usable here.
+  // These literals land just past 4.5:1 while staying dimmer than comments.
+  '--color-syntax-punctuation': 'light-dark(#596E7F, #808891)',
   // background -> muted surface
   '--color-syntax-background': 'var(--color-background-muted)',
 } as const;

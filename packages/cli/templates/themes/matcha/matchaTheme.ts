@@ -6,28 +6,42 @@
  * An earthy green theme inspired by matcha tea and natural botanicals.
  * Core palette: #3E481D, #707E46, #C0CBA9, #F0F0E0, #FFFFFF
  * Uses Playwrite US Trad for headings and DM Sans for body text.
+ *
+ * Contrast promises (WCAG 2.1 AA, audited by internal/theme-contrast):
+ * text tokens hold >=4.5:1 and icon tokens >=3:1 on every surface they are
+ * laid out on, in both modes. #707E46 remains the palette's sage for icons
+ * and borders, but text roles ship its darker text stop #5c6739 (>=4.8:1 on
+ * the deepest neutral wash). Filled status chips keep white labels in light
+ * mode (fills darkened to >=4.8:1) and flip to deep olive ink #1c2210 on
+ * the bright dark-mode fills — the same dark-on-bright approach on-warning
+ * has always used.
  */
 
 import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
 import {matchaIconRegistry} from './icons';
 
-/** Matcha syntax palette — earthy greens and warm tones. */
+/**
+ * Matcha syntax palette — earthy greens and warm tones.
+ * Code is text: every stop holds >=4.5:1 on the code background in both
+ * modes; the dimmest stops (comment/operator/punctuation) sit just past
+ * 4.5:1 (~4.7) so they still read dimmer than the primary stops.
+ */
 const matchaSyntax = defineSyntaxTheme({
   name: 'xds-matcha',
   tokens: {
     keyword: ['#5a6b2a', '#a8bf6a'],
     string: ['#2e6b4a', '#7bc49e'],
-    comment: ['#707E46', '#707E46'],
-    number: ['#8c6b30', '#d4b870'],
+    comment: ['#636f3e', '#7d8d4e'],
+    number: ['#82632c', '#d4b870'],
     function: ['#3a5e8c', '#7ba8d4'],
     type: ['#6b4a8c', '#b08ed4'],
     variable: ['#3E481D', '#C0CBA9'],
-    operator: ['#707E46', '#94a468'],
-    constant: ['#8c6b30', '#d4b870'],
+    operator: ['#636f3e', '#94a468'],
+    constant: ['#82632c', '#d4b870'],
     tag: ['#8c3a3a', '#d47a7a'],
     attribute: ['#7c5e3a', '#c4a882'],
-    property: ['#3a7c6b', '#70c4b0'],
-    punctuation: ['#707E46', '#5a6440'],
+    property: ['#367364', '#70c4b0'],
+    punctuation: ['#636f3e', '#7e8c59'],
     background: ['#F0F0E0', '#1a1c14'],
   },
 });
@@ -72,36 +86,46 @@ export const matchaTheme = defineTheme({
     '--color-overlay': ['#3E481D80', '#3E481DCC'],
     '--color-overlay-hover': ['#3E481D0D', '#C0CBA90D'],
     '--color-overlay-pressed': ['#3E481D1A', '#C0CBA91A'],
-    '--color-background-muted': ['#F0F0E0', '#3E481D'],
+    '--color-background-muted': ['#F0F0E0', '#2a3113'], // dark follows popover (zebra rows, Code, muted cards)
 
     // Text
+    // Secondary is the sage's text stop: #707E46 misses AA on the washes
+    // (4.41:1 on white, 3.49:1 on neutral-over-body), so text roles use
+    // #5c6739 light / #abb889 dark (>=4.8:1 on their deepest wash).
     '--color-text-primary': ['#3E481D', '#C0CBA9'],
-    '--color-text-secondary': ['#707E46', '#94a468'],
+    '--color-text-secondary': ['#5c6739', '#abb889'],
     '--color-text-disabled': ['#C0CBA9', '#5a6440'],
     '--color-text-accent': ['#3E481D', '#C0CBA9'],
     '--color-on-dark': '#FFFFFF',
     '--color-on-light': '#3E481D',
+    // Dark-mode error/success fills stay bright, so their labels use deep
+    // olive ink (5.4:1 / 7.1:1) — olive #3E481D only reads 3.2:1 there.
     '--color-on-accent': ['#FFFFFF', '#3E481D'],
-    '--color-on-success': ['#FFFFFF', '#3E481D'],
-    '--color-on-error': ['#FFFFFF', '#3E481D'],
+    '--color-on-success': ['#FFFFFF', '#1c2210'],
+    '--color-on-error': ['#FFFFFF', '#1c2210'],
     '--color-on-warning': ['#3E481D', '#3E481D'],
 
     // Icon
     '--color-icon-accent': ['#3E481D', '#C0CBA9'],
     '--color-icon-primary': ['#3E481D', '#C0CBA9'],
-    '--color-icon-secondary': ['#707E46', '#94a468'],
+    '--color-icon-secondary': ['#5c6739', '#abb889'], // kept equal to text-secondary (paired icon+label rows stay one sage)
     '--color-icon-disabled': ['#C0CBA9', '#5a6440'],
 
     // Surface variants
+    // Dark popover deepened from #3E481D so secondary text and the
+    // accent-muted selection wash on it clear AA (primary 6.0:1 on the
+    // selected wash; it was 4.45:1 on the old olive).
     '--color-background-card': ['#FFFFFF', '#1e2016'],
-    '--color-background-popover': ['#FFFFFF', '#3E481D'],
+    '--color-background-popover': ['#FFFFFF', '#2a3113'],
     '--color-background-inverted': ['#3E481D', '#C0CBA9'],
 
     // Status / Sentiment
-    '--color-success': ['#4D9900', '#6dbf2a'],
-    '--color-success-muted': ['#4D990020', '#6dbf2a20'],
-    '--color-error': ['#FD0000', '#ff5c5c'],
-    '--color-error-muted': ['#FD000020', '#ff5c5c20'],
+    // Light success/error double as 12px text and as filled chip bgs under
+    // white labels, so both sit at 4.8:1 vs white (muted tints track them).
+    '--color-success': ['#418100', '#6dbf2a'],
+    '--color-success-muted': ['#41810020', '#6dbf2a20'],
+    '--color-error': ['#e60000', '#ff5c5c'],
+    '--color-error-muted': ['#e6000020', '#ff5c5c20'],
     '--color-warning': ['#FFB600', '#ffc940'],
     '--color-warning-muted': ['#FFB60020', '#ffc94020'],
 
@@ -137,13 +161,13 @@ export const matchaTheme = defineTheme({
     '--color-background-green': ['#4D990033', '#6dbf2a33'],
     '--color-border-green': ['#4D9900', '#6dbf2a'],
     '--color-icon-green': ['#4D9900', '#6dbf2a'],
-    '--color-text-green': ['#3d7a00', '#80d43a'],
+    '--color-text-green': ['#387000', '#80d43a'], // light darkened for 4.8:1 on its tint
 
     // Categorical — Orange
     '--color-background-orange': ['#c4762033', '#d4903a33'],
     '--color-border-orange': ['#c47620', '#d4903a'],
     '--color-icon-orange': ['#c47620', '#d4903a'],
-    '--color-text-orange': ['#a06018', '#e0a04a'],
+    '--color-text-orange': ['#8e5515', '#e0a04a'], // light darkened for 4.8:1 on its tint
 
     // Categorical — Pink
     '--color-background-pink': ['#c44a7033', '#e07a9a33'],
@@ -161,7 +185,7 @@ export const matchaTheme = defineTheme({
     '--color-background-red': ['#FD000033', '#ff5c5c33'],
     '--color-border-red': ['#FD0000', '#ff5c5c'],
     '--color-icon-red': ['#FD0000', '#ff5c5c'],
-    '--color-text-red': ['#cc0000', '#ff7a7a'],
+    '--color-text-red': ['#b90000', '#ff7a7a'], // light darkened for 4.8:1 on its tint
 
     // Categorical — Teal
     '--color-background-teal': ['#2e6b5a33', '#5ab89833'],
@@ -170,10 +194,12 @@ export const matchaTheme = defineTheme({
     '--color-text-teal': ['#245546', '#6ccaaa'],
 
     // Categorical — Yellow
+    // Bright #FFB600 physically can't reach 3:1 on white/cream, so the
+    // light icon stop is the same hue at amber depth (3.3-3.8:1).
     '--color-background-yellow': ['#FFB60033', '#ffc94033'],
     '--color-border-yellow': ['#FFB600', '#ffc940'],
-    '--color-icon-yellow': ['#FFB600', '#ffc940'],
-    '--color-text-yellow': ['#cc9200', '#ffd960'],
+    '--color-icon-yellow': ['#ab7a00', '#ffc940'],
+    '--color-text-yellow': ['#8a6300', '#ffd960'], // light darkened for 4.8:1 on its tint
 
     // =========================================================================
     // Spacing
@@ -225,6 +251,15 @@ export const matchaTheme = defineTheme({
   },
 
   components: {
+    banner: {
+      'status:warning': {
+        // Banner paints its warning icon with --color-warning, and the
+        // bright badge yellow #FFB600 vanishes on the pale warning wash
+        // (1.6:1). Rebind it here to the amber icon stop (3.5:1) so the
+        // warning badge keeps its signature #FFB600 + olive label (5.6:1).
+        '--color-warning': 'light-dark(#ab7a00, #ffc940)',
+      },
+    },
     button: {
       base: {
         borderRadius: 'var(--radius-full)',

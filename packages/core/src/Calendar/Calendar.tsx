@@ -1013,8 +1013,11 @@ function DayCell({
               dayCellTheme.dayTodayInRange,
             endpoint && dayCellStyles.daySelected,
             endpoint && dayCellTheme.daySelected,
-            state.effectivelyDisabled && dayCellStyles.dayDisabled,
-            state.effectivelyDisabled && dayCellTheme.dayDisabled,
+            // Style only truly disabled days: outside-month days already get
+            // dayOutside's de-emphasis; stacking dayDisabled's opacity on top
+            // rendered them near-invisible (issue #3654).
+            isDisabled && dayCellStyles.dayDisabled,
+            isDisabled && dayCellTheme.dayDisabled,
           ),
         )}>
         {dayNumber}

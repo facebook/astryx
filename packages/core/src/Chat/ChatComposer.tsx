@@ -190,7 +190,7 @@ const styles = stylex.create({
     overflowY: 'auto' as const,
     maxHeight: '176px',
     '::placeholder': {
-      color: colorVars['--color-text-disabled'],
+      color: colorVars['--color-text-secondary'],
     },
   },
   footer: {

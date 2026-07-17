@@ -127,7 +127,7 @@ const styles = stylex.create({
     flexShrink: 0,
     width: '14px',
     height: '14px',
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     transition: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
   },
   chevronExpanded: {
@@ -214,7 +214,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontFamily: typographyVars['--font-family-body'],
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -225,7 +225,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontFamily: typographyVars['--font-family-body'],
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     whiteSpace: 'nowrap',
     flexShrink: 0,
   },
@@ -239,7 +239,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontFamily: typographyVars['--font-family-body'],
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     flexShrink: 0,
   },
   statsAdditions: {
@@ -260,7 +260,7 @@ const styles = stylex.create({
     flexShrink: 0,
     width: '14px',
     height: '14px',
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     transition: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
     marginInlineStart: 'auto',
   },
@@ -275,7 +275,7 @@ const styles = stylex.create({
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
     fontFamily: typographyVars['--font-family-body'],
-    color: colorVars['--color-text-disabled'],
+    color: colorVars['--color-text-secondary'],
     flexShrink: 0,
   },
 
@@ -302,7 +302,7 @@ const styles = stylex.create({
   },
 
   // Status colors
-  colorPending: {color: colorVars['--color-text-disabled']},
+  colorPending: {color: colorVars['--color-text-secondary']},
   colorRunning: {color: colorVars['--color-accent']},
   colorComplete: {color: colorVars['--color-success']},
   colorError: {color: colorVars['--color-error']},

@@ -17,7 +17,8 @@ import {stoneIconRegistry} from './icons';
  * --color-{success,warning,error} (T30 light / T80 dark = saturated text
  * tone). Stone redefines those vars inside each input's status scope to
  * T60 light / T70 dark so the border (and the matching status icon) reads
- * as a softer hue rim, in line with the gentle T90 status message bubble.
+ * as a softer hue rim, in line with the gentle status message bubble
+ * (T90 light / T35 dark).
  */
 const INPUT_STATUS_VARS = {
   'status:success': {
@@ -94,18 +95,18 @@ export const stoneTheme = defineTheme({
     // Core semantic — all neutrals H=291
     // Stone 900 T=16 C=1.4, Stone 500 T=55 C=4, Stone 300 T=86 C=1.6, Stone 100 T=96 C=1
     '--color-accent': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
-    '--color-accent-muted': ['#25252a14', '#f3f3f5'], // light: Stone Neutral T15 · 8%
+    '--color-accent-muted': ['#25252a14', '#f3f3f520'], // light: Stone Neutral T15 · 8% / dark: T96 · 12.5%
     '--color-neutral': ['#25252a0f', '#f3f3f51a'], // light: Stone Neutral T15 · 6% / dark: T96 · 10%
     '--color-background-surface': ['#ffffff', '#1b1b1f'], // dark: Stone Neutral T10
     '--color-background-body': ['#f3f3f5', '#111015'], // dark: Stone Neutral T5
-    '--color-overlay': ['#25252a80', '#28282a'], // light: Stone Neutral T15 · 50%
-    '--color-overlay-hover': ['#25252a0d', '#f3f3f5'], // light: Stone Neutral T15 · 5%
-    '--color-overlay-pressed': ['#25252a1a', '#f3f3f5'], // light: Stone Neutral T15 · 10%
+    '--color-overlay': ['#25252a80', '#28282acc'], // light: Stone Neutral T15 · 50% / dark: 80%
+    '--color-overlay-hover': ['#25252a0d', '#f3f3f50d'], // light: Stone Neutral T15 · 5% / dark: T96 · 5%
+    '--color-overlay-pressed': ['#25252a1a', '#f3f3f51a'], // light: Stone Neutral T15 · 10% / dark: T96 · 10%
     '--color-background-muted': ['#e2e2e8', '#3b3b3f'], // light: Stone Neutral T90
 
     // Text — H=291
     '--color-text-primary': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
-    '--color-text-secondary': ['#83838a', '#9d9da3'], // T55 C=4 / T65 C=3
+    '--color-text-secondary': ['#5e5e65', '#afafb5'], // T40 C=4 / T72 C=4 — AA (4.5:1) on every surface up to muted; worst pairs 4.99 light / 4.80 dark
     '--color-text-disabled': ['#d7d7da', '#5e5e61'], // T86 C=1.6 / T40 C=2
     '--color-text-accent': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
     '--color-on-dark': '#FFFFFF',
@@ -119,7 +120,7 @@ export const stoneTheme = defineTheme({
     // Icon — H=291
     '--color-icon-accent': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
     '--color-icon-primary': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
-    '--color-icon-secondary': ['#83838a', '#9d9da3'], // T55 C=4 / T65 C=3
+    '--color-icon-secondary': ['#5e5e65', '#afafb5'], // follows text-secondary (T40 / T72) — ≥3:1 on muted surfaces
     '--color-icon-disabled': ['#d7d7da', '#5e5e61'], // T86 C=1.6 / T40 C=2
 
     // Surface variants — H=291
@@ -127,21 +128,24 @@ export const stoneTheme = defineTheme({
     '--color-background-popover': ['#ffffff', '#25252a'], // dark: Stone Neutral T15
     '--color-background-inverted': ['#25252a', '#f3f3f5'], // light: Stone Neutral T15
 
-    // Status / Sentiment — T50 from palette for icons/borders (visible color)
+    // Status / Sentiment — T30 light / T80 dark for icons/borders (visible color).
+    // Muted surfaces mirror the categorical backgrounds in both modes: T90
+    // light / T35 dark (same hexes as --color-background-{hue}), so T90 status
+    // text reads ~6:1 and T80 status icons ~4.6:1 on the dark bubble (AA both).
     '--color-success': ['#374c36', '#b4cdb2'], // Green T30 / T80
-    '--color-success-muted': ['#d0e9ce', '#b4cdb2'], // Green T90 / T80
+    '--color-success-muted': ['#d0e9ce', '#425841'], // Green T90 / T35
     '--color-error': ['#58413e', '#dcc0bc'], // Red T30 / T80
-    '--color-error-muted': ['#f9dcd7', '#dcc0bc'], // Red T90 / T80
+    '--color-error-muted': ['#f9dcd7', '#644d49'], // Red T90 / T35
     '--color-warning': ['#524622', '#d7c59c'], // Yellow T30 / T80
-    '--color-warning-muted': ['#f4e1b7', '#d7c59c'], // Yellow T90 / T80
+    '--color-warning-muted': ['#f4e1b7', '#5e512d'], // Yellow T90 / T35
 
     // Border — H=291
-    '--color-border': ['#e2e2e8', '#f3f3f5'], // light: Stone Neutral T90
+    '--color-border': ['#e2e2e8', '#f3f3f51a'], // light: Stone Neutral T90 / dark: T96 · 10%
     '--color-border-emphasized': ['#83838a', '#5e5e61'], // T55 C=4 / T40 C=2
 
     // Effects — H=291
     '--color-skeleton': ['#d4d4da', '#5e5e64'], // T85 / T40 from H=291 C=3
-    '--color-shadow': ['#25252a1a', '#000000'], // light: Stone Neutral T15 · 10%
+    '--color-shadow': ['#25252a1a', '#0000004d'], // light: Stone Neutral T15 · 10% / dark: 30%
     '--color-tint-hover': ['black', 'white'],
 
     // Typography override

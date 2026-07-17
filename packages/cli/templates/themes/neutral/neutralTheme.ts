@@ -8,7 +8,11 @@
  * chosen to keep each color recognizable at every tone (no red drift for
  * orange, no blue drift for purple) and well-separated from its neighbors.
  *
- * Core neutral palette: #fafafa, #f5f5f5, #e5e5e5, #737373, #262626, #0a0a0a
+ * Core neutral palette: #fafafa, #f5f5f5, #e5e5e5, #616161, #262626, #0a0a0a
+ *   (secondary text/icon = #616161 light / #acacac dark — clears WCAG AA at
+ *    >=4.8:1 on the tinted body and every --color-neutral wash composite,
+ *    where the Tailwind 500/400 stops fall short; #737373 remains as the
+ *    light syntax comment/operator/punctuation stop, 4.54:1 on #fafafa)
  *
  * Categorical hues (OKLCH; chroma = max-in-gamut at the saturated stop):
  *   Red H=25    Orange H=65    Yellow H=90    Green H=145
@@ -24,7 +28,8 @@
  *   icon   = T30         / T80
  *   text   = T30         / T80
  *
- * All 9 saturated badge values pass WCAG AA (5.6–9.6 contrast range).
+ * Filled semantic badges pass WCAG AA: white label at 4.6–5.0:1 in light
+ * (error stop deepened to #d03943), dark #171717 label at 6.6–7:1 in dark.
  *
  * Only overrides tokens that differ from the defaults.
  */
@@ -51,7 +56,7 @@ const neutralSyntax = defineSyntaxTheme({
     tag: ['#89001a', '#ffaeaa'], // red
     attribute: ['#584400', '#eec12f'], // yellow
     property: ['#005348', '#83dac9'], // teal
-    punctuation: ['#a3a3a3', '#525252'], // neutral
+    punctuation: ['#737373', '#a3a3a3'], // neutral (= comment/operator; 4.54:1 L, 7.85:1 D — dimmest stop, just past AA)
     background: ['#fafafa', '#0a0a0a'],
   },
 });
@@ -144,7 +149,13 @@ export const neutralTheme = defineTheme({
 
     // Text
     '--color-text-primary': ['#171717', '#fafafa'],
-    '--color-text-secondary': ['#737373', '#a3a3a3'],
+    // Secondary sits just off the Tailwind ramp: 500 #737373 misses AA on
+    // the tinted body + neutral-wash composites (4.20:1 on #f1f1f1, 3.69:1
+    // on wash-over-body #e3e3e3) and 400 #a3a3a3 misses the dark
+    // wash-over-surface composite #3c3c3c (4.36:1). #616161 / #acacac clear
+    // every composite at >=4.83:1 / >=4.86:1 with minimal perceptual drift
+    // from the original grays (body-bg ratios: 5.48:1 light, 7.59:1 dark).
+    '--color-text-secondary': ['#616161', '#acacac'],
     '--color-text-disabled': ['#a3a3a3', '#525252'],
     '--color-text-accent': ['#262626', '#ebebeb'],
     '--color-on-dark': '#ffffff',
@@ -158,7 +169,7 @@ export const neutralTheme = defineTheme({
     // Icon
     '--color-icon-accent': ['#262626', '#ebebeb'],
     '--color-icon-primary': ['#171717', '#fafafa'],
-    '--color-icon-secondary': ['#737373', '#a3a3a3'],
+    '--color-icon-secondary': ['#616161', '#acacac'], // kept equal to text-secondary (paired label+icon rows stay one gray)
     '--color-icon-disabled': ['#a3a3a3', '#525252'],
 
     // Status / Sentiment — dark mode follows the issue #2150 rubric:
@@ -392,7 +403,8 @@ export const neutralTheme = defineTheme({
     badge: {
       // Semantic — filled saturated bg + contrasting text.
       //   Light: vivid T45-T55 from the OKLCH palette + white text
-      //          (~4.5-5:1 — Material/Linear/Vercel pop).
+      //          (4.6-5:1 — Material/Linear/Vercel pop; error deepened
+      //          below T55, see variant:error).
       //   Dark : T60 stop from the dark-mode tonal palette (chroma×0.85,
       //          +5 tone-lift taper from issue #2150 §4) + DARK text.
       //          T60+white fails AA-large (~2.7:1); T60+dark hits 6.6-7:1
@@ -426,10 +438,14 @@ export const neutralTheme = defineTheme({
         color: '#171717',
       },
       'variant:error': {
-        // Light: T55 #e33f4a (palette saturated stop)
+        // Light: deepened from the T55 palette stop #e33f4a (white label
+        //        only hit 4.14:1 there; dark #171717 fares no better at
+        //        4.33:1 — the T55 mid-tone fails both ways). #d03943 is
+        //        the same hue darkened ~18% in linear RGB (~T50), putting
+        //        the white label at 4.83:1.
         // Dark : T60 stop from dark-mode tonal palette of Tailwind red-600
         //        source #dc2626 (kept on H=27 alarm-red rather than coral)
-        backgroundColor: 'light-dark(#e33f4a, #ff705d)',
+        backgroundColor: 'light-dark(#d03943, #ff705d)',
         color: 'light-dark(#ffffff, #171717)',
       },
 
@@ -557,8 +573,10 @@ export const neutralTheme = defineTheme({
         '--color-background-muted': 'var(--color-border-emphasized)',
       },
       // Vivid stops match the filled semantic badge colors (info/success/
-      // warning/error variants in the badge override above). Same hex
-      // values; documented per role with palette provenance.
+      // warning variants in the badge override above). Error keeps the T55
+      // palette stop — the badge deepened its bg to #d03943 only for its
+      // white LABEL (SC 1.4.3); a bar fill is non-text and T55 stays the
+      // palette-true choice. Documented per role with palette provenance.
       'variant:accent': {
         // Blue T50 saturated stop (= variant:info badge bg)
         '--color-accent': '#0074e2',
@@ -572,7 +590,7 @@ export const neutralTheme = defineTheme({
         '--color-warning': '#ffce2f',
       },
       'variant:error': {
-        // Red T55 saturated stop (= variant:error badge bg)
+        // Red T55 saturated stop (badge error bg is the darker #d03943)
         '--color-error': '#e33f4a',
       },
     },

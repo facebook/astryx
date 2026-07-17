@@ -7,6 +7,13 @@
  * Periwinkle body (#CCCFFA), charcoal accent, Poppins for body/headings, and
  * Crimson Text for display sizes.
  * Core neutral: H=75 C=8 (warm cream neutral derived from #FFF6ED)
+ *
+ * Contrast (WCAG 2.1 AA, both modes): text holds 4.5:1 on every surface it
+ * renders on — secondary text is neutral-30 so it clears the periwinkle body
+ * and its neutral wash. The pastel chips live in the status -muted slots;
+ * success/error carry saturated ramp-45 inks in light mode (>=4.8:1 on
+ * white). Categorical icon inks lift to tone-50 ramp stops in dark mode
+ * (~3.9:1 on the navy surfaces).
  */
 
 import {defineTheme, defineSyntaxTheme} from '@astryxdesign/core/theme';
@@ -98,7 +105,8 @@ export const y2kTheme = defineTheme({
 
     // Text — neutral H=75 (cream)
     '--color-text-primary': ['#2d241b', '#EDEFFC'],
-    '--color-text-secondary': ['#675d52', '#a6acd6'],
+    // neutral-30: 5.5:1 worst case (periwinkle body + neutral wash #c2c4ec)
+    '--color-text-secondary': ['#4f453b', '#a6acd6'],
     '--color-text-disabled': ['#d1c5b8', '#4a4f6b'],
     '--color-text-accent': ['#2d241b', '#EDEFFC'],
     '--color-on-dark': '#FFFFFF',
@@ -111,7 +119,8 @@ export const y2kTheme = defineTheme({
     // Icon — neutral H=75 (cream)
     '--color-icon-accent': ['#2d241b', '#EDEFFC'],
     '--color-icon-primary': ['#2d241b', '#EDEFFC'],
-    '--color-icon-secondary': ['#675d52', '#a6acd6'],
+    // follows text-secondary (paired label+icon rows stay one gray)
+    '--color-icon-secondary': ['#4f453b', '#a6acd6'],
     '--color-icon-disabled': ['#d1c5b8', '#4a4f6b'],
 
     // Surface variants — white cards, cream body
@@ -119,10 +128,15 @@ export const y2kTheme = defineTheme({
     '--color-background-popover': ['#FFFFFF', '#1f2238'],
     '--color-background-inverted': ['#2d241b', '#EDEFFC'],
 
-    // Status / Sentiment — same in light and dark
-    '--color-success': ['#C5E17A', '#C5E17A'],
+    // Status / Sentiment — the pastel chips live in the -muted slots (same
+    // in light and dark). success/error also render as real text (stats,
+    // over-limit counters), so in light mode they carry the saturated
+    // ramp-45 inks (>=4.8:1 on white) and keep the bright pastel in dark.
+    // Warning only paints pastel chips (banners/badges redirect its text to
+    // text-yellow), so it stays pastel in both modes.
+    '--color-success': ['#4f7600', '#C5E17A'],
     '--color-success-muted': ['#C5E17A', '#C5E17A'],
-    '--color-error': ['#FFC5C3', '#FFC5C3'],
+    '--color-error': ['#ba3f47', '#FFC5C3'],
     '--color-error-muted': ['#FFC5C3', '#FFC5C3'],
     '--color-warning': ['#FFE08A', '#FFE08A'],
     '--color-warning-muted': ['#FFE08A', '#FFE08A'],
@@ -140,56 +154,60 @@ export const y2kTheme = defineTheme({
     // Typography override
     '--text-supporting-size': '12px',
 
-    // Categorical — hand-tuned for equal optical brightness, same light/dark
+    // Categorical — pastel backgrounds/borders hand-tuned for equal optical
+    // brightness, same light/dark. Text inks only render on their own pastel
+    // chip, so they stay deep in both modes. Icon inks also render directly
+    // on body/surface, so dark mode lifts them to each ramp's tone-50 stop —
+    // a uniform ~3.9:1 on the navy surfaces, keeping the hues optically even.
     '--color-background-green': ['#C5E17A', '#C5E17A'],
     '--color-border-green': ['#B5D16A', '#B5D16A'],
-    '--color-icon-green': ['#3a5500', '#1e3200'],
+    '--color-icon-green': ['#3a5500', '#5c830b'],
     '--color-text-green': ['#3a5500', '#1e3200'],
 
     '--color-background-red': ['#FFC5C3', '#FFC5C3'],
     '--color-border-red': ['#FF9E9A', '#FF9E9A'],
-    '--color-icon-red': ['#8b1d24', '#5c0008'],
+    '--color-icon-red': ['#8b1d24', '#c94d52'],
     '--color-text-red': ['#8b1d24', '#5c0008'],
 
     '--color-background-yellow': ['#FFE08A', '#FFE08A'],
     '--color-border-yellow': ['#FFCC55', '#FFCC55'],
-    '--color-icon-yellow': ['#614400', '#3f2600'],
+    '--color-icon-yellow': ['#614400', '#977100'],
     '--color-text-yellow': ['#614400', '#3f2600'],
 
     '--color-background-blue': ['#B8E0FF', '#B8E0FF'],
     '--color-border-blue': ['#8ECFFF', '#8ECFFF'],
-    '--color-icon-blue': ['#004e74', '#002c4d'],
+    '--color-icon-blue': ['#004e74', '#0080b4'],
     '--color-text-blue': ['#004e74', '#002c4d'],
 
     '--color-background-pink': ['#FFC8E0', '#FFC8E0'],
     '--color-border-pink': ['#FFA0C8', '#FFA0C8'],
-    '--color-icon-pink': ['#822050', '#580030'],
+    '--color-icon-pink': ['#822050', '#b75685'],
     '--color-text-pink': ['#822050', '#580030'],
 
     '--color-background-purple': ['#DDD0FF', '#DDD0FF'],
     '--color-border-purple': ['#C0AAFF', '#C0AAFF'],
-    '--color-icon-purple': ['#453080', '#201058'],
+    '--color-icon-purple': ['#453080', '#796eb2'],
     '--color-text-purple': ['#453080', '#201058'],
 
     '--color-background-cyan': ['#A8F0E2', '#A8F0E2'],
     '--color-border-cyan': ['#70E8D0', '#70E8D0'],
-    '--color-icon-cyan': ['#005548', '#003028'],
+    '--color-icon-cyan': ['#005548', '#00867b'],
     '--color-text-cyan': ['#005548', '#003028'],
 
     '--color-background-orange': ['#FFCCA0', '#FFCCA0'],
     '--color-border-orange': ['#FFAA66', '#FFAA66'],
-    '--color-icon-orange': ['#703500', '#4a1800'],
+    '--color-icon-orange': ['#703500', '#b66019'],
     '--color-text-orange': ['#703500', '#4a1800'],
 
     '--color-background-teal': ['#A8EED0', '#A8EED0'],
     '--color-border-teal': ['#78E0B0', '#78E0B0'],
-    '--color-icon-teal': ['#005530', '#003018'],
+    '--color-icon-teal': ['#005530', '#3d8469'],
     '--color-text-teal': ['#005530', '#003018'],
 
     // Gray (cream neutral H=75 C=8)
     '--color-background-gray': ['#ede0d4', '#ede0d4'],
     '--color-border-gray': ['#dfd2c6', '#dfd2c6'],
-    '--color-icon-gray': ['#4f453b', '#2d241b'],
+    '--color-icon-gray': ['#4f453b', '#80756a'],
     '--color-text-gray': ['#4f453b', '#2d241b'],
 
     // =========================================================================
