@@ -146,6 +146,86 @@ export const Video: Story = {
   },
 };
 
+export const CustomContent: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <>
+        <button onClick={() => setIsOpen(true)}>Open custom content</button>
+        <Lightbox
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          media={{
+            type: 'custom',
+            label: 'Dashboard template preview',
+            content: (
+              <div
+                style={{
+                  width: 'min(80vw, 960px)',
+                  height: 'min(70vh, 600px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#ffffff',
+                  color: '#111827',
+                  borderRadius: 12,
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+                  fontSize: 24,
+                }}>
+                Live React preview goes here
+              </div>
+            ),
+            caption: 'A rich React subtree hosted inside the lightbox',
+          }}
+        />
+      </>
+    );
+  },
+};
+
+export const MixedGallery: Story = {
+  render: () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [index, setIndex] = useState(0);
+    const items = [
+      {src: 'https://picsum.photos/id/10/1200/800', alt: 'Forest path'},
+      {
+        type: 'custom' as const,
+        label: 'Interactive card',
+        content: (
+          <div
+            style={{
+              width: 'min(70vw, 720px)',
+              padding: 32,
+              background: '#ffffff',
+              color: '#111827',
+              borderRadius: 12,
+              textAlign: 'center',
+            }}>
+            <h2 style={{marginTop: 0}}>Custom slide</h2>
+            <p>Images and arbitrary React content share one gallery.</p>
+            <button onClick={() => alert('Interactive!')}>Click me</button>
+          </div>
+        ),
+        caption: 'A custom slide between images',
+      },
+      {src: 'https://picsum.photos/id/20/1200/800', alt: 'Beach sunset'},
+    ];
+    return (
+      <>
+        <button onClick={() => setIsOpen(true)}>Open mixed gallery</button>
+        <Lightbox
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          media={items}
+          index={index}
+          onIndexChange={setIndex}
+        />
+      </>
+    );
+  },
+};
+
 export const WithHook: Story = {
   render: () => {
     const lightbox = useLightbox({media: GALLERY_MEDIA});
