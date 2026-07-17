@@ -3,7 +3,7 @@ title: 'AI is a copycat so we gave it good examples to copy'
 description: 'We created a single entry point in the CLI that exposes the high quality templates our designers crafted so your agent can copy them and produce high quality output.'
 date: '2026-07-17'
 type: 'engineering'
-draft: true
+draft: false
 authors:
   - 'josephfarina'
 tags:
