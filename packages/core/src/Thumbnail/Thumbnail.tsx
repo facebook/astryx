@@ -11,7 +11,8 @@
  * Square preview card for image attachments. Shows a skeleton shimmer while
  * the image loads, the image on success, or a placeholder on failure.
  * Uses useImageMode (APCA) to detect image luminance so the overlaid
- * remove button always has sufficient contrast.
+ * remove button always has sufficient contrast. Sampling only runs when
+ * that button actually renders — no remove button, no image fetch.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Thumbnail/Thumbnail.doc.mjs
@@ -252,7 +253,15 @@ export function Thumbnail({
   ref,
   ...props
 }: ThumbnailProps) {
-  const imageMode = useImageMode(src, {region: BUTTON_REGION, fallback: null});
+  const showRemoveButton = onRemove != null && !isDisabled;
+
+  // The remove button is the only consumer of the sampled mode. Without it the
+  // fetch + canvas sample is pure waste — and on a cross-origin src it is waste
+  // that fails CORS — so pass a null src to skip sampling (see useImageMode).
+  const imageMode = useImageMode(showRemoveButton ? src : null, {
+    region: BUTTON_REGION,
+    fallback: null,
+  });
 
   const hasSrc = src != null;
   const showSkeleton = isLoading && !hasSrc;
@@ -277,21 +286,20 @@ export function Thumbnail({
     </>
   );
 
-  const removeButtonEl =
-    onRemove != null && !isDisabled ? (
-      <Button
-        icon={<Icon icon="close" size="xsm" />}
-        label={`Remove ${accessibleName}`}
-        variant="secondary"
-        size="sm"
-        isIconOnly
-        onClick={e => {
-          e.stopPropagation();
-          onRemove(e);
-        }}
-        xstyle={styles.removeButtonOverrides}
-      />
-    ) : null;
+  const removeButtonEl = showRemoveButton ? (
+    <Button
+      icon={<Icon icon="close" size="xsm" />}
+      label={`Remove ${accessibleName}`}
+      variant="secondary"
+      size="sm"
+      isIconOnly
+      onClick={e => {
+        e.stopPropagation();
+        onRemove(e);
+      }}
+      xstyle={styles.removeButtonOverrides}
+    />
+  ) : null;
 
   const thumbnail = (
     <div

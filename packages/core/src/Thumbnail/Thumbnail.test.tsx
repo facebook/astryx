@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {render, screen, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Thumbnail} from './Thumbnail';
 
@@ -21,16 +21,19 @@ describe('Thumbnail', () => {
   });
 
   it('shows skeleton when isLoading with no src', () => {
-    const {container} = render(
-      <Thumbnail isLoading data-testid="thumb" />,
-    );
+    const {container} = render(<Thumbnail isLoading data-testid="thumb" />);
     expect(container.querySelector('.astryx-skeleton')).toBeInTheDocument();
     expect(screen.queryByRole('img')).toBeNull();
   });
 
   it('shows image with upload overlay when isLoading with src', () => {
     render(
-      <Thumbnail src="/local.jpg" alt="Uploading" isLoading data-testid="thumb" />,
+      <Thumbnail
+        src="/local.jpg"
+        alt="Uploading"
+        isLoading
+        data-testid="thumb"
+      />,
     );
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', '/local.jpg');
@@ -75,7 +78,6 @@ describe('Thumbnail', () => {
     ).toBeInTheDocument();
   });
 
-
   it('label is shown via tooltip, not as inline text', () => {
     render(<Thumbnail label="photo.png" data-testid="thumb" />);
     // Label should exist in DOM (tooltip) but not as a direct child text node
@@ -117,9 +119,7 @@ describe('Thumbnail', () => {
 
   it('is not interactive when isLoading', () => {
     const onClick = vi.fn();
-    render(
-      <Thumbnail src="/img.jpg" alt="Test" onClick={onClick} isLoading />,
-    );
+    render(<Thumbnail src="/img.jpg" alt="Test" onClick={onClick} isLoading />);
     expect(screen.queryByRole('button')).toBeNull();
   });
 
@@ -127,5 +127,133 @@ describe('Thumbnail', () => {
     const ref = vi.fn();
     render(<Thumbnail ref={ref} data-testid="thumb" />);
     expect(ref).toHaveBeenCalled();
+  });
+
+  // ── Refs #3231 ──────────────────────────────────────────────────────────
+  // The APCA sample (`fetch(src, {mode: 'cors'})` -> createImageBitmap ->
+  // OffscreenCanvas getImageData) exists only to pick the remove button's
+  // MediaTheme. When there is no remove button the sampled mode is discarded,
+  // so the fetch is pure waste — and on a cross-origin src it is waste that
+  // logs a CORS error (see scripts/check-demo-media.mjs).
+  describe('image sampling', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    /** jsdom has no fetch/createImageBitmap/OffscreenCanvas — stub the pipeline. */
+    function stubSamplingPipeline() {
+      const fetchSpy = vi.fn(async () => {
+        throw new TypeError(
+          'Failed to fetch: No Access-Control-Allow-Origin header',
+        );
+      });
+      vi.stubGlobal('fetch', fetchSpy);
+      vi.stubGlobal('createImageBitmap', vi.fn());
+      vi.stubGlobal('OffscreenCanvas', class {});
+      return fetchSpy;
+    }
+
+    /** Let the effect's fetch + state update flush. */
+    async function flush() {
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 0));
+      });
+    }
+
+    it('does not sample the image when there is no remove button', async () => {
+      const fetchSpy = stubSamplingPipeline();
+      render(<Thumbnail src="https://cdn.example/photo.png" alt="Photo" />);
+      await flush();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not sample the image when onRemove is suppressed by isDisabled', async () => {
+      const fetchSpy = stubSamplingPipeline();
+      render(
+        <Thumbnail
+          src="https://cdn.example/photo.png"
+          alt="Photo"
+          onRemove={vi.fn()}
+          isDisabled
+        />,
+      );
+      await flush();
+      expect(screen.queryByRole('button', {name: /Remove/})).toBeNull();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('still samples the image when a remove button is rendered', async () => {
+      const fetchSpy = stubSamplingPipeline();
+      render(
+        <Thumbnail
+          src="https://cdn.example/photo.png"
+          alt="Photo"
+          onRemove={vi.fn()}
+        />,
+      );
+      await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+      expect(fetchSpy).toHaveBeenCalledWith('https://cdn.example/photo.png', {
+        mode: 'cors',
+      });
+    });
+
+    it('does not sample when there is no src to sample', async () => {
+      const fetchSpy = stubSamplingPipeline();
+      render(<Thumbnail onRemove={vi.fn()} isLoading />);
+      await flush();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    // The gate is a render-time condition, not a mount-time latch: a thumbnail
+    // that gains its remove button later must still get its contrast sample.
+    it('starts sampling when the remove button appears after mount', async () => {
+      const fetchSpy = stubSamplingPipeline();
+      const {rerender} = render(
+        <Thumbnail
+          src="https://cdn.example/photo.png"
+          alt="Photo"
+          onRemove={vi.fn()}
+          isDisabled
+        />,
+      );
+      await flush();
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      rerender(
+        <Thumbnail
+          src="https://cdn.example/photo.png"
+          alt="Photo"
+          onRemove={vi.fn()}
+        />,
+      );
+      await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+      expect(screen.getByRole('button', {name: /Remove/})).toBeInTheDocument();
+    });
+
+    it('re-samples when src changes while the remove button is rendered', async () => {
+      const fetchSpy = stubSamplingPipeline();
+      const {rerender} = render(
+        <Thumbnail
+          src="https://cdn.example/photo.png"
+          alt="Photo"
+          onRemove={vi.fn()}
+        />,
+      );
+      await waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
+
+      rerender(
+        <Thumbnail
+          src="https://cdn.example/other.png"
+          alt="Photo"
+          onRemove={vi.fn()}
+        />,
+      );
+      await waitFor(() =>
+        expect(fetchSpy).toHaveBeenLastCalledWith(
+          'https://cdn.example/other.png',
+          {mode: 'cors'},
+        ),
+      );
+    });
   });
 });
