@@ -1,0 +1,28 @@
+{
+  "createdAt": "2026-07-17T11:06:04.506Z",
+  "sample": 10,
+  "promptIds": [
+    "fwc-3",
+    "wd-5",
+    "cwm-1",
+    "sd-4",
+    "dd-2",
+    "rc-3",
+    "io-3",
+    "ps-4",
+    "ty-3",
+    "tc-7"
+  ],
+  "iterations": {
+    "astryx": "086b04aa",
+    "astryx-tailwind": "bc8a34cd",
+    "baseline": "279f4a43",
+    "html": "d3a264eb"
+  },
+  "dirs": {
+    "astryx": "/vercel/sandbox/repos/xds-worktrees/7d1aa510/internal/vibe-tests/results/086b04aa",
+    "astryx-tailwind": "/vercel/sandbox/repos/xds-worktrees/7d1aa510/internal/vibe-tests/results/bc8a34cd",
+    "baseline": "/vercel/sandbox/repos/xds-worktrees/7d1aa510/internal/vibe-tests/results/279f4a43",
+    "html": "/vercel/sandbox/repos/xds-worktrees/7d1aa510/internal/vibe-tests/results/d3a264eb"
+  }
+}

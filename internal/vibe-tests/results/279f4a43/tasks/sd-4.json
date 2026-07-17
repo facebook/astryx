@@ -1,0 +1,14 @@
+{
+  "promptId": "sd-4",
+  "category": "state-driven",
+  "prompt": "Build a terms and conditions acceptance form. Show a scrollable text area with the terms, then checkboxes for \"I agree to the Terms of Service\" and \"I agree to the Privacy Policy\". The continue button should only enable when both are checked.",
+  "expectedComponents": [
+    "CheckboxInput",
+    "Button",
+    "TextArea"
+  ],
+  "target": "baseline",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds-worktrees/7d1aa510/internal/vibe-tests/results/279f4a43/projects/sd-4. Explore it to find available components.\n\n## Task\n\nBuild a terms and conditions acceptance form. Show a scrollable text area with the terms, then checkboxes for \"I agree to the Terms of Service\" and \"I agree to the Privacy Policy\". The continue button should only enable when both are checked.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds-worktrees/7d1aa510/internal/vibe-tests/results/279f4a43/projects/sd-4/sd-4.tsx\nWrite metadata to: /vercel/sandbox/repos/xds-worktrees/7d1aa510/internal/vibe-tests/results/279f4a43/projects/sd-4/sd-4.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-17T11:06:04.503Z"
+}

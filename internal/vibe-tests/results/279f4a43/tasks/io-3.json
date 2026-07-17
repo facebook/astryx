@@ -1,0 +1,12 @@
+{
+  "promptId": "io-3",
+  "category": "integration-oriented",
+  "prompt": "A file upload button that shows progress and calls an upload endpoint",
+  "expectedComponents": [
+    "Button"
+  ],
+  "target": "baseline",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds-worktrees/7d1aa510/internal/vibe-tests/results/279f4a43/projects/io-3. Explore it to find available components.\n\n## Task\n\nA file upload button that shows progress and calls an upload endpoint\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds-worktrees/7d1aa510/internal/vibe-tests/results/279f4a43/projects/io-3/io-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds-worktrees/7d1aa510/internal/vibe-tests/results/279f4a43/projects/io-3/io-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-17T11:06:04.504Z"
+}

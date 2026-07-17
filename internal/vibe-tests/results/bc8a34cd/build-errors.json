@@ -1,0 +1,103 @@
+{
+  "cwm-1": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "dd-2": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "fwc-3": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "io-3": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ps-4": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "rc-3": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "sd-4": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "tc-7": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 13,
+        "message": "Object literal may only specify known properties, and 'background' does not exist in type 'ColorScaleConfig'.",
+        "code": "TS2353"
+      },
+      {
+        "line": 24,
+        "message": "Object literal may only specify known properties, and 'background' does not exist in type 'ColorScaleConfig'.",
+        "code": "TS2353"
+      },
+      {
+        "line": 37,
+        "message": "Property 'title' is missing in type '{ children: Element[]; }' but required in type 'SideNavSectionProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 38,
+        "message": "Property 'heading' is missing in type '{ children: string; }' but required in type 'SideNavHeadingProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 39,
+        "message": "Property 'label' is missing in type '{ children: string; href: string; isSelected: true; }' but required in type 'SideNavItemProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 40,
+        "message": "Property 'label' is missing in type '{ children: string; href: string; }' but required in type 'SideNavItemProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 41,
+        "message": "Property 'label' is missing in type '{ children: string; href: string; }' but required in type 'SideNavItemProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 42,
+        "message": "Property 'label' is missing in type '{ children: string; href: string; }' but required in type 'SideNavItemProps'.",
+        "code": "TS2741"
+      }
+    ],
+    "errorCount": 8,
+    "buildSuccess": false
+  },
+  "ty-3": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "wd-5": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  }
+}
