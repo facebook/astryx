@@ -1,143 +1,89 @@
-# Authoring an Astryx integration
+# Authoring an Astryx Integration
 
 > **Status:** working notes. This should eventually move to the public wiki
 > alongside the rest of the integration-authoring guidance; it lives here for
 > now so it ships and is versioned with the CLI.
 
-An **integration** is an npm package that contributes components, templates, or
-codemods to a consumer's design-system workflow. It declares its contributions
-in a root `astryx.integration.{ts,mjs,js}` manifest sibling to its
-`package.json`:
+An **Integration** is an npm package that contributes components, templates, and/or
+codemods to a consumer's design-system workflow. Consumers install the 3rd party
+package, add a line to their astryx.config file:
+```js
+export default createConfig({
+  integrations: ['@acme/astryx-widgets'],
+  ...
+});
+```
+Then the integration's components and templates will be surfaced alongside Astryx
+components in the Astryx CLI.
+```sh
+astryx component AcmeCarousel props
+astryx component list --package @acme/astryx-widgets
+```
+
+## The Integration File
+
+In order to register your package as an Astryx Integration, create an
+`astryx.integration.{ts,mjs,js}` file as a sibling to your `package.json`. This file
+tells Astryx where to find your components, templates, codemods, etc.
 
 ```js
-// astryx.integration.mjs
-export default {
+// astryx.integration.{ts,mjs,js}
+export default createIntegration({
   components: './components',
   templates: './templates',
   codemods: './codemods',
   issuesUrl: 'https://github.com/acme/widgets/issues',
-};
+});
 ```
 
-## Block templates ship TypeScript source
+## Components
 
-Integration packages in this ecosystem ship **TypeScript source** — a block
-template is a `.tsx` file (plus a same-stem `.template.{ts,mjs,js}` doc), with
-**no compiled `.d.ts`**. Consumers run their own bundler (Next.js/Turbopack,
-Vite, esbuild) and type-check with `moduleResolution: bundler`.
+Your components themselves may be exported from your library as you see fit (consumers
+will still import them from your package) but Astryx CLI will look for a .doc.{ts,mjs,js}
+file with the same stem e.g. `AcmeCarousel.tsx` and `AcmeCarousel.doc.ts`.
 
-A block template lives under the declared `templates` root as a pair:
-
+```js
+// AcmeCarousel.doc.ts
+export default createComponentDoc({
+  name: 'AcmeCarousel',
+  description: '...',
+  ...
+});
 ```
-templates/
-  Gauge/
-    GaugeShowcase.template.ts   # the template-spec doc (createBlockTemplate)
-    GaugeShowcase.tsx           # the same-stem source a preview import()s
+
+## Templates
+
+Templates are typically not exported from the package directly, but instead accessed
+via the Astryx CLI. Consumers can look through your templates and materialize them 
+into their apps.
+
+You define a template with the `createPageTemplate` (for full pages) or `createBlockTemplate`
+(for smaller chunks). e.g. `AcmeLandingPage.tsx`, `AcmeLandingPage.template.ts`
+
+```js
+// AcmeLandingPage.template.ts
+export default createPageTemplate({
+  ...
+});
 ```
 
-## Requirement: export your block templates for deep import
+Note that, since the CLI needs access to the template source code, you need to make sure
+that it is included in your published package. This will also allow us to render previews
+of templates in the future by bundling your template into a doc site build.
 
-Tooling renders showcase/template previews by a **real dynamic `import()`** of a
-block's `.tsx` source — no `eval`, no reading-source-as-text. For that
-`import()` to resolve, your `package.json#exports` map must **gate the deep
-path**. Node/bundler resolution will refuse `@acme/widgets/templates/…` unless an
-`exports` entry matches it.
-
-### Canonical recipe
-
-Add this single entry to your integration's `package.json`:
+Typically, this is done via the package.json `exports` key.
 
 ```jsonc
 {
   "exports": {
-    // …your existing entries…
+    // ...
     "./templates/*.tsx": "./templates/*.tsx",
   },
 }
 ```
 
-and let consumers (and generated import maps) import **with the `.tsx`
-extension**:
+In order to verify that it's working, you can test importing the template component like this:
 
 ```ts
-import('@acme/widgets/templates/Gauge/GaugeShowcase.tsx');
+import('@acme/astryx-widgets/templates/pages/AcmeLandingPage.tsx');
 ```
-
-This is the **minimal** form that satisfies _both_ gates:
-
-| Recipe                                         | Import shape                    | `tsc --noEmit` (bundler) | bundler build |
-| ---------------------------------------------- | ------------------------------- | :----------------------: | :-----------: |
-| **`"./templates/*.tsx": "./templates/*.tsx"`** | **`…/GaugeShowcase.tsx`** (ext) |          **✅**          |    **✅**     |
-| `"./templates/*.tsx": "./templates/*.tsx"`     | `…/GaugeShowcase` (no ext)      |       ❌ `TS2307`        |      ❌       |
-| `"./templates/*": "./templates/*"`             | `…/GaugeShowcase.tsx` (ext)     |      ❌ `TS5097`\*       |      ✅       |
-| `"./templates/*": "./templates/*"`             | `…/GaugeShowcase` (no ext)      |       ❌ `TS2307`        |      ❌       |
-| _(no exports map)_                             | either                          |            ❌            | ✅ (unscoped) |
-
-\* A bare `./templates/*` mapping does not tell TypeScript the resolved file is a
-`.tsx`, so importing with the extension trips `TS5097` ("An import path can only
-end with a '.tsx' extension when 'allowImportingTsExtensions' is enabled"). The
-extensionful `./templates/*.tsx` entry is what lets TS accept the `.tsx` import
-**without** requiring consumers to set `allowImportingTsExtensions` — the
-extension is legitimized by the matched `exports` pattern. This is why the
-extensionful export is the canonical choice: it type-checks against an
-**unmodified** consumer tsconfig (the profile used by the repo's Next.js example
-apps).
-
-### Why the extension is unavoidable (without a barrel)
-
-Because integration packages ship raw `.tsx` with no `.d.ts`, `moduleResolution:
-bundler` will not silently append `.tsx` to a bare deep specifier — an
-extensionless import of `@acme/widgets/templates/Gauge/GaugeShowcase` fails to
-type-check (`TS2307`) and fails to bundle regardless of the exports map. The
-resolvable, type-checking shape is the **extensionful** one.
-
-### Optional: a no-extension barrel
-
-If you want consumers to import **without** an extension, ship an index barrel
-per block and export the directory:
-
-```jsonc
-{"exports": {"./templates/*": "./templates/*/index.ts"}}
-```
-
-```ts
-// templates/Gauge/index.ts
-export {default} from './GaugeShowcase'; // no extension — resolved by the bundler
-```
-
-```ts
-import('@acme/widgets/templates/Gauge'); // clean, extensionless
-```
-
-This type-checks under bundler resolution and bundles. The trade-off: it adds a
-hand-written (or generated) barrel file per block, and — like the direct `.tsx`
-recipe — it still requires a bundler/loader to _execute_ the TS source (raw
-`node` cannot type-strip files inside `node_modules`;
-`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`). For **generated import maps**,
-prefer the direct extensionful recipe: it needs no per-block barrel and no build
-step in the integration package.
-
-## Recommended import shape for generated code
-
-**Emit the extensionful, direct form:**
-
-```ts
-import('@acme/widgets/templates/Gauge/GaugeShowcase.tsx');
-```
-
-paired with the canonical `"./templates/*.tsx": "./templates/*.tsx"` export. It is the
-one shape that resolves for a real bundler `import()` **and** type-checks under
-an unmodified `moduleResolution: bundler` consumer tsconfig, with no barrel
-files to generate and no `allowImportingTsExtensions` opt-in required of
-consumers.
-
-## Hazard for consumers of `exports` (stale entries)
-
-A star pattern like `./templates/*.tsx` is resolved **structurally** — Node's
-`import.meta.resolve` returns a path for
-`@acme/widgets/templates/Gauge/GaugeShowcase.tsx` even if that file has since been
-**deleted** (it only throws when you actually load it). A generator or consumer
-that walks a package's declared block exports must therefore **tolerate and skip
-dead entries**: verify the target exists on disk (or catch the load failure)
-before emitting an `import()` for it. Do not assume every listed/expected export
-target is present.
