@@ -39,17 +39,6 @@ import {themeProps} from '../utils/themeProps';
 
 type Density = 'compact' | 'balanced' | 'spacious';
 
-/** Imperative handle for ChatLayout scroll controls. */
-export interface ChatLayoutHandle {
-  /** Scroll a message to the top and unlock for stream-in. */
-  /** Scroll to bottom and re-lock. */
-  scrollToBottom: () => void;
-  /** Navigate to a message, no lock change. */
-  scrollToMessage: (el: HTMLElement) => void;
-  /** Scroll to the last message. */
-  scrollToLastMessage: () => void;
-}
-
 export interface ChatLayoutProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element. */
   ref?: React.Ref<HTMLDivElement>;
