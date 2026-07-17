@@ -19,7 +19,6 @@ import {cliError} from './lib/cli-error.mjs';
 import {ERROR_CODES} from './lib/error-codes.mjs';
 import {levenshteinDistance} from './lib/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
-import {buildAttribution, recordFirstSeen} from './lib/attribution.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -235,27 +234,6 @@ program.hook('postAction', (thisCommand, actionCommand) => {
     }
   } catch {
     // Never let update check break the CLI
-  }
-});
-
-/**
- * Attribution (foolproof): on ANY command, record — at most once per CLI
- * version — how/when this project started using the CLI. Local-only file
- * (.astryx/attribution.jsonl), no telemetry, no stdout. `init` records its own
- * (via-tagged) attribution, so it's skipped here to avoid a double entry. This
- * makes discovery-channel learning independent of whether `init` ever runs.
- * A channel with no CLI flag can still tag itself via the ASTRYX_VIA env var.
- * See lib/attribution.mjs.
- */
-program.hook('preAction', (thisCommand, actionCommand) => {
-  try {
-    if (actionCommand === program) return;
-    if (actionCommand.name() === 'init') return; // init self-records (via-tagged)
-    const targetDir = process.cwd();
-    if (!fs.existsSync(path.join(targetDir, 'package.json'))) return; // only real projects
-    recordFirstSeen(targetDir, buildAttribution({targetDir, cliVersion: pkg.version}));
-  } catch {
-    // Never let attribution break the CLI.
   }
 });
 

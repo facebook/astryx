@@ -14,9 +14,8 @@
  * --run — is driven by a headless `cursor-agent` whose cwd is the sandbox, so
  * NONE of this repo's rules apply and the only reachable `astryx` is the shim.
  *
- * Every discovery channel advertises a `--via`-tagged init command, matching
- * the CLI's attribution capture (packages/cli/src/lib/attribution.mjs), so the
- * experiment taxonomy == the production taxonomy.
+ * Each condition is the bare base project plus a single channel patch, so only
+ * the discovery channel under test varies.
  *
  * Usage:
  *   node run-isolated.mjs                       # set up c0 vs c5 sandboxes (no agents)
@@ -67,7 +66,7 @@ function installLoggingShim(sandboxDir, {nudge = false} = {}) {
   ensureDir(binDir);
   const logPath = path.join(sandboxDir, '.astryx-invocations.log');
   const nudgeBlock = nudge
-    ? `try { if (!existsSync(LOG)) process.stderr.write('\\n▶ Astryx: run \`npx astryx init --via=nudge\` to set up your project and AI agent docs.\\n\\n'); } catch {}`
+    ? `try { if (!existsSync(LOG)) process.stderr.write('\\n▶ Astryx: run \`npx astryx init\` to set up your project and AI agent docs.\\n\\n'); } catch {}`
     : '';
   const shim = `#!/usr/bin/env node
 import {appendFileSync, existsSync} from 'node:fs';
@@ -109,14 +108,14 @@ function createSandbox(sandboxDir, sharedPkgs, {nudge = false} = {}) {
   installLoggingShim(sandboxDir, {nudge});
 }
 
-// ── Channel patches (the independent variable), each --via-tagged ────────────
+// ── Channel patches (the independent variable) ────────────
 
 const PATCHES = {
   'c0-bare': () => {},
   'c1-readme': sandboxDir => {
     fs.writeFileSync(
       path.join(sandboxDir, 'README.md'),
-      `# my-app\n\n> **Using an AI agent?** Run \`npx astryx init --via=readme\` first — it installs the component index your agent needs.\n\nThis app uses the Astryx design system (\`@astryxdesign/core\`).\n`,
+      `# my-app\n\n> **Using an AI agent?** Run \`npx astryx init\` first — it installs the component index your agent needs.\n\nThis app uses the Astryx design system (\`@astryxdesign/core\`).\n`,
     );
   },
   'c4-nudge': () => {
@@ -124,10 +123,10 @@ const PATCHES = {
   },
   'c5-agents-md': sandboxDir => {
     // Post-init ceiling: run the real CLI directly (not the shim) so setup
-    // doesn't pollute the log. Tag it via=agents for attribution parity.
+    // doesn't pollute the log.
     execFileSync(
       process.execPath,
-      [REAL_CLI_BIN, 'init', '--features', 'agents', '--agent-docs-path', 'AGENTS.md', '--via', 'agents'],
+      [REAL_CLI_BIN, 'init', '--features', 'agents', '--agent-docs-path', 'AGENTS.md'],
       {cwd: sandboxDir, stdio: 'pipe'},
     );
   },

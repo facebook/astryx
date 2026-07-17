@@ -265,7 +265,7 @@ Self-reports contradict it: both `c0` agents ran the CLI heavily (**9** and **35
 
 ## 15. Findings — pilot 2 (ISOLATED, valid) · exp `ee116c67`
 
-Fix from §14 applied: headless `cursor-agent` in `/tmp` sandboxes (no repo rules, packages copied out of the repo). Conditions `c0-bare` / `c1-readme` / `c4-nudge` / `c5-agents-md` × {`fwc-1`, `ps-1`}, n=2/condition, model `auto`. Channels are `--via`-tagged to match production attribution (`packages/cli/src/lib/attribution.mjs`).
+Fix from §14 applied: headless `cursor-agent` in `/tmp` sandboxes (no repo rules, packages copied out of the repo). Conditions `c0-bare` / `c1-readme` / `c4-nudge` / `c5-agents-md` × {`fwc-1`, `ps-1`}, n=2/condition, model `auto`.
 
 Funnel (ground truth = astryx shim log):
 
@@ -307,19 +307,15 @@ Funnel (ground truth = astryx shim log):
 - **Ceiling nuance:** `c5` (AGENTS.md) hits 100% CLI use but only **3/5 completed** the code — the 30-command CLI-exploration path is thorough but token-expensive and sometimes doesn't finish. `c1-readme` completed **5/5** — better cost/completion, because README→init lands the same `AGENTS.md` without the agent burning the turn exploring.
 - **Nudge-alone (`c4`) = 0/5.** Confirmed useless for _discovery_; keep only as post-discovery conversion. Do not rely on it.
 
-**Foolproof attribution** ✅ SHIPPED:
-
-- `recordFirstSeen()` in `packages/cli/src/lib/attribution.mjs` + a `preAction` hook in `packages/cli/src/index.mjs`: **any** command (not just `init`) records — once per CLI version — how/when a project started using the CLI (`via`/`invoker`/`installMethod`/versions/`ts`). `ASTRYX_VIA` env lets flagless channels (nudge, postinstall) self-tag. Verified: non-`init` `docs` writes a record; env-via works; dedupe holds (1 line on repeat).
+**Attribution — considered and removed.** A `--via` tag + local `.astryx/attribution.jsonl` was prototyped, but it's local-only (no passive way to aggregate across the ecosystem), so it was dropped. The npm download share (~63% of core installs already pull the CLI) is the adoption signal we keep.
 
 **Caveats:** single model (`auto`); n=5 (README lower CI ~38% vs floor upper ~43% — strong, tighten with K=10). `c2-types` still untested (the other agent-native channel).
 
 ---
 
-## 15. Attribution + isolated runner (implemented)
+## Isolated runner (implemented)
 
-**Attribution shipped in the CLI** — `packages/cli/src/lib/attribution.mjs`, wired into `init`. `astryx init --via=<channel>` records _how_ the project found the CLI to `.astryx/attribution.jsonl` and embeds a tag in the generated agent docs: `<!-- ASTRYX:src via=… invoker=… install=… v=… ts=… -->`. Local-first, **no telemetry**; auto-detects agent-vs-human and install method (npx vs devDependency). This is the production-side answer to _"how did they get the CLI?"_ — and the experiment's channel taxonomy is intentionally identical to the `--via` taxonomy (`VIA_SOURCES`). 65/65 existing CLI tests pass; `--json init` still writes nothing.
-
-**Isolated runner** — `run-isolated.mjs` fixes the §14 contamination. Each task runs in a `/tmp` sandbox with packages **copied out of the repo** (walking up lands in `/tmp`, not the design-system source), driven by a headless `cursor-agent` whose **cwd is the sandbox** (so this repo's always-applied `CLAUDE.md` never applies), with only the shim `astryx` reachable. Channels advertise `--via`-tagged init commands. Verified without agents: `c0` bare, `c5` tagged `AGENTS.md`, `core`→`/tmp`, shim logs, and `cursor-agent -p` headless responds.
+**Isolated runner** — `run-isolated.mjs` fixes the §14 contamination. Each task runs in a `/tmp` sandbox with packages **copied out of the repo** (walking up lands in `/tmp`, not the design-system source), driven by a headless `cursor-agent` whose **cwd is the sandbox** (so this repo's always-applied `CLAUDE.md` never applies), with only the shim `astryx` reachable. Verified without agents: `c0` bare, `c5` tagged `AGENTS.md`, `core`→`/tmp`, shim logs, and `cursor-agent -p` headless responds.
 
 Run: `node cli-discovery-test/run-isolated.mjs --run --prompts fwc-1,ps-1` → `discovery-aggregate.ts --experiment <id>`.
 

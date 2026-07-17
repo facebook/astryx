@@ -23,7 +23,6 @@ import {findCoreDir, CLI_ROOT} from '../utils/paths.mjs';
 import {assertWithin, PathSafetyError} from '../utils/path-safety.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {discoverComponents} from '../lib/component-discovery.mjs';
-import {attributionComment} from '../lib/attribution.mjs';
 import {humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
@@ -142,14 +141,9 @@ export function detectStylingSystem(targetDir) {
  * configured (see {@link detectStylingSystem}) so the agent never reaches for a
  * styling path that isn't compiled here.
  */
-export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix(), stylingSystem = 'css', attributionLine} = {}) {
+export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix(), stylingSystem = 'css'} = {}) {
   const run = `${runPrefix} astryx`;
   const lines = [MARKER_START];
-
-  // Attribution: embed how this project found the CLI so any repo reveals its
-  // discovery channel on inspection (see lib/attribution.mjs). Sits inside the
-  // marker block, so it's refreshed on every re-run.
-  if (attributionLine) lines.push(attributionLine);
 
   // Component count from live discovery
   let componentCount = '90+';
@@ -391,16 +385,14 @@ export function removeAgentDocs(targetDir) {
  * @param {string} [options.agent] - Tool preset: 'claude', 'cursor', 'codex', 'all'
  * @param {string[]} [options.paths] - Explicit paths (overrides agent/auto-detect)
  * @param {boolean} [options.onlyReplace] - Only update files that already have Astryx markers (for upgrades)
- * @param {object} [options.attribution] - Attribution record to embed as a comment (see lib/attribution.mjs)
  * @returns {string[]} List of files written
  */
-export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false, attribution} = {}) {
+export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false} = {}) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
   const runPrefix = getRunPrefix(targetDir);
   const stylingSystem = detectStylingSystem(targetDir);
-  const attributionLine = attribution ? attributionComment(attribution) : undefined;
-  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, runPrefix, stylingSystem, attributionLine});
+  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, runPrefix, stylingSystem});
   const written = [];
 
   // Explicit paths override everything
