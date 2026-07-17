@@ -114,6 +114,19 @@ describe('MultiSelector', () => {
     expect(screen.getByText('2 selected')).toBeInTheDocument();
   });
 
+  it('formats the count display with formatTriggerCount', () => {
+    render(
+      <MultiSelector
+        label="Spaces"
+        options={defaultOptions}
+        value={['Apple', 'Banana']}
+        onChange={() => {}}
+        formatTriggerCount={count => `${count} spaces selected`}
+      />,
+    );
+    expect(screen.getByText('2 spaces selected')).toBeInTheDocument();
+  });
+
   it('shows labels display', () => {
     render(
       <MultiSelector
