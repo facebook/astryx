@@ -268,6 +268,7 @@ export function ChatLayout({
   style,
   'data-testid': testId,
   ref,
+  ...rest
 }: ChatLayoutProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -327,6 +328,7 @@ export function ChatLayout({
   return (
     <ChatLayoutContext value={layoutContext}>
       <div
+        {...rest}
         ref={mergeRefs(ref, rootRef)}
         data-testid={testId}
         {...mergeProps(

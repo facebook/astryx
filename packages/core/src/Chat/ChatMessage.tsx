@@ -167,6 +167,7 @@ export function ChatMessage({
   style: styleProp,
   'data-testid': testId,
   ref,
+  ...rest
 }: ChatMessageProps) {
   const listContext = useChatListContext();
   const density = densityProp ?? listContext?.density ?? 'balanced';
@@ -216,6 +217,7 @@ export function ChatMessage({
   return (
     <ChatMessageContext value={contextValue}>
       <article
+        {...rest}
         ref={ref}
         data-testid={testId}
         aria-label={!hasName ? `Message from ${sender}` : undefined}
