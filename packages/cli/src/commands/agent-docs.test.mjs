@@ -43,6 +43,25 @@ describe('generateCompressedIndex', () => {
     expect(result).toMatch(/never override --color-/);
   });
 
+  it('includes the post-generation self-check rule', () => {
+    const result = generateCompressedIndex('1.0.0');
+    expect(result).toContain('SELF-CHECK before you finish');
+    expect(result).toMatch(/re-read the file/);
+    expect(result).toMatch(/you veered off Astryx/);
+  });
+
+  it('tailors the self-check marker list to the styling system', () => {
+    // className is a veer in the xstyle/StyleX path
+    const stylex = generateCompressedIndex('1.0.0', {stylingSystem: 'stylex'});
+    const stylexSelfCheck = stylex.split('\n').find(l => l.includes('SELF-CHECK'));
+    expect(stylexSelfCheck).toMatch(/className=/);
+    // className IS the system in Tailwind — it must NOT be listed as a veer marker
+    const tailwind = generateCompressedIndex('1.0.0', {stylingSystem: 'tailwind'});
+    const tailwindSelfCheck = tailwind.split('\n').find(l => l.includes('SELF-CHECK'));
+    expect(tailwindSelfCheck).toBeDefined();
+    expect(tailwindSelfCheck).not.toMatch(/className=/);
+  });
+
   it('defaults to the CSS-variable styling path (no compiler)', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).toMatch(/style\/className with tokens/);
