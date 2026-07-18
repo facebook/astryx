@@ -171,6 +171,30 @@ describe('BaseTypeahead', () => {
     });
   });
 
+  it.each(['ArrowDown', 'Home'])(
+    'does not set aria-activedescendant when %s is pressed with no results',
+    async key => {
+      render(
+        <BaseTypeahead
+          searchSource={fruitSource}
+          value={null}
+          onChange={() => {}}
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      fireEvent.change(input, {target: {value: 'zzzzz'}});
+
+      await waitFor(() => {
+        expect(input).toHaveAttribute('aria-expanded', 'true');
+      });
+
+      fireEvent.keyDown(input, {key});
+
+      expect(input).not.toHaveAttribute('aria-activedescendant');
+    },
+  );
+
   it('disables input when isDisabled', () => {
     render(
       <BaseTypeahead
