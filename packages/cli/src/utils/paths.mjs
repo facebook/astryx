@@ -118,13 +118,23 @@ export function discoverExternalPackages(startDir = process.cwd()) {
       try {
         const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
         if (pkg.name === '@astryxdesign/core') continue;
-        if (pkg.astryx && pkg.astryx.docs) {
+        // A package participates if it declares component docs and/or a
+        // templates root. `docs` packages contribute component docs (+ optional
+        // showcase blocks); `templates` packages contribute page/block
+        // templates that showcase components the package owns (e.g. charts/lab
+        // sit above core, so their chart templates live with them, not core).
+        if (pkg.astryx && (pkg.astryx.docs || pkg.astryx.templates)) {
           externals.push({
             name: pkg.name,
             category: pkg.astryx.category || pkg.name,
-            docsDir: path.resolve(fullPath, pkg.astryx.docs),
+            docsDir: pkg.astryx.docs
+              ? path.resolve(fullPath, pkg.astryx.docs)
+              : null,
             blocksDir: pkg.astryx.blocks
               ? path.resolve(fullPath, pkg.astryx.blocks)
+              : null,
+            templatesDir: pkg.astryx.templates
+              ? path.resolve(fullPath, pkg.astryx.templates)
               : null,
           });
         }

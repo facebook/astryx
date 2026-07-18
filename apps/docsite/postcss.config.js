@@ -12,6 +12,8 @@ module.exports = {
       include: [
         'src/**/*.{js,jsx,ts,tsx}',
         '../../packages/core/templates/**/*.{js,jsx,ts,tsx}',
+        '../../packages/charts/templates/**/*.{js,jsx,ts,tsx}',
+        '../../packages/lab/templates/**/*.{js,jsx,ts,tsx}',
       ],
       babelConfig: {
         babelrc: false,

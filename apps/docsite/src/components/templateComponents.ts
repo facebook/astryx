@@ -141,15 +141,15 @@ export const TEMPLATE_COMPONENTS: Record<
   ),
   'table-page-chart': lazy(
     () =>
-      import('../../../../packages/core/templates/pages/table-page-chart/page'),
+      import('../../../../packages/charts/templates/pages/table-page-chart/page'),
   ),
   'table-page-heatmap-status': lazy(
     () =>
-      import('../../../../packages/core/templates/pages/table-page-heatmap-status/page'),
+      import('../../../../packages/lab/templates/pages/table-page-heatmap-status/page'),
   ),
   'table-page-shoe-store-heatmap': lazy(
     () =>
-      import('../../../../packages/core/templates/pages/table-page-shoe-store-heatmap/page'),
+      import('../../../../packages/charts/templates/pages/table-page-shoe-store-heatmap/page'),
   ),
 };
 

@@ -2,7 +2,7 @@
   "name": "@astryxdesign/charts",
   "version": "0.1.6",
   "private": true,
-  "description": "Astryx charts — a config-model data visualization library (d3-based). Published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
+  "description": "Astryx charts \u2014 a config-model data visualization library (d3-based). Published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
@@ -22,7 +22,8 @@
   ],
   "astryx": {
     "canaryOnly": true,
-    "_comment": "Published ONLY to the @canary dist-tag (see .github/workflows/release.yml). Never published as a stable `latest` release. `private: true` is intentional and must stay — it is npm's hard guarantee against an accidental stable publish."
+    "_comment": "Published ONLY to the @canary dist-tag (see .github/workflows/release.yml). Never published as a stable `latest` release. `private: true` is intentional and must stay \u2014 it is npm's hard guarantee against an accidental stable publish.",
+    "templates": "./templates"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -31,6 +32,7 @@
   "files": [
     "dist",
     "src",
+    "templates",
     "README.md",
     "CHANGELOG.md"
   ],

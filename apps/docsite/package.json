@@ -22,6 +22,7 @@
     "@astryxdesign/charts": "*",
     "@astryxdesign/cli": "*",
     "@astryxdesign/core": "*",
+    "@astryxdesign/lab": "*",
     "@astryxdesign/theme-butter": "*",
     "@astryxdesign/theme-gothic": "*",
     "@astryxdesign/theme-matcha": "*",

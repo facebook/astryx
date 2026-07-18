@@ -126,6 +126,9 @@ importers:
       '@astryxdesign/core':
         specifier: '*'
         version: link:../../packages/core
+      '@astryxdesign/lab':
+        specifier: '*'
+        version: link:../../packages/lab
       '@astryxdesign/theme-butter':
         specifier: '*'
         version: link:../../packages/themes/butter

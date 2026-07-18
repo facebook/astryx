@@ -169,6 +169,12 @@ async function loadDocModule(docPath) {
 
 export {discoverAll as discoverTemplates};
 
+/**
+ * Page-template directory names available to `astryx init` as project starters.
+ * Core-owned page templates only: external packages (charts/lab) contribute
+ * hidden chart/heatmap demo pages via {@link discoverExternalPages}, which are
+ * showcase content surfaced through `discoverAll`, not general init starters.
+ */
 export function listTemplates() {
   const all = [];
   if (fs.existsSync(PAGES_DIR)) {
@@ -306,6 +312,59 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
 }
 
 /**
+ * Discover page templates contributed by external packages that declare an
+ * `astryx.templates` root (e.g. `@astryxdesign/charts`, `@astryxdesign/lab`
+ * ship the chart/heatmap page templates that showcase their own components,
+ * since core cannot depend on packages that sit above it). Reads `<root>/pages`.
+ * @param {string} [cwd]
+ */
+async function discoverExternalPages(cwd = process.cwd()) {
+  const externals = discoverExternalPackages(cwd);
+  const pages = [];
+
+  for (const ext of externals) {
+    if (!ext.templatesDir) continue;
+    const pagesDir = path.join(ext.templatesDir, 'pages');
+    if (!fs.existsSync(pagesDir)) continue;
+    const dirs = fs
+      .readdirSync(pagesDir, {withFileTypes: true})
+      .filter(e => e.isDirectory());
+    for (const dir of dirs) {
+      const dirPath = path.join(pagesDir, dir.name);
+      const docPath =
+        findPageDocFile(dirPath) ?? path.join(dirPath, 'template.doc.mjs');
+      const doc = await loadDocModule(docPath);
+      pages.push({
+        type: 'page',
+        dirName: dir.name,
+        name: doc?.name || dir.name,
+        description: doc?.description || '',
+        category: doc?.category || '',
+        isReady: doc?.isReady ?? true,
+        scaffold: doc?.scaffold ?? false,
+        filePath: path.join(dirPath, 'page.tsx'),
+        docPath,
+        package: ext.name,
+      });
+    }
+  }
+
+  return pages;
+}
+
+/**
+ * Discover all page templates — core + external packages.
+ * @param {string} [cwd]
+ */
+async function discoverAllPages(cwd = process.cwd()) {
+  const [core, external] = await Promise.all([
+    discoverPages(),
+    discoverExternalPages(cwd),
+  ]);
+  return [...core, ...external];
+}
+
+/**
  * Discover all blocks — core + external packages.
  * @param {string} [cwd]
  */
@@ -319,7 +378,7 @@ async function discoverAllBlocks(cwd = process.cwd()) {
 
 async function discoverAll(cwd = process.cwd()) {
   const [pages, blocks, integration] = await Promise.all([
-    discoverPages(),
+    discoverAllPages(cwd),
     discoverAllBlocks(cwd),
     discoverIntegrationTemplates(cwd),
   ]);
@@ -338,7 +397,7 @@ async function discoverAll(cwd = process.cwd()) {
  */
 async function discoverAllWithErrors(cwd = process.cwd()) {
   const [pages, blocks, integration] = await Promise.all([
-    discoverPages(),
+    discoverAllPages(cwd),
     discoverAllBlocks(cwd),
     discoverIntegrationTemplates(cwd),
   ]);

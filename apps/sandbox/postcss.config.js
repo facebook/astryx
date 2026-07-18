@@ -11,6 +11,10 @@ const rootDir = path.resolve(__dirname, '../..');
 // plugin only needs to handle product code here.
 module.exports = postcss(rootDir, {
   appDir: path.relative(rootDir, path.resolve(__dirname, 'src')),
-  extraInclude: ['packages/core/templates/**/*.{ts,tsx}'],
+  extraInclude: [
+    'packages/core/templates/**/*.{ts,tsx}',
+    'packages/charts/templates/**/*.{ts,tsx}',
+    'packages/lab/templates/**/*.{ts,tsx}',
+  ],
   classNamePrefix: 'p',
 });
