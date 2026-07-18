@@ -39,4 +39,8 @@ export const docsDense = {
     description:
       'Returns a translator function that resolves keys against the current locale, provider overrides, and the shipped English fallback catalog.',
   },
+  returnDescriptions: {
+    value:
+      'translator function bound to current InternationalizationProvider context. Call with message key + optional ICU MessageFormat values; returns formatted string in active locale. Safe in render, event handlers, effects.',
+  },
 };
