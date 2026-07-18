@@ -12,11 +12,9 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {Table} from '../../Table';
+import {InternationalizationProvider} from '../../../i18n';
 import type {TableColumn} from '../../types';
-import {
-  useTableSortable,
-  type TableSortState,
-} from './useTableSortable';
+import {useTableSortable, type TableSortState} from './useTableSortable';
 
 // =============================================================================
 // Test Data
@@ -73,9 +71,7 @@ function SortableTable({
     isMultiSortEnabled,
   });
 
-  return (
-    <Table data={data} columns={columns} plugins={{sort: sortPlugin}} />
-  );
+  return <Table data={data} columns={columns} plugins={{sort: sortPlugin}} />;
 }
 
 // =============================================================================
@@ -672,11 +668,15 @@ describe('useTableSortable — context menu actions', () => {
 
     // Apply ascending → "Clear sort" now appears.
     fireEvent.click(
-      screen.getAllByRole('menuitem', {name: 'Sort ascending', hidden: true})[0],
+      screen.getAllByRole('menuitem', {
+        name: 'Sort ascending',
+        hidden: true,
+      })[0],
     );
     fireEvent.contextMenu(screen.getByText('Name'));
     expect(
-      screen.getAllByRole('menuitem', {name: 'Clear sort', hidden: true}).length,
+      screen.getAllByRole('menuitem', {name: 'Clear sort', hidden: true})
+        .length,
     ).toBeGreaterThan(0);
   });
 
@@ -707,5 +707,84 @@ describe('useTableSortable — context menu actions', () => {
     expect(clear.length).toBeGreaterThan(0);
     fireEvent.click(clear[0]);
     expect(onSortChange).toHaveBeenLastCalledWith([]);
+  });
+});
+
+// =============================================================================
+// i18n (header-button aria-labels route through the catalog)
+// =============================================================================
+
+describe('useTableSortable — i18n', () => {
+  it('localizes the unsorted sort-by aria-label via @astryx.table.sort.sortBy', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {'@astryx.table.sort.sortBy': 'Trier par {label}'},
+        }}>
+        <SortableTable />
+      </InternationalizationProvider>,
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Trier par Name'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: 'Trier par Age'}),
+    ).toBeInTheDocument();
+  });
+
+  it('localizes the multi-sort priority aria-label with ICU number args', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {
+            '@astryx.table.sort.sortedByWithPriority':
+              'Trier par {label}, tri {direction}, priorité {rank, number} sur {total, number}',
+          },
+        }}>
+        <SortableTable
+          isMultiSortEnabled
+          initialSort={[
+            {sortKey: 'name', direction: 'ascending'},
+            {sortKey: 'age', direction: 'descending'},
+          ]}
+        />
+      </InternationalizationProvider>,
+    );
+
+    // The direction word is not overridden — it falls back to the en
+    // catalog's @astryx.table.sort.direction.* entry.
+    expect(
+      screen.getByRole('button', {
+        name: 'Trier par Name, tri ascending, priorité 1 sur 2',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Trier par Age, tri descending, priorité 2 sur 2',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('localizes the direction word via its own key, not raw enum text', () => {
+    render(
+      <InternationalizationProvider
+        locale="fr"
+        overrides={{
+          fr: {'@astryx.table.sort.direction.ascending': 'croissant'},
+        }}>
+        <SortableTable
+          initialSort={[{sortKey: 'name', direction: 'ascending'}]}
+        />
+      </InternationalizationProvider>,
+    );
+
+    // The composed message falls back to en, but the direction word inside
+    // it resolves through its own catalog key.
+    expect(
+      screen.getByRole('button', {name: 'Sort by Name, sorted croissant'}),
+    ).toBeInTheDocument();
   });
 });

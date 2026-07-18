@@ -423,6 +423,26 @@
     "defaultMessage": "Clear sort",
     "description": "Aria label for a Table column header when clicking it will clear the current sort."
   },
+  "@astryx.table.sort.direction.ascending": {
+    "defaultMessage": "ascending",
+    "description": "Localized direction word interpolated as `direction` into @astryx.table.sort.sortedBy and @astryx.table.sort.sortedByWithPriority."
+  },
+  "@astryx.table.sort.direction.descending": {
+    "defaultMessage": "descending",
+    "description": "Localized direction word interpolated as `direction` into @astryx.table.sort.sortedBy and @astryx.table.sort.sortedByWithPriority."
+  },
+  "@astryx.table.sort.sortBy": {
+    "defaultMessage": "Sort by {label}",
+    "description": "Aria label for a sortable Table header button when the column is unsorted. `label` is the column header text."
+  },
+  "@astryx.table.sort.sortedBy": {
+    "defaultMessage": "Sort by {label}, sorted {direction}",
+    "description": "Aria label for a sorted Table header button. `direction` is the localized direction word from @astryx.table.sort.direction.*."
+  },
+  "@astryx.table.sort.sortedByWithPriority": {
+    "defaultMessage": "Sort by {label}, sorted {direction}, priority {rank, number} of {total, number}",
+    "description": "Aria label for a sorted Table header button in multi-sort. `rank` is the 1-based position of this column in the sort order; `total` is the number of sorted columns."
+  },
   "@astryx.toast.dismiss": {
     "defaultMessage": "Dismiss notification",
     "description": "Aria label for the dismiss button on a Toast."
