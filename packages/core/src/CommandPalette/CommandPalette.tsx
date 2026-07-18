@@ -268,6 +268,10 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
   label: labelFromProps,
   width = 640,
   maxHeight = 480,
+  xstyle,
+  className,
+  style,
+  ...props
 }: CommandPaletteProps<T>) {
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.commandPalette.label');
@@ -514,6 +518,7 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
 
   return (
     <Dialog
+      {...props}
       ref={ref}
       isOpen={isOpen}
       isInline={isInline}
@@ -527,7 +532,10 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
       width={width}
       maxHeight={maxHeight}
       purpose="info"
-      aria-label={label}>
+      aria-label={label}
+      xstyle={xstyle}
+      className={className}
+      style={style}>
       <CommandPaletteContext value={contextValue}>
         <Layout
           defaultHasDividers
