@@ -137,6 +137,12 @@ export const docs = {
         'Status indicator object (`{ type, message }`) for validation feedback.',
     },
     {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        "Width of the field. Numbers are treated as pixels, strings are used as-is (e.g. '100%'). Sizes the whole field (label, control, and status) so they stay aligned, unlike setting width via xstyle/className/style.",
+    },
+    {
       name: 'labelTooltip',
       type: 'string',
       description: 'Tooltip text for an info icon displayed next to the label.',
@@ -291,6 +297,12 @@ export const docsZh = {
         '验证反馈的状态指示器对象（`{ type, message }`）。',
     },
     {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        "字段的宽度；数字类型会被解释为像素值，字符串类型按原样使用（如 '100%'）。同时设置标签、控件和状态的宽度，使它们保持对齐，不同于通过 xstyle/className/style 设置宽度。",
+    },
+    {
       name: 'labelTooltip',
       type: 'string',
       description: '标签旁信息图标的提示文本。',
@@ -355,6 +367,7 @@ export const docsDense = {
     isLabelHidden: 'Visually hide label.',
     description: 'Description text below label.',
     status: 'Status indicator ({type, message}) for validation feedback.',
+    width: 'Field width; number = px, string as-is. Sizes label + control + status together.',
     labelTooltip: 'Tooltip text for info icon next to label.',
     xstyle: 'StyleX layout styles; must be stylex.create() value.',
   },

@@ -9,6 +9,16 @@ export const docs = {
   category: 'Data Input',
   isHiddenFromOverview: true,
   keywords: ["checkboxlist","checkbox","checkboxgroup","multichoice","multiselect","checklist"],
+  playground: {
+    defaults: {
+      label: 'Notifications',
+      children: [
+        {__element: 'CheckboxListItem', props: {label: 'Email', value: 'email'}},
+        {__element: 'CheckboxListItem', props: {label: 'SMS', value: 'sms'}},
+        {__element: 'CheckboxListItem', props: {label: 'Push', value: 'push'}},
+      ],
+    },
+  },
   description: 'Checkbox group container with field integration for label, description, and status.',
   props: [
     {

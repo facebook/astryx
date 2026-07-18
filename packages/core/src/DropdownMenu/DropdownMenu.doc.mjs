@@ -8,6 +8,15 @@ export const docs = {
   group: 'DropdownMenu',
   category: 'Action',
   keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
+  playground: {
+    defaults: {
+      button: {label: 'Actions'},
+      items: [
+        {label: 'Edit'},
+        {label: 'Delete'},
+      ],
+    },
+  },
   theming: {
     targets: [
       {className: 'astryx-dropdown-menu'},

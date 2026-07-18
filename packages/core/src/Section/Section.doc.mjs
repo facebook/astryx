@@ -8,6 +8,18 @@ export const docs = {
   group: 'Layout',
   category: 'Layout',
   keywords: ["section","panel","container","group","fieldset","region","block"],
+  playground: {
+    defaults: {
+      children: {
+        __element: 'VStack',
+        props: {gap: 2},
+        children: [
+          {__element: 'Heading', props: {level: 3}, children: 'Title'},
+          {__element: 'Text', props: {type: 'body'}, children: 'Content'},
+        ],
+      },
+    },
+  },
   props: [
     {
       name: 'variant',
