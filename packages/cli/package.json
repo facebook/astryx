@@ -67,7 +67,6 @@
   "files": [
     "bin",
     "src",
-    "templates",
     "docs",
     "CHANGELOG.md"
   ],

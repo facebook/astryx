@@ -636,6 +636,7 @@
   "files": [
     "dist",
     "src",
+    "templates",
     "locales",
     "docs.mjs",
     "groups.doc.mjs",
