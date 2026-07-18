@@ -7,7 +7,7 @@
 import {pathToFileURL} from 'node:url';
 import {importUserModule} from './module-loader.mjs';
 import {formatZodError} from './config-schema.mjs';
-import {ComponentDocSchema} from '../doc.mjs';
+import {ComponentDocSchema} from '../schemas/doc-schema.mjs';
 
 /**
  * Load a component doc through the shared load/validation boundary.
