@@ -29,7 +29,7 @@
     "@astryxdesign/theme-stone": "*",
     "@astryxdesign/theme-y2k": "*",
     "fflate": "^0.8.2",
-    "lucide-react": "^1.18.0",
+    "lucide-react": "^1.24.0",
     "lz-string": "^1.5.0",
     "mcp-handler": "^1.1.0",
     "monaco-editor": "^0.55.1",

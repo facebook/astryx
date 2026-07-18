@@ -49,7 +49,7 @@
     "build": "astryx theme build src/stoneTheme.ts -o dist/theme.css && tsup && tsc --project tsconfig.build.json"
   },
   "dependencies": {
-    "lucide-react": "^1.18.0"
+    "lucide-react": "^1.24.0"
   },
   "peerDependencies": {
     "@astryxdesign/core": "0.1.6",
