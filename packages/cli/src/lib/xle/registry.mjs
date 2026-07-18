@@ -230,8 +230,3 @@ export async function buildRegistry({cwd = process.cwd()} = {}) {
   };
   return cachedRegistry;
 }
-
-/** Test seam — drop the module-level cache. */
-export function resetRegistryCache() {
-  cachedRegistry = null;
-}
