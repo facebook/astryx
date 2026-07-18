@@ -262,7 +262,12 @@ export function DropdownMenu({
     focusFirst,
     focusItem,
   } = useListFocus<HTMLDivElement>({
-    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
+    // Compound-mode children may render selectable items (menuitemradio /
+    // menuitemcheckbox) — all three menu item roles are keyboard-navigable
+    // (#3829). Keep this selector, the typeahead query below, and the
+    // Enter/Space role check in listKeyDown in sync.
+    itemSelector:
+      '[role="menuitem"]:not([aria-disabled="true"]), [role="menuitemradio"]:not([aria-disabled="true"]), [role="menuitemcheckbox"]:not([aria-disabled="true"])',
     wrap: false,
     onEscape: closeMenu,
   });
@@ -274,7 +279,7 @@ export function DropdownMenu({
       listRef.current
         ? Array.from(
             listRef.current.querySelectorAll<HTMLElement>(
-              '[role="menuitem"]:not([aria-disabled="true"])',
+              '[role="menuitem"]:not([aria-disabled="true"]), [role="menuitemradio"]:not([aria-disabled="true"]), [role="menuitemcheckbox"]:not([aria-disabled="true"])',
             ),
           )
         : [],
@@ -308,8 +313,13 @@ export function DropdownMenu({
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
-        if (focused?.getAttribute('role') === 'menuitem') {
-          focused.click();
+        const focusedRole = focused?.getAttribute('role');
+        if (
+          focusedRole === 'menuitem' ||
+          focusedRole === 'menuitemradio' ||
+          focusedRole === 'menuitemcheckbox'
+        ) {
+          focused?.click();
         }
         return;
       }

@@ -613,3 +613,138 @@ describe('DropdownMenu compound mode', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('DropdownMenu keyboard access for menuitemradio/menuitemcheckbox (#3829)', () => {
+  it('arrow navigation reaches consumer-rendered menuitemradio and menuitemcheckbox items', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <div role="menuitemradio" tabIndex={-1} aria-checked="false">
+          Newest
+        </div>
+        <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+          Archived
+        </div>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    screen.getByRole('menuitem', {name: 'Edit', hidden: true}).focus();
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
+    ).toHaveFocus();
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Archived', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('activates a focused menuitemradio with Enter and a menuitemcheckbox with Space', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const onToggle = vi.fn();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <div
+          role="menuitemradio"
+          tabIndex={-1}
+          aria-checked="false"
+          onClick={onSelect}>
+          Newest
+        </div>
+        <div
+          role="menuitemcheckbox"
+          tabIndex={-1}
+          aria-checked="false"
+          onClick={onToggle}>
+          Archived
+        </div>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+
+    screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}).focus();
+    fireEvent.keyDown(menu, {key: 'Enter'});
+    expect(onSelect).toHaveBeenCalledTimes(1);
+
+    screen
+      .getByRole('menuitemcheckbox', {name: 'Archived', hidden: true})
+      .focus();
+    fireEvent.keyDown(menu, {key: ' '});
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('typeahead matches a menuitemradio label', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <div role="menuitemradio" tabIndex={-1} aria-checked="false">
+          Newest
+        </div>
+        <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+          Archived
+        </div>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {key: 'n'});
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Newest', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('typeahead matches a menuitemcheckbox label', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <div role="menuitemradio" tabIndex={-1} aria-checked="false">
+          Newest
+        </div>
+        <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+          Archived
+        </div>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {key: 'a'});
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Archived', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('skips aria-disabled menuitemradio and menuitemcheckbox items during arrow navigation', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <div role="menuitemradio" tabIndex={-1} aria-disabled="true">
+          Newest
+        </div>
+        <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+          Archived
+        </div>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    screen.getByRole('menuitem', {name: 'Edit', hidden: true}).focus();
+
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Archived', hidden: true}),
+    ).toHaveFocus();
+  });
+});
