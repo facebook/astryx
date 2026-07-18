@@ -40,7 +40,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
     image:
-      'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png',
+      '/template-assets/illustrative-horizontal-1.png',
   },
   {
     id: 2,
@@ -49,7 +49,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 80.0,
     image:
-      'https://lookaside.facebook.com/assets/astryx/illustrative-vertical-1.png',
+      '/template-assets/illustrative-vertical-1.png',
   },
   {
     id: 3,
@@ -58,7 +58,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
     image:
-      'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-3.png',
+      '/template-assets/illustrative-horizontal-3.png',
   },
   {
     id: 4,
@@ -67,7 +67,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 75.0,
     image:
-      'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-4.png',
+      '/template-assets/illustrative-horizontal-4.png',
   },
   {
     id: 5,
@@ -76,7 +76,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 60.0,
     image:
-      'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-5.png',
+      '/template-assets/illustrative-horizontal-5.png',
   },
   {
     id: 6,
@@ -85,7 +85,7 @@ const PRODUCTS: Product[] = [
       "Sometimes all it takes is one small thing to turn your whole day around. That's what good design is for.",
     price: 80.0,
     image:
-      'https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-2.png',
+      '/template-assets/illustrative-horizontal-2.png',
   },
 ];
 

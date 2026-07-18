@@ -6,11 +6,15 @@
  *
  * Thumbnail's remove-button overlay uses useImageMode, which FETCHES the image
  * (`fetch(src, {mode: 'cors'})` -> createImageBitmap -> OffscreenCanvas
- * getImageData) to sample pixels for APCA contrast. A cross-origin CDN URL
+ * getImageData) to sample pixels for APCA contrast. Any cross-origin URL
  * without `Access-Control-Allow-Origin` cannot be fetched/sampled, so contrast
  * detection fails silently and logs CORS errors in hosted previews. These
- * image-backed examples must use a self-contained, same-origin, samplable
- * source (a data: URI) instead of a cross-origin lookaside URL.
+ * image-backed examples must therefore use a self-contained, same-origin,
+ * samplable source — a `data:` URI — rather than ANY remote `http(s)://` URL.
+ *
+ * (Other blocks self-host demo media under `/template-assets/*`, which is
+ * same-origin and CORS-safe; Thumbnail examples go one step further and inline
+ * a `data:` URI so the sample works with zero network dependency at all.)
  *
  * Usage: node scripts/check-demo-media.mjs
  */
@@ -24,8 +28,9 @@ const THUMBNAIL_BLOCK_DIR = path.resolve(
   '../packages/cli/templates/blocks/components/Thumbnail',
 );
 
-// Cross-origin demo CDN that cannot be CORS-sampled by useImageMode.
-const CROSS_ORIGIN_MEDIA = 'lookaside.facebook.com';
+// Any remote http(s) src cannot be guaranteed CORS-sampleable by useImageMode.
+// Thumbnail image-backed examples must inline a same-origin `data:` URI.
+const REMOTE_MEDIA_RE = /(?:src=|src:)\s*['"`]?\s*(https?:\/\/[^\s'"`)]+)/g;
 
 const errors = [];
 let checked = 0;
@@ -43,10 +48,11 @@ for (const file of files) {
   if (!source.includes('src=') && !source.includes('src:')) continue;
   checked++;
 
-  if (source.includes(CROSS_ORIGIN_MEDIA)) {
+  const remote = [...source.matchAll(REMOTE_MEDIA_RE)].map(m => m[1]);
+  if (remote.length > 0) {
     errors.push({
       file,
-      issue: `references cross-origin ${CROSS_ORIGIN_MEDIA} media — useImageMode cannot CORS-sample it for the remove-button overlay`,
+      issue: `references remote media (${remote[0]}) — useImageMode cannot guarantee CORS-sampling it for the remove-button overlay`,
     });
   }
 }

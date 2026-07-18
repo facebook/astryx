@@ -30,39 +30,39 @@ const imageClip = {
 
 const IMAGES = [
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/colorful-lifestyle-vertical-3.png',
+    src: '/template-assets/colorful-lifestyle-vertical-3.png',
     alt: 'Colorful lifestyle scene',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/colorful-lifestyle-horizontal-1.png',
+    src: '/template-assets/colorful-lifestyle-horizontal-1.png',
     alt: 'Colorful lifestyle horizontal',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/colorful-lifestyle-vertical-1.png',
+    src: '/template-assets/colorful-lifestyle-vertical-1.png',
     alt: 'Colorful lifestyle vertical',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/colorful-home-vertical-2.png',
+    src: '/template-assets/colorful-home-vertical-2.png',
     alt: 'Colorful home interior',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/colorful-home-vertical-3.png',
+    src: '/template-assets/colorful-home-vertical-3.png',
     alt: 'Colorful home scene',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/colorful-home-vertical-1.png',
+    src: '/template-assets/colorful-home-vertical-1.png',
     alt: 'Colorful home vertical',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/colorful-lifestyle-horizontal-2.png',
+    src: '/template-assets/colorful-lifestyle-horizontal-2.png',
     alt: 'Colorful lifestyle wide',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/colorful-lifestyle-vertical-2.png',
+    src: '/template-assets/colorful-lifestyle-vertical-2.png',
     alt: 'Colorful lifestyle detail',
   },
   {
-    src: 'https://lookaside.facebook.com/assets/astryx/colorful-lifestyle-vertical-4.png',
+    src: '/template-assets/colorful-lifestyle-vertical-4.png',
     alt: 'Colorful lifestyle portrait',
   },
 ];

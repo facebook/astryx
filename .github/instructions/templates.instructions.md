@@ -70,11 +70,18 @@ Quick triage before grading. Two questions:
    missing fields, a wrong `aspectRatio`, `componentsUsed` drift, and missing
    `scale` for tiny components (Badge/StatusDot/single Icon/Spinner → `2` or
    `3`).
-6. **Image handling (5)** — images only from the astryx CDN via the permanent
-   lookaside URL (`https://lookaside.facebook.com/assets/astryx/<asset>.png`)
-   with an asset-name comment. Flag external URLs (unsplash/placehold/picsum),
-   checked-in image files, data URIs, and expiring signed `scontent…fbcdn.net`
-   URLs.
+6. **Image handling (5)** — demo imagery is referenced by a root-relative path
+   under `/template-assets/<asset>.png`, self-hosted in the repo under
+   `apps/docsite/public/template-assets/` (mirrored into the sandbox preview at
+   generate time). To use an existing image, browse that directory and reference
+   it by name with an asset-name comment; to add a new one, drop the file into
+   that same directory and reference it the same way. On scaffold,
+   `stripTemplateAssetRefs` swaps these paths for an inline placeholder so a
+   generated project renders with zero setup. Flag external URLs
+   (unsplash/placehold/picsum), expiring signed `scontent…fbcdn.net` URLs, and
+   inline data URIs. Image-backed Thumbnail examples are the one exception: they
+   inline a same-origin, samplable `data:` URI (required by `useImageMode` — see
+   `scripts/check-demo-media.mjs`).
 7. **Code quality (10)** — `'use client';` first line; `export default`;
    self-contained imports (`@astryxdesign/core/*`, `@heroicons/react/*`, or
    local only); realistic mock data (real names/values, never

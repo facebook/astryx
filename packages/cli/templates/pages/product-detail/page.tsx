@@ -74,13 +74,13 @@ function StarRating({rating, count}: {rating: number; count: number}) {
 // ─── Image URLs ─────────────────────────────────────────────────────────────
 // IMAGES[0] = fallback hero; IMAGES[1..6] = thumbnails (first is selected by default)
 const IMAGES = [
-  'https://lookaside.facebook.com/assets/astryx/light-product-1.png',
-  'https://lookaside.facebook.com/assets/astryx/light-product-1.png',
-  'https://lookaside.facebook.com/assets/astryx/light-product-2.png',
-  'https://lookaside.facebook.com/assets/astryx/light-product-3.png',
-  'https://lookaside.facebook.com/assets/astryx/light-product-4.png',
-  'https://lookaside.facebook.com/assets/astryx/light-product-5.png',
-  'https://lookaside.facebook.com/assets/astryx/light-product-3.png',
+  '/template-assets/light-product-1.png',
+  '/template-assets/light-product-1.png',
+  '/template-assets/light-product-2.png',
+  '/template-assets/light-product-3.png',
+  '/template-assets/light-product-4.png',
+  '/template-assets/light-product-5.png',
+  '/template-assets/light-product-3.png',
 ];
 
 // ─── Product Data ───────────────────────────────────────────────────────────

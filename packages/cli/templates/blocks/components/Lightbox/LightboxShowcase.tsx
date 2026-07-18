@@ -12,7 +12,7 @@ export default function LightboxShowcase() {
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         media={{
-          src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
+          src: '/template-assets/light-scene-horizontal-1.png',
           alt: 'Coastal shoreline with ocean waves',
           caption:
             'A scenic coastline with waves rolling onto a sandy beach beneath a clear sky.',

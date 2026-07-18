@@ -280,16 +280,17 @@ const DEFAULT_PRODUCTS: ProductSpec[] = [
   },
 ];
 
-// Neutral product photos, served from the shared astryx asset CDN so the
-// scaffolded template renders real imagery without needing local public assets.
+// Neutral product photos, self-hosted under the docsite's /template-assets dir
+// so the docsite/sandbox preview renders real imagery. On scaffold these
+// /template-assets/* paths are swapped for the inline placeholder (see
+// stripTemplateAssetRefs), so a generated project has no external dependency.
 const DEFAULT_IMAGES: Record<string, string> = {
-  watch: 'https://lookaside.facebook.com/assets/astryx/Neutral-Watch.png',
-  headphones:
-    'https://lookaside.facebook.com/assets/astryx/Neutral-Headphones.png',
-  backpack: 'https://lookaside.facebook.com/assets/astryx/Neutral-Backpack.png',
-  wallet: 'https://lookaside.facebook.com/assets/astryx/Neutral-Wallet.png',
-  tumbler: 'https://lookaside.facebook.com/assets/astryx/Neutral-Tumbler.png',
-  throw_: 'https://lookaside.facebook.com/assets/astryx/Neutral-Blanket.png',
+  watch: '/template-assets/Neutral-Watch.png',
+  headphones: '/template-assets/Neutral-Headphones.png',
+  backpack: '/template-assets/Neutral-Backpack.png',
+  wallet: '/template-assets/Neutral-Wallet.png',
+  tumbler: '/template-assets/Neutral-Tumbler.png',
+  throw_: '/template-assets/Neutral-Blanket.png',
 };
 
 export interface ThemeShowcaseProps {

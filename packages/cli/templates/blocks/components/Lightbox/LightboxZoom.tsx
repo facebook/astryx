@@ -12,7 +12,7 @@ export default function LightboxZoom() {
   return (
     <>
       <Thumbnail
-        src="https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png"
+        src="/template-assets/light-scene-horizontal-1.png"
         alt="Coastal shoreline with ocean waves"
         label="Coastal shoreline with ocean waves"
         onClick={() => setIsOpen(true)}
@@ -21,7 +21,7 @@ export default function LightboxZoom() {
         isOpen={isOpen}
         onOpenChange={setIsOpen}
         media={{
-          src: 'https://lookaside.facebook.com/assets/astryx/light-scene-horizontal-1.png',
+          src: '/template-assets/light-scene-horizontal-1.png',
           alt: 'Coastal shoreline with ocean waves',
           caption:
             'A scenic coastline. Double-click to zoom in and drag to pan.',

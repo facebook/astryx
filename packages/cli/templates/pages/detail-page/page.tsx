@@ -64,11 +64,11 @@ const itemsList: CSSProperties = {
 
 // ─── Product data ───────────────────────────────────────────────────────────
 const PRODUCT_IMAGES = [
-  'https://lookaside.facebook.com/assets/astryx/light-product-1.png',
-  'https://lookaside.facebook.com/assets/astryx/light-product-2.png',
-  'https://lookaside.facebook.com/assets/astryx/light-product-3.png',
-  'https://lookaside.facebook.com/assets/astryx/light-product-4.png',
-  'https://lookaside.facebook.com/assets/astryx/light-product-5.png',
+  '/template-assets/light-product-1.png',
+  '/template-assets/light-product-2.png',
+  '/template-assets/light-product-3.png',
+  '/template-assets/light-product-4.png',
+  '/template-assets/light-product-5.png',
 ];
 
 const PRODUCTS = [
