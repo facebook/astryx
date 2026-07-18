@@ -114,10 +114,6 @@ export function toneToY(tone: number): number {
   return labFInv((tone + 16) / 116);
 }
 
-export function yToTone(y: number): number {
-  return 116 * labF(y) - 16;
-}
-
 // =============================================================================
 // Hex <-> RGB
 // =============================================================================
