@@ -549,7 +549,11 @@ describe('Slider', () => {
     it('submits both range values under the same name', () => {
       const {container} = render(
         <form>
-          <Slider label="Price" htmlName="price" value={[20, 80] as [number, number]} />
+          <Slider
+            label="Price"
+            htmlName="price"
+            value={[20, 80] as [number, number]}
+          />
         </form>,
       );
       const data = new FormData(container.querySelector('form')!);
@@ -562,7 +566,156 @@ describe('Slider', () => {
           <Slider label="Volume" htmlName="volume" value={50} isDisabled />
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
+    });
+  });
+
+  describe('text value display width stability', () => {
+    function getTextSpan(): HTMLElement {
+      // The text display is the only sibling of the track container inside the
+      // slider row.
+      const track = screen.getByRole('slider').parentElement!;
+      const span = track.nextElementSibling;
+      expect(span).not.toBeNull();
+      return span as HTMLElement;
+    }
+
+    it('reserves width for the widest value so the track does not resize', () => {
+      const {rerender} = render(
+        <Slider
+          label="Volume"
+          value={5}
+          min={0}
+          max={100}
+          valueDisplay="text"
+        />,
+      );
+      const span = getTextSpan();
+      // Widest candidate is "100" -> 3ch reserved regardless of current value.
+      expect(span.getAttribute('style') ?? '').toContain('3ch');
+
+      const styleAtNarrowValue = span.getAttribute('style');
+      rerender(
+        <Slider
+          label="Volume"
+          value={100}
+          min={0}
+          max={100}
+          valueDisplay="text"
+        />,
+      );
+      expect(getTextSpan().getAttribute('style')).toBe(styleAtNarrowValue);
+    });
+
+    it('reserves width from formatted values when formatValue is set', () => {
+      render(
+        <Slider
+          label="Volume"
+          value={5}
+          min={0}
+          max={100}
+          valueDisplay="text"
+          formatValue={v => `${v}%`}
+        />,
+      );
+      // Widest candidate is "100%" -> 4ch.
+      expect(getTextSpan().getAttribute('style') ?? '').toContain('4ch');
+    });
+
+    it('reserves width for both values plus separator in range mode', () => {
+      render(
+        <Slider
+          label="Price"
+          value={[20, 80] as [number, number]}
+          min={0}
+          max={100}
+          valueDisplay="text"
+        />,
+      );
+      // "100" (3) + " – " (3) + "100" (3) -> 9ch.
+      const track = screen.getAllByRole('slider')[0]
+        .parentElement as HTMLElement;
+      const span = track.nextElementSibling as HTMLElement;
+      expect(span.getAttribute('style') ?? '').toContain('9ch');
+    });
+
+    it('accounts for decimal steps when reserving width', () => {
+      render(
+        <Slider
+          label="Opacity"
+          value={0.5}
+          min={0}
+          max={1}
+          step={0.1}
+          valueDisplay="text"
+        />,
+      );
+      // Widest candidate is "0.9" -> 3ch (not "1" -> 1ch).
+      expect(getTextSpan().getAttribute('style') ?? '').toContain('3ch');
+    });
+  });
+
+  describe('step precision', () => {
+    it('emits clean decimal values instead of float artifacts', async () => {
+      const user = userEvent.setup();
+      const handleChange = vi.fn();
+      render(
+        <Slider
+          label="Opacity"
+          value={0.2}
+          min={0}
+          max={1}
+          step={0.1}
+          onChange={handleChange}
+        />,
+      );
+      const slider = screen.getByRole('slider');
+      act(() => {
+        slider.focus();
+      });
+      await user.keyboard('{ArrowRight}');
+      // 0.2 + 0.1 must snap to exactly 0.3, not 0.30000000000000004.
+      expect(handleChange).toHaveBeenCalledWith(0.3);
+    });
+
+    it('emits clean values from pointer positions with decimal steps', () => {
+      const handleChange = vi.fn();
+      render(
+        <Slider
+          label="Opacity"
+          value={0.5}
+          min={0}
+          max={1}
+          step={0.1}
+          valueDisplay="none"
+          onChange={handleChange}
+        />,
+      );
+      // With valueDisplay="none" there is no tooltip wrapper, so the thumb's
+      // parent is the track container whose rect drives position math.
+      const slider = screen.getByRole('slider');
+      const trackContainer = slider.parentElement!;
+      trackContainer.getBoundingClientRect = () => ({
+        left: 0,
+        top: 0,
+        right: 200,
+        bottom: 20,
+        width: 200,
+        height: 20,
+        x: 0,
+        y: 0,
+        toJSON: () => {},
+      });
+
+      // 141/200 = 0.705 -> snaps to 0.7 exactly.
+      fireEvent.pointerDown(trackContainer, {
+        clientX: 141,
+        clientY: 10,
+        pointerId: 1,
+      });
+      expect(handleChange).toHaveBeenCalledWith(0.7);
     });
   });
 });
