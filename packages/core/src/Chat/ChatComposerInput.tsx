@@ -14,6 +14,15 @@
  * inline token rendering, serialization, Enter/Shift+Enter, message
  * history, paste/drop file handling, and mobile-safe touch typography.
  *
+ * State model (#2473, Lexical-inspired): internal-authoritative. The
+ * contentEditable DOM plus its Selection is the single source of
+ * truth; every mutation path (typing, token chips, trigger-menu
+ * replacements, paste, dictation, history recall, submit-clear,
+ * handleRef.setValue) writes it directly and reports via onChange.
+ * The controlled `value` prop is a commit/override channel — it only
+ * writes the DOM when it genuinely diverges from internal state.
+ * Echoes of our own onChange emissions (including late ones) are
+ * recognized via a pending-emissions ledger and never written back.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts
@@ -67,6 +76,13 @@ export interface ChatComposerInputHandle {
   expandToken: (id: string) => void;
   /** Insert plain text at the current cursor position */
   insertText: (text: string) => void;
+  /**
+   * Replace the entire content and place the caret at the end.
+   * Runs the same internal pipeline as user input: writes the DOM
+   * synchronously and emits exactly one onChange. The parent echoing
+   * that value back through `value` causes no further DOM write.
+   */
+  setValue: (text: string) => void;
   /** Focus the input */
   focus: () => void;
   /** Get the current serialized value */
@@ -151,9 +167,17 @@ export interface ChatComposerInputProps extends Omit<
   ref?: React.Ref<HTMLDivElement>;
   /** Imperative handle ref for programmatic control. */
   handleRef?: React.Ref<ChatComposerInputHandle>;
-  /** Controlled value */
+  /**
+   * Controlled value. The input's internal state stays authoritative
+   * while editing — this prop is a commit/override channel that only
+   * rewrites the content when it genuinely diverges from internal
+   * state. Echoes of onChange emissions never rewrite the DOM.
+   */
   value?: string;
-  /** Change handler */
+  /**
+   * Change handler. Observational — the parent does not need to
+   * commit the value back through `value` for the input to work.
+   */
   onChange?: (value: string) => void;
   /** Placeholder text. @default 'Type a message\u2026' */
   placeholder?: string;
@@ -256,6 +280,33 @@ function selectAll(el: HTMLElement): void {
   selection.addRange(range);
 }
 
+/**
+ * Place a collapsed caret at the end of `el`'s contents. Selection is
+ * part of the internal state model: every full-content replacement
+ * derives the new caret position deterministically from the state
+ * change (end of content — the next keystroke appends).
+ */
+function placeCaretAtEnd(el: HTMLElement): void {
+  const selection = window.getSelection();
+  if (!selection) {
+    return;
+  }
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+/**
+ * Upper bound on the pending-emissions ledger. Only relevant when a
+ * controlled parent never commits our emissions back — entries are
+ * otherwise consumed by their echo or dropped on an external
+ * override. An echo staler than this many emissions degrades to the
+ * pre-#2473 behavior (treated as an external override).
+ */
+const MAX_PENDING_EMISSIONS = 64;
+
 function serialize(node: Node): string {
   let result = '';
   for (const child of Array.from(node.childNodes)) {
@@ -331,16 +382,21 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef(-1);
   const currentDraftRef = useRef('');
-  // One-shot marker: when set, holds the value we expect the parent
-  // to echo back as `controlledValue` after our latest `onChange`
-  // emission. We use it to skip a single `useEffect` resync, because
-  // resyncing would (a) collapse the caret to offset 0 and (b)
-  // discard any characters the user typed between the emit and the
-  // resulting commit. Cleared on consumption — either when the echo
-  // arrives or when a non-echoing external update overwrites it — so
-  // a later external set back to the same string is never
-  // incorrectly skipped.
-  const pendingEchoValueRef = useRef<string | undefined>(undefined);
+  // Internal-authoritative state model (#2473): the contentEditable
+  // DOM — together with its Selection — IS the component's state.
+  // Every mutation path writes the DOM first and then reports through
+  // `emitChange`; the `value` prop is a commit/override channel, not
+  // a render-driven mirror.
+  //
+  // This ledger holds `onChange` emissions the parent has not yet
+  // echoed back through `value`, in emission order. It lets the sync
+  // effect distinguish a (possibly LATE) echo of our own emission —
+  // internal state is at least as new, so writing would collapse the
+  // caret and discard newer keystrokes — from a genuine external
+  // override. Entries are consumed in order when their echo arrives
+  // and discarded wholesale when an override applies, so a later
+  // external set back to a previously-emitted string still applies.
+  const pendingEmissionsRef = useRef<string[]>([]);
 
   // Stable refs for imperative handle callbacks (avoid re-creating handle on every render)
   const insertTokenRef = useRef<
@@ -359,6 +415,19 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     insertToken: (token: ChatComposerToken) => insertTokenRef.current(token),
     expandToken: (id: string) => tokens.expandToken(id),
     insertText: (text: string) => insertTextRef.current(text),
+    setValue: (text: string) => {
+      const editable = editableRef.current;
+      if (!editable) {
+        return;
+      }
+      // Programmatic replacement — the imperative counterpart of
+      // typing. Write the DOM, derive the selection from the state
+      // change (caret at end), then report through the same pipeline
+      // as user input: exactly one onChange, no effect, no echo.
+      editable.textContent = text;
+      placeCaretAtEnd(editable);
+      emitChange();
+    },
     focus: () => editableRef.current?.focus(),
     getValue: () =>
       serialize(editableRef.current ?? document.createElement('div')),
@@ -370,41 +439,37 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     if (controlledValue === undefined || !editableRef.current) {
       return;
     }
-    // Skip exactly one echo of our most recent `onChange` emission:
-    // the DOM is already authoritative for that value, and the user
-    // may have typed more characters between the emit and this
-    // effect running. Consume the marker so a later external set to
-    // the same string is still applied.
-    if (controlledValue === pendingEchoValueRef.current) {
-      pendingEchoValueRef.current = undefined;
+    // Echo of one of our own `onChange` emissions — possibly a LATE
+    // one that lands after further edits (the parent committed
+    // emission N while internal state is already at emission ≥ N).
+    // Internal state is authoritative: consume the ledger through
+    // that entry and leave the DOM untouched. Matching the FIRST
+    // occurrence keeps later duplicate emissions consumable by their
+    // own echoes.
+    const ledger = pendingEmissionsRef.current;
+    const echoIndex = ledger.indexOf(controlledValue);
+    if (echoIndex !== -1) {
+      ledger.splice(0, echoIndex + 1);
       return;
     }
     const editable = editableRef.current;
     if (serialize(editable) !== controlledValue) {
-      // Genuine external override — invalidate any stale pending
-      // echo before we rewrite the DOM.
-      pendingEchoValueRef.current = undefined;
+      // Genuine external override — the parent is telling us
+      // something new. Un-echoed emissions are now obsolete: drop
+      // them so a later external set back to a previously-emitted
+      // string is still applied.
+      ledger.length = 0;
       const wasFocused = document.activeElement === editable;
       editable.textContent = controlledValue;
       // Setting `textContent` tears down the existing text node,
       // which collapses any Selection inside this editable to
-      // offset 0. If the user was focused (e.g. a programmatic
-      // insert from a slash-menu pick), restore the caret to the
-      // end of the new content so the next keystroke appends rather
-      // than prepends.
+      // offset 0. If the user was focused, derive the new selection
+      // from the state change: caret at the end, so the next
+      // keystroke appends rather than prepends.
       if (wasFocused) {
-        const selection = window.getSelection();
-        if (selection) {
-          const range = document.createRange();
-          range.selectNodeContents(editable);
-          range.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        }
+        placeCaretAtEnd(editable);
       }
       setIsEmpty(controlledValue.length === 0);
-    } else {
-      pendingEchoValueRef.current = undefined;
     }
   }, [controlledValue]);
 
@@ -423,7 +488,17 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
       ) != null;
     const trimmedEmpty = text.trim().length === 0 && !hasTokens;
     const nextValue = trimmedEmpty ? '' : text;
-    pendingEchoValueRef.current = nextValue;
+    // Record the emission so the sync effect can recognize the
+    // parent's (possibly late) echo of it and skip the write.
+    // Consecutive duplicates need only one entry — a single echo
+    // covers them.
+    const ledger = pendingEmissionsRef.current;
+    if (ledger[ledger.length - 1] !== nextValue) {
+      ledger.push(nextValue);
+      if (ledger.length > MAX_PENDING_EMISSIONS) {
+        ledger.shift();
+      }
+    }
     setIsEmpty(trimmedEmpty);
     onChange?.(nextValue);
     cleanupPortalsRef.current?.();
@@ -535,9 +610,12 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         }
 
         onSubmit?.(text);
+        // Submit-clear goes through the same pipeline as every other
+        // mutation: write the DOM, then report via emitChange (which
+        // records the emission, updates emptiness, and emits
+        // onChange('')).
         editableRef.current.textContent = '';
-        setIsEmpty(true);
-        onChange?.('');
+        emitChange();
         return;
       }
 
@@ -583,7 +661,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         }
       }
     },
-    [hasHistory, onSubmit, onChange, emitChange, triggerMenu],
+    [hasHistory, onSubmit, emitChange, triggerMenu],
   );
 
   const handlePaste = useCallback(

@@ -244,6 +244,95 @@ describe('ChatComposerInput', () => {
       rerender(<ChatComposerInput value="hello" onChange={onChange} />);
       expect(textbox.textContent).toBe('hello');
     });
+
+    it('keeps newer internal state when the parent commits a late echo of an earlier emission', () => {
+      // Two rapid inputs emit 'ab' then 'abc' before the parent's
+      // state commit for 'ab' lands. That late value='ab' re-render
+      // is a stale echo of our own emission — not an external
+      // override — and must not wipe the trailing 'c' the user
+      // typed in the meantime.
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput value="" onChange={onChange} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+      textbox.textContent = 'ab';
+      fireEvent.input(textbox);
+      textbox.textContent = 'abc';
+      fireEvent.input(textbox);
+      expect(onChange).toHaveBeenNthCalledWith(1, 'ab');
+      expect(onChange).toHaveBeenNthCalledWith(2, 'abc');
+      // The parent's LATE commit of the first emission arrives after
+      // the second emission. Internal state ('abc') is newer and
+      // stays authoritative.
+      rerender(<ChatComposerInput value="ab" onChange={onChange} />);
+      expect(textbox.textContent).toBe('abc');
+    });
+
+    it('setValue writes synchronously, places the caret at the end, and emits one echo-free onChange', () => {
+      let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput
+          value=""
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+
+      handle!.setValue('/feedback ');
+
+      // Synchronous DOM write + exactly one informational onChange.
+      expect(textbox.textContent).toBe('/feedback ');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith('/feedback ');
+
+      // Caret is collapsed at the end of the new content — the next
+      // keystroke appends, not prepends.
+      const selection = window.getSelection()!;
+      expect(selection.rangeCount).toBe(1);
+      const range = selection.getRangeAt(0);
+      expect(range.collapsed).toBe(true);
+      expect(
+        range.endContainer === textbox ||
+          range.endContainer.parentNode === textbox,
+      ).toBe(true);
+      expect(range.endOffset).toBe(
+        range.endContainer.nodeType === Node.TEXT_NODE
+          ? (range.endContainer.textContent?.length ?? 0)
+          : textbox.childNodes.length,
+      );
+
+      // A subsequent parent echo of that value must cause ZERO DOM
+      // writes — observed via MutationObserver + node identity.
+      const textNodeBefore = textbox.firstChild;
+      const observer = new MutationObserver(() => {});
+      observer.observe(textbox, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+      rerender(
+        <ChatComposerInput
+          value="/feedback "
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      expect(observer.takeRecords()).toEqual([]);
+      observer.disconnect();
+      expect(textbox.firstChild).toBe(textNodeBefore);
+      expect(textbox.textContent).toBe('/feedback ');
+      // No re-emission on the echo — still exactly one onChange.
+      expect(onChange).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('file handling', () => {
