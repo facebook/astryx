@@ -13,7 +13,7 @@
  * - /packages/core/src/Field/Field.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Field/index.ts (exports if types change)
  * - /apps/storybook/stories/Field.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Field/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Field/ (showcase blocks)
  */
 
 import {type ReactNode, use} from 'react';

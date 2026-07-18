@@ -17,7 +17,7 @@
  * - /packages/core/src/Outline/Outline.doc.mjs
  * - /packages/core/src/Outline/index.ts
  * - /apps/storybook/stories/Outline.stories.tsx
- * - /packages/cli/templates/blocks/components/Outline/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Outline/ (showcase blocks)
  */
 
 import {useRef} from 'react';

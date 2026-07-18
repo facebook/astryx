@@ -20,7 +20,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/Chat.doc.mjs
  * - /apps/storybook/stories/ChatComposer.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatComposer/ (block examples)
+ * - /packages/core/templates/blocks/components/ChatComposer/ (block examples)
  */
 
 import React, {

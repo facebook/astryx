@@ -12,7 +12,7 @@
  * - /packages/core/src/TopNav/TopNav.doc.mjs
  * - /packages/core/src/TopNav/TopNavMenu.test.tsx
  * - /packages/core/src/TopNav/index.ts
- * - /packages/cli/templates/blocks/components/TopNav/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/TopNav/ (showcase blocks)
  */
 
 import React, {useId, useRef, useState, type ReactNode} from 'react';

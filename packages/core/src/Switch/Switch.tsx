@@ -13,7 +13,7 @@
  * - /packages/core/src/Switch/Switch.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Switch/index.ts (exports if types change)
  * - /apps/storybook/stories/Switch.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Switch/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Switch/ (showcase blocks)
  */
 
 import {

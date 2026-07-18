@@ -13,7 +13,7 @@
  * - /packages/core/src/TabList/TabList.doc.mjs
  * - /packages/core/src/TabList/index.ts
  * - /packages/core/src/TabList/TabList.test.tsx
- * - /packages/cli/templates/blocks/components/TabList/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/TabList/ (showcase blocks)
  */
 
 import React, {useCallback, type ReactNode} from 'react';

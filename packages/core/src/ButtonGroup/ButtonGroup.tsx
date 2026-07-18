@@ -17,7 +17,7 @@
  * - /packages/core/src/ButtonGroup/ButtonGroup.test.tsx (tests)
  * - /packages/core/src/ButtonGroup/index.ts (exports if types change)
  * - /apps/storybook/stories/ButtonGroup.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/ButtonGroup/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/ButtonGroup/ (showcase blocks)
  */
 
 import {useMemo, type ReactNode} from 'react';

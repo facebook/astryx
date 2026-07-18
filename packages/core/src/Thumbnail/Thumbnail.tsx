@@ -18,7 +18,7 @@
  * - /packages/core/src/Thumbnail/Thumbnail.test.tsx
  * - /packages/core/src/Thumbnail/index.ts
  * - /apps/storybook/stories/Thumbnail.stories.tsx
- * - /packages/cli/templates/blocks/components/Thumbnail/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Thumbnail/ (showcase blocks)
  */
 
 import * as stylex from '@stylexjs/stylex';

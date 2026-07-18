@@ -10,7 +10,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Citation/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/Citation/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Citation/ (showcase blocks)
  */
 
 import type React from 'react';

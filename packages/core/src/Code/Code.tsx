@@ -10,8 +10,8 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/CodeBlock/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/Code/ (showcase blocks)
- * - /packages/cli/templates/blocks/components/CodeBlock/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Code/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/CodeBlock/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

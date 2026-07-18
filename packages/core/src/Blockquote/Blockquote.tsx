@@ -12,7 +12,7 @@
  * - /packages/core/src/Blockquote/Blockquote.doc.mjs
  * - /packages/core/src/Blockquote/Blockquote.test.tsx
  * - /apps/storybook/stories/Blockquote.stories.tsx
- * - /packages/cli/templates/blocks/components/Blockquote/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Blockquote/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

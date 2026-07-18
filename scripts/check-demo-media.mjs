@@ -21,7 +21,7 @@ import {fileURLToPath} from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const THUMBNAIL_BLOCK_DIR = path.resolve(
   __dirname,
-  '../packages/cli/templates/blocks/components/Thumbnail',
+  '../packages/core/templates/blocks/components/Thumbnail',
 );
 
 // Cross-origin demo CDN that cannot be CORS-sampled by useImageMode.

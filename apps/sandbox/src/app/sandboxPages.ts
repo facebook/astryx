@@ -4,13 +4,13 @@
  * @file sandboxPages.ts
  * @position Central registry of all sandbox pages, grouped by category.
  *
- * The "Templates" category is auto-populated from packages/cli/templates/
+ * The "Templates" category is auto-populated from packages/core/templates/
  * via `node scripts/sync-templates.js`. Each template has a template.doc.mjs
  * that provides metadata. The sync script generates a registry file at
  * src/generated/templateRegistry.ts.
  *
  * To add a new template:
- *   1. Create packages/cli/templates/<name>/page.tsx + template.doc.mjs
+ *   1. Create packages/core/templates/<name>/page.tsx + template.doc.mjs
  *   2. Run `node scripts/sync-templates.js`
  *   3. It appears in the sandbox and CLI automatically
  *

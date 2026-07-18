@@ -22,8 +22,8 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Link/index.ts
  * - /packages/core/src/Link/Link.doc.mjs
- * - /packages/cli/templates/blocks/components/Link/ (showcase blocks)
- * - /packages/cli/templates/blocks/components/LinkProvider/ (example blocks)
+ * - /packages/core/templates/blocks/components/Link/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/LinkProvider/ (example blocks)
  */
 
 import {useMemo, type ReactNode} from 'react';

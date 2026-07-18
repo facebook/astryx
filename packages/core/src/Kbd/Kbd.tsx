@@ -10,7 +10,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Kbd/index.ts
- * - /packages/cli/templates/blocks/components/Kbd/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Kbd/ (showcase blocks)
  */
 
 import React, {useSyncExternalStore} from 'react';

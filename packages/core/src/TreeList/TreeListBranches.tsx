@@ -10,7 +10,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TreeList/TreeListItem.tsx
- * - /packages/cli/templates/blocks/components/TreeList/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/TreeList/ (showcase blocks)
  */
 
 import * as stylex from '@stylexjs/stylex';

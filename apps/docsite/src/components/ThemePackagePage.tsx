@@ -23,7 +23,7 @@ import {SelectableCard} from '@astryxdesign/core/SelectableCard';
 import {Selector} from '@astryxdesign/core/Selector';
 import {Divider} from '@astryxdesign/core/Divider';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
-import {ThemeShowcaseStore} from '../../../../packages/cli/templates/pages/theme-showcase/page';
+import {ThemeShowcaseStore} from '../../../../packages/core/templates/pages/theme-showcase/page';
 import {getThemeShowcaseContent} from './themeShowcaseContent';
 import {buildPlaygroundHref} from './playgroundLink';
 import {packages} from '../generated/packageRegistry';

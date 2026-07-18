@@ -13,7 +13,7 @@
  * - /packages/lab/src/Stepper/Stepper.test.tsx (tests for new/changed behavior)
  * - /packages/lab/src/Stepper/index.ts (exports if types change)
  * - /apps/storybook/stories/Stepper.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Stepper/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
 import {useMemo, type ReactNode} from 'react';

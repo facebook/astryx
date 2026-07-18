@@ -12,7 +12,7 @@
  * - /packages/core/src/Center/Center.doc.mjs
  * - /packages/core/src/Center/Center.test.tsx
  * - /apps/storybook/stories/Center.stories.tsx
- * - /packages/cli/templates/blocks/components/Center/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Center/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

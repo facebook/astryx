@@ -8,7 +8,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/CommandPalette/index.ts
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 'use client';

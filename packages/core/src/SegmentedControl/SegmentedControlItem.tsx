@@ -12,7 +12,7 @@
  * - /packages/core/src/SegmentedControl/SegmentedControl.doc.mjs
  * - /packages/core/src/SegmentedControl/index.ts
  * - /packages/core/src/SegmentedControl/SegmentedControl.test.tsx
- * - /packages/cli/templates/blocks/components/SegmentedControl/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/SegmentedControl/ (showcase blocks)
  */
 
 import React, {type ReactNode} from 'react';

@@ -13,7 +13,7 @@
  * - /packages/core/src/Slider/Slider.test.tsx
  * - /packages/core/src/Slider/index.ts
  * - /apps/storybook/stories/Slider.stories.tsx
- * - /packages/cli/templates/blocks/components/Slider/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Slider/ (showcase blocks)
  */
 
 import {

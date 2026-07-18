@@ -12,7 +12,7 @@
  * - /packages/core/src/Section/Section.doc.mjs (props table, features)
  * - /packages/core/src/Section/index.ts (exports if types change)
  * - /apps/storybook/stories/Section.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Section/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Section/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

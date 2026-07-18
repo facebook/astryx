@@ -19,7 +19,7 @@
  * - /packages/core/src/Icon/Icon.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Icon/index.ts (exports if types change)
  * - /apps/storybook/stories/Icon.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Icon/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Icon/ (showcase blocks)
  */
 
 import React, {type ComponentType, type SVGProps} from 'react';

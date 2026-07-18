@@ -20,7 +20,7 @@ const ROOT = path.resolve(__dirname, '..');
 const CORE_SRC = path.join(ROOT, 'packages/core/src');
 const SHOWCASE_DIR = path.join(
   ROOT,
-  'packages/cli/templates/blocks/components',
+  'packages/core/templates/blocks/components',
 );
 
 const violations = [];
@@ -135,7 +135,7 @@ for (const comp of componentDirs) {
         addViolation(
           'missing-showcase',
           `${comp}/${xdsFile}`,
-          `Has SYNC block but no showcase reference (dir exists at packages/cli/templates/blocks/components/${comp}/)`,
+          `Has SYNC block but no showcase reference (dir exists at packages/core/templates/blocks/components/${comp}/)`,
         );
       }
     }

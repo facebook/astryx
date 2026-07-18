@@ -13,7 +13,7 @@
  * - /packages/core/src/Selector/Selector.test.tsx
  * - /packages/core/src/Selector/index.ts
  * - /apps/storybook/stories/InputGroup.stories.tsx
- * - /packages/cli/templates/blocks/components/Selector/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Selector/ (showcase blocks)
  */
 
 import React, {

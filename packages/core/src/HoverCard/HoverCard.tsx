@@ -12,7 +12,7 @@
  * - /packages/core/src/HoverCard/HoverCard.test.tsx
  * - /packages/core/src/HoverCard/index.ts
  * - /apps/storybook/stories/HoverCard.stories.tsx
- * - /packages/cli/templates/blocks/components/HoverCard/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/HoverCard/ (showcase blocks)
  */
 
 import {useCallback, useRef, type ReactElement, type ReactNode} from 'react';

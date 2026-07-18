@@ -11,7 +11,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Table/Table.doc.mjs
  * - /packages/core/src/Table/index.ts
- * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Table/ (showcase blocks)
  */
 
 import {use, type ReactNode} from 'react';

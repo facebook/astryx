@@ -7,7 +7,7 @@
  * @position Sub-component; empty state shown when there are no items to display
  *
  * SYNC: When modified, update:
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 'use client';

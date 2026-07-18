@@ -8,7 +8,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/index.ts
- * - /packages/cli/templates/blocks/components/Typeahead/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Typeahead/ (showcase blocks)
  */
 
 import React, {type ReactNode} from 'react';

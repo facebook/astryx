@@ -13,7 +13,7 @@
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
- * - /packages/cli/templates/blocks/components/ChatLayoutScrollButton/ (block examples)
+ * - /packages/core/templates/blocks/components/ChatLayoutScrollButton/ (block examples)
  */
 
 import React from 'react';

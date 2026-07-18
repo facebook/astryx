@@ -13,7 +13,7 @@
  * - /packages/core/src/RadioList/RadioList.test.tsx
  * - /packages/core/src/RadioList/index.ts
  * - /apps/storybook/stories/RadioList.stories.tsx
- * - /packages/cli/templates/blocks/components/RadioList/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/RadioList/ (showcase blocks)
  */
 
 import React, {

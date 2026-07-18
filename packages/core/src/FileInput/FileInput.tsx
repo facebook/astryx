@@ -13,7 +13,7 @@
  * - /packages/core/src/FileInput/FileInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/FileInput/index.ts (exports if types change)
  * - /apps/storybook/stories/FileInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/FileInput/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/FileInput/ (showcase blocks)
  */
 
 import {

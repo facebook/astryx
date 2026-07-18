@@ -2,7 +2,7 @@
 
 /**
  * @file Bundles each theme's source (`src/<slug>Theme.ts` + `icons.tsx`) and a
- * `manifest.json` into `packages/cli/templates/themes/` so `astryx theme add`
+ * `manifest.json` into `packages/core/templates/themes/` so `astryx theme add`
  * can scaffold a theme without the package installed — like page templates.
  * Run from the repo root; commit the output so the published CLI carries it.
  */

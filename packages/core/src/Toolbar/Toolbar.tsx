@@ -13,7 +13,7 @@
  * - /packages/core/src/Toolbar/Toolbar.test.tsx
  * - /packages/core/src/Toolbar/index.ts
  * - /apps/storybook/stories/Toolbar.stories.tsx
- * - /packages/cli/templates/blocks/components/Toolbar/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Toolbar/ (showcase blocks)
  */
 
 import {useCallback, type ReactNode} from 'react';

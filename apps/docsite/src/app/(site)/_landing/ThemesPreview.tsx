@@ -15,7 +15,7 @@ import {
   shadowVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-import {ThemeShowcaseStore} from '../../../../../../packages/cli/templates/pages/theme-showcase/page';
+import {ThemeShowcaseStore} from '../../../../../../packages/core/templates/pages/theme-showcase/page';
 import {getThemeShowcaseContent} from '../../../components/themeShowcaseContent';
 import {themeObjects} from '../../../generated/themeRegistry';
 import {useThemeMode} from '../../providers';

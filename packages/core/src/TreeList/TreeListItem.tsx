@@ -11,7 +11,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/TreeList/TreeList.doc.mjs
  * - /packages/core/src/TreeList/TreeList.tsx
- * - /packages/cli/templates/blocks/components/TreeList/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/TreeList/ (showcase blocks)
  */
 
 import {useId, useMemo, type ReactNode} from 'react';

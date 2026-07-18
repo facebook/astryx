@@ -12,7 +12,7 @@
  * - /packages/core/src/Pagination/Pagination.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Pagination/index.ts (exports if types change)
  * - /apps/storybook/stories/Pagination.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Pagination/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Pagination/ (showcase blocks)
  *
  * Last synced props: page, onChange, changeAction, totalItems, totalPages, hasMore,
  *   pageSize, pageSizeOptions, onPageSizeChange, variant, siblingCount, size, isDisabled,

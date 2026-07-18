@@ -13,7 +13,7 @@
  * - /packages/core/src/Link/Link.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Link/index.ts (exports if types change)
  * - /apps/storybook/stories/Link.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Link/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Link/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

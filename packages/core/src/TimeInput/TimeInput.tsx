@@ -13,7 +13,7 @@
  * - /packages/core/src/TimeInput/TimeInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TimeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TimeInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/TimeInput/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/TimeInput/ (showcase blocks)
  */
 
 import {

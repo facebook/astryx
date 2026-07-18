@@ -12,7 +12,7 @@
  * - /packages/core/src/Divider/Divider.doc.mjs
  * - /packages/core/src/Divider/Divider.test.tsx
  * - /apps/storybook/stories/Divider.stories.tsx
- * - /packages/cli/templates/blocks/components/Divider/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Divider/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

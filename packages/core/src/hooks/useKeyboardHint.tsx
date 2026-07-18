@@ -13,7 +13,7 @@
  * - /packages/core/src/hooks/index.ts
  * - /packages/core/src/hooks/useKeyboardHint.doc.mjs
  * - /apps/storybook/stories/useKeyboardHint.stories.tsx
- * - /packages/cli/templates/blocks/components/Hooks/useKeyboardHintHookUsage.tsx
+ * - /packages/core/templates/blocks/components/Hooks/useKeyboardHintHookUsage.tsx
  */
 
 import React, {useCallback, useEffect, useRef, type ReactNode} from 'react';

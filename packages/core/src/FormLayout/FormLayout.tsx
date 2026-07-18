@@ -12,7 +12,7 @@
  * - /packages/core/src/FormLayout/FormLayout.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/FormLayout/index.ts (exports if types change)
  * - /apps/storybook/stories/FormLayout.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/FormLayout/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/FormLayout/ (showcase blocks)
  */
 
 import {useMemo, type ReactNode} from 'react';

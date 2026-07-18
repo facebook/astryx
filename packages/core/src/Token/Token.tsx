@@ -13,7 +13,7 @@
  * - /packages/core/src/Token/Token.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Token/index.ts (exports if types change)
  * - /apps/storybook/stories/Token.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Token/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Token/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

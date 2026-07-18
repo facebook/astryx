@@ -24,7 +24,7 @@
  * - /packages/core/src/Collapsible/index.ts (exports)
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
  * - /apps/storybook/stories/Collapsible.stories.tsx
- * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
 import {use, useId, type ReactNode} from 'react';

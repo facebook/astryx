@@ -13,7 +13,7 @@
  * - /packages/core/src/Dialog/DialogHeader.test.tsx
  * - /packages/core/src/Dialog/index.ts
  * - /apps/storybook/stories/Dialog.stories.tsx
- * - /packages/cli/templates/blocks/components/Dialog/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Dialog/ (showcase blocks)
  */
 
 import {useEffect, useRef, type ReactNode} from 'react';

@@ -13,7 +13,7 @@
  * - /packages/core/src/MetadataList/MetadataList.test.tsx
  * - /packages/core/src/MetadataList/index.ts
  * - /apps/storybook/stories/MetadataList.stories.tsx
- * - /packages/cli/templates/blocks/components/MetadataList/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/MetadataList/ (showcase blocks)
  */
 
 import {use, type ReactNode} from 'react';

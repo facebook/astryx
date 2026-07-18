@@ -13,7 +13,7 @@
  * - /packages/core/src/TextInput/TextInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/TextInput/index.ts (exports if types change)
  * - /apps/storybook/stories/TextInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/TextInput/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/TextInput/ (showcase blocks)
  */
 
 import {

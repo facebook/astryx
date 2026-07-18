@@ -11,7 +11,7 @@
  * - /packages/core/src/Table/Table.doc.mjs (component description, props)
  * - /packages/core/src/Table/Table.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/Table/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/Table/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Table/ (showcase blocks)
  */
 
 import {memo, useRef, type ReactElement, type ReactNode, type Ref} from 'react';

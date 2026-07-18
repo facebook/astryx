@@ -13,7 +13,7 @@
  * - /packages/core/src/AlertDialog/AlertDialog.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/AlertDialog/index.ts (exports if types change)
  * - /apps/storybook/stories/AlertDialog.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/AlertDialog/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/AlertDialog/ (showcase blocks)
  */
 
 import React, {useId, useCallback} from 'react';

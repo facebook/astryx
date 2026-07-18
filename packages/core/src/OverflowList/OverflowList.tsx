@@ -14,7 +14,7 @@
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/OverflowList/index.ts (exports if types change)
- * - /packages/cli/templates/blocks/components/OverflowList/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/OverflowList/ (showcase blocks)
  */
 
 import {type ReactNode, type ReactElement, Children} from 'react';

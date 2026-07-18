@@ -16,7 +16,7 @@
 import type {
   ProductSpec,
   InventoryRow,
-} from '../../../../packages/cli/templates/pages/theme-showcase/page';
+} from '../../../../packages/core/templates/pages/theme-showcase/page';
 
 export interface ThemeShowcaseContent {
   images: Record<string, string>;

@@ -12,7 +12,7 @@
  * - /packages/core/src/Grid/Grid.doc.mjs
  * - /packages/core/src/Grid/Grid.test.tsx
  * - /apps/storybook/stories/Grid.stories.tsx
- * - /packages/cli/templates/blocks/components/Grid/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Grid/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

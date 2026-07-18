@@ -11,7 +11,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/InputGroup/InputGroup.doc.mjs
  * - /packages/core/src/InputGroup/index.ts
- * - /packages/cli/templates/blocks/components/InputGroup/
+ * - /packages/core/templates/blocks/components/InputGroup/
  */
 
 import React, {type ReactNode} from 'react';

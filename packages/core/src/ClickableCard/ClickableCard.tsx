@@ -12,8 +12,8 @@
  * - /packages/core/src/ClickableCard/ClickableCard.doc.mjs (props table, features)
  * - /packages/core/src/ClickableCard/index.ts (exports if types change)
  * - /apps/storybook/stories/ClickableCard.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Card/ClickableCardShowcase.tsx (showcase block)
- * - /packages/cli/templates/blocks/components/Card/ClickableCardWithNestedButton.tsx (block)
+ * - /packages/core/templates/blocks/components/Card/ClickableCardShowcase.tsx (showcase block)
+ * - /packages/core/templates/blocks/components/Card/ClickableCardWithNestedButton.tsx (block)
  *
  * Composes Card for all visual styling (radius, padding, variants,
  * container tokens, theming). Adds an interactive wrapper with

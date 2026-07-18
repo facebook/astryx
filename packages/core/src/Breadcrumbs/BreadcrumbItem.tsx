@@ -13,7 +13,7 @@
  * - /packages/core/src/Breadcrumbs/Breadcrumbs.test.tsx
  * - /packages/core/src/Breadcrumbs/index.ts
  * - /apps/storybook/stories/Breadcrumbs.stories.tsx
- * - /packages/cli/templates/blocks/components/Breadcrumbs/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Breadcrumbs/ (showcase blocks)
  */
 
 import React, {

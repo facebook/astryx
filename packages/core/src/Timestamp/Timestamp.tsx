@@ -13,7 +13,7 @@
  * - /packages/core/src/Timestamp/Timestamp.test.tsx
  * - /packages/core/src/Timestamp/index.ts
  * - /apps/storybook/stories/Timestamp.stories.tsx
- * - /packages/cli/templates/blocks/components/Timestamp/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Timestamp/ (showcase blocks)
  */
 
 import {useEffect, useRef, useState, lazy, Suspense} from 'react';

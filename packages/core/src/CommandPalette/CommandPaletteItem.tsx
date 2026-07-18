@@ -8,7 +8,7 @@
  * @position Sub-component; individual selectable item
  *
  * SYNC: When modified, update:
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 import {useCallback, useEffect, useMemo, useRef, type ReactNode} from 'react';

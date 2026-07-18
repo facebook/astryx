@@ -19,7 +19,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /apps/storybook/stories/Chat.stories.tsx
- * - /packages/cli/templates/blocks/components/ChatMessageList/ (block examples)
+ * - /packages/core/templates/blocks/components/ChatMessageList/ (block examples)
  */
 
 import {type ReactNode, useEffect, useMemo, useRef, useTransition} from 'react';

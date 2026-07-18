@@ -13,7 +13,7 @@
  * - /packages/core/src/MultiSelector/MultiSelector.test.tsx
  * - /packages/core/src/MultiSelector/index.ts
  * - /apps/storybook/stories/InputGroup.stories.tsx
- * - /packages/cli/templates/blocks/components/MultiSelector/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/MultiSelector/ (showcase blocks)
  */
 
 import React, {

@@ -12,7 +12,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Tokenizer/index.ts
  * - /apps/storybook/stories/Tokenizer.stories.tsx
- * - /packages/cli/templates/blocks/components/Tokenizer/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Tokenizer/ (showcase blocks)
  */
 
 import React, {

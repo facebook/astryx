@@ -12,7 +12,7 @@
  * - /packages/core/src/Avatar/Avatar.doc.mjs (props table, features, implementation notes)
  * - /packages/core/src/Avatar/index.ts (exports if types change)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/Avatar/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Avatar/ (showcase blocks)
  */
 
 import {useMemo, useState, type ReactNode} from 'react';

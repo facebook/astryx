@@ -13,7 +13,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Collapsible/CollapsibleGroup.tsx (provider)
  * - /packages/core/src/Collapsible/Collapsible.doc.mjs
- * - /packages/cli/templates/blocks/components/Collapsible/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Collapsible/ (showcase blocks)
  */
 
 import {createContext} from 'react';

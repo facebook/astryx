@@ -11,7 +11,7 @@
  * - /packages/core/src/NavIcon/NavIcon.test.tsx
  * - /packages/core/src/NavIcon/index.ts
  * - /apps/storybook/stories/TopNav.stories.tsx
- * - /packages/cli/templates/blocks/components/NavIcon/NavIconShowcase.tsx
+ * - /packages/core/templates/blocks/components/NavIcon/NavIconShowcase.tsx
  */
 
 import type {ReactNode} from 'react';

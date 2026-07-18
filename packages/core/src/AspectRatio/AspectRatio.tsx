@@ -13,7 +13,7 @@
  * - /packages/core/src/AspectRatio/AspectRatio.test.tsx
  * - /packages/core/src/reset.css (AspectRatio fit baseline rules)
  * - /apps/storybook/stories/AspectRatio.stories.tsx
- * - /packages/cli/templates/blocks/components/AspectRatio/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/AspectRatio/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

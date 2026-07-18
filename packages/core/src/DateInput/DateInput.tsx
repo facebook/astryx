@@ -13,7 +13,7 @@
  * - /packages/core/src/DateInput/DateInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/DateInput/index.ts (exports if types change)
  * - /apps/storybook/stories/DateInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/DateInput/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/DateInput/ (showcase blocks)
  */
 
 import {

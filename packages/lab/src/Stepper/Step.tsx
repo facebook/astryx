@@ -13,7 +13,7 @@
  * - /packages/lab/src/Stepper/Stepper.test.tsx
  * - /packages/lab/src/Stepper/index.ts
  * - /apps/storybook/stories/Stepper.stories.tsx
- * - /packages/cli/templates/blocks/components/Stepper/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
 import {type ReactNode} from 'react';

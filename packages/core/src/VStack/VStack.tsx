@@ -9,7 +9,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stack/Stack.doc.mjs
  * - /packages/core/src/VStack/VStack.test.tsx
- * - /packages/cli/templates/blocks/components/VStack/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/VStack/ (showcase blocks)
  */
 
 import {Stack, type StackProps} from '../Stack/Stack';

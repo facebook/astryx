@@ -15,7 +15,7 @@
  * SYNC: When modified, update:
  * - /packages/core/src/Typeahead/index.ts
  * - /apps/storybook/stories/Typeahead.stories.tsx
- * - /packages/cli/templates/blocks/components/Typeahead/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Typeahead/ (showcase blocks)
  */
 
 import React, {

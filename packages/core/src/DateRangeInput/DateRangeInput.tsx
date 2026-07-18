@@ -13,7 +13,7 @@
  * - /packages/core/src/DateRangeInput/DateRangeInput.test.tsx (tests for new/changed behavior)
  * - /packages/core/src/DateRangeInput/index.ts (exports if types change)
  * - /apps/storybook/stories/DateRangeInput.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/DateRangeInput/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/DateRangeInput/ (showcase blocks)
  */
 
 import {useId, useCallback, useMemo, useOptimistic, useTransition} from 'react';

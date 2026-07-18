@@ -9,7 +9,7 @@
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stack/Stack.doc.mjs
  * - /apps/storybook/stories/Stack.stories.tsx
- * - /packages/cli/templates/blocks/components/Stack/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Stack/ (showcase blocks)
  */
 
 import {createElement, type ElementType, type ReactNode, type Ref} from 'react';

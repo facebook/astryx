@@ -13,7 +13,7 @@
  * - /packages/core/src/Item/Item.test.tsx
  * - /packages/core/src/Item/index.ts
  * - /apps/storybook/stories/Item.stories.tsx
- * - /packages/cli/templates/blocks/components/Item/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/Item/ (showcase blocks)
  */
 
 import type {ReactNode} from 'react';

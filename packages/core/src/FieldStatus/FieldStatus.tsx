@@ -11,7 +11,7 @@
  * - /packages/core/src/Field/Field.doc.mjs (compat docs when public API changes)
  * - /packages/core/src/FieldStatus/index.ts (exports if types change)
  * - /packages/core/src/Field/index.ts (compat re-export if public API changes)
- * - /packages/cli/templates/blocks/components/FieldStatus/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/FieldStatus/ (showcase blocks)
  */
 
 'use client';

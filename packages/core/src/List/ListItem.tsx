@@ -16,7 +16,7 @@
  * - /packages/core/src/List/List.test.tsx
  * - /packages/core/src/List/index.ts
  * - /apps/storybook/stories/List.stories.tsx
- * - /packages/cli/templates/blocks/components/List/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/List/ (showcase blocks)
  */
 
 import {use, type ReactNode} from 'react';

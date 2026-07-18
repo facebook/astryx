@@ -7,7 +7,7 @@
  * @position Sub-component; footer with keyboard hints
  *
  * SYNC: When modified, update:
- * - /packages/cli/templates/blocks/components/CommandPalette/ (showcase blocks)
+ * - /packages/core/templates/blocks/components/CommandPalette/ (showcase blocks)
  */
 
 'use client';
