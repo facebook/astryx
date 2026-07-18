@@ -1,19 +1,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Static template authoring API.
+ * @file Static template authoring API (CLI surface).
  *
- * Helpers for authoring Astryx page/block template docs. Like
- * `createConfig`/`createIntegration`, these are tiny runtime identity helpers
- * whose real value is the exported TypeScript surface from
- * `@astryxdesign/cli/template`. They inject the discriminant `type` so a
- * discovered doc always knows whether it is a page or a block. They do NOT
- * validate — validation happens at the load boundary, where integration
- * template discovery runs the module's default export through
- * {@link TemplateEnvelopeSchema} (see `loadModuleWithSchema`).
+ * The `createPageTemplate`/`createBlockTemplate` authoring helpers now live in
+ * `@astryxdesign/core/authoring` and are re-exported here so existing
+ * `@astryxdesign/cli/template` imports keep working. The Zod validation schemas
+ * stay in the CLI: they are the load-boundary contract that integration
+ * template discovery runs a module's default export through (see
+ * `loadModuleWithSchema`).
  */
 
 import {z} from 'zod';
+
+export {createPageTemplate, createBlockTemplate} from '@astryxdesign/core/authoring';
 
 const PreviewSchema = z
   .object({
@@ -47,27 +47,3 @@ export const BaseTemplateSchema = z
 export const TemplateEnvelopeSchema = BaseTemplateSchema.extend({
   type: z.enum(['page', 'block']),
 });
-
-/**
- * Author an Astryx page template doc. Stamp-only: returns the def with
- * `type: 'page'` injected. Validation happens at the load boundary.
- *
- * @template {import('./types/template-api').AstryxPageTemplateInput} T
- * @param {T} def
- * @returns {T & {type: 'page'}}
- */
-export function createPageTemplate(def) {
-  return /** @type {T & {type: 'page'}} */ ({...def, type: 'page'});
-}
-
-/**
- * Author an Astryx block template doc. Stamp-only: returns the def with
- * `type: 'block'` injected. Validation happens at the load boundary.
- *
- * @template {import('./types/template-api').AstryxBlockTemplateInput} T
- * @param {T} def
- * @returns {T & {type: 'block'}}
- */
-export function createBlockTemplate(def) {
-  return /** @type {T & {type: 'block'}} */ ({...def, type: 'block'});
-}

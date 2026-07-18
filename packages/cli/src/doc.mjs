@@ -1,26 +1,24 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Public doc-authoring API.
+ * @file Doc-authoring API (CLI surface) + load-boundary schemas.
  *
- * A doc describes a documentable unit of the design system so the CLI and docs
- * surfaces can list, search, and render it. There are three kinds, each a tiny
- * runtime identity helper that stamps a `type` discriminant (mirroring how
- * `createPageTemplate`/`createBlockTemplate` stamp `type`):
- *
- *   - `createComponentDoc` -> `type: 'component'` — a component (or a family).
- *   - `createFunctionDoc`   -> `type: 'function'`  — any function, including
- *      hooks: an "inputs + outputs" surface (`params` + `returns`).
- *   - `createDoc`           -> `type: 'generic'`   — reference/topic docs.
- *
- * Like `createConfig`/`createIntegration`/`createBlockTemplate`, these factories
- * do NOT validate. Validation happens at the LOAD boundary, where doc discovery
- * runs the loaded value through {@link ComponentDocSchema}. That schema handles
- * BOTH the new stamped formats and the legacy loose `export const docs = {...}`
- * shape, so existing docs keep loading unchanged (a later PR migrates them).
+ * The `createComponentDoc`/`createFunctionDoc`/`createDoc` authoring helpers now
+ * live in `@astryxdesign/core/authoring` and are re-exported here so existing
+ * `@astryxdesign/cli/doc` imports keep working. The Zod validation schemas stay
+ * in the CLI: they are the LOAD boundary, where doc discovery runs the loaded
+ * value through {@link ComponentDocSchema}. That schema handles BOTH the new
+ * stamped formats and the legacy loose `export const docs = {...}` shape, so
+ * existing docs keep loading unchanged (a later PR migrates them).
  */
 
 import {z} from 'zod';
+
+export {
+  createComponentDoc,
+  createFunctionDoc,
+  createDoc,
+} from '@astryxdesign/core/authoring';
 
 /**
  * A single documented prop. Mirrors `PropDoc` from
@@ -222,50 +220,12 @@ export const LegacyDocSchema = z.union([
 /**
  * The LOAD-boundary contract for a doc. Handles BOTH formats:
  *   - NEW: a stamped doc (`type: 'component' | 'function' | 'generic'`,
- *     produced by the factories below) is validated against the matching
- *     per-kind schema in {@link StampedDocSchema}.
+ *     produced by the factories) is validated against the matching per-kind
+ *     schema in {@link StampedDocSchema}.
  *   - OLD: a loose, unstamped doc is validated against the permissive
  *     {@link LegacyDocSchema} union (the three legacy shapes + standalone hook).
  *
- * Discovery validates the SHAPE, not "was it made by the factory". This PR does
- * NOT migrate real docs; a later PR does. Both formats normalize into the same
- * internal shape consumers already expect.
+ * Discovery validates the SHAPE, not "was it made by the factory". Both formats
+ * normalize into the same internal shape consumers already expect.
  */
 export const ComponentDocSchema = z.union([StampedDocSchema, LegacyDocSchema]);
-
-/**
- * Author a component doc. Stamp-only: returns the def with `type: 'component'`
- * injected. Validation happens at the load boundary.
- *
- * @template {import('./types/doc').AstryxComponentDocInput} T
- * @param {T} def
- * @returns {T & {type: 'component'}}
- */
-export function createComponentDoc(def) {
-  return /** @type {T & {type: 'component'}} */ ({...def, type: 'component'});
-}
-
-/**
- * Author a function doc (covers any function, including hooks). Stamp-only:
- * returns the def with `type: 'function'` injected. Validation happens at the
- * load boundary.
- *
- * @template {import('./types/doc').AstryxFunctionDocInput} T
- * @param {T} def
- * @returns {T & {type: 'function'}}
- */
-export function createFunctionDoc(def) {
-  return /** @type {T & {type: 'function'}} */ ({...def, type: 'function'});
-}
-
-/**
- * Author a generic reference/topic doc. Stamp-only: returns the def with
- * `type: 'generic'` injected. Validation happens at the load boundary.
- *
- * @template {import('./types/doc').AstryxGenericDocInput} T
- * @param {T} def
- * @returns {T & {type: 'generic'}}
- */
-export function createDoc(def) {
-  return /** @type {T & {type: 'generic'}} */ ({...def, type: 'generic'});
-}

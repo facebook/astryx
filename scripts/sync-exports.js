@@ -68,6 +68,16 @@ const STATIC_EXPORTS = {
     types: './dist/naming.d.ts',
     default: './dist/naming.js',
   },
+  './config': {
+    source: './src/config.ts',
+    types: './dist/config.d.ts',
+    default: './dist/config.js',
+  },
+  './authoring': {
+    source: './src/authoring/index.ts',
+    types: './dist/authoring/index.d.ts',
+    default: './dist/authoring/index.js',
+  },
   './theme/tokens': {
     source: './src/theme/tokens.ts',
     types: './dist/theme/tokens.d.ts',
