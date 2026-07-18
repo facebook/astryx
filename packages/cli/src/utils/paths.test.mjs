@@ -86,6 +86,31 @@ describe('discoverExternalPackages', () => {
         category: 'Data Viz',
         docsDir: path.join(extDir, 'src'),
         blocksDir: null,
+        templatesDir: null,
+      },
+    ]);
+  });
+
+  it('finds a package that declares only "astryx.templates" (no docs)', () => {
+    const nm = path.join(tmpDir, 'node_modules');
+    const extDir = path.join(nm, 'astryx-charts');
+    fs.mkdirSync(extDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(extDir, 'package.json'),
+      JSON.stringify({
+        name: 'astryx-charts',
+        astryx: {templates: './templates'},
+      }),
+    );
+
+    const result = discoverExternalPackages(tmpDir);
+    expect(result).toEqual([
+      {
+        name: 'astryx-charts',
+        category: 'astryx-charts',
+        docsDir: null,
+        blocksDir: null,
+        templatesDir: path.join(extDir, 'templates'),
       },
     ]);
   });
@@ -109,6 +134,7 @@ describe('discoverExternalPackages', () => {
         category: 'Widgets',
         docsDir: path.join(scopedDir, 'lib'),
         blocksDir: null,
+        templatesDir: null,
       },
     ]);
   });
