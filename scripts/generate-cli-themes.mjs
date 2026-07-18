@@ -17,7 +17,7 @@ const THEMES_SRC_ROOT = path.join(REPO_ROOT, 'packages', 'themes');
 const CLI_THEMES_OUT = path.join(
   REPO_ROOT,
   'packages',
-  'cli',
+  'core',
   'templates',
   'themes',
 );

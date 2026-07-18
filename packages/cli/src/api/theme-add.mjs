@@ -8,12 +8,21 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {CLI_ROOT} from '../utils/paths.mjs';
+import {CLI_ROOT, findCoreDir} from '../utils/paths.mjs';
 import {assertWithin, PathSafetyError} from '../utils/path-safety.mjs';
 import {AstryxError} from './error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
-const THEMES_DIR = path.join(CLI_ROOT, 'templates', 'themes');
+// Bundled themes ship in @astryxdesign/core (packages/core/templates/themes in
+// the monorepo, node_modules/@astryxdesign/core when installed). Resolve via
+// the CLI's core locator, anchored at the CLI package so it does not depend on
+// cwd; fall back to the CLI's own directory only if core cannot be located.
+const CORE_DIR = findCoreDir(CLI_ROOT);
+const THEMES_DIR = path.join(
+  CORE_DIR ?? CLI_ROOT,
+  'templates',
+  'themes',
+);
 const MANIFEST_PATH = path.join(THEMES_DIR, 'manifest.json');
 
 // Stripped from scaffolded files so the consumer's copy doesn't carry our

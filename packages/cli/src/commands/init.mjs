@@ -16,7 +16,7 @@
 import * as p from '@clack/prompts';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import {CLI_ROOT} from '../utils/paths.mjs';
+import {CLI_ROOT, findCoreDir} from '../utils/paths.mjs';
 import {PathSafetyError} from '../utils/path-safety.mjs';
 import {getRunPrefix} from '../utils/package-manager.mjs';
 import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
@@ -28,6 +28,12 @@ import {requireInteractive} from '../utils/interactive.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
 const run = getRunPrefix();
+
+// Built-in page templates ship in @astryxdesign/core (packages/core/templates
+// in the monorepo, node_modules/@astryxdesign/core when installed). Resolve via
+// the CLI's core locator, anchored at the CLI package so it does not depend on
+// cwd; fall back to the CLI's own directory only if core cannot be located.
+const TEMPLATES_ROOT = path.join(findCoreDir(CLI_ROOT) ?? CLI_ROOT, 'templates');
 
 /**
  * Build the "Next steps" lines printed at the end of `astryx init`.
@@ -149,7 +155,7 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
     }
 
     const outputDir = path.resolve(targetDir, `./src/pages/${templateName}`);
-    const srcPath = path.join(CLI_ROOT, 'templates', 'pages', templateName, 'page.tsx');
+    const srcPath = path.join(TEMPLATES_ROOT, 'pages', templateName, 'page.tsx');
     fs.mkdirSync(outputDir, {recursive: true});
     fs.copyFileSync(srcPath, path.join(outputDir, 'page.tsx'));
     humanLog(`✓ Template created at ${path.relative(targetDir, outputDir)}/page.tsx`);
@@ -181,7 +187,7 @@ async function runTemplate(targetDir, {interactive = true, templateName} = {}) {
   );
 
   const outputDir = path.resolve(targetDir, targetPath);
-  const srcPath = path.join(CLI_ROOT, 'templates', 'pages', templateChoice, 'page.tsx');
+  const srcPath = path.join(TEMPLATES_ROOT, 'pages', templateChoice, 'page.tsx');
 
   fs.mkdirSync(outputDir, {recursive: true});
   fs.copyFileSync(srcPath, path.join(outputDir, 'page.tsx'));

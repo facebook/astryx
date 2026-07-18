@@ -9,7 +9,7 @@ import * as path from 'node:path';
 import {createJiti} from 'jiti';
 import {loadModuleWithSchema} from '../lib/module-loader.mjs';
 import {TemplateEnvelopeSchema} from '../schemas/template-schema.mjs';
-import {CLI_ROOT, discoverExternalPackages} from '../utils/paths.mjs';
+import {CLI_ROOT, findCoreDir, discoverExternalPackages} from '../utils/paths.mjs';
 import {
   assertWithin,
   isFilePathArg,
@@ -85,7 +85,18 @@ async function loadIntegrationDoc(file, label) {
   return loadModuleWithSchema(file, TemplateEnvelopeSchema, {label});
 }
 
-const TEMPLATES_DIR = path.join(CLI_ROOT, 'templates');
+/**
+ * Root of the built-in templates. They now live in `@astryxdesign/core`
+ * (`packages/core/templates` in the monorepo, `node_modules/@astryxdesign/core`
+ * when installed) so template content ships with the design system it
+ * showcases rather than the CLI that serves it. Resolved via the CLI's core
+ * locator, anchored at the CLI package so it does not depend on `cwd`. Falls
+ * back to the CLI's own directory only if core cannot be located.
+ */
+const CORE_DIR = findCoreDir(CLI_ROOT);
+const TEMPLATES_DIR = CORE_DIR
+  ? path.join(CORE_DIR, 'templates')
+  : path.join(CLI_ROOT, 'templates');
 const PAGES_DIR = path.join(TEMPLATES_DIR, 'pages');
 const BLOCKS_DIR = path.join(TEMPLATES_DIR, 'blocks');
 
