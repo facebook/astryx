@@ -4,7 +4,7 @@
 
 /**
  * @file Center.tsx
- * @input Uses React, StyleX for centering styles
+ * @input Uses React, StyleX for centering styles, Layout padding.stylex for spacing-scale padding
  * @output Exports Center component and CenterProps
  * @position Center component for centering children horizontally/vertically
  *
@@ -18,7 +18,11 @@
 import type {ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
-import type {SizeValue} from '../utils/types';
+import type {SizeValue, SpacingStep} from '../utils/types';
+import {
+  paddingInlineStyles,
+  paddingBlockStyles,
+} from '../Layout/padding.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
@@ -91,6 +95,26 @@ export interface CenterProps extends BaseProps<HTMLDivElement> {
   minHeight?: SizeValue;
 
   /**
+   * Inner padding on all sides, using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   *
+   * Matches the `padding` prop on `Stack`, `Card`, `LayoutContent`, and `LayoutPanel`.
+   */
+  padding?: SpacingStep;
+
+  /**
+   * Inline (horizontal) padding, using the spacing scale.
+   * Overrides `padding` on the inline axis when both are set.
+   */
+  paddingInline?: SpacingStep;
+
+  /**
+   * Block (vertical) padding, using the spacing scale.
+   * Overrides `padding` on the block axis when both are set.
+   */
+  paddingBlock?: SpacingStep;
+
+  /**
    * Whether to make the container inline-flex (useful for text/icons).
    * @default false
    */
@@ -121,6 +145,9 @@ export function Center({
   height,
   maxWidth,
   minHeight,
+  padding,
+  paddingInline,
+  paddingBlock,
   isInline = false,
   children,
   xstyle,
@@ -129,6 +156,11 @@ export function Center({
   ref,
   ...props
 }: CenterProps) {
+  // Resolve padding to per-axis values: `padding` sets both axes; `paddingInline`
+  // / `paddingBlock` take precedence on their own axis when provided.
+  const resolvedPaddingInline = paddingInline ?? padding;
+  const resolvedPaddingBlock = paddingBlock ?? padding;
+
   const stylexProps = mergeProps(
     themeProps('center', {axis}),
     stylex.props(
@@ -141,6 +173,9 @@ export function Center({
         maxWidth ?? null,
         minHeight ?? null,
       ),
+      resolvedPaddingInline != null &&
+        paddingInlineStyles[resolvedPaddingInline],
+      resolvedPaddingBlock != null && paddingBlockStyles[resolvedPaddingBlock],
       xstyle,
     ),
     className,

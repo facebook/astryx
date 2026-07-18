@@ -82,6 +82,81 @@ describe('Center', () => {
     expect(element).toBeInTheDocument();
   });
 
+  it('applies a class when padding is set', () => {
+    const {rerender} = render(
+      <Center data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    const baseline = screen.getByTestId('center').className;
+    rerender(
+      <Center padding={3} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    const withPadding = screen.getByTestId('center').className;
+    expect(withPadding).not.toBe('');
+    expect(withPadding).not.toBe(baseline);
+  });
+
+  it('accepts paddingInline and paddingBlock without error', () => {
+    render(
+      <Center paddingInline={4} paddingBlock={2} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(screen.getByTestId('center')).toBeInTheDocument();
+  });
+
+  it('lets paddingInline/paddingBlock override padding on their axis', () => {
+    // padding sets both axes; paddingInline overrides the inline axis. The
+    // component should render without conflict and carry a class.
+    render(
+      <Center padding={2} paddingInline={5} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(screen.getByTestId('center').className).not.toBe('');
+  });
+
+  it('applies a class for explicit padding={0} (zero is a valid spacing step)', () => {
+    const {rerender} = render(
+      <Center data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    const baseline = screen.getByTestId('center').className;
+    rerender(
+      <Center padding={0} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(screen.getByTestId('center').className).not.toBe(baseline);
+  });
+
+  it('leaves the default className unchanged when no padding props are set', () => {
+    const {rerender} = render(
+      <Center data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    const baseline = screen.getByTestId('center').className;
+    // Opting in changes the className...
+    rerender(
+      <Center padding={3} data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(screen.getByTestId('center').className).not.toBe(baseline);
+    // ...and dropping the prop restores the exact default output.
+    rerender(
+      <Center data-testid="center">
+        <div>Content</div>
+      </Center>,
+    );
+    expect(screen.getByTestId('center').className).toBe(baseline);
+  });
+
   it('renders as inline-flex when isInline is true', () => {
     render(
       <Center isInline data-testid="center">
