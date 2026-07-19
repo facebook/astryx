@@ -2,7 +2,11 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "paths": {
+      "zod": ["./node_modules/zod"],
+      "zod/*": ["./node_modules/zod/*"]
+    }
   },
   "include": ["src"]
 }
