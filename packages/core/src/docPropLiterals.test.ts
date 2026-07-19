@@ -104,6 +104,27 @@ function stripComments(src: string): string {
 }
 
 /**
+ * Literal members of a union flagged `@deprecated` in source. Docs shouldn't
+ * advertise a deprecated value as a legal option (the prose can still mention
+ * it), so the guard doesn't require it to be inlined. Detected from the *raw*
+ * declaration, because the registry parses members from comment-stripped
+ * source where the `@deprecated` marker is already gone. A member is
+ * deprecated when a `@deprecated` JSDoc or line comment immediately precedes
+ * it in the union — e.g. a member `'c'` written just after a
+ * `@deprecated`-tagged block comment is treated as deprecated and dropped,
+ * while undecorated members like `'a'` and `'b'` are kept.
+ */
+function deprecatedLiteralMembers(rawRhs: string): Set<string> {
+  const out = new Set<string>();
+  const marker =
+    /(?:\/\*\*?[\s\S]*?@deprecated[\s\S]*?\*\/|\/\/[^\n]*@deprecated[^\n]*)\s*\|\s*('[^']*'|-?\d+(?:\.\d+)?|null|undefined)/g;
+  for (const m of rawRhs.matchAll(marker)) {
+    out.add(m[1]);
+  }
+  return out;
+}
+
+/**
  * Names a consumer would have to write values for, given a type expression.
  * Skips string literals, generic parameters, and the type arguments of any
  * wrapper that isn't transparent.
@@ -161,13 +182,23 @@ for (const file of findFiles(SRC_DIR, ['.ts', '.tsx'])) {
   if (file.includes('.test.')) {
     continue;
   }
-  const src = stripComments(readFileSync(file, 'utf8'));
+  const raw = readFileSync(file, 'utf8');
+  const src = stripComments(raw);
+  // Raw type declarations, keyed by name, so we can inspect `@deprecated`
+  // markers the comment-stripped `src` has already removed.
+  const rawTypeRhs = new Map<string, string>();
+  for (const m of raw.matchAll(
+    /export type ([A-Z][A-Za-z0-9]*)(?:<[^>]*>)?\s*=\s*([^;]+);/g,
+  )) {
+    rawTypeRhs.set(m[1], m[2]);
+  }
   for (const m of src.matchAll(
     /export type ([A-Z][A-Za-z0-9]*)(?:<[^>]*>)?\s*=\s*([^;]+);/g,
   )) {
     const [, name, rhsRaw] = m;
     const rhs = rhsRaw.replace(/\s+/g, ' ').trim();
     if (LITERAL_UNION.test(rhs)) {
+      const deprecated = deprecatedLiteralMembers(rawTypeRhs.get(name) ?? '');
       literalUnions.set(
         name,
         rhs
@@ -175,6 +206,7 @@ for (const file of findFiles(SRC_DIR, ['.ts', '.tsx'])) {
           .split('|')
           .map(s => s.trim())
           .filter(Boolean)
+          .filter(member => !deprecated.has(member))
           .join(' | '),
       );
     } else {
@@ -562,6 +594,10 @@ describe('doc prop types surface their literal values (#1645)', () => {
     expect(literalUnions.get('TableSortDirection')).toBe(
       "'ascending' | 'descending'",
     );
+    // @deprecated members are dropped: SwitchLabelSpacing is
+    // `'hug' | 'spread' | (@deprecated) 'default'`, and docs shouldn't have to
+    // advertise the deprecated value as a legal option.
+    expect(literalUnions.get('SwitchLabelSpacing')).toBe("'hug' | 'spread'");
     expect([...requiredUnions('InputStatus').keys()]).toContain(
       'InputStatusType',
     );
