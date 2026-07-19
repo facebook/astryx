@@ -10,7 +10,13 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
@@ -545,7 +551,11 @@ describe('Selector', () => {
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
       await user.type(screen.getByRole('combobox', h), 'xyz');
       expect(screen.queryAllByRole('option', h)).toHaveLength(0);
-      expect(screen.getByText('No results found')).toBeInTheDocument();
+      // Scope to the listbox: the polite live region also announces "No results
+      // found", so an unscoped query matches both the visible empty state and
+      // the a11y announcement.
+      const listbox = screen.getByRole('listbox', h);
+      expect(within(listbox).getByText('No results found')).toBeInTheDocument();
     });
 
     it('calls onChange when selecting a filtered option', async () => {
