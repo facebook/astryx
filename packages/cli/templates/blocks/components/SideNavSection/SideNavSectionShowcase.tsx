@@ -84,7 +84,7 @@ export default function SideNavSectionShowcase() {
     <AppShell
       contentPadding={6}
       style={{width: '100%', height: '100%', minHeight: 0}}
-      mobileNav={false}
+      mobileNav={{breakpoint: 'none'}}
       sideNav={
         <SideNav>
           <SideNavSection title="Overview">

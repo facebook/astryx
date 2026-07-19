@@ -73,7 +73,7 @@ export default function SideNavHeadingShowcase() {
       <AppShell
         contentPadding={6}
         style={{flex: 1, minWidth: 0, height: '100%', minHeight: 0}}
-        mobileNav={false}
+        mobileNav={{breakpoint: 'none'}}
         sideNav={
           <SideNav
             header={
@@ -99,7 +99,7 @@ export default function SideNavHeadingShowcase() {
       <AppShell
         contentPadding={6}
         style={{flex: 1, minWidth: 0, height: '100%', minHeight: 0}}
-        mobileNav={false}
+        mobileNav={{breakpoint: 'none'}}
         sideNav={
           <SideNav
             header={
