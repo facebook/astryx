@@ -724,7 +724,7 @@ describe('DropdownMenu keyboard access for menuitemradio/menuitemcheckbox (#3829
     ).toHaveFocus();
   });
 
-  it('skips aria-disabled menuitemradio and menuitemcheckbox items during arrow navigation', async () => {
+  it('typeahead skips an aria-disabled item and matches the next enabled label', async () => {
     const user = userEvent.setup();
     render(
       <DropdownMenu button={{label: 'Sort'}}>
@@ -733,7 +733,35 @@ describe('DropdownMenu keyboard access for menuitemradio/menuitemcheckbox (#3829
           Newest
         </div>
         <div role="menuitemcheckbox" tabIndex={-1} aria-checked="false">
+          Nightly
+        </div>
+      </DropdownMenu>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Sort/}));
+    // Anchor the search on 'Edit' so typeahead scans forward and meets the
+    // disabled 'Newest' (also an 'n' match) before the enabled 'Nightly' —
+    // it must skip it and keep its match index aligned with the focus list.
+    screen.getByRole('menuitem', {name: 'Edit', hidden: true}).focus();
+    fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {key: 'n'});
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Nightly', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('skips aria-disabled menuitemradio and menuitemcheckbox items during arrow navigation', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuItem label="Edit" onClick={() => {}} />
+        <div role="menuitemradio" tabIndex={-1} aria-disabled="true">
+          Newest
+        </div>
+        <div role="menuitemcheckbox" tabIndex={-1} aria-disabled="true">
           Archived
+        </div>
+        <div role="menuitemradio" tabIndex={-1} aria-checked="false">
+          Oldest
         </div>
       </DropdownMenu>,
     );
@@ -744,7 +772,7 @@ describe('DropdownMenu keyboard access for menuitemradio/menuitemcheckbox (#3829
 
     fireEvent.keyDown(menu, {key: 'ArrowDown'});
     expect(
-      screen.getByRole('menuitemcheckbox', {name: 'Archived', hidden: true}),
+      screen.getByRole('menuitemradio', {name: 'Oldest', hidden: true}),
     ).toHaveFocus();
   });
 });

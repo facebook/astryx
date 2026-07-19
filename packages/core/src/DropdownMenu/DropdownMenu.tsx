@@ -179,6 +179,13 @@ export type DropdownMenuProps =
 // locale.
 const DEFAULT_BUTTON_I18N_KEY = '@astryx.dropdownMenu.label' as const;
 
+// Compound-mode children may render selectable items (menuitemradio /
+// menuitemcheckbox) — all three menu item roles are keyboard-navigable
+// (#3829). Keep the role list in listKeyDown's Enter/Space check in sync
+// with this selector.
+const MENU_ITEM_SELECTOR =
+  '[role="menuitem"]:not([aria-disabled="true"]), [role="menuitemradio"]:not([aria-disabled="true"]), [role="menuitemcheckbox"]:not([aria-disabled="true"])';
+
 export function DropdownMenu({
   button: buttonFromProps,
   isMenuOpen: controlledIsOpen,
@@ -262,12 +269,7 @@ export function DropdownMenu({
     focusFirst,
     focusItem,
   } = useListFocus<HTMLDivElement>({
-    // Compound-mode children may render selectable items (menuitemradio /
-    // menuitemcheckbox) — all three menu item roles are keyboard-navigable
-    // (#3829). Keep this selector, the typeahead query below, and the
-    // Enter/Space role check in listKeyDown in sync.
-    itemSelector:
-      '[role="menuitem"]:not([aria-disabled="true"]), [role="menuitemradio"]:not([aria-disabled="true"]), [role="menuitemcheckbox"]:not([aria-disabled="true"])',
+    itemSelector: MENU_ITEM_SELECTOR,
     wrap: false,
     onEscape: closeMenu,
   });
@@ -278,9 +280,7 @@ export function DropdownMenu({
     (): HTMLElement[] =>
       listRef.current
         ? Array.from(
-            listRef.current.querySelectorAll<HTMLElement>(
-              '[role="menuitem"]:not([aria-disabled="true"]), [role="menuitemradio"]:not([aria-disabled="true"]), [role="menuitemcheckbox"]:not([aria-disabled="true"])',
-            ),
+            listRef.current.querySelectorAll<HTMLElement>(MENU_ITEM_SELECTOR),
           )
         : [],
     [listRef],
