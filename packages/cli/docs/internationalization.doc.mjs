@@ -16,7 +16,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Internationalization ships with `@astryxdesign/core`. There is nothing to install. Wrap your app in `<InternationalizationProvider>` and set a `locale` — astryx components pick up localized strings automatically.',
+          text: 'Internationalization ships with `@astryxdesign/core`. There is nothing to install. Wrap your app in `<InternationalizationProvider>` and set a `locale`, and astryx components pick up localized strings automatically.',
         },
         {
           type: 'code',
@@ -45,11 +45,11 @@ function SaveButton() {
         },
         {
           type: 'prose',
-          text: 'The hook is available to consumer components too, but using it is entirely optional — many teams keep their app strings on their existing i18n library (react-intl, i18next, next-intl, LinguiJS) and only use `useTranslator` when reading astryx keys. If you do route your own strings through it, we recommend namespacing them (`@myapp.*` or your npm scope) to keep them separated from `@astryx.*`, but this is a convention, not a requirement — the resolver treats every key as an opaque string.',
+          text: 'The hook is available to consumer components too, but using it is entirely optional: many teams keep their app strings on their existing i18n library (react-intl, i18next, next-intl, LinguiJS) and only use `useTranslator` when reading astryx keys. If you do route your own strings through it, we recommend namespacing them (`@myapp.*` or your npm scope) to keep them separated from `@astryx.*`, but this is a convention, not a requirement; the resolver treats every key as an opaque string.',
         },
         {
           type: 'prose',
-          text: "Astryx ships translations only for English today. First-party translations for other locales are on the roadmap and coming soon — track https://github.com/facebook/astryx/issues/3641. In the meantime, if you want astryx UI translated into another locale, you can ship your own catalog through the `messages` prop (covered in the next section). If you're using `useTranslator` for your own strings, you'll want to ship your own catalog either way — astryx only carries the fallback for `@astryx.*` keys, not the ones you author.",
+          text: "Astryx ships translations only for English today. First-party translations for other locales are on the roadmap; track https://github.com/facebook/astryx/issues/3641. In the meantime, if you want astryx UI translated into another locale, you can ship your own catalog through the `messages` prop (covered in the next section). If you're using `useTranslator` for your own strings, you'll want to ship your own catalog either way, since astryx only carries the fallback for `@astryx.*` keys, not the ones you author.",
         },
       ],
     },
@@ -59,7 +59,7 @@ function SaveButton() {
       content: [
         {
           type: 'prose',
-          text: 'Astryx bundles only the English catalog today. To render in any other locale, provide a translation catalog through the `messages` prop and set `locale` accordingly. This matches how MUI, Ant Design, and AG Grid work — the consumer app supplies the catalogs it actually needs so unused translations stay out of the bundle.',
+          text: 'Astryx bundles only the English catalog today. To render in any other locale, provide a translation catalog through the `messages` prop and set `locale` accordingly. This matches how MUI, Ant Design, and AG Grid work: the consumer app supplies the catalogs it actually needs so unused translations stay out of the bundle.',
         },
         {
           type: 'code',
@@ -74,11 +74,11 @@ import fr from './locales/astryx/fr.json';
         },
         {
           type: 'prose',
-          text: "See `@astryxdesign/core/locales/en.json` for the full inventory of keys to translate. Copy it as the starting point — every key you translate replaces the English default; anything you omit falls back through the locale chain to English (e.g. `pt-BR` walks to `pt` then to shipped `en`), so a partial translation renders as a mix rather than empty text or raw key names.",
+          text: "See `@astryxdesign/core/locales/en.json` for the full inventory of keys to translate. Copy it as the starting point: every key you translate replaces the English default; anything you omit falls back through the locale chain to English (e.g. `pt-BR` walks to `pt` then to shipped `en`), so a partial translation renders as a mix rather than empty text or raw key names.",
         },
         {
           type: 'prose',
-          text: 'A community-maintained set of astryx translations is on the roadmap but not shipped yet. For now, consumer apps that ship in multiple languages own their astryx catalogs alongside their app catalogs. Contributions to a first-party set are welcome — track discussion at https://github.com/facebook/astryx/issues/3641.',
+          text: 'A community-maintained set of astryx translations is on the roadmap but not shipped yet. For now, consumer apps that ship in multiple languages own their astryx catalogs alongside their app catalogs. Contributions to a first-party set are welcome; track discussion at https://github.com/facebook/astryx/issues/3641.',
         },
       ],
     },
@@ -113,7 +113,7 @@ import fr from './locales/astryx/fr.json';
       content: [
         {
           type: 'prose',
-          text: "Astryx components render astryx strings through astryx's provider. Consumer components render consumer strings through whatever i18n library you already use — react-intl, i18next, next-intl, LinguiJS, and so on. The two systems coexist and read from the same source of truth for the active locale.",
+          text: "Astryx components render astryx strings through astryx's provider. Consumer components render consumer strings through whatever i18n library you already use: react-intl, i18next, next-intl, LinguiJS, and so on. The two systems coexist and read from the same source of truth for the active locale.",
         },
         {
           type: 'code',
@@ -165,11 +165,11 @@ export default function App() {
         },
         {
           type: 'prose',
-          text: 'Keep the two providers in sync on locale, and each library owns its own catalog. Astryx never sees your app strings, and your i18n library never sees astryx internals. Runtime locale swap works the same way — re-render both providers with a new `locale` prop and the whole tree updates live.',
+          text: 'Keep the two providers in sync on locale, and each library owns its own catalog. Astryx never sees your app strings, and your i18n library never sees astryx internals. Runtime locale swap works the same way: re-render both providers with a new `locale` prop and the whole tree updates live.',
         },
         {
           type: 'prose',
-          text: "Single-catalog usage — where an external i18n runtime like react-intl or i18next resolves both your app strings AND astryx's strings through one provider — is on the roadmap via a `Translator` adapter. Track https://github.com/facebook/astryx/issues/4029. For now, run the two providers side by side as shown above.",
+          text: "Single-catalog usage (where an external i18n runtime like react-intl or i18next resolves both your app strings AND astryx's strings through one provider) is on the roadmap via a `Translator` adapter. Track https://github.com/facebook/astryx/issues/4029. For now, run the two providers side by side as shown above.",
         },
       ],
     },
@@ -225,7 +225,7 @@ export default function App() {
         },
         {
           type: 'prose',
-          text: "Pseudoloc also has a subtle caveat worth knowing: the pseudo catalog is complete (astryx generates it from every shipped key), so a component using an astryx-shipped key will always render its pseudo version. Your handwritten translation catalogs, on the other hand, only cover the keys you translated — anything missing falls back to English. That means \"looks perfect in pseudo\" is not the same guarantee as \"looks perfect in French.\" Check each real locale by hand for coverage gaps.",
+          text: "Pseudoloc also has a subtle caveat worth knowing: the pseudo catalog is complete (astryx generates it from every shipped key), so a component using an astryx-shipped key will always render its pseudo version. Your handwritten translation catalogs, on the other hand, only cover the keys you translated; anything missing falls back to English. That means \"looks perfect in pseudo\" is not the same guarantee as \"looks perfect in French.\" Check each real locale by hand for coverage gaps.",
         },
       ],
     },
@@ -235,7 +235,7 @@ export default function App() {
       content: [
         {
           type: 'prose',
-          text: "Astryx's own strings live in `packages/core/locales/en.json`. New user-facing strings must go through `useTranslator` — this is enforced by the `@astryx/no-hardcoded-i18n-string` ESLint rule. See the AI contribution guide for the alias-and-resolve pattern used when adding new keys.",
+          text: "Astryx's own strings live in `packages/core/locales/en.json`. New user-facing strings must go through `useTranslator`; this is enforced by the `@astryx/no-hardcoded-i18n-string` ESLint rule. See the AI contribution guide for the alias-and-resolve pattern used when adding new keys.",
         },
       ],
     },
