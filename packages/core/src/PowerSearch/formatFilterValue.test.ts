@@ -2,7 +2,27 @@
 
 import {describe, expect, it} from 'vitest';
 import {formatFilterValue} from './formatFilterValue';
+import type {TranslatorFn} from '../i18n';
 import type {OperatorValue, FilterValue} from './types';
+
+// Minimal stand-in for the real translator: resolves just the count/range keys
+// formatFilterValue uses, with the same singular/plural forms as en.json so the
+// overflow-summary assertions ("3 items", "2 entities", "1 filter") hold.
+const t: TranslatorFn = (key, values) => {
+  const count = Number(values?.count ?? 0);
+  switch (key) {
+    case '@astryx.powersearch.valueEditor.itemsCount':
+      return `${count} ${count === 1 ? 'item' : 'items'}`;
+    case '@astryx.powersearch.valueEditor.entitiesCount':
+      return `${count} ${count === 1 ? 'entity' : 'entities'}`;
+    case '@astryx.powersearch.valueEditor.filtersCount':
+      return `${count} ${count === 1 ? 'filter' : 'filters'}`;
+    case '@astryx.powersearch.valueEditor.dateRange':
+      return 'date range';
+    default:
+      return key;
+  }
+};
 
 // _config is unused by formatFilterValue; a stub keeps the call type-clean.
 const fmt = (
@@ -11,7 +31,7 @@ const fmt = (
   maxLength = 20,
   timezoneID?: string,
 ): string =>
-  formatFilterValue({} as never, operator, value, maxLength, timezoneID);
+  formatFilterValue({} as never, operator, value, maxLength, t, timezoneID);
 
 const ELLIPSIS = '…';
 
