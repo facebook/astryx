@@ -12,6 +12,7 @@ export const docs = {
   playground: {
     defaults: {
       label: 'Notifications',
+      value: ['email'],
       children: [
         {__element: 'CheckboxListItem', props: {label: 'Email', value: 'email'}},
         {__element: 'CheckboxListItem', props: {label: 'SMS', value: 'sms'}},

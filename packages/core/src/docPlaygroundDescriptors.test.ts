@@ -8,13 +8,15 @@
  * (`__element`) usage and verifies:
  *
  * 1. Every `playground.defaults` key names a documented prop of the entry
- *    that declares it. A defaults key with no matching prop is dead state:
- *    the playground renders a knob for nothing (or silently drops it).
+ *    that declares it (for compound docs whose props live on components[]
+ *    sub-entries, the union of those). A defaults key with no matching prop
+ *    is dead state: the docsite silently applies the value to the preview
+ *    with no knob and no prop documentation.
  * 2. Every `__element` name (slotElements and playground defaults, however
  *    deeply nested) resolves the way the docsite resolver does: bare export
  *    from the package index, legacy `XDS`-prefixed export, or an intrinsic
- *    lowercase HTML tag. A typo ('XDSIcn') would otherwise surface only as
- *    a runtime createElement crash in the docsite playground.
+ *    lowercase HTML tag. A typo ('XDSIcn') would otherwise silently render
+ *    as an unknown DOM tag in the docsite playground.
  * 3. The #2008 slice components carry playground defaults and slot coverage
  *    for their ReactNode props.
  */
@@ -116,10 +118,19 @@ describe('doc playground descriptors', () => {
       for (const exported of Object.values(mod)) {
         for (const entry of docEntries(exported)) {
           const defaults = entry.playground?.defaults;
-          if (!defaults || !Array.isArray(entry.props)) {
+          if (!defaults) {
             continue;
           }
-          const documented = new Set(entry.props.map(prop => prop.name));
+          // Compound docs (e.g. Toolbar) declare playground on the top-level
+          // entry while the props live on a same-named components[] entry —
+          // validate against the union so those defaults aren't exempt.
+          const props = Array.isArray(entry.props)
+            ? entry.props
+            : (entry.components || []).flatMap(sub => sub.props || []);
+          if (props.length === 0) {
+            continue;
+          }
+          const documented = new Set(props.map(prop => prop.name));
           for (const key of Object.keys(defaults)) {
             if (!documented.has(key)) {
               violations.push(
@@ -210,6 +221,18 @@ describe('doc playground descriptors', () => {
         }
       }
       expect(violations, violations.join('\n')).toEqual([]);
+    });
+
+    it('the inline BreadcrumbItem entry keeps its startIcon slotElements', () => {
+      // components[] props sit outside the top-level loop above — pin the
+      // slice's one sub-entry slot descriptor explicitly.
+      const breadcrumbs = sliceDocs.find(({name}) => name === 'Breadcrumbs');
+      const subEntry = breadcrumbs?.docs?.components?.find(
+        sub => sub.name === 'BreadcrumbItem',
+      );
+      const subProps = subEntry?.props || [];
+      const startIcon = subProps.find(prop => prop.name === 'startIcon');
+      expect(startIcon?.slotElements?.length ?? 0).toBeGreaterThan(0);
     });
   });
 });
