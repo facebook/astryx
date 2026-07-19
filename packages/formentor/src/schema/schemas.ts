@@ -17,6 +17,7 @@ import {
   type ObjectSchema,
   type ObjectValue,
 } from './types';
+import {rootPath, type ValuePath} from './paths';
 
 const DEFAULT_META = {nullable: false, omissible: false} as const;
 
@@ -65,6 +66,15 @@ export class ObjectSchemaImpl<P extends Record<string, Schema>>
     this.constraints = {title: config.title, description: config.description};
   }
   readonly constraints: BaseConstraints;
+
+  /**
+   * A value path rooted at this object. Chain `.property(key)` to point at a
+   * field — used to attach a cross-field validation error to a specific input,
+   * e.g. `schema.getValuePath().property('confirm')`.
+   */
+  getValuePath(): ValuePath {
+    return rootPath();
+  }
 }
 
 // ── Builders ────────────────────────────────────────────────────────────────

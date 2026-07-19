@@ -100,6 +100,13 @@ function fieldBindingCount(code: string, target: FormTarget): number {
 
 /** Did they express validation the framework's way (schema or validator hook)? */
 function hasValidationWiring(code: string, target: FormTarget): boolean {
+  // A schema with non-optional fields encodes required-ness by default in every
+  // framework (Formentor non-omissible, Valibot/Zod non-optional). So a declared
+  // schema is itself basic (required-field) validation — recognized equally for
+  // all targets so no framework is penalized for expressing "required" tersely.
+  if (hasSchema(code, target)) {
+    return true;
+  }
   const common =
     /\bvalidate\b|\brequired\b|minLength|maxLength|\bmin\b|\bmax\b|\bemail\b|refine|check|\bpipe\b/;
   switch (target) {

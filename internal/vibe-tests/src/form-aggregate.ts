@@ -67,6 +67,7 @@ interface TargetAggregate {
   target: FormTarget;
   iterationId: string;
   byPrompt: Record<string, {score: FormScore; average: number; tier: string}>;
+  scoredPrompts: number;
   coreAverage: number;
   stretchAverage: number | null;
   dimensionAverages: Record<string, number>;
@@ -97,18 +98,20 @@ function aggregateTarget(iterationId: string): TargetAggregate {
 
   for (const p of manifest.prompts) {
     const code = readResult(iterationId, p.id);
+    // A prompt with no result file was not run in this iteration — exclude it
+    // from the averages rather than scoring it 0 (which would conflate "not run"
+    // with "agent produced broken code"). Partial/pilot runs only score prompts
+    // that actually have output.
+    if (code === null) {
+      continue;
+    }
     const spec: FormPromptSpec = {
       id: p.id,
       category: p.category,
       tier: p.tier,
       expectedBehaviors: p.expectedBehaviors,
     };
-    // Missing output scores 0 across the board (agent failed to produce code).
-    const score: FormScore = code
-      ? evaluateForm(code, target, spec)
-      : (Object.fromEntries(
-          dims.map((d) => [d, {score: 0, findings: [{rule: 'no-output', detail: 'No code produced'}]}]),
-        ) as unknown as FormScore);
+    const score: FormScore = evaluateForm(code, target, spec);
     const average = getFormAverage(score);
     byPrompt[p.id] = {score, average, tier: p.tier};
     for (const d of dims) {dimSums[d] += score[d].score;}
@@ -121,13 +124,14 @@ function aggregateTarget(iterationId: string): TargetAggregate {
     }
   }
 
-  const total = manifest.prompts.length || 1;
+  const total = Object.keys(byPrompt).length || 1;
   const dimensionAverages: Record<string, number> = {};
   for (const d of dims) {dimensionAverages[d] = Math.round(dimSums[d] / total);}
 
   return {
     target,
     iterationId,
+    scoredPrompts: Object.keys(byPrompt).length,
     byPrompt,
     coreAverage: coreCount ? Math.round(coreSum / coreCount) : 0,
     stretchAverage: stretchCount ? Math.round(stretchSum / stretchCount) : null,
@@ -157,7 +161,7 @@ function main() {
   console.log('HEADLINE (CORE tier only):\n');
   const sorted = [...aggregates].sort((a, b) => b.coreAverage - a.coreAverage);
   for (const a of sorted) {
-    console.log(`  ${a.target.padEnd(10)} ${String(a.coreAverage).padStart(3)}  (${a.iterationId})`);
+    console.log(`  ${a.target.padEnd(10)} ${String(a.coreAverage).padStart(3)}  (${a.scoredPrompts} scored, ${a.iterationId})`);
   }
 
   console.log('\nPer-dimension (CORE + STRETCH averaged):\n');

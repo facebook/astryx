@@ -215,7 +215,7 @@ const form = useFormentorForm({
       ? pass()
       : fail({
           message: 'Passwords do not match',
-          valuePath: schema.getValuePath?.().property('confirm'),
+          valuePath: schema.getValuePath().property('confirm'),
         }),
 });
 ```
