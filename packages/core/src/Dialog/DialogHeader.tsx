@@ -131,6 +131,7 @@ export function DialogHeader({
   className,
   style,
   ref,
+  ...rest
 }: DialogHeaderProps) {
   const t = useTranslator();
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -152,7 +153,8 @@ export function DialogHeader({
       hasDivider={hasDivider}
       xstyle={xstyle}
       className={className}
-      style={style}>
+      style={style}
+      {...rest}>
       <div {...stylex.props(styles.container)}>
         {startContent && (
           <div {...stylex.props(styles.actions)}>{startContent}</div>

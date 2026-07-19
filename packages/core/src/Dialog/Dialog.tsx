@@ -508,6 +508,10 @@ export function Dialog({
     </div>
   );
 
+  // Filter out native open to prevent InvalidStateError when accidentally passed
+  const hasPosition = position != null && !isFullscreen;
+  const {open: _open, ...safeProps} = props as Record<string, unknown>;
+
   // --- Inline rendering path (for documentation previews) ---
   if (isInline) {
     if (!isOpen) {
@@ -516,6 +520,7 @@ export function Dialog({
 
     return (
       <div
+        {...safeProps}
         {...mergeProps(
           themeProps('dialog', {variant}),
           stylex.props(
@@ -526,30 +531,18 @@ export function Dialog({
           ),
           className,
           style,
-        )}
-        data-testid={
-          (props as Record<string, unknown>)['data-testid'] as
-            | string
-            | undefined
-        }>
+        )}>
         {innerContent}
       </div>
     );
   }
 
   // --- Standard modal rendering path ---
-  const hasPosition = position != null && !isFullscreen;
-
-  // Filter out native open to prevent InvalidStateError when accidentally passed
-  const {open: _open, ...safeProps} = props as Record<string, unknown>;
 
   return (
     <dialog
       ref={mergeRefs(ref, dialogRef)}
-      onClick={handleClick}
-      onCancel={handleCancel}
-      aria-modal="true"
-      role={purpose === 'required' ? 'alertdialog' : undefined}
+      {...safeProps}
       {...mergeProps(
         themeProps('dialog', {variant}),
         stylex.props(
@@ -570,7 +563,10 @@ export function Dialog({
         className,
         style,
       )}
-      {...safeProps}>
+      onClick={handleClick}
+      onCancel={handleCancel}
+      aria-modal="true"
+      {...(purpose === 'required' ? {role: 'alertdialog'} : undefined)}>
       {innerContent}
     </dialog>
   );
