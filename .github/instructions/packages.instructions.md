@@ -40,10 +40,13 @@ in what order, so effort lands where the risk is — and so the risk checks
 
 **3. Pick the review path** (depth follows category × risk):
 
-- **Fast path** — test/docs/chore, or a small behavior-only bug fix with a
+- **Fast path** — docs/chore, or a small behavior-only bug fix with a
   regression test, no breaking change, low blast radius. Verify accuracy (does
   the referenced API exist / does the fix match the described bug), confirm the
   test/changeset, and approve. Don't manufacture findings on a clean small PR.
+  **A standalone test PR is not automatically fast-path** — it still has to clear
+  the test-quality bar under "Calibrate to the PR type" (a test existing and
+  passing is necessary, not sufficient).
 - **Standard path** — a normal bug fix or a contained prop/behavior change. Run
   the full Mechanical checklist + convergence + Judgment below.
 - **Deep path** — new API surface, a breaking change, a plugin/hook that extends
@@ -120,6 +123,26 @@ Once triaged, weight the review by what the PR is trying to do:
   passes). Flag a bug-fix PR that changes behavior with no failing-test-then-
   passing evidence and ask for it — a fix without a regression test can silently
   break again.
+- **Tests** — a test PR must earn its merge by testing the **contract, not the
+  implementation**. A passing test that exists is necessary but *not* sufficient
+  to approve; judge it against the bar below and, if it's implementation-coupled
+  or padding, request changes (kindly) naming the specific assertions to cut or
+  refocus. The one-line test: *does this protect a promise a consumer relies on,
+  or does it just mirror the code?* If it would break on a harmless refactor yet
+  survive a real bug, it's slop.
+  - **✅ Worth testing** — the public behavioral contract (state transitions,
+    controlled/uncontrolled, callbacks fire with the right args, documented edge
+    cases: empty / boundary / overflow); each meaningful branch of a pure
+    function; the accessibility contract (roles, ARIA wiring, keyboard
+    interaction — first-class for a design system); and regression tests pinned
+    to a real reported bug (red → green).
+  - **🚫 Test slop — don't merge as-is** — asserting internal state, private
+    helpers, or DOM/class structure that isn't a public contract
+    (change-detector tests); snapshot dumps with no behavioral assertion;
+    re-testing React or the library ("useState updates", "prop passed through"
+    with no logic between); trivial padding ("renders without crashing" as the
+    *only* assertion, or `it.each` explosions with no distinct risk per case);
+    and computed style/token/pixel assertions (that's brittle design territory).
 - **Docs** — validate against reality. Check that the documentation is actually
   correct (matches the code/API/behavior on this branch). When a claim is a
   matter of best practice or judgment rather than fact, **call it out for a
