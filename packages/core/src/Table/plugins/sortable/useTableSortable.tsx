@@ -194,11 +194,10 @@ function buildAriaLabel<T extends Record<string, unknown>>(
   if (direction == null) {
     return t('@astryx.table.sort.sortBy', {label});
   }
-  const directionLabel = t(
+  const directionLabel =
     direction === 'ascending'
-      ? '@astryx.table.sort.direction.ascending'
-      : '@astryx.table.sort.direction.descending',
-  );
+      ? t('@astryx.table.sort.direction.ascending')
+      : t('@astryx.table.sort.direction.descending');
   if (rank != null && total > 1) {
     return t('@astryx.table.sort.sortedByWithPriority', {
       label,

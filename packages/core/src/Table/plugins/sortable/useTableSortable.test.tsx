@@ -742,6 +742,8 @@ describe('useTableSortable — i18n', () => {
           fr: {
             '@astryx.table.sort.sortedByWithPriority':
               'Trier par {label}, tri {direction}, priorité {rank, number} sur {total, number}',
+            '@astryx.table.sort.direction.ascending': 'croissant',
+            '@astryx.table.sort.direction.descending': 'décroissant',
           },
         }}>
         <SortableTable
@@ -754,26 +756,30 @@ describe('useTableSortable — i18n', () => {
       </InternationalizationProvider>,
     );
 
-    // The direction word is not overridden — it falls back to the en
-    // catalog's @astryx.table.sort.direction.* entry.
+    // The overridden direction words deliberately differ from the raw enum
+    // values ('ascending'/'descending'), so an implementation interpolating
+    // the enum without translating it cannot pass — for either direction.
     expect(
       screen.getByRole('button', {
-        name: 'Trier par Name, tri ascending, priorité 1 sur 2',
+        name: 'Trier par Name, tri croissant, priorité 1 sur 2',
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: 'Trier par Age, tri descending, priorité 2 sur 2',
+        name: 'Trier par Age, tri décroissant, priorité 2 sur 2',
       }),
     ).toBeInTheDocument();
   });
 
-  it('localizes the direction word via its own key, not raw enum text', () => {
+  it('localizes the sorted aria-label and direction word via their own keys', () => {
     render(
       <InternationalizationProvider
         locale="fr"
         overrides={{
-          fr: {'@astryx.table.sort.direction.ascending': 'croissant'},
+          fr: {
+            '@astryx.table.sort.sortedBy': 'Trié par {label}, {direction}',
+            '@astryx.table.sort.direction.ascending': 'croissant',
+          },
         }}>
         <SortableTable
           initialSort={[{sortKey: 'name', direction: 'ascending'}]}
@@ -781,10 +787,11 @@ describe('useTableSortable — i18n', () => {
       </InternationalizationProvider>,
     );
 
-    // The composed message falls back to en, but the direction word inside
-    // it resolves through its own catalog key.
+    // Both the composed template and the direction word resolve through
+    // their own catalog keys; 'croissant' differs from the raw enum value,
+    // so neither a hardcoded English frame nor raw-enum interpolation passes.
     expect(
-      screen.getByRole('button', {name: 'Sort by Name, sorted croissant'}),
+      screen.getByRole('button', {name: 'Trié par Name, croissant'}),
     ).toBeInTheDocument();
   });
 });
