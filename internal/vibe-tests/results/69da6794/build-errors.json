@@ -1,0 +1,90 @@
+{
+  "cwm-1": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 38,
+        "message": "Type '\"baseline\"' is not assignable to type '\"end\" | \"start\" | \"center\" | \"stretch\" | undefined'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "dd-6": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "fwc-4": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 13,
+        "message": "Type '{ padding: string; }' is not assignable to type 'StyleXStyles'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 15,
+        "message": "Cannot find name 'HStack'. Did you mean 'VStack'?",
+        "code": "TS2552"
+      },
+      {
+        "line": 18,
+        "message": "Cannot find name 'HStack'. Did you mean 'VStack'?",
+        "code": "TS2552"
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  },
+  "io-4": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ps-4": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "rc-3": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "sd-4": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "tc-10": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ty-4": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "wd-3": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 9,
+        "message": "Cannot find module '@astryxdesign/core/Stepper' or its corresponding type declarations.",
+        "code": "TS2307"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  }
+}

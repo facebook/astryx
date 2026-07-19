@@ -1,0 +1,62 @@
+{
+  "cwm-1": {
+    "target": "baseline",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "dd-6": {
+    "target": "baseline",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "fwc-4": {
+    "target": "baseline",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "io-4": {
+    "target": "baseline",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ps-4": {
+    "target": "baseline",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "rc-3": {
+    "target": "baseline",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "sd-4": {
+    "target": "baseline",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "tc-10": {
+    "target": "baseline",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ty-4": {
+    "target": "baseline",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "wd-3": {
+    "target": "baseline",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  }
+}

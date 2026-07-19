@@ -1,0 +1,119 @@
+{
+  "iterationId": "d225950e",
+  "createdAt": "2026-07-19T11:04:57.610Z",
+  "config": {
+    "target": "astryx-tailwind",
+    "persona": "naive",
+    "holdout": false,
+    "degradation": false,
+    "cliRetrieval": true
+  },
+  "prompts": [
+    {
+      "id": "fwc-4",
+      "category": "feature-with-constraint",
+      "prompt": "I need a confirmation dialog that asks \"Are you sure you want to delete this item?\" with cancel and delete buttons. The delete button should be destructive-styled.",
+      "expectedComponents": [
+        "Dialog",
+        "Button",
+        "Layout"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "wd-3",
+      "category": "workflow-description",
+      "prompt": "Build an onboarding flow: welcome screen → profile setup → preferences → done",
+      "expectedComponents": [
+        "Card",
+        "Button",
+        "TextInput"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "cwm-1",
+      "category": "clone-with-modification",
+      "prompt": "Something like Stripe's pricing table but with monthly/annual toggle",
+      "expectedComponents": [
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "sd-4",
+      "category": "state-driven",
+      "prompt": "Build a terms and conditions acceptance form. Show a scrollable text area with the terms, then checkboxes for \"I agree to the Terms of Service\" and \"I agree to the Privacy Policy\". The continue button should only enable when both are checked.",
+      "expectedComponents": [
+        "CheckboxInput",
+        "Button",
+        "TextArea"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "dd-6",
+      "category": "data-display",
+      "prompt": "Create a team members list where hovering over a member's name shows a hover card with their avatar, role, email, and a \"Message\" button.",
+      "expectedComponents": [
+        "HoverCard",
+        "Avatar",
+        "Text",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "rc-3",
+      "category": "responsive-context",
+      "prompt": "Cards that stack vertically on mobile but show in a grid on desktop",
+      "expectedComponents": [
+        "Card"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "io-4",
+      "category": "integration-oriented",
+      "prompt": "Build a quantity selector for a shopping cart item. It should have a number input with increment/decrement, min of 1, max of 99. Changing the quantity should call an update API endpoint.",
+      "expectedComponents": [
+        "NumberInput",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ps-4",
+      "category": "page-setup",
+      "prompt": "Create a product detail page with breadcrumb navigation showing Home > Category > Subcategory > Product Name. The page should have a header, product info section, and a back button.",
+      "expectedComponents": [
+        "Breadcrumbs",
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ty-4",
+      "category": "typography",
+      "prompt": "Create a settings page with 3 sections. Each section needs a heading, a brief description, and some form controls. Use different heading levels for the page title vs section titles.",
+      "expectedComponents": [
+        "Heading",
+        "Text",
+        "TextInput"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "tc-10",
+      "category": "theme-customization",
+      "prompt": "My docs page is light-themed, but I want the install command snippet to look like a real terminal — dark background with light syntax colors — and have a copy button. Only that snippet should be dark; the rest of the page stays light.",
+      "expectedComponents": [
+        "XDSCodeBlock",
+        "XDSSyntaxTheme"
+      ],
+      "status": "pending"
+    }
+  ]
+}

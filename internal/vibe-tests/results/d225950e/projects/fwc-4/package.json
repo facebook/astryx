@@ -1,0 +1,15 @@
+{
+  "name": "my-app",
+  "private": true,
+  "dependencies": {
+    "@astryxdesign/core": "*",
+    "@astryxdesign/theme-neutral": "*",
+    "react": "^19",
+    "react-dom": "^19",
+    "tailwindcss": "^4"
+  },
+  "devDependencies": {
+    "@astryxdesign/cli": "*",
+    "@tailwindcss/postcss": "^4"
+  }
+}
