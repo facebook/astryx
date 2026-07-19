@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "playground": "vite --config vite.config.playground.ts"
   },
   "dependencies": {
     "@astryxdesign/core": "*",

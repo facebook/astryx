@@ -20,6 +20,17 @@ function App() {
     );
   }
 
+  if (mode === 'playground') {
+    const Playground = lazy(() =>
+      import('./playground/Playground').then(m => ({default: m.Playground})),
+    );
+    return (
+      <Suspense fallback={<div>Loading playground...</div>}>
+        <Playground theme={theme === 'dark' ? 'dark' : 'light'} />
+      </Suspense>
+    );
+  }
+
   const Preview = lazy(() => import('./preview'));
   return (
     <Suspense fallback={<div>Loading...</div>}>

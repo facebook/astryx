@@ -19,3 +19,4 @@ results/
 # Preview build temp dirs
 .preview-tmp*
 # .baseline/ is committed (real shadcn components for type checking)
+app/.playground/
