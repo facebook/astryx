@@ -77,10 +77,14 @@ export interface ChatComposerInputHandle {
   /** Insert plain text at the current cursor position */
   insertText: (text: string) => void;
   /**
-   * Replace the entire content and place the caret at the end.
-   * Runs the same internal pipeline as user input: writes the DOM
-   * synchronously and emits exactly one onChange. The parent echoing
-   * that value back through `value` causes no further DOM write.
+   * Replace the entire content and, when the input has focus, place
+   * the caret at the end (call `focus()` first to continue typing —
+   * while unfocused the document selection is left untouched). Runs
+   * the same change pipeline as user input: writes the DOM
+   * synchronously, emits exactly one onChange, and re-evaluates the
+   * trigger menu (a menu left open over the replaced content closes).
+   * The parent echoing that value back through `value` causes no
+   * further DOM write.
    */
   setValue: (text: string) => void;
   /** Focus the input */
@@ -421,12 +425,22 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         return;
       }
       // Programmatic replacement — the imperative counterpart of
-      // typing. Write the DOM, derive the selection from the state
-      // change (caret at end), then report through the same pipeline
-      // as user input: exactly one onChange, no effect, no echo.
+      // typing. Write the DOM, then report through the same change
+      // pipeline as user input: exactly one onChange, ledger-recorded
+      // so the parent's echo (even a late one) never writes back.
+      // Caret placement is skipped while unfocused — writing a range
+      // into an unfocused editable yanks the document selection (and
+      // in Blink, focus itself) away from wherever the user is
+      // typing; call focus() before setValue to continue typing at
+      // the end. The trigger-menu re-evaluation also matches typing:
+      // a menu left open across the replacement would aim a later
+      // item pick at a stale trigger position inside the new text.
       editable.textContent = text;
-      placeCaretAtEnd(editable);
+      if (document.activeElement === editable) {
+        placeCaretAtEnd(editable);
+      }
       emitChange();
+      triggerMenu.handleInput();
     },
     focus: () => editableRef.current?.focus(),
     getValue: () =>

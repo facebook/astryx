@@ -12,7 +12,7 @@ export const docs = {
     {
       name: 'handleRef',
       type: 'React.Ref<ChatComposerInputHandle>',
-      description: 'Imperative handle for programmatic control: insertToken, insertText, setValue, focus, and getValue. setValue replaces the content synchronously, places the caret at the end, and emits one onChange.',
+      description: 'Imperative handle for programmatic control: insertToken, expandToken, insertText, setValue, focus, and getValue. setValue replaces the content synchronously, emits one onChange, re-evaluates the trigger menu, and places the caret at the end when the input has focus.',
     },
     {
       name: 'value',
@@ -89,7 +89,7 @@ export const docsZh = {
   displayName: 'Chat Composer Input',
   description: '聊天编写器的富文本输入。支持触发菜单（输入 @ 或 / 打开 typeahead）、内联标记徽章、ArrowUp/Down 消息历史回溯、粘贴/拖放文件处理，并在触控设备上将字体大小保持至少 16px 以避免 iOS 输入缩放。当需要普通文本区域以外的功能时，传入 ChatComposer 的 input 插槽。',
   propDescriptions: {
-    handleRef: '命令式句柄，用于编程式控制：insertToken、insertText、setValue、focus 和 getValue。setValue 同步替换内容、将光标置于末尾并触发一次 onChange。',
+    handleRef: '命令式句柄，用于编程式控制：insertToken、expandToken、insertText、setValue、focus 和 getValue。setValue 同步替换内容、触发一次 onChange、重新评估触发菜单，并在输入框拥有焦点时将光标置于末尾。',
     value: '受控输入值。编辑期间内部状态保持权威——仅当该属性与内部状态确实不同时才重写内容（外部覆盖）；onChange 的回显会被忽略。与 onChange 配对实现双向绑定。',
     onChange: '输入值变更时调用。序列化字符串包含标记占位符。',
     placeholder: '输入为空时显示的占位文本。',
@@ -111,7 +111,7 @@ export const docsDense = {
   displayName: 'Chat Composer Input',
   description: 'rich input for composer; trigger menus (@/commands), inline tokens, msg history, paste/drop files, 16px touch font-size floor to prevent iOS zoom. Use in ChatComposer input slot when you need more than plain textarea.',
   propDescriptions: {
-    handleRef: 'imperative handle (insertToken/insertText/setValue/focus/getValue); setValue replaces content sync + caret at end + one onChange',
+    handleRef: 'imperative handle (insertToken/expandToken/insertText/setValue/focus/getValue); setValue replaces content sync + one onChange + re-evaluates trigger menu + caret at end when focused',
     value: 'controlled value; internal state authoritative while editing — applied only as genuine external override (onChange echoes ignored); pair w/ onChange',
     onChange: 'value change handler; serialized string includes token placeholders',
     placeholder: 'placeholder when empty',

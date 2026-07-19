@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, afterEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, act} from '@testing-library/react';
 import {ChatComposer} from './ChatComposer';
 import {ChatComposerInput} from './ChatComposerInput';
 import type {
@@ -332,6 +332,88 @@ describe('ChatComposerInput', () => {
       expect(textbox.textContent).toBe('/feedback ');
       // No re-emission on the echo — still exactly one onChange.
       expect(onChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps keystrokes typed after setValue when the parent echoes it late', () => {
+      let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      const {rerender} = render(
+        <ChatComposerInput
+          value=""
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.focus();
+
+      handle!.setValue('/feedback ');
+      // The user keeps typing before the parent's state commit for the
+      // setValue emission lands.
+      textbox.textContent = '/feedback great';
+      fireEvent.input(textbox);
+
+      // The parent's LATE echo of the setValue emission is a stale echo
+      // — not an external override — and must not wipe the keystrokes
+      // typed after it. This only holds if setValue records its
+      // emission in the same pending-emissions ledger as typing.
+      rerender(
+        <ChatComposerInput
+          value="/feedback "
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      expect(textbox.textContent).toBe('/feedback great');
+    });
+
+    it('setValue leaves the document selection alone when the input is not focused', () => {
+      let handle: ChatComposerInputHandle | null = null;
+      const onChange = vi.fn();
+      render(
+        <ChatComposerInput
+          value=""
+          onChange={onChange}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+
+      // The user is working in a different editable surface — focus
+      // and the document selection both live there.
+      const other = document.createElement('div');
+      other.setAttribute('contenteditable', 'true');
+      other.tabIndex = -1;
+      other.textContent = 'elsewhere';
+      document.body.appendChild(other);
+      other.focus();
+      const selection = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(other.firstChild!, 4);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      act(() => {
+        handle!.setValue('restored draft');
+      });
+
+      // The replacement and emission happen, but the other surface
+      // keeps its caret — a background setValue must not yank the
+      // document selection (and with it, in some browsers, focus)
+      // away from where the user is typing.
+      expect(textbox.textContent).toBe('restored draft');
+      expect(onChange).toHaveBeenCalledWith('restored draft');
+      expect(selection.rangeCount).toBe(1);
+      expect(selection.getRangeAt(0).startContainer).toBe(other.firstChild);
+      expect(selection.getRangeAt(0).startOffset).toBe(4);
+      other.remove();
     });
   });
 
@@ -803,6 +885,33 @@ describe('ChatComposerInput', () => {
 
       expect(textbox.getAttribute('aria-expanded')).toBe('false');
       expect(document.querySelector(BODY_ANCHOR_SELECTOR)).toBeNull();
+    });
+
+    it('setValue closes a stale trigger menu left open over replaced content', () => {
+      let handle: ChatComposerInputHandle | null = null;
+      render(
+        <ChatComposerInput
+          triggers={[createMentionTrigger()]}
+          onChange={vi.fn()}
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+      const textbox = screen.getByRole('combobox');
+      textbox.focus();
+      setCursorAfterText(textbox, '@');
+      fireEvent.input(textbox);
+      expect(textbox.getAttribute('aria-expanded')).toBe('true');
+
+      // Replacing the content invalidates the menu's stored trigger
+      // position — an item pick on the stale menu would splice the
+      // wrong range of the new text. setValue re-evaluates the menu
+      // the same way typing does, so the stale menu closes.
+      act(() => {
+        handle!.setValue('/done ');
+      });
+      expect(textbox.getAttribute('aria-expanded')).toBe('false');
     });
 
     it('serialized output is clean — no anchor artifacts', () => {
