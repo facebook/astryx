@@ -10,11 +10,17 @@
 import * as React from 'react';
 import type {ComponentType} from 'react';
 import type {CommonFieldProps} from '../inputset/types';
+import type {Validator, AsyncValidator} from './validation';
 
-/** Extra props a caller may layer on when rendering a field. */
+/**
+ * Extra props a caller may layer on when rendering a field. `validate` and
+ * `validateAsync` configure field-level validation (their `pass`/`fail` helpers
+ * are typed); the field value is `unknown` at this type-erased layer, so narrow
+ * it in the callback. Any other keys are forwarded to the underlying input.
+ */
 export type RenderOverlay = Record<string, unknown> & {
-  validate?: unknown;
-  validateAsync?: unknown;
+  validate?: Validator<unknown>;
+  validateAsync?: AsyncValidator<unknown>;
 };
 
 /**
