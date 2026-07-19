@@ -154,7 +154,7 @@ describe('useTableRowExpansion', () => {
   });
 });
 
-describe('useTableRowExpansionState with cyclic data', () => {
+describe('useTableRowExpansionState cycle guard', () => {
   /** A row whose children array contains the row itself (plus a real child). */
   function makeSelfReferential(): TreeItem[] {
     const x: TreeItem = {id: 'x', name: 'Self', children: []};
@@ -206,12 +206,11 @@ describe('useTableRowExpansionState with cyclic data', () => {
     expect(expansionConfig.getDepth?.(data[0])).toBe(0);
     expect(expansionConfig.getDepth?.(data[1])).toBe(1);
     expect(expansionConfig.getDepth?.(data[2])).toBe(2);
-    // Each expandable key counted exactly once — all expanded reads as true,
-    // not 'indeterminate'.
+    // The cycle guard keeps isAllExpanded computable — true, not a crash.
     expect(expansionConfig.isAllExpanded).toBe(true);
   });
 
-  it('collects allExpandableKeys once each on cyclic data with nothing expanded', () => {
+  it('terminates when collecting allExpandableKeys on cyclic data with nothing expanded', () => {
     const {hook, setExpandedKeys} = renderState(
       makeDeepCycle(),
       new Set<string>(),
@@ -223,11 +222,23 @@ describe('useTableRowExpansionState with cyclic data', () => {
     expect(Array.from(nextKeys)).toEqual(['root', 'child', 'grand']);
   });
 
-  it('keeps the first-encountered depth and skips the cyclic edge', () => {
-    const {hook} = renderState(makeSelfReferential(), new Set(['x']));
-    const {data, expansionConfig} = hook.result.current;
-    // The self-edge x -> x is skipped: x keeps depth 0, never re-assigned 1.
-    const x = data.find(item => item.id === 'x') as TreeItem;
-    expect(expansionConfig.getDepth?.(x)).toBe(0);
+  it('re-walks a shared child under each expanded parent (ancestor-path, not visited-set, semantics)', () => {
+    const leaf: TreeItem = {id: 'leaf', name: 'Leaf', children: []};
+    const shared: TreeItem = {id: 's', name: 'Shared', children: [leaf]};
+    const p1: TreeItem = {id: 'p1', name: 'Parent 1', children: [shared]};
+    const p2: TreeItem = {id: 'p2', name: 'Parent 2', children: [shared]};
+    const {hook} = renderState([p1, p2], new Set(['p1', 'p2', 's']));
+    // 's' is on neither parent's ancestor path, so it must flatten under
+    // both — the guard only skips true cycles, matching pre-guard behavior
+    // for acyclic (DAG-shaped) data.
+    const {data} = hook.result.current;
+    expect(data.map(item => item.id)).toEqual([
+      'p1',
+      's',
+      'leaf',
+      'p2',
+      's',
+      'leaf',
+    ]);
   });
 });
