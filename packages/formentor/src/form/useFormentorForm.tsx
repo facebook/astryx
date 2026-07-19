@@ -23,28 +23,33 @@ import {
   helpers,
   type FormentorError,
   type ValidatorHelpers,
+  type ValidationResult,
   type Validator,
   type AsyncValidator,
 } from './validation';
 import {Renderable, type RenderOverlay} from './renderable';
 
-/** Configuration for a form. */
-export interface FormentorFormConfig<
-  S extends ObjectSchemaImpl<Record<string, Schema>>,
-> {
-  schema: S;
+/** Configuration for a form. Generic over the object's property map `P`, which
+ * infers cleanly from `schema.properties` and drives every value type. */
+export interface FormentorFormConfig<P extends Record<string, Schema>> {
+  schema: ObjectSchemaImpl<P>;
   inputSet: InputSet;
-  initialValue?: InferPartial<S>;
+  initialValue?: InferPartial<ObjectSchemaImpl<P>>;
   /** Global display mode; individual fields may override via render overlay. */
   mode?: FieldMode;
   /** Form-level (cross-field) validation. Runs on submit. */
-  validate?: Validator<InferPartial<S>>;
-  /** Submit-time async handler with full validated value + AbortSignal. */
-  onSubmit?: AsyncValidator<InferValue<S>> | ((value: InferValue<S>) => void);
+  validate?: Validator<InferPartial<ObjectSchemaImpl<P>>>;
+  /** Submit-time handler. Receives the fully validated value plus pass/fail and
+   * an AbortSignal. Return (or resolve) `fail(...)` to surface a server error;
+   * a plain `void`/sync return is treated as success. */
+  onSubmit?: (
+    value: InferValue<ObjectSchemaImpl<P>>,
+    helpers: ValidatorHelpers & {signal: AbortSignal},
+  ) => void | ValidationResult | Promise<ValidationResult>;
 }
 
-export interface FormState<S extends ObjectSchemaImpl<Record<string, Schema>>> {
-  values: InferPartial<S>;
+export interface FormState<P extends Record<string, Schema>> {
+  values: InferPartial<ObjectSchemaImpl<P>>;
   errors: Record<string, string>;
   isSubmitting: boolean;
   isSubmitted: boolean;
@@ -52,13 +57,11 @@ export interface FormState<S extends ObjectSchemaImpl<Record<string, Schema>>> {
   isDirty: boolean;
 }
 
-export interface FormentorForm<
-  S extends ObjectSchemaImpl<Record<string, Schema>>,
-> {
+export interface FormentorForm<P extends Record<string, Schema>> {
   fields: Record<string, Renderable>;
   submitButton: {render: (overlay?: RenderOverlay) => React.ReactNode};
   render: (opts?: {children?: React.ReactNode}) => React.ReactNode;
-  state: FormState<S>;
+  state: FormState<P>;
   submit: () => void;
 }
 
@@ -78,9 +81,9 @@ interface ConstraintsCarrier {
   constraints?: {title?: string; description?: string};
 }
 
-export function useFormentorForm<
-  S extends ObjectSchemaImpl<Record<string, Schema>>,
->(config: FormentorFormConfig<S>): FormentorForm<S> {
+export function useFormentorForm<P extends Record<string, Schema>>(
+  config: FormentorFormConfig<P>,
+): FormentorForm<P> {
   const {schema, inputSet, mode} = config;
 
   const [values, setValues] = React.useState<Record<string, unknown>>(() => ({
@@ -153,7 +156,7 @@ export function useFormentorForm<
       }
     }
     if (config.validate) {
-      const result = config.validate(values as InferPartial<S>, helpers);
+      const result = config.validate(values as InferPartial<ObjectSchemaImpl<P>>, helpers);
       if (!result.ok) {
         for (const err of result.errors) {
           const key = err.valuePath?.segments[0] ?? '__form__';
@@ -183,10 +186,10 @@ export function useFormentorForm<
     const controller = new AbortController();
     abortRef.current = controller;
 
-    const validatedValue = values as InferValue<S>;
+    const validatedValue = values as InferValue<ObjectSchemaImpl<P>>;
     // Distinguish async submit (returns a promise) from sync.
     type SubmitFn = (
-      value: InferValue<S>,
+      value: InferValue<ObjectSchemaImpl<P>>,
       helpers: ValidatorHelpers & {signal: AbortSignal},
     ) => unknown;
     const maybePromise = (onSubmit as SubmitFn)(validatedValue, {
@@ -266,8 +269,8 @@ export function useFormentorForm<
   const isValid = Object.keys(errors).length === 0;
   const isDirty = Object.keys(touched).length > 0;
 
-  const state: FormState<S> = {
-    values: values as InferPartial<S>,
+  const state: FormState<P> = {
+    values: values as InferPartial<ObjectSchemaImpl<P>>,
     errors,
     isSubmitting,
     isSubmitted,

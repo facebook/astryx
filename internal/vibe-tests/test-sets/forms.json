@@ -1,0 +1,266 @@
+{
+  "$comment": "Form-framework vibe test battery. CORE tier = headline comparison (all 4 frameworks fully support). STRETCH tier = reported separately (roadmap signal; Formentor scaffold does not yet support). expectedBehaviors is EVAL-ONLY \u2014 never shown to tester agents (invariant #3). Prompts are phrased as a naive non-expert would ask (invariant #2/#3).",
+  "prompts": [
+    {
+      "id": "core-contact-1",
+      "category": "single-field",
+      "tier": "core",
+      "complexity": "simple",
+      "prompt": "Make a form with a single \"Full name\" text box and a Save button.",
+      "expectedBehaviors": [
+        "text input with label",
+        "submit button",
+        "required or handles empty"
+      ]
+    },
+    {
+      "id": "core-newsletter-1",
+      "category": "validation",
+      "tier": "core",
+      "complexity": "simple",
+      "prompt": "Build a newsletter signup with an email field. It should check that the email looks valid before it can be submitted, and send it to /api/subscribe.",
+      "expectedBehaviors": [
+        "email field",
+        "email format validation",
+        "posts to /api/subscribe",
+        "invalid email blocks submit"
+      ]
+    },
+    {
+      "id": "core-login-1",
+      "category": "validation",
+      "tier": "core",
+      "complexity": "simple",
+      "prompt": "Create a login form with email and password. The password has to be at least 8 characters.",
+      "expectedBehaviors": [
+        "email field",
+        "password field (masked)",
+        "min length 8 on password",
+        "submit"
+      ]
+    },
+    {
+      "id": "core-gate-1",
+      "category": "state-driven",
+      "tier": "core",
+      "complexity": "moderate",
+      "prompt": "Make a form where the submit button stays disabled until all the required fields are filled in correctly.",
+      "expectedBehaviors": [
+        "multiple required fields",
+        "submit disabled while invalid",
+        "enables when valid"
+      ]
+    },
+    {
+      "id": "core-signup-1",
+      "category": "cross-field",
+      "tier": "core",
+      "complexity": "moderate",
+      "prompt": "Build a sign-up form with a password and a confirm-password field. Show an error if the two don't match.",
+      "expectedBehaviors": [
+        "two password fields",
+        "cross-field match check",
+        "error on the confirm field"
+      ]
+    },
+    {
+      "id": "core-role-1",
+      "category": "single-field",
+      "tier": "core",
+      "complexity": "simple",
+      "prompt": "Make a form to invite a teammate: their email, and a dropdown to pick their role (Admin, Editor, or Viewer).",
+      "expectedBehaviors": [
+        "email field",
+        "select/dropdown with 3 options",
+        "submit"
+      ]
+    },
+    {
+      "id": "core-quantity-1",
+      "category": "validation",
+      "tier": "core",
+      "complexity": "simple",
+      "prompt": "Add a quantity picker to a form. It should only allow whole numbers from 1 to 99.",
+      "expectedBehaviors": [
+        "number input",
+        "min 1 max 99",
+        "integer only"
+      ]
+    },
+    {
+      "id": "core-terms-1",
+      "category": "single-field",
+      "tier": "core",
+      "complexity": "simple",
+      "prompt": "Make a form where the user has to tick a box to accept the terms before they can continue.",
+      "expectedBehaviors": [
+        "checkbox",
+        "required to proceed",
+        "submit gated on checkbox"
+      ]
+    },
+    {
+      "id": "core-feedback-1",
+      "category": "multi-field",
+      "tier": "core",
+      "complexity": "moderate",
+      "prompt": "Build a feedback form with a subject line, a longer message box, and a dropdown to pick how urgent it is (Low, Medium, High).",
+      "expectedBehaviors": [
+        "text subject",
+        "multiline message",
+        "priority select",
+        "submit"
+      ]
+    },
+    {
+      "id": "core-username-1",
+      "category": "async",
+      "tier": "core",
+      "complexity": "moderate",
+      "prompt": "Make a form to claim a username. When they submit, check with the server whether the name is taken and show an error if it is.",
+      "expectedBehaviors": [
+        "username field",
+        "async check on submit",
+        "server error surfaced",
+        "loading while checking"
+      ]
+    },
+    {
+      "id": "core-settings-1",
+      "category": "multi-field",
+      "tier": "core",
+      "complexity": "moderate",
+      "prompt": "Build a profile settings section: display name (required), a short bio (optional), and a toggle for making the profile public.",
+      "expectedBehaviors": [
+        "required display name",
+        "optional bio (multiline)",
+        "boolean toggle/checkbox",
+        "optional shown"
+      ]
+    },
+    {
+      "id": "core-viewedit-1",
+      "category": "view-edit",
+      "tier": "core",
+      "complexity": "moderate",
+      "prompt": "Make a profile card that shows the user's name and email as read-only text, with an \"Edit\" button that turns the same fields into editable inputs.",
+      "expectedBehaviors": [
+        "read-only view of fields",
+        "edit toggle",
+        "same fields become editable",
+        "save"
+      ]
+    },
+    {
+      "id": "core-contact-2",
+      "category": "multi-field",
+      "tier": "core",
+      "complexity": "moderate",
+      "prompt": "Build a contact form: name, email, and a message. Email must be valid and the message can't be empty.",
+      "expectedBehaviors": [
+        "name",
+        "email w/ validation",
+        "required message",
+        "submit"
+      ]
+    },
+    {
+      "id": "core-order-1",
+      "category": "multi-field",
+      "tier": "core",
+      "complexity": "moderate",
+      "prompt": "Make a simple order form: pick a product from a dropdown and enter how many (at least 1).",
+      "expectedBehaviors": [
+        "product select",
+        "quantity number min 1",
+        "submit"
+      ]
+    },
+    {
+      "id": "core-reset-1",
+      "category": "validation",
+      "tier": "core",
+      "complexity": "simple",
+      "prompt": "Build a password reset form with a new password (at least 8 characters) and a confirmation that must match.",
+      "expectedBehaviors": [
+        "password min 8",
+        "confirm match cross-field",
+        "submit gated"
+      ]
+    },
+    {
+      "id": "stretch-lineitems-1",
+      "category": "field-array",
+      "tier": "stretch",
+      "complexity": "complex",
+      "prompt": "Build an invoice form where the user can add and remove line items, each with a description and an amount.",
+      "expectedBehaviors": [
+        "dynamic list add/remove",
+        "per-row fields",
+        "running total optional"
+      ]
+    },
+    {
+      "id": "stretch-address-1",
+      "category": "nested",
+      "tier": "stretch",
+      "complexity": "moderate",
+      "prompt": "Make a checkout form that collects a shipping address grouped together (street, city, postal code) inside the larger form.",
+      "expectedBehaviors": [
+        "nested address object",
+        "grouped fields",
+        "submit whole form"
+      ]
+    },
+    {
+      "id": "stretch-conditional-1",
+      "category": "conditional",
+      "tier": "stretch",
+      "complexity": "moderate",
+      "prompt": "Build a form with a \"Do you have a referral code?\" checkbox that reveals a code field only when it's checked.",
+      "expectedBehaviors": [
+        "conditional field reveal",
+        "state-driven visibility",
+        "validation only when shown"
+      ]
+    },
+    {
+      "id": "stretch-wizard-1",
+      "category": "wizard",
+      "tier": "stretch",
+      "complexity": "complex",
+      "prompt": "Create a multi-step signup wizard with Back and Next buttons and a progress indicator across three steps.",
+      "expectedBehaviors": [
+        "multi-step",
+        "back/next",
+        "progress",
+        "per-step validation"
+      ]
+    },
+    {
+      "id": "stretch-typeahead-1",
+      "category": "async-options",
+      "tier": "stretch",
+      "complexity": "complex",
+      "prompt": "Add a city field that suggests matching cities from the server as the user types.",
+      "expectedBehaviors": [
+        "typeahead",
+        "async options fetch",
+        "debounce",
+        "select from suggestions"
+      ]
+    },
+    {
+      "id": "stretch-upload-1",
+      "category": "file",
+      "tier": "stretch",
+      "complexity": "moderate",
+      "prompt": "Build a form that lets the user attach a profile photo file along with their name.",
+      "expectedBehaviors": [
+        "file input",
+        "name field",
+        "submit with file"
+      ]
+    }
+  ]
+}

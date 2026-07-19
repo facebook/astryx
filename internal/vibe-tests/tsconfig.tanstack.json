@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@astryxdesign/core": [
+        "../../packages/core/src"
+      ],
+      "@astryxdesign/core/*": [
+        "../../packages/core/src/*"
+      ],
+      "@astryxdesign/theme/neutral": [
+        "../../packages/themes/neutral/src/source.ts"
+      ],
+      "@stylexjs/stylex": [
+        "../../node_modules/@stylexjs/stylex"
+      ],
+      "@astryxdesign/astryx-tanstack": [
+        "../../packages/astryx-tanstack/src"
+      ],
+      "@tanstack/react-form": [
+        "../../node_modules/@tanstack/react-form"
+      ],
+      "zod": [
+        "../../node_modules/zod"
+      ]
+    }
+  },
+  "include": [
+    "**/*.tsx"
+  ]
+}

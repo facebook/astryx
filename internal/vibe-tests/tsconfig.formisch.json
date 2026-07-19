@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@astryxdesign/core": [
+        "../../packages/core/src"
+      ],
+      "@astryxdesign/core/*": [
+        "../../packages/core/src/*"
+      ],
+      "@astryxdesign/theme/neutral": [
+        "../../packages/themes/neutral/src/source.ts"
+      ],
+      "@stylexjs/stylex": [
+        "../../node_modules/@stylexjs/stylex"
+      ],
+      "@astryxdesign/astryx-formisch": [
+        "../../packages/astryx-formisch/src"
+      ],
+      "@formisch/react": [
+        "../../node_modules/@formisch/react"
+      ],
+      "valibot": [
+        "../../node_modules/valibot"
+      ]
+    }
+  },
+  "include": [
+    "**/*.tsx"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "my-app",
+  "private": true,
+  "dependencies": {
+    "@astryxdesign/core": "*",
+    "@astryxdesign/astryx-tanstack": "*",
+    "@astryxdesign/theme-neutral": "*",
+    "@tanstack/react-form": "^1.0.0",
+    "zod": "^3.22.0",
+    "@stylexjs/stylex": "^0.10",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@astryxdesign/cli": "*"
+  }
+}
