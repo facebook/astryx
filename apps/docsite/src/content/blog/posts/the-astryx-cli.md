@@ -12,6 +12,8 @@ tags:
 coverImage: '/blog/the-astryx-cli/cover.gif'
 coverAlt: 'A terminal running astryx init'
 relatedDocs:
+  - title: 'AI is a copycat, so we gave it good examples to copy'
+    href: '/blog/astryx-cli-build-command'
   - title: 'How Astryx works'
     href: '/blog/how-astryx-works'
   - title: 'CLI'
@@ -47,3 +49,5 @@ We enforce a JSON interface across every command. We enforce stable error codes 
 ## The whole point
 
 An agent building with Astryx should not have to guess. Everything is one command away.
+
+Read part two: [AI is a copycat, so we gave it good examples to copy](/blog/astryx-cli-build-command).

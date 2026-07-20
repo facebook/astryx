@@ -197,6 +197,20 @@ export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPre
     lines.push("- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)");
   }
   lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent via `astryx theme` — never override --color-* in :root.');
+  // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
+  // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
+  // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.
+  // The fix names the sanctioned escape hatch for the configured system.
+  const selfCheckFix = {
+    stylex:
+      'replace any className=, style={{…}}, raw <div>/<span> layout, imported .css/@apply, or hardcoded #hex/px with the component or the xstyle prop + a token',
+    tailwind:
+      'replace any style={{…}}, raw <div>/<span> layout, imported .css/@apply, or hardcoded/arbitrary value (e.g. bg-[#fff], p-[13px]) with the component or a token-backed utility',
+    css: 'replace any raw <div>/<span> layout, imported .css/@apply, or hardcoded value (#hex, 16px) with the component or a token (var(--color-*|--spacing-*|…))',
+  };
+  lines.push(
+    `- SELF-CHECK before you finish: re-read the file and ${selfCheckFix[stylingSystem] ?? selfCheckFix.css}. If unsure a component/prop exists, run \`astryx component <Name>\` / \`astryx search "<thing>"\`; don't hand-roll CSS.`,
+  );
   lines.push('');
 
   // Command reference — build/template/component are covered in WORKFLOW above.

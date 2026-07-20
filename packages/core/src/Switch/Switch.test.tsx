@@ -197,6 +197,22 @@ describe('Switch', () => {
     expect(screen.getByLabelText('Toggle row')).toBeInTheDocument();
   });
 
+  it('keeps description linked via aria-describedby when isLabelHidden', () => {
+    render(
+      <Switch
+        label="Toggle row"
+        isLabelHidden
+        description="Enables sync for this row"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const switchEl = screen.getByRole('switch');
+    const description = screen.getByText('Enables sync for this row');
+    expect(description.id).not.toBe('');
+    expect(switchEl.getAttribute('aria-describedby')).toContain(description.id);
+  });
+
   it('shows label visually by default', () => {
     render(
       <Switch label="Enable notifications" value={false} onChange={() => {}} />,
@@ -470,11 +486,84 @@ describe('Switch', () => {
       expect(screen.getByRole('switch')).toBeDisabled();
     });
   });
+  describe('labelSpacing', () => {
+    const getField = (container: HTMLElement) =>
+      container.querySelector<HTMLElement>('.astryx-switch-field')!;
+
+    it('omits the data attribute for the default hug spacing', () => {
+      const {container} = render(
+        <Switch label="Notify" value={false} onChange={() => {}} />,
+      );
+      expect(getField(container)).not.toHaveAttribute('data-label-spacing');
+    });
+
+    it('reflects spread spacing as a data attribute and variant class', () => {
+      const {container} = render(
+        <Switch
+          label="Notify"
+          value={false}
+          onChange={() => {}}
+          labelSpacing="spread"
+        />,
+      );
+      expect(getField(container)).toHaveAttribute(
+        'data-label-spacing',
+        'spread',
+      );
+      expect(getField(container).className).toContain('spread');
+    });
+
+    it('renders explicit hug the same as the default', () => {
+      const {container: implicit} = render(
+        <Switch label="Notify" value={false} onChange={() => {}} />,
+      );
+      const {container: explicit} = render(
+        <Switch
+          label="Notify"
+          value={false}
+          onChange={() => {}}
+          labelSpacing="hug"
+        />,
+      );
+      expect(getField(explicit)).not.toHaveAttribute('data-label-spacing');
+      expect(getField(explicit).className).toBe(getField(implicit).className);
+    });
+
+    it("treats the deprecated 'default' value as an alias for hug", () => {
+      const {container: hug} = render(
+        <Switch
+          label="Notify"
+          value={false}
+          onChange={() => {}}
+          labelSpacing="hug"
+        />,
+      );
+      const {container: deprecated} = render(
+        <Switch
+          label="Notify"
+          value={false}
+          onChange={() => {}}
+          labelSpacing="default"
+        />,
+      );
+      expect(getField(deprecated)).not.toHaveAttribute('data-label-spacing');
+      expect(getField(deprecated).className).toBe(getField(hug).className);
+      // The switch row keeps the hug layout, not the spread justification.
+      expect(getField(deprecated).firstElementChild?.className).toBe(
+        getField(hug).firstElementChild?.className,
+      );
+    });
+  });
   describe('form participation', () => {
     it('submits under htmlName when on', () => {
       const {container} = render(
         <form>
-          <Switch label="Notify" htmlName="notify" value={true} onChange={() => {}} />
+          <Switch
+            label="Notify"
+            htmlName="notify"
+            value={true}
+            onChange={() => {}}
+          />
         </form>,
       );
       const data = new FormData(container.querySelector('form')!);
@@ -494,18 +583,44 @@ describe('Switch', () => {
           />
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
     });
 
     it('submits nothing when off or when htmlName is omitted', () => {
       const {container} = render(
         <form>
-          <Switch label="Off" htmlName="off" value={false} onChange={() => {}} />
+          <Switch
+            label="Off"
+            htmlName="off"
+            value={false}
+            onChange={() => {}}
+          />
           <Switch label="Unnamed" value={true} onChange={() => {}} />
         </form>,
       );
       const data = new FormData(container.querySelector('form')!);
       expect([...data.keys()]).toEqual([]);
+    });
+  });
+
+  describe('rest forwarding', () => {
+    it('forwards data-testid, id, and aria-* to the root element', () => {
+      const {container} = render(
+        <Switch
+          label="Notifications"
+          value={false}
+          onChange={() => {}}
+          data-testid="my-switch"
+          id="switch-1"
+          aria-label="Toggle notifications"
+        />,
+      );
+      const root = container.querySelector('[data-testid="my-switch"]');
+      expect(root).not.toBeNull();
+      expect(root).toHaveAttribute('id', 'switch-1');
+      expect(root).toHaveAttribute('aria-label', 'Toggle notifications');
     });
   });
 });

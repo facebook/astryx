@@ -207,7 +207,7 @@ export function parseYamlFrontmatter(text) {
  * @returns {{data: Record<string, unknown>, body: string}}
  */
 export function parseFrontmatter(raw) {
-  const normalized = raw.replace(/^\uFEFF/, '');
+  const normalized = raw.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const match = normalized.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!match) {
     return {data: {}, body: normalized.trim()};

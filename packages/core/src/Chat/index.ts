@@ -21,10 +21,7 @@ export type {ChatSendButtonProps} from './ChatSendButton';
 export {ChatComposerDrawer} from './ChatComposerDrawer';
 export type {ChatComposerDrawerProps} from './ChatComposerDrawer';
 
-export {
-  ChatComposerInput,
-  ChatComposerTokenElement,
-} from './ChatComposerInput';
+export {ChatComposerInput, ChatComposerTokenElement} from './ChatComposerInput';
 export type {
   ChatComposerInputProps,
   ChatComposerInputHandle,
@@ -62,6 +59,7 @@ export type {
 
 export {useChatStreamScroll} from './useChatStreamScroll';
 export type {
+  ChatScrollToBottomOptions,
   UseChatStreamScrollOptions,
   UseChatStreamScrollReturn,
 } from './useChatStreamScroll';

@@ -439,8 +439,11 @@ export default function KanbanBoardTemplate() {
     let cb = columnRefCbs.current.get(id);
     if (!cb) {
       cb = el => {
-        if (el) {columnEls.current.set(id, el);}
-        else {columnEls.current.delete(id);}
+        if (el) {
+          columnEls.current.set(id, el);
+        } else {
+          columnEls.current.delete(id);
+        }
       };
       columnRefCbs.current.set(id, cb);
     }
@@ -451,8 +454,11 @@ export default function KanbanBoardTemplate() {
     let cb = cardRefCbs.current.get(id);
     if (!cb) {
       cb = el => {
-        if (el) {cardEls.current.set(id, el);}
-        else {cardEls.current.delete(id);}
+        if (el) {
+          cardEls.current.set(id, el);
+        } else {
+          cardEls.current.delete(id);
+        }
       };
       cardRefCbs.current.set(id, cb);
     }
@@ -487,7 +493,9 @@ export default function KanbanBoardTemplate() {
   ): DropTarget | null => {
     for (const [colId, el] of Array.from(columnEls.current.entries())) {
       const r = el.getBoundingClientRect();
-      if (px < r.left || px > r.right || py < r.top || py > r.bottom) {continue;}
+      if (px < r.left || px > r.right || py < r.top || py > r.bottom) {
+        continue;
+      }
 
       const ids = itemsByColumn[colId]
         .filter(it => it.id !== draggedId)
@@ -496,7 +504,9 @@ export default function KanbanBoardTemplate() {
       let index = ids.length;
       for (let i = 0; i < ids.length; i++) {
         const cardEl = cardEls.current.get(ids[i]);
-        if (!cardEl) {continue;}
+        if (!cardEl) {
+          continue;
+        }
         const cr = cardEl.getBoundingClientRect();
         if (py < cr.top + cr.height / 2) {
           index = i;
@@ -513,21 +523,27 @@ export default function KanbanBoardTemplate() {
   const commitDrag = (id: string, target: DropTarget) => {
     setItems(prev => {
       const moved = prev.find(it => it.id === id);
-      if (!moved) {return prev;}
+      if (!moved) {
+        return prev;
+      }
 
       const rest = prev.filter(it => it.id !== id);
       const updated: WorkItem = {...moved, column: target.column};
       const colItems = rest.filter(it => it.column === target.column);
       const anchor = colItems[target.index];
 
-      if (!anchor) {return [...rest, updated];}
+      if (!anchor) {
+        return [...rest, updated];
+      }
       const at = rest.indexOf(anchor);
       return [...rest.slice(0, at), updated, ...rest.slice(at)];
     });
   };
 
   const onCardPointerDown = (e: ReactPointerEvent, id: string) => {
-    if (e.button !== 0) {return;}
+    if (e.button !== 0) {
+      return;
+    }
     // Let the card's own controls (the actions menu) handle the press.
     if (
       (e.target as HTMLElement).closest(
@@ -538,7 +554,9 @@ export default function KanbanBoardTemplate() {
     }
 
     const el = cardEls.current.get(id);
-    if (!el) {return;}
+    if (!el) {
+      return;
+    }
 
     const rect = el.getBoundingClientRect();
     const startX = e.clientX;
@@ -574,7 +592,9 @@ export default function KanbanBoardTemplate() {
 
     const onUp = () => {
       teardownRef.current?.();
-      if (started && target) {commitDrag(id, target);}
+      if (started && target) {
+        commitDrag(id, target);
+      }
       setDrag(null);
     };
 
@@ -594,7 +614,9 @@ export default function KanbanBoardTemplate() {
 
   // Suppress selection while dragging and detach listeners on unmount.
   useEffect(() => {
-    if (!isDragging) {return;}
+    if (!isDragging) {
+      return;
+    }
     const previous = document.body.style.userSelect;
     document.body.style.userSelect = 'none';
     return () => {
@@ -612,7 +634,9 @@ export default function KanbanBoardTemplate() {
     const ghostTarget =
       drag && drag.target && drag.target.column === colId ? drag : null;
 
-    if (visible.length === 0 && !ghostTarget) {return null;}
+    if (visible.length === 0 && !ghostTarget) {
+      return null;
+    }
 
     const nodes: ReactNode[] = visible.map(it => (
       <BoardCard

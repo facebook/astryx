@@ -21,6 +21,7 @@ import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {useTranslator} from '../i18n';
 import {TopNavSlotContext} from './TopNavContext';
 import {useTopNavRenderMode} from './TopNavRenderContext';
 import {useTopNavMobileContent} from './TopNavMobileContentContext';
@@ -147,6 +148,7 @@ export interface TopNavProps extends BaseProps<HTMLElement> {
   /**
    * Accessible label for the navigation landmark.
    * Helps screen readers identify the navigation area.
+   * @default 'Top navigation'
    */
   label?: string;
 }
@@ -176,13 +178,15 @@ export function TopNav({
   children,
   centerContent,
   endContent,
-  label,
+  label: labelFromProps,
   xstyle,
   className,
   style,
   ref,
   ...props
 }: TopNavProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.topNav.landmarkLabel');
   const renderMode = useTopNavRenderMode();
   const mobileContent = useTopNavMobileContent();
   const {hasAutoToggle} = useAppShellMobile();
@@ -294,9 +298,7 @@ export function TopNav({
       ) : (
         endContent && (
           <div {...stylex.props(styles.endContent)}>
-            <TopNavSlotContext value="end">
-              {endContent}
-            </TopNavSlotContext>
+            <TopNavSlotContext value="end">{endContent}</TopNavSlotContext>
           </div>
         )
       )}

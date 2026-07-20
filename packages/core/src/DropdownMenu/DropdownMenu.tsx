@@ -55,6 +55,7 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   dropdown: {
@@ -111,9 +112,7 @@ export interface DropdownMenuSection {
 }
 
 export type DropdownMenuOption =
-  | DropdownMenuItemData
-  | DropdownMenuDivider
-  | DropdownMenuSection;
+  DropdownMenuItemData | DropdownMenuDivider | DropdownMenuSection;
 
 // =============================================================================
 // Props
@@ -149,8 +148,7 @@ interface DropdownMenuCompoundProps extends DropdownMenuBaseProps {
 }
 
 export type DropdownMenuProps =
-  | DropdownMenuDataProps
-  | DropdownMenuCompoundProps;
+  DropdownMenuDataProps | DropdownMenuCompoundProps;
 
 // =============================================================================
 // DropdownMenu
@@ -176,10 +174,13 @@ export type DropdownMenuProps =
  * />
  * ```
  */
-const DEFAULT_BUTTON = {label: 'Menu'} as const;
+// When the consumer doesn't pass `button`, the default label is looked up
+// at render time so it respects the active InternationalizationProvider
+// locale.
+const DEFAULT_BUTTON_I18N_KEY = '@astryx.dropdownMenu.label' as const;
 
 export function DropdownMenu({
-  button = DEFAULT_BUTTON,
+  button: buttonFromProps,
   isMenuOpen: controlledIsOpen,
   onOpenChange,
   menuWidth,
@@ -192,11 +193,14 @@ export function DropdownMenu({
   'data-testid': testId,
   ...props
 }: DropdownMenuProps) {
+  const t = useTranslator();
+  const button = buttonFromProps ?? {label: t(DEFAULT_BUTTON_I18N_KEY)};
+
   const items = ('items' in props ? props.items : undefined) ?? [];
   const children = props.children;
 
   const menuId = useId();
-  const menuSize = button?.size ?? 'md';
+  const menuSize = button.size ?? 'md';
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Open state

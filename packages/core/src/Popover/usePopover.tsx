@@ -27,6 +27,7 @@ import {
   shadowVars,
 } from '../theme/tokens.stylex';
 import {Button} from '../Button';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   // Default popover surface — background, radius, shadow.
@@ -309,11 +310,15 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
     hasAutoFocus = true,
     hasSurface = true,
     hasCloseButton = true,
-    closeButtonLabel = 'Close popover',
+    closeButtonLabel: closeButtonLabelFromProps,
     dialogLabel,
     role = 'dialog',
     isModal = true,
   } = options;
+
+  const t = useTranslator();
+  const closeButtonLabel =
+    closeButtonLabelFromProps ?? t('@astryx.popover.close');
 
   // Track the trigger element for returning focus
   const triggerElementRef = useRef<HTMLElement | null>(null);

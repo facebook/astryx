@@ -52,6 +52,7 @@ import {
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // Re-export status types for convenience
 export type {
@@ -81,9 +82,7 @@ export type TokenizerSize = 'sm' | 'md' | 'lg';
  * - `'unfocusedLayer'`: Shows a single line with "+ N more" when unfocused, expands as an overlay on focus.
  */
 export type TokenizerOverflowBehavior =
-  | 'none'
-  | 'unfocusedInline'
-  | 'unfocusedLayer';
+  'none' | 'unfocusedInline' | 'unfocusedLayer';
 
 /**
  * Imperative handle for Tokenizer handleRef.
@@ -403,6 +402,7 @@ export function Tokenizer<T extends SearchableItem>({
   ref,
   handleRef,
 }: TokenizerProps<T>) {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const inputId = useId();
   const descriptionId = useId();
@@ -684,9 +684,11 @@ export function Tokenizer<T extends SearchableItem>({
     );
   });
 
+  // Self-authored position styles (positioning: 'custom' below): explicit
+  // anchor() insets pin the expanded layer over the field itself.
+  // `left` is physical, so this popover does not yet mirror in RTL —
+  // known follow-up from #3389.
   const popoverOverrideStyle: React.CSSProperties = {
-    positionArea: undefined,
-    positionTryFallbacks: undefined,
     top: 'anchor(top)',
     left: 'anchor(start)',
   };
@@ -784,7 +786,7 @@ export function Tokenizer<T extends SearchableItem>({
           {endContent}
           {hasClear && value.length > 0 && !isDisabled && (
             <InputClearButton
-              label="Clear all"
+              label={t('@astryx.tokenizer.clearAll')}
               onClick={e => {
                 e.stopPropagation();
                 handleClearAll();
@@ -846,8 +848,7 @@ export function Tokenizer<T extends SearchableItem>({
             {wrapperContent}
           </div>,
           {
-            placement: 'below',
-            alignment: 'start',
+            positioning: 'custom',
             xstyle: styles.layerPopover,
             style: popoverOverrideStyle,
           },

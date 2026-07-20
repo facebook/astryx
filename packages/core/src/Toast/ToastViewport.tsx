@@ -17,6 +17,7 @@ import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
 import {Toast} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   viewport: {
@@ -107,6 +108,7 @@ export function ToastViewport({
   isTopLayer = true,
   children,
 }: ToastViewportProps) {
+  const t = useTranslator();
   const [toasts, setToasts] = useState<ToastEntry[]>([]);
   const [exitingIds, setExitingIds] = useState<Set<string>>(new Set());
   const toastsRef = useRef(toasts);
@@ -363,7 +365,7 @@ export function ToastViewport({
       <div
         ref={viewportRef}
         role="region"
-        aria-label="Notifications"
+        aria-label={t('@astryx.toast.viewport')}
         tabIndex={-1}
         // popover="manual" promotes to the top layer (above dialogs).
         // Omitted inside dialogs where the viewport is already in a top layer.

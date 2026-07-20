@@ -181,10 +181,14 @@ export interface HoverCardReturn {
   /**
    * Render function for hover card content.
    * Returns anchor-positioned popover element.
+   *
+   * `positioning` is excluded: the hover card always derives its position
+   * from placement/alignment, so accepting the custom opt-out here would be
+   * a silent no-op.
    */
   renderHoverCard: (
     children: ReactNode,
-    props?: ContextRenderProps,
+    props?: Omit<ContextRenderProps, 'positioning'>,
   ) => ReactNode;
 
   /**
@@ -450,7 +454,10 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
 
   // Render function that wraps layer.render with hover card behavior
   const renderHoverCard = useCallback(
-    (children: ReactNode, props?: ContextRenderProps): ReactNode => {
+    (
+      children: ReactNode,
+      props?: Omit<ContextRenderProps, 'positioning'>,
+    ): ReactNode => {
       const renderPlacement = props?.placement ?? placement;
       const renderProps = {
         placement: renderPlacement,

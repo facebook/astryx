@@ -25,7 +25,7 @@ export const docs = {
     {name: 'onChange', type: '(isSelected: boolean) => void', description: 'Called when toggled.', required: true},
     {name: 'isDisabled', type: 'boolean', description: 'Disables the card.', default: 'false'},
     {name: 'children', type: 'ReactNode', description: 'Card content.'},
-    {name: 'padding', type: "SpacingStep", description: 'Inner padding.', default: '4'},
+    {name: 'padding', type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10', description: 'Inner padding.', default: '4'},
     {name: 'variant', type: "'default' | 'transparent' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'", description: 'Background color variant.', default: "'default'"},
     {name: 'width', type: 'SizeValue', description: 'Card width.'},
     {name: 'height', type: 'SizeValue', description: 'Card height.'},

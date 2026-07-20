@@ -29,6 +29,7 @@ import {useListFocus} from '../hooks/useListFocus';
 import {useKeyboardHint} from '../hooks/useKeyboardHint';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 /**
  * Selector matching the focusable stops in the tab strip: every Tab
@@ -129,11 +130,13 @@ export function TabList({
   onKeyDown: onKeyDownProp,
   onFocus: onFocusProp,
   onBlur: onBlurProp,
-  'aria-label': ariaLabel = 'Tabs',
+  'aria-label': ariaLabelFromProps,
   'aria-orientation': _ariaOrientation,
   [EDGE_COMP_ATTR]: _edgeCompAttr,
   ...restProps
 }: TabListProps) {
+  const t = useTranslator();
+  const ariaLabel = ariaLabelFromProps ?? t('@astryx.tabList.label');
   const size = useSize(sizeProp, 'md');
 
   // Roving-tabindex keyboard navigation across the tab strip via the shared

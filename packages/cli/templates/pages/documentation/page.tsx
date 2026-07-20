@@ -209,7 +209,7 @@ const COMPONENT_CATEGORIES = [
 export default function DocumentationOverviewPage() {
   return (
     <Layout
-      height="auto"
+      height="fill"
       contentWidth={1200}
       content={
         <LayoutContent padding={8}>

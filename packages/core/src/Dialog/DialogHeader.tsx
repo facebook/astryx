@@ -26,6 +26,7 @@ import {Heading} from '../Heading/Heading';
 import {Text} from '../Text/Text';
 import type {BaseProps} from '../BaseProps';
 import {useDialogContext} from './DialogContext';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   container: {
@@ -130,7 +131,9 @@ export function DialogHeader({
   className,
   style,
   ref,
+  ...rest
 }: DialogHeaderProps) {
+  const t = useTranslator();
   const titleRef = useRef<HTMLHeadingElement>(null);
   const dialogContext = useDialogContext();
   const shouldAutoFocus = dialogContext?.isInline !== true;
@@ -150,7 +153,8 @@ export function DialogHeader({
       hasDivider={hasDivider}
       xstyle={xstyle}
       className={className}
-      style={style}>
+      style={style}
+      {...rest}>
       <div {...stylex.props(styles.container)}>
         {startContent && (
           <div {...stylex.props(styles.actions)}>{startContent}</div>
@@ -179,8 +183,8 @@ export function DialogHeader({
             {onOpenChange && (
               <Button
                 variant="ghost"
-                label="Close"
-                tooltip="Close"
+                label={t('@astryx.dialog.close')}
+                tooltip={t('@astryx.dialog.close')}
                 icon={<Icon icon="close" color="inherit" />}
                 onClick={() => {
                   onOpenChange?.(false);

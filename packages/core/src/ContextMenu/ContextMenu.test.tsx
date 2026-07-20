@@ -464,4 +464,76 @@ describe('ContextMenu compound mode', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('separator', {hidden: true})).toBeInTheDocument();
   });
+
+  describe('cursor anchor positioning (#3465)', () => {
+    // The menu is anchored to a zero-size element placed at the cursor point
+    // *inside the trigger*, so it is positioned relative to the trigger's
+    // context (scroll-follow + auto-flip) rather than the viewport.
+    function getCursorAnchor(trigger: HTMLElement): HTMLElement {
+      const anchor = trigger.querySelector<HTMLElement>('[aria-hidden="true"]');
+      if (!anchor) {
+        throw new Error('cursor anchor not found');
+      }
+      return anchor;
+    }
+
+    it('renders a zero-size cursor anchor inside the trigger', () => {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Right-click me</div>
+        </ContextMenu>,
+      );
+      const anchor = getCursorAnchor(screen.getByTestId('ctx'));
+      expect(anchor.tagName).toBe('SPAN');
+      // Carries an anchor-name so the menu can be anchored to it via CSS
+      // anchor positioning (context mode), not fixed viewport coordinates.
+      expect(anchor.style.anchorName).toMatch(/^--astryx-layer-/);
+    });
+
+    it('places the cursor anchor at the pointer position relative to the trigger', () => {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Right-click me</div>
+        </ContextMenu>,
+      );
+      const trigger = screen.getByTestId('ctx');
+      trigger.getBoundingClientRect = () =>
+        ({
+          left: 100,
+          top: 50,
+          right: 300,
+          bottom: 150,
+          width: 200,
+          height: 100,
+        }) as DOMRect;
+      // Pointer at viewport (170, 90) -> local trigger offset (70, 40).
+      fireEvent.contextMenu(trigger, {clientX: 170, clientY: 90, detail: 1});
+      const anchor = getCursorAnchor(trigger);
+      expect(anchor.style.left).toBe('70px');
+      expect(anchor.style.top).toBe('40px');
+    });
+
+    it('anchors a keyboard-invoked menu to the trigger bottom-left', () => {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Right-click me</div>
+        </ContextMenu>,
+      );
+      const trigger = screen.getByTestId('ctx');
+      trigger.getBoundingClientRect = () =>
+        ({
+          left: 40,
+          top: 10,
+          right: 100,
+          bottom: 30,
+          width: 60,
+          height: 20,
+        }) as DOMRect;
+      // Keyboard-initiated contextmenu: coords (0,0), detail 0 -> local (0, height).
+      fireEvent.contextMenu(trigger, {clientX: 0, clientY: 0, detail: 0});
+      const anchor = getCursorAnchor(trigger);
+      expect(anchor.style.left).toBe('0px');
+      expect(anchor.style.top).toBe('20px');
+    });
+  });
 });

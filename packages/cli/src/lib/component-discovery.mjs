@@ -273,14 +273,24 @@ export function findComponentReadme(coreDir, name) {
  * For "Button" finds src/Button/XDSButton.tsx
  * For "Layout" finds src/Layout/XDSLayout/XDSLayout.tsx
  * For "Card" finds src/Layout/Container/XDSCard.tsx (deep search fallback)
+ *
+ * Hooks and other functions are authored as `.ts` (e.g. `useMediaQuery.ts`,
+ * `useResizable.ts`), so `.ts` candidates are searched alongside `.tsx`. Without
+ * this, deriving the import path for a `.ts`-authored function falls back to the
+ * bare `@astryxdesign/core` root instead of its tree-shakeable subpath.
  */
 export function findComponentSource(coreDir, name) {
   const srcDir = path.join(coreDir, 'src');
-  // Try the prefixed form (`XDSButton.tsx`) first since that is the current
-  // on-disk convention, then the bare form (`Button.tsx`) that the Astryx-prefix
-  // migration (P4) renames to. Listing the prefixed name first keeps behavior
-  // identical until files are actually renamed.
-  const candidateFiles = [`XDS${name}.tsx`, `${name}.tsx`];
+  // Try the prefixed forms (`XDSButton.tsx`) first since that is the current
+  // on-disk convention, then the bare forms (`Button.tsx`) that the Astryx-prefix
+  // migration (P4) renames to. `.tsx` before `.ts` within each so a component's
+  // `.tsx` wins over a same-named `.ts` helper; `.ts` covers hooks/functions.
+  const candidateFiles = [
+    `XDS${name}.tsx`,
+    `${name}.tsx`,
+    `XDS${name}.ts`,
+    `${name}.ts`,
+  ];
 
   function searchDir(dirPath) {
     if (!fs.existsSync(dirPath)) return null;

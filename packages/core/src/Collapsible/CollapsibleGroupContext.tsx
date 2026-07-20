@@ -7,7 +7,7 @@
  * @input Uses React createContext
  * @output Exports CollapsibleGroupContext, CollapsibleGroupContextValue,
  *   CollapsibleGroupPresentationContext, CollapsibleGroupPresentationValue,
- *   CollapsibleGroupDividers, and CollapsibleGroupDensity types
+ *   and CollapsibleGroupDensity types
  * @position Context definitions for collapsible group coordination and presentation
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -37,14 +37,6 @@ export const CollapsibleGroupContext =
 CollapsibleGroupContext.displayName = 'CollapsibleGroupContext';
 
 /**
- * Divider style rendered around the items of a CollapsibleGroup.
- * - 'between': hairlines between adjacent items only.
- * - 'all': hairlines between items plus the group's top and bottom edges.
- * - 'none': no dividers (default).
- */
-export type CollapsibleGroupDividers = 'between' | 'all' | 'none';
-
-/**
  * Row density for the items of a CollapsibleGroup, controlling trigger and
  * content block padding. Shares the repo-wide density vocabulary
  * (Table, List, Item).
@@ -57,8 +49,8 @@ export type CollapsibleGroupDensity = 'compact' | 'balanced' | 'spacious';
  * cannot style items from the outside).
  */
 export interface CollapsibleGroupPresentationValue {
-  /** Resolved divider style for the group's items. */
-  dividers: CollapsibleGroupDividers;
+  /** Whether the group's items draw hairline dividers between one another. */
+  hasDividers: boolean;
   /** Resolved row density, or null to keep the default (unpadded) look. */
   density: CollapsibleGroupDensity | null;
 }

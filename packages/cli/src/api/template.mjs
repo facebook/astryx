@@ -6,8 +6,9 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {createJiti} from 'jiti';
 import {loadModuleWithSchema} from '../lib/module-loader.mjs';
-import {TemplateEnvelopeSchema} from '../template.mjs';
+import {TemplateEnvelopeSchema} from '../schemas/template-schema.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../utils/paths.mjs';
 import {
   assertWithin,
@@ -21,8 +22,53 @@ import {Project} from '../lib/project.mjs';
 /** Identity used for core (built-in) templates in package-scoped listings. */
 const CORE_PACKAGE = '@astryxdesign/core';
 
-/** Doc-file basename suffixes for integration templates, in precedence order. */
+/**
+ * Canonical basename suffixes for template-spec files, in precedence order.
+ * A template spec exports a `createBlockTemplate`/`createPageTemplate` result
+ * (a scaffoldable TEMPLATE), so `.template.*` is the descriptive family name.
+ */
+const TEMPLATE_SUFFIXES = ['.template.ts', '.template.mjs', '.template.js'];
+
+/**
+ * Legacy basename suffixes for template-spec files, in precedence order.
+ * `.doc.*` was inherited from the component-doc convention before templates
+ * had their own name; it is still accepted during the transition window.
+ */
 const DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
+
+/**
+ * The union of canonical + legacy template-spec suffixes, canonical first so
+ * `.template.*` wins over `.doc.*` when both stems exist. All template
+ * discovery matches this union so a `Foo.template.ts` file is treated exactly
+ * like a legacy `Foo.doc.mjs`.
+ */
+const ALL_TEMPLATE_SUFFIXES = [...TEMPLATE_SUFFIXES, ...DOC_SUFFIXES];
+
+/**
+ * The template-spec suffix present on `file`, or null if none matches.
+ * Recognizes both the canonical `.template.*` and legacy `.doc.*` families.
+ * @param {string} file
+ * @returns {string | null}
+ */
+function matchedTemplateSuffix(file) {
+  return ALL_TEMPLATE_SUFFIXES.find(suffix => file.endsWith(suffix)) ?? null;
+}
+
+/**
+ * RegExp matching either template-spec suffix family at end of a basename.
+ * Used where a per-file regex is convenient (e.g. block discovery walks).
+ */
+const TEMPLATE_SUFFIX_RE = /\.(template|doc)\.(ts|mjs|js)$/;
+
+let jitiInstance;
+/** Lazily-created jiti for loading `.ts` template specs (JSX-capable). */
+function getJiti() {
+  if (!jitiInstance) {
+    jitiInstance = createJiti(import.meta.url, {jsx: true});
+  }
+  return jitiInstance;
+}
+
 
 /**
  * Load an integration template doc module and validate it against the template
@@ -87,11 +133,28 @@ export function stripTemplateAssetRefs(source) {
     source,
   );
 }
+/**
+ * Load a template-spec module and return its metadata object. Supports both
+ * families of suffix:
+ *   - Legacy `.doc.*` core/external specs export `export const doc = {...}`.
+ *   - Specs authored with `createPageTemplate`/`createBlockTemplate` export the
+ *     stamped object as the default export.
+ * Prefers the default export, falling back to the named `doc` export, so a
+ * `Foo.template.ts` (default export) is read identically to a legacy
+ * `Foo.doc.mjs` (`doc` export). `.ts` is loaded via jiti; `.mjs`/`.js` via a
+ * native dynamic import. Returns null if the file does not exist.
+ *
+ * @param {string} docPath absolute path to the spec file
+ * @returns {Promise<Record<string, unknown> | undefined | null>}
+ */
 async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
-  const docModule = await import(`file://${docPath}`);
-  return docModule.doc;
+  const docModule = docPath.endsWith('.ts')
+    ? await getJiti().import(docPath)
+    : await import(`file://${docPath}`);
+  return docModule.default ?? docModule.doc;
 }
+
 
 export {discoverAll as discoverTemplates};
 
@@ -122,6 +185,20 @@ function findDocFiles(dir, pattern) {
   return results;
 }
 
+/**
+ * Resolve the template-spec file for a core page directory: the first existing
+ * `template.<suffix>` in canonical-then-legacy precedence, or null.
+ * @param {string} dirPath
+ * @returns {string | null}
+ */
+function findPageDocFile(dirPath) {
+  for (const suffix of ALL_TEMPLATE_SUFFIXES) {
+    const candidate = path.join(dirPath, `template${suffix}`);
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
+}
+
 async function discoverPages() {
   if (!fs.existsSync(PAGES_DIR)) return [];
   const dirs = fs
@@ -131,7 +208,9 @@ async function discoverPages() {
   const templates = [];
   for (const dir of dirs) {
     const dirPath = path.join(PAGES_DIR, dir.name);
-    const doc = await loadDocModule(path.join(dirPath, 'template.doc.mjs'));
+    const docPath =
+      findPageDocFile(dirPath) ?? path.join(dirPath, 'template.doc.mjs');
+    const doc = await loadDocModule(docPath);
     templates.push({
       type: 'page',
       dirName: dir.name,
@@ -141,17 +220,18 @@ async function discoverPages() {
       isReady: doc?.isReady ?? true,
       scaffold: doc?.scaffold ?? false,
       filePath: path.join(dirPath, 'page.tsx'),
-      docPath: path.join(dirPath, 'template.doc.mjs'),
+      docPath,
     });
   }
   return templates;
 }
 
 async function discoverBlocks() {
-  const docFiles = findDocFiles(BLOCKS_DIR, /\.doc\.mjs$/);
+  const docFiles = findDocFiles(BLOCKS_DIR, TEMPLATE_SUFFIX_RE);
   const blocks = [];
   for (const docPath of docFiles) {
-    const basename = path.basename(docPath, '.doc.mjs');
+    const suffix = matchedTemplateSuffix(docPath);
+    const basename = path.basename(docPath, suffix);
     const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
     if (!fs.existsSync(tsxPath)) continue;
     const doc = await loadDocModule(docPath);
@@ -173,6 +253,7 @@ async function discoverBlocks() {
   return blocks;
 }
 
+
 /**
  * Discover blocks from external packages that declare `astryx.blocks` in
  * their package.json. Same shape as discoverBlocks() output.
@@ -185,9 +266,10 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
 
   for (const ext of externals) {
     if (!ext.blocksDir || !fs.existsSync(ext.blocksDir)) continue;
-    const docFiles = findDocFiles(ext.blocksDir, /\.doc\.mjs$/);
+    const docFiles = findDocFiles(ext.blocksDir, TEMPLATE_SUFFIX_RE);
     for (const docPath of docFiles) {
-      const basename = path.basename(docPath, '.doc.mjs');
+      const suffix = matchedTemplateSuffix(docPath);
+      const basename = path.basename(docPath, suffix);
       const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
       if (!fs.existsSync(tsxPath)) continue;
       const doc = await loadDocModule(docPath);
@@ -258,8 +340,9 @@ async function discoverAllWithErrors(cwd = process.cwd()) {
 export {discoverAllWithErrors};
 
 /**
- * Recursively collect integration template doc files under `root`.
- * Returns absolute paths to files ending in one of DOC_SUFFIXES.
+ * Recursively collect integration template-spec files under `root`.
+ * Returns absolute paths to files ending in one of ALL_TEMPLATE_SUFFIXES
+ * (canonical `.template.*` or legacy `.doc.*`).
  *
  * @param {string} root
  * @returns {string[]}
@@ -272,7 +355,7 @@ function findIntegrationDocFiles(root) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
-      } else if (DOC_SUFFIXES.some(suffix => entry.name.endsWith(suffix))) {
+      } else if (ALL_TEMPLATE_SUFFIXES.some(suffix => entry.name.endsWith(suffix))) {
         results.push(full);
       }
     }
@@ -282,23 +365,16 @@ function findIntegrationDocFiles(root) {
 }
 
 /**
- * The doc-file suffix present on `file`, or null if none matches.
- * @param {string} file
- */
-function matchedDocSuffix(file) {
-  return DOC_SUFFIXES.find(suffix => file.endsWith(suffix)) ?? null;
-}
-
-/**
  * Discover templates contributed by configured integrations.
  *
  * For each integration with a resolved `templates` root, every
- * `<id>.doc.{ts,mjs,js}` file is a template whose id is its path relative to
- * the templates root with the `.doc.*` suffix stripped (kebab-case, may be
- * nested). The doc's `type` (page|block) decides scaffolding — there is no
- * `/pages` vs `/blocks` requirement. A same-stem sibling source file
- * (`<id>.tsx`) is required; a doc missing its source, or missing `type`, is
- * an integration error and that template is skipped (recorded in `errors`).
+ * `<id>.template.{ts,mjs,js}` (or legacy `<id>.doc.{ts,mjs,js}`) file is a
+ * template whose id is its path relative to the templates root with the
+ * matched suffix stripped (kebab-case, may be nested). The doc's `type`
+ * (page|block) decides scaffolding — there is no `/pages` vs `/blocks`
+ * requirement. A same-stem sibling source file (`<id>.tsx`) is required; a doc
+ * missing its source, or missing `type`, is an integration error and that
+ * template is skipped (recorded in `errors`).
  *
  * @param {string} [cwd]
  * @returns {Promise<{templates: object[], errors: {package: string, template?: string, message: string}[]}>}
@@ -344,7 +420,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
   if (!root || !fs.existsSync(root)) return {templates, errors};
 
   for (const docPath of findIntegrationDocFiles(root)) {
-    const suffix = matchedDocSuffix(docPath);
+    const suffix = matchedTemplateSuffix(docPath);
     const id = path
       .relative(root, docPath)
       .slice(0, -suffix.length)

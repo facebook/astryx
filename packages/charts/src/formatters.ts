@@ -122,11 +122,21 @@ function toDate(value: unknown): Date {
     }
     const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
     if (dateOnly) {
-      return new Date(
-        Number(dateOnly[1]),
-        Number(dateOnly[2]) - 1,
-        Number(dateOnly[3]),
-      );
+      const year = Number(dateOnly[1]);
+      const month = Number(dateOnly[2]);
+      const day = Number(dateOnly[3]);
+      const local = new Date(year, month - 1, day);
+      // Reject out-of-range parts (e.g. "2024-02-31") that the Date constructor
+      // would otherwise silently roll into a different day; treat them as
+      // invalid so the raw value passes through unchanged.
+      if (
+        local.getFullYear() !== year ||
+        local.getMonth() !== month - 1 ||
+        local.getDate() !== day
+      ) {
+        return new Date(NaN);
+      }
+      return local;
     }
     const asNumber = Number(s);
     return new Date(Number.isFinite(asNumber) ? asNumber : s);

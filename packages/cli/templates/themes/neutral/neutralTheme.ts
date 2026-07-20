@@ -39,19 +39,19 @@ import {neutralIconRegistry} from './icons';
 const neutralSyntax = defineSyntaxTheme({
   name: 'xds-neutral',
   tokens: {
-    keyword: ['#700084', '#efa8ff'], // purple T30/T80
-    string: ['#005600', '#a6d2a2'], // green (sat T30 / pastel T80)
-    comment: ['#737373', '#a3a3a3'], // neutral
-    number: ['#6e3500', '#ffb37f'], // orange
-    function: ['#00458c', '#a0caff'], // blue T30/T80 H=255
-    type: ['#700084', '#efa8ff'], // purple
-    variable: ['#171717', '#e5e5e5'], // near-black / near-white
-    operator: ['#737373', '#a3a3a3'], // neutral
-    constant: ['#6e3500', '#ffb37f'], // orange
-    tag: ['#89001a', '#ffaeaa'], // red
-    attribute: ['#584400', '#eec12f'], // yellow
-    property: ['#005348', '#83dac9'], // teal
-    punctuation: ['#a3a3a3', '#525252'], // neutral
+    keyword: ['#700084', '#efa8ff'],    // purple T30/T80
+    string: ['#005600', '#a6d2a2'],     // green (sat T30 / pastel T80)
+    comment: ['#737373', '#a3a3a3'],    // neutral
+    number: ['#6e3500', '#ffb37f'],     // orange
+    function: ['#00458c', '#a0caff'],   // blue T30/T80 H=255
+    type: ['#700084', '#efa8ff'],       // purple
+    variable: ['#171717', '#e5e5e5'],   // near-black / near-white
+    operator: ['#737373', '#a3a3a3'],   // neutral
+    constant: ['#6e3500', '#ffb37f'],   // orange
+    tag: ['#89001a', '#ffaeaa'],        // red
+    attribute: ['#584400', '#eec12f'],  // yellow
+    property: ['#005348', '#83dac9'],   // teal
+    punctuation: ['#a3a3a3', '#525252'],// neutral
     background: ['#fafafa', '#0a0a0a'],
   },
 });
@@ -127,39 +127,39 @@ export const neutralTheme = defineTheme({
     // All values use the OKLCH Neutral tonal palette (chroma=0).
     // =========================================================================
     '--color-background-surface': ['#ffffff', '#262626'],
-    '--color-background-body': ['#f1f1f1', '#1b1b1b'],
-    '--color-background-card': ['#ffffff', '#1b1b1b'],
+    '--color-background-body':    ['#f1f1f1', '#1b1b1b'],
+    '--color-background-card':    ['#ffffff', '#1b1b1b'],
     '--color-background-popover': ['#ffffff', '#1b1b1b'],
-    '--color-background-muted': ['#f1f1f1', '#1b1b1b'],
+    '--color-background-muted':   ['#f1f1f1', '#1b1b1b'],
 
     // Accent + neutral surface tints (sit alongside backgrounds)
-    '--color-accent': ['#262626', '#ebebeb'],
+    '--color-accent':       ['#262626', '#ebebeb'],
     '--color-accent-muted': ['#f1f1f1', '#262626'],
-    '--color-neutral': ['#0000000F', '#FFFFFF1A'],
+    '--color-neutral':      ['#0000000F', '#FFFFFF1A'],
 
     // Overlays (modal scrims, hover/pressed tints)
-    '--color-overlay': ['#00000080', '#000000CC'],
-    '--color-overlay-hover': ['#0000000D', '#FFFFFF0D'],
+    '--color-overlay':         ['#00000080', '#000000CC'],
+    '--color-overlay-hover':   ['#0000000D', '#FFFFFF0D'],
     '--color-overlay-pressed': ['#0000001A', '#FFFFFF1A'],
 
     // Text
-    '--color-text-primary': ['#171717', '#fafafa'],
+    '--color-text-primary':   ['#171717', '#fafafa'],
     '--color-text-secondary': ['#737373', '#a3a3a3'],
-    '--color-text-disabled': ['#a3a3a3', '#525252'],
-    '--color-text-accent': ['#262626', '#ebebeb'],
-    '--color-on-dark': '#ffffff',
-    '--color-on-light': '#171717',
+    '--color-text-disabled':  ['#a3a3a3', '#525252'],
+    '--color-text-accent':    ['#262626', '#ebebeb'],
+    '--color-on-dark':    '#ffffff',
+    '--color-on-light':   '#171717',
     // Contrast: neutral accent is near-black (L) / near-white (D)
-    '--color-on-accent': ['#ffffff', '#171717'],
+    '--color-on-accent':  ['#ffffff', '#171717'],
     '--color-on-success': ['#ffffff', '#171717'],
-    '--color-on-error': ['#ffffff', '#171717'],
+    '--color-on-error':   ['#ffffff', '#171717'],
     '--color-on-warning': '#171717',
 
     // Icon
-    '--color-icon-accent': ['#262626', '#ebebeb'],
-    '--color-icon-primary': ['#171717', '#fafafa'],
+    '--color-icon-accent':    ['#262626', '#ebebeb'],
+    '--color-icon-primary':   ['#171717', '#fafafa'],
     '--color-icon-secondary': ['#737373', '#a3a3a3'],
-    '--color-icon-disabled': ['#a3a3a3', '#525252'],
+    '--color-icon-disabled':  ['#a3a3a3', '#525252'],
 
     // Status / Sentiment — dark mode follows the issue #2150 rubric:
     //
@@ -372,8 +372,8 @@ export const neutralTheme = defineTheme({
     // =========================================================================
     button: {
       'variant:destructive': {
-        backgroundColor: 'var(--color-error-muted)', // locked pastel red bg
-        color: 'var(--color-error)', // locked T30 red — matches banner/input error text
+        backgroundColor: 'var(--color-error-muted)',  // locked pastel red bg
+        color: 'var(--color-error)',                  // locked T30 red — matches banner/input error text
       },
     },
 

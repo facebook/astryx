@@ -3,11 +3,16 @@
 
 /**
  * @file ContextMenu.tsx
- * @input Uses React, StyleX, useLayer (fixed mode), useListFocus
+ * @input Uses React, StyleX, useLayer (context mode), useListFocus
  * @output Exports ContextMenu component
  * @position Core implementation; consumed by index.ts
  *
- * Right-click context menu positioned at cursor coordinates.
+ * Right-click context menu positioned at the cursor. The cursor point is
+ * captured as an offset *inside the trigger* and materialized as a zero-size
+ * anchor element, so the menu is positioned relative to the trigger's context
+ * (via CSS anchor positioning) rather than the viewport. It therefore follows
+ * the content on scroll and auto-flips at viewport edges, while still appearing
+ * under the cursor.
  * Reuses DropdownMenu item rendering and keyboard navigation.
  *
  * Supports two content modes with a single keyboard/focus path:
@@ -53,10 +58,11 @@ import {
   easeVars,
   shadowVars,
 } from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {StyleXStyles} from '../theme/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 import type {
   DropdownMenuOption,
   DropdownMenuItemData,
@@ -67,8 +73,22 @@ import type {
 const styles = stylex.create({
   // Trigger wrapper: suppress the iOS long-press callout/selection so the
   // long-press opens our context menu instead of the native text/callout UI.
+  // `position: relative` establishes the containing block for the absolutely
+  // positioned cursor anchor below, so the anchor point tracks the trigger
+  // (and scrolls with it) instead of the page.
   trigger: {
+    position: 'relative',
     WebkitTouchCallout: 'none',
+  },
+  // Zero-size anchor placed at the cursor point within the trigger. The menu
+  // is anchored to this element, so it sits under the cursor yet is positioned
+  // relative to the trigger's context — it follows the content on scroll and
+  // the browser can auto-flip it against the viewport edges.
+  cursorAnchor: {
+    position: 'absolute',
+    width: 0,
+    height: 0,
+    pointerEvents: 'none',
   },
   menu: {
     boxSizing: 'border-box',
@@ -186,7 +206,7 @@ export function ContextMenu({
   children,
   menuWidth,
   size = 'md',
-  label = 'Context menu',
+  label: labelFromProps,
   isDisabled = false,
   onOpenChange,
   ref,
@@ -197,11 +217,19 @@ export function ContextMenu({
   'data-testid': testId,
   ...props
 }: ContextMenuProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.contextMenu.label');
   const items = ('items' in props ? props.items : undefined) ?? [];
   const menuContent = 'menuContent' in props ? props.menuContent : undefined;
 
   const menuId = useId();
+  // Cursor point in the trigger's local coordinate space (offset from the
+  // trigger's top-left, in-flow). Stored here and written to the zero-size
+  // anchor element so the menu is positioned relative to the trigger context
+  // — it scrolls with the content instead of sitting at a fixed viewport point.
   const positionRef = useRef({x: 0, y: 0});
+  const cursorAnchorRef = useRef<HTMLSpanElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   // Element focused before the menu opened, restored when it closes so focus
   // does not fall to <body> after Escape or outside-click dismissal.
   const triggerFocusRef = useRef<HTMLElement | null>(null);
@@ -209,7 +237,7 @@ export function ContextMenu({
   const [isOpen, setIsOpen] = useState(false);
 
   const layer = useLayer({
-    mode: 'fixed',
+    mode: 'context',
     onHide: useCallback(() => {
       setIsOpen(false);
       onOpenChange?.(false);
@@ -327,34 +355,53 @@ export function ContextMenu({
     [listNavKeyDown, typeahead],
   );
 
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent) => {
-      if (isDisabled) {
-        return;
-      }
-      e.preventDefault();
-      // A keyboard-initiated contextmenu (Shift+F10 / the Menu key) fires a
-      // `contextmenu` event whose coordinates are (0, 0) in several browsers.
-      // Detect that and anchor the menu to the trigger's box instead, so the
-      // menu is reachable without a pointer (menus-8).
-      const isKeyboardInvoked =
-        e.clientX === 0 && e.clientY === 0 && e.detail === 0;
-      if (isKeyboardInvoked && e.currentTarget instanceof HTMLElement) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        positionRef.current = {x: rect.left, y: rect.bottom};
-      } else {
-        positionRef.current = {x: e.clientX, y: e.clientY};
+  // Place the zero-size cursor anchor at a point in the trigger's local
+  // coordinate space and open the menu. Positioning the anchor inside the
+  // trigger (rather than storing viewport coordinates on the menu itself) is
+  // what makes the menu context-relative: it scrolls with the content and the
+  // browser auto-flips it against the viewport edges via CSS anchor positioning.
+  const openAtLocalPoint = useCallback(
+    (localX: number, localY: number, focusEl: HTMLElement | null) => {
+      positionRef.current = {x: localX, y: localY};
+      const anchorEl = cursorAnchorRef.current;
+      if (anchorEl) {
+        anchorEl.style.left = `${localX}px`;
+        anchorEl.style.top = `${localY}px`;
       }
       // Remember the element focused before opening so we can restore it on
       // close (Escape or outside-click), instead of dropping focus to <body>.
       triggerFocusRef.current =
         document.activeElement instanceof HTMLElement
           ? document.activeElement
-          : (e.currentTarget as HTMLElement);
+          : focusEl;
       layer.show();
       requestAnimationFrame(() => focusFirst());
     },
-    [isDisabled, layer, focusFirst],
+    [layer, focusFirst],
+  );
+
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      if (isDisabled) {
+        return;
+      }
+      e.preventDefault();
+      const trigger = triggerRef.current;
+      const rect = trigger?.getBoundingClientRect();
+      // A keyboard-initiated contextmenu (Shift+F10 / the Menu key) fires a
+      // `contextmenu` event whose coordinates are (0, 0) in several browsers.
+      // Detect that and anchor the menu to the trigger's bottom-left instead,
+      // so the menu is reachable without a pointer (menus-8).
+      const isKeyboardInvoked =
+        e.clientX === 0 && e.clientY === 0 && e.detail === 0;
+      // Convert the viewport cursor point into the trigger's local space so
+      // the anchor lives inside the (scrollable) trigger context.
+      const localX = isKeyboardInvoked || !rect ? 0 : e.clientX - rect.left;
+      const localY =
+        isKeyboardInvoked || !rect ? (rect?.height ?? 0) : e.clientY - rect.top;
+      openAtLocalPoint(localX, localY, e.currentTarget as HTMLElement);
+    },
+    [isDisabled, openAtLocalPoint],
   );
 
   // Touch long-press invocation (menus-8). iOS Safari never synthesizes a
@@ -365,11 +412,14 @@ export function ContextMenu({
     disabled: isDisabled,
     onLongPress: useCallback(
       (point: {x: number; y: number}) => {
-        positionRef.current = {x: point.x, y: point.y};
-        layer.show();
-        requestAnimationFrame(() => focusFirst());
+        const rect = triggerRef.current?.getBoundingClientRect();
+        openAtLocalPoint(
+          rect ? point.x - rect.left : point.x,
+          rect ? point.y - rect.top : point.y,
+          triggerRef.current,
+        );
       },
-      [layer, focusFirst],
+      [openAtLocalPoint],
     ),
   });
 
@@ -388,7 +438,7 @@ export function ContextMenu({
   return (
     <>
       <div
-        ref={ref}
+        ref={mergeRefs(ref, triggerRef)}
         onContextMenu={handleContextMenu}
         {...longPressHandlers}
         data-testid={testId}
@@ -401,6 +451,16 @@ export function ContextMenu({
             : []),
         )}>
         {children}
+        <span
+          ref={mergeRefs(cursorAnchorRef, layer.ref)}
+          aria-hidden="true"
+          {...mergeProps(stylex.props(styles.cursorAnchor), {
+            style: {
+              left: `${positionRef.current.x}px`,
+              top: `${positionRef.current.y}px`,
+            },
+          })}
+        />
       </div>
 
       {layer.render(
@@ -422,8 +482,8 @@ export function ContextMenu({
           </DropdownMenuContext>
         </div>,
         {
-          x: positionRef.current.x,
-          y: positionRef.current.y,
+          placement: 'below',
+          alignment: 'start',
           xstyle: [popoverXstyle, layerAnimations.below],
         },
       )}

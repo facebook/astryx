@@ -225,7 +225,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Status indicator that colors the border and displays an icon. When a message is provided it is rendered below the input.',
     },
@@ -368,7 +368,7 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         '为边框着色并显示图标的状态指示器。当提供消息时，消息渲染在输入框下方。',
     },

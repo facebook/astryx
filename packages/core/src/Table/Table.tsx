@@ -31,6 +31,7 @@ import type {
   TableRenderProps,
 } from './types';
 import type {StyleXStyles} from '../theme/types';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Table Types
@@ -135,7 +136,7 @@ const scrollWrapperStyles = stylex.create({
 function TableScrollWrapper({
   children,
   htmlProps,
-  styles: pluginStyles,
+  xstyle: pluginStyles,
   beforeTable,
   afterTable,
 }: {
@@ -143,10 +144,11 @@ function TableScrollWrapper({
   htmlProps?: React.HTMLAttributes<HTMLDivElement> & {
     ref?: React.Ref<HTMLDivElement>;
   };
-  styles?: StyleXStyles[];
+  xstyle?: StyleXStyles[];
   beforeTable?: React.ReactNode;
   afterTable?: React.ReactNode;
 }) {
+  const t = useTranslator();
   const {ref, ...restHtmlProps} = htmlProps ?? {};
   return (
     <div
@@ -158,7 +160,7 @@ function TableScrollWrapper({
       // htmlProps.
       tabIndex={0}
       role="group"
-      aria-label="Table"
+      aria-label={t('@astryx.table.label')}
       {...restHtmlProps}
       {...mergeProps(
         themeProps('table-scroll-wrapper'),
@@ -194,7 +196,7 @@ function buildTableStylePlugin<
             ? `${existingClass} ${tableClass}`
             : tableClass,
         },
-        styles: [...props.styles, tableStyles.base],
+        xstyle: [...props.xstyle, tableStyles.base],
       };
     },
   };

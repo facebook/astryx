@@ -216,6 +216,7 @@ export function ChatMessageBubble({
   style: styleProp,
   'data-testid': testId,
   ref,
+  ...rest
 }: ChatMessageBubbleProps) {
   const msgContext = useChatMessageContext();
   const sender = msgContext?.sender ?? 'assistant';
@@ -274,6 +275,7 @@ export function ChatMessageBubble({
         </div>
       )}
       <div
+        {...rest}
         ref={ref}
         data-testid={testId}
         {...mergeProps(

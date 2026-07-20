@@ -10,8 +10,15 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateInput} from './DateInput';
 import {InputGroup} from '../InputGroup';
 import {InputGroupText} from '../InputGroup/InputGroupText';
@@ -92,14 +99,14 @@ describe('DateInput', () => {
 
   it('calendar button is focusable and clickable', () => {
     render(<DateInput label="Date" onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     expect(button).toBeInTheDocument();
     expect(button).not.toBeDisabled();
   });
 
   it('calendar button is disabled when isDisabled is true', () => {
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     expect(button).toBeDisabled();
   });
 
@@ -132,21 +139,27 @@ describe('DateInput', () => {
   });
 
   it('announces an alert message when typed input is invalid', () => {
-    render(<DateInput label="Date" onChange={() => {}} />);
+    // Scope to the component's own container: the embedded Calendar uses the
+    // shared `useAnnounce` hook, whose global polite/assertive live-region pair
+    // (both mounted on document.body by any announce) would otherwise make a
+    // document-wide `getByRole('alert')` ambiguous.
+    const {container} = render(<DateInput label="Date" onChange={() => {}} />);
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, {target: {value: '13/45/2024'}});
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Invalid date');
+    expect(within(container).getByRole('alert')).toHaveTextContent(
+      'Invalid date',
+    );
   });
 
   it('does not announce an alert message when input is valid', () => {
-    render(<DateInput label="Date" onChange={() => {}} />);
+    const {container} = render(<DateInput label="Date" onChange={() => {}} />);
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, {target: {value: '03/15/2026'}});
 
-    expect(screen.getByRole('alert')).toHaveTextContent('');
+    expect(within(container).getByRole('alert')).toHaveTextContent('');
     expect(screen.queryByText('Invalid date')).not.toBeInTheDocument();
   });
 
@@ -282,7 +295,7 @@ describe('DateInput', () => {
   it('disables input and button when isLoading is true', () => {
     render(<DateInput label="Date" isLoading onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeDisabled();
-    expect(screen.getByRole('button', {name: 'Open calendar'})).toBeDisabled();
+    expect(getButton('Open calendar')).toBeDisabled();
   });
 
   it('shows spinner when isLoading is true', () => {
@@ -475,7 +488,7 @@ describe('DateInput', () => {
 
   it('does not open popover when clicking calendar button while disabled', () => {
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     fireEvent.click(button);
     expect(screen.getByRole('combobox')).toHaveAttribute(
       'aria-expanded',
@@ -513,23 +526,17 @@ describe('DateInput', () => {
           hasClear
         />,
       );
-      expect(
-        screen.getByRole('button', {name: 'Clear Date'}),
-      ).toBeInTheDocument();
+      expect(getButton('Clear Date')).toBeInTheDocument();
     });
 
     it('does not show clear button when value is undefined', () => {
       render(<DateInput label="Date" onChange={() => {}} hasClear />);
-      expect(
-        screen.queryByRole('button', {name: 'Clear Date'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Date')).not.toBeInTheDocument();
     });
 
     it('does not show clear button when hasClear is false', () => {
       render(<DateInput label="Date" value="2026-01-15" onChange={() => {}} />);
-      expect(
-        screen.queryByRole('button', {name: 'Clear Date'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Date')).not.toBeInTheDocument();
     });
 
     it('does not show clear button when disabled', () => {
@@ -542,9 +549,7 @@ describe('DateInput', () => {
           isDisabled
         />,
       );
-      expect(
-        screen.queryByRole('button', {name: 'Clear Date'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Date')).not.toBeInTheDocument();
     });
 
     it('calls onChange with undefined when clear is clicked', () => {
@@ -557,7 +562,7 @@ describe('DateInput', () => {
           hasClear
         />,
       );
-      fireEvent.click(screen.getByRole('button', {name: 'Clear Date'}));
+      fireEvent.click(getButton('Clear Date'));
       expect(onChange).toHaveBeenCalledWith(undefined);
     });
   });
@@ -699,9 +704,7 @@ describe('DateInput', () => {
       expect(input).toHaveAttribute('aria-disabled', 'true');
       expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
       expect(tooltip).toHaveTextContent('Scheduling is locked');
-      expect(
-        screen.getByRole('button', {name: 'Open calendar'}),
-      ).toBeDisabled();
+      expect(getButton('Open calendar')).toBeDisabled();
     });
   });
 

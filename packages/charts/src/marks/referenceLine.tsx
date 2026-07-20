@@ -8,7 +8,7 @@
  */
 
 import type {SeriesDef} from '../types';
-import type {ScaleLinear} from 'd3-scale';
+import {isBandScale} from '../utils';
 
 export interface ReferenceLineOptions {
   /** Horizontal reference at this y value */
@@ -211,11 +211,11 @@ export function referenceLine(options: ReferenceLineOptions): SeriesDef {
 
       // Vertical reference line (linear x only — a band scale has no pixel
       // position for an arbitrary numeric x).
-      if (options.x != null && !('bandwidth' in xScale)) {
+      if (options.x != null && !isBandScale(xScale)) {
         if (!Number.isFinite(options.x)) {
           return null;
         }
-        const px = (xScale as ScaleLinear<number, number>)(options.x);
+        const px = xScale(options.x);
         if (!Number.isFinite(px)) {
           return null;
         }

@@ -23,12 +23,14 @@ import {durationVars, easeVars} from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {Button} from '../Button';
 import type {BaseProps} from '../BaseProps';
+import {composeEventHandlers} from '../utils';
 import {
   useSideNavCollapse,
   type SideNavCollapseState,
   type SideNavImperativeCollapseHandle,
 } from './SideNavCollapseContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -101,8 +103,10 @@ export function SideNavCollapseButton({
   handleRef,
   label,
   children,
+  onClick: onClickProp,
   ...props
 }: SideNavCollapseButtonProps) {
+  const t = useTranslator();
   const {isCollapsed, toggle, isCollapsible} =
     useSideNavCollapseState(handleRef);
   const {isMobile} = useAppShellMobile();
@@ -116,10 +120,10 @@ export function SideNavCollapseButton({
   return (
     <Button
       ref={ref}
-      label={label ?? (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}
+      label={label ?? (isCollapsed ? t('@astryx.sideNavCollapseButton.expandSidebar') : t('@astryx.sideNavCollapseButton.collapseSidebar'))}
       variant="ghost"
       {...props}
-      onClick={toggle}
+      onClick={composeEventHandlers(onClickProp, toggle)}
       icon={
         children ?? (
           <span
@@ -140,8 +144,7 @@ SideNavCollapseButton.displayName = 'SideNavCollapseButton';
 
 function useSideNavCollapseState(
   handleRef:
-    | React.RefObject<SideNavImperativeCollapseHandle | null>
-    | undefined,
+    React.RefObject<SideNavImperativeCollapseHandle | null> | undefined,
 ): SideNavCollapseState {
   const contextCollapseState = useSideNavCollapse();
 

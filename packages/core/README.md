@@ -2,6 +2,8 @@
 
 Core UI components, theme system, and utilities for the Astryx design system. For project setup, see [Quick Start](#quick-start) below.
 
+> **Building with an AI agent?** Run **`npx astryx init`** first. It installs the Astryx CLI's component index into your `AGENTS.md`/`CLAUDE.md` so your agent discovers components, templates, and design tokens instead of guessing. Without it, agents can't see the CLI — see [XDS CLI](#xds-cli).
+
 ## Component Docs
 
 Look up any component's full API (props, types, best practices, and theming):

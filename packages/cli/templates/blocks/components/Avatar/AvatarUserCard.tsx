@@ -6,24 +6,22 @@ import {Avatar, AvatarStatusDot} from '@astryxdesign/core/Avatar';
 import {Stack} from '@astryxdesign/core/Layout';
 import {Text} from '@astryxdesign/core/Text';
 
-const CDN = 'https://lookaside.facebook.com/assets/astryx';
-
 const USERS = [
   {
     name: 'Itai Jordaan',
-    src: `${CDN}/DATA-Itai-Jordaan.png`,
+    src: 'https://lookaside.facebook.com/assets/astryx/DATA-Itai-Jordaan.png',
     role: 'Engineering Lead',
     variant: 'success' as const,
   },
   {
     name: 'Margot Schroder',
-    src: `${CDN}/DATA-Margot-Schroder.png`,
+    src: 'https://lookaside.facebook.com/assets/astryx/DATA-Margot-Schroder.png',
     role: 'Product Designer',
     variant: 'neutral' as const,
   },
   {
     name: 'Daniela Gimenez',
-    src: `${CDN}/DATA-Daniela-Gimenez.png`,
+    src: 'https://lookaside.facebook.com/assets/astryx/DATA-Daniela-Gimenez.png',
     role: 'Engineering Manager',
     variant: 'error' as const,
   },

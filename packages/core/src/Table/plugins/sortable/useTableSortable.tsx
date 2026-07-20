@@ -18,6 +18,7 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {resolveContextActions} from '../../tableContextMenu';
+import {useTranslator} from '../../../i18n';
 import type {
   TablePlugin,
   HeaderCellRenderProps,
@@ -344,6 +345,7 @@ export function useTableSortable<
   T extends Record<string, unknown>,
   TSortKey extends string = string,
 >(config: UseTableSortableConfig<TSortKey>): TablePlugin<T> {
+  const t = useTranslator();
   const configRef = useRef(config);
   configRef.current = config;
 
@@ -367,12 +369,13 @@ export function useTableSortable<
         // checked/clear state always reflects the latest sort.
         const getSortActions = (): TableContextAction[] => {
           const c = configRef.current;
-          const dir = c.sort.find(e => e.sortKey === sortKey)?.direction ?? null;
+          const dir =
+            c.sort.find(e => e.sortKey === sortKey)?.direction ?? null;
           const actions: TableContextAction[] = [
             {
               id: 'sort-asc',
               group: 'sort',
-              label: 'Sort ascending',
+              label: t('@astryx.table.sort.ascending'),
               icon: <Icon icon="arrowUp" size="xsm" aria-hidden />,
               checked: dir === 'ascending',
               onSelect: () =>
@@ -383,7 +386,7 @@ export function useTableSortable<
             {
               id: 'sort-desc',
               group: 'sort',
-              label: 'Sort descending',
+              label: t('@astryx.table.sort.descending'),
               icon: <Icon icon="arrowDown" size="xsm" aria-hidden />,
               checked: dir === 'descending',
               onSelect: () =>
@@ -396,7 +399,7 @@ export function useTableSortable<
             actions.push({
               id: 'sort-clear',
               group: 'sort-clear',
-              label: 'Clear sort',
+              label: t('@astryx.table.sort.clear'),
               icon: <Icon icon="close" size="xsm" aria-hidden />,
               onSelect: () =>
                 c.onSortChange(c.sort.filter(e => e.sortKey !== sortKey)),
@@ -430,6 +433,6 @@ export function useTableSortable<
         };
       },
     }),
-    [],
+    [t],
   );
 }

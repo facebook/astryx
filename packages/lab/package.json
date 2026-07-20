@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/lab",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "private": true,
   "description": "Experimental Astryx components — published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
   "author": "Meta Open Source",
@@ -46,7 +46,7 @@
   },
   "scripts": {
     "prepack": "pnpm build",
-    "build": "rm -rf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css",
+    "build": "rm -rf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs",
     "build:esm": "babel src --out-dir dist --extensions '.ts,.tsx' --out-file-extension '.js' --ignore '**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts' --config-file ./babel.config.js",
     "build:css": "node ../../scripts/build-css.mjs --package lab",
     "dev": "babel src --watch --out-dir dist --extensions '.ts,.tsx' --out-file-extension '.js' --ignore '**/*.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css*' --config-file ./babel.config.js",
@@ -57,7 +57,7 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.1.4",
+    "@astryxdesign/core": "0.1.6",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
   },
@@ -67,7 +67,6 @@
     "d3-shape": "^3.2.0"
   },
   "devDependencies": {
-    "@types/d3-array": "^3.2.2",
     "@types/d3-scale": "^4.0.9",
     "@types/d3-shape": "^3.1.8"
   }

@@ -36,6 +36,7 @@ import {CommandPaletteInput} from './CommandPaletteInput';
 import {CommandPaletteFooter} from './CommandPaletteFooter';
 import {CommandPaletteEmpty} from './CommandPaletteEmpty';
 import type {BaseProps} from '../BaseProps';
+import {useTranslator} from '../i18n';
 
 export interface CommandPaletteProps<
   T extends SearchableItem = SearchableItem,
@@ -260,14 +261,20 @@ export function CommandPalette<T extends SearchableItem = SearchableItem>({
   input,
   footer,
   renderItem,
-  emptySearchText = 'No results',
-  emptyBootstrapText = 'Type to search',
+  emptySearchText: emptySearchTextFromProps,
+  emptyBootstrapText: emptyBootstrapTextFromProps,
   value: controlledValue,
   onValueChange,
-  label = 'Command palette',
+  label: labelFromProps,
   width = 640,
   maxHeight = 480,
 }: CommandPaletteProps<T>) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.commandPalette.label');
+  const emptySearchText =
+    emptySearchTextFromProps ?? t('@astryx.commandPalette.emptySearch');
+  const emptyBootstrapText =
+    emptyBootstrapTextFromProps ?? t('@astryx.commandPalette.emptyBootstrap');
   const listId = useId();
   // search: the committed query — only advances when async results arrive.
   // optimisticSearch: updates immediately on keystroke, drives input + empty state.

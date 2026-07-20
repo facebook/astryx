@@ -34,15 +34,30 @@ function getTargetDataAttributes(target) {
   ];
 }
 
+/**
+ * Escape a value for a markdown table cell.
+ *
+ * A prop type is a union, and a union is spelled with the same `|` that GFM
+ * uses to separate cells — backticks do not protect it. A row with more cells
+ * than the header has columns gets the excess *discarded*, so an unescaped
+ * `gap: 0 | 0.5 | ...` silently eats its own Default and Description columns.
+ * <!-- SYNC: packages/core/src/Markdown/parser.ts (splits on unescaped pipes) -->
+ */
+export function mdCell(value) {
+  return String(value ?? '').replace(/\|/g, '\\|');
+}
+
 function formatPropsTable(props) {
   if (!props || props.length === 0) return '';
   const lines = [];
   lines.push('| Prop | Type | Default | Description |');
   lines.push('|------|------|---------|-------------|');
   for (const p of props) {
-    const def = p.default ? `\`${p.default}\`` : '—';
+    const def = p.default ? `\`${mdCell(p.default)}\`` : '—';
     const req = p.required ? ' **(required)**' : '';
-    lines.push(`| \`${p.name}\` | \`${p.type}\` | ${def} | ${p.description}${req} |`);
+    lines.push(
+      `| \`${mdCell(p.name)}\` | \`${mdCell(p.type)}\` | ${def} | ${mdCell(p.description)}${req} |`,
+    );
   }
   return lines.join('\n');
 }
@@ -177,7 +192,7 @@ export function formatFull(docs, options = {}) {
     sections.push('|---------|----------|-------------|');
     for (const el of docs.usage.anatomy) {
       const req = el.required ? 'Yes' : 'No';
-      sections.push(`| ${el.name} | ${req} | ${el.description} |`);
+      sections.push(`| ${mdCell(el.name)} | ${req} | ${mdCell(el.description)} |`);
     }
     sections.push('');
   }
@@ -282,7 +297,9 @@ export function formatFull(docs, options = {}) {
         varLines.push('| CSS Variable | Default | Description |');
         varLines.push('|-------------|---------|-------------|');
         for (const v of publicVars) {
-          varLines.push(`| \`${v.name}\` | \`${v.default}\` | ${v.description} |`);
+          varLines.push(
+            `| \`${mdCell(v.name)}\` | \`${mdCell(v.default)}\` | ${mdCell(v.description)} |`,
+          );
         }
         sections.push(varLines.join('\n') + '\n');
       }
@@ -378,8 +395,8 @@ export function formatCompact(docs, componentName, importHint) {
     propLines.push('| CSS Property | Sets |');
     propLines.push('|-------------|------|');
     for (const d of docs.theming.derived) {
-      const target = d.expand === 'container' ? 'container layout tokens' : (d.vars || []).map(v => `\`${v}\``).join(', ');
-      propLines.push(`| \`${d.property}\` | ${target} |`);
+      const target = d.expand === 'container' ? 'container layout tokens' : (d.vars || []).map(v => `\`${mdCell(v)}\``).join(', ');
+      propLines.push(`| \`${mdCell(d.property)}\` | ${target} |`);
     }
     sections.push(propLines.join('\n') + '\n');
   }
@@ -395,6 +412,19 @@ export function formatCompact(docs, componentName, importHint) {
  *
  * For multi-component docs, extracts the entry matching componentName.
  */
+/**
+ * Longest union `--detail brief` will spell out inside the one-line signature.
+ *
+ * The signature is a glance, not a reference: a six-member enum like
+ * `start|center|end|between|around|evenly` reads at a glance, an eleven-member
+ * spacing scale does not — and Stack carries four of them (gap, padding,
+ * paddingInline, paddingBlock), so it printed the same scale four times. Longer
+ * unions fall through to the terse prop list, exactly as they did when the type
+ * was still the bare name `SpacingStep`. The full values are always one
+ * `astryx component <Name>` away.
+ */
+const SIGNATURE_UNION_MAX_MEMBERS = 8;
+
 export function formatBrief(docs, componentName, importHint, options = {}) {
   const displayName = componentName.startsWith('XDS')
     ? componentName.slice(3)
@@ -421,13 +451,15 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
   const otherProps = [];
 
   for (const prop of props) {
-    if (prop.type.includes('|') && !prop.type.includes('ReactNode')) {
-      const values = prop.type
-        .replace(/['"]/g, '')
-        .split('|')
-        .map(v => v.trim())
-        .join('|');
-      signatureProps.push(`${prop.name}: ${values}`);
+    const values =
+      prop.type.includes('|') && !prop.type.includes('ReactNode')
+        ? prop.type
+            .replace(/['"]/g, '')
+            .split('|')
+            .map(v => v.trim())
+        : null;
+    if (values && values.length <= SIGNATURE_UNION_MAX_MEMBERS) {
+      signatureProps.push(`${prop.name}: ${values.join('|')}`);
     } else if (prop.required) {
       otherProps.unshift(`${prop.name}: ${prop.type.split('|')[0].trim()}`);
     } else {

@@ -14,14 +14,22 @@
 
 import {useMemo} from 'react';
 import type {SearchSource} from '../Typeahead/types';
+import {useTranslator} from '../i18n';
+import {resolveOperatorLabel} from './resolveOperatorLabel';
 import type {InternalConfig} from './useInternalConfig';
 import type {PowerSearchItem, PowerSearchOperator, FilterValue} from './types';
 
 export function usePowerSearchSource(
   config: InternalConfig,
 ): SearchSource<PowerSearchItem> {
+  const t = useTranslator();
   return useMemo(() => {
     const allItems = buildFieldItems(config);
+    // Resolver stays inline — `t()` internally memoizes both catalog
+    // lookups and parsed IntlMessageFormat instances, so calling it
+    // per keystroke is already O(1).
+    const opLabel = (op: PowerSearchOperator): string =>
+      resolveOperatorLabel(op, t);
 
     return {
       search(query: string): PowerSearchItem[] {
@@ -68,14 +76,15 @@ export function usePowerSearchSource(
 
           // Check each field+operator combo against the query
           for (const op of field.operators) {
-            const combinedLabel = `${field.label} ${op.label}`.toLowerCase();
+            const combinedLabel =
+              `${field.label} ${opLabel(op)}`.toLowerCase();
             if (combinedLabel.includes(lower)) {
               const id = `${field.key}:${op.key}`;
               if (!seen.has(id)) {
                 seen.add(id);
                 results.push({
                   id,
-                  label: `${field.label} ${op.label}`,
+                  label: `${field.label} ${opLabel(op)}`,
                   auxiliaryData: {
                     fieldKey: field.key,
                     operatorKey: op.key,
@@ -100,7 +109,7 @@ export function usePowerSearchSource(
           // Try "<field> <operator> <value>" first (longer match wins)
           let hasExactOperatorMatch = false;
           for (const op of field.operators) {
-            const prefix = `${fieldLabel} ${op.label.toLowerCase()} `;
+            const prefix = `${fieldLabel} ${opLabel(op).toLowerCase()} `;
             if (lower.startsWith(prefix) && lower.length > prefix.length) {
               const rawValue = query.slice(prefix.length);
               const matches = resolveValueMatches(op, rawValue);
@@ -113,7 +122,7 @@ export function usePowerSearchSource(
                   seen.add(id);
                   results.push({
                     id,
-                    label: `${field.label} ${op.label} ${match.quoted ? `"${match.displayValue}"` : match.displayValue}`,
+                    label: `${field.label} ${opLabel(op)} ${match.quoted ? `"${match.displayValue}"` : match.displayValue}`,
                     auxiliaryData: {
                       fieldKey: field.key,
                       operatorKey: op.key,
@@ -136,7 +145,7 @@ export function usePowerSearchSource(
             // Check the remainder isn't the start of an operator name
             const remainder = lower.slice(fieldPrefix.length);
             const isOperatorPrefix = field.operators.some(op =>
-              op.label.toLowerCase().startsWith(remainder),
+              opLabel(op).toLowerCase().startsWith(remainder),
             );
             if (!isOperatorPrefix) {
               const rawValue = query.slice(fieldPrefix.length);
@@ -148,7 +157,7 @@ export function usePowerSearchSource(
                     seen.add(id);
                     results.push({
                       id,
-                      label: `${field.label} ${op.label} ${match.quoted ? `"${match.displayValue}"` : match.displayValue}`,
+                      label: `${field.label} ${opLabel(op)} ${match.quoted ? `"${match.displayValue}"` : match.displayValue}`,
                       auxiliaryData: {
                         fieldKey: field.key,
                         operatorKey: op.key,
@@ -171,7 +180,7 @@ export function usePowerSearchSource(
             f =>
               f.label.toLowerCase() === lower ||
               f.operators.some(
-                op => `${f.label} ${op.label}`.toLowerCase() === lower,
+                op => `${f.label} ${opLabel(op)}`.toLowerCase() === lower,
               ),
           );
         if (contentFieldKey && !hasExactMatch) {
@@ -197,7 +206,7 @@ export function usePowerSearchSource(
         return allItems;
       },
     };
-  }, [config]);
+  }, [config, t]);
 }
 
 interface ValueMatch {

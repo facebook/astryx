@@ -36,7 +36,8 @@ export const docs = {
     {
       name: 'options',
       type: 'SelectorOption[]',
-      description: 'Array of items: strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
+      description:
+        'Array of items: strings, objects with value/label/icon/disabled, dividers ({type: "divider"}), or sections ({type: "section", title, items}).',
       required: true,
     },
     {
@@ -59,7 +60,8 @@ export const docs = {
     {
       name: 'hasSearch',
       type: 'boolean',
-      description: 'Whether to show a search input for filtering options.',
+      description:
+        'Whether to show a search input for filtering options. As the user types, the match count (or "No results found") is announced to screen readers via a polite live region.',
       default: 'false',
     },
     {
@@ -135,7 +137,8 @@ export const docs = {
     {
       name: 'xstyle',
       type: 'StyleXStyles',
-      description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
   components: [{name: 'SelectorOption'}],

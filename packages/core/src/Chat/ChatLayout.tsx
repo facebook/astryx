@@ -32,23 +32,13 @@ import {useChatNewMessages} from './useChatNewMessages';
 import {ChatLayoutScrollButton} from './ChatLayoutScrollButton';
 import {ChatLayoutContext} from './ChatContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 type Density = 'compact' | 'balanced' | 'spacious';
-
-/** Imperative handle for ChatLayout scroll controls. */
-export interface ChatLayoutHandle {
-  /** Scroll a message to the top and unlock for stream-in. */
-  /** Scroll to bottom and re-lock. */
-  scrollToBottom: () => void;
-  /** Navigate to a message, no lock change. */
-  scrollToMessage: (el: HTMLElement) => void;
-  /** Scroll to the last message. */
-  scrollToLastMessage: () => void;
-}
 
 export interface ChatLayoutProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element. */
@@ -268,7 +258,9 @@ export function ChatLayout({
   style,
   'data-testid': testId,
   ref,
+  ...rest
 }: ChatLayoutProps) {
+  const t = useTranslator();
   const rootRef = useRef<HTMLDivElement>(null);
 
   const scrollContainerRef = externalScrollRef ?? rootRef;
@@ -284,7 +276,7 @@ export function ChatLayout({
   const defaultScrollButton = (
     <ChatLayoutScrollButton
       isVisible={scroll.isScrolledUp || newMsgs.hasNewMessages}
-      label={newMsgs.hasNewMessages ? 'New messages' : undefined}
+      label={newMsgs.hasNewMessages ? t('@astryx.chatLayout.newMessages') : undefined}
       onClick={() => {
         newMsgs.dismiss();
         scroll.scrollToBottom();
@@ -327,6 +319,7 @@ export function ChatLayout({
   return (
     <ChatLayoutContext value={layoutContext}>
       <div
+        {...rest}
         ref={mergeRefs(ref, rootRef)}
         data-testid={testId}
         {...mergeProps(

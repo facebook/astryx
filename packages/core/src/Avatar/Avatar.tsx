@@ -63,20 +63,7 @@ type AvatarNamedSize = 'tiny' | 'xsmall' | 'small' | 'medium' | 'large';
  * Numeric size options (in pixels)
  */
 type AvatarNumericSize =
-  | 16
-  | 20
-  | 24
-  | 32
-  | 36
-  | 40
-  | 48
-  | 60
-  | 64
-  | 72
-  | 96
-  | 128
-  | 144
-  | 180;
+  16 | 20 | 24 | 32 | 36 | 40 | 48 | 60 | 64 | 72 | 96 | 128 | 144 | 180;
 
 /**
  * Avatar size - can be a named size or a specific pixel value
@@ -289,11 +276,16 @@ export function Avatar({
   ref,
   ...props
 }: AvatarProps) {
-  const [imageError, setImageError] = useState(false);
-  const [fallbackError, setFallbackError] = useState(false);
+  // Track the exact src that failed (rather than a boolean) so a changed
+  // src/fallbackSrc gets a fresh load attempt instead of the stale error.
+  const [erroredSrc, setErroredSrc] = useState<string | undefined>(undefined);
+  const [erroredFallbackSrc, setErroredFallbackSrc] = useState<
+    string | undefined
+  >(undefined);
 
-  const showImage = src && !imageError;
-  const showFallbackImage = !showImage && fallbackSrc && !fallbackError;
+  const showImage = src && erroredSrc !== src;
+  const showFallbackImage =
+    !showImage && fallbackSrc && erroredFallbackSrc !== fallbackSrc;
   const showInitials = !showImage && !showFallbackImage && name;
   const showIcon = !showImage && !showFallbackImage && !name;
 
@@ -309,6 +301,7 @@ export function Avatar({
   return (
     <AvatarSizeContext value={numericSize}>
       <div
+        {...props}
         ref={ref}
         role={isDecorative ? 'presentation' : 'img'}
         aria-label={isDecorative ? undefined : accessibleName}
@@ -325,14 +318,13 @@ export function Avatar({
           ),
           className,
           style,
-        )}
-        {...props}>
+        )}>
         <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
           {showImage && (
             <img
               src={src}
               alt=""
-              onError={() => setImageError(true)}
+              onError={() => setErroredSrc(src)}
               {...stylex.props(styles.image)}
             />
           )}
@@ -340,7 +332,7 @@ export function Avatar({
             <img
               src={fallbackSrc}
               alt=""
-              onError={() => setFallbackError(true)}
+              onError={() => setErroredFallbackSrc(fallbackSrc)}
               {...stylex.props(styles.image)}
             />
           )}

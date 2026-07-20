@@ -170,6 +170,9 @@ export * from './utils';
 // Theme
 export * from './theme';
 
+// Internationalization
+export * from './i18n';
+
 // Doc types — for external library authors writing .doc.mjs files
 export type {
   ComponentDoc,

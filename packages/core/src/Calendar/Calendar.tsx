@@ -23,12 +23,13 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useRef,
 } from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {Button} from '../Button';
 import {Icon} from '../Icon';
-import {useGridFocus} from '../hooks';
+import {useAnnounce, useGridFocus} from '../hooks';
 import {
   useCalendarDays,
   useCalendarConstraints,
@@ -56,7 +57,7 @@ import {
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
-import {mergeProps} from '../utils';
+import {mergeProps, composeEventHandlers} from '../utils';
 import {
   computeDayCellState,
   computeRangeRounding,
@@ -84,6 +85,7 @@ import type {
 } from '../utils/dateTypes';
 import {normalizeDayOfWeek} from '../utils/dateTypes';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 /** Imperative handle for Calendar handleRef */
 
@@ -197,6 +199,7 @@ export type CalendarProps = CalendarSingleProps | CalendarRangeProps;
  * ```
  */
 export function Calendar({ref, ...props}: CalendarProps) {
+  const t = useTranslator();
   const {
     handleRef,
     mode = 'single',
@@ -216,6 +219,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
     xstyle,
     className,
     style,
+    onKeyDown,
     ...rest
   } = props;
 
@@ -307,6 +311,25 @@ export function Calendar({ref, ...props}: CalendarProps) {
       .map(m => plainDateFormat(m, DATE_FORMAT_MONTH_YEAR))
       .join(' – ');
   }, [visibleMonths, numberOfMonths]);
+
+  // Announce the newly visible month to screen readers whenever it changes.
+  // The visible month label (`<span>`) carries no live semantics, so paging the
+  // grid — via the header prev/next buttons, keyboard grid paging (arrow keys
+  // across a month boundary, PageUp/PageDown), the `navigateTo` handle, or a
+  // controlled `focusDate` change — otherwise updates the grid silently. Keying
+  // off `monthYearLabel` reuses the existing single-/multi-month formatting and
+  // only fires when the visible month actually changes (so selecting a date,
+  // which does not move the grid, stays silent). The first-render guard avoids
+  // announcing the initial month on mount.
+  const announce = useAnnounce();
+  const isInitialRenderRef = useRef(true);
+  useEffect(() => {
+    if (isInitialRenderRef.current) {
+      isInitialRenderRef.current = false;
+      return;
+    }
+    announce(monthYearLabel);
+  }, [monthYearLabel, announce]);
 
   // Determine if prev/next navigation is possible based on min/max
   const canNavigatePrevious = useMemo(() => {
@@ -418,18 +441,18 @@ export function Calendar({ref, ...props}: CalendarProps) {
   return (
     <div
       ref={ref}
+      {...rest}
       {...mergeProps(
         themeProps('calendar', {mode}),
         stylex.props(calendarStyles.calendar, xstyle),
         className,
         style,
       )}
-      onKeyDown={handleCalendarKeyDown}
-      {...rest}>
+      onKeyDown={composeEventHandlers(onKeyDown, handleCalendarKeyDown)}>
       {/* Header with navigation */}
       <div {...stylex.props(calendarStyles.header)}>
         <Button
-          label="Previous month"
+          label={t('@astryx.calendar.previousMonth')}
           variant="ghost"
           icon={
             // Wrapper span (not Icon props): Icon's string mode clobbers
@@ -449,7 +472,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
         </span>
 
         <Button
-          label="Next month"
+          label={t('@astryx.calendar.nextMonth')}
           variant="ghost"
           icon={
             <span {...stylex.props(calendarStyles.navIcon)}>

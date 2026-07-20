@@ -9,13 +9,23 @@
  * SYNC: When Calendar.tsx changes, update tests accordingly
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {act, render, screen, within} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {act, render, screen, within, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {getButton} from '../__tests__/fastRoleQueries';
 import * as stylex from '@stylexjs/stylex';
 import {Calendar} from './Calendar';
 import type {CalendarHandle} from './Calendar';
 import {calendarStyles} from './styles';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
 
 /**
  * Helper to find a day button by its day number.
@@ -26,7 +36,7 @@ import {calendarStyles} from './styles';
 function getDayButton(day: number, month = 'January', year = 2026) {
   // Match the full date pattern with the day number
   const pattern = new RegExp(`${month}\\s+${day},\\s+${year}`);
-  return screen.getByRole('button', {name: pattern});
+  return getButton(pattern);
 }
 
 describe('Calendar', () => {
@@ -147,7 +157,7 @@ describe('Calendar', () => {
     // Verify we start on February
     expect(screen.getByText('February 2026')).toBeInTheDocument();
 
-    const prevButton = screen.getByRole('button', {name: 'Previous month'});
+    const prevButton = getButton('Previous month');
     await user.click(prevButton);
 
     expect(screen.getByText('January 2026')).toBeInTheDocument();
@@ -161,7 +171,7 @@ describe('Calendar', () => {
     // Verify we start on January
     expect(screen.getByText('January 2026')).toBeInTheDocument();
 
-    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    const nextButton = getButton('Next month');
     await user.click(nextButton);
 
     expect(screen.getByText('February 2026')).toBeInTheDocument();
@@ -175,7 +185,7 @@ describe('Calendar', () => {
       <Calendar focusDate="2026-01-01" onFocusDateChange={handleFocusChange} />,
     );
 
-    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    const nextButton = getButton('Next month');
     await user.click(nextButton);
 
     expect(handleFocusChange).toHaveBeenCalledWith('2026-02-01');
@@ -233,7 +243,7 @@ describe('Calendar', () => {
 
     render(<Calendar numberOfMonths={2} focusDate="2026-01-01" />);
 
-    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    const nextButton = getButton('Next month');
     await user.click(nextButton);
 
     expect(screen.getByText(/February 2026.*March 2026/)).toBeInTheDocument();
@@ -540,12 +550,100 @@ describe('Calendar', () => {
   it('has navigation buttons with accessible labels', () => {
     render(<Calendar />);
 
-    expect(
-      screen.getByRole('button', {name: 'Previous month'}),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: 'Next month'}),
-    ).toBeInTheDocument();
+    expect(getButton('Previous month')).toBeInTheDocument();
+    expect(getButton('Next month')).toBeInTheDocument();
+  });
+
+  // ─── Month Change Announcements ──────────────────────────────
+
+  describe('month change announcements', () => {
+    it('does not announce on initial render', () => {
+      render(<Calendar focusDate="2026-01-01" />);
+      // The live region is only created lazily on first announce; mounting the
+      // calendar must not speak the initial month.
+      expect(politeRegion()).toBeNull();
+    });
+
+    it('announces the new month politely when clicking next', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" />);
+
+      await user.click(screen.getByRole('button', {name: 'Next month'}));
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('February 2026');
+      });
+    });
+
+    it('announces the new month politely when clicking previous', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-02-01" />);
+
+      await user.click(screen.getByRole('button', {name: 'Previous month'}));
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('January 2026');
+      });
+    });
+
+    it('announces the next month when paging the grid with PageDown', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" />);
+
+      // PageDown from a focused day pages the visible grid to the next month.
+      getDayButton(15).focus();
+      await user.keyboard('{PageDown}');
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('February 2026');
+      });
+    });
+
+    it('announces the newly visible month when navigated via the handle', async () => {
+      let handle: CalendarHandle | null = null;
+      render(
+        <Calendar
+          focusDate="2026-01-01"
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+
+      act(() => {
+        handle?.navigateTo('2026-03-01');
+      });
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('March 2026');
+      });
+    });
+
+    it('announces both months in a two-month view', async () => {
+      const user = userEvent.setup();
+      render(<Calendar numberOfMonths={2} focusDate="2026-01-01" />);
+
+      await user.click(screen.getByRole('button', {name: 'Next month'}));
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('February 2026 – March 2026');
+      });
+    });
+
+    it('does not announce when selecting a date leaves the visible month unchanged', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" />);
+
+      // Selecting an in-month day does not move the grid, so nothing should be
+      // announced (the live region stays uncreated).
+      await user.click(getDayButton(15));
+
+      // Allow the announce rAF a chance to run before asserting silence.
+      await act(async () => {
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      });
+      expect(politeRegion()).toBeNull();
+    });
   });
 
   // ─── Bug Regression Tests ───────────────────────────────────
@@ -653,14 +751,14 @@ describe('Calendar', () => {
   it('prev button is disabled when focusDate month contains min', () => {
     render(<Calendar focusDate="2026-01-01" min="2026-01-15" />);
 
-    const prevButton = screen.getByRole('button', {name: 'Previous month'});
+    const prevButton = getButton('Previous month');
     expect(prevButton).toBeDisabled();
   });
 
   it('next button is disabled when focusDate month contains max', () => {
     render(<Calendar focusDate="2026-01-01" max="2026-01-15" />);
 
-    const nextButton = screen.getByRole('button', {name: 'Next month'});
+    const nextButton = getButton('Next month');
     expect(nextButton).toBeDisabled();
   });
 
@@ -755,7 +853,7 @@ describe('Calendar', () => {
       expect(navIconClass).toBeTruthy();
 
       for (const name of ['Previous month', 'Next month']) {
-        const button = screen.getByRole('button', {name});
+        const button = getButton(name);
         const wrappers = Array.from(button.querySelectorAll('span')).filter(
           span => span.className === navIconClass,
         );
@@ -776,10 +874,10 @@ describe('Calendar', () => {
 
       // DOM order and handlers must not change in RTL: flexbox already
       // places "Previous month" at the visual right; only the glyph mirrors.
-      await user.click(screen.getByRole('button', {name: 'Previous month'}));
+      await user.click(getButton('Previous month'));
       expect(screen.getByText('January 2026')).toBeInTheDocument();
 
-      await user.click(screen.getByRole('button', {name: 'Next month'}));
+      await user.click(getButton('Next month'));
       expect(screen.getByText('February 2026')).toBeInTheDocument();
     });
   });

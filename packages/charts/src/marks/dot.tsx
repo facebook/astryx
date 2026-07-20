@@ -63,7 +63,10 @@ export function dot(dataKey: string, options: DotOptions = {}): SeriesDef {
         // horizontally so they don't overlap, centered on the original x.
         const groups = new Map<number, ResolvedPoint[]>();
         for (const p of points) {
-          if (!Number.isFinite(p.px)) {
+          // Only points render() will actually draw (finite px AND py) join a
+          // dodge group; a missing y-value must not reserve a slot and knock the
+          // visible points off-center.
+          if (!Number.isFinite(p.px) || !Number.isFinite(p.py)) {
             continue;
           }
           const key = Math.round(p.px);

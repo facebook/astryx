@@ -109,6 +109,7 @@ export const docs = {
       name: 'label',
       type: 'string',
       description: 'Accessible label for the navigation landmark, applied as aria-label on the <nav> element.',
+      default: "'Top navigation'",
     },
     {
       name: 'xstyle',

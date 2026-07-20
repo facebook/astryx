@@ -20,6 +20,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-input-group', visualProps: ['size', 'status']},
+      {className: 'astryx-input-group-text'},
     ],
   },
   description:
@@ -75,7 +76,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description: 'Status indicator applied to the group border.',
     },
     {

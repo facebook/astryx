@@ -17,7 +17,7 @@ import type {CommandPaletteContextValue} from './CommandPaletteContext';
 describe('CommandPaletteInput', () => {
   it('renders with default placeholder', () => {
     render(<CommandPaletteInput />);
-    expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search…')).toBeInTheDocument();
   });
 
   it('renders with custom placeholder', () => {

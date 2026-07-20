@@ -101,7 +101,7 @@ function ImageGrid() {
 export default function SideGalleryTemplate() {
   return (
     <Layout
-      height="auto"
+      height="fill"
       contentWidth={1400}
       content={
         <LayoutContent padding={6}>

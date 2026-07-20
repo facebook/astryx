@@ -36,6 +36,7 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export interface ChatMessageProps extends BaseProps<HTMLElement> {
   ref?: React.Ref<HTMLElement>;
@@ -167,7 +168,9 @@ export function ChatMessage({
   style: styleProp,
   'data-testid': testId,
   ref,
+  ...rest
 }: ChatMessageProps) {
+  const t = useTranslator();
   const listContext = useChatListContext();
   const density = densityProp ?? listContext?.density ?? 'balanced';
 
@@ -216,9 +219,10 @@ export function ChatMessage({
   return (
     <ChatMessageContext value={contextValue}>
       <article
+        {...rest}
         ref={ref}
         data-testid={testId}
-        aria-label={!hasName ? `Message from ${sender}` : undefined}
+        aria-label={!hasName ? t('@astryx.chatMessage.messageFrom', {sender}) : undefined}
         aria-labelledby={hasName ? nameId : undefined}
         {...mergeProps(
           themeProps('chat-message', {sender, density}),
