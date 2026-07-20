@@ -63,6 +63,11 @@ export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
       const parts = importPath.replace(/^\.\.\//, '').split('/');
       const topDir = parts[0];
 
+      // BaseProps is exported directly from the package barrel
+      if (topDir === 'BaseProps') {
+        return `${prefix}${ownerPackage}${suffix}`;
+      }
+
       // Map to the owner package subpath
       return `${prefix}${ownerPackage}/${topDir}${suffix}`;
     },

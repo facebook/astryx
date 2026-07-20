@@ -22,6 +22,12 @@ describe('rewriteImports', () => {
     expect(result).toBe(`import { helper } from './helper';`);
   });
 
+  it('rewrites ../BaseProps to package root barrel', () => {
+    const input = `import type {BaseProps} from '../BaseProps';`;
+    const result = rewriteImports(input);
+    expect(result).toBe(`import type {BaseProps} from '@astryxdesign/core';`);
+  });
+
   it('rewrites export from statements', () => {
     const input = `export { foo } from '../hooks/useLayout';`;
     const result = rewriteImports(input);

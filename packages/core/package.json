@@ -59,6 +59,11 @@
       "types": "./dist/naming.d.ts",
       "default": "./dist/naming.js"
     },
+    "./BaseProps": {
+      "source": "./src/BaseProps.ts",
+      "types": "./dist/BaseProps.d.ts",
+      "default": "./dist/BaseProps.js"
+    },
     "./config": {
       "source": "./src/config.ts",
       "types": "./dist/config.d.ts",
