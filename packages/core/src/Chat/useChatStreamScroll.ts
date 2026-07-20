@@ -4,7 +4,7 @@
 
 /**
  * @file useChatStreamScroll.ts
- * @input Uses React refs, state, callbacks
+ * @input Uses React refs, state, callbacks, useMediaQuery
  * @output Exports useChatStreamScroll hook for AI chat scroll behavior
  * @position Utility hook — used by ChatLayout, also usable standalone
  *
@@ -15,6 +15,8 @@
  * - The first fill positions instantly (whether content is present at
  *   mount or arrives async); only subsequent growth springs
  * - `scrollToBottom({behavior: 'instant'})` jumps in one frame, no animation
+ * - Under `prefers-reduced-motion`, every spring path falls back to the
+ *   same instant jump — following still works, it just doesn't animate
  *
  * Uses scroll direction (lastScrollTop comparison) to detect user
  * intent — works for wheel, touch, scrollbar drag, keyboard, everything.
@@ -26,6 +28,7 @@
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 
 // =============================================================================
 // Types
@@ -37,7 +40,8 @@ export interface ChatScrollToBottomOptions {
    * the spring animation. Use for programmatic positioning (opening a
    * conversation, restoring a session) — keep the default `'spring'` for
    * user-initiated scrolls like the scroll-to-bottom button. Mirrors the
-   * DOM's `scrollTo({behavior})`.
+   * DOM's `scrollTo({behavior})`. When the user prefers reduced motion,
+   * `'spring'` also jumps instantly.
    * @default 'spring'
    */
   behavior?: 'instant' | 'spring';
@@ -189,14 +193,6 @@ export function useChatStreamScroll({
     requestAnimationFrame(animate);
   }, [scrollRef, damping, stiffness, mass]);
 
-  const startAnimation = useCallback(() => {
-    if (!animatingRef.current && lockedRef.current) {
-      animatingRef.current = true;
-      lastTickRef.current = undefined;
-      requestAnimationFrame(animate);
-    }
-  }, [animate]);
-
   // Jump to the bottom in a single frame — cancels any in-flight spring so
   // a later animation tick can't fight the assignment.
   const jumpToBottom = useCallback(() => {
@@ -210,6 +206,27 @@ export function useChatStreamScroll({
     el.scrollTop = el.scrollHeight - el.clientHeight;
     lastScrollTopRef.current = el.scrollTop;
   }, [scrollRef]);
+
+  const prefersReducedMotion = useMediaQuery(
+    '(prefers-reduced-motion: reduce)',
+  );
+
+  // Every spring entry point (scrollToBottom, lock, scrollIfLocked growth
+  // follow) funnels through here, so this one branch covers them all.
+  const startAnimation = useCallback(() => {
+    if (!lockedRef.current) {
+      return;
+    }
+    if (prefersReducedMotion) {
+      jumpToBottom();
+      return;
+    }
+    if (!animatingRef.current) {
+      animatingRef.current = true;
+      lastTickRef.current = undefined;
+      requestAnimationFrame(animate);
+    }
+  }, [animate, jumpToBottom, prefersReducedMotion]);
 
   // --- Public API ---
 

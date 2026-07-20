@@ -45,6 +45,23 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// The global test setup polyfills matchMedia with a never-matching stub;
+// this override makes only the reduced-motion query match, mirroring the
+// pattern in useStreamingText.test.ts. Undone by afterEach's
+// unstubAllGlobals.
+function stubReducedMotion() {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.includes('prefers-reduced-motion'),
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  }));
+}
+
 function setGeometry(
   el: HTMLElement,
   {scrollHeight, clientHeight}: {scrollHeight: number; clientHeight: number},
@@ -164,5 +181,37 @@ describe("useChatStreamScroll — scrollToBottom({behavior: 'instant'})", () => 
     // Spring path: position is untouched until animation frames run.
     expect(el.scrollTop).toBe(100);
     expect(rafQueue.length).toBeGreaterThan(0);
+  });
+});
+
+describe('useChatStreamScroll — prefers-reduced-motion', () => {
+  it('streaming growth jumps synchronously instead of springing', () => {
+    stubReducedMotion();
+    const {api, el} = renderHook();
+    setGeometry(el, {scrollHeight: 1000, clientHeight: 400});
+    flushRaf(); // consume the mount jump
+    expect(el.scrollTop).toBe(600);
+
+    // Post-first-fill growth would normally take the spring path; under
+    // reduced motion it must land in the same synchronous step.
+    setGeometry(el, {scrollHeight: 1400, clientHeight: 400});
+    rafQueue = [];
+    act(() => api.current!.scrollIfLocked());
+    expect(el.scrollTop).toBe(1000);
+    expect(rafQueue).toHaveLength(0);
+  });
+
+  it('default scrollToBottom falls back to an instant jump', () => {
+    stubReducedMotion();
+    const {api, el} = renderHook();
+    setGeometry(el, {scrollHeight: 1000, clientHeight: 400});
+    flushRaf();
+    el.scrollTop = 100; // user scrolled up
+
+    rafQueue = [];
+    act(() => api.current!.scrollToBottom());
+    expect(el.scrollTop).toBe(600);
+    expect(rafQueue).toHaveLength(0);
+    expect(api.current!.isLocked).toBe(true);
   });
 });
