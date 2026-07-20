@@ -1,5 +1,19 @@
 # @xds/theme-neutral
 
+# 0.1.7
+
+#### Fixes
+
+- StatusDot now uses the same vivid fills as the filled Badge in the neutral theme. Previously the dots mapped to the dark text/icon stops (dark green, maroon, brown), which read muddy in light mode; success/warning/error/accent now match their badge counterparts so a dot and its badge share one status color.
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @ernestt
+
+---
+
 # 0.1.6
 
 ---
