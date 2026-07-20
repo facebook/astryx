@@ -14,7 +14,7 @@ export const docs = {
     {
       name: 'sort',
       type: "Array<{sortKey: TSortKey, direction: 'ascending' | 'descending'}>",
-      description: "Current sort state (TableSortState<TSortKey>). Ordered array of entries; the first is the primary sort, the rest are tiebreakers. An empty array means unsorted. Direction is the full word — 'ascending' / 'descending', not 'asc' / 'desc'.",
+      description: "Current sort state (TableSortState<TSortKey>). Ordered array of entries; the first is the primary sort, the rest are tiebreakers. An empty array means unsorted. Direction is the full word: 'ascending' / 'descending', not 'asc' / 'desc'.",
       required: true,
     },
     {
