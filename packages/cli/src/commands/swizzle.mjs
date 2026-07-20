@@ -64,7 +64,11 @@ export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
       const topDir = parts[0];
 
       // Map to the owner package subpath
-      return `${prefix}${ownerPackage}/${topDir}${suffix}`;
+      const target =
+        ownerPackage === CORE_PACKAGE && topDir === 'BaseProps'
+          ? ownerPackage
+          : `${ownerPackage}/${topDir}`;
+      return `${prefix}${target}${suffix}`;
     },
   );
 }

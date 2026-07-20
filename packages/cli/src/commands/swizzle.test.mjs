@@ -13,7 +13,23 @@ describe('rewriteImports', () => {
   it('rewrites ../utils/mergeProps to @astryxdesign/core/utils', () => {
     const input = `import { mergeProps } from '../utils/mergeProps';`;
     const result = rewriteImports(input);
-    expect(result).toBe(`import { mergeProps } from '@astryxdesign/core/utils';`);
+    expect(result).toBe(
+      `import { mergeProps } from '@astryxdesign/core/utils';`,
+    );
+  });
+
+  it('rewrites ../BaseProps to the public package entry point', () => {
+    const input = `import type {BaseProps} from '../BaseProps';`;
+    const result = rewriteImports(input);
+    expect(result).toBe(`import type {BaseProps} from '@astryxdesign/core';`);
+  });
+
+  it('preserves BaseProps subpaths for integration packages', () => {
+    const input = `import type {BaseProps} from '../BaseProps';`;
+    const result = rewriteImports(input, '@example/integration');
+    expect(result).toBe(
+      `import type {BaseProps} from '@example/integration/BaseProps';`,
+    );
   });
 
   it('leaves same-level relative imports untouched', () => {
