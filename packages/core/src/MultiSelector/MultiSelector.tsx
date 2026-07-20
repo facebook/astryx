@@ -529,7 +529,7 @@ export interface MultiSelectorProps<
 
   /**
    * How to display selected items in the trigger.
-   * - 'count': "3 selected"
+   * - 'count': "3 selected" (customizable via formatTriggerCount)
    * - 'labels': "Name, Email, +3"
    * - 'badges': [Name] [Email] +2
    * @default 'count'
@@ -542,6 +542,29 @@ export interface MultiSelectorProps<
    * @default 3
    */
   maxBadges?: number;
+
+  /**
+   * Formats the trigger text when triggerDisplay is 'count'.
+   * Receives the number of selected values and returns the full trigger
+   * string, e.g. for domain nouns or singular/plural handling.
+   * Only used when triggerDisplay is 'count'.
+   *
+   * @example
+   * ```
+   * <MultiSelector
+   *   label="Spaces"
+   *   isLabelHidden
+   *   options={spaces}
+   *   value={selected}
+   *   onChange={setSelected}
+   *   formatTriggerCount={count =>
+   *     count === 1 ? '1 space selected' : `${count} spaces selected`
+   *   }
+   * />
+   * ```
+   * @default (count) => `${count} selected`
+   */
+  formatTriggerCount?: (count: number) => string;
 
   /**
    * Custom render function for options.
@@ -602,6 +625,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   searchPlaceholder: searchPlaceholderFromProps,
   triggerDisplay = 'count',
   maxBadges = 3,
+  formatTriggerCount,
   renderOption,
   isDefaultOpen = false,
   'data-testid': testId,
@@ -983,7 +1007,8 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       case 'count':
         return (
           <span {...stylex.props(styles.triggerText)}>
-            {optimisticValue.length} selected
+            {formatTriggerCount?.(optimisticValue.length) ??
+              `${optimisticValue.length} selected`}
           </span>
         );
 
@@ -1014,7 +1039,14 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         );
       }
     }
-  }, [optimisticValue, triggerDisplay, selectedLabels, placeholder, maxBadges]);
+  }, [
+    optimisticValue,
+    triggerDisplay,
+    selectedLabels,
+    placeholder,
+    maxBadges,
+    formatTriggerCount,
+  ]);
 
   // Render search input
   const renderSearch = useCallback(() => {

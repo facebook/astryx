@@ -114,6 +114,49 @@ describe('MultiSelector', () => {
     expect(screen.getByText('2 selected')).toBeInTheDocument();
   });
 
+  it('formats count display with formatTriggerCount', () => {
+    render(
+      <MultiSelector
+        label="Spaces"
+        options={defaultOptions}
+        value={['Apple', 'Banana']}
+        onChange={() => {}}
+        formatTriggerCount={count =>
+          count === 1 ? '1 space selected' : `${count} spaces selected`
+        }
+      />,
+    );
+    expect(screen.getByText('2 spaces selected')).toBeInTheDocument();
+    expect(screen.queryByText('2 selected')).not.toBeInTheDocument();
+  });
+
+  it('keeps default count text when formatTriggerCount is not provided', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Apple']}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByText('1 selected')).toBeInTheDocument();
+  });
+
+  it('does not apply formatTriggerCount outside count mode', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={['Apple', 'Banana']}
+        onChange={() => {}}
+        triggerDisplay="labels"
+        formatTriggerCount={count => `${count} fruits selected`}
+      />,
+    );
+    expect(screen.getByText('Apple, Banana')).toBeInTheDocument();
+    expect(screen.queryByText('2 fruits selected')).not.toBeInTheDocument();
+  });
+
   it('shows labels display', () => {
     render(
       <MultiSelector
