@@ -69,6 +69,12 @@ export default defineConfig({
         find: /^@astryxdesign\/core$/,
         replacement: path.join(coreSrc, 'index.ts'),
       },
+      // Internal, unpublished aria-spec package — resolve to source so component
+      // binding tests can import the contracts + harness without a build step.
+      {
+        find: '@astryxdesign/aria-spec',
+        replacement: path.resolve(rootDir, 'internal/aria-spec/src/index.ts'),
+      },
     ],
   },
   test: {
@@ -107,6 +113,12 @@ export default defineConfig({
             'packages/core/src/**/*.test.{ts,tsx,mjs}',
             'packages/lab/src/**/*.test.{ts,tsx,mjs}',
             'packages/charts/src/**/*.test.{ts,tsx,mjs}',
+          ],
+          // Tier 2 aria-spec bindings run in the `browser` project (real
+          // Chromium), never in the fast jsdom `ui` project.
+          exclude: [
+            ...configDefaults.exclude,
+            '**/*.aria.browser.test.{ts,tsx}',
           ],
         },
       },
