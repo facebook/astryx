@@ -48,11 +48,11 @@ const ciBudgetMultiplier = process.env.CI === 'true' ? 1.5 : 1;
 // budget. The fastest of a few runs approximates the un-contended cost — a
 // real regression raises the minimum too — so the budgets below stay tight
 // without flapping. Same technique as measureBest in
-// Markdown/parser.perf.test.ts (#3848). `fn` may return a cleanup callback;
-// it runs outside the timed section so teardown never pollutes the sample.
+// Markdown/parser.perf.test.ts (#3848). `fn` returns a cleanup callback; it
+// runs outside the timed section so teardown never pollutes the sample.
 async function measureBest(
   runs: number,
-  fn: () => void | (() => void) | Promise<void | (() => void)>,
+  fn: () => (() => void) | Promise<() => void>,
 ): Promise<number> {
   let best = Infinity;
   for (let i = 0; i < runs; i++) {
@@ -62,9 +62,7 @@ async function measureBest(
     if (elapsed < best) {
       best = elapsed;
     }
-    if (typeof cleanup === 'function') {
-      cleanup();
-    }
+    cleanup();
   }
   return best;
 }
