@@ -1,0 +1,16 @@
+{
+  "promptId": "ps-2",
+  "category": "page-setup",
+  "prompt": "Set up the root layout for a new internal tool. Include proper body styling, theme provider with neutralTheme, and a layout with header and main content area.",
+  "expectedComponents": [
+    "Theme",
+    "neutralTheme",
+    "Layout",
+    "LayoutHeader",
+    "LayoutContent"
+  ],
+  "target": "baseline",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds-worktrees/b48e7b42/internal/vibe-tests/results/64464eab/projects/ps-2. Explore it to find available components.\n\n## Task\n\nSet up the root layout for a new internal tool. Include proper body styling, theme provider with neutralTheme, and a layout with header and main content area.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds-worktrees/b48e7b42/internal/vibe-tests/results/64464eab/projects/ps-2/ps-2.tsx\nWrite metadata to: /vercel/sandbox/repos/xds-worktrees/b48e7b42/internal/vibe-tests/results/64464eab/projects/ps-2/ps-2.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-20T11:04:06.874Z"
+}

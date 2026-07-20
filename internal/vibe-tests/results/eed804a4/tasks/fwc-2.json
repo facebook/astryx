@@ -1,0 +1,12 @@
+{
+  "promptId": "fwc-2",
+  "category": "feature-with-constraint",
+  "prompt": "Build a notification that shows unread count, but hides when count is zero",
+  "expectedComponents": [
+    "Card"
+  ],
+  "target": "html",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds-worktrees/b48e7b42/internal/vibe-tests/results/eed804a4/projects/fwc-2. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nBuild a notification that shows unread count, but hides when count is zero\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds-worktrees/b48e7b42/internal/vibe-tests/results/eed804a4/projects/fwc-2/fwc-2.tsx\nWrite metadata to: /vercel/sandbox/repos/xds-worktrees/b48e7b42/internal/vibe-tests/results/eed804a4/projects/fwc-2/fwc-2.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-20T11:04:06.875Z"
+}

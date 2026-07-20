@@ -1,0 +1,118 @@
+{
+  "iterationId": "64464eab",
+  "createdAt": "2026-07-20T11:04:06.872Z",
+  "config": {
+    "target": "baseline",
+    "persona": "naive",
+    "holdout": false,
+    "degradation": false,
+    "cliRetrieval": false
+  },
+  "prompts": [
+    {
+      "id": "fwc-2",
+      "category": "feature-with-constraint",
+      "prompt": "Build a notification that shows unread count, but hides when count is zero",
+      "expectedComponents": [
+        "Card"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "wd-5",
+      "category": "workflow-description",
+      "prompt": "Build a feedback form that opens in a dialog. It should have a title field, a long-form text area for comments, and a submit button. Show a success state after submission.",
+      "expectedComponents": [
+        "Dialog",
+        "TextInput",
+        "TextArea",
+        "Button",
+        "Layout"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "cwm-3",
+      "category": "clone-with-modification",
+      "prompt": "Like Notion's page header with icon picker and cover image",
+      "expectedComponents": [
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "sd-1",
+      "category": "state-driven",
+      "prompt": "Show a dashboard widget with loading → error → data states",
+      "expectedComponents": [
+        "Card",
+        "Skeleton"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "dd-5",
+      "category": "data-display",
+      "prompt": "Build an email inbox view with a table showing sender, subject, date, and a preview snippet. Add row selection with checkboxes and a bulk actions bar that appears when items are selected.",
+      "expectedComponents": [
+        "Table",
+        "CheckboxInput",
+        "DropdownMenu",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "rc-3",
+      "category": "responsive-context",
+      "prompt": "Cards that stack vertically on mobile but show in a grid on desktop",
+      "expectedComponents": [
+        "Card"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "io-3",
+      "category": "integration-oriented",
+      "prompt": "A file upload button that shows progress and calls an upload endpoint",
+      "expectedComponents": [
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ps-2",
+      "category": "page-setup",
+      "prompt": "Set up the root layout for a new internal tool. Include proper body styling, theme provider with neutralTheme, and a layout with header and main content area.",
+      "expectedComponents": [
+        "Theme",
+        "neutralTheme",
+        "Layout",
+        "LayoutHeader",
+        "LayoutContent"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ty-9",
+      "category": "typography",
+      "prompt": "Build a comparison table header where each column has a plan name heading and a price. The 'Enterprise' plan should have visually larger display-style typography compared to the other plans.",
+      "expectedComponents": [
+        "Heading",
+        "Text"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "tc-1",
+      "category": "theme-customization",
+      "prompt": "Set up a dark mode toggle for my app. I want a button that switches between light and dark themes using the Astryx theme system.",
+      "expectedComponents": [
+        "Theme",
+        "Button"
+      ],
+      "status": "pending"
+    }
+  ]
+}

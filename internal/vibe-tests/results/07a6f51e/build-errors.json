@@ -1,0 +1,62 @@
+{
+  "cwm-3": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "dd-5": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "fwc-2": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "io-3": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ps-2": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "rc-3": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "sd-1": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "tc-1": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ty-9": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "wd-5": {
+    "target": "astryx-tailwind",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  }
+}
