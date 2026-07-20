@@ -16,7 +16,7 @@
     "@heroicons/react": "^2.2.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@monaco-editor/react": "^4.8.0-rc.3",
-    "@stylexjs/stylex": "^0.19.0",
+    "@stylexjs/stylex": "catalog:",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^1.2.0",
     "@astryxdesign/charts": "*",
@@ -34,7 +34,7 @@
     "mcp-handler": "^1.1.0",
     "monaco-editor": "^0.55.1",
     "next": "16.3.0-preview.5",
-    "prettier": "^3.9.3",
+    "prettier": "catalog:",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zod": "^4.4.3"
@@ -42,7 +42,7 @@
   "devDependencies": {
     "@babel/preset-react": "^8.0.1",
     "@babel/preset-typescript": "^7.29.7",
-    "@stylexjs/babel-plugin": "^0.19.0",
+    "@stylexjs/babel-plugin": "catalog:",
     "@stylexjs/postcss-plugin": "^0.19.0",
     "@types/lz-string": "^1.5.0",
     "@types/react": "^19.2.17",
