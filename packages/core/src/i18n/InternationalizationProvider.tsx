@@ -51,8 +51,7 @@ export interface InternationalizationProviderProps {
    * ```
    * <InternationalizationProvider
    *   locale="fr"
-   *   overrides={{fr: {'@astryx.pagination.next': 'Suivant'}}}
-   * >
+   *   overrides={{fr: {'@astryx.pagination.next': 'Suivant'}}}>
    * ```
    */
   overrides?: Overrides;
