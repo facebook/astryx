@@ -1523,6 +1523,10 @@ function renderBlock(
           </div>
         );
       }
+      const ImageComp = components?.image;
+      if (ImageComp) {
+        return <ImageComp key={index} src={safeSrc} alt={node.alt} />;
+      }
       return (
         <div
           key={index}
