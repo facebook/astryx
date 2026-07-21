@@ -72,9 +72,14 @@ export function plainDateDayOfWeek(pd: PlainDate): number {
 }
 
 export function plainDateAddMonths(pd: PlainDate, n: number): PlainDate {
-  const d = plainDateToDate(pd);
-  d.setMonth(d.getMonth() + n);
-  return plainDateFromDate(d);
+  // Pure month arithmetic with day clamping (Temporal.PlainDate.add
+  // semantics): Jan 31 + 1 month is Feb 28/29, not Mar 2/3. Date#setMonth
+  // would overflow the excess days into the following month instead.
+  const totalMonths = pd.year * 12 + (pd.month - 1) + n;
+  const year = Math.floor(totalMonths / 12);
+  const month = (((totalMonths % 12) + 12) % 12) + 1;
+  const day = Math.min(pd.day, getDaysInMonth(year, month));
+  return {year, month, day};
 }
 
 export function plainDateAddDays(pd: PlainDate, n: number): PlainDate {
