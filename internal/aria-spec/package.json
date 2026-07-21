@@ -1,0 +1,12 @@
+{
+  "name": "@astryxdesign/aria-spec",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Internal: reusable WAI-ARIA APG conformance contracts for Astryx components. Not published.",
+  "main": "./src/index.ts",
+  "scripts": {},
+  "dependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.5.0"
+  }
+}

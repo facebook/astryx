@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
+    "test:aria-browser": "vitest run --config vitest.config.browser.ts",
     "check:package-boundaries": "node scripts/check-package-boundaries.js",
     "check:repo": "pnpm check:sync && pnpm check:package-boundaries && pnpm check:changesets && pnpm check:demo-media && pnpm check:executable-bits",
     "check:changesets": "node scripts/check-changesets.mjs",
@@ -47,6 +48,8 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
+    "@vitest/browser": "^4.1.10",
+    "@vitest/browser-playwright": "^4.1.10",
     "@vitest/coverage-v8": "^4.1.9",
     "dom-accessibility-api": "^0.6.3",
     "esbuild": "^0.28.1",
@@ -64,7 +67,8 @@
     "typescript-eslint": "^8.62.1",
     "vite": "catalog:",
     "vite-plugin-singlefile": "^2.3.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.9",
+    "vitest-browser-react": "^2.2.0"
   },
   "packageManager": "pnpm@11.10.0",
   "lint-staged": {
