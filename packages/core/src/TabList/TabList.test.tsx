@@ -75,6 +75,51 @@ describe('TabList', () => {
     expect(screen.getByRole('button', {name: 'Settings'})).toBeInTheDocument();
   });
 
+  it('does not apply full-bleed styles by default', () => {
+    render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+      </TabList>,
+    );
+
+    expect(screen.getByRole('navigation').className).not.toContain('fullBleed');
+  });
+
+  it('applies full-bleed styles when isFullBleed is set', () => {
+    render(
+      <TabList value="home" onChange={() => {}} isFullBleed>
+        <Tab value="home" label="Home" />
+        <Tab value="settings" label="Settings" />
+      </TabList>,
+    );
+
+    // The nav opts into the negative-margin bleed style that cancels the
+    // nearest padded container's --container-padding-* vars.
+    expect(screen.getByRole('navigation').className).toContain('fullBleed');
+  });
+
+  it('adds the bleed class on top of the base classes when toggled on', () => {
+    const {rerender} = render(
+      <TabList value="home" onChange={() => {}}>
+        <Tab value="home" label="Home" />
+      </TabList>,
+    );
+    const classesOff = screen.getByRole('navigation').className;
+
+    rerender(
+      <TabList value="home" onChange={() => {}} isFullBleed>
+        <Tab value="home" label="Home" />
+      </TabList>,
+    );
+    const classesOn = screen.getByRole('navigation').className;
+
+    expect(classesOn).not.toEqual(classesOff);
+    expect(classesOn.split(' ').length).toBeGreaterThan(
+      classesOff.split(' ').length,
+    );
+  });
+
   it('does not set aria-orientation on the nav (invalid for role navigation)', () => {
     // Regression: aria-orientation is not an allowed attribute on the
     // navigation role and produces an axe aria-allowed-attr violation. The

@@ -67,6 +67,22 @@ export interface TabListProps extends Omit<BaseProps<HTMLElement>, 'onChange'> {
    */
   hasDivider?: boolean;
   /**
+   * Makes the tab strip escape its parent's container padding, extending it
+   * out to the container's content edges. Reads the `--container-padding-*`
+   * custom properties that padded Layout containers (LayoutHeader, Card,
+   * Section, LayoutContent, ...) set and cancels them with negative margins.
+   * Use it to dock a tab bar flush with a header's content edges so a
+   * `hasDivider` underline meets the header divider, replacing the
+   * negative-margin CSS that case otherwise requires.
+   *
+   * Matches Divider's `isFullBleed`. Inline (start/end) edges always bleed;
+   * the block-start / block-end edges bleed only when the TabList is the
+   * first / last child of the padded container (as Table's container bleed
+   * does), so a tab bar placed mid-content is not pulled into its siblings.
+   * @default false
+   */
+  isFullBleed?: boolean;
+  /**
    * Orientation of the tab strip, controlling which arrow keys move
    * focus between tabs.
    * - `'horizontal'` (default): ArrowLeft / ArrowRight (ArrowUp / ArrowDown
@@ -97,6 +113,29 @@ const styles = stylex.create({
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
   },
+  // Cancel the nearest padded Layout container's padding so the strip reaches
+  // its content edges. Same `--container-padding-*` mechanism as Divider's
+  // `isFullBleed` and Table's `scrollWrapperStyles.containerBleed`; the block
+  // edges are gated on first/last-child like Table (Divider bleeds block
+  // unconditionally, which would pull a bottom-docked tab bar upward). The one
+  // addition is `maxWidth: 'none'`, needed because the `nav` base sets
+  // `maxWidth: '100%'`, which would otherwise clamp the widened box back
+  // inside the container's padding.
+  fullBleed: {
+    marginInlineStart: 'calc(-1 * var(--container-padding-inline-start, 0px))',
+    marginInlineEnd: 'calc(-1 * var(--container-padding-inline-end, 0px))',
+    maxWidth: 'none',
+    width:
+      'calc(100% + var(--container-padding-inline-start, 0px) + var(--container-padding-inline-end, 0px))',
+    marginTop: {
+      default: null,
+      ':first-child': 'calc(-1 * var(--container-padding-block-start, 0px))',
+    },
+    marginBottom: {
+      default: null,
+      ':last-child': 'calc(-1 * var(--container-padding-block-end, 0px))',
+    },
+  },
 });
 
 /**
@@ -122,6 +161,7 @@ export function TabList({
   size: sizeProp,
   layout = 'hug',
   hasDivider = false,
+  isFullBleed = false,
   orientation = 'horizontal',
   xstyle,
   className,
@@ -223,6 +263,7 @@ export function TabList({
             styles.nav,
             layout === 'fill' && styles.fill,
             hasDivider && styles.divider,
+            isFullBleed && styles.fullBleed,
             xstyle,
           ),
           className,
