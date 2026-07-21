@@ -568,14 +568,14 @@ export const LabCheckboxItems: Story = {
       <DropdownMenu button={{label: 'View'}}>
         <DropdownMenuCheckboxItem
           label="Show archived"
-          isChecked={showArchived}
-          onCheckedChange={setShowArchived}
+          value={showArchived}
+          onChange={setShowArchived}
         />
         <DropdownMenuCheckboxItem
           label="Show drafts"
           description="Include unpublished items"
-          isChecked={showDrafts}
-          onCheckedChange={setShowDrafts}
+          value={showDrafts}
+          onChange={setShowDrafts}
         />
       </DropdownMenu>
     );

@@ -16,7 +16,7 @@ export interface DropdownMenuRadioGroupContextValue {
   /** Select a value. Called by a DropdownMenuRadioItem on activation. */
   onChange: (value: string) => void;
   /** Whether selecting an item should close the menu. @default true */
-  closeOnSelect: boolean;
+  hasCloseOnSelect: boolean;
 }
 
 export const DropdownMenuRadioGroupContext =

@@ -46,7 +46,7 @@ describe('DropdownMenuCheckboxItem', () => {
     const user = userEvent.setup();
     render(
       <DropdownMenu button={{label: 'View'}}>
-        <DropdownMenuCheckboxItem label="Show archived" isChecked={true} />
+        <DropdownMenuCheckboxItem label="Show archived" value={true} />
       </DropdownMenu>,
     );
     await user.click(screen.getByRole('button', {name: /View/}));
@@ -58,15 +58,15 @@ describe('DropdownMenuCheckboxItem', () => {
     ).toHaveAttribute('aria-checked', 'true');
   });
 
-  it('calls onCheckedChange with the toggled value on click', async () => {
+  it('calls onChange with the toggled value on click', async () => {
     const user = userEvent.setup();
-    const onCheckedChange = vi.fn();
+    const onChangeSpy = vi.fn();
     render(
       <DropdownMenu button={{label: 'View'}}>
         <DropdownMenuCheckboxItem
           label="Show archived"
-          isChecked={false}
-          onCheckedChange={onCheckedChange}
+          value={false}
+          onChange={onChangeSpy}
         />
       </DropdownMenu>,
     );
@@ -77,18 +77,18 @@ describe('DropdownMenuCheckboxItem', () => {
         hidden: true,
       }),
     );
-    expect(onCheckedChange).toHaveBeenCalledWith(true);
+    expect(onChangeSpy).toHaveBeenCalledWith(true);
   });
 
   it('does not toggle when disabled', async () => {
     const user = userEvent.setup();
-    const onCheckedChange = vi.fn();
+    const onChangeSpy = vi.fn();
     render(
       <DropdownMenu button={{label: 'View'}}>
         <DropdownMenuCheckboxItem
           label="Show archived"
-          isChecked={false}
-          onCheckedChange={onCheckedChange}
+          value={false}
+          onChange={onChangeSpy}
           isDisabled
         />
       </DropdownMenu>,
@@ -100,7 +100,7 @@ describe('DropdownMenuCheckboxItem', () => {
     });
     expect(item).toHaveAttribute('aria-disabled', 'true');
     await user.click(item);
-    expect(onCheckedChange).not.toHaveBeenCalled();
+    expect(onChangeSpy).not.toHaveBeenCalled();
   });
 });
 

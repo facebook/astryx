@@ -4,7 +4,7 @@
 
 /**
  * @file DropdownMenuCheckboxItem.tsx
- * @input React, stylex, Item + Icon + DropdownMenu context from core
+ * @input React, stylex, Item + Icon + DropdownMenu context + tokens from core
  * @output DropdownMenuCheckboxItem — a standalone checkable menu item.
  * @position @astryxdesign/lab; used inside a core DropdownMenu.
  *
@@ -15,23 +15,29 @@
  * the parent DropdownMenu's useListFocus + activation path, which matches
  * menuitemcheckbox alongside plain menuitem rows.
  *
- * The control visual is sized from the menu's item size (menuSize) and swaps to
- * the inline-end of the row on coarse-pointer devices — see
- * DropdownMenuSelectableControl.
+ * The square checkbox visual is decorative (aria-hidden) — the row owns the
+ * checked state. Its size is derived from the menu's item size (a `sm` menu
+ * gets the compact control; `md`/`lg` get the standard one) and it swaps to the
+ * inline-end of the row on coarse-pointer (touch) devices via CSS `order`, so
+ * it lands where selection toggles are conventionally placed on mobile. The
+ * checkmark uses the `check` icon from the active theme's icon registry.
  */
 
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {renderIconSlot, type IconType} from '@astryxdesign/core/Icon';
+import {Icon, renderIconSlot, type IconType} from '@astryxdesign/core/Icon';
 import {Item} from '@astryxdesign/core/Item';
 import {useDropdownMenuContext} from '@astryxdesign/core/DropdownMenu';
-import {colorVars, spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {
+  colorVars,
+  spacingVars,
+  radiusVars,
+  durationVars,
+  easeVars,
+  borderVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps, themeProps} from '@astryxdesign/core/utils';
 import type {BaseProps} from '@astryxdesign/core';
-import {
-  DropdownMenuSelectableControl,
-  menuSizeToControlSize,
-} from './DropdownMenuSelectableControl';
 
 const styles = stylex.create({
   root: {
@@ -50,32 +56,92 @@ const styles = stylex.create({
     opacity: 0.5,
     cursor: 'not-allowed',
   },
+  // Rendered in Item's `marker` slot as a raw flex child, so `order` moves it
+  // relative to the label within the row. On touch it moves to the inline-end.
+  box: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    boxSizing: 'border-box',
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderRadius: radiusVars['--radius-inner'],
+    color: colorVars['--color-on-accent'],
+    transitionProperty: 'background-color, border-color',
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
+    transitionTimingFunction: easeVars['--ease-standard'],
+    order: {
+      default: 0,
+      '@media (pointer: coarse)': 1,
+    },
+    marginInlineStart: {
+      default: 0,
+      '@media (pointer: coarse)': 'auto',
+    },
+  },
+  unchecked: {
+    borderColor: colorVars['--color-border-emphasized'],
+    backgroundColor: colorVars['--color-background-surface'],
+  },
+  checked: {
+    borderColor: colorVars['--color-accent'],
+    backgroundColor: colorVars['--color-accent'],
+  },
 });
 
-export interface DropdownMenuCheckboxItemProps extends Pick<
+const boxSizeStyles = stylex.create({
+  sm: {width: 18, height: 18},
+  md: {width: 22, height: 22},
+});
+
+export interface DropdownMenuCheckboxItemProps extends Omit<
   BaseProps,
-  'xstyle' | 'className' | 'style'
+  'onChange' | 'role' | 'aria-checked' | 'tabIndex'
 > {
-  /** Primary label text. */
+  /**
+   * Primary label text identifying the item.
+   */
   label: ReactNode;
-  /** Secondary description text displayed below the label. */
+  /**
+   * Secondary description text displayed below the label.
+   */
   description?: ReactNode;
-  /** Icon to display before the label. */
+  /**
+   * Icon to display before the label. Accepts a semantic icon name (see
+   * `npx astryx docs icons`) or a rendered node.
+   */
   icon?: ReactNode | IconType;
-  /** Whether the item is checked. */
-  isChecked: boolean;
-  /** Callback fired with the next checked state when toggled. */
-  onCheckedChange?: (checked: boolean) => void;
-  /** Whether the item is disabled. @default false */
+  /**
+   * Whether the item is checked. Controlled — pair with `onChange`.
+   */
+  value: boolean;
+  /**
+   * Callback fired with the next checked state when the item is toggled.
+   */
+  onChange?: (checked: boolean) => void;
+  /**
+   * Whether the item is disabled. Disabled items stay focusable (via
+   * `aria-disabled`) so they remain discoverable by keyboard and assistive
+   * technology, but activation is blocked.
+   * @default false
+   */
   isDisabled?: boolean;
   /**
-   * Whether toggling closes the menu. Checkbox items usually stay open so
-   * multiple toggles are possible in one session. @default false
+   * Whether toggling the item closes the menu. Checkbox items default to
+   * staying open so several can be toggled in a single session, unlike radio
+   * items which default to closing on selection.
+   * @default false
    */
-  closeOnSelect?: boolean;
-  /** Additional content to render after the label/description. */
+  hasCloseOnSelect?: boolean;
+  /**
+   * Content to render after the label and description, such as a keyboard
+   * shortcut hint or badge.
+   */
   endContent?: ReactNode;
-  'data-testid'?: string;
 }
 
 /**
@@ -92,8 +158,8 @@ export interface DropdownMenuCheckboxItemProps extends Pick<
  * <DropdownMenu button={{label: 'View'}}>
  *   <DropdownMenuCheckboxItem
  *     label="Show archived"
- *     isChecked={showArchived}
- *     onCheckedChange={setShowArchived}
+ *     value={showArchived}
+ *     onChange={setShowArchived}
  *   />
  * </DropdownMenu>
  * ```
@@ -102,42 +168,53 @@ export function DropdownMenuCheckboxItem({
   label,
   description,
   icon,
-  isChecked,
-  onCheckedChange,
+  value,
+  onChange,
   isDisabled = false,
-  closeOnSelect = false,
+  hasCloseOnSelect = false,
   endContent,
   xstyle,
   className,
   style,
-  'data-testid': testId,
+  ...rest
 }: DropdownMenuCheckboxItemProps) {
   const ctx = useDropdownMenuContext();
   const menuSize = ctx?.menuSize ?? 'md';
-  const controlSize = menuSizeToControlSize(menuSize);
+  const controlSize = menuSize === 'sm' ? 'sm' : 'md';
 
   const handleClick = useCallback(() => {
     if (isDisabled) {
       return;
     }
-    onCheckedChange?.(!isChecked);
-    if (closeOnSelect) {
+    onChange?.(!value);
+    if (hasCloseOnSelect) {
       ctx?.closeMenu();
     }
-  }, [isDisabled, onCheckedChange, isChecked, closeOnSelect, ctx]);
+  }, [isDisabled, onChange, value, hasCloseOnSelect, ctx]);
 
   return (
     <Item
+      {...rest}
       role="menuitemcheckbox"
-      aria-checked={isChecked}
+      aria-checked={value}
       tabIndex={isDisabled ? undefined : -1}
       marker={
-        <DropdownMenuSelectableControl
-          type="checkbox"
-          size={controlSize}
-          isChecked={isChecked}
-          isDisabled={isDisabled}
-        />
+        <span
+          aria-hidden="true"
+          {...mergeProps(
+            themeProps('checkbox', {
+              size: controlSize,
+              checked: value ? 'checked' : null,
+              disabled: isDisabled ? 'disabled' : null,
+            }),
+            stylex.props(
+              styles.box,
+              boxSizeStyles[controlSize],
+              value ? styles.checked : styles.unchecked,
+            ),
+          )}>
+          {value && <Icon icon="check" size="sm" color="inherit" />}
+        </span>
       }
       startContent={
         icon
@@ -149,7 +226,6 @@ export function DropdownMenuCheckboxItem({
       endContent={endContent}
       onClick={handleClick}
       isDisabled={isDisabled}
-      data-testid={testId}
       xstyle={[styles.root, isDisabled && styles.disabled, xstyle]}
       {...mergeProps(themeProps('dropdown-menu-item', {size: menuSize}), {
         className,
