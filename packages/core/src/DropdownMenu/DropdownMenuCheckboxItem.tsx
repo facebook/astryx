@@ -6,7 +6,7 @@
  * @file DropdownMenuCheckboxItem.tsx
  * @input React, stylex, Item + Icon + DropdownMenu context + tokens from core
  * @output DropdownMenuCheckboxItem — a standalone checkable menu item.
- * @position @astryxdesign/lab; used inside a core DropdownMenu.
+ * @position Sub-component; used inside DropdownMenu.
  *
  * A menu item that toggles an independent boolean (role="menuitemcheckbox").
  * Unlike CheckboxInput, there is no nested native <input>: the row itself owns
@@ -25,9 +25,9 @@
 
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {Icon, renderIconSlot, type IconType} from '@astryxdesign/core/Icon';
-import {Item} from '@astryxdesign/core/Item';
-import {useDropdownMenuContext} from '@astryxdesign/core/DropdownMenu';
+import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {Item} from '../Item';
+import {useDropdownMenuContext} from './DropdownMenuContext';
 import {
   colorVars,
   spacingVars,
@@ -35,9 +35,9 @@ import {
   durationVars,
   easeVars,
   borderVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps, themeProps} from '@astryxdesign/core/utils';
-import type {BaseProps} from '@astryxdesign/core';
+} from '../theme/tokens.stylex';
+import {mergeProps, themeProps} from '../utils';
+import type {BaseProps} from '../BaseProps';
 
 const styles = stylex.create({
   root: {
@@ -152,8 +152,7 @@ export interface DropdownMenuCheckboxItemProps extends Omit<
  *
  * @example
  * ```
- * import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
- * import {DropdownMenuCheckboxItem} from '@astryxdesign/lab';
+ *  * import {DropdownMenuCheckboxItem} from '@astryxdesign/core/DropdownMenu';
  *
  * <DropdownMenu button={{label: 'View'}}>
  *   <DropdownMenuCheckboxItem

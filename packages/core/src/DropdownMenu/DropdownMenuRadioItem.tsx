@@ -6,7 +6,7 @@
  * @file DropdownMenuRadioItem.tsx
  * @input React, stylex, Item + Icon + DropdownMenu context + tokens from core
  * @output DropdownMenuRadioItem — a single option in a radio group.
- * @position @astryxdesign/lab; must be used inside a DropdownMenuRadioGroup.
+ * @position Sub-component; must be used inside a DropdownMenuRadioGroup.
  *
  * A menu item representing one option in a single-select group
  * (role="menuitemradio"). The row owns the role and aria-checked; there is no
@@ -23,19 +23,19 @@
 
 import {useCallback, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {renderIconSlot, type IconType} from '@astryxdesign/core/Icon';
-import {Item} from '@astryxdesign/core/Item';
-import {useDropdownMenuContext} from '@astryxdesign/core/DropdownMenu';
+import {renderIconSlot, type IconType} from '../Icon';
+import {Item} from '../Item';
+import {useDropdownMenuContext} from './DropdownMenuContext';
 import {
   colorVars,
   spacingVars,
   durationVars,
   easeVars,
   borderVars,
-} from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps, themeProps} from '@astryxdesign/core/utils';
-import type {BaseProps} from '@astryxdesign/core';
-import {useDropdownMenuRadioGroupContext} from './DropdownMenuRadioGroupContext';
+} from '../theme/tokens.stylex';
+import {mergeProps, themeProps} from '../utils';
+import type {BaseProps} from '../BaseProps';
+import {useDropdownMenuRadioGroupContext} from './DropdownMenuContext';
 
 const styles = stylex.create({
   root: {

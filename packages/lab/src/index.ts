@@ -229,14 +229,3 @@ export {
   type LogEntry,
   type LogStreamLevel,
 } from './LogStream';
-
-// DropdownMenu selectable items — radio & checkbox menu items (#3829).
-// Used inside a core <DropdownMenu>. See DropdownMenuSelectable/.
-export {
-  DropdownMenuCheckboxItem,
-  type DropdownMenuCheckboxItemProps,
-  DropdownMenuRadioGroup,
-  type DropdownMenuRadioGroupProps,
-  DropdownMenuRadioItem,
-  type DropdownMenuRadioItemProps,
-} from './DropdownMenuSelectable';

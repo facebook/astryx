@@ -20,8 +20,22 @@ export {
 
 export {DropdownMenuItem, type DropdownMenuItemProps} from './DropdownMenuItem';
 
-// Menu-coordination context — public so consumers (and @astryxdesign/lab)
-// can build custom menu items that read the menu size / close the menu.
+// Selectable items — checkbox (independent) and radio (single-select group).
+export {
+  DropdownMenuCheckboxItem,
+  type DropdownMenuCheckboxItemProps,
+} from './DropdownMenuCheckboxItem';
+export {
+  DropdownMenuRadioGroup,
+  type DropdownMenuRadioGroupProps,
+} from './DropdownMenuRadioGroup';
+export {
+  DropdownMenuRadioItem,
+  type DropdownMenuRadioItemProps,
+} from './DropdownMenuRadioItem';
+
+// Menu-coordination context — public so consumers can build custom menu items
+// that read the menu size / close the menu.
 export {
   DropdownMenuContext,
   useDropdownMenuContext,

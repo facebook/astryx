@@ -2,19 +2,17 @@
 
 /**
  * @file DropdownMenuSelectable.test.tsx
- * @input vitest, @testing-library/react, core DropdownMenu + lab selectable items
+ * @input vitest, @testing-library/react, DropdownMenu + selectable items
  * @output Unit tests for DropdownMenuCheckboxItem / RadioGroup / RadioItem (#3829)
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
-import {
-  DropdownMenuCheckboxItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-} from './index';
+import {DropdownMenu} from './DropdownMenu';
+import {DropdownMenuCheckboxItem} from './DropdownMenuCheckboxItem';
+import {DropdownMenuRadioGroup} from './DropdownMenuRadioGroup';
+import {DropdownMenuRadioItem} from './DropdownMenuRadioItem';
 
 beforeEach(() => {
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {

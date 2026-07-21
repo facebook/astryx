@@ -5,7 +5,7 @@
 /**
  * @file DropdownMenuRadioGroup.tsx
  * @output DropdownMenuRadioGroup — a single-select group of menu items.
- * @position @astryxdesign/lab; wraps DropdownMenuRadioItem inside a DropdownMenu.
+ * @position Sub-component; wraps DropdownMenuRadioItem inside a DropdownMenu.
  *
  * Owns single-selection state (value/onChange) for its child
  * DropdownMenuRadioItems and exposes it via context. Renders role="group" with
@@ -16,13 +16,13 @@
 
 import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
-import {mergeProps} from '@astryxdesign/core/utils';
-import type {BaseProps} from '@astryxdesign/core';
+import {spacingVars} from '../theme/tokens.stylex';
+import {mergeProps} from '../utils';
+import type {BaseProps} from '../BaseProps';
 import {
   DropdownMenuRadioGroupContext,
   type DropdownMenuRadioGroupContextValue,
-} from './DropdownMenuRadioGroupContext';
+} from './DropdownMenuContext';
 
 const styles = stylex.create({
   // Match the menu's own inter-item rhythm (2px) so grouped radio items keep
@@ -77,8 +77,10 @@ export interface DropdownMenuRadioGroupProps extends Omit<
  *
  * @example
  * ```
- * import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
- * import {DropdownMenuRadioGroup, DropdownMenuRadioItem} from '@astryxdesign/lab';
+ *  * import {
+ *   DropdownMenuRadioGroup,
+ *   DropdownMenuRadioItem,
+ * } from '@astryxdesign/core/DropdownMenu';
  *
  * <DropdownMenu button={{label: 'Sort'}}>
  *   <DropdownMenuRadioGroup value={sort} onChange={setSort} aria-label="Sort by">

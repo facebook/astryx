@@ -2,12 +2,13 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
-import {DropdownMenu, DropdownMenuItem} from '@astryxdesign/core/DropdownMenu';
 import {
+  DropdownMenu,
+  DropdownMenuItem,
   DropdownMenuCheckboxItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-} from '@astryxdesign/lab';
+} from '@astryxdesign/core/DropdownMenu';
 import {Divider} from '@astryxdesign/core/Divider';
 import {
   PencilIcon,
@@ -584,7 +585,7 @@ export const LabCheckboxItems: Story = {
     docs: {
       description: {
         story:
-          'Lab: DropdownMenuCheckboxItem — independent toggles (role="menuitemcheckbox"). The menu stays open on toggle by default so several can be flipped at once. Import from `@astryxdesign/lab`.',
+          'DropdownMenuCheckboxItem — independent toggles (role="menuitemcheckbox"). The menu stays open on toggle by default so several can be flipped at once.',
       },
     },
   },
@@ -614,7 +615,7 @@ export const LabRadioGroup: Story = {
     docs: {
       description: {
         story:
-          'Lab: DropdownMenuRadioGroup + DropdownMenuRadioItem — single-select group (role="menuitemradio"). Selecting closes the menu by default. Import from `@astryxdesign/lab`.',
+          'DropdownMenuRadioGroup + DropdownMenuRadioItem — single-select group (role="menuitemradio"). Selecting closes the menu by default.',
       },
     },
   },
@@ -651,7 +652,7 @@ export const LabSelectableSizes: Story = {
     docs: {
       description: {
         story:
-          'Lab: the checkbox/radio control size is derived from the menu item size — a `sm` menu renders the small (18px) control, `md`/`lg` render the standard (22px) control. On coarse-pointer (touch) devices the control swaps to the inline-end of the row.',
+          'The checkbox/radio control size is derived from the menu item size — a `sm` menu renders the small (18px) control, `md`/`lg` render the standard (22px) control. On coarse-pointer (touch) devices the control swaps to the inline-end of the row.',
       },
     },
   },
