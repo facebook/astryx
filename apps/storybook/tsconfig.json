@@ -22,6 +22,34 @@
       ],
       "@astryxdesign/build/vite": [
         "../../packages/build/src/vite.ts"
+      ],
+      "@astryxdesign/theme-neutral": [
+        "../../packages/themes/neutral/src/source.ts"
+      ],
+      "@astryxdesign/theme-neutral/*": [
+        "../../packages/themes/neutral/src/*/index.ts",
+        "../../packages/themes/neutral/src/*"
+      ],
+      "@astryxdesign/theme-stone": [
+        "../../packages/themes/stone/src/source.ts"
+      ],
+      "@astryxdesign/theme-stone/*": [
+        "../../packages/themes/stone/src/*/index.ts",
+        "../../packages/themes/stone/src/*"
+      ],
+      "@astryxdesign/theme-y2k": [
+        "../../packages/themes/y2k/src/source.ts"
+      ],
+      "@astryxdesign/theme-y2k/*": [
+        "../../packages/themes/y2k/src/*/index.ts",
+        "../../packages/themes/y2k/src/*"
+      ],
+      "@astryxdesign/vega": [
+        "../../packages/vega/src/index.ts"
+      ],
+      "@astryxdesign/vega/*": [
+        "../../packages/vega/src/*/index.ts",
+        "../../packages/vega/src/*"
       ]
     }
   },

@@ -182,10 +182,20 @@
       "types": "./dist/Citation/index.d.ts",
       "default": "./dist/Citation/index.js"
     },
+    "./Clickable": {
+      "source": "./src/Clickable/index.ts",
+      "types": "./dist/Clickable/index.d.ts",
+      "default": "./dist/Clickable/index.js"
+    },
     "./ClickableCard": {
       "source": "./src/ClickableCard/index.ts",
       "types": "./dist/ClickableCard/index.d.ts",
       "default": "./dist/ClickableCard/index.js"
+    },
+    "./ClickableContainer": {
+      "source": "./src/ClickableContainer/index.ts",
+      "types": "./dist/ClickableContainer/index.d.ts",
+      "default": "./dist/ClickableContainer/index.js"
     },
     "./Code": {
       "source": "./src/Code/index.ts",
