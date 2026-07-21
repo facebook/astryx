@@ -39,7 +39,7 @@ export interface AvatarGroupProps extends BaseProps<HTMLDivElement> {
   children: ReactNode;
   /**
    * Size applied to all avatars via context.
-   * @default 'small'
+   * @default 'md'
    */
   size?: AvatarSize;
   /**
@@ -65,7 +65,7 @@ const styles = stylex.create({
  *
  * @example
  * ```
- * <AvatarGroup size="medium">
+ * <AvatarGroup size="lg">
  *   {users.slice(0, 3).map(u => (
  *     <Avatar key={u.id} src={u.src} name={u.name} />
  *   ))}
@@ -75,7 +75,7 @@ const styles = stylex.create({
  */
 export function AvatarGroup({
   children,
-  size = 'small',
+  size = 'md',
   'data-testid': testId,
   'aria-label': ariaLabelFromProps,
   xstyle,

@@ -199,7 +199,7 @@ function PageHeader({
                   </Text>
                   <HStack gap={1} vAlign="center">
                     <Bullet />
-                    <Avatar name="Jane Doe" size="xsmall" />
+                    <Avatar name="Jane Doe" size="sm" />
                     <Text type="body" maxLines={1}>
                       Jane Doe
                     </Text>
@@ -444,7 +444,7 @@ function TimelineSection() {
           {ACTIVITY.map((item, i) => (
             <VStack key={i} gap={2}>
               <HStack gap={3} vAlign="start">
-                <Avatar name={item.user} size="small" />
+                <Avatar name={item.user} size="md" />
                 <StackItem size="fill">
                   <VStack gap={2}>
                     <Card variant="muted" padding={3}>
@@ -478,11 +478,7 @@ function TimelineSection() {
                           size="xsm"
                           color="secondary"
                         />
-                        <Icon
-                          icon={HeartIcon}
-                          size="xsm"
-                          color="secondary"
-                        />
+                        <Icon icon={HeartIcon} size="xsm" color="secondary" />
                         <Text type="supporting" color="secondary">
                           {item.reactions}
                         </Text>
@@ -533,16 +529,13 @@ function PanelContent() {
             321 Smith Road, CA 38238
           </MetadataListItem>
           <MetadataListItem label="Phone">234-</MetadataListItem>
-          <MetadataListItem label="Email">
-            janedoe@email.com
-          </MetadataListItem>
+          <MetadataListItem label="Email">janedoe@email.com</MetadataListItem>
           <MetadataListItem label="Billing Address">
             Same as shipping address
           </MetadataListItem>
         </MetadataList>
       </Collapsible>
-      <Collapsible
-        trigger={<Heading level={4}>Fraud Analysis</Heading>}>
+      <Collapsible trigger={<Heading level={4}>Fraud Analysis</Heading>}>
         <VStack gap={1}>
           <ProgressBar
             label="Risk level"

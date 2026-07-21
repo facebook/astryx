@@ -116,7 +116,7 @@ const dynamicStyles = stylex.create({
  *
  * @example
  * ```
- * <AvatarGroup size="medium">
+ * <AvatarGroup size="lg">
  *   {users.slice(0, 3).map(u => (
  *     <Avatar key={u.id} src={u.src} name={u.name} />
  *   ))}

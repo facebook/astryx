@@ -10,17 +10,17 @@ export default function AvatarStatusDotVariants() {
     <HStack gap={4} vAlign="center">
       <Avatar
         name="Ana Silva"
-        size="large"
+        size="xl"
         status={<AvatarStatusDot variant="success" label="Online" />}
       />
       <Avatar
         name="Ben Okafor"
-        size="large"
+        size="xl"
         status={<AvatarStatusDot variant="neutral" label="Away" />}
       />
       <Avatar
         name="Cleo Marsh"
-        size="large"
+        size="xl"
         status={<AvatarStatusDot variant="error" label="Do not disturb" />}
       />
     </HStack>

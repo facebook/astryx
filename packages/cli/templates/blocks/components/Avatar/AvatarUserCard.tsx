@@ -35,7 +35,7 @@ export default function AvatarUserCard() {
           <Avatar
             src={user.src}
             name={user.name}
-            size="medium"
+            size="lg"
             status={
               <AvatarStatusDot variant={user.variant} label={user.variant} />
             }

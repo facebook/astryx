@@ -56,14 +56,14 @@ describe('AvatarGroup', () => {
 
   it('applies size class to the group', () => {
     render(
-      <AvatarGroup size="medium">
+      <AvatarGroup size="lg">
         <Avatar name="Alice" />
       </AvatarGroup>,
     );
 
     const group = screen.getByRole('group');
     expect(group.className).toContain('astryx-avatar-group');
-    expect(group.className).toContain('medium');
+    expect(group.className).toContain('lg');
   });
 
   it('renders empty group when no children', () => {
@@ -134,7 +134,7 @@ describe('AvatarGroupOverflow', () => {
     const visibleCount = 3;
 
     render(
-      <AvatarGroup size="medium">
+      <AvatarGroup size="lg">
         {users.slice(0, visibleCount).map(name => (
           <Avatar key={name} name={name} />
         ))}

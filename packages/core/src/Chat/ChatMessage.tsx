@@ -150,7 +150,7 @@ const styles = stylex.create({
  *
  * @example
  * ```
- * <ChatMessage sender="assistant" name="Navi" avatar={<Avatar name="Navi" size="small" />}>
+ * <ChatMessage sender="assistant" name="Navi" avatar={<Avatar name="Navi" size="md" />}>
  *   <ChatMessageBubble>Hello!</ChatMessageBubble>
  *   <ChatMessageMetadata timestamp="2:30 PM" />
  * </ChatMessage>
@@ -222,7 +222,9 @@ export function ChatMessage({
         {...rest}
         ref={ref}
         data-testid={testId}
-        aria-label={!hasName ? t('@astryx.chatMessage.messageFrom', {sender}) : undefined}
+        aria-label={
+          !hasName ? t('@astryx.chatMessage.messageFrom', {sender}) : undefined
+        }
         aria-labelledby={hasName ? nameId : undefined}
         {...mergeProps(
           themeProps('chat-message', {sender, density}),

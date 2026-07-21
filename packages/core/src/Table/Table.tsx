@@ -275,7 +275,7 @@ function TableInner<T extends Record<string, unknown>>({
  *   columns={[
  *     { key: 'name', header: 'Name', width: proportional(1), renderCell: (u) => (
  *       <HStack gap={2} align="center">
- *         <Avatar name={u.name} size="small" />
+ *         <Avatar name={u.name} size="md" />
  *         <Text weight="semibold">{u.name}</Text>
  *       </HStack>
  *     )},

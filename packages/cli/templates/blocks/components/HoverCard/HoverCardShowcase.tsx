@@ -15,7 +15,7 @@ export default function HoverCardShowcase() {
       content={
         <Stack direction="vertical" gap={2} style={{width: 240}}>
           <Stack direction="horizontal" gap={2} vAlign="center">
-            <Avatar name="Jane Doe" size="medium" />
+            <Avatar name="Jane Doe" size="lg" />
             <Stack direction="vertical" gap={0}>
               <Heading level={5}>Jane Doe</Heading>
               <Text type="supporting" color="secondary">

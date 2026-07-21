@@ -64,7 +64,7 @@ export const docs = {
     {
       label: 'Default overflow count',
       code: `
-<AvatarGroup size="medium">
+<AvatarGroup size="lg">
   {users.slice(0, 3).map(user => (
     <Avatar key={user.id} src={user.src} name={user.name} />
   ))}
@@ -75,7 +75,7 @@ export const docs = {
     {
       label: 'Custom count text',
       code: `
-<AvatarGroup size="medium">
+<AvatarGroup size="lg">
   {users.slice(0, 3).map(user => (
     <Avatar key={user.id} src={user.src} name={user.name} />
   ))}

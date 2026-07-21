@@ -541,7 +541,7 @@ function ComponentDetailView({activeNav}: {activeNav: string}) {
         endContent={<Badge label="New" variant="info" />}
       />
     ),
-    avatar: <Avatar name="Alice" size="medium" />,
+    avatar: <Avatar name="Alice" size="lg" />,
     badge: <Badge label="Success" variant="success" />,
     card: (
       <Card>
