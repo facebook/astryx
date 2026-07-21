@@ -60,7 +60,6 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
     marginInlineStart: spacingVars['--spacing-0-5'],
     textDecoration: 'none',
-    cursor: 'pointer',
     transitionProperty: 'background-color, border-color, color',
     transitionDuration: durationVars['--duration-fast-max'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -75,6 +74,9 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     minWidth: 0,
+  },
+  labelInteractive: {
+    cursor: 'pointer',
   },
   labelHover: {
     backgroundColor: {
@@ -107,10 +109,12 @@ const styles = stylex.create({
     height: spacingVars['--spacing-5'],
     paddingInline: spacingVars['--spacing-1'],
     textDecoration: 'none',
-    cursor: 'pointer',
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast-max'],
     transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  numberInteractive: {
+    cursor: 'pointer',
   },
   numberHover: {
     backgroundColor: {
@@ -189,6 +193,7 @@ export function Citation({
           stylex.props(
             styles.number,
             href != null && styles.numberHover,
+            href != null && styles.numberInteractive,
             xstyle,
           ),
           className,
@@ -213,6 +218,7 @@ export function Citation({
           styles.label,
           icon != null && styles.labelWithIcon,
           href != null && styles.labelHover,
+          href != null && styles.labelInteractive,
           xstyle,
         ),
         className,
