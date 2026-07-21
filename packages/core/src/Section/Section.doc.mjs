@@ -59,6 +59,27 @@ export const docs = {
       description: 'Block (vertical) padding override. Overrides only the block-axis padding while preserving inline padding from `padding` or the container theme default. Accepts the spacing scale (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10).',
     },
     {
+      name: 'isScrollable',
+      type: 'boolean',
+      description: 'Makes the section scroll its own overflow (overflow: auto) — the "this pane scrolls on its own" prop. The section still needs a bounded height to scroll against: give it a height, or put it in a Stack that has one. Matches isScrollable on LayoutContent and LayoutPanel.',
+      default: 'false',
+    },
+    {
+      name: 'grow',
+      type: 'boolean | number',
+      description: 'Whether the section grows to absorb free space when it is a flex child (flex-grow). true is 1; pass a number for a custom factor.',
+    },
+    {
+      name: 'shrink',
+      type: 'boolean | number',
+      description: 'Whether the section shrinks when space runs short (flex-shrink). shrink={false} is the fixed-width column idiom.',
+    },
+    {
+      name: 'basis',
+      type: 'SizeValue',
+      description: 'Initial main-axis size of the section as a flex child (flex-basis). Numbers are treated as pixels, strings are used as-is.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object.',

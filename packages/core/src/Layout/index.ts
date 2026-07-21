@@ -22,6 +22,9 @@ export type {
 // Edge compensation utility
 export {edgeCompSlot, EDGE_COMP_ATTR} from './edgeCompensation.stylex';
 
+// Flex-item prop types (shared by Stack, StackItem and Section)
+export type {FlexItemOptions, FlexFactor} from './flex.stylex';
+
 // Stack utilities (re-exported from Stack module)
 export {stack} from '../Stack/stack.stylex';
 export type {

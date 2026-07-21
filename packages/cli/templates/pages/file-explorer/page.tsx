@@ -259,11 +259,9 @@ const FILESYSTEM: FileSystemItem[] = [
   },
 ];
 
+// Fill the viewport: the host page's <html>/<body> are not height:100%, so
+// Layout height="fill" has nothing to fill. Tracked separately from #2623.
 const page: CSSProperties = {height: '100dvh'};
-const columnRow: CSSProperties = {overflowX: 'auto', overflowY: 'hidden'};
-const scrollable: CSSProperties = {overflowY: 'auto'};
-const fixedColumn: CSSProperties = {flexShrink: 0};
-const detailColumn: CSSProperties = {flexGrow: 1, flexShrink: 0, flexBasis: 320};
 
 function findItem(items: FileSystemItem[], id: string): FileSystemItem | null {
   for (const item of items) {
@@ -445,7 +443,8 @@ export default function FileExplorerPage() {
       }
       content={
         <LayoutContent padding={0} isScrollable={false}>
-          <HStack height="100%" style={columnRow}>
+          {/* The column strip scrolls horizontally; each column scrolls itself. */}
+          <HStack height="100%" isScrollable>
             {columns.map((col, colIndex) => {
               const showDivider =
                 colIndex < columns.length - 1 || selectedFile != null;
@@ -456,7 +455,8 @@ export default function FileExplorerPage() {
                   padding={2}
                   variant="transparent"
                   dividers={showDivider ? ['end'] : undefined}
-                  style={{...scrollable, ...fixedColumn}}>
+                  shrink={false}
+                  isScrollable>
                   <List density="compact" hasDividers={false}>
                     {col.items.map(item => {
                       const isSelected = col.selectedId === item.id;
@@ -503,7 +503,10 @@ export default function FileExplorerPage() {
               <Section
                 padding={6}
                 variant="transparent"
-                style={{...scrollable, ...detailColumn}}>
+                grow
+                shrink={false}
+                basis={320}
+                isScrollable>
                 <VStack gap={4} hAlign="center">
                   <Avatar name={selectedFile.name} size={96} />
                   <VStack gap={1} hAlign="center">

@@ -74,6 +74,18 @@ const meta: Meta<typeof Section> = {
       control: {type: 'range', min: 100, max: 600, step: 10},
       description: 'Height in pixels',
     },
+    isScrollable: {
+      control: 'boolean',
+      description: 'Makes the section scroll its own content (overflow: auto)',
+    },
+    grow: {
+      control: 'boolean',
+      description: 'flex-grow as a flex child',
+    },
+    shrink: {
+      control: 'boolean',
+      description: 'flex-shrink as a flex child',
+    },
   },
 };
 
@@ -189,8 +201,8 @@ export const PageLayout: Story = {
             <VStack gap={2}>
               <h3 {...stylex.props(styles.text)}>Main Content</h3>
               <p {...stylex.props(styles.text, styles.textSecondary)}>
-                This demonstrates how Layout can be used to create page
-                layouts with header, sidebar, and content areas.
+                This demonstrates how Layout can be used to create page layouts
+                with header, sidebar, and content areas.
               </p>
             </VStack>
           </LayoutContent>
@@ -263,6 +275,81 @@ export const NestedPaddingInheritance: Story = {
           </Section>
         </Section>
       </div>
+    </div>
+  ),
+};
+
+// ============================================================================
+// Scrollable — isScrollable / overflow (issue #2623)
+// ============================================================================
+
+export const Scrollable: Story = {
+  name: 'Scrollable',
+  render: () => (
+    <div {...stylex.props(styles.pageWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>
+        isScrollable — the section scrolls its own content
+      </h4>
+      <Section variant="section" width={320} height={200} dividers={['end']}>
+        <Section variant="transparent" height="100%" isScrollable>
+          <VStack gap={2}>
+            {Array.from({length: 14}, (_, i) => (
+              <p key={i} {...stylex.props(styles.text)}>
+                Row {i + 1}
+              </p>
+            ))}
+          </VStack>
+        </Section>
+      </Section>
+      <p {...stylex.props(styles.text, styles.textSecondary)}>
+        Overflow is applied to the padded surface, so the background, the
+        dividers and the section&apos;s own padding stay put while the content
+        scrolls.
+      </p>
+    </div>
+  ),
+};
+
+// ============================================================================
+// MultiPane — grow / shrink / basis (issue #2623)
+// ============================================================================
+
+export const MultiPane: Story = {
+  name: 'Multi-pane (grow / shrink / basis)',
+  render: () => (
+    <div {...stylex.props(styles.pageWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>
+        Fixed sidebar + detail column that takes the rest
+      </h4>
+      <HStack height={220} isScrollable>
+        <Section
+          variant="muted"
+          width={180}
+          shrink={false}
+          isScrollable
+          dividers={['end']}>
+          <VStack gap={2}>
+            {Array.from({length: 12}, (_, i) => (
+              <p key={i} {...stylex.props(styles.text)}>
+                Item {i + 1}
+              </p>
+            ))}
+          </VStack>
+        </Section>
+        <Section variant="section" grow shrink={false} basis={320} isScrollable>
+          <VStack gap={2}>
+            <p {...stylex.props(styles.text)}>
+              This column grows into the leftover space from a 320px basis and
+              never shrinks below it — the strip scrolls horizontally instead.
+            </p>
+            {Array.from({length: 10}, (_, i) => (
+              <p key={i} {...stylex.props(styles.text, styles.textSecondary)}>
+                Detail line {i + 1}
+              </p>
+            ))}
+          </VStack>
+        </Section>
+      </HStack>
     </div>
   ),
 };
