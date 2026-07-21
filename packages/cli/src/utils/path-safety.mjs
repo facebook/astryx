@@ -165,21 +165,3 @@ export function isFilePathArg(pathArg) {
   const ext = path.extname(base).toLowerCase();
   return ext.length > 0 && FILE_EXTENSIONS.has(ext);
 }
-
-/**
- * True when the process is running non-interactively (no TTY) or when the
- * caller has signaled JSON / scripted use. Commands consult this before
- * prompting for confirmation; in scripted mode they require an explicit
- * `--overwrite` flag instead.
- *
- * @param {object} [options]
- * @param {boolean} [options.json] - Caller's --json flag.
- * @returns {boolean}
- */
-export function isNonInteractive({json = false} = {}) {
-  if (json) return true;
-  // stdin not a TTY means piped input or scripted execution.
-  if (process.stdin && process.stdin.isTTY === false) return true;
-  if (process.stdout && process.stdout.isTTY === false) return true;
-  return false;
-}

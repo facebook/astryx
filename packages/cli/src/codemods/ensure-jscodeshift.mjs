@@ -3,12 +3,11 @@
 /**
  * @file Lazy jscodeshift installer
  *
- * Checks if jscodeshift is available and offers to install it on-demand.
+ * Checks if jscodeshift is available and installs it on-demand.
  * Keeps the CLI lean — jscodeshift is only needed for codemods.
  *
- * In non-interactive environments (CI, LLM agents), the interactive prompt
- * is skipped. Pass `installDeps: true` to auto-install without prompting,
- * or the command will fail with a helpful error message.
+ * Non-interactive by default (no prompts): pass `installDeps: true` to
+ * auto-install, otherwise the command fails fast with a helpful error.
  */
 
 import {execSync} from 'node:child_process';
@@ -30,32 +29,17 @@ export async function ensureJscodeshift({installDeps = false, silent = false} = 
   } catch {
     log.warn('jscodeshift is required for codemods but not installed.');
 
-    const isInteractive = process.stdout.isTTY && !process.env.CI;
-
     if (installDeps) {
-      // Explicit opt-in — install without prompting
+      // Explicit opt-in — install without prompting.
       return installJscodeshift(silent);
     }
 
-    if (!isInteractive || silent) {
-      // Non-interactive environment (or --json) — fail fast with a helpful message
-      log.error(
-        'Cannot run codemods without jscodeshift. ' +
-          'Use --install-deps to auto-install in non-interactive environments.',
-      );
-      return false;
-    }
-
-    // Interactive TTY — prompt as before
-    const shouldInstall = await p.confirm({
-      message: 'Install jscodeshift now?',
-      initialValue: true,
-    });
-    if (p.isCancel(shouldInstall) || !shouldInstall) {
-      p.log.error('Cannot run codemods without jscodeshift.');
-      return false;
-    }
-    return installJscodeshift(silent);
+    // Non-interactive by default: fail fast with a helpful message instead of
+    // prompting (the CLI never blocks on a TTY).
+    log.error(
+      'Cannot run codemods without jscodeshift. Use --install-deps to auto-install.',
+    );
+    return false;
   }
 }
 

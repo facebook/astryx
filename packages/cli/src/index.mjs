@@ -323,7 +323,7 @@ ${line('')}
 ${line('  Design system installed!')}
 ${line('')}
 ${line('  Get started:')}
-${line(`    ${r} init          Interactive setup`)}
+${line(`    ${r} init          Setup + AI agent docs`)}
 ${line(`    ${r} --help        See all commands`)}
 ${line('')}
 ${line('  Or run directly:')}

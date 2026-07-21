@@ -20,7 +20,7 @@ import {layoutExpand, layoutCheck, layoutGrammar} from '../api/layout.mjs';
 /** Resolve the expression from arg, --file, or stdin ('-'). */
 async function readExpression(expr, options) {
   if (options.file) return fs.readFileSync(options.file, 'utf-8');
-  if (expr === '-' || (!expr && !process.stdin.isTTY)) {
+  if (expr === '-') {
     const chunks = [];
     for await (const chunk of process.stdin) chunks.push(chunk);
     return Buffer.concat(chunks).toString('utf-8');
