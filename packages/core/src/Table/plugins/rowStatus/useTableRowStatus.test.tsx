@@ -113,15 +113,19 @@ describe('useTableRowStatus', () => {
     expect(indicator.querySelector('svg')).not.toBeNull();
   });
 
-  it('sets role=img only when a label is provided (dot mode)', () => {
+  it('exposes the required label as the accessible name in dot mode', () => {
     render(
       <Harness
-        statusFn={item => (item.state === 'error' ? {color: 'red'} : null)}
+        statusFn={item =>
+          item.state === 'error' ? {color: 'red', label: 'Error'} : null
+        }
       />,
     );
-    // No label means no accessible name, so it is not exposed as an img role.
-    expect(screen.queryByRole('img')).not.toBeInTheDocument();
-    // But the row still renders (Alice present) with a color-only dot.
+    // Label is required, so every dot is announced via role=img with its name.
+    const indicator = screen.getByRole('img', {name: 'Error'});
+    expect(indicator).toBeInTheDocument();
+    // Dot mode renders no svg (that is icon mode).
+    expect(indicator.querySelector('svg')).toBeNull();
     expect(screen.getByText('Alice')).toBeInTheDocument();
   });
 

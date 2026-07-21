@@ -15,6 +15,7 @@
 import {useMemo} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon, type IconColor, type IconName} from '../../../Icon';
+import {Tooltip} from '../../../Tooltip';
 import type {TableColumn, TablePlugin} from '../../types';
 
 /**
@@ -65,17 +66,21 @@ const ICON_COLOR_BY_STATUS: Record<TableRowStatusColor, IconColor> = {
  * (mapped to a theme token) or any raw CSS color string as an escape hatch.
  * By default the plugin renders a colored status dot. Provide `icon` to signal
  * status by shape as well as color, which is more accessible when several
- * statuses coexist. Provide `label` for an accessible name (strongly
- * recommended; without it the indicator is color-only). Return `null` for
- * rows with no status.
+ * statuses coexist. `label` is required so the status is never conveyed by
+ * color alone — it names the indicator for assistive technology and shows on
+ * hover. Return `null` for rows with no status.
  */
 export interface TableRowStatus {
   /** Semantic status color (preferred) or a raw CSS color string. */
   color: TableRowStatusColor | (string & {});
   /** Optional icon rendered as the signifier instead of the dot (shape as an a11y differentiator). */
   icon?: IconName;
-  /** Accessible label; announced via role="img". Recommended. */
-  label?: string;
+  /**
+   * Accessible name for the status, announced to assistive technology and
+   * shown in a tooltip on hover. Required: a status must never be conveyed by
+   * color alone.
+   */
+  label: string;
 }
 
 /** Configuration for {@link useTableRowStatus}. */
@@ -152,31 +157,27 @@ export function useTableRowStatus<T extends Record<string, unknown>>(
             if (!status) {
               return null;
             }
-            const role = status.label ? 'img' : undefined;
-            if (status.icon) {
-              const iconColor: IconColor =
-                ICON_COLOR_BY_STATUS[status.color as TableRowStatusColor] ??
-                'primary';
-              return (
+            const signifier = status.icon ? (
+              <Icon
+                icon={status.icon}
+                size="xsm"
+                color={
+                  ICON_COLOR_BY_STATUS[status.color as TableRowStatusColor] ??
+                  'primary'
+                }
+              />
+            ) : (
+              <span {...stylex.props(styles.dot(resolveColor(status.color)))} />
+            );
+            return (
+              <Tooltip content={status.label}>
                 <span
                   {...stylex.props(styles.wrap)}
-                  role={role}
-                  aria-label={status.label}
-                  title={status.label}>
-                  <Icon icon={status.icon} size="xsm" color={iconColor} />
+                  role="img"
+                  aria-label={status.label}>
+                  {signifier}
                 </span>
-              );
-            }
-            return (
-              <span
-                {...stylex.props(styles.wrap)}
-                role={role}
-                aria-label={status.label}
-                title={status.label}>
-                <span
-                  {...stylex.props(styles.dot(resolveColor(status.color)))}
-                />
-              </span>
+              </Tooltip>
             );
           },
         };
