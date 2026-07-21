@@ -3,6 +3,11 @@
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState} from 'react';
 import {DropdownMenu, DropdownMenuItem} from '@astryxdesign/core/DropdownMenu';
+import {
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from '@astryxdesign/lab';
 import {Divider} from '@astryxdesign/core/Divider';
 import {
   PencilIcon,
@@ -546,6 +551,107 @@ export const RTL: Story = {
       description: {
         story:
           'In RTL contexts (CSS direction property or dir attribute) the menu right-edge-aligns to the trigger and grows toward the left — the logical mirror of the LTR default (#3389). Both direction mechanisms are shown; the popover inherits direction from the trigger subtree and the self-* position-area keywords mirror it in pure CSS.',
+      },
+    },
+  },
+};
+
+// =============================================================================
+// Lab — selectable items (#3829)
+// =============================================================================
+
+export const LabCheckboxItems: Story = {
+  render: function LabCheckboxItemsStory() {
+    const [showArchived, setShowArchived] = useState(false);
+    const [showDrafts, setShowDrafts] = useState(true);
+    return (
+      <DropdownMenu button={{label: 'View'}}>
+        <DropdownMenuCheckboxItem
+          label="Show archived"
+          isChecked={showArchived}
+          onCheckedChange={setShowArchived}
+        />
+        <DropdownMenuCheckboxItem
+          label="Show drafts"
+          description="Include unpublished items"
+          isChecked={showDrafts}
+          onCheckedChange={setShowDrafts}
+        />
+      </DropdownMenu>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Lab: DropdownMenuCheckboxItem — independent toggles (role="menuitemcheckbox"). The menu stays open on toggle by default so several can be flipped at once. Import from `@astryxdesign/lab`.',
+      },
+    },
+  },
+};
+
+export const LabRadioGroup: Story = {
+  render: function LabRadioGroupStory() {
+    const [sort, setSort] = useState('newest');
+    return (
+      <DropdownMenu button={{label: 'Sort'}}>
+        <DropdownMenuRadioGroup
+          value={sort}
+          onChange={setSort}
+          aria-label="Sort by">
+          <DropdownMenuRadioItem value="newest" label="Newest" />
+          <DropdownMenuRadioItem value="oldest" label="Oldest" />
+          <DropdownMenuRadioItem
+            value="az"
+            label="Alphabetical"
+            description="A → Z"
+          />
+        </DropdownMenuRadioGroup>
+      </DropdownMenu>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Lab: DropdownMenuRadioGroup + DropdownMenuRadioItem — single-select group (role="menuitemradio"). Selecting closes the menu by default. Import from `@astryxdesign/lab`.',
+      },
+    },
+  },
+};
+
+export const LabSelectableSizes: Story = {
+  render: function LabSelectableSizesStory() {
+    const [sm, setSm] = useState('a');
+    const [lg, setLg] = useState('a');
+    return (
+      <div style={{display: 'flex', gap: 24}}>
+        <DropdownMenu button={{label: 'Small menu', size: 'sm'}}>
+          <DropdownMenuRadioGroup
+            value={sm}
+            onChange={setSm}
+            aria-label="Small">
+            <DropdownMenuRadioItem value="a" label="Option A" />
+            <DropdownMenuRadioItem value="b" label="Option B" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+        <DropdownMenu button={{label: 'Large menu', size: 'lg'}}>
+          <DropdownMenuRadioGroup
+            value={lg}
+            onChange={setLg}
+            aria-label="Large">
+            <DropdownMenuRadioItem value="a" label="Option A" />
+            <DropdownMenuRadioItem value="b" label="Option B" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>
+      </div>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Lab: the checkbox/radio control size is derived from the menu item size — a `sm` menu renders the small (18px) control, `md`/`lg` render the standard (22px) control. On coarse-pointer (touch) devices the control swaps to the inline-end of the row.',
       },
     },
   },

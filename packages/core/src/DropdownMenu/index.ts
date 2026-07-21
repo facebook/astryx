@@ -18,7 +18,13 @@ export {
   type DropdownMenuOption,
 } from './DropdownMenu';
 
+export {DropdownMenuItem, type DropdownMenuItemProps} from './DropdownMenuItem';
+
+// Menu-coordination context — public so consumers (and @astryxdesign/lab)
+// can build custom menu items that read the menu size / close the menu.
 export {
-  DropdownMenuItem,
-  type DropdownMenuItemProps,
-} from './DropdownMenuItem';
+  DropdownMenuContext,
+  useDropdownMenuContext,
+  type DropdownMenuContextValue,
+  type DropdownMenuSize,
+} from './DropdownMenuContext';

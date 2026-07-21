@@ -14,11 +14,14 @@
 
 import {createContext, use} from 'react';
 
+/** Menu size, derived from the trigger button size. */
+export type DropdownMenuSize = 'sm' | 'md' | 'lg';
+
 export interface DropdownMenuContextValue {
   /** Close the menu and return focus to trigger */
   closeMenu: () => void;
   /** Menu size derived from button size */
-  menuSize: 'sm' | 'md' | 'lg';
+  menuSize: DropdownMenuSize;
 }
 
 export const DropdownMenuContext =
