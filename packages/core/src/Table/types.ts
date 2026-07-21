@@ -540,6 +540,39 @@ export interface BaseTableProps<
   /** Plugins to transform render props at each level */
   plugins?: TablePlugin<T>[];
 
+  /**
+   * ARIA row index (1-based) assigned to the **first** rendered body row.
+   *
+   * The row ordinal is an accessibility concern independent of any visible
+   * index column: `aria-rowindex` on each `<tr>` should reflect the row's
+   * position in the **full** dataset, not just the current page. For a
+   * paginated / windowed view, pass the offset of the first visible row —
+   * e.g. `(page - 1) * pageSize + 1`.
+   *
+   * Setting this (or {@link rowCount}) opts the table into emitting
+   * `aria-rowindex` on body rows and `aria-rowcount` on the `<table>`. Data
+   * rows are numbered from this value; the header row keeps native table
+   * semantics and is not assigned an ARIA row index (so the visible
+   * `useTableRowIndex` numbering and `aria-rowindex` stay in agreement).
+   *
+   * Applies to data-driven mode only (ignored in children mode).
+   *
+   * @default 1
+   */
+  rowIndexStart?: number;
+  /**
+   * Total number of body rows across **all** pages/windows, used for
+   * `aria-rowcount` on the `<table>`. Provide this for paginated data so
+   * assistive tech can announce "row X of Y" against the full dataset.
+   *
+   * When omitted but {@link rowIndexStart} is set (a windowed view with an
+   * unknown total, e.g. cursor pagination), `aria-rowcount` is set to `-1`
+   * per the ARIA convention for an unknown row count.
+   *
+   * Applies to data-driven mode only (ignored in children mode).
+   */
+  rowCount?: number;
+
   /** Children mode — render `<tr>`/`<td>` directly instead of data-driven */
   children?: ReactNode;
   /**

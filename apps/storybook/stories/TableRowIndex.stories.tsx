@@ -5,12 +5,15 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   Table,
   useTableRowIndex,
+  useTablePagination,
   useTableSortable,
   useTableSortableState,
   proportional,
   pixel,
 } from '@astryxdesign/core/Table';
 import type {TableColumn, TableSortState} from '@astryxdesign/core/Table';
+import {Text} from '@astryxdesign/core/Text';
+import {VStack} from '@astryxdesign/core/Layout';
 
 // =============================================================================
 // Sample Data
@@ -123,6 +126,95 @@ export const RenumbersWithSort: Story = {
         columns={columns}
         idKey="id"
         hasHover
+        plugins={plugins}
+      />
+    );
+  },
+};
+
+// =============================================================================
+// Table-level ARIA row index (#3939)
+// =============================================================================
+
+interface Contact extends Record<string, unknown> {
+  id: string;
+  name: string;
+  city: string;
+}
+
+const contacts: Contact[] = Array.from({length: 42}, (_, i) => ({
+  id: `c${i + 1}`,
+  name: `Contact ${i + 1}`,
+  city: ['Lisbon', 'Tokyo', 'Oslo', 'Cairo'][i % 4],
+}));
+
+const contactColumns: TableColumn<Contact>[] = [
+  {key: 'name', header: 'Name', width: proportional(2)},
+  {key: 'city', header: 'City', width: proportional(1)},
+];
+
+/**
+ * The row ordinal is an accessibility concern, not just a visible column. Pass
+ * `rowCount` (and, for a windowed view, `rowIndexStart`) to emit `aria-rowindex`
+ * on every `<tr>` and `aria-rowcount` on the `<table>` — correct even when no
+ * visible `#` column is rendered. Inspect the DOM: rows carry `aria-rowindex`
+ * with no index column in sight.
+ */
+export const AriaRowIndexNoVisibleColumn: Story = {
+  render: () => (
+    <VStack gap={2}>
+      <Text type="body">
+        No visible index column — but each row still exposes aria-rowindex, and
+        the table exposes aria-rowcount. Inspect the DOM to verify.
+      </Text>
+      <Table
+        data={contacts.slice(0, 5)}
+        columns={contactColumns}
+        idKey="id"
+        rowCount={contacts.length}
+      />
+    </VStack>
+  ),
+};
+
+/**
+ * With pagination, `aria-rowindex` must reflect the row's position in the
+ * **full** dataset, not the current page. Pass `rowIndexStart` as the offset of
+ * the first visible row (`(page - 1) * pageSize + 1`) and `rowCount` as the
+ * total. On page 3 below, the first row announces as row 21 of 42. The visible
+ * `useTableRowIndex` numbering is seeded from the same offset so both agree.
+ */
+export const AriaRowIndexWithPagination: Story = {
+  render: () => {
+    const pageSize = 10;
+    const [page, setPage] = useState(3);
+    const start = (page - 1) * pageSize;
+    const pageData = contacts.slice(start, start + pageSize);
+
+    const pagination = useTablePagination<Contact>({
+      page,
+      onPageChange: setPage,
+      totalItems: contacts.length,
+      pageSize,
+    });
+    const rowIndex = useTableRowIndex<Contact>({
+      data: pageData,
+      getRowKey: item => item.id,
+      startFrom: start + 1,
+    });
+    const plugins = useMemo(
+      () => ({rowIndex, pagination}),
+      [rowIndex, pagination],
+    );
+
+    return (
+      <Table
+        data={pageData}
+        columns={contactColumns}
+        idKey="id"
+        hasHover
+        rowIndexStart={start + 1}
+        rowCount={contacts.length}
         plugins={plugins}
       />
     );
