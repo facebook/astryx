@@ -67,10 +67,13 @@ const RENAMES = new Map([
 
 /**
  * Ambiguous names — common words that must ONLY be renamed in a precise
- * context (a `size` JSX attribute on a known Avatar/AvatarGroup element).
- * `tiny`/`xsmall` are omitted because they are unique to Avatar's scale.
+ * context. `tiny`/`xsmall` are omitted because they are unique to Avatar's
+ * scale; their presence in a collection proves it is an Avatar size enum.
  */
 const AMBIGUOUS = new Set(['small', 'medium', 'large']);
+
+/** Names that appear only in Avatar's scale — safe signals of Avatar sizing. */
+const UNIQUE = new Set(['tiny', 'xsmall']);
 
 /**
  * Rename a string-literal node if its value is an old size name.
@@ -89,6 +92,19 @@ function renameValue(node, {precise = false} = {}) {
   target.value = replacement;
   if (target.raw) target.raw = undefined;
   return true;
+}
+
+/** Extract a plain string value from a literal-ish node, or null. */
+function literalString(node) {
+  const target = node?.type === 'TSAsExpression' ? node.expression : node;
+  if (
+    target &&
+    (target.type === 'StringLiteral' || target.type === 'Literal') &&
+    typeof target.value === 'string'
+  ) {
+    return target.value;
+  }
+  return null;
 }
 
 export default function transformer(file, api) {
@@ -112,10 +128,14 @@ export default function transformer(file, api) {
 
   if (targetLocals.size === 0) return undefined;
 
-  function renameArrayElements(node, {precise = false} = {}) {
+  function renameArrayElements(node) {
     let arr = node;
     if (arr.type === 'TSAsExpression') arr = arr.expression;
     if (arr.type !== 'ArrayExpression') return;
+    // If the array contains a name unique to Avatar's scale (tiny/xsmall), the
+    // whole collection is unambiguously the Avatar size enum, so it is safe to
+    // rename the ambiguous members too. Otherwise stay conservative.
+    const precise = arr.elements.some((el) => UNIQUE.has(literalString(el)));
     for (const el of arr.elements) {
       if (renameValue(el, {precise})) hasChanges = true;
     }
@@ -198,6 +218,15 @@ export default function transformer(file, api) {
   //    file that also imports Avatar.
   root.find(j.TSLiteralType).forEach((path) => {
     if (renameValue(path.node.literal)) hasChanges = true;
+  });
+
+  // 4. Standalone array literals whose members are exactly the Avatar size
+  //    scale (identified by the presence of a unique name like tiny/xsmall) —
+  //    e.g. `(['tiny', 'xsmall', 'small', 'medium', 'large'] as const).map(...)`
+  //    used to render every size. The unique name proves the whole array is the
+  //    Avatar enum, so its ambiguous members can be renamed safely.
+  root.find(j.ArrayExpression).forEach((path) => {
+    renameArrayElements(path.node);
   });
 
   if (!hasChanges) return undefined;

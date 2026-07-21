@@ -79,6 +79,33 @@ const meta = {
     expect(output).toContain(`size: 'xsm'`);
   });
 
+  it('renames a FULL Storybook options array (unique name unlocks ambiguous members)', async () => {
+    // The presence of a unique name (tiny/xsmall) proves the whole array is the
+    // Avatar size enum, so small/medium/large in it are safe to rename too.
+    const input = `import {Avatar} from '@astryxdesign/core';
+const meta = {
+  argTypes: {size: {control: 'select', options: ['tiny', 'xsmall', 'small', 'medium', 'large']}},
+};`;
+    const output = await applyTransform(input);
+    expect(output).toContain(`['xsm', 'sm', 'md', 'lg', 'xl']`);
+  });
+
+  it('renames a standalone Avatar-size array literal used with .map()', async () => {
+    const input = `import {AvatarGroup} from '@astryxdesign/core';
+const sizes = (['tiny', 'xsmall', 'small', 'medium', 'large'] as const).map(s => s);`;
+    const output = await applyTransform(input);
+    expect(output).toContain(`['xsm', 'sm', 'md', 'lg', 'xl']`);
+  });
+
+  it('does NOT rename an array of ambiguous words with no unique Avatar name', async () => {
+    // Without tiny/xsmall, the array could be anything (priorities, densities),
+    // so ambiguous members are left untouched.
+    const input = `import {Avatar} from '@astryxdesign/core';
+const densities = ['small', 'medium', 'large'] as const;`;
+    const output = await applyTransform(input);
+    expect(output).toContain(`['small', 'medium', 'large']`);
+  });
+
   it('renames a UNIQUE name in a size-typed union literal', async () => {
     const input = `import {Avatar} from '@astryxdesign/core';
 type Props = {size: 'tiny' | 'xsmall'};`;
