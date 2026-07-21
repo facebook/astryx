@@ -12,7 +12,12 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ContextMenu} from './ContextMenu';
-import {ContextMenuItem} from './index';
+import {
+  ContextMenuItem,
+  ContextMenuCheckboxItem,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+} from './index';
 import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
 import {Divider} from '../Divider';
 
@@ -535,5 +540,74 @@ describe('ContextMenu compound mode', () => {
       expect(anchor.style.left).toBe('0px');
       expect(anchor.style.top).toBe('20px');
     });
+  });
+});
+
+describe('ContextMenu selectable items', () => {
+  it('renders checkbox and radio items with correct roles and state', () => {
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <ContextMenuRadioGroup
+              value="name"
+              onChange={() => {}}
+              aria-label="Sort by">
+              <ContextMenuRadioItem value="name" label="Sort by name" />
+              <ContextMenuRadioItem value="date" label="Sort by date" />
+            </ContextMenuRadioGroup>
+            <ContextMenuCheckboxItem label="Show hidden" value={true} />
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Sort by name', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Sort by date', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'false');
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Show hidden', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(
+      screen.getByRole('group', {name: 'Sort by', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('fires onChange for radio and checkbox items', async () => {
+    const user = userEvent.setup();
+    const onSort = vi.fn();
+    const onToggle = vi.fn();
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <ContextMenuRadioGroup
+              value="name"
+              onChange={onSort}
+              aria-label="Sort by">
+              <ContextMenuRadioItem value="name" label="Sort by name" />
+              <ContextMenuRadioItem value="date" label="Sort by date" />
+            </ContextMenuRadioGroup>
+            <ContextMenuCheckboxItem
+              label="Show hidden"
+              value={false}
+              onChange={onToggle}
+            />
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    await user.click(
+      screen.getByRole('menuitemradio', {name: 'Sort by date', hidden: true}),
+    );
+    expect(onSort).toHaveBeenCalledWith('date');
+    await user.click(
+      screen.getByRole('menuitemcheckbox', {name: 'Show hidden', hidden: true}),
+    );
+    expect(onToggle).toHaveBeenCalledWith(true);
   });
 });

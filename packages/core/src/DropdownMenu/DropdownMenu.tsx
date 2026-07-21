@@ -38,6 +38,7 @@ import {Icon} from '../Icon';
 import type {IconType} from '../Icon';
 
 import {renderDropdownItems} from './renderDropdownItems';
+import {MENU_ITEM_ROLES, MENU_ITEM_SELECTOR} from './menuItemRoles';
 import {
   DropdownMenuContext,
   type DropdownMenuContextValue,
@@ -149,18 +150,6 @@ interface DropdownMenuCompoundProps extends DropdownMenuBaseProps {
 
 export type DropdownMenuProps =
   DropdownMenuDataProps | DropdownMenuCompoundProps;
-
-// Roles that count as focusable/activatable rows in the menu. Includes the
-// selectable lab items (menuitemradio/menuitemcheckbox) so they are reachable
-// by arrow keys, typeahead, and Enter/Space alongside plain items.
-const MENU_ITEM_ROLES = new Set([
-  'menuitem',
-  'menuitemradio',
-  'menuitemcheckbox',
-]);
-const MENU_ITEM_SELECTOR = [...MENU_ITEM_ROLES]
-  .map(role => `[role="${role}"]:not([aria-disabled="true"])`)
-  .join(',');
 
 // =============================================================================
 // DropdownMenu

@@ -46,6 +46,10 @@ import {
   DropdownMenuContext,
   type DropdownMenuContextValue,
 } from '../DropdownMenu/DropdownMenuContext';
+import {
+  MENU_ITEM_ROLES,
+  MENU_ITEM_SELECTOR,
+} from '../DropdownMenu/menuItemRoles';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useLongPress} from '../hooks/useLongPress';
@@ -265,7 +269,7 @@ export function ContextMenu({
     focusFirst,
     focusItem,
   } = useListFocus<HTMLDivElement>({
-    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
+    itemSelector: MENU_ITEM_SELECTOR,
     wrap: false,
     onEscape: closeMenu,
   });
@@ -275,9 +279,7 @@ export function ContextMenu({
     (): HTMLElement[] =>
       listRef.current
         ? Array.from(
-            listRef.current.querySelectorAll<HTMLElement>(
-              '[role="menuitem"]:not([aria-disabled="true"])',
-            ),
+            listRef.current.querySelectorAll<HTMLElement>(MENU_ITEM_SELECTOR),
           )
         : [],
     [listRef],
@@ -341,7 +343,10 @@ export function ContextMenu({
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
-        if (focused?.getAttribute('role') === 'menuitem') {
+        if (
+          focused &&
+          MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
+        ) {
           focused.click();
         }
         return;
