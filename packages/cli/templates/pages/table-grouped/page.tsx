@@ -70,7 +70,7 @@ const groupHeaderCell: React.CSSProperties = {
 
 // Types
 type TaskStatus = 'in_progress' | 'todo' | 'backlog' | 'done';
-type TaskPriority = 'urgent' | 'high' | 'lg' | 'low' | 'none';
+type TaskPriority = 'urgent' | 'high' | 'medium' | 'low' | 'none';
 
 interface TaskRow extends Record<string, unknown> {
   id: string;
