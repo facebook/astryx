@@ -95,6 +95,61 @@ const args = { variant: 'positive' };`;
     expect(output).not.toContain("'positive'");
   });
 
+  it('renames unambiguous values in status-denoting object keys (dot/state/status) in target-importing files', async () => {
+    // A StatusDot variant is often supplied indirectly via a non-variant key
+    // (`{ dot: 'positive' }`, `{ state: 'negative' }`, `{ status: 'positive' }`)
+    // that is later fed into `variant`. Those unambiguous values must migrate.
+    const input = `import { XDSStatusDot } from '@xds/core/StatusDot';
+const cfg = { dot: 'positive' };
+const row = { state: 'negative' };
+const map = { status: 'positive' };
+const el = <XDSStatusDot variant={cfg.dot} label="x" />;`;
+    const output = await applyTransform(input);
+    expect(output).toContain("dot: 'success'");
+    expect(output).toContain("state: 'error'");
+    expect(output).toContain("status: 'success'");
+    expect(output).not.toContain("'positive'");
+    expect(output).not.toContain("'negative'");
+  });
+
+  it('does NOT rewrite status-key values in a file that does not import a target component', async () => {
+    // The object-property path (including the status-key allowlist) is gated on
+    // the file importing a StatusDot-family component. Without that import, the
+    // value could be anything, so it must be left alone.
+    const input = `const cfg = { dot: 'positive' };
+const row = { state: 'negative' };`;
+    const output = await applyTransform(input);
+    expect(output).toContain("dot: 'positive'");
+    expect(output).toContain("state: 'negative'");
+    expect(output).not.toContain("'success'");
+    expect(output).not.toContain("'error'");
+  });
+
+  it('does NOT rewrite "info" on a status-denoting key (Badge safety, context-blind)', async () => {
+    // `info` is a VALID variant on non-target components (e.g. Badge). A
+    // status-key is a context-blind path — the concrete component is unknown —
+    // so `info` must be preserved even though positive/negative migrate.
+    const input = `import { XDSStatusDot } from '@xds/core/StatusDot';
+const cfg = { status: 'info' };`;
+    const output = await applyTransform(input);
+    expect(output).toContain("status: 'info'");
+    expect(output).not.toContain("'accent'");
+  });
+
+  it('does NOT rewrite unrelated positive/negative string data in non-status object keys', async () => {
+    // The allowlist is exactly {dot,state,status}: unrelated data such as
+    // sentiment values, review scores, or test fixtures keyed by review/
+    // sentiment/result must never be rewritten, even in a target-importing file.
+    const input = `import { XDSStatusDot } from '@xds/core/StatusDot';
+const data = { review: 'positive', sentiment: 'negative', result: 'positive' };`;
+    const output = await applyTransform(input);
+    expect(output).toContain("review: 'positive'");
+    expect(output).toContain("sentiment: 'negative'");
+    expect(output).toContain("result: 'positive'");
+    expect(output).not.toContain("'success'");
+    expect(output).not.toContain("'error'");
+  });
+
   it('renames unambiguous values in Storybook argType options arrays but leaves ambiguous "info"', async () => {
     const input = `import { XDSStatusDot } from '@xds/core/StatusDot';
 const meta = { argTypes: { variant: { options: ['positive', 'negative', 'warning', 'info', 'neutral'] } } };`;

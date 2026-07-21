@@ -16,7 +16,9 @@
  * - XDSProgressBar: variant="positive|negative" → variant="success|error"
  *
  * Transforms JSX attributes, object properties (in files importing affected
- * components), TypeScript type annotations, and Storybook argType options.
+ * components, including status-denoting keys like `dot`/`state`/`status` that
+ * carry a variant value indirectly), TypeScript type annotations, and Storybook
+ * argType options.
  */
 
 export const meta = {
@@ -84,6 +86,32 @@ function matchesPropName(keyName) {
     if (lower.endsWith(prop.toLowerCase()) && lower !== prop.toLowerCase()) return true;
   }
   return false;
+}
+
+/**
+ * Status-denoting object keys that commonly carry a status-dot value indirectly
+ * (i.e. NOT via a `variant`/`color`-family key) and are later fed into a target
+ * component's `variant`/`color`. Real-world configs express a StatusDot variant
+ * through keys like `{ dot: 'positive' }`, `{ state: 'negative' }`, or
+ * `{ status: 'positive' }`, then spread/pass that value into `variant`.
+ *
+ * These are handled with a strict allowlist rather than a broad "any key"
+ * sweep so that unrelated `positive`/`negative` string data — sentiment values,
+ * review scores, test fixtures like `{ review: 'positive' }` — is never
+ * rewritten. Only exact key matches (case-insensitive) qualify.
+ *
+ * Only ever used for UNAMBIGUOUS values (`positive`/`negative`); ambiguous
+ * values such as `info` are still gated out by AMBIGUOUS_VALUES because this is
+ * a context-blind path (the concrete component is unknown here).
+ */
+const STATUS_VALUE_KEYS = new Set(['dot', 'state', 'status']);
+
+/**
+ * Check whether an object key is a known status-denoting key (exact,
+ * case-insensitive). Used only within target-importing files.
+ */
+function matchesStatusValueKey(keyName) {
+  return STATUS_VALUE_KEYS.has(keyName.toLowerCase());
 }
 
 export default function transformer(file, api) {
@@ -210,15 +238,28 @@ export default function transformer(file, api) {
             ? key.value
             : null;
 
-      if (!keyName || !matchesPropName(keyName)) return;
+      if (!keyName) return;
+
+      const isPropKey = matchesPropName(keyName);
+      // A status-denoting key (dot/state/status) carries a variant value
+      // indirectly. Rewrite it too, but only for unambiguous values — the
+      // AMBIGUOUS_VALUES guard in renameValue keeps `info` untouched here since
+      // this is still a context-blind path.
+      const isStatusValueKey = matchesStatusValueKey(keyName);
+      if (!isPropKey && !isStatusValueKey) return;
 
       const value = path.node.value;
 
       // variant: 'positive' → variant: 'success'
+      // dot: 'positive' → dot: 'success'   (unambiguous values only)
       if (renameValue(value)) {
         hasChanges = true;
         return;
       }
+
+      // Suffix-only / options-array handling below is scoped to prop-family
+      // keys; a status-value key only ever carries a bare string literal.
+      if (!isPropKey) return;
 
       // variant: { options: ['positive', 'negative', ...] }
       if (value.type === 'ObjectExpression') {
