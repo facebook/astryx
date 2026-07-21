@@ -2,7 +2,7 @@
   "name": "@astryxdesign/lab",
   "version": "0.1.7",
   "private": true,
-  "description": "Experimental Astryx components — published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
+  "description": "Experimental Astryx components \u2014 published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
   "author": "Meta Open Source",
   "license": "MIT",
   "homepage": "https://github.com/facebook/astryx#readme",
@@ -22,7 +22,7 @@
   ],
   "astryx": {
     "canaryOnly": true,
-    "_comment": "Published ONLY to the @canary dist-tag (see .github/workflows/release.yml). Never published as a stable `latest` release. `private: true` is intentional and must stay — it is npm's hard guarantee against an accidental stable publish."
+    "_comment": "Published ONLY to the @canary dist-tag (see .github/workflows/release.yml). Never published as a stable `latest` release. `private: true` is intentional and must stay \u2014 it is npm's hard guarantee against an accidental stable publish."
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -59,7 +59,15 @@
     "@stylexjs/stylex": ">=0.10.0",
     "@astryxdesign/core": "0.1.7",
     "react": ">=19.0.0",
-    "react-dom": ">=19.0.0"
+    "react-dom": ">=19.0.0",
+    "lexical": "^0.46.0",
+    "@lexical/react": "^0.46.0",
+    "@lexical/markdown": "^0.46.0",
+    "@lexical/link": "^0.46.0",
+    "@lexical/list": "^0.46.0",
+    "@lexical/rich-text": "^0.46.0",
+    "@lexical/code": "^0.46.0",
+    "@lexical/utils": "^0.46.0"
   },
   "dependencies": {
     "d3-array": "^3.2.4",
@@ -67,7 +75,42 @@
     "d3-shape": "^3.2.0"
   },
   "devDependencies": {
+    "@lexical/code": "^0.46.0",
+    "@lexical/link": "^0.46.0",
+    "@lexical/list": "^0.46.0",
+    "@lexical/markdown": "^0.46.0",
+    "@lexical/react": "^0.46.0",
+    "@lexical/rich-text": "^0.46.0",
+    "@lexical/utils": "^0.46.0",
+    "@types/d3-array": "^3.2.2",
     "@types/d3-scale": "^4.0.9",
-    "@types/d3-shape": "^3.1.8"
+    "@types/d3-shape": "^3.1.8",
+    "lexical": "^0.46.0"
+  },
+  "peerDependenciesMeta": {
+    "lexical": {
+      "optional": true
+    },
+    "@lexical/react": {
+      "optional": true
+    },
+    "@lexical/markdown": {
+      "optional": true
+    },
+    "@lexical/link": {
+      "optional": true
+    },
+    "@lexical/list": {
+      "optional": true
+    },
+    "@lexical/rich-text": {
+      "optional": true
+    },
+    "@lexical/code": {
+      "optional": true
+    },
+    "@lexical/utils": {
+      "optional": true
+    }
   }
 }
