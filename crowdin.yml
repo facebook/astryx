@@ -1,0 +1,27 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Crowdin CLI config for the astryx design system.
+#
+# Sources: packages/core/locales/en.json (react-intl / FormatJS shape:
+#   { "<key>": { "defaultMessage": "...", "description": "..." } })
+# Targets: packages/core/locales/<lang>.json, one file per translated language.
+#
+# `skip_untranslated_files: true` keeps per-locale files out of git until a
+# language has real translated content — no empty stub JSON files landing in
+# the repo just because Crowdin added a target language.
+#
+# Env vars come from the GitHub workflows that run the Crowdin CLI:
+#   CROWDIN_PROJECT_ID    — repo variable (public)
+#   CROWDIN_PERSONAL_TOKEN — repo secret
+
+project_id_env: CROWDIN_PROJECT_ID
+api_token_env: CROWDIN_PERSONAL_TOKEN
+
+preserve_hierarchy: true
+skip_untranslated_files: true
+commit_message: '[ci skip]'
+
+files:
+  - source: /packages/core/locales/en.json
+    translation: /packages/core/locales/%locale%.json
+    type: react_intl
