@@ -48,7 +48,6 @@ export const docs = {
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
 export const docsZh = {
   name: 'DropdownMenuRadioItem',
   isHiddenFromOverview: true,
@@ -65,7 +64,6 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   name: 'DropdownMenuRadioItem',
   isHiddenFromOverview: true,
