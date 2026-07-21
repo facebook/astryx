@@ -128,7 +128,10 @@ const styles = stylex.create({
     width: '14px',
     height: '14px',
     color: colorVars['--color-text-disabled'],
-    transition: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
+    transition: {
+      default: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
   },
   chevronExpanded: {
     transform: 'rotate(180deg)',
@@ -136,7 +139,10 @@ const styles = stylex.create({
   groupContent: {
     display: 'grid',
     gridTemplateRows: '0fr',
-    transition: `grid-template-rows ${durationVars['--duration-medium']} ${easeVars['--ease-standard']}`,
+    transition: {
+      default: `grid-template-rows ${durationVars['--duration-medium']} ${easeVars['--ease-standard']}`,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
   },
   groupContentExpanded: {
     gridTemplateRows: '1fr',
@@ -261,7 +267,10 @@ const styles = stylex.create({
     width: '14px',
     height: '14px',
     color: colorVars['--color-text-disabled'],
-    transition: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
+    transition: {
+      default: `transform ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     marginInlineStart: 'auto',
   },
   callDetailContent: {
