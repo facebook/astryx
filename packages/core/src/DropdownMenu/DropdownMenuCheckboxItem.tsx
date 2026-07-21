@@ -201,7 +201,7 @@ export function DropdownMenuCheckboxItem({
         <span
           aria-hidden="true"
           {...mergeProps(
-            themeProps('checkbox', {
+            themeProps('dropdown-menu-checkbox', {
               size: controlSize,
               checked: value ? 'checked' : null,
               disabled: isDisabled ? 'disabled' : null,

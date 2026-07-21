@@ -12,6 +12,16 @@ export const docs = {
     targets: [
       {className: 'astryx-dropdown-menu'},
       {className: 'astryx-dropdown-menu-item', visualProps: ['size']},
+      {
+        className: 'astryx-dropdown-menu-checkbox',
+        visualProps: ['size'],
+        states: ['checked', 'disabled'],
+      },
+      {
+        className: 'astryx-dropdown-menu-radio',
+        visualProps: ['size'],
+        states: ['checked', 'disabled'],
+      },
     ],
     vars: [
       {name: '--_dropdown-menu-radius', description: 'Border radius of the menu popup', default: 'var(--radius-element)', private: true},

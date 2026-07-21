@@ -194,7 +194,7 @@ export function DropdownMenuRadioItem({
         <span
           aria-hidden="true"
           {...mergeProps(
-            themeProps('radio', {
+            themeProps('dropdown-menu-radio', {
               size: controlSize,
               checked: isChecked ? 'checked' : null,
               disabled: isDisabled ? 'disabled' : null,
