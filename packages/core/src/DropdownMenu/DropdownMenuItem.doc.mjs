@@ -31,6 +31,12 @@ export const docs = {
       description: 'Secondary description text displayed below the label.',
     },
     {
+      name: 'isSelected',
+      type: 'boolean',
+      description: 'Marks this item as the current selection. The menu moves initial keyboard focus here on open (instead of the first item), exposes it as aria-current, and renders it in a medium font weight. Use for menus that represent a current choice.',
+      default: 'false',
+    },
+    {
       name: 'endContent',
       type: 'ReactNode',
       description: 'Additional content rendered after the label and description.',
@@ -65,6 +71,11 @@ export const docsZh = {
       description: '显示在标签下方的次要描述文本。',
     },
     {
+      name: 'isSelected',
+      type: 'boolean',
+      description: '将此项标记为当前选中项。菜单打开时初始键盘焦点会移到此项（而非第一项），并以 aria-current 暴露、使用中等字重。用于表示当前选择的菜单。',
+    },
+    {
       name: 'endContent',
       type: 'ReactNode',
       description: '在标签和描述之后渲染的附加内容。',
@@ -86,6 +97,7 @@ export const docsDense = {
     icon: 'icon before label',
     label: 'primary label text',
     description: 'secondary text below label',
+    isSelected: 'marks current selection; focused on open + aria-current',
     endContent: 'additional content after label+description',
     xstyle: 'StyleX styles for root container',
   },

@@ -29,6 +29,7 @@ import {renderIconSlot, type IconType} from '../Icon';
 import {Item} from '../Item';
 import {
   colorVars,
+  fontWeightVars,
   spacingVars,
   typographyVars,
   typeScaleVars,
@@ -62,6 +63,9 @@ const menuItemStyles = stylex.create({
     opacity: 0.5,
     cursor: 'not-allowed',
   },
+  selected: {
+    fontWeight: fontWeightVars['--font-weight-medium'],
+  },
 });
 
 const itemSizeStyles = stylex.create({
@@ -89,6 +93,14 @@ export interface DropdownMenuItemProps extends Pick<
   onClick?: () => void;
   /** Whether the item is disabled. @default false */
   isDisabled?: boolean;
+  /**
+   * Marks this item as the current selection. The menu moves initial keyboard
+   * focus here when it opens (instead of the first item), exposes the item as
+   * `aria-current` to assistive tech, and gives it a medium font weight. Use
+   * for menus that represent a current choice, e.g. a model or account picker.
+   * @default false
+   */
+  isSelected?: boolean;
   /** Additional content to render after the label/description. */
   endContent?: ReactNode;
 }
@@ -113,6 +125,7 @@ export function DropdownMenuItem({
   description,
   onClick,
   isDisabled = false,
+  isSelected = false,
   endContent,
   xstyle,
   className,
@@ -133,6 +146,10 @@ export function DropdownMenuItem({
     <Item
       role="menuitem"
       tabIndex={isDisabled ? undefined : -1}
+      // menuitem doesn't support aria-selected/aria-checked; aria-current is the
+      // valid "this is the current item in the set" marker and is what the menu
+      // queries to place initial focus on open.
+      aria-current={isSelected ? true : undefined}
       startContent={
         icon
           ? renderIconSlot(icon, {size: 'sm', color: 'secondary'})
@@ -147,6 +164,7 @@ export function DropdownMenuItem({
         menuItemStyles.root,
         itemSizeStyles[menuSize],
         isDisabled && menuItemStyles.disabled,
+        isSelected && menuItemStyles.selected,
         xstyle,
       ]}
       {...mergeProps(themeProps('dropdown-menu-item', {size: menuSize}), {

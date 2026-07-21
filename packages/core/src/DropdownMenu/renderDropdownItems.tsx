@@ -79,6 +79,7 @@ export function renderDropdownItems(
               label={item.label}
               onClick={item.onClick}
               isDisabled={item.isDisabled}
+              isSelected={item.isSelected}
             />
           ))}
         </div>,
@@ -91,6 +92,7 @@ export function renderDropdownItems(
           label={option.label}
           onClick={option.onClick}
           isDisabled={option.isDisabled}
+          isSelected={option.isSelected}
         />,
       );
     }
