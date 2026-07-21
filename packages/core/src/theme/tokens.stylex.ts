@@ -22,7 +22,7 @@ import * as stylex from '@stylexjs/stylex';
 
 export const colorDefaults = {
   // Core semantic
-  '--color-accent': 'light-dark(#0064E0, #2694FE)',
+  '--color-accent': 'light-dark(#0F9D8C, #1FBFAC)',
   '--color-accent-muted': 'light-dark(#0082FB33, #0082FB3F)',
   '--color-on-accent': 'light-dark(#FFFFFF, #FFFFFF)',
   '--color-neutral':

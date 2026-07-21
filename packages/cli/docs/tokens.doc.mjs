@@ -30,8 +30,8 @@ export const docs = {
           "rows": [
             [
               "--color-accent",
-              "#0064E0",
-              "#2694FE"
+              "#0F9D8C",
+              "#1FBFAC"
             ],
             [
               "--color-accent-muted",
