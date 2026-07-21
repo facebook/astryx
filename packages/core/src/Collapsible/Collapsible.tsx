@@ -82,6 +82,13 @@ const styles = stylex.create({
     textBoxEdge: 'cap alphabetic',
     textBoxTrim: 'trim-both',
   },
+  // Disabled trigger — non-interactive, dimmed. Native `disabled` on the
+  // button blocks click + keyboard activation; these styles restore the
+  // visual affordance that `all: unset` wipes.
+  triggerDisabled: {
+    cursor: 'not-allowed',
+    opacity: 0.5,
+  },
   // Chevron indicator
   chevron: {
     display: 'inline-flex',
@@ -177,6 +184,17 @@ export interface CollapsibleProps extends BaseProps {
   isOpen?: boolean;
 
   /**
+   * Whether the collapsible is disabled. A disabled item can't be toggled —
+   * its trigger is non-interactive and dimmed. Following the system-wide
+   * disabled convention, the trigger uses `aria-disabled` (not the native
+   * `disabled` attribute) and drops out of the tab order, staying perceivable
+   * to assistive tech. The content stays in whatever open state it was;
+   * disabling doesn't collapse an already-open item.
+   * @default false
+   */
+  isDisabled?: boolean;
+
+  /**
    * Callback when the open state changes.
    */
   onOpenChange?: (isOpen: boolean) => void;
@@ -235,6 +253,7 @@ export function Collapsible({
   children,
   defaultIsOpen,
   isOpen: controlledIsOpen,
+  isDisabled = false,
   onOpenChange,
   value,
   ref,
@@ -253,6 +272,17 @@ export function Collapsible({
     isCollapsible: collapsibleConfig,
     value,
   });
+
+  // Activation is blocked by this guard rather than the native `disabled`
+  // attribute, so the trigger keeps `aria-disabled` semantics and stays
+  // discoverable. A native `disabled` button would silently swallow events
+  // (e.g. a wrapping tooltip's hover) — the system-wide disabled convention.
+  const handleToggle = () => {
+    if (isDisabled) {
+      return;
+    }
+    toggle();
+  };
 
   const presentation = use(CollapsibleGroupPresentationContext);
   const isDivided = presentation?.hasDividers ?? false;
@@ -278,12 +308,20 @@ export function Collapsible({
       {...props}>
       <button
         type="button"
-        onClick={toggle}
+        onClick={handleToggle}
+        aria-disabled={isDisabled || undefined}
         aria-expanded={isOpen}
         aria-controls={contentId}
+        // A disabled trigger drops out of the tab order so it isn't a silently
+        // dead tab stop; activation stays blocked by the handleToggle guard,
+        // and aria-disabled keeps the state perceivable to assistive tech —
+        // the system-wide disabled convention (never native `disabled`, which
+        // would swallow events like a wrapping tooltip's hover).
+        tabIndex={isDisabled ? -1 : undefined}
         {...stylex.props(
           styles.trigger,
           density != null && triggerDensity[density],
+          isDisabled && styles.triggerDisabled,
         )}>
         <span {...stylex.props(styles.triggerLabel)}>{trigger}</span>
         <span

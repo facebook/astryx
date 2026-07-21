@@ -246,6 +246,80 @@ describe('Collapsible', () => {
     });
   });
 
+  describe('disabled state', () => {
+    it('marks the trigger aria-disabled and drops it from the tab order', () => {
+      render(
+        <Collapsible trigger="T" isDisabled>
+          Body
+        </Collapsible>,
+      );
+      const button = screen.getByRole('button');
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+      expect(button).toHaveAttribute('tabindex', '-1');
+      // Never the native disabled attribute — it stays focusable/perceivable.
+      expect(button).not.toBeDisabled();
+    });
+
+    it('is enabled by default (no aria-disabled, stays in tab order)', () => {
+      render(<Collapsible trigger="T">Body</Collapsible>);
+      const button = screen.getByRole('button');
+      expect(button).not.toHaveAttribute('aria-disabled');
+      expect(button).not.toHaveAttribute('tabindex', '-1');
+    });
+
+    it('does not toggle when the trigger is clicked while disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <Collapsible trigger="T" isDisabled defaultIsOpen>
+          Body
+        </Collapsible>,
+      );
+      const button = screen.getByRole('button');
+      expect(button).toHaveAttribute('aria-expanded', 'true');
+      await user.click(button);
+      expect(button).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('does not fire onOpenChange while disabled', async () => {
+      const user = userEvent.setup();
+      const onOpenChange = vi.fn();
+      render(
+        <Collapsible trigger="T" isDisabled onOpenChange={onOpenChange}>
+          Body
+        </Collapsible>,
+      );
+      await user.click(screen.getByRole('button'));
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it('does not collapse an already-open item — content stays visible', () => {
+      render(
+        <Collapsible trigger="T" isDisabled defaultIsOpen>
+          Body
+        </Collapsible>,
+      );
+      const content = contentFor(screen.getByRole('button'));
+      expect(content).not.toHaveStyle({display: 'none'});
+    });
+
+    it('does not toggle its group item when disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <CollapsibleGroup type="single">
+          <Collapsible trigger="A" value="a" isDisabled>
+            Body A
+          </Collapsible>
+          <Collapsible trigger="B" value="b">
+            Body B
+          </Collapsible>
+        </CollapsibleGroup>,
+      );
+      const triggerA = screen.getByRole('button', {name: /A/});
+      await user.click(triggerA);
+      expect(triggerA).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
   describe('prop forwarding', () => {
     it('forwards a ref to the root element', () => {
       const ref = vi.fn();

@@ -55,6 +55,12 @@ export const docs = {
       description: 'Controlled open state.',
     },
     {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: "Disable the item so its trigger can't be toggled (dimmed, aria-disabled, and out of the tab order). Doesn't collapse an already-open item.",
+      default: 'false',
+    },
+    {
       name: 'onOpenChange',
       type: '(isOpen: boolean) => void',
       description: 'Callback invoked when the open state changes.',
