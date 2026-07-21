@@ -17,6 +17,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-collapsible', visualProps: ['density']},
+      {className: 'astryx-collapsible-content', visualProps: ['density']},
       {className: 'astryx-collapsible-group', visualProps: ['density']},
     ],
   },

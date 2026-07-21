@@ -72,6 +72,12 @@ describe('Collapsible', () => {
       expect(screen.getByTestId('root')).toHaveClass('astryx-collapsible');
     });
 
+    it('renders the stable astryx-collapsible-content class on the content area', () => {
+      render(<Collapsible trigger="T">c</Collapsible>);
+      const content = contentFor(screen.getByRole('button'));
+      expect(content).toHaveClass('astryx-collapsible-content');
+    });
+
     it('renders a ReactNode trigger, not just a string', () => {
       render(
         <Collapsible trigger={<span data-testid="rich">Rich</span>}>

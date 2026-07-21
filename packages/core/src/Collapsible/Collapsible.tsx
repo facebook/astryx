@@ -39,6 +39,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
+
 import {useCollapsible} from './useCollapsible';
 import {CollapsibleGroupPresentationContext} from './CollapsibleGroupContext';
 import {getIcon} from '../Icon/globalIconRegistry';
@@ -102,8 +103,17 @@ const styles = stylex.create({
   contentHidden: {
     display: 'none',
   },
+  // Anchors body typography so revealed text renders at the system's body
+  // scale (family/size/weight/leading) instead of inheriting from wherever
+  // the Collapsible is placed. External themes override via the
+  // `astryx-collapsible-content` target.
   content: {
     paddingBlockStart: spacingVars['--spacing-1'],
+    fontFamily: typographyVars['--font-family-body'],
+    fontSize: typeScaleVars['--text-body-size'],
+    fontWeight: typeScaleVars['--text-body-weight'],
+    lineHeight: typeScaleVars['--text-body-leading'],
+    color: colorVars['--color-text-primary'],
   },
   // Group divider chrome — a hairline above every item except the first.
   // The group's wrapper (or 'all' mode) owns the outer edges.
@@ -286,10 +296,15 @@ export function Collapsible({
       </button>
       <div
         id={contentId}
-        {...stylex.props(
-          styles.content,
-          density != null && contentDensity[density],
-          !isOpen && styles.contentHidden,
+        {...mergeProps(
+          themeProps('collapsible-content', {
+            density: density ?? undefined,
+          }),
+          stylex.props(
+            styles.content,
+            density != null && contentDensity[density],
+            !isOpen && styles.contentHidden,
+          ),
         )}>
         {presentation != null ? (
           <CollapsibleGroupPresentationContext value={null}>
