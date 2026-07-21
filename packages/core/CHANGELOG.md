@@ -1,5 +1,73 @@
 # @xds/core
 
+# 0.1.7
+
+#### Breaking Changes
+
+- Table plugin render-prop interfaces (`TableRenderProps`, `HeaderRowRenderProps`, `HeaderCellRenderProps`, `BodyRowRenderProps`, `BodyCellRenderProps`, `ScrollWrapperRenderProps`) and the `scrollWrapper` component contract rename their StyleX array field `styles` → `xstyle`, matching the prop name sub-components receive it under. Custom plugin authors: rename `props.styles` reads and `styles:` writes in transform functions (#3679)
+  **Codemod:** `npx astryx upgrade --codemod rename-table-renderprops-styles-to-xstyle`
+
+#### New Features
+
+- Export the authoring factories from `@astryxdesign/core`: `createConfig` at `@astryxdesign/core/config` and `createIntegration`/`createPageTemplate`/`createBlockTemplate`/`createComponentDoc`/`createFunctionDoc`/`createDoc` at `@astryxdesign/core/authoring`. Authoring a config or integration no longer requires depending on the CLI. Existing `@astryxdesign/cli/*` imports keep working via re-export.
+- Button: new `width` prop following the input field width convention (`SizeValue`: numbers are pixels, strings are used as-is). `width="100%"` removes the need for a `width: '100%'` xstyle override or a stretch layout wrapper for full-width CTAs in auth forms, dialogs, and mobile layouts (#2600).
+- **Astryx components are now translatable.** Wrap your app in `<InternationalizationProvider locale="...">` and pass one or more locale catalogs to render astryx UI in the language of your choice; call `useTranslator()` inside your own components to translate consumer strings against the active locale. Astryx ships an English catalog with BCP 47 regional fallback (e.g. `pt-BR` → `pt` → `en`), so consumers who never render a provider see today's English strings unchanged.
+- **Translation coverage now spans the full component set** — PowerSearch (UI chrome, value-editor labels/placeholders, the 21 built-in operator labels, and ICU-pluralized result counts), plus AlertDialog, AppShell, Banner, Breadcrumbs, Calendar, Chat, CommandPalette, ContextMenu, date/time inputs, Dialog, DropdownMenu, Lightbox, Link, Markdown, mobile/side/top nav, Outline, Popover, Resizable, Selector/MultiSelector, Table (and its filter/selection/sort plugins), Toast, Tokenizer, Typeahead, and related interactive affordances. Placeholder strings that used `...` are normalized to `…` (U+2026) in the English catalog; consumers who snapshot-test the exact three-dot form will see a diff, and consumers passing an explicit `placeholder` are unaffected.
+- Two i18n-related **type refinements** (source-compatible for existing usage): `PowerSearchOperator` is now a discriminated union — `{key, value, label}` (raw text) or `{key, value, i18nKey}` (astryx-translated); passing `label` compiles and behaves unchanged, while a bare `{key, value}` (neither `label` nor `i18nKey`) becomes a compile-time error. `Markdown.renderBlock` gains a `t: TranslatorFn` parameter threaded from the top-level `Markdown`; direct `renderBlock` consumers pass a translator.
+- New ESLint rules in `@astryx/eslint-plugin-astryx` (`astryx.configs.strict` / `recommended`): `@astryx/i18n-key-format` enforces camelCase path segments for `@astryx.*` catalog keys, and `@astryx/no-hardcoded-i18n-string` flags hardcoded English string literals on user-facing props — now also inside ternaries, logical expressions, and template literals (e.g. `aria-label={isOpen ? 'Close' : 'Open'}`). Both are filesystem-agnostic; downstream packages can enable them with the standard `files` / `ignores` pattern and will see additional violations flagged after upgrading.
+
+#### Fixes
+
+- Fix Banner chevron transition to honor `prefers-reduced-motion: reduce`.
+- Round the trailing corner of the last ButtonGroup member, even when it renders a layer (#2508)
+  ButtonGroup keyed its trailing border-radius off `:last-child`. But several members render an invisible layer element _after_ their button — a `Button` with a `tooltip` returns `button + tooltip layer`, and `DropdownMenu` returns `trigger + popover`, both rendered inline by `useLayer` rather than portaled. The layer took the `:last-child` slot, so the real trailing button silently kept square outer corners and the group ended in a flat-edged stub.
+- Calendar: month navigation now announces the newly visible month (e.g. "March 2026") to screen readers via a polite live region. Previously the grid changed silently. (#3724)
+- Chat: opening a conversation that already has content (history, replay, session switching) no longer spring-scrolls from the top — the first fill positions instantly, whether the content is present at mount or arrives asynchronously. Subsequent growth (streaming) springs as before. `useChatStreamScroll`'s `scrollToBottom` accepts `{behavior: 'instant'}` for one-frame programmatic jumps, mirroring the DOM's `scrollTo({behavior})`. Exports the `ChatScrollToBottomOptions` type. (#3795)
+- CheckboxInput/Switch: descriptions stay linked via aria-describedby when the label is visually hidden, instead of being orphaned in the DOM.
+- CodeBlock keeps line numbers aligned with wrapped lines when `isWrapped` is enabled
+- Forward rest props in Dialog and DialogHeader. DialogHeader now passes through data-testid, aria-*, and other attributes. Dialog's inline path forwards all rest props. Standard path spreads rest before contract props so onClick, onCancel, aria-modal, and role cannot be clobbered.
+- Anchor --dense / --zh doc overlays to their base sections (#2182)
+  The compressed and translated reference docs were merged into the base doc **by array position**, so an overlay whose sections were ordered differently — or which omitted one — grafted every title onto the wrong body.
+- FileInput: don't drop the drag-over highlight when dragging over dropzone children
+  Dragging a file across the dropzone's own icon/text fired a dragleave on the container and cleared the drag-over state, so the "Drop files here" highlight flickered mid-drag. A dragleave whose relatedTarget is still inside the dropzone is now ignored; only actually exiting the dropzone ends the drag-over state.
+- Fix consumer rest props clobbering component contract props in ButtonGroup, Calendar, and Carousel
+  Components that set `role`, `aria-roledescription`, or `onKeyDown` on their root element now spread `{...rest}` before those props so a consumer cannot accidentally override the component's semantic contract. `onKeyDown` is composed via `composeEventHandlers` so both the consumer's and the component's handlers fire.
+- Kbd: pass-through props no longer clobber the computed role and spoken accessible name (rest-spread precedence corrected, mirroring Avatar).
+- Layer: centered layers near a viewport edge no longer render clipped (#3671). Flip fallbacks are a no-op for center alignment, so centered placements now append span-based `position-try-fallbacks` that slide the layer along its alignment axis.
+- Link: disabled links no longer carry a live href/onClick — programmatic focus or AT activation can no longer trigger navigation.
+- Selector: searching within the options popover now announces the number of matching results ("3 results" / "No results found") to screen readers, mirroring Typeahead. Previously filtering happened silently. (#3725)
+- Table now honors the standard root styling props: `className`, `style`, `xstyle`, `id`, `aria-*`, `data-*`, and other HTML attributes reach the root `<table>` element instead of being silently dropped. `tableProps` is deprecated (still works, loses conflicts to direct props); the computed column min-width still wins over a consumer `style.minWidth`, but no longer clobbers it when columns compute none (#3679)
+- Timestamp: the absolute-time tooltip is now reachable by keyboard — the timestamp is focusable while a tooltip is attached, per WCAG content-on-hover requirements.
+- TopNav: the `<nav>` landmark now defaults its accessible name to "Top navigation" when the `label` prop is omitted, matching SideNav ("Side navigation"), Breadcrumbs, and Pagination. Previously an omitted `label` shipped an unnamed navigation landmark, leaving screen-reader users with multiple indistinguishable "navigation" landmarks on pages that compose SideNav + TopNav + Breadcrumbs. An explicit `label` still wins.
+
+#### Documentation
+
+- Point AI agents to the CLI from the core README.
+  `@astryxdesign/core`'s README now leads with a callout telling AI agents to run `npx astryx init` first, which installs the CLI's component index into `AGENTS.md`/`CLAUDE.md`. In an isolated cold-start test, this took agents from 0/5 to 4/5 on discovering and using the CLI (matching the AGENTS.md ceiling); a first-run nudge alone did 0/5.
+- Surface literal values for union types in component docs (#1645)
+  Prop docs named their union types without ever showing the values behind them — `gap: SpacingStep`, `align: GridAlignment`, `sort: TableSortState<TSortKey>`, `status: InputStatus`. Readers without an IDE (agents especially) had to guess, and guessed wrong: `gap={16}` (pixels, not a scale step), `direction: 'desc'` (the type says `'descending'`).
+
+#### Other Changes
+
+- Migrate the duplicated charts/lab color parsers onto the shared `@astryxdesign/core/utils/color` module: adds `toGLFloats(rgba)` for RGBA→GL float conversion with a neutral non-NaN fallback, replacing the four `hexToGL` copies, and rebuilds `lerpHex`/`hexAlpha` on `parseHex`/`formatHex`/`parseColor`/`formatColor` (#3739)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @AKnassa
+- @arham766
+- @bhamodi
+- @cixzhang
+- @ejhammond
+- @jiunshinn
+- @joeyfarina
+- @nynexman4464
+- @yyq1025
+- @zeroryu
+
+---
+
 # 0.1.6
 
 #### New Features
