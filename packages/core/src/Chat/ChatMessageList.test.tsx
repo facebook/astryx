@@ -125,15 +125,18 @@ class FakeIntersectionObserver {
   }
 }
 
-/** Fire an intersection notification on every live observer. */
-function fireIntersect(isIntersecting = true) {
+/**
+ * Fire an intersection notification on every live observer. Multiple
+ * states model coalesced delivery — entries arrive oldest-first.
+ */
+function fireIntersect(...states: boolean[]) {
+  const entries = (states.length > 0 ? states : [true]).map(
+    isIntersecting => ({isIntersecting}) as IntersectionObserverEntry,
+  );
   act(() => {
     for (const io of ioInstances) {
       if (io.observed.size > 0) {
-        io.callback(
-          [{isIntersecting} as IntersectionObserverEntry],
-          io as unknown as IntersectionObserver,
-        );
+        io.callback(entries, io as unknown as IntersectionObserver);
       }
     }
   });
@@ -446,6 +449,11 @@ describe('ChatMessageList — scrollToTopAction', () => {
 
     // The list keeps filling without another manual scroll.
     expect(action).toHaveBeenCalledTimes(2);
+
+    // Settle the second load: React runs async transition actions on one
+    // global chain, so a load left forever-pending here would wedge every
+    // later transition commit in this file.
+    await act(async () => resolveAction());
   });
 
   it('fires the latest action after the prop changes', async () => {
@@ -546,5 +554,108 @@ describe('ChatMessageList — scrollToTopAction', () => {
     await act(async () => resolveAction());
 
     expect(container.scrollTop).toBe(0);
+    // An empty page must also stop the auto-refill cycle.
+    expect(action).toHaveBeenCalledTimes(1);
+  });
+
+  it('acts on the latest entry when the observer coalesces notifications', async () => {
+    const action = vi.fn(async () => {});
+    render(
+      <ChatMessageList scrollToTopAction={action}>
+        <div>msg</div>
+      </ChatMessageList>,
+    );
+
+    // Delayed delivery batches threshold crossings, oldest first.
+    // Enter-then-leave means the sentinel is already gone — no load.
+    fireIntersect(true, false);
+    await act(async () => {});
+    expect(action).not.toHaveBeenCalled();
+
+    // Leave-then-enter is a real arrival at the top.
+    fireIntersect(false, true);
+    await act(async () => {});
+    expect(action).toHaveBeenCalledTimes(1);
+  });
+
+  it('compensates against the nearest scrollable ancestor when standalone', async () => {
+    let resolveAction!: () => void;
+    const action = vi.fn(
+      async () => new Promise<void>(resolve => (resolveAction = resolve)),
+    );
+
+    const ui = (messages: string[]) => (
+      <div style={{overflowY: 'auto'}} data-testid="scroller">
+        <ChatMessageList scrollToTopAction={action}>
+          {messages.map(m => (
+            <div key={m}>{m}</div>
+          ))}
+        </ChatMessageList>
+      </div>
+    );
+
+    const view = render(ui(['oldest-visible']));
+    const scroller = screen.getByTestId('scroller');
+    stubRect(scroller, () => 0);
+    const anchor = screen.getByText('oldest-visible');
+    let anchorTop = 100;
+    stubRect(anchor, () => anchorTop);
+
+    fireIntersect();
+    await act(async () => {});
+
+    view.rerender(ui(['earlier-1', 'earlier-2', 'oldest-visible']));
+    anchorTop = 500;
+    await act(async () => resolveAction());
+
+    // Compensation lands on the wrapper that clips the list — not the page.
+    expect(scroller.scrollTop).toBe(400);
+  });
+
+  it('finds legacy overlay-scrollbar containers when standalone', async () => {
+    let resolveAction!: () => void;
+    const action = vi.fn(
+      async () => new Promise<void>(resolve => (resolveAction = resolve)),
+    );
+
+    const ui = (messages: string[]) => (
+      <div data-testid="scroller">
+        <ChatMessageList scrollToTopAction={action}>
+          {messages.map(m => (
+            <div key={m}>{m}</div>
+          ))}
+        </ChatMessageList>
+      </div>
+    );
+
+    // Older Chromium still computes the deprecated `overflow-y: overlay`,
+    // which jsdom's inline styles cannot express — stub the computed style.
+    // Installed before render: the observer effect resolves its container
+    // once, on mount.
+    const realGetComputedStyle = window.getComputedStyle.bind(window);
+    const spy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el, pseudo) =>
+        (el as HTMLElement).getAttribute?.('data-testid') === 'scroller'
+          ? ({overflowY: 'overlay'} as CSSStyleDeclaration)
+          : realGetComputedStyle(el, pseudo ?? undefined),
+      );
+
+    const view = render(ui(['oldest-visible']));
+    const scroller = screen.getByTestId('scroller');
+    stubRect(scroller, () => 0);
+    const anchor = screen.getByText('oldest-visible');
+    let anchorTop = 100;
+    stubRect(anchor, () => anchorTop);
+
+    fireIntersect();
+    await act(async () => {});
+
+    view.rerender(ui(['earlier-1', 'earlier-2', 'oldest-visible']));
+    anchorTop = 500;
+    await act(async () => resolveAction());
+    spy.mockRestore();
+
+    expect(scroller.scrollTop).toBe(400);
   });
 });

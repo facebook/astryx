@@ -201,12 +201,19 @@ const gapStyles = stylex.create({
 /**
  * Nearest scrollable ancestor — used only when the list renders outside a
  * ChatLayout, so scroll compensation targets the scroller that actually
- * clips the list rather than the page.
+ * clips the list rather than the page. Accepts the deprecated `overlay`
+ * value like Outline's getScrollableAncestor, but deliberately does not
+ * require scrollHeight > clientHeight: an underfilled list's scroller
+ * cannot scroll *yet*, and the auto-refill cycle must still target it.
  */
 function findScrollContainer(el: Element | null): Element | null {
   for (let node = el?.parentElement; node != null; node = node.parentElement) {
     const {overflowY} = getComputedStyle(node);
-    if (overflowY === 'auto' || overflowY === 'scroll') {
+    if (
+      overflowY === 'auto' ||
+      overflowY === 'scroll' ||
+      overflowY === 'overlay'
+    ) {
       return node;
     }
   }
