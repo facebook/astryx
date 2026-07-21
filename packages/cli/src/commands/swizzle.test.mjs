@@ -13,9 +13,7 @@ describe('rewriteImports', () => {
   it('rewrites ../utils/mergeProps to @astryxdesign/core/utils', () => {
     const input = `import { mergeProps } from '../utils/mergeProps';`;
     const result = rewriteImports(input);
-    expect(result).toBe(
-      `import { mergeProps } from '@astryxdesign/core/utils';`,
-    );
+    expect(result).toBe(`import { mergeProps } from '@astryxdesign/core/utils';`);
   });
 
   it('rewrites ../BaseProps to the public package entry point', () => {
