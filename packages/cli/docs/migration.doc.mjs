@@ -14,10 +14,12 @@ export const docs = {
       title: 'Overview',
       content: [
         {
+          id: 'migration-b1',
           type: 'prose',
           text: 'Treat migration as a product-shell and workflow migration, not a global class replacement. Start by putting the app inside Theme and AppShell, then move one route or surface at a time to design system primitives while keeping existing data, routing, and business logic intact.',
         },
         {
+          id: 'migration-b2',
           type: 'prose',
           text: 'Tailwind can coexist during migration. Use it for legacy wrappers and local layout while replacing interactive controls, navigation, command surfaces, forms, alerts, dialogs, and settings UI with components.',
         },
@@ -27,6 +29,7 @@ export const docs = {
       title: 'Recommended Order',
       content: [
         {
+          id: 'migration-b3',
           type: 'list',
           style: 'ordered',
           items: [
@@ -47,10 +50,12 @@ export const docs = {
       title: 'CLI Workflow',
       content: [
         {
+          id: 'migration-b4',
           type: 'prose',
           text: 'Use the CLI as the migration checklist. Read the docs for the pattern you are about to touch, inspect a matching template skeleton, then read the exact component docs before editing.',
         },
         {
+          id: 'migration-b5',
           type: 'code',
           lang: 'bash',
           label: 'Migration-oriented CLI pass',
@@ -68,10 +73,12 @@ npx astryx component Button
 npx astryx component TextInput`,
         },
         {
+          id: 'migration-b6',
           type: 'prose',
           text: 'Use --dense when pasting output into an AI coding tool, and use --json when building automated migration reports.',
         },
         {
+          id: 'migration-b7',
           type: 'code',
           lang: 'bash',
           label: 'Dense and JSON modes',
@@ -84,10 +91,12 @@ npx astryx component Button --json`,
       title: 'Theme and CSS Setup',
       content: [
         {
+          id: 'migration-b8',
           type: 'prose',
           text: 'Mount Theme at the app root so every migrated component reads the same token set. Keep the mode in application state if users can switch between light and dark themes.',
         },
         {
+          id: 'migration-b9',
           type: 'code',
           lang: 'tsx',
           label: 'Root provider with explicit mode',
@@ -109,10 +118,12 @@ export function AppRoot({children}: {children: React.ReactNode}) {
 }`,
         },
         {
+          id: 'migration-b10',
           type: 'prose',
           text: 'When Tailwind remains in the app, declare layer order once in the global CSS file. design system reset and theme CSS should load before Tailwind utilities so migrated components keep design system defaults while legacy utility classes still work.',
         },
         {
+          id: 'migration-b11',
           type: 'code',
           lang: 'css',
           label: 'Tailwind v4 coexistence',
@@ -127,10 +138,12 @@ export function AppRoot({children}: {children: React.ReactNode}) {
 @import "tailwindcss/utilities.css" layer(utilities);`,
         },
         {
+          id: 'migration-b12',
           type: 'prose',
           text: 'On Tailwind v3 there is no preflight.css to import, so wrap the @tailwind base directive in a named layer instead. Keep utilities unlayered so existing app utility classes still win everywhere.',
         },
         {
+          id: 'migration-b13',
           type: 'code',
           lang: 'css',
           label: 'Tailwind v3 coexistence',
@@ -152,14 +165,17 @@ export function AppRoot({children}: {children: React.ReactNode}) {
       title: 'Cascade Layer Safety',
       content: [
         {
+          id: 'migration-b14',
           type: 'prose',
           text: 'In a stylesheet with no layers at all, a zero-specificity reset like `* { padding: 0 }` loses to any class selector, so most developers treat resets as harmless. Layers change the rules twice: unlayered styles beat every named layer, and a later layer beats an earlier one, both regardless of specificity. The same reset therefore wins against every component style either by staying unlayered or by landing in a layer declared after astryx-base. Same CSS, opposite outcome, and no error or warning when it happens.',
         },
         {
+          id: 'migration-b15',
           type: 'prose',
           text: 'This is the most common way an adoption breaks, through one of two @import mechanisms. A top-level @import without the layer() keyword keeps the legacy reset unlayered, where it overrides every design system layer. And an @import nested inside a file that was itself imported into a layer inherits that surrounding layer, so a reset can silently land in a consumer layer above astryx-base. Either way the fix is the same: import the legacy reset into the lowest layer explicitly.',
         },
         {
+          id: 'migration-b16',
           type: 'code',
           lang: 'css',
           label: 'Legacy reset, explicitly layered',
@@ -167,10 +183,12 @@ export function AppRoot({children}: {children: React.ReactNode}) {
 @import "./legacy-reset.css" layer(reset);`,
         },
         {
+          id: 'migration-b17',
           type: 'prose',
           text: 'Audit the layers around the design system with this checklist before building screens.',
         },
         {
+          id: 'migration-b18',
           type: 'list',
           style: 'unordered',
           items: [
@@ -184,6 +202,7 @@ export function AppRoot({children}: {children: React.ReactNode}) {
           ],
         },
         {
+          id: 'migration-b19',
           type: 'prose',
           text: 'One more mental model shift: a className or utility class you write on a component still reaches the DOM either way, but whether it overrides the component is a layer question, not a source order question. Keep app utilities in the utilities layer so they keep winning.',
         },
@@ -193,10 +212,12 @@ export function AppRoot({children}: {children: React.ReactNode}) {
       title: 'Foundation Smoke Test',
       content: [
         {
+          id: 'migration-b20',
           type: 'prose',
           text: 'A broken layer order fails silently and identically on every page, so catch it before feature work instead of after N migrated screens. Render one throwaway page with a few primitives as the first migration step.',
         },
         {
+          id: 'migration-b21',
           type: 'code',
           lang: 'tsx',
           label: 'Foundation check page',
@@ -234,10 +255,12 @@ export default function FoundationCheck() {
 }`,
         },
         {
+          id: 'migration-b22',
           type: 'prose',
           text: 'If the button renders with visible padding, a filled primary background, and the input and card have borders and internal spacing, the foundation is sound. For an assertion that can run in any test runner or a dev-only effect, check that a primitive keeps non-zero padding:',
         },
         {
+          id: 'migration-b23',
           type: 'code',
           lang: 'ts',
           label: 'Foundation assertion',
@@ -256,6 +279,7 @@ if (getComputedStyle(button).paddingInline === '0px') {
 }`,
         },
         {
+          id: 'migration-b24',
           type: 'prose',
           text: 'When this fails, the fix is almost always in the layer order: find the stylesheet that zeroes padding, and move it into the reset layer or delete it.',
         },
@@ -265,10 +289,12 @@ if (getComputedStyle(button).paddingInline === '0px') {
       title: 'Move the App Frame First',
       content: [
         {
+          id: 'migration-b25',
           type: 'prose',
           text: 'Start with AppShell so page migration happens inside the final navigation, spacing, surface, and responsive frame. This also exposes theme and color issues early because every route shares the same shell.',
         },
         {
+          id: 'migration-b26',
           type: 'table',
           headers: ['Legacy surface', 'Component', 'Notes'],
           rows: [
@@ -285,10 +311,12 @@ if (getComputedStyle(button).paddingInline === '0px') {
       title: 'Map shadcn and Radix Primitives',
       content: [
         {
+          id: 'migration-b27',
           type: 'prose',
           text: 'Do not wrap old shadcn components in design system styles. Replace the primitive with the component that owns the behavior, accessibility, state classes, and token usage.',
         },
         {
+          id: 'migration-b28',
           type: 'table',
           headers: ['Existing primitive', 'Component', 'Migration note'],
           rows: [
@@ -313,14 +341,17 @@ if (getComputedStyle(button).paddingInline === '0px') {
       title: 'Command Palette, Settings, and Theme',
       content: [
         {
+          id: 'migration-b29',
           type: 'prose',
           text: 'Move global search to CommandPalette once the shell exists. Treat the palette as a view over app commands: routes, contextual actions, create actions, filters, recent items, and entity results. Keep data normalization in app code so search sources always return arrays of searchable items.',
         },
         {
+          id: 'migration-b30',
           type: 'prose',
           text: 'Put light and dark mode controls in the settings popover or account menu. The switch or selector should update the mode passed to Theme, not toggle isolated body classes.',
         },
         {
+          id: 'migration-b31',
           type: 'code',
           lang: 'tsx',
           label: 'Settings popover theme control',
@@ -344,6 +375,7 @@ if (getComputedStyle(button).paddingInline === '0px') {
       title: 'Verification Checklist',
       content: [
         {
+          id: 'migration-b32',
           type: 'list',
           style: 'unordered',
           items: [
@@ -361,10 +393,12 @@ if (getComputedStyle(button).paddingInline === '0px') {
       title: 'AI Migration Prompt',
       content: [
         {
+          id: 'migration-b33',
           type: 'prose',
           text: 'When using an AI coding agent, give it an explicit migration loop instead of asking for a full-app rewrite.',
         },
         {
+          id: 'migration-b34',
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',

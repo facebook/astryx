@@ -16,6 +16,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'shape-b1',
           type: 'prose',
           text: 'The radius scale uses a semantic naming system: inner → element → container → page. Each level fits a specific context. Themes can multiply the entire scale via a radius multiplier, with --radius-none and --radius-full as fixed anchors.',
         },
@@ -26,6 +27,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'shape-b2',
           type: 'token-ref',
           topic: 'tokens',
           section: 'Radius Tokens',
@@ -37,10 +39,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'shape-b3',
           type: 'prose',
           text: 'When a rounded container has padding, inner elements need a smaller radius to appear concentric. Components like Card handle this automatically; the inner radius is computed as max(0, outerRadius - padding).',
         },
         {
+          id: 'shape-b4',
           type: 'code',
           lang: 'css',
           label: 'Concentric radius formula',
@@ -54,6 +58,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'shape-b5',
           type: 'list',
           style: 'do',
           items: [
@@ -63,6 +68,7 @@ export const docs = {
           ],
         },
         {
+          id: 'shape-b6',
           type: 'list',
           style: 'dont',
           items: [

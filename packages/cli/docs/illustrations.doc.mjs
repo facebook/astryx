@@ -14,10 +14,12 @@ export const docs = {
       category: 'foundations',
       content: [
         {
+          id: 'illustrations-b1',
           type: 'prose',
           text: 'Consistent illustration usage reinforces brand identity and helps users understand context at a glance. Use illustrations in these contexts:',
         },
         {
+          id: 'illustrations-b2',
           type: 'table',
           headers: ['Context', 'Examples'],
           rows: [
@@ -34,6 +36,7 @@ export const docs = {
       category: 'foundations',
       content: [
         {
+          id: 'illustrations-b3',
           type: 'list',
           style: 'do',
           items: [
@@ -44,6 +47,7 @@ export const docs = {
           ],
         },
         {
+          id: 'illustrations-b4',
           type: 'list',
           style: 'dont',
           items: [
@@ -58,10 +62,12 @@ export const docs = {
       category: 'foundations',
       content: [
         {
+          id: 'illustrations-b5',
           type: 'prose',
           text: 'Center illustrations inside Center with supporting text stacked below. Typical illustration sizes range from 120px for inline empty states to 240px for full-page onboarding screens. Always pair the illustration with a heading and optional body text to explain what the user should do next.',
         },
         {
+          id: 'illustrations-b6',
           type: 'code',
           lang: 'tsx',
           label: 'Empty state with illustration',

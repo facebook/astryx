@@ -17,10 +17,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'typography-b1',
           type: 'prose',
           text: 'Typography is built on a geometric type scale: base size × ratio^step, with 14px and 1.2 as defaults. Every text style is a semantic token that composes font size, weight, and line-height, so components express intent (heading, body, label) rather than raw values.',
         },
         {
+          id: 'typography-b2',
           type: 'prose',
           text: 'Two layers work together: raw size tokens (--font-size-xs ... --font-size-5xl) form the geometric scale, and semantic type scale tokens (--text-heading-1-size, --text-body-leading, etc.) reference them by var(). Themes override the entire scale by adjusting base and ratio in defineTheme; all semantic tokens recompute automatically.',
         },
@@ -33,10 +35,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'typography-b3',
           type: 'prose',
           text: 'Three font roles: body (UI text), heading (titles and headings), and code (monospace). By default, body and heading share the same system font stack; code uses a monospace stack. Custom themes can assign different families per role; heading inherits from body when not explicitly set.',
         },
         {
+          id: 'typography-b4',
           type: 'token-ref',
           topic: 'tokens',
           section: 'Font Family Tokens',
@@ -50,10 +54,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'typography-b5',
           type: 'prose',
           text: 'Geometric scale: round(base × ratio^step), expressed in rem. The default scale is 14px × 1.2, producing 12 steps from 4xs (6px) to 5xl (42px). Adjusting base and ratio in defineTheme regenerates every size token while preserving proportional relationships.',
         },
         {
+          id: 'typography-b6',
           type: 'token-ref',
           topic: 'tokens',
           section: 'Font Size Tokens',
@@ -67,10 +73,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'typography-b7',
           type: 'prose',
           text: 'Four semantic weights: normal (400, body/code), medium (500, labels/data), semibold (600, headings/titles), bold (700, strong emphasis). Type scale tokens reference these by var() so themes can remap numeric values.',
         },
         {
+          id: 'typography-b8',
           type: 'token-ref',
           topic: 'tokens',
           section: 'Font Weight Tokens',
@@ -84,10 +92,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'typography-b9',
           type: 'prose',
           text: 'Line heights are computed from a tiered target ratio and snapped to a 4px vertical grid. Small text (<20px) targets 1.5, medium text (20–31px) targets 1.4, and large text (≥32px) targets 1.25. A minimum gap of fontSize + 4px is enforced. The result is a unitless ratio stored in each --text-*-leading token.',
         },
         {
+          id: 'typography-b10',
           type: 'prose',
           text: 'The 4px grid matters: every line box aligns to 4px increments, which keeps baselines, spacing, and component heights predictable. The expandTypeScale utility computes these automatically when you provide a base and ratio, so you should never need to set line-height manually.',
         },
@@ -100,10 +110,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'typography-b11',
           type: 'prose',
           text: 'Semantic tokens that combine size, weight, and line-height into a single type style. Each token triplet (--text-*-size, --text-*-weight, --text-*-leading) is consumed by Text and Heading. Use the component props rather than composing raw font tokens.',
         },
         {
+          id: 'typography-b12',
           type: 'token-ref',
           topic: 'tokens',
           section: 'Type Scale Tokens',
@@ -117,10 +129,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'typography-b13',
           type: 'prose',
           text: 'Display variants (display-1, display-2, display-3) continue the geometric progression above heading-1, at steps +6, +5, and +4. They use normal weight (400) instead of semibold, and tighter line-heights (~1.2), since large text reads better with less leading. Use display types for hero banners, marketing headlines, and data callouts, not for document headings.',
         },
         {
+          id: 'typography-b14',
           type: 'prose',
           text: 'Display text often needs heading semantics for accessibility. Use the type prop on Heading to apply display styling while preserving the correct HTML element: <Heading level={1} type="display-1"> gives you display-1 styling with an <h1> tag, so screen readers see the correct document outline.',
         },
@@ -133,6 +147,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'typography-b15',
           type: 'code',
           lang: 'tsx',
           label: 'Heading for document structure',
@@ -153,6 +168,7 @@ export const docs = {
 </Heading>`,
         },
         {
+          id: 'typography-b16',
           type: 'code',
           lang: 'tsx',
           label: 'Text for body, label, and display text',
@@ -168,6 +184,7 @@ export const docs = {
 <Text type="display-2">$1.2M Revenue</Text>`,
         },
         {
+          id: 'typography-b17',
           type: 'code',
           lang: 'tsx',
           label: 'Customizing the type scale via defineTheme',
@@ -200,6 +217,7 @@ const denseTheme = defineTheme({
   category: 'foundations',
       content: [
         {
+          id: 'typography-b18',
           type: 'list',
           style: 'do',
           items: [
@@ -212,6 +230,7 @@ const denseTheme = defineTheme({
           ],
         },
         {
+          id: 'typography-b19',
           type: 'list',
           style: 'dont',
           items: [

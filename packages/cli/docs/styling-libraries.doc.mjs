@@ -15,14 +15,17 @@ export const docs = {
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b1',
           type: 'prose',
           text: 'Keep the system as the source of truth for theme values. Components read design tokens from CSS custom properties such as `--color-text-primary`, `--color-background-surface`, `--spacing-4`, and `--radius-container`. Other styling libraries should map their own semantic tokens, utility names, or theme objects to those system CSS variables whenever possible.',
         },
         {
+          id: 'styling-libraries-b2',
           type: 'prose',
           text: 'Use CSS variables for ordinary DOM styling because they inherit through the tree, follow `data-theme` color mode, respect nested `data-astryx-theme` scopes, and update when themes switch. Use token resolver APIs only for non-CSS consumers such as SVG attribute values, canvas, chart configuration, color calculations, or static config generation.',
         },
         {
+          id: 'styling-libraries-b3',
           type: 'prose',
           text: 'For available token names and values, run `npx astryx docs tokens`. Focused references are also available with `npx astryx docs color`, `npx astryx docs spacing`, `npx astryx docs shape`, `npx astryx docs typography`, `npx astryx docs elevation`, and `npx astryx docs motion`.',
         },
@@ -33,10 +36,12 @@ export const docs = {
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b4',
           type: 'prose',
           text: 'Choose the narrowest integration path that fits the styling library. Most DOM styling should stay on the CSS-variable path; JavaScript token resolution is for APIs that cannot consume CSS custom properties.',
         },
         {
+          id: 'styling-libraries-b5',
           type: 'table',
           headers: ['Path', 'Use when', 'Value shape'],
           rows: [
@@ -69,6 +74,7 @@ export const docs = {
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b6',
           type: 'list',
           style: 'do',
           items: [
@@ -78,6 +84,7 @@ export const docs = {
           ],
         },
         {
+          id: 'styling-libraries-b7',
           type: 'list',
           style: 'dont',
           items: [
@@ -93,10 +100,12 @@ export const docs = {
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b8',
           type: 'prose',
           text: 'The simplest integration is direct CSS variable usage. CSS Modules scope class names, but system token variables are global/inherited values supplied by package CSS and the active theme.',
         },
         {
+          id: 'styling-libraries-b9',
           type: 'code',
           lang: 'css',
           label: 'Card.module.css',
@@ -109,6 +118,7 @@ export const docs = {
 }`,
         },
         {
+          id: 'styling-libraries-b10',
           type: 'prose',
           text: 'Sass variables are compile-time only. They are useful for generating static CSS, but they do not update when the system switches theme or color mode. Use native CSS custom properties for themeable values.',
         },
@@ -119,10 +129,12 @@ export const docs = {
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b11',
           type: 'prose',
           text: 'For StyleX styles, prefer the typed token exports from `@astryxdesign/core/theme/tokens.stylex`. They provide autocomplete and catch token-name typos while still resolving through the same system CSS variables at runtime.',
         },
         {
+          id: 'styling-libraries-b12',
           type: 'code',
           lang: 'tsx',
           label: 'Typed token imports',
@@ -139,6 +151,7 @@ const styles = stylex.create({
 });`,
         },
         {
+          id: 'styling-libraries-b13',
           type: 'prose',
           text: 'Use `xstyle` for component overrides and `stylex.props()` for your own DOM nodes. Use `className` when integrating a non-StyleX styling library.',
         },
@@ -149,10 +162,12 @@ const styles = stylex.create({
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b14',
           type: 'prose',
           text: 'The Tailwind v4 bridge at `@astryxdesign/core/tailwind-theme.css` maps Tailwind theme variables to system CSS variables with `@theme inline`, so utility classes like `text-primary`, `bg-surface`, `border-border`, `rounded-lg`, and `shadow-md` stay in sync with the active theme.',
         },
         {
+          id: 'styling-libraries-b15',
           type: 'code',
           lang: 'css',
           label: 'globals.css',
@@ -167,10 +182,12 @@ const styles = stylex.create({
 @import "tailwindcss/utilities.css" layer(utilities);`,
         },
         {
+          id: 'styling-libraries-b16',
           type: 'prose',
           text: 'Pre-declare every layer before any imports. This keeps reset lowest, Tailwind preflight above reset, component/theme styles in the middle, and Tailwind utilities last so utility classes on `className` can intentionally override component defaults.',
         },
         {
+          id: 'styling-libraries-b17',
           type: 'code',
           lang: 'tsx',
           label: 'Tailwind classes backed by system tokens',
@@ -179,6 +196,7 @@ const styles = stylex.create({
 </section>`,
         },
         {
+          id: 'styling-libraries-b18',
           type: 'prose',
           text: 'The Tailwind bridge is the concrete example of the general interop pattern: expose another library\'s semantic API, but point the values at system token variables.',
         },
@@ -189,10 +207,12 @@ const styles = stylex.create({
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b19',
           type: 'prose',
           text: 'Libraries like Panda CSS and Chakra UI have first-class semantic token objects. Put system CSS variables at the leaves of those objects so product code can use the library\'s semantic names while the system still owns the values.',
         },
         {
+          id: 'styling-libraries-b20',
           type: 'code',
           lang: 'ts',
           label: 'Semantic token aliases',
@@ -221,6 +241,7 @@ tokens: {
 }`,
         },
         {
+          id: 'styling-libraries-b21',
           type: 'code',
           lang: 'tsx',
           label: 'Panda-style usage',
@@ -235,6 +256,7 @@ tokens: {
 />`,
         },
         {
+          id: 'styling-libraries-b22',
           type: 'prose',
           text: 'If a semantic-token library needs to generate its own light/dark CSS from raw values, align its mode selector with Theme (`data-theme="light|dark"`) and generate that adapter from system theme data. Otherwise it can drift from nested or runtime themes.',
         },
@@ -245,10 +267,12 @@ tokens: {
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b23',
           type: 'prose',
           text: 'MUI expects palette slots such as primary, background, text, and divider. Map those slots to system variables for ordinary component styling. Use raw values only when MUI or your code needs to parse colors for contrast, alpha, lighten, or darken calculations.',
         },
         {
+          id: 'styling-libraries-b24',
           type: 'code',
           lang: 'ts',
           label: 'MUI palette mapped to system vars',
@@ -287,6 +311,7 @@ tokens: {
 });`,
         },
         {
+          id: 'styling-libraries-b25',
           type: 'prose',
           text: 'If MUI owns color mode in an app, generate the light and dark palette values from system theme data and keep Theme mode synchronized. If Theme owns color mode, keep both MUI schemes pointing at the same system CSS variables.',
         },
@@ -297,10 +322,12 @@ tokens: {
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b26',
           type: 'prose',
           text: 'Runtime CSS-in-JS libraries usually accept arbitrary theme objects. Keep those objects semantic, but store system CSS variable references as the values. This keeps generated classes stable while the system updates values through the CSS cascade.',
         },
         {
+          id: 'styling-libraries-b27',
           type: 'code',
           lang: 'ts',
           label: 'Generic CSS-in-JS theme object',
@@ -321,6 +348,7 @@ tokens: {
 };`,
         },
         {
+          id: 'styling-libraries-b28',
           type: 'prose',
           text: 'Avoid rebuilding CSS-in-JS theme objects with raw color values on every mode switch. CSS variables let the class names stay the same while the browser resolves the active values.',
         },
@@ -331,10 +359,12 @@ tokens: {
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b29',
           type: 'prose',
           text: 'Utility generators such as UnoCSS can put system variables in their theme config or shortcuts. Keep classes semantic (`bg-surface`, `text-primary`) and let the values point at system tokens.',
         },
         {
+          id: 'styling-libraries-b30',
           type: 'code',
           lang: 'ts',
           label: 'UnoCSS-style config',
@@ -356,6 +386,7 @@ tokens: {
 });`,
         },
         {
+          id: 'styling-libraries-b31',
           type: 'prose',
           text: 'Static utility extractors cannot see dynamically constructed class names. Prefer explicit class strings or the library\'s safelist/source-registration mechanism.',
         },
@@ -366,10 +397,12 @@ tokens: {
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b32',
           type: 'prose',
           text: 'Use `resolveThemeTokens()` or `resolveThemeToken()` when code outside React needs token values for a known theme and mode. Use `useTheme()` inside client components when the values should come from the nearest Theme and active mode.',
         },
         {
+          id: 'styling-libraries-b33',
           type: 'code',
           lang: 'ts',
           label: 'Resolve tokens without React context',
@@ -390,6 +423,7 @@ const chartOptions = {
 };`,
         },
         {
+          id: 'styling-libraries-b34',
           type: 'code',
           lang: 'tsx',
           label: 'Resolve tokens from the nearest Theme',
@@ -426,6 +460,7 @@ function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b35',
           type: 'list',
           style: 'do',
           items: [
@@ -435,6 +470,7 @@ function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
           ],
         },
         {
+          id: 'styling-libraries-b36',
           type: 'list',
           style: 'dont',
           items: [
@@ -449,6 +485,7 @@ function RevenueChart({data}: {data: Array<{x: string; y: number}>}) {
       category: 'guide',
       content: [
         {
+          id: 'styling-libraries-b37',
           type: 'list',
           style: 'ordered',
           items: [

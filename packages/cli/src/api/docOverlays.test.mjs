@@ -206,3 +206,40 @@ describe('reference overlays are id-anchored and prose-only (bulletproof, #2182)
     });
   }
 });
+
+describe('every reference doc block has a required, unique id (#2182)', () => {
+  // id is required on ContentBlock so Navi can address any block for translation.
+  // Docs are JSDoc-typed .mjs (not strictly type-checked), so this is the real
+  // enforcement: every block in every reference doc must carry a unique id.
+  const canonical = fs.readdirSync(DOCS_DIR).filter(f => /\.doc\.mjs$/.test(f));
+
+  it('discovers canonical reference docs', () => {
+    expect(canonical.length).toBeGreaterThan(0);
+  });
+
+  for (const file of canonical) {
+    it(`${file}: every block has an id, unique within its section`, async () => {
+      const mod = await load(path.join(DOCS_DIR, file));
+      const doc = mod.docs;
+      const problems = [];
+      for (const section of doc.sections || []) {
+        const seen = new Set();
+        (section.content || []).forEach((b, i) => {
+          if (b == null) return;
+          if (b.id == null) {
+            problems.push(`section "${section.title}" block #${i} (${b.type}) has no id`);
+          } else if (seen.has(b.id)) {
+            problems.push(`section "${section.title}" has a duplicate id "${b.id}"`);
+          } else {
+            seen.add(b.id);
+          }
+        });
+      }
+      expect(
+        problems,
+        `${file} has blocks without a stable, unique id (id is required so every ` +
+          `block is addressable by an overlay):\n  ${problems.join('\n  ')}`,
+      ).toEqual([]);
+    });
+  }
+});

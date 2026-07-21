@@ -16,6 +16,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'spacing-b1',
           type: 'prose',
           text: 'The design system uses a 4px base-unit spacing scale. Component gap props accept step values that map to these tokens. The scale provides fine-grained control at the small end (2px, 4px, 6px) and consistent rhythm at larger sizes (multiples of 4px).',
         },
@@ -26,6 +27,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'spacing-b2',
           type: 'token-ref',
           topic: 'tokens',
           section: 'Spacing Tokens',
@@ -37,10 +39,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'spacing-b3',
           type: 'prose',
           text: 'Most components accept a `gap` prop using step values (0 through 12). For custom layouts, use the spacing tokens directly in StyleX.',
         },
         {
+          id: 'spacing-b4',
           type: 'code',
           lang: 'tsx',
           label: 'Spacing via component props vs StyleX',
@@ -64,6 +68,7 @@ const styles = stylex.create({
   category: 'foundations',
       content: [
         {
+          id: 'spacing-b5',
           type: 'list',
           style: 'do',
           items: [
@@ -73,6 +78,7 @@ const styles = stylex.create({
           ],
         },
         {
+          id: 'spacing-b6',
           type: 'list',
           style: 'dont',
           items: [

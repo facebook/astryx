@@ -18,10 +18,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'icons-b1',
           type: 'prose',
           text: 'Components that accept an icon prop use IconType: either a semantic name string or a direct SVG component. The semantic names below are resolved through the global icon registry.',
         },
         {
+          id: 'icons-b2',
           type: 'table',
           headers: ['Name', 'Usage'],
           rows: [
@@ -60,10 +62,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'icons-b3',
           type: 'prose',
           text: 'For icons not in the semantic list, pass an SVG component directly. Any ComponentType<SVGProps<SVGSVGElement>> works; Icon applies size and color styling automatically.',
         },
         {
+          id: 'icons-b4',
           type: 'code',
           lang: 'tsx',
           label: 'Using custom SVG components',
@@ -80,10 +84,12 @@ import { HeartIcon } from 'lucide-react';
   category: 'foundations',
       content: [
         {
+          id: 'icons-b5',
           type: 'prose',
           text: 'Themes can replace the default SVGs for any semantic name using registerIcons(). This lets you swap the entire icon set (e.g. heroicons \u2192 lucide) without touching component code.',
         },
         {
+          id: 'icons-b6',
           type: 'code',
           lang: 'tsx',
           label: 'Registering theme icons',
@@ -103,10 +109,12 @@ registerIcons({
   category: 'foundations',
       content: [
         {
+          id: 'icons-b7',
           type: 'prose',
           text: 'To add a new semantic icon name to the design system:',
         },
         {
+          id: 'icons-b8',
           type: 'list',
           style: 'ordered',
           items: [

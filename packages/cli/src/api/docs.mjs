@@ -94,7 +94,7 @@ async function resolveTokenRefs(docsData, topics) {
       if (block.type === 'token-ref') {
         const refPath = topics[block.topic];
         if (!refPath) {
-          newContent.push({type: 'prose', text: `[token-ref: unknown topic "${block.topic}"]`});
+          newContent.push({id: 'token-ref-unknown-topic', type: 'prose', text: `[token-ref: unknown topic "${block.topic}"]`});
           continue;
         }
         const refMod = await import(pathToFileURL(refPath).href);
@@ -103,7 +103,7 @@ async function resolveTokenRefs(docsData, topics) {
           s => s.title.toLowerCase() === block.section.toLowerCase(),
         );
         if (!refSection) {
-          newContent.push({type: 'prose', text: `[token-ref: section "${block.section}" not found in "${block.topic}"]`});
+          newContent.push({id: 'token-ref-missing-section', type: 'prose', text: `[token-ref: section "${block.section}" not found in "${block.topic}"]`});
           continue;
         }
         // Inline the referenced section's content blocks (tables, prose, etc.)

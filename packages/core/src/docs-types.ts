@@ -666,10 +666,11 @@ export interface TranslationDoc {
  * Ordered array of these makes up a section's content.
  * New block types can be added without breaking existing docs.
  *
- * Each block may carry a stable `id`. Translation/compression overlays
- * (see `ReferenceTranslationDoc`) reference blocks by `id`, never by array
- * position, so reordering or inserting blocks can never misalign an overlay.
- * Blocks in a doc that has overlays should each have a unique `id`.
+ * Every block carries a stable `id`, unique within its section. Translation/
+ * compression overlays (see `ReferenceTranslationDoc`) reference blocks by `id`,
+ * never by array position, so reordering or inserting blocks can never misalign
+ * an overlay. Translation itself is optional; the `id` just guarantees every
+ * block is addressable.
  *
  * @example
  * ```
@@ -681,17 +682,17 @@ export interface TranslationDoc {
  * ```
  */
 export type ContentBlock =
-  | {id?: string; type: 'prose'; text: string}
-  | {id?: string; type: 'code'; lang: string; code: string; label?: string}
-  | {id?: string; type: 'table'; headers: string[]; rows: string[][]}
+  | {id: string; type: 'prose'; text: string}
+  | {id: string; type: 'code'; lang: string; code: string; label?: string}
+  | {id: string; type: 'table'; headers: string[]; rows: string[][]}
   | {
-      id?: string;
+      id: string;
       type: 'list';
       style: 'ordered' | 'unordered' | 'do' | 'dont';
       items: string[];
     }
   | {
-      id?: string;
+      id: string;
       /** Reference to a token table in another doc topic.
        *  The CLI resolves this at read time and inlines the referenced
        *  section's table. The docsite can render it with live theme values
