@@ -443,4 +443,37 @@ describe('Lightbox', () => {
     );
     expect(container.querySelector('dialog')).not.toBeInTheDocument();
   });
+
+  describe('backdrop dismiss', () => {
+    it('calls onOpenChange(false) when the dark area around the media is clicked', () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={onOpenChange}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+        />,
+      );
+      // The container fills the whole dialog, so a click on the visual
+      // backdrop (the dark area around the media) lands on it — not on the
+      // dialog element itself.
+      const dialog = document.querySelector('dialog')!;
+      const container = dialog.firstElementChild!;
+      fireEvent.click(container);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it('does not close when the media itself is clicked', () => {
+      const onOpenChange = vi.fn();
+      render(
+        <Lightbox
+          isOpen={true}
+          onOpenChange={onOpenChange}
+          media={{src: '/photo.jpg', alt: 'Photo'}}
+        />,
+      );
+      fireEvent.click(screen.getByRole('img', {hidden: true}));
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+  });
 });

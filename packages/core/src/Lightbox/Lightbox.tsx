@@ -285,6 +285,7 @@ export function Lightbox({
 }: LightboxProps) {
   const t = useTranslator();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const imageWrapperRef = useRef<HTMLDivElement>(null);
   const triggerElementRef = useRef<Element | null>(null);
 
@@ -390,10 +391,19 @@ export function Lightbox({
     [handleClose],
   );
 
-  // Backdrop click
+  // Backdrop click. The layout container fills the whole transparent dialog,
+  // so clicks on the visual backdrop (the dark area around the media) land on
+  // the container, never on the dialog element itself — treat both as the
+  // backdrop. A pan drag that ends over the backdrop still fires a click on
+  // the common ancestor; ignore it so releasing a drag doesn't dismiss.
+  const didDragRef = useRef(false);
   const handleBackdropClick = useCallback(
     (e: ReactMouseEvent<HTMLDialogElement>) => {
-      if (e.target === e.currentTarget) {
+      if (didDragRef.current) {
+        didDragRef.current = false;
+        return;
+      }
+      if (e.target === e.currentTarget || e.target === containerRef.current) {
         handleClose();
       }
     },
@@ -448,6 +458,7 @@ export function Lightbox({
         return;
       }
       setIsDragging(true);
+      didDragRef.current = false;
       dragStartRef.current = {
         x: e.clientX,
         y: e.clientY,
@@ -464,6 +475,7 @@ export function Lightbox({
     }
 
     const handlePointerMove = (e: PointerEvent) => {
+      didDragRef.current = true;
       const dx = e.clientX - dragStartRef.current.x;
       const dy = e.clientY - dragStartRef.current.y;
       setPan({
@@ -514,7 +526,7 @@ export function Lightbox({
         style,
       )}
       {...props}>
-      <div {...stylex.props(styles.container)}>
+      <div ref={containerRef} {...stylex.props(styles.container)}>
         {/* Close button */}
         <div {...stylex.props(styles.closeButton)}>
           <IconButton
