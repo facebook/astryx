@@ -17,13 +17,18 @@
  * The default size shifts from `small` to `md`, but that is the SAME 36px, so
  * call sites that relied on the default need no change.
  *
- * Renames are applied to:
- * - `size` JSX attributes on <Avatar> / <AvatarGroup> (alias-aware)
- * - `size` object properties and Storybook `options` arrays, plus `size`-typed
- *   union literals, in files that import Avatar or AvatarGroup
+ * ## Precision
  *
- * Only files importing Avatar/AvatarGroup from an Astryx core source are
- * touched, so unrelated `small`/`medium`/`large` strings elsewhere are safe.
+ * `small`, `medium`, and `large` are common English words that appear as
+ * unrelated string/type literals (priorities, statuses, breakpoints, …). To
+ * avoid corrupting those, the three AMBIGUOUS names are renamed ONLY in a
+ * precise context: a `size` JSX attribute on a component that resolves to an
+ * Avatar/AvatarGroup import (alias-aware).
+ *
+ * `tiny` and `xsmall` are unique to Avatar's scale, so they are additionally
+ * renamed in context-blind positions (object properties keyed `size`/`*Size`,
+ * Storybook `options` arrays, and size-typed union literals) within files that
+ * import Avatar/AvatarGroup.
  */
 
 export const meta = {
@@ -31,8 +36,10 @@ export const meta = {
   description:
     'Avatar and AvatarGroup adopt Icon\'s abbreviated size scale ' +
     '(xsm/sm/md/lg/xl). Pixel values are unchanged; the default moves from ' +
-    '`small` to `md` (both 36px). Renames size props, Storybook options, ' +
-    'object properties, and union types in files importing Avatar/AvatarGroup.',
+    '`small` to `md` (both 36px). The ambiguous names small/medium/large are ' +
+    'only renamed on Avatar/AvatarGroup `size` JSX attributes; the unique ' +
+    'names tiny/xsmall are also renamed in size-keyed props, Storybook ' +
+    'options, and union types in files importing Avatar/AvatarGroup.',
   pr: '#2672',
 };
 
@@ -59,10 +66,18 @@ const RENAMES = new Map([
 ]);
 
 /**
- * Rename a string-literal node if its value is an old size name.
- * Unwraps `'small' as const`. Returns true when a rename occurred.
+ * Ambiguous names — common words that must ONLY be renamed in a precise
+ * context (a `size` JSX attribute on a known Avatar/AvatarGroup element).
+ * `tiny`/`xsmall` are omitted because they are unique to Avatar's scale.
  */
-function renameValue(node) {
+const AMBIGUOUS = new Set(['small', 'medium', 'large']);
+
+/**
+ * Rename a string-literal node if its value is an old size name.
+ * Unwraps `'small' as const`. In non-precise contexts, ambiguous names are
+ * skipped. Returns true when a rename occurred.
+ */
+function renameValue(node, {precise = false} = {}) {
   if (!node) return false;
   const target = node.type === 'TSAsExpression' ? node.expression : node;
   const isString =
@@ -70,6 +85,7 @@ function renameValue(node) {
   if (!isString || typeof target.value !== 'string') return false;
   const replacement = RENAMES.get(target.value);
   if (!replacement) return false;
+  if (!precise && AMBIGUOUS.has(target.value)) return false;
   target.value = replacement;
   if (target.raw) target.raw = undefined;
   return true;
@@ -96,16 +112,17 @@ export default function transformer(file, api) {
 
   if (targetLocals.size === 0) return undefined;
 
-  function renameArrayElements(node) {
+  function renameArrayElements(node, {precise = false} = {}) {
     let arr = node;
     if (arr.type === 'TSAsExpression') arr = arr.expression;
     if (arr.type !== 'ArrayExpression') return;
     for (const el of arr.elements) {
-      if (renameValue(el)) hasChanges = true;
+      if (renameValue(el, {precise})) hasChanges = true;
     }
   }
 
-  // 1. `size` JSX attributes on target components.
+  // 1. `size` JSX attributes on target components — PRECISE (component known),
+  //    so all five names, including the ambiguous ones, are renamed here.
   root.find(j.JSXOpeningElement).forEach((path) => {
     const name = path.node.name;
     const componentName = name.type === 'JSXIdentifier' ? name.name : null;
@@ -116,7 +133,7 @@ export default function transformer(file, api) {
       const value = attr.value;
 
       // size="small"
-      if (renameValue(value)) {
+      if (renameValue(value, {precise: true})) {
         hasChanges = true;
         continue;
       }
@@ -126,21 +143,24 @@ export default function transformer(file, api) {
         value.expression
       ) {
         // size={'small'}
-        if (renameValue(value.expression)) {
+        if (renameValue(value.expression, {precise: true})) {
           hasChanges = true;
           continue;
         }
         // size={cond ? 'small' : 'large'}
         if (value.expression.type === 'ConditionalExpression') {
-          if (renameValue(value.expression.consequent)) hasChanges = true;
-          if (renameValue(value.expression.alternate)) hasChanges = true;
+          if (renameValue(value.expression.consequent, {precise: true}))
+            hasChanges = true;
+          if (renameValue(value.expression.alternate, {precise: true}))
+            hasChanges = true;
         }
       }
     }
   });
 
-  // 2. Object properties keyed `size` (or `*size`) + Storybook `options`
-  //    arrays, in files importing a target component.
+  // 2. Object properties keyed `size` (or `*Size`) + Storybook `options`
+  //    arrays — NON-PRECISE (the component isn't known here), so only the
+  //    unique names tiny/xsmall are renamed.
   const PropertyType = j.ObjectProperty ?? j.Property;
   root.find(PropertyType).forEach((path) => {
     const key = path.node.key;
@@ -153,29 +173,29 @@ export default function transformer(file, api) {
     if (typeof keyName !== 'string') return;
 
     const lower = keyName.toLowerCase();
-    const isSizeKey = lower === 'size' || lower.endsWith('size');
+    if (lower !== 'size' && !lower.endsWith('size')) return;
 
-    if (isSizeKey) {
-      const value = path.node.value;
-      // size: 'small'
-      if (renameValue(value)) {
-        hasChanges = true;
-        return;
-      }
-      // size: { control: 'select', options: ['tiny', ...] }
-      if (value.type === 'ObjectExpression') {
-        const optionsProp = value.properties.find(
-          (p) =>
-            p.key && (p.key.name === 'options' || p.key.value === 'options'),
-        );
-        if (optionsProp) renameArrayElements(optionsProp.value);
-      }
-      // size: ['tiny', 'xsmall', ...]
-      renameArrayElements(value);
+    const value = path.node.value;
+    // size: 'tiny'
+    if (renameValue(value)) {
+      hasChanges = true;
+      return;
     }
+    // size: { control: 'select', options: ['tiny', ...] }
+    if (value.type === 'ObjectExpression') {
+      const optionsProp = value.properties.find(
+        (p) => p.key && (p.key.name === 'options' || p.key.value === 'options'),
+      );
+      if (optionsProp) renameArrayElements(optionsProp.value);
+    }
+    // size: ['tiny', 'xsmall', ...]
+    renameArrayElements(value);
   });
 
-  // 3. Union-type literals: 'tiny' | 'xsmall' | ... in size-typed annotations.
+  // 3. Union-type literals — NON-PRECISE, so only the unique names tiny/xsmall
+  //    are renamed. This avoids corrupting unrelated unions that happen to use
+  //    common words like 'medium' (e.g. a priority or breakpoint type) in a
+  //    file that also imports Avatar.
   root.find(j.TSLiteralType).forEach((path) => {
     if (renameValue(path.node.literal)) hasChanges = true;
   });

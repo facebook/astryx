@@ -13,7 +13,7 @@ async function applyTransform(source) {
 }
 
 describe('rename-avatar-size-scale', () => {
-  it('renames every named size on Avatar', async () => {
+  it('renames every named size on an Avatar JSX size attribute', async () => {
     const input = `import {Avatar} from '@astryxdesign/core';
 const a = <Avatar name="A" size="tiny" />;
 const b = <Avatar name="B" size="xsmall" />;
@@ -61,43 +61,69 @@ const x = <Avatar name="A" size="tiny" />;`;
     expect(await applyTransform(legacy)).toContain(`size='xsm'`);
   });
 
-  it('renames a size inside a ternary', async () => {
+  it('renames a size inside a ternary on an Avatar element', async () => {
     const input = `import {Avatar} from '@astryxdesign/core';
 const x = <Avatar name="A" size={big ? 'large' : 'small'} />;`;
     const output = await applyTransform(input);
     expect(output).toContain(`big ? 'xl' : 'md'`);
   });
 
-  it('renames Storybook options arrays and default args', async () => {
+  it('renames the UNIQUE names tiny/xsmall in Storybook options and size args', async () => {
     const input = `import {Avatar} from '@astryxdesign/core';
 const meta = {
-  argTypes: {size: {control: 'select', options: ['tiny', 'xsmall', 'small', 'medium', 'large']}},
-  args: {size: 'medium'},
+  argTypes: {size: {control: 'select', options: ['tiny', 'xsmall']}},
+  args: {size: 'tiny'},
 };`;
     const output = await applyTransform(input);
-    expect(output).toContain(`['xsm', 'sm', 'md', 'lg', 'xl']`);
-    expect(output).toContain(`size: 'lg'`);
+    expect(output).toContain(`['xsm', 'sm']`);
+    expect(output).toContain(`size: 'xsm'`);
   });
 
-  it('renames a size-typed union literal', async () => {
+  it('renames a UNIQUE name in a size-typed union literal', async () => {
     const input = `import {Avatar} from '@astryxdesign/core';
-type Props = {size: 'small' | 'large'};`;
+type Props = {size: 'tiny' | 'xsmall'};`;
     const output = await applyTransform(input);
-    expect(output).toContain(`'md' | 'xl'`);
+    expect(output).toContain(`'xsm' | 'sm'`);
+  });
+
+  // --- Precision guards: ambiguous common words must NOT be corrupted in
+  // --- context-blind positions, even in files that import Avatar. ---
+
+  it('does NOT rename ambiguous names in an unrelated union type', async () => {
+    const input = `import {Avatar} from '@astryxdesign/core';
+type TaskPriority = 'urgent' | 'high' | 'medium' | 'low' | 'none';`;
+    const output = await applyTransform(input);
+    expect(output).toContain(`'medium'`);
+    expect(output).not.toContain(`'lg'`);
+  });
+
+  it('does NOT rename an ambiguous name in a non-size object property', async () => {
+    const input = `import {Avatar} from '@astryxdesign/core';
+const cfg = {priority: 'medium', density: 'large'};`;
+    const output = await applyTransform(input);
+    expect(output).toContain(`priority: 'medium'`);
+    expect(output).toContain(`density: 'large'`);
+  });
+
+  it('does NOT rename an ambiguous name in a size-keyed object property (component unknown)', async () => {
+    // A `size: 'small'` object entry could belong to any component; renaming it
+    // blind would be unsafe, so it is left for manual migration.
+    const input = `import {Avatar} from '@astryxdesign/core';
+const args = {size: 'small'};`;
+    const output = await applyTransform(input);
+    expect(output).toContain(`size: 'small'`);
   });
 
   it('does not touch files that never import Avatar/AvatarGroup', async () => {
     const input = `import {Badge} from '@astryxdesign/core';
 const x = <Badge size="small" />;
-const cfg = {size: 'large'};`;
+type P = 'tiny' | 'xsmall';`;
     const output = await applyTransform(input);
     expect(output).toContain(`size="small"`);
-    expect(output).toContain(`size: 'large'`);
+    expect(output).toContain(`'tiny' | 'xsmall'`);
   });
 
-  it('does not rename an unrelated size string in an Avatar file', async () => {
-    // Guarded: only `size`-keyed props are renamed, so a non-size string
-    // literal is left alone even in a file that imports Avatar.
+  it('does not rename an unrelated non-size string in an Avatar file', async () => {
     const input = `import {Avatar} from '@astryxdesign/core';
 const label = 'small';
 const x = <Avatar name="A" size="small" />;`;
