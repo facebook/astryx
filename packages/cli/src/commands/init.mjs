@@ -175,7 +175,7 @@ export function registerInit(program) {
         agentDocsPath: options.agentDocsPath,
       });
       humanLog('');
-      humanLog(`  Tip: \`${run} astryx init --all\` also scaffolds a theme + starter template.`);
+      humanLog(`  Tip: \`${run} astryx init --all\` also points you to the theme and page-building workflows.`);
 
       for (const line of getNextSteps(run)) {
         humanLog(line);
