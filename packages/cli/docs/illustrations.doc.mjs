@@ -80,7 +80,7 @@ export const docs = {
     />
     <Heading level={3}>No results found</Heading>
     <Text type="body" color="secondary">
-      Try adjusting your search or filters to find what you\u2019re
+      Try adjusting your search or filters to find what you\'re
       looking for.
     </Text>
   </Stack>

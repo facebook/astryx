@@ -17,12 +17,12 @@ export const docs = {
         {
           id: 'cli-integrations-b1',
           type: 'prose',
-          text: 'An integration is an npm package that contributes components, templates, and/or upgrade codemods to a consumer\u2019s design-system workflow. Consumers install the package and add it to their `astryx.config`; from then on the integration\u2019s contributions show up alongside core\u2019s in the same CLI commands.',
+          text: 'An integration is an npm package that contributes components, templates, and/or upgrade codemods to a consumer\'s design-system workflow. Consumers install the package and add it to their `astryx.config`; from then on the integration\'s contributions show up alongside core\'s in the same CLI commands.',
         },
         {
           id: 'cli-integrations-b2',
           type: 'prose',
-          text: 'The system runs on two files. The consumer writes `astryx.config.{ts,mjs,js}` at their project root to list which packages to load. The author writes `astryx.integration.{ts,mjs,js}` at the package root to declare what the package contributes. This page is the author\u2019s guide. For the consumer side, run `npx astryx docs getting-started`.',
+          text: 'The system runs on two files. The consumer writes `astryx.config.{ts,mjs,js}` at their project root to list which packages to load. The author writes `astryx.integration.{ts,mjs,js}` at the package root to declare what the package contributes. This page is the author\'s guide. For the consumer side, run `npx astryx docs getting-started`.',
         },
         {
           id: 'cli-integrations-b3',
@@ -38,7 +38,7 @@ export const docs = {
         {
           id: 'cli-integrations-b5',
           type: 'prose',
-          text: 'Your components and templates then appear next to core\u2019s:',
+          text: 'Your components and templates then appear next to core\'s:',
         },
         {
           id: 'cli-integrations-b6',
@@ -133,7 +133,7 @@ export const docs = {
         {
           id: 'cli-integrations-b18',
           type: 'prose',
-          text: 'Ship codemods so `astryx upgrade` can migrate consumers across breaking changes in your package. Point the integration file\u2019s `codemods` field at your codemods root, and author each one with `createCodemod` (transforms source files) or `createConfigCodemod` (rewrites the consumer\u2019s `astryx.config`).',
+          text: 'Ship codemods so `astryx upgrade` can migrate consumers across breaking changes in your package. Point the integration file\'s `codemods` field at your codemods root, and author each one with `createCodemod` (transforms source files) or `createConfigCodemod` (rewrites the consumer\'s `astryx.config`).',
         },
         {
           id: 'cli-integrations-b19',
@@ -155,7 +155,7 @@ export const docs = {
         {
           id: 'cli-integrations-b21',
           type: 'prose',
-          text: 'Every CLI command loads the consumer\u2019s `astryx.config`, resolves each listed integration\u2019s manifest from `node_modules`, and discovers its contributions. Everything is validated against one strict schema at the load boundary. The `create*` helpers do not validate. They are identity functions whose value is their TypeScript surface, so validation happens when the CLI loads the file, not when you author it.',
+          text: 'Every CLI command loads the consumer\'s `astryx.config`, resolves each listed integration\'s manifest from `node_modules`, and discovers its contributions. Everything is validated against one strict schema at the load boundary. The `create*` helpers do not validate. They are identity functions whose value is their TypeScript surface, so validation happens when the CLI loads the file, not when you author it.',
         },
         {
           id: 'cli-integrations-b22',
