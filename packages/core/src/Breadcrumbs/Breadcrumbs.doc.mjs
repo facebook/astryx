@@ -8,6 +8,15 @@ export const docs = {
   group: 'Breadcrumbs',
   category: 'Navigation',
   keywords: ["breadcrumbs","breadcrumb","navigation","nav","crumbs","trail","path","hierarchy","wayfinding","steps"],
+  playground: {
+    defaults: {
+      children: [
+        {__element: 'BreadcrumbItem', props: {href: '#'}, children: 'Home'},
+        {__element: 'BreadcrumbItem', props: {href: '#'}, children: 'Projects'},
+        {__element: 'BreadcrumbItem', props: {isCurrent: true}, children: 'My Project'},
+      ],
+    },
+  },
   usage: {
     description:
       'Breadcrumbs show a trail of links from the root to the current page. Use them at the top of detail pages, settings panels, or anywhere the user needs to see where they are and navigate back up.',
@@ -115,6 +124,15 @@ export const docs = {
           name: 'startIcon',
           type: 'ReactNode',
           description: 'Icon rendered before the item label.',
+          slotElements: [
+            {
+              __element: 'Icon',
+              props: {
+                icon: 'check',
+                size: 'sm',
+              },
+            },
+          ],
         },
         {
           name: 'as',

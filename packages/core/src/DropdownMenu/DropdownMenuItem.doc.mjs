@@ -8,6 +8,10 @@ export const docs = {
   displayName: 'Dropdown Menu Item',
   isHiddenFromOverview: true,
   description: 'Helper component for custom item rendering with consistent styling.',
+  // Own playground so this page doesn't inherit DropdownMenu's button/items defaults.
+  playground: {
+    defaults: {label: 'Edit'},
+  },
   props: [
     {
       name: 'icon',

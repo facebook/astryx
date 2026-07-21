@@ -134,6 +134,11 @@ export const docs = {
           default: "'transparent'",
         },
         {
+          name: 'dividers',
+          type: "('top' | 'bottom' | 'start' | 'end')[]",
+          description: 'Which sides should have divider borders. Passed through to Section.',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -172,6 +177,7 @@ export const docsZh = {
         gap: '插槽内项目间距。',
         orientation: '键盘导航方向。控制方向键方向。',
         variant: '传递给 Section 的视觉变体。',
+        dividers: '哪些边显示分隔线边框。透传给 Section。',
         xstyle: '用于布局自定义的 StyleX 样式。必须是 stylex.create() 的值。',
       },
     },
@@ -221,6 +227,7 @@ export const docsDense = {
         gap: 'Gap between slot items.',
         orientation: 'Keyboard nav direction.',
         variant: 'Visual variant for Section.',
+        dividers: 'Sides w/ divider borders; passed to Section.',
         xstyle: 'StyleX layout styles. Must be stylex.create() value.',
       },
     },

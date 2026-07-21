@@ -4,6 +4,9 @@
  * Resolves ElementDescriptor objects into React elements at runtime.
  * Shared between InteractivePreview (for playground defaults) and
  * PlaygroundPropsTable (for slot element controls).
+ *
+ * SYNC: packages/core/src/docPlaygroundDescriptors.test.ts mirrors
+ * getComponent()'s resolution rules — keep them in sync.
  */
 
 import {
