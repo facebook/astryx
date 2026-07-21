@@ -484,7 +484,7 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
   return written;
 }
 
-const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'all'];
+export const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'all'];
 
 export function registerAgentDocs(program) {
   program
