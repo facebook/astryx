@@ -8,6 +8,19 @@ export const docs = {
   group: 'DropdownMenu',
   category: 'Action',
   keywords: ["dropdown","menu","popover","select","actions","contextmenu","overflow","kebab","menubutton"],
+  playground: {
+    // `items` is required; without seeded entries the properties-tab preview
+    // renders an empty trigger button. Provide a few actions so the preview
+    // is meaningful.
+    defaults: {
+      button: {label: 'Actions'},
+      items: [
+        {label: 'Edit'},
+        {label: 'Duplicate'},
+        {label: 'Delete'},
+      ],
+    },
+  },
   theming: {
     targets: [
       {className: 'astryx-dropdown-menu'},
