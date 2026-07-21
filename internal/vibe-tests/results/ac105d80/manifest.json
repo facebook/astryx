@@ -1,0 +1,119 @@
+{
+  "iterationId": "ac105d80",
+  "createdAt": "2026-07-21T11:04:19.037Z",
+  "config": {
+    "target": "baseline",
+    "persona": "naive",
+    "holdout": false,
+    "degradation": false,
+    "cliRetrieval": false
+  },
+  "prompts": [
+    {
+      "id": "fwc-11",
+      "category": "feature-with-constraint",
+      "prompt": "Build a toolbar with icon buttons for Bold, Italic, Underline, and Link. Each button should show a tooltip with the action name and keyboard shortcut on hover.",
+      "expectedComponents": [
+        "Tooltip",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "wd-4",
+      "category": "workflow-description",
+      "prompt": "Create a new internal tool called TodoTracker. UI Requirements: Display todos in a paginated table (default 25 per page). Columns: Title, Status, Created, Updated. Sortable by: Updated date (default desc), Created date, Title. Add a filter bar that filters by title (substring match) and status. Inline editing for todo title (with save/cancel). Status toggle button (Open <-> Closed). 'Create Todo' button that opens a modal with title input. Delete button with confirmation dialog. UI should update optimistically after any modification. Optimistic updates should be marked as 'pending' until the modification is complete.",
+      "expectedComponents": [
+        "Table",
+        "Button",
+        "TextInput"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "cwm-3",
+      "category": "clone-with-modification",
+      "prompt": "Like Notion's page header with icon picker and cover image",
+      "expectedComponents": [
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "sd-1",
+      "category": "state-driven",
+      "prompt": "Show a dashboard widget with loading → error → data states",
+      "expectedComponents": [
+        "Card",
+        "Skeleton"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "dd-8",
+      "category": "data-display",
+      "prompt": "Show a content library table where each row has a small colored pill for its type — Article, Video, Podcast, Newsletter, and Course each need their own distinct color so they're easy to tell apart at a glance. The colors should stay consistent everywhere a type appears.",
+      "expectedComponents": [
+        "XDSBadge",
+        "XDSTable"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "rc-2",
+      "category": "responsive-context",
+      "prompt": "A sidebar that becomes a bottom sheet on mobile",
+      "expectedComponents": [
+        "Card",
+        "LayoutPanel"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "io-3",
+      "category": "integration-oriented",
+      "prompt": "A file upload button that shows progress and calls an upload endpoint",
+      "expectedComponents": [
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ps-1",
+      "category": "page-setup",
+      "prompt": "Create a new page for a settings dashboard. It should have a header with the app title, a sidebar for navigation, and a main content area. Use the Astryx theme system.",
+      "expectedComponents": [
+        "Theme",
+        "Layout",
+        "LayoutHeader",
+        "LayoutContent",
+        "LayoutPanel"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ty-5",
+      "category": "typography",
+      "prompt": "Build a landing page hero with a large display heading that says 'Build faster with Astryx', a subheading paragraph, and a CTA button",
+      "expectedComponents": [
+        "Heading",
+        "Text",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "tc-6",
+      "category": "theme-customization",
+      "prompt": "Build a settings page where users can customize the app's appearance. Include controls for accent color, border radius, and spacing scale. Changes should apply via the Astryx theme system, not inline styles.",
+      "expectedComponents": [
+        "Theme",
+        "TextInput",
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    }
+  ]
+}

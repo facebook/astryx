@@ -1,0 +1,11 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+@import "@astryxdesign/core/tailwind-theme.css";
+@import "tailwindcss/utilities.css" layer(utilities);

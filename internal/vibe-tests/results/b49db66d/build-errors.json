@@ -1,0 +1,148 @@
+{
+  "cwm-3": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 20,
+        "message": "Cannot find name 'COVERS'.",
+        "code": "TS2304"
+      },
+      {
+        "line": 33,
+        "message": "Cannot find name 'COVERS'.",
+        "code": "TS2304"
+      },
+      {
+        "line": 33,
+        "message": "Cannot find name 'COVERS'.",
+        "code": "TS2304"
+      },
+      {
+        "line": 39,
+        "message": "Cannot find name 'COVERS'.",
+        "code": "TS2304"
+      }
+    ],
+    "errorCount": 4,
+    "buildSuccess": false
+  },
+  "dd-8": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "fwc-11": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 21,
+        "message": "Type '{ children: Element[]; label: string; }' is not assignable to type 'IntrinsicAttributes & ToolbarProps'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "io-3": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ps-1": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 35,
+        "message": "Type '{ children: Element[]; label: string; }' is not assignable to type 'IntrinsicAttributes & SideNavSectionProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 45,
+        "message": "Type '{ title: string; }' is not assignable to type 'IntrinsicAttributes & TopNavHeadingProps'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 2,
+    "buildSuccess": false
+  },
+  "rc-2": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 20,
+        "message": "Type '{ children: Element[]; label: string; }' is not assignable to type 'IntrinsicAttributes & SideNavSectionProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 25,
+        "message": "Type '{ children: Element; label: string; }' is not assignable to type 'IntrinsicAttributes & SideNavSectionProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 32,
+        "message": "Object literal may only specify known properties, and 'trigger' does not exist in type 'ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<...> | MobileNavConfig'.",
+        "code": "TS2353"
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  },
+  "sd-1": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "tc-6": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 31,
+        "message": "Property 'Item' does not exist on type 'typeof RadioList'.",
+        "code": "TS2339"
+      },
+      {
+        "line": 32,
+        "message": "Property 'Item' does not exist on type 'typeof RadioList'.",
+        "code": "TS2339"
+      },
+      {
+        "line": 33,
+        "message": "Property 'Item' does not exist on type 'typeof RadioList'.",
+        "code": "TS2339"
+      },
+      {
+        "line": 34,
+        "message": "Property 'Item' does not exist on type 'typeof RadioList'.",
+        "code": "TS2339"
+      }
+    ],
+    "errorCount": 4,
+    "buildSuccess": false
+  },
+  "ty-5": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "wd-4": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 95,
+        "message": "Type 'TablePlugin<Record<string, unknown>>' is not assignable to type 'TablePlugin<Todo>'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 95,
+        "message": "Type 'TablePlugin<Record<string, unknown>>' is not assignable to type 'TablePlugin<Todo>'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 2,
+    "buildSuccess": false
+  }
+}

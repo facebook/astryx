@@ -1,0 +1,14 @@
+{
+  "promptId": "ty-5",
+  "category": "typography",
+  "prompt": "Build a landing page hero with a large display heading that says 'Build faster with Astryx', a subheading paragraph, and a CTA button",
+  "expectedComponents": [
+    "Heading",
+    "Text",
+    "Button"
+  ],
+  "target": "html",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/1545b39c/projects/ty-5. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nBuild a landing page hero with a large display heading that says 'Build faster with Astryx', a subheading paragraph, and a CTA button\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/1545b39c/projects/ty-5/ty-5.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/1545b39c/projects/ty-5/ty-5.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-21T11:04:19.040Z"
+}
