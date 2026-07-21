@@ -2,7 +2,7 @@
 
 /**
  * @file expandColorScale.ts
- * @input Color scale configuration { accent, neutralStyle?, contrast? }
+ * @input Color scale configuration { accent?, neutralStyle?, contrast? }
  * @output Token overrides for derivable color tokens
  * @position Theme utility; consumed by defineTheme.ts
  *
@@ -10,6 +10,10 @@
  * HCT perceptual color model. Only produces tokens that meaningfully
  * derive from the accent — status colors, categorical hues, and fixed
  * tokens (on-dark/on-light) fall through to colorDefaults.
+ *
+ * `accent` is optional: a neutral-only config still gets the full neutral
+ * ramp (seeded from the default accent's hue) while the accent tokens
+ * themselves fall through to colorDefaults, same as the tokens above.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/defineTheme.ts
@@ -31,11 +35,21 @@ import {hexToHct, tonalPalette, hexWithAlpha} from './hct';
  *
  * // With customization
  * { accent: '#B7410E', neutralStyle: 'warm', contrast: 'high' }
+ *
+ * // Neutral-only — keeps the default accent, themes the neutrals
+ * { neutralStyle: 'warm' }
  * ```
  */
 export interface ColorScaleConfig {
-  /** Seed accent color as hex (#RRGGBB). Everything derives from this. */
-  accent: string;
+  /**
+   * Seed accent color as hex (#RRGGBB). Everything derives from this.
+   *
+   * Optional. When omitted, the neutral palettes are seeded from the
+   * default accent's hue and the accent tokens (--color-accent,
+   * --color-accent-muted, --color-on-accent) are not generated — they
+   * fall through to colorDefaults.
+   */
+  accent?: string;
 
   /**
    * Neutral tone warmth. Controls how much of the seed's hue bleeds
@@ -69,6 +83,14 @@ const NEUTRAL_VARIANT_CHROMA: Record<string, number> = {
   neutral: 6,
 };
 
+/**
+ * Hue source for accent-less configs — the light half of
+ * colorDefaults['--color-accent'] (a test guards the two against drift).
+ * Only its hue reaches the output: the accent tokens stay ungenerated, so
+ * they keep their colorDefaults values rather than this seed's derivation.
+ */
+const DEFAULT_ACCENT_SEED = '#0064E0';
+
 // =============================================================================
 // Computation
 // =============================================================================
@@ -89,18 +111,23 @@ function accentWithAlpha(alpha: number): string {
  * --color-on-dark/on-light) are NOT generated — they fall through
  * to colorDefaults.
  *
+ * Without an `accent`, the accent tokens join that fall-through set: the
+ * neutrals are seeded from the default accent's hue, and --color-accent,
+ * --color-accent-muted and --color-on-accent keep their colorDefaults values.
+ *
  * @example
  * ```
  * const tokens = expandColorScale({ accent: '#0064E0' });
  * // tokens['--color-accent'] === 'light-dark(#..., #...)'
+ *
+ * const neutralOnly = expandColorScale({ neutralStyle: 'warm' });
+ * // neutralOnly['--color-accent'] === undefined
  * ```
  */
-export function expandColorScale(
-  config: ColorScaleConfig,
-): ColorScaleTokens {
+export function expandColorScale(config: ColorScaleConfig): ColorScaleTokens {
   const {accent, neutralStyle = 'cool', contrast = 'standard'} = config;
 
-  const seed = hexToHct(accent);
+  const seed = hexToHct(accent ?? DEFAULT_ACCENT_SEED);
   const seedHue = seed.hue;
 
   const primaryChroma = Math.max(seed.chroma, 48);
@@ -119,14 +146,25 @@ export function expandColorScale(
   const textSecondaryDarkTone = isHigh ? 80 : 70;
 
   return {
-    // Core semantic
-    '--color-accent': ld(P[40], P[80]),
-    // Derived accent tokens reference --color-accent instead of baking its
-    // resolved hex, so a scoped override of the base token re-accents the
-    // whole subtree at runtime. --color-on-accent stays baked: it is a
-    // contrast computation against the accent, which CSS cannot express.
-    '--color-accent-muted': ld(accentWithAlpha(0.2), accentWithAlpha(0.25)),
-    '--color-on-accent': ld(P[100], P[20]),
+    // Core semantic — only with a seed accent. Without one these fall through
+    // to colorDefaults, whose --color-accent is NOT what the default seed
+    // derives: defaulting the seed instead of omitting the tokens would
+    // recolor every neutral-only theme. Nullish and not truthy, matching the
+    // seed above, so a supplied-but-malformed accent keeps its old behavior.
+    ...(accent != null
+      ? {
+          '--color-accent': ld(P[40], P[80]),
+          // Derived accent tokens reference --color-accent instead of baking its
+          // resolved hex, so a scoped override of the base token re-accents the
+          // whole subtree at runtime. --color-on-accent stays baked: it is a
+          // contrast computation against the accent, which CSS cannot express.
+          '--color-accent-muted': ld(
+            accentWithAlpha(0.2),
+            accentWithAlpha(0.25),
+          ),
+          '--color-on-accent': ld(P[100], P[20]),
+        }
+      : null),
     '--color-neutral': ld(hexWithAlpha(N[10], 0.1), hexWithAlpha(N[90], 0.2)),
     '--color-background-surface': ld(N[99], N[10]),
     '--color-background-body': ld(N[95], N[5]),

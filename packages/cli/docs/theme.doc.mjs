@@ -191,7 +191,7 @@ const myTheme = defineTheme({
             [
               'color',
               '--color-accent, --color-background-*, --color-text-*, --color-border, etc.',
-              'accent (hex), neutralStyle? (warm|cool|neutral), contrast? (standard|high)',
+              'accent? (hex — omit for neutral-only), neutralStyle? (warm|cool|neutral), contrast? (standard|high)',
             ],
             [
               'typography.scale',
