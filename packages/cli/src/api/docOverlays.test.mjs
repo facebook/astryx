@@ -208,7 +208,7 @@ describe('reference overlays are id-anchored and prose-only (bulletproof, #2182)
 });
 
 describe('every reference doc block has a required, unique id (#2182)', () => {
-  // id is required on ContentBlock so Navi can address any block for translation.
+  // id is required on ContentBlock so any block is addressable by an overlay.
   // Docs are JSDoc-typed .mjs (not strictly type-checked), so this is the real
   // enforcement: every block in every reference doc must carry a unique id.
   const canonical = fs.readdirSync(DOCS_DIR).filter(f => /\.doc\.mjs$/.test(f));
