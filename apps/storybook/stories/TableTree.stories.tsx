@@ -223,6 +223,33 @@ export const ExpandAndCollapseAll: Story = {
 };
 
 /**
+ * `hasExpandAllControl` renders a built-in expand-all/collapse-all toggle in
+ * the tree column header, wired to the state hook. No external buttons needed:
+ * the toggle reads the aggregate `isAllExpanded` state (down chevron only when
+ * every expandable row is expanded) and calls `expandAll`/`collapseAll`.
+ */
+export const HeaderExpandAllControl: Story = {
+  render: () => {
+    const {visibleData, treeConfig} = useTableTreeState<OrgRow>({
+      data: orgChart,
+      idKey: 'id',
+      defaultExpandedIds: ['eng'],
+    });
+    const tree = useTableTreeData({...treeConfig, hasExpandAllControl: true});
+
+    return (
+      <Table
+        data={visibleData}
+        columns={columns}
+        idKey="id"
+        hasHover
+        plugins={{tree}}
+      />
+    );
+  },
+};
+
+/**
  * The `indent` token controls the step per level: `sm` (spacing-3), `md`
  * (spacing-4, the default), and `lg` (spacing-6).
  */

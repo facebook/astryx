@@ -751,6 +751,14 @@
     "defaultMessage": "Expand row",
     "description": "Aria label for the Table tree-data expander chevron when the row is currently collapsed."
   },
+  "@astryx.tableTree.collapseAllRows": {
+    "defaultMessage": "Collapse all rows",
+    "description": "Aria label for the Table tree-data header toggle when all rows are expanded and clicking it collapses them."
+  },
+  "@astryx.tableTree.expandAllRows": {
+    "defaultMessage": "Expand all rows",
+    "description": "Aria label for the Table tree-data header toggle when rows are collapsed and clicking it expands them."
+  },
   "@astryx.textInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the value from a TextInput. Example: `Clear Email`, `Clear Name`."
