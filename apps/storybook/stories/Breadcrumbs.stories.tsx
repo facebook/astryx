@@ -1,7 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {Meta, StoryObj} from '@storybook/react';
-import {Breadcrumbs, BreadcrumbItem} from '@astryxdesign/core/Breadcrumbs';
+import {
+  Breadcrumbs,
+  BreadcrumbItem,
+  BreadcrumbMenuItem,
+} from '@astryxdesign/core/Breadcrumbs';
+import type {BreadcrumbMenuOption} from '@astryxdesign/core/Breadcrumbs';
 import {HomeIcon, Cog6ToothIcon, FolderIcon} from '@heroicons/react/24/outline';
 
 const meta: Meta<typeof Breadcrumbs> = {
@@ -115,9 +120,7 @@ export const DeepHierarchy: Story = {
     <Breadcrumbs>
       <BreadcrumbItem href="/">Home</BreadcrumbItem>
       <BreadcrumbItem href="/products">Products</BreadcrumbItem>
-      <BreadcrumbItem href="/products/electronics">
-        Electronics
-      </BreadcrumbItem>
+      <BreadcrumbItem href="/products/electronics">Electronics</BreadcrumbItem>
       <BreadcrumbItem href="/products/electronics/phones">
         Phones
       </BreadcrumbItem>
@@ -171,6 +174,61 @@ export const CurrentOnMiddleItem: Story = {
       <BreadcrumbItem href="/projects/my-project/settings">
         Settings
       </BreadcrumbItem>
+    </Breadcrumbs>
+  ),
+};
+
+const teamMenu: BreadcrumbMenuOption[] = [
+  {label: 'Design', onClick: () => console.log('go /team/design')},
+  {label: 'Engineering', onClick: () => console.log('go /team/eng')},
+  {type: 'divider'},
+  {label: 'Data', icon: 'chart', onClick: () => console.log('go /team/data')},
+];
+
+/**
+ * A mid-trail crumb can open a menu of sibling destinations. The `menu` prop
+ * accepts the SAME item API as `DropdownMenu` / `MoreMenu` / `ContextMenu`, so
+ * an existing `DropdownMenuOption[]` drops in verbatim. The crumb renders a
+ * link-styled trigger with a trailing chevron; separators before and after are
+ * unaffected.
+ */
+export const MenuCrumb: Story = {
+  name: 'Menu Crumb (data array)',
+  render: () => (
+    <Breadcrumbs>
+      <BreadcrumbItem href="/">Home</BreadcrumbItem>
+      <BreadcrumbItem menu={teamMenu}>Teams</BreadcrumbItem>
+      <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+    </Breadcrumbs>
+  ),
+};
+
+/**
+ * The `menu` prop also accepts composed `BreadcrumbMenuItem` children (an alias
+ * of `DropdownMenuItem`), for dynamic or stateful menus.
+ */
+export const MenuCrumbComposed: Story = {
+  name: 'Menu Crumb (composed children)',
+  render: () => (
+    <Breadcrumbs>
+      <BreadcrumbItem href="/">Home</BreadcrumbItem>
+      <BreadcrumbItem
+        menu={
+          <>
+            <BreadcrumbMenuItem
+              label="Overview"
+              onClick={() => console.log('overview')}
+            />
+            <BreadcrumbMenuItem
+              label="Settings"
+              icon="gear"
+              onClick={() => console.log('settings')}
+            />
+          </>
+        }>
+        Project
+      </BreadcrumbItem>
+      <BreadcrumbItem isCurrent>Details</BreadcrumbItem>
     </Breadcrumbs>
   ),
 };
