@@ -636,6 +636,7 @@
   "files": [
     "dist",
     "src",
+    "scripts/postinstall.mjs",
     "locales",
     "docs.mjs",
     "groups.doc.mjs",
@@ -644,6 +645,7 @@
   ],
   "scripts": {
     "prepack": "pnpm build",
+    "postinstall": "node scripts/postinstall.mjs",
     "build": "rimraf dist && pnpm build:i18n && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && pnpm build:umd && node ../../scripts/check-no-dev-jsx.mjs",
     "build:i18n": "node scripts/build-pseudo-locale.mjs",
     "build:esm": "babel src --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.json",
