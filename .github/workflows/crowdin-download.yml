@@ -52,8 +52,27 @@ jobs:
           CROWDIN_PROJECT_ID: ${{ vars.CROWDIN_PROJECT_ID }}
           CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
 
+      # crowdin/github-action runs inside a Docker container as root, so any
+      # files it writes into the working tree are owned by root. Later steps
+      # run as the `runner` user and can't overwrite those files (EACCES).
+      # Reclaim ownership of anything in the locales dir before subsequent
+      # steps touch it.
+      - name: Reclaim ownership of downloaded files
+        run: sudo chown -R "$(id -u):$(id -g)" packages/core/locales
+
+      # If Crowdin's build produced any locale JSON, normalize it with prettier
+      # so the diff matches the repo's formatting conventions. `--ignore-unknown`
+      # + a shell guard makes the step a no-op when no locale files exist yet
+      # (which is the expected state until translators start contributing).
       - name: Normalize locale JSON with prettier
-        run: pnpm exec prettier --write "packages/core/locales/*.json"
+        run: |
+          shopt -s nullglob
+          files=(packages/core/locales/*.json)
+          if [ "${#files[@]}" -gt 0 ]; then
+            pnpm exec prettier --write "${files[@]}"
+          else
+            echo "No locale files present; nothing to normalize."
+          fi
 
       # peter-evans/create-pull-request@v7.0.11 — pinned by SHA per repo policy.
       - name: Open translations PR

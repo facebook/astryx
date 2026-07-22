@@ -6,22 +6,30 @@
 #   { "<key>": { "defaultMessage": "...", "description": "..." } })
 # Targets: packages/core/locales/<lang>.json, one file per translated language.
 #
-# `skip_untranslated_files: true` keeps per-locale files out of git until a
-# language has real translated content — no empty stub JSON files landing in
-# the repo just because Crowdin added a target language.
+# The skip flags are declared PER-FILE (inside the files: block, not at the
+# root) so Crowdin's react_intl builder respects them:
+#   - skip_untranslated_files: don't emit a target file at all if 0% translated.
+#   - skip_untranslated_strings: strip untranslated keys from within a file
+#     rather than emitting them with empty string values (which then pollute
+#     the diff with meaningless "": "" pairs).
+# Root-level `skip_untranslated_files` is a common misconfiguration and does
+# NOT flow through to the react_intl file builder — verified empirically:
+# without the per-file placement, `crowdin download` writes an empty JSON file
+# for every configured target language even at 0% translation.
 #
 # Env vars come from the GitHub workflows that run the Crowdin CLI:
-#   CROWDIN_PROJECT_ID    — repo variable (public)
+#   CROWDIN_PROJECT_ID     — repo variable (public)
 #   CROWDIN_PERSONAL_TOKEN — repo secret
 
 project_id_env: CROWDIN_PROJECT_ID
 api_token_env: CROWDIN_PERSONAL_TOKEN
 
 preserve_hierarchy: true
-skip_untranslated_files: true
 commit_message: '[ci skip]'
 
 files:
   - source: /packages/core/locales/en.json
     translation: /packages/core/locales/%locale%.json
     type: react_intl
+    skip_untranslated_files: true
+    skip_untranslated_strings: true
