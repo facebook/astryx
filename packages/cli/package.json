@@ -67,12 +67,14 @@
   "files": [
     "bin",
     "src",
+    "scripts/postinstall.mjs",
     "templates",
     "docs",
     "CHANGELOG.md"
   ],
   "scripts": {
     "astryx": "node bin/astryx.mjs",
+    "postinstall": "node scripts/postinstall.mjs",
     "typecheck:template-docs": "tsc --project tsconfig.template-docs.json",
     "typecheck:json-api": "tsc --project tsconfig.json-api.json && tsc --project tsconfig.api-contract.json"
   },
