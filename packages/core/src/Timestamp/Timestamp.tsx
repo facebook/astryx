@@ -38,6 +38,7 @@ export type TimestampFormat =
   | 'relative'
   | 'auto'
   | 'date'
+  | 'date_long'
   | 'date_weekday'
   | 'date_time'
   | 'time'
@@ -55,6 +56,7 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    * - `'relative'`: "2 hours ago", "yesterday", "now"
    * - `'auto'`: Relative for recent times, `date_time` for older
    * - `'date'`: "Mar 21, 2025"
+   * - `'date_long'`: "March 21, 2025"
    * - `'date_weekday'`: "Wed, Mar 21, 2025"
    * - `'date_time'`: "Mar 21, 2025, 2:51 PM"
    * - `'time'`: "2:51 PM"
@@ -255,6 +257,12 @@ function formatTimestamp(
       return new Intl.DateTimeFormat(
         undefined,
         SHARED_DATE_FORMAT_OPTIONS.date,
+      ).format(date);
+
+    case 'date_long':
+      return new Intl.DateTimeFormat(
+        undefined,
+        SHARED_DATE_FORMAT_OPTIONS.date_long,
       ).format(date);
 
     case 'date_weekday':

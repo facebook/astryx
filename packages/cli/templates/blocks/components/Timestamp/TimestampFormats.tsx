@@ -17,6 +17,7 @@ export default function TimestampFormats() {
         </Text>
         <Stack direction="horizontal" gap={4} vAlign="center">
           <Timestamp value={DATE} format="date" color="primary" />
+          <Timestamp value={DATE} format="date_long" color="primary" />
           <Timestamp value={DATE} format="date_weekday" color="primary" />
           <Timestamp value={DATE} format="date_time" color="primary" />
           <Timestamp value={DATE} format="time" color="primary" />

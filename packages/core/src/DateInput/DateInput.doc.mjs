@@ -137,9 +137,10 @@ export const docs = {
     },
     {
       name: 'format',
-      type: "'date' | 'date_weekday' | 'system_date' | ((value: ISODateString) => string)",
+      type: "'date' | 'date_long' | 'date_weekday' | 'system_date' | ((value: ISODateString) => string)",
       description:
-        "How the committed date value is displayed. Named values are reused from Timestamp's format vocabulary: 'date' shows 'Mar 21, 2026', 'date_weekday' shows 'Wed, Mar 21, 2026', 'system_date' shows '2026-03-21'. A function receives the ISO value and returns a custom string. Left unset, the value renders as a long-month date ('March 21, 2026'). Applies only to the committed value, never to text being typed.",
+        "How the committed date value is displayed. Named values are reused from Timestamp's format vocabulary: 'date' shows 'Mar 21, 2026', 'date_long' shows 'March 21, 2026', 'date_weekday' shows 'Wed, Mar 21, 2026', 'system_date' shows '2026-03-21'. A function receives the ISO value and returns a custom string. Applies only to the committed value, never to text being typed.",
+      default: "'date_long'",
     },
     {
       name: 'xstyle',
@@ -396,9 +397,10 @@ export const docsZh = {
     },
     {
       name: 'format',
-      type: "'date' | 'date_weekday' | 'system_date' | ((value: ISODateString) => string)",
+      type: "'date' | 'date_long' | 'date_weekday' | 'system_date' | ((value: ISODateString) => string)",
       description:
-        "已选日期的显示格式。命名值复用 Timestamp 的格式词汇：'date' 显示 'Mar 21, 2026'，'date_weekday' 显示 'Wed, Mar 21, 2026'，'system_date' 显示 '2026-03-21'。函数接收 ISO 值并返回自定义字符串。不设置时按长月份格式显示（'March 21, 2026'）。仅作用于已提交的值，不影响正在输入的文本。",
+        "已选日期的显示格式。命名值复用 Timestamp 的格式词汇：'date' 显示 'Mar 21, 2026'，'date_long' 显示 'March 21, 2026'，'date_weekday' 显示 'Wed, Mar 21, 2026'，'system_date' 显示 '2026-03-21'。函数接收 ISO 值并返回自定义字符串。仅作用于已提交的值，不影响正在输入的文本。",
+      default: "'date_long'",
     },
     {
       name: 'xstyle',
@@ -494,7 +496,7 @@ export const docsDense = {
     hasClear: 'Shows clear button when date is set. Clears value on click.',
     numberOfMonths: 'months shown simultaneously in calendar popover',
     format:
-      "committed-value display: 'date' (Mar 21, 2026), 'date_weekday' (Wed, Mar 21, 2026), 'system_date' (2026-03-21), or (iso)=>string; reuses Timestamp vocabulary. Unset = long month (March 21, 2026). Committed value only, not while typing.",
+      "committed-value display: 'date_long' (default, March 21, 2026), 'date' (Mar 21, 2026), 'date_weekday' (Wed, Mar 21, 2026), 'system_date' (2026-03-21), or (iso)=>string; reuses Timestamp vocabulary. Committed value only, not while typing.",
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },
 };

@@ -116,6 +116,21 @@ describe('Timestamp', () => {
     expect(el.textContent).toMatch(/Mon|Tue|Wed|Thu|Fri|Sat|Sun/);
   });
 
+  it('renders date_long format with a full month name', () => {
+    render(
+      <Timestamp
+        value="2026-02-19T17:00:00Z"
+        format="date_long"
+        data-testid="ts"
+      />,
+    );
+    const el = screen.getByTestId('ts');
+    // Long-month shape: full month name, year, no time portion.
+    expect(el.textContent).toContain('February');
+    expect(el.textContent).toContain('2026');
+    expect(el.textContent).not.toContain(':');
+  });
+
   it('renders date_time format', () => {
     render(
       <Timestamp

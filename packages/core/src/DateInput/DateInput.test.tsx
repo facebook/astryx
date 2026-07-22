@@ -836,9 +836,24 @@ describe('DateInput', () => {
   });
 
   describe('format', () => {
-    it('defaults to long-month format when format is unset', () => {
-      // Non-breaking default: byte-identical to the historical rendering.
+    it('defaults to the long-month date_long shape', () => {
+      // Non-breaking default: byte-identical to the historical hardcoded
+      // DATE_FORMAT_LONG rendering. `format` now defaults to 'date_long'.
       render(<DateInput label="Date" value="2026-01-25" onChange={() => {}} />);
+      expect(screen.getByDisplayValue('January 25, 2026')).toBeInTheDocument();
+    });
+
+    it('renders the long-month shape for explicit format="date_long"', () => {
+      // Explicit date_long is identical to the unset default above and to the
+      // old hardcoded long-month output — real named parity with Timestamp.
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date_long"
+        />,
+      );
       expect(screen.getByDisplayValue('January 25, 2026')).toBeInTheDocument();
     });
 
