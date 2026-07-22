@@ -15,10 +15,12 @@ export const docs = {
   category: 'guide',
       content: [
         {
+          id: 'intro',
           type: 'prose',
           text: 'A design system that prioritizes consistency, adaptability, and developer experience. Every decision flows from a few core ideas:',
         },
         {
+          id: 'core-ideas',
           type: 'list',
           style: 'unordered',
           items: [
@@ -35,6 +37,7 @@ export const docs = {
   category: 'guide',
       content: [
         {
+          id: 'rules',
           type: 'list',
           style: 'ordered',
           items: [
@@ -55,10 +58,12 @@ export const docs = {
   category: 'guide',
       content: [
         {
+          id: 'overview',
           type: 'prose',
           text: 'The design system supports multiple styling approaches. Every component accepts an \`xstyle\` prop for StyleX style overrides via \`stylex.create()\`. For layout and wrapper styling outside of components, use StyleX or Tailwind utilities; both resolve to the same design tokens.',
         },
         {
+          id: 'see-styling',
           type: 'prose',
           text: 'See \`npx astryx docs styling\` for the complete guide with examples.',
         },
@@ -69,6 +74,7 @@ export const docs = {
   category: 'guide',
       content: [
         {
+          id: 'donts',
           type: 'list',
           style: 'dont',
           items: [
@@ -88,6 +94,7 @@ export const docs = {
   category: 'guide',
       content: [
         {
+          id: 'tokens-intro',
           type: 'prose',
           text: 'The design system provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run \`npx astryx docs tokens\` for the full reference with all values.',
         },

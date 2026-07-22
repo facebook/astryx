@@ -9,13 +9,13 @@ export const docsDense = {
     {
       section: 'Frame First',
       title: 'Frame First',
-      content: [
+      blocks: [
         {
-          type: 'prose',
+          id: 'layout-b1',
           text: 'decide frame before content. content-first (Card-wrapped sections in a scroll column) = prototype look.',
         },
         {
-          type: 'list',
+          id: 'layout-b2',
           items: [
             'pick frame: AppShell (nav apps) | Layout+LayoutPanel+LayoutContent (multi-pane tools) | plain column (docs/forms)',
             'budget regions in px first: side nav 240-280, rail 64-72, inspector 340-420, facet rail 220-260',
@@ -23,20 +23,18 @@ export const docsDense = {
             'write responsive contract up front',
           ],
         },
-        null,
       ],
     },
     {
       section: 'App Archetypes',
       title: 'App Archetypes',
-      content: [
+      blocks: [
         {
-          type: 'prose',
+          id: 'layout-b4',
           text: 'container choice tracks archetype, not preference.',
         },
-        null,
         {
-          type: 'prose',
+          id: 'layout-b6',
           text: 'start from matching template (astryx template --list), study with --skeleton.',
         },
       ],
@@ -44,13 +42,13 @@ export const docsDense = {
     {
       section: 'Cards vs Rows',
       title: 'Cards vs Rows',
-      content: [
+      blocks: [
         {
-          type: 'prose',
+          id: 'layout-b7',
           text: 'Card = widget container, NOT list-item wrapper. dense/scannable/selectable data = rows: Table (columnar) or List/Item (single-line), edge-to-edge, 32-40px rows, dividers.',
         },
         {
-          type: 'list',
+          id: 'layout-b8',
           items: [
             'Table+plugins: hosts, deployments, monitors, users',
             'List/Item rows: issues, files, conversations',
@@ -59,7 +57,7 @@ export const docsDense = {
           ],
         },
         {
-          type: 'list',
+          id: 'layout-b9',
           items: [
             'no Card-wrapped list items (card soup)',
             'no stacked full-width Cards as page structure',
@@ -72,23 +70,21 @@ export const docsDense = {
     {
       section: 'Panels and Inspectors',
       title: 'Panels and Inspectors',
-      content: [
+      blocks: [
         {
-          type: 'prose',
+          id: 'layout-b10',
           text: 'master-detail: row select opens fixed-width inspector (LayoutPanel end slot + width budget + resizable/useResizable). overlay content <=1024px, do not compress.',
         },
-        null,
       ],
     },
     {
       section: 'Responsive Contract',
       title: 'Responsive Contract',
-      content: [
+      blocks: [
         {
-          type: 'prose',
+          id: 'layout-b12',
           text: 'declare breakpoint behavior as comment at frame root: which regions collapse/overlay/drop at which widths.',
         },
-        null,
       ],
     },
   ],

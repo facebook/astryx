@@ -17,10 +17,12 @@ export const docs = {
       "title": "Color Tokens",
       "content": [
         {
+          "id": "color-desc",
           "type": "prose",
           "text": "Semantic colors for consistent theming. All colors use light-dark() for automatic mode switching."
         },
         {
+          "id": "color-table",
           "type": "table",
           "headers": [
             "Token",
@@ -432,10 +434,12 @@ export const docs = {
       "title": "Spacing Tokens",
       "content": [
         {
+          "id": "spacing-desc",
           "type": "prose",
           "text": "Spacing scale used for padding, gap, and margin. Component gap props map spacing steps to these tokens."
         },
         {
+          "id": "spacing-table",
           "type": "table",
           "headers": [
             "Token",
@@ -511,10 +515,12 @@ export const docs = {
       "title": "Size Tokens",
       "content": [
         {
+          "id": "size-desc",
           "type": "prose",
           "text": "Control heights for consistent sizing across buttons, inputs, and selectors."
         },
         {
+          "id": "size-table",
           "type": "table",
           "headers": [
             "Token",
@@ -542,10 +548,12 @@ export const docs = {
       "title": "Border Tokens",
       "content": [
         {
+          "id": "border-desc",
           "type": "prose",
           "text": "Border width for card and input borders."
         },
         {
+          "id": "border-table",
           "type": "table",
           "headers": [
             "Token",
@@ -565,10 +573,12 @@ export const docs = {
       "title": "Radius Tokens",
       "content": [
         {
+          "id": "radius-desc",
           "type": "prose",
           "text": "Numeric scale based on a 4dp base unit. Tokens scale with the theme's radius multiplier; --radius-none and --radius-full are fixed."
         },
         {
+          "id": "radius-table",
           "type": "table",
           "headers": [
             "Token",
@@ -612,10 +622,12 @@ export const docs = {
       "title": "Shadow Tokens",
       "content": [
         {
+          "id": "shadow-desc",
           "type": "prose",
           "text": "Elevation shadows (low to med to high) and inset shadows for input state rings."
         },
         {
+          "id": "shadow-table",
           "type": "table",
           "headers": [
             "Token",
@@ -663,10 +675,12 @@ export const docs = {
       "title": "Duration Tokens",
       "content": [
         {
+          "id": "duration-desc",
           "type": "prose",
           "text": "Motion duration primitives. Three bands: fast (micro-interactions), medium (entrance/exit), slow (continuous). Min/max variants derive from base × ratio."
         },
         {
+          "id": "duration-table",
           "type": "table",
           "headers": [
             "Token",
@@ -718,10 +732,12 @@ export const docs = {
       "title": "Easing Tokens",
       "content": [
         {
+          "id": "ease-desc",
           "type": "prose",
           "text": "Easing curves for animations and transitions."
         },
         {
+          "id": "ease-table",
           "type": "table",
           "headers": [
             "Token",
@@ -741,10 +757,12 @@ export const docs = {
       "title": "Font Family Tokens",
       "content": [
         {
+          "id": "typography-desc",
           "type": "prose",
           "text": "Font family stacks for body, code, and heading text."
         },
         {
+          "id": "typography-table",
           "type": "table",
           "headers": [
             "Token",
@@ -772,10 +790,12 @@ export const docs = {
       "title": "Font Size Tokens",
       "content": [
         {
+          "id": "textSize-desc",
           "type": "prose",
           "text": "Geometric type scale: round(14 × 1.2^step). Base is 14px (--font-size-base)."
         },
         {
+          "id": "textSize-table",
           "type": "table",
           "headers": [
             "Token",
@@ -839,10 +859,12 @@ export const docs = {
       "title": "Font Weight Tokens",
       "content": [
         {
+          "id": "fontWeight-desc",
           "type": "prose",
           "text": "Font weight values for body, emphasis, and headings."
         },
         {
+          "id": "fontWeight-table",
           "type": "table",
           "headers": [
             "Token",
@@ -874,10 +896,12 @@ export const docs = {
       "title": "Type Scale Tokens",
       "content": [
         {
+          "id": "typeScale-desc",
           "type": "prose",
           "text": "Semantic tokens for headings, body, labels, code, supporting text, and display text. References font size and weight tokens. Override via typography.scale in defineTheme."
         },
         {
+          "id": "typeScale-table",
           "type": "table",
           "headers": [
             "Token",
@@ -1061,12 +1085,14 @@ export const docs = {
       "title": "Usage in StyleX",
       "content": [
         {
+          "id": "usage-code",
           "type": "code",
           "lang": "tsx",
           "label": "Using token imports",
           "code": "import * as stylex from '@stylexjs/stylex';\nimport {colorVars, spacingVars, sizeVars, radiusVars} from '@astryxdesign/core';\n\nconst styles = stylex.create({\n  card: {\n    padding: spacingVars['--spacing-4'],\n    backgroundColor: colorVars['--color-background-surface'],\n    borderRadius: radiusVars['--radius-container'],\n  },\n  button: {\n    height: sizeVars['--size-element-md'],\n  },\n});"
         },
         {
+          "id": "usage-prose",
           "type": "prose",
           "text": "See `npx astryx docs styling` for how to apply tokens via xstyle, className, and compound component patterns. See `npx astryx docs theme` for overriding tokens with defineTheme."
         }

@@ -14,10 +14,12 @@ export const docs = {
       title: 'Overview',
       content: [
         {
+          id: 'browser-support-b1',
           type: 'prose',
           text: 'Astryx is built on modern web platform features: the Popover API, CSS anchor positioning, and CSS `light-dark()`. These let components stay small, accessible, and dependency-free, but they also set a floor on which browsers render everything correctly.',
         },
         {
+          id: 'browser-support-b2',
           type: 'prose',
           text: 'A design system does not own its traffic; the products built on it do. Their audiences range from evergreen-Chrome-only internal tools to public sites with meaningful older-Safari share. So Astryx does not declare a single hard browser floor the way an app would. Instead it defines tiers that describe what works at each level, and hands the final decision to you. Pick the tier that matches your audience.',
         },
@@ -27,10 +29,12 @@ export const docs = {
       title: 'Support Tiers',
       content: [
         {
+          id: 'browser-support-b3',
           type: 'prose',
           text: 'Astryx officially supports Tier 1 and Tier 2. Tier 3 is best-effort: components will not crash, but positioning and theming may degrade.',
         },
         {
+          id: 'browser-support-b4',
           type: 'table',
           headers: ['Tier', 'Baseline', 'Representative versions', 'What your users experience'],
           rows: [
@@ -60,10 +64,12 @@ export const docs = {
       title: 'Which Features Set the Floor',
       content: [
         {
+          id: 'browser-support-b5',
           type: 'prose',
           text: 'Only three modern features carry a browser requirement. Everything else Astryx uses (`:has()`, `color-mix()`, container queries, the `<dialog>` element) has been widely available since 2023 or earlier and needs no special handling.',
         },
         {
+          id: 'browser-support-b6',
           type: 'table',
           headers: ['Feature', 'Role in Astryx', 'Widely available'],
           rows: [
@@ -85,6 +91,7 @@ export const docs = {
           ],
         },
         {
+          id: 'browser-support-b7',
           type: 'prose',
           text: 'The gap that matters is between Tier 1 and Tier 2: the Popover API and `light-dark()` reached wide availability well before anchor positioning. So in Tier 2 browsers, layered surfaces open and dismiss correctly; they just are not positioned. This is the one feature most consumers will need to reason about.',
         },
@@ -94,10 +101,12 @@ export const docs = {
       title: 'Which Components Are Affected',
       content: [
         {
+          id: 'browser-support-b8',
           type: 'prose',
           text: 'The browser requirement is concentrated in the layered-surface components: anything that renders content in an overlay positioned against a trigger:',
         },
         {
+          id: 'browser-support-b9',
           type: 'list',
           style: 'unordered',
           items: [
@@ -111,6 +120,7 @@ export const docs = {
           ],
         },
         {
+          id: 'browser-support-b10',
           type: 'prose',
           text: 'If your product does not use any of these, it has no anchor-positioning requirement at all; it needs only `light-dark()` (Tier 2 and up) for correct theme colors. Layout, typography, forms, buttons, cards, tables, and navigation all work down to Tier 2 with no special handling.',
         },
@@ -120,6 +130,7 @@ export const docs = {
       title: 'What Astryx Guarantees',
       content: [
         {
+          id: 'browser-support-b11',
           type: 'list',
           style: 'do',
           items: [
@@ -129,6 +140,7 @@ export const docs = {
           ],
         },
         {
+          id: 'browser-support-b12',
           type: 'list',
           style: 'dont',
           items: [
@@ -142,10 +154,12 @@ export const docs = {
       title: 'Supporting Older Browsers',
       content: [
         {
+          id: 'browser-support-b13',
           type: 'prose',
           text: 'If your audience includes Tier 2 browsers and you need correct layer positioning, you have three options, cheapest first. All of them are decisions you make for your audience; Astryx does not impose one.',
         },
         {
+          id: 'browser-support-b14',
           type: 'list',
           style: 'ordered',
           items: [
@@ -155,10 +169,12 @@ export const docs = {
           ],
         },
         {
+          id: 'browser-support-b15',
           type: 'prose',
           text: 'Feature-detect at runtime rather than sniffing user agents:',
         },
         {
+          id: 'browser-support-b16',
           type: 'code',
           lang: 'js',
           label: 'Feature detection',
@@ -178,10 +194,12 @@ const hasLightDark = CSS.supports('color', 'light-dark(#000, #fff)');`,
       title: 'How These Tiers Move Over Time',
       content: [
         {
+          id: 'browser-support-b17',
           type: 'prose',
           text: 'The tiers are rolling, not frozen to specific versions. They track the Web Baseline year:',
         },
         {
+          id: 'browser-support-b18',
           type: 'list',
           style: 'unordered',
           items: [
@@ -191,6 +209,7 @@ const hasLightDark = CSS.supports('color', 'light-dark(#000, #fff)');`,
           ],
         },
         {
+          id: 'browser-support-b19',
           type: 'prose',
           text: 'This is not an arbitrary window: Baseline − 2 is close to where anchor positioning stops being available while the Popover API and `light-dark()` still are, so the tier boundary tracks a real capability edge, not a guessed date. The version floors above are reviewed and advanced roughly once a year as new Baseline years land. Always feature-detect rather than hardcoding version numbers, so your app adapts automatically as the platform moves.',
         },

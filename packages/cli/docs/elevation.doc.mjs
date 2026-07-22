@@ -16,6 +16,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'elevation-b1',
           type: 'prose',
           text: 'Elevation tokens create depth through box-shadow. Three levels (low, med, high) establish a visual hierarchy for floating elements. Inset shadows provide focus and selection rings for interactive components.',
         },
@@ -26,10 +27,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'elevation-b2',
           type: 'prose',
           text: 'Each level adds stronger offset and spread. Shadow color adapts to dark mode automatically via light-dark().',
         },
         {
+          id: 'elevation-b3',
           type: 'token-ref',
           topic: 'tokens',
           section: 'Shadow Tokens',
@@ -41,6 +44,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'elevation-b4',
           type: 'code',
           lang: 'tsx',
           label: 'Applying elevation',
@@ -65,6 +69,7 @@ const styles = stylex.create({
   category: 'foundations',
       content: [
         {
+          id: 'elevation-b5',
           type: 'list',
           style: 'do',
           items: [
@@ -73,6 +78,7 @@ const styles = stylex.create({
           ],
         },
         {
+          id: 'elevation-b6',
           type: 'list',
           style: 'dont',
           items: [

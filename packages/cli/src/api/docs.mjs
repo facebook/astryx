@@ -38,13 +38,12 @@ async function loadReferenceDocs(docPath, {lang} = {}) {
   const translation = translationMod.docsZh || translationMod.docsDense;
   if (!translation) return docs;
 
-  // Overlays are keyed to a base section by title (`section`), not by array
-  // position. Position-keying silently grafted each overlay title onto whatever
-  // base section happened to share its index, so an overlay that omitted or
-  // reordered a section corrupted every section after it — `docs tokens --dense`
-  // printed the colour table under a "Spacing" heading (#2182). An overlay may
-  // now cover any subset of sections, in any order; sections it does not name
-  // keep their base content.
+  // Overlays anchor to the base doc by stable keys — section title (`section`)
+  // and block `id` — never by array position. An overlay may cover any subset of
+  // sections and blocks, in any order; anything it does not name (or cannot
+  // express) keeps its base (English) content, so an overlay can never drop,
+  // reorder, or override canonical structure. (Index-based merging grafted
+  // overlays onto the wrong content — see #2182.)
   const bySection = new Map();
   for (const ts of translation.sections ?? []) {
     if (ts?.section != null) bySection.set(ts.section, ts);
@@ -56,14 +55,25 @@ async function loadReferenceDocs(docPath, {lang} = {}) {
     sections: docs.sections.map(section => {
       const ts = bySection.get(section.title);
       if (!ts) return section;
+      const byId = new Map();
+      for (const ob of ts.blocks ?? []) {
+        if (ob?.id != null) byId.set(ob.id, ob);
+      }
       return {
         ...section,
         title: ts.title || section.title,
-        content: section.content.map((block, bi) => {
-          const tb = ts.content?.[bi];
-          if (!tb) return block;
-          if (tb.type === 'prose' && block.type === 'prose') return {...block, text: tb.text};
-          if (tb.type === 'list' && block.type === 'list') return {...block, items: tb.items};
+        content: section.content.map(block => {
+          const ob = block.id != null ? byId.get(block.id) : undefined;
+          if (!ob) return block;
+          // Prose-only overrides; the block type must match. Structural blocks
+          // (code, table, token-ref) are never overridden — they always come
+          // from the base doc.
+          if (block.type === 'prose' && typeof ob.text === 'string') {
+            return {...block, text: ob.text};
+          }
+          if (block.type === 'list' && Array.isArray(ob.items)) {
+            return {...block, items: ob.items};
+          }
           return block;
         }),
       };
@@ -84,7 +94,7 @@ async function resolveTokenRefs(docsData, topics) {
       if (block.type === 'token-ref') {
         const refPath = topics[block.topic];
         if (!refPath) {
-          newContent.push({type: 'prose', text: `[token-ref: unknown topic "${block.topic}"]`});
+          newContent.push({id: 'token-ref-unknown-topic', type: 'prose', text: `[token-ref: unknown topic "${block.topic}"]`});
           continue;
         }
         const refMod = await import(pathToFileURL(refPath).href);
@@ -93,7 +103,7 @@ async function resolveTokenRefs(docsData, topics) {
           s => s.title.toLowerCase() === block.section.toLowerCase(),
         );
         if (!refSection) {
-          newContent.push({type: 'prose', text: `[token-ref: section "${block.section}" not found in "${block.topic}"]`});
+          newContent.push({id: 'token-ref-missing-section', type: 'prose', text: `[token-ref: section "${block.section}" not found in "${block.topic}"]`});
           continue;
         }
         // Inline the referenced section's content blocks (tables, prose, etc.)

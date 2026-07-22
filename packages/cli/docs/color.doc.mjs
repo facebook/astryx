@@ -16,6 +16,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'color-b1',
           type: 'prose',
           text: 'Colors are semantic: tokens describe purpose, not appearance. Every color adapts automatically between light and dark modes via CSS light-dark(). Themes override the resolved values, so your code never references raw hex colors.',
         },
@@ -26,10 +27,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'color-b2',
           type: 'prose',
           text: 'Layered surface hierarchy: body → surface → card → popover. Each level sits visually above the previous one.',
         },
         {
+          id: 'color-b3',
           type: 'token-ref',
           topic: 'tokens',
           section: 'Color Tokens',
@@ -41,6 +44,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'color-b4',
           type: 'code',
           lang: 'tsx',
           label: 'Applying color tokens',
@@ -65,6 +69,7 @@ const styles = stylex.create({
   category: 'foundations',
       content: [
         {
+          id: 'color-b5',
           type: 'list',
           style: 'do',
           items: [
@@ -74,6 +79,7 @@ const styles = stylex.create({
           ],
         },
         {
+          id: 'color-b6',
           type: 'list',
           style: 'dont',
           items: [

@@ -199,8 +199,8 @@ for (const group of groups) {
 
   /** @type {import('../../core/src/docs-types').ContentBlock[]} */
   const content = [
-    {type: 'prose', text: group.description},
-    {type: 'table', headers: group.headers, rows},
+    {id: `${group.key}-desc`, type: 'prose', text: group.description},
+    {id: `${group.key}-table`, type: 'table', headers: group.headers, rows},
   ];
 
   const section = {title: group.title, content};
@@ -213,6 +213,7 @@ sections.push({
   title: 'Usage in StyleX',
   content: [
     {
+      id: 'usage-code',
       type: 'code',
       lang: 'tsx',
       label: 'Using token imports',
@@ -231,6 +232,7 @@ const styles = stylex.create({
 });`,
     },
     {
+      id: 'usage-prose',
       type: 'prose',
       text: "See `npx astryx docs styling` for how to apply tokens via xstyle, className, and compound component patterns. See `npx astryx docs theme` for overriding tokens with defineTheme.",
     },

@@ -14,10 +14,12 @@ export const docs = {
       title: 'Quick Start with AI',
       content: [
         {
+          id: 'getting-started-b1',
           type: 'prose',
           text: 'Paste this into your AI coding tool and let it handle the setup:',
         },
         {
+          id: 'getting-started-b2',
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
@@ -29,20 +31,24 @@ export const docs = {
       title: 'Install',
       content: [
         {
+          id: 'getting-started-b3',
           type: 'prose',
           text: 'Add the core package, a theme, and the CLI to your existing project.',
         },
         {
+          id: 'getting-started-b4',
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
           code: `npm install @astryxdesign/core @astryxdesign/theme-neutral @astryxdesign/cli`,
         },
         {
+          id: 'getting-started-b5',
           type: 'prose',
           text: "Then run `astryx init` to install the AI agent cheat sheet (AGENTS.md/CLAUDE.md). It's non-interactive — no prompts — so it's safe for AI agents, CI, and scripts. Add `--all` for pointers to the theme and page-building workflows.",
         },
         {
+          id: 'getting-started-b6',
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
@@ -54,10 +60,12 @@ export const docs = {
       title: 'Add the theme CSS',
       content: [
         {
+          id: 'getting-started-b7',
           type: 'prose',
           text: 'Import the reset stylesheet and a theme in your global CSS file. Themes provide all design tokens (colors, spacing, radius, typography) as CSS custom properties.',
         },
         {
+          id: 'getting-started-b8',
           type: 'code',
           lang: 'css',
           label: 'globals.css',
@@ -66,10 +74,12 @@ export const docs = {
 @import '@astryxdesign/theme-neutral/theme.css';`,
         },
         {
+          id: 'getting-started-b9',
           type: 'prose',
           text: 'Available themes: @astryxdesign/theme-neutral (muted minimal, a good starting point), @astryxdesign/theme-butter, @astryxdesign/theme-chocolate, @astryxdesign/theme-gothic (dark-only), @astryxdesign/theme-matcha, @astryxdesign/theme-stone, and @astryxdesign/theme-y2k. See `npx astryx docs theme` for the full theming guide.',
         },
         {
+          id: 'getting-started-b10',
           type: 'prose',
           text: 'These stylesheets are cascade-layered: the reset loads in @layer reset and component styles in @layer astryx-base. If your project has existing global CSS, a legacy reset, or Tailwind, declare the layer order explicitly and assign every stylesheet to a layer deliberately: unlayered styles and later layers both override astryx-base regardless of specificity. See the Cascade Layer Safety section in `npx astryx docs migration` before building screens.',
         },
@@ -79,10 +89,12 @@ export const docs = {
       title: 'Add your first component',
       content: [
         {
+          id: 'getting-started-b11',
           type: 'prose',
           text: 'Components are imported from per-category subpath entrypoints. This keeps bundles small and makes intent clear.',
         },
         {
+          id: 'getting-started-b12',
           type: 'code',
           lang: 'tsx',
           label: 'app/page.tsx',
@@ -103,10 +115,12 @@ export default function Page() {
       title: 'Customize with StyleX',
       content: [
         {
+          id: 'getting-started-b13',
           type: 'prose',
           text: 'Astryx components support various styling solutions, from plain CSS and `className` to Tailwind and CSS-in-JS. See the [styling docs](/docs/styling) for the full guide. Astryx also has a deep integration with [StyleX](https://stylexjs.com/), an atomic CSS-in-JS library: create styles with `stylex.create()` and pass them to components with the `xstyle` prop.',
         },
         {
+          id: 'getting-started-b14',
           type: 'code',
           lang: 'tsx',
           label: 'Style overrides',
@@ -124,10 +138,12 @@ const overrides = stylex.create({
       title: 'Example Apps',
       content: [
         {
+          id: 'getting-started-b15',
           type: 'prose',
           text: 'For a full working project, clone one of the example apps from the repo. These are complete setups with routing, theming, and components wired together.',
         },
         {
+          id: 'getting-started-b16',
           type: 'table',
           headers: ['Example', 'Stack', 'Path'],
           rows: [
@@ -139,6 +155,7 @@ const overrides = stylex.create({
           ],
         },
         {
+          id: 'getting-started-b17',
           type: 'code',
           lang: 'bash',
           label: 'Clone and run an example',
@@ -153,10 +170,12 @@ pnpm dev`,
       title: 'Explore the CLI',
       content: [
         {
+          id: 'getting-started-b18',
           type: 'prose',
           text: 'The CLI is your reference for components, tokens, templates, and docs. For reliable invocation (especially with AI assistants), add this script to your package.json:',
         },
         {
+          id: 'getting-started-b19',
           type: 'code',
           lang: 'json',
           label: 'package.json',
@@ -165,10 +184,12 @@ pnpm dev`,
 }`,
         },
         {
+          id: 'getting-started-b20',
           type: 'prose',
           text: 'Then discover what\'s available:',
         },
         {
+          id: 'getting-started-b21',
           type: 'code',
           lang: 'bash',
           label: 'Terminal',

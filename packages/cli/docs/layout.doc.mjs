@@ -14,10 +14,12 @@ export const docs = {
       title: 'Frame First',
       content: [
         {
+          id: 'layout-b1',
           type: 'prose',
           text: 'Decide the frame before writing any content. Real applications are built top-down: pick the shell, name its regions, give each region an explicit size budget, then fill regions with content. Content-first layout (writing sections and wrapping each one in a Card) produces a padded scroll column that reads as a prototype, not a product.',
         },
         {
+          id: 'layout-b2',
           type: 'list',
           style: 'ordered',
           items: [
@@ -28,6 +30,7 @@ export const docs = {
           ],
         },
         {
+          id: 'layout-b3',
           type: 'code',
           lang: 'tsx',
           label: 'A three-region tool frame',
@@ -47,10 +50,12 @@ export const docs = {
       title: 'App Archetypes',
       content: [
         {
+          id: 'layout-b4',
           type: 'prose',
           text: 'Match the frame and container policy to the kind of app you are building. These recipes are distilled from product-scale apps built with the design system; container choice tracks the archetype, not personal preference.',
         },
         {
+          id: 'layout-b5',
           type: 'table',
           headers: ['Archetype', 'Frame', 'Container policy'],
           rows: [
@@ -82,6 +87,7 @@ export const docs = {
           ],
         },
         {
+          id: 'layout-b6',
           type: 'prose',
           text: 'Start from a template that matches the archetype (`npx astryx template --list`), then study its structure with `--skeleton` before customizing.',
         },
@@ -91,10 +97,12 @@ export const docs = {
       title: 'Cards vs Rows',
       content: [
         {
+          id: 'layout-b7',
           type: 'prose',
           text: 'Card is a widget container, not a list-item wrapper. The fastest way to make an app look like a generic AI prototype is to wrap every record in a Card with a Badge. Dense data (anything the user scans, filters, or selects) belongs in rows: Table for columnar data, List/Item for single-line records, edge-to-edge with dividers and 32–40px row height.',
         },
         {
+          id: 'layout-b8',
           type: 'list',
           style: 'do',
           items: [
@@ -105,6 +113,7 @@ export const docs = {
           ],
         },
         {
+          id: 'layout-b9',
           type: 'list',
           style: 'dont',
           items: [
@@ -120,10 +129,12 @@ export const docs = {
       title: 'Panels and Inspectors',
       content: [
         {
+          id: 'layout-b10',
           type: 'prose',
           text: 'Master-detail is the backbone of tool UIs: selecting a row opens a fixed-width inspector panel rather than navigating away. Use LayoutPanel in the end slot with an explicit width budget; add resizable (useResizable) for user control, and let the panel overlay the content region below ~1024px instead of compressing it.',
         },
         {
+          id: 'layout-b11',
           type: 'code',
           lang: 'tsx',
           label: 'Inspector that overlays at narrow widths',
@@ -142,10 +153,12 @@ export const docs = {
       title: 'Responsive Contract',
       content: [
         {
+          id: 'layout-b12',
           type: 'prose',
           text: 'Declare breakpoint behavior as a contract before building, and keep it in a comment at the frame root. A typical contract: full frame above 1024px; inspector panels overlay the content column at 1024px and below; the side nav collapses into MobileNav at 768px and below. Deciding this up front keeps every region change intentional instead of emergent.',
         },
         {
+          id: 'layout-b13',
           type: 'code',
           lang: 'tsx',
           label: 'Contract comment at the frame root',

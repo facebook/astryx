@@ -666,25 +666,35 @@ export interface TranslationDoc {
  * Ordered array of these makes up a section's content.
  * New block types can be added without breaking existing docs.
  *
+ * Every *authored* block in a reference `.doc.mjs` carries a stable `id`, unique
+ * within its section — enforced by the docs gate (`docOverlays.test.mjs`).
+ * Translation/compression overlays (see `ReferenceTranslationDoc`) reference
+ * blocks by `id`, never by array position, so reordering or inserting blocks can
+ * never misalign an overlay. The field is optional on the type so blocks
+ * synthesized at runtime (e.g. token-ref fallbacks, previews) need not fabricate
+ * one; only authored source blocks must have it. Translation itself is optional.
+ *
  * @example
  * ```
- * { type: 'prose', text: 'Spacing tokens control gap and padding...' }
- * { type: 'code', lang: 'tsx', code: 'padding: spacingVars[...]' }
- * { type: 'table', headers: ['Token', 'Value'], rows: [['--spacing-4', '16px']] }
- * { type: 'list', style: 'do', items: ['Use semantic tokens'] }
+ * { id: 'intro', type: 'prose', text: 'Spacing tokens control gap and padding...' }
+ * { id: 'setup', type: 'code', lang: 'tsx', code: 'padding: spacingVars[...]' }
+ * { id: 'scale', type: 'table', headers: ['Token', 'Value'], rows: [['--spacing-4', '16px']] }
+ * { id: 'do', type: 'list', style: 'do', items: ['Use semantic tokens'] }
  * { type: 'token-ref', topic: 'tokens', section: 'Color Tokens' }
  * ```
  */
 export type ContentBlock =
-  | {type: 'prose'; text: string}
-  | {type: 'code'; lang: string; code: string; label?: string}
-  | {type: 'table'; headers: string[]; rows: string[][]}
+  | {id?: string; type: 'prose'; text: string}
+  | {id?: string; type: 'code'; lang: string; code: string; label?: string}
+  | {id?: string; type: 'table'; headers: string[]; rows: string[][]}
   | {
+      id?: string;
       type: 'list';
       style: 'ordered' | 'unordered' | 'do' | 'dont';
       items: string[];
     }
   | {
+      id?: string;
       /** Reference to a token table in another doc topic.
        *  The CLI resolves this at read time and inlines the referenced
        *  section's table. The docsite can render it with live theme values
@@ -771,8 +781,22 @@ export interface ReferenceDoc {
 /**
  * Translation/compression overlay for reference documentation.
  *
- * Swaps prose text and list items. Code blocks and table data
- * are NOT translated — they stay as-is from the base doc.
+ * Generated from the canonical English doc by an external process (never
+ * hand-maintained). It carries prose only, keyed to the base doc by stable
+ * anchors — section title and block `id` — so it is structurally incapable of
+ * dropping, reordering, or overriding canonical structure:
+ *
+ *   - Sections anchor by `section` (base title). Unknown/missing sections keep
+ *     their base content.
+ *   - Blocks anchor by `id` (base block id), NOT array position. A block the
+ *     overlay does not name keeps its base (English) content.
+ *   - A block override may only supply `text` (prose) or `items` (list), so an
+ *     overlay can never change a block's type or touch code/tables/structure.
+ *
+ * Code blocks and table data are always taken from the base doc. Anything the
+ * overlay cannot express, or anchors that do not resolve, fall back to English
+ * — an overlay can never corrupt the doc. (This replaced index-based merging,
+ * which grafted overlays onto the wrong content — see #2182.)
  *
  * Used by `docsZh` (Chinese) and `docsDense` (compressed format).
  */
@@ -780,23 +804,26 @@ export interface ReferenceTranslationDoc {
   /** Translated/compressed description. */
   description: string;
   /** Section overrides, keyed to base sections by `section`. Order does not
-   *  matter, and an overlay may cover any subset — sections it does not name
-   *  keep their base content. (These used to be matched by array index, which
-   *  meant a reordered or partial overlay grafted every title onto the wrong
-   *  body: `docs tokens --dense` printed the colour table under a "Spacing"
-   *  heading. See #2182.) */
+   *  matter, and an overlay may cover any subset. */
   sections: {
     /** Title of the BASE section this entry overrides, verbatim and in English
      *  (e.g. 'Spacing Tokens'). Must match a section in the base doc. */
     section: string;
-    /** Translated/compressed section title, shown in place of the base title. */
-    title: string;
-    /** Content block overrides, by index within the anchored base section.
-     *  Only prose and list blocks need entries. Use null for blocks that don't
-     *  change (code, table). */
-    content: (
-      {type: 'prose'; text: string} | {type: 'list'; items: string[]} | null
-    )[];
+    /** Translated/compressed section title, shown in place of the base title.
+     *  Omit to keep the base title. */
+    title?: string;
+    /** Prose overrides for blocks in this section, keyed by base block `id`.
+     *  Only `prose` and `list` blocks can be overridden, and only their prose
+     *  (`text` / `items`). Blocks not listed keep their base content. */
+    blocks?: {
+      /** `id` of the BASE block this entry overrides. Must match a block in the
+       *  anchored base section. */
+      id: string;
+      /** Prose override, for a base `prose` block. */
+      text?: string;
+      /** List items override, for a base `list` block. */
+      items?: string[];
+    }[];
   }[];
 }
 

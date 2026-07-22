@@ -131,3 +131,115 @@ describe('the reported defect: docs tokens --dense (#2182)', () => {
     expect(titles).toContain('亮/暗模式');
   });
 });
+
+describe('reference overlays are id-anchored and prose-only (bulletproof, #2182)', () => {
+  const pairs = overlayPairs();
+
+  for (const {topic, variant, basePath, overlayPath} of pairs) {
+    it(`${topic} --${variant}: block overrides anchor to real base block ids, prose-only`, async () => {
+      const base = (await load(basePath)).docs;
+      const overlayMod = await load(overlayPath);
+      const overlay = overlayMod.docsDense || overlayMod.docsZh;
+      const baseSections = new Map(base.sections.map(s => [s.title, s]));
+
+      const problems = [];
+      for (const os of overlay.sections || []) {
+        // The legacy positional `content` shape is forbidden — it is the exact
+        // footgun this system removes. Overlays must use id-keyed `blocks`.
+        if ('content' in os) {
+          problems.push(
+            `section "${os.section}" uses legacy positional \`content\`; use id-keyed \`blocks\``,
+          );
+        }
+        const cs = baseSections.get(os.section);
+        if (!cs) continue; // unresolved sections are caught by the anchor test above
+        const baseBlocks = new Map(
+          (cs.content || []).filter(b => b.id != null).map(b => [b.id, b]),
+        );
+        for (const ob of os.blocks || []) {
+          if (ob.id == null) {
+            problems.push(`section "${os.section}" has a block override with no \`id\``);
+            continue;
+          }
+          const bb = baseBlocks.get(ob.id);
+          if (!bb) {
+            problems.push(`section "${os.section}" overrides unknown block id "${ob.id}"`);
+            continue;
+          }
+          // Prose-only: an override may carry only id + text/items, and its
+          // shape must match the base block type. It can never introduce a
+          // type, code, table, or any other structural field.
+          const extra = Object.keys(ob).filter(k => !['id', 'text', 'items'].includes(k));
+          if (extra.length) {
+            problems.push(`block "${ob.id}" in "${os.section}" carries non-prose keys: ${extra.join(', ')}`);
+          }
+          if ('text' in ob && bb.type !== 'prose') {
+            problems.push(`block "${ob.id}" supplies \`text\` but base block is "${bb.type}", not prose`);
+          }
+          if ('items' in ob && bb.type !== 'list') {
+            problems.push(`block "${ob.id}" supplies \`items\` but base block is "${bb.type}", not list`);
+          }
+        }
+      }
+
+      expect(
+        problems,
+        `${topic}.doc.${variant}.mjs has overlay issues that could drop or ` +
+          `misrepresent canonical content:\n  ${problems.join('\n  ')}`,
+      ).toEqual([]);
+    });
+
+    it(`${topic} --${variant}: every base block that can be overridden has a unique id`, async () => {
+      // Overlays can only reach blocks that carry an id, so a doc with overlays
+      // should give its prose/list blocks stable, unique ids.
+      const base = (await load(basePath)).docs;
+      const dupes = [];
+      for (const section of base.sections) {
+        const ids = (section.content || []).map(b => b.id).filter(Boolean);
+        const seen = new Set();
+        for (const id of ids) {
+          if (seen.has(id)) dupes.push(`${section.title} → ${id}`);
+          seen.add(id);
+        }
+      }
+      expect(dupes, `${topic}.doc.mjs has duplicate block ids: ${dupes.join(', ')}`).toEqual([]);
+    });
+  }
+});
+
+describe('every reference doc block has a required, unique id (#2182)', () => {
+  // id is required on ContentBlock so any block is addressable by an overlay.
+  // Docs are JSDoc-typed .mjs (not strictly type-checked), so this is the real
+  // enforcement: every block in every reference doc must carry a unique id.
+  const canonical = fs.readdirSync(DOCS_DIR).filter(f => /\.doc\.mjs$/.test(f));
+
+  it('discovers canonical reference docs', () => {
+    expect(canonical.length).toBeGreaterThan(0);
+  });
+
+  for (const file of canonical) {
+    it(`${file}: every block has an id, unique within its section`, async () => {
+      const mod = await load(path.join(DOCS_DIR, file));
+      const doc = mod.docs;
+      const problems = [];
+      for (const section of doc.sections || []) {
+        const seen = new Set();
+        (section.content || []).forEach((b, i) => {
+          if (b == null) return;
+          if (b.id == null) {
+            problems.push(`section "${section.title}" block #${i} (${b.type}) has no id`);
+          } else if (seen.has(b.id)) {
+            problems.push(`section "${section.title}" has a duplicate id "${b.id}"`);
+          } else {
+            seen.add(b.id);
+          }
+        });
+      }
+      expect(
+        problems,
+        `${file} has blocks without a stable, unique id (id is required so every ` +
+          `block is addressable by an overlay):\n  ${problems.join('\n  ')}`,
+      ).toEqual([]);
+    });
+  }
+});

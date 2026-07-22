@@ -15,10 +15,12 @@ export const docs = {
   category: 'guide',
       content: [
         {
+          id: 'styling-b1',
           type: 'prose',
           text: 'There are several ways to style things. Here is when to use each:',
         },
         {
+          id: 'styling-b2',
           type: 'table',
           headers: ['Approach', 'Use for', 'Example'],
           rows: [
@@ -29,6 +31,7 @@ export const docs = {
           ],
         },
         {
+          id: 'styling-b3',
           type: 'prose',
           text: 'All approaches resolve to the same design tokens, so theming and dark mode work regardless of which you choose. For external styling libraries, run `npx astryx docs styling-libraries`; it covers Tailwind, StyleX, Panda, Chakra, MUI, CSS-in-JS, CSS Modules, Sass, and `useTheme()` for non-CSS processing.',
         },
@@ -39,10 +42,12 @@ export const docs = {
   category: 'guide',
       content: [
         {
+          id: 'styling-b4',
           type: 'prose',
           text: 'Every component accepts an xstyle prop for style customization. It accepts StyleX styles created via stylex.create(), not inline objects or class name strings. StyleX styles are compiled at build time for optimal deduplication and dead-code elimination.',
         },
         {
+          id: 'styling-b5',
           type: 'code',
           lang: 'tsx',
           label: 'Simple overrides',
@@ -57,6 +62,7 @@ const overrides = stylex.create({
 <Button label="Save" xstyle={overrides.saveButton} />`,
         },
         {
+          id: 'styling-b6',
           type: 'code',
           lang: 'tsx',
           label: 'Pseudo-classes and conditional styles',
@@ -74,6 +80,7 @@ const overrides = stylex.create({
 <Card xstyle={overrides.card}>...</Card>`,
         },
         {
+          id: 'styling-b7',
           type: 'list',
           style: 'unordered',
           items: [
@@ -90,10 +97,12 @@ const overrides = stylex.create({
   category: 'guide',
       content: [
         {
+          id: 'styling-b8',
           type: 'prose',
           text: 'The package ships a Tailwind v4 theme bridge that maps all design tokens to Tailwind utility classes. Import it once and use Tailwind classes backed by design tokens: colors, spacing, radius, shadows, and typography all resolve to the active theme.',
         },
         {
+          id: 'styling-b9',
           type: 'code',
           lang: 'css',
           label: 'globals.css: import the bridge',
@@ -108,6 +117,7 @@ const overrides = stylex.create({
 @import "tailwindcss/utilities.css" layer(utilities);`,
         },
         {
+          id: 'styling-b10',
           type: 'code',
           lang: 'tsx',
           label: 'Tailwind utilities alongside components',
@@ -117,6 +127,7 @@ const overrides = stylex.create({
 </div>`,
         },
         {
+          id: 'styling-b11',
           type: 'prose',
           text: 'The bridge is pure CSS with zero JS. Theme changes (dark mode, custom themes) apply automatically because the utilities reference the same CSS custom properties that components use. This is the paved Tailwind path; for other styling libraries that follow the same aliasing pattern, run `npx astryx docs styling-libraries`.',
         },
@@ -127,10 +138,12 @@ const overrides = stylex.create({
   category: 'guide',
       content: [
         {
+          id: 'styling-b12',
           type: 'prose',
           text: 'Every component also accepts standard className and style props. className is appended after the component\'s own classes. style is merged after StyleX inline styles, so consumer values win on conflict.',
         },
         {
+          id: 'styling-b13',
           type: 'code',
           lang: 'tsx',
           label: 'className with Tailwind utilities',
@@ -140,6 +153,7 @@ const overrides = stylex.create({
 <Button label="Save" className="my-app-save-btn" />`,
         },
         {
+          id: 'styling-b14',
           type: 'prose',
           text: 'For layout and wrapper styling, Tailwind utilities on className work well. For component-specific overrides (padding, colors, borders), prefer xstyle; it integrates with StyleX deduplication and the component\'s internal style pipeline.',
         },
@@ -150,10 +164,12 @@ const overrides = stylex.create({
   category: 'guide',
       content: [
         {
+          id: 'styling-b15',
           type: 'prose',
           text: 'Components extend HTML attributes and spread rest props onto their root DOM element. This means data-* attributes, aria-* attributes, event handlers, and other HTML props pass through automatically.',
         },
         {
+          id: 'styling-b16',
           type: 'code',
           lang: 'tsx',
           label: 'Data attributes, event handlers, and ARIA',
@@ -167,6 +183,7 @@ const overrides = stylex.create({
 </Card>`,
         },
         {
+          id: 'styling-b17',
           type: 'code',
           lang: 'tsx',
           label: 'Ref forwarding',
@@ -174,6 +191,7 @@ const overrides = stylex.create({
 <Card ref={cardRef}>...</Card>`,
         },
         {
+          id: 'styling-b18',
           type: 'prose',
           text: 'A few HTML attributes are intentionally omitted from the base type (contentEditable, dangerouslySetInnerHTML). children is not in the base type either; components that accept children declare it explicitly, so slot-based components don\'t silently drop JSX children.',
         },
@@ -184,10 +202,12 @@ const overrides = stylex.create({
   category: 'guide',
       content: [
         {
+          id: 'styling-b19',
           type: 'prose',
           text: 'Complex components are composed from smaller components. Each sub-component accepts its own xstyle, className, and rest props. You style the parts individually; there\'s no single "drill into sub-part" prop.',
         },
         {
+          id: 'styling-b20',
           type: 'code',
           lang: 'tsx',
           label: 'Dialog with individually styled parts',
@@ -220,6 +240,7 @@ const overrides = stylex.create({
 </Dialog>`,
         },
         {
+          id: 'styling-b21',
           type: 'prose',
           text: 'The pattern: the parent component (Dialog) controls structure and behavior, child components (Layout, Header, Button) control their own appearance. Style each piece where it lives.',
         },
@@ -230,10 +251,12 @@ const overrides = stylex.create({
   category: 'guide',
       content: [
         {
+          id: 'styling-b22',
           type: 'prose',
           text: 'When external CSS needs to target an Astryx component by prop or state, combine the stable component class with reflected data attributes. The component class identifies the component (`.astryx-button`, `.astryx-card`); data attributes identify the axis and value (`data-variant`, `data-size`, `data-level`, etc.). This is the preferred selector surface for new CSS because it is explicit and collision-resistant.',
         },
         {
+          id: 'styling-b23',
           type: 'code',
           lang: 'css',
           code: `.my-app .astryx-button[data-variant="primary"] {
@@ -249,6 +272,7 @@ const overrides = stylex.create({
 }`,
         },
         {
+          id: 'styling-b24',
           type: 'code',
           lang: 'tsx',
           label: 'What components reflect',
@@ -262,6 +286,7 @@ const overrides = stylex.create({
 // preferred selector attrs: data-level="2"`,
         },
         {
+          id: 'styling-b25',
           type: 'prose',
           text: 'For systematic theming, use defineTheme component overrides instead of raw CSS selectors. defineTheme keeps the higher-level `prop:value` API (`variant:primary`, `size:sm`) and handles selector generation for you. Run `npx astryx docs theme` for the full theming guide.',
         },
@@ -272,10 +297,12 @@ const overrides = stylex.create({
   category: 'guide',
       content: [
         {
+          id: 'styling-b26',
           type: 'prose',
           text: 'Astryx still emits legacy bare prop/state classes such as `.primary`, `.sm`, `.level-2`, and `.checked` for compatibility with existing apps and built themes. Do not write new CSS against these bare classes. The stable base component classes (`.astryx-button`, `.astryx-card`, etc.) are not deprecated; only the unprefixed prop/state classes are the legacy surface.',
         },
         {
+          id: 'styling-b27',
           type: 'code',
           lang: 'css',
           code: `/* Deprecated compatibility selector — avoid in new CSS */
@@ -295,10 +322,12 @@ const overrides = stylex.create({
   category: 'guide',
       content: [
         {
+          id: 'styling-b28',
           type: 'prose',
           text: 'When writing custom styles, use design tokens instead of hardcoded values. Tokens are CSS custom properties that adapt to the active theme and color mode. The system provides tokens for spacing, color, radius, shadow, typography, and size.',
         },
         {
+          id: 'styling-b29',
           type: 'code',
           lang: 'tsx',
           label: 'Using tokens in stylex.create',
@@ -315,6 +344,7 @@ const styles = stylex.create({
 <Card xstyle={styles.surface} />`,
         },
         {
+          id: 'styling-b30',
           type: 'code',
           lang: 'tsx',
           label: 'Using typed token imports in stylex.create',
@@ -329,10 +359,12 @@ const styles = stylex.create({
 });`,
         },
         {
+          id: 'styling-b31',
           type: 'prose',
           text: 'Both approaches work: var() strings or typed imports from tokens.stylex. The typed imports give autocomplete and catch typos at build time.',
         },
         {
+          id: 'styling-b32',
           type: 'prose',
           text: 'See `npx astryx docs tokens` for the full token reference (all spacing, color, radius, shadow, and typography tokens with values). See `npx astryx docs theme` for how to override tokens via defineTheme.',
         },
@@ -343,10 +375,12 @@ const styles = stylex.create({
   category: 'guide',
       content: [
         {
+          id: 'styling-b33',
           type: 'prose',
           text: 'Astryx components ship pre-compiled, so consuming the published package needs no StyleX setup. But `astryx swizzle <Component>` copies the raw StyleX *source* into your app, and StyleX source requires a build-time StyleX compiler to produce atomic CSS. Without one the component compiles but renders completely unstyled: no error, no warning. If a swizzled component looks unstyled, a missing StyleX compiler is almost always why. The same applies if you author your own StyleX with `stylex.create()`.',
         },
         {
+          id: 'styling-b34',
           type: 'table',
           headers: ['Bundler', 'StyleX plugin'],
           rows: [
@@ -357,14 +391,17 @@ const styles = stylex.create({
           ],
         },
         {
+          id: 'styling-b35',
           type: 'prose',
           text: 'Next.js (App Router) is the sharp edge. StyleX\'s canonical compiler is a Babel plugin, but introducing a Babel config in Next.js disables the SWC compiler, which in turn breaks SWC-dependent features like `next/font`. So the "obvious" Babel setup is actively incompatible with a standard Next 15 App Router app.',
         },
         {
+          id: 'styling-b36',
           type: 'prose',
           text: 'The working path on Next.js is an SWC-based StyleX transform (e.g. the community `@stylexswc/nextjs-plugin`) wired into `next.config`, which keeps SWC and `next/font` intact. See the example app `apps/example-nextjs-stylex` in the repo for a complete, working Next.js + StyleX + SWC configuration.',
         },
         {
+          id: 'styling-b37',
           type: 'code',
           lang: 'js',
           label: 'next.config.mjs: SWC-based StyleX transform (keeps next/font working)',
@@ -381,6 +418,7 @@ export default stylexPlugin({
 });`,
         },
         {
+          id: 'styling-b38',
           type: 'list',
           style: 'unordered',
           items: [
@@ -396,6 +434,7 @@ export default stylexPlugin({
   category: 'guide',
       content: [
         {
+          id: 'styling-b39',
           type: 'list',
           style: 'dont',
           items: [

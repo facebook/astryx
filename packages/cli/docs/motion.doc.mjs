@@ -16,14 +16,17 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'motion-b1',
           type: 'prose',
           text: 'Motion serves two purposes: it makes interfaces easier to understand, and it makes them more pleasant to use. A panel animating open helps the eye track what changed and where new content sits in the layout. These moments reduce cognitive load and make the interface feel responsive.',
         },
         {
+          id: 'motion-b2',
           type: 'prose',
           text: 'At the same time, well-tuned motion gives an application a sense of craft and polish that users notice, even if they can\'t name it.',
         },
         {
+          id: 'motion-b3',
           type: 'prose',
           text: 'The design system provides duration and easing tokens that keep these moments consistent across your application.',
         },
@@ -34,6 +37,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'motion-b4',
           type: 'token-ref',
           topic: 'tokens',
           section: 'Duration Tokens',
@@ -45,6 +49,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'motion-b5',
           type: 'token-ref',
           topic: 'tokens',
           section: 'Easing Tokens',
@@ -56,10 +61,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'motion-b6',
           type: 'prose',
           text: 'Some parts of the interface benefit from animation. Panels, dialogs, and collapsible sections are disorienting when they appear instantly, so animation gives the eye something to follow. Toasts and notifications need just enough entrance to be noticed without startling. State changes like a switch flipping or a selection highlighting feel more intentional with a brief transition.',
         },
         {
+          id: 'motion-b7',
           type: 'prose',
           text: 'The common thread is that these are moments where the user needs to understand what happened.',
         },
@@ -70,10 +77,12 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'motion-b8',
           type: 'prose',
           text: 'Table row hovers. List item highlights. Anything the user does dozens of times per minute. Adding perceptible duration to these interactions makes the interface feel like it\'s catching up to the cursor. Keep these fast enough that the user never notices a delay.',
         },
         {
+          id: 'motion-b9',
           type: 'prose',
           text: 'Animations that block interaction are worse. If a user has to wait for a panel to finish sliding before they can click something inside it, the animation has become an obstacle. Motion should never stand between the user and their next action.',
         },
@@ -84,6 +93,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'motion-b10',
           type: 'list',
           style: 'unordered',
           items: [
@@ -100,6 +110,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'motion-b11',
           type: 'prose',
           text: 'Some users experience motion sensitivity; animation that feels polished to one person can cause discomfort for another. Components should honor the operating system\'s reduced motion setting. When it\'s enabled, replace animations with instant state changes.',
         },
@@ -110,6 +121,7 @@ export const docs = {
   category: 'foundations',
       content: [
         {
+          id: 'motion-b12',
           type: 'code',
           lang: 'tsx',
           label: 'Applying motion tokens',
@@ -135,6 +147,7 @@ const styles = stylex.create({
   category: 'foundations',
       content: [
         {
+          id: 'motion-b13',
           type: 'list',
           style: 'do',
           items: [
@@ -144,6 +157,7 @@ const styles = stylex.create({
           ],
         },
         {
+          id: 'motion-b14',
           type: 'list',
           style: 'dont',
           items: [

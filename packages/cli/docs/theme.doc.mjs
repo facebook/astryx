@@ -15,12 +15,14 @@ export const docs = {
   category: 'guide',
       content: [
         {
+          id: 'theme-b1',
           type: 'code',
           lang: 'bash',
           label: 'Install a theme package',
           code: 'npm install @astryxdesign/theme-neutral',
         },
         {
+          id: 'theme-b2',
           type: 'code',
           lang: 'tsx',
           label: 'Basic theme setup (runtime injection)',
@@ -36,6 +38,7 @@ function App() {
 }`,
         },
         {
+          id: 'theme-b3',
           type: 'code',
           lang: 'tsx',
           label: 'Optimized setup (pre-built CSS)',
@@ -52,10 +55,12 @@ function App() {
 }`,
         },
         {
+          id: 'theme-b4',
           type: 'prose',
           text: 'Each theme ships as its own npm package. Install the one you want, then wrap your app in `<Theme>`. The same pattern works for every theme; just swap the package and import name.',
         },
         {
+          id: 'theme-b5',
           type: 'prose',
           text: 'The default import uses runtime style injection, which works everywhere with no build step. The `/built` import skips injection and relies on the pre-compiled CSS file for better performance and SSR support.',
         },
@@ -66,10 +71,12 @@ function App() {
   category: 'guide',
       content: [
         {
+          id: 'theme-b6',
           type: 'prose',
           text: 'Install the theme package you want with `npm install @astryxdesign/theme-{name}`, then import its theme object as shown below.',
         },
         {
+          id: 'theme-b7',
           type: 'table',
           headers: ['Theme', 'Import', 'Description'],
           rows: [
@@ -111,6 +118,7 @@ function App() {
           ],
         },
         {
+          id: 'theme-b8',
           type: 'prose',
           text: 'All theme packages export from two subpaths:\n- `@astryxdesign/theme-{name}`: source theme (runtime injection)\n- `@astryxdesign/theme-{name}/built`: pre-built theme (pair with `theme.css`)',
         },
@@ -121,6 +129,7 @@ function App() {
   category: 'guide',
       content: [
         {
+          id: 'theme-b9',
           type: 'table',
           headers: ['Prop', 'Type', 'Default', 'Description'],
           rows: [
@@ -141,10 +150,12 @@ function App() {
   category: 'guide',
       content: [
         {
+          id: 'theme-b10',
           type: 'prose',
           text: 'Use the CLI wizard (recommended) or create manually with defineTheme. Only override tokens that differ from defaults; omitted tokens use the design system defaults.',
         },
         {
+          id: 'theme-b11',
           type: 'code',
           lang: 'bash',
           label: 'Scaffold with CLI',
@@ -157,10 +168,12 @@ function App() {
   category: 'guide',
       content: [
         {
+          id: 'theme-b12',
           type: 'prose',
           text: 'defineTheme creates a theme from token overrides and optional scale configs. Scale configs generate tokens from parameters. Explicit token overrides always take precedence over scale-generated values.',
         },
         {
+          id: 'theme-b13',
           type: 'code',
           lang: 'tsx',
           label: 'defineTheme with scale configs',
@@ -185,6 +198,7 @@ const myTheme = defineTheme({
 });`,
         },
         {
+          id: 'theme-b14',
           type: 'table',
           headers: ['Config', 'Generates', 'Parameters'],
           rows: [
@@ -222,10 +236,12 @@ const myTheme = defineTheme({
   category: 'guide',
       content: [
         {
+          id: 'theme-b15',
           type: 'prose',
           text: '`extends` lets you derive a new theme from an existing one, inheriting its tokens, component overrides, icons, and fonts. Only specify what you want to change; everything else carries over from the base theme.',
         },
         {
+          id: 'theme-b16',
           type: 'code',
           lang: 'tsx',
           label: 'Extending the neutral theme',
@@ -243,6 +259,7 @@ const brandTheme = defineTheme({
 });`,
         },
         {
+          id: 'theme-b17',
           type: 'table',
           headers: ['Field', 'Merge behavior'],
           rows: [
@@ -260,10 +277,12 @@ const brandTheme = defineTheme({
   category: 'guide',
       content: [
         {
+          id: 'theme-b18',
           type: 'prose',
           text: 'The `components` field in defineTheme uses semantic component keys and style keys, not raw CSS selectors. Use `base` for all instances, `variant:value` or `stateName` for specific props/states, and let the theme pipeline choose the underlying selector. For raw external CSS escape hatches, prefer the data-attribute selector surface documented in `astryx docs styling`.',
         },
         {
+          id: 'theme-b19',
           type: 'code',
           lang: 'tsx',
           label: 'Component overrides with standard CSS',
@@ -286,10 +305,12 @@ const brandTheme = defineTheme({
 }`,
         },
         {
+          id: 'theme-b20',
           type: 'prose',
           text: 'Run `npx astryx component <Name>` to see a component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
         },
         {
+          id: 'theme-b21',
           type: 'list',
           style: 'do',
           items: [
@@ -298,6 +319,7 @@ const brandTheme = defineTheme({
           ],
         },
         {
+          id: 'theme-b22',
           type: 'list',
           style: 'dont',
           items: [
@@ -311,10 +333,12 @@ const brandTheme = defineTheme({
   category: 'guide',
       content: [
         {
+          id: 'theme-b23',
           type: 'prose',
           text: 'Themes can add new prop values to any component. Any `prop:value` key where the value isn\'t a built-in gets treated as a new variant. Use `astryx theme build` to generate TypeScript augmentations for type safety.',
         },
         {
+          id: 'theme-b24',
           type: 'code',
           lang: 'tsx',
           label: 'Adding custom variants',
@@ -338,10 +362,12 @@ const brandTheme = defineTheme({
 }`,
         },
         {
+          id: 'theme-b25',
           type: 'prose',
           text: 'After building, the new values are type-safe in JSX:',
         },
         {
+          id: 'theme-b26',
           type: 'code',
           lang: 'tsx',
           label: 'Using custom variants',
@@ -350,6 +376,7 @@ const brandTheme = defineTheme({
 <Banner status="neutral" title="Note" />`,
         },
         {
+          id: 'theme-b27',
           type: 'prose',
           text: 'Custom variants only work when the theme that defines them is active. The component\'s variant map is extended via module augmentation, with no changes to the component source needed.',
         },
@@ -360,20 +387,24 @@ const brandTheme = defineTheme({
   category: 'guide',
       content: [
         {
+          id: 'theme-b28',
           type: 'prose',
           text: '`npx astryx theme build` compiles a defineTheme file into production-ready artifacts. Recommended for SSR apps (Next.js, Remix) where styles must be present on first paint.',
         },
         {
+          id: 'theme-b29',
           type: 'code',
           lang: 'bash',
           label: 'Build a theme',
           code: 'npx astryx theme build ./src/themes/ocean.ts',
         },
         {
+          id: 'theme-b30',
           type: 'prose',
           text: 'This generates the following files alongside the source:',
         },
         {
+          id: 'theme-b31',
           type: 'table',
           headers: ['File', 'Description'],
           rows: [
@@ -396,10 +427,12 @@ const brandTheme = defineTheme({
           ],
         },
         {
+          id: 'theme-b32',
           type: 'prose',
           text: 'The `__built: true` flag tells Theme to skip runtime `<style>` injection; the CSS file handles it.',
         },
         {
+          id: 'theme-b33',
           type: 'code',
           lang: 'tsx',
           label: 'Using a custom built theme',
@@ -417,10 +450,12 @@ import './themes/ocean.css';
   category: 'guide',
       content: [
         {
+          id: 'theme-b34',
           type: 'prose',
           text: 'Themes work in two modes:',
         },
         {
+          id: 'theme-b35',
           type: 'table',
           headers: ['', 'Runtime (source)', 'Built'],
           rows: [
@@ -457,6 +492,7 @@ import './themes/ocean.css';
           ],
         },
         {
+          id: 'theme-b36',
           type: 'list',
           style: 'do',
           items: [
@@ -466,6 +502,7 @@ import './themes/ocean.css';
           ],
         },
         {
+          id: 'theme-b37',
           type: 'list',
           style: 'dont',
           items: [
@@ -480,16 +517,19 @@ import './themes/ocean.css';
   category: 'guide',
       content: [
         {
+          id: 'theme-b38',
           type: 'prose',
           text: "Use [light, dark] tuples in token values for automatic mode switching. Use mode='system' (default) on Theme to follow OS preference.",
         },
         {
+          id: 'theme-b39',
           type: 'code',
           lang: 'tsx',
           label: 'Light/dark tuple',
           code: "'--color-accent': ['#0064E0', '#2694FE'],\n//                   ^light     ^dark",
         },
         {
+          id: 'theme-b40',
           type: 'code',
           lang: 'tsx',
           label: 'Toggle with a button',
@@ -509,10 +549,12 @@ import './themes/ocean.css';
   category: 'guide',
       content: [
         {
+          id: 'theme-b41',
           type: 'prose',
           text: 'Wrap different sections in separate <Theme> providers.',
         },
         {
+          id: 'theme-b42',
           type: 'code',
           lang: 'tsx',
           label: 'Dark sidebar with light content',
@@ -535,10 +577,12 @@ import './themes/ocean.css';
   category: 'guide',
       content: [
         {
+          id: 'theme-b43',
           type: 'prose',
           text: 'Use `tokenVar()` when a non-StyleX styling library wants a CSS variable reference, and `resolveThemeTokens()` when JavaScript needs token values for a specific theme and mode without React context.',
         },
         {
+          id: 'theme-b44',
           type: 'code',
           lang: 'ts',
           label: 'CSS var references for styling-library configs',
@@ -555,6 +599,7 @@ const pandaOrEmotionTheme = {
 };`,
         },
         {
+          id: 'theme-b45',
           type: 'code',
           lang: 'ts',
           label: 'Resolve token values without a hook',
@@ -568,6 +613,7 @@ const chartTheme = {
 };`,
         },
         {
+          id: 'theme-b46',
           type: 'prose',
           text: 'The `@astryxdesign/core/theme/tokens` subpath is server-safe and does not require React. The main `@astryxdesign/core/theme` barrel also re-exports these helpers for client code that already imports theme APIs.',
         },
@@ -578,10 +624,12 @@ const chartTheme = {
   category: 'guide',
       content: [
         {
+          id: 'theme-b47',
           type: 'prose',
           text: '`useTheme()` uses the same token resolution as `resolveThemeTokens()`, but reads the nearest Theme and effective color mode from React context and media query state. Use it inside client components for SVG, canvas, charts, maps, and third-party configuration objects that need token values in JavaScript instead of `var(...)` references.',
         },
         {
+          id: 'theme-b48',
           type: 'code',
           lang: 'tsx',
           label: 'Access resolved token values in React',
@@ -605,10 +653,12 @@ function ChartConfig() {
 }`,
         },
         {
+          id: 'theme-b49',
           type: 'prose',
           text: 'Prefer CSS variables, StyleX token imports, xstyle, or className for ordinary styling. To change the theme or mode, manage state at the app level and pass it to <Theme>.',
         },
         {
+          id: 'theme-b50',
           type: 'prose',
           text: 'See `npx astryx docs styling-libraries` for styling-library interop and `npx astryx docs tokens` for the full token reference.',
         },
