@@ -31,6 +31,9 @@ import {ERROR_CODES} from '../lib/error-codes.mjs';
 const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';
 const CLAUDE_DIR_MD = '.claude/CLAUDE.md'; // cross-platform literal
+const CURSOR_RULES = '.cursorrules';
+const HERMES_DOT_MD = '.hermes.md';
+const HERMES_MD = 'HERMES.md';
 
 
 const MARKER_START = '<!-- ASTRYX:START -->';
@@ -45,20 +48,60 @@ const LEGACY_MARKER_END = '<!-- XDS:END -->';
  */
 const AGENT_PRESETS = {
   claude: [CLAUDE_MD, CLAUDE_DIR_MD],
-  cursor: ['.cursorrules', AGENTS_MD],
+  cursor: [CURSOR_RULES, AGENTS_MD],
   codex: [AGENTS_MD],
-  hermes: ['.hermes.md', 'HERMES.md', AGENTS_MD],
+  hermes: [HERMES_DOT_MD, HERMES_MD, AGENTS_MD],
 };
 
 /**
- * Find all existing agent doc files in a directory.
- * Searches all known locations (AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, .cursorrules).
+ * The canonical set of EVERY location an --agent preset (or the default) can
+ * write the Astryx block. SINGLE SOURCE OF TRUTH: discovery, removal, and the
+ * `isAstryxInitialized` predicate all derive from this list, so "where init
+ * writes" and "where we look" can never drift. (Explicit --agent-docs-path
+ * targets are user-chosen and not enumerable here.)
+ */
+const AGENT_DOC_PATHS = [
+  AGENTS_MD, // Codex / ChatGPT / generic
+  CLAUDE_MD, // Claude Code (root)
+  CLAUDE_DIR_MD, // Claude Code (.claude/CLAUDE.md)
+  CURSOR_RULES, // Cursor
+  HERMES_DOT_MD, // Hermes
+  HERMES_MD, // Hermes
+];
+
+/**
+ * Find all existing agent doc files in a directory, across EVERY location any
+ * preset can write (see {@link AGENT_DOC_PATHS}: AGENTS.md, CLAUDE.md,
+ * .claude/CLAUDE.md, .cursorrules, .hermes.md, HERMES.md).
  * @param {string} targetDir
  * @returns {string[]} Relative paths of existing agent doc files
  */
 export function discoverAgentDocs(targetDir) {
-  const allPaths = [AGENTS_MD, CLAUDE_MD, CLAUDE_DIR_MD, '.cursorrules'];
-  return allPaths.filter(p => fs.existsSync(path.join(targetDir, p)));
+  return AGENT_DOC_PATHS.filter(p => fs.existsSync(path.join(targetDir, p)));
+}
+
+/**
+ * Single source of truth for "is Astryx set up in this project?" — true when any
+ * agent-doc file already carries the Astryx marker, i.e. `init` / `agent-docs`
+ * has run. Reused by the init & upgrade commands, the per-command setup nudge
+ * (enforcement layer 3), and the cli postinstall nudge (layer 2). Core's
+ * postinstall (separate package, layer 1) mirrors the same marker contract.
+ *
+ * @param {string} [targetDir=process.cwd()]
+ * @returns {boolean}
+ */
+export function isAstryxInitialized(targetDir = process.cwd()) {
+  for (const rel of discoverAgentDocs(targetDir)) {
+    try {
+      const content = fs.readFileSync(path.join(targetDir, rel), 'utf-8');
+      if (content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START)) {
+        return true;
+      }
+    } catch {
+      // Unreadable file — ignore and keep checking the others.
+    }
+  }
+  return false;
 }
 
 /**
