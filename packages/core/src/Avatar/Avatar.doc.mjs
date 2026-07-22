@@ -15,6 +15,7 @@ export const docs = {
       {guidance: true, description: 'Always pass a name so the avatar can show initials if the photo fails to load, and so screen readers can announce who it represents.'},
       {guidance: true, description: 'Pick a size that matches the context: xsm or sm for inline mentions, md or lg for lists and cards, xl for profile headers.'},
       {guidance: true, description: 'Add a status dot when knowing someone\'s availability matters, like in chat or team views.'},
+      {guidance: true, description: 'When wrapping an Avatar in your own Tooltip or HoverCard, set tooltip={false} so the built-in name tooltip does not overlap yours.'},
       {guidance: false, description: 'Use Avatar for logos, product images, or anything that isn\'t a person or team. Use an image or icon instead.'},
       {guidance: false, description: 'Force a square or custom shape. Avatars are always circular to stay consistent across the system.'},
     ],
@@ -72,6 +73,13 @@ export const docs = {
         },
       ],
     },
+    {
+      name: 'tooltip',
+      type: 'string | boolean',
+      description:
+        "Tooltip shown on hover and keyboard focus. Omitted or true shows the avatar's name; a string shows that text instead; false shows no tooltip. Not auto-disabled when wrapped in your own Tooltip/HoverCard — set tooltip={false} if you supply your own overlay. No tooltip is shown when tooltip is true/omitted and there is no name.",
+      default: 'true',
+    },
   ],
   components: [
     {name: 'AvatarStatusDot'},
@@ -113,6 +121,8 @@ export const docsDense = {
     alt: 'alt text; falls back to name',
     size: "avatar size. Named ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or numeric px.",
     status: 'corner content for status indicators',
+    tooltip:
+      "hover/focus tooltip. true/omitted → name; string → that text; false → none. Owns its tooltip; set false when wrapping in your own Tooltip/HoverCard. Default true.",
   },
   components: [
     {name: 'AvatarStatusDot', description: 'size-aware status indicator rendered in the Avatar corner'},
