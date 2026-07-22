@@ -91,6 +91,15 @@ describe('validatePostFrontmatter', () => {
     expect(meta.coverImage).toBeNull();
     expect(meta.relatedDocs).toBeNull();
     expect(meta.updatedAt).toBeNull();
+    expect(meta.dek).toBeNull();
+  });
+
+  it('accepts an optional article dek', () => {
+    const meta = validatePostFrontmatter('slug', {
+      ...VALID_FM,
+      dek: '[Launch](/blog/introducing-astryx). One month in.',
+    });
+    expect(meta.dek).toBe('[Launch](/blog/introducing-astryx). One month in.');
   });
 
   it.each(['title', 'description', 'date', 'type'])('requires "%s"', field => {
