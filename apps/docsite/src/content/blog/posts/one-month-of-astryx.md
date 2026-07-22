@@ -1,0 +1,48 @@
+---
+slug: one-month-of-astryx
+title: 'One Month of Astryx'
+description: "One month in — where Astryx stands, and where we're taking it."
+date: '2026-07-24'
+type: 'update'
+authors: [liya, ernest]
+tags: [astryx, design-system, open-source]
+---
+
+_Launched June 24, 2026. One month in — where Astryx stands, and where we're taking it._
+
+A month ago we open-sourced **Astryx** — a code-first, AI-fluent React + StyleX design system, built and refined inside Meta for eight years. The goal: give every builder — human or agent — a design system that's fully customizable, production-grade, and legible to the tools now writing most of our UI. One month in, the early signal says the bet resonates.
+
+## By the numbers (first month)
+
+- **GitHub:** 10.1K stars · 746 forks (peaked #2 on GitHub Trending — all repos — in launch week)
+- **npm (last 30 days):** @astryxdesign/core 175K · cli 119K · themes 459K across 7 themes
+- **Docsite ([astryx.atmeta.com](http://astryx.atmeta.com)):** 215K visitors · 1.7M page views (last 30 days)
+- **Community contributions:** 88 people opened PRs; 2,619 merged
+
+## Built with Astryx
+
+Real projects shipped on Astryx within the first month — from a company that [rebuilt its entire site within hours of release](https://moonveil.ai) to a growing set of community sites now in production.
+
+![A collage of websites and product interfaces built with Astryx](/blog/one-month-of-astryx/community-showcase.png)
+
+## What the community told us
+
+Discussion converged on what makes Astryx different — the CLI, MCP server, and agent-first architecture:
+
+- A widely-followed design-tooling leader described Astryx as **"infrastructure for a world where agents create most UI"** — the most-engaged Astryx post anywhere ([link](https://www.linkedin.com/posts/domyen_meta-just-open-sourced-a-design-system-theyve-share-7478518968098529280-R3p4/)).
+- An engineer on the React/Vercel team profiled our docsite and, with a Cache Components migration, made navigation **instant — up to 3x faster** ([link](https://x.com/aurorascharff/status/2078110561640845708)).
+- A well-known frontend educator called Astryx **"Tokenmaxxing done right,"** praising its extensive component set (including agentic UI), flexible CSS-variable theming, and AI-friendly CLI ([link](https://www.linkedin.com/posts/yangshun_meta-just-released-a-new-frontend-open-source-ugcPost-7477245799542837248-pcwN/)).
+- Independent, source-level analyses appeared organically in the [Japanese](https://x.com/wataryooou/status/2070445582993244377), [Korean](https://x.com/ngnicky/status/2074380595078258779), and [Chinese](https://m.sohu.com/a/1042830838_120333371) developer communities within days.
+- The community is contributing back — a Figma mapping, developers digging into the MCP internals with us, and momentum toward community-led themes and translations.
+
+## Where we're headed
+
+The launch was the start, not the finish. Our focus now is quality and depth — hardening components, expanding themes and templates, tightening the AI-authoring loop (vibe tests + design-judge), and making it easier for external contributors to build with us. Community contributions are a first-class input from here on.
+
+## Thank you
+
+To everyone who starred, shared, filed issues, and shipped PRs — thank you. Astryx is better because of you, and we're just getting started.
+
+## Show us what you built
+
+We're gathering standout websites built with Astryx. If you've shipped one — or are building one — send us your website link or a screenshot at **astryxdesign@meta.com**. We'll feature selected projects on [**astryx.atmeta.com**](http://astryx.atmeta.com) and reach out with some Astryx swag as a small thank-you.
