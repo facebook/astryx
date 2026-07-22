@@ -14,6 +14,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {semverGt} from './semver.mjs';
+import {getCliInvocation} from './package-manager.mjs';
 
 /**
  * Read the latest available version from local signals.
@@ -75,7 +76,7 @@ export function checkForUpdate(cwd = process.cwd()) {
   // Use semver-aware comparison so '0.0.20' is correctly treated as greater
   // than '0.0.5' (lexicographic compare gets that backwards).
   if (semverGt(latest, installed)) {
-    return `FYI: A newer version of @astryxdesign/core (${latest}) is available. Install the new package version, then run: astryx upgrade --from <old-version> --apply`;
+    return `FYI: A newer version of @astryxdesign/core (${latest}) is available. Install the new package version, then run: ${getCliInvocation()} upgrade --from <old-version> --apply`;
   }
 
   return null;

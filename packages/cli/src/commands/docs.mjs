@@ -12,7 +12,7 @@
  *   astryx docs <topic> <section>        Print one section
  */
 
-import {getRunPrefix} from '../utils/package-manager.mjs';
+import {getCliInvocation} from '../utils/package-manager.mjs';
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {docs as docsApi} from '../api/docs.mjs';
@@ -105,7 +105,7 @@ export function registerDocs(program) {
     .command('docs [topic] [section]')
     .description('Print reference docs')
     .action(async (topic, section) => {
-      const run = getRunPrefix();
+      const run = getCliInvocation();
       const lang = program.opts().lang || null;
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
@@ -130,8 +130,8 @@ export function registerDocs(program) {
           for (const entry of result.data) {
             humanLog(`  ${entry.topic.padEnd(14)} ${entry.description}`);
           }
-          humanLog(`\nUsage: ${run} astryx docs <topic>`);
-          humanLog(`       ${run} astryx docs <topic> <section>\n`);
+          humanLog(`\nUsage: ${run} docs <topic>`);
+          humanLog(`       ${run} docs <topic> <section>\n`);
           break;
         }
 

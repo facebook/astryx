@@ -26,7 +26,7 @@ import {createRequire} from 'node:module';
 
 import {MIN_NODE_VERSION, isNodeVersionSupported} from '../lib/node-version.mjs';
 import {CLI_ROOT, findCoreDir} from '../utils/paths.mjs';
-import {detectPackageManager} from '../utils/package-manager.mjs';
+import {detectPackageManager, getCliInvocation} from '../utils/package-manager.mjs';
 import {findConfigPath, Project} from '../lib/project.mjs';
 import {semverCompare} from '../utils/semver.mjs';
 
@@ -343,7 +343,7 @@ export function checkAgentDocs(ctx) {
       label: 'AI agent docs',
       status: 'info',
       message: 'No agent docs (CLAUDE.md / AGENTS.md / .cursorrules) found.',
-      fix: 'Generate agent docs with `astryx init --features agents`.',
+      fix: `Generate agent docs with \`${getCliInvocation(ctx.cwd)} init --features agents\`.`,
     };
   }
 
@@ -365,7 +365,7 @@ export function checkAgentDocs(ctx) {
       label: 'AI agent docs',
       status: 'warn',
       message: `Agent docs present (${present.join(', ')}) but no Astryx section markers found.`,
-      fix: 'Add the Astryx section to your agent docs with `astryx init --features agents`.',
+      fix: `Add the Astryx section to your agent docs with \`${getCliInvocation(ctx.cwd)} init --features agents\`.`,
     };
   }
 

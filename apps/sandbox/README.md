@@ -17,7 +17,7 @@ This automatically generates `AGENTS.md` with the Astryx component index via `as
 If `AGENTS.md` is missing, regenerate it:
 
 ```bash
-npx astryx init --features agents
+npx @astryxdesign/cli init --features agents
 ```
 
 ## How it works

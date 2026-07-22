@@ -12,7 +12,7 @@ import {fileURLToPath} from 'node:url';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {checkForUpdate} from './utils/update-check.mjs';
-import {getRunPrefix} from './utils/package-manager.mjs';
+import {getCliInvocation} from './utils/package-manager.mjs';
 import {API_VERSION, setJsonMode} from './lib/json.mjs';
 import {buildManifest} from './lib/manifest.mjs';
 import {cliError} from './lib/cli-error.mjs';
@@ -305,15 +305,14 @@ program
       console.log(`  ${c.name}${tag}`);
       if (c.description) console.log(`    ${c.description}`);
     }
-    console.log(`\nRun \`astryx manifest --json\` for the full structured manifest.\n`);
+    console.log(`\nRun \`${getCliInvocation()} manifest --json\` for the full structured manifest.\n`);
   });
 
 // Hidden command used by package.json postinstall scripts
 program
   .command('postinstall', {hidden: true})
   .action(() => {
-    const run = getRunPrefix();
-    const r = `${run} xds`;
+    const r = getCliInvocation();
     const pad = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
     const W = 49; // inner width of the box
     const line = (s) => `  │ ${pad(s, W)}│`;

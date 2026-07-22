@@ -22,7 +22,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {findCoreDir, CLI_ROOT} from '../utils/paths.mjs';
 import {assertWithin, PathSafetyError} from '../utils/path-safety.mjs';
-import {getRunPrefix} from '../utils/package-manager.mjs';
+import {getCliInvocation} from '../utils/package-manager.mjs';
 import {discoverComponents} from '../lib/component-discovery.mjs';
 import {humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
@@ -144,8 +144,8 @@ export function detectStylingSystem(targetDir) {
  * configured (see {@link detectStylingSystem}) so the agent never reaches for a
  * styling path that isn't compiled here.
  */
-export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix(), stylingSystem = 'css'} = {}) {
-  const run = `${runPrefix} astryx`;
+export function generateCompressedIndex(version, {coreDir, invocation = getCliInvocation(), stylingSystem = 'css'} = {}) {
+  const run = invocation;
   const lines = [MARKER_START];
 
   // Component count from live discovery
@@ -410,9 +410,9 @@ export function removeAgentDocs(targetDir) {
 export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false} = {}) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
-  const runPrefix = getRunPrefix(targetDir);
+  const invocation = getCliInvocation(targetDir);
   const stylingSystem = detectStylingSystem(targetDir);
-  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, runPrefix, stylingSystem});
+  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, invocation, stylingSystem});
   const written = [];
 
   // Explicit paths override everything
@@ -538,8 +538,7 @@ export function registerAgentDocs(program) {
         throw err;
       }
 
-      const runPrefix = getRunPrefix(targetDir);
-      const run = `${runPrefix} astryx`;
+      const run = getCliInvocation(targetDir);
 
       for (const t of targets) {
         humanLog(`✓ ${t}`);

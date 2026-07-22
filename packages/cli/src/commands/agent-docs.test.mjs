@@ -88,16 +88,23 @@ describe('generateCompressedIndex', () => {
     expect(result).toMatch(/after any @astryxdesign\/core bump/);
   });
 
-  it('states the runPrefix once in the CLI header', () => {
-    const result = generateCompressedIndex('1.0.0', {runPrefix: 'yarn'});
+  it('states the invocation once in the CLI header (yarn)', () => {
+    const result = generateCompressedIndex('1.0.0', {invocation: 'yarn astryx'});
     expect(result).toContain('yarn astryx <cmd>');
     expect(result).not.toContain('npx astryx');
   });
 
-  it('uses pnpm exec prefix', () => {
-    const result = generateCompressedIndex('1.0.0', {runPrefix: 'pnpm exec'});
+  it('uses the pnpm exec invocation', () => {
+    const result = generateCompressedIndex('1.0.0', {invocation: 'pnpm exec astryx'});
     expect(result).toContain('pnpm exec astryx <cmd>');
     expect(result).not.toContain('npx astryx');
+  });
+
+  it('uses the scoped package for one-off (uninstalled) runs so agents never hit the bare name', () => {
+    const result = generateCompressedIndex('1.0.0', {invocation: 'npx @astryxdesign/cli'});
+    expect(result).toContain('npx @astryxdesign/cli <cmd>');
+    // The header defines the mapping; the bare "run every command as `npx astryx`" footgun must be absent.
+    expect(result).not.toContain('npx astryx <cmd>');
   });
 });
 

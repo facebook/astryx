@@ -8,8 +8,8 @@
  * - An updated JS module that references the built className
  *
  * Usage:
- *   npx astryx theme build ./src/themes/ocean.ts
- *   npx astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css
+ *   astryx theme build ./src/themes/ocean.ts
+ *   astryx theme build ./src/themes/ocean.ts --out ./dist/ocean.css
  */
 
 import * as fs from 'node:fs';
@@ -17,7 +17,7 @@ import * as path from 'node:path';
 import {pathToFileURL, fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
 import {createJiti} from 'jiti';
-import {getRunPrefix} from '../utils/package-manager.mjs';
+import {getCliInvocation} from '../utils/package-manager.mjs';
 import {
   sanitizeName,
   PathSafetyError,
@@ -499,7 +499,7 @@ function generateBuiltModule(themeDef, iconInfo) {
     .join('\n');
 
   return `${iconImport}/**
- * ${themeDef.name} theme — built by \`${getRunPrefix()} astryx theme build\`
+ * ${themeDef.name} theme — built by \`${getCliInvocation()} theme build\`
  * Import the CSS file alongside this module:
  *
  *   import { ${toIdentifier(themeDef.name)}Theme } from './${themeDef.name}';
@@ -1129,7 +1129,7 @@ Or with a <link> tag:
         if (t.description) humanLog(`    ${t.description}`);
       }
       humanLog('\nUsage:');
-      humanLog('  astryx theme add <slug> [target-path]   Scaffold a theme file you own\n');
+      humanLog(`  ${getCliInvocation()} theme add <slug> [target-path]   Scaffold a theme file you own\n`);
     });
 
   theme
@@ -1167,7 +1167,7 @@ Or with a <link> tag:
           if (t.description) humanLog(`    ${t.description}`);
         }
         humanLog('\nUsage:');
-        humanLog('  astryx theme add <slug> [target-path]   Scaffold a theme file you own\n');
+        humanLog(`  ${getCliInvocation()} theme add <slug> [target-path]   Scaffold a theme file you own\n`);
         return;
       }
 

@@ -145,7 +145,7 @@ Component overrides generate scoped CSS:
 ### Distribution
 
 - **Unbuilt**: `Theme` generates CSS and injects `<style>` at runtime
-- **Built**: `npx astryx theme build` pre-compiles to a CSS file
+- **Built**: `astryx theme build` pre-compiles to a CSS file
 
 ## Extending an Existing Theme
 

@@ -12,6 +12,7 @@ import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {template as templateApi} from '../api/template.mjs';
 import {Project} from '../lib/project.mjs';
 import {warnOnIntegrationIssues} from '../lib/integration-warnings.mjs';
+import {getCliInvocation} from '../utils/package-manager.mjs';
 
 export {discoverTemplates, listTemplates} from '../api/template.mjs';
 
@@ -26,6 +27,7 @@ export function registerTemplate(program) {
     .option('-f, --overwrite', 'Overwrite existing files without prompting')
     .action(async (name, targetPath, options) => {
       const json = program.opts().json || false;
+      const run = getCliInvocation();
 
       // Non-blocking nudge: if any configured integration has validation
       // issues, print one compact line to stderr pointing at
@@ -98,10 +100,10 @@ export function registerTemplate(program) {
             for (const t of blocks) renderEntry(t);
           }
           humanLog('\nUsage:');
-          humanLog('  astryx template <id> [target-path]     Scaffold page or block');
-          humanLog('  astryx template <id> --skeleton        Layout reference');
-          humanLog('  astryx template --list --type block    List only blocks');
-          humanLog('  astryx template --list --package <pkg> List from one package\n');
+          humanLog(`  ${run} template <id> [target-path]     Scaffold page or block`);
+          humanLog(`  ${run} template <id> --skeleton        Layout reference`);
+          humanLog(`  ${run} template --list --type block    List only blocks`);
+          humanLog(`  ${run} template --list --package <pkg> List from one package\n`);
           break;
         }
 

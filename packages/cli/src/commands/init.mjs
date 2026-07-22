@@ -19,7 +19,7 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import {CLI_ROOT} from '../utils/paths.mjs';
 import {PathSafetyError} from '../utils/path-safety.mjs';
-import {getRunPrefix} from '../utils/package-manager.mjs';
+import {getCliInvocation} from '../utils/package-manager.mjs';
 import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
 import {listTemplates} from './template.mjs';
 import {humanLog} from '../lib/json.mjs';
@@ -27,7 +27,7 @@ import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 const VALID_FEATURES = ['agents', 'theme', 'template'];
-const run = getRunPrefix();
+const run = getCliInvocation();
 
 /**
  * Build the "Next steps" lines printed at the end of `astryx init`.
@@ -40,10 +40,10 @@ const run = getRunPrefix();
  *
  * Exported for testing.
  *
- * @param {string} runPrefix package-manager run prefix (e.g. `npx`)
+ * @param {string} invocation install-aware CLI invocation stem (e.g. `npx astryx`, `pnpm exec astryx`, or `npx @astryxdesign/cli` for one-off runs)
  * @returns {string[]} ordered list of human-facing lines
  */
-export function getNextSteps(runPrefix) {
+export function getNextSteps(invocation) {
   return [
     '',
     '  Next steps:',
@@ -54,8 +54,8 @@ export function getNextSteps(runPrefix) {
     "       import { neutralTheme } from '@astryxdesign/theme-neutral/built'",
     "       import '@astryxdesign/theme-neutral/theme.css'",
     '       <Theme theme={neutralTheme}>...</Theme>',
-    `       For custom themes, run \`${runPrefix} astryx theme build <file>\` to generate the built artifacts.`,
-    `    4. ${runPrefix} astryx --help for all commands`,
+    `       For custom themes, run \`${invocation} theme build <file>\` to generate the built artifacts.`,
+    `    4. ${invocation} --help for all commands`,
     '',
   ];
 }
@@ -81,14 +81,14 @@ function runAgents(targetDir, {agent, agentDocsPath} = {}) {
       process.exitCode = 1;
       return;
     }
-    console.error(`Could not install agent docs. Try again with \`${run} astryx init --features agents\`.`);
+    console.error(`Could not install agent docs. Try again with \`${run} init --features agents\`.`);
   }
 }
 
 // ─── Feature: theme ──────────────────────────────────────────────────────────
 
 function runTheme() {
-  humanLog(`✓ For a custom theme, run \`${run} astryx theme\` (browse) or \`${run} astryx theme add <slug>\` (scaffold).`);
+  humanLog(`✓ For a custom theme, run \`${run} theme\` (browse) or \`${run} theme add <slug>\` (scaffold).`);
 }
 
 // ─── Feature: template ───────────────────────────────────────────────────────
@@ -103,9 +103,9 @@ function runTemplate(targetDir, {templateName} = {}) {
     // and `build` with no args is the full how-to-build playbook.
     humanLog('✓ To build UI, use these commands:');
     humanLog('');
-    humanLog(`    ${run} astryx build "<what you're building>"   build a page — kit: closest template + blocks + components`);
-    humanLog(`    ${run} astryx build                            the how-to-build workflow (read this first)`);
-    humanLog(`    ${run} astryx search <query>                   find anything — components, docs, templates, blocks`);
+    humanLog(`    ${run} build "<what you're building>"   build a page — kit: closest template + blocks + components`);
+    humanLog(`    ${run} build                            the how-to-build workflow (read this first)`);
+    humanLog(`    ${run} search <query>                   find anything — components, docs, templates, blocks`);
     humanLog('');
     return;
   }
@@ -175,7 +175,7 @@ export function registerInit(program) {
         agentDocsPath: options.agentDocsPath,
       });
       humanLog('');
-      humanLog(`  Tip: \`${run} astryx init --all\` also points you to the theme and page-building workflows.`);
+      humanLog(`  Tip: \`${run} init --all\` also points you to the theme and page-building workflows.`);
 
       for (const line of getNextSteps(run)) {
         humanLog(line);

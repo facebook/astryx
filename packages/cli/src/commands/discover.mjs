@@ -14,6 +14,7 @@ import {formatFull, formatBrief, formatCompact} from '../lib/component-format.mj
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {discover as discoverApi} from '../api/discover.mjs';
+import {getCliInvocation} from '../utils/package-manager.mjs';
 
 export function registerDiscover(program) {
   program
@@ -25,6 +26,7 @@ export function registerDiscover(program) {
       const json = program.opts().json || false;
       const lang = program.opts().lang || null;
       const zh = program.opts().zh || false;
+      const run = getCliInvocation();
 
       let result;
       try {
@@ -80,9 +82,9 @@ export function registerDiscover(program) {
               humanLog('');
             }
             humanLog('Usage:');
-            humanLog('  astryx discover <package>            Browse a package');
-            humanLog('  astryx discover <package>/Component  View component docs');
-            humanLog('  astryx discover <search>             Search all packages');
+            humanLog(`  ${run} discover <package>            Browse a package`);
+            humanLog(`  ${run} discover <package>/Component  View component docs`);
+            humanLog(`  ${run} discover <search>             Search all packages`);
             humanLog('');
           }
           break;
@@ -99,7 +101,7 @@ export function registerDiscover(program) {
           humanLog('');
           for (const comp of result.data.components) humanLog('  ' + comp);
           humanLog('');
-          humanLog('Usage: astryx discover ' + result.data.name + '/<ComponentName>');
+          humanLog(`Usage: ${run} discover ` + result.data.name + '/<ComponentName>');
           humanLog('');
           break;
         }
@@ -122,7 +124,7 @@ export function registerDiscover(program) {
           humanLog('Found ' + result.data.matches.length + ' matches for "' + result.data.query + '":');
           humanLog('');
           for (const m of result.data.matches) {
-            humanLog('  astryx discover ' + m.package + '/' + m.component);
+            humanLog(`  ${run} discover ` + m.package + '/' + m.component);
           }
           humanLog('');
           break;

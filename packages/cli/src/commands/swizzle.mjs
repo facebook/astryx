@@ -24,7 +24,7 @@ import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {checkGhCli} from '../utils/github.mjs';
-import {getRunPrefix} from '../utils/package-manager.mjs';
+import {getCliInvocation} from '../utils/package-manager.mjs';
 import {Project} from '../lib/project.mjs';
 import {
   CORE_PACKAGE,
@@ -180,6 +180,7 @@ export function registerSwizzle(program) {
     .action(async (component, options) => {
       const coreDir = findCoreDir(process.cwd());
       const json = program.opts().json || false;
+      const run = getCliInvocation();
 
       if (!coreDir) {
         cliError(
@@ -197,10 +198,10 @@ export function registerSwizzle(program) {
         for (const name of components) {
           humanLog(`  ${name}`);
         }
-        humanLog(`\nUsage: astryx swizzle <component>\n`);
-        humanLog('Example: astryx swizzle Button');
+        humanLog(`\nUsage: ${run} swizzle <component>\n`);
+        humanLog(`Example: ${run} swizzle Button`);
         humanLog(
-          '         astryx swizzle XDSButton  (XDS prefix also works)\n',
+          `         ${run} swizzle XDSButton  (XDS prefix also works)\n`,
         );
         return;
       }
@@ -387,7 +388,7 @@ export function registerSwizzle(program) {
         humanLog(
           '  Without one they render unstyled (no error). See setup per framework:',
         );
-        humanLog(`  ${getRunPrefix()} astryx docs styling`);
+        humanLog(`  ${run} docs styling`);
         humanLog(
           '  Next.js note: the StyleX Babel plugin disables SWC and breaks next/font —',
         );

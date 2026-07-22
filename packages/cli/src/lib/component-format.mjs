@@ -6,6 +6,7 @@
 
 import {discoverComponents, findComponentReadme, resolveImportPath} from './component-discovery.mjs';
 import {loadDocs} from './component-loader.mjs';
+import {getCliInvocation} from '../utils/package-manager.mjs';
 
 /**
  * Derive the `defineTheme` component-override key from a theming target.
@@ -81,7 +82,7 @@ function formatSubComponent(comp) {
   if (table) {
     out.push(table + '\n');
   } else {
-    out.push(`See \`astryx component ${comp.name}\` for props and usage.\n`);
+    out.push(`See \`${getCliInvocation()} component ${comp.name}\` for props and usage.\n`);
   }
   return out;
 }

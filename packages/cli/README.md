@@ -2,14 +2,18 @@
 
 The CLI is the primary interface for working with the design system, for humans and machines alike. It provides component documentation, design tokens, page templates, theming tools, and upgrade codemods, all accessible via terminal commands, a typed JSON API, or programmatic imports. AI agents and build tools use the same API that powers the CLI, enabling end-to-end frontend development loops.
 
+Run it one-off with the scoped package (works whether or not it's installed):
+
 ```bash
-npx astryx --help
-npx astryx search button
-npx astryx component Button
-npx astryx docs tokens
-npx astryx docs migration
-npx astryx template --list
+npx @astryxdesign/cli --help
+npx @astryxdesign/cli search button
+npx @astryxdesign/cli component Button
+npx @astryxdesign/cli docs tokens
+npx @astryxdesign/cli docs migration
+npx @astryxdesign/cli template --list
 ```
+
+Once it's a project dependency (`npm install -D @astryxdesign/cli`), drop the scope and use the shorter `astryx` — e.g. `npx astryx component Button` or `pnpm exec astryx component Button`. Bare `astryx` resolves to an unrelated npm package until the CLI is installed, so prefer the scoped form above for first-run/one-off use.
 
 ## Finding things: `astryx search`
 
@@ -20,26 +24,28 @@ fuzzy matching for typos) and tagged with their domain plus the follow-up
 command to run:
 
 ```bash
-$ npx astryx search button
+$ astryx search button
 
 Results for "button" (20):
 
   [component]  Button
                Button triggers an action when clicked. Use it for form submissions…
-               → npx astryx component Button
+               → astryx component Button
 
   [component]  IconButton
                A button that shows only an icon with no visible text…
-               → npx astryx component IconButton
+               → astryx component IconButton
 
   [hook]       useClickableContainer
                Makes a container element clickable while preserving nested…
-               → npx astryx hook useClickableContainer
+               → astryx hook useClickableContainer
 
   [template]   Banner — Collapsible
                Combine an action button, dismiss control, and expandable detail area…
-               → npx astryx template BannerCollapsibleContent
+               → astryx template BannerCollapsibleContent
 ```
+
+(The CLI prints the follow-up commands with your actual runner — `npx astryx …` when installed, or `npx @astryxdesign/cli …` when run one-off.)
 
 Options:
 
@@ -415,7 +421,7 @@ failures (warnings are fine) and `1` when any check fails. That makes it
 usable directly as a CI step:
 
 ```yaml
-- run: npx astryx doctor
+- run: npx @astryxdesign/cli doctor
 ```
 
 Use `--json` for a structured envelope (`{ apiVersion, type: "doctor",

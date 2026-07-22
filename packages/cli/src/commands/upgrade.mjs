@@ -47,7 +47,7 @@ import {
 } from '../codemods/integration-discovery.mjs';
 import {runIntegrationCodemods} from '../codemods/integration-runner.mjs';
 import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
-import {getRunPrefix} from '../utils/package-manager.mjs';
+import {getCliInvocation, formatCliCommand} from '../utils/package-manager.mjs';
 import {isValidSemver, semverGte} from '../utils/semver.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
 import {Project} from '../lib/project.mjs';
@@ -176,7 +176,7 @@ export function registerUpgrade(program) {
 
       if (!options.list && !options.from) {
         const msg =
-          'Missing required --from. Install the target version first, then run `astryx upgrade --from <old-version>`.';
+          `Missing required --from. Install the target version first, then run \`${getCliInvocation()} upgrade --from <old-version>\`.`;
         if (json)
           return jsonError(msg, undefined, ERROR_CODES.ERR_INVALID_ARGUMENT);
         p.log.error(msg);
@@ -237,7 +237,7 @@ export function registerUpgrade(program) {
       const installed = detectInstalledTargetVersion();
       if (!installed) {
         const msg =
-          'Could not find installed @astryxdesign/core (or legacy @xds/core). Install the target version first, then rerun `astryx upgrade --from <old-version>`.';
+          `Could not find installed @astryxdesign/core (or legacy @xds/core). Install the target version first, then rerun \`${getCliInvocation()} upgrade --from <old-version>\`.`;
         if (json)
           return jsonError(msg, undefined, ERROR_CODES.ERR_VERSION_DETECT);
         p.log.error(msg);
@@ -390,6 +390,9 @@ export function registerUpgrade(program) {
           const codemodFlags = coreConfigCodemodNames
             .map(name => `--codemod ${name}`)
             .join(' ');
+          // Canonical (bare) form — this is a structured, machine-executable
+          // field in the --json envelope. The human print below is made
+          // install-aware via formatCliCommand.
           const suggestedCommand = `astryx upgrade --from ${currentVersion} ${codemodFlags} --apply`;
           const guidance =
             'Your astryx.config currently fails strict validation, but a pending ' +
@@ -409,7 +412,7 @@ export function registerUpgrade(program) {
             });
           }
           p.log.warn(guidance);
-          p.log.info(`  ${suggestedCommand}`);
+          p.log.info(`  ${formatCliCommand(suggestedCommand)}`);
           p.log.info(
             'Integrations are skipped in this preview; they will be processed on the --apply run.',
           );
@@ -619,7 +622,7 @@ export function registerUpgrade(program) {
         } catch {
           if (!json) {
             p.log.warn(
-              `Could not update agent docs. Run \`${getRunPrefix()} astryx init --features agents\` to update manually.`,
+              `Could not update agent docs. Run \`${getCliInvocation()} init --features agents\` to update manually.`,
             );
           }
         }
