@@ -205,11 +205,24 @@ export function refreshAgentDocs({cwd, installedVersion, apply, json}) {
     const written = installAgentDocs(cwd, {onlyReplace: true});
     summary.refreshed = written.length > 0;
     summary.files = written;
-    summary.action = summary.refreshed ? 'refreshed' : 'none';
-    if (!json && summary.refreshed) {
-      p.log.success(
-        `Agent docs refreshed → v${installedVersion} (from ${fromLabel}): ${written.join(', ')}`,
-      );
+    if (summary.refreshed) {
+      summary.action = 'refreshed';
+      if (!json) {
+        p.log.success(
+          `Agent docs refreshed → v${installedVersion} (from ${fromLabel}): ${written.join(', ')}`,
+        );
+      }
+    } else {
+      // We detected a stale marked block but rewrote nothing, and
+      // installAgentDocs did not throw — the block markers are malformed (e.g. a
+      // START with no matching END, so the writer can't safely splice it). Don't
+      // fail silently: the block is exactly the artifact agents rely on.
+      summary.action = 'error';
+      if (!json) {
+        p.log.warn(
+          `Agent docs look stale but couldn't be refreshed — the <!-- ASTRYX:START -->/<!-- ASTRYX:END --> markers may be malformed. Run \`${formatCliCommand('astryx init --features agents')}\` to reinstall the block.`,
+        );
+      }
     }
   } catch {
     summary.action = 'error';

@@ -251,6 +251,25 @@ describe('upgrade agent-docs refresh (#4168)', () => {
     expect(fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8')).toBe(before);
   });
 
+  it('does not silently no-op a stale block with malformed markers (START without END)', async () => {
+    writePkg();
+    writeInstalledCore('0.0.15');
+    // A corrupted block: START + version header but no matching END marker, so
+    // the writer can't safely splice it. This must not crash, corrupt the file,
+    // or falsely claim success — it should surface an error and nudge re-init.
+    const corrupted =
+      '# A\n\n<!-- ASTRYX:START -->\nAstryx v0.0.1 · 9 components\nguidance, but no end marker\n';
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), corrupted);
+
+    const result = await runJson(['--json', 'upgrade', '--from', '0.0.15', '--apply']);
+
+    expect(result.data.agentDocs.status).toBe('stale');
+    expect(result.data.agentDocs.action).toBe('error');
+    expect(result.data.agentDocs.refreshed).toBe(false);
+    // File left byte-for-byte intact — never corrupted.
+    expect(fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8')).toBe(corrupted);
+  });
+
   it('stays silent when the block already matches the installed version', async () => {
     writePkg();
     writeInstalledCore('0.0.15');
