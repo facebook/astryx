@@ -42,13 +42,13 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'If you prefer to target a specific file format:',
+          text: 'By default this creates `AGENTS.md` (the tool-agnostic standard most agents read). To target a specific tool\'s file instead:',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Manual options',
-          code: `npx @astryxdesign/cli init --features agents --agent claude    # CLAUDE.md
+          code: `npx @astryxdesign/cli init --features agents --agent claude    # .claude/CLAUDE.md
 npx @astryxdesign/cli init --features agents --agent cursor    # .cursorrules
 npx @astryxdesign/cli init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
         },

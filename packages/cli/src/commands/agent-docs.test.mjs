@@ -398,16 +398,35 @@ describe('installAgentDocs', () => {
     );
   }
 
-  it('creates .claude/CLAUDE.md when no agent docs exist', () => {
+  it('creates AGENTS.md when no agent docs exist (tool-agnostic default)', () => {
     setupCorePackage(tmpDir);
 
     const written = installAgentDocs(tmpDir);
 
-    expect(written).toEqual(['.claude/CLAUDE.md']);
-    expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(true);
-    expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(false);
-    const content = fs.readFileSync(path.join(tmpDir, '.claude', 'CLAUDE.md'), 'utf-8');
+    expect(written).toEqual(['AGENTS.md']);
+    expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
+    // Must NOT create the Claude-specific file by default.
+    expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(false);
+    const content = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
+    expect(content).toContain('# AGENTS.md');
     expect(content).toContain('<!-- ASTRYX:START -->');
+  });
+
+  it('defaults to AGENTS.md but writes .claude/CLAUDE.md only when --agent claude is explicit', () => {
+    // Default (no agent): tool-agnostic AGENTS.md, never the Claude file.
+    setupCorePackage(tmpDir);
+    expect(installAgentDocs(tmpDir)).toEqual(['AGENTS.md']);
+    expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(false);
+
+    // Explicit Claude: the Claude-specific file, in a fresh project.
+    const claudeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-agent-docs-claude-'));
+    setupCorePackage(claudeDir);
+    try {
+      expect(installAgentDocs(claudeDir, {agent: 'claude'})).toEqual(['.claude/CLAUDE.md']);
+      expect(fs.existsSync(path.join(claudeDir, 'AGENTS.md'))).toBe(false);
+    } finally {
+      fs.rmSync(claudeDir, {recursive: true, force: true});
+    }
   });
 
   it('injects into CLAUDE.md at root when it exists', () => {
@@ -526,12 +545,13 @@ describe('installAgentDocs', () => {
     expect(content).toContain('Other rules.');
   });
 
-  it('onlyReplace: does not create default .claude/CLAUDE.md when nothing exists', () => {
+  it('onlyReplace: does not create the default AGENTS.md when nothing exists', () => {
     setupCorePackage(tmpDir);
 
     const written = installAgentDocs(tmpDir, {onlyReplace: true});
 
     expect(written).toEqual([]);
+    expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(false);
     expect(fs.existsSync(path.join(tmpDir, '.claude', 'CLAUDE.md'))).toBe(false);
   });
 });

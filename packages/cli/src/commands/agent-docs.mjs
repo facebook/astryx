@@ -12,7 +12,7 @@
  * - Hermes Agent: .hermes.md or HERMES.md (existing), else AGENTS.md
  *
  * Auto-detect: discovers existing files and updates them in place.
- * Default (no existing files): creates .claude/CLAUDE.md.
+ * Default (no existing files): creates AGENTS.md (the tool-agnostic standard).
  *
  * --agent <tool>: target a specific tool preset (claude, cursor, codex, hermes, all)
  * --agent-docs-path <path>: explicit file path(s)
@@ -511,7 +511,7 @@ export function removeAgentDocs(targetDir) {
  *
  * Strategy (when no agent/paths specified):
  * - Discover all existing agent doc files and update them
- * - If nothing found, create .claude/CLAUDE.md as default
+ * - If nothing found, create AGENTS.md as default (tool-agnostic standard)
  *
  * @param {string} targetDir
  * @param {object} [options]
@@ -586,14 +586,16 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
     return written;
   }
 
-  // Nothing exists — create .claude/CLAUDE.md as default (skip if onlyReplace)
+  // Nothing exists — create root AGENTS.md as the default (skip if onlyReplace).
+  // AGENTS.md is the tool-agnostic standard (Codex/Copilot, Cursor, and most
+  // agents read it), so it's the safe default. Claude-specific output is opt-in
+  // via `--agent claude` (→ .claude/CLAUDE.md); `--agent all` writes both.
   if (onlyReplace) return written;
 
-  const defaultPath = CLAUDE_DIR_MD;
-  fs.mkdirSync(path.join(targetDir, '.claude'), {recursive: true});
+  const defaultPath = AGENTS_MD;
   injectXdsBlock(path.join(targetDir, defaultPath), compressedIndex, {
     createIfMissing: true,
-    header: `# CLAUDE.md\n\nProject-specific guidance for AI coding agents.`,
+    header: `# AGENTS.md\n\nProject-specific guidance for AI coding agents.`,
   });
   written.push(defaultPath);
   return written;
