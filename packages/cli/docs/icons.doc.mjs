@@ -51,6 +51,7 @@ export const docs = {
             ['wrench', 'Settings, configuration'],
             ['stop', 'Stop/cancel action'],
             ['microphone', 'Voice input, audio recording'],
+            ['speaker', 'Audio output, text-to-speech, read aloud'],
           ],
         },
       ],
