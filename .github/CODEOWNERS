@@ -6,7 +6,7 @@
 /packages/cli/ @josephfarina
 
 # The core README is the front door for component/CLI discovery — often the
-# first (and only) doc a consumer or agent reads. Add a discovery owner on top
-# of the default reviewers (CODEOWNERS replaces owners on the most specific
-# match, so the defaults are re-listed to keep them as reviewers).
-/packages/core/README.md @cixzhang @imdreamrunner @ejhammond @josephfarina
+# first (and only) doc a consumer or agent reads. Scope it to a small set of
+# discovery owners so changes get focused review rather than a silent
+# "it's just docs" merge.
+/packages/core/README.md @cixzhang @josephfarina
