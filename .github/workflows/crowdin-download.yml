@@ -60,18 +60,48 @@ jobs:
       - name: Reclaim ownership of downloaded files
         run: sudo chown -R "$(id -u):$(id -g)" packages/core/locales
 
-      # If Crowdin's build produced any locale JSON, normalize it with prettier
-      # so the diff matches the repo's formatting conventions. `--ignore-unknown`
-      # + a shell guard makes the step a no-op when no locale files exist yet
-      # (which is the expected state until translators start contributing).
+      # Skip the `skip_untranslated_files` flag in crowdin.yml (Crowdin's CLI
+      # rejects `skip_untranslated_files + skip_untranslated_strings` together).
+      # `skip_untranslated_strings` alone strips untranslated keys inside a
+      # file, but Crowdin still emits an empty `{}` file for a target language
+      # that has zero translations. Delete those here so `en.json`'s siblings
+      # only include locales that have real content.
+      - name: Drop empty locale files
+        run: |
+          shopt -s nullglob
+          removed=0
+          for f in packages/core/locales/*.json; do
+            case "$f" in
+              packages/core/locales/en.json|packages/core/locales/pseudo.json) continue ;;
+            esac
+            # A JSON object with no entries. `jq` returns 0 for `{}`.
+            if [ "$(jq -r 'if type == "object" then length else -1 end' "$f")" = "0" ]; then
+              rm "$f"
+              removed=$((removed + 1))
+            fi
+          done
+          echo "Removed $removed empty locale file(s)."
+
+      # If any locale JSON survived, normalize it with prettier so the diff
+      # matches the repo's formatting conventions. Shell guard makes the step
+      # a no-op when no locale files remain — the expected state until
+      # translators start contributing.
       - name: Normalize locale JSON with prettier
         run: |
           shopt -s nullglob
           files=(packages/core/locales/*.json)
-          if [ "${#files[@]}" -gt 0 ]; then
-            pnpm exec prettier --write "${files[@]}"
+          # Filter out en.json (the source) — we only re-format translated files.
+          filtered=()
+          for f in "${files[@]}"; do
+            case "$f" in
+              packages/core/locales/en.json|packages/core/locales/pseudo.json) continue ;;
+            esac
+            filtered+=("$f")
+          done
+          if [ "${#filtered[@]}" -gt 0 ]; then
+            pnpm exec prettier --write "${filtered[@]}"
           else
-            echo "No locale files present; nothing to normalize."
+            echo "No translated locale files present; nothing to normalize."
           fi
 
       # peter-evans/create-pull-request@v7.0.11 — pinned by SHA per repo policy.
