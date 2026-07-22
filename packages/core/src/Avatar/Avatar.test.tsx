@@ -65,4 +65,16 @@ describe('Avatar', () => {
     expect(img).not.toBeNull();
     expect(img).toHaveAttribute('src', 'https://example.com/ada.jpg');
   });
+
+  it('exposes data-shape attribute when shape prop is set', () => {
+    const {rerender} = render(<Avatar name="Ada" shape="circle" />);
+    const wrapper = screen.getByRole('img', {name: 'Ada'});
+    expect(wrapper).toHaveAttribute('data-shape', 'circle');
+
+    rerender(<Avatar name="Ada" shape="rounded" />);
+    expect(wrapper).toHaveAttribute('data-shape', 'rounded');
+
+    rerender(<Avatar name="Ada" shape="square" />);
+    expect(wrapper).toHaveAttribute('data-shape', 'square');
+  });
 });

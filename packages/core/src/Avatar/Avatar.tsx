@@ -109,7 +109,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radiusVars['--radius-full'],
+    borderRadius: radiusVars['--radius-avatar'],
     overflow: 'hidden',
     userSelect: 'none',
   },
@@ -147,17 +147,32 @@ const dynamicStyles = stylex.create({
     fontSize: size * INITIALS_FONT_SIZE_RATIO,
   }),
   statusPosition: (size: number) => ({
-    bottom: size * CIRCLE_EDGE_OFFSET_RATIO,
-    right: size * CIRCLE_EDGE_OFFSET_RATIO,
+    bottom: `calc(min(${radiusVars['--radius-avatar']}, ${size / 2}px) * 0.292893)`,
+    right: `calc(min(${radiusVars['--radius-avatar']}, ${size / 2}px) * 0.292893)`,
     transform: 'translate(50%, 50%)',
   }),
+});
+
+/**
+ * Shape overrides for the avatar shape prop
+ */
+const shapes = stylex.create({
+  circle: {
+    [radiusVars['--radius-avatar']]: radiusVars['--radius-full'],
+  },
+  rounded: {
+    [radiusVars['--radius-avatar']]: radiusVars['--radius-element'],
+  },
+  square: {
+    [radiusVars['--radius-avatar']]: '0px',
+  },
 });
 
 const BORDER_WIDTH = 2;
 
 const groupStyles = stylex.create({
   ring: {
-    borderRadius: radiusVars['--radius-full'],
+    borderRadius: radiusVars['--radius-avatar'],
     borderWidth: BORDER_WIDTH,
     borderStyle: 'solid',
     borderColor: colorVars['--color-background-surface'],
@@ -207,6 +222,11 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
    * @default 'md'
    */
   size?: AvatarSize;
+  /**
+   * The visual shape of the avatar.
+   * @default 'circle'
+   */
+  shape?: 'circle' | 'rounded' | 'square';
   /**
    * The primary image source for the avatar.
    */
@@ -273,6 +293,7 @@ export function Avatar({
   fallbackSrc,
   name,
   size = 'md',
+  shape,
   src,
   status,
   xstyle,
@@ -313,12 +334,13 @@ export function Avatar({
         aria-hidden={isDecorative || undefined}
         data-testid={testId}
         {...mergeProps(
-          themeProps('avatar', {size: resolvedSize}),
+          themeProps('avatar', {size: resolvedSize, shape}),
           stylex.props(
             styles.wrapper,
             avatarGroup && groupStyles.ring,
             avatarGroup && groupStyles.overlap,
             avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),
+            shape && shapes[shape],
             xstyle,
           ),
           className,

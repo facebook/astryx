@@ -57,7 +57,7 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radiusVars['--radius-full'],
+    borderRadius: radiusVars['--radius-avatar'],
     // Use opaque background to prevent avatar bleed-through
     backgroundColor: colorVars['--color-background-surface'],
     color: colorVars['--color-text-secondary'],

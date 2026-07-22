@@ -12,6 +12,7 @@ describe('expandRadiusScale', () => {
     expect(tokens['--radius-container']).toBe('12px');
     expect(tokens['--radius-page']).toBe('28px');
     expect(tokens['--radius-chat']).toBe('28px');
+    expect(tokens['--radius-avatar']).toBe('9999px');
     expect(tokens['--radius-full']).toBe('9999px');
   });
 
@@ -22,6 +23,7 @@ describe('expandRadiusScale', () => {
     expect(tokens['--radius-container']).toBe('18px');
     expect(tokens['--radius-page']).toBe('42px');
     expect(tokens['--radius-chat']).toBe('42px');
+    expect(tokens['--radius-avatar']).toBe('9999px');
   });
 
   it('multiplier 0 produces all zeros', () => {
@@ -32,12 +34,14 @@ describe('expandRadiusScale', () => {
     expect(tokens['--radius-container']).toBe('0px');
     expect(tokens['--radius-page']).toBe('0px');
     expect(tokens['--radius-chat']).toBe('0px');
+    expect(tokens['--radius-avatar']).toBe('9999px');
     expect(tokens['--radius-full']).toBe('9999px');
   });
 
   it('fixed tokens are unaffected by multiplier', () => {
     const tokens = expandRadiusScale({base: 4, multiplier: 2});
     expect(tokens['--radius-none']).toBe('0px');
+    expect(tokens['--radius-avatar']).toBe('9999px');
     expect(tokens['--radius-full']).toBe('9999px');
   });
 

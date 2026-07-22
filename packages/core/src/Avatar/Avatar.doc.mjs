@@ -16,7 +16,6 @@ export const docs = {
       {guidance: true, description: 'Pick a size that matches the context: xsm or sm for inline mentions, md or lg for lists and cards, xl for profile headers.'},
       {guidance: true, description: 'Add a status dot when knowing someone\'s availability matters, like in chat or team views.'},
       {guidance: false, description: 'Use Avatar for logos, product images, or anything that isn\'t a person or team. Use an image or icon instead.'},
-      {guidance: false, description: 'Force a square or custom shape. Avatars are always circular to stay consistent across the system.'},
     ],
     anatomy: [
       {name: 'Photo', required: false, description: 'The profile image, loaded from the src URL. Shown when available.'},
@@ -60,6 +59,12 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'shape',
+      type: "'circle' | 'rounded' | 'square'",
+      description: 'The visual shape of the avatar.',
+      default: "'circle'",
+    },
+    {
       name: 'status',
       type: 'ReactNode',
       description: 'Corner content for status indicators.',
@@ -87,7 +92,6 @@ export const docsZh = {
       {guidance: true, description: 'Always provide a name prop so the component can generate meaningful initials and alt text when the image fails to load.'},
       {guidance: true, description: 'Use the status slot with AvatarStatusDot to indicate online presence or availability when relevant to the context.'},
       {guidance: false, description: 'Use Avatar for decorative images or logos that aren\'t representing a person or entity. Use an image or icon component instead.'},
-      {guidance: false, description: 'Override the circular shape. Avatars are always round to maintain visual consistency across the system.'},
     ],
   },
 };
@@ -103,7 +107,6 @@ export const docsDense = {
       {guidance: true, description: 'Match size to context: xsm/sm inline, md/lg in lists, xl for profiles.'},
       {guidance: true, description: 'Add a status dot in chat or team views where availability matters.'},
       {guidance: false, description: 'Use for logos or product images. Use an image or icon instead.'},
-      {guidance: false, description: 'Force a square or custom shape. Avatars are always circular.'},
     ],
   },
   propDescriptions: {
@@ -112,6 +115,7 @@ export const docsDense = {
     name: 'user name for initials and alt text',
     alt: 'alt text; falls back to name',
     size: "avatar size. Named ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or numeric px.",
+    shape: 'avatar shape: circle (default), rounded, square',
     status: 'corner content for status indicators',
   },
   components: [
