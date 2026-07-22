@@ -1,0 +1,14 @@
+{
+  "promptId": "fwc-4",
+  "category": "feature-with-constraint",
+  "prompt": "I need a confirmation dialog that asks \"Are you sure you want to delete this item?\" with cancel and delete buttons. The delete button should be destructive-styled.",
+  "expectedComponents": [
+    "Dialog",
+    "Button",
+    "Layout"
+  ],
+  "target": "astryx-tailwind",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/d773d1a2/projects/fwc-4. Explore it to find available components.\n\n## Task\n\nI need a confirmation dialog that asks \"Are you sure you want to delete this item?\" with cancel and delete buttons. The delete button should be destructive-styled.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/d773d1a2/projects/fwc-4/fwc-4.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/d773d1a2/projects/fwc-4/fwc-4.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-22T11:30:41.777Z"
+}

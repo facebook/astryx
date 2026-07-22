@@ -1,0 +1,3145 @@
+{
+  "astryx": {
+    "averages": {
+      "correctness": 66,
+      "accessibility": 100,
+      "codeQuality": 99,
+      "efficiency": 93,
+      "maintainability": 98
+    },
+    "overall": 91,
+    "byPrompt": {
+      "cwm-3": {
+        "correctness": {
+          "score": 70,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 16
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"ghost\"; size: \"sm\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 16
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element; isOpen: boolean; onClose: () => void; trigger: Element; }' is not assignable to type 'IntrinsicAttributes & PopoverProps'.",
+              "line": 19
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 97,
+          "findings": [],
+          "metrics": {
+            "totalLines": 35,
+            "codeLines": 31,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 29,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.06451612903225806,
+            "decisionsPerElement": 0.5,
+            "elementCount": 10,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 10
+          }
+        }
+      },
+      "dd-6": {
+        "correctness": {
+          "score": 70,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element; key: string; trigger: Element; }' is not assignable to type 'IntrinsicAttributes & HoverCardProps'.",
+              "line": 15
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '\"lg\"' is not assignable to type 'AvatarSize | undefined'.",
+              "line": 21
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 91,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 3 times",
+              "count": 3,
+              "example": "{name: \"_\", role: \"_\", email: \"_\", avatar: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 37,
+            "codeLines": 34,
+            "stylingLines": 0,
+            "boilerplateLines": 1,
+            "logicLines": 33,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.029411764705882353,
+            "decisionsPerElement": 0.9,
+            "elementCount": 14,
+            "stylingDecisionCount": 13,
+            "duplicateRatio": 0.09
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 6,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "fwc-4": {
+        "correctness": {
+          "score": 25,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 12
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 13
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element; isOpen: boolean; onClose: () => void; title: string; }' is not assignable to type 'IntrinsicAttributes & DialogProps'.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2339: Property 'Actions' does not exist on type 'typeof Dialog'.",
+              "line": 11
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 12
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"destructive\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 13
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2339: Property 'Actions' does not exist on type 'typeof Dialog'.",
+              "line": 14
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 95,
+          "findings": [],
+          "metrics": {
+            "totalLines": 19,
+            "codeLines": 16,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 14,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.125,
+            "decisionsPerElement": 0.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 3,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 3
+          }
+        }
+      },
+      "io-4": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2305: Module '\"@astryxdesign/core\"' has no exported member 'Stepper'.",
+              "line": 1
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 97,
+          "findings": [],
+          "metrics": {
+            "totalLines": 29,
+            "codeLines": 25,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 23,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.08,
+            "decisionsPerElement": 0.4,
+            "elementCount": 5,
+            "stylingDecisionCount": 2,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 0,
+            "avgStateSpread": 19
+          }
+        }
+      },
+      "ps-4": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 21
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 21
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 28,
+            "codeLines": 24,
+            "stylingLines": 0,
+            "boilerplateLines": 1,
+            "logicLines": 23,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.041666666666666664,
+            "decisionsPerElement": 0.6,
+            "elementCount": 14,
+            "stylingDecisionCount": 9,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 4,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "rc-1": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 19
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ icon: string; label: string; variant: \"ghost\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & IconButtonProps'.",
+              "line": 19
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 94,
+          "findings": [
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 15
+            },
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 25
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 40,
+            "codeLines": 36,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 34,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.05555555555555555,
+            "decisionsPerElement": 0.8,
+            "elementCount": 10,
+            "stylingDecisionCount": 8,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 87,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "1 magic value (hardcoded colors, spacing, or typography)",
+              "count": 1
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0.83,
+            "magicValueCount": 1,
+            "semanticValueCount": 5,
+            "avgStateSpread": 15
+          }
+        }
+      },
+      "sd-3": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 22
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; isDisabled: boolean; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 22
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 96,
+          "findings": [],
+          "metrics": {
+            "totalLines": 27,
+            "codeLines": 22,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 20,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.09090909090909091,
+            "decisionsPerElement": 0.4,
+            "elementCount": 7,
+            "stylingDecisionCount": 3,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 14
+          }
+        }
+      },
+      "tc-3": {
+        "correctness": {
+          "score": 70,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2305: Module '\"@astryxdesign/core\"' has no exported member 'ThemeProvider'.",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2353: Object literal may only specify known properties, and 'accent' does not exist in type 'DefineThemeInput'.",
+              "line": 4
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 22,
+            "codeLines": 19,
+            "stylingLines": 0,
+            "boilerplateLines": 1,
+            "logicLines": 18,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.05263157894736842,
+            "decisionsPerElement": 0.5,
+            "elementCount": 6,
+            "stylingDecisionCount": 3,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "ty-4": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2724: '\"@astryxdesign/core\"' has no exported member named 'SelectorItem'. Did you mean 'Selector'?",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; isSelected: boolean; onChange: Dispatch<SetStateAction<boolean>>; }' is not assignable to type 'IntrinsicAttributes & SwitchProps'.",
+              "line": 26
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element[]; label: string; value: string; onChange: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & SelectorProps<SelectorOptionType>'.",
+              "line": 34
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 44,
+            "codeLines": 38,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 36,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.05263157894736842,
+            "decisionsPerElement": 0.5,
+            "elementCount": 21,
+            "stylingDecisionCount": 11,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 3,
+            "avgStateSpread": 20
+          }
+        }
+      },
+      "wd-1": {
+        "correctness": {
+          "score": 25,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 28
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 44
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 45
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 57
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 58
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 28
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 44
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 45
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 57
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 58
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 60,
+          "findings": [],
+          "metrics": {
+            "totalLines": 75,
+            "codeLines": 67,
+            "stylingLines": 0,
+            "boilerplateLines": 67,
+            "logicLines": 0,
+            "stylingRatio": 0,
+            "boilerplateRatio": 1,
+            "decisionsPerElement": 0.6,
+            "elementCount": 34,
+            "stylingDecisionCount": 21,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 5,
+            "avgStateSpread": 44
+          }
+        }
+      }
+    },
+    "byCategory": {
+      "clone-with-modification": {
+        "correctness": 70,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 97,
+        "maintainability": 100
+      },
+      "data-display": {
+        "correctness": 70,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 91,
+        "maintainability": 100
+      },
+      "feature-with-constraint": {
+        "correctness": 25,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 95,
+        "maintainability": 100
+      },
+      "integration-oriented": {
+        "correctness": 85,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 97,
+        "maintainability": 100
+      },
+      "page-setup": {
+        "correctness": 85,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 98,
+        "maintainability": 100
+      },
+      "responsive-context": {
+        "correctness": 85,
+        "accessibility": 100,
+        "codeQuality": 94,
+        "efficiency": 98,
+        "maintainability": 87
+      },
+      "state-driven": {
+        "correctness": 85,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 96,
+        "maintainability": 100
+      },
+      "theme-customization": {
+        "correctness": 70,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 98,
+        "maintainability": 100
+      },
+      "typography": {
+        "correctness": 55,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 98,
+        "maintainability": 100
+      },
+      "workflow-description": {
+        "correctness": 25,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 60,
+        "maintainability": 92
+      }
+    },
+    "darkModeRate": 0,
+    "cost": {
+      "totalDurationMs": 1945178,
+      "avgDurationMs": 194518,
+      "avgOutputChars": 1334,
+      "avgOutputLines": 36,
+      "avgDocsRead": 6.2,
+      "estimatedInputTokens": 42500,
+      "estimatedOutputTokens": 3336,
+      "byPrompt": {
+        "cwm-3": {
+          "durationMs": 194519,
+          "outputChars": 1536,
+          "outputLines": 35,
+          "docsRead": [
+            "Card",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "Button",
+            "Popover"
+          ],
+          "estimatedInputTokens": 4750,
+          "estimatedOutputTokens": 384
+        },
+        "dd-6": {
+          "durationMs": 194518,
+          "outputChars": 1478,
+          "outputLines": 37,
+          "docsRead": [
+            "Card",
+            "Text",
+            "VStack",
+            "HStack",
+            "Avatar",
+            "Button",
+            "HoverCard",
+            "Heading"
+          ],
+          "estimatedInputTokens": 5375,
+          "estimatedOutputTokens": 370
+        },
+        "fwc-4": {
+          "durationMs": 194520,
+          "outputChars": 670,
+          "outputLines": 19,
+          "docsRead": [
+            "Dialog",
+            "Button",
+            "Text",
+            "VStack"
+          ],
+          "estimatedInputTokens": 2875,
+          "estimatedOutputTokens": 168
+        },
+        "io-4": {
+          "durationMs": 194517,
+          "outputChars": 820,
+          "outputLines": 29,
+          "docsRead": [
+            "Stepper",
+            "Card",
+            "VStack",
+            "Text"
+          ],
+          "estimatedInputTokens": 2875,
+          "estimatedOutputTokens": 205
+        },
+        "ps-4": {
+          "durationMs": 194517,
+          "outputChars": 1058,
+          "outputLines": 28,
+          "docsRead": [
+            "Breadcrumbs",
+            "BreadcrumbItem",
+            "Heading",
+            "Text",
+            "Button",
+            "VStack",
+            "HStack",
+            "Card"
+          ],
+          "estimatedInputTokens": 5375,
+          "estimatedOutputTokens": 265
+        },
+        "rc-1": {
+          "durationMs": 194518,
+          "outputChars": 1404,
+          "outputLines": 40,
+          "docsRead": [
+            "Button",
+            "HStack",
+            "VStack",
+            "IconButton",
+            "Icon"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 351
+        },
+        "sd-3": {
+          "durationMs": 194518,
+          "outputChars": 1192,
+          "outputLines": 27,
+          "docsRead": [
+            "Card",
+            "Button",
+            "TextInput",
+            "VStack",
+            "Heading"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 298
+        },
+        "tc-3": {
+          "durationMs": 194516,
+          "outputChars": 752,
+          "outputLines": 22,
+          "docsRead": [
+            "ThemeProvider",
+            "defineTheme",
+            "VStack",
+            "Heading",
+            "Text",
+            "Card"
+          ],
+          "estimatedInputTokens": 4125,
+          "estimatedOutputTokens": 188
+        },
+        "ty-4": {
+          "durationMs": 194516,
+          "outputChars": 1579,
+          "outputLines": 44,
+          "docsRead": [
+            "Heading",
+            "Text",
+            "VStack",
+            "Card",
+            "TextInput",
+            "Switch",
+            "Selector"
+          ],
+          "estimatedInputTokens": 4750,
+          "estimatedOutputTokens": 395
+        },
+        "wd-1": {
+          "durationMs": 194519,
+          "outputChars": 2849,
+          "outputLines": 75,
+          "docsRead": [
+            "Card",
+            "Button",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "TextInput",
+            "RadioList"
+          ],
+          "estimatedInputTokens": 5375,
+          "estimatedOutputTokens": 712
+        }
+      }
+    }
+  },
+  "baseline": {
+    "averages": {
+      "correctness": 66,
+      "accessibility": 100,
+      "codeQuality": 99,
+      "efficiency": 93,
+      "maintainability": 98
+    },
+    "overall": 91,
+    "byPrompt": {
+      "cwm-3": {
+        "correctness": {
+          "score": 70,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 16
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"ghost\"; size: \"sm\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 16
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element; isOpen: boolean; onClose: () => void; trigger: Element; }' is not assignable to type 'IntrinsicAttributes & PopoverProps'.",
+              "line": 19
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 97,
+          "findings": [],
+          "metrics": {
+            "totalLines": 35,
+            "codeLines": 31,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 29,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.06451612903225806,
+            "decisionsPerElement": 0.5,
+            "elementCount": 10,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 10
+          }
+        }
+      },
+      "dd-6": {
+        "correctness": {
+          "score": 70,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element; key: string; trigger: Element; }' is not assignable to type 'IntrinsicAttributes & HoverCardProps'.",
+              "line": 15
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '\"lg\"' is not assignable to type 'AvatarSize | undefined'.",
+              "line": 21
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 91,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 3 times",
+              "count": 3,
+              "example": "{name: \"_\", role: \"_\", email: \"_\", avatar: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 37,
+            "codeLines": 34,
+            "stylingLines": 0,
+            "boilerplateLines": 1,
+            "logicLines": 33,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.029411764705882353,
+            "decisionsPerElement": 0.9,
+            "elementCount": 14,
+            "stylingDecisionCount": 13,
+            "duplicateRatio": 0.09
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 6,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "fwc-4": {
+        "correctness": {
+          "score": 25,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 12
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 13
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element; isOpen: boolean; onClose: () => void; title: string; }' is not assignable to type 'IntrinsicAttributes & DialogProps'.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2339: Property 'Actions' does not exist on type 'typeof Dialog'.",
+              "line": 11
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 12
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"destructive\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 13
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2339: Property 'Actions' does not exist on type 'typeof Dialog'.",
+              "line": 14
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 95,
+          "findings": [],
+          "metrics": {
+            "totalLines": 19,
+            "codeLines": 16,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 14,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.125,
+            "decisionsPerElement": 0.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 3,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 3
+          }
+        }
+      },
+      "io-4": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2305: Module '\"@astryxdesign/core\"' has no exported member 'Stepper'.",
+              "line": 1
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 97,
+          "findings": [],
+          "metrics": {
+            "totalLines": 29,
+            "codeLines": 25,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 23,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.08,
+            "decisionsPerElement": 0.4,
+            "elementCount": 5,
+            "stylingDecisionCount": 2,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 0,
+            "avgStateSpread": 19
+          }
+        }
+      },
+      "ps-4": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 21
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 21
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 28,
+            "codeLines": 24,
+            "stylingLines": 0,
+            "boilerplateLines": 1,
+            "logicLines": 23,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.041666666666666664,
+            "decisionsPerElement": 0.6,
+            "elementCount": 14,
+            "stylingDecisionCount": 9,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 4,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "rc-1": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 19
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ icon: string; label: string; variant: \"ghost\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & IconButtonProps'.",
+              "line": 19
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 94,
+          "findings": [
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 15
+            },
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 25
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 40,
+            "codeLines": 36,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 34,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.05555555555555555,
+            "decisionsPerElement": 0.8,
+            "elementCount": 10,
+            "stylingDecisionCount": 8,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 87,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "1 magic value (hardcoded colors, spacing, or typography)",
+              "count": 1
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0.83,
+            "magicValueCount": 1,
+            "semanticValueCount": 5,
+            "avgStateSpread": 15
+          }
+        }
+      },
+      "sd-3": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 22
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; isDisabled: boolean; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 22
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 96,
+          "findings": [],
+          "metrics": {
+            "totalLines": 27,
+            "codeLines": 22,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 20,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.09090909090909091,
+            "decisionsPerElement": 0.4,
+            "elementCount": 7,
+            "stylingDecisionCount": 3,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 14
+          }
+        }
+      },
+      "tc-3": {
+        "correctness": {
+          "score": 70,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2305: Module '\"@astryxdesign/core\"' has no exported member 'ThemeProvider'.",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2353: Object literal may only specify known properties, and 'accent' does not exist in type 'DefineThemeInput'.",
+              "line": 4
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 22,
+            "codeLines": 19,
+            "stylingLines": 0,
+            "boilerplateLines": 1,
+            "logicLines": 18,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.05263157894736842,
+            "decisionsPerElement": 0.5,
+            "elementCount": 6,
+            "stylingDecisionCount": 3,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "ty-4": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2724: '\"@astryxdesign/core\"' has no exported member named 'SelectorItem'. Did you mean 'Selector'?",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; isSelected: boolean; onChange: Dispatch<SetStateAction<boolean>>; }' is not assignable to type 'IntrinsicAttributes & SwitchProps'.",
+              "line": 26
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element[]; label: string; value: string; onChange: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & SelectorProps<SelectorOptionType>'.",
+              "line": 34
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 44,
+            "codeLines": 38,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 36,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.05263157894736842,
+            "decisionsPerElement": 0.5,
+            "elementCount": 21,
+            "stylingDecisionCount": 11,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 3,
+            "avgStateSpread": 20
+          }
+        }
+      },
+      "wd-1": {
+        "correctness": {
+          "score": 25,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 28
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 44
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 45
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 57
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 58
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 28
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 44
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 45
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 57
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 58
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 60,
+          "findings": [],
+          "metrics": {
+            "totalLines": 75,
+            "codeLines": 67,
+            "stylingLines": 0,
+            "boilerplateLines": 67,
+            "logicLines": 0,
+            "stylingRatio": 0,
+            "boilerplateRatio": 1,
+            "decisionsPerElement": 0.6,
+            "elementCount": 34,
+            "stylingDecisionCount": 21,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 5,
+            "avgStateSpread": 44
+          }
+        }
+      }
+    },
+    "byCategory": {
+      "clone-with-modification": {
+        "correctness": 70,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 97,
+        "maintainability": 100
+      },
+      "data-display": {
+        "correctness": 70,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 91,
+        "maintainability": 100
+      },
+      "feature-with-constraint": {
+        "correctness": 25,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 95,
+        "maintainability": 100
+      },
+      "integration-oriented": {
+        "correctness": 85,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 97,
+        "maintainability": 100
+      },
+      "page-setup": {
+        "correctness": 85,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 98,
+        "maintainability": 100
+      },
+      "responsive-context": {
+        "correctness": 85,
+        "accessibility": 100,
+        "codeQuality": 94,
+        "efficiency": 98,
+        "maintainability": 87
+      },
+      "state-driven": {
+        "correctness": 85,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 96,
+        "maintainability": 100
+      },
+      "theme-customization": {
+        "correctness": 70,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 98,
+        "maintainability": 100
+      },
+      "typography": {
+        "correctness": 55,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 98,
+        "maintainability": 100
+      },
+      "workflow-description": {
+        "correctness": 25,
+        "accessibility": 100,
+        "codeQuality": 100,
+        "efficiency": 60,
+        "maintainability": 92
+      }
+    },
+    "darkModeRate": 0,
+    "cost": {
+      "totalDurationMs": 1945132,
+      "avgDurationMs": 194513,
+      "avgOutputChars": 1334,
+      "avgOutputLines": 36,
+      "avgDocsRead": 6.2,
+      "estimatedInputTokens": 42500,
+      "estimatedOutputTokens": 3336,
+      "byPrompt": {
+        "cwm-3": {
+          "durationMs": 194514,
+          "outputChars": 1536,
+          "outputLines": 35,
+          "docsRead": [
+            "Card",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "Button",
+            "Popover"
+          ],
+          "estimatedInputTokens": 4750,
+          "estimatedOutputTokens": 384
+        },
+        "dd-6": {
+          "durationMs": 194513,
+          "outputChars": 1478,
+          "outputLines": 37,
+          "docsRead": [
+            "Card",
+            "Text",
+            "VStack",
+            "HStack",
+            "Avatar",
+            "Button",
+            "HoverCard",
+            "Heading"
+          ],
+          "estimatedInputTokens": 5375,
+          "estimatedOutputTokens": 370
+        },
+        "fwc-4": {
+          "durationMs": 194515,
+          "outputChars": 670,
+          "outputLines": 19,
+          "docsRead": [
+            "Dialog",
+            "Button",
+            "Text",
+            "VStack"
+          ],
+          "estimatedInputTokens": 2875,
+          "estimatedOutputTokens": 168
+        },
+        "io-4": {
+          "durationMs": 194513,
+          "outputChars": 820,
+          "outputLines": 29,
+          "docsRead": [
+            "Stepper",
+            "Card",
+            "VStack",
+            "Text"
+          ],
+          "estimatedInputTokens": 2875,
+          "estimatedOutputTokens": 205
+        },
+        "ps-4": {
+          "durationMs": 194512,
+          "outputChars": 1058,
+          "outputLines": 28,
+          "docsRead": [
+            "Breadcrumbs",
+            "BreadcrumbItem",
+            "Heading",
+            "Text",
+            "Button",
+            "VStack",
+            "HStack",
+            "Card"
+          ],
+          "estimatedInputTokens": 5375,
+          "estimatedOutputTokens": 265
+        },
+        "rc-1": {
+          "durationMs": 194513,
+          "outputChars": 1404,
+          "outputLines": 40,
+          "docsRead": [
+            "Button",
+            "HStack",
+            "VStack",
+            "IconButton",
+            "Icon"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 351
+        },
+        "sd-3": {
+          "durationMs": 194514,
+          "outputChars": 1192,
+          "outputLines": 27,
+          "docsRead": [
+            "Card",
+            "Button",
+            "TextInput",
+            "VStack",
+            "Heading"
+          ],
+          "estimatedInputTokens": 3500,
+          "estimatedOutputTokens": 298
+        },
+        "tc-3": {
+          "durationMs": 194512,
+          "outputChars": 752,
+          "outputLines": 22,
+          "docsRead": [
+            "ThemeProvider",
+            "defineTheme",
+            "VStack",
+            "Heading",
+            "Text",
+            "Card"
+          ],
+          "estimatedInputTokens": 4125,
+          "estimatedOutputTokens": 188
+        },
+        "ty-4": {
+          "durationMs": 194512,
+          "outputChars": 1579,
+          "outputLines": 44,
+          "docsRead": [
+            "Heading",
+            "Text",
+            "VStack",
+            "Card",
+            "TextInput",
+            "Switch",
+            "Selector"
+          ],
+          "estimatedInputTokens": 4750,
+          "estimatedOutputTokens": 395
+        },
+        "wd-1": {
+          "durationMs": 194514,
+          "outputChars": 2849,
+          "outputLines": 75,
+          "docsRead": [
+            "Card",
+            "Button",
+            "Heading",
+            "Text",
+            "VStack",
+            "HStack",
+            "TextInput",
+            "RadioList"
+          ],
+          "estimatedInputTokens": 5375,
+          "estimatedOutputTokens": 712
+        }
+      }
+    }
+  },
+  "winners": {
+    "correctness": "tie",
+    "accessibility": "tie",
+    "codeQuality": "tie",
+    "efficiency": "tie",
+    "maintainability": "tie"
+  },
+  "byPrompt": {
+    "cwm-3": {
+      "astryx": {
+        "correctness": {
+          "score": 70,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 16
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"ghost\"; size: \"sm\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 16
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element; isOpen: boolean; onClose: () => void; trigger: Element; }' is not assignable to type 'IntrinsicAttributes & PopoverProps'.",
+              "line": 19
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 97,
+          "findings": [],
+          "metrics": {
+            "totalLines": 35,
+            "codeLines": 31,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 29,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.06451612903225806,
+            "decisionsPerElement": 0.5,
+            "elementCount": 10,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 10
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 70,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 16
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"ghost\"; size: \"sm\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 16
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element; isOpen: boolean; onClose: () => void; trigger: Element; }' is not assignable to type 'IntrinsicAttributes & PopoverProps'.",
+              "line": 19
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 97,
+          "findings": [],
+          "metrics": {
+            "totalLines": 35,
+            "codeLines": 31,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 29,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.06451612903225806,
+            "decisionsPerElement": 0.5,
+            "elementCount": 10,
+            "stylingDecisionCount": 5,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 10
+          }
+        }
+      },
+      "winner": "tie"
+    },
+    "dd-6": {
+      "astryx": {
+        "correctness": {
+          "score": 70,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element; key: string; trigger: Element; }' is not assignable to type 'IntrinsicAttributes & HoverCardProps'.",
+              "line": 15
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '\"lg\"' is not assignable to type 'AvatarSize | undefined'.",
+              "line": 21
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 91,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 3 times",
+              "count": 3,
+              "example": "{name: \"_\", role: \"_\", email: \"_\", avatar: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 37,
+            "codeLines": 34,
+            "stylingLines": 0,
+            "boilerplateLines": 1,
+            "logicLines": 33,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.029411764705882353,
+            "decisionsPerElement": 0.9,
+            "elementCount": 14,
+            "stylingDecisionCount": 13,
+            "duplicateRatio": 0.09
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 6,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 70,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element; key: string; trigger: Element; }' is not assignable to type 'IntrinsicAttributes & HoverCardProps'.",
+              "line": 15
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '\"lg\"' is not assignable to type 'AvatarSize | undefined'.",
+              "line": 21
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 91,
+          "findings": [
+            {
+              "rule": "duplicate-lines",
+              "severity": "moderate",
+              "detail": "Line repeated 3 times",
+              "count": 3,
+              "example": "{name: \"_\", role: \"_\", email: \"_\", avatar: \"_\"},"
+            }
+          ],
+          "metrics": {
+            "totalLines": 37,
+            "codeLines": 34,
+            "stylingLines": 0,
+            "boilerplateLines": 1,
+            "logicLines": 33,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.029411764705882353,
+            "decisionsPerElement": 0.9,
+            "elementCount": 14,
+            "stylingDecisionCount": 13,
+            "duplicateRatio": 0.09
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 6,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "tie"
+    },
+    "fwc-4": {
+      "astryx": {
+        "correctness": {
+          "score": 25,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 12
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 13
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element; isOpen: boolean; onClose: () => void; title: string; }' is not assignable to type 'IntrinsicAttributes & DialogProps'.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2339: Property 'Actions' does not exist on type 'typeof Dialog'.",
+              "line": 11
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 12
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"destructive\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 13
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2339: Property 'Actions' does not exist on type 'typeof Dialog'.",
+              "line": 14
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 95,
+          "findings": [],
+          "metrics": {
+            "totalLines": 19,
+            "codeLines": 16,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 14,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.125,
+            "decisionsPerElement": 0.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 3,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 3
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 25,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 12
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 13
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element; isOpen: boolean; onClose: () => void; title: string; }' is not assignable to type 'IntrinsicAttributes & DialogProps'.",
+              "line": 8
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2339: Property 'Actions' does not exist on type 'typeof Dialog'.",
+              "line": 11
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 12
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"destructive\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 13
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2339: Property 'Actions' does not exist on type 'typeof Dialog'.",
+              "line": 14
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 95,
+          "findings": [],
+          "metrics": {
+            "totalLines": 19,
+            "codeLines": 16,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 14,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.125,
+            "decisionsPerElement": 0.6,
+            "elementCount": 5,
+            "stylingDecisionCount": 3,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 3
+          }
+        }
+      },
+      "winner": "tie"
+    },
+    "io-4": {
+      "astryx": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2305: Module '\"@astryxdesign/core\"' has no exported member 'Stepper'.",
+              "line": 1
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 97,
+          "findings": [],
+          "metrics": {
+            "totalLines": 29,
+            "codeLines": 25,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 23,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.08,
+            "decisionsPerElement": 0.4,
+            "elementCount": 5,
+            "stylingDecisionCount": 2,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 0,
+            "avgStateSpread": 19
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2305: Module '\"@astryxdesign/core\"' has no exported member 'Stepper'.",
+              "line": 1
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 97,
+          "findings": [],
+          "metrics": {
+            "totalLines": 29,
+            "codeLines": 25,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 23,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.08,
+            "decisionsPerElement": 0.4,
+            "elementCount": 5,
+            "stylingDecisionCount": 2,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 0,
+            "avgStateSpread": 19
+          }
+        }
+      },
+      "winner": "tie"
+    },
+    "ps-4": {
+      "astryx": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 21
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 21
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 28,
+            "codeLines": 24,
+            "stylingLines": 0,
+            "boilerplateLines": 1,
+            "logicLines": 23,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.041666666666666664,
+            "decisionsPerElement": 0.6,
+            "elementCount": 14,
+            "stylingDecisionCount": 9,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 4,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 21
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 21
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 28,
+            "codeLines": 24,
+            "stylingLines": 0,
+            "boilerplateLines": 1,
+            "logicLines": 23,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.041666666666666664,
+            "decisionsPerElement": 0.6,
+            "elementCount": 14,
+            "stylingDecisionCount": 9,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 4,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "tie"
+    },
+    "rc-1": {
+      "astryx": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 19
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ icon: string; label: string; variant: \"ghost\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & IconButtonProps'.",
+              "line": 19
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 94,
+          "findings": [
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 15
+            },
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 25
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 40,
+            "codeLines": 36,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 34,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.05555555555555555,
+            "decisionsPerElement": 0.8,
+            "elementCount": 10,
+            "stylingDecisionCount": 8,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 87,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "1 magic value (hardcoded colors, spacing, or typography)",
+              "count": 1
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0.83,
+            "magicValueCount": 1,
+            "semanticValueCount": 5,
+            "avgStateSpread": 15
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 19
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ icon: string; label: string; variant: \"ghost\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & IconButtonProps'.",
+              "line": 19
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 94,
+          "findings": [
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 15
+            },
+            {
+              "rule": "index-key",
+              "severity": "minor",
+              "detail": "Array index as key",
+              "line": 25
+            }
+          ]
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 40,
+            "codeLines": 36,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 34,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.05555555555555555,
+            "decisionsPerElement": 0.8,
+            "elementCount": 10,
+            "stylingDecisionCount": 8,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 87,
+          "findings": [
+            {
+              "rule": "magic-values",
+              "severity": "minor",
+              "detail": "1 magic value (hardcoded colors, spacing, or typography)",
+              "count": 1
+            }
+          ],
+          "metrics": {
+            "semanticRatio": 0.83,
+            "magicValueCount": 1,
+            "semanticValueCount": 5,
+            "avgStateSpread": 15
+          }
+        }
+      },
+      "winner": "tie"
+    },
+    "sd-3": {
+      "astryx": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 22
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; isDisabled: boolean; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 22
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 96,
+          "findings": [],
+          "metrics": {
+            "totalLines": 27,
+            "codeLines": 22,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 20,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.09090909090909091,
+            "decisionsPerElement": 0.4,
+            "elementCount": 7,
+            "stylingDecisionCount": 3,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 14
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 85,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 22
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; isDisabled: boolean; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 22
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 96,
+          "findings": [],
+          "metrics": {
+            "totalLines": 27,
+            "codeLines": 22,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 20,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.09090909090909091,
+            "decisionsPerElement": 0.4,
+            "elementCount": 7,
+            "stylingDecisionCount": 3,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 1,
+            "avgStateSpread": 14
+          }
+        }
+      },
+      "winner": "tie"
+    },
+    "tc-3": {
+      "astryx": {
+        "correctness": {
+          "score": 70,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2305: Module '\"@astryxdesign/core\"' has no exported member 'ThemeProvider'.",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2353: Object literal may only specify known properties, and 'accent' does not exist in type 'DefineThemeInput'.",
+              "line": 4
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 22,
+            "codeLines": 19,
+            "stylingLines": 0,
+            "boilerplateLines": 1,
+            "logicLines": 18,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.05263157894736842,
+            "decisionsPerElement": 0.5,
+            "elementCount": 6,
+            "stylingDecisionCount": 3,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 70,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2305: Module '\"@astryxdesign/core\"' has no exported member 'ThemeProvider'.",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2353: Object literal may only specify known properties, and 'accent' does not exist in type 'DefineThemeInput'.",
+              "line": 4
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 22,
+            "codeLines": 19,
+            "stylingLines": 0,
+            "boilerplateLines": 1,
+            "logicLines": 18,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.05263157894736842,
+            "decisionsPerElement": 0.5,
+            "elementCount": 6,
+            "stylingDecisionCount": 3,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 2,
+            "avgStateSpread": 0
+          }
+        }
+      },
+      "winner": "tie"
+    },
+    "ty-4": {
+      "astryx": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2724: '\"@astryxdesign/core\"' has no exported member named 'SelectorItem'. Did you mean 'Selector'?",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; isSelected: boolean; onChange: Dispatch<SetStateAction<boolean>>; }' is not assignable to type 'IntrinsicAttributes & SwitchProps'.",
+              "line": 26
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element[]; label: string; value: string; onChange: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & SelectorProps<SelectorOptionType>'.",
+              "line": 34
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 44,
+            "codeLines": 38,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 36,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.05263157894736842,
+            "decisionsPerElement": 0.5,
+            "elementCount": 21,
+            "stylingDecisionCount": 11,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 3,
+            "avgStateSpread": 20
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 55,
+          "findings": [
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2724: '\"@astryxdesign/core\"' has no exported member named 'SelectorItem'. Did you mean 'Selector'?",
+              "line": 1
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; isSelected: boolean; onChange: Dispatch<SetStateAction<boolean>>; }' is not assignable to type 'IntrinsicAttributes & SwitchProps'.",
+              "line": 26
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ children: Element[]; label: string; value: string; onChange: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & SelectorProps<SelectorOptionType>'.",
+              "line": 34
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 98,
+          "findings": [],
+          "metrics": {
+            "totalLines": 44,
+            "codeLines": 38,
+            "stylingLines": 0,
+            "boilerplateLines": 2,
+            "logicLines": 36,
+            "stylingRatio": 0,
+            "boilerplateRatio": 0.05263157894736842,
+            "decisionsPerElement": 0.5,
+            "elementCount": 21,
+            "stylingDecisionCount": 11,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 100,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 3,
+            "avgStateSpread": 20
+          }
+        }
+      },
+      "winner": "tie"
+    },
+    "wd-1": {
+      "astryx": {
+        "correctness": {
+          "score": 25,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 28
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 44
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 45
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 57
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 58
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 28
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 44
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 45
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 57
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 58
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 60,
+          "findings": [],
+          "metrics": {
+            "totalLines": 75,
+            "codeLines": 67,
+            "stylingLines": 0,
+            "boilerplateLines": 67,
+            "logicLines": 0,
+            "stylingRatio": 0,
+            "boilerplateRatio": 1,
+            "decisionsPerElement": 0.6,
+            "elementCount": 34,
+            "stylingDecisionCount": 21,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 5,
+            "avgStateSpread": 44
+          }
+        }
+      },
+      "baseline": {
+        "correctness": {
+          "score": 25,
+          "findings": [
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 28
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 44
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 45
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 57
+            },
+            {
+              "rule": "phantom-prop",
+              "severity": "critical",
+              "detail": "onPress is React Native; use onClick for React DOM. Handler will never fire.",
+              "line": 58
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 28
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 44
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 45
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 57
+            },
+            {
+              "rule": "type-error",
+              "severity": "critical",
+              "detail": "TS2322: Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.",
+              "line": 58
+            }
+          ]
+        },
+        "accessibility": {
+          "score": 100,
+          "findings": []
+        },
+        "codeQuality": {
+          "score": 100,
+          "findings": []
+        },
+        "efficiency": {
+          "score": 60,
+          "findings": [],
+          "metrics": {
+            "totalLines": 75,
+            "codeLines": 67,
+            "stylingLines": 0,
+            "boilerplateLines": 67,
+            "logicLines": 0,
+            "stylingRatio": 0,
+            "boilerplateRatio": 1,
+            "decisionsPerElement": 0.6,
+            "elementCount": 34,
+            "stylingDecisionCount": 21,
+            "duplicateRatio": 0
+          }
+        },
+        "maintainability": {
+          "score": 92,
+          "findings": [],
+          "metrics": {
+            "semanticRatio": 1,
+            "magicValueCount": 0,
+            "semanticValueCount": 5,
+            "avgStateSpread": 44
+          }
+        }
+      },
+      "winner": "tie"
+    }
+  }
+}

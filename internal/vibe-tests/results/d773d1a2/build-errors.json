@@ -1,0 +1,187 @@
+{
+  "cwm-3": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 16,
+        "code": "TS2322",
+        "message": "Type '{ label: string; variant: \"ghost\"; size: \"sm\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'."
+      },
+      {
+        "line": 19,
+        "code": "TS2322",
+        "message": "Type '{ children: Element; isOpen: boolean; onClose: () => void; trigger: Element; }' is not assignable to type 'IntrinsicAttributes & PopoverProps'."
+      }
+    ],
+    "errorCount": 2,
+    "buildSuccess": false
+  },
+  "dd-6": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 15,
+        "code": "TS2322",
+        "message": "Type '{ children: Element; key: string; trigger: Element; }' is not assignable to type 'IntrinsicAttributes & HoverCardProps'."
+      },
+      {
+        "line": 21,
+        "code": "TS2322",
+        "message": "Type '\"lg\"' is not assignable to type 'AvatarSize | undefined'."
+      }
+    ],
+    "errorCount": 2,
+    "buildSuccess": false
+  },
+  "fwc-4": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 8,
+        "code": "TS2322",
+        "message": "Type '{ children: Element; isOpen: boolean; onClose: () => void; title: string; }' is not assignable to type 'IntrinsicAttributes & DialogProps'."
+      },
+      {
+        "line": 11,
+        "code": "TS2339",
+        "message": "Property 'Actions' does not exist on type 'typeof Dialog'."
+      },
+      {
+        "line": 12,
+        "code": "TS2322",
+        "message": "Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'."
+      },
+      {
+        "line": 13,
+        "code": "TS2322",
+        "message": "Type '{ label: string; variant: \"destructive\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'."
+      },
+      {
+        "line": 14,
+        "code": "TS2339",
+        "message": "Property 'Actions' does not exist on type 'typeof Dialog'."
+      }
+    ],
+    "errorCount": 5,
+    "buildSuccess": false
+  },
+  "io-4": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 1,
+        "code": "TS2305",
+        "message": "Module '\"@astryxdesign/core\"' has no exported member 'Stepper'."
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "ps-4": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 21,
+        "code": "TS2322",
+        "message": "Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'."
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "rc-1": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 19,
+        "code": "TS2322",
+        "message": "Type '{ icon: string; label: string; variant: \"ghost\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & IconButtonProps'."
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "sd-3": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 22,
+        "code": "TS2322",
+        "message": "Type '{ label: string; variant: \"primary\"; isDisabled: boolean; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'."
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "tc-3": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 1,
+        "code": "TS2305",
+        "message": "Module '\"@astryxdesign/core\"' has no exported member 'ThemeProvider'."
+      },
+      {
+        "line": 4,
+        "code": "TS2353",
+        "message": "Object literal may only specify known properties, and 'accent' does not exist in type 'DefineThemeInput'."
+      }
+    ],
+    "errorCount": 2,
+    "buildSuccess": false
+  },
+  "ty-4": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 1,
+        "code": "TS2724",
+        "message": "'\"@astryxdesign/core\"' has no exported member named 'SelectorItem'. Did you mean 'Selector'?"
+      },
+      {
+        "line": 26,
+        "code": "TS2322",
+        "message": "Type '{ label: string; isSelected: boolean; onChange: Dispatch<SetStateAction<boolean>>; }' is not assignable to type 'IntrinsicAttributes & SwitchProps'."
+      },
+      {
+        "line": 34,
+        "code": "TS2322",
+        "message": "Type '{ children: Element[]; label: string; value: string; onChange: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & SelectorProps<SelectorOptionType>'."
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  },
+  "wd-1": {
+    "target": "astryx-tailwind",
+    "errors": [
+      {
+        "line": 28,
+        "code": "TS2322",
+        "message": "Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'."
+      },
+      {
+        "line": 44,
+        "code": "TS2322",
+        "message": "Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'."
+      },
+      {
+        "line": 45,
+        "code": "TS2322",
+        "message": "Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'."
+      },
+      {
+        "line": 57,
+        "code": "TS2322",
+        "message": "Type '{ label: string; variant: \"secondary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'."
+      },
+      {
+        "line": 58,
+        "code": "TS2322",
+        "message": "Type '{ label: string; variant: \"primary\"; onPress: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'."
+      }
+    ],
+    "errorCount": 5,
+    "buildSuccess": false
+  }
+}

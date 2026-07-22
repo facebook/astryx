@@ -1,0 +1,13 @@
+{
+  "promptId": "tc-3",
+  "category": "theme-customization",
+  "prompt": "I need my page background to use the wash color from the theme. Right now wrapping my app in Theme doesn't change the page background — it stays white.",
+  "expectedComponents": [
+    "Theme",
+    "Layout"
+  ],
+  "target": "astryx-tailwind",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/d773d1a2/projects/tc-3. Explore it to find available components.\n\n## Task\n\nI need my page background to use the wash color from the theme. Right now wrapping my app in Theme doesn't change the page background — it stays white.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/d773d1a2/projects/tc-3/tc-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/d773d1a2/projects/tc-3/tc-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-22T11:30:41.780Z"
+}

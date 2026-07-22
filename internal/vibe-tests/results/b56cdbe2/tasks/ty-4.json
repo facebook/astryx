@@ -1,0 +1,14 @@
+{
+  "promptId": "ty-4",
+  "category": "typography",
+  "prompt": "Create a settings page with 3 sections. Each section needs a heading, a brief description, and some form controls. Use different heading levels for the page title vs section titles.",
+  "expectedComponents": [
+    "Heading",
+    "Text",
+    "TextInput"
+  ],
+  "target": "astryx",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/b56cdbe2/projects/ty-4. Explore it to find available components.\n\n## Task\n\nCreate a settings page with 3 sections. Each section needs a heading, a brief description, and some form controls. Use different heading levels for the page title vs section titles.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/b56cdbe2/projects/ty-4/ty-4.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/b56cdbe2/projects/ty-4/ty-4.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-22T11:30:41.776Z"
+}
