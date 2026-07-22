@@ -1,0 +1,14 @@
+{
+  "name": "fresh-install-test",
+  "description": "Two-turn cold-start conversation given VERBATIM to a headless Sonnet agent in an empty /tmp sandbox. No hints, no scaffolding, no mention of the CLI or `astryx init`. Measures whether a real user's fresh install of @astryxdesign/core leads the agent to install the CLI and run `astryx init` (evidence: the `<!-- ASTRYX:START -->` block written into AGENTS.md/CLAUDE.md). Only the SUT (the shipped package + these fixed prompts) varies across reps.",
+  "turns": [
+    "install astryx design and make a new NextJS app with the astryx design package",
+    "build a to-do app"
+  ],
+  "notes": [
+    "turns[0] and turns[1] are the ENTIRE prompts — do not append guidance BEYOND naming the core package.",
+    "turns[0] names @astryxdesign/core EXPLICITLY on purpose: core-package-name resolution ('astryx design' → wrong packages, e.g. the real-but-unrelated astryx-ui@1.0.1 that GPT-5.2 installed) is OUT OF SCOPE. We measure CLI discovery + `astryx init`, not npm name-guessing. Everything else stays unguided (NO CLI/init/setup hints). Original ambiguous turn[0] was: 'install astryx design and make a new NextJS app with the astryx design package'.",
+    "Turn 2 runs in the SAME agent session via `cursor-agent --resume <session_id>` so it's a continuing conversation.",
+    "The whole point is to see what an unguided agent does; success = it discovers the CLI and runs `astryx init` on its own."
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "description": "Candidate postinstall messages, raced against a control. Each is injected into a realistic install log shown to a headless agent; we measure whether the agent's NEXT commands reach for the init command. `{{CMD}}` is filled per --context (core → `npx astryxdesign init`; cli → `npx astryx init`) so ONE file serves both PRs. `control` shows the normal npm log with no message (expected ~0% init).",
+  "winner": "v1-plain",
+  "axes": {
+    "decoration": "plain (v1) vs boxed (v2) vs bare-arrow (v6)",
+    "audience": "generic (v1,v2,v5) vs explicit-AI (v3)",
+    "urgency": "neutral (v1,v5) vs consequence/warning (v4)",
+    "rationale": "none (v6) vs benefit (v3,v5) vs consequence (v4)"
+  },
+  "variants": [
+    {
+      "id": "control",
+      "label": "Control (no message)",
+      "message": ""
+    },
+    {
+      "id": "v1-plain",
+      "label": "Plain one-liner (WINNER)",
+      "message": "\nNext step: run `{{CMD}}` to finish setup and install the Astryx agent prompt."
+    },
+    {
+      "id": "v2-boxed",
+      "label": "Boxed / branded",
+      "message": "\n╭───────────────────────────────────────────────╮\n│  @astryxdesign/core                             │\n│  ▶ Next: {{CMD}}                                 │\n│    installs the Astryx agent prompt + config     │\n╰───────────────────────────────────────────────╯"
+    },
+    {
+      "id": "v3-agent",
+      "label": "Explicit AI-agent address",
+      "message": "\nAI agents: before writing any UI, run `{{CMD}}`.\nIt installs the Astryx agent prompt (AGENTS.md/CLAUDE.md) so you\ngenerate correct Astryx code instead of guessing."
+    },
+    {
+      "id": "v4-warning",
+      "label": "Consequence / warning",
+      "message": "\n⚠  Setup incomplete — components won't render correctly until you run:\n     {{CMD}}"
+    },
+    {
+      "id": "v5-benefit",
+      "label": "Benefit-first",
+      "message": "\nTo finish setup and install the Astryx agent prompt, run:\n  {{CMD}}"
+    },
+    {
+      "id": "v6-terse",
+      "label": "Bare arrow (terse)",
+      "message": "\n▶ {{CMD}}"
+    }
+  ]
+}

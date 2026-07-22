@@ -1,0 +1,9 @@
+{
+  "description": "The models tracked by the needle scoreboard. A 2x2: two vendors (OpenAI, Anthropic) x two tiers (strong, weak). Haiku is not offered by cursor-agent on this account, so the weak Claude slot uses Sonnet 4. Each data point (commit/condition) is run against ALL of these.",
+  "models": [
+    {"slug": "gpt-5.5-high", "label": "GPT-5.5", "short": "gpt-5.5", "vendor": "OpenAI", "tier": "strong"},
+    {"slug": "claude-opus-4-8-high", "label": "Opus 4.8", "short": "opus-4.8", "vendor": "Anthropic", "tier": "strong"},
+    {"slug": "gpt-5.2", "label": "GPT-5.2", "short": "gpt-5.2", "vendor": "OpenAI", "tier": "weak"},
+    {"slug": "claude-4-sonnet", "label": "Sonnet 4", "short": "sonnet-4", "vendor": "Anthropic", "tier": "weak"}
+  ]
+}

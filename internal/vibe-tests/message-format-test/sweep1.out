@@ -1,0 +1,7 @@
+
+🧪 Message-format probe — sweep1
+   variants:  control, v1-plain, v2-boxed, v3-agent, v4-warning, v5-benefit, v6-terse
+   models:    GPT-5.5, GPT-5.2, Opus 4.8
+   reps:      4 (concurrency 16)
+   metric:    init-first / init-before-build / init-listed
+
