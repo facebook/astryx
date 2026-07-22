@@ -1,0 +1,10 @@
+{
+  "@astryx.pagination.previous": {
+    "defaultMessage": "Aller à la page précédente",
+    "description": "Aria label for the previous-page button."
+  },
+  "@astryx.pagination.next": {
+    "defaultMessage": "Aller à la page suivante",
+    "description": "Aria label for the next-page button."
+  }
+}
