@@ -37,6 +37,7 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Divider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
@@ -433,6 +434,13 @@ interface SelectorPropsBase<
    * If message is provided, displays a message box below the selector.
    */
   status?: SelectorStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
@@ -588,6 +596,7 @@ export function Selector<T extends SelectorOptionType>(
     placeholder: placeholderFromProps,
     size: sizeProp,
     status,
+    statusVariant = 'attached',
     labelTooltip,
     startIcon,
     htmlName,
@@ -1154,6 +1163,7 @@ export function Selector<T extends SelectorOptionType>(
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {selectorContent}

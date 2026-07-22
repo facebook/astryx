@@ -405,3 +405,32 @@ export const Clearable: Story = {
     placeholder: 'Select technologies...',
   },
 };
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<string[]>([]);
+    const [b, setB] = useState<string[]>([]);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 300}}>
+        <MultiSelector
+          label="Attached (default)"
+          options={['Name', 'Email', 'Role']}
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Select at least one column'}}
+          placeholder="Select..."
+        />
+        <MultiSelector
+          label="Detached"
+          options={['Name', 'Email', 'Role']}
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Select at least one column'}}
+          statusVariant="detached"
+          placeholder="Select..."
+        />
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
+};

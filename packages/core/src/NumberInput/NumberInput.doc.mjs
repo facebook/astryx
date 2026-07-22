@@ -95,6 +95,13 @@ export const docs = {
       description: 'Validation status with optional message.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
+    },
+    {
       name: 'min',
       type: 'number | null',
       description: 'Minimum value allowed.',
@@ -276,6 +283,13 @@ export const docsZh = {
       description: '带可选消息的验证状态。',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+      default: "'attached'",
+    },
+    {
       name: 'min',
       type: 'number | null',
       description: '允许的最小值。',
@@ -402,6 +416,7 @@ export const docsDense = {
     startIcon: 'Icon at input start.',
     labelIcon: 'Icon before label text.',
     status: 'Validation status w/ optional message.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     min: 'Minimum value allowed.',
     max: 'Maximum value allowed.',
     step: 'Step increment.',

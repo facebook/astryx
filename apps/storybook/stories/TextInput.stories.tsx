@@ -514,3 +514,27 @@ export const ClearableWithStatus: Story = {
     status: {type: 'error', message: 'Invalid email address'},
   },
 };
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState('invalid@');
+    const [b, setB] = useState('invalid@');
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+        <TextInput
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Enter a valid email'}}
+        />
+        <TextInput
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Enter a valid email'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};

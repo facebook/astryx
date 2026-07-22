@@ -916,3 +916,26 @@ describe('keyboard clearing with hasClear (#3599)', () => {
     expect((input as HTMLInputElement).value).toBe('42');
   });
 });
+
+
+describe('NumberInput statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <NumberInput label="Amount" value={null} onChange={() => {}} status={{type: 'error', message: 'Must be positive'}} />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <NumberInput label="Amount" value={null} onChange={() => {}} status={{type: 'error', message: 'Must be positive'}} statusVariant="detached" />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+});
