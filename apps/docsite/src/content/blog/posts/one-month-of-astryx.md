@@ -6,6 +6,8 @@ date: '2026-07-24'
 type: 'update'
 authors: [liya, ernest]
 tags: [astryx, design-system, open-source]
+coverImage: '/blog/one-month-of-astryx/header.jpg'
+coverAlt: 'One Month of Astryx header artwork with product screenshots around the words 1 month'
 ---
 
 _Launched June 24, 2026. One month in — where Astryx stands, and where we're taking it._
