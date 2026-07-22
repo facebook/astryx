@@ -42,12 +42,16 @@ export {
   plainDateSetEndOfWeekExclusive,
   plainDateGetWeekNumber,
   plainDateFormat,
+  formatSharedDate,
   DATE_FORMAT_WITH_WEEKDAY,
+  DATE_FORMAT_SHORT_WITH_WEEKDAY,
   DATE_FORMAT_LONG,
   DATE_FORMAT_MONTH_YEAR,
   DATE_FORMAT_SHORT,
   DATE_FORMAT_SHORT_WITH_YEAR,
+  SHARED_DATE_FORMAT_OPTIONS,
 } from './plainDate';
+export type {SharedDateFormat} from './plainDate';
 
 export {
   parseISOTime,
