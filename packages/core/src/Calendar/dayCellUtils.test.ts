@@ -45,6 +45,11 @@ describe('computeDayCellState', () => {
     expect(state.isToday).toBe(false);
   });
 
+  it('does not identify an outside day as today', () => {
+    const state = computeDayCellState(makeInput({isOutside: true}));
+    expect(state.isToday).toBe(false);
+  });
+
   it('identifies selected day in single mode', () => {
     const state = computeDayCellState(
       makeInput({selectedDate: plainDateFromISO('2024-03-15')}),
