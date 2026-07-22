@@ -19,8 +19,8 @@ A month ago we open-sourced **Astryx**, a code-first, AI-fluent React + StyleX d
 ## By the numbers (first month)
 
 - **GitHub:** 10.3K stars · 758 forks · peaked at #2 on GitHub Trending across all repos during launch week
-- **npm (last 30 days):** @astryxdesign/core 190K · cli 126K · themes 480K across 7 themes
-- **[astryx.atmeta.com](http://astryx.atmeta.com):** 224K visitors · 1.79M page views (last 30 days)
+- **npm:** @astryxdesign/core 190K · cli 126K · themes 480K across 7 themes
+- **[astryx.atmeta.com](http://astryx.atmeta.com/):** 224K visitors · 1.79M page views
 - **Community contributions:** 87 people opened PRs · 61 authors pushed 714 commits to main and 815 commits to all branches
 
 ## Built with Astryx
