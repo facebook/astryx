@@ -18,7 +18,7 @@ A month ago we open-sourced **Astryx**, a code-first, AI-fluent React + StyleX d
 
 ## By the numbers (first month)
 
-- **GitHub:** 10.3K stars · 758 forks · peaked #2 on GitHub Trending across all repos during launch week
+- **GitHub:** 10.3K stars · 758 forks · peaked at #2 on GitHub Trending across all repos during launch week
 - **npm (last 30 days):** @astryxdesign/core 190K · cli 126K · themes 480K across 7 themes
 - **[astryx.atmeta.com](http://astryx.atmeta.com):** 224K visitors · 1.79M page views (last 30 days)
 - **Community contributions:** 87 people opened PRs · 61 authors pushed 714 commits to main and 815 commits to all branches
@@ -33,11 +33,11 @@ Real projects shipped on Astryx within the first month, from a company that [reb
 
 Discussion converged on what makes Astryx different: the CLI, MCP server, and agent-first architecture:
 
-- Dominic Nguyen (Chromatic & Storybook, Founder) described Astryx as **"infrastructure for a world where agents create most UI"**, in a post that became the most-engaged Astryx mention anywhere ([link](https://www.linkedin.com/posts/domyen_meta-just-open-sourced-a-design-system-theyve-share-7478518968098529280-R3p4/)).
-- Aurora Scharff (React/Vercel, Engineer) profiled our docsite and, with a Cache Components migration, made navigation **instant, up to 3x faster** ([link](https://x.com/aurorascharff/status/2078110561640845708)).
+- Dominic Nguyen (Chromatic & Storybook, Founder) described Astryx as **"infrastructure for a world where agents create most UI"** in a post that became the most-engaged Astryx mention anywhere ([link](https://www.linkedin.com/posts/domyen_meta-just-open-sourced-a-design-system-theyve-share-7478518968098529280-R3p4/)).
+- Aurora Scharff (React/Vercel, Engineer) profiled the Astryx site and, with a Cache Components migration, made navigation **feel instant and up to 3x faster** ([link](https://x.com/aurorascharff/status/2078110561640845708)).
 - [Yangshun Tay](https://www.linkedin.com/in/yangshun/) (GreatFrontEnd, Co-founder) dubbed Astryx **"Tokenmaxxing done right,"** praising its extensive component set (including agentic UI), flexible CSS-variable theming, and AI-friendly CLI ([link](https://www.linkedin.com/posts/yangshun_meta-just-released-a-new-frontend-open-source-ugcPost-7477245799542837248-pcwN/)).
 - Independent, source-level analyses appeared organically in the [Japanese](https://x.com/wataryooou/status/2070445582993244377), [Korean](https://x.com/ngnicky/status/2074380595078258779), and [Chinese](https://m.sohu.com/a/1042830838_120333371) developer communities within days.
-- The community is contributing back, from Figma mapping to developers digging into the MCP internals with us, and there's been growing momentum toward community-led themes and translations.
+- The community is contributing back, from Figma mapping work to developers digging into the MCP internals with us, and momentum is growing toward community-led themes and translations.
 
 ## Where we're headed
 
@@ -49,4 +49,4 @@ To everyone who starred, shared, filed issues, and shipped PRs, thank you. Astry
 
 ## Show us what you built
 
-We're gathering standout case studies built with Astryx. If you've shipped or are building something using Astryx that you'd like to show off, send us a link to your site or a screenshot at **astryxdesign@meta.com**. Select projects will be featured on [**astryx.atmeta.com**](http://astryx.atmeta.com), and we'll gift you a small token of gratitude in the form of Astryx swag 🤗.
+We're gathering standout case studies built with Astryx. If you've shipped or are building something using Astryx that you'd like to show off, send us a link to your site or a screenshot at **astryxdesign@meta.com**. Select projects will be featured on [**astryx.atmeta.com**](http://astryx.atmeta.com), and we'll send a small token of gratitude in the form of Astryx swag 🤗.
