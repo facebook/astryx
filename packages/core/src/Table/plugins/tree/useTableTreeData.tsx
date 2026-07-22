@@ -4,7 +4,7 @@
 
 /**
  * @file useTableTreeData.tsx
- * @input React, StyleX, Icon, Table types, theme tokens
+ * @input React, StyleX, Icon, Table types, theme tokens, i18n (useTranslator)
  * @output Exports useTableTreeData hook + config/meta types
  * @position Tree plugin; consumed by Table via plugins prop.
  *   Pairs with useTableTreeState (owns expansion state + flattening).
@@ -44,6 +44,7 @@ import {colorVars, radiusVars, spacingVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {mergeRefs} from '../../../utils';
 import type {TablePlugin, TableColumn, BodyRowRenderProps} from '../../types';
+import {useTranslator} from '../../../i18n';
 
 // =============================================================================
 // Types
@@ -255,6 +256,7 @@ function TreeExpander({
   isExpanded: boolean;
   onToggle: () => void;
 }) {
+  const t = useTranslator();
   return (
     <button
       type="button"
@@ -263,7 +265,11 @@ function TreeExpander({
         e.stopPropagation();
         onToggle();
       }}
-      aria-label={isExpanded ? 'Collapse row' : 'Expand row'}
+      aria-label={
+        isExpanded
+          ? t('@astryx.tableTree.collapseRow')
+          : t('@astryx.tableTree.expandRow')
+      }
       aria-expanded={isExpanded}>
       <span
         {...stylex.props(
