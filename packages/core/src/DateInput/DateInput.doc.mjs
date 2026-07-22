@@ -116,6 +116,13 @@ export const docs = {
         'Status indicator object for error, warning, or success states with a message.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
+    },
+    {
       name: 'labelTooltip',
       type: 'string',
       description:
@@ -378,6 +385,13 @@ export const docsZh = {
       description: '错误、警告或成功状态的状态指示对象，附带消息。',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+      default: "'attached'",
+    },
+    {
       name: 'labelTooltip',
       type: 'string',
       description: '通过标签末尾的信息图标显示的提示文本。',
@@ -478,6 +492,7 @@ export const docsDense = {
     placeholder: 'placeholder text in input',
     size: 'input control size',
     status: 'error/warning/success status w/ message',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     labelTooltip: 'tooltip text via info icon at label end',
     hasClear: 'Shows clear button when date is set. Clears value on click.',
     numberOfMonths: 'months shown simultaneously in calendar popover',

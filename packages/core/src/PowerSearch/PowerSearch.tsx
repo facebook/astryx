@@ -37,7 +37,7 @@ import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {Icon} from '../Icon';
 import type {IconType} from '../Icon';
 import type {IconName} from '../Icon/globalIconRegistry';
-import type {InputStatus} from '../Field';
+import type {InputStatus, FieldStatusVariant} from '../Field';
 import {usePopover} from '../Popover/usePopover';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {
@@ -383,6 +383,13 @@ export interface PowerSearchProps extends Omit<
   onBlur?: (e: React.FocusEvent) => void;
   /** Validation status. */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
   /** Max width for dropdown menu. */
   menuWidth?: number;
   /** Max display length for filter token values. @default 40 */
@@ -527,6 +534,7 @@ export function PowerSearch({
   onFocus,
   onBlur,
   status,
+  statusVariant = 'attached',
   maxTokenLength = 40,
   popoverSaveButtonLabel: popoverSaveButtonLabelFromProps,
   timezoneID,
@@ -1033,6 +1041,7 @@ export function PowerSearch({
           hasEntriesOnFocus
           debounceMs={0}
           status={status}
+          statusVariant={statusVariant}
           onFocus={onFocus}
           onBlur={onBlur}
           xstyle={xstyle}

@@ -90,6 +90,13 @@ export const docs = {
         'Validation status object with type and message for error/warning/success states.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
+    },
+    {
       name: 'renderItem',
       type: '(item: T) => ReactNode',
       description:

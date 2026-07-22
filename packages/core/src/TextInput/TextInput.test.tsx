@@ -659,3 +659,26 @@ describe('TextInput', () => {
     });
   });
 });
+
+
+describe('TextInput statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <TextInput label="Email" value="" onChange={() => {}} status={{type: 'error', message: 'Invalid email'}} />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <TextInput label="Email" value="" onChange={() => {}} status={{type: 'error', message: 'Invalid email'}} statusVariant="detached" />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+});

@@ -84,6 +84,13 @@ export const docs = {
         'Validation status object with type and optional message.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
+    },
+    {
       name: 'maxTokenLength',
       type: 'number',
       description: 'Max character length for filter value display in tokens.',
@@ -236,6 +243,13 @@ export const docsZh = {
       description: '带有类型和可选消息的验证状态对象。',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+      default: "'attached'",
+    },
+    {
       name: 'maxTokenLength',
       type: 'number',
       description: '令牌中过滤器值显示的最大字符长度。',
@@ -318,6 +332,7 @@ export const docsDense = {
     isReadOnly: 'Prevent adding, editing, or removing filters.',
     isDisabled: 'Disables entire component.',
     status: 'Validation status object w/ type + optional message.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     maxTokenLength: 'Max char length for filter value display in tokens.',
     popoverSaveButtonLabel: 'Label for save button in edit popover.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',

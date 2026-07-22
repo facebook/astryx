@@ -603,3 +603,38 @@ export const PlacementAbove: Story = {
     );
   },
 };
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<string | undefined>();
+    const [b, setB] = useState<string | undefined>();
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+        <Selector
+          label="Attached (default)"
+          options={[
+            {value: 'apple', label: 'Apple'},
+            {value: 'banana', label: 'Banana'},
+          ]}
+          value={a}
+          onChange={setA}
+          placeholder="Select a fruit..."
+          status={{type: 'error', message: 'Please select a fruit'}}
+        />
+        <Selector
+          label="Detached"
+          options={[
+            {value: 'apple', label: 'Apple'},
+            {value: 'banana', label: 'Banana'},
+          ]}
+          value={b}
+          onChange={setB}
+          placeholder="Select a fruit..."
+          status={{type: 'error', message: 'Please select a fruit'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+  decorators: [Story => <Story />],
+};

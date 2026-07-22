@@ -422,3 +422,29 @@ export const DisabledWithMessage: Story = {
     disabledMessage: 'You need edit access to change members',
   },
 };
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<SearchableItem[]>([]);
+    const [b, setB] = useState<SearchableItem[]>([]);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
+        <Tokenizer
+          label="Attached (default)"
+          searchSource={userSource}
+          value={a}
+          onChange={items => setA(items)}
+          status={{type: 'error', message: 'Select at least one member'}}
+        />
+        <Tokenizer
+          label="Detached"
+          searchSource={userSource}
+          value={b}
+          onChange={items => setB(items)}
+          status={{type: 'error', message: 'Select at least one member'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};

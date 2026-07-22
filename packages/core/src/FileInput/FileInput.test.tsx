@@ -849,3 +849,26 @@ describe('FileInput', () => {
     });
   });
 });
+
+
+describe('FileInput statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <FileInput label="Upload" value={null} onChange={() => {}} status={{type: 'error', message: 'Something went wrong'}} />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <FileInput label="Upload" value={null} onChange={() => {}} status={{type: 'error', message: 'Something went wrong'}} statusVariant="detached" />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+});

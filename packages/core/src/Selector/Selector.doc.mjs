@@ -129,6 +129,13 @@ export const docs = {
       description: 'Validation status with an optional message.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
+    },
+    {
       name: 'renderOption',
       type: '(option: SelectorOptionData) => ReactNode',
       description:

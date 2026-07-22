@@ -41,6 +41,7 @@ import {
   InputClearButton,
   type InputStatus,
   type InputStatusType,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon, type IconName} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -359,6 +360,13 @@ export interface FileInputProps extends Omit<
    */
   status?: InputStatus;
   /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
+  /**
    * Description text displayed below the label.
    */
   description?: string;
@@ -414,6 +422,7 @@ export function FileInput({
   isRequired = false,
   isLoading = false,
   status: statusProp,
+  statusVariant = 'attached',
   description,
   placeholder,
   mode = 'input',
@@ -728,6 +737,7 @@ export function FileInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       <div

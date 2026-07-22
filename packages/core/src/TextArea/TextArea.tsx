@@ -40,6 +40,7 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -218,6 +219,13 @@ export interface TextAreaProps extends Omit<
    */
   status?: TextAreaStatus;
   /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
+  /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
    * (e.g. `'100%'`). Sizes the whole field (label, control, and status) so they
    * stay aligned, unlike setting width via `xstyle`/`className`/`style`.
@@ -298,6 +306,7 @@ export function TextArea({
   isDisabled = false,
   disabledMessage,
   status,
+  statusVariant = 'attached',
   labelTooltip,
   startIcon,
   hasSpellCheck = true,
@@ -412,6 +421,7 @@ export function TextArea({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       <div
