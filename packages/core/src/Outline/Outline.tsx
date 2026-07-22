@@ -299,7 +299,6 @@ function getIndentStyle(level: number) {
  * @example
  * ```
  * const scrollContainerRef = useRef<HTMLDivElement>(null);
- *
  * <div ref={scrollContainerRef} style={{overflowY: 'auto'}}>...</div>
  * <Outline
  *   items={items}

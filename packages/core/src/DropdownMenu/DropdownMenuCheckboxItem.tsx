@@ -152,8 +152,7 @@ export interface DropdownMenuCheckboxItemProps extends Omit<
  *
  * @example
  * ```
- *  * import {DropdownMenuCheckboxItem} from '@astryxdesign/core/DropdownMenu';
- *
+ * import {DropdownMenuCheckboxItem} from '@astryxdesign/core/DropdownMenu';
  * <DropdownMenu button={{label: 'View'}}>
  *   <DropdownMenuCheckboxItem
  *     label="Show archived"

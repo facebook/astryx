@@ -77,11 +77,10 @@ export interface DropdownMenuRadioGroupProps extends Omit<
  *
  * @example
  * ```
- *  * import {
+ * import {
  *   DropdownMenuRadioGroup,
  *   DropdownMenuRadioItem,
  * } from '@astryxdesign/core/DropdownMenu';
- *
  * <DropdownMenu button={{label: 'Sort'}}>
  *   <DropdownMenuRadioGroup value={sort} onChange={setSort} aria-label="Sort by">
  *     <DropdownMenuRadioItem value="newest" label="Newest" />
