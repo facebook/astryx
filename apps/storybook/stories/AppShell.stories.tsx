@@ -654,3 +654,52 @@ export const WithMobileNav: Story = {
     );
   },
 };
+
+/**
+ * Toggling nav surfaces on and off. Use the buttons to show/hide the TopNav
+ * and SideNav — each surface fades and slides in when it appears, instead of
+ * popping instantly, and the main content reflows into the freed space.
+ *
+ * The motion reuses MobileNav's tokens (`--duration-medium` / `--ease-standard`)
+ * so all shell nav motion stays coordinated, and it respects
+ * `prefers-reduced-motion` — enable "Reduce motion" in your OS to see the
+ * surfaces appear immediately with no transition.
+ *
+ * Presence is expressed by passing the slot or `undefined`; the animation is
+ * automatic (no extra API). A hidden surface is fully unmounted, so nothing
+ * off-screen stays focusable.
+ */
+export const ToggleNavSurfaces: Story = {
+  name: 'Toggle Nav Surfaces',
+  render: function ToggleNavSurfacesStory() {
+    const [showTopNav, setShowTopNav] = useState(true);
+    const [showSideNav, setShowSideNav] = useState(true);
+
+    return (
+      <AppShell
+        contentPadding={6}
+        topNav={showTopNav ? <AppTopNav /> : undefined}
+        sideNav={showSideNav ? <SideNavWithoutHeader /> : undefined}>
+        <div {...stylex.props(styles.longContent)}>
+          <Text type="large">Toggle the nav surfaces</Text>
+          <div style={{display: 'flex', gap: 8}}>
+            <Button
+              label={showTopNav ? 'Hide TopNav' : 'Show TopNav'}
+              onClick={() => setShowTopNav(v => !v)}
+            />
+            <Button
+              label={showSideNav ? 'Hide SideNav' : 'Show SideNav'}
+              onClick={() => setShowSideNav(v => !v)}
+            />
+          </div>
+          <Text type="body">
+            Each surface fades and slides in when shown. Enable your OS
+            &ldquo;reduce motion&rdquo; setting to verify the animation is
+            suppressed.
+          </Text>
+          <MockContent paragraphs={4} />
+        </div>
+      </AppShell>
+    );
+  },
+};

@@ -32,6 +32,8 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
+  durationVars,
+  easeVars,
   fontWeightVars,
   radiusVars,
   spacingVars,
@@ -392,8 +394,52 @@ const styles = stylex.create({
   banner: {
     flexShrink: 0,
   },
-  hidden: {
-    display: 'none',
+  // Enter animation for a nav surface appearing in place.
+  //
+  // `display: none` can't animate, so a nav surface used to pop in/out. Instead
+  // we fade + slide the surface in with `@starting-style`, which gives it an
+  // initial offset/faded state so it transitions in on mount rather than
+  // snapping. Nothing is removed from the DOM to express state — the surface is
+  // present and focusable the whole time it's mounted, so focus/tab order stay
+  // intact. Browsers without `@starting-style` (Firefox) just show the surface
+  // immediately — graceful, not broken.
+  //
+  // Mirrors MobileNav's motion language: `--duration-medium` / `--ease-standard`
+  // and collapses to near-instant under `prefers-reduced-motion`.
+  navSurfaceHeaderEnter: {
+    transitionProperty: 'opacity, transform',
+    transitionDuration: durationVars['--duration-medium'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    opacity: {
+      default: 1,
+      '@starting-style': 0,
+    },
+    transform: {
+      default: 'translateY(0)',
+      '@starting-style': 'translateY(-100%)',
+    },
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+    },
+  },
+  navSurfaceSideEnter: {
+    transitionProperty: 'opacity, transform',
+    transitionDuration: durationVars['--duration-medium'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    opacity: {
+      default: 1,
+      '@starting-style': 0,
+    },
+    transform: {
+      default: 'translateX(0)',
+      '@starting-style': {
+        default: 'translateX(-100%)',
+        ':is([dir="rtl"] *)': 'translateX(100%)',
+      },
+    },
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+    },
   },
   autoMobileTopBar: {
     display: 'flex',
@@ -671,7 +717,11 @@ export function AppShell({
         ref={headerRef}
         {...mergeProps(
           themeProps('app-shell-header', {variant}),
-          stylex.props(navAreaStyle, isAuto && styles.headerSticky),
+          stylex.props(
+            navAreaStyle,
+            styles.navSurfaceHeaderEnter,
+            isAuto && styles.headerSticky,
+          ),
         )}>
         {headerInner}
       </div>
@@ -695,6 +745,9 @@ export function AppShell({
         navAreaStyle,
         isAuto && stickyBgStyle,
         isAuto && styles.panelAutoFill,
+        // Slide + fade the surface in when it appears in place (fill mode).
+        // In auto mode the sticky wrapper owns the enter animation instead.
+        isFill && styles.navSurfaceSideEnter,
       ]}>
       {sideNav}
     </LayoutPanel>
@@ -702,7 +755,9 @@ export function AppShell({
 
   const sideNavContent =
     sideNavPanel != null && isAuto ? (
-      <div {...stylex.props(styles.sideNavSticky)}>{sideNavPanel}</div>
+      <div {...stylex.props(styles.sideNavSticky, styles.navSurfaceSideEnter)}>
+        {sideNavPanel}
+      </div>
     ) : (
       sideNavPanel
     );
@@ -752,7 +807,11 @@ export function AppShell({
       <div
         {...mergeProps(
           themeProps('app-shell-header', {variant}),
-          stylex.props(navAreaStyle, isAuto && styles.headerSticky),
+          stylex.props(
+            navAreaStyle,
+            styles.navSurfaceHeaderEnter,
+            isAuto && styles.headerSticky,
+          ),
         )}>
         <LayoutHeader padding={0} hasDivider={navHasDividers}>
           <div
