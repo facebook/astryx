@@ -130,12 +130,15 @@ async function loadKnownValues(componentName) {
   const cliDir = path.dirname(fileURLToPath(import.meta.url));
   const coreSrc = path.resolve(cliDir, '../../../../core/src');
   if (!fs.existsSync(coreSrc)) return {};
-  // Map component name to directory (e.g. 'banner' → 'Banner', 'dropdownmenu' → 'DropdownMenu')
+  // Map component name to directory (e.g. 'banner' → 'Banner',
+  // 'dropdown-menu' → 'DropdownMenu'). Theme keys use the rendered class
+  // token, which hyphenates multi-word names, so strip non-letters from BOTH
+  // sides before comparing.
   const dirs = fs.readdirSync(coreSrc, { withFileTypes: true })
     .filter(d => d.isDirectory())
     .map(d => d.name);
-  const dir = dirs.find(d => d.toLowerCase() === componentName.toLowerCase()
-    || d.toLowerCase().replace(/[^a-z]/g, '') === componentName.toLowerCase());
+  const target = componentName.toLowerCase().replace(/[^a-z]/g, '');
+  const dir = dirs.find(d => d.toLowerCase().replace(/[^a-z]/g, '') === target);
   if (!dir) return {};
 
   const docPath = path.join(coreSrc, dir, `${dir}.doc.mjs`);
@@ -600,11 +603,29 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
 /**
  * Known Astryx component names and their visual props.
  * Used to warn on typos in defineTheme component overrides.
+ *
+ * CONTRACT: every key must equal the stable class token the component
+ * actually renders — the `<name>` in core's `themeProps('<name>')` /
+ * `stableClassName('<name>')` calls. Theme CSS selectors are derived
+ * verbatim from these keys (`.astryx-<key>`), so a key that diverges from
+ * the rendered class validates cleanly but emits a dead rule that matches
+ * nothing in the DOM (#4109: `textinput` emitted `.astryx-textinput` while
+ * TextInput renders `astryx-text-input`).
+ *
+ * The prop lists mirror the visual props each component passes to
+ * `themeProps()` (also documented as `theming.targets[].visualProps` in the
+ * component's doc.mjs) — the axes that render as variant classes and
+ * data attributes.
+ *
+ * `layer` has no rendered `astryx-layer` class or doc target; it is a
+ * layout/anchor concept unrelated to #4109 and is intentionally kept (see the
+ * `allowedWithoutTarget` allowlist in build-theme.registry.test.mjs).
+ *
  * @type {Record<string, string[]>}
  */
 const KNOWN_COMPONENTS = {
-  'app-shell': ['position'],
-  'aspect-ratio': [],
+  'app-shell': ['variant'],
+  'aspect-ratio': ['shape'],
   avatar: ['size'],
   badge: ['variant', 'color'],
   banner: ['container', 'status'],
@@ -613,15 +634,15 @@ const KNOWN_COMPONENTS = {
   calendar: [],
   card: ['variant'],
   center: [],
-  'checkbox-input': [],
+  'checkbox-input': ['size'],
   collapsible: [],
-  'date-input': [],
+  'date-input': ['size', 'status'],
   dialog: ['variant', 'position'],
   divider: ['variant', 'orientation'],
   'dropdown-menu': [],
   'empty-state': [],
   field: [],
-  'form-layout': [],
+  'form-layout': ['direction'],
   grid: ['align'],
   heading: ['level'],
   icon: ['size', 'color'],
@@ -630,28 +651,28 @@ const KNOWN_COMPONENTS = {
   layout: [],
   link: ['color'],
   list: ['type', 'density'],
-  'mobile-nav': [],
+  'mobile-nav': ['side'],
   'more-menu': [],
   navicon: [],
-  'number-input': [],
+  'number-input': ['size', 'status'],
   pagination: ['variant'],
   progressbar: ['variant', 'size'],
-  'radio-list': ['orientation'],
+  'radio-list': ['orientation', 'size'],
   section: ['variant'],
   selector: ['type', 'size', 'color'],
-  'side-nav': [],
+  'side-nav': ['mode'],
   skeleton: [],
   slider: ['orientation'],
   spinner: ['size'],
   stack: [],
   statusdot: ['variant', 'size'],
   switch: [],
+  'tab-list': ['size'],
   table: [],
-  'tab-list': ['type'],
   text: ['type', 'color'],
+  'text-input': ['size', 'status'],
   textarea: [],
-  'text-input': [],
-  'time-input': [],
+  'time-input': ['size', 'status'],
   token: ['color'],
   tokenizer: [],
   'top-nav': [],
