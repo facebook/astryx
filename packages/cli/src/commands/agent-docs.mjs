@@ -392,7 +392,7 @@ export function removeAgentDocs(targetDir) {
 
 /**
  * Programmatic entry point for installing agent docs.
- * Used by the init wizard, upgrade command, and agent-docs command.
+ * Used by the init command, upgrade command, and agent-docs command.
  *
  * Strategy (when no agent/paths specified):
  * - Discover all existing agent doc files and update them

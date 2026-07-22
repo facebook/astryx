@@ -96,6 +96,14 @@ const styles = stylex.create({
     borderBottomWidth: borderVars['--border-width'],
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
+    // Reserve a gap between the tabs and the divider rail so the hover pill
+    // (which fills the tab height) no longer touches the underline, and an
+    // adjacent same-size Button aligns to the tabs rather than butting the
+    // rail. The tabs keep their element-size height; this padding grows the
+    // strip. `--_tab-indicator-bottom` drops the selected indicator through
+    // the reserved gap (+ the 1px border) so it still sits on the rail.
+    paddingBlockEnd: spacingVars['--spacing-1'],
+    '--_tab-indicator-bottom': `calc(-1 * (${spacingVars['--spacing-1']} + ${borderVars['--border-width']}))`,
   },
 });
 

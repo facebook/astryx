@@ -29,7 +29,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as p from '@clack/prompts';
+import * as p from '../lib/term-log.mjs';
 import {findConfigPath} from '../lib/project.mjs';
 import {fixDirectiveCorruption, validateOutput} from './runner.mjs';
 

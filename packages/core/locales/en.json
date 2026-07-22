@@ -723,6 +723,14 @@
     "defaultMessage": "Expand all rows",
     "description": "Aria label for the Table expand-all / collapse-all header button when not all rows are currently expanded."
   },
+  "@astryx.tableTree.collapseRow": {
+    "defaultMessage": "Collapse row",
+    "description": "Aria label for the Table tree-data expander chevron when the row is currently expanded."
+  },
+  "@astryx.tableTree.expandRow": {
+    "defaultMessage": "Expand row",
+    "description": "Aria label for the Table tree-data expander chevron when the row is currently collapsed."
+  },
   "@astryx.textInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Aria label for the TextInput clear button. `label` is the input's own visible label."

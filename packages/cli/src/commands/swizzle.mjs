@@ -15,12 +15,10 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as p from '@clack/prompts';
 import {findCoreDir, listComponents} from '../utils/paths.mjs';
 import {
   assertWithin,
   PathSafetyError,
-  isNonInteractive,
 } from '../utils/path-safety.mjs';
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
@@ -97,14 +95,6 @@ function buildFeedback(component, issuesUrl) {
   }
 
   return feedback;
-}
-
-function isCancel(value) {
-  if (p.isCancel(value)) {
-    p.cancel('Cancelled.');
-    process.exit(0);
-  }
-  return value;
 }
 
 /**
@@ -314,25 +304,11 @@ export function registerSwizzle(program) {
 
       if (existingFiles.length > 0 && !options.overwrite) {
         const relOutputForMsg = path.relative(process.cwd(), outputDir) || '.';
-        if (json || isNonInteractive({json})) {
-          const msg =
-            `Refusing to overwrite ${existingFiles.length} existing file(s) in ${relOutputForMsg}/. ` +
-            `Re-run with --overwrite (or -f) to replace them.`;
-          cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
-          return;
-        }
-        const confirmed = isCancel(
-          await p.confirm({
-            message:
-              `Overwrite ${existingFiles.length} existing file(s) in ${relOutputForMsg}/? ` +
-              `(${existingFiles.slice(0, 3).join(', ')}${existingFiles.length > 3 ? ', …' : ''})`,
-            initialValue: false,
-          }),
-        );
-        if (!confirmed) {
-          humanLog('Aborted. Re-run with --overwrite to replace files.');
-          return;
-        }
+        const msg =
+          `Refusing to overwrite ${existingFiles.length} existing file(s) in ${relOutputForMsg}/. ` +
+          `Re-run with --overwrite (or -f) to replace them.`;
+        cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
+        return;
       }
 
       fs.mkdirSync(outputDir, {recursive: true});

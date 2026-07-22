@@ -96,6 +96,52 @@ describe('Icon', () => {
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
+  it('sizes component-mode icons in rem so they scale with root font-size', () => {
+    const sizes = {
+      xsm: '0.75rem',
+      sm: '1rem',
+      md: '1.25rem',
+      lg: '1.5rem',
+    } as const;
+    for (const [size, expected] of Object.entries(sizes)) {
+      const {unmount} = render(
+        <Icon
+          icon={TestIcon}
+          size={size as keyof typeof sizes}
+          data-testid="icon"
+        />,
+      );
+      const style = getComputedStyle(screen.getByTestId('icon'));
+      expect(style.width).toBe(expected);
+      expect(style.height).toBe(expected);
+      unmount();
+    }
+  });
+
+  it('sizes registry (string-mode) icons in rem, including fontSize', () => {
+    const sizes = {
+      xsm: '0.75rem',
+      sm: '1rem',
+      md: '1.25rem',
+      lg: '1.5rem',
+    } as const;
+    for (const [size, expected] of Object.entries(sizes)) {
+      const {unmount} = render(
+        <Icon
+          icon="check"
+          size={size as keyof typeof sizes}
+          data-testid="icon"
+        />,
+      );
+      const style = getComputedStyle(screen.getByTestId('icon'));
+      expect(style.width).toBe(expected);
+      expect(style.height).toBe(expected);
+      // fontSize is expressed in rem so 1em-based registry icons scale too.
+      expect(style.fontSize).toBe(expected);
+      unmount();
+    }
+  });
+
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(<Icon icon={TestIcon} ref={ref} />);

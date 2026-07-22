@@ -45,7 +45,7 @@ export const docs = {
         {
           id: 'getting-started-b5',
           type: 'prose',
-          text: 'Then run the init wizard to set up AI agent docs, pick a starter template, and learn about theming.',
+          text: "Then run `astryx init` to install the AI agent cheat sheet (AGENTS.md/CLAUDE.md). It's non-interactive — no prompts — so it's safe for AI agents, CI, and scripts. Add `--all` for pointers to the theme and page-building workflows.",
         },
         {
           id: 'getting-started-b6',

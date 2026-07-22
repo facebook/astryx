@@ -24,7 +24,7 @@ beforeEach(() => {
     logCalls.push(args.join(' '));
   });
   vi.spyOn(console, 'error').mockImplementation(() => {});
-  // @clack/prompts writes directly to process.stdout — capture that too.
+  // Some human logs are written straight to process.stdout — capture that too.
   vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
     stdoutCalls.push(typeof chunk === 'string' ? chunk : chunk.toString());
     return true;

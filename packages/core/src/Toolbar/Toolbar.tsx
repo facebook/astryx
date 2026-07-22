@@ -239,6 +239,7 @@ export function Toolbar({
   const hasCenterContent = centerContent != null;
   const hasStartContent = startContent != null;
   const hasEndContent = endContent != null;
+  const hasBottomDivider = dividers?.includes('bottom') ?? false;
 
   const gapVar = spacingVars[spacingStepToVar[gap]] as string;
 
@@ -316,9 +317,15 @@ export function Toolbar({
               orientation === 'vertical' && styles.vertical,
               sizeStyles.base,
               dynamicStyles.gap(gapVar),
-              dynamicStyles.tabIndicatorBottom(
-                `calc(-1 * (${blockPaddingVarForSize[size]}${dividers?.includes('bottom') ? ' + 1px' : ''}))`,
-              ),
+              // Only drop the tab indicator through the toolbar's block padding
+              // onto the rail when a bottom divider is actually present.
+              // Without a divider, leave `--_tab-indicator-bottom` unset so a
+              // nested TabList's indicator keeps its own default (hugging the
+              // tab) instead of floating down into the toolbar's padding.
+              hasBottomDivider &&
+                dynamicStyles.tabIndicatorBottom(
+                  `calc(-1 * (${blockPaddingVarForSize[size]} + 1px))`,
+                ),
             ),
           )}
           {...props}>

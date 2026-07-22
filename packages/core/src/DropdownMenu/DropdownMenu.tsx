@@ -38,6 +38,7 @@ import {Icon} from '../Icon';
 import type {IconType} from '../Icon';
 
 import {renderDropdownItems} from './renderDropdownItems';
+import {MENU_ITEM_ROLES, MENU_ITEM_SELECTOR} from './menuItemRoles';
 import {
   DropdownMenuContext,
   type DropdownMenuContextValue,
@@ -255,14 +256,17 @@ export function DropdownMenu({
     popover.hide();
   }, [popover]);
 
-  // Single keyboard navigation path for both modes
+  // Single keyboard navigation path for both modes.
+  // The selector matches plain items plus selectable items
+  // (menuitemradio/menuitemcheckbox) so lab checkbox/radio rows are reachable
+  // and roved to alongside plain items — not just role="menuitem".
   const {
     listRef,
     handleKeyDown: listNavKeyDown,
     focusFirst,
     focusItem,
   } = useListFocus<HTMLDivElement>({
-    itemSelector: '[role="menuitem"]:not([aria-disabled="true"])',
+    itemSelector: MENU_ITEM_SELECTOR,
     wrap: false,
     onEscape: closeMenu,
   });
@@ -273,9 +277,7 @@ export function DropdownMenu({
     (): HTMLElement[] =>
       listRef.current
         ? Array.from(
-            listRef.current.querySelectorAll<HTMLElement>(
-              '[role="menuitem"]:not([aria-disabled="true"])',
-            ),
+            listRef.current.querySelectorAll<HTMLElement>(MENU_ITEM_SELECTOR),
           )
         : [],
     [listRef],
@@ -308,7 +310,10 @@ export function DropdownMenu({
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
-        if (focused?.getAttribute('role') === 'menuitem') {
+        if (
+          focused &&
+          MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
+        ) {
           focused.click();
         }
         return;

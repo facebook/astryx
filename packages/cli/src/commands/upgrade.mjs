@@ -37,7 +37,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import * as p from '@clack/prompts';
+import * as p from '../lib/term-log.mjs';
 import {ensureJscodeshift} from '../codemods/ensure-jscodeshift.mjs';
 import {getTransformsBetween, latestVersion} from '../codemods/registry.mjs';
 import {runCodemods} from '../codemods/runner.mjs';

@@ -1,15 +1,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Subprocess no-hang tests for the interactivity contract.
+ * @file Subprocess no-hang tests for `astryx init`.
  *
- * The wizard command `init` blocks on @clack/prompts. In a
- * non-interactive context it must fail fast (exit 1) instead of hanging.
- * These tests spawn the CLI as a real subprocess with stdin/stdout NOT a TTY
- * (stdio 'ignore'/'pipe'), which is exactly the CI / piped condition. If the
- * guard were missing, spawnSync would hit the timeout (signal SIGTERM,
- * status null) — so asserting `signal === null && status === 1` proves the
- * process exited cleanly rather than hanging.
+ * TTY was removed from the CLI: `init` is non-interactive by default and must
+ * run cleanly (exit 0, writing the agent cheat sheet) instead of hanging on a
+ * prompt. These tests spawn the CLI with stdin/stdout NOT a TTY (the CI / piped
+ * / agent condition). A hang would show as signal SIGTERM + status null; we
+ * assert `signal === null && status === 0` to prove it exits cleanly and works.
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
@@ -42,25 +40,24 @@ afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
 });
 
-describe('init non-interactive safety', () => {
-  it('fails fast (exit 1, no hang) and writes no files', () => {
+describe('init is non-interactive by default (no TTY needed)', () => {
+  it('runs cleanly (exit 0, no hang) and writes agent docs', () => {
     const r = runCli(['init']);
-    expect(r.signal).toBeNull();
-    expect(r.status).toBe(1);
-    expect(fs.readdirSync(tmpDir)).toEqual([]);
+    expect(r.signal).toBeNull(); // did not hang
+    expect(r.status).toBe(0); // succeeded without a TTY
+    expect(fs.readdirSync(tmpDir).length).toBeGreaterThan(0); // wrote the cheat sheet
   });
 
-  it('prints actionable guidance (--all / --features)', () => {
-    const out = (() => {
-      const r = runCli(['init']);
-      return r.stderr + r.stdout;
-    })();
-    expect(out).toMatch(/requires a TTY/i);
-    expect(out).toMatch(/--all/);
-    expect(out).toMatch(/--features/);
+  it('writes an agent-doc file containing the ASTRYX cheat-sheet marker', () => {
+    runCli(['init']);
+    // init injects into AGENTS.md/CLAUDE.md if present, else creates .claude/CLAUDE.md
+    const candidates = ['AGENTS.md', 'CLAUDE.md', '.cursorrules', path.join('.claude', 'CLAUDE.md')];
+    const doc = candidates.find(f => fs.existsSync(path.join(tmpDir, f)));
+    expect(doc).toBeTruthy();
+    expect(fs.readFileSync(path.join(tmpDir, doc), 'utf8')).toMatch(/ASTRYX:START/);
   });
 
-  it('still runs --features agents non-interactively (guard does not over-catch)', () => {
+  it('still runs --features agents non-interactively', () => {
     const r = runCli(['init', '--features', 'agents']);
     expect(r.signal).toBeNull();
     expect(r.status).toBe(0);

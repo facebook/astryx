@@ -45,7 +45,7 @@ function runCli(args, {cwd} = {}) {
 
 function parseJson(stdout) {
   // CLI emits a single JSON document. If anything else snuck onto stdout
-  // (clack output, console.log strings, etc.) JSON.parse will throw —
+  // (log output, console.log strings, etc.) JSON.parse will throw —
   // which is exactly the failure mode we want to catch in tests.
   return JSON.parse(stdout);
 }
