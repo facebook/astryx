@@ -186,7 +186,7 @@ export const CircleToPill: Story = {
     <div {...stylex.props(storyStyles.storyWrapper)}>
       <div>
         <h4 {...stylex.props(storyStyles.heading)}>Short count (circle)</h4>
-        <AvatarGroup size="medium">
+        <AvatarGroup size="lg">
           {USERS.slice(0, 3).map(u => (
             <Avatar key={u.key} src={u.src} name={u.name} />
           ))}
@@ -195,7 +195,7 @@ export const CircleToPill: Story = {
       </div>
       <div>
         <h4 {...stylex.props(storyStyles.heading)}>Long count (pill)</h4>
-        <AvatarGroup size="medium">
+        <AvatarGroup size="lg">
           {USERS.slice(0, 3).map(u => (
             <Avatar key={u.key} src={u.src} name={u.name} />
           ))}
