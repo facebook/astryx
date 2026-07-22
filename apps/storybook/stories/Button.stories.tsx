@@ -10,6 +10,12 @@ const buttonStoryStyles = stylex.create({
   fullWidth: {
     width: '100%',
   },
+  // #3379: a padding-block override now grows the button because sizes use
+  // min-height instead of a fixed height. Previously the fixed height absorbed
+  // the extra padding under border-box and the button stayed the same size.
+  tallPadding: {
+    paddingBlock: '20px',
+  },
 });
 
 const meta: Meta<typeof Button> = {
@@ -117,6 +123,21 @@ export const IconOnly: Story = {
         variant="destructive"
         icon={<TrashIcon style={{width: 16, height: 16}} />}
         isIconOnly
+      />
+    </div>
+  ),
+};
+
+export const PaddingComposesWithHeight: Story = {
+  name: 'Padding grows the button (#3379)',
+  render: () => (
+    <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+      <Button label="Default lg" variant="primary" size="lg" />
+      <Button
+        label="lg + paddingBlock override"
+        variant="primary"
+        size="lg"
+        xstyle={buttonStoryStyles.tallPadding}
       />
     </div>
   ),
