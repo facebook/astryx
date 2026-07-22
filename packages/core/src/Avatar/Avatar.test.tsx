@@ -3,6 +3,7 @@
 import {describe, it, expect} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {Avatar} from './Avatar';
+import {AvatarStatusDot} from './AvatarStatusDot';
 
 describe('Avatar', () => {
   it('exposes role="img" with the name as accessible name', () => {
@@ -64,5 +65,99 @@ describe('Avatar', () => {
     const img = wrapper.querySelector('img');
     expect(img).not.toBeNull();
     expect(img).toHaveAttribute('src', 'https://example.com/ada.jpg');
+  });
+});
+
+describe('AvatarStatusDot', () => {
+  it('renders a default accessible label based on variant (WCAG 1.4.1)', () => {
+    render(
+      <Avatar name="Ada" size="lg" status={<AvatarStatusDot variant="success" />} />,
+    );
+    // The status dot should have role="img" with a default label.
+    expect(screen.getByRole('img', {name: 'Success'})).toBeInTheDocument();
+  });
+
+  it('renders a default accessible label for neutral variant', () => {
+    render(
+      <Avatar name="Ada" size="lg" status={<AvatarStatusDot variant="neutral" />} />,
+    );
+    expect(screen.getByRole('img', {name: 'Neutral'})).toBeInTheDocument();
+  });
+
+  it('renders a default accessible label for error variant', () => {
+    render(
+      <Avatar name="Ada" size="lg" status={<AvatarStatusDot variant="error" />} />,
+    );
+    expect(screen.getByRole('img', {name: 'Error'})).toBeInTheDocument();
+  });
+
+  it('uses explicit label over default variant label', () => {
+    render(
+      <Avatar
+        name="Ada"
+        size="lg"
+        status={<AvatarStatusDot variant="success" label="Online" />}
+      />,
+    );
+    expect(screen.getByRole('img', {name: 'Online'})).toBeInTheDocument();
+    expect(screen.queryByRole('img', {name: 'Success'})).toBeNull();
+  });
+
+  it('renders a default icon at medium+ avatar sizes (WCAG 1.4.1 shape differentiation)', () => {
+    render(
+      <Avatar name="Ada" size="lg" status={<AvatarStatusDot variant="success" />} />,
+    );
+    // The default icon is an SVG inside the status dot.
+    const statusDot = screen.getByRole('img', {name: 'Success'});
+    const svg = statusDot.querySelector('svg');
+    expect(svg).not.toBeNull();
+  });
+
+  it('does not render default icon at the smallest avatar tier', () => {
+    render(
+      <Avatar name="Ada" size="sm" status={<AvatarStatusDot variant="success" />} />,
+    );
+    const statusDot = screen.getByRole('img', {name: 'Success'});
+    expect(statusDot.querySelector('svg')).toBeNull();
+  });
+
+  it('allows suppressing the default icon with icon={null}', () => {
+    render(
+      <Avatar
+        name="Ada"
+        size="lg"
+        status={<AvatarStatusDot variant="success" icon={null} />}
+      />,
+    );
+    const statusDot = screen.getByRole('img', {name: 'Success'});
+    expect(statusDot.querySelector('svg')).toBeNull();
+  });
+
+  it('renders different icons for different variants', () => {
+    const successRender = render(
+      <Avatar name="A" size="lg" status={<AvatarStatusDot variant="success" />} />,
+    );
+    const successSvg = successRender.container.querySelector(
+      '[role="img"] svg',
+    );
+    expect(successSvg).not.toBeNull();
+    successRender.unmount();
+
+    const errorRender = render(
+      <Avatar name="B" size="lg" status={<AvatarStatusDot variant="error" />} />,
+    );
+    const errorSvg = errorRender.container.querySelector(
+      '[role="img"] svg',
+    );
+    expect(errorSvg).not.toBeNull();
+    errorRender.unmount();
+
+    const neutralRender = render(
+      <Avatar name="C" size="lg" status={<AvatarStatusDot variant="neutral" />} />,
+    );
+    const neutralSvg = neutralRender.container.querySelector(
+      '[role="img"] svg',
+    );
+    expect(neutralSvg).not.toBeNull();
   });
 });

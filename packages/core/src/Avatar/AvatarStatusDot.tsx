@@ -24,6 +24,62 @@ import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
 /**
+ * Default icons for each variant, used when no `icon` prop is provided.
+ *
+ * These ensure the status is conveyed by shape (not colour alone),
+ * satisfying WCAG 2.1 Success Criterion 1.4.1 (Use of Color).
+ *
+ * At the smallest avatar tier (≤ 36px) the dot is too small for icons,
+ * so shape differentiation is provided via the accessible label instead.
+ */
+const defaultVariantIcons: Record<AvatarStatusDotVariant, ReactNode> = {
+  success: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden={true}
+      width="1em"
+      height="1em">
+      <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  ),
+  neutral: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden={true}
+      width="1em"
+      height="1em">
+      <path d="M6 12h12" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" fill="none" />
+    </svg>
+  ),
+  error: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden={true}
+      width="1em"
+      height="1em">
+      <path d="M6 6l12 12M6 18L18 6" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" fill="none" />
+    </svg>
+  ),
+};
+
+/**
+ * Default accessible labels for each variant, used when no `label` prop is
+ * provided. Ensures screen readers always announce the status meaning,
+ * even at the smallest avatar tier where icons cannot be rendered.
+ */
+const defaultVariantLabels: Record<AvatarStatusDotVariant, string> = {
+  success: 'Success',
+  neutral: 'Neutral',
+  error: 'Error',
+};
+
+/**
  * Resolves the status dot size, border width, and icon size based on the
  * avatar size.
  *
@@ -37,7 +93,8 @@ import {themeProps} from '../utils/themeProps';
  *   | ≥ 96px       | 32px | 4px    | 18px |
  *
  * Icons are not rendered at the smallest tier — there isn't enough
- * room for them to be legible.
+ * room for them to be legible. At that tier the accessible label
+ * still conveys meaning (WCAG 1.4.1).
  */
 function resolveStatusDotSize(avatarSize: number): {
   dotSize: number;
@@ -93,6 +150,10 @@ export interface AvatarStatusDotProps extends BaseProps<HTMLDivElement> {
    * Accessible label for the status dot.
    * Describes the meaning of the indicator for screen readers
    * (e.g. "Online", "Accepted", "John Doe is busy").
+   *
+   * When omitted, a default label is derived from the variant
+   * ("Success", "Neutral", "Error") so the status is never
+   * conveyed by colour alone (WCAG 2.1 SC 1.4.1).
    */
   label?: string;
   /**
@@ -101,12 +162,17 @@ export interface AvatarStatusDotProps extends BaseProps<HTMLDivElement> {
    * The icon is automatically sized to fit the dot and hidden
    * at the smallest avatar sizes where there isn't enough room.
    *
+   * When omitted, a default icon is rendered based on the variant
+   * (checkmark for success, dash for neutral, cross for error)
+   * so shape reinforces meaning alongside colour (WCAG 2.1 SC 1.4.1).
+   * Pass `icon={null}` to suppress the default icon.
+   *
    * @example
    * ```
    * <AvatarStatusDot variant="success" label="Verified" icon={<CheckIcon />} />
    * ```
    */
-  icon?: ReactNode;
+  icon?: ReactNode | null;
 }
 
 const styles = stylex.create({
@@ -191,11 +257,23 @@ export function AvatarStatusDot({
   const avatarSize = use(AvatarSizeContext);
   const {dotSize, borderWidth, iconSize} = resolveStatusDotSize(avatarSize);
 
+  // Resolve label: explicit prop → default per variant → none.
+  // A default label ensures screen readers always convey status meaning,
+  // even when the consumer doesn't provide one (WCAG 2.1 SC 1.4.1).
+  const resolvedLabel = label ?? defaultVariantLabels[variant];
+
+  // Resolve icon: explicit prop (including null) → default per variant.
+  // A default icon ensures shape differentiation reinforces colour,
+  // so status is not conveyed by colour alone (WCAG 2.1 SC 1.4.1).
+  // At the smallest avatar tier (iconSize === 0) the icon is not rendered,
+  // but the resolved label still conveys meaning.
+  const resolvedIcon = icon !== undefined ? icon : defaultVariantIcons[variant];
+
   return (
     <div
       {...props}
       ref={ref}
-      {...(label ? {role: 'img', 'aria-label': label} : undefined)}
+      {...(resolvedLabel ? {role: 'img', 'aria-label': resolvedLabel} : undefined)}
       {...mergeProps(
         themeProps('avatar-status-dot', {variant}),
         stylex.props(
@@ -207,11 +285,11 @@ export function AvatarStatusDot({
         className,
         style,
       )}>
-      {icon && iconSize > 0 && (
+      {resolvedIcon && iconSize > 0 && (
         <span
           aria-hidden="true"
           {...stylex.props(styles.icon, dynamicStyles.iconSize(iconSize))}>
-          {icon}
+          {resolvedIcon}
         </span>
       )}
     </div>
