@@ -637,9 +637,12 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setHighlightedIndex(prev =>
-            prev < results.length - 1 ? prev + 1 : 0,
-          );
+          setHighlightedIndex(prev => {
+            if (results.length === 0) {
+              return -1;
+            }
+            return prev < results.length - 1 ? prev + 1 : 0;
+          });
           break;
         case 'ArrowUp':
           e.preventDefault();
@@ -660,7 +663,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         case 'Home':
           if (popover.isOpen) {
             e.preventDefault();
-            setHighlightedIndex(0);
+            setHighlightedIndex(results.length > 0 ? 0 : -1);
           }
           break;
         case 'End':
