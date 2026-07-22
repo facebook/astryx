@@ -41,7 +41,7 @@ interface ToggleButtonGroupContextValue {
   isDisabled?: boolean;
 }
 
-export const ToggleButtonGroupContext =
+const ToggleButtonGroupContext =
   createContext<ToggleButtonGroupContextValue | null>(null);
 ToggleButtonGroupContext.displayName = 'ToggleButtonGroupContext';
 
