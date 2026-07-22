@@ -29,7 +29,7 @@ export const docs = {
     {
       name: 'value',
       type: 'boolean',
-      description: 'Whether the item is checked. Controlled — pair with onChange.',
+      description: 'Whether the item is checked. Controlled; pair with onChange.',
     },
     {
       name: 'onChange',
@@ -69,7 +69,7 @@ export const docsZh = {
     label: '标识该项的主标签文本。',
     description: '显示在标签下方的次要描述文本。',
     icon: '显示在标签前的图标。',
-    value: '该项是否被勾选。受控 — 与 onChange 搭配使用。',
+    value: '该项是否被勾选。受控，与 onChange 搭配使用。',
     onChange: '切换该项时以下一个勾选状态触发的回调。',
     isDisabled: '该项是否禁用。',
     hasCloseOnSelect: '切换该项是否关闭菜单。默认保持打开。',
@@ -89,7 +89,7 @@ export const docsDense = {
     value: 'checked state (controlled, w/ onChange)',
     onChange: 'fired w/ next checked state on toggle',
     isDisabled: 'disabled; stays focusable via aria-disabled',
-    hasCloseOnSelect: 'close menu on toggle (default false — stays open)',
+    hasCloseOnSelect: 'close menu on toggle (default false, stays open)',
     endContent: 'content after label+description',
   },
 };
