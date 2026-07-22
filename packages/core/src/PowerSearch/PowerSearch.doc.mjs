@@ -7,9 +7,6 @@ export const docs = {
   displayName: 'Power Search',
   category: 'Data Input',
   keywords: ["powersearch","search","searchbar","filter","filterbar","faceted","querybuilder","structured","omnibar"],
-  theming: {
-    targets: [{className: 'astryx-power-search'}],
-  },
   props: [
     {
       name: 'config',
@@ -291,6 +288,11 @@ export const docsZh = {
       { guidance: true, description: 'Provide a result count to give users feedback on how their filters affect the data set.' },
       { guidance: false, description: 'Use PowerSearch for simple keyword searches; a standard text input is more appropriate for single-field lookups.' },
       { guidance: false, description: 'Wrap a disabled PowerSearch in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
+    ],
+  },
+  theming: {
+    targets: [
+      {className: 'astryx-power-search'},
     ],
   },
 };

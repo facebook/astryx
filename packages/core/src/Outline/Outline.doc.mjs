@@ -32,7 +32,6 @@ export const docs = {
       {className: 'astryx-outline', visualProps: ['density']},
       {className: 'astryx-outline-indicator'},
       {className: 'astryx-outline-item', visualProps: ['level'], states: ['active']},
-      {className: 'astryx-outline-indicator'},
     ],
   },
   components: [
@@ -167,7 +166,6 @@ export const docsZh = {
       {className: 'astryx-outline', visualProps: ['density']},
       {className: 'astryx-outline-indicator'},
       {className: 'astryx-outline-item', visualProps: ['level'], states: ['active']},
-      {className: 'astryx-outline-indicator'},
     ],
   },
   components: [
