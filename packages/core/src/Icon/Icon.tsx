@@ -214,6 +214,50 @@ export interface IconProps extends Omit<
    * @default 'md'
    */
   size?: IconSize;
+  /**
+   * Accessible name for the icon. Set this only when the icon is MEANINGFUL on
+   * its own — a standalone status glyph or an icon-only indicator with no
+   * adjacent text conveying the same information. Providing it exposes the icon
+   * to assistive tech as `role="img"` with this string as the accessible name
+   * (via `aria-label`) and drops the default `aria-hidden="true"`.
+   *
+   * Omit it (the default) for decorative icons — the common case, e.g. an icon
+   * beside a text label — and the icon stays hidden from assistive tech
+   * (`aria-hidden="true"`). An empty string (`''`) is treated the same as
+   * omitting it (decorative), since an empty accessible name is meaningless.
+   *
+   * Don't set `label` when an interactive parent (Button, IconButton, link)
+   * already names the control — that produces a duplicate announcement.
+   *
+   * @example
+   * ```
+   * // Meaningful, standalone icon
+   * <Icon icon="success" label="Completed" />
+   *
+   * // Decorative icon (default) — omit label
+   * <Icon icon="search" />
+   * ```
+   */
+  label?: string;
+}
+
+/**
+ * Derives the ARIA attributes for an icon from its `label` prop.
+ *
+ * - Non-empty `label` → meaningful image: `role="img"` + `aria-label`, and no
+ *   `aria-hidden` (an `aria-hidden` element is removed from the accessibility
+ *   tree, so its accessible name would be ignored).
+ * - Omitted or empty `label` → decorative default: `aria-hidden="true"`.
+ *
+ * The result is spread BEFORE `{...props}` in both render modes so an explicit
+ * `aria-hidden` / `role` / `aria-label` from the consumer always wins.
+ */
+function getIconA11yProps(
+  label: string | undefined,
+): {role: 'img'; 'aria-label': string} | {'aria-hidden': 'true'} {
+  return label != null && label !== ''
+    ? {role: 'img', 'aria-label': label}
+    : {'aria-hidden': 'true'};
 }
 
 // =============================================================================
@@ -232,9 +276,14 @@ export function Icon({
   icon,
   color = 'inherit',
   size = 'md',
+  label,
   ref,
   ...props
 }: IconProps) {
+  // Derive ARIA from `label`: decorative (aria-hidden) by default, or a
+  // meaningful image (role="img" + aria-label) when `label` is non-empty.
+  const a11yProps = getIconA11yProps(label);
+
   // String mode: resolve from icon registry, wrap in styled span
   if (typeof icon === 'string') {
     return (
@@ -242,6 +291,7 @@ export function Icon({
         name={icon}
         color={color}
         size={size}
+        a11yProps={a11yProps}
         spanProps={props}
       />
     );
@@ -252,7 +302,10 @@ export function Icon({
   return (
     <IconComponent
       ref={ref}
-      aria-hidden="true"
+      // Derived a11y (decorative default or meaningful `label`) is spread
+      // BEFORE {...props} so an explicit aria-hidden/role/aria-label from the
+      // consumer still wins as an escape hatch.
+      {...a11yProps}
       {...mergeProps(
         themeProps('icon', {size, color}),
         stylex.props(styles.root, colorStyles[color], sizeStyles[size]),
@@ -279,11 +332,13 @@ function IconFromRegistry({
   name,
   color,
   size,
+  a11yProps,
   spanProps,
 }: {
   name: IconName;
   color: IconColor;
   size: IconSize;
+  a11yProps: {role: 'img'; 'aria-label': string} | {'aria-hidden': 'true'};
   spanProps?: Omit<SVGProps<SVGSVGElement>, 'ref' | 'color'>;
 }) {
   const resolvedIcon = getIcon(name);
@@ -294,11 +349,11 @@ function IconFromRegistry({
 
   return (
     <span
-      // Decorative by default, but placed BEFORE the prop spread so consumers
-      // can override it (e.g. `aria-hidden={false}` + `role="img"` +
-      // `aria-label`) to expose a meaningful standalone icon. This matches
-      // component-mode Icon, which already sets aria-hidden before its spread.
-      aria-hidden="true"
+      // Derived a11y — decorative (aria-hidden) by default, or a meaningful
+      // image (role="img" + aria-label) when `label` is set. Placed BEFORE the
+      // prop spread so consumers can still override it with explicit
+      // aria-hidden/role/aria-label. This mirrors component-mode Icon.
+      {...a11yProps}
       {...(spanProps as React.HTMLAttributes<HTMLSpanElement>)}
       {...mergeProps(
         themeProps('icon', {size, color}),
