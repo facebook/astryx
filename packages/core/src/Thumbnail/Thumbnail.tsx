@@ -21,6 +21,7 @@
  * - /packages/cli/templates/blocks/components/Thumbnail/ (showcase blocks)
  */
 
+import {useState} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -256,11 +257,16 @@ export function Thumbnail({
   const t = useTranslator();
   const imageMode = useImageMode(src, {region: BUTTON_REGION, fallback: null});
 
+  // Track the exact src that failed (rather than a boolean) so a changed src
+  // gets a fresh load attempt instead of the stale error.
+  const [erroredSrc, setErroredSrc] = useState<string | undefined>(undefined);
+
   const hasSrc = src != null;
+  const hasError = hasSrc && erroredSrc === src;
   const showSkeleton = isLoading && !hasSrc;
-  const showImage = hasSrc && !showSkeleton;
+  const showImage = hasSrc && !showSkeleton && !hasError;
   const showUploadOverlay = isLoading && hasSrc;
-  const showPlaceholder = !isLoading && !hasSrc;
+  const showPlaceholder = (!isLoading && !hasSrc) || hasError;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
   const accessibleName =
     label && alt ? `${label} — ${alt}` : (label ?? alt ?? 'thumbnail');
@@ -268,7 +274,12 @@ export function Thumbnail({
   const imageContent = (
     <>
       {showImage && (
-        <img src={src} alt={alt ?? ''} {...stylex.props(styles.image)} />
+        <img
+          src={src}
+          alt={alt ?? ''}
+          onError={() => setErroredSrc(src)}
+          {...stylex.props(styles.image)}
+        />
       )}
       {showSkeleton && <Skeleton radius={2} />}
       {showPlaceholder && (
