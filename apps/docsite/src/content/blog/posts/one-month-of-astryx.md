@@ -3,7 +3,7 @@ slug: one-month-of-astryx
 title: 'One Month of Astryx'
 description: "One month in: where Astryx stands and where we're taking it."
 dek: "[Launched June 18, 2026](/blog/introducing-astryx). One month in: where Astryx stands and where we're taking it."
-date: '2026-07-24'
+date: '2026-07-22'
 type: 'update'
 authors: [liya, ernest]
 tags: [astryx, design-system, open-source]
