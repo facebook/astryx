@@ -99,6 +99,23 @@ describe('Timestamp', () => {
     expect(el.textContent).not.toContain(':');
   });
 
+  it('renders date_weekday format with a weekday prefix', () => {
+    render(
+      <Timestamp
+        value="2026-02-19T17:00:00Z"
+        format="date_weekday"
+        data-testid="ts"
+      />,
+    );
+    const el = screen.getByTestId('ts');
+    // Includes the year and a leading weekday abbreviation, no time portion.
+    expect(el.textContent).toContain('2026');
+    expect(el.textContent).not.toContain(':');
+    // en-US short weekday for 2026-02-19 is "Thu"; assert a weekday word is
+    // present without over-fitting the exact locale punctuation.
+    expect(el.textContent).toMatch(/Mon|Tue|Wed|Thu|Fri|Sat|Sun/);
+  });
+
   it('renders date_time format', () => {
     render(
       <Timestamp
