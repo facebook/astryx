@@ -31,8 +31,10 @@ import {themeProps} from '../utils/themeProps';
 const styles = stylex.create({
   label: {
     display: 'flex',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
+    rowGap: spacingVars['--spacing-0-5'],
+    columnGap: spacingVars['--spacing-1'],
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-label-size'],
     lineHeight: typeScaleVars['--text-label-leading'],
@@ -66,6 +68,9 @@ const styles = stylex.create({
     color: colorVars['--color-text-secondary'],
   },
   description: {
+    // Forces the description onto its own line within the wrapping label's
+    // flex row instead of trailing alongside the label text.
+    flexBasis: '100%',
     fontFamily: typographyVars['--font-family-body'],
     fontSize: typeScaleVars['--text-supporting-size'],
     lineHeight: typeScaleVars['--text-supporting-leading'],
@@ -200,23 +205,21 @@ export function FieldLabel({
   );
 
   return (
-    <>
-      <LabelElement
-        ref={ref}
-        id={labelID}
-        // `htmlFor` only applies to a real `<label>` associating with a single
-        // control; a group label (span) has no `htmlFor`.
-        htmlFor={isGroupLabel ? undefined : inputID}
-        {...mergeProps(
-          themeProps('field-label'),
-          stylex.props(
-            styles.label,
-            isDisabled && styles.labelDisabled,
-            isLabelHidden && styles.srOnly,
-          ),
-        )}>
-        {labelContent}
-      </LabelElement>
+    <LabelElement
+      ref={ref}
+      id={labelID}
+      // `htmlFor` only applies to a real `<label>` associating with a single
+      // control; a group label (span) has no `htmlFor`.
+      htmlFor={isGroupLabel ? undefined : inputID}
+      {...mergeProps(
+        themeProps('field-label'),
+        stylex.props(
+          styles.label,
+          isDisabled && styles.labelDisabled,
+          isLabelHidden && styles.srOnly,
+        ),
+      )}>
+      {labelContent}
       {description && (
         <span
           id={descriptionID}
@@ -224,7 +227,7 @@ export function FieldLabel({
           {description}
         </span>
       )}
-    </>
+    </LabelElement>
   );
 }
 
