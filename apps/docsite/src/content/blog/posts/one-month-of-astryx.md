@@ -18,7 +18,7 @@ A month ago we open-sourced **Astryx** — a code-first, AI-fluent React + Style
 
 - **GitHub:** 10.1K stars · 746 forks (peaked #2 on GitHub Trending — all repos — in launch week)
 - **npm (last 30 days):** @astryxdesign/core 175K · cli 119K · themes 459K across 7 themes
-- **Docsite ([astryx.atmeta.com](http://astryx.atmeta.com)):** 215K visitors · 1.7M page views (last 30 days)
+- **[astryx.atmeta.com](http://astryx.atmeta.com):** 215K visitors · 1.7M page views (last 30 days)
 - **Community contributions:** 88 people opened PRs; 2,619 merged
 
 ## Built with Astryx
