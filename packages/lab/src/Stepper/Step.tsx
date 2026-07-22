@@ -144,7 +144,6 @@ function CurrentIcon() {
 
 // --- Styles ---
 
-const BAR_WIDTH = '4px';
 const ICON_SIZE = spacingVars['--spacing-4'];
 const NUMBER_SIZE = spacingVars['--spacing-5'];
 
@@ -160,7 +159,7 @@ const styles = stylex.create({
 
   // 4px progress bar segment
   verticalBar: {
-    width: BAR_WIDTH,
+    width: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-full'],
     flexShrink: 0,
     alignSelf: 'stretch',
@@ -206,7 +205,7 @@ const styles = stylex.create({
   // parent never has to introspect children to build the bar.
   horizontalBar: {
     width: '100%',
-    height: BAR_WIDTH,
+    height: spacingVars['--spacing-1'],
     borderRadius: radiusVars['--radius-full'],
     flexShrink: 0,
     marginBlockEnd: spacingVars['--spacing-0-5'],
