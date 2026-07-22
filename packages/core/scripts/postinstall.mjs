@@ -7,12 +7,13 @@
  * is installed and the project hasn't run init yet, print a one-line next-step
  * so agents/humans discover it (this is the most common fresh-install entry).
  *
- * Self-contained: core is a separate package and cannot import the CLI, so the
- * agent-doc locations + marker below intentionally DUPLICATE the CLI's agent-doc
- * discovery in packages/cli/src/commands/agent-docs.mjs — keep them aligned with
- * that file. The .hermes.md / HERMES.md entries are an intentional superset (the
- * CLI writes those via `--agent hermes`). Non-interactive, never fails the
- * install, and quiet in the monorepo build, during npx's fetch, and once set up.
+ * Self-contained: core is a separate package and cannot import the CLI (that
+ * would be a dependency cycle — the CLI peer-depends on core), so the agent-doc
+ * locations + markers below intentionally MIRROR the CLI's canonical contract in
+ * packages/cli/src/lib/agent-doc-state.mjs. They are pinned to it by a drift test
+ * (src/postinstall.test.mjs) so the two can never silently diverge. Hermes files
+ * are part of that shared set. Non-interactive, never fails the install, and
+ * quiet in the monorepo build, during npx's fetch, and once set up.
  */
 
 import fs from 'node:fs';
@@ -21,9 +22,13 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 
 const HERE = fileURLToPath(import.meta.url);
 
-// Duplicates the CLI's agent-doc locations + markers — keep aligned with
-// packages/cli/src/commands/agent-docs.mjs. Hermes files are an intentional superset.
-const AGENT_DOC_PATHS = [
+// MIRROR of the CLI's canonical agent-doc contract (packages/cli/src/lib/
+// agent-doc-state.mjs: AGENT_DOC_PATHS + INIT_MARKERS). Core can't import the CLI
+// (dependency cycle), so these are duplicated here and pinned by a drift test
+// (src/postinstall.test.mjs) that asserts deep-equality with the leaf — they
+// can never silently diverge. Exported for that test. Hermes files are part of
+// the shared set.
+export const AGENT_DOC_PATHS = [
   'AGENTS.md',
   'CLAUDE.md',
   '.claude/CLAUDE.md',
@@ -31,7 +36,7 @@ const AGENT_DOC_PATHS = [
   '.hermes.md',
   'HERMES.md',
 ];
-const MARKERS = ['<!-- ASTRYX:START -->', '<!-- XDS:START -->'];
+export const MARKERS = ['<!-- ASTRYX:START -->', '<!-- XDS:START -->'];
 
 /**
  * True when the project already has the Astryx agent prompt installed (an Astryx

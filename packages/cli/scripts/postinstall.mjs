@@ -7,9 +7,10 @@
  * installed as a project dependency and the project hasn't run init yet, print a
  * one-line next-step so agents/humans discover it.
  *
- * Reuses the ONE setup check (isAstryxInitialized from agent-docs.mjs — a
- * dep-free import chain, safe at install time). Non-interactive, never fails the
- * install, and stays quiet:
+ * Reuses the ONE setup check (isAstryxInitialized) from the dependency-free leaf
+ * ../src/lib/agent-doc-state.mjs — node builtins only, so it is genuinely safe to
+ * load at install time (importing commands/agent-docs.mjs would drag in the full
+ * CLI module graph). Non-interactive, never fails the install, and stays quiet:
  *   - in the monorepo/source build (not under node_modules),
  *   - during npx's transient fetch (npx runs the bin — likely `init` — right
  *     after, so nudging here would double up), and
@@ -41,7 +42,10 @@ export function shouldNudge({scriptPath, npmCommand, isSetUp} = {}) {
 /** @param {string} root @returns {Promise<boolean>} */
 async function projectIsSetUp(root) {
   try {
-    const {isAstryxInitialized} = await import('../src/commands/agent-docs.mjs');
+    // Dep-free leaf (node builtins only) — safe to load mid-install. NOT
+    // commands/agent-docs.mjs, whose static graph (commander, jscodeshift, …)
+    // isn't guaranteed importable yet during this package's postinstall.
+    const {isAstryxInitialized} = await import('../src/lib/agent-doc-state.mjs');
     return isAstryxInitialized(root);
   } catch {
     return false; // best-effort — if the check can't load, fall through and nudge

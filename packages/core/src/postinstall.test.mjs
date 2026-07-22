@@ -3,16 +3,23 @@
 /**
  * @file Guardrail tests for the @astryxdesign/core postinstall nudge (layer 1).
  *
- * The marker check mirrors the CLI's single source of truth (core can't import
- * the CLI). Tests that it detects the marker across EVERY agent-doc location
- * (incl. Hermes) + legacy markers, and that the nudge decision matrix is correct.
+ * Core can't import the CLI (dependency cycle), so its marker check hand-mirrors
+ * the CLI's single source of truth. Tests that it detects the marker across
+ * EVERY agent-doc location (incl. Hermes) + legacy markers, that the nudge
+ * decision matrix is correct, and — crucially — that the mirror stays pinned to
+ * the CLI leaf (the drift guard below).
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import {isAstryxInitialized, shouldNudge} from '../scripts/postinstall.mjs';
+import {isAstryxInitialized, shouldNudge, AGENT_DOC_PATHS, MARKERS} from '../scripts/postinstall.mjs';
+// The CLI's dependency-free leaf is the ONE source of truth; core mirrors it.
+import {
+  AGENT_DOC_PATHS as CLI_AGENT_DOC_PATHS,
+  INIT_MARKERS as CLI_INIT_MARKERS,
+} from '../../cli/src/lib/agent-doc-state.mjs';
 
 const MARKER = '<!-- ASTRYX:START -->';
 
@@ -67,5 +74,18 @@ describe('core postinstall — shouldNudge', () => {
   });
   it('quiet once set up', () => {
     expect(shouldNudge({scriptPath: DEP, npmCommand: 'install', isSetUp: true})).toBe(false);
+  });
+});
+
+describe('core postinstall — mirror is pinned to the CLI source of truth', () => {
+  // Core hand-mirrors the agent-doc contract because it cannot import the CLI at
+  // runtime. This guard fails the moment the two diverge — e.g. a new agent-doc
+  // location or marker added to the CLI leaf but not copied here. That is exactly
+  // the class of bug that originally let Hermes files slip through discovery.
+  it('AGENT_DOC_PATHS deep-equals the CLI leaf', () => {
+    expect(AGENT_DOC_PATHS).toEqual(CLI_AGENT_DOC_PATHS);
+  });
+  it('MARKERS deep-equals the CLI leaf INIT_MARKERS', () => {
+    expect(MARKERS).toEqual(CLI_INIT_MARKERS);
   });
 });
