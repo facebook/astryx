@@ -4,7 +4,10 @@ import * as stylex from '@stylexjs/stylex';
 import {AvatarGroup, AvatarGroupOverflow} from '@astryxdesign/core/AvatarGroup';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {StatusDot} from '@astryxdesign/core/StatusDot';
-import {spacingVars, typographyVars} from '@astryxdesign/core/theme/tokens.stylex';
+import {
+  spacingVars,
+  typographyVars,
+} from '@astryxdesign/core/theme/tokens.stylex';
 
 const USERS = [
   {name: 'Alice Johnson', src: 'https://i.pravatar.cc/150?img=1', key: 'alice'},
@@ -168,6 +171,38 @@ export const LargeOverflowCount: Story = {
       ))}
       <AvatarGroupOverflow count={999} />
     </AvatarGroup>
+  ),
+};
+
+/**
+ * Short counts stay a circle; long counts grow into a pill.
+ *
+ * The indicator uses a minimum width equal to the avatar size, so a small
+ * `+5` renders as a circle, while a wide `+4912` grows horizontally into a
+ * stadium/pill so the number always fits with comfortable padding.
+ */
+export const CircleToPill: Story = {
+  render: () => (
+    <div {...stylex.props(storyStyles.storyWrapper)}>
+      <div>
+        <h4 {...stylex.props(storyStyles.heading)}>Short count (circle)</h4>
+        <AvatarGroup size="medium">
+          {USERS.slice(0, 3).map(u => (
+            <Avatar key={u.key} src={u.src} name={u.name} />
+          ))}
+          <AvatarGroupOverflow count={5} />
+        </AvatarGroup>
+      </div>
+      <div>
+        <h4 {...stylex.props(storyStyles.heading)}>Long count (pill)</h4>
+        <AvatarGroup size="medium">
+          {USERS.slice(0, 3).map(u => (
+            <Avatar key={u.key} src={u.src} name={u.name} />
+          ))}
+          <AvatarGroupOverflow count={4912} />
+        </AvatarGroup>
+      </div>
+    </div>
   ),
 };
 

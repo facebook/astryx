@@ -211,4 +211,18 @@ describe('AvatarGroupOverflow — hardening', () => {
 
     expect(screen.getByText('+999')).toBeInTheDocument();
   });
+
+  it('renders the full "+N" text for wide multi-digit counts', () => {
+    // The indicator grows into a pill for long counts, so the entire number
+    // must remain present (nothing clipped away in the DOM).
+    render(
+      <AvatarGroup>
+        <Avatar name="Alice" />
+        <AvatarGroupOverflow count={4912} />
+      </AvatarGroup>,
+    );
+
+    expect(screen.getByText('+4912')).toBeInTheDocument();
+    expect(screen.getByLabelText('4912 more')).toBeInTheDocument();
+  });
 });
