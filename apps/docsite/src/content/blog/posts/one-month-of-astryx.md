@@ -13,7 +13,7 @@ relatedDocs:
     href: '/blog/introducing-astryx'
 ---
 
-_Launched June 24, 2026. One month in: where Astryx stands and where we're taking it._
+_[Launched June 18, 2026](/blog/introducing-astryx). One month in: where Astryx stands and where we're taking it._
 
 A month ago we open-sourced **Astryx**, a code-first, AI-fluent React + StyleX design system, built and refined inside Meta for eight years. The goal: give every builder, human or agent, a design system that's fully customizable, production-grade, and legible to the tools now writing most of our UI. One month in, the early signal says the bet resonates.
 
