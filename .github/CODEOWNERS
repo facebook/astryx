@@ -5,8 +5,8 @@
 
 /packages/cli/ @josephfarina
 
-# Package READMEs are the front door for CLI/component discovery — the first
-# (and often only) doc a consumer or agent reads. Own them explicitly so any
-# change is reviewed by someone who tracks discovery, not just merged as "docs".
-/packages/cli/README.md @josephfarina
+# The core README is the front door for component/CLI discovery — often the
+# first (and only) doc a consumer or agent reads. Add a discovery owner on top
+# of the default reviewers (CODEOWNERS replaces owners on the most specific
+# match, so the defaults are re-listed to keep them as reviewers).
 /packages/core/README.md @cixzhang @imdreamrunner @ejhammond @josephfarina
