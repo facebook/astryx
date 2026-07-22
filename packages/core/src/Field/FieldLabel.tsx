@@ -204,7 +204,15 @@ export function FieldLabel({
     </>
   );
 
-  return (
+  const descriptionElement = description && (
+    <span
+      id={descriptionID}
+      {...stylex.props(styles.description, isLabelHidden && styles.srOnly)}>
+      {description}
+    </span>
+  );
+
+  const labelElement = (
     <LabelElement
       ref={ref}
       id={labelID}
@@ -220,14 +228,22 @@ export function FieldLabel({
         ),
       )}>
       {labelContent}
-      {description && (
-        <span
-          id={descriptionID}
-          {...stylex.props(styles.description, isLabelHidden && styles.srOnly)}>
-          {description}
-        </span>
-      )}
+      {/* A group label is referenced by a group control via aria-labelledby,
+          which computes its accessible name from ALL descendant text — nesting
+          the description here would fold it into the group's name. Keep it as
+          a sibling for group labels; a <span> has no native click-to-activate
+          behavior anyway, so nesting bought nothing there in the first place. */}
+      {!isGroupLabel && descriptionElement}
     </LabelElement>
+  );
+
+  return isGroupLabel ? (
+    <>
+      {labelElement}
+      {descriptionElement}
+    </>
+  ) : (
+    labelElement
   );
 }
 
