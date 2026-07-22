@@ -1774,3 +1774,47 @@ export function parseMarkdownIncremental(
 
   return mergeSettledBlocks(settledBlocks, unsettledBlocks);
 }
+
+/** Helper to extract plain text from inline nodes. */
+export function inlineText(nodes: InlineNode[]): string {
+  return nodes
+    .map(node => {
+      switch (node.type) {
+        case 'text':
+        case 'code':
+          return node.content;
+        case 'bold':
+        case 'italic':
+        case 'strikethrough':
+        case 'link':
+          return inlineText(node.children);
+        case 'image':
+          return node.alt;
+        case 'citation':
+        case 'break':
+          return '';
+      }
+    })
+    .join('');
+}
+
+/** Helper to generate a slug from string. */
+export function slugify(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/** Helper to guarantee a unique slug relative to a map of counts. */
+export function uniqueSlug(
+  baseSlug: string,
+  counts: Map<string, number>,
+): string {
+  const fallbackSlug = baseSlug || 'section';
+  const count = counts.get(fallbackSlug) ?? 0;
+  counts.set(fallbackSlug, count + 1);
+  return count === 0 ? fallbackSlug : `${fallbackSlug}-${count}`;
+}
