@@ -23,6 +23,7 @@ import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {colorVars} from '../theme/tokens.stylex';
 
 const LazyXDSTooltip = lazy(async () =>
   import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
@@ -117,6 +118,18 @@ const styles = stylex.create({
     lineHeight: 'inherit',
     color: 'inherit',
     fontWeight: 'inherit',
+  },
+  // Visible focus ring for the tooltip tab stop, matching the repo-wide
+  // focus-visible outline treatment (see Token, Thumbnail).
+  focusable: {
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
   },
 });
 
@@ -360,7 +373,12 @@ export function Timestamp({
   const [now, setNow] = useState(() => new Date());
 
   const date = parseValue(value);
-  const isoString = date.toISOString();
+  // An unparseable value (a malformed date string, or a NaN timestamp from
+  // missing data) yields an Invalid Date, and formatting one throws "Invalid
+  // time value" — crashing the whole tree. Compute nothing from it here and
+  // bail out below (after the hooks) instead.
+  const isValidDate = !Number.isNaN(date.getTime());
+  const isoString = isValidDate ? date.toISOString() : '';
 
   // Determine effective format
   const diffSeconds = Math.round((now.getTime() - date.getTime()) / 1000);
@@ -372,19 +390,20 @@ export function Timestamp({
       : format;
 
   // Format the display text
-  const displayText =
-    effectiveFormat === 'relative'
+  const displayText = !isValidDate
+    ? ''
+    : effectiveFormat === 'relative'
       ? getRelativeTimeString(date, now)
       : isAbsoluteFormat(effectiveFormat)
         ? formatTimestamp(date, effectiveFormat, isTimezoneShown)
         : '';
 
   // Full absolute text for tooltip and aria-label
-  const fullAbsoluteText = getFullAbsoluteString(date);
+  const fullAbsoluteText = isValidDate ? getFullAbsoluteString(date) : '';
 
   // Live updates
   useEffect(() => {
-    if (!isLive || effectiveFormat !== 'relative') {
+    if (!isLive || !isValidDate || effectiveFormat !== 'relative') {
       return;
     }
 
@@ -394,7 +413,15 @@ export function Timestamp({
     }, interval);
 
     return () => clearInterval(timer);
-  }, [isLive, effectiveFormat, diffSeconds]);
+  }, [isLive, isValidDate, effectiveFormat, diffSeconds]);
+
+  // Placed after all hooks so the hook order stays stable across renders.
+  if (!isValidDate) {
+    console.warn(
+      `Timestamp: could not parse value ${JSON.stringify(value)} as a date. Rendering nothing.`,
+    );
+    return null;
+  }
 
   const showTooltip = hasTooltip && effectiveFormat === 'relative';
 
@@ -417,8 +444,15 @@ export function Timestamp({
         aria-label={
           effectiveFormat === 'relative' ? fullAbsoluteText : undefined
         }
+        // The absolute-time tooltip is anchored here with the default 'auto'
+        // focus trigger, which only activates on focusable anchors. A bare
+        // <time> is not focusable, so without a tab stop sighted keyboard
+        // users could never reveal the tooltip (WCAG 1.4.13 / 2.1.1). Only
+        // add the tab stop while a tooltip is actually attached — no
+        // gratuitous tab stops otherwise.
+        tabIndex={showTooltip ? 0 : undefined}
         data-testid={testId}
-        {...stylex.props(styles.time)}>
+        {...stylex.props(styles.time, showTooltip && styles.focusable)}>
         {displayText}
       </time>
     </Text>

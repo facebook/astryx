@@ -182,6 +182,41 @@ describe('SideNav', () => {
     const nav = screen.getByTestId('nav');
     expect(nav.children).toHaveLength(1);
   });
+
+  it('fires a consumer onClick on the collapse button in addition to toggling', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+
+    function Example() {
+      const [isCollapsed, setIsCollapsed] = useState(false);
+      const handleRef = useRef<SideNavImperativeCollapseHandle>(null);
+      return (
+        <>
+          <SideNavCollapseButton handleRef={handleRef} onClick={onClick} />
+          <SideNav
+            handleRef={handleRef}
+            collapsible={{
+              isCollapsed,
+              onCollapsedChange: setIsCollapsed,
+              hasButton: false,
+            }}>
+            <SideNavSection title="Main">
+              <SideNavItem label="Dashboard" icon={StubIcon} />
+            </SideNavSection>
+          </SideNav>
+        </>
+      );
+    }
+
+    render(<Example />);
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+    // Toggle still ran: the label flipped to "Expand sidebar".
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+  });
 });
 
 // =============================================================================
@@ -753,6 +788,17 @@ describe('SideNavSection', () => {
     );
     const group = screen.getByRole('group');
     expect(group.style.marginTop).toBe('16px');
+  });
+
+  it('forwards arbitrary pass-through attributes (id, aria-*) to root element', () => {
+    render(
+      <SideNavSection title="Main" id="section-1" aria-describedby="hint">
+        <SideNavItem label="Dashboard" />
+      </SideNavSection>,
+    );
+    const group = screen.getByRole('group');
+    expect(group).toHaveAttribute('id', 'section-1');
+    expect(group).toHaveAttribute('aria-describedby', 'hint');
   });
 });
 

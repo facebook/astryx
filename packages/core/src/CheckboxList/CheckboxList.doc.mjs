@@ -85,7 +85,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description: 'Status indicator ({ type, message }).',
     },
     {
@@ -106,6 +106,11 @@ export const docs = {
       { guidance: false, description: 'Show a CheckboxList when the user can only pick one thing; that is what RadioList is for.' },
       { guidance: false, description: 'Put buttons or links inside the trailing slot (endContent); the whole row is already tappable, so a nested button creates two competing click targets.' },
       { guidance: false, description: 'Wrap a disabled CheckboxList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
+    ],
+  },
+  theming: {
+    targets: [
+      {className: 'astryx-checkbox-list'},
     ],
   },
 };

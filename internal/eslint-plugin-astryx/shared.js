@@ -32,6 +32,7 @@ export const COMPONENT_RULE_ALLOWED = new Set([
   'LayerProviderProps',
   'LinkProviderProps',
   'MediaThemeProps',
+  'InternationalizationProviderProps',
   // Hook return-value / editor-config prop bags — not DOM-component props
   'OverlayContainerProps',
   'PowerSearchEditorProps',

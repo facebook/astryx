@@ -25,6 +25,11 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-base-table'},
+      {className: 'astryx-table'},
+      {className: 'astryx-table-scroll-wrapper'},
+      {className: 'astryx-table-header'},
+      {className: 'astryx-table-body'},
+      {className: 'astryx-table-footer'},
       {className: 'astryx-table-row'},
       {className: 'astryx-table-cell'},
       {className: 'astryx-table-header-cell'},
@@ -40,7 +45,7 @@ export const docs = {
     {
       name: 'columns',
       type: 'TableColumn<T>[]',
-      description: 'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys.',
+      description: 'Column definitions: each column has {key, header, width?, align?, renderCell?}. The `header` field sets the column heading text. If omitted, columns are auto-generated from data object keys. The `width` field is typed as `ColumnWidth` (not a number); use `proportional(n)` or `pixel(n)` helpers imported from `@astryxdesign/core/Table`. Example: `width: pixel(120)` for 120px fixed, `width: proportional(1)` for flex distribution.',
     },
     {
       name: 'idKey',
@@ -106,6 +111,8 @@ export const docs = {
     {name: 'useTableSelection'},
     {name: 'useTableSelectionState'},
     {name: 'useTableSortable'},
+    {name: 'useTableTreeData'},
+    {name: 'useTableTreeState'},
     {name: 'useTablePagination'},
     {name: 'useTableColumnSettings'},
     {name: 'useTableFiltering'},

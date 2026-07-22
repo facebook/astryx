@@ -72,6 +72,12 @@ describe('Collapsible', () => {
       expect(screen.getByTestId('root')).toHaveClass('astryx-collapsible');
     });
 
+    it('renders the stable astryx-collapsible-content class on the content area', () => {
+      render(<Collapsible trigger="T">c</Collapsible>);
+      const content = contentFor(screen.getByRole('button'));
+      expect(content).toHaveClass('astryx-collapsible-content');
+    });
+
     it('renders a ReactNode trigger, not just a string', () => {
       render(
         <Collapsible trigger={<span data-testid="rich">Rich</span>}>
@@ -240,6 +246,80 @@ describe('Collapsible', () => {
     });
   });
 
+  describe('disabled state', () => {
+    it('marks the trigger aria-disabled and drops it from the tab order', () => {
+      render(
+        <Collapsible trigger="T" isDisabled>
+          Body
+        </Collapsible>,
+      );
+      const button = screen.getByRole('button');
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+      expect(button).toHaveAttribute('tabindex', '-1');
+      // Never the native disabled attribute — it stays focusable/perceivable.
+      expect(button).not.toBeDisabled();
+    });
+
+    it('is enabled by default (no aria-disabled, stays in tab order)', () => {
+      render(<Collapsible trigger="T">Body</Collapsible>);
+      const button = screen.getByRole('button');
+      expect(button).not.toHaveAttribute('aria-disabled');
+      expect(button).not.toHaveAttribute('tabindex', '-1');
+    });
+
+    it('does not toggle when the trigger is clicked while disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <Collapsible trigger="T" isDisabled defaultIsOpen>
+          Body
+        </Collapsible>,
+      );
+      const button = screen.getByRole('button');
+      expect(button).toHaveAttribute('aria-expanded', 'true');
+      await user.click(button);
+      expect(button).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('does not fire onOpenChange while disabled', async () => {
+      const user = userEvent.setup();
+      const onOpenChange = vi.fn();
+      render(
+        <Collapsible trigger="T" isDisabled onOpenChange={onOpenChange}>
+          Body
+        </Collapsible>,
+      );
+      await user.click(screen.getByRole('button'));
+      expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it('does not collapse an already-open item — content stays visible', () => {
+      render(
+        <Collapsible trigger="T" isDisabled defaultIsOpen>
+          Body
+        </Collapsible>,
+      );
+      const content = contentFor(screen.getByRole('button'));
+      expect(content).not.toHaveStyle({display: 'none'});
+    });
+
+    it('does not toggle its group item when disabled', async () => {
+      const user = userEvent.setup();
+      render(
+        <CollapsibleGroup type="single">
+          <Collapsible trigger="A" value="a" isDisabled>
+            Body A
+          </Collapsible>
+          <Collapsible trigger="B" value="b">
+            Body B
+          </Collapsible>
+        </CollapsibleGroup>,
+      );
+      const triggerA = screen.getByRole('button', {name: /A/});
+      await user.click(triggerA);
+      expect(triggerA).toHaveAttribute('aria-expanded', 'false');
+    });
+  });
+
   describe('prop forwarding', () => {
     it('forwards a ref to the root element', () => {
       const ref = vi.fn();
@@ -378,27 +458,25 @@ describe('Collapsible', () => {
   });
 
   describe('group presentation (dividers + density)', () => {
-    it('reflects group dividers and density as data attributes on items', () => {
+    it('reflects group density as a data attribute on items when dividers are enabled', () => {
       render(
-        <CollapsibleGroup type="single" dividers="between" density="compact">
+        <CollapsibleGroup type="single" hasDividers density="compact">
           <Collapsible trigger="A" value="a" data-testid="item-a">
             Body A
           </Collapsible>
         </CollapsibleGroup>,
       );
       const item = screen.getByTestId('item-a');
-      expect(item).toHaveAttribute('data-dividers', 'between');
       expect(item).toHaveAttribute('data-density', 'compact');
     });
 
-    it('omits divider data attributes when standalone (no group)', () => {
+    it('omits density data attribute when standalone (no group)', () => {
       render(
         <Collapsible trigger="A" data-testid="item">
           Body
         </Collapsible>,
       );
       const item = screen.getByTestId('item');
-      expect(item).not.toHaveAttribute('data-dividers');
       expect(item).not.toHaveAttribute('data-density');
     });
   });

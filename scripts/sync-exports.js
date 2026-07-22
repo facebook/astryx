@@ -68,6 +68,16 @@ const STATIC_EXPORTS = {
     types: './dist/naming.d.ts',
     default: './dist/naming.js',
   },
+  './config': {
+    source: './src/config.ts',
+    types: './dist/config.d.ts',
+    default: './dist/config.js',
+  },
+  './authoring': {
+    source: './src/authoring/index.ts',
+    types: './dist/authoring/index.d.ts',
+    default: './dist/authoring/index.js',
+  },
   './theme/tokens': {
     source: './src/theme/tokens.ts',
     types: './dist/theme/tokens.d.ts',
@@ -85,6 +95,12 @@ const STATIC_EXPORTS = {
   },
   './docs.mjs': './docs.mjs',
   './groups.doc.mjs': './groups.doc.mjs',
+  // i18n message catalogs. Consumers pass these to
+  // <InternationalizationProvider messages={{fr, ...}}> or use them for
+  // custom overrides / pseudoloc smoke-tests. Wildcard export exposes every
+  // JSON file under packages/core/locales/, which ships thanks to the
+  // `locales` entry in the `files` array.
+  './locales/*.json': './locales/*.json',
 };
 
 /**

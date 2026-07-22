@@ -28,6 +28,7 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export interface CitationSource {
   title?: string;
@@ -154,6 +155,7 @@ export function Citation({
   'data-testid': testId,
   ...rest
 }: CitationProps): React.ReactElement {
+  const t = useTranslator();
   const title = source.title ?? String(number);
   const href = source.url;
   const icon = source.icon;
@@ -181,7 +183,7 @@ export function Citation({
         {...rest}
         ref={elementRef}
         role={noteRole}
-        aria-label={`Citation ${number}: ${title}`}
+        aria-label={t('@astryx.citation.label', {number, title})}
         data-testid={testId}
         {...linkProps}
         {...mergeProps(
@@ -204,7 +206,7 @@ export function Citation({
       {...rest}
       ref={elementRef}
       role={noteRole}
-      aria-label={`Citation ${number}: ${title}`}
+      aria-label={t('@astryx.citation.label', {number, title})}
       data-testid={testId}
       {...linkProps}
       {...mergeProps(

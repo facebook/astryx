@@ -47,6 +47,12 @@ export interface LayoutInput {
 export interface LayoutResult {
   xScale: ChartScale;
   yScale: ReturnType<typeof scaleLinear<number, number>>;
+  /**
+   * Categorical y band scale, built when a series declares `layout.yBandKey`
+   * (e.g. a heatmap's rows). When present the y-axis is categorical and the
+   * linear `yScale` is unused.
+   */
+  yBandScale?: ReturnType<typeof scaleBand<string>>;
   resolved: Map<string, ResolvedPoint[]>;
 }
 
@@ -95,6 +101,13 @@ export function computeLayout({
   yDomain,
   xDomain,
 }: LayoutInput): LayoutResult {
+  // A categorical y-axis (heatmap) means BOTH axes are categorical: columns
+  // should tile the plot edge-to-edge just like the rows. Drop the bar-style
+  // outer padding on the x band scale for these charts so the grid meets the
+  // x/y axis lines flush on every side (no asymmetric gap).
+  const yBandKey = series.find(s => s.layout.yBandKey != null)?.layout.yBandKey;
+  const isCategoricalGrid = yBandKey != null;
+
   // ─── 1. X scale ──────────────────────────────────────────────────────
   const xValues = data.map(d => d[xKey]);
   const isNumericX =
@@ -114,7 +127,7 @@ export function computeLayout({
     xScale = scaleBand<string>()
       .domain(xValues.map(String))
       .range([0, width])
-      .padding(0.2);
+      .padding(isCategoricalGrid ? 0 : 0.2);
   }
 
   // ─── 2. Y domain from all series dataKeys ────────────────────────────
@@ -142,27 +155,40 @@ export function computeLayout({
   let yMin = Infinity,
     yMax = -Infinity;
 
-  // Stacked series contribute their per-datum accumulated total. `Number.isFinite`
-  // (not `typeof === 'number'`) so a stray NaN/Infinity can't corrupt the domain
-  // into a NaN/Infinity scale.
+  // Stacked series contribute the full extent of their running cumulative — every
+  // layer boundary, not just the net total — mirroring the d3 stackOffsetNone pass
+  // in §3 that actually draws them. The 0 baseline is included because stacks are
+  // drawn from it. Tracking only the total would let the drawn bars/areas escape
+  // the scale: a mixed-sign stack whose interior peaks exceed the net total, or a
+  // 'data'-baseline stack whose bars start at 0 (below the smallest positive
+  // total), would render outside the y-domain and be clipped. `Number.isFinite`
+  // (not `typeof === 'number'`) keeps a stray NaN/Infinity from corrupting the
+  // domain into a NaN/Infinity scale; a non-finite layer carries the baseline
+  // forward (contributes nothing new) exactly as stackOffsetNone does.
   const stackedKeys = new Set<string>();
   for (const [, keys] of stackGroups) {
     for (const k of keys) {
       stackedKeys.add(k);
     }
     for (const d of data) {
-      let sum = 0;
+      let acc = 0;
+      if (acc < yMin) {
+        yMin = acc;
+      }
+      if (acc > yMax) {
+        yMax = acc;
+      }
       for (const k of keys) {
         const v = d[k];
         if (Number.isFinite(v)) {
-          sum += v as number;
+          acc += v as number;
+          if (acc < yMin) {
+            yMin = acc;
+          }
+          if (acc > yMax) {
+            yMax = acc;
+          }
         }
-      }
-      if (sum > yMax) {
-        yMax = sum;
-      }
-      if (sum < yMin) {
-        yMin = sum;
       }
     }
   }
@@ -239,6 +265,20 @@ export function computeLayout({
   const yScaleBase = scaleLinear().domain(yDomainFinal).range([height, 0]);
   const yScale = applyNice ? yScaleBase.nice() : yScaleBase;
 
+  // ─── 2b. Categorical y band scale ────────────────────────────────────
+  // If any series declares a `yBandKey` (e.g. a heatmap's rows), the y-axis is
+  // categorical: build one band scale over that key's unique values so the
+  // marks and the left axis share the same row layout. The linear yScale above
+  // is left in place but goes unused for these charts.
+  // No band padding: heatmap rows should tile the full plot height edge-to-edge
+  // (the mark's own `cellGap` draws the thin grid lines between cells). Padding
+  // here would inset the grid and leave a sliver at the top/bottom.
+  let yBandScale: ReturnType<typeof scaleBand<string>> | undefined;
+  if (yBandKey != null) {
+    const cats = [...new Set(data.map(d => String(d[yBandKey])))];
+    yBandScale = scaleBand<string>().domain(cats).range([0, height]).padding(0);
+  }
+
   // ─── 3. Stacking ─────────────────────────────────────────────────────
   // Reuses `stackGroups` collected during the domain pass (§2).
   const stackedData = new Map<string, {y0: number; y1: number}[]>();
@@ -276,7 +316,15 @@ export function computeLayout({
   }
 
   // ─── 5. Resolve each series ──────────────────────────────────────────
-  const ctx: SeriesContext = {data, xKey, xScale, yScale, width, height};
+  const ctx: SeriesContext = {
+    data,
+    xKey,
+    xScale,
+    yScale,
+    yBandScale,
+    width,
+    height,
+  };
   const resolved = new Map<string, ResolvedPoint[]>();
 
   // Determine which series is the topmost in each stack group
@@ -320,5 +368,5 @@ export function computeLayout({
     resolved.set(s._uid, points);
   }
 
-  return {xScale, yScale, resolved};
+  return {xScale, yScale, yBandScale, resolved};
 }

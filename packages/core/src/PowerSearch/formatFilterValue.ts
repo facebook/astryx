@@ -12,6 +12,7 @@
 
 import type {OperatorValue, FilterValue, EnumItem} from './types';
 import type {InternalConfig} from './useInternalConfig';
+import type {TranslatorFn} from '../i18n';
 
 function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) {
@@ -50,8 +51,11 @@ function formatRelativeDate(value: string): string {
   return value;
 }
 
-function formatDateRange(_value: {start: unknown; end: unknown}): string {
-  return 'date range';
+function formatDateRange(
+  _value: {start: unknown; end: unknown},
+  t: TranslatorFn,
+): string {
+  return t('@astryx.powersearch.valueEditor.dateRange');
 }
 
 export function formatFilterValue(
@@ -59,6 +63,7 @@ export function formatFilterValue(
   operatorValue: OperatorValue,
   filterValue: FilterValue,
   maxLength: number,
+  t: TranslatorFn,
   timezoneID?: string,
 ): string {
   switch (filterValue.type) {
@@ -101,7 +106,9 @@ export function formatFilterValue(
       if (joined.length <= maxLength) {
         return joined;
       }
-      return `${items.length} items`;
+      return t('@astryx.powersearch.valueEditor.itemsCount', {
+        count: items.length,
+      });
     }
 
     case 'enum_list': {
@@ -118,12 +125,16 @@ export function formatFilterValue(
         if (joined.length <= maxLength) {
           return joined;
         }
-        return `${labels.length} items`;
+        return t('@astryx.powersearch.valueEditor.itemsCount', {
+          count: labels.length,
+        });
       }
       if (items.length === 1) {
         return truncate(items[0], maxLength);
       }
-      return `${items.length} items`;
+      return t('@astryx.powersearch.valueEditor.itemsCount', {
+        count: items.length,
+      });
     }
 
     case 'entity_list': {
@@ -138,7 +149,9 @@ export function formatFilterValue(
       if (joined.length <= maxLength) {
         return joined;
       }
-      return `${entities.length} entities`;
+      return t('@astryx.powersearch.valueEditor.entitiesCount', {
+        count: entities.length,
+      });
     }
 
     case 'time':
@@ -154,7 +167,7 @@ export function formatFilterValue(
       return formatRelativeDate(filterValue.value);
 
     case 'date_range':
-      return formatDateRange(filterValue.value);
+      return formatDateRange(filterValue.value, t);
 
     case 'custom':
       if (operatorValue.type === 'custom') {
@@ -164,7 +177,7 @@ export function formatFilterValue(
 
     case 'nested': {
       const count = filterValue.value.length;
-      return count === 1 ? '1 filter' : `${count} filters`;
+      return t('@astryx.powersearch.valueEditor.filtersCount', {count});
     }
 
     default:

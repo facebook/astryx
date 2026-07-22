@@ -163,6 +163,7 @@ export function CheckboxList({
   className,
   style,
   'data-testid': dataTestId,
+  ...rest
 }: CheckboxListProps) {
   const inputID = useId();
   const labelID = useId();
@@ -234,6 +235,7 @@ export function CheckboxList({
 
   return (
     <Field
+      {...rest}
       ref={ref}
       data-testid={dataTestId}
       label={label}

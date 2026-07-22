@@ -248,6 +248,22 @@ describe('CheckboxInput', () => {
     expect(screen.getByLabelText('Select row')).toBeInTheDocument();
   });
 
+  it('keeps description linked via aria-describedby when isLabelHidden', () => {
+    render(
+      <CheckboxInput
+        label="Select row"
+        isLabelHidden
+        description="Selects this row for bulk actions"
+        value={false}
+        onChange={() => {}}
+      />,
+    );
+    const checkbox = screen.getByRole('checkbox');
+    const description = screen.getByText('Selects this row for bulk actions');
+    expect(description.id).not.toBe('');
+    expect(checkbox.getAttribute('aria-describedby')).toContain(description.id);
+  });
+
   it('shows label visually by default', () => {
     render(
       <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,

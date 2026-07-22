@@ -40,6 +40,7 @@ import {useImageMode} from '../hooks/useImageMode';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 /** Sample the region behind the remove button (20px button, 4px inset, in 64px container). */
 const BUTTON_REGION = {x: 0.5, y: 0.06, width: 0.44, height: 0.44};
@@ -252,6 +253,7 @@ export function Thumbnail({
   ref,
   ...props
 }: ThumbnailProps) {
+  const t = useTranslator();
   const imageMode = useImageMode(src, {region: BUTTON_REGION, fallback: null});
 
   const hasSrc = src != null;
@@ -281,7 +283,7 @@ export function Thumbnail({
     onRemove != null && !isDisabled ? (
       <Button
         icon={<Icon icon="close" size="xsm" />}
-        label={`Remove ${accessibleName}`}
+        label={t('@astryx.thumbnail.remove', {accessibleName})}
         variant="secondary"
         size="sm"
         isIconOnly
@@ -315,7 +317,7 @@ export function Thumbnail({
           <button
             type="button"
             onClick={onClick}
-            aria-label={`Open ${accessibleName}`}
+            aria-label={t('@astryx.thumbnail.open', {accessibleName})}
             {...stylex.props(styles.interactiveButton)}>
             {imageContent}
           </button>

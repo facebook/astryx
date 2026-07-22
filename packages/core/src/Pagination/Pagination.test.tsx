@@ -903,4 +903,23 @@ describe('Pagination', () => {
       ).not.toBeInTheDocument();
     });
   });
+
+  describe('rest forwarding', () => {
+    it('forwards data-testid, id, and aria-* to the root nav', () => {
+      const {container} = render(
+        <Pagination
+          page={1}
+          onChange={() => {}}
+          totalPages={3}
+          data-testid="pager"
+          id="pager-1"
+          aria-describedby="hint"
+        />,
+      );
+      const nav = container.querySelector('nav')!;
+      expect(nav).toHaveAttribute('data-testid', 'pager');
+      expect(nav).toHaveAttribute('id', 'pager-1');
+      expect(nav).toHaveAttribute('aria-describedby', 'hint');
+    });
+  });
 });

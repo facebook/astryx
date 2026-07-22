@@ -54,20 +54,15 @@ function toGradientCSS(colors: string[]): string {
  *
  * @example
  * ```
- * // Discrete
  * <ChartLegend items={[
  *   {label: 'Revenue', color: colors[0]},
  *   {label: 'Expenses', color: colors[1]},
  * ]} />
- *
- * // Continuous — pipe useChartColors() directly
  * <ChartLegend
  *   gradient={useChartColors().sequential.blue(5)}
  *   domain={[0, 100]}
  *   label="Temperature"
  * />
- *
- * // Diverging
  * <ChartLegend
  *   gradient={useChartColors().diverging.coldHot(7)}
  *   domain={[-50, 50]}

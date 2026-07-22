@@ -37,6 +37,7 @@ import type {BaseProps} from '../BaseProps';
 import {useScrollSpy} from './useScrollSpy';
 import type {OutlineItem} from './types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export type {OutlineItem} from './types';
 
@@ -236,7 +237,7 @@ export function Outline({
   items,
   activeId,
   onActiveIdChange,
-  label = 'Table of contents',
+  label: labelFromProps,
   density = 'default',
   xstyle,
   className,
@@ -245,6 +246,8 @@ export function Outline({
   'data-testid': testId,
   ...props
 }: OutlineProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.outline.label');
   const rootRef = useRef<HTMLElement | null>(null);
   const LinkComponent = useLinkComponent();
   const isControlled = activeId !== undefined;

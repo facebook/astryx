@@ -430,7 +430,6 @@ const styles = stylex.create({
  *
  * @example
  * ```
- * // Generic icon + semantic color
  * <Step step={1} label="Payment" status="error" icon={<Icon icon="warning" />} />
  * ```
  */

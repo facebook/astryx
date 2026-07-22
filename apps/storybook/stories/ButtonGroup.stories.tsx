@@ -5,6 +5,7 @@ import {ButtonGroup} from '@astryxdesign/core/ButtonGroup';
 import {Button} from '@astryxdesign/core/Button';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Icon} from '@astryxdesign/core/Icon';
+import {DropdownMenu} from '@astryxdesign/core/DropdownMenu';
 import {
   ClipboardDocumentIcon,
   ScissorsIcon,
@@ -36,10 +37,7 @@ const iconSize = {width: 16, height: 16} as const;
 export const Horizontal: Story = {
   render: () => (
     <ButtonGroup label="Clipboard actions">
-      <Button
-        label="Copy"
-        icon={<ClipboardDocumentIcon style={iconSize} />}
-      />
+      <Button label="Copy" icon={<ClipboardDocumentIcon style={iconSize} />} />
       <Button label="Cut" icon={<ScissorsIcon style={iconSize} />} />
       <Button label="Paste" icon={<ClipboardIcon style={iconSize} />} />
     </ButtonGroup>
@@ -57,21 +55,21 @@ export const Vertical: Story = {
   ),
 };
 
-/** Icon-only button group for compact toolbars. */
+/**
+ * Icon-only button group for compact toolbars.
+ *
+ * The trailing button carries a tooltip, which renders an invisible layer after
+ * it in the DOM — its outer corners must still round (#2508).
+ */
 export const IconOnly: Story = {
   render: () => (
     <ButtonGroup label="Text formatting">
-      <IconButton
-        label="Bold"
-        icon={<Icon icon={BoldIcon} size="sm" />}
-      />
-      <IconButton
-        label="Italic"
-        icon={<Icon icon={ItalicIcon} size="sm" />}
-      />
+      <IconButton label="Bold" icon={<Icon icon={BoldIcon} size="sm" />} />
+      <IconButton label="Italic" icon={<Icon icon={ItalicIcon} size="sm" />} />
       <IconButton
         label="Underline"
         icon={<Icon icon={UnderlineIcon} size="sm" />}
+        tooltip="Underline"
       />
     </ButtonGroup>
   ),
@@ -155,6 +153,29 @@ export const Mixed: Story = {
       <IconButton
         label="More options"
         icon={<ChevronDownIcon style={iconSize} />}
+      />
+    </ButtonGroup>
+  ),
+};
+
+/**
+ * A DropdownMenu composes as a group member — the split-button pattern, with no
+ * dedicated primitive. Its popover is an invisible DOM sibling after the
+ * trigger, so the trailing corner must still round (#2508).
+ */
+export const WithDropdownMenu: Story = {
+  render: () => (
+    <ButtonGroup label="Approve action">
+      <Button label="Allow once" variant="primary" />
+      <DropdownMenu
+        hasChevron={false}
+        button={{
+          label: 'Allow options',
+          variant: 'primary',
+          isIconOnly: true,
+          icon: <Icon icon="chevronDown" />,
+        }}
+        items={[{label: 'Allow for 30 minutes'}, {label: 'Always allow'}]}
       />
     </ButtonGroup>
   ),

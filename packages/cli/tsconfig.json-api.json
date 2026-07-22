@@ -5,7 +5,8 @@
     "allowJs": true,
     "checkJs": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "customConditions": ["source"]
   },
   "include": [
     "src/types/**/*.d.ts",

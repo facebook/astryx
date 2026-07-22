@@ -1,5 +1,6 @@
 # Default reviewers for the Astryx repository
 # See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Cindy and Dream review everything by default
-* @cixzhang @imdreamrunner
+* @cixzhang @imdreamrunner @ejhammond
+
+/packages/cli/ @josephfarina

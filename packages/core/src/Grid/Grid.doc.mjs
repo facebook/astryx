@@ -60,28 +60,28 @@ export const docs = {
     },
     {
       name: 'gap',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: 'Spacing between all items.',
     },
     {
       name: 'rowGap',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: 'Row spacing; overrides `gap` for the row axis.',
     },
     {
       name: 'columnGap',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: 'Column spacing; overrides `gap` for the column axis.',
     },
     {
       name: 'align',
-      type: 'GridAlignment',
+      type: "'start' | 'center' | 'end' | 'stretch'",
       description: 'Vertical alignment of items.',
       default: "'stretch'",
     },
     {
       name: 'justify',
-      type: 'GridAlignment',
+      type: "'start' | 'center' | 'end' | 'stretch'",
       description: 'Horizontal alignment of items.',
       default: "'stretch'",
     },

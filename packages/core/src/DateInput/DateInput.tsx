@@ -137,6 +137,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export interface DateInputProps extends Omit<
   BaseProps,
@@ -311,7 +312,7 @@ export function DateInput({
   min,
   max,
   dateConstraints,
-  placeholder = 'Select a date',
+  placeholder: placeholderFromProps,
   size: sizeProp,
   status,
   labelTooltip,
@@ -324,6 +325,9 @@ export function DateInput({
   ref,
   ...rest
 }: DateInputProps) {
+  const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.dateInput.placeholder');
   const size = useSize(sizeProp, 'md');
   const id = useId();
   const inputLabelID = useId();
@@ -415,8 +419,8 @@ export function DateInput({
       : parseDateInput(pendingInput) !== null;
 
   const popover = usePopover({
-    dialogLabel: 'Choose date',
-    closeButtonLabel: 'Close calendar',
+    dialogLabel: t('@astryx.dateInput.dialogLabel'),
+    closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
     onHide: () => inputRef.current?.focus(),
   });
 
@@ -582,7 +586,11 @@ export function DateInput({
         type="button"
         onClick={handleToggle}
         disabled={isEffectivelyDisabled}
-        aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
+        aria-label={
+          popover.isOpen
+            ? t('@astryx.dateInput.toggleCalendarClose')
+            : t('@astryx.dateInput.openCalendar')
+        }
         {...stylex.props(
           styles.iconButton,
           isEffectivelyDisabled && styles.iconButtonDisabled,
@@ -637,7 +645,7 @@ export function DateInput({
         <button
           type="button"
           onClick={handleClear}
-          aria-label={`Clear ${label}`}
+          aria-label={t('@astryx.dateInput.clear', {label})}
           {...stylex.props(styles.iconButton)}>
           <Icon icon="close" size="sm" color="secondary" />
         </button>

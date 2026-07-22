@@ -1,0 +1,8 @@
+# Runtime artifacts default to os.tmpdir()/astryx-purity (out of the repo).
+# These patterns only matter if you pass --out pointing inside the repo.
+sandbox/
+results/
+runs/
+purity-config-*.json
+purity-summary-*.json
+*.log

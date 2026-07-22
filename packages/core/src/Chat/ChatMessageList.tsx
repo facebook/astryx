@@ -210,6 +210,7 @@ export function ChatMessageList({
   style,
   'data-testid': testId,
   ref,
+  ...rest
 }: ChatMessageListProps) {
   const layoutContext = useChatLayoutContext();
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -264,6 +265,7 @@ export function ChatMessageList({
   return (
     <ChatListContext value={contextValue}>
       <div
+        {...rest}
         ref={ref}
         role="log"
         aria-live="polite"

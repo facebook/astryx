@@ -229,6 +229,17 @@ describe('discoverPosts (temp fixtures)', () => {
     expect(discoverPosts(path.join(dir, 'nope'))).toEqual([]);
   });
 
+  it('discovers posts with CRLF line endings', () => {
+    write('windows.md', fm({title: 'Windows'}).replace(/\n/g, '\r\n'));
+    expect(discoverPosts(dir)).toEqual([
+      expect.objectContaining({
+        slug: 'windows',
+        title: 'Windows',
+        body: 'Body content here.',
+      }),
+    ]);
+  });
+
   it('discovers posts and sorts latest-first', () => {
     write('older.md', fm({date: '2026-01-01', title: 'Older'}));
     write('newer.md', fm({date: '2026-06-01', title: 'Newer'}));

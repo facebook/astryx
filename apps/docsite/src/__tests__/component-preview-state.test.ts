@@ -128,6 +128,40 @@ describe('component detail preview state', () => {
     expect(getMissingRequiredProps(knobs, state)).toEqual([]);
   });
 
+  it('seeds DropdownMenu items from playground defaults so the preview is not empty', () => {
+    const knobs = pickPrimaryProps('DropdownMenu', [
+      prop({name: 'button', type: 'DropdownMenuButtonProps'}),
+      prop({name: 'items', type: 'DropdownMenuOption[]', required: true}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {
+        button: {label: 'Actions'},
+        items: [{label: 'Edit'}, {label: 'Duplicate'}, {label: 'Delete'}],
+      },
+    });
+
+    expect(Array.isArray(state.items)).toBe(true);
+    expect((state.items as unknown[]).length).toBe(3);
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
+  it('seeds DropdownMenuItem label and description from playground defaults', () => {
+    const knobs = pickPrimaryProps('DropdownMenuItem', [
+      prop({name: 'icon', type: 'IconType'}),
+      prop({name: 'label', type: 'ReactNode'}),
+      prop({name: 'description', type: 'ReactNode'}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {label: 'Edit', description: 'Modify this item'},
+    });
+
+    expect(state.label).toBe('Edit');
+    expect(state.description).toBe('Modify this item');
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
   it("satisfies Icon's required, non-generatable icon prop via playground defaults", () => {
     const knobs = pickPrimaryProps('Icon', [
       prop({
@@ -350,6 +384,102 @@ describe('component detail preview state', () => {
     });
     (runtimeState.onOpenChange as (isOpen: boolean) => void)(true);
     expect(onPropChange).toHaveBeenCalledWith('isOpen', true);
+  });
+
+  it('bridges a required onOpenChange knob for overlay previews via the knob path', () => {
+    // Lightbox shape: isOpen/onOpenChange/media are all REQUIRED — the
+    // MobileNav test above covers the optional-props variant of this bridge.
+    const knobs = pickPrimaryProps('Lightbox', [
+      prop({name: 'isOpen', type: 'boolean', required: true}),
+      prop({
+        name: 'onOpenChange',
+        type: '(isOpen: boolean) => void',
+        required: true,
+      }),
+      prop({
+        name: 'media',
+        type: 'LightboxMedia | LightboxMedia[]',
+        required: true,
+      }),
+    ]);
+
+    const playground = {
+      overlay: true,
+      defaults: {
+        isOpen: false,
+        media: {src: 'https://example.com/scene.png', alt: 'Scene'},
+      },
+    };
+    const state = buildInitialState(knobs, playground);
+
+    // The explicit isOpen: false survives (not eaten by required fallbacks),
+    // media is satisfied from defaults, and the stage starts closed.
+    expect(state.isOpen).toBe(false);
+    expect(state.media).toMatchObject({alt: 'Scene'});
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+    expect(isOverlayPreviewClosed(playground, state)).toBe(true);
+
+    // The Open-preview trigger and the component's own Esc/backdrop close both
+    // round-trip through the bridged onOpenChange.
+    const onPropChange = vi.fn();
+    const runtimeState = buildRuntimePreviewState(state, onPropChange, {
+      knobs,
+      canControlOpenState: true,
+    });
+    (runtimeState.onOpenChange as (isOpen: boolean) => void)(true);
+    expect(onPropChange).toHaveBeenCalledWith('isOpen', true);
+    expect(isOverlayPreviewClosed(playground, {...state, isOpen: true})).toBe(
+      false,
+    );
+  });
+
+  it('bridges gallery onIndexChange only when index is seeded in state', () => {
+    const knobs = pickPrimaryProps('Lightbox', [
+      prop({name: 'isOpen', type: 'boolean', required: true}),
+      prop({
+        name: 'onOpenChange',
+        type: '(isOpen: boolean) => void',
+        required: true,
+      }),
+      prop({
+        name: 'media',
+        type: 'LightboxMedia | LightboxMedia[]',
+        required: true,
+      }),
+      prop({name: 'index', type: 'number'}),
+      prop({name: 'onIndexChange', type: '(index: number) => void'}),
+    ]);
+    const media = [
+      {src: 'https://example.com/one.png', alt: 'One'},
+      {src: 'https://example.com/two.png', alt: 'Two'},
+    ];
+    const onPropChange = vi.fn();
+
+    // Without an index default, `index` is absent from state, so the gallery
+    // callback is not bridged — prev/next inside the open preview cannot
+    // update playground state.
+    const state = buildInitialState(knobs, {
+      overlay: true,
+      defaults: {isOpen: false, media},
+    });
+    expect(state.index).toBeUndefined();
+    const runtimeState = buildRuntimePreviewState(state, onPropChange, {
+      knobs,
+      canControlOpenState: true,
+    });
+    expect(runtimeState.onIndexChange).toBeUndefined();
+
+    // Seeding index in defaults opts the gallery into the bridge.
+    const seeded = buildInitialState(knobs, {
+      overlay: true,
+      defaults: {isOpen: false, index: 0, media},
+    });
+    const seededRuntime = buildRuntimePreviewState(seeded, onPropChange, {
+      knobs,
+      canControlOpenState: true,
+    });
+    (seededRuntime.onIndexChange as (index: number) => void)(1);
+    expect(onPropChange).toHaveBeenCalledWith('index', 1);
   });
 
   it('flags closed overlay previews only for overlay-mode playgrounds', () => {

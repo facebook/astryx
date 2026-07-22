@@ -10,9 +10,12 @@
 'use client';
 
 import {createElement, useState} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {Heading, Text} from '@astryxdesign/core/Text';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Divider} from '@astryxdesign/core';
+import {Card} from '@astryxdesign/core/Card';
+import {Popover} from '@astryxdesign/core/Popover';
 import {Switch} from '@astryxdesign/core/Switch';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {NumberInput} from '@astryxdesign/core/NumberInput';
@@ -24,14 +27,51 @@ import {Minus, Plus} from 'lucide-react';
 import {useMediaQuery} from '@astryxdesign/core/hooks';
 import {allSyntaxPresets} from '@astryxdesign/core/theme/syntax';
 import {themeObjectsFull} from '../../generated/themeRegistry';
-import {coerceEnumOption, type PropControlDescriptor} from './parsePropType';
+import {
+  coerceEnumOption,
+  splitTypeRefSegments,
+  type PropControlDescriptor,
+} from './parsePropType';
 import type {KnobProp} from './InteractivePreview';
 import {resolveElementDescriptor} from './resolveElements';
 import type {
   ElementDescriptor,
   PropDoc,
+  TypeDefinition,
 } from '../../generated/componentRegistry';
+import {CodeExampleBlock} from '../CodeExampleBlock';
 import {MarkdownText} from '../MarkdownText';
+
+const styles = stylex.create({
+  // Inline link treatment for type-name definition triggers, mirroring the
+  // authored-docs link pattern (docs/inlineMarkdown.tsx) on a button element
+  // so the trigger stays keyboard-focusable with a visible focus ring.
+  typeRefTrigger: {
+    backgroundColor: 'transparent',
+    borderStyle: 'none',
+    padding: 0,
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    lineHeight: 'inherit',
+    cursor: 'pointer',
+    color: 'var(--color-text-accent)',
+    textDecorationLine: 'underline',
+    textDecorationThickness: '1px',
+    textUnderlineOffset: '0.16em',
+    transition: 'color 120ms ease, text-decoration-color 120ms ease',
+    ':hover': {
+      '@media (hover: hover)': {
+        color: 'var(--color-accent)',
+        textDecorationThickness: '2px',
+      },
+    },
+    ':focus-visible': {
+      borderRadius: 'var(--radius-sm)',
+      outline: '2px solid var(--color-accent)',
+      outlineOffset: 2,
+    },
+  },
+});
 
 function formatType(type: string, defaultValue?: string): React.ReactNode {
   const parts = type.split(/\s*\|\s*/);
@@ -62,6 +102,86 @@ function formatType(type: string, defaultValue?: string): React.ReactNode {
     );
   }
   return type;
+}
+
+/**
+ * Inline definition trigger for a type name in the type column: the name
+ * itself renders as a link-styled button that opens the extracted declaration
+ * so readers can inspect the shape without leaving the props table (#2682).
+ * The popover mirrors the Popover + Card + CodeExampleBlock pattern used by
+ * PackageActions.
+ */
+function TypeDefinitionTrigger({def}: {def: TypeDefinition}) {
+  return (
+    <Popover
+      width="min(480px, calc(100vw - 32px))"
+      label={`${def.name} type definition`}
+      content={
+        <VStack gap={1}>
+          <Text type="supporting" color="secondary">
+            {def.sourcePath}
+          </Text>
+          <Card padding={0}>
+            <CodeExampleBlock
+              code={def.definition}
+              language="typescript"
+              size="sm"
+              hasCopyButton
+              maxHeight={320}
+              width="100%"
+            />
+          </Card>
+        </VStack>
+      }>
+      <button type="button" {...stylex.props(styles.typeRefTrigger)}>
+        {def.name}
+      </button>
+    </Popover>
+  );
+}
+
+/**
+ * Type-column text for a prop. When the documented type references named
+ * types exported from the component's package (e.g. `SearchSource<T>`), each
+ * referenced name becomes a {@link TypeDefinitionTrigger}; surrounding type
+ * syntax (generics punctuation, unions) stays plain text. Props with no
+ * resolved references keep the plain formatType rendering.
+ */
+function PropTypeText({
+  prop,
+  typeDefs,
+}: {
+  prop: PropDoc;
+  typeDefs: TypeDefinition[];
+}) {
+  const defs = (prop.typeRefs ?? [])
+    .map(name => typeDefs.find(def => def.name === name))
+    .filter(def => def != null);
+  if (defs.length === 0) {
+    return <>{formatType(prop.type, prop.default)}</>;
+  }
+
+  const segments = splitTypeRefSegments(
+    prop.type,
+    defs.map(def => def.name),
+  );
+  return (
+    <>
+      {segments.map((segment, i) => {
+        const def = segment.isRef
+          ? defs.find(d => d.name === segment.text)
+          : undefined;
+        return def ? (
+          <TypeDefinitionTrigger key={i} def={def} />
+        ) : (
+          <span key={i}>{segment.text}</span>
+        );
+      })}
+      {prop.default != null && (
+        <span style={{opacity: 0.6}}> (default: {prop.default})</span>
+      )}
+    </>
+  );
 }
 
 function resolveSlotElement(
@@ -468,12 +588,14 @@ function InlineControl({
 
 function PropRow({
   prop,
+  typeDefs,
   knob,
   value,
   onChange,
   isMobile,
 }: {
   prop: PropDoc;
+  typeDefs: TypeDefinition[];
   knob?: KnobProp;
   value?: unknown;
   onChange?: (next: unknown) => void;
@@ -486,7 +608,7 @@ function PropRow({
           {prop.name}
         </Text>
         <Text type="code" display="block">
-          {formatType(prop.type, prop.default)}
+          <PropTypeText prop={prop} typeDefs={typeDefs} />
         </Text>
         {prop.description != null && prop.description !== '' && (
           <MarkdownText type="body" color="secondary">
@@ -514,7 +636,7 @@ function PropRow({
       </div>
       <div style={{flex: 1}}>
         <Text type="code" display="block">
-          {formatType(prop.type, prop.default)}
+          <PropTypeText prop={prop} typeDefs={typeDefs} />
         </Text>
         {prop.description != null && prop.description !== '' && (
           <MarkdownText type="body" color="secondary" style={{marginTop: 6}}>
@@ -538,6 +660,7 @@ function PropRow({
 
 interface PlaygroundPropsTableProps {
   props: PropDoc[];
+  typeDefs: TypeDefinition[];
   knobs: KnobProp[];
   state: Record<string, unknown>;
   onPropChange: (name: string, value: unknown) => void;
@@ -545,6 +668,7 @@ interface PlaygroundPropsTableProps {
 
 export function PlaygroundPropsTable({
   props,
+  typeDefs,
   knobs,
   state,
   onPropChange,
@@ -569,6 +693,7 @@ export function PlaygroundPropsTable({
                 <Divider />
                 <PropRow
                   prop={prop}
+                  typeDefs={typeDefs}
                   knob={knobMap.get(prop.name)}
                   value={state[prop.name]}
                   onChange={next => onPropChange(prop.name, next)}
@@ -590,6 +715,7 @@ export function PlaygroundPropsTable({
                 <Divider />
                 <PropRow
                   prop={prop}
+                  typeDefs={typeDefs}
                   knob={knobMap.get(prop.name)}
                   value={state[prop.name]}
                   onChange={next => onPropChange(prop.name, next)}

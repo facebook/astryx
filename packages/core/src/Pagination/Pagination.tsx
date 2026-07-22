@@ -39,6 +39,7 @@ import {useListFocus} from '../hooks/useListFocus';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n/useTranslator';
 
 // =============================================================================
 // Types
@@ -344,14 +345,23 @@ export function Pagination({
   siblingCount = 1,
   size = 'md',
   isDisabled = false,
-  label = 'Pagination',
+  label: labelFromProps,
   'data-testid': testId,
   xstyle,
   className,
   style,
   ref,
+  ...rest
 }: PaginationProps) {
   const [, startTransition] = useTransition();
+
+  // Resolve system strings once per render. Prop overrides win.
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.pagination.label');
+  const previousLabel = t('@astryx.pagination.previous');
+  const nextLabel = t('@astryx.pagination.next');
+  const pageIndicatorsLabel = t('@astryx.pagination.pageIndicators');
+  const itemsPerPageLabel = t('@astryx.pagination.itemsPerPage');
 
   // pageSize is typed as number, so 0, NaN, and negatives are valid at the
   // type level but yield Infinity/NaN page counts, and
@@ -417,8 +427,11 @@ export function Pagination({
     onChange(newPage);
     announce(
       computedTotalPages != null
-        ? `Page ${newPage} of ${computedTotalPages}`
-        : `Page ${newPage}`,
+        ? t('@astryx.pagination.pageOfTotal', {
+            current: newPage,
+            total: computedTotalPages,
+          })
+        : t('@astryx.pagination.pageAnnounce', {current: newPage}),
     );
     startTransition(async () => {
       setOptimisticPage(newPage);
@@ -510,8 +523,10 @@ export function Pagination({
               return (
                 <Button
                   key={item}
-                  label={`Go to page ${item}`}
-                  aria-label={`Go to page ${item}`}
+                  label={t('@astryx.pagination.goToPage', {page: item})}
+                  aria-label={t('@astryx.pagination.goToPage', {
+                    page: item,
+                  })}
                   variant="ghost"
                   size={buttonSize}
                   onClick={() => handlePageChange(item)}
@@ -533,7 +548,11 @@ export function Pagination({
         return (
           <span {...stylex.props(styles.infoText)}>
             <Text type="body" size="sm" color="secondary">
-              {`${rangeStart}\u2013${rangeEnd} of ${totalItems}`}
+              {t('@astryx.pagination.count', {
+                from: rangeStart,
+                to: rangeEnd,
+                total: totalItems,
+              })}
             </Text>
           </span>
         );
@@ -546,7 +565,10 @@ export function Pagination({
         return (
           <span {...stylex.props(styles.infoText)}>
             <Text type="body" size="sm" color="secondary">
-              {`Page ${optimisticPage} of ${computedTotalPages}`}
+              {t('@astryx.pagination.pageOfTotal', {
+                current: optimisticPage,
+                total: computedTotalPages,
+              })}
             </Text>
           </span>
         );
@@ -562,7 +584,7 @@ export function Pagination({
             ref={dotsListRef}
             {...stylex.props(styles.dotsContainer)}
             role="group"
-            aria-label="Page indicators"
+            aria-label={pageIndicatorsLabel}
             onKeyDown={handleDotsKeyDown}
             onFocus={handleDotsFocus}>
             {Array.from({length: computedTotalPages}, (_, i) => {
@@ -572,7 +594,9 @@ export function Pagination({
                   key={i + 1}
                   type="button"
                   data-page={i + 1}
-                  aria-label={`Go to page ${i + 1}`}
+                  aria-label={t('@astryx.pagination.goToPage', {
+                    page: i + 1,
+                  })}
                   aria-current={isActive ? 'page' : undefined}
                   // The active dot is the single roving tab stop; useListFocus
                   // maintains it as focus and the active page move.
@@ -610,19 +634,20 @@ export function Pagination({
   return (
     <nav
       ref={ref}
-      aria-label={label}
-      data-testid={testId}
       {...mergeProps(
         themeProps('pagination', {variant, size}),
         stylex.props(styles.root, xstyle),
         className,
         style,
-      )}>
+      )}
+      {...rest}
+      aria-label={label}
+      data-testid={testId}>
       {pageSizeOptions != null && pageSizeOptions.length > 0 && (
         <div {...stylex.props(styles.pageSizeSelector)}>
           <div {...stylex.props(styles.pageSizeSelectorControl)}>
             <Selector
-              label="Items per page"
+              label={itemsPerPageLabel}
               isLabelHidden
               options={pageSizeOptions.map(opt => String(opt))}
               value={String(pageSize)}
@@ -635,7 +660,7 @@ export function Pagination({
       )}
       <div {...stylex.props(styles.controls)}>
         <Button
-          label="Go to previous page"
+          label={previousLabel}
           variant="ghost"
           size={buttonSize}
           icon={<Icon icon="chevronLeft" size={isSm ? 'sm' : 'md'} />}
@@ -647,7 +672,7 @@ export function Pagination({
         {renderIndicator()}
 
         <Button
-          label="Go to next page"
+          label={nextLabel}
           variant="ghost"
           size={buttonSize}
           icon={<Icon icon="chevronRight" size={isSm ? 'sm' : 'md'} />}

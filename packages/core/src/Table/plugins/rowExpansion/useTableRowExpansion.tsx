@@ -17,6 +17,7 @@ import * as stylex from '@stylexjs/stylex';
 import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {resolveContextActions} from '../../tableContextMenu';
+import {useTranslator} from '../../../i18n';
 import type {
   TablePlugin,
   TableColumn,
@@ -109,7 +110,7 @@ export interface UseTableRowExpansionStateResult<
  * computing the expand-all state.
  *
  * @example
- * ```tsx
+ * ```
  * const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
  * const {data, expansionConfig} = useTableRowExpansionState({
  *   baseData: tree,
@@ -356,6 +357,7 @@ function ExpansionChevron({
 export function useTableRowExpansion<T extends Record<string, unknown>>(
   config: UseTableRowExpansionConfig<T>,
 ): TablePlugin<T> {
+  const t = useTranslator();
   const {
     expandedKeys,
     onToggle,
@@ -397,7 +399,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
           <ExpansionChevron
             isExpanded={isExpanded}
             onToggle={() => onToggle(key)}
-            ariaLabel={isExpanded ? 'Collapse row' : 'Expand row'}
+            ariaLabel={isExpanded ? t('@astryx.tableRowExpansion.collapseRow') : t('@astryx.tableRowExpansion.expandRow')}
           />
         );
       },
@@ -409,6 +411,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       getChildren,
       getIsItemExpandable,
       getDepth,
+      t,
     ],
   );
 
@@ -436,10 +439,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                 ? originalRenderCell(item)
                 : String(
                     ((item as Record<string, unknown>)[col.key] as
-                      | string
-                      | number
-                      | null
-                      | undefined) ?? '',
+                      string | number | null | undefined) ?? '',
                   );
 
               if (depth === 0) {
@@ -457,7 +457,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                 <ExpansionChevron
                   isExpanded={isExpanded}
                   onToggle={() => onToggle(key)}
-                  ariaLabel={isExpanded ? 'Collapse row' : 'Expand row'}
+                  ariaLabel={isExpanded ? t('@astryx.tableRowExpansion.collapseRow') : t('@astryx.tableRowExpansion.expandRow')}
                 />
               ) : (
                 <span {...stylex.props(expansionStyles.placeholder)} />
@@ -499,7 +499,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                 {...stylex.props(expansionStyles.chevronButton)}
                 onClick={() => onToggleExpandAll(!allExpanded)}
                 aria-label={
-                  allExpanded ? 'Collapse all rows' : 'Expand all rows'
+                  allExpanded ? t('@astryx.tableRowExpansion.collapseAllRows') : t('@astryx.tableRowExpansion.expandAllRows')
                 }>
                 <span
                   {...stylex.props(
@@ -570,7 +570,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
             ...props.htmlProps,
             onClick: () => onToggle(key),
           },
-          styles: [...props.styles, expansionStyles.clickableRow],
+          xstyle: [...props.xstyle, expansionStyles.clickableRow],
         };
       },
     }),
@@ -585,6 +585,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       isAllExpanded,
       onToggleExpandAll,
       expansionColumn,
+      t,
     ],
   );
 }

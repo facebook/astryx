@@ -34,6 +34,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps, mergeRefs} from '../utils';
 import type {SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export interface CarouselProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -256,13 +257,15 @@ export function Carousel({
   hasEdgeFade = true,
   hasSnap = false,
   padding,
-  'aria-label': ariaLabel = 'Carousel',
+  'aria-label': ariaLabelFromProps,
   xstyle,
   className,
   style,
   'data-testid': testId,
   ...htmlProps
 }: CarouselProps) {
+  const t = useTranslator();
+  const ariaLabel = ariaLabelFromProps ?? t('@astryx.carousel.label');
   const scrollElRef = useRef<HTMLElement | null>(null);
   const {scrollRef, overflowStart, overflowEnd} = useScrollOverflow();
 
@@ -318,6 +321,8 @@ export function Carousel({
           : null
     : null;
 
+  // Self-authored position styles (positioning: 'custom' below): a cover
+  // centered on the anchor, sized to it — direction-neutral by construction.
   const coverStyle: React.CSSProperties = {
     positionArea: 'center',
     width: 'anchor-size(width)',
@@ -328,16 +333,16 @@ export function Carousel({
     <div
       ref={mergeRefs(ref, layer.ref as React.Ref<HTMLDivElement>)}
       data-testid={testId}
-      role="region"
-      aria-label={ariaLabel}
-      aria-roledescription="carousel"
+      {...htmlProps}
       {...mergeProps(
         themeProps('carousel'),
         stylex.props(styles.root, xstyle),
         className,
         style,
       )}
-      {...htmlProps}>
+      role="region"
+      aria-label={ariaLabel}
+      aria-roledescription="carousel">
       <div
         ref={composedRef}
         tabIndex={0}
@@ -364,7 +369,7 @@ export function Carousel({
               )}>
               <Button
                 icon={<Icon icon="chevronLeft" size="xsm" />}
-                label="Scroll left"
+                label={t('@astryx.carousel.scrollLeft')}
                 variant="ghost"
                 size="sm"
                 isIconOnly
@@ -385,7 +390,7 @@ export function Carousel({
               )}>
               <Button
                 icon={<Icon icon="chevronRight" size="xsm" />}
-                label="Scroll right"
+                label={t('@astryx.carousel.scrollRight')}
                 variant="ghost"
                 size="sm"
                 isIconOnly
@@ -398,8 +403,7 @@ export function Carousel({
             </div>
           </>,
           {
-            placement: 'below',
-            alignment: 'center',
+            positioning: 'custom',
             style: coverStyle,
             xstyle: styles.buttonOverlay,
           },

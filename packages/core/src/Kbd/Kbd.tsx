@@ -188,10 +188,10 @@ export function Kbd({keys, ref, xstyle, className, style, ...rest}: KbdProps) {
 
   return (
     <span
+      {...rest}
       ref={ref}
       role="img"
       aria-label={accessibleName}
-      {...rest}
       {...mergeProps(
         themeProps('kbd'),
         stylex.props(styles.wrapper, xstyle),

@@ -54,6 +54,7 @@ import {getIcon} from '../Icon/globalIconRegistry';
 import {useSideNavRenderMode} from './SideNavRenderContext';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -356,6 +357,7 @@ export function SideNavItem({
   'data-testid': testId,
   ref,
 }: SideNavItemProps) {
+  const t = useTranslator();
   const {isCollapsed} = useSideNavCollapse();
   const renderMode = useSideNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
@@ -626,7 +628,7 @@ export function SideNavItem({
         <button
           type="button"
           onClick={handleToggleClick}
-          aria-label={isItemCollapsed ? `Expand ${label}` : `Collapse ${label}`}
+          aria-label={isItemCollapsed ? t('@astryx.sideNavItem.expand', {label}) : t('@astryx.sideNavItem.collapse', {label})}
           aria-expanded={!isItemCollapsed}
           aria-controls={`${id}-children`}
           {...stylex.props(styles.expandToggle)}>

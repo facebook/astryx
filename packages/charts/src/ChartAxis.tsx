@@ -85,10 +85,24 @@ export function ChartAxis({
   // Tick marks need an axis line to anchor against; force it on when ticks
   // are enabled so the two visuals stay coherent.
   const renderAxisLine = showAxisLine || showTicks;
-  const {width, height, xScale, yScale} = useChart();
+  const {width, height, xScale, yScale, yBandScale} = useChart();
 
   const isHorizontal = position === 'top' || position === 'bottom';
-  const scale = isHorizontal ? xScale : yScale;
+  // A categorical y-axis (e.g. heatmap rows) is exposed as `yBandScale`; prefer
+  // it over the linear `yScale` so a left/right axis renders the row categories
+  // (days) aligned to each band instead of meaningless value ticks.
+  const scale = isHorizontal ? xScale : (yBandScale ?? yScale);
+
+  // Sanitize the tick count before it reaches d3. `.ticks()` targets ~N ticks
+  // and allocates an array that large, so a huge N throws `RangeError: Invalid
+  // array length` and crashes the render; a non-finite or negative N would
+  // otherwise blank the axis. Clamp to a sane integer (0 still means "no
+  // ticks") and fall back to the default for invalid input. Shared by tick
+  // generation and the auto formatter so the two stay in sync.
+  const safeTickCount =
+    Number.isFinite(tickCount) && tickCount >= 0
+      ? Math.min(Math.floor(tickCount), 1000)
+      : 5;
 
   // Default label formatter. For continuous (linear/time) scales, use d3's own
   // tick formatter so numbers get sensible precision (no floating-point dust
@@ -100,9 +114,9 @@ export function ChartAxis({
     }
     const continuous = scale as
       ScaleLinear<number, number> | ScaleTime<number, number>;
-    const fmt = continuous.tickFormat(tickCount);
+    const fmt = continuous.tickFormat(safeTickCount);
     return (v: unknown) => fmt(v as number & Date);
-  }, [tickFormat, scale, tickCount]);
+  }, [tickFormat, scale, safeTickCount]);
 
   const format = useCallback(
     (value: unknown): string => {
@@ -124,7 +138,7 @@ export function ChartAxis({
     } else {
       const linearScale = scale as
         ScaleLinear<number, number> | ScaleTime<number, number>;
-      allTicks = linearScale.ticks(tickCount).map(d => ({
+      allTicks = linearScale.ticks(safeTickCount).map(d => ({
         value: d,
         offset: linearScale(d as number & Date),
       }));
@@ -156,7 +170,7 @@ export function ChartAxis({
     }
 
     return allTicks;
-  }, [scale, tickCount, maxTicks, isHorizontal, width, height, format]);
+  }, [scale, safeTickCount, maxTicks, isHorizontal, width, height, format]);
 
   const transform =
     position === 'bottom'
@@ -168,7 +182,10 @@ export function ChartAxis({
   // For the bottom axis, draw the axis line at y=0 when the domain spans
   // negative values (so the axis line still represents zero, not the chart edge).
   const axisLineY = (() => {
-    if (position !== 'bottom') {
+    // Categorical y (e.g. heatmap rows): there is no meaningful zero, and the
+    // linear yScale is degenerate — anchor the bottom edge line to the plot edge
+    // so it frames the grid instead of cutting across the cells.
+    if (position !== 'bottom' || yBandScale) {
       return 0;
     }
     const domain = yScale.domain();

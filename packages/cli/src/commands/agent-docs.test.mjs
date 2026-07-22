@@ -43,6 +43,26 @@ describe('generateCompressedIndex', () => {
     expect(result).toMatch(/never override --color-/);
   });
 
+  it('includes the post-generation self-check rule', () => {
+    const result = generateCompressedIndex('1.0.0');
+    expect(result).toContain('SELF-CHECK before you finish');
+    expect(result).toMatch(/re-read the file/);
+    expect(result).toMatch(/don't hand-roll CSS/);
+  });
+
+  it('tailors the self-check to the styling system (xstyle for StyleX, not className for Tailwind)', () => {
+    // StyleX path: className/inline style are veers; the fix is the xstyle prop + a token
+    const stylex = generateCompressedIndex('1.0.0', {stylingSystem: 'stylex'});
+    const stylexSelfCheck = stylex.split('\n').find(l => l.includes('SELF-CHECK'));
+    expect(stylexSelfCheck).toMatch(/xstyle/);
+    expect(stylexSelfCheck).toMatch(/className=/);
+    // className IS the system in Tailwind — it must NOT be flagged
+    const tailwind = generateCompressedIndex('1.0.0', {stylingSystem: 'tailwind'});
+    const tailwindSelfCheck = tailwind.split('\n').find(l => l.includes('SELF-CHECK'));
+    expect(tailwindSelfCheck).toBeDefined();
+    expect(tailwindSelfCheck).not.toMatch(/className=/);
+  });
+
   it('defaults to the CSS-variable styling path (no compiler)', () => {
     const result = generateCompressedIndex('1.0.0');
     expect(result).toMatch(/style\/className with tokens/);

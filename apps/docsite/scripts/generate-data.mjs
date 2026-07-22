@@ -24,6 +24,10 @@ import * as path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {resolveContentRoot} from './resolve-content-root.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
+import {
+  buildTypeDefinitionIndex,
+  collectPropTypeRefs,
+} from '../src/lib/typeDefinitions.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DOCSITE_ROOT = path.resolve(__dirname, '..');
@@ -657,6 +661,31 @@ async function generateComponentRegistry() {
       }
     }
 
+    // Surface the shape of non-primitive prop types (issue #2682): when a
+    // documented prop type references a named type exported from this
+    // package's source (e.g. `SearchSource<T>`), record the reference on the
+    // prop and attach the extracted declaration to the entry so the props
+    // table can render it on demand.
+    const typeIndex = buildTypeDefinitionIndex(
+      pkg.srcDir,
+      path.relative(CONTENT_ROOT, pkg.srcDir),
+    );
+    for (const comp of components) {
+      const referenced = new Map();
+      for (const prop of comp.props) {
+        const typeRefs = collectPropTypeRefs(prop.type, typeIndex);
+        if (typeRefs.length > 0) {
+          prop.typeRefs = typeRefs;
+          for (const name of typeRefs) {
+            referenced.set(name, typeIndex.get(name));
+          }
+        }
+      }
+      comp.typeDefs = [...referenced.values()].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      );
+    }
+
     components.sort((a, b) => a.name.localeCompare(b.name));
     if (components.length > 0) {
       allComponents[pkg.name] = components;
@@ -673,6 +702,18 @@ export interface PropDoc {
   default?: string;
   required?: boolean;
   slotElements?: ElementDescriptor[];
+  /** Names of package-exported types referenced by \`type\`, resolvable
+   *  against the owning entry's \`typeDefs\`. */
+  typeRefs?: string[];
+}
+
+export interface TypeDefinition {
+  /** Exported type name, e.g. \`SearchSource\`. */
+  name: string;
+  /** Extracted TypeScript declaration source, including member JSDoc. */
+  definition: string;
+  /** Repo-relative source file, e.g. \`packages/core/src/Typeahead/types.ts\`. */
+  sourcePath: string;
 }
 export interface BestPractice {
   guidance: boolean;
@@ -761,6 +802,8 @@ export interface ComponentEntry {
   hidden: boolean;
   parentDoc: string | null;
   props: PropDoc[];
+  /** Declarations for every type referenced from \`props[].typeRefs\`. */
+  typeDefs: TypeDefinition[];
   usage: UsageDoc | null;
   theming: ThemingDoc | null;
   params: HookParamDoc[] | null;

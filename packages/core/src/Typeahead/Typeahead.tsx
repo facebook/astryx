@@ -49,6 +49,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export type {
   InputStatus as TypeaheadStatus,
@@ -249,6 +250,7 @@ export function Typeahead<T extends SearchableItem>({
   style,
   'data-testid': testId,
 }: TypeaheadProps<T>) {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const inputId = useId();
   const inputLabelId = useId();
@@ -460,7 +462,7 @@ export function Typeahead<T extends SearchableItem>({
         />
         {hasClear && value && !isDisabled && (
           <InputClearButton
-            label="Clear selection"
+            label={t('@astryx.typeahead.clearSelection')}
             onClick={e => {
               e.stopPropagation();
               handleClear();

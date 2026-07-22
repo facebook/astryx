@@ -47,6 +47,8 @@ import {
   useTableStickyColumns,
   useTableRowExpansion,
   useTableRowExpansionState,
+  useTableGroupedRows,
+  useTableRowIndex,
 } from '@astryxdesign/core/Table';
 import type {TablePlugin, TableSortState} from '@astryxdesign/core/Table';
 
@@ -68,7 +70,9 @@ type PluginId =
   | 'pagination'
   | 'columnResize'
   | 'stickyColumns'
-  | 'rowExpansion';
+  | 'rowExpansion'
+  | 'groupedRows'
+  | 'rowIndex';
 
 interface PluginMeta {
   id: PluginId;
@@ -103,6 +107,16 @@ const PLUGIN_REGISTRY: PluginMeta[] = [
     label: 'Row Expansion',
     description: 'Expandable tree rows (grouped by team)',
   },
+  {
+    id: 'groupedRows',
+    label: 'Grouped Rows',
+    description: 'Collapsible sections grouped by team',
+  },
+  {
+    id: 'rowIndex',
+    label: 'Row Index',
+    description: 'Prepend a monospaced row-number column',
+  },
 ];
 
 // =============================================================================
@@ -118,6 +132,8 @@ interface UseLabPluginsArgs {
 interface UseLabPluginsResult {
   data: LabRow[];
   plugins: Record<string, TablePlugin<LabRow>>;
+  /** idKey passed to <Table>. Grouped rows override this to key synthetic headers. */
+  idKey: (keyof LabRow & string) | ((item: LabRow) => string);
   /** Summary chips for the active-plugin state (selected count, page, etc). */
   summary: string[];
 }
@@ -196,8 +212,46 @@ function useLabPlugins({
     summary.push(`${expandedKeys.size} expanded`);
   }
 
+  // --- grouped rows (collapsible sections by team) ---
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    new Set(),
+  );
+  const toggleGroup = useCallback((key: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
+  const grouped = useTableGroupedRows<LabRow>({
+    data: dataAfterPage,
+    groupBy: item => item.team,
+    collapsedGroups,
+    onToggleGroup: toggleGroup,
+    getRowKey: item => item.id,
+  });
+  if (enabled.groupedRows) {
+    summary.push(`${collapsedGroups.size} groups collapsed`);
+  }
+
+  // --- row index ---
+  const rowIndexPlugin = useTableRowIndex<LabRow>({
+    data: dataAfterPage,
+    getRowKey: item => item.id,
+  });
+
   // Assemble enabled plugins in a stable order.
   const plugins: Record<string, TablePlugin<LabRow>> = {};
+  if (enabled.groupedRows) {
+    plugins.grouped = grouped.plugin;
+  }
+  if (enabled.rowIndex) {
+    plugins.rowIndex = rowIndexPlugin;
+  }
   if (enabled.sortable) {
     plugins.sort = sortPlugin;
   }
@@ -217,7 +271,12 @@ function useLabPlugins({
     plugins.pagination = paginationPlugin;
   }
 
-  return {data: dataAfterPage, plugins, summary};
+  return {
+    data: enabled.groupedRows ? grouped.data : dataAfterPage,
+    plugins,
+    idKey: enabled.groupedRows ? grouped.idKey : 'id',
+    summary,
+  };
 }
 
 // =============================================================================
@@ -370,10 +429,12 @@ export default function TableLabPage() {
     columnResize: false,
     stickyColumns: false,
     rowExpansion: false,
+    groupedRows: false,
+    rowIndex: false,
   });
 
   const baseData = useMemo(() => generateRows(rowCount), [rowCount]);
-  const {data, plugins, summary} = useLabPlugins({enabled, baseData});
+  const {data, plugins, idKey, summary} = useLabPlugins({enabled, baseData});
 
   const {
     renderStatsRef,
@@ -498,7 +559,7 @@ export default function TableLabPage() {
             <Table
               data={data}
               columns={labColumns}
-              idKey="id"
+              idKey={idKey}
               hasHover
               isStriped
               plugins={plugins}

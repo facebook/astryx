@@ -104,8 +104,8 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'FieldStatus',
-      description: 'Status indicator with type and optional message. When message is set, displays a colored status box.',
+      type: "{type: 'warning' | 'error' | 'success', message?: string, messageID?: string}",
+      description: 'Status indicator with type and optional message. When message is set, displays a colored status box. messageID is for wiring aria-describedby on the input.',
     },
     {
       name: 'statusVariant',

@@ -50,7 +50,7 @@ export const docs = {
     },
     {
       name: 'gap',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description:
         'Gap between items as a spacing token step (0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10).',
       default: '2',
@@ -116,7 +116,7 @@ export const docsZh = {
     },
     {
       name: 'gap',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description:
         '项目间距，使用间距步进值（0、0.5、1、1.5、2、3、4、5、6、8、10）。',
       default: '2',

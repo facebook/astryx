@@ -301,6 +301,7 @@ export function Avatar({
   return (
     <AvatarSizeContext value={numericSize}>
       <div
+        {...props}
         ref={ref}
         role={isDecorative ? 'presentation' : 'img'}
         aria-label={isDecorative ? undefined : accessibleName}
@@ -317,8 +318,7 @@ export function Avatar({
           ),
           className,
           style,
-        )}
-        {...props}>
+        )}>
         <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
           {showImage && (
             <img

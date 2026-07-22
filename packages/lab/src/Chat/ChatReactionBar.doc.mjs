@@ -6,18 +6,18 @@ export const docs = {
   name: 'ChatReactionBar',
   subComponentOf: 'Chat',
   displayName: 'Chat Reaction Bar',
-  description: 'Row of emoji reaction pills under a chat message. Each pill shows an emoji and count; the current user’s own reactions get an accent tint and aria-pressed. Provide onAdd to render a trailing add-reaction button that opens a ChatEmojiPicker popover.',
+  description: 'Row of emoji reaction pills under a chat message. Each pill shows an emoji and count; the current user\'s own reactions get an accent tint and aria-pressed. Provide onAdd to render a trailing add-reaction button that opens a ChatEmojiPicker popover.',
   props: [
     {
       name: 'reactions',
       type: '{emoji: string; count: number; isSelected?: boolean; label?: string}[]',
-      description: 'Reactions to render, in display order. isSelected marks the current user’s own reactions (accent tint + aria-pressed). label is a human-readable description like "Ana and Dana reacted with 🎉", used as the pill tooltip and accessible label.',
+      description: 'Reactions to render, in display order. isSelected marks the current user\'s own reactions (accent tint + aria-pressed). label is a human-readable description like "Ana and Dana reacted with 🎉", used as the pill tooltip and accessible label.',
       required: true,
     },
     {
       name: 'onToggle',
       type: '(emoji: string) => void',
-      description: 'Called with the pill’s emoji when the user toggles a reaction on or off.',
+      description: 'Called with the pill\'s emoji when the user toggles a reaction on or off.',
     },
     {
       name: 'onAdd',

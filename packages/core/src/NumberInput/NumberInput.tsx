@@ -135,6 +135,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 interface NumberInputPropsBase extends Omit<
   BaseProps,
@@ -399,6 +400,7 @@ export function NumberInput({
   ref,
   ...rest
 }: NumberInputProps) {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const id = useId();
   const inputLabelID = useId();
@@ -663,7 +665,7 @@ export function NumberInput({
         <button
           type="button"
           onClick={handleClear}
-          aria-label={`Clear ${label}`}
+          aria-label={t('@astryx.numberInput.clearLabel', {label})}
           {...stylex.props(styles.clearButton)}>
           <Icon icon="close" size="sm" color="secondary" />
         </button>

@@ -1,7 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, act} from '@testing-library/react';
+import {render, screen, act, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {Timestamp} from './Timestamp';
 
 describe('Timestamp', () => {
@@ -41,9 +42,7 @@ describe('Timestamp', () => {
     );
     expect(screen.getByText('59 minutes ago')).toBeInTheDocument();
 
-    rerender(
-      <Timestamp value={Date.now() / 1000 - 86399} format="relative" />,
-    );
+    rerender(<Timestamp value={Date.now() / 1000 - 86399} format="relative" />);
     expect(screen.getByText('23 hours ago')).toBeInTheDocument();
 
     rerender(
@@ -52,9 +51,7 @@ describe('Timestamp', () => {
     expect(screen.getByText('29 days ago')).toBeInTheDocument();
 
     // Same guarantee on the future side.
-    rerender(
-      <Timestamp value={Date.now() / 1000 + 3599} format="relative" />,
-    );
+    rerender(<Timestamp value={Date.now() / 1000 + 3599} format="relative" />);
     expect(screen.getByText('in 59 minutes')).toBeInTheDocument();
   });
 
@@ -314,5 +311,148 @@ describe('Timestamp', () => {
     );
     const el = screen.getByRole('time');
     expect(el.textContent).not.toContain('ago');
+  });
+
+  // --- Invalid values ---
+
+  it('renders nothing instead of crashing on an unparseable string value', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const {container} = render(
+        <Timestamp value="not-a-date" data-testid="ts" />,
+      );
+      expect(container).toBeEmptyDOMElement();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('could not parse value'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('renders nothing instead of crashing on a NaN value', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const {container} = render(<Timestamp value={NaN} data-testid="ts" />);
+      expect(container).toBeEmptyDOMElement();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  // --- Tooltip keyboard reachability (WCAG 1.4.13 / 2.1.1) ---
+
+  describe('tooltip keyboard reachability', () => {
+    const originalMatches = HTMLElement.prototype.matches;
+    const originalShowPopover = HTMLElement.prototype.showPopover;
+    const originalHidePopover = HTMLElement.prototype.hidePopover;
+
+    beforeEach(() => {
+      // The tooltip is lazy-loaded via a dynamic import; real timers let the
+      // import promise and RTL's waitFor resolve naturally (the outer
+      // beforeEach installs fake timers, which would stall them).
+      vi.useRealTimers();
+
+      // Mock the Popover API, which jsdom does not implement.
+      HTMLElement.prototype.showPopover = vi.fn();
+      HTMLElement.prototype.hidePopover = vi.fn();
+
+      // jsdom does not derive :focus-visible from keyboard focus for a <time>
+      // element; treat the focused element as focus-visible so the tooltip's
+      // keyboard-focus path can be exercised.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (HTMLElement.prototype as any).matches = function (
+        selector: string,
+      ): boolean {
+        if (selector === ':focus-visible') {
+          return this === document.activeElement;
+        }
+        return originalMatches.call(this, selector);
+      };
+    });
+
+    afterEach(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (HTMLElement.prototype as any).matches = originalMatches;
+      HTMLElement.prototype.showPopover = originalShowPopover;
+      HTMLElement.prototype.hidePopover = originalHidePopover;
+    });
+
+    it('makes the <time> element focusable while the tooltip is attached', () => {
+      render(
+        <Timestamp
+          value={Date.now() / 1000 - 3600}
+          format="relative"
+          data-testid="ts"
+        />,
+      );
+      expect(screen.getByTestId('ts')).toHaveAttribute('tabindex', '0');
+    });
+
+    it('shows the tooltip when the timestamp receives keyboard focus', async () => {
+      const user = userEvent.setup();
+      render(
+        <Timestamp
+          value={Date.now() / 1000 - 3600}
+          format="relative"
+          data-testid="ts"
+        />,
+      );
+      const el = screen.getByTestId('ts');
+
+      // Wait for the lazy-loaded tooltip layer to mount and confirm it
+      // carries the full absolute time (same string as the aria-label).
+      // Compare with normalized whitespace: Intl output can contain narrow
+      // no-break spaces that jest-dom's matcher normalization would break on.
+      const layer = await screen.findByRole('tooltip', {hidden: true});
+      const normalize = (s: string) => s.replace(/\s+/g, ' ');
+      expect(normalize(layer.textContent ?? '')).toContain(
+        normalize(el.getAttribute('aria-label') ?? '\0'),
+      );
+
+      // Tab onto the timestamp — the only tab stop in the document.
+      await user.tab();
+      expect(el).toHaveFocus();
+      await waitFor(() => {
+        expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+      });
+    });
+
+    it('does not add a tab stop when the tooltip is disabled', () => {
+      render(
+        <Timestamp
+          value={Date.now() / 1000 - 3600}
+          format="relative"
+          hasTooltip={false}
+          data-testid="ts"
+        />,
+      );
+      expect(screen.getByTestId('ts')).not.toHaveAttribute('tabindex');
+    });
+
+    it('does not add a tab stop for absolute formats (no tooltip)', () => {
+      render(
+        <Timestamp
+          value="2026-02-19T17:00:00Z"
+          format="date_time"
+          data-testid="ts"
+        />,
+      );
+      expect(screen.getByTestId('ts')).not.toHaveAttribute('tabindex');
+    });
+
+    it('keeps the full absolute aria-label while the tooltip is attached', () => {
+      render(
+        <Timestamp
+          value={Date.now() / 1000 - 3600}
+          format="relative"
+          data-testid="ts"
+        />,
+      );
+      const label = screen.getByTestId('ts').getAttribute('aria-label');
+      expect(label).toBeTruthy();
+      // The label is the full absolute string, not the relative text.
+      expect(label).not.toContain('ago');
+    });
   });
 });

@@ -59,6 +59,7 @@ export type {
 
 export {useChatStreamScroll} from './useChatStreamScroll';
 export type {
+  ChatScrollToBottomOptions,
   UseChatStreamScrollOptions,
   UseChatStreamScrollReturn,
 } from './useChatStreamScroll';

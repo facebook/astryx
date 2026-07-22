@@ -89,7 +89,7 @@ describe('DropdownMenu', () => {
       .getByRole('menu', {hidden: true})
       .closest('[popover]');
     expect(popover?.getAttribute('style')).toContain(
-      'position-area: bottom span-right',
+      'position-area: self-block-end span-self-inline-end',
     );
   });
 
@@ -105,7 +105,27 @@ describe('DropdownMenu', () => {
       .getByRole('menu', {hidden: true})
       .closest('[popover]');
     expect(popover?.getAttribute('style')).toContain(
-      'position-area: top span-right',
+      'position-area: self-block-start span-self-inline-end',
+    );
+  });
+
+  it('emits the direction-independent logical mapping under an RTL ancestor (#3389)', async () => {
+    // The self-* position-area keywords resolve against the popover's own
+    // inherited direction in the browser, so RTL emits the same string as
+    // LTR and the mirroring is pure CSS. jsdom can't verify the geometry —
+    // the DropdownMenu RTL Storybook story is the visual proof surface.
+    const user = userEvent.setup();
+    const {container} = render(
+      <div style={{direction: 'rtl'}}>
+        <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />
+      </div>,
+    );
+
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+
+    const popover = container.querySelector('[popover]');
+    expect(popover?.getAttribute('style')).toContain(
+      'position-area: self-block-end span-self-inline-end',
     );
   });
 

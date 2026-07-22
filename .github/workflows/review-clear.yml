@@ -40,6 +40,8 @@ jobs:
     steps:
       - name: Clear the code gate if an entitled owner approved
         uses: actions/github-script@v9
+        env:
+          ENG_OWNERS: ${{ vars.ENGOWNERS }}
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -88,24 +90,24 @@ jobs:
             const headSha = full.head.sha;
             const labels = full.labels.map((l) => l.name);
 
-            // Read CODEOWNERS default owners (the `*` line), ignoring comments.
-            async function codeownerHandles() {
-              try {
-                const { data } = await github.rest.repos.getContent({
-                  owner, repo, path: '.github/CODEOWNERS', ref: full.base.ref,
-                });
-                const text = Buffer.from(data.content, 'base64').toString('utf8');
-                const star = text.split('\n').map((l) => l.trim())
-                  .filter((l) => !l.startsWith('#')).find((l) => l.startsWith('*'));
-                return ((star || '').match(/@[A-Za-z0-9-]+/g) || []).map((h) => h.slice(1).toLowerCase());
-              } catch (e) {
-                core.warning(`Could not read CODEOWNERS: ${e.message}`);
-                return [];
-              }
+            // Entitled code approvers come from the ENGOWNERS repo variable
+            // (passed in as env above). Any eng owner's approval clears the code
+            // gate — eng owns the code, and the GitHub-native CODEOWNERS set is
+            // a subset of ENGOWNERS, so ENGOWNERS covers it. No file read / no
+            // content API, so there is nothing to 502 on. If the variable is
+            // empty/unset, DON'T clear (leave the gate as-is) and let
+            // review-signal's flag job reconcile — declining to clear is the
+            // safe direction here; an empty list is never "everyone".
+            const codeApprovers = new Set(
+              ((process.env.ENG_OWNERS || '').match(/@?[A-Za-z0-9-]+/g) || [])
+                .map((h) => h.replace(/^@/, '').toLowerCase()),
+            );
+            if (!codeApprovers.size) {
+              core.warning('ENGOWNERS variable empty/unset; not clearing (flag job will reconcile).');
+              return;
             }
-            const codeOwners = await codeownerHandles();
 
-            // Did an entitled CODEOWNER approve (latest review state per user)?
+            // Did an entitled owner approve (latest review state per user)?
             let codeApproved = false;
             try {
               const reviews = await github.paginate(github.rest.pulls.listReviews, {
@@ -117,14 +119,14 @@ jobs:
                 latest.set(r.user.login.toLowerCase(), r.state);
               }
               for (const [login, state] of latest) {
-                if (state === 'APPROVED' && codeOwners.includes(login)) codeApproved = true;
+                if (state === 'APPROVED' && codeApprovers.has(login)) codeApproved = true;
               }
             } catch (e) {
               core.warning(`Could not read reviews: ${e.message}`);
             }
 
             if (!codeApproved) {
-              core.info(`PR #${prNumber}: no entitled code-owner approval; leaving gate as-is.`);
+              core.info(`PR #${prNumber}: no entitled code owner (CODEOWNER/ENGOWNER) approval; leaving gate as-is.`);
               return;
             }
 

@@ -21,9 +21,11 @@ import {
   type ColorAccessor,
 } from './types';
 
-/** A usable CSS paint value — a non-empty string. */
+/** A usable CSS paint value — a non-blank string. */
 function isPaint(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0;
+  // A whitespace-only string is an invalid paint (it renders as the initial
+  // color, not the intended fallback), so treat it as "unset" like an empty one.
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 /** The palette color assigned by the chart root, or the last-resort token. */
@@ -52,9 +54,14 @@ export function pointFill(
   index: number,
 ): string {
   if (typeof color === 'function') {
-    const resolved = color(datum, index);
-    if (isPaint(resolved)) {
-      return resolved;
+    try {
+      const resolved = color(datum, index);
+      if (isPaint(resolved)) {
+        return resolved;
+      }
+    } catch {
+      // A consumer accessor can throw on unexpected data; fall through to the
+      // palette/token fallback rather than crashing the whole chart render.
     }
   } else if (isPaint(color)) {
     return color;

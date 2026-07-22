@@ -6,7 +6,7 @@ export const docs = {
   name: 'ChatUnreadDivider',
   subComponentOf: 'Chat',
   displayName: 'Chat Unread Divider',
-  description: 'Error-colored rule with a trailing label marking where unread messages begin in a chat thread. Rendered as an aria separator with an accessible label. Distinct from ChatSystemMessage’s divider variant, which is for neutral date breaks.',
+  description: 'Error-colored rule with a trailing label marking where unread messages begin in a chat thread. Rendered as an aria separator with an accessible label. Distinct from ChatSystemMessage\'s divider variant, which is for neutral date breaks.',
   props: [
     {
       name: 'label',

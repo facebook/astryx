@@ -369,7 +369,9 @@ describe('ChatComposerInput', () => {
         },
       });
 
-      expect(textbox.querySelector('[data-astryx-token]')).not.toBeInTheDocument();
+      expect(
+        textbox.querySelector('[data-astryx-token]'),
+      ).not.toBeInTheDocument();
       expect(textbox.textContent).toBe(long);
     });
   });

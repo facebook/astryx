@@ -11,6 +11,7 @@
 
 import {discoverHooks, findHookDoc} from './hook-discovery.mjs';
 import {loadDocs} from './component-loader.mjs';
+import {mdCell} from './component-format.mjs';
 
 /**
  * Build a signature string from hook docs.
@@ -51,9 +52,11 @@ function formatParamsTable(params) {
   lines.push('| Param | Type | Default | Description |');
   lines.push('|-------|------|---------|-------------|');
   for (const p of params) {
-    const def = p.default ? `\`${p.default}\`` : '\u2014';
+    const def = p.default ? `\`${mdCell(p.default)}\`` : '\u2014';
     const req = p.required ? ' **(required)**' : '';
-    lines.push(`| \`${p.name}\` | \`${p.type}\` | ${def} | ${p.description}${req} |`);
+    lines.push(
+      `| \`${mdCell(p.name)}\` | \`${mdCell(p.type)}\` | ${def} | ${mdCell(p.description)}${req} |`,
+    );
   }
   return lines.join('\n');
 }
@@ -67,7 +70,9 @@ function formatReturnsTable(returns) {
   lines.push('| Field | Type | Description |');
   lines.push('|-------|------|-------------|');
   for (const r of returns) {
-    lines.push(`| \`${r.name}\` | \`${r.type}\` | ${r.description} |`);
+    lines.push(
+      `| \`${mdCell(r.name)}\` | \`${mdCell(r.type)}\` | ${mdCell(r.description)} |`,
+    );
   }
   return lines.join('\n');
 }

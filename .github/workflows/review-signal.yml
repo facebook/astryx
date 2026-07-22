@@ -41,9 +41,10 @@
 # self-serve code.
 #
 # Uses pull_request_target so it can label / request reviewers / disable
-# auto-merge on fork PRs. It only reads the PR file LIST and repo owner files via
-# the API — it never checks out or runs PR-controlled code. Do not add checkout
-# or build steps here.
+# auto-merge on fork PRs. It reads the PR file LIST via the API and the eng/
+# design owner lists from repo VARIABLES (vars.ENGOWNERS / vars.DESIGNOWNERS) —
+# no checkout, no owner-file content API. It never checks out or runs
+# PR-controlled code. Do not add checkout or build steps here.
 
 name: Review signal
 
@@ -96,6 +97,9 @@ jobs:
     steps:
       - name: Detect signals and route
         uses: actions/github-script@v9
+        env:
+          ENG_OWNERS: ${{ vars.ENGOWNERS }}
+          DESIGN_OWNERS: ${{ vars.DESIGNOWNERS }}
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -144,34 +148,31 @@ jobs:
             // and the community label entirely.
             const authorIsBot = pr.user.type === 'Bot' || /\[bot\]$/.test(author);
 
-            // --- Read owner sets from repo files at the base ref. ---
-            async function handlesFrom(path, { starLineOnly = false } = {}) {
-              try {
-                const { data } = await github.rest.repos.getContent({
-                  owner, repo, path, ref: pr.base.ref,
-                });
-                let text = Buffer.from(data.content, 'base64').toString('utf8');
-                if (starLineOnly) {
-                  const star = text.split('\n').map((l) => l.trim())
-                    .find((l) => l.startsWith('*'));
-                  text = star || '';
-                }
-                // Strip comment lines (# ...) so an @handle mentioned in a
-                // file header comment is not parsed as a real owner.
-                const body = text
-                  .split('\n')
-                  .filter((l) => !l.trim().startsWith('#'))
-                  .join('\n');
-                return (body.match(/@[A-Za-z0-9-]+/g) || [])
-                  .map((h) => h.slice(1).toLowerCase());
-              } catch (e) {
-                core.warning(`Could not read ${path}: ${e.message}`);
-                return [];
-              }
+            // --- Owner sets come from repo VARIABLES (vars.ENGOWNERS /
+            // vars.DESIGNOWNERS), passed in as env above. No file read, no
+            // content API — so there is nothing to 502 on. CODEOWNERS is NOT
+            // read here: it is GitHub-native and auto-requests its reviewers on
+            // every PR regardless of branch protection, which covers code
+            // review for contributor and design-owner PRs. These lists are
+            // CRITICAL: an empty/unset value would mis-bucket a real owner as a
+            // community contributor and wrongly gate them. So treat an empty
+            // owner list as a configuration error and THROW — the caller's
+            // per-PR try/catch then skips this PR, LEAVES ITS GATE UNTOUCHED
+            // (never a false success), and fails the run visibly. An unreadable
+            // owner list is never "no owners".
+            function parseHandles(text) {
+              return ((text || '').match(/@?[A-Za-z0-9-]+/g) || [])
+                .map((h) => h.replace(/^@/, '').toLowerCase());
             }
-            const engOwners = await handlesFrom('.github/ENGOWNERS');
-            const designOwners = await handlesFrom('.github/DESIGNOWNERS');
-            const codeOwners = await handlesFrom('.github/CODEOWNERS', { starLineOnly: true });
+            function ownersFromVar(name) {
+              const handles = parseHandles(process.env[name]);
+              if (!handles.length) {
+                throw new Error(`Owner variable ${name} is empty or unset — refusing to bucket authors from an empty list.`);
+              }
+              return handles;
+            }
+            const engOwners = ownersFromVar('ENG_OWNERS');
+            const designOwners = ownersFromVar('DESIGN_OWNERS');
             const authorIsEng = engOwners.includes(author);
             const authorIsDesign = designOwners.includes(author);
 
@@ -324,8 +325,8 @@ jobs:
             // the PR's reviews here (this job runs on pull_request_target and
             // workflow_dispatch, both of which work for forks) and treat a gate
             // as satisfied when an entitled owner has approved:
-            //   code gate   → a CODEOWNER approval
-            //   design gate → a DESIGNOWNER or CODEOWNER approval
+            //   code gate   → an ENGOWNER approval
+            //   design gate → a DESIGNOWNER approval
             // We use each reviewer's LATEST review state so a later
             // CHANGES_REQUESTED/DISMISSED correctly un-satisfies it.
             let codeApproved = false;
@@ -344,8 +345,12 @@ jobs:
               }
               for (const [login, state] of latestByUser) {
                 if (state !== 'APPROVED') continue;
-                if (codeOwners.includes(login)) { codeApproved = true; designApproved = true; }
-                else if (designOwners.includes(login)) { designApproved = true; }
+                // Code gate: any ENGOWNER approval satisfies it (eng owns the
+                // code; the CODEOWNERS subset is a subset of ENGOWNERS, so
+                // ENGOWNERS covers it). Design gate: only a DESIGNOWNER — an
+                // eng approval does NOT clear a design gate.
+                if (engOwners.includes(login)) codeApproved = true;
+                if (designOwners.includes(login)) designApproved = true;
               }
             } catch (e) {
               core.warning(`Could not read reviews: ${e.message}`);
@@ -400,6 +405,10 @@ jobs:
             if (!designGated && current.includes(DESIGN)) await dropLabel(DESIGN);
 
             // --- Request reviewers (can't request the author; ignore 422s). ---
+            // Code review is left to GitHub-native CODEOWNERS auto-request (it
+            // requests the codeowners on every PR regardless of branch
+            // protection). We only add DESIGN owners, and only when a design
+            // gate actually fires — so design owners aren't pinged on every PR.
             async function requestReviewers(handles) {
               const reviewers = [...new Set(handles)].filter((h) => h !== author);
               if (!reviewers.length) return;
@@ -411,7 +420,6 @@ jobs:
                 core.warning(`requestReviewers(${reviewers.join(',')}) failed: ${e.message}`);
               }
             }
-            if (codeGated) await requestReviewers(codeOwners);
             if (designGated) await requestReviewers(designOwners);
 
             // --- Only the CODE gate blocks. Design review is advisory:

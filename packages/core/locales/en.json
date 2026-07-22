@@ -1,0 +1,754 @@
+{
+  "@astryx.pagination.label": {
+    "defaultMessage": "Pagination",
+    "description": "Aria label for the pagination navigation region."
+  },
+  "@astryx.pagination.previous": {
+    "defaultMessage": "Go to previous page",
+    "description": "Aria label for the previous-page button."
+  },
+  "@astryx.pagination.next": {
+    "defaultMessage": "Go to next page",
+    "description": "Aria label for the next-page button."
+  },
+  "@astryx.pagination.goToPage": {
+    "defaultMessage": "Go to page {page, number}",
+    "description": "Aria label for an individual page-number button. `page` is 1-based."
+  },
+  "@astryx.pagination.pageIndicators": {
+    "defaultMessage": "Page indicators",
+    "description": "Aria label for the dots-variant page-indicator group."
+  },
+  "@astryx.pagination.itemsPerPage": {
+    "defaultMessage": "Items per page",
+    "description": "Label for the page-size selector."
+  },
+  "@astryx.pagination.count": {
+    "defaultMessage": "{from, number}–{to, number} of {total, number}",
+    "description": "Visible range-of-total text for the count variant. `from`/`to` are 1-based item indices."
+  },
+  "@astryx.pagination.pageOfTotal": {
+    "defaultMessage": "Page {current, number} of {total, number}",
+    "description": "Page-x-of-y text. Used as the visible compact-variant text and as the screen-reader announcement when total is known."
+  },
+  "@astryx.pagination.pageAnnounce": {
+    "defaultMessage": "Page {current, number}",
+    "description": "Screen-reader announcement when a page changes and total is unknown."
+  },
+  "@astryx.powersearch.editor.field": {
+    "defaultMessage": "Field",
+    "description": "Label for the field selector in the PowerSearch filter editor popover."
+  },
+  "@astryx.powersearch.editor.operator": {
+    "defaultMessage": "Operator",
+    "description": "Label for the operator selector in the PowerSearch filter editor popover."
+  },
+  "@astryx.powersearch.editor.addFilter": {
+    "defaultMessage": "+ Add filter",
+    "description": "Label for the button that appends a new filter row inside a group in the PowerSearch editor."
+  },
+  "@astryx.powersearch.editor.removeFilter": {
+    "defaultMessage": "Remove filter",
+    "description": "Aria label for the icon button that removes a filter row from a group in the PowerSearch editor."
+  },
+  "@astryx.powersearch.editor.groupOperator": {
+    "defaultMessage": "Group operator",
+    "description": "Aria label for the AND/OR selector that combines sibling filters inside a group. Visible label is provided separately by the operator itself."
+  },
+  "@astryx.powersearch.editor.group": {
+    "defaultMessage": "Group",
+    "description": "Fallback label rendered where a nested group's operator would appear if no operator is available."
+  },
+  "@astryx.powersearch.editor.delete": {
+    "defaultMessage": "Delete",
+    "description": "Label for the delete action inside the PowerSearch filter editor popover."
+  },
+  "@astryx.powersearch.editor.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Label for the cancel action inside the PowerSearch filter editor popover."
+  },
+  "@astryx.powersearch.editor.apply": {
+    "defaultMessage": "Apply",
+    "description": "Label for the save/apply action inside the PowerSearch filter editor popover. Consumers can override via the `popoverSaveButtonLabel` prop."
+  },
+  "@astryx.powersearch.valueEditor.value": {
+    "defaultMessage": "Value",
+    "description": "Label for the single-value input in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.values": {
+    "defaultMessage": "Values",
+    "description": "Label for the multi-value input in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.time": {
+    "defaultMessage": "Time",
+    "description": "Label for the time picker in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.date": {
+    "defaultMessage": "Date",
+    "description": "Label for the absolute date picker in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.relativeDate": {
+    "defaultMessage": "Relative date",
+    "description": "Label for the relative-date selector (e.g. \"Last 7 days\") in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.startDate": {
+    "defaultMessage": "Start date",
+    "description": "Label for the start of a date range in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.endDate": {
+    "defaultMessage": "End date",
+    "description": "Label for the end of a date range in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.entities": {
+    "defaultMessage": "Entities",
+    "description": "Label for the entity picker in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.searchPlaceholder": {
+    "defaultMessage": "Search…",
+    "description": "Placeholder shown in the typeahead / entity search input in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.enterValuePlaceholder": {
+    "defaultMessage": "Enter value…",
+    "description": "Placeholder shown in a free-text single-value input in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.addValuesPlaceholder": {
+    "defaultMessage": "Add values…",
+    "description": "Placeholder shown in the multi-value chip input in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.enterNumberPlaceholder": {
+    "defaultMessage": "Enter number…",
+    "description": "Placeholder shown in a numeric input in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.valueEditor.selectValuesPlaceholder": {
+    "defaultMessage": "Select values…",
+    "description": "Placeholder shown in the enum-list selector in the PowerSearch value editor."
+  },
+  "@astryx.powersearch.operator.contains": {
+    "defaultMessage": "contains",
+    "description": "PowerSearch string operator: substring match."
+  },
+  "@astryx.powersearch.operator.notContains": {
+    "defaultMessage": "does not contain",
+    "description": "PowerSearch string operator: negated substring match."
+  },
+  "@astryx.powersearch.operator.startsWith": {
+    "defaultMessage": "starts with",
+    "description": "PowerSearch string operator: prefix match."
+  },
+  "@astryx.powersearch.operator.notStartsWith": {
+    "defaultMessage": "does not start with",
+    "description": "PowerSearch string operator: negated prefix match."
+  },
+  "@astryx.powersearch.operator.endsWith": {
+    "defaultMessage": "ends with",
+    "description": "PowerSearch string operator: suffix match."
+  },
+  "@astryx.powersearch.operator.notEndsWith": {
+    "defaultMessage": "does not end with",
+    "description": "PowerSearch string operator: negated suffix match."
+  },
+  "@astryx.powersearch.operator.is": {
+    "defaultMessage": "is",
+    "description": "PowerSearch equality operator (string, enum). May diverge from other equality operators (numbers, dates) at translation time."
+  },
+  "@astryx.powersearch.operator.isNot": {
+    "defaultMessage": "is not",
+    "description": "PowerSearch inequality operator (string, enum)."
+  },
+  "@astryx.powersearch.operator.equals": {
+    "defaultMessage": "is",
+    "description": "PowerSearch numeric equality operator. Ships the same English text as `is` but is a distinct entry so number translators can diverge."
+  },
+  "@astryx.powersearch.operator.notEquals": {
+    "defaultMessage": "is not",
+    "description": "PowerSearch numeric inequality operator."
+  },
+  "@astryx.powersearch.operator.greaterThan": {
+    "defaultMessage": "is greater than",
+    "description": "PowerSearch numeric operator: strictly greater than."
+  },
+  "@astryx.powersearch.operator.lessThan": {
+    "defaultMessage": "is less than",
+    "description": "PowerSearch numeric operator: strictly less than."
+  },
+  "@astryx.powersearch.operator.greaterThanOrEqual": {
+    "defaultMessage": "is greater than or equal to",
+    "description": "PowerSearch numeric operator: greater than or equal."
+  },
+  "@astryx.powersearch.operator.lessThanOrEqual": {
+    "defaultMessage": "is less than or equal to",
+    "description": "PowerSearch numeric operator: less than or equal."
+  },
+  "@astryx.powersearch.operator.before": {
+    "defaultMessage": "is before",
+    "description": "PowerSearch date operator: earlier than."
+  },
+  "@astryx.powersearch.operator.after": {
+    "defaultMessage": "is after",
+    "description": "PowerSearch date operator: later than."
+  },
+  "@astryx.powersearch.operator.between": {
+    "defaultMessage": "is between",
+    "description": "PowerSearch date operator: within a range."
+  },
+  "@astryx.powersearch.operator.isTrue": {
+    "defaultMessage": "is true",
+    "description": "PowerSearch boolean operator: true."
+  },
+  "@astryx.powersearch.operator.isFalse": {
+    "defaultMessage": "is false",
+    "description": "PowerSearch boolean operator: false."
+  },
+  "@astryx.powersearch.operator.isAnyOf": {
+    "defaultMessage": "is any of",
+    "description": "PowerSearch list operator: membership in the provided set."
+  },
+  "@astryx.powersearch.operator.isNoneOf": {
+    "defaultMessage": "is none of",
+    "description": "PowerSearch list operator: exclusion from the provided set."
+  },
+  "@astryx.powersearch.valueEditor.itemsCount": {
+    "defaultMessage": "{count, number} {count, plural, one {item} other {items}}",
+    "description": "Overflow summary shown by PowerSearch when a list-valued filter has too many items to fit on the token. Pluralized to match locale rules."
+  },
+  "@astryx.powersearch.valueEditor.entitiesCount": {
+    "defaultMessage": "{count, number} {count, plural, one {entity} other {entities}}",
+    "description": "Overflow summary shown by PowerSearch when an entity-list-valued filter has too many entities to fit on the token."
+  },
+  "@astryx.powersearch.valueEditor.dateRange": {
+    "defaultMessage": "date range",
+    "description": "Fallback text rendered by PowerSearch when a date-range filter value cannot be formatted concretely."
+  },
+  "@astryx.powersearch.valueEditor.filtersCount": {
+    "defaultMessage": "{count, number} {count, plural, one {filter} other {filters}}",
+    "description": "Summary shown by PowerSearch for a nested-filter value: N filters."
+  },
+  "@astryx.powersearch.resultCount": {
+    "defaultMessage": "{count, number} {count, plural, one {result} other {results}}",
+    "description": "Result count shown next to the PowerSearch input. Announced to screen readers on change."
+  },
+  "@astryx.alertDialog.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Default label for the cancel action in AlertDialog."
+  },
+  "@astryx.appShell.mobileNavigation": {
+    "defaultMessage": "Mobile navigation",
+    "description": "Aria label for the mobile navigation region rendered by AppShell on small viewports."
+  },
+  "@astryx.avatarGroup.label": {
+    "defaultMessage": "Avatars",
+    "description": "Default aria label for an AvatarGroup rendered as a list of avatars."
+  },
+  "@astryx.banner.dismiss": {
+    "defaultMessage": "Dismiss",
+    "description": "Label and tooltip for the dismiss button on a Banner."
+  },
+  "@astryx.calendar.previousMonth": {
+    "defaultMessage": "Previous month",
+    "description": "Aria label for the previous-month button in Calendar."
+  },
+  "@astryx.calendar.nextMonth": {
+    "defaultMessage": "Next month",
+    "description": "Aria label for the next-month button in Calendar."
+  },
+  "@astryx.carousel.label": {
+    "defaultMessage": "Carousel",
+    "description": "Default aria label for the Carousel landmark."
+  },
+  "@astryx.carousel.scrollLeft": {
+    "defaultMessage": "Scroll left",
+    "description": "Aria label for the scroll-left button in Carousel."
+  },
+  "@astryx.carousel.scrollRight": {
+    "defaultMessage": "Scroll right",
+    "description": "Aria label for the scroll-right button in Carousel."
+  },
+  "@astryx.chat.status.sending": {
+    "defaultMessage": "Sending",
+    "description": "ChatMessageMetadata status: message in flight."
+  },
+  "@astryx.chat.status.sent": {
+    "defaultMessage": "Sent",
+    "description": "ChatMessageMetadata status: message sent to server."
+  },
+  "@astryx.chat.status.delivered": {
+    "defaultMessage": "Delivered",
+    "description": "ChatMessageMetadata status: message delivered to recipient."
+  },
+  "@astryx.chat.status.read": {
+    "defaultMessage": "Read",
+    "description": "ChatMessageMetadata status: message read by recipient."
+  },
+  "@astryx.chat.status.failed": {
+    "defaultMessage": "Failed",
+    "description": "ChatMessageMetadata status: message send failed."
+  },
+  "@astryx.chat.messageAriaLabel": {
+    "defaultMessage": "Message {status}",
+    "description": "Aria-label for a chat message row. `status` is the localized message status (e.g. \"sent\", \"delivered\") from @astryx.chat.status.*."
+  },
+  "@astryx.chat.pastedText.expand": {
+    "defaultMessage": "Expand",
+    "description": "Label for the button that expands a collapsed pasted-text chat token."
+  },
+  "@astryx.checkboxList.item.checkbox": {
+    "defaultMessage": "Checkbox",
+    "description": "Aria label for the checkbox inside CheckboxListItem when no label is provided."
+  },
+  "@astryx.commandPalette.emptySearch": {
+    "defaultMessage": "No results",
+    "description": "Default text shown in CommandPalette when the current query returns no matches."
+  },
+  "@astryx.commandPalette.emptyBootstrap": {
+    "defaultMessage": "Type to search",
+    "description": "Default text shown in CommandPalette on first open, before the user has typed anything."
+  },
+  "@astryx.dateRangeInput.presetDateRanges": {
+    "defaultMessage": "Preset date ranges",
+    "description": "Aria label for the preset-date-range group in DateRangeInput."
+  },
+  "@astryx.dateTimeInput.timePlaceholder": {
+    "defaultMessage": "Select a time",
+    "description": "Default placeholder for the time input in DateTimeInput."
+  },
+  "@astryx.dialog.close": {
+    "defaultMessage": "Close",
+    "description": "Label and tooltip for the close button in DialogHeader."
+  },
+  "@astryx.dropdownMenu.label": {
+    "defaultMessage": "Menu",
+    "description": "Default aria label for a DropdownMenu when none is provided."
+  },
+  "@astryx.lightbox.close": {
+    "defaultMessage": "Close",
+    "description": "Aria label for the close button in Lightbox."
+  },
+  "@astryx.lightbox.previous": {
+    "defaultMessage": "Previous",
+    "description": "Aria label for the previous-item button in Lightbox."
+  },
+  "@astryx.lightbox.next": {
+    "defaultMessage": "Next",
+    "description": "Aria label for the next-item button in Lightbox."
+  },
+  "@astryx.markdown.taskList": {
+    "defaultMessage": "Task list",
+    "description": "Aria label rendered by Markdown for a GitHub-flavored task-list block."
+  },
+  "@astryx.markdown.table": {
+    "defaultMessage": "Table",
+    "description": "Aria label rendered by Markdown for a rendered table."
+  },
+  "@astryx.mobileNav.closeNavigation": {
+    "defaultMessage": "Close navigation",
+    "description": "Aria label for the close button on the MobileNav overlay."
+  },
+  "@astryx.multiSelector.selectAll": {
+    "defaultMessage": "Select all",
+    "description": "Default label for the \"select all\" toggle in MultiSelector."
+  },
+  "@astryx.multiSelector.searchPlaceholder": {
+    "defaultMessage": "Search…",
+    "description": "Default placeholder for the search input inside MultiSelector."
+  },
+  "@astryx.multiSelector.searchOptions": {
+    "defaultMessage": "Search options",
+    "description": "Aria label for the search input inside MultiSelector."
+  },
+  "@astryx.popover.close": {
+    "defaultMessage": "Close popover",
+    "description": "Default label for the close button rendered inside a Popover."
+  },
+  "@astryx.selector.searchPlaceholder": {
+    "defaultMessage": "Search…",
+    "description": "Default placeholder for the search input inside Selector."
+  },
+  "@astryx.selector.searchOptions": {
+    "defaultMessage": "Search options",
+    "description": "Aria label for the search input inside Selector."
+  },
+  "@astryx.sideNav.label": {
+    "defaultMessage": "Side navigation",
+    "description": "Aria label for the SideNav landmark region."
+  },
+  "@astryx.sideNav.resizeSidebar": {
+    "defaultMessage": "Resize sidebar",
+    "description": "Aria label for the SideNav resize handle."
+  },
+  "@astryx.sideNav.heading.openMenu": {
+    "defaultMessage": "Open menu",
+    "description": "Aria label for the overflow menu button in a SideNav heading."
+  },
+  "@astryx.tabList.label": {
+    "defaultMessage": "Tabs",
+    "description": "Default aria label for a TabList when none is provided."
+  },
+  "@astryx.table.label": {
+    "defaultMessage": "Table",
+    "description": "Default aria label for a Table when none is provided."
+  },
+  "@astryx.table.noData": {
+    "defaultMessage": "No data",
+    "description": "Default text shown by Table when the data set is empty."
+  },
+  "@astryx.table.filter.allPlaceholder": {
+    "defaultMessage": "All",
+    "description": "Placeholder for a Table filter selector when no value is selected (matches all rows)."
+  },
+  "@astryx.table.filter.reset": {
+    "defaultMessage": "Reset",
+    "description": "Label for the reset action in a Table filter panel."
+  },
+  "@astryx.table.filter.apply": {
+    "defaultMessage": "Apply",
+    "description": "Label for the apply action in a Table filter panel."
+  },
+  "@astryx.table.selection.selectAllRows": {
+    "defaultMessage": "Select all rows",
+    "description": "Aria label for the \"select all rows\" checkbox in a Table header."
+  },
+  "@astryx.table.selection.selectRow": {
+    "defaultMessage": "Select row",
+    "description": "Aria label for the \"select row\" checkbox on a Table row."
+  },
+  "@astryx.table.sort.ascending": {
+    "defaultMessage": "Sort ascending",
+    "description": "Aria label for a Table column header when clicking it will sort ascending."
+  },
+  "@astryx.table.sort.descending": {
+    "defaultMessage": "Sort descending",
+    "description": "Aria label for a Table column header when clicking it will sort descending."
+  },
+  "@astryx.table.sort.clear": {
+    "defaultMessage": "Clear sort",
+    "description": "Aria label for a Table column header when clicking it will clear the current sort."
+  },
+  "@astryx.toast.dismiss": {
+    "defaultMessage": "Dismiss notification",
+    "description": "Aria label for the dismiss button on a Toast."
+  },
+  "@astryx.toast.viewport": {
+    "defaultMessage": "Notifications",
+    "description": "Aria label for the Toast viewport region that hosts toasts."
+  },
+  "@astryx.tokenizer.clearAll": {
+    "defaultMessage": "Clear all",
+    "description": "Label for the \"clear all tokens\" button in Tokenizer."
+  },
+  "@astryx.topNav.heading.openMenu": {
+    "defaultMessage": "Open menu",
+    "description": "Aria label for the overflow menu button in a TopNav heading."
+  },
+  "@astryx.topNav.landmarkLabel": {
+    "defaultMessage": "Top navigation",
+    "description": "Default accessible name (aria-label) for the <nav> landmark rendered by TopNav when no label is provided."
+  },
+  "@astryx.treeList.toggleChildren": {
+    "defaultMessage": "Toggle children",
+    "description": "Aria label for the expand/collapse button on a TreeList item."
+  },
+  "@astryx.typeahead.emptySearchResults": {
+    "defaultMessage": "No results found",
+    "description": "Default text shown by Typeahead when the current query returns no matches."
+  },
+  "@astryx.typeahead.loading": {
+    "defaultMessage": "Loading",
+    "description": "Aria label for the loading indicator inside a Typeahead dropdown."
+  },
+  "@astryx.typeahead.searchResults": {
+    "defaultMessage": "Search results",
+    "description": "Aria label for the search-results list inside a Typeahead dropdown."
+  },
+  "@astryx.typeahead.clearSelection": {
+    "defaultMessage": "Clear selection",
+    "description": "Label for the \"clear selected value\" button on a Typeahead."
+  },
+  "@astryx.breadcrumbs.label": {
+    "defaultMessage": "Breadcrumb",
+    "description": "Default aria label for the Breadcrumbs navigation landmark."
+  },
+  "@astryx.chat.composer.placeholder": {
+    "defaultMessage": "Type a message…",
+    "description": "Default placeholder for the ChatComposer input."
+  },
+  "@astryx.chat.composerDrawer.label": {
+    "defaultMessage": "Items",
+    "description": "Default label for the ChatComposerDrawer list."
+  },
+  "@astryx.chat.composerInput.label": {
+    "defaultMessage": "Message input",
+    "description": "Default aria label for the ChatComposerInput textarea."
+  },
+  "@astryx.chat.speechRecognition.noSpeechDetected": {
+    "defaultMessage": "No speech was detected.",
+    "description": "Speech-recognition error message shown when the mic captures silence."
+  },
+  "@astryx.commandPalette.label": {
+    "defaultMessage": "Command palette",
+    "description": "Default aria label for the CommandPalette landmark."
+  },
+  "@astryx.commandPalette.input.placeholder": {
+    "defaultMessage": "Search…",
+    "description": "Default placeholder for the CommandPalette search input."
+  },
+  "@astryx.commandPalette.list.label": {
+    "defaultMessage": "Commands",
+    "description": "Default aria label for the CommandPalette command list."
+  },
+  "@astryx.contextMenu.label": {
+    "defaultMessage": "Context menu",
+    "description": "Default aria label for the ContextMenu."
+  },
+  "@astryx.dateInput.placeholder": {
+    "defaultMessage": "Select a date",
+    "description": "Default placeholder for DateInput."
+  },
+  "@astryx.dateInput.dialogLabel": {
+    "defaultMessage": "Choose date",
+    "description": "Aria label for the DateInput picker dialog."
+  },
+  "@astryx.dateInput.closeCalendar": {
+    "defaultMessage": "Close calendar",
+    "description": "Aria label for the close button in the DateInput calendar popover."
+  },
+  "@astryx.dateInput.openCalendar": {
+    "defaultMessage": "Open calendar",
+    "description": "Aria label for the DateInput / DateRangeInput / DateTimeInput calendar toggle button when the popover is closed."
+  },
+  "@astryx.dateInput.toggleCalendarClose": {
+    "defaultMessage": "Close calendar",
+    "description": "Aria label for the DateInput / DateRangeInput / DateTimeInput calendar toggle button when the popover is open. Distinct from closeCalendar (which labels the X inside the popover) so translators can differentiate the toggle vs the close-X UI."
+  },
+  "@astryx.dateInput.clear": {
+    "defaultMessage": "Clear {label}",
+    "description": "Aria label for the clear-value button in DateInput / DateRangeInput / DateTimeInput. `{label}` is the field's own label so screen readers announce e.g. 'Clear Start date'."
+  },
+  "@astryx.dateTimeInput.timeSuffix": {
+    "defaultMessage": "{label} time",
+    "description": "Aria label suffix for the time slot in DateTimeInput. `{label}` is the field's own label."
+  },
+  "@astryx.dateRangeInput.placeholder": {
+    "defaultMessage": "Select date range",
+    "description": "Default placeholder for DateRangeInput."
+  },
+  "@astryx.dateRangeInput.dialogLabel": {
+    "defaultMessage": "Choose date range",
+    "description": "Aria label for the DateRangeInput picker dialog."
+  },
+  "@astryx.dateTimeInput.placeholder": {
+    "defaultMessage": "Select a date",
+    "description": "Default placeholder for DateTimeInput."
+  },
+  "@astryx.dateTimeInput.dialogLabel": {
+    "defaultMessage": "Choose date",
+    "description": "Aria label for the DateTimeInput picker dialog."
+  },
+  "@astryx.link.newTab": {
+    "defaultMessage": "(opens in new tab)",
+    "description": "Visually-hidden suffix appended to Link labels that open in a new tab."
+  },
+  "@astryx.mobileNav.toggle.open": {
+    "defaultMessage": "Open navigation",
+    "description": "Aria label for the MobileNavToggle button when the drawer is closed."
+  },
+  "@astryx.moreMenu.label": {
+    "defaultMessage": "More options",
+    "description": "Default aria label for the MoreMenu trigger button."
+  },
+  "@astryx.multiSelector.selectPlaceholder": {
+    "defaultMessage": "Select…",
+    "description": "Default placeholder on the MultiSelector trigger button."
+  },
+  "@astryx.outline.label": {
+    "defaultMessage": "Table of contents",
+    "description": "Default aria label for the Outline navigation landmark."
+  },
+  "@astryx.powersearch.label": {
+    "defaultMessage": "Search",
+    "description": "Default aria label for the PowerSearch input."
+  },
+  "@astryx.powersearch.placeholder": {
+    "defaultMessage": "Search…",
+    "description": "Default placeholder for the PowerSearch input."
+  },
+  "@astryx.resizable.handle.label": {
+    "defaultMessage": "Resize handle",
+    "description": "Aria label for the drag handle in Resizable."
+  },
+  "@astryx.selector.placeholder": {
+    "defaultMessage": "Select…",
+    "description": "Default placeholder on the Selector trigger button."
+  },
+  "@astryx.sideNav.heading.dialogLabel": {
+    "defaultMessage": "Navigation menu",
+    "description": "Aria label for the SideNavHeading dropdown dialog."
+  },
+  "@astryx.table.pagination.label": {
+    "defaultMessage": "Table pagination",
+    "description": "Default aria label for the pagination row appended to a Table."
+  },
+  "@astryx.timeInput.placeholder": {
+    "defaultMessage": "Select a time",
+    "description": "Default placeholder for TimeInput."
+  },
+  "@astryx.topNav.heading.dialogLabel": {
+    "defaultMessage": "Navigation menu",
+    "description": "Aria label for the TopNavHeading dropdown dialog."
+  },
+  "@astryx.typeahead.searchPlaceholder": {
+    "defaultMessage": "Search…",
+    "description": "Default placeholder for the Typeahead input."
+  },
+  "@astryx.banner.collapse": {
+    "defaultMessage": "Collapse",
+    "description": "Aria label and tooltip for the Banner expand/collapse toggle button when the banner is expanded."
+  },
+  "@astryx.banner.expand": {
+    "defaultMessage": "Expand",
+    "description": "Aria label and tooltip for the Banner expand/collapse toggle button when the banner is collapsed."
+  },
+  "@astryx.chatComposerDrawer.expand": {
+    "defaultMessage": "Expand {label}",
+    "description": "Aria label for the ChatComposerDrawer toggle when the drawer is collapsed. `label` is the drawer's visible label."
+  },
+  "@astryx.chatComposerDrawer.collapse": {
+    "defaultMessage": "Collapse {label}",
+    "description": "Aria label for the ChatComposerDrawer toggle when the drawer is expanded. `label` is the drawer's visible label."
+  },
+  "@astryx.chatLayout.newMessages": {
+    "defaultMessage": "New messages",
+    "description": "Label for the ChatLayout scroll-to-bottom pill when new messages have arrived below the viewport."
+  },
+  "@astryx.chatLayoutScrollButton.scrollToBottom": {
+    "defaultMessage": "Scroll to bottom",
+    "description": "Default label and aria-label for the ChatLayout scroll-to-bottom button."
+  },
+  "@astryx.chatMessage.messageFrom": {
+    "defaultMessage": "Message from {sender}",
+    "description": "Aria label for a ChatMessage article element when no visible sender name is rendered. `sender` is the sender identifier."
+  },
+  "@astryx.chatSendButton.stop": {
+    "defaultMessage": "Stop",
+    "description": "Label for the ChatSendButton while a response is streaming and the button acts as a stop control."
+  },
+  "@astryx.chatSendButton.send": {
+    "defaultMessage": "Send",
+    "description": "Label for the ChatSendButton when submitting a chat message."
+  },
+  "@astryx.chatTriggerMenu.suggestions": {
+    "defaultMessage": "Suggestions",
+    "description": "Default aria label for the trigger-menu listbox popover in the chat composer when a trigger does not supply its own menuLabel."
+  },
+  "@astryx.citation.label": {
+    "defaultMessage": "Citation {number}: {title}",
+    "description": "Aria label for a Citation element. `number` is the 1-based citation index; `title` is the source title (or the number as a string if no title is provided)."
+  },
+  "@astryx.codeBlock.copied": {
+    "defaultMessage": "Copied",
+    "description": "Aria label for the CodeBlock copy button immediately after the code has been copied."
+  },
+  "@astryx.codeBlock.copyCode": {
+    "defaultMessage": "Copy code",
+    "description": "Aria label for the CodeBlock copy button in its default (not-yet-copied) state."
+  },
+  "@astryx.codeBlock.code": {
+    "defaultMessage": "Code",
+    "description": "Fallback aria label for the CodeBlock scroll container when no language label is available."
+  },
+  "@astryx.fileInput.clearLabel": {
+    "defaultMessage": "Clear {label}",
+    "description": "Label for the FileInput clear button. `label` is the file input's own visible label."
+  },
+  "@astryx.lightbox.mediaViewer": {
+    "defaultMessage": "Media viewer",
+    "description": "Fallback aria label for the Lightbox dialog when the current media item has no alt text."
+  },
+  "@astryx.mobileNav.navigation": {
+    "defaultMessage": "Navigation",
+    "description": "Fallback aria label for the MobileNav dialog when no explicit label or string header is provided."
+  },
+  "@astryx.multiSelector.clearAll": {
+    "defaultMessage": "Clear all {label}",
+    "description": "Aria label for the MultiSelector clear-all button. `label` is the selector's own visible label."
+  },
+  "@astryx.numberInput.clearLabel": {
+    "defaultMessage": "Clear {label}",
+    "description": "Aria label for the NumberInput clear button. `label` is the input's own visible label."
+  },
+  "@astryx.selector.clearLabel": {
+    "defaultMessage": "Clear {label}",
+    "description": "Aria label for the Selector clear button. `label` is the selector's own visible label."
+  },
+  "@astryx.sideNavCollapseButton.expandSidebar": {
+    "defaultMessage": "Expand sidebar",
+    "description": "Default label for the SideNav collapse/expand button when the sidebar is currently collapsed."
+  },
+  "@astryx.sideNavCollapseButton.collapseSidebar": {
+    "defaultMessage": "Collapse sidebar",
+    "description": "Default label for the SideNav collapse/expand button when the sidebar is currently expanded."
+  },
+  "@astryx.sideNavItem.expand": {
+    "defaultMessage": "Expand {label}",
+    "description": "Aria label for the SideNavItem expand/collapse chevron when the item is collapsed. `label` is the nav item's visible label."
+  },
+  "@astryx.sideNavItem.collapse": {
+    "defaultMessage": "Collapse {label}",
+    "description": "Aria label for the SideNavItem expand/collapse chevron when the item is expanded. `label` is the nav item's visible label."
+  },
+  "@astryx.tableFiltering.filterByColumn": {
+    "defaultMessage": "Filter {header}",
+    "description": "Label, placeholder, and aria label for per-column filter controls in the Table filtering plugin. `header` is the column's header text."
+  },
+  "@astryx.tableGroupedRows.expandGroup": {
+    "defaultMessage": "Expand group {groupKey}",
+    "description": "Aria label for a Table grouped-row header chevron when the group is collapsed. `groupKey` is the group identifier."
+  },
+  "@astryx.tableGroupedRows.collapseGroup": {
+    "defaultMessage": "Collapse group {groupKey}",
+    "description": "Aria label for a Table grouped-row header chevron when the group is expanded. `groupKey` is the group identifier."
+  },
+  "@astryx.tableRowExpansion.collapseRow": {
+    "defaultMessage": "Collapse row",
+    "description": "Aria label for the Table row-expansion chevron when the row is currently expanded."
+  },
+  "@astryx.tableRowExpansion.expandRow": {
+    "defaultMessage": "Expand row",
+    "description": "Aria label for the Table row-expansion chevron when the row is currently collapsed."
+  },
+  "@astryx.tableRowExpansion.collapseAllRows": {
+    "defaultMessage": "Collapse all rows",
+    "description": "Aria label for the Table expand-all / collapse-all header button when all rows are currently expanded."
+  },
+  "@astryx.tableRowExpansion.expandAllRows": {
+    "defaultMessage": "Expand all rows",
+    "description": "Aria label for the Table expand-all / collapse-all header button when not all rows are currently expanded."
+  },
+  "@astryx.tableTree.collapseRow": {
+    "defaultMessage": "Collapse row",
+    "description": "Aria label for the Table tree-data expander chevron when the row is currently expanded."
+  },
+  "@astryx.tableTree.expandRow": {
+    "defaultMessage": "Expand row",
+    "description": "Aria label for the Table tree-data expander chevron when the row is currently collapsed."
+  },
+  "@astryx.textInput.clearLabel": {
+    "defaultMessage": "Clear {label}",
+    "description": "Aria label for the TextInput clear button. `label` is the input's own visible label."
+  },
+  "@astryx.thumbnail.remove": {
+    "defaultMessage": "Remove {accessibleName}",
+    "description": "Label for the Thumbnail remove button. `accessibleName` is the thumbnail's accessible name (label, alt, or a combination)."
+  },
+  "@astryx.thumbnail.open": {
+    "defaultMessage": "Open {accessibleName}",
+    "description": "Aria label for the interactive Thumbnail's open button. `accessibleName` is the thumbnail's accessible name (label, alt, or a combination)."
+  },
+  "@astryx.timeInput.clearLabel": {
+    "defaultMessage": "Clear {label}",
+    "description": "Aria label for the TimeInput clear button. `label` is the input's own visible label."
+  },
+  "@astryx.token.remove": {
+    "defaultMessage": "Remove {label}",
+    "description": "Aria label for the Token remove button. `label` is the token's own visible label."
+  }
+}

@@ -12,7 +12,12 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ContextMenu} from './ContextMenu';
-import {ContextMenuItem} from './index';
+import {
+  ContextMenuItem,
+  ContextMenuCheckboxItem,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+} from './index';
 import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
 import {Divider} from '../Divider';
 
@@ -463,5 +468,146 @@ describe('ContextMenu compound mode', () => {
       screen.getByRole('menuitem', {name: 'Paste', hidden: true}),
     ).toBeInTheDocument();
     expect(screen.getByRole('separator', {hidden: true})).toBeInTheDocument();
+  });
+
+  describe('cursor anchor positioning (#3465)', () => {
+    // The menu is anchored to a zero-size element placed at the cursor point
+    // *inside the trigger*, so it is positioned relative to the trigger's
+    // context (scroll-follow + auto-flip) rather than the viewport.
+    function getCursorAnchor(trigger: HTMLElement): HTMLElement {
+      const anchor = trigger.querySelector<HTMLElement>('[aria-hidden="true"]');
+      if (!anchor) {
+        throw new Error('cursor anchor not found');
+      }
+      return anchor;
+    }
+
+    it('renders a zero-size cursor anchor inside the trigger', () => {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Right-click me</div>
+        </ContextMenu>,
+      );
+      const anchor = getCursorAnchor(screen.getByTestId('ctx'));
+      expect(anchor.tagName).toBe('SPAN');
+      // Carries an anchor-name so the menu can be anchored to it via CSS
+      // anchor positioning (context mode), not fixed viewport coordinates.
+      expect(anchor.style.anchorName).toMatch(/^--astryx-layer-/);
+    });
+
+    it('places the cursor anchor at the pointer position relative to the trigger', () => {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Right-click me</div>
+        </ContextMenu>,
+      );
+      const trigger = screen.getByTestId('ctx');
+      trigger.getBoundingClientRect = () =>
+        ({
+          left: 100,
+          top: 50,
+          right: 300,
+          bottom: 150,
+          width: 200,
+          height: 100,
+        }) as DOMRect;
+      // Pointer at viewport (170, 90) -> local trigger offset (70, 40).
+      fireEvent.contextMenu(trigger, {clientX: 170, clientY: 90, detail: 1});
+      const anchor = getCursorAnchor(trigger);
+      expect(anchor.style.left).toBe('70px');
+      expect(anchor.style.top).toBe('40px');
+    });
+
+    it('anchors a keyboard-invoked menu to the trigger bottom-left', () => {
+      render(
+        <ContextMenu items={[{label: 'Item 1'}]} data-testid="ctx">
+          <div>Right-click me</div>
+        </ContextMenu>,
+      );
+      const trigger = screen.getByTestId('ctx');
+      trigger.getBoundingClientRect = () =>
+        ({
+          left: 40,
+          top: 10,
+          right: 100,
+          bottom: 30,
+          width: 60,
+          height: 20,
+        }) as DOMRect;
+      // Keyboard-initiated contextmenu: coords (0,0), detail 0 -> local (0, height).
+      fireEvent.contextMenu(trigger, {clientX: 0, clientY: 0, detail: 0});
+      const anchor = getCursorAnchor(trigger);
+      expect(anchor.style.left).toBe('0px');
+      expect(anchor.style.top).toBe('20px');
+    });
+  });
+});
+
+describe('ContextMenu selectable items', () => {
+  it('renders checkbox and radio items with correct roles and state', () => {
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <ContextMenuRadioGroup
+              value="name"
+              onChange={() => {}}
+              aria-label="Sort by">
+              <ContextMenuRadioItem value="name" label="Sort by name" />
+              <ContextMenuRadioItem value="date" label="Sort by date" />
+            </ContextMenuRadioGroup>
+            <ContextMenuCheckboxItem label="Show hidden" value={true} />
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Sort by name', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Sort by date', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'false');
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Show hidden', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(
+      screen.getByRole('group', {name: 'Sort by', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('fires onChange for radio and checkbox items', async () => {
+    const user = userEvent.setup();
+    const onSort = vi.fn();
+    const onToggle = vi.fn();
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <ContextMenuRadioGroup
+              value="name"
+              onChange={onSort}
+              aria-label="Sort by">
+              <ContextMenuRadioItem value="name" label="Sort by name" />
+              <ContextMenuRadioItem value="date" label="Sort by date" />
+            </ContextMenuRadioGroup>
+            <ContextMenuCheckboxItem
+              label="Show hidden"
+              value={false}
+              onChange={onToggle}
+            />
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    await user.click(
+      screen.getByRole('menuitemradio', {name: 'Sort by date', hidden: true}),
+    );
+    expect(onSort).toHaveBeenCalledWith('date');
+    await user.click(
+      screen.getByRole('menuitemcheckbox', {name: 'Show hidden', hidden: true}),
+    );
+    expect(onToggle).toHaveBeenCalledWith(true);
   });
 });

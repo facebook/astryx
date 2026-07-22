@@ -73,33 +73,3 @@ export function formatZodError(label, error) {
     .join('; ');
   return `${label} is invalid: ${issues}`;
 }
-
-/**
- * @param {unknown} config
- * @returns {import('../types/config').AstryxConfig}
- */
-export function validateConfig(config) {
-  const result = AstryxConfigSchema.safeParse(config);
-  if (!result.success) {
-    throw new Error(
-      formatZodError('astryx.config default export', result.error),
-    );
-  }
-  return result.data;
-}
-
-/**
- * @param {unknown} integration
- * @param {string} [label]
- * @returns {import('../types/integration').AstryxIntegration}
- */
-export function validateIntegration(
-  integration,
-  label = 'integration manifest',
-) {
-  const result = AstryxIntegrationSchema.safeParse(integration);
-  if (!result.success) {
-    throw new Error(formatZodError(label, result.error));
-  }
-  return result.data;
-}

@@ -16,15 +16,17 @@
  * - /packages/cli/templates/blocks/components/CheckboxList/ (showcase blocks)
  */
 
-import {use, type ReactNode} from 'react';
+import {use, type MouseEvent, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
+import {composeEventHandlers} from '../utils';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
 import {CheckboxListContext} from './CheckboxListContext';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -128,8 +130,10 @@ export function CheckboxListItem({
   xstyle,
   className,
   style,
+  onClick: onClickProp,
   ...restProps
 }: CheckboxListItemProps) {
+  const t = useTranslator();
   const ctx = use(CheckboxListContext);
 
   if (ctx && ctx.value !== undefined && value === undefined) {
@@ -200,7 +204,14 @@ export function CheckboxListItem({
       description={description}
       endContent={endContent}
       isDisabled={effectiveDisabled}
-      onClick={isInteractive ? handleToggle : undefined}
+      onClick={
+        isInteractive || onClickProp
+          ? composeEventHandlers<MouseEvent>(
+              onClickProp as ((event: MouseEvent) => void) | undefined,
+              isInteractive ? handleToggle : undefined,
+            )
+          : undefined
+      }
       aria-busy={isBusy || undefined}
       xstyle={
         [
@@ -215,7 +226,11 @@ export function CheckboxListItem({
       style={style}
       startContent={
         <CheckboxInput
-          label={typeof label === 'string' ? label : 'Checkbox'}
+          label={
+            typeof label === 'string'
+              ? label
+              : t('@astryx.checkboxList.item.checkbox')
+          }
           isLabelHidden
           value={resolvedChecked}
           onChange={() => handleToggle()}

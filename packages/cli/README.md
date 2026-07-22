@@ -423,13 +423,103 @@ data: { checks, summary } }`) that AI agents and scripts can parse.
 
 ## Configuration
 
-The CLI reads from an optional `astryx.config.mjs` in your project root:
+The CLI reads an optional `astryx.config.{ts,mjs,js}` from your project root
+(a sibling of `package.json`). Every field is optional; with no config file the
+CLI runs on defaults.
 
-```javascript
-export default {
-  templates: {
-    get: async id => fetchTemplateFromAPI(id),
-  },
+```typescript
+import {createConfig} from '@astryxdesign/core/config';
+
+export default createConfig({
+  integrations: ['@acme/astryx-widgets'],
   issuesUrl: 'https://github.com/your-org/your-repo/issues',
-};
+});
+```
+
+`createConfig` is a type-preserving helper: it returns its argument unchanged
+and exists only to give the config file editor autocomplete and type-checking. A
+plain `export default {}` object works identically. It's exported from
+`@astryxdesign/core` (not the CLI) so your config file gets type feedback
+without depending on the CLI; the same helper is re-exported from
+`@astryxdesign/cli/config` for back-compat.
+
+| Field                         | Type                           | Purpose                                                                                         |
+| ----------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `integrations`                | `string[]`                     | Integration package names to load (see [Integrations](#integrations)).                          |
+| `issuesUrl`                   | `string`                       | Where "report an issue" links point for your project. Defaults to the core issue tracker.       |
+| `hooks.postCodemod`           | `PostCodemodHook[]`            | Commands to run after `astryx upgrade` applies codemods (e.g. reinstall, rebuild, reformat).    |
+| `experimental.xle.components` | `Record<string, XleComponent>` | Register app-local components so layout (XLE) expressions can reference them by name. Unstable. |
+
+The config is validated against a strict schema when the CLI loads it, so an
+unknown field is a hard error rather than a silent no-op. `astryx doctor`
+reports whether the config loads cleanly.
+
+## Integrations
+
+An **integration** is any npm package that contributes its own components,
+templates, and upgrade codemods to Astryx. The CLI surfaces them next to core's,
+through the same commands, so a consumer can `astryx component`,
+`astryx template`, and `astryx upgrade` across core and every integration
+uniformly. Use it to ship a first-party add-on, publish a third-party component
+library, or share an internal design-system package across apps.
+
+The system runs on two files, each with a small typed API:
+
+| File                             | Written by | Role                                      |
+| -------------------------------- | ---------- | ----------------------------------------- |
+| `astryx.config.{ts,mjs,js}`      | Consumer   | Lists which integration packages to load. |
+| `astryx.integration.{ts,mjs,js}` | Author     | Declares what a package contributes.      |
+
+The consumer side is the `integrations` field of [`astryx.config`](#configuration).
+The author side is the integration manifest below.
+
+### The integration manifest
+
+A package becomes an integration by exporting a manifest from
+`astryx.integration.{ts,mjs,js}` at its root (a sibling of `package.json`). The
+manifest points at where each kind of contribution lives; identity (name,
+version) comes from `package.json`, not the manifest.
+
+```typescript
+import {createIntegration} from '@astryxdesign/core/authoring';
+
+export default createIntegration({
+  components: './components',
+  templates: './templates',
+  codemods: './codemods',
+  issuesUrl: 'https://github.com/acme/widgets/issues',
+});
+```
+
+| Field        | Type     | Purpose                                                               |
+| ------------ | -------- | --------------------------------------------------------------------- |
+| `components` | `string` | Directory holding the package's components and their `.doc.*` files.  |
+| `templates`  | `string` | Directory holding the package's page/block templates.                 |
+| `codemods`   | `string` | Directory holding upgrade codemods run by `astryx upgrade`.           |
+| `issuesUrl`  | `string` | Where "report an issue" links for this package's contributions point. |
+
+Every field is optional; declare only the roots the package ships.
+`createIntegration` is a type-preserving helper (editor autocomplete and
+type-checking); it lives in `@astryxdesign/core/authoring` and is re-exported
+from `@astryxdesign/cli/integration` for back-compat.
+
+### How it works
+
+Every command loads the consumer's `astryx.config`, resolves each listed
+integration's manifest from `node_modules`, and discovers its contributions.
+Everything is validated against one strict schema at the load boundary, so the
+CLI presents core and integration contributions through a single, uniform
+surface.
+
+Discovery is resilient: a broken or misconfigured integration is skipped with a
+one-line warning on stderr instead of crashing the CLI, and it never corrupts a
+`--json` envelope. To inspect problems, run
+`astryx validate-integration <package>` for a detailed report on one package, or
+`astryx doctor` for an overall health check.
+
+For the full authoring walkthrough (component doc format, template packaging
+and `exports` requirements, and codemod authoring), see the guide:
+
+```bash
+astryx docs cli-integrations
 ```
