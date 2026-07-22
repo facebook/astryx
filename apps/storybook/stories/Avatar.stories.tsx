@@ -77,7 +77,7 @@ const meta: Meta<typeof Avatar> = {
       control: 'boolean',
       description: 'Show status indicator dot',
       mapping: {
-        true: <AvatarStatusDot />,
+        true: <AvatarStatusDot label="Online" />,
         false: undefined,
       },
     },
@@ -248,27 +248,27 @@ export const StatusAcrossAllSizes: Story = {
         <Avatar
           name="TY"
           size="xsm"
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           name="XS"
           size="sm"
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           name="SM"
           size="md"
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           name="MD"
           size="lg"
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           name="LG"
           size="xl"
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
       </div>
 
@@ -278,37 +278,37 @@ export const StatusAcrossAllSizes: Story = {
           src="https://i.pravatar.cc/150?img=30"
           name="U1"
           size={20}
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=31"
           name="U2"
           size={32}
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=32"
           name="U3"
           size={48}
-          status={<AvatarStatusDot variant="error" />}
+          status={<AvatarStatusDot variant="error" label="Busy" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=33"
           name="U4"
           size={72}
-          status={<AvatarStatusDot variant="neutral" />}
+          status={<AvatarStatusDot variant="neutral" label="Offline" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=34"
           name="U5"
           size={96}
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=35"
           name="U6"
           size={128}
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
       </div>
 
@@ -342,10 +342,55 @@ export const StatusWithSizes: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>Status with Different Sizes</h4>
       <div {...stylex.props(styles.row)}>
-        <Avatar name="AB" size="md" status={<AvatarStatusDot />} />
-        <Avatar name="CD" size="lg" status={<AvatarStatusDot />} />
-        <Avatar name="EF" size="xl" status={<AvatarStatusDot />} />
-        <Avatar name="GH" size={72} status={<AvatarStatusDot />} />
+        <Avatar name="AB" size="md" status={<AvatarStatusDot label="Online" />} />
+        <Avatar name="CD" size="lg" status={<AvatarStatusDot label="Online" />} />
+        <Avatar name="EF" size="xl" status={<AvatarStatusDot label="Online" />} />
+        <Avatar name="GH" size={72} status={<AvatarStatusDot label="Online" />} />
+      </div>
+    </div>
+  ),
+};
+
+export const StatusShapesAtSmallSizes: Story = {
+  name: 'Status Shapes at Small Sizes',
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>
+        Each variant pairs colour with a distinct shape (filled, ring, minus) so
+        status never relies on colour alone — including the smallest sizes,
+        where icons cannot render
+      </h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar
+          name="ON"
+          size="xsm"
+          status={<AvatarStatusDot variant="success" label="Online" />}
+        />
+        <Avatar
+          name="OF"
+          size="xsm"
+          status={<AvatarStatusDot variant="neutral" label="Offline" />}
+        />
+        <Avatar
+          name="BU"
+          size="xsm"
+          status={<AvatarStatusDot variant="error" label="Busy" />}
+        />
+        <Avatar
+          name="ON"
+          size="md"
+          status={<AvatarStatusDot variant="success" label="Online" />}
+        />
+        <Avatar
+          name="OF"
+          size="md"
+          status={<AvatarStatusDot variant="neutral" label="Offline" />}
+        />
+        <Avatar
+          name="BU"
+          size="md"
+          status={<AvatarStatusDot variant="error" label="Busy" />}
+        />
       </div>
     </div>
   ),
