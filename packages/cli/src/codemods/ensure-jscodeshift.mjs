@@ -11,7 +11,7 @@
  */
 
 import {execSync} from 'node:child_process';
-import * as p from '@clack/prompts';
+import * as p from '../lib/term-log.mjs';
 import {detectPackageManager} from '../utils/package-manager.mjs';
 
 /**

@@ -174,7 +174,7 @@ function fullCommandName(actionCommand) {
  *
  * If --json is set on a command that is not on the JSON_SUPPORTED allowlist,
  * emit a structured error envelope and exit 1 — without running the command's
- * action (so no filesystem mutations, no clack prompts, no spawned processes).
+ * action (so no filesystem mutations, no interactive prompts, no spawned processes).
  *
  * This is the single source of truth for "command does not support --json".
  * Individual commands should NOT re-check this; they may assume that if their

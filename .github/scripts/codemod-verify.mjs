@@ -142,7 +142,7 @@ async function main() {
       continue;
     }
 
-    // Suppress clack output during verification
+    // Suppress codemod log output during verification
     const origLog = console.log;
     const origErr = console.error;
     await runCodemods(manifests, {
