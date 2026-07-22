@@ -16,6 +16,10 @@
  *
  * --agent <tool>: target a specific tool preset (claude, cursor, codex, hermes, all)
  * --agent-docs-path <path>: explicit file path(s)
+ *
+ * Also exposes auditAgentDocs() — the staleness detector `upgrade` uses to
+ * compare every managed block against what the installed version generates
+ * today (#4168).
  */
 
 import * as fs from 'node:fs';
@@ -102,6 +106,95 @@ export function isAstryxInitialized(targetDir = process.cwd()) {
     }
   }
   return false;
+}
+
+/**
+ * The version stamp printed on the first line of every generated block
+ * (`Astryx v0.1.7 · 150 components`). Legacy XDS blocks used `XDS v…`.
+ */
+const BLOCK_VERSION_RE = /(?:Astryx|XDS) v(\d+\.\d+\.\d+[^\s]*)/;
+
+/**
+ * Extract the managed block (markers included) from file content.
+ * Tries current ASTRYX markers first, then the legacy XDS markers.
+ *
+ * @param {string} content
+ * @returns {string|null} The block text, or null when no complete block exists
+ */
+function extractXdsBlock(content) {
+  let startIdx = content.indexOf(MARKER_START);
+  let endIdx = content.indexOf(MARKER_END);
+  let markerEndLength = MARKER_END.length;
+  if (startIdx === -1) {
+    startIdx = content.indexOf(LEGACY_MARKER_START);
+    endIdx = content.indexOf(LEGACY_MARKER_END);
+    markerEndLength = LEGACY_MARKER_END.length;
+  }
+  if (startIdx === -1 || endIdx === -1) return null;
+  return content.slice(startIdx, endIdx + markerEndLength);
+}
+
+/**
+ * Audit every managed agent-docs block against what the installed version
+ * would generate today (#4168 — `upgrade` must not leave the block stale).
+ *
+ * Detection covers the canonical {@link AGENT_DOC_PATHS} plus a shallow marker
+ * scan of root-level markdown files, since `init --agent-docs-path` can write
+ * the block to user-chosen locations.
+ *
+ * A block is STALE when its text differs from the freshly generated index.
+ * Comparing full block text (not just the version stamp) catches version bumps
+ * AND content drift within a version (component count, rules, styling-system
+ * guidance), and makes a refresh idempotent: after a rewrite the block equals
+ * the expected text byte-for-byte, so the next audit reports it fresh. The
+ * parsed `blockVersion` is only used for human-readable messaging.
+ *
+ * @param {string} [targetDir=process.cwd()]
+ * @returns {{
+ *   installedVersion: string,
+ *   files: Array<{path: string, blockVersion: string|null, stale: boolean}>,
+ * }} `files` has one entry per file carrying a complete managed block; an
+ *   empty list means the project has no managed block anywhere.
+ */
+export function auditAgentDocs(targetDir = process.cwd()) {
+  const coreDir = findCoreDir(targetDir);
+  const installedVersion = getXdsVersion(coreDir);
+  const expectedBlock = generateCompressedIndex(installedVersion, {
+    coreDir,
+    invocation: getCliInvocation(targetDir),
+    stylingSystem: detectStylingSystem(targetDir),
+  });
+
+  const candidates = new Set(discoverAgentDocs(targetDir));
+  try {
+    for (const entry of fs.readdirSync(targetDir, {withFileTypes: true})) {
+      if (!entry.isFile()) continue;
+      if (!/\.(md|mdc)$/i.test(entry.name)) continue;
+      candidates.add(entry.name);
+    }
+  } catch {
+    // Unreadable target dir — audit the canonical paths only.
+  }
+
+  const files = [];
+  for (const rel of candidates) {
+    let content;
+    try {
+      content = fs.readFileSync(path.join(targetDir, rel), 'utf-8');
+    } catch {
+      continue; // Unreadable file — not auditable.
+    }
+    const block = extractXdsBlock(content);
+    if (block === null) continue;
+    const versionMatch = BLOCK_VERSION_RE.exec(block);
+    files.push({
+      path: rel,
+      blockVersion: versionMatch ? versionMatch[1] : null,
+      stale: block !== expectedBlock,
+    });
+  }
+  files.sort((a, b) => a.path.localeCompare(b.path));
+  return {installedVersion, files};
 }
 
 /**
