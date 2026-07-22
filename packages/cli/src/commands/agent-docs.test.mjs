@@ -16,6 +16,8 @@ import {
   removeXdsBlock,
   discoverAgentDocs,
   resolveAgentPaths,
+  parseBlockVersion,
+  inspectAgentDocs,
 } from './agent-docs.mjs';
 
 let tmpDir;
@@ -607,5 +609,89 @@ describe('resolveAgentPaths', () => {
   it('claude preset still creates .claude/CLAUDE.md when nothing exists (hermes is additive)', () => {
     const result = resolveAgentPaths(tmpDir, 'claude');
     expect(result).toEqual({inject: [], create: ['.claude/CLAUDE.md']});
+  });
+});
+
+describe('parseBlockVersion', () => {
+  it('reads the version from the header of a generated block', () => {
+    expect(parseBlockVersion(generateCompressedIndex('1.2.3'))).toBe('1.2.3');
+  });
+
+  it('reads prerelease versions', () => {
+    expect(parseBlockVersion('Astryx v1.2.3-beta.4 · 10 components')).toBe(
+      '1.2.3-beta.4',
+    );
+  });
+
+  it('returns null when no versioned header is present', () => {
+    expect(parseBlockVersion('<!-- XDS:START -->\nold\n<!-- XDS:END -->')).toBeNull();
+    expect(parseBlockVersion('')).toBeNull();
+    expect(parseBlockVersion(undefined)).toBeNull();
+  });
+});
+
+describe('inspectAgentDocs', () => {
+  function writeBlock(rel, version) {
+    const filePath = path.join(tmpDir, rel);
+    fs.mkdirSync(path.dirname(filePath), {recursive: true});
+    fs.writeFileSync(filePath, `# Doc\n\n${generateCompressedIndex(version)}\n`);
+  }
+
+  it('reports missing when no agent docs exist at all', () => {
+    const res = inspectAgentDocs(tmpDir, '1.0.0');
+    expect(res.status).toBe('missing');
+    expect(res.files).toEqual([]);
+    expect(res.staleFiles).toEqual([]);
+  });
+
+  it('reports missing when agent files exist but carry no Astryx marker', () => {
+    fs.writeFileSync(path.join(tmpDir, 'AGENTS.md'), '# Agents\n\nHand-written notes.\n');
+    expect(inspectAgentDocs(tmpDir, '1.0.0').status).toBe('missing');
+  });
+
+  it('reports current when the only block matches the installed version', () => {
+    writeBlock('AGENTS.md', '1.0.0');
+    const res = inspectAgentDocs(tmpDir, '1.0.0');
+    expect(res.status).toBe('current');
+    expect(res.staleFiles).toEqual([]);
+    expect(res.blockVersions).toEqual([]);
+  });
+
+  it('reports stale (with the old version) when the block is behind', () => {
+    writeBlock('AGENTS.md', '1.0.0');
+    const res = inspectAgentDocs(tmpDir, '2.0.0');
+    expect(res.status).toBe('stale');
+    expect(res.staleFiles).toEqual(['AGENTS.md']);
+    expect(res.blockVersions).toEqual(['1.0.0']);
+    expect(res.installedVersion).toBe('2.0.0');
+  });
+
+  it('treats a legacy XDS block as stale even with no parseable version', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'CLAUDE.md'),
+      '# Claude\n\n<!-- XDS:START -->\nlegacy index\n<!-- XDS:END -->\n',
+    );
+    const res = inspectAgentDocs(tmpDir, '1.0.0');
+    expect(res.status).toBe('stale');
+    expect(res.files[0].legacy).toBe(true);
+    expect(res.blockVersions).toEqual([]);
+  });
+
+  it('is stale if ANY marked file is behind (mixed current + stale)', () => {
+    writeBlock('AGENTS.md', '2.0.0');
+    writeBlock('CLAUDE.md', '1.0.0');
+    const res = inspectAgentDocs(tmpDir, '2.0.0');
+    expect(res.status).toBe('stale');
+    expect(res.staleFiles).toEqual(['CLAUDE.md']);
+  });
+
+  it('defaults the installed version to the core package when omitted', () => {
+    const coreDir = path.join(tmpDir, 'node_modules', '@astryxdesign', 'core');
+    fs.mkdirSync(coreDir, {recursive: true});
+    fs.writeFileSync(path.join(coreDir, 'package.json'), JSON.stringify({version: '3.0.0'}));
+    writeBlock('AGENTS.md', '3.0.0');
+    const res = inspectAgentDocs(tmpDir);
+    expect(res.installedVersion).toBe('3.0.0');
+    expect(res.status).toBe('current');
   });
 });

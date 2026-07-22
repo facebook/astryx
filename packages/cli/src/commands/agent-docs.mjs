@@ -105,6 +105,78 @@ export function isAstryxInitialized(targetDir = process.cwd()) {
 }
 
 /**
+ * Parse the Astryx version a managed block was generated for, from its header
+ * line ("Astryx v1.2.3 · N components"). Returns null when the block predates
+ * the versioned header (e.g. a legacy XDS block) or has no header at all.
+ *
+ * @param {string} content File contents, or just the block text.
+ * @returns {string|null}
+ */
+export function parseBlockVersion(content) {
+  const match = /Astryx v(\d+\.\d+\.\d+[^\s·]*)/.exec(content ?? '');
+  return match ? match[1] : null;
+}
+
+/**
+ * Read-only staleness assessment of the managed agent-docs block(s) against the
+ * installed core version. This is the detection half of the `astryx upgrade`
+ * agent-docs refresh: it never writes, so `upgrade` can run it on EVERY path —
+ * including the up-to-date / no-codemods short-circuits — and decide whether to
+ * rewrite a stale block, nudge an uninitialized repo, or stay silent.
+ *
+ * A managed block is:
+ * - `stale`   — it carries a legacy XDS marker, has no parseable version, or
+ *               records a version other than the installed one.
+ * - `current` — every managed block already matches the installed version.
+ * And the project is `missing` when no managed block exists anywhere (the repo
+ * has agent-doc files without our markers, or none at all — i.e. never `init`ed).
+ *
+ * @param {string} targetDir
+ * @param {string} [installedVersion] Defaults to the installed core version.
+ * @returns {{
+ *   installedVersion: string,
+ *   status: 'missing' | 'stale' | 'current',
+ *   files: Array<{path: string, blockVersion: string|null, legacy: boolean, stale: boolean}>,
+ *   staleFiles: string[],
+ *   blockVersions: string[],
+ * }}
+ */
+export function inspectAgentDocs(targetDir, installedVersion) {
+  const version = installedVersion ?? getXdsVersion(findCoreDir(targetDir));
+  const files = [];
+
+  for (const rel of discoverAgentDocs(targetDir)) {
+    let content;
+    try {
+      content = fs.readFileSync(path.join(targetDir, rel), 'utf-8');
+    } catch {
+      continue; // Unreadable — treat as absent.
+    }
+    const hasNew = content.includes(MARKER_START);
+    const hasLegacy = content.includes(LEGACY_MARKER_START);
+    if (!hasNew && !hasLegacy) continue; // Not a block we manage.
+
+    const legacy = !hasNew && hasLegacy;
+    const blockVersion = parseBlockVersion(content);
+    const stale = legacy || blockVersion == null || blockVersion !== version;
+    files.push({path: rel, blockVersion, legacy, stale});
+  }
+
+  const staleEntries = files.filter(f => f.stale);
+  const staleFiles = staleEntries.map(f => f.path);
+  const blockVersions = [
+    ...new Set(staleEntries.map(f => f.blockVersion).filter(Boolean)),
+  ];
+
+  let status;
+  if (files.length === 0) status = 'missing';
+  else if (staleFiles.length > 0) status = 'stale';
+  else status = 'current';
+
+  return {installedVersion: version, status, files, staleFiles, blockVersions};
+}
+
+/**
  * Resolve which file(s) to write for a given agent tool preset.
  * Searches for existing files first, falls back to default creation path.
  *

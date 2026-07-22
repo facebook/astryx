@@ -23,6 +23,31 @@ export interface UpgradeListEntry {
   version: string;
 }
 
+/**
+ * State of the managed agent-docs block (`<!-- ASTRYX:START --> … END -->`)
+ * relative to the installed core version, plus what `upgrade` did about it.
+ * Present on every upgrade response (run, status, and the codemod/config error
+ * envelopes) because the block is refreshed independently of codemods.
+ *
+ * - `refreshed`     — a stale block was rewritten (`--apply` only).
+ * - `would-refresh` — a stale block was detected in dry-run; nothing written.
+ * - `nudge-init`    — no managed block exists; user should run `init`.
+ * - `error`         — refresh was attempted but writing failed.
+ * - `none`          — nothing to do (block already current).
+ */
+export interface AgentDocsSummary {
+  status: 'missing' | 'stale' | 'current';
+  /** Installed core version the block should reflect. */
+  installedVersion: string;
+  /** Distinct stale block versions found (the "from" side of the refresh). */
+  fromVersions: string[];
+  /** Files rewritten (apply) or that would be rewritten (dry-run). */
+  files: string[];
+  /** True only when a block was actually rewritten (apply mode). */
+  refreshed: boolean;
+  action: 'refreshed' | 'would-refresh' | 'nudge-init' | 'error' | 'none';
+}
+
 /** xds --json upgrade [--apply] */
 export interface UpgradeRunResponse {
   type: 'upgrade.run';
@@ -32,6 +57,7 @@ export interface UpgradeRunResponse {
     codemods: number;
     depsUpdated: string[];
     agentDocsRefreshed: boolean;
+    agentDocs: AgentDocsSummary;
   };
 }
 
@@ -49,8 +75,18 @@ export interface UpgradeRunResponse {
 export interface UpgradeStatusResponse {
   type: 'upgrade.status';
   data:
-    | {status: 'up_to_date'; from: string; to: string}
-    | {status: 'no_codemods'; from: string; to: string}
+    | {
+        status: 'up_to_date';
+        from: string;
+        to: string;
+        agentDocs: AgentDocsSummary;
+      }
+    | {
+        status: 'no_codemods';
+        from: string;
+        to: string;
+        agentDocs: AgentDocsSummary;
+      }
     | {
         status: 'config_fixable';
         from: string;
@@ -60,5 +96,6 @@ export interface UpgradeStatusResponse {
         suggestedCommand: string;
         message: string;
         note: string;
+        agentDocs: AgentDocsSummary;
       };
 }
