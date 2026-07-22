@@ -284,10 +284,12 @@ export function plainDateFormat(
  * literal renders the same date shape in either component.
  *
  * - `date`: locale short-month date, e.g. "Mar 21, 2026"
+ * - `date_long`: locale long-month date, e.g. "March 21, 2026"
  * - `date_weekday`: short weekday + short-month date, e.g. "Wed, Mar 21, 2026"
  * - `system_date`: ISO 8601 calendar date, e.g. "2026-03-21"
  */
-export type SharedDateFormat = 'date' | 'date_weekday' | 'system_date';
+export type SharedDateFormat =
+  'date' | 'date_long' | 'date_weekday' | 'system_date';
 
 /**
  * Intl option bags for the locale-aware shared date members. `system_date` is
@@ -303,6 +305,7 @@ export const SHARED_DATE_FORMAT_OPTIONS: Record<
   Intl.DateTimeFormatOptions
 > = {
   date: DATE_FORMAT_SHORT_WITH_YEAR,
+  date_long: DATE_FORMAT_LONG,
   date_weekday: DATE_FORMAT_SHORT_WITH_WEEKDAY,
 };
 

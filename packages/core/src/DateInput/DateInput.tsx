@@ -57,9 +57,7 @@ import {getInputARIA, parseDateInput} from '../utils';
 import {
   plainDateFromISO,
   plainDateToISO,
-  plainDateFormat,
   formatSharedDate,
-  DATE_FORMAT_LONG,
 } from '../utils/plainDate';
 import type {TimestampFormat} from '../Timestamp';
 
@@ -135,6 +133,7 @@ export type DateInputSize = keyof typeof sizeStyles;
  * `Extract`) so the same literal renders the same date shape in both
  * `Timestamp` and `DateInput`:
  * - `'date'`: locale short-month date, e.g. "Mar 21, 2026"
+ * - `'date_long'`: locale long-month date, e.g. "March 21, 2026" (the default)
  * - `'date_weekday'`: short weekday + date, e.g. "Wed, Mar 21, 2026"
  * - `'system_date'`: ISO 8601 calendar date, e.g. "2026-03-21"
  *
@@ -144,7 +143,7 @@ export type DateInputSize = keyof typeof sizeStyles;
  */
 export type DateInputFormat = Extract<
   TimestampFormat,
-  'date' | 'date_weekday' | 'system_date'
+  'date' | 'date_long' | 'date_weekday' | 'system_date'
 >;
 
 // Re-export shared types for convenience
@@ -310,7 +309,7 @@ export interface DateInputProps extends Omit<
    * literal renders the same date shape in both components) or a function that
    * maps the ISO value to a custom display string.
    *
-   * - unset (default): long-month date, e.g. "March 21, 2026" (unchanged)
+   * - `'date_long'` (default): long-month date, e.g. "March 21, 2026"
    * - `'date'`: short-month date, e.g. "Mar 21, 2026"
    * - `'date_weekday'`: short weekday + date, e.g. "Wed, Mar 21, 2026"
    * - `'system_date'`: ISO 8601 calendar date, e.g. "2026-03-21"
@@ -321,6 +320,7 @@ export interface DateInputProps extends Omit<
    * read back can't be re-committed after an edit; external `value` changes
    * always recompute the display from the ISO value.
    *
+   * @default 'date_long'
    * @example
    * ```
    * <DateInput label="Ship date" value={date} onChange={setDate} format="date" />
@@ -368,7 +368,7 @@ export function DateInput({
   labelTooltip,
   hasClear = false,
   numberOfMonths = 1,
-  format,
+  format = 'date_long',
   width,
   xstyle,
   className,
@@ -455,20 +455,17 @@ export function DateInput({
     }
   }
 
-  // Format a committed ISO value for display. `format` unset keeps today's
-  // long-month rendering (byte-identical, non-breaking); a function is called
-  // with the ISO value; a named member reuses Timestamp's shared date mapping.
-  // Applies ONLY to the committed value, never to in-progress typed input.
+  // Format a committed ISO value for display. The default `date_long` renders
+  // the long-month shape (byte-identical to the historical hardcoded
+  // DATE_FORMAT_LONG rendering, so still non-breaking); a function is called
+  // with the ISO value; every other named member reuses Timestamp's shared
+  // date mapping. Applies ONLY to the committed value, never to in-progress
+  // typed input.
   const formatCommittedValue = useCallback(
-    (iso: ISODateString): string => {
-      if (typeof format === 'function') {
-        return format(iso);
-      }
-      const pd = plainDateFromISO(iso);
-      return format === undefined
-        ? plainDateFormat(pd, DATE_FORMAT_LONG)
-        : formatSharedDate(pd, format);
-    },
+    (iso: ISODateString): string =>
+      typeof format === 'function'
+        ? format(iso)
+        : formatSharedDate(plainDateFromISO(iso), format),
     [format],
   );
 

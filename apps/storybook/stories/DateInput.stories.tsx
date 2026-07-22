@@ -59,9 +59,9 @@ const meta: Meta<typeof DateInput> = {
     },
     format: {
       control: 'select',
-      options: [undefined, 'date', 'date_weekday', 'system_date'],
+      options: ['date_long', 'date', 'date_weekday', 'system_date'],
       description:
-        "Display format for the committed value, reusing Timestamp's vocabulary. Unset renders a long-month date.",
+        "Display format for the committed value, reusing Timestamp's vocabulary. Defaults to 'date_long' (long-month date).",
     },
   },
 };
@@ -95,10 +95,9 @@ export const WithValue: Story = {
 /**
  * The committed date value can be rendered in different shapes via `format`,
  * reusing `Timestamp`'s format vocabulary so the same literal renders the same
- * date shape in both components. Left unset, the value renders as a long-month
- * date ("March 21, 2026"), unchanged from the historical default. While the
- * user is typing, the raw text is shown verbatim — `format` applies only to the
- * committed value.
+ * date shape in both components. It defaults to `'date_long'` (a long-month
+ * date, "March 21, 2026"). While the user is typing, the raw text is shown
+ * verbatim — `format` applies only to the committed value.
  */
 export const Formats: Story = {
   render: () => {
@@ -108,7 +107,7 @@ export const Formats: Story = {
     return (
       <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
         <DateInput
-          label="Default (long month)"
+          label="Default (format='date_long')"
           value={value}
           onChange={setValue}
         />
