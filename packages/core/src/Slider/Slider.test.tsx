@@ -85,6 +85,19 @@ describe('Slider', () => {
     expect(slider).toHaveAttribute('aria-valuenow', '72');
   });
 
+  it.each([
+    {value: 150, expectedValue: 100, expectedPosition: '100%'},
+    {value: -50, expectedValue: 0, expectedPosition: '0%'},
+  ])(
+    'clamps a controlled value of $value to $expectedValue',
+    ({value, expectedValue, expectedPosition}) => {
+      render(<Slider label="Volume" value={value} min={0} max={100} />);
+      const slider = screen.getByRole('slider');
+      expect(slider).toHaveAttribute('aria-valuenow', String(expectedValue));
+      expect(slider).toHaveStyle({left: expectedPosition});
+    },
+  );
+
   it('range mode sets correct aria values on both thumbs', () => {
     render(
       <Slider

@@ -428,10 +428,12 @@ export function Slider({ref, ...props}: SliderProps) {
 
   // Value helpers — guard against undefined value (e.g. playground previews
   // that render the component without providing a value prop).
-  const values: number[] = useMemo(
-    () => (isRange ? value : [value != null ? value : min]),
-    [isRange, value, min],
-  );
+  const values: number[] = useMemo(() => {
+    const currentValues = Array.isArray(value)
+      ? value
+      : [value != null ? value : min];
+    return currentValues.map(currentValue => clamp(currentValue, min, max));
+  }, [value, min, max]);
 
   const valuesRef = useRef(values);
   valuesRef.current = values;
