@@ -350,9 +350,15 @@ export function useCombobox({
             );
             if (matchIndex >= 0) {
               if (!isOpen) {
-                onOpen();
+                // When closed, select the matched item directly (native
+                // <select> behavior) instead of opening the menu.
+                const item = selectableItems[matchIndex];
+                if (item && !item.disabled) {
+                  selectItem(item);
+                }
+              } else {
+                setHighlightedIndex(matchIndex);
               }
-              setHighlightedIndex(matchIndex);
             }
           }
           break;
