@@ -19,6 +19,7 @@
 import {useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps} from '@astryxdesign/core/utils';
 import type {BaseProps} from '@astryxdesign/core';
 import {themeProps} from '@astryxdesign/core/utils';
@@ -61,8 +62,6 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
   density?: 'compact' | 'balanced' | 'spacious';
 }
 
-const STEP_GAP = '2px';
-
 const styles = stylex.create({
   root: {
     display: 'flex',
@@ -74,11 +73,11 @@ const styles = stylex.create({
   horizontal: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: STEP_GAP,
+    gap: spacingVars['--spacing-0-5'],
   },
   vertical: {
     flexDirection: 'column',
-    gap: STEP_GAP,
+    gap: spacingVars['--spacing-0-5'],
   },
 });
 

@@ -144,7 +144,7 @@ function CurrentIcon() {
 
 // --- Styles ---
 
-const BAR_WIDTH = '4px';
+const BAR_WIDTH = spacingVars['--spacing-1'];
 const ICON_SIZE = spacingVars['--spacing-4'];
 const NUMBER_SIZE = spacingVars['--spacing-5'];
 
