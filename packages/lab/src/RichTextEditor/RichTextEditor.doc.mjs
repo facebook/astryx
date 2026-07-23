@@ -29,7 +29,7 @@ export const docs = {
       type: 'boolean',
       description:
         'Visually hide the label (still accessible to screen readers).',
-      defaultValue: 'false',
+      default: 'false',
     },
     {
       name: 'description',
@@ -57,13 +57,13 @@ export const docs = {
       name: 'isReadOnly',
       type: 'boolean',
       description: 'Whether the editor is read-only (non-editable).',
-      defaultValue: 'false',
+      default: 'false',
     },
     {
       name: 'isDisabled',
       type: 'boolean',
       description: 'Whether the editor is disabled (non-editable, dimmed).',
-      defaultValue: 'false',
+      default: 'false',
     },
     {
       name: 'status',
@@ -75,7 +75,7 @@ export const docs = {
       name: 'size',
       type: "'sm' | 'md' | 'lg'",
       description: 'The size of the editor, affecting internal padding.',
-      defaultValue: "'md'",
+      default: "'md'",
     },
     {
       name: 'nodes',
@@ -94,13 +94,13 @@ export const docs = {
       type: 'boolean',
       description:
         'Enable Markdown shortcut typing (e.g. "# " for a heading). Uses default @lexical/markdown transformers.',
-      defaultValue: 'true',
+      default: 'true',
     },
     {
       name: 'hasAutoFocus',
       type: 'boolean',
       description: 'Automatically focus the editor on mount.',
-      defaultValue: 'false',
+      default: 'false',
     },
     {
       name: 'width',
