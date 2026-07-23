@@ -16,7 +16,7 @@ export const docs = {
     {
       name: 'alt',
       type: 'string',
-      description: 'Alt text for the image.',
+      description: 'Alt text for the image. When omitted, the image is explicitly decorative (alt="", role="presentation", aria-hidden) and hidden from screen readers; a dev warning fires if neither alt nor label is set.',
     },
     {
       name: 'label',
@@ -95,7 +95,7 @@ export const docs = {
 export const docsZh = {
   propDescriptions: {
     src: '\u56FE\u7247\u6E90 URL\u3002',
-    alt: '\u56FE\u7247\u7684\u66FF\u4EE3\u6587\u672C\u3002',
+    alt: '\u56FE\u7247\u7684\u66FF\u4EE3\u6587\u672C\u3002\u7701\u7565\u65F6\u56FE\u7247\u4F1A\u88AB\u663E\u5F0F\u6807\u8BB0\u4E3A\u88C5\u9970\u6027\uFF08alt=""\u3001role="presentation"\u3001aria-hidden\uFF09\u5E76\u5BF9\u5C4F\u5E55\u9605\u8BFB\u5668\u9690\u85CF\uFF1B\u82E5 alt \u548C label \u5747\u672A\u8BBE\u7F6E\uFF0C\u5F00\u53D1\u73AF\u5883\u4F1A\u53D1\u51FA\u8B66\u544A\u3002',
     label: '\u65E0\u969C\u788D\u6807\u7B7E\uFF08\u5982\u6587\u4EF6\u540D\uFF09\u3002\u60AC\u505C\u65F6\u4EE5\u63D0\u793A\u5DE5\u5177\u663E\u793A\u3002',
     onRemove: '\u8986\u76D6\u5C42\u79FB\u9664\u6309\u94AE\u7684\u56DE\u8C03\u3002',
     onClick: '\u70B9\u51FB\u5904\u7406\u5668\u3002\u6DFB\u52A0\u6309\u94AE\u8BED\u4E49\u548C\u60AC\u505C\u9634\u5F71\u3002',
@@ -135,7 +135,7 @@ export const docsDense = {
   },
   propDescriptions: {
     src: 'Image source URL.',
-    alt: 'Alt text for image.',
+    alt: 'Alt text for image. Omitted → explicitly decorative (alt="" + role="presentation" + aria-hidden); dev warn when src set with no alt and no label.',
     label: 'Accessible label (file name). Tooltip on hover, aria-label.',
     onRemove: '(e) => void. Overlaid remove button callback.',
     onClick: '(e) => void. Adds button semantics + hover shadow.',

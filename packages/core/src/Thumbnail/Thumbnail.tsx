@@ -13,6 +13,10 @@
  * Uses useImageMode (APCA) to detect image luminance so the overlaid
  * remove button always has sufficient contrast.
  *
+ * Images without `alt` are explicitly decorative (alt="" +
+ * role="presentation" + aria-hidden, matching Avatar). A dev-time warning
+ * fires once when `src` is set with no `alt` and no other name source.
+ *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Thumbnail/Thumbnail.doc.mjs
  * - /packages/core/src/Thumbnail/Thumbnail.test.tsx
@@ -21,6 +25,7 @@
  * - /packages/cli/templates/blocks/components/Thumbnail/ (showcase blocks)
  */
 
+import {useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -54,7 +59,14 @@ export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
    */
   src?: string;
   /**
-   * Alt text for the image. Required for accessibility when `src` is provided.
+   * Alt text for the image.
+   *
+   * When omitted, the image is explicitly decorative (`alt=""` +
+   * `role="presentation"` + `aria-hidden`, matching Avatar) and hidden from
+   * assistive technology. Provide `alt` whenever the image conveys content;
+   * without it, screen reader users only hear the `label` (file name), or a
+   * generic "thumbnail" if `label` is also missing — which triggers a
+   * dev-time warning.
    */
   alt?: string;
   /**
@@ -265,10 +277,45 @@ export function Thumbnail({
   const accessibleName =
     label && alt ? `${label} — ${alt}` : (label ?? alt ?? 'thumbnail');
 
+  // Without `alt`, the image is explicitly decorative rather than silently
+  // empty-alt, matching Avatar's handling of unnamed images.
+  const isImageDecorative = !alt;
+
+  // Dev-time guardrail: `src` with no `alt` hides the image from assistive
+  // technology. That is fine when the thumbnail is otherwise named — `label`
+  // (or a consumer-provided aria name) becomes the group's accessible name —
+  // but with no name source at all the group falls back to a generic
+  // "thumbnail". Warn once per component instance (in an effect) rather than
+  // on every render.
+  const hasNameSource =
+    alt != null ||
+    label != null ||
+    props['aria-label'] != null ||
+    props['aria-labelledby'] != null;
+  const warnedUnnamedImageRef = useRef(false);
+  useEffect(() => {
+    if (hasSrc && !hasNameSource && !warnedUnnamedImageRef.current) {
+      warnedUnnamedImageRef.current = true;
+      console.warn(
+        'Thumbnail: `src` is set without `alt` or `label`. The image is ' +
+          'treated as decorative and hidden from assistive technology, and ' +
+          'the thumbnail falls back to a generic "thumbnail" name. Pass ' +
+          '`alt` to describe the image content, or `label` (file name) to ' +
+          'name the thumbnail.',
+      );
+    }
+  }, [hasSrc, hasNameSource]);
+
   const imageContent = (
     <>
       {showImage && (
-        <img src={src} alt={alt ?? ''} {...stylex.props(styles.image)} />
+        <img
+          src={src}
+          alt={alt ?? ''}
+          role={isImageDecorative ? 'presentation' : undefined}
+          aria-hidden={isImageDecorative || undefined}
+          {...stylex.props(styles.image)}
+        />
       )}
       {showSkeleton && <Skeleton radius={2} />}
       {showPlaceholder && (

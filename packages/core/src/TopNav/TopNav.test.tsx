@@ -444,4 +444,49 @@ describe('TopNavItem', () => {
       expect(card).toHaveAttribute('aria-label', 'Featured');
     });
   });
+
+  describe('TopNavMegaMenuFeaturedCard image alt handling', () => {
+    it('marks the image as explicitly decorative when imageAlt is omitted', () => {
+      render(
+        <TopNavMegaMenuFeaturedCard
+          title="What's new"
+          image="/promo.jpg"
+          data-testid="featured-card"
+        />,
+      );
+      const img = screen.getByTestId('featured-card').querySelector('img');
+      expect(img).toHaveAttribute('alt', '');
+      expect(img).toHaveAttribute('role', 'presentation');
+      expect(img).toHaveAttribute('aria-hidden', 'true');
+      // The image must not be exposed to assistive technology as a nameless img.
+      expect(screen.queryByRole('img')).toBeNull();
+    });
+
+    it('exposes the image with normal img semantics when imageAlt is provided', () => {
+      render(
+        <TopNavMegaMenuFeaturedCard
+          title="What's new"
+          image="/promo.jpg"
+          imageAlt="Team collaboration"
+        />,
+      );
+      const img = screen.getByRole('img', {name: 'Team collaboration'});
+      expect(img).not.toHaveAttribute('role');
+      expect(img).not.toHaveAttribute('aria-hidden');
+    });
+
+    it('keeps title and link semantics unchanged with a decorative image', () => {
+      render(
+        <TopNavMegaMenuFeaturedCard
+          title="What's new"
+          image="/promo.jpg"
+          linkLabel="Read the announcement"
+          linkHref="/blog/v4"
+        />,
+      );
+      expect(screen.getByText("What's new")).toBeInTheDocument();
+      const link = screen.getByRole('link', {name: /Read the announcement/});
+      expect(link).toHaveAttribute('href', '/blog/v4');
+    });
+  });
 });
