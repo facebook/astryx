@@ -16,7 +16,7 @@
  *   astryx search button --json          Typed JSON envelope
  */
 
-import {getRunPrefix} from '../utils/package-manager.mjs';
+import {getCliInvocation, formatCliCommand} from '../utils/package-manager.mjs';
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {search as searchApi, SEARCH_DOMAINS} from '../api/search.mjs';
@@ -63,7 +63,7 @@ export function registerSearch(program) {
       if (json) return jsonOut(result.type, result.data);
 
       // ── Text output ──────────────────────────────────────────────
-      const run = getRunPrefix();
+      const run = getCliInvocation();
       const {query: q, results} = result.data;
 
       // No matches is a valid, successful outcome — clean message, exit 0.
@@ -71,7 +71,7 @@ export function registerSearch(program) {
         humanLog('');
         humanLog(`No results for "${q}".`);
         humanLog('');
-        humanLog(`Try a broader term, or browse: ${run} astryx component --list`);
+        humanLog(`Try a broader term, or browse: ${run} component --list`);
         humanLog('');
         return;
       }
@@ -86,7 +86,7 @@ export function registerSearch(program) {
         if (r.description) {
           humanLog(`               ${r.description}`);
         }
-        humanLog(`               → ${run} ${r.command}`);
+        humanLog(`               → ${formatCliCommand(r.command)}`);
         if (options.detail) {
           if (r.import) humanLog(`               import: ${r.import}`);
           humanLog(`               match: ${r.reason} (score ${r.score})`);

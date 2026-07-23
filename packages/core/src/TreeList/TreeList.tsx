@@ -208,8 +208,12 @@ export function TreeList({
   // to this treeitem's own row — never a descendant treeitem's action inside an
   // expanded group.
   const activateItem = useCallback((current: HTMLElement): boolean => {
+    // The chevron toggle is marked with `data-tree-toggle` (set by
+    // TreeListItem) so this filter stays stable across locales — matching by
+    // aria-label would break under any locale where "Toggle children" is
+    // translated.
     const candidates = current.querySelectorAll<HTMLElement>(
-      'a[href], button:not([aria-label="Toggle children"])',
+      'a[href], button:not([data-tree-toggle])',
     );
     for (const candidate of candidates) {
       if (candidate.closest('[role="treeitem"]') === current) {

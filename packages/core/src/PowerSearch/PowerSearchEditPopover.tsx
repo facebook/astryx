@@ -19,8 +19,10 @@ import {Selector} from '../Selector';
 import {HStack, VStack} from '../Stack';
 import {Icon} from '../Icon';
 import {TreeList, type TreeListItemData} from '../TreeList';
+import {useTranslator} from '../i18n';
 import {spacingVars, typeScaleVars} from '../theme/tokens.stylex';
 import {PowerSearchValueEditor} from './PowerSearchValueEditor';
+import {resolveOperatorLabel} from './resolveOperatorLabel';
 import type {InternalConfig} from './useInternalConfig';
 import type {
   PowerSearchFilter,
@@ -238,6 +240,7 @@ function NestedSubFilterRow({
   onChange,
   isReadOnly,
 }: NestedSubFilterRowProps) {
+  const t = useTranslator();
   const fieldOptions = useMemo(
     () =>
       config.getVisibleFields().map(field => ({
@@ -251,9 +254,9 @@ function NestedSubFilterRow({
     const operators = config.getVisibleOperators(subFilter.field);
     return operators.map(op => ({
       value: op.key,
-      label: op.label,
+      label: resolveOperatorLabel(op, t),
     }));
-  }, [config, subFilter.field]);
+  }, [config, subFilter.field, t]);
 
   const currentOperator = subFilter.operator
     ? config.getOperator(subFilter.field, subFilter.operator)
@@ -308,7 +311,7 @@ function NestedSubFilterRow({
     <HStack gap={2} vAlign="center">
       <div {...stylex.props(styles.nestedFieldSelector)}>
         <Selector
-          label="Field"
+          label={t('@astryx.powersearch.editor.field')}
           isLabelHidden
           options={fieldOptions}
           value={subFilter.field}
@@ -320,7 +323,7 @@ function NestedSubFilterRow({
       {operatorOptions.length > 0 && (
         <div {...stylex.props(styles.nestedOperatorSelector)}>
           <Selector
-            label="Operator"
+            label={t('@astryx.powersearch.editor.operator')}
             isLabelHidden
             options={operatorOptions}
             value={subFilter.operator}
@@ -366,6 +369,7 @@ function NestedEditor({
   onPartialFilterChange,
   isReadOnly,
 }: NestedEditorProps) {
+  const t = useTranslator();
   const [subFilters, setSubFilters] = useState<EditablePartialFilter[]>(() => {
     if (partialFilter.value && partialFilter.value.type === 'nested') {
       return partialFilter.value.value.map(f => initEditableFilter(config, f));
@@ -468,7 +472,7 @@ function NestedEditor({
             id: `${itemPath.join('-')}-add`,
             label: (
               <Button
-                label="+ Add filter"
+                label={t('@astryx.powersearch.editor.addFilter')}
                 onClick={() => handleAdd(itemPath)}
                 variant="ghost"
                 size="sm"
@@ -491,7 +495,7 @@ function NestedEditor({
           children,
           endContent: !isReadOnly ? (
             <Button
-              label="Remove filter"
+              label={t('@astryx.powersearch.editor.removeFilter')}
               icon={<Icon icon="close" size="sm" />}
               variant="ghost"
               size="sm"
@@ -515,7 +519,7 @@ function NestedEditor({
         ),
         endContent: !isReadOnly ? (
           <Button
-            label="Remove filter"
+            label={t('@astryx.powersearch.editor.removeFilter')}
             icon={<Icon icon="close" size="sm" />}
             variant="ghost"
             size="sm"
@@ -536,7 +540,7 @@ function NestedEditor({
       id: 'add-filter',
       label: (
         <Button
-          label="+ Add filter"
+          label={t('@astryx.powersearch.editor.addFilter')}
           onClick={() => handleAdd([])}
           variant="ghost"
           size="sm"
@@ -550,7 +554,7 @@ function NestedEditor({
       {operatorOptions.length > 1 ? (
         <div {...stylex.props(styles.operatorSelector)}>
           <Selector
-            label="Group operator"
+            label={t('@astryx.powersearch.editor.groupOperator')}
             isLabelHidden
             options={operatorOptions}
             value={partialFilter.operator}
@@ -560,7 +564,7 @@ function NestedEditor({
           />
         </div>
       ) : (
-        (operatorOptions[0]?.label ?? 'Group')
+        (operatorOptions[0]?.label ?? t('@astryx.powersearch.editor.group'))
       )}
     </div>
   );
@@ -587,9 +591,12 @@ export function PowerSearchEditPopover({
   mode,
   onSave,
   onCancel,
-  saveButtonLabel = 'Apply',
+  saveButtonLabel: saveButtonLabelFromProps,
   isReadOnly = false,
 }: PowerSearchEditPopoverProps) {
+  const t = useTranslator();
+  const saveButtonLabel =
+    saveButtonLabelFromProps ?? t('@astryx.powersearch.editor.apply');
   const [partialFilter, setPartialFilter] =
     useState<PartialFilter>(initialFilter);
   const valueEditorRef = useRef<HTMLDivElement>(null);
@@ -628,9 +635,9 @@ export function PowerSearchEditPopover({
     const operators = config.getVisibleOperators(partialFilter.field);
     return operators.map(op => ({
       value: op.key,
-      label: op.label,
+      label: resolveOperatorLabel(op, t),
     }));
-  }, [config, partialFilter.field]);
+  }, [config, partialFilter.field, t]);
 
   const handleFieldChange = useCallback(
     (fieldKey: string) => {
@@ -732,7 +739,7 @@ export function PowerSearchEditPopover({
             <HStack gap={2}>
               <div {...stylex.props(styles.fieldSelector)}>
                 <Selector
-                  label="Field"
+                  label={t('@astryx.powersearch.editor.field')}
                   isLabelHidden
                   options={fieldOptions}
                   value={partialFilter.field}
@@ -756,7 +763,7 @@ export function PowerSearchEditPopover({
           <HStack gap={2} hAlign="between">
             {!isReadOnly && mode === 'edit' ? (
               <Button
-                label="Delete"
+                label={t('@astryx.powersearch.editor.delete')}
                 onClick={handleDelete}
                 variant="ghost"
                 size="sm"
@@ -766,7 +773,7 @@ export function PowerSearchEditPopover({
             )}
             <HStack gap={2}>
               <Button
-                label="Cancel"
+                label={t('@astryx.powersearch.editor.cancel')}
                 onClick={onCancel}
                 variant="ghost"
                 size="sm"
@@ -791,7 +798,7 @@ export function PowerSearchEditPopover({
         <HStack gap={2}>
           <div {...stylex.props(styles.fieldSelector)}>
             <Selector
-              label="Field"
+              label={t('@astryx.powersearch.editor.field')}
               isLabelHidden
               options={fieldOptions}
               value={partialFilter.field}
@@ -803,7 +810,7 @@ export function PowerSearchEditPopover({
           {showOperatorSelector && operatorOptions.length > 0 && (
             <div {...stylex.props(styles.operatorSelector)}>
               <Selector
-                label="Operator"
+                label={t('@astryx.powersearch.editor.operator')}
                 isLabelHidden
                 options={operatorOptions}
                 value={partialFilter.operator}
@@ -832,7 +839,7 @@ export function PowerSearchEditPopover({
           <HStack gap={2} hAlign="between">
             {!isReadOnly && mode === 'edit' ? (
               <Button
-                label="Delete"
+                label={t('@astryx.powersearch.editor.delete')}
                 onClick={handleDelete}
                 variant="ghost"
                 size="sm"
@@ -842,7 +849,7 @@ export function PowerSearchEditPopover({
             )}
             <HStack gap={2}>
               <Button
-                label="Cancel"
+                label={t('@astryx.powersearch.editor.cancel')}
                 onClick={onCancel}
                 variant="ghost"
                 size="sm"

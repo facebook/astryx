@@ -49,6 +49,7 @@ import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -290,6 +291,7 @@ export function MobileNav({
   ref,
   ...rest
 }: MobileNavProps) {
+  const t = useTranslator();
   // Read from AppShell context as fallback
   const appShellMobile = useAppShellMobile();
   const isOpen = isOpenProp ?? appShellMobile.isMobileNavOpen;
@@ -423,7 +425,12 @@ export function MobileNav({
       )}
       {...rest}
       data-testid={testId}
-      aria-label={label ?? (typeof header === 'string' ? header : 'Navigation')}
+      aria-label={
+        label ??
+        (typeof header === 'string'
+          ? header
+          : t('@astryx.mobileNav.navigation'))
+      }
       onClick={composeEventHandlers(onClickProp, handleDialogClick)}
       onCancel={handleCancel}>
       {/* Drawer panel — tabIndex so showModal() focuses the drawer, not the close button */}
@@ -448,7 +455,7 @@ export function MobileNav({
           )}
           <Button
             variant="ghost"
-            label="Close navigation"
+            label={t('@astryx.mobileNav.closeNavigation')}
             icon={<Icon icon="close" color="inherit" />}
             onClick={() => onOpenChange(false)}
             isIconOnly

@@ -75,6 +75,7 @@ export default defineConfig({
       exclude: ['**/*.test.{ts,tsx}', '**/*.stories.{ts,tsx}', '**/index.ts'],
     },
     setupFiles: ['./internal/test-utils/src/setup.ts'],
+    globalSetup: ['./internal/test-utils/src/globalSetup.ts'],
     // Increase worker heap to prevent OOM crashes on memory-heavy test files
     // (e.g. Chat composer tests with contentEditable + popover portals in
     // jsdom). Vitest 4 removed `poolOptions`; per-worker argv is now top-level.
@@ -118,6 +119,7 @@ export default defineConfig({
             'packages/**/src/**/*.test.{ts,tsx,mjs}',
             'internal/**/*.test.{ts,tsx,mjs}',
             'scripts/**/*.test.{ts,tsx,mjs}',
+            '.github/scripts/**/*.test.{ts,tsx,mjs}',
           ],
           exclude: [
             ...configDefaults.exclude,

@@ -27,6 +27,7 @@ import {useCommandPaletteContext} from './CommandPaletteContext';
 import {useDialogContext} from '../Dialog/DialogContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   wrapper: {
@@ -147,7 +148,7 @@ export interface CommandPaletteInputProps extends Omit<
 export function CommandPaletteInput({
   value: controlledValue,
   onValueChange,
-  placeholder = 'Search...',
+  placeholder: placeholderFromProps,
   hasAutoFocus = true,
   endContent,
   onChange,
@@ -156,6 +157,9 @@ export function CommandPaletteInput({
   xstyle,
   ...props
 }: CommandPaletteInputProps) {
+  const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.commandPalette.input.placeholder');
   const ctx = useCommandPaletteContext();
   const dialogContext = useDialogContext();
   const inputRef = useRef<HTMLInputElement>(null);

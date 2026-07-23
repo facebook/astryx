@@ -169,7 +169,7 @@ astryx/
 │
 ├── packages/
 │   ├── core/           # Core components (Button, Input, etc.)
-│   ├── cli/            # CLI tooling (npx astryx)
+│   ├── cli/            # CLI tooling (astryx)
 │   ├── lab/            # Experimental components (not yet stable)
 │   └── themes/         # Theme presets (default, neutral, daily, and more)
 │
@@ -226,7 +226,7 @@ export interface MyComponentProps extends HTMLAttributes<HTMLDivElement> {
  * Brief description of the component.
  *
  * @example
- * ```tsx
+ * ```
  * <MyComponent>Hello</MyComponent>
  * ```
  */
@@ -398,6 +398,17 @@ yet" — open the PR as a draft and mark it ready for review when it's done.
 3. Run `pnpm test` and `pnpm lint`
 4. Add a changeset if needed: `pnpm changeset:new`
 5. Open a PR with a clear description
+6. **Leave "Allow edits by maintainers" enabled** (it's checked by default when
+   you open the PR). This lets us rebase your branch onto the latest `main` to
+   clear merge conflicts and keep CI passing against current `main`, so a PR
+   that's ready doesn't get stuck behind staleness while you're away.
+
+> **Why this helps.** `main` moves quickly, and a branch that was green a few
+> days ago can go stale — CI last ran against an older `main`, or a merge
+> conflict appears. With maintainer edits enabled we can rebase and re-run CI
+> for you instead of round-tripping. (One exception: PRs that modify
+> `.github/workflows/**` can't be pushed on your behalf — GitHub requires the
+> author to update those; we'll ping you if so.)
 
 ## Code Style
 
@@ -500,6 +511,13 @@ and doesn't need network to use.
 - Rebuild the package: `pnpm -F @astryxdesign/core build`
 - Hard refresh browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
 - Clear Storybook cache: Remove `apps/storybook/node_modules/.cache`
+
+## Translations
+
+Astryx accepts community translations via Crowdin. To help translate astryx
+into your language, visit <https://crowdin.com/project/astryx>. New locales are
+picked up automatically after a maintainer reviews the auto-generated
+translations PR.
 
 ## Contributor License Agreement ("CLA")
 

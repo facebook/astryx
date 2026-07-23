@@ -13,7 +13,7 @@ export const docs = {
       'Avatar represents a person or team with a profile photo, initials, or a default icon. Use it in comment headers, contact lists, chat messages, user cards, and anywhere you need to identify someone visually.',
     bestPractices: [
       {guidance: true, description: 'Always pass a name so the avatar can show initials if the photo fails to load, and so screen readers can announce who it represents.'},
-      {guidance: true, description: 'Pick a size that matches the context: tiny or xsmall for inline mentions, small or medium for lists and cards, large for profile headers.'},
+      {guidance: true, description: 'Pick a size that matches the context: xsm or sm for inline mentions, md or lg for lists and cards, xl for profile headers.'},
       {guidance: true, description: 'Add a status dot when knowing someone\'s availability matters, like in chat or team views.'},
       {guidance: false, description: 'Use Avatar for logos, product images, or anything that isn\'t a person or team. Use an image or icon instead.'},
       {guidance: false, description: 'Force a square or custom shape. Avatars are always circular to stay consistent across the system.'},
@@ -55,9 +55,9 @@ export const docs = {
     },
     {
       name: 'size',
-      type: "'tiny' | 'xsmall' | 'small' | 'medium' | 'large' | number",
-      description: "Avatar size. Use a named size ('tiny', 'xsmall', 'small', 'medium', 'large') or a numeric pixel value. Note: short names like 'sm', 'md', 'lg' are NOT valid; use the full words.",
-      default: "'small'",
+      type: "'xsm' | 'sm' | 'md' | 'lg' | 'xl' | number",
+      description: "Avatar size. Use a named size ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or a numeric pixel value. Avatar shares Icon's abbreviated scale, but its tiers are larger because avatars align with media rather than glyphs.",
+      default: "'md'",
     },
     {
       name: 'status',
@@ -100,7 +100,7 @@ export const docsDense = {
       'Avatar represents a person or team with a profile photo, initials, or a default icon. Falls back automatically. Use in comment headers, contact lists, chat, user cards.',
     bestPractices: [
       {guidance: true, description: 'Always pass a name for initials fallback and screen reader alt text.'},
-      {guidance: true, description: 'Match size to context: tiny/xsmall inline, small/medium in lists, large for profiles.'},
+      {guidance: true, description: 'Match size to context: xsm/sm inline, md/lg in lists, xl for profiles.'},
       {guidance: true, description: 'Add a status dot in chat or team views where availability matters.'},
       {guidance: false, description: 'Use for logos or product images. Use an image or icon instead.'},
       {guidance: false, description: 'Force a square or custom shape. Avatars are always circular.'},
@@ -111,7 +111,7 @@ export const docsDense = {
     fallbackSrc: 'fallback image when primary fails',
     name: 'user name for initials and alt text',
     alt: 'alt text; falls back to name',
-    size: "avatar size. Named ('tiny', 'xsmall', 'small', 'medium', 'large') or numeric px. Short names 'sm'/'md'/'lg' are NOT valid; use full words.",
+    size: "avatar size. Named ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or numeric px.",
     status: 'corner content for status indicators',
   },
   components: [

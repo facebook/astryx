@@ -45,12 +45,9 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars} from '../../../theme/tokens.stylex';
 import {CheckboxInput} from '../../../CheckboxInput';
 import {mergeRefs} from '../../../utils';
-import type {
-  TablePlugin,
-  TableColumn,
-  BodyRowRenderProps,
-} from '../../types';
+import type {TablePlugin, TableColumn, BodyRowRenderProps} from '../../types';
 import {pixel} from '../../columnUtils';
+import {useTranslator} from '../../../i18n';
 
 // =============================================================================
 // Config Type
@@ -181,6 +178,7 @@ function SelectAllCheckboxInner<T extends Record<string, unknown>>({
 }: {
   store: SelectionStore<T>;
 }) {
+  const t = useTranslator();
   const getSnapshot = useCallback(() => {
     const config = store.getConfig();
     const allSelected = config.getIsAllSelected();
@@ -197,7 +195,7 @@ function SelectAllCheckboxInner<T extends Record<string, unknown>>({
 
   return (
     <CheckboxInput
-      label="Select all rows"
+      label={t('@astryx.table.selection.selectAllRows')}
       isLabelHidden
       value={allSelected ? true : indeterminate ? 'indeterminate' : false}
       onChange={() =>
@@ -232,6 +230,7 @@ function SelectionCellContentInner<T extends Record<string, unknown>>({
   store: SelectionStore<T>;
   item: T;
 }) {
+  const t = useTranslator();
   const config = store.getConfig();
   const isSelected = useIsItemSelected(store, item);
   const selectable = config.getIsItemSelectable?.(item) ?? true;
@@ -243,7 +242,7 @@ function SelectionCellContentInner<T extends Record<string, unknown>>({
 
   return (
     <CheckboxInput
-      label="Select row"
+      label={t('@astryx.table.selection.selectRow')}
       isLabelHidden
       value={isSelected}
       onChange={() =>

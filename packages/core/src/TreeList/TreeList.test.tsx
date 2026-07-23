@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TreeList} from './TreeList';
 import type {TreeListItemData} from './TreeListTypes';
@@ -249,6 +249,37 @@ describe('TreeList', () => {
     expect(screen.getByText('Root')).toBeInTheDocument();
     expect(screen.getByText('Mid')).toBeInTheDocument();
     expect(screen.getByText('Leaf')).toBeInTheDocument();
+  });
+
+  // ===========================================================================
+  // Focus-visible outline scoping (regression: focusing a parent row must not
+  // leak the ring onto descendant rows — see #4130)
+  // ===========================================================================
+
+  it('scopes the focus-visible outline to the focused row, not its descendants', () => {
+    render(<TreeList items={deepItems} />);
+    const root = screen.getByText('Root').closest('li')!;
+    const mid = screen.getByText('Mid').closest('li')!;
+    const leaf = screen.getByText('Leaf').closest('li')!;
+
+    // A keydown before .focus() establishes keyboard modality so jsdom's
+    // :focus-visible heuristic applies deterministically, regardless of
+    // pointer events left over from other tests in this file.
+    fireEvent.keyDown(document.body, {key: 'Tab'});
+    root.focus();
+    expect(root).toHaveFocus();
+
+    expect(
+      getComputedStyle(root).getPropertyValue('--_tree-focus-outline'),
+    ).toContain('solid');
+    // Mid and Leaf are DOM descendants of Root's <li> (nested <ul role="group">
+    // subtrees) — their own outline var must stay unset, not inherit Root's.
+    expect(
+      getComputedStyle(mid).getPropertyValue('--_tree-focus-outline'),
+    ).toBe('none');
+    expect(
+      getComputedStyle(leaf).getPropertyValue('--_tree-focus-outline'),
+    ).toBe('none');
   });
 
   // ===========================================================================

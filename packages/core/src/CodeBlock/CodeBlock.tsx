@@ -45,6 +45,7 @@ import type {SyntaxToken, TokenLine} from './tokenizer';
 import {ensureHighlightStyles} from './highlightStyles';
 import {applyHighlightRangesChunked} from './highlightRanges';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 import {SyntaxTheme, type SyntaxThemeDefinition} from '../theme/syntax';
 
 // ---------------------------------------------------------------------------
@@ -718,6 +719,7 @@ export function CodeBlock({
   ref,
   ...props
 }: CodeBlockProps) {
+  const t = useTranslator();
   const [copied, setCopied] = useState(false);
   const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const announce = useAnnounce();
@@ -805,7 +807,9 @@ export function CodeBlock({
         e.stopPropagation();
         void handleCopy();
       }}
-      aria-label={copied ? 'Copied' : 'Copy code'}
+      aria-label={
+        copied ? t('@astryx.codeBlock.copied') : t('@astryx.codeBlock.copyCode')
+      }
       {...stylex.props(
         styles.copyButton,
         !showHeader && styles.copyButtonAbsolute,
@@ -868,7 +872,7 @@ export function CodeBlock({
       // create duplicate same-named landmarks (axe: landmark-unique).
       tabIndex={0}
       role="group"
-      aria-label={languageLabel ?? 'Code'}
+      aria-label={languageLabel ?? t('@astryx.codeBlock.code')}
       {...mergeProps(stylex.props(styles.scrollContainer), {
         style: scrollStyle,
       })}>

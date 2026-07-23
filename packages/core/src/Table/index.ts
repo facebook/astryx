@@ -33,6 +33,7 @@ export {
   useTableRowExpansion,
   useTableRowExpansionState,
 } from './plugins/rowExpansion';
+export {useTableTreeData, useTableTreeState} from './plugins/tree';
 export {resolveContextActions} from './tableContextMenu';
 export {
   useTableFiltering,
@@ -114,6 +115,12 @@ export type {
   UseTableRowStatusConfig,
   TableRowStatus,
 } from './plugins/rowStatus';
+export type {
+  TableTreeRowMeta,
+  UseTableTreeDataConfig,
+  UseTableTreeStateConfig,
+  UseTableTreeStateResult,
+} from './plugins/tree';
 export type {
   UseTableFilteringConfig,
   TableFilterState,

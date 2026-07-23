@@ -45,7 +45,7 @@ function runCli(args, {cwd} = {}) {
 
 function parseJson(stdout) {
   // CLI emits a single JSON document. If anything else snuck onto stdout
-  // (clack output, console.log strings, etc.) JSON.parse will throw —
+  // (log output, console.log strings, etc.) JSON.parse will throw —
   // which is exactly the failure mode we want to catch in tests.
   return JSON.parse(stdout);
 }
@@ -61,7 +61,7 @@ afterEach(() => {
 });
 
 describe('--json contract: rejects before side effects', () => {
-  it('astryx init --json --features agents does not write .claude/CLAUDE.md', () => {
+  it('astryx init --json --features agents does not write agent docs', () => {
     const before = fs.readdirSync(tmpDir);
     expect(before).toEqual([]);
 

@@ -67,11 +67,6 @@ function error(code, message) {
   return {code, severity: 'error', message};
 }
 
-/** @param {string} code @param {string} message @returns {Issue} */
-function warning(code, message) {
-  return {code, severity: 'warning', message};
-}
-
 /**
  * Verify each declared contribution root exists on disk. A declared-but-missing
  * root is a `missing_root` error.
@@ -365,6 +360,3 @@ export function summarizeIssues(issues) {
   }
   return {errors, warnings};
 }
-
-// Re-export issue constructors for callers/tests that want them.
-export {error as integrationError, warning as integrationWarning};

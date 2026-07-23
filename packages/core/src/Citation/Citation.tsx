@@ -28,6 +28,7 @@ import {
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export interface CitationSource {
   title?: string;
@@ -60,7 +61,6 @@ const styles = stylex.create({
     paddingInline: spacingVars['--spacing-2'],
     marginInlineStart: spacingVars['--spacing-0-5'],
     textDecoration: 'none',
-    cursor: 'pointer',
     transitionProperty: 'background-color, border-color, color',
     transitionDuration: durationVars['--duration-fast-max'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -75,6 +75,9 @@ const styles = stylex.create({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     minWidth: 0,
+  },
+  labelInteractive: {
+    cursor: 'pointer',
   },
   labelHover: {
     backgroundColor: {
@@ -107,10 +110,12 @@ const styles = stylex.create({
     height: spacingVars['--spacing-5'],
     paddingInline: spacingVars['--spacing-1'],
     textDecoration: 'none',
-    cursor: 'pointer',
     transitionProperty: 'background-color',
     transitionDuration: durationVars['--duration-fast-max'],
     transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  numberInteractive: {
+    cursor: 'pointer',
   },
   numberHover: {
     backgroundColor: {
@@ -154,6 +159,7 @@ export function Citation({
   'data-testid': testId,
   ...rest
 }: CitationProps): React.ReactElement {
+  const t = useTranslator();
   const title = source.title ?? String(number);
   const href = source.url;
   const icon = source.icon;
@@ -181,7 +187,7 @@ export function Citation({
         {...rest}
         ref={elementRef}
         role={noteRole}
-        aria-label={`Citation ${number}: ${title}`}
+        aria-label={t('@astryx.citation.label', {number, title})}
         data-testid={testId}
         {...linkProps}
         {...mergeProps(
@@ -189,6 +195,7 @@ export function Citation({
           stylex.props(
             styles.number,
             href != null && styles.numberHover,
+            href != null && styles.numberInteractive,
             xstyle,
           ),
           className,
@@ -204,7 +211,7 @@ export function Citation({
       {...rest}
       ref={elementRef}
       role={noteRole}
-      aria-label={`Citation ${number}: ${title}`}
+      aria-label={t('@astryx.citation.label', {number, title})}
       data-testid={testId}
       {...linkProps}
       {...mergeProps(
@@ -213,6 +220,7 @@ export function Citation({
           styles.label,
           icon != null && styles.labelWithIcon,
           href != null && styles.labelHover,
+          href != null && styles.labelInteractive,
           xstyle,
         ),
         className,

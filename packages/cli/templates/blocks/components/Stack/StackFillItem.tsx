@@ -17,13 +17,9 @@ export default function StackFillItem() {
   return (
     <Stack direction="vertical" gap={3} width="100%" style={{maxWidth: 300}}>
       {USERS.map(user => (
-        <Stack
-          key={user.name}
-          direction="horizontal"
-          gap={3}
-          vAlign="center">
+        <Stack key={user.name} direction="horizontal" gap={3} vAlign="center">
           <StackItem size="static">
-            <Avatar name={user.name} size="small" />
+            <Avatar name={user.name} size="md" />
           </StackItem>
           <StackItem size="fill">
             <Stack direction="vertical" gap={0}>

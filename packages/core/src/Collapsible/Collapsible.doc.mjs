@@ -17,6 +17,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-collapsible', visualProps: ['density']},
+      {className: 'astryx-collapsible-content', visualProps: ['density']},
       {className: 'astryx-collapsible-group', visualProps: ['density']},
     ],
   },
@@ -52,6 +53,12 @@ export const docs = {
       name: 'isOpen',
       type: 'boolean',
       description: 'Controlled open state.',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: "Disable the item so its trigger can't be toggled (dimmed, aria-disabled, and out of the tab order). Doesn't collapse an already-open item.",
+      default: 'false',
     },
     {
       name: 'onOpenChange',

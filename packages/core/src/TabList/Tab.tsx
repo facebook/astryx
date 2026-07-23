@@ -138,7 +138,11 @@ const styles = stylex.create({
   },
   indicator: {
     position: 'absolute',
-    bottom: '-1px',
+    // Sits on the tab's bottom edge by default (-1px). When the tab strip
+    // reserves space for a divider rail — TabList `hasDivider` or a Toolbar
+    // with a bottom divider — that ancestor sets `--_tab-indicator-bottom`
+    // to drop the indicator onto the rail beneath the reserved gap.
+    bottom: 'var(--_tab-indicator-bottom, -1px)',
     left: spacingVars['--spacing-3'],
     right: spacingVars['--spacing-3'],
     height: '2px',

@@ -55,9 +55,13 @@ const CIRCLE_EDGE_OFFSET_RATIO = (1 - 1 / Math.SQRT2) / 2;
 const INITIALS_FONT_SIZE_RATIO = 0.4;
 
 /**
- * Named size options
+ * Named size options.
+ *
+ * Avatar uses the same abbreviated scale as Icon (`xsm`/`sm`/`md`/`lg`/`xl`),
+ * but the values are larger because avatars align with media rather than
+ * glyphs. The tiers match EPS's avatar sizes.
  */
-type AvatarNamedSize = 'tiny' | 'xsmall' | 'small' | 'medium' | 'large';
+type AvatarNamedSize = 'xsm' | 'sm' | 'md' | 'lg' | 'xl';
 
 /**
  * Numeric size options (in pixels)
@@ -78,15 +82,15 @@ export function resolveSize(size: AvatarSize): number {
     return size;
   }
   switch (size) {
-    case 'tiny':
+    case 'xsm':
       return 20;
-    case 'xsmall':
+    case 'sm':
       return 24;
-    case 'small':
+    case 'md':
       return 36;
-    case 'medium':
+    case 'lg':
       return 48;
-    case 'large':
+    case 'xl':
       return 128;
   }
 }
@@ -198,8 +202,9 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
    */
   name?: string;
   /**
-   * The size of the avatar.
-   * @default 'small'
+   * The size of the avatar. A named size (`xsm` 20px, `sm` 24px, `md` 36px,
+   * `lg` 48px, `xl` 128px) or a specific pixel value.
+   * @default 'md'
    */
   size?: AvatarSize;
   /**
@@ -258,7 +263,7 @@ function DefaultIcon({size}: {size: number}) {
  * @example
  * ```
  * <Avatar src="/user.jpg" name="John Doe" />
- * <Avatar name="Jane Smith" size="large" />
+ * <Avatar name="Jane Smith" size="xl" />
  * <Avatar src="/user.jpg" status={<OnlineIndicator />} />
  * ```
  */
@@ -267,7 +272,7 @@ export function Avatar({
   'data-testid': testId,
   fallbackSrc,
   name,
-  size = 'small',
+  size = 'md',
   src,
   status,
   xstyle,

@@ -34,7 +34,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @astryxdesign/cli and run `npx astryx init --features agents` to set up your Astryx context. Read the generated file.',
+          code: 'Install @astryxdesign/cli and run `npx @astryxdesign/cli init --features agents` to set up your Astryx context. Read the generated file.',
         },
         {
           type: 'prose',
@@ -42,15 +42,15 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'If you prefer to target a specific file format:',
+          text: 'By default this creates `AGENTS.md` (the tool-agnostic standard most agents read). To target a specific tool\'s file instead:',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Manual options',
-          code: `npx astryx init --features agents --agent claude    # CLAUDE.md
-npx astryx init --features agents --agent cursor    # .cursorrules
-npx astryx init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
+          code: `npx @astryxdesign/cli init --features agents --agent claude    # .claude/CLAUDE.md
+npx @astryxdesign/cli init --features agents --agent cursor    # .cursorrules
+npx @astryxdesign/cli init --features agents --agent codex     # AGENTS.md (Copilot, Codex, etc.)`,
         },
       ],
     },
@@ -65,9 +65,9 @@ npx astryx init --features agents --agent codex     # AGENTS.md (Copilot, Codex,
           type: 'list',
           style: 'ordered',
           items: [
-            '`npx astryx template --list`: find a related page pattern to use as reference',
-            '`npx astryx template <name> --skeleton`: study the layout structure',
-            '`npx astryx component <Name>`: read props and examples for every component used',
+            '`astryx template --list`: find a related page pattern to use as reference',
+            '`astryx template <name> --skeleton`: study the layout structure',
+            '`astryx component <Name>`: read props and examples for every component used',
           ],
         },
         {
@@ -88,7 +88,7 @@ npx astryx init --features agents --agent codex     # AGENTS.md (Copilot, Codex,
           lang: 'bash',
           label: 'Install as a Cursor user rule',
           code: `mkdir -p ~/.cursor/rules
-npx astryx init --features agents --agent-docs-path ~/.cursor/rules/xds.mdc`,
+npx @astryxdesign/cli init --features agents --agent-docs-path ~/.cursor/rules/xds.mdc`,
         },
       ],
     },
@@ -109,12 +109,12 @@ npx astryx init --features agents --agent-docs-path ~/.cursor/rules/xds.mdc`,
 2. How do you make an Dialog non-dismissible?
 3. What prop does Selector use for its items?
 
-If you don't know all three, run \`npx astryx init --features agents\` to generate agent docs, then read the generated file.`,
+If you don't know all three, run \`npx @astryxdesign/cli init --features agents\` to generate agent docs, then read the generated file.`,
         },
       ],
     },
     {
-      title: 'The npx astryx Pattern',
+      title: 'The astryx Pattern',
       content: [
         {
           type: 'prose',
@@ -130,16 +130,16 @@ If you don't know all three, run \`npx astryx init --features agents\` to genera
         },
         {
           type: 'prose',
-          text: 'With this alias, agents use `npx astryx component --list` instead of guessing the binary path. The `--` separator is standard npm convention for passing flags to scripts.',
+          text: 'With this alias, agents use `astryx component --list` instead of guessing the binary path. The `--` separator is standard npm convention for passing flags to scripts.',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Reliable CLI invocation',
-          code: `npx astryx component --list
-npx astryx component Dialog --dense
-npx astryx docs styling --dense
-npx astryx docs tokens --dense`,
+          code: `astryx component --list
+astryx component Dialog --dense
+astryx docs styling --dense
+astryx docs tokens --dense`,
         },
       ],
     },
@@ -154,9 +154,9 @@ npx astryx docs tokens --dense`,
           type: 'code',
           lang: 'bash',
           label: 'Dense output for pasting into AI conversations',
-          code: `npx astryx component Dialog --dense
-npx astryx docs styling --dense
-npx astryx docs tokens --dense`,
+          code: `astryx component Dialog --dense
+astryx docs styling --dense
+astryx docs tokens --dense`,
         },
       ],
     },

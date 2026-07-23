@@ -8,9 +8,10 @@
  * @output Exports ButtonGroup component, context, and types
  * @position Groups buttons with connected styling; consumed by index.ts
  *
- * Children (Button, IconButton) consume the ButtonGroup context to
- * apply position-aware styles using CSS :first-child / :last-child
- * pseudo-classes — no cloneElement or wrapper divs needed.
+ * Children (Button, IconButton) consume the ButtonGroup context to apply
+ * position-aware styles in pure CSS — no cloneElement or wrapper divs needed.
+ * The end-cap radius rules live in Button.tsx; see IS_LAST_ITEM there for why
+ * the trailing edge cannot use :last-child (#2508).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/ButtonGroup/ButtonGroup.doc.mjs (props table, features)
@@ -25,7 +26,7 @@ import * as stylex from '@stylexjs/stylex';
 import type {ButtonSize} from '../Button';
 import {SizeProvider, useSize} from '../SizeContext/SizeContext';
 import {useListFocus} from '../hooks/useListFocus';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {ButtonGroupContext} from './ButtonGroupContext';
 import type {ButtonGroupOrientation} from './ButtonGroupContext';
@@ -97,7 +98,10 @@ const styles = stylex.create({
  * handling (only on outer edges), and horizontal or vertical orientation.
  *
  * Children automatically detect the group via context and apply position-aware
- * styles using CSS :first-child / :last-child pseudo-classes.
+ * styles in pure CSS.
+ *
+ * Members that render their own layer — a Button with a `tooltip`, or a
+ * DropdownMenu — compose correctly, including as the trailing member.
  *
  * @example
  * ```
@@ -105,6 +109,17 @@ const styles = stylex.create({
  *   <Button label="Copy" />
  *   <Button label="Cut" />
  *   <Button label="Paste" />
+ * </ButtonGroup>
+ * ```
+ *
+ * @example
+ * ```
+ * <ButtonGroup label="Approve action">
+ *   <Button label="Allow once" variant="primary" />
+ *   <DropdownMenu
+ *     button={{label: 'Allow options', variant: 'primary', isIconOnly: true, icon: <Icon icon="chevronDown" />}}
+ *     items={[{label: 'Allow for 30 minutes'}, {label: 'Always allow'}]}
+ *   />
  * </ButtonGroup>
  * ```
  */
@@ -119,6 +134,7 @@ export function ButtonGroup({
   style,
   ref,
   'data-testid': testId,
+  onKeyDown,
   ...props
 }: ButtonGroupProps): ReactNode {
   const size = useSize(sizeProp, 'md');
@@ -138,11 +154,7 @@ export function ButtonGroup({
       <SizeProvider value={size}>
         <div
           ref={mergeRefs(ref, listRef)}
-          role="group"
-          aria-label={label}
-          onKeyDown={handleKeyDown}
-          aria-disabled={isDisabled || undefined}
-          data-testid={testId}
+          {...props}
           {...mergeProps(
             themeProps('button-group', {size, orientation}),
             stylex.props(
@@ -153,7 +165,11 @@ export function ButtonGroup({
             className,
             style,
           )}
-          {...props}>
+          role="group"
+          aria-label={label}
+          onKeyDown={composeEventHandlers(onKeyDown, handleKeyDown)}
+          aria-disabled={isDisabled || undefined}
+          data-testid={testId}>
           {children}
         </div>
       </SizeProvider>

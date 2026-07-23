@@ -12,7 +12,7 @@ import {
   formatHookBrief,
   formatHookParams,
 } from '../../lib/hook-format.mjs';
-import {getRunPrefix} from '../../utils/package-manager.mjs';
+import {getCliInvocation} from '../../utils/package-manager.mjs';
 import {jsonOut, humanLog} from '../../lib/json.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../lib/error-codes.mjs';
@@ -27,7 +27,7 @@ export function registerHook(program) {
     .option('--category <category>', 'List hooks in a specific category')
     .option('--params', 'Print only the parameters table')
     .action(async (name, options) => {
-      const run = getRunPrefix();
+      const run = getCliInvocation();
       const zh = program.opts().zh || false;
       const lang = program.opts().lang || null;
       const detailSource = program.getOptionValueSource('detail');
@@ -76,7 +76,7 @@ export function registerHook(program) {
               for (const h of hookNames) humanLog(`  ${h}`);
             }
             humanLog('');
-            humanLog(`Usage: ${run} astryx hook <name>`);
+            humanLog(`Usage: ${run} hook <name>`);
             humanLog('');
           }
           break;
@@ -93,7 +93,7 @@ export function registerHook(program) {
             }
             humanLog('');
           }
-          humanLog(`Usage: ${run} astryx hook <name>`);
+          humanLog(`Usage: ${run} hook <name>`);
           humanLog('');
           break;
         }

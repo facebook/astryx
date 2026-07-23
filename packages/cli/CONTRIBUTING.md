@@ -278,7 +278,7 @@ When `--json` is active, human-readable output must not contaminate stdout:
 // Simple commands: guard console.log
 if (!json) console.log(`✓ Done`);
 
-// Clack-based commands: skip Clack calls
+// Logger commands: skip term-log calls
 if (!json) p.intro('Welcome');
 if (!json) p.log.step('Running...');
 

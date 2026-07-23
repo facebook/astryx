@@ -25,6 +25,7 @@ import {useChatComposerContext} from './ChatContext';
 
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -75,6 +76,7 @@ const styles = stylex.create({
  * ```
  */
 export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
+  const t = useTranslator();
   const context = useChatComposerContext();
 
   const {
@@ -94,7 +96,11 @@ export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
   return (
     <Button
       ref={ref}
-      label={isStopShown ? 'Stop' : 'Send'}
+      label={
+        isStopShown
+          ? t('@astryx.chatSendButton.stop')
+          : t('@astryx.chatSendButton.send')
+      }
       variant={isStopShown ? 'secondary' : 'primary'}
       size={size}
       icon={

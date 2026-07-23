@@ -23,7 +23,7 @@ import {describe, it, expect} from 'vitest';
 import {getNextSteps} from './init.mjs';
 
 describe('init Next steps theme guidance', () => {
-  const text = getNextSteps('npx').join('\n');
+  const text = getNextSteps('npx astryx').join('\n');
 
   it('mentions the base CSS imports so the app is not left unstyled', () => {
     expect(text).toContain("'@astryxdesign/core/reset.css'");

@@ -9,12 +9,23 @@
  * SYNC: When Selector.tsx API changes, update these tests.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
 import {InputGroup, InputGroupText} from '../InputGroup';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
@@ -40,6 +51,10 @@ beforeEach(() => {
     }
     return originalMatches.call(this, selector);
   };
+});
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
 });
 
 // Helper: jsdom popover content is in the DOM but may not be
@@ -536,7 +551,11 @@ describe('Selector', () => {
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
       await user.type(screen.getByRole('combobox', h), 'xyz');
       expect(screen.queryAllByRole('option', h)).toHaveLength(0);
-      expect(screen.getByText('No results found')).toBeInTheDocument();
+      // Scope to the listbox: the polite live region also announces "No results
+      // found", so an unscoped query matches both the visible empty state and
+      // the a11y announcement.
+      const listbox = screen.getByRole('listbox', h);
+      expect(within(listbox).getByText('No results found')).toBeInTheDocument();
     });
 
     it('calls onChange when selecting a filtered option', async () => {
@@ -598,6 +617,82 @@ describe('Selector', () => {
       expect(
         screen.getByPlaceholderText('Find a fruit...'),
       ).toBeInTheDocument();
+    });
+
+    describe('result announcements', () => {
+      it('announces the match count politely while searching', async () => {
+        const user = userEvent.setup();
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            onChange={() => {}}
+            hasSearch
+          />,
+        );
+        await user.click(screen.getByRole('button', {name: 'Fruit'}));
+        // "a" matches Apple and Banana.
+        await user.type(screen.getByRole('combobox', h), 'a');
+        await waitFor(() => {
+          expect(politeRegion()).toHaveTextContent('2 results');
+        });
+      });
+
+      it('announces the singular form when one option matches', async () => {
+        const user = userEvent.setup();
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            onChange={() => {}}
+            hasSearch
+          />,
+        );
+        await user.click(screen.getByRole('button', {name: 'Fruit'}));
+        // "ban" matches only Banana. Anchored so it cannot pass on "1 results".
+        await user.type(screen.getByRole('combobox', h), 'ban');
+        await waitFor(() => {
+          expect(politeRegion()).toHaveTextContent(/^1 result$/);
+        });
+      });
+
+      it('announces "No results found" when nothing matches', async () => {
+        const user = userEvent.setup();
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            onChange={() => {}}
+            hasSearch
+          />,
+        );
+        await user.click(screen.getByRole('button', {name: 'Fruit'}));
+        await user.type(screen.getByRole('combobox', h), 'xyz');
+        await waitFor(() => {
+          expect(politeRegion()).toHaveTextContent('No results found');
+        });
+      });
+
+      it('does not announce results until the user searches', async () => {
+        const user = userEvent.setup();
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            onChange={() => {}}
+            hasSearch
+          />,
+        );
+        // Popover closed: nothing announced.
+        expect(politeRegion()?.textContent ?? '').toBe('');
+        // Open with an empty query: still nothing announced.
+        await user.click(screen.getByRole('button', {name: 'Fruit'}));
+        expect(politeRegion()?.textContent ?? '').toBe('');
+      });
     });
   });
 
@@ -869,7 +964,12 @@ describe('Selector', () => {
     it('submits the selected value under htmlName', () => {
       const {container} = render(
         <form>
-          <Selector label="Fruit" htmlName="fruit" options={OPTIONS} value="Banana" />
+          <Selector
+            label="Fruit"
+            htmlName="fruit"
+            options={OPTIONS}
+            value="Banana"
+          />
         </form>,
       );
       const data = new FormData(container.querySelector('form')!);
@@ -889,10 +989,18 @@ describe('Selector', () => {
     it('is excluded from form data when disabled', () => {
       const {container} = render(
         <form>
-          <Selector label="Fruit" htmlName="fruit" options={OPTIONS} value="Banana" isDisabled />
+          <Selector
+            label="Fruit"
+            htmlName="fruit"
+            options={OPTIONS}
+            value="Banana"
+            isDisabled
+          />
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
     });
   });
 });

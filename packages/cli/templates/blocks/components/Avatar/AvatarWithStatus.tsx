@@ -11,19 +11,19 @@ export default function AvatarWithStatus() {
       <Avatar
         src="https://lookaside.facebook.com/assets/astryx/DATA-Itai-Jordaan.png"
         name="Itai Jordaan"
-        size="large"
+        size="xl"
         status={<AvatarStatusDot variant="success" label="Online" />}
       />
       <Avatar
         src="https://lookaside.facebook.com/assets/astryx/DATA-Margot-Schroder.png"
         name="Margot Schroder"
-        size="large"
+        size="xl"
         status={<AvatarStatusDot variant="neutral" label="Offline" />}
       />
       <Avatar
         src="https://lookaside.facebook.com/assets/astryx/DATA-Pablo-Morales.png"
         name="Pablo Morales"
-        size="large"
+        size="xl"
         status={<AvatarStatusDot variant="error" label="Busy" />}
       />
     </Stack>

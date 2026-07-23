@@ -25,6 +25,7 @@ import {
 import {Badge} from '../Badge';
 import {Button} from '../Button';
 import {HoverCard} from '../HoverCard';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -88,6 +89,7 @@ export function ChatPastedTextToken({
   text,
   onExpand,
 }: ChatPastedTextTokenProps) {
+  const t = useTranslator();
   const label = formatLabel(text);
 
   const cardContent = (
@@ -97,7 +99,7 @@ export function ChatPastedTextToken({
         <span {...stylex.props(styles.meta)}>{label}</span>
         {onExpand && (
           <Button
-            label="Expand"
+            label={t('@astryx.chat.pastedText.expand')}
             variant="ghost"
             size="sm"
             onClick={onExpand}

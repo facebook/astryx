@@ -6,24 +6,15 @@
 
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import * as p from '@clack/prompts';
-import {isNonInteractive} from '../utils/path-safety.mjs';
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {template as templateApi} from '../api/template.mjs';
 import {Project} from '../lib/project.mjs';
 import {warnOnIntegrationIssues} from '../lib/integration-warnings.mjs';
+import {getCliInvocation} from '../utils/package-manager.mjs';
 
 export {discoverTemplates, listTemplates} from '../api/template.mjs';
-
-function isCancel(value) {
-  if (p.isCancel(value)) {
-    p.cancel('Cancelled.');
-    process.exit(0);
-  }
-  return value;
-}
 
 export function registerTemplate(program) {
   program
@@ -36,6 +27,7 @@ export function registerTemplate(program) {
     .option('-f, --overwrite', 'Overwrite existing files without prompting')
     .action(async (name, targetPath, options) => {
       const json = program.opts().json || false;
+      const run = getCliInvocation();
 
       // Non-blocking nudge: if any configured integration has validation
       // issues, print one compact line to stderr pointing at
@@ -59,23 +51,11 @@ export function registerTemplate(program) {
         const collision = await detectTemplateCollision(name, targetPath);
         if (collision && !options.overwrite) {
           const rel = path.relative(process.cwd(), collision) || collision;
-          if (json || isNonInteractive({json})) {
-            const msg =
-              `Refusing to overwrite existing file ${rel}. ` +
-              `Re-run with --overwrite (or -f) to replace it.`;
-            cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
-            return;
-          }
-          const confirmed = isCancel(
-            await p.confirm({
-              message: `Overwrite existing file ${rel}?`,
-              initialValue: false,
-            }),
-          );
-          if (!confirmed) {
-            humanLog('Aborted. Re-run with --overwrite to replace the file.');
-            return;
-          }
+          const msg =
+            `Refusing to overwrite existing file ${rel}. ` +
+            `Re-run with --overwrite (or -f) to replace it.`;
+          cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
+          return;
         }
       }
 
@@ -120,10 +100,10 @@ export function registerTemplate(program) {
             for (const t of blocks) renderEntry(t);
           }
           humanLog('\nUsage:');
-          humanLog('  astryx template <id> [target-path]     Scaffold page or block');
-          humanLog('  astryx template <id> --skeleton        Layout reference');
-          humanLog('  astryx template --list --type block    List only blocks');
-          humanLog('  astryx template --list --package <pkg> List from one package\n');
+          humanLog(`  ${run} template <id> [target-path]     Scaffold page or block`);
+          humanLog(`  ${run} template <id> --skeleton        Layout reference`);
+          humanLog(`  ${run} template --list --type block    List only blocks`);
+          humanLog(`  ${run} template --list --package <pkg> List from one package\n`);
           break;
         }
 

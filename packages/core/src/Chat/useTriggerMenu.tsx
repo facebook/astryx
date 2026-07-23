@@ -40,6 +40,7 @@ import {
 import {mergeProps, groupItems} from '../utils';
 import type {SearchableItem} from '../Typeahead/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 import type {ChatComposerTrigger, ChatComposerToken} from './ChatComposerInput';
 
 // =============================================================================
@@ -254,6 +255,7 @@ function deleteTriggerText(
 export function useTriggerMenu(
   options: UseTriggerMenuOptions,
 ): UseTriggerMenuReturn {
+  const t = useTranslator();
   const {
     triggers,
     editableRef,
@@ -697,7 +699,9 @@ export function useTriggerMenu(
       <div
         id={listboxId}
         role="listbox"
-        aria-label={trigger?.menuLabel ?? 'Suggestions'}
+        aria-label={
+          trigger?.menuLabel ?? t('@astryx.chatTriggerMenu.suggestions')
+        }
         {...mergeProps(
           themeProps('trigger-menu'),
           stylex.props(styles.dropdown),
@@ -710,7 +714,7 @@ export function useTriggerMenu(
         xstyle: [styles.popoverSurface, styles.popoverGap],
       },
     );
-  }, [popover, listboxId, state, selectItem, getItemId]);
+  }, [popover, listboxId, state, selectItem, getItemId, t]);
 
   return {
     state,

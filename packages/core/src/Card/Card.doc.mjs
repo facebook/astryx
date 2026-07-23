@@ -62,9 +62,9 @@ export const docs = {
     },
     {
       name: 'variant',
-      type: "'default' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
+      type: "'default' | 'transparent' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
       description:
-        'Background color variant. `default` uses the standard card background. `muted` uses the muted background for de-emphasised cards. The non-semantic variants use the corresponding `--color-<name>-background` token.',
+        'Background color variant. `default` uses the standard card background. `transparent` drops the background entirely. `muted` uses the muted background for de-emphasised cards. The non-semantic variants use the corresponding `--color-background-<name>` token.',
       default: "'default'",
     },
   ],
@@ -169,6 +169,6 @@ export const docsDense = {
     minHeight: 'min card height',
     children: 'content inside card',
     padding: 'internal padding via spacing scale',
-    variant: 'background color variant; `default` = standard card bg, `muted` = muted bg for de-emphasised cards; non-semantic variants use the corresponding `--color-<name>-background` token',
+    variant: 'background color variant; `default` = standard card bg, `transparent` = no background at all, `muted` = muted bg for de-emphasised cards; non-semantic variants use the corresponding `--color-background-<name>` token',
   },
 };

@@ -47,7 +47,7 @@ export const docs = {
       name: 'size',
       type: 'AvatarSize',
       description: 'Size applied to all avatars via context.',
-      default: "'small'",
+      default: "'md'",
     },
     {
       name: 'ref',

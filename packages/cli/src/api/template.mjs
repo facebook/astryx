@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {createJiti} from 'jiti';
 import {loadModuleWithSchema} from '../lib/module-loader.mjs';
-import {TemplateEnvelopeSchema} from '../template.mjs';
+import {TemplateEnvelopeSchema} from '../schemas/template-schema.mjs';
 import {CLI_ROOT, discoverExternalPackages} from '../utils/paths.mjs';
 import {
   assertWithin,

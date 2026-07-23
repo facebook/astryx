@@ -10,7 +10,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as p from '@clack/prompts';
+import * as p from '../lib/term-log.mjs';
 import {humanLog} from '../lib/json.mjs';
 import {runConfigCodemod} from './run-codemod.mjs';
 
@@ -184,7 +184,7 @@ export async function runCodemods(
   versionManifests,
   {apply, path: srcPath, codemod, skipCodemods, silent = false},
 ) {
-  // No-op stub object so silent mode skips clack stdout entirely without
+  // No-op stub object so silent mode skips log output entirely without
   // littering the body with `if (!silent)` guards.
   const log = silent
     ? {step() {}, info() {}, success() {}, warn() {}, error() {}, message() {}}

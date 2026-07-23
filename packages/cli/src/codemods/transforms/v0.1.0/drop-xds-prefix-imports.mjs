@@ -35,11 +35,19 @@
  *    including type references in generic type-argument positions such as
  *    `useMemo<XDSTableColumn<Issue>[]>(...)`
  * 3. Re-exports from @xds/core: export {XDSButton} from '@xds/core/Button'
+ * 4. Object-property keys inside a test-framework mock factory for an
+ *    `@xds/core` module: the partial-mock override in
+ *    `vi.mock('@xds/core/Text', async orig => ({...await orig(),
+ *    useXDSTruncation: () => ...}))` must be un-prefixed to `useTruncation`,
+ *    otherwise the key targets a name the renamed module no longer exports and
+ *    the mock silently overrides nothing.
  *
  * Does NOT touch:
  * - import source paths (`@xds/core/Button` stays -- subpath dirs are unchanged
  *   by the prefix migration)
  * - identifiers not bound to an @xds/core import
+ * - object-property keys outside an `@xds/core` mock factory (an unrelated
+ *   `{useXDSFoo: ...}` literal, or a mock of some other package, is untouched)
  * - the `XDSBaseProps`-style names only when they are NOT imported from core
  */
 
@@ -48,7 +56,8 @@ export const meta = {
   description:
     'Rewrites @xds/core imports and their usages from the prefixed names ' +
     '(XDSButton, useXDSTheme, XDSIconRegistry, XDSButtonProps) to their bare ' +
-    'names (Button, useTheme, IconRegistry, ButtonProps). Only renames ' +
+    'names (Button, useTheme, IconRegistry, ButtonProps), including override ' +
+    'keys in a vi.mock/jest.mock factory for an @xds/core module. Only renames ' +
     'bindings imported from @xds/core, leaving unrelated identifiers untouched.',
   pr: '#2880',
 };
@@ -72,6 +81,81 @@ function bareName(name) {
     return name.slice(3);
   }
   return null;
+}
+
+// A test-framework mock of an `@xds/core` module (`vi.mock('@xds/core/Text',
+// factory)`). We only rewrite override keys inside such a factory, so scope the
+// detection tightly: callee must be `vi.mock`/`vi.doMock`/`jest.mock`/
+// `jest.doMock` (or a bare `mock`) AND the first argument must be a string
+// literal that resolves to `@xds/core` (bare or subpath).
+const MOCK_METHOD_NAMES = new Set(['mock', 'doMock']);
+const MOCK_OBJECT_NAMES = new Set(['vi', 'jest']);
+
+function isMockCallee(callee) {
+  if (
+    callee.type === 'MemberExpression' &&
+    !callee.computed &&
+    callee.object.type === 'Identifier' &&
+    MOCK_OBJECT_NAMES.has(callee.object.name) &&
+    callee.property.type === 'Identifier' &&
+    MOCK_METHOD_NAMES.has(callee.property.name)
+  ) {
+    return true;
+  }
+  return callee.type === 'Identifier' && callee.name === 'mock';
+}
+
+function isXdsCoreMockCall(node) {
+  if (node.type !== 'CallExpression' || !isMockCallee(node.callee))
+    return false;
+  const [arg] = node.arguments;
+  const value =
+    arg && (arg.type === 'StringLiteral' || arg.type === 'Literal')
+      ? arg.value
+      : null;
+  return typeof value === 'string' && XDS_CORE_SOURCE.test(value);
+}
+
+// Rename XDS-prefixed object-property KEYS (not values, not nested objects)
+// within the given AST subtree. Used only on a recognized @xds/core mock
+// factory, so the scope guard lives at the call site.
+function renameMockFactoryKeys(node, seen, onChange) {
+  if (!node || typeof node !== 'object') return;
+  if (Array.isArray(node)) {
+    for (const child of node) renameMockFactoryKeys(child, seen, onChange);
+    return;
+  }
+  if (seen.has(node)) return;
+  seen.add(node);
+
+  if (
+    (node.type === 'ObjectProperty' || node.type === 'Property') &&
+    !node.computed &&
+    node.key &&
+    node.key.type === 'Identifier'
+  ) {
+    const bare = bareName(node.key.name);
+    if (bare && bare !== node.key.name) {
+      node.key.name = bare;
+      onChange();
+    }
+  }
+
+  for (const key of Object.keys(node)) {
+    if (
+      key === 'loc' ||
+      key === 'start' ||
+      key === 'end' ||
+      key === 'range' ||
+      key === 'comments' ||
+      key === 'leadingComments' ||
+      key === 'trailingComments' ||
+      key === 'tokens'
+    ) {
+      continue;
+    }
+    renameMockFactoryKeys(node[key], seen, onChange);
+  }
 }
 
 export default function transformer(file, api) {
@@ -190,11 +274,26 @@ export default function transformer(file, api) {
     }
   });
 
+  // 3. Un-prefix override keys inside @xds/core mock factories. Independent of
+  // the import bindings above: the override key is a factory object property,
+  // not a reference to an imported binding, so it must match the renamed export
+  // name of the mocked module regardless of what the file imports.
+  const seenMockNodes = new Set();
+  root.find(j.CallExpression).forEach(path => {
+    if (!isXdsCoreMockCall(path.node)) return;
+    // Only walk the factory argument(s), never the module-path string.
+    for (const arg of path.node.arguments.slice(1)) {
+      renameMockFactoryKeys(arg, seenMockNodes, () => {
+        hasChanges = true;
+      });
+    }
+  });
+
   if (localRenames.size === 0) {
     return hasChanges ? root.toSource() : undefined;
   }
 
-  // 3. Rename references to renamed local bindings
+  // 4. Rename references to renamed local bindings
   // Identifiers (type refs, value refs, etc.)
   root.find(j.Identifier).forEach(path => {
     const newName = localRenames.get(path.node.name);
@@ -231,7 +330,7 @@ export default function transformer(file, api) {
     }
   });
 
-  // 4. Rename TS type references in generic type-argument positions.
+  // 5. Rename TS type references in generic type-argument positions.
   //
   // `j.find(j.Identifier)` (and `j.find(j.TSTypeReference)`) do NOT visit
   // identifiers nested inside generic type arguments with the tsx/babel parser

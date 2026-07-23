@@ -7,8 +7,9 @@
  * @input Uses React, StyleX, useScrollOverflow, useLayer, Button, Icon, theme tokens
  * @output Exports Carousel component
  * @position Horizontal scroll container with fade-edge overflow indication,
- *   optional prev/next buttons on the top layer, scroll-snap, and a 1px
- *   visual bleed allowance for child selection indicators.
+ *   optional prev/next buttons on the top layer, scroll-snap, a 1px
+ *   visual bleed allowance for child selection indicators, and Shift + wheel
+ *   mapping so mouse users can scroll horizontally.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Carousel/index.ts (exports)
@@ -34,6 +35,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps, mergeRefs} from '../utils';
 import type {SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export interface CarouselProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
@@ -256,13 +258,15 @@ export function Carousel({
   hasEdgeFade = true,
   hasSnap = false,
   padding,
-  'aria-label': ariaLabel = 'Carousel',
+  'aria-label': ariaLabelFromProps,
   xstyle,
   className,
   style,
   'data-testid': testId,
   ...htmlProps
 }: CarouselProps) {
+  const t = useTranslator();
+  const ariaLabel = ariaLabelFromProps ?? t('@astryx.carousel.label');
   const scrollElRef = useRef<HTMLElement | null>(null);
   const {scrollRef, overflowStart, overflowEnd} = useScrollOverflow();
 
@@ -286,6 +290,31 @@ export function Carousel({
     },
     [scrollRef],
   );
+
+  // Map Shift + vertical wheel to horizontal scroll. Trackpads emit
+  // horizontal deltas natively, but a standard mouse only produces deltaY —
+  // so mouse users can't wheel-scroll a horizontal container. Shift + wheel
+  // is the long-established convention for horizontal scroll containers; we
+  // honor it by translating the vertical delta into a horizontal scroll.
+  //
+  // Only kicks in when Shift is held and the wheel is purely vertical
+  // (deltaX === 0), so native trackpad horizontal scrolling is untouched.
+  const handleWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+    if (!event.shiftKey || event.deltaY === 0 || event.deltaX !== 0) {
+      return;
+    }
+    const el = scrollElRef.current;
+    if (!el) {
+      return;
+    }
+    // Nothing to scroll horizontally — let the event fall through so the page
+    // can scroll as it normally would.
+    if (el.scrollWidth <= el.clientWidth) {
+      return;
+    }
+    event.preventDefault();
+    el.scrollBy({left: event.deltaY, behavior: 'auto'});
+  }, []);
 
   const scrollBy = useCallback((direction: -1 | 1) => {
     const el = scrollElRef.current;
@@ -330,19 +359,20 @@ export function Carousel({
     <div
       ref={mergeRefs(ref, layer.ref as React.Ref<HTMLDivElement>)}
       data-testid={testId}
-      role="region"
-      aria-label={ariaLabel}
-      aria-roledescription="carousel"
+      {...htmlProps}
       {...mergeProps(
         themeProps('carousel'),
         stylex.props(styles.root, xstyle),
         className,
         style,
       )}
-      {...htmlProps}>
+      role="region"
+      aria-label={ariaLabel}
+      aria-roledescription="carousel">
       <div
         ref={composedRef}
         tabIndex={0}
+        onWheel={handleWheel}
         {...stylex.props(
           styles.scroller,
           gapStyles[gap],
@@ -366,7 +396,7 @@ export function Carousel({
               )}>
               <Button
                 icon={<Icon icon="chevronLeft" size="xsm" />}
-                label="Scroll left"
+                label={t('@astryx.carousel.scrollLeft')}
                 variant="ghost"
                 size="sm"
                 isIconOnly
@@ -387,7 +417,7 @@ export function Carousel({
               )}>
               <Button
                 icon={<Icon icon="chevronRight" size="xsm" />}
-                label="Scroll right"
+                label={t('@astryx.carousel.scrollRight')}
                 variant="ghost"
                 size="sm"
                 isIconOnly

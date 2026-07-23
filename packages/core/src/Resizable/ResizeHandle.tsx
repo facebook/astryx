@@ -33,6 +33,7 @@ import {
 import {mergeProps, mergeRefs} from '../utils';
 import type {ResizableProps} from './useResizable';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const KEYBOARD_STEP = 10;
 const KEYBOARD_LARGE_STEP = 50;
@@ -307,7 +308,7 @@ export function ResizeHandle({
   hasDivider = false,
   isAlwaysVisible = true,
   pillPlacement = 'auto',
-  label = 'Resize handle',
+  label: labelFromProps,
   resizable,
   children,
   xstyle,
@@ -315,6 +316,8 @@ export function ResizeHandle({
   ref,
   ...props
 }: ResizeHandleProps) {
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.resizable.handle.label');
   const handleRef = useRef<HTMLDivElement>(null);
   // Removes the in-flight drag's window listeners (and resets body styles).
   // Held in a ref so unmount can tear down a drag that never got a pointerup.

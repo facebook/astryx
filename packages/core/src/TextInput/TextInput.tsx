@@ -123,6 +123,7 @@ import {useInputGroup} from '../InputGroup/InputGroupContext';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export type TextInputType = 'text' | 'password' | 'email';
 
@@ -298,6 +299,7 @@ export function TextInput({
   ref,
   ...rest
 }: TextInputProps) {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
 
   const id = useId();
@@ -448,7 +450,7 @@ export function TextInput({
         <button
           type="button"
           onClick={handleClear}
-          aria-label={`Clear ${label}`}
+          aria-label={t('@astryx.textInput.clearLabel', {label})}
           {...stylex.props(styles.clearButton)}>
           <Icon icon="close" size="sm" color="secondary" />
         </button>

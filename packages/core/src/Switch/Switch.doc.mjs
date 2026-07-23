@@ -90,7 +90,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Status indicator with type and message. Displays a colored message box below the switch and sets aria-invalid when type is "error".',
     },
@@ -107,7 +107,7 @@ export const docs = {
     {
       name: 'labelIcon',
       type: 'IconType',
-      description: 'Icon displayed before the label text. See `npx astryx docs icons` for valid semantic names.',
+      description: 'Icon displayed before the label text. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'labelTooltip',
@@ -236,7 +236,7 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         '带类型和消息的状态指示器。在开关下方显示彩色消息框，当类型为 "error" 时设置 aria-invalid。',
     },

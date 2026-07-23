@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/core",
-  "version": "0.1.6",
+  "version": "0.1.8",
   "displayName": "Astryx Core",
   "description": "The component library. Accessible, themeable React components with built-in spacing, dark mode, and StyleX styling.",
   "author": "Meta Open Source",
@@ -59,6 +59,16 @@
       "types": "./dist/naming.d.ts",
       "default": "./dist/naming.js"
     },
+    "./config": {
+      "source": "./src/config.ts",
+      "types": "./dist/config.d.ts",
+      "default": "./dist/config.js"
+    },
+    "./authoring": {
+      "source": "./src/authoring/index.ts",
+      "types": "./dist/authoring/index.d.ts",
+      "default": "./dist/authoring/index.js"
+    },
     "./theme/tokens": {
       "source": "./src/theme/tokens.ts",
       "types": "./dist/theme/tokens.d.ts",
@@ -76,6 +86,7 @@
     },
     "./docs.mjs": "./docs.mjs",
     "./groups.doc.mjs": "./groups.doc.mjs",
+    "./locales/*.json": "./locales/*.json",
     "./AlertDialog": {
       "source": "./src/AlertDialog/index.ts",
       "types": "./dist/AlertDialog/index.d.ts",
@@ -576,6 +587,11 @@
       "types": "./dist/hooks/index.d.ts",
       "default": "./dist/hooks/index.js"
     },
+    "./i18n": {
+      "source": "./src/i18n/index.ts",
+      "types": "./dist/i18n/index.d.ts",
+      "default": "./dist/i18n/index.js"
+    },
     "./theme": {
       "source": "./src/theme/index.ts",
       "types": "./dist/theme/index.d.ts",
@@ -620,6 +636,8 @@
   "files": [
     "dist",
     "src",
+    "scripts/postinstall.mjs",
+    "locales",
     "docs.mjs",
     "groups.doc.mjs",
     "README.md",
@@ -627,7 +645,9 @@
   ],
   "scripts": {
     "prepack": "pnpm build",
-    "build": "rimraf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && pnpm build:umd && node ../../scripts/check-no-dev-jsx.mjs",
+    "postinstall": "node scripts/postinstall.mjs",
+    "build": "rimraf dist && pnpm build:i18n && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && pnpm build:umd && node ../../scripts/check-no-dev-jsx.mjs",
+    "build:i18n": "node scripts/build-pseudo-locale.mjs",
     "build:esm": "babel src --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.json",
     "build:css": "node ../../scripts/build-css.mjs",
     "build:umd": "node ../../scripts/build-umd.mjs",
@@ -653,5 +673,8 @@
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.3.2",
     "rimraf": "^6.0.1"
+  },
+  "dependencies": {
+    "intl-messageformat": "^11.2.9"
   }
 }

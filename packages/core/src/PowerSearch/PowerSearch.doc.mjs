@@ -23,7 +23,7 @@ export const docs = {
     },
     {
       name: 'onChange',
-      type: '(filters: ReadonlyArray<PowerSearchFilter>, changeType: PowerSearchChangeType, index: number) => void',
+      type: "(filters: ReadonlyArray<PowerSearchFilter>, changeType: 'add' | 'edit' | 'remove', index: number) => void",
       description:
         "Called when filters change. changeType is 'add', 'edit', or 'remove'. index is the affected filter's position.",
       required: true,
@@ -79,7 +79,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Validation status object with type and optional message.',
     },
@@ -177,7 +177,7 @@ export const docsZh = {
     },
     {
       name: 'onChange',
-      type: '(filters: ReadonlyArray<PowerSearchFilter>, changeType: PowerSearchChangeType, index: number) => void',
+      type: "(filters: ReadonlyArray<PowerSearchFilter>, changeType: 'add' | 'edit' | 'remove', index: number) => void",
       description:
         "当过滤器变更时调用。changeType 为 'add'、'edit' 或 'remove'。index 为受影响的过滤器位置。",
       required: true,
@@ -232,7 +232,7 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description: '带有类型和可选消息的验证状态对象。',
     },
     {

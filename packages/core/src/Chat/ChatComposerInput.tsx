@@ -53,6 +53,7 @@ import {
 import {Badge, type BadgeProps} from '../Badge';
 import {useChatComposerContext} from './ChatContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -96,8 +97,7 @@ export type ChatComposerTokenCustom = {
  *   Use for tooltips, hovercards, or any content beyond a badge.
  */
 export type ChatComposerToken =
-  | ChatComposerTokenBadge
-  | ChatComposerTokenCustom;
+  ChatComposerTokenBadge | ChatComposerTokenCustom;
 
 export type ChatComposerTriggerItem = SearchableItem;
 
@@ -279,6 +279,7 @@ function serialize(node: Node): string {
 // =============================================================================
 
 export function ChatComposerInput(props: ChatComposerInputProps) {
+  const t = useTranslator();
   const composerCtx = useChatComposerContext();
   const hasControlledValueProp = props.value !== undefined;
 
@@ -287,12 +288,12 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     handleRef,
     value: controlledValue = composerCtx?.value,
     onChange: onChangeProp,
-    placeholder = composerCtx?.placeholder ?? 'Type a message\u2026',
+    placeholder: placeholderFromProps,
     maxRows = 8,
     triggers,
     debounceMs = 150,
     hasHistory = true,
-    label = 'Message input',
+    label: labelFromProps,
     isDisabled = composerCtx?.isDisabled ?? false,
     onPaste: onPasteProp,
     pasteAsToken: pasteAsTokenProp,
@@ -303,6 +304,11 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     style,
     ...rest
   } = props;
+  const label = labelFromProps ?? t('@astryx.chat.composerInput.label');
+  const placeholder =
+    placeholderFromProps ??
+    composerCtx?.placeholder ??
+    t('@astryx.chat.composer.placeholder');
 
   const composerOnChange = composerCtx?.onChange;
   const onChange = useCallback(

@@ -39,10 +39,10 @@ export const docs = {
           style: 'ordered',
           items: [
             'Use components for everything they cover',
-            'Layout is frame-first: pick the shell and budget regions before writing content (see \`npx astryx docs layout\`)',
+            'Layout is frame-first: pick the shell and budget regions before writing content (see \`astryx docs layout\`)',
             'Dense data renders as rows (Table, List/Item), edge-to-edge with dividers; Card is for widgets, galleries, and settings groups',
-            'StyleX or Tailwind for custom styling; both are first-class (see \`npx astryx docs styling\`)',
-            'Semantic tokens, not hardcoded values (see \`npx astryx docs tokens\`)',
+            'StyleX or Tailwind for custom styling; both are first-class (see \`astryx docs styling\`)',
+            'Semantic tokens, not hardcoded values (see \`astryx docs tokens\`)',
             'CSS custom properties for colors, not hex values',
             'Form inputs are controlled (value + onChange)',
             'Use useLinkComponent() for navigation so consumers can plug in their framework router via LinkProvider',
@@ -60,7 +60,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'See \`npx astryx docs styling\` for the complete guide with examples.',
+          text: 'See \`astryx docs styling\` for the complete guide with examples.',
         },
       ],
     },
@@ -76,7 +76,7 @@ export const docs = {
             'Hardcoded colors (#fff). Use var(--color-*) or Tailwind semantic classes (text-primary, bg-surface)',
             'Hardcoded spacing (16px). Use spacing tokens or Tailwind spacing utilities',
             'Hardcoded <a> elements. Use useLinkComponent() so consumers can swap in their framework router via LinkProvider',
-            'Wrapping every list item or page section in a Card. Decide the frame first; dense data renders as rows (see \`npx astryx docs layout\`)',
+            'Wrapping every list item or page section in a Card. Decide the frame first; dense data renders as rows (see \`astryx docs layout\`)',
             'Badge as decoration. Reserve Badge for counts and enumerated states; use StatusDot or Token for status',
             'Inventing props. Read component docs first',
           ],
@@ -89,7 +89,7 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'The design system provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run \`npx astryx docs tokens\` for the full reference with all values.',
+          text: 'The design system provides semantic design tokens for spacing, color, radius, shadow, typography, and size. Tokens adapt to the active theme and color mode. Run \`astryx docs tokens\` for the full reference with all values.',
         },
       ],
     },

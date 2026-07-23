@@ -15,18 +15,16 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as p from '@clack/prompts';
 import {findCoreDir, listComponents} from '../utils/paths.mjs';
 import {
   assertWithin,
   PathSafetyError,
-  isNonInteractive,
 } from '../utils/path-safety.mjs';
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {checkGhCli} from '../utils/github.mjs';
-import {getRunPrefix} from '../utils/package-manager.mjs';
+import {getCliInvocation} from '../utils/package-manager.mjs';
 import {Project} from '../lib/project.mjs';
 import {
   CORE_PACKAGE,
@@ -97,14 +95,6 @@ function buildFeedback(component, issuesUrl) {
   }
 
   return feedback;
-}
-
-function isCancel(value) {
-  if (p.isCancel(value)) {
-    p.cancel('Cancelled.');
-    process.exit(0);
-  }
-  return value;
 }
 
 /**
@@ -190,6 +180,7 @@ export function registerSwizzle(program) {
     .action(async (component, options) => {
       const coreDir = findCoreDir(process.cwd());
       const json = program.opts().json || false;
+      const run = getCliInvocation();
 
       if (!coreDir) {
         cliError(
@@ -207,10 +198,10 @@ export function registerSwizzle(program) {
         for (const name of components) {
           humanLog(`  ${name}`);
         }
-        humanLog(`\nUsage: astryx swizzle <component>\n`);
-        humanLog('Example: astryx swizzle Button');
+        humanLog(`\nUsage: ${run} swizzle <component>\n`);
+        humanLog(`Example: ${run} swizzle Button`);
         humanLog(
-          '         astryx swizzle XDSButton  (XDS prefix also works)\n',
+          `         ${run} swizzle XDSButton  (XDS prefix also works)\n`,
         );
         return;
       }
@@ -314,25 +305,11 @@ export function registerSwizzle(program) {
 
       if (existingFiles.length > 0 && !options.overwrite) {
         const relOutputForMsg = path.relative(process.cwd(), outputDir) || '.';
-        if (json || isNonInteractive({json})) {
-          const msg =
-            `Refusing to overwrite ${existingFiles.length} existing file(s) in ${relOutputForMsg}/. ` +
-            `Re-run with --overwrite (or -f) to replace them.`;
-          cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
-          return;
-        }
-        const confirmed = isCancel(
-          await p.confirm({
-            message:
-              `Overwrite ${existingFiles.length} existing file(s) in ${relOutputForMsg}/? ` +
-              `(${existingFiles.slice(0, 3).join(', ')}${existingFiles.length > 3 ? ', …' : ''})`,
-            initialValue: false,
-          }),
-        );
-        if (!confirmed) {
-          humanLog('Aborted. Re-run with --overwrite to replace files.');
-          return;
-        }
+        const msg =
+          `Refusing to overwrite ${existingFiles.length} existing file(s) in ${relOutputForMsg}/. ` +
+          `Re-run with --overwrite (or -f) to replace them.`;
+        cliError(msg, {code: ERROR_CODES.ERR_FILE_EXISTS});
+        return;
       }
 
       fs.mkdirSync(outputDir, {recursive: true});
@@ -411,7 +388,7 @@ export function registerSwizzle(program) {
         humanLog(
           '  Without one they render unstyled (no error). See setup per framework:',
         );
-        humanLog(`  ${getRunPrefix()} astryx docs styling`);
+        humanLog(`  ${run} docs styling`);
         humanLog(
           '  Next.js note: the StyleX Babel plugin disables SWC and breaks next/font —',
         );

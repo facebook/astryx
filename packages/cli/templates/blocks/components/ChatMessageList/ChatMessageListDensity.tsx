@@ -16,9 +16,9 @@ import {Fragment} from 'react';
 const DENSITIES = ['compact', 'balanced', 'spacious'] as const;
 
 const AVATAR_SIZE = {
-  compact: 'xsmall' as const,
-  balanced: 'small' as const,
-  spacious: 'small' as const,
+  compact: 'sm' as const,
+  balanced: 'md' as const,
+  spacious: 'md' as const,
 };
 
 export default function ChatMessageListDensity() {
@@ -34,15 +34,11 @@ export default function ChatMessageListDensity() {
             <VStack style={{flex: 1, minHeight: 0}}>
               <ChatMessageList density={density}>
                 <ChatMessage sender="user">
-                  <ChatMessageBubble>
-                    How does density work?
-                  </ChatMessageBubble>
+                  <ChatMessageBubble>How does density work?</ChatMessageBubble>
                 </ChatMessage>
                 <ChatMessage
                   sender="assistant"
-                  avatar={
-                    <Avatar name="Agent" size={AVATAR_SIZE[density]} />
-                  }>
+                  avatar={<Avatar name="Agent" size={AVATAR_SIZE[density]} />}>
                   <ChatMessageBubble>
                     Density provides default spacing at every level — message
                     gap, bubble padding, and gap between child elements. Use gap

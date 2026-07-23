@@ -17,6 +17,7 @@ import * as stylex from '@stylexjs/stylex';
 import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {resolveContextActions} from '../../tableContextMenu';
+import {useTranslator} from '../../../i18n';
 import type {
   TablePlugin,
   TableColumn,
@@ -140,12 +141,19 @@ export function useTableRowExpansionState<T extends Record<string, unknown>>({
 
   const depthMap = useMemo(() => {
     const map = new Map<string, number>();
+    // Ancestor keys on the current walk path — guards against cyclic data.
+    const path = new Set<string>();
     function walk(items: T[], depth: number) {
       for (const item of items) {
         const key = getRowKey(item);
+        if (path.has(key)) {
+          continue; // cyclic edge — skip
+        }
         map.set(key, depth);
         if (expandedKeys.has(key)) {
+          path.add(key);
           walk(getChildren(item), depth + 1);
+          path.delete(key);
         }
       }
     }
@@ -155,12 +163,19 @@ export function useTableRowExpansionState<T extends Record<string, unknown>>({
 
   const data = useMemo(() => {
     const result: T[] = [];
+    // Ancestor keys on the current walk path — guards against cyclic data.
+    const path = new Set<string>();
     function walk(items: T[]) {
       for (const item of items) {
-        result.push(item);
         const key = getRowKey(item);
+        if (path.has(key)) {
+          continue; // cyclic edge — skip
+        }
+        result.push(item);
         if (expandedKeys.has(key)) {
+          path.add(key);
           walk(getChildren(item));
+          path.delete(key);
         }
       }
     }
@@ -171,11 +186,19 @@ export function useTableRowExpansionState<T extends Record<string, unknown>>({
   // Every expandable key across the whole tree (drives expand-all).
   const allExpandableKeys = useMemo(() => {
     const keys: string[] = [];
+    // Ancestor keys on the current walk path — guards against cyclic data.
+    const path = new Set<string>();
     function walk(items: T[]) {
       for (const item of items) {
+        const key = getRowKey(item);
+        if (path.has(key)) {
+          continue; // cyclic edge — skip
+        }
         if (isExpandable(item)) {
-          keys.push(getRowKey(item));
+          keys.push(key);
+          path.add(key);
           walk(getChildren(item));
+          path.delete(key);
         }
       }
     }
@@ -356,6 +379,7 @@ function ExpansionChevron({
 export function useTableRowExpansion<T extends Record<string, unknown>>(
   config: UseTableRowExpansionConfig<T>,
 ): TablePlugin<T> {
+  const t = useTranslator();
   const {
     expandedKeys,
     onToggle,
@@ -397,7 +421,11 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
           <ExpansionChevron
             isExpanded={isExpanded}
             onToggle={() => onToggle(key)}
-            ariaLabel={isExpanded ? 'Collapse row' : 'Expand row'}
+            ariaLabel={
+              isExpanded
+                ? t('@astryx.tableRowExpansion.collapseRow')
+                : t('@astryx.tableRowExpansion.expandRow')
+            }
           />
         );
       },
@@ -409,6 +437,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       getChildren,
       getIsItemExpandable,
       getDepth,
+      t,
     ],
   );
 
@@ -436,10 +465,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                 ? originalRenderCell(item)
                 : String(
                     ((item as Record<string, unknown>)[col.key] as
-                      | string
-                      | number
-                      | null
-                      | undefined) ?? '',
+                      string | number | null | undefined) ?? '',
                   );
 
               if (depth === 0) {
@@ -457,7 +483,11 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                 <ExpansionChevron
                   isExpanded={isExpanded}
                   onToggle={() => onToggle(key)}
-                  ariaLabel={isExpanded ? 'Collapse row' : 'Expand row'}
+                  ariaLabel={
+                    isExpanded
+                      ? t('@astryx.tableRowExpansion.collapseRow')
+                      : t('@astryx.tableRowExpansion.expandRow')
+                  }
                 />
               ) : (
                 <span {...stylex.props(expansionStyles.placeholder)} />
@@ -499,7 +529,9 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                 {...stylex.props(expansionStyles.chevronButton)}
                 onClick={() => onToggleExpandAll(!allExpanded)}
                 aria-label={
-                  allExpanded ? 'Collapse all rows' : 'Expand all rows'
+                  allExpanded
+                    ? t('@astryx.tableRowExpansion.collapseAllRows')
+                    : t('@astryx.tableRowExpansion.expandAllRows')
                 }>
                 <span
                   {...stylex.props(
@@ -570,7 +602,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
             ...props.htmlProps,
             onClick: () => onToggle(key),
           },
-          styles: [...props.styles, expansionStyles.clickableRow],
+          xstyle: [...props.xstyle, expansionStyles.clickableRow],
         };
       },
     }),
@@ -585,6 +617,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       isAllExpanded,
       onToggleExpandAll,
       expansionColumn,
+      t,
     ],
   );
 }

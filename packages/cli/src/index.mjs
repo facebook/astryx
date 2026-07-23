@@ -12,13 +12,14 @@ import {fileURLToPath} from 'node:url';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {checkForUpdate} from './utils/update-check.mjs';
-import {getRunPrefix} from './utils/package-manager.mjs';
+import {getCliInvocation} from './utils/package-manager.mjs';
 import {API_VERSION, setJsonMode} from './lib/json.mjs';
 import {buildManifest} from './lib/manifest.mjs';
 import {cliError} from './lib/cli-error.mjs';
 import {ERROR_CODES} from './lib/error-codes.mjs';
 import {levenshteinDistance} from './lib/string-utils.mjs';
 import {installJsonShim} from './lib/json-shim.mjs';
+import {isAstryxInitialized} from './commands/agent-docs.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -174,7 +175,7 @@ function fullCommandName(actionCommand) {
  *
  * If --json is set on a command that is not on the JSON_SUPPORTED allowlist,
  * emit a structured error envelope and exit 1 — without running the command's
- * action (so no filesystem mutations, no clack prompts, no spawned processes).
+ * action (so no filesystem mutations, no interactive prompts, no spawned processes).
  *
  * This is the single source of truth for "command does not support --json".
  * Individual commands should NOT re-check this; they may assume that if their
@@ -234,6 +235,40 @@ program.hook('postAction', (thisCommand, actionCommand) => {
     }
   } catch {
     // Never let update check break the CLI
+  }
+});
+
+/**
+ * Enforcement layer 3 — setup nudge. If this project hasn't run `astryx init`
+ * yet (no Astryx marker in any agent-doc file — see isAstryxInitialized), remind
+ * the user/agent that setup is missing.
+ *
+ * Uses `preAction` (not postAction) so it fires for EVERY valid command — even
+ * ones whose action errors or calls process.exit (postAction is skipped then).
+ *
+ * Suppressed in --json: that is machine output with a strict clean stdout+stderr
+ * contract (json-shim.test: "error envelopes have empty stderr"), and --json
+ * consumers parse stdout, not stderr — a stderr nudge would not reach them anyway.
+ * The core/cli postinstall layers already nudge at install time regardless of
+ * --json; a machine-readable nudge could later be an envelope field. Also skipped
+ * for the installer commands themselves and outside a project (no package.json).
+ */
+const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
+program.hook('preAction', (thisCommand, actionCommand) => {
+  try {
+    if (program.opts().json) return; // machine mode — keep --json output clean
+    if (SETUP_NUDGE_EXEMPT.has(actionCommand.name())) return;
+    const cwd = process.cwd();
+    if (!fs.existsSync(path.join(cwd, 'package.json'))) return; // not a project
+    if (isAstryxInitialized(cwd)) return; // already set up — stay quiet
+    // Same wording as the core/cli postinstall nudges. #4151's getCliInvocation()
+    // renders the correct form for THIS project — scoped `npx @astryxdesign/cli`
+    // one-off, or `<pm> astryx` when installed — never the bare `npx astryx` footgun.
+    console.error(
+      `\nNext step: run \`${getCliInvocation(cwd)} init\` to finish setup and install the Astryx agent prompt.`,
+    );
+  } catch {
+    // Never let the nudge break a command.
   }
 });
 
@@ -305,15 +340,14 @@ program
       console.log(`  ${c.name}${tag}`);
       if (c.description) console.log(`    ${c.description}`);
     }
-    console.log(`\nRun \`astryx manifest --json\` for the full structured manifest.\n`);
+    console.log(`\nRun \`${getCliInvocation()} manifest --json\` for the full structured manifest.\n`);
   });
 
 // Hidden command used by package.json postinstall scripts
 program
   .command('postinstall', {hidden: true})
   .action(() => {
-    const run = getRunPrefix();
-    const r = `${run} xds`;
+    const r = getCliInvocation();
     const pad = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
     const W = 49; // inner width of the box
     const line = (s) => `  │ ${pad(s, W)}│`;
@@ -323,7 +357,7 @@ ${line('')}
 ${line('  Design system installed!')}
 ${line('')}
 ${line('  Get started:')}
-${line(`    ${r} init          Interactive setup`)}
+${line(`    ${r} init          Setup + AI agent docs`)}
 ${line(`    ${r} --help        See all commands`)}
 ${line('')}
 ${line('  Or run directly:')}

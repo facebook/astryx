@@ -50,6 +50,7 @@ import {
 import {mergeProps} from '../utils';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -296,7 +297,10 @@ const styles = stylex.create({
   chevron: {
     display: 'inline-flex',
     transitionProperty: 'transform',
-    transitionDuration: durationVars['--duration-fast'],
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   chevronExpanded: {
@@ -385,6 +389,7 @@ export function Banner({
   ref,
   ...rest
 }: BannerProps) {
+  const t = useTranslator();
   const [isDismissed, setIsDismissed] = useState(false);
   const [isExpanded, setIsExpanded] = useState(defaultIsExpanded);
   // Links the expand/collapse toggle to the content region it shows/hides so
@@ -469,8 +474,16 @@ export function Banner({
               <Button
                 variant="ghost"
                 size="sm"
-                label={isExpanded ? 'Collapse' : 'Expand'}
-                tooltip={isExpanded ? 'Collapse' : 'Expand'}
+                label={
+                  isExpanded
+                    ? t('@astryx.banner.collapse')
+                    : t('@astryx.banner.expand')
+                }
+                tooltip={
+                  isExpanded
+                    ? t('@astryx.banner.collapse')
+                    : t('@astryx.banner.expand')
+                }
                 icon={
                   <span
                     {...stylex.props(
@@ -490,8 +503,8 @@ export function Banner({
               <Button
                 variant="ghost"
                 size="sm"
-                label="Dismiss"
-                tooltip="Dismiss"
+                label={t('@astryx.banner.dismiss')}
+                tooltip={t('@astryx.banner.dismiss')}
                 icon={<Icon icon="close" size="sm" color="inherit" />}
                 onClick={handleDismiss}
                 isIconOnly

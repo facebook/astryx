@@ -83,13 +83,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Depth 50 (same as check-scope) so the three-dot diff below can find
+          # a merge base. With the default depth of 1 the diff fails with
+          # "no merge base", the error is swallowed by the pipeline, and
+          # has_components silently becomes false — skipping pr-a11y entirely.
+          fetch-depth: 50
 
       - name: Fetch base branch
-        run: git fetch origin ${{ github.base_ref }} --depth=1
+        run: git fetch origin ${{ github.base_ref }} --depth=50
 
       - name: Check for component changes
         id: check
         run: |
+          if ! git merge-base HEAD origin/${{ github.base_ref }} >/dev/null 2>&1; then
+            echo "::warning::No merge base between HEAD and origin/${{ github.base_ref }} (clone too shallow) — assuming components changed so pr-a11y still runs"
+            echo "has_components=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ | grep -v -E '(hooks|theme|utils)/' | head -1)
           echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
@@ -149,10 +160,15 @@ jobs:
       - name: Checkout
         if: needs.check-scope.outputs.docsite_only != 'true'
         uses: actions/checkout@v7
+        with:
+          # Depth 50 (same as check-scope) so analyze-pr.js's three-dot diff
+          # can find a merge base — depth 1 breaks it ("no merge base") and
+          # the analysis silently reported zero changed components.
+          fetch-depth: 50
 
       - name: Fetch base branch for PR analysis
         if: needs.check-scope.outputs.docsite_only != 'true' && github.event_name == 'pull_request'
-        run: git fetch origin ${{ github.base_ref }} --depth=1
+        run: git fetch origin ${{ github.base_ref }} --depth=50
 
       - name: Setup Node and pnpm
         if: needs.check-scope.outputs.docsite_only != 'true'
