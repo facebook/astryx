@@ -165,6 +165,7 @@ export function AvatarGroupOverflow({
         onClick={onClick}
         {...rest}
         aria-label={label}
+        data-avatar-item=""
         {...mergeProps(
           themeProps('avatar-group-overflow'),
           stylex.props(

@@ -14,6 +14,8 @@
  * - /packages/core/src/Avatar/index.ts (exports if types change)
  * - /apps/storybook/stories/Avatar.stories.tsx (storybook stories)
  * - /packages/cli/templates/blocks/components/Avatar/ (showcase blocks)
+ *
+ * Last synced props: alt, fallbackSrc, name, size, src, status, href, as, target, rel, onClick
  */
 
 import {useMemo, useState, type ReactNode} from 'react';
@@ -30,6 +32,8 @@ import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
 import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTooltip} from '../Tooltip/useTooltip';
+import {useLinkComponent} from '../Link/useLinkComponent';
+import type {LinkComponentType} from '../Link/types';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -148,6 +152,39 @@ const styles = stylex.create({
       ':focus-visible': '2px',
     },
   },
+  // Reset the intrinsic styling of the interactive element (<a>/<button>) so it
+  // is a transparent, correctly-sized wrapper around the avatar visuals. The
+  // element carries the focus-visible accent ring for keyboard users.
+  interactive: {
+    appearance: 'none',
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderStyle: 'none',
+    backgroundColor: 'transparent',
+    color: 'inherit',
+    font: 'inherit',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    // Match the avatar's circular shape so the focus ring hugs it.
+    borderRadius: radiusVars['--radius-full'],
+    outlineWidth: {
+      default: 0,
+      ':focus-visible': 2,
+    },
+    outlineStyle: {
+      default: 'none',
+      ':focus-visible': 'solid',
+    },
+    outlineColor: {
+      default: null,
+      ':focus-visible': colorVars['--color-accent'],
+    },
+    outlineOffset: {
+      default: 0,
+      ':focus-visible': 2,
+    },
+  },
 });
 
 /**
@@ -244,6 +281,35 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
    * @default true
    */
   tooltip?: string | boolean;
+  /**
+   * When provided, the avatar becomes an interactive link (`<a>` or custom
+   * link component) pointing at `href`. Follows the same element-swap rules as
+   * Button: `href` renders a link, otherwise `onClick` renders a
+   * `<button type="button">`, otherwise the avatar stays a static (non-focusable)
+   * element. An interactive avatar requires a meaningful accessible name via
+   * `alt` or `name`.
+   */
+  href?: string;
+  /**
+   * Custom link component to use when `href` is provided. Overrides the
+   * provider-level default set by LinkProvider. Useful for Next.js `<Link>` or
+   * other router-aware components. Only applies when `href` is provided.
+   */
+  as?: LinkComponentType;
+  /**
+   * HTML target attribute for the link. Only applies when `href` is provided.
+   */
+  target?: string;
+  /**
+   * HTML rel attribute for the link. Only applies when `href` is provided.
+   */
+  rel?: string;
+  /**
+   * Click handler. When provided without `href`, renders the avatar as a
+   * focusable `<button type="button">`. An interactive avatar requires a
+   * meaningful accessible name via `alt` or `name`.
+   */
+  onClick?: React.MouseEventHandler<HTMLElement>;
 }
 
 /**
@@ -295,6 +361,8 @@ function DefaultIcon({size}: {size: number}) {
  * <Avatar src="/user.jpg" status={<OnlineIndicator />} />
  * <Avatar name="jsmith" tooltip="Jane Smith, Staff Engineer" />
  * <Avatar name="Jane" tooltip={false} />
+ * <Avatar src="/user.jpg" name="John Doe" href="/users/john" />
+ * <Avatar src="/user.jpg" name="John Doe" onClick={() => openProfile()} />
  * ```
  */
 export function Avatar({
@@ -306,6 +374,11 @@ export function Avatar({
   src,
   status,
   tooltip = true,
+  href,
+  as,
+  target,
+  rel,
+  onClick,
   xstyle,
   className,
   style,
@@ -359,11 +432,14 @@ export function Avatar({
   // returns `describedBy` as a value we choose whether to apply — the only way
   // to satisfy the per-case aria-describedby rule (default name: none; custom
   // string: describe) without editing Tooltip. `focusTrigger: 'auto'` shows the
-  // tooltip on keyboard focus once the root is made focusable (below).
+  // tooltip on keyboard focus once the root is focusable (natively for the
+  // interactive <a>/<button>, or via an explicit tab stop on the static div).
   const tooltipHook = useTooltip({
     placement: 'above',
     isEnabled: showTooltip,
   });
+  // The tooltip ref attaches to whichever root element renders (static or
+  // interactive), so the tooltip works for link/button avatars too.
   const rootRef = mergeRefs(ref, showTooltip ? tooltipHook.ref : undefined);
   const describedByProp =
     showTooltip && isCustomTooltip
@@ -375,8 +451,136 @@ export function Avatar({
         }
       : null;
 
-  const avatarElement = (
-    <AvatarSizeContext value={numericSize}>
+  // Element-swap trichotomy, copied from Button: `href` renders a link,
+  // otherwise `onClick` renders a `<button>`, otherwise today's static element
+  // is unchanged (the non-breaking default).
+  const renderAsLink = href != null;
+  const renderAsButton = !renderAsLink && onClick != null;
+  const isInteractive = renderAsLink || renderAsButton;
+  const LinkComponent = useLinkComponent(as);
+
+  // An interactive control with no accessible name is an unacceptable control
+  // name. Warn in the same client-safe way sibling components do (Field,
+  // Timestamp, Popover) — a plain `console.warn`, never gated on `process.env`
+  // (which is not available on the client in this codebase).
+  if (isInteractive && !accessibleName) {
+    console.warn(
+      'Avatar: an interactive avatar (with `href` or `onClick`) needs a ' +
+        'meaningful accessible name. Pass `alt` or `name`.',
+    );
+  }
+
+  // The inner visuals are identical across the static and interactive variants.
+  const visualContent = (
+    <>
+      <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
+        {showImage && (
+          <img
+            src={src}
+            alt=""
+            onError={() => setErroredSrc(src)}
+            {...stylex.props(styles.image)}
+          />
+        )}
+        {showFallbackImage && (
+          <img
+            src={fallbackSrc}
+            alt=""
+            onError={() => setErroredFallbackSrc(fallbackSrc)}
+            {...stylex.props(styles.image)}
+          />
+        )}
+        {showInitials && (
+          <div
+            {...stylex.props(
+              styles.fallback,
+              dynamicStyles.fontSize(numericSize),
+            )}>
+            {getInitials(name)}
+          </div>
+        )}
+        {showIcon && (
+          <div {...stylex.props(styles.fallback)}>
+            <DefaultIcon size={numericSize} />
+          </div>
+        )}
+      </div>
+      {status && (
+        <div
+          {...stylex.props(
+            styles.status,
+            dynamicStyles.statusPosition(numericSize),
+          )}>
+          {status}
+        </div>
+      )}
+    </>
+  );
+
+  // Shared StyleX + theme props for the root element in every variant. The
+  // group ring/overlap, the interactive focus-visible ring, and the
+  // tooltip tab-stop focus ring all live here so the interactive
+  // `<a>`/`<button>` and the static `<div>` carry the exact same box.
+  const rootStylexProps = mergeProps(
+    themeProps('avatar', {size: resolvedSize}),
+    stylex.props(
+      styles.wrapper,
+      isInteractive && styles.interactive,
+      !isInteractive && showTooltip && !avatarGroup && styles.focusable,
+      avatarGroup && groupStyles.ring,
+      avatarGroup && groupStyles.overlap,
+      avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),
+      xstyle,
+    ),
+    className,
+    style,
+  );
+
+  let rootElement: ReactNode;
+
+  // `props` is typed for the default `<div>` root (its event handlers are
+  // HTMLDivElement-typed). The interactive branches render an `<a>`/`<button>`,
+  // so the passthrough props are re-typed to the generic element here — the
+  // avatar's own handlers (onClick) are declared on HTMLElement and stay typed.
+  const interactivePassthrough = props as React.HTMLAttributes<HTMLElement>;
+
+  if (renderAsLink) {
+    // The rendered link carries the `data-avatar-item` marker so AvatarGroup's
+    // roving focus (which selects on `[data-avatar-item]`, not a tag/role) picks
+    // it up while ignoring nested buttons in a custom status/badge slot.
+    rootElement = (
+      <LinkComponent
+        {...interactivePassthrough}
+        {...describedByProp}
+        ref={rootRef as React.Ref<HTMLAnchorElement>}
+        href={href}
+        target={target}
+        rel={rel}
+        aria-label={accessibleName}
+        data-avatar-item=""
+        data-testid={testId}
+        onClick={onClick}
+        {...rootStylexProps}>
+        {visualContent}
+      </LinkComponent>
+    );
+  } else if (renderAsButton) {
+    rootElement = (
+      <button
+        {...interactivePassthrough}
+        {...describedByProp}
+        ref={rootRef}
+        type="button"
+        aria-label={accessibleName}
+        data-avatar-item=""
+        data-testid={testId}
+        onClick={onClick}
+        {...rootStylexProps}>
+        {visualContent}
+      </button>
+    );
+  } else {
+    rootElement = (
       <div
         {...props}
         ref={rootRef}
@@ -385,66 +589,19 @@ export function Avatar({
         aria-hidden={isDecorative || undefined}
         // The root is a div[role="img"], not natively focusable. When a name
         // tooltip is active, add a tab stop so keyboard users can reveal it
-        // (WCAG 1.4.13 / 2.1.1) — matching Timestamp/Button. Only while active.
-        tabIndex={showTooltip ? 0 : undefined}
+        // (WCAG 1.4.13 / 2.1.1) — matching Timestamp/Button. Suppressed inside
+        // an AvatarGroup, which owns a single roving tab stop for its members.
+        tabIndex={showTooltip && !avatarGroup ? 0 : undefined}
         data-testid={testId}
         {...describedByProp}
-        {...mergeProps(
-          themeProps('avatar', {size: resolvedSize}),
-          stylex.props(
-            styles.wrapper,
-            showTooltip && styles.focusable,
-            avatarGroup && groupStyles.ring,
-            avatarGroup && groupStyles.overlap,
-            avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),
-            xstyle,
-          ),
-          className,
-          style,
-        )}>
-        <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
-          {showImage && (
-            <img
-              src={src}
-              alt=""
-              onError={() => setErroredSrc(src)}
-              {...stylex.props(styles.image)}
-            />
-          )}
-          {showFallbackImage && (
-            <img
-              src={fallbackSrc}
-              alt=""
-              onError={() => setErroredFallbackSrc(fallbackSrc)}
-              {...stylex.props(styles.image)}
-            />
-          )}
-          {showInitials && (
-            <div
-              {...stylex.props(
-                styles.fallback,
-                dynamicStyles.fontSize(numericSize),
-              )}>
-              {getInitials(name)}
-            </div>
-          )}
-          {showIcon && (
-            <div {...stylex.props(styles.fallback)}>
-              <DefaultIcon size={numericSize} />
-            </div>
-          )}
-        </div>
-        {status && (
-          <div
-            {...stylex.props(
-              styles.status,
-              dynamicStyles.statusPosition(numericSize),
-            )}>
-            {status}
-          </div>
-        )}
+        {...rootStylexProps}>
+        {visualContent}
       </div>
-    </AvatarSizeContext>
+    );
+  }
+
+  const avatarElement = (
+    <AvatarSizeContext value={numericSize}>{rootElement}</AvatarSizeContext>
   );
 
   if (!showTooltip) {

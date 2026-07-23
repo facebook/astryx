@@ -250,3 +250,51 @@ export const ManyAvatars: Story = {
     );
   },
 };
+
+/**
+ * Interactive avatars — a mix of links (`href`) and buttons (`onClick`) plus an
+ * interactive overflow. The whole group is a single Tab stop: Tab into it once,
+ * then use ArrowLeft/ArrowRight to move focus between avatars and the overflow
+ * button. Screen readers hear a keyboard hint from the group.
+ */
+export const Interactive: Story = {
+  render: () => (
+    <AvatarGroup size="lg" aria-label="Project team">
+      <Avatar
+        src={USERS[0].src}
+        name={USERS[0].name}
+        href="https://example.com/users/alice"
+      />
+      <Avatar
+        src={USERS[1].src}
+        name={USERS[1].name}
+        href="https://example.com/users/bob"
+      />
+      <Avatar
+        src={USERS[2].src}
+        name={USERS[2].name}
+        onClick={() => alert(`Open ${USERS[2].name}`)}
+      />
+      <AvatarGroupOverflow
+        count={USERS.length - 3}
+        onClick={() => alert('Show all members')}
+      />
+    </AvatarGroup>
+  ),
+};
+
+/**
+ * Static facepile (no href/onClick) — unchanged behavior. Not focusable, no Tab
+ * stop, no keyboard hint. Shown here alongside the interactive variant for
+ * contrast.
+ */
+export const StaticFacepile: Story = {
+  render: () => (
+    <AvatarGroup size="lg">
+      {USERS.slice(0, 4).map(u => (
+        <Avatar key={u.key} src={u.src} name={u.name} />
+      ))}
+      <AvatarGroupOverflow count={USERS.length - 4} />
+    </AvatarGroup>
+  ),
+};
