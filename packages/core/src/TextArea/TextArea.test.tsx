@@ -9,26 +9,26 @@
  * SYNC: When TextArea.tsx changes, update tests to match new behavior
  */
 
-import {useState} from 'react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import { useState } from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {TestIcon} from '../__tests__/TestIcon';
-import {TextArea} from './TextArea';
+import { TestIcon } from '../__tests__/TestIcon';
+import { TextArea } from './TextArea';
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
 // disabledMessage tooltip.
 beforeEach(() => {
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     this.setAttribute('popover-open', '');
-    const event = new Event('toggle', {bubbles: false});
-    Object.defineProperty(event, 'newState', {value: 'open'});
+    const event = new Event('toggle', { bubbles: false });
+    Object.defineProperty(event, 'newState', { value: 'open' });
     this.dispatchEvent(event);
   });
   HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
     this.removeAttribute('popover-open');
-    const event = new Event('toggle', {bubbles: false});
-    Object.defineProperty(event, 'newState', {value: 'closed'});
+    const event = new Event('toggle', { bubbles: false });
+    Object.defineProperty(event, 'newState', { value: 'closed' });
     this.dispatchEvent(event);
   });
   const originalMatches = HTMLElement.prototype.matches;
@@ -45,11 +45,11 @@ beforeEach(() => {
 
 // jsdom popover content is in the DOM but may not be "visible" in the
 // accessibility tree. Use hidden: true to find it.
-const h = {hidden: true} as const;
+const h = { hidden: true } as const;
 
 describe('TextArea', () => {
   it('renders with label', () => {
-    render(<TextArea label="Description" value="" onChange={() => {}} />);
+    render(<TextArea label="Description" value="" onChange={() => { }} />);
     expect(screen.getByLabelText('Description')).toBeInTheDocument();
   });
 
@@ -58,7 +58,7 @@ describe('TextArea', () => {
       <TextArea
         label="Description"
         value=""
-        onChange={() => {}}
+        onChange={() => { }}
         placeholder="Enter description"
       />,
     );
@@ -93,7 +93,7 @@ describe('TextArea', () => {
       <TextArea
         label="Description"
         value="Controlled value"
-        onChange={() => {}}
+        onChange={() => { }}
       />,
     );
     expect(screen.getByRole('textbox')).toHaveValue('Controlled value');
@@ -102,14 +102,14 @@ describe('TextArea', () => {
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(
-      <TextArea ref={ref} label="Description" value="" onChange={() => {}} />,
+      <TextArea ref={ref} label="Description" value="" onChange={() => { }} />,
     );
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLTextAreaElement));
   });
 
   it('visually hides label when isLabelHidden is true', () => {
     render(
-      <TextArea label="Comments" isLabelHidden value="" onChange={() => {}} />,
+      <TextArea label="Comments" isLabelHidden value="" onChange={() => { }} />,
     );
     const label = screen.getByText('Comments');
     expect(label).toBeInTheDocument();
@@ -118,14 +118,14 @@ describe('TextArea', () => {
   });
 
   it('shows label visually by default', () => {
-    render(<TextArea label="Notes" value="" onChange={() => {}} />);
+    render(<TextArea label="Notes" value="" onChange={() => { }} />);
     const label = screen.getByText('Notes');
     expect(label).toBeVisible();
   });
 
   it('sets aria-required when isRequired is true', () => {
     render(
-      <TextArea label="Feedback" isRequired value="" onChange={() => {}} />,
+      <TextArea label="Feedback" isRequired value="" onChange={() => { }} />,
     );
     expect(screen.getByRole('textbox')).toHaveAttribute(
       'aria-required',
@@ -134,40 +134,66 @@ describe('TextArea', () => {
   });
 
   it('does not set aria-required when isRequired is false', () => {
-    render(<TextArea label="Feedback" value="" onChange={() => {}} />);
+    render(<TextArea label="Feedback" value="" onChange={() => { }} />);
     expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-required');
   });
 
   it('renders with custom rows', () => {
     render(
-      <TextArea label="Description" value="" onChange={() => {}} rows={5} />,
+      <TextArea label="Description" value="" onChange={() => { }} rows={5} />,
     );
     expect(screen.getByRole('textbox')).toHaveAttribute('rows', '5');
   });
 
   it('renders with default rows of 3', () => {
-    render(<TextArea label="Description" value="" onChange={() => {}} />);
+    render(<TextArea label="Description" value="" onChange={() => { }} />);
     expect(screen.getByRole('textbox')).toHaveAttribute('rows', '3');
   });
 
   it('is disabled when isDisabled is true', () => {
     render(
-      <TextArea label="Description" isDisabled value="" onChange={() => {}} />,
+      <TextArea label="Description" isDisabled value="" onChange={() => { }} />,
     );
     expect(screen.getByRole('textbox')).toBeDisabled();
   });
 
   it('is not disabled by default', () => {
-    render(<TextArea label="Description" value="" onChange={() => {}} />);
+    render(<TextArea label="Description" value="" onChange={() => { }} />);
     expect(screen.getByRole('textbox')).not.toBeDisabled();
   });
 
   it('shows aria-busy when isLoading is true', () => {
     render(
-      <TextArea label="Description" isLoading value="" onChange={() => {}} />,
+      <TextArea label="Description" isLoading value="" onChange={() => { }} />,
     );
     expect(screen.getByRole('textbox')).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('textbox')).not.toBeDisabled();
+  });
+
+  it('renders positioned spinner container when isLoading is true', () => {
+    render(
+      <TextArea label="Description" isLoading value="" onChange={() => { }} />,
+    );
+    const spinner = screen.getByRole('status');
+    expect(spinner).toBeInTheDocument();
+    const spinnerContainer = spinner.parentElement;
+    expect(spinnerContainer?.tagName.toLowerCase()).toBe('span');
+    expect(spinnerContainer?.className).toContain('spinnerIcon');
+  });
+
+  it('suppresses status icon when isLoading is true', () => {
+    render(
+      <TextArea
+        label="Description"
+        isLoading
+        status={{ type: 'error' }}
+        value=""
+        onChange={() => { }}
+      />,
+    );
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    // Icon SVG should not be present because status icon is suppressed when busy
+    expect(document.querySelector('svg')).not.toBeInTheDocument();
   });
 
   it('does not call onChange when disabled', async () => {
@@ -192,7 +218,7 @@ describe('TextArea', () => {
       <TextArea
         label="Description"
         value=""
-        onChange={() => {}}
+        onChange={() => { }}
         startIcon={TestIcon}
       />,
     );
@@ -203,8 +229,8 @@ describe('TextArea', () => {
   });
 
   it('renders without icon wrapper when startIcon is not provided', () => {
-    const {container} = render(
-      <TextArea label="Description" value="" onChange={() => {}} />,
+    const { container } = render(
+      <TextArea label="Description" value="" onChange={() => { }} />,
     );
     // No SVG should be present
     expect(container.querySelector('svg')).not.toBeInTheDocument();
@@ -212,36 +238,36 @@ describe('TextArea', () => {
 
   describe('status prop', () => {
     it('renders with error status icon', () => {
-      const {container} = render(
+      const { container } = render(
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
-          status={{type: 'error'}}
+          onChange={() => { }}
+          status={{ type: 'error' }}
         />,
       );
       expect(container.querySelector('svg')).toBeInTheDocument();
     });
 
     it('renders with warning status icon', () => {
-      const {container} = render(
+      const { container } = render(
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
-          status={{type: 'warning'}}
+          onChange={() => { }}
+          status={{ type: 'warning' }}
         />,
       );
       expect(container.querySelector('svg')).toBeInTheDocument();
     });
 
     it('renders with success status icon', () => {
-      const {container} = render(
+      const { container } = render(
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
-          status={{type: 'success'}}
+          onChange={() => { }}
+          status={{ type: 'success' }}
         />,
       );
       expect(container.querySelector('svg')).toBeInTheDocument();
@@ -252,8 +278,8 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
-          status={{type: 'error', message: 'Description is required'}}
+          onChange={() => { }}
+          status={{ type: 'error', message: 'Description is required' }}
         />,
       );
       expect(screen.getByText('Description is required')).toBeInTheDocument();
@@ -264,8 +290,8 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
-          status={{type: 'error'}}
+          onChange={() => { }}
+          status={{ type: 'error' }}
         />,
       );
       expect(screen.queryByText(/required/i)).not.toBeInTheDocument();
@@ -276,8 +302,8 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
-          status={{type: 'error'}}
+          onChange={() => { }}
+          status={{ type: 'error' }}
         />,
       );
       expect(screen.getByRole('textbox')).toHaveAttribute(
@@ -291,8 +317,8 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
-          status={{type: 'warning'}}
+          onChange={() => { }}
+          status={{ type: 'warning' }}
         />,
       );
       expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid');
@@ -303,8 +329,8 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
-          status={{type: 'success'}}
+          onChange={() => { }}
+          status={{ type: 'success' }}
         />,
       );
       expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-invalid');
@@ -315,8 +341,8 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
-          status={{type: 'error', message: 'Too short'}}
+          onChange={() => { }}
+          status={{ type: 'error', message: 'Too short' }}
         />,
       );
       const textarea = screen.getByRole('textbox');
@@ -334,7 +360,7 @@ describe('TextArea', () => {
       <TextArea
         label="Description"
         value=""
-        onChange={() => {}}
+        onChange={() => { }}
         labelTooltip="Enter a detailed description"
       />,
     );
@@ -343,20 +369,20 @@ describe('TextArea', () => {
   });
 
   it('does not render tooltip icon when labelTooltip is not provided', () => {
-    render(<TextArea label="Description" value="" onChange={() => {}} />);
+    render(<TextArea label="Description" value="" onChange={() => { }} />);
     expect(document.querySelector('svg')).not.toBeInTheDocument();
   });
 
   it('renders with size="lg"', () => {
     render(
-      <TextArea label="Description" value="" onChange={() => {}} size="lg" />,
+      <TextArea label="Description" value="" onChange={() => { }} size="lg" />,
     );
     expect(screen.getByLabelText('Description')).toBeInTheDocument();
   });
 
   describe('hasSpellCheck prop', () => {
     it('enables spellcheck by default', () => {
-      render(<TextArea label="Description" value="" onChange={() => {}} />);
+      render(<TextArea label="Description" value="" onChange={() => { }} />);
       expect(screen.getByRole('textbox')).toHaveAttribute('spellcheck', 'true');
     });
 
@@ -365,7 +391,7 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           hasSpellCheck={true}
         />,
       );
@@ -377,7 +403,7 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           hasSpellCheck={false}
         />,
       );
@@ -395,25 +421,25 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           onPaste={handlePaste}
         />,
       );
 
       const textarea = screen.getByRole('textbox');
       fireEvent.paste(textarea, {
-        clipboardData: {getData: () => 'pasted text'},
+        clipboardData: { getData: () => 'pasted text' },
       });
       expect(handlePaste).toHaveBeenCalledTimes(1);
     });
 
     it('does not throw when onPaste is not provided', () => {
-      render(<TextArea label="Description" value="" onChange={() => {}} />);
+      render(<TextArea label="Description" value="" onChange={() => { }} />);
 
       const textarea = screen.getByRole('textbox');
       expect(() => {
         fireEvent.paste(textarea, {
-          clipboardData: {getData: () => 'pasted text'},
+          clipboardData: { getData: () => 'pasted text' },
         });
       }).not.toThrow();
     });
@@ -425,7 +451,7 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value="Hello"
-          onChange={() => {}}
+          onChange={() => { }}
           maxLength={20}
         />,
       );
@@ -434,17 +460,17 @@ describe('TextArea', () => {
 
     it('does not display counter when maxLength is not provided', () => {
       render(
-        <TextArea label="Description" value="Hello" onChange={() => {}} />,
+        <TextArea label="Description" value="Hello" onChange={() => { }} />,
       );
       expect(screen.queryByText(/\/\d+/)).not.toBeInTheDocument();
     });
 
     it('updates counter as value changes', () => {
-      const {rerender} = render(
+      const { rerender } = render(
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           maxLength={100}
         />,
       );
@@ -454,7 +480,7 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value="Hello World"
-          onChange={() => {}}
+          onChange={() => { }}
           maxLength={100}
         />,
       );
@@ -466,7 +492,7 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           maxLength={50}
         />,
       );
@@ -475,7 +501,7 @@ describe('TextArea', () => {
     });
 
     it('does not set maxLength attribute when not provided', () => {
-      render(<TextArea label="Description" value="" onChange={() => {}} />);
+      render(<TextArea label="Description" value="" onChange={() => { }} />);
       expect(screen.getByRole('textbox')).not.toHaveAttribute('maxlength');
     });
 
@@ -503,7 +529,7 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value={'x'.repeat(45)}
-          onChange={() => {}}
+          onChange={() => { }}
           maxLength={50}
         />,
       );
@@ -517,7 +543,7 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value="Hello"
-          onChange={() => {}}
+          onChange={() => { }}
           maxLength={50}
         />,
       );
@@ -535,7 +561,7 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           hasAutoFocus
         />,
       );
@@ -543,7 +569,7 @@ describe('TextArea', () => {
     });
 
     it('does not set autofocus when hasAutoFocus is false', () => {
-      render(<TextArea label="Description" value="" onChange={() => {}} />);
+      render(<TextArea label="Description" value="" onChange={() => { }} />);
       expect(screen.getByRole('textbox')).not.toHaveFocus();
     });
   });
@@ -554,7 +580,7 @@ describe('TextArea', () => {
         <TextArea
           label="Description"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           htmlName="description"
         />,
       );
@@ -565,7 +591,7 @@ describe('TextArea', () => {
     });
 
     it('does not set name attribute when htmlName is not provided', () => {
-      render(<TextArea label="Description" value="" onChange={() => {}} />);
+      render(<TextArea label="Description" value="" onChange={() => { }} />);
       expect(screen.getByRole('textbox')).not.toHaveAttribute('name');
     });
   });
@@ -576,7 +602,7 @@ describe('TextArea', () => {
         <TextArea
           label="Notes"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           startIcon={<TestIcon />}
         />,
       );
@@ -590,7 +616,7 @@ describe('TextArea', () => {
     });
 
     it('focuses textarea when clicking the wrapper padding', () => {
-      render(<TextArea label="Notes" value="" onChange={() => {}} />);
+      render(<TextArea label="Notes" value="" onChange={() => { }} />);
 
       const textarea = screen.getByRole('textbox');
       const wrapper = textarea.parentElement!;
@@ -606,7 +632,7 @@ describe('TextArea', () => {
         <TextArea
           label="Notes"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           isDisabled
           disabledMessage="You need the Editor role"
         />,
@@ -634,7 +660,7 @@ describe('TextArea', () => {
         <TextArea
           label="Notes"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           isDisabled
           disabledMessage="You need the Editor role"
         />,
@@ -653,7 +679,7 @@ describe('TextArea', () => {
         <TextArea
           label="Notes"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           disabledMessage="You need the Editor role"
         />,
       );
@@ -662,7 +688,7 @@ describe('TextArea', () => {
 
     it('does not render a tooltip when disabled without a reason', () => {
       render(
-        <TextArea label="Notes" value="" onChange={() => {}} isDisabled />,
+        <TextArea label="Notes" value="" onChange={() => { }} isDisabled />,
       );
       expect(screen.queryByRole('tooltip', h)).not.toBeInTheDocument();
     });
@@ -672,7 +698,7 @@ describe('TextArea', () => {
         <TextArea
           label="Notes"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           isDisabled
           disabledMessage="You need the Editor role"
         />,
@@ -688,7 +714,7 @@ describe('TextArea', () => {
         <TextArea
           label="Notes"
           value=""
-          onChange={() => {}}
+          onChange={() => { }}
           isDisabled
           disabledMessage="You need the Editor role"
         />,
@@ -720,7 +746,7 @@ describe('TextArea', () => {
 
     it('remains natively disabled when disabled without a reason', () => {
       render(
-        <TextArea label="Notes" value="" onChange={() => {}} isDisabled />,
+        <TextArea label="Notes" value="" onChange={() => { }} isDisabled />,
       );
       const textarea = screen.getByRole('textbox');
       expect(textarea).toBeDisabled();

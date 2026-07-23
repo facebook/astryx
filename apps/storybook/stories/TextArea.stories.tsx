@@ -83,6 +83,10 @@ const meta: Meta<typeof TextArea> = {
       options: ['sm', 'md', 'lg'],
       description: 'Textarea size (affects padding, not height)',
     },
+    isLoading: {
+      control: 'boolean',
+      description: 'Whether the textarea is in a loading state',
+    },
   },
 };
 
@@ -635,3 +639,16 @@ export const MaxLengthVariations: Story = {
     );
   },
 };
+
+export const IsLoading: Story = {
+  render: args => {
+    const [value, setValue] = useState(args.value ?? '');
+    return <TextArea {...args} value={value} onChange={setValue} />;
+  },
+  args: {
+    label: 'Description',
+    isLoading: true,
+    placeholder: 'Loading...',
+  },
+};
+
