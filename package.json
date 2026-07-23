@@ -31,6 +31,7 @@
     "format-changelogs": "node scripts/format-changelogs.mjs",
     "setup-trusted-publishing": "node scripts/npm/setup-trusted-publishing.mjs",
     "verify-exports": "node scripts/verify-exports.mjs",
+    "typecheck:docs": "tsc --project tsconfig.docs.json",
     "release": "pnpm build && changeset publish",
     "prepare": "husky install",
     "dev:sandbox": "pnpm -F @astryxdesign/core build && pnpm -F @astryxdesign/sandbox dev",

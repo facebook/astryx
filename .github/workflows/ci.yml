@@ -182,9 +182,9 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: node scripts/verify-exports.mjs
 
-      - name: Typecheck component docs
+      - name: Typecheck component docs (all packages)
         if: needs.check-scope.outputs.docsite_only != 'true'
-        run: pnpm -F @astryxdesign/core typecheck:docs
+        run: pnpm typecheck:docs
 
       - name: Typecheck template docs
         if: needs.check-scope.outputs.docsite_only != 'true'

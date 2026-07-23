@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../../core/src/docs-types').ComponentDoc} */
+/** @type {import('../../../core/src/docs-types').ComponentDoc} */
 
 export const docs = {
   name: 'Stat',
@@ -70,7 +70,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../../core/src/docs-types').ComponentDoc} */
+/** @type {import('../../../core/src/docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'Stat',
   displayName: 'Stat',
@@ -136,7 +136,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../../core/src/docs-types').TranslationDoc} */
+/** @type {import('../../../core/src/docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'KPI/metric display: label, large tabular-nums value, sentiment-aware delta, and trend media slot.',
   usage: {

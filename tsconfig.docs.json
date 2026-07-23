@@ -1,0 +1,14 @@
+{
+  "//": "Auto-discovering doc type-check. Globs EVERY package's component .doc.mjs (packages/*/src) and type-checks them with checkJs against docs-types.ts. A new package's docs are covered automatically — no per-package config to forget. Run via `pnpm typecheck:docs`.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true
+  },
+  "include": [
+    "packages/*/src/**/*.doc.mjs",
+    "packages/*/*.doc.mjs",
+    "packages/core/src/docs-types.ts"
+  ]
+}

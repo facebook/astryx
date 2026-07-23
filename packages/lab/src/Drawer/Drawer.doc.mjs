@@ -1,5 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-/** @type {import('../../core/src/docs-types').ComponentDoc} */
+/** @type {import('../../../core/src/docs-types').ComponentDoc} */
 
 export const docs = {
   name: 'Drawer',
@@ -123,7 +123,7 @@ const [lineItem, setLineItem] = useState(null);
   ],
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('../../../core/src/docs-types').TranslationDoc} */
 export const docsZh = {
   usage: {
     description: '用于检查器、详情视图和面板的边缘浮层——"点击表格行查看详情"的模式。按 Escape 关闭抽屉，焦点返回到打开它的元素。滑入/滑出动画遵循 prefers-reduced-motion。堆叠约定：同级抽屉后开的在上层，Escape 只关闭最上层的，关闭顺序由内向外——请以同级方式渲染，切勿嵌套。',
@@ -139,7 +139,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('../../../core/src/docs-types').TranslationDoc} */
 export const docsDense = {
   description: 'edge-anchored overlay (native <dialog>): start/end side panel or top/bottom sheet',
   usage: {

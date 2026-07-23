@@ -75,8 +75,8 @@ jobs:
       - name: Verify package exports
         run: node scripts/verify-exports.mjs
 
-      - name: Typecheck component docs
-        run: pnpm -F @astryxdesign/core typecheck:docs
+      - name: Typecheck component docs (all packages)
+        run: pnpm typecheck:docs
 
       - name: Typecheck template docs
         run: pnpm -F @astryxdesign/cli typecheck:template-docs
