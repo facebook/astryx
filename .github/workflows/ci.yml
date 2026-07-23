@@ -190,6 +190,10 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: pnpm -F @astryxdesign/cli typecheck:template-docs
 
+      - name: Strict type-check gate (CLI)
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm -F @astryxdesign/cli typecheck:strict
+
       - name: Typecheck storybook
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: pnpm -F @astryxdesign/storybook typecheck

@@ -76,7 +76,9 @@
     "astryx": "node bin/astryx.mjs",
     "postinstall": "node scripts/postinstall.mjs",
     "typecheck:template-docs": "tsc --project tsconfig.template-docs.json",
-    "typecheck:json-api": "tsc --project tsconfig.json-api.json && tsc --project tsconfig.api-contract.json"
+    "typecheck:json-api": "tsc --project tsconfig.json-api.json && tsc --project tsconfig.api-contract.json",
+    "typecheck:strict": "node scripts/strict-typecheck-gate.mjs",
+    "typecheck:strict:update": "node scripts/strict-typecheck-gate.mjs --update-baseline"
   },
   "dependencies": {
     "commander": "^12.1.0",

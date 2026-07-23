@@ -81,6 +81,9 @@ jobs:
       - name: Typecheck template docs
         run: pnpm -F @astryxdesign/cli typecheck:template-docs
 
+      - name: Strict type-check gate (CLI)
+        run: pnpm -F @astryxdesign/cli typecheck:strict
+
       - name: Typecheck storybook
         run: pnpm -F @astryxdesign/storybook typecheck
 

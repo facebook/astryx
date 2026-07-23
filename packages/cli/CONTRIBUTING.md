@@ -292,3 +292,36 @@ if (!json) p.log.step('Running...');
 - `.github/scripts/cli-json-smoke-test.mjs` validates every `--json` command outputs valid JSON with correct envelope shape
 - `.github/scripts/api-cli-parity-test.mjs` verifies the programmatic API returns identical data to `xds --json` for every command
 - All three run in the `cli-smoke-test.yml` workflow on every PR
+
+## Strict type-check gate (checkJs + JSDoc)
+
+The CLI ships as hand-written `.mjs` — there is no build step — but it is type-checked
+with TypeScript's `checkJs` against the JSDoc annotations in the source. `tsconfig.strict.json`
+runs the compiler over the whole non-test tree under full `strict`, and
+`scripts/strict-typecheck-gate.mjs` turns that into a merge gate that runs in the required
+`build` job (`ci.yml`). It enforces two invariants:
+
+1. **Enforced set — zero tolerance.** Every file in `strict-typecheck-allowlist.json` (plus
+   all `.d.ts`) must have **zero** strict errors. These files can never regress, and every
+   new source file is expected to join the list. This is what forces complete, correct JSDoc
+   annotations — an un-annotated parameter is an `implicitAny` error, which fails the gate.
+2. **Whole-tree ratchet — monotonic.** The total strict-error count (including files not yet
+   in the enforced set) may never rise above the number in `strict-typecheck-baseline.json`.
+   Existing type debt can only shrink.
+
+Run it locally before pushing:
+
+```bash
+pnpm -F @astryxdesign/cli typecheck:strict
+```
+
+**When you clean up type debt** (fix errors in a not-yet-enforced file, or add a new clean
+file), regenerate the baseline + allowlist and commit them:
+
+```bash
+pnpm -F @astryxdesign/cli typecheck:strict:update
+```
+
+This lowers `maxErrors` and promotes any newly-clean file into the enforced set, so the
+progress is locked in and can't silently regress. The long-term goal is `maxErrors: 0` with
+every file enforced.
