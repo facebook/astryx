@@ -1451,3 +1451,88 @@ describe('emptyState', () => {
     });
   });
 });
+
+describe('ARIA row indexing (#3939)', () => {
+  const bodyRows = (container: HTMLElement): HTMLTableRowElement[] =>
+    Array.from(container.querySelectorAll('tbody tr'));
+
+  it('emits no aria-rowindex/aria-rowcount by default', () => {
+    const {container} = render(<Table data={users} columns={columns} />);
+    expect(screen.getByRole('table')).not.toHaveAttribute('aria-rowcount');
+    for (const row of bodyRows(container)) {
+      expect(row).not.toHaveAttribute('aria-rowindex');
+    }
+  });
+
+  it('numbers rows from 1 when rowCount is provided', () => {
+    const {container} = render(
+      <Table data={users} columns={columns} rowCount={users.length} />,
+    );
+    expect(screen.getByRole('table')).toHaveAttribute(
+      'aria-rowcount',
+      String(users.length),
+    );
+    const indices = bodyRows(container).map(r =>
+      r.getAttribute('aria-rowindex'),
+    );
+    expect(indices).toEqual(['1', '2', '3']);
+  });
+
+  it('offsets aria-rowindex by rowIndexStart for a paginated view', () => {
+    // Page 3 of a 10-per-page dataset: first visible row is dataset row 21.
+    const {container} = render(
+      <Table
+        data={users}
+        columns={columns}
+        rowIndexStart={21}
+        rowCount={100}
+      />,
+    );
+    expect(screen.getByRole('table')).toHaveAttribute('aria-rowcount', '100');
+    const indices = bodyRows(container).map(r =>
+      r.getAttribute('aria-rowindex'),
+    );
+    expect(indices).toEqual(['21', '22', '23']);
+  });
+
+  it('sets aria-rowcount to -1 (unknown) when only rowIndexStart is given', () => {
+    // Windowed/cursor pagination: offset known, total unknown.
+    const {container} = render(
+      <Table data={users} columns={columns} rowIndexStart={5} />,
+    );
+    expect(screen.getByRole('table')).toHaveAttribute('aria-rowcount', '-1');
+    const indices = bodyRows(container).map(r =>
+      r.getAttribute('aria-rowindex'),
+    );
+    expect(indices).toEqual(['5', '6', '7']);
+  });
+
+  it('does not assign an ARIA row index to the header row', () => {
+    render(<Table data={users} columns={columns} rowCount={users.length} />);
+    const header = screen.getAllByRole('row')[0];
+    expect(header).not.toHaveAttribute('aria-rowindex');
+  });
+
+  it('lets a plugin override the seeded aria-rowindex', () => {
+    const plugin: TablePlugin<User> = {
+      transformBodyRow(props, _item, index) {
+        return {
+          ...props,
+          htmlProps: {...props.htmlProps, 'aria-rowindex': 100 + index},
+        };
+      },
+    };
+    const {container} = render(
+      <Table
+        data={users}
+        columns={columns}
+        rowCount={users.length}
+        plugins={{custom: plugin}}
+      />,
+    );
+    const indices = bodyRows(container).map(r =>
+      r.getAttribute('aria-rowindex'),
+    );
+    expect(indices).toEqual(['100', '101', '102']);
+  });
+});
