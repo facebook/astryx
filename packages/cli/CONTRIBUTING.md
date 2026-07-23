@@ -292,3 +292,18 @@ if (!json) p.log.step('Running...');
 - `.github/scripts/cli-json-smoke-test.mjs` validates every `--json` command outputs valid JSON with correct envelope shape
 - `.github/scripts/api-cli-parity-test.mjs` verifies the programmatic API returns identical data to `xds --json` for every command
 - All three run in the `cli-smoke-test.yml` workflow on every PR
+
+## Strict type-check (checkJs + JSDoc) — opt-in for now
+
+The CLI ships as hand-written `.mjs` (no build step) but is type-checked with
+TypeScript's `checkJs` against the JSDoc annotations in the source. `tsconfig.strict.json`
+runs the compiler over the whole non-test tree (`src/**/*.mjs` + `src/**/*.ts`) under full
+`strict` — including `noImplicitAny`, so an un-annotated parameter is an error.
+
+```bash
+pnpm -F @astryxdesign/cli typecheck:strict
+```
+
+This is **not yet wired into CI** — the tree still has known strict errors. It's available
+as a command so contributors can run it locally and so the remaining errors can be burned
+down in follow-up PRs. Once the tree is clean, a later PR will make it a required CI gate.
