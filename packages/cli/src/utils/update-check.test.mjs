@@ -33,12 +33,12 @@ afterEach(() => {
 describe('getLatestVersion', () => {
   it('reads from ASTRYX_LATEST_VERSION env var', () => {
     process.env.ASTRYX_LATEST_VERSION = '0.0.8';
-    expect(getLatestVersion(tmpDir)).toBe('0.0.8');
+    expect(getLatestVersion()).toBe('0.0.8');
   });
 
   it('ignores invalid env var values', () => {
     process.env.ASTRYX_LATEST_VERSION = 'not-a-version';
-    expect(getLatestVersion(tmpDir)).toBeNull();
+    expect(getLatestVersion()).toBeNull();
   });
 
   it('returns null when no signals exist', () => {
@@ -46,7 +46,7 @@ describe('getLatestVersion', () => {
       path.join(tmpDir, 'package.json'),
       JSON.stringify({name: 'test'}),
     );
-    expect(getLatestVersion(tmpDir)).toBeNull();
+    expect(getLatestVersion()).toBeNull();
   });
 });
 
