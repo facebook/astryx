@@ -342,7 +342,7 @@ This wrapper:
 1. **Detects which packages you changed** from your git diff and pre-selects them — no hand-enumerating the frontmatter.
 2. **Asks for a category** (`breaking`, `component`, `feat`, `fix`, `perf`, `docs`, `chore`) — this drives changelog grouping, _not_ the semver bump.
 3. **Captures the contributor(s)** — defaults to your `gh`/git identity, so credit is recorded at authoring time (not reconstructed from the release bot's commit).
-4. **Forces a `patch` bump** while we're pre-1.0 (see below).
+4. **Derives the semver bump from the category** — a `[breaking]` change bumps the minor; everything else bumps the patch (see below).
 
 It writes a normal `.changeset/<id>.md` — commit it with your PR. The body looks like:
 
@@ -364,11 +364,12 @@ pnpm changeset:new --category fix --summary "…" --pr 2717 --contributor yourha
 > The bare `pnpm changeset` CLI still works, but you must follow the body
 > convention by hand (`[category]` first line + `@handle` line). CI
 > (`pnpm check:changesets`) rejects changesets missing a category or
-> contributor, or declaring a `minor`/`major` bump while pre-1.0.
+> contributor, or whose bump doesn't match the category (`[breaking]` must be
+> `minor`, everything else `patch`), or declaring a `major` bump while 0.x.
 
 ### Version Bumps
 
-- **Pre-1.0 (current): always `patch`.** The Changesets CLI maps `minor` → 0.0.x → 0.1.0 and `major` → 1.0.0. While we're on 0.0.x we ship every change — features, fixes, and breaking changes alike — as a `patch`. Signal a breaking change with the `[breaking]` **category**, not a `major` bump. `pnpm changeset:new` enforces this; `pnpm check:changesets` is the CI backstop.
+- **0.x (current): bump follows the category.** We track standard semver for the `0.x.y` range, where a minor bump is the breaking tier (under a caret range like `^0.1.8`, npm resolves `<0.2.0`, so `0.1.x → 0.2.0` is what signals "may break you"). A `[breaking]` change bumps the **minor** (`0.x.y → 0.(x+1).0`); every other category (`feat`, `fix`, `component`, `perf`, `docs`, `chore`) bumps the **patch**. `major` is never used while 0.x — it would jump to `1.0.0`. `pnpm changeset:new` writes the right bump from the category you pick; `pnpm check:changesets` is the CI backstop that enforces the coupling both ways.
 - All publishable packages are a `fixed` group, so a single change co-bumps them to the same version. Only genuinely-affected packages get a changelog entry — the rest get a clean version-only bump.
 
 ### How a release is cut
