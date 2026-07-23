@@ -16,14 +16,16 @@
  * - /packages/cli/templates/blocks/components/Timestamp/ (showcase blocks)
  */
 
-import {useEffect, useRef, useState, lazy, Suspense} from 'react';
+import {useEffect, useRef, useState, lazy, Suspense, Fragment} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
 import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
-import {colorVars} from '../theme/tokens.stylex';
+import {colorVars, spacingVars} from '../theme/tokens.stylex';
+import {formatTooltipLines} from './tooltipEntries';
+import type {TimestampTooltipEntry} from './tooltipEntries';
 
 const LazyXDSTooltip = lazy(async () =>
   import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
@@ -72,8 +74,35 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    */
   hasTooltip?: boolean;
   /**
-   * Whether to append the timezone abbreviation after the timestamp.
-   * Applies to date_time, time, system_date_time, and system_time formats.
+   * Lines to show in the hover tooltip, so one instant can be read in several
+   * time zones and/or formats at once. Each entry is one line, rendered in the
+   * order given, with an optional label.
+   *
+   * Configuring entries also attaches the tooltip to absolute formats, which
+   * otherwise have no tooltip at all. `hasTooltip={false}` still suppresses it,
+   * and an empty array is treated as no configuration.
+   *
+   * @default undefined — a single line with the full absolute time in the
+   *   viewer's own time zone
+   * @example
+   * ```
+   * <Timestamp
+   *   value={savedAt}
+   *   tooltipEntries={[
+   *     {label: 'Your time'},
+   *     {timezoneID: 'UTC', label: 'UTC'},
+   *   ]}
+   * />
+   * ```
+   */
+  tooltipEntries?: ReadonlyArray<TimestampTooltipEntry>;
+  /**
+   * Whether to append the timezone abbreviation after the timestamp text.
+   * Applies to the date_time and time formats. The system_* formats stay
+   * machine-readable and never carry a timezone abbreviation.
+   *
+   * Affects the visible text only — use `tooltipEntries` to control the
+   * tooltip's time zones.
    * @default false
    */
   isTimezoneShown?: boolean;
@@ -130,6 +159,31 @@ const styles = stylex.create({
       default: '0',
       ':focus-visible': '2px',
     },
+  },
+  // Label/value pairs for a multi-entry tooltip. The label column is sized to
+  // its content, so when no entry carries a label it collapses to zero width
+  // and the values sit exactly where a plain list of lines would.
+  tooltipLines: {
+    display: 'grid',
+    gridTemplateColumns: 'auto 1fr',
+    rowGap: spacingVars['--spacing-0-5'],
+    marginBlock: 0,
+    marginInline: 0,
+  },
+  tooltipLabel: {
+    marginBlock: 0,
+    marginInline: 0,
+    // Only a label that actually has text earns the gutter, keeping the
+    // unlabeled case flush.
+    paddingInlineEnd: {
+      default: 0,
+      ':not(:empty)': spacingVars['--spacing-2'],
+    },
+  },
+  tooltipValue: {
+    marginBlock: 0,
+    // <dd> carries a 40px inline start margin from the UA stylesheet.
+    marginInline: 0,
   },
 });
 
@@ -357,6 +411,7 @@ export function Timestamp({
   format = 'auto',
   autoThreshold = DEFAULT_AUTO_THRESHOLD,
   hasTooltip = true,
+  tooltipEntries,
   isTimezoneShown = false,
   isLive = false,
   type = 'supporting',
@@ -423,7 +478,19 @@ export function Timestamp({
     return null;
   }
 
-  const showTooltip = hasTooltip && effectiveFormat === 'relative';
+  // An empty array is not a second way to spell "off" — `hasTooltip` stays the
+  // only on/off axis — so normalize it away before anything reads it.
+  const entries =
+    tooltipEntries !== undefined && tooltipEntries.length > 0
+      ? tooltipEntries
+      : undefined;
+
+  // Absolute formats have never carried a tooltip. Leaving that gate closed
+  // when a consumer has explicitly configured tooltip lines would let `format`
+  // silently suppress another prop's output, so entry presence opens it too.
+  // With no entries this reduces to the original condition exactly.
+  const showTooltip =
+    hasTooltip && (effectiveFormat === 'relative' || entries !== undefined);
 
   const timestampProps = mergeProps(
     themeProps('timestamp', {format: effectiveFormat}),
@@ -459,13 +526,31 @@ export function Timestamp({
   );
 
   if (showTooltip) {
+    // Built inside the branch so a timestamp without a tooltip allocates none
+    // of it. With no entries the content stays the bare string it has always
+    // been — no wrapper element is introduced around the default line.
+    const tooltipContent =
+      entries === undefined ? (
+        fullAbsoluteText
+      ) : (
+        <dl {...stylex.props(styles.tooltipLines)}>
+          {formatTooltipLines(date, entries).map((line, index) => (
+            // eslint-disable-next-line @eslint-react/no-array-index-key -- tooltip lines are fixed positional slots and two entries may legitimately be identical
+            <Fragment key={index}>
+              <dt {...stylex.props(styles.tooltipLabel)}>{line.label ?? ''}</dt>
+              <dd {...stylex.props(styles.tooltipValue)}>{line.value}</dd>
+            </Fragment>
+          ))}
+        </dl>
+      );
+
     return (
       <>
         {timeElement}
         <Suspense fallback={null}>
           <LazyXDSTooltip
             anchorRef={timeRef}
-            content={fullAbsoluteText}
+            content={tooltipContent}
             placement="above"
           />
         </Suspense>
