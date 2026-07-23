@@ -25,6 +25,10 @@ export {
 // InfoTip — accessible info-icon help affordance (RFC facebook/astryx#3349)
 export {InfoTip, type InfoTipProps, type InfoTipSize} from './InfoTip';
 
+// Image — content image with loading, error fallback, and preview
+// (RFC facebook/astryx#4094)
+export {Image, type ImageProps, type ImageFit, type ImageRadius} from './Image';
+
 // Chat — experimental reasoning display
 export {
   ChatReasoning,
