@@ -27,7 +27,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
+import type { IconName } from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -41,16 +41,16 @@ import {
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
 } from '../Field';
-import {Icon, renderIconSlot, type IconType} from '../Icon';
-import {Spinner} from '../Spinner';
-import {useTooltip} from '../Tooltip';
-import {mergeProps, mergeRefs} from '../utils';
-import type {BaseProps} from '../BaseProps';
-import type {SizeValue} from '../utils/types';
-import {useInputContainer} from '../hooks/useInputContainer';
-import {useSize} from '../SizeContext/SizeContext';
-import {themeProps} from '../utils/themeProps';
-import {VisuallyHidden} from '../VisuallyHidden';
+import { Icon, renderIconSlot, type IconType } from '../Icon';
+import { Spinner } from '../Spinner';
+import { useTooltip } from '../Tooltip';
+import { mergeProps, mergeRefs } from '../utils';
+import type { BaseProps } from '../BaseProps';
+import type { SizeValue } from '../utils/types';
+import { useInputContainer } from '../hooks/useInputContainer';
+import { useSize } from '../SizeContext/SizeContext';
+import { themeProps } from '../utils/themeProps';
+import { VisuallyHidden } from '../VisuallyHidden';
 
 const COUNTER_WARNING_THRESHOLD = 0.8;
 
@@ -96,16 +96,22 @@ const styles = stylex.create({
     color: colorVars['--color-error'],
   },
   statusIcon: {
-    position: 'absolute',
-    top: spacingVars['--spacing-2'],
-    insetInlineEnd: spacingVars['--spacing-2'],
-    pointerEvents: 'none',
     display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    marginTop: spacingVars['--spacing-1'],
+    marginInlineStart: spacingVars['--spacing-2'],
+    flexShrink: 0,
   },
-  textareaWithStatus: {
-    // Reserve space so text doesn't flow under the absolutely-positioned icon.
-    // 20px (icon md) + 4px gap = 24px (--spacing-6)
-    paddingInlineEnd: spacingVars['--spacing-6'],
+  spinnerIcon: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    marginTop: spacingVars['--spacing-1'],
+    marginInlineStart: spacingVars['--spacing-2'],
+    flexShrink: 0,
   },
 });
 
@@ -386,7 +392,7 @@ export function TextArea({
   const effectivelyDisabled = isDisabled || isBusy;
 
   // Focus textarea when clicking anywhere on the wrapper (icons, padding, etc.)
-  const {onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp} =
+  const { onClick: handleWrapperClick, onMouseUp: handleWrapperMouseUp } =
     useInputContainer({
       containerRef,
       inputRef: textareaRef,
@@ -406,10 +412,10 @@ export function TextArea({
       status={
         status
           ? {
-              type: status.type,
-              message: status.message,
-              messageID: status.message ? statusMessageID : undefined,
-            }
+            type: status.type,
+            message: status.message,
+            messageID: status.message ? statusMessageID : undefined,
+          }
           : undefined
       }
       labelTooltip={labelTooltip}
@@ -425,7 +431,7 @@ export function TextArea({
         onClick={handleWrapperClick}
         onMouseUp={handleWrapperMouseUp}
         {...mergeProps(
-          themeProps('textarea', {size, status: status?.type ?? null}),
+          themeProps('textarea', { size, status: status?.type ?? null }),
           stylex.props(
             inputWrapperStyles.base,
             styles.wrapper,
@@ -440,7 +446,7 @@ export function TextArea({
           style,
         )}>
         {startIcon &&
-          renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
+          renderIconSlot(startIcon, { size: 'sm', color: 'secondary' })}
         <textarea
           {...rest}
           ref={mergeRefs(ref, textareaRef)}
@@ -466,7 +472,7 @@ export function TextArea({
           aria-required={isRequired && !isOptional ? 'true' : undefined}
           aria-invalid={
             status?.type === 'error' ||
-            (maxLength != null && optimisticValue.length > maxLength)
+              (maxLength != null && optimisticValue.length > maxLength)
               ? 'true'
               : undefined
           }
@@ -474,11 +480,14 @@ export function TextArea({
           {...stylex.props(
             styles.textarea,
             effectivelyDisabled && styles.textareaDisabled,
-            status && styles.textareaWithStatus,
           )}
         />
-        {isBusy && <Spinner size="sm" />}
-        {status && (
+        {isBusy && (
+          <span {...stylex.props(styles.spinnerIcon)}>
+            <Spinner size="sm" />
+          </span>
+        )}
+        {status && !isBusy && (
           <span {...stylex.props(styles.statusIcon)}>
             <Icon
               icon={statusIconMap[status.type]}
