@@ -88,15 +88,24 @@ export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
     stopIcon,
     size = 'md',
     xstyle,
+    className,
+    style,
     ref,
+    'data-testid': dataTestId,
+    ...rest
   } = props;
 
   const handleSend = onSend ?? (() => context?.onSubmit(''));
 
   return (
     <Button
+      {...rest}
       ref={ref}
-      label={isStopShown ? t('@astryx.chatSendButton.stop') : t('@astryx.chatSendButton.send')}
+      label={
+        isStopShown
+          ? t('@astryx.chatSendButton.stop')
+          : t('@astryx.chatSendButton.send')
+      }
       variant={isStopShown ? 'secondary' : 'primary'}
       size={size}
       icon={
@@ -107,8 +116,11 @@ export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
       isIconOnly
       isDisabled={!isStopShown && isDisabled}
       onClick={isStopShown ? onStop : handleSend}
+      data-testid={dataTestId}
       {...themeProps('chat-send-button')}
       xstyle={[styles.root, xstyle]}
+      className={className}
+      style={style}
     />
   );
 }
