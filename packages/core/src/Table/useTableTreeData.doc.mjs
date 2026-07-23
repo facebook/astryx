@@ -19,7 +19,7 @@ export const docs = {
     {
       name: 'onToggleItem',
       type: '(item: T) => void',
-      description: 'Toggle a row’s expansion.',
+      description: 'Toggle a row\'s expansion.',
       required: true,
     },
     {

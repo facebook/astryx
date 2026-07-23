@@ -56,6 +56,7 @@ headings, code blocks, lists, links. The body is rendered with `Markdown`.
 | Field            | Type             | Notes                                                                                                     |
 | ---------------- | ---------------- | --------------------------------------------------------------------------------------------------------- |
 | `updatedAt`      | `YYYY-MM-DD`     | Shows an "Updated" date; does not replace `date`.                                                         |
+| `dek`            | string           | Article-only subtitle/dek. Supports inline Markdown links.                                                |
 | `draft`          | boolean          | `true` keeps the post in the repo but out of production output.                                           |
 | `coverImage`     | string           | Path to a custom cover image (e.g. `/blog/<slug>/cover.png`).                                             |
 | `coverAlt`       | string           | **Required when `coverImage` is set.** Alt text for the cover.                                            |

@@ -11,22 +11,22 @@ export default function AvatarWithImage() {
       <Avatar
         src="https://lookaside.facebook.com/assets/astryx/DATA-Ami-Pena.png"
         name="Ami Pena"
-        size="tiny"
+        size="xsm"
       />
       <Avatar
         src="https://lookaside.facebook.com/assets/astryx/DATA-Ana-Thomas.png"
         name="Ana Thomas"
-        size="small"
+        size="md"
       />
       <Avatar
         src="https://lookaside.facebook.com/assets/astryx/DATA-Daniela-Gimenez.png"
         name="Daniela Gimenez"
-        size="medium"
+        size="lg"
       />
       <Avatar
         src="https://lookaside.facebook.com/assets/astryx/DATA-Gabriela-Fernandez.png"
         name="Gabriela Fernandez"
-        size="large"
+        size="xl"
       />
     </Stack>
   );

@@ -512,6 +512,13 @@ and doesn't need network to use.
 - Hard refresh browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R (Windows)
 - Clear Storybook cache: Remove `apps/storybook/node_modules/.cache`
 
+## Translations
+
+Astryx accepts community translations via Crowdin. To help translate astryx
+into your language, visit <https://crowdin.com/project/astryx>. New locales are
+picked up automatically after a maintainer reviews the auto-generated
+translations PR.
+
 ## Contributor License Agreement ("CLA")
 
 In order to accept your pull request, we need you to submit a CLA. You only need

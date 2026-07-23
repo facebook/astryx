@@ -61,7 +61,7 @@ afterEach(() => {
 });
 
 describe('--json contract: rejects before side effects', () => {
-  it('astryx init --json --features agents does not write .claude/CLAUDE.md', () => {
+  it('astryx init --json --features agents does not write agent docs', () => {
     const before = fs.readdirSync(tmpDir);
     expect(before).toEqual([]);
 

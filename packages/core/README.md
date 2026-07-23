@@ -13,13 +13,15 @@ Core UI components, theme system, and utilities for the Astryx design system. Fo
 
 ## Component Docs
 
-Look up any component's full API (props, types, best practices, and theming):
+Look up any component's full API (props, variants, examples, best practices, and theming) via the Astryx CLI:
 
 ```bash
-node node_modules/@astryxdesign/core/docs.mjs Button        # full docs for a component
-node node_modules/@astryxdesign/core/docs.mjs --list         # list all components
-node node_modules/@astryxdesign/core/docs.mjs --list --brief  # brief summaries
+npx @astryxdesign/cli init                   # one-time: writes the component guide into AGENTS.md / CLAUDE.md
+npx @astryxdesign/cli component Button        # full docs for a component
+npx @astryxdesign/cli component --list        # list all components
 ```
+
+> Use the scoped `@astryxdesign/cli` to run without installing; bare `npx astryx` only resolves once the CLI is a dependency.
 
 ## Page Layouts
 

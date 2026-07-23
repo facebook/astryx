@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableTreeState',
   description:
-    'State management companion for useTableTreeData. Owns the expanded set (controlled or uncontrolled) and flattens nested data into the visible row array — collapsed subtrees are unmounted, not hidden, so the table body contains exactly the visible rows. Returns expandAll/collapseAll helpers and a ready-to-use config for the tree plugin. Note: because collapsed rows unmount, cell-local React state inside collapsed subtrees is lost on collapse; lift state that must survive.',
+    'State management companion for useTableTreeData. Owns the expanded set (controlled or uncontrolled) and flattens nested data into the visible row array; collapsed subtrees are unmounted, not hidden, so the table body contains exactly the visible rows. Returns expandAll/collapseAll helpers and a ready-to-use config for the tree plugin. Note: because collapsed rows unmount, cell-local React state inside collapsed subtrees is lost on collapse; lift state that must survive.',
   props: [
     {
       name: 'data',
@@ -26,7 +26,7 @@ export const docs = {
     {
       name: 'childrenKey',
       type: 'string',
-      description: 'Property holding each row’s children array.',
+      description: 'Property holding each row\'s children array.',
       default: "'children'",
     },
     {
@@ -51,7 +51,7 @@ export const docs = {
       name: 'isItemExpandable',
       type: '(item: T) => boolean',
       description:
-        'Should this row show an expander? Overrides the default non-empty-children check — use for lazy loading, where a row is expandable before its children have been fetched.',
+        'Should this row show an expander? Overrides the default non-empty-children check; use for lazy loading, where a row is expandable before its children have been fetched.',
     },
     {
       name: 'sortSiblings',

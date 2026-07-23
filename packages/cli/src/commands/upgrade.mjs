@@ -11,8 +11,11 @@
  *
  * Pipeline (--apply):
  *   1. Read installed @astryxdesign/core (or legacy @xds/core) version
- *   2. Run codemods for --from → installed version
- *   3. Refresh agent docs (AGENTS.md / CLAUDE.md) if present
+ *   2. Refresh the managed agent-docs block (AGENTS.md / CLAUDE.md) to the
+ *      installed version — runs on EVERY path (including the up-to-date /
+ *      no-codemods short-circuits), because the block documents the installed
+ *      library, not the codemod outcome. Dry-run reports without writing.
+ *   3. Run codemods for --from → installed version
  *
  * Options:
  *   --from <version>       Previous version before the dependency upgrade
@@ -46,7 +49,7 @@ import {
   selectIntegrationCodemods,
 } from '../codemods/integration-discovery.mjs';
 import {runIntegrationCodemods} from '../codemods/integration-runner.mjs';
-import {installAgentDocs, discoverAgentDocs} from './agent-docs.mjs';
+import {installAgentDocs, inspectAgentDocs} from './agent-docs.mjs';
 import {getCliInvocation, formatCliCommand} from '../utils/package-manager.mjs';
 import {isValidSemver, semverGte} from '../utils/semver.mjs';
 import {jsonOut, jsonError} from '../lib/json.mjs';
@@ -133,6 +136,103 @@ async function runPostCodemodHooks(hooks, context, silent) {
     });
     log.success(`Post-codemod hook ${label} completed.`);
   }
+}
+
+/**
+ * Refresh (or, in dry-run, report) the managed agent-docs block after a version
+ * bump. The block (`<!-- ASTRYX:START --> … <!-- ASTRYX:END -->`) documents the
+ * INSTALLED library — its version, component index, and agent rules — so it must
+ * be re-synced on EVERY upgrade path, including the up-to-date / no-codemods
+ * short-circuits where no source file changes. That was the gap in #4168: an
+ * agent reading a stale index queries missing components and follows superseded
+ * rules. Three cases, one detection pass:
+ *
+ * - `stale`   — a managed block records an older version (or a legacy XDS
+ *               marker). `--apply` rewrites it; dry-run reports the pending
+ *               refresh as a loud next step and writes nothing.
+ * - `missing` — core is installed but no managed block exists anywhere (the repo
+ *               never ran `init`, or its agent docs were never marked). We never
+ *               silently create docs mid-upgrade; we nudge to run `init`.
+ * - `current` — every block already matches the installed version: stay silent.
+ *
+ * @param {{cwd: string, installedVersion: string, apply: boolean, json: boolean}} ctx
+ * @returns {import('../types/upgrade').AgentDocsSummary}
+ */
+export function refreshAgentDocs({cwd, installedVersion, apply, json}) {
+  const inspection = inspectAgentDocs(cwd, installedVersion);
+  /** @type {import('../types/upgrade').AgentDocsSummary} */
+  const summary = {
+    status: inspection.status,
+    installedVersion,
+    fromVersions: inspection.blockVersions,
+    files: [],
+    refreshed: false,
+    action: 'none',
+  };
+
+  // Never initialized — don't silently create docs during an upgrade; nudge.
+  if (inspection.status === 'missing') {
+    summary.action = 'nudge-init';
+    if (!json) {
+      p.log.warn(
+        `No Astryx agent-docs block found — AI agents have no component index. Run \`${formatCliCommand('astryx init --features agents')}\` to install it.`,
+      );
+    }
+    return summary;
+  }
+
+  if (inspection.status === 'current') return summary;
+
+  // Stale.
+  summary.files = inspection.staleFiles;
+  const fromLabel = summary.fromVersions.length
+    ? `v${summary.fromVersions.join(', v')}`
+    : 'an unknown version';
+
+  if (!apply) {
+    // Dry-run: report the pending change, never write.
+    summary.action = 'would-refresh';
+    if (!json) {
+      p.log.warn(
+        `Agent docs are stale: block is at ${fromLabel}, installed is v${installedVersion}. Re-run with --apply to refresh (${summary.files.join(', ')}).`,
+      );
+    }
+    return summary;
+  }
+
+  // Apply: rewrite only files that already carry a marker (onlyReplace).
+  try {
+    const written = installAgentDocs(cwd, {onlyReplace: true});
+    summary.refreshed = written.length > 0;
+    summary.files = written;
+    if (summary.refreshed) {
+      summary.action = 'refreshed';
+      if (!json) {
+        p.log.success(
+          `Agent docs refreshed → v${installedVersion} (from ${fromLabel}): ${written.join(', ')}`,
+        );
+      }
+    } else {
+      // We detected a stale marked block but rewrote nothing, and
+      // installAgentDocs did not throw — the block markers are malformed (e.g. a
+      // START with no matching END, so the writer can't safely splice it). Don't
+      // fail silently: the block is exactly the artifact agents rely on.
+      summary.action = 'error';
+      if (!json) {
+        p.log.warn(
+          `Agent docs look stale but couldn't be refreshed — the <!-- ASTRYX:START -->/<!-- ASTRYX:END --> markers may be malformed. Run \`${formatCliCommand('astryx init --features agents')}\` to reinstall the block.`,
+        );
+      }
+    }
+  } catch {
+    summary.action = 'error';
+    if (!json) {
+      p.log.warn(
+        `Could not refresh agent docs. Run \`${formatCliCommand('astryx init --features agents')}\` to update them manually.`,
+      );
+    }
+  }
+  return summary;
 }
 
 /**
@@ -254,6 +354,19 @@ export function registerUpgrade(program) {
         );
       }
 
+      // Sync the managed agent-docs block to the installed version FIRST. It
+      // documents the installed library (version + component index + rules),
+      // independent of any source codemods, so it must be refreshed on every
+      // path below — including the up-to-date / no-codemods short-circuits that
+      // return before codemods ever run (issue #4168). Dry-run reports without
+      // writing. Folded into every terminal payload as `agentDocs`.
+      const agentDocs = refreshAgentDocs({
+        cwd: process.cwd(),
+        installedVersion: targetVersion,
+        apply: options.apply,
+        json,
+      });
+
       // ───────────────────────────────────────────────────────────────────
       // PIPELINE ORDERING
       //
@@ -275,6 +388,7 @@ export function registerUpgrade(program) {
             status: 'up_to_date',
             from: currentVersion,
             to: targetVersion,
+            agentDocs,
           });
         }
         p.log.success('Already up to date — no codemods to run.');
@@ -409,6 +523,7 @@ export function registerUpgrade(program) {
               suggestedCommand,
               message: guidance,
               note: 'Integrations are skipped in this preview; they will be processed on the --apply run.',
+              agentDocs,
             });
           }
           p.log.warn(guidance);
@@ -420,11 +535,12 @@ export function registerUpgrade(program) {
           return;
         }
         // Genuine config error (apply mode, OR dry-run with no pending core
-        // config codemod that would fix it): abort as before.
+        // config codemod that would fix it): abort as before. The agent-docs
+        // refresh already ran (it's independent of config), so surface it.
         if (json)
           return jsonError(
             err.message,
-            undefined,
+            {agentDocs},
             ERROR_CODES.ERR_INVALID_ARGUMENT,
           );
         p.log.error(err.message);
@@ -502,6 +618,7 @@ export function registerUpgrade(program) {
             status: 'no_codemods',
             from: currentVersion,
             to: targetVersion,
+            agentDocs,
           });
         }
         p.log.success('No codemods available for this version range.');
@@ -513,7 +630,7 @@ export function registerUpgrade(program) {
       if (totalTransforms === 0 && totalOptional === 0) {
         const msg = `Codemod "${options.codemod}" not found. Use --list to see available codemods.`;
         if (json)
-          return jsonError(msg, undefined, ERROR_CODES.ERR_UNKNOWN_CODEMOD);
+          return jsonError(msg, {agentDocs}, ERROR_CODES.ERR_UNKNOWN_CODEMOD);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -535,7 +652,10 @@ export function registerUpgrade(program) {
         to: targetVersion,
         codemods: totalTransforms,
         integrations: integrations.map(i => i.name ?? i.__spec),
-        agentDocsRefreshed: false,
+        // Refreshed up front (before the gates above), so the receipt just
+        // reports what happened. `agentDocsRefreshed` kept for back-compat.
+        agentDocsRefreshed: agentDocs.refreshed,
+        agentDocs,
       };
 
       // Run file-based integration codemods alongside the core registry
@@ -607,26 +727,9 @@ export function registerUpgrade(program) {
         }
       }
 
-      // Refresh agent docs if any exist (AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, etc.)
-      // Always update after --apply; also update during dry-run if files exist,
-      // since the index reflects the installed CLI version, not the codemods.
-      const existingDocs = discoverAgentDocs(process.cwd());
-      if (existingDocs.length > 0) {
-        try {
-          // onlyReplace: only update files that already have Astryx markers.
-          // Don't inject into files that never had Astryx content.
-          const written = installAgentDocs(process.cwd(), {onlyReplace: true});
-          receipt.agentDocsRefreshed = written.length > 0;
-          if (!json && written.length > 0)
-            p.log.success(`Agent docs updated: ${written.join(', ')}`);
-        } catch {
-          if (!json) {
-            p.log.warn(
-              `Could not update agent docs. Run \`${getCliInvocation()} init --features agents\` to update manually.`,
-            );
-          }
-        }
-      }
+      // NOTE: the managed agent-docs block was already refreshed up front (see
+      // refreshAgentDocs after installed-version detection), so it stays in sync
+      // even on the short-circuit paths that return before this point.
 
       receipt.filesChanged = mergedFilesChanged;
       receipt.transformsApplied = mergedTransformsApplied;

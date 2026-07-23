@@ -37,7 +37,7 @@ export default function AvatarGroupBlock() {
         <Text type="supporting" color="secondary">
           Team members
         </Text>
-        <AvatarGroup size="medium">
+        <AvatarGroup size="lg">
           {USERS.map(user => (
             <Avatar key={user.name} src={user.src} name={user.name} />
           ))}
@@ -48,7 +48,7 @@ export default function AvatarGroupBlock() {
         <Text type="supporting" color="secondary">
           Larger group
         </Text>
-        <AvatarGroup size="medium">
+        <AvatarGroup size="lg">
           {USERS.slice(0, 3).map(user => (
             <Avatar key={user.name} src={user.src} name={user.name} />
           ))}

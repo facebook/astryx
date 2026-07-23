@@ -92,7 +92,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
       { guidance: true, description: 'Use TabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
-      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm) — the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
+      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm); the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
       { guidance: false, description: 'Confuse TabList with SegmentedControl or ToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
@@ -113,7 +113,7 @@ export const docsZh = {
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
       { guidance: true, description: 'Use TabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
-      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm) — the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
+      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm); the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
       { guidance: false, description: 'Confuse TabList with SegmentedControl or ToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },
@@ -135,7 +135,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Keep tab labels short and descriptive so users can quickly scan available sections.' },
       { guidance: true, description: 'Use TabMenu to group overflow items when horizontal space is limited rather than scrolling tabs off-screen.' },
-      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm) — the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
+      { guidance: true, description: 'When using hasDivider with action buttons alongside tabs, match the Button size to the TabList size (both md, both sm); the divided tab strip reserves space so tabs and same-size buttons align to a shared baseline above the rail.' },
       { guidance: false, description: 'Use tabs for sequential steps or workflows; use a stepper or wizard pattern instead.' },
       { guidance: false, description: 'Place more than 6–8 visible tabs before the overflow menu; prioritize the most important categories.' },
       { guidance: false, description: 'Confuse TabList with SegmentedControl or ToggleButton. TabList is for navigation between views. SegmentedControl and ToggleButton are input controls: SegmentedControl always has exactly one selected option, while ToggleButton can be toggled on or off.' },

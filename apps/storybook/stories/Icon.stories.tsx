@@ -63,6 +63,32 @@ export const Default: Story = {
   },
 };
 
+/**
+ * Icons are decorative by default (`aria-hidden`), which is correct when
+ * adjacent text already conveys the meaning. When an icon stands alone and
+ * carries meaning on its own, give it an accessible name with `label` — this
+ * exposes it to screen readers as `role="img"` with that name and unhides it.
+ */
+export const AccessibleName: Story = {
+  render: () => (
+    <HStack gap={6} vAlign="center">
+      <VStack gap={2} hAlign="center">
+        <Icon
+          icon={CheckCircleIcon}
+          color="success"
+          size="lg"
+          label="Completed"
+        />
+        <Text type="supporting">Meaningful (label="Completed")</Text>
+      </VStack>
+      <VStack gap={2} hAlign="center">
+        <Icon icon={HomeIcon} color="secondary" size="lg" />
+        <Text type="supporting">Decorative (no label)</Text>
+      </VStack>
+    </HStack>
+  ),
+};
+
 export const Primary: Story = {
   args: {
     icon: HomeIcon,

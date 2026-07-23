@@ -166,15 +166,50 @@ describe('drop-xds-prefix-imports', () => {
     expect(output).toContain('export const other = Card;');
   });
 
-  it('un-prefixes normally when there is NO local collision', async () => {
+  it('un-prefixes override keys inside an @xds/core mock factory', async () => {
     const input = [
-      `import {XDSCodeBlock} from '@xds/core/CodeBlock';`,
-      `export const App = () => <XDSCodeBlock code="x" />;`,
+      `vi.mock('@xds/core/Text', async orig => ({`,
+      `  ...(await orig<typeof import('@xds/core/Text')>()),`,
+      `  useXDSTruncation: () => ({ref: vi.fn(), isTruncated: true, fullText: ''}),`,
+      `}));`,
     ].join('\n');
     const output = await applyTransform(input);
-    expect(output).toContain('{CodeBlock}');
-    expect(output).toContain('@xds/core/CodeBlock');
-    expect(output).toContain('<CodeBlock code="x" />');
-    expect(output).not.toContain('AstryxCodeBlock');
+    expect(output).toContain('useTruncation:');
+    expect(output).not.toContain('useXDSTruncation');
+    // This codemod does not touch the module-path string (that is the
+    // module-specifiers codemod's job); the @xds/core/Text path stays here.
+    expect(output).toContain(`vi.mock('@xds/core/Text'`);
+  });
+
+  it('un-prefixes component override keys inside a bare @xds/core jest.mock factory', async () => {
+    const input = [
+      `jest.mock('@xds/core', () => ({`,
+      `  XDSButton: () => null,`,
+      `  useXDSToast: () => ({}),`,
+      `}));`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    expect(output).toContain('Button:');
+    expect(output).toContain('useToast:');
+    expect(output).not.toContain('XDSButton');
+    expect(output).not.toContain('useXDSToast');
+  });
+
+  it('does NOT touch mock factory keys for a non-@xds package', async () => {
+    const input = [
+      `vi.mock('some-other-pkg', () => ({`,
+      `  useXDSFoo: () => 1,`,
+      `}));`,
+    ].join('\n');
+    const output = await applyTransform(input);
+    expect(output).toBe(input);
+  });
+
+  it('does NOT touch useXDS keys in an unrelated object literal (not a mock factory)', async () => {
+    const input = [`const config = {`, `  useXDSWhatever: true,`, `};`].join(
+      '\n',
+    );
+    const output = await applyTransform(input);
+    expect(output).toBe(input);
   });
 });

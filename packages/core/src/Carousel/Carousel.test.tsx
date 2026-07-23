@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import {Carousel} from './Carousel';
 
 // Mock ResizeObserver (not available in jsdom)
@@ -110,5 +110,100 @@ describe('Carousel', () => {
     expect(right).toBeInTheDocument();
     expect(left).toBeDisabled();
     expect(right).toBeDisabled();
+  });
+
+  describe('Shift + wheel horizontal scroll', () => {
+    // jsdom doesn't lay out elements, so we fake an overflowing scroll
+    // container and capture scrollBy calls.
+    function getScroller() {
+      const region = screen.getByRole('region');
+      return region.firstElementChild as HTMLElement;
+    }
+
+    function makeOverflowing(el: HTMLElement) {
+      Object.defineProperty(el, 'scrollWidth', {
+        value: 500,
+        configurable: true,
+      });
+      Object.defineProperty(el, 'clientWidth', {
+        value: 200,
+        configurable: true,
+      });
+    }
+
+    it('maps Shift + vertical wheel to horizontal scroll', () => {
+      render(
+        <Carousel aria-label="Wheel">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      makeOverflowing(scroller);
+      const scrollBy = vi.fn();
+      scroller.scrollBy = scrollBy;
+
+      fireEvent.wheel(scroller, {shiftKey: true, deltaY: 120, deltaX: 0});
+
+      expect(scrollBy).toHaveBeenCalledWith({left: 120, behavior: 'auto'});
+    });
+
+    it('does not translate wheel without Shift held', () => {
+      render(
+        <Carousel aria-label="Wheel">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      makeOverflowing(scroller);
+      const scrollBy = vi.fn();
+      scroller.scrollBy = scrollBy;
+
+      fireEvent.wheel(scroller, {shiftKey: false, deltaY: 120, deltaX: 0});
+
+      expect(scrollBy).not.toHaveBeenCalled();
+    });
+
+    it('leaves native horizontal wheel deltas alone', () => {
+      // Trackpads emit deltaX directly — don't double-handle those.
+      render(
+        <Carousel aria-label="Wheel">
+          <div>Item 1</div>
+          <div>Item 2</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      makeOverflowing(scroller);
+      const scrollBy = vi.fn();
+      scroller.scrollBy = scrollBy;
+
+      fireEvent.wheel(scroller, {shiftKey: true, deltaY: 120, deltaX: 40});
+
+      expect(scrollBy).not.toHaveBeenCalled();
+    });
+
+    it('does not intercept when there is no horizontal overflow', () => {
+      render(
+        <Carousel aria-label="Wheel">
+          <div>Item 1</div>
+        </Carousel>,
+      );
+      const scroller = getScroller();
+      Object.defineProperty(scroller, 'scrollWidth', {
+        value: 200,
+        configurable: true,
+      });
+      Object.defineProperty(scroller, 'clientWidth', {
+        value: 200,
+        configurable: true,
+      });
+      const scrollBy = vi.fn();
+      scroller.scrollBy = scrollBy;
+
+      fireEvent.wheel(scroller, {shiftKey: true, deltaY: 120, deltaX: 0});
+
+      expect(scrollBy).not.toHaveBeenCalled();
+    });
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/cli",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "displayName": "CLI",
   "description": "Scaffold projects, browse templates, generate themes, and get agent-ready docs from the command line.",
   "author": "Meta Open Source",
@@ -67,12 +67,14 @@
   "files": [
     "bin",
     "src",
+    "scripts/postinstall.mjs",
     "templates",
     "docs",
     "CHANGELOG.md"
   ],
   "scripts": {
     "astryx": "node bin/astryx.mjs",
+    "postinstall": "node scripts/postinstall.mjs",
     "typecheck:template-docs": "tsc --project tsconfig.template-docs.json",
     "typecheck:json-api": "tsc --project tsconfig.json-api.json && tsc --project tsconfig.api-contract.json"
   },

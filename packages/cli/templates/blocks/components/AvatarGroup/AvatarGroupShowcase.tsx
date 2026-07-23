@@ -36,7 +36,7 @@ export default function AvatarGroupShowcase() {
         <Text type="supporting" color="secondary">
           Team members
         </Text>
-        <AvatarGroup size="medium">
+        <AvatarGroup size="lg">
           {USERS.map(u => (
             <Avatar key={u.key} name={u.name} />
           ))}
@@ -46,7 +46,7 @@ export default function AvatarGroupShowcase() {
         <Text type="supporting" color="secondary">
           With overflow
         </Text>
-        <AvatarGroup size="medium">
+        <AvatarGroup size="lg">
           {USERS.slice(0, 3).map(u => (
             <Avatar key={u.key} name={u.name} />
           ))}

@@ -50,7 +50,7 @@ describe('init is non-interactive by default (no TTY needed)', () => {
 
   it('writes an agent-doc file containing the ASTRYX cheat-sheet marker', () => {
     runCli(['init']);
-    // init injects into AGENTS.md/CLAUDE.md if present, else creates .claude/CLAUDE.md
+    // init injects into existing agent-doc files if present, else creates AGENTS.md
     const candidates = ['AGENTS.md', 'CLAUDE.md', '.cursorrules', path.join('.claude', 'CLAUDE.md')];
     const doc = candidates.find(f => fs.existsSync(path.join(tmpDir, f)));
     expect(doc).toBeTruthy();

@@ -7,7 +7,7 @@ import {githubDark} from '@astryxdesign/core/theme/syntax';
 import {CodeBlock} from '@astryxdesign/core/CodeBlock';
 
 const commands = `$ astryx init --features agents
-✓ AI agent docs installed → .claude/CLAUDE.md
+✓ AI agent docs installed → AGENTS.md
 $ pnpm astryx component CodeBlock --dense`;
 
 export default function CodeBlockTerminal() {

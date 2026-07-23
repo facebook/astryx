@@ -337,7 +337,7 @@ function StreamMessageGroup({message}: {message: StreamMessage}) {
   return (
     <ChatMessage
       sender={isSelf ? 'user' : 'assistant'}
-      avatar={isSelf ? undefined : <Avatar name={user.name} size="small" />}>
+      avatar={isSelf ? undefined : <Avatar name={user.name} size="md" />}>
       {message.bubbles.map((text, index) => (
         <ChatMessageBubble
           key={`${message.id}-${index}`}
@@ -395,7 +395,7 @@ export default function MessagingShellPage() {
 
   const workspaceRail = (
     <VStack gap={2} style={styles.rail}>
-      <Avatar name="Astryx HQ" size="small" />
+      <Avatar name="Astryx HQ" size="md" />
       {RAIL_ITEMS.map(item => (
         <IconButton
           key={item.id}
@@ -416,7 +416,7 @@ export default function MessagingShellPage() {
       />
       <Avatar
         name={USERS.you.name}
-        size="small"
+        size="md"
         status={<AvatarStatusDot variant="success" label="Online" />}
       />
     </VStack>
@@ -497,7 +497,7 @@ export default function MessagingShellPage() {
                 startContent={
                   <Avatar
                     name={USERS[dm.userId].name}
-                    size="xsmall"
+                    size="sm"
                     status={
                       <AvatarStatusDot
                         variant={PRESENCE_VARIANT[dm.presence]}
@@ -600,9 +600,7 @@ export default function MessagingShellPage() {
         <ChatMessageList density="compact">
           <ChatMessage
             sender="assistant"
-            avatar={
-              <Avatar name={USERS[THREAD_ROOT.userId].name} size="small" />
-            }>
+            avatar={<Avatar name={USERS[THREAD_ROOT.userId].name} size="md" />}>
             <ChatMessageBubble
               name={USERS[THREAD_ROOT.userId].name}
               metadata={
@@ -622,7 +620,7 @@ export default function MessagingShellPage() {
             <ChatMessage
               key={reply.id}
               sender="assistant"
-              avatar={<Avatar name={USERS[reply.userId].name} size="small" />}>
+              avatar={<Avatar name={USERS[reply.userId].name} size="md" />}>
               <ChatMessageBubble
                 name={USERS[reply.userId].name}
                 metadata={

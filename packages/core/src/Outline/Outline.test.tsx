@@ -287,6 +287,741 @@ describe('Outline', () => {
   });
 });
 
+/**
+ * Override `scroll-margin-top` for specific elements in `getComputedStyle`.
+ * jsdom's cssstyle does not resolve `scroll-margin-top`, so the real value can
+ * never be read back from an inline style — the property must be faked at the
+ * `getComputedStyle` boundary that useScrollSpy actually reads. Every other
+ * element (and every other property) falls through to the real implementation,
+ * so StyleX and Testing Library are unaffected.
+ */
+function mockScrollMarginTop(overrides: Map<Element, string>) {
+  const original = window.getComputedStyle.bind(window);
+  vi.spyOn(window, 'getComputedStyle').mockImplementation(
+    (element, pseudoElement) => {
+      const style = original(element, pseudoElement ?? undefined);
+      const scrollMarginTop = overrides.get(element);
+      if (scrollMarginTop != null) {
+        // An own property shadows the prototype's accessor, so the real
+        // CSSStyleDeclaration keeps working for every other property.
+        Object.defineProperty(style, 'scrollMarginTop', {
+          value: scrollMarginTop,
+          configurable: true,
+        });
+      }
+      return style;
+    },
+  );
+}
+
+/**
+ * Mount real heading elements for `items` so navigation has scroll targets.
+ * Returns a cleanup that removes them.
+ */
+function mountHeadings(ids: string[] = items.map(item => item.id)) {
+  const headings = ids.map(id => {
+    const heading = document.createElement('h2');
+    heading.id = id;
+    document.body.appendChild(heading);
+    return heading;
+  });
+  return () => {
+    for (const heading of headings) {
+      heading.remove();
+    }
+  };
+}
+
+describe('Outline keyboard navigation', () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('exposes a single tab stop (roving tabindex) instead of one per heading', () => {
+    render(<Outline items={items} />);
+    const links = screen.getAllByRole('link');
+
+    // A 40-heading TOC must not cost 40 Tab presses: exactly one link is in
+    // the page tab order, the rest are reachable with arrow keys.
+    expect(links.map(link => link.getAttribute('tabindex'))).toEqual([
+      '0',
+      '-1',
+      '-1',
+    ]);
+  });
+
+  it('seats the tab stop on the active heading, not always the first', () => {
+    // WAI-ARIA roving tabindex: the single tab stop belongs on the *current*
+    // item. Tabbing into a TOC while reading section 3 must land on section 3,
+    // not send the reader back to section 1.
+    render(<Outline items={items} activeId="api" />);
+    const links = screen.getAllByRole('link');
+
+    expect(links.map(link => link.getAttribute('tabindex'))).toEqual([
+      '-1',
+      '-1',
+      '0',
+    ]);
+  });
+
+  it('moves the tab stop as the active heading changes', () => {
+    const {rerender} = render(<Outline items={items} activeId="intro" />);
+    expect(
+      screen.getAllByRole('link').map(l => l.getAttribute('tabindex')),
+    ).toEqual(['0', '-1', '-1']);
+
+    // Scroll-spy advances the active section: the tab stop must follow it.
+    rerender(<Outline items={items} activeId="install" />);
+    expect(
+      screen.getAllByRole('link').map(l => l.getAttribute('tabindex')),
+    ).toEqual(['-1', '0', '-1']);
+  });
+
+  it('does not yank the tab stop away from the item the user arrowed to', async () => {
+    const user = userEvent.setup();
+    const {rerender} = render(<Outline items={items} activeId="intro" />);
+    const links = screen.getAllByRole('link');
+
+    // User arrow-keys down to `api` and keeps focus there.
+    links[0].focus();
+    await user.keyboard('{ArrowDown}{ArrowDown}');
+    expect(links[2]).toHaveFocus();
+    expect(links[2]).toHaveAttribute('tabindex', '0');
+
+    // Scroll-spy moves the active section underneath them. Focus is still
+    // inside the list, so the tab stop must stay where the user put it.
+    rerender(<Outline items={items} activeId="install" />);
+    expect(links[2]).toHaveAttribute('tabindex', '0');
+    expect(links[1]).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('moves focus with ArrowDown / ArrowUp', async () => {
+    const user = userEvent.setup();
+    render(<Outline items={items} />);
+    const [intro, install] = screen.getAllByRole('link');
+
+    intro.focus();
+    await user.keyboard('{ArrowDown}');
+    expect(install).toHaveFocus();
+    expect(install).toHaveAttribute('tabindex', '0');
+    expect(intro).toHaveAttribute('tabindex', '-1');
+
+    await user.keyboard('{ArrowUp}');
+    expect(intro).toHaveFocus();
+  });
+
+  it('jumps to first / last with Home / End', async () => {
+    const user = userEvent.setup();
+    render(<Outline items={items} />);
+    const links = screen.getAllByRole('link');
+
+    links[0].focus();
+    await user.keyboard('{End}');
+    expect(links[2]).toHaveFocus();
+
+    await user.keyboard('{Home}');
+    expect(links[0]).toHaveFocus();
+  });
+
+  it('activates the focused link with Space', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const onNavigateStart = vi.fn();
+
+    render(<Outline items={items} onNavigateStart={onNavigateStart} />);
+    const install = screen.getAllByRole('link')[1];
+    install.focus();
+    await user.keyboard('[Space]');
+
+    expect(onNavigateStart).toHaveBeenCalledWith('install');
+    expect(document.getElementById('install')?.scrollIntoView).toBeDefined();
+    expect(
+      (document.getElementById('install') as HTMLElement).scrollIntoView,
+    ).toHaveBeenCalledWith({behavior: 'smooth', block: 'start'});
+
+    cleanup();
+  });
+
+  it('activates the focused link with Enter', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const onNavigateStart = vi.fn();
+
+    render(<Outline items={items} onNavigateStart={onNavigateStart} />);
+    screen.getAllByRole('link')[2].focus();
+    await user.keyboard('{Enter}');
+
+    expect(onNavigateStart).toHaveBeenCalledWith('api');
+    cleanup();
+  });
+
+  it('leaves modifier chords to the browser (Cmd/Ctrl + Space is not activation)', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const onNavigateStart = vi.fn();
+
+    render(<Outline items={items} onNavigateStart={onNavigateStart} />);
+    screen.getAllByRole('link')[1].focus();
+    await user.keyboard('{Meta>}[Space]{/Meta}');
+
+    expect(onNavigateStart).not.toHaveBeenCalled();
+    cleanup();
+  });
+
+  it('does not treat its own Space activation as a manual scroll', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const onNavigateEnd = vi.fn();
+
+    render(<Outline items={items} onNavigateEnd={onNavigateEnd} />);
+    screen.getAllByRole('link')[1].focus();
+    await user.keyboard('[Space]');
+
+    // Space is one of the keys that normally scroll the page, and the settle
+    // watcher listens on window — so the very keydown that started this
+    // navigation would bubble up and cancel it. Because we preventDefault it,
+    // no scroll can happen and the navigation must survive.
+    expect(onNavigateEnd).not.toHaveBeenCalled();
+
+    act(() => {
+      window.dispatchEvent(new Event('scrollend'));
+    });
+    expect(onNavigateEnd).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+
+    cleanup();
+  });
+
+  it('does not treat arrow-key roving focus as a manual scroll', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const onNavigateEnd = vi.fn();
+
+    render(<Outline items={items} onNavigateEnd={onNavigateEnd} />);
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+
+    // Arrow keys inside the outline move focus; they are prevented, so they do
+    // not scroll the page and must not cancel the in-flight navigation.
+    await user.keyboard('{ArrowDown}');
+    expect(onNavigateEnd).not.toHaveBeenCalled();
+
+    cleanup();
+  });
+
+  it('does not steal Tab from the page', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <Outline items={items} />
+        <button type="button">After</button>
+      </>,
+    );
+
+    screen.getAllByRole('link')[0].focus();
+    await user.tab();
+
+    // The non-tabbable links are skipped, so one Tab leaves the whole outline.
+    expect(screen.getByRole('button', {name: 'After'})).toHaveFocus();
+  });
+
+  it('keeps a single tab stop with one item, and none with zero items', () => {
+    const {rerender} = render(
+      <Outline items={[{id: 'only', label: 'Only', level: 2}]} />,
+    );
+    expect(screen.getAllByRole('link')[0]).toHaveAttribute('tabindex', '0');
+
+    rerender(<Outline items={[]} />);
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+  });
+});
+
+describe('Outline navigate callbacks', () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('fires onNavigateStart on click and onNavigateEnd when the scroll settles', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const onNavigateStart = vi.fn();
+    const onNavigateEnd = vi.fn();
+
+    render(
+      <Outline
+        items={items}
+        onNavigateStart={onNavigateStart}
+        onNavigateEnd={onNavigateEnd}
+      />,
+    );
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+
+    expect(onNavigateStart).toHaveBeenCalledWith('install');
+    // Still scrolling — arrival has not happened yet.
+    expect(onNavigateEnd).not.toHaveBeenCalled();
+
+    act(() => {
+      window.dispatchEvent(new Event('scrollend'));
+    });
+    expect(onNavigateEnd).toHaveBeenCalledTimes(1);
+    expect(onNavigateEnd).toHaveBeenCalledWith('install');
+
+    cleanup();
+  });
+
+  it('fires the callbacks in controlled mode too', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const onNavigateStart = vi.fn();
+    const onNavigateEnd = vi.fn();
+
+    render(
+      <Outline
+        items={items}
+        activeId="intro"
+        onNavigateStart={onNavigateStart}
+        onNavigateEnd={onNavigateEnd}
+      />,
+    );
+    await user.click(screen.getByRole('link', {name: 'API'}));
+
+    expect(onNavigateStart).toHaveBeenCalledWith('api');
+    act(() => {
+      window.dispatchEvent(new Event('scrollend'));
+    });
+    expect(onNavigateEnd).toHaveBeenCalledTimes(1);
+    expect(onNavigateEnd).toHaveBeenCalledWith('api');
+
+    cleanup();
+  });
+
+  it('falls back to a settle timeout when scrollend never fires', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const cleanup = mountHeadings();
+    const onNavigateEnd = vi.fn();
+
+    render(<Outline items={items} onNavigateEnd={onNavigateEnd} />);
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+
+    expect(onNavigateEnd).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(onNavigateEnd).toHaveBeenCalledTimes(1);
+    expect(onNavigateEnd).toHaveBeenCalledWith('install');
+
+    cleanup();
+  });
+
+  it('fires onNavigateEnd exactly once when scrollend AND the fallback both elapse', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const user = userEvent.setup({advanceTimers: vi.advanceTimersByTime});
+    const cleanup = mountHeadings();
+    const onNavigateEnd = vi.fn();
+
+    render(<Outline items={items} onNavigateEnd={onNavigateEnd} />);
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+
+    // Reduced motion turns the smooth scroll into an instant jump: scrollend
+    // arrives immediately. The fallback timer must not fire a second time.
+    act(() => {
+      window.dispatchEvent(new Event('scrollend'));
+      window.dispatchEvent(new Event('scrollend'));
+      vi.advanceTimersByTime(5000);
+    });
+    expect(onNavigateEnd).toHaveBeenCalledTimes(1);
+    expect(onNavigateEnd).toHaveBeenCalledWith('install');
+
+    cleanup();
+  });
+
+  it('still fires onNavigateEnd once when a manual scroll interrupts the jump', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const onNavigateStart = vi.fn();
+    const onNavigateEnd = vi.fn();
+
+    render(
+      <Outline
+        items={items}
+        onNavigateStart={onNavigateStart}
+        onNavigateEnd={onNavigateEnd}
+      />,
+    );
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+    expect(onNavigateStart).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      window.dispatchEvent(new Event('wheel'));
+    });
+
+    // Every onNavigateStart is balanced by exactly one onNavigateEnd, so a
+    // consumer's "navigating" state can never leak.
+    expect(onNavigateEnd).toHaveBeenCalledTimes(1);
+    expect(onNavigateEnd).toHaveBeenCalledWith('install');
+
+    cleanup();
+  });
+
+  it('does not fire callbacks when the target heading is missing', async () => {
+    const user = userEvent.setup();
+    const onNavigateStart = vi.fn();
+    const onNavigateEnd = vi.fn();
+
+    render(
+      <Outline
+        items={items}
+        onNavigateStart={onNavigateStart}
+        onNavigateEnd={onNavigateEnd}
+      />,
+    );
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+
+    expect(onNavigateStart).not.toHaveBeenCalled();
+    expect(onNavigateEnd).not.toHaveBeenCalled();
+  });
+
+  it('leaves a missing target to the browser instead of deadening the link', async () => {
+    const user = userEvent.setup();
+    window.location.hash = '';
+
+    render(<Outline items={items} />);
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+
+    // The heading is not in the DOM (lazily-rendered or virtualized content).
+    // We own the scroll only when we have something to scroll to; with no
+    // target we must NOT preventDefault, or the anchor becomes a total no-op.
+    // The browser's native fragment navigation still updates the URL, so a
+    // later render / deep link can still resolve it.
+    expect(window.location.hash).toBe('#install');
+
+    window.location.hash = '';
+  });
+
+  it('does not fire callbacks for a modified (Cmd) click', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const onNavigateStart = vi.fn();
+
+    render(<Outline items={items} onNavigateStart={onNavigateStart} />);
+    await user.keyboard('{Meta>}');
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+    await user.keyboard('{/Meta}');
+
+    expect(onNavigateStart).not.toHaveBeenCalled();
+    cleanup();
+  });
+});
+
+describe('Outline scroll scoping', () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+    // jsdom implements neither; the offset path drives the scroll through them.
+    Element.prototype.scrollBy = vi.fn();
+    window.scrollBy = vi.fn();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('hasScrollOnClick={false} skips the scroll but still navigates', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const onNavigateStart = vi.fn();
+    const onNavigateEnd = vi.fn();
+
+    render(
+      <Outline
+        items={items}
+        hasScrollOnClick={false}
+        onNavigateStart={onNavigateStart}
+        onNavigateEnd={onNavigateEnd}
+      />,
+    );
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+
+    const target = document.getElementById('install') as HTMLElement;
+    expect(target.scrollIntoView).not.toHaveBeenCalled();
+    // The consumer owns scrolling; they still learn where to go.
+    expect(onNavigateStart).toHaveBeenCalledWith('install');
+    // There is nothing to scroll, so nothing to wait for: onNavigateEnd must
+    // resolve immediately rather than waiting out the settle timeout — an
+    // arrival effect paired with onNavigateEnd would otherwise land ~1.2s late
+    // for no reason.
+    expect(onNavigateEnd).toHaveBeenCalledWith('install');
+    expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+
+    cleanup();
+  });
+
+  it('offset shifts the activation line for a fixed header', () => {
+    const cleanup = mountHeadings();
+    const [intro, install, api] = items.map(
+      item => document.getElementById(item.id) as HTMLElement,
+    );
+
+    Object.defineProperty(document.documentElement, 'scrollHeight', {
+      value: 4000,
+      configurable: true,
+    });
+    vi.spyOn(intro, 'getBoundingClientRect').mockReturnValue({
+      top: -200,
+    } as DOMRect);
+    // `install` sits 40px below the viewport top — under a 64px fixed header,
+    // so it should already be active once `offset={64}` is declared.
+    vi.spyOn(install, 'getBoundingClientRect').mockReturnValue({
+      top: 40,
+    } as DOMRect);
+    vi.spyOn(api, 'getBoundingClientRect').mockReturnValue({
+      top: 400,
+    } as DOMRect);
+
+    const {rerender} = render(<Outline items={items} />);
+    // Without offset the activation line is the viewport top: `install` (top:40)
+    // has not reached it, so `intro` stays active.
+    expect(screen.getByRole('link', {name: 'Introduction'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+
+    rerender(<Outline items={items} offset={64} />);
+    act(() => {
+      window.dispatchEvent(new Event('resize'));
+    });
+    expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+
+    cleanup();
+  });
+
+  it('lands the heading below a fixed header instead of underneath it', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const install = document.getElementById('install') as HTMLElement;
+
+    // The heading sits 400px down the page and asks for 8px of breathing room
+    // below whatever is above it.
+    vi.spyOn(install, 'getBoundingClientRect').mockReturnValue({
+      top: 400,
+    } as DOMRect);
+    mockScrollMarginTop(new Map([[install, '8px']]));
+
+    render(<Outline items={items} offset={48} />);
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+
+    // A 48px fixed header covers the top of the scroll root, so the heading
+    // must come to rest at 48 (header) + 8 (its own scroll-margin-top) = 56px
+    // — NOT at 8px, which would park it underneath the header, invisible.
+    // scrollIntoView cannot know about the header, so it must not be used here.
+    expect(window.scrollBy).toHaveBeenCalledWith({
+      top: 400 - 56,
+      behavior: 'smooth',
+    });
+    expect(install.scrollIntoView).not.toHaveBeenCalled();
+
+    cleanup();
+  });
+
+  it('lands the heading below a fixed header inside a scoped container', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const install = document.getElementById('install') as HTMLElement;
+
+    const pane = document.createElement('div');
+    document.body.appendChild(pane);
+    pane.scrollBy = vi.fn();
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      top: 100,
+    } as DOMRect);
+    vi.spyOn(install, 'getBoundingClientRect').mockReturnValue({
+      top: 500,
+    } as DOMRect);
+
+    render(
+      <Outline
+        items={items}
+        scrollContainerRef={{current: pane}}
+        offset={48}
+      />,
+    );
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+
+    // Measured from the pane's own top (100), not the viewport's.
+    expect(pane.scrollBy).toHaveBeenCalledWith({
+      top: 500 - (100 + 48),
+      behavior: 'smooth',
+    });
+    expect(window.scrollBy).not.toHaveBeenCalled();
+
+    cleanup();
+    pane.remove();
+  });
+
+  it('keeps the CSS-native scrollIntoView path when offset is 0', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+
+    render(<Outline items={items} />);
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+
+    // No fixed header to compensate for: let the browser honor
+    // scroll-margin-top itself rather than doing the math in JS.
+    const install = document.getElementById('install') as HTMLElement;
+    expect(install.scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start',
+    });
+    expect(window.scrollBy).not.toHaveBeenCalled();
+
+    cleanup();
+  });
+
+  it('composes offset with the heading own scroll-margin-top for activation', () => {
+    const cleanup = mountHeadings();
+    const [intro, install, api] = items.map(
+      item => document.getElementById(item.id) as HTMLElement,
+    );
+
+    Object.defineProperty(document.documentElement, 'scrollHeight', {
+      value: 4000,
+      configurable: true,
+    });
+    // Every heading declares 8px of scroll-margin-top; the header is 48px.
+    // The activation line is therefore 48 + 8 = 56px (+1px tolerance).
+    mockScrollMarginTop(
+      new Map([
+        [intro, '8px'],
+        [install, '8px'],
+        [api, '8px'],
+      ]),
+    );
+    vi.spyOn(intro, 'getBoundingClientRect').mockReturnValue({
+      top: -200,
+    } as DOMRect);
+    // 50 < 56: `install` has crossed the composed line, so it is active.
+    vi.spyOn(install, 'getBoundingClientRect').mockReturnValue({
+      top: 50,
+    } as DOMRect);
+    // 60 > 56: `api` has NOT crossed it. If offset and scroll-margin-top were
+    // double-counted (96px) this would wrongly activate.
+    vi.spyOn(api, 'getBoundingClientRect').mockReturnValue({
+      top: 60,
+    } as DOMRect);
+
+    render(<Outline items={items} offset={48} />);
+
+    expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+    expect(screen.getByRole('link', {name: 'API'})).not.toHaveAttribute(
+      'aria-current',
+    );
+
+    cleanup();
+  });
+
+  it('scrollContainerRef scopes tracking to a custom scroll container', () => {
+    const cleanup = mountHeadings();
+    const [intro, install, api] = items.map(
+      item => document.getElementById(item.id) as HTMLElement,
+    );
+
+    // A split-pane / modal scroll container. It is deliberately NOT a
+    // scrollable ancestor of the Outline, so the auto-detect heuristic would
+    // fall back to the window — the exact case that leaves a TOC's highlight
+    // stuck today. Scoping must use this element's box as the activation line.
+    const pane = document.createElement('div');
+    document.body.appendChild(pane);
+    vi.spyOn(pane, 'getBoundingClientRect').mockReturnValue({
+      top: 300,
+    } as DOMRect);
+    Object.defineProperty(pane, 'scrollTop', {value: 0, configurable: true});
+    Object.defineProperty(pane, 'clientHeight', {
+      value: 500,
+      configurable: true,
+    });
+    Object.defineProperty(pane, 'scrollHeight', {
+      value: 4000,
+      configurable: true,
+    });
+
+    // Relative to the pane's top (300), intro and install have passed; api not.
+    // Relative to the viewport (0) all three would have passed, which would
+    // make `api` active — so this asserts the pane really is the scroll root.
+    vi.spyOn(intro, 'getBoundingClientRect').mockReturnValue({
+      top: 100,
+    } as DOMRect);
+    vi.spyOn(install, 'getBoundingClientRect').mockReturnValue({
+      top: 250,
+    } as DOMRect);
+    vi.spyOn(api, 'getBoundingClientRect').mockReturnValue({
+      top: 600,
+    } as DOMRect);
+
+    render(<Outline items={items} scrollContainerRef={{current: pane}} />);
+
+    expect(screen.getByRole('link', {name: 'Installation'})).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+
+    pane.remove();
+    cleanup();
+  });
+
+  it('settles a scoped navigation on the container scrollend, not the window', async () => {
+    const user = userEvent.setup();
+    const cleanup = mountHeadings();
+    const onNavigateEnd = vi.fn();
+
+    const pane = document.createElement('div');
+    document.body.appendChild(pane);
+
+    render(
+      <Outline
+        items={items}
+        scrollContainerRef={{current: pane}}
+        onNavigateEnd={onNavigateEnd}
+      />,
+    );
+    await user.click(screen.getByRole('link', {name: 'Installation'}));
+
+    // A window scrollend must NOT settle a container-scoped navigation.
+    act(() => {
+      window.dispatchEvent(new Event('scrollend'));
+    });
+    expect(onNavigateEnd).not.toHaveBeenCalled();
+
+    act(() => {
+      pane.dispatchEvent(new Event('scrollend'));
+    });
+    expect(onNavigateEnd).toHaveBeenCalledTimes(1);
+    expect(onNavigateEnd).toHaveBeenCalledWith('install');
+
+    pane.remove();
+    cleanup();
+  });
+});
+
 describe('useOutlineFromDOM', () => {
   it('collects headings from DOM container', () => {
     function Demo() {

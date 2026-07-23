@@ -168,12 +168,12 @@ const variantStyleMap: Partial<
  * ```
  * <Avatar
  *   name="John Doe"
- *   size="medium"
+ *   size="lg"
  *   status={<AvatarStatusDot variant="success" label="Online" />}
  * />
  * <Avatar
  *   name="Jane Smith"
- *   size="large"
+ *   size="xl"
  *   status={<AvatarStatusDot variant="success" label="Verified" icon={<CheckIcon />} />}
  * />
  * ```

@@ -11,23 +11,23 @@ export default function AvatarShowcase() {
       <Avatar
         src="https://lookaside.facebook.com/assets/astryx/DATA-Ana-Thomas.png"
         name="Ana Thomas"
-        size="large"
+        size="xl"
         status={<AvatarStatusDot variant="success" label="Online" />}
       />
       <Avatar
         src="https://lookaside.facebook.com/assets/astryx/DATA-Drew-Young.png"
         name="Drew Young"
-        size="large"
+        size="xl"
       />
       <Avatar
         src="https://lookaside.facebook.com/assets/astryx/DATA-Jihoo-Song.png"
         name="Jihoo Song"
-        size="large"
+        size="xl"
       />
       <Avatar
         src="https://lookaside.facebook.com/assets/astryx/DATA-Nam-Tran.png"
         name="Nam Tran"
-        size="large"
+        size="xl"
         status={<AvatarStatusDot variant="error" label="Online" />}
       />
     </Stack>
