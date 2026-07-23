@@ -9,11 +9,10 @@
  * @position Core implementation; consumed by index.ts
  *
  * SYNC: When modified, update these files to stay in sync:
- * - /packages/core/src/CircularProgress/CircularProgress.doc.mjs (props table, features, implementation notes)
- * - /packages/core/src/CircularProgress/CircularProgress.test.tsx (tests for new/changed behavior)
- * - /packages/core/src/CircularProgress/index.ts (exports if types change)
+ * - /packages/lab/src/CircularProgress/CircularProgress.doc.mjs (props table, features, implementation notes)
+ * - /packages/lab/src/CircularProgress/CircularProgress.test.tsx (tests for new/changed behavior)
+ * - /packages/lab/src/CircularProgress/index.ts (exports if types change)
  * - /apps/storybook/stories/CircularProgress.stories.tsx (storybook stories)
- * - /packages/cli/templates/blocks/components/CircularProgress/ (showcase blocks)
  */
 
 import {useId, type ReactNode} from 'react';
@@ -37,7 +36,7 @@ import {themeProps} from '@astryxdesign/core/utils';
  * Theme packages can add custom variants via TypeScript module augmentation:
  * @example
  * ```
- * declare module '@astryxdesign/core/CircularProgress' {
+ * declare module '@astryxdesign/lab' {
  *   interface CircularProgressVariantMap {
  *     'brand': true;
  *   }
@@ -67,7 +66,7 @@ export interface CircularProgressProps extends BaseProps<HTMLDivElement> {
   ref?: React.Ref<HTMLDivElement>;
   /**
    * Current value of the circular progress.
-   * When omitted, the component renders an indeterminate spinning animation.
+   * Ignored when `isIndeterminate` is true.
    */
   value?: number;
   /**
@@ -85,8 +84,21 @@ export interface CircularProgressProps extends BaseProps<HTMLDivElement> {
    */
   isLabelHidden?: boolean;
   /**
+   * When true, displays the formatted value (e.g. "75%") in the center of
+   * the ring. Ignored when `isIndeterminate` is true or when `children`
+   * provide custom center content.
+   * @default false
+   */
+  hasValueLabel?: boolean;
+  /**
+   * Custom formatter for the value label.
+   * @default (value, max) => `${Math.round((value / max) * 100)}%`
+   */
+  formatValueLabel?: (value: number, max: number) => string;
+  /**
    * Content displayed in the center of the ring.
    * Typically a percentage string, icon, or custom content.
+   * Takes precedence over `hasValueLabel`.
    */
   children?: ReactNode;
   /**
@@ -102,6 +114,20 @@ export interface CircularProgressProps extends BaseProps<HTMLDivElement> {
    * @default 'accent'
    */
   variant?: CircularProgressVariant;
+  /**
+   * When true, renders an animated indeterminate progress indicator.
+   * Use when the progress amount is unknown (e.g. loading, processing).
+   * The `value` and `hasValueLabel` props are ignored in this mode.
+   * Respects `prefers-reduced-motion` by slowing the animation.
+   * @default false
+   */
+  isIndeterminate?: boolean;
+  /**
+   * When true, the circular progress is visually disabled — the ring and
+   * text use disabled colors. Use for canceled or inactive operations.
+   * @default false
+   */
+  isDisabled?: boolean;
   /**
    * Test ID for testing utilities.
    */
@@ -198,6 +224,18 @@ const styles = stylex.create({
     fontWeight: fontWeightVars['--font-weight-medium'],
     color: colorVars['--color-text-secondary'],
   },
+  labelDisabled: {
+    color: colorVars['--color-text-disabled'],
+  },
+  valueLabel: {
+    fontSize: typeScaleVars['--text-supporting-size'],
+    lineHeight: typeScaleVars['--text-supporting-leading'],
+    fontWeight: fontWeightVars['--font-weight-normal'],
+    color: colorVars['--color-text-secondary'],
+  },
+  valueLabelDisabled: {
+    color: colorVars['--color-text-disabled'],
+  },
   visuallyHidden: {
     position: 'absolute',
     width: '1px',
@@ -231,6 +269,9 @@ const variantStyles = stylex.create({
   neutral: {
     stroke: colorVars['--color-text-disabled'],
   },
+  disabled: {
+    stroke: colorVars['--color-text-disabled'],
+  },
 });
 
 const trackVariantStyles = stylex.create({
@@ -251,28 +292,40 @@ const trackVariantStyles = stylex.create({
   },
 });
 
+function defaultFormatValueLabel(value: number, max: number): string {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return `${pct}%`;
+}
+
 /**
  * A circular/radial progress indicator that shows completion as a ring.
  *
  * In determinate mode, displays a known value as an arc fill.
  * In indeterminate mode, shows an animated spinning indicator.
- * Supports center content via children for labels, percentages, or icons.
+ * Supports center content via children for labels, percentages, or icons,
+ * or an automatic formatted value label via `hasValueLabel`.
  *
  * @example
  * ```
- * <CircularProgress value={75} label="Upload progress" />
- * <CircularProgress value={75} label="Progress" max={100}>75%</CircularProgress>
- * <CircularProgress label="Loading..." />
+ * <CircularProgress value={75} label="Upload progress" hasValueLabel />
+ * <CircularProgress isIndeterminate label="Loading..." />
+ * <CircularProgress value={3.2} max={5} label="Disk usage" hasValueLabel
+ *   formatValueLabel={(v, m) => `${v} GB / ${m} GB`} />
+ * <CircularProgress value={30} label="Canceled" isDisabled hasValueLabel />
  * ```
  */
 export function CircularProgress({
-  value,
+  value = 0,
   max = 100,
   label,
   isLabelHidden = true,
+  hasValueLabel = false,
+  formatValueLabel = defaultFormatValueLabel,
   children,
   size = 'md',
   variant = 'accent',
+  isIndeterminate = false,
+  isDisabled = false,
   xstyle,
   className,
   style,
@@ -281,19 +334,30 @@ export function CircularProgress({
   ...rest
 }: CircularProgressProps) {
   const labelId = useId();
-  const isIndeterminate = value == null;
   const {diameter, strokeWidth} = SIZE_CONFIG[size];
   const radius = (diameter - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  const resolvedValue = value ?? 0;
-  const clampedValue = Math.min(Math.max(0, resolvedValue), max);
-  const percentage = max > 0 ? clampedValue / max : 0;
+  // A non-finite value or max (e.g. a NaN from an upstream `loaded / total`
+  // with total 0) would otherwise leak into aria-valuenow, the value label,
+  // and the arc geometry as the string "NaN". Treat it as empty progress,
+  // matching the max=0 handling below.
+  const safeValue = Number.isFinite(value) ? value : 0;
+  const safeMax = Number.isFinite(max) ? max : 0;
+  const clampedValue = Math.min(Math.max(0, safeValue), safeMax);
+  const percentage = safeMax > 0 ? clampedValue / safeMax : 0;
   const dashoffset = circumference * (1 - percentage);
+  const valueText = formatValueLabel(clampedValue, safeMax);
 
   const center = diameter / 2;
 
   const showLabel = !isLabelHidden;
+  const showValueLabel = hasValueLabel && !isIndeterminate;
+  const centerContent =
+    children != null ? children : showValueLabel ? valueText : null;
+
+  const fillVariant = isDisabled ? 'disabled' : variant;
+  const trackVariant = isDisabled ? 'neutral' : variant;
 
   return (
     <div
@@ -308,17 +372,21 @@ export function CircularProgress({
       {...rest}>
       <span
         id={labelId}
-        {...stylex.props(showLabel ? styles.label : styles.visuallyHidden)}>
+        {...stylex.props(
+          showLabel ? styles.label : styles.visuallyHidden,
+          showLabel && isDisabled && styles.labelDisabled,
+        )}>
         {label}
       </span>
 
       <div {...stylex.props(styles.ringWrapper)}>
         <svg
-          role={isIndeterminate ? 'progressbar' : 'meter'}
+          role="progressbar"
           aria-labelledby={labelId}
           aria-valuenow={isIndeterminate ? undefined : clampedValue}
           aria-valuemin={isIndeterminate ? undefined : 0}
-          aria-valuemax={isIndeterminate ? undefined : max}
+          aria-valuemax={isIndeterminate ? undefined : safeMax}
+          aria-valuetext={isIndeterminate ? undefined : valueText}
           width={diameter}
           height={diameter}
           viewBox={`0 0 ${diameter} ${diameter}`}
@@ -328,7 +396,7 @@ export function CircularProgress({
           <circle
             {...mergeProps(
               themeProps('circular-progress-track'),
-              stylex.props(styles.track, trackVariantStyles[variant]),
+              stylex.props(styles.track, trackVariantStyles[trackVariant]),
             )}
             cx={center}
             cy={center}
@@ -338,8 +406,11 @@ export function CircularProgress({
           {isIndeterminate ? (
             <circle
               {...mergeProps(
-                themeProps('circular-progress-fill', {variant}),
-                stylex.props(styles.fillIndeterminate, variantStyles[variant]),
+                themeProps('circular-progress-fill', {variant: fillVariant}),
+                stylex.props(
+                  styles.fillIndeterminate,
+                  variantStyles[fillVariant],
+                ),
               )}
               cx={center}
               cy={center}
@@ -349,8 +420,8 @@ export function CircularProgress({
           ) : (
             <circle
               {...mergeProps(
-                themeProps('circular-progress-fill', {variant}),
-                stylex.props(styles.fill, variantStyles[variant]),
+                themeProps('circular-progress-fill', {variant: fillVariant}),
+                stylex.props(styles.fill, variantStyles[fillVariant]),
               )}
               cx={center}
               cy={center}
@@ -362,8 +433,20 @@ export function CircularProgress({
           )}
         </svg>
 
-        {children != null && (
-          <div {...stylex.props(styles.children)}>{children}</div>
+        {centerContent != null && (
+          <div {...stylex.props(styles.children)}>
+            {children != null ? (
+              children
+            ) : (
+              <span
+                {...stylex.props(
+                  styles.valueLabel,
+                  isDisabled && styles.valueLabelDisabled,
+                )}>
+                {valueText}
+              </span>
+            )}
+          </div>
         )}
       </div>
     </div>
