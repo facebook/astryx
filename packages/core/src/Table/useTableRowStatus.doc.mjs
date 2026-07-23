@@ -11,9 +11,9 @@ export const docs = {
   props: [
     {
       name: 'getStatus',
-      type: '(item: T) => { color: TableRowStatusColor | string; icon?: IconName; label: string } | null',
+      type: "(item: T) => { color: 'accent' | 'success' | 'error' | 'warning' | 'red' | 'orange' | 'green' | 'yellow' | 'blue' | 'gray' | string; icon?: IconName; label: string } | null",
       description:
-        'Derive the status indicator for a row: a semantic color (accent/success/error/warning/red/orange/green/yellow/blue/gray, mapped to a theme token) or a raw CSS color as an escape hatch; an optional icon to signal status by shape instead of the dot (recommended when multiple statuses coexist); and a required accessible label (announced via role="img" and shown in a tooltip on hover, so a status is never conveyed by color alone). Return null for rows with no status. Memoize with useCallback for a stable plugin identity.',
+        'Derive the status indicator for a row: a semantic color (accent, success, error, warning, red, orange, green, yellow, blue, gray — mapped to a theme token) or a raw CSS color as an escape hatch; an optional icon to signal status by shape instead of the dot (recommended when multiple statuses coexist; valid names: close, chevronDown, chevronLeft, chevronRight, check, success, error, warning, info, calendar, clock, externalLink, menu, moreHorizontal, search, arrowUp, arrowDown, arrowsUpDown, funnel, eyeSlash, viewColumns, copy, checkDouble, wrench, stop, microphone); and a required accessible label (announced via role="img" and shown in a tooltip on hover, so a status is never conveyed by color alone). Return null for rows with no status. Memoize with useCallback for a stable plugin identity.',
       required: true,
     },
   ],
