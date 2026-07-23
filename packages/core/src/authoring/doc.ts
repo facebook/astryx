@@ -8,6 +8,15 @@
  * @position Integration-author authoring surface. See `./index.ts` for why
  *   these authoring factories live in `@astryxdesign/core`.
  *
+ * @deprecated The DOC factories and input types in this file are superseded by
+ *   the single doc-typing home `@astryxdesign/core/doc-types`
+ *   (`createComponentDoc` / `createHookDoc` / `createReferenceDoc`, typed by the
+ *   canonical `ComponentDoc` / `HookDoc` / `ReferenceDoc` shapes). This module
+ *   is a parallel, internally-unused model kept only as a back-compat shim
+ *   during migration — do not use it in new code. (The template + integration
+ *   factories, `createPageTemplate` / `createBlockTemplate` / `createIntegration`,
+ *   are NOT doc types and are unaffected.)
+ *
  * A doc describes a documentable unit of the design system so the CLI and docs
  * surfaces can list, search, and render it. There are three kinds, each a tiny
  * runtime identity helper that stamps a `type` discriminant:
@@ -34,6 +43,8 @@
  *
  * `relatedDocs` is a single flat curated cross-reference list; it replaces the
  * legacy split `relatedComponents` + `relatedHooks`.
+ *
+ * @deprecated Use the canonical doc shapes from `@astryxdesign/core/doc-types`.
  */
 export interface AstryxBaseDocInput {
   /** Name of the documented unit, without any prefix, PascalCase. Required. */
@@ -62,7 +73,11 @@ export interface AstryxBaseDocInput {
   [key: string]: unknown;
 }
 
-/** A single documented prop (mirrors `PropDoc` from core docs-types). */
+/**
+ * A single documented prop (mirrors `PropDoc` from core docs-types).
+ *
+ * @deprecated Use `PropDoc` from `@astryxdesign/core/doc-types`.
+ */
 export interface AstryxPropInput {
   name: string;
   type: string;
@@ -72,7 +87,11 @@ export interface AstryxPropInput {
   [key: string]: unknown;
 }
 
-/** A single documented param (mirrors `HookParamDoc`). */
+/**
+ * A single documented param (mirrors `HookParamDoc`).
+ *
+ * @deprecated Use `HookParamDoc` from `@astryxdesign/core/doc-types`.
+ */
 export interface AstryxParamInput {
   name: string;
   type: string;
@@ -82,7 +101,11 @@ export interface AstryxParamInput {
   [key: string]: unknown;
 }
 
-/** A single documented return field (mirrors `HookReturnDoc`). */
+/**
+ * A single documented return field (mirrors `HookReturnDoc`).
+ *
+ * @deprecated Use `HookReturnDoc` from `@astryxdesign/core/doc-types`.
+ */
 export interface AstryxReturnInput {
   name: string;
   type: string;
@@ -94,6 +117,8 @@ export interface AstryxReturnInput {
  * Input accepted by {@link createComponentDoc}. A component (or a family). The
  * `type` discriminant is injected by the factory. `anatomy`/`slotElements` live
  * inside `usage`; `importPath` is DERIVED (never authored).
+ *
+ * @deprecated Use `ComponentDoc` from `@astryxdesign/core/doc-types`.
  */
 export interface AstryxComponentDocInput extends AstryxBaseDocInput {
   /** All public props for the component. */
@@ -110,6 +135,8 @@ export interface AstryxComponentDocInput extends AstryxBaseDocInput {
  * Input accepted by {@link createFunctionDoc}. Covers any function, including
  * hooks: an inputs (`params`) + outputs (`returns`) surface. The `type`
  * discriminant is injected by the factory; `importPath` is DERIVED.
+ *
+ * @deprecated Use `HookDoc` from `@astryxdesign/core/doc-types`.
  */
 export interface AstryxFunctionDocInput extends AstryxBaseDocInput {
   /** Function/hook parameters or options-object fields. */
@@ -121,6 +148,8 @@ export interface AstryxFunctionDocInput extends AstryxBaseDocInput {
 /**
  * Input accepted by {@link createDoc}. A generic reference/topic doc — just the
  * shared base. The `type` discriminant is injected by the factory.
+ *
+ * @deprecated Use `ReferenceDoc` from `@astryxdesign/core/doc-types`.
  */
 export type AstryxGenericDocInput = AstryxBaseDocInput;
 
@@ -128,6 +157,8 @@ export type AstryxGenericDocInput = AstryxBaseDocInput;
  * Back-compat alias. Previously `createDoc` accepted a broad component-doc
  * record; the union of the three input kinds preserves that permissiveness for
  * any code referring to the old name.
+ *
+ * @deprecated Use `ComponentDoc` from `@astryxdesign/core/doc-types`.
  */
 export type AstryxComponentDoc =
   AstryxComponentDocInput | AstryxFunctionDocInput | AstryxGenericDocInput;
@@ -135,6 +166,8 @@ export type AstryxComponentDoc =
 /**
  * Author a component doc. Stamp-only: returns the def with `type: 'component'`
  * injected. Validation happens at the CLI load boundary.
+ *
+ * @deprecated Use `createComponentDoc` from `@astryxdesign/core/doc-types`.
  */
 export function createComponentDoc<T extends AstryxComponentDocInput>(
   def: T,
@@ -146,6 +179,8 @@ export function createComponentDoc<T extends AstryxComponentDocInput>(
  * Author a function doc (covers any function, including hooks). Stamp-only:
  * returns the def with `type: 'function'` injected. Validation happens at the
  * CLI load boundary.
+ *
+ * @deprecated Use `createHookDoc` from `@astryxdesign/core/doc-types`.
  */
 export function createFunctionDoc<T extends AstryxFunctionDocInput>(
   def: T,
@@ -156,6 +191,8 @@ export function createFunctionDoc<T extends AstryxFunctionDocInput>(
 /**
  * Author a generic reference/topic doc. Stamp-only: returns the def with
  * `type: 'generic'` injected. Validation happens at the CLI load boundary.
+ *
+ * @deprecated Use `createReferenceDoc` from `@astryxdesign/core/doc-types`.
  */
 export function createDoc<T extends AstryxGenericDocInput>(
   def: T,
