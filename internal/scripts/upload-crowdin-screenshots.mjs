@@ -104,6 +104,22 @@ function loadCatalogKeys() {
   return keys;
 }
 
+// Map of un-@ catalog key → defaultMessage. Loaded once at module scope so
+// t() can fall back to the catalog default when a tag's text arg is omitted.
+function loadCatalogDefaults() {
+  const raw = JSON.parse(fs.readFileSync(EN_JSON, 'utf8'));
+  const out = new Map();
+  for (const k of Object.keys(raw)) {
+    const bare = k.replace(/^@/, '');
+    const msg = raw[k] && typeof raw[k].defaultMessage === 'string'
+      ? raw[k].defaultMessage
+      : null;
+    if (msg != null) out.set(bare, msg);
+  }
+  return out;
+}
+const CATALOG_DEFAULTS = loadCatalogDefaults();
+
 // ---------- Crowdin API ----------
 async function crowdinFetch(pathAndQuery, {token, method = 'GET', body = null} = {}) {
   const url = `https://api.crowdin.com/api/v2${pathAndQuery}`;
@@ -182,7 +198,41 @@ function serveStatic(dir) {
 //
 // Bare `key` values must NOT include the leading '@' — the strategy map
 // stores identifiers without it.
-const t = (key, strategy, ...args) => ({key, strategy, args});
+//
+// The third+ positional arg is the "text to match" the strategy uses when
+// probing the rendered DOM. For the vast majority of tags this text is
+// identical to `en.json[key].defaultMessage`, so t() defaults it to that
+// catalog value when omitted. Callers still pass an explicit text when it
+// diverges from the catalog default — e.g. ICU-interpolated messages
+// (`Sort by {label}` → `Sort by Name`), or placeholder catalog values that
+// carry trailing ellipses the rendered DOM omits (`Enter value…` vs
+// `Enter value`).
+//
+// Per-strategy convention for which arg slot is the "text" arg:
+//   visibleText / option / placeholder / ariaLabel / footerButton /
+//   srOnlyLabel / srOnlyReveal   → args[0]
+//   chipOperator                  → args[1]  (args[0] = field name)
+//   filterInput                   → no text arg (kind string only)
+const TEXT_ARG_INDEX = {
+  visibleText: 0,
+  option: 0,
+  placeholder: 0,
+  ariaLabel: 0,
+  chipOperator: 1,
+  filterInput: null,
+  footerButton: 0,
+  srOnlyLabel: 0,
+  srOnlyReveal: 0,
+};
+
+function t(key, strategy, ...args) {
+  const idx = TEXT_ARG_INDEX[strategy];
+  if (idx != null && args[idx] === undefined) {
+    const def = CATALOG_DEFAULTS.get(key);
+    if (def != null) args[idx] = def;
+  }
+  return {key, strategy, args};
+}
 
 const TARGETS = [
   // ==========================================================================
@@ -201,12 +251,12 @@ const TARGETS = [
     // uses an operator label with no direct catalog key (it's a string_list
     // isAnyOf render variant), so we skip it here.
     manualTags: [
-      t('astryx.powersearch.operator.isAnyOf', 'chipOperator', 'Status', 'is any of'),
-      t('astryx.powersearch.operator.is', 'chipOperator', 'Priority', 'is'),
-      t('astryx.powersearch.operator.contains', 'chipOperator', 'Title', 'contains'),
-      t('astryx.powersearch.operator.isAnyOf', 'chipOperator', 'Assignee', 'is any of'),
-      t('astryx.powersearch.operator.greaterThan', 'chipOperator', 'Line count', 'is greater than'),
-      t('astryx.powersearch.operator.after', 'chipOperator', 'Created', 'is after'),
+      t('astryx.powersearch.operator.isAnyOf', 'chipOperator', 'Status'),
+      t('astryx.powersearch.operator.is', 'chipOperator', 'Priority'),
+      t('astryx.powersearch.operator.contains', 'chipOperator', 'Title'),
+      t('astryx.powersearch.operator.isAnyOf', 'chipOperator', 'Assignee'),
+      t('astryx.powersearch.operator.greaterThan', 'chipOperator', 'Line count'),
+      t('astryx.powersearch.operator.after', 'chipOperator', 'Created'),
     ],
   },
   {
@@ -227,11 +277,11 @@ const TARGETS = [
     selector: null,
     manualTags: [
       // Operator selector in the compact editor shows "is after".
-      t('astryx.powersearch.operator.after', 'visibleText', 'is after'),
+      t('astryx.powersearch.operator.after', 'visibleText'),
       // Date value input placeholder (from @astryx/core's DateTimeInput).
-      t('astryx.dateTimeInput.placeholder', 'placeholder', 'Select a date'),
-      t('astryx.powersearch.editor.cancel', 'footerButton', 'Cancel'),
-      t('astryx.powersearch.editor.apply', 'footerButton', 'Apply'),
+      t('astryx.dateTimeInput.placeholder', 'placeholder'),
+      t('astryx.powersearch.editor.cancel', 'footerButton'),
+      t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
   },
   {
@@ -241,11 +291,11 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.chat.status.sending', 'visibleText', 'Sending'),
-      t('astryx.chat.status.sent', 'visibleText', 'Sent'),
-      t('astryx.chat.status.delivered', 'visibleText', 'Delivered'),
-      t('astryx.chat.status.read', 'visibleText', 'Read'),
-      t('astryx.chat.status.failed', 'visibleText', 'Failed'),
+      t('astryx.chat.status.sending', 'visibleText'),
+      t('astryx.chat.status.sent', 'visibleText'),
+      t('astryx.chat.status.delivered', 'visibleText'),
+      t('astryx.chat.status.read', 'visibleText'),
+      t('astryx.chat.status.failed', 'visibleText'),
     ],
   },
   {
@@ -293,7 +343,7 @@ const TARGETS = [
       // srOnlyReveal strategy injects a small visible label bubble next to
       // the widget so translators see the actual English label text in the
       // screenshot instead of just a bare combobox.
-      t('astryx.pagination.itemsPerPage', 'srOnlyReveal', 'Items per page', 'below'),
+      t('astryx.pagination.itemsPerPage', 'srOnlyReveal', undefined, 'below'),
     ],
   },
 
@@ -315,17 +365,17 @@ const TARGETS = [
     },
     selector: null,
     manualTags: [
-      t('astryx.powersearch.operator.contains', 'option', 'contains'),
-      t('astryx.powersearch.operator.notContains', 'option', 'does not contain'),
-      t('astryx.powersearch.operator.startsWith', 'option', 'starts with'),
-      t('astryx.powersearch.operator.notStartsWith', 'option', 'does not start with'),
-      t('astryx.powersearch.operator.endsWith', 'option', 'ends with'),
-      t('astryx.powersearch.operator.notEndsWith', 'option', 'does not end with'),
-      t('astryx.powersearch.operator.is', 'option', 'is'),
-      t('astryx.powersearch.operator.isNot', 'option', 'is not'),
+      t('astryx.powersearch.operator.contains', 'option'),
+      t('astryx.powersearch.operator.notContains', 'option'),
+      t('astryx.powersearch.operator.startsWith', 'option'),
+      t('astryx.powersearch.operator.notStartsWith', 'option'),
+      t('astryx.powersearch.operator.endsWith', 'option'),
+      t('astryx.powersearch.operator.notEndsWith', 'option'),
+      t('astryx.powersearch.operator.is', 'option'),
+      t('astryx.powersearch.operator.isNot', 'option'),
       t('astryx.powersearch.valueEditor.enterValuePlaceholder', 'placeholder', 'Enter value'),
-      t('astryx.powersearch.editor.cancel', 'footerButton', 'Cancel'),
-      t('astryx.powersearch.editor.apply', 'footerButton', 'Apply'),
+      t('astryx.powersearch.editor.cancel', 'footerButton'),
+      t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
   },
   {
@@ -345,14 +395,14 @@ const TARGETS = [
     // For number fields: "is" is the label for `equals`, "is not" for
     // `notEquals`. Different string ids from the string field's is/isNot.
     manualTags: [
-      t('astryx.powersearch.operator.equals', 'option', 'is'),
-      t('astryx.powersearch.operator.notEquals', 'option', 'is not'),
-      t('astryx.powersearch.operator.greaterThan', 'option', 'is greater than'),
-      t('astryx.powersearch.operator.lessThan', 'option', 'is less than'),
-      t('astryx.powersearch.operator.greaterThanOrEqual', 'option', 'is greater than or equal to'),
-      t('astryx.powersearch.operator.lessThanOrEqual', 'option', 'is less than or equal to'),
-      t('astryx.powersearch.editor.cancel', 'footerButton', 'Cancel'),
-      t('astryx.powersearch.editor.apply', 'footerButton', 'Apply'),
+      t('astryx.powersearch.operator.equals', 'option'),
+      t('astryx.powersearch.operator.notEquals', 'option'),
+      t('astryx.powersearch.operator.greaterThan', 'option'),
+      t('astryx.powersearch.operator.lessThan', 'option'),
+      t('astryx.powersearch.operator.greaterThanOrEqual', 'option'),
+      t('astryx.powersearch.operator.lessThanOrEqual', 'option'),
+      t('astryx.powersearch.editor.cancel', 'footerButton'),
+      t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
   },
   {
@@ -370,12 +420,12 @@ const TARGETS = [
     },
     selector: null,
     manualTags: [
-      t('astryx.powersearch.operator.is', 'option', 'is'),
-      t('astryx.powersearch.operator.isNot', 'option', 'is not'),
-      t('astryx.powersearch.operator.isAnyOf', 'option', 'is any of'),
-      t('astryx.powersearch.operator.isNoneOf', 'option', 'is none of'),
-      t('astryx.powersearch.editor.cancel', 'footerButton', 'Cancel'),
-      t('astryx.powersearch.editor.apply', 'footerButton', 'Apply'),
+      t('astryx.powersearch.operator.is', 'option'),
+      t('astryx.powersearch.operator.isNot', 'option'),
+      t('astryx.powersearch.operator.isAnyOf', 'option'),
+      t('astryx.powersearch.operator.isNoneOf', 'option'),
+      t('astryx.powersearch.editor.cancel', 'footerButton'),
+      t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
   },
 
@@ -397,12 +447,12 @@ const TARGETS = [
     },
     selector: null,
     manualTags: [
-      t('astryx.powersearch.operator.before', 'option', 'is before'),
-      t('astryx.powersearch.operator.after', 'option', 'is after'),
-      t('astryx.powersearch.operator.between', 'option', 'is between'),
-      t('astryx.dateTimeInput.placeholder', 'placeholder', 'Select a date'),
-      t('astryx.powersearch.editor.cancel', 'footerButton', 'Cancel'),
-      t('astryx.powersearch.editor.apply', 'footerButton', 'Apply'),
+      t('astryx.powersearch.operator.before', 'option'),
+      t('astryx.powersearch.operator.after', 'option'),
+      t('astryx.powersearch.operator.between', 'option'),
+      t('astryx.dateTimeInput.placeholder', 'placeholder'),
+      t('astryx.powersearch.editor.cancel', 'footerButton'),
+      t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
   },
   {
@@ -418,8 +468,8 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.powersearch.operator.isTrue', 'chipOperator', 'In Stock', 'is true'),
-      t('astryx.powersearch.operator.isFalse', 'chipOperator', 'Discontinued', 'is false'),
+      t('astryx.powersearch.operator.isTrue', 'chipOperator', 'In Stock'),
+      t('astryx.powersearch.operator.isFalse', 'chipOperator', 'Discontinued'),
     ],
   },
   {
@@ -437,11 +487,11 @@ const TARGETS = [
     },
     selector: null,
     manualTags: [
-      t('astryx.powersearch.operator.isAnyOf', 'option', 'is any of'),
-      t('astryx.powersearch.operator.isNoneOf', 'option', 'is none of'),
+      t('astryx.powersearch.operator.isAnyOf', 'option'),
+      t('astryx.powersearch.operator.isNoneOf', 'option'),
       t('astryx.powersearch.valueEditor.selectValuesPlaceholder', 'placeholder', 'Select values'),
-      t('astryx.powersearch.editor.cancel', 'footerButton', 'Cancel'),
-      t('astryx.powersearch.editor.apply', 'footerButton', 'Apply'),
+      t('astryx.powersearch.editor.cancel', 'footerButton'),
+      t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
   },
 
@@ -460,10 +510,10 @@ const TARGETS = [
     },
     selector: null,
     manualTags: [
-      t('astryx.powersearch.operator.after', 'visibleText', 'is after'),
-      t('astryx.dateTimeInput.placeholder', 'placeholder', 'Select a date'),
-      t('astryx.powersearch.editor.cancel', 'footerButton', 'Cancel'),
-      t('astryx.powersearch.editor.apply', 'footerButton', 'Apply'),
+      t('astryx.powersearch.operator.after', 'visibleText'),
+      t('astryx.dateTimeInput.placeholder', 'placeholder'),
+      t('astryx.powersearch.editor.cancel', 'footerButton'),
+      t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
   },
   {
@@ -480,10 +530,10 @@ const TARGETS = [
     },
     selector: null,
     manualTags: [
-      t('astryx.powersearch.operator.isAnyOf', 'visibleText', 'is any of'),
+      t('astryx.powersearch.operator.isAnyOf', 'visibleText'),
       t('astryx.powersearch.valueEditor.searchPlaceholder', 'placeholder', 'Search'),
-      t('astryx.powersearch.editor.cancel', 'footerButton', 'Cancel'),
-      t('astryx.powersearch.editor.apply', 'footerButton', 'Apply'),
+      t('astryx.powersearch.editor.cancel', 'footerButton'),
+      t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
   },
   {
@@ -498,10 +548,10 @@ const TARGETS = [
     },
     selector: null,
     manualTags: [
-      t('astryx.powersearch.operator.contains', 'visibleText', 'contains'),
+      t('astryx.powersearch.operator.contains', 'visibleText'),
       t('astryx.powersearch.valueEditor.enterValuePlaceholder', 'placeholder', 'Enter value'),
-      t('astryx.powersearch.editor.cancel', 'footerButton', 'Cancel'),
-      t('astryx.powersearch.editor.apply', 'footerButton', 'Apply'),
+      t('astryx.powersearch.editor.cancel', 'footerButton'),
+      t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
   },
   {
@@ -517,10 +567,10 @@ const TARGETS = [
     selector: null,
     manualTags: [
       // Number-field default operator label is "is" (equals key).
-      t('astryx.powersearch.operator.equals', 'visibleText', 'is'),
+      t('astryx.powersearch.operator.equals', 'visibleText'),
       t('astryx.powersearch.valueEditor.enterNumberPlaceholder', 'placeholder', 'Enter number'),
-      t('astryx.powersearch.editor.cancel', 'footerButton', 'Cancel'),
-      t('astryx.powersearch.editor.apply', 'footerButton', 'Apply'),
+      t('astryx.powersearch.editor.cancel', 'footerButton'),
+      t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
   },
   {
@@ -535,10 +585,10 @@ const TARGETS = [
     },
     selector: null,
     manualTags: [
-      t('astryx.powersearch.operator.isAnyOf', 'visibleText', 'is any of'),
+      t('astryx.powersearch.operator.isAnyOf', 'visibleText'),
       t('astryx.powersearch.valueEditor.selectValuesPlaceholder', 'placeholder', 'Select values'),
-      t('astryx.powersearch.editor.cancel', 'footerButton', 'Cancel'),
-      t('astryx.powersearch.editor.apply', 'footerButton', 'Apply'),
+      t('astryx.powersearch.editor.cancel', 'footerButton'),
+      t('astryx.powersearch.editor.apply', 'footerButton'),
     ],
   },
 
@@ -562,7 +612,7 @@ const TARGETS = [
     },
     selector: null,
     manualTags: [
-      t('astryx.dialog.close', 'srOnlyReveal', 'Close', 'left'),
+      t('astryx.dialog.close', 'srOnlyReveal', undefined, 'left'),
     ],
   },
   {
@@ -584,7 +634,7 @@ const TARGETS = [
       // Cancel is one of two footer buttons in the alertdialog (Cancel /
       // Delete). footerButton scopes to dialog/popover containers, avoiding
       // any stray "Cancel" elsewhere on the page.
-      t('astryx.alertDialog.cancel', 'footerButton', 'Cancel'),
+      t('astryx.alertDialog.cancel', 'footerButton'),
     ],
   },
 
@@ -599,7 +649,7 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.banner.dismiss', 'srOnlyReveal', 'Dismiss', 'below'),
+      t('astryx.banner.dismiss', 'srOnlyReveal', undefined, 'below'),
     ],
   },
   {
@@ -610,7 +660,7 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.banner.expand', 'srOnlyReveal', 'Expand', 'below'),
+      t('astryx.banner.expand', 'srOnlyReveal', undefined, 'below'),
     ],
   },
   {
@@ -621,7 +671,7 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.banner.collapse', 'srOnlyReveal', 'Collapse', 'below'),
+      t('astryx.banner.collapse', 'srOnlyReveal', undefined, 'below'),
     ],
   },
 
@@ -649,9 +699,9 @@ const TARGETS = [
     },
     selector: null,
     manualTags: [
-      t('astryx.table.sort.ascending', 'visibleText', 'Sort ascending'),
-      t('astryx.table.sort.descending', 'visibleText', 'Sort descending'),
-      t('astryx.table.sort.clear', 'visibleText', 'Clear sort'),
+      t('astryx.table.sort.ascending', 'visibleText'),
+      t('astryx.table.sort.descending', 'visibleText'),
+      t('astryx.table.sort.clear', 'visibleText'),
     ],
   },
   {
@@ -665,8 +715,8 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.table.selection.selectAllRows', 'srOnlyReveal', 'Select all rows', 'below'),
-      t('astryx.table.selection.selectRow', 'srOnlyReveal', 'Select row', 'right'),
+      t('astryx.table.selection.selectAllRows', 'srOnlyReveal', undefined, 'below'),
+      t('astryx.table.selection.selectRow', 'srOnlyReveal', undefined, 'right'),
     ],
   },
   {
@@ -689,9 +739,9 @@ const TARGETS = [
     manualTags: [
       // "All" is rendered as a <span> inside a combobox trigger — no
       // <input placeholder>, so use visibleText.
-      t('astryx.table.filter.allPlaceholder', 'visibleText', 'All'),
-      t('astryx.table.filter.reset', 'footerButton', 'Reset'),
-      t('astryx.table.filter.apply', 'footerButton', 'Apply'),
+      t('astryx.table.filter.allPlaceholder', 'visibleText'),
+      t('astryx.table.filter.reset', 'footerButton'),
+      t('astryx.table.filter.apply', 'footerButton'),
     ],
   },
   {
@@ -707,9 +757,9 @@ const TARGETS = [
     interact: async () => {},
     selector: null,
     manualTags: [
-      t('astryx.tableRowExpansion.expandRow', 'srOnlyReveal', 'Expand row', 'right'),
-      t('astryx.tableRowExpansion.collapseRow', 'srOnlyReveal', 'Collapse row', 'right'),
-      t('astryx.tableRowExpansion.expandAllRows', 'srOnlyReveal', 'Expand all rows', 'below'),
+      t('astryx.tableRowExpansion.expandRow', 'srOnlyReveal', undefined, 'right'),
+      t('astryx.tableRowExpansion.collapseRow', 'srOnlyReveal', undefined, 'right'),
+      t('astryx.tableRowExpansion.expandAllRows', 'srOnlyReveal', undefined, 'below'),
     ],
   },
   {
