@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TreeList} from './TreeList';
 import type {TreeListItemData} from './TreeListTypes';
@@ -605,5 +605,403 @@ describe('TreeList', () => {
     expect(document.activeElement).toBe(
       screen.getByText('Cherry').closest('li'),
     );
+  });
+
+  // ===========================================================================
+  // Custom expand icon (renderExpandIcon)
+  // ===========================================================================
+
+  describe('renderExpandIcon', () => {
+    const renderFolderIcon = (state: {
+      isExpanded: boolean;
+      hasChildren: boolean;
+      isDisabled: boolean;
+    }) =>
+      state.hasChildren ? (
+        state.isExpanded ? (
+          <span data-testid="folder-open">▼</span>
+        ) : (
+          <span data-testid="folder-closed">▶</span>
+        )
+      ) : (
+        <span data-testid="file-icon">•</span>
+      );
+
+    it('renders the custom icon inside the toggle for a collapsed parent', () => {
+      render(
+        <TreeList items={nestedItems} renderExpandIcon={renderFolderIcon} />,
+      );
+      const toggle = screen.getByRole('button', {name: 'Toggle children'});
+      expect(within(toggle).getByTestId('folder-closed')).toBeInTheDocument();
+      expect(
+        within(toggle).queryByTestId('folder-open'),
+      ).not.toBeInTheDocument();
+      // The default chevron svg is replaced entirely.
+      expect(toggle.querySelector('svg')).not.toBeInTheDocument();
+    });
+
+    it('renders a distinct icon for an expanded parent (state-aware)', () => {
+      render(
+        <TreeList
+          items={nestedItemsExpanded}
+          renderExpandIcon={renderFolderIcon}
+        />,
+      );
+      const toggle = screen.getByRole('button', {name: 'Toggle children'});
+      expect(within(toggle).getByTestId('folder-open')).toBeInTheDocument();
+      expect(
+        within(toggle).queryByTestId('folder-closed'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('swaps the icon when the parent is toggled', async () => {
+      const user = userEvent.setup();
+      render(
+        <TreeList items={nestedItems} renderExpandIcon={renderFolderIcon} />,
+      );
+      expect(screen.getByTestId('folder-closed')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', {name: 'Toggle children'}));
+      expect(screen.getByTestId('folder-open')).toBeInTheDocument();
+      expect(screen.getByText('Child 1')).toBeInTheDocument();
+    });
+
+    it('renders the leaf icon in the indicator slot, outside any button', () => {
+      render(
+        <TreeList items={simpleItems} renderExpandIcon={renderFolderIcon} />,
+      );
+      const fileIcons = screen.getAllByTestId('file-icon');
+      expect(fileIcons).toHaveLength(2);
+      // Leaves have no toggle — the icon must not create an interactive element.
+      expect(fileIcons[0].closest('button')).toBeNull();
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('calls the render prop with isExpanded, hasChildren, and isDisabled', () => {
+      const renderExpandIcon = vi.fn(renderFolderIcon);
+      const items: TreeListItemData[] = [
+        {
+          id: 'parent',
+          label: 'Parent',
+          isExpanded: true,
+          children: [{id: 'child', label: 'Child'}],
+        },
+        {id: 'off', label: 'Off', isDisabled: true},
+      ];
+      render(<TreeList items={items} renderExpandIcon={renderExpandIcon} />);
+      expect(renderExpandIcon).toHaveBeenCalledWith({
+        isExpanded: true,
+        hasChildren: true,
+        isDisabled: false,
+      });
+      expect(renderExpandIcon).toHaveBeenCalledWith({
+        isExpanded: false,
+        hasChildren: false,
+        isDisabled: false,
+      });
+      expect(renderExpandIcon).toHaveBeenCalledWith({
+        isExpanded: false,
+        hasChildren: false,
+        isDisabled: true,
+      });
+    });
+
+    it('keeps the toggle a11y wiring regardless of the custom icon', () => {
+      render(
+        <TreeList items={nestedItems} renderExpandIcon={renderFolderIcon} />,
+      );
+      const toggle = screen.getByRole('button', {name: 'Toggle children'});
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(toggle).toHaveAttribute('data-tree-toggle');
+      expect(toggle).toHaveAttribute('tabindex', '-1');
+    });
+
+    it('still expands from the keyboard with a custom icon', async () => {
+      const user = userEvent.setup();
+      render(
+        <TreeList items={nestedItems} renderExpandIcon={renderFolderIcon} />,
+      );
+      const parent = screen.getByText('Parent').closest('li')!;
+      parent.focus();
+      await user.keyboard('{ArrowRight}');
+      expect(screen.getByText('Child 1')).toBeInTheDocument();
+      expect(screen.getByTestId('folder-open')).toBeInTheDocument();
+    });
+
+    it('falls back to the default chevron when the render prop returns null for a parent', () => {
+      render(
+        <TreeList
+          items={nestedItems}
+          renderExpandIcon={({hasChildren}) =>
+            hasChildren ? null : <span data-testid="file-icon">•</span>
+          }
+        />,
+      );
+      const toggle = screen.getByRole('button', {name: 'Toggle children'});
+      expect(toggle.querySelector('svg')).toBeInTheDocument();
+    });
+
+    it('renders no leaf indicator when the render prop returns null for leaves', () => {
+      render(
+        <TreeList
+          items={nestedItems}
+          renderExpandIcon={({isExpanded, hasChildren}) =>
+            hasChildren ? (
+              <span data-testid={isExpanded ? 'folder-open' : 'folder-closed'}>
+                ▶
+              </span>
+            ) : null
+          }
+        />,
+      );
+      // Sibling is a leaf: no indicator element is rendered for it.
+      const sibling = screen.getByText('Sibling').closest('li')!;
+      expect(sibling.querySelector('[data-testid]')).toBeNull();
+    });
+
+    it('treats a boolean return as no icon, not renderable content', () => {
+      render(
+        <TreeList
+          items={simpleItems}
+          renderExpandIcon={({hasChildren}) => hasChildren && <span>▶</span>}
+        />,
+      );
+      // All items are leaves → render prop returns false → no indicator slot,
+      // so rows keep the leaf alignment margin rather than an empty icon box.
+      const rowA = screen.getByText('Item A').closest('div')!;
+      const rowB = screen.getByText('Item B').closest('div')!;
+      expect(rowA.style.marginLeft).toBe(rowB.style.marginLeft);
+      expect(rowA.style.marginLeft).toContain('+');
+    });
+
+    it('aligns a leaf with an icon to the indicator column of its siblings', () => {
+      render(
+        <TreeList items={nestedItems} renderExpandIcon={renderFolderIcon} />,
+      );
+      // Parent (has indicator) and Sibling (leaf w/ icon) are both level 0:
+      // with a rendered leaf icon the extra leaf offset must not apply.
+      const parentRow = screen.getByText('Parent').closest('div')!;
+      const siblingRow = screen.getByText('Sibling').closest('div')!;
+      expect(siblingRow.style.marginLeft).toBe(parentRow.style.marginLeft);
+    });
+
+    it('keeps the extra leaf offset when no leaf icon is rendered', () => {
+      render(<TreeList items={nestedItems} />);
+      const parentRow = screen.getByText('Parent').closest('div')!;
+      const siblingRow = screen.getByText('Sibling').closest('div')!;
+      expect(siblingRow.style.marginLeft).not.toBe(parentRow.style.marginLeft);
+    });
+
+    it('does not apply the state-driven rotation classes to custom icons', () => {
+      const {rerender} = render(
+        <TreeList
+          key="collapsed"
+          items={nestedItems}
+          renderExpandIcon={renderFolderIcon}
+        />,
+      );
+      const collapsedWrapper =
+        screen.getByTestId('folder-closed').parentElement!;
+      const collapsedClasses = collapsedWrapper.className;
+      rerender(
+        <TreeList
+          key="expanded"
+          items={nestedItemsExpanded}
+          renderExpandIcon={renderFolderIcon}
+        />,
+      );
+      const expandedWrapper = screen.getByTestId('folder-open').parentElement!;
+      // Same wrapper classes in both states → no rotation is applied to
+      // custom icons. The default chevron differs between states (rotate 90).
+      expect(expandedWrapper.className).toBe(collapsedClasses);
+
+      const {container: defCollapsed} = render(
+        <TreeList items={nestedItems} />,
+      );
+      const {container: defExpanded} = render(
+        <TreeList items={nestedItemsExpanded} />,
+      );
+      const chevronCollapsed = defCollapsed.querySelector(
+        'button[data-tree-toggle] > span',
+      )!;
+      const chevronExpanded = defExpanded.querySelector(
+        'button[data-tree-toggle] > span',
+      )!;
+      expect(chevronExpanded.className).not.toBe(chevronCollapsed.className);
+    });
+
+    it('fires the item onClick when a leaf icon itself is clicked', async () => {
+      const user = userEvent.setup();
+      const onClick = vi.fn();
+      const items: TreeListItemData[] = [
+        {id: 'a', label: 'Clickable leaf', onClick},
+      ];
+      render(<TreeList items={items} renderExpandIcon={renderFolderIcon} />);
+      await user.click(screen.getByTestId('file-icon'));
+      expect(onClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes isDisabled: true for a disabled parent and keeps the toggle disabled', () => {
+      const renderExpandIcon = vi.fn(renderFolderIcon);
+      const items: TreeListItemData[] = [
+        {
+          id: 'p',
+          label: 'Off parent',
+          isDisabled: true,
+          children: [{id: 'c', label: 'Child'}],
+        },
+      ];
+      render(<TreeList items={items} renderExpandIcon={renderExpandIcon} />);
+      expect(renderExpandIcon).toHaveBeenCalledWith({
+        isExpanded: false,
+        hasChildren: true,
+        isDisabled: true,
+      });
+      const toggle = screen.getByRole('button', {name: 'Toggle children'});
+      expect(toggle).toBeDisabled();
+      expect(within(toggle).getByTestId('folder-closed')).toBeInTheDocument();
+    });
+
+    it('renders custom icons at every depth of the recursion', () => {
+      render(
+        <TreeList items={deepItems} renderExpandIcon={renderFolderIcon} />,
+      );
+      // Root and Mid are expanded parents; Leaf is a leaf — all three depths
+      // receive the render prop.
+      expect(screen.getAllByTestId('folder-open')).toHaveLength(2);
+      expect(screen.getAllByTestId('file-icon')).toHaveLength(1);
+    });
+
+    it('keeps Enter routed to the item action, not the toggle, for onClick parents', async () => {
+      const user = userEvent.setup();
+      const onClick = vi.fn();
+      const items: TreeListItemData[] = [
+        {
+          id: 'p',
+          label: 'Parent',
+          onClick,
+          children: [{id: 'c', label: 'Child 1'}],
+        },
+      ];
+      render(<TreeList items={items} renderExpandIcon={renderFolderIcon} />);
+      const parent = screen.getByText('Parent').closest('li')!;
+      parent.focus();
+      await user.keyboard('{Enter}');
+      // Enter activates the row's own action; expansion is untouched.
+      expect(onClick).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText('Child 1')).not.toBeInTheDocument();
+      // The toggle still expands independently, without firing onClick.
+      await user.click(screen.getByRole('button', {name: 'Toggle children'}));
+      expect(screen.getByText('Child 1')).toBeInTheDocument();
+      expect(onClick).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('folder-open')).toBeInTheDocument();
+    });
+
+    it('treats an empty children array as a leaf in the render prop', () => {
+      const renderExpandIcon = vi.fn(renderFolderIcon);
+      const items: TreeListItemData[] = [
+        {id: 'e', label: 'Empty dir', children: []},
+      ];
+      render(<TreeList items={items} renderExpandIcon={renderExpandIcon} />);
+      expect(renderExpandIcon).toHaveBeenCalledWith({
+        isExpanded: false,
+        hasChildren: false,
+        isDisabled: false,
+      });
+      expect(screen.getByTestId('file-icon')).toBeInTheDocument();
+      expect(screen.getByText('Empty dir').closest('li')).not.toHaveAttribute(
+        'aria-expanded',
+      );
+    });
+
+    it('reports isExpanded: false for a leaf even when its data says isExpanded', () => {
+      const renderExpandIcon = vi.fn(renderFolderIcon);
+      const items: TreeListItemData[] = [
+        {id: 'l', label: 'Leafy', isExpanded: true},
+      ];
+      render(<TreeList items={items} renderExpandIcon={renderExpandIcon} />);
+      // isExpanded on a childless item is meaningless — the render prop must
+      // see the documented "always false for leaves", never the raw data flag.
+      expect(renderExpandIcon).toHaveBeenCalledWith({
+        isExpanded: false,
+        hasChildren: false,
+        isDisabled: false,
+      });
+    });
+
+    it('renders string returns as indicator content', () => {
+      render(
+        <TreeList
+          items={nestedItems}
+          renderExpandIcon={({isExpanded, hasChildren}) =>
+            hasChildren ? (isExpanded ? '−' : '+') : '·'
+          }
+        />,
+      );
+      const toggle = screen.getByRole('button', {name: 'Toggle children'});
+      expect(toggle).toHaveTextContent('+');
+      expect(screen.getByText('·')).toBeInTheDocument();
+    });
+
+    it('treats an empty-string return as no icon on both paths', () => {
+      render(<TreeList items={nestedItems} renderExpandIcon={() => ''} />);
+      // Parent falls back to the default chevron…
+      const toggle = screen.getByRole('button', {name: 'Toggle children'});
+      expect(toggle.querySelector('svg')).toBeInTheDocument();
+      // …and the leaf keeps its alignment offset instead of an empty box.
+      const parentRow = screen.getByText('Parent').closest('div')!;
+      const siblingRow = screen.getByText('Sibling').closest('div')!;
+      expect(siblingRow.style.marginLeft).not.toBe(parentRow.style.marginLeft);
+    });
+
+    it('renders the indicator slot separately from startContent', () => {
+      const items: TreeListItemData[] = [
+        {
+          id: 'a',
+          label: 'Doc',
+          startContent: <span data-testid="start-icon">★</span>,
+        },
+      ];
+      render(<TreeList items={items} renderExpandIcon={renderFolderIcon} />);
+      const indicator = screen.getByTestId('file-icon');
+      const start = screen.getByTestId('start-icon');
+      expect(indicator).toBeInTheDocument();
+      expect(start).toBeInTheDocument();
+      // The indicator slot precedes startContent in the row.
+      expect(
+        indicator.compareDocumentPosition(start) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('honors a new render prop identity on re-render', () => {
+      const {rerender} = render(
+        <TreeList items={simpleItems} renderExpandIcon={renderFolderIcon} />,
+      );
+      expect(screen.getAllByTestId('file-icon')).toHaveLength(2);
+      rerender(
+        <TreeList
+          items={simpleItems}
+          renderExpandIcon={() => <span data-testid="icon-v2">◆</span>}
+        />,
+      );
+      expect(screen.getAllByTestId('icon-v2')).toHaveLength(2);
+      expect(screen.queryByTestId('file-icon')).not.toBeInTheDocument();
+    });
+
+    it('swaps back to the collapsed icon on ArrowLeft collapse', async () => {
+      const user = userEvent.setup();
+      render(
+        <TreeList
+          items={nestedItemsExpanded}
+          renderExpandIcon={renderFolderIcon}
+        />,
+      );
+      expect(screen.getByTestId('folder-open')).toBeInTheDocument();
+      const parent = screen.getByText('Parent').closest('li')!;
+      parent.focus();
+      await user.keyboard('{ArrowLeft}');
+      expect(screen.queryByText('Child 1')).not.toBeInTheDocument();
+      expect(screen.getByTestId('folder-closed')).toBeInTheDocument();
+    });
   });
 });

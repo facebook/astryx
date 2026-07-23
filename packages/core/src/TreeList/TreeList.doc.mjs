@@ -55,6 +55,12 @@ export const docs = {
           slotElements: [{__element: 'Text', props: {type: 'body'}, children: 'Header'}],
         },
         {
+          name: 'renderExpandIcon',
+          type: '(state: TreeListExpandIconState) => ReactNode',
+          description:
+            'Custom expand/collapse indicator replacing the default rotating chevron. Called per item with {isExpanded, hasChildren, isDisabled} so collapsed, expanded, and leaf icons can differ (e.g. closed/open folder, file). Custom icons swap per state instead of rotating. Return null to fall back: default chevron for parents, no indicator for leaves. Toggle a11y wiring is preserved regardless of the icon.',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -119,6 +125,12 @@ export const docsZh = {
             '标题内容，通过 aria-labelledby 与树关联。',
         },
         {
+          name: 'renderExpandIcon',
+          type: '(state: TreeListExpandIconState) => ReactNode',
+          description:
+            '自定义展开/折叠指示图标，替代默认的旋转箭头。按项调用并传入 {isExpanded, hasChildren, isDisabled}，可为折叠、展开和叶子节点渲染不同图标（如打开/关闭的文件夹、文件）。自定义图标按状态切换而非旋转。返回 null 时回退：父节点使用默认箭头，叶子节点不渲染指示器。切换按钮的无障碍连接不受图标影响。',
+        },
+        {
           name: 'xstyle',
           type: 'StyleXStyles',
           description:
@@ -157,6 +169,7 @@ export const docsDense = {
     items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',
     density: 'Spacing density for items.',
     header: 'Header content, linked to tree via aria-labelledby.',
+    renderExpandIcon: 'Custom indicator per item state {isExpanded, hasChildren, isDisabled}; state-swap not rotation; null → default chevron (parents) / no indicator (leaves).',
     xstyle: 'StyleX styles for layout. Must be stylex.create() value.',
   },
   components: [
@@ -168,6 +181,7 @@ export const docsDense = {
         items: 'Recursive tree item data w/ id, label, optional children + isExpanded.',
         density: 'Spacing density for items.',
         header: 'Header content, linked to tree via aria-labelledby.',
+        renderExpandIcon: 'Custom indicator per item state {isExpanded, hasChildren, isDisabled}; state-swap not rotation; null → default chevron (parents) / no indicator (leaves).',
         xstyle: 'StyleX styles for layout. Must be stylex.create() value.',
       },
     },
