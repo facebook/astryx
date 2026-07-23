@@ -9,7 +9,7 @@ import {Text} from '@astryxdesign/core/Text';
 
 export default function ButtonGroupFloating() {
   return (
-    <Stack direction="vertical" gap={3} vAlign="start">
+    <Stack direction="vertical" gap={3} hAlign="start">
       <Text type="supporting" color="secondary">
         The whole group shares one raised surface — a floating action bar
       </Text>
