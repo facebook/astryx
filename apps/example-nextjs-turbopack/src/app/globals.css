@@ -1,0 +1,8 @@
+/* Copyright (c) Meta Platforms, Inc. and affiliates. */
+
+/*
+ * Astryx stylesheets are imported as JS side-effects in layout.tsx, not here.
+ * On Turbopack, a bare @import of a package's CSS subpath from a CSS file is
+ * emitted as a chunk but not linked onto the route. Keep app-level global CSS
+ * in this file; import library CSS from the layout module instead.
+ */
