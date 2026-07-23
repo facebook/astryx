@@ -207,6 +207,7 @@ export function FieldLabel({
         // `htmlFor` only applies to a real `<label>` associating with a single
         // control; a group label (span) has no `htmlFor`.
         htmlFor={isGroupLabel ? undefined : inputID}
+        aria-disabled={isDisabled ? 'true' : undefined}
         {...mergeProps(
           themeProps('field-label'),
           stylex.props(
