@@ -230,6 +230,75 @@ export default function App() {
       ],
     },
     {
+      title: 'Text direction (RTL)',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: "Astryx tracks text direction (`'ltr'` or `'rtl'`) alongside the locale. By default the direction is derived from the `locale` you pass to `<InternationalizationProvider>` via `Intl.Locale.getTextInfo()`, so RTL locales such as Arabic (`ar`), Hebrew (`he`), Farsi (`fa`), and Urdu (`ur`) resolve to `'rtl'` automatically. Most layout mirroring should use CSS logical properties; direction is for the cases CSS can't express — swapping directional icons, mirroring behavioral logic (slider math, keyboard nav), or applying direction-specific styling.",
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Direction derived from locale',
+          code: `import {InternationalizationProvider} from '@astryxdesign/core';
+
+// direction resolves to 'rtl' automatically from the Arabic locale
+<InternationalizationProvider locale="ar">
+  <App />
+</InternationalizationProvider>;`,
+        },
+        {
+          type: 'prose',
+          text: 'Pass the optional `dir` prop to force a direction. This overrides the locale-derived default — useful for RTL layout testing under an English catalog, or to skip derivation when you already know the direction.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Explicit direction override',
+          code: `// force RTL layout while keeping English strings
+<InternationalizationProvider locale="en" dir="rtl">
+  <App />
+</InternationalizationProvider>;`,
+        },
+        {
+          type: 'prose',
+          text: 'Read the ambient direction inside a component with `useDirection()`. It returns `\'ltr\'` when called outside a provider, matching the silent-fallback behavior of `useTranslator`.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'useDirection() in a component',
+          code: `import {useDirection} from '@astryxdesign/core';
+
+function NextButton() {
+  const direction = useDirection();
+  const icon = direction === 'rtl' ? 'chevronLeft' : 'chevronRight';
+  return <Icon icon={icon} />;
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'For React Server Components (e.g. a Next.js root layout), use the server-safe `getLocaleDirection()` helper to compute the direction without a provider — for example to set `<html dir>`. It has no `\'use client\'` boundary and falls back to `\'ltr\'` for malformed input.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'getLocaleDirection() in a Next.js layout',
+          code: `import {getLocaleDirection} from '@astryxdesign/core';
+
+export default function RootLayout({children, params}) {
+  const {locale} = params;
+  return (
+    <html lang={locale} dir={getLocaleDirection(locale)}>
+      <body>{children}</body>
+    </html>
+  );
+}`,
+        },
+      ],
+    },
+    {
       title: 'For contributors',
       category: 'guide',
       content: [

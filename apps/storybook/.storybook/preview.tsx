@@ -2,7 +2,7 @@
 
 import type {Preview, Decorator} from '@storybook/react';
 import * as React from 'react';
-import {Theme, LayerProvider} from '@astryxdesign/core';
+import {Theme, LayerProvider, InternationalizationProvider} from '@astryxdesign/core';
 import {neutralTheme} from '@astryxdesign/theme-neutral';
 import {stoneTheme} from '@astryxdesign/theme-stone';
 import {y2kTheme} from '@astryxdesign/theme-y2k';
@@ -31,6 +31,7 @@ const withTheme: Decorator = (Story, context) => {
   // Get theme selection from toolbar
   const themeKey = (context.globals?.astryxTheme || 'neutral') as string;
   const mode = context.globals?.colorMode === 'dark' ? 'dark' : 'light';
+  const direction = context.globals?.direction === 'rtl' ? 'rtl' : 'ltr';
 
   // Sync color-scheme to the document root so light-dark() works
   // everywhere, including on <html>/<body> backgrounds and any
@@ -42,13 +43,16 @@ const withTheme: Decorator = (Story, context) => {
   // No theme — render with just base defineVars defaults
   if (themeKey === 'none') {
     return (
-      <div
-        style={{
-          colorScheme: mode,
-          padding: 16,
-        }}>
-        <Story />
-      </div>
+      <InternationalizationProvider locale="en" dir={direction}>
+        <div
+          dir={direction}
+          style={{
+            colorScheme: mode,
+            padding: 16,
+          }}>
+          <Story />
+        </div>
+      </InternationalizationProvider>
     );
   }
 
@@ -57,13 +61,16 @@ const withTheme: Decorator = (Story, context) => {
   return (
     <Theme theme={theme} mode={mode}>
       <LayerProvider>
-        <div
-          style={{
-            backgroundColor: 'var(--color-background-surface)',
-            padding: 16,
-          }}>
-          <Story />
-        </div>
+        <InternationalizationProvider locale="en" dir={direction}>
+          <div
+            dir={direction}
+            style={{
+              backgroundColor: 'var(--color-background-surface)',
+              padding: 16,
+            }}>
+            <Story />
+          </div>
+        </InternationalizationProvider>
       </LayerProvider>
     </Theme>
   );
@@ -109,10 +116,23 @@ const preview: Preview = {
         dynamicTitle: true,
       },
     },
+    direction: {
+      description: 'Text direction',
+      toolbar: {
+        title: 'Direction',
+        icon: 'transfer',
+        items: [
+          {value: 'ltr', title: 'LTR'},
+          {value: 'rtl', title: 'RTL'},
+        ],
+        dynamicTitle: true,
+      },
+    },
   },
   initialGlobals: {
     astryxTheme: 'neutral',
     colorMode: 'light',
+    direction: 'ltr',
   },
   decorators: [withTheme],
 };

@@ -4,7 +4,8 @@
 
 /**
  * @file Pagination.tsx
- * @input Uses React, StyleX, Button, Icon, Selector, Text; page number buttons delegate to Button
+ * @input Uses React, StyleX, Button, Icon, Selector, Text; page number buttons delegate to Button.
+ *   Reads i18n direction via useDirection() to flip the prev/next chevrons under RTL.
  * @output Exports Pagination component, PaginationProps, PaginationVariant, PaginationSize types
  * @position Core implementation; consumed by index.ts, tested by Pagination.test.tsx
  *
@@ -40,6 +41,7 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n/useTranslator';
+import {useDirection} from '../i18n/useDirection';
 
 // =============================================================================
 // Types
@@ -360,6 +362,12 @@ export function Pagination({
   const label = labelFromProps ?? t('@astryx.pagination.label');
   const previousLabel = t('@astryx.pagination.previous');
   const nextLabel = t('@astryx.pagination.next');
+
+  // Directional icons: under RTL, the "previous" control points right and the
+  // "next" control points left. aria-labels stay semantic (unchanged).
+  const direction = useDirection();
+  const previousIcon = direction === 'rtl' ? 'chevronRight' : 'chevronLeft';
+  const nextIcon = direction === 'rtl' ? 'chevronLeft' : 'chevronRight';
   const pageIndicatorsLabel = t('@astryx.pagination.pageIndicators');
   const itemsPerPageLabel = t('@astryx.pagination.itemsPerPage');
 
@@ -663,7 +671,7 @@ export function Pagination({
           label={previousLabel}
           variant="ghost"
           size={buttonSize}
-          icon={<Icon icon="chevronLeft" size={isSm ? 'sm' : 'md'} />}
+          icon={<Icon icon={previousIcon} size={isSm ? 'sm' : 'md'} />}
           onClick={handlePrevious}
           isDisabled={isDisabled || !hasPrevious}
           isIconOnly
@@ -675,7 +683,7 @@ export function Pagination({
           label={nextLabel}
           variant="ghost"
           size={buttonSize}
-          icon={<Icon icon="chevronRight" size={isSm ? 'sm' : 'md'} />}
+          icon={<Icon icon={nextIcon} size={isSm ? 'sm' : 'md'} />}
           onClick={handleNext}
           isDisabled={isDisabled || !hasNext}
           isIconOnly
