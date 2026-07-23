@@ -1062,15 +1062,17 @@ export function ThemePackagePage({packageName, theme}: ThemePackagePageProps) {
         <div {...stylex.props(styles.showcaseBlock)}>
           <Card padding={0} xstyle={styles.showcaseCard}>
             <Theme theme={selectedTheme} mode={mode}>
-              <LinkProvider component={PreviewAnchor}>
-                {/* Bespoke per-theme content (e.g. Matcha's café menu); falls
-                    back to the template's neutral defaults when undefined. */}
-                <ThemeShowcaseStore
-                  {...getThemeShowcaseContent(
-                    selectedPkgName.replace('@astryxdesign/theme-', ''),
-                  )}
-                />
-              </LinkProvider>
+              <div style={{colorScheme: mode}}>
+                <LinkProvider component={PreviewAnchor}>
+                  {/* Bespoke per-theme content (e.g. Matcha's café menu); falls
+                      back to the template's neutral defaults when undefined. */}
+                  <ThemeShowcaseStore
+                    {...getThemeShowcaseContent(
+                      selectedPkgName.replace('@astryxdesign/theme-', ''),
+                    )}
+                  />
+                </LinkProvider>
+              </div>
             </Theme>
           </Card>
         </div>
