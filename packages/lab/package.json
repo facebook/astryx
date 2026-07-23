@@ -60,14 +60,14 @@
     "@astryxdesign/core": "0.1.8",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
-    "lexical": "^0.46.0",
-    "@lexical/react": "^0.46.0",
-    "@lexical/markdown": "^0.46.0",
-    "@lexical/link": "^0.46.0",
-    "@lexical/list": "^0.46.0",
-    "@lexical/rich-text": "^0.46.0",
-    "@lexical/code": "^0.46.0",
-    "@lexical/utils": "^0.46.0"
+    "lexical": "^0.47.0",
+    "@lexical/react": "^0.47.0",
+    "@lexical/markdown": "^0.47.0",
+    "@lexical/link": "^0.47.0",
+    "@lexical/list": "^0.47.0",
+    "@lexical/rich-text": "^0.47.0",
+    "@lexical/code": "^0.47.0",
+    "@lexical/utils": "^0.47.0"
   },
   "dependencies": {
     "d3-array": "^3.2.4",
@@ -75,17 +75,17 @@
     "d3-shape": "^3.2.0"
   },
   "devDependencies": {
-    "@lexical/code": "^0.46.0",
-    "@lexical/link": "^0.46.0",
-    "@lexical/list": "^0.46.0",
-    "@lexical/markdown": "^0.46.0",
-    "@lexical/react": "^0.46.0",
-    "@lexical/rich-text": "^0.46.0",
-    "@lexical/utils": "^0.46.0",
+    "@lexical/code": "^0.47.0",
+    "@lexical/link": "^0.47.0",
+    "@lexical/list": "^0.47.0",
+    "@lexical/markdown": "^0.47.0",
+    "@lexical/react": "^0.47.0",
+    "@lexical/rich-text": "^0.47.0",
+    "@lexical/utils": "^0.47.0",
     "@types/d3-array": "^3.2.2",
     "@types/d3-scale": "^4.0.9",
     "@types/d3-shape": "^3.1.8",
-    "lexical": "^0.46.0"
+    "lexical": "^0.47.0"
   },
   "peerDependenciesMeta": {
     "lexical": {
