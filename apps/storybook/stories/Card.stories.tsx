@@ -121,8 +121,8 @@ export const WithInnerLayout: Story = {
         content={
           <LayoutContent>
             <p {...stylex.props(styles.text, styles.textSecondary)}>
-              When using Layout, the layout uses negative margin to escape
-              the container padding, then manages its own padding.
+              When using Layout, the layout uses negative margin to escape the
+              container padding, then manages its own padding.
             </p>
           </LayoutContent>
         }
@@ -371,6 +371,43 @@ export const OnBackgrounds: Story = {
           </Card>
         </div>
       </Section>
+    </div>
+  ),
+};
+
+/**
+ * Elevated cards: the `elevation` prop maps to the shadow token scale
+ * (`--shadow-low` / `--shadow-med` / `--shadow-high`). Elevated cards drop
+ * the default variant's border — the shadow replaces it as the separation
+ * cue, matching the system's other elevated surfaces (Popover, Dialog).
+ */
+export const Elevated: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <Card width={250} elevation="low">
+        <VStack gap={2}>
+          <Heading level={3}>Low</Heading>
+          <p {...stylex.props(styles.text, styles.textSecondary)}>
+            Subtle lift for resting surfaces like dashboard widgets.
+          </p>
+        </VStack>
+      </Card>
+      <Card width={250} elevation="med">
+        <VStack gap={2}>
+          <Heading level={3}>Med</Heading>
+          <p {...stylex.props(styles.text, styles.textSecondary)}>
+            Clear separation for panels that float above the page.
+          </p>
+        </VStack>
+      </Card>
+      <Card width={250} elevation="high">
+        <VStack gap={2}>
+          <Heading level={3}>High</Heading>
+          <p {...stylex.props(styles.text, styles.textSecondary)}>
+            Strong float for cards over photos or colored backgrounds.
+          </p>
+        </VStack>
+      </Card>
     </div>
   ),
 };

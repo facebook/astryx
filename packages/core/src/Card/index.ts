@@ -12,4 +12,4 @@
  */
 
 export {Card} from './Card';
-export type {CardProps, CardVariant, SizeValue} from './Card';
+export type {CardProps, CardVariant, CardElevation, SizeValue} from './Card';

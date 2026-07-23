@@ -67,6 +67,12 @@ export const docs = {
         'Background color variant. `default` uses the standard card background. `transparent` drops the background entirely. `muted` uses the muted background for de-emphasised cards. The non-semantic variants use the corresponding `--color-background-<name>` token.',
       default: "'default'",
     },
+    {
+      name: 'elevation',
+      type: "'low' | 'med' | 'high'",
+      description:
+        'Elevation shadow using the shadow token scale (`--shadow-low`, `--shadow-med`, `--shadow-high`). An elevated card drops the `default` variant border; the shadow replaces it as the separation cue, matching other elevated surfaces like Popover and Dialog. Omit for a flat card.',
+    },
   ],
   playground: {
     defaults: {
@@ -84,7 +90,7 @@ export const docs = {
   theming: {
     container: true,
     targets: [
-      {className: 'astryx-card', visualProps: ['variant']},
+      {className: 'astryx-card', visualProps: ['variant', 'elevation']},
     ],
     vars: [
       {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},
@@ -127,11 +133,12 @@ export const docsZh = {
     {name: 'minHeight', type: 'SizeValue', description: '卡片最小高度。'},
     {name: 'children', type: 'ReactNode', description: '在卡片内部渲染的内容。'},
     {name: 'padding', type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10', description: '使用间距比例的内边距。', default: '4'},
+    {name: 'elevation', type: "'low' | 'med' | 'high'", description: '使用阴影令牌等级的悬浮阴影（`--shadow-low`、`--shadow-med`、`--shadow-high`）。设置后 `default` 变体不再绘制边框，由阴影承担分隔作用。省略则为无阴影的平面卡片。'},
   ],
   theming: {
     container: true,
     targets: [
-      {className: 'astryx-card', visualProps: ['variant']},
+      {className: 'astryx-card', visualProps: ['variant', 'elevation']},
     ],
     vars: [
       {name: '--_card-radius', description: 'Border radius of the card', default: 'var(--radius-container)', private: true},
@@ -170,5 +177,6 @@ export const docsDense = {
     children: 'content inside card',
     padding: 'internal padding via spacing scale',
     variant: 'background color variant; `default` = standard card bg, `transparent` = no background at all, `muted` = muted bg for de-emphasised cards; non-semantic variants use the corresponding `--color-background-<name>` token',
+    elevation: 'shadow via shadow token scale (`low`/`med`/`high` = `--shadow-low`/`--shadow-med`/`--shadow-high`); elevated cards drop the `default` variant border (shadow replaces it); omit = flat',
   },
 };
