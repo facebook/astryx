@@ -86,6 +86,67 @@ import fr from '@astryxdesign/core/locales/fr.json';
       ],
     },
     {
+      title: 'Text direction (RTL)',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: "Astryx tracks text direction (`'ltr'` or `'rtl'`) alongside the locale. By default the direction is derived from the `locale` you pass to `<InternationalizationProvider>` via `Intl.Locale.getTextInfo()`, so RTL locales such as Arabic (`ar`), Hebrew (`he`), Farsi (`fa`), and Urdu (`ur`) resolve to `'rtl'` automatically.",
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Direction derived from locale',
+          code: `import {InternationalizationProvider} from '@astryxdesign/core/i18n';
+
+// direction resolves to 'rtl' automatically from the Arabic locale
+<InternationalizationProvider locale="ar">
+  <App />
+</InternationalizationProvider>;`,
+        },
+        {
+          type: 'prose',
+          text: 'Pass the optional `dir` prop to force a direction. This overrides the locale-derived default — useful for RTL layout testing under an English catalog, or to skip derivation when you already know the direction.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Explicit direction override',
+          code: `// force RTL layout while keeping English strings
+<InternationalizationProvider locale="en" dir="rtl">
+  <App />
+</InternationalizationProvider>;`,
+        },
+        {
+          type: 'prose',
+          text: "Set the `dir` attribute on your document yourself — astryx does not write it for you. The provider tracks direction for astryx components, but the browser needs `dir` on a real DOM element (usually `<html>`) for CSS logical properties, `text-align: start/end`, bidi text, and native controls to mirror. Astryx deliberately does not mutate `document.dir`: doing so from an effect causes a server/client hydration mismatch and misses portaled overlays. Keep the DOM `dir` and the provider in sync — both should reflect the same active direction.",
+        },
+        {
+          type: 'prose',
+          text: 'In a client app, set it on `<html>` (or a subtree root) whenever the active locale changes. In a server-rendered app such as Next.js, compute it up front with the server-safe `getLocaleDirection()` helper (no provider or `\'use client\'` boundary needed; it falls back to `\'ltr\'` for malformed input).',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Set <html dir> in a Next.js root layout',
+          code: `import {getLocaleDirection} from '@astryxdesign/core/i18n';
+
+export default function RootLayout({children, params}) {
+  const {locale} = params;
+  return (
+    <html lang={locale} dir={getLocaleDirection(locale)}>
+      <body>{children}</body>
+    </html>
+  );
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'To scope a right-to-left region inside an otherwise left-to-right page, nest both channels together on the same subtree: an inner `<InternationalizationProvider dir="rtl">` for astryx components plus a `dir="rtl"` DOM attribute on the wrapping element for CSS. (Portaled overlays opened from inside that region are a known gap that later RTL work will close.)',
+        },
+      ],
+    },
+    {
       title: "Overriding astryx's default text",
       category: 'guide',
       content: [
@@ -273,6 +334,22 @@ function SaveButton() {
         {
           type: 'prose',
           text: "Astryx's own strings live in `packages/core/locales/en.json`. New user-facing strings must go through `useTranslator`; this is enforced by the `@astryx/no-hardcoded-i18n-string` ESLint rule. See the AI contribution guide for the alias-and-resolve pattern used when adding new keys.",
+        },
+        {
+          type: 'prose',
+          text: "Component authors read the ambient text direction with `useDirection()`. Reach for it only when CSS logical properties can't express the mirroring — swapping a directional icon, mirroring behavioral logic (slider math, keyboard nav), or direction-specific geometry. It returns `'ltr'` when called outside a provider, matching the silent-fallback behavior of `useTranslator`.",
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'useDirection() in a component',
+          code: `import {useDirection} from '@astryxdesign/core/i18n';
+
+function NextButton() {
+  const direction = useDirection();
+  const icon = direction === 'rtl' ? 'chevronLeft' : 'chevronRight';
+  return <Icon icon={icon} />;
+}`,
         },
         {
           type: 'heading',
