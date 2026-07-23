@@ -14,6 +14,7 @@
  * - /apps/storybook/stories/ClickableCard.stories.tsx (storybook stories)
  * - /packages/cli/templates/blocks/components/Card/ClickableCardShowcase.tsx (showcase block)
  * - /packages/cli/templates/blocks/components/Card/ClickableCardWithNestedButton.tsx (block)
+ * - /packages/cli/templates/blocks/components/Card/ClickableCardElevated.tsx (block)
  *
  * Composes Card for all visual styling (radius, padding, variants,
  * container tokens, theming). Adds an interactive wrapper with

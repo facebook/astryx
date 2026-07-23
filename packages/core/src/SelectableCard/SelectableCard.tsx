@@ -14,6 +14,7 @@
  * - /apps/storybook/stories/SelectableCard.stories.tsx (storybook stories)
  * - /packages/cli/templates/blocks/components/Card/SelectableCardShowcase.tsx (showcase block)
  * - /packages/cli/templates/blocks/components/Card/SelectableCardMulti.tsx (block)
+ * - /packages/cli/templates/blocks/components/Card/SelectableCardElevated.tsx (block)
  *
  * Composes Card for all visual styling. Adds selection state with
  * an inset box-shadow (zero layout jitter) and useClickableContainer
