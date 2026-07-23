@@ -91,6 +91,18 @@ const STATIC_EXPORTS = {
     types: './dist/doc-types/*.d.ts',
     default: './dist/doc-types/*.js',
   },
+  // `common/` is a folder (shared building blocks split by concern), so it
+  // needs an explicit barrel entry plus a wildcard for its sub-items.
+  './doc-types/common': {
+    source: './src/doc-types/common/index.ts',
+    types: './dist/doc-types/common/index.d.ts',
+    default: './dist/doc-types/common/index.js',
+  },
+  './doc-types/common/*': {
+    source: './src/doc-types/common/*.ts',
+    types: './dist/doc-types/common/*.d.ts',
+    default: './dist/doc-types/common/*.js',
+  },
   './theme/tokens': {
     source: './src/theme/tokens.ts',
     types: './dist/theme/tokens.d.ts',
