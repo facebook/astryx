@@ -1,0 +1,69 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import React, {useState} from 'react';
+import {TextInput} from '@astryxdesign/core/TextInput';
+import {Card} from '@astryxdesign/core/Card';
+import {Text} from '@astryxdesign/core/Text';
+import {Badge} from '@astryxdesign/core/Badge';
+
+interface Label {
+  id: string;
+  name: string;
+  color: string;
+  description: string;
+}
+
+const LABELS: Label[] = [
+  {id: '1', name: 'bug', color: '#d73a4a', description: 'Something is broken'},
+  {id: '2', name: 'enhancement', color: '#a2eeef', description: 'New feature or request'},
+  {id: '3', name: 'documentation', color: '#0075ca', description: 'Improvements to docs'},
+  {id: '4', name: 'good first issue', color: '#7057ff', description: 'Good for newcomers'},
+  {id: '5', name: 'help wanted', color: '#008672', description: 'Extra attention needed'},
+  {id: '6', name: 'wontfix', color: '#ffffff', description: 'This will not be worked on'},
+];
+
+export default function LabelPicker() {
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<string[]>([]);
+
+  const filtered = LABELS.filter(l =>
+    l.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const toggle = (id: string) => {
+    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  return (
+    <Card width={320}>
+      <div className="flex flex-col gap-3">
+        <Text type="body">Apply labels</Text>
+        <TextInput label="Filter labels" isLabelHidden placeholder="Filter labels" value={search} onChange={setSearch} />
+        <div className="flex flex-col gap-1">
+          {filtered.map(label => (
+            <button
+              key={label.id}
+              onClick={() => toggle(label.id)}
+              className={`flex items-center gap-2 px-3 py-2 rounded text-left w-full border-0 cursor-pointer ${selected.includes(label.id) ? 'bg-blue-50' : 'bg-transparent hover:bg-gray-50'}`}
+            >
+              <span className="w-3.5 h-3.5 rounded-full shrink-0 border border-gray-200" style={{backgroundColor: label.color}} />
+              <div className="flex flex-col">
+                <Text type="body">{label.name}</Text>
+                <Text type="supporting">{label.description}</Text>
+              </div>
+              {selected.includes(label.id) && <span className="ml-auto">✓</span>}
+            </button>
+          ))}
+        </div>
+        {selected.length > 0 && (
+          <div className="flex gap-1 flex-wrap">
+            {selected.map(id => {
+              const label = LABELS.find(l => l.id === id)!;
+              return <Badge key={id} label={label.name} />;
+            })}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}

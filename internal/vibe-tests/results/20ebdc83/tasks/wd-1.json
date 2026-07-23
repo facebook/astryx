@@ -1,0 +1,14 @@
+{
+  "promptId": "wd-1",
+  "category": "workflow-description",
+  "prompt": "Build a checkout flow: cart summary → shipping → payment → confirmation",
+  "expectedComponents": [
+    "Card",
+    "Button",
+    "TextInput"
+  ],
+  "target": "html",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/wd-1. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nBuild a checkout flow: cart summary → shipping → payment → confirmation\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/wd-1/wd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/wd-1/wd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-23T11:06:25.796Z"
+}

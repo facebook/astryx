@@ -1,0 +1,118 @@
+{
+  "iterationId": "f2410ae4",
+  "createdAt": "2026-07-23T11:06:25.776Z",
+  "config": {
+    "target": "astryx",
+    "persona": "naive",
+    "holdout": false,
+    "degradation": false,
+    "cliRetrieval": true
+  },
+  "prompts": [
+    {
+      "id": "fwc-9",
+      "category": "feature-with-constraint",
+      "prompt": "Build a meeting scheduler with a date picker and a time input for start time. The meeting duration should default to 30 minutes.",
+      "expectedComponents": [
+        "DateInput",
+        "TimeInput",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "wd-1",
+      "category": "workflow-description",
+      "prompt": "Build a checkout flow: cart summary → shipping → payment → confirmation",
+      "expectedComponents": [
+        "Card",
+        "Button",
+        "TextInput"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "cwm-2",
+      "category": "clone-with-modification",
+      "prompt": "A GitHub-style issue label picker with color dots and search",
+      "expectedComponents": [
+        "TextInput",
+        "Button",
+        "Card"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "sd-1",
+      "category": "state-driven",
+      "prompt": "Show a dashboard widget with loading → error → data states",
+      "expectedComponents": [
+        "Card",
+        "Skeleton"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "dd-1",
+      "category": "data-display",
+      "prompt": "A table of users with sortable columns and search",
+      "expectedComponents": [
+        "TextInput"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "rc-3",
+      "category": "responsive-context",
+      "prompt": "Cards that stack vertically on mobile but show in a grid on desktop",
+      "expectedComponents": [
+        "Card"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "io-3",
+      "category": "integration-oriented",
+      "prompt": "A file upload button that shows progress and calls an upload endpoint",
+      "expectedComponents": [
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ps-3",
+      "category": "page-setup",
+      "prompt": "Create an admin panel page layout with a fixed header, collapsible left sidebar, main content area, and a right panel for details. Wrap everything in the Astryx theme.",
+      "expectedComponents": [
+        "Theme",
+        "Layout",
+        "LayoutHeader",
+        "LayoutContent",
+        "LayoutPanel"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "ty-5",
+      "category": "typography",
+      "prompt": "Build a landing page hero with a large display heading that says 'Build faster with Astryx', a subheading paragraph, and a CTA button",
+      "expectedComponents": [
+        "Heading",
+        "Text",
+        "Button"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "tc-4",
+      "category": "theme-customization",
+      "prompt": "Create a theme switcher that lets users pick between three themes: Default, Midnight (dark purple), and Earth (warm brown tones). Show a preview card for each theme.",
+      "expectedComponents": [
+        "Theme",
+        "Card",
+        "Button"
+      ],
+      "status": "pending"
+    }
+  ]
+}

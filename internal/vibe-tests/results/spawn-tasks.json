@@ -1,0 +1,282 @@
+[
+  {
+    "target": "astryx",
+    "prompt_id": "fwc-9",
+    "iter_id": "f2410ae4",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/fwc-9. Explore it to find available components.\n\n## Task\n\nBuild a meeting scheduler with a date picker and a time input for start time. The meeting duration should default to 30 minutes.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/fwc-9/fwc-9.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/fwc-9/fwc-9.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-fwc-9"
+  },
+  {
+    "target": "astryx",
+    "prompt_id": "wd-1",
+    "iter_id": "f2410ae4",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/wd-1. Explore it to find available components.\n\n## Task\n\nBuild a checkout flow: cart summary \u2192 shipping \u2192 payment \u2192 confirmation\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/wd-1/wd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/wd-1/wd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-wd-1"
+  },
+  {
+    "target": "astryx",
+    "prompt_id": "cwm-2",
+    "iter_id": "f2410ae4",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/cwm-2. Explore it to find available components.\n\n## Task\n\nA GitHub-style issue label picker with color dots and search\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/cwm-2/cwm-2.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/cwm-2/cwm-2.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-cwm-2"
+  },
+  {
+    "target": "astryx",
+    "prompt_id": "sd-1",
+    "iter_id": "f2410ae4",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/sd-1. Explore it to find available components.\n\n## Task\n\nShow a dashboard widget with loading \u2192 error \u2192 data states\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/sd-1/sd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/sd-1/sd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-sd-1"
+  },
+  {
+    "target": "astryx",
+    "prompt_id": "dd-1",
+    "iter_id": "f2410ae4",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/dd-1. Explore it to find available components.\n\n## Task\n\nA table of users with sortable columns and search\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/dd-1/dd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/dd-1/dd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-dd-1"
+  },
+  {
+    "target": "astryx",
+    "prompt_id": "rc-3",
+    "iter_id": "f2410ae4",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/rc-3. Explore it to find available components.\n\n## Task\n\nCards that stack vertically on mobile but show in a grid on desktop\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/rc-3/rc-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/rc-3/rc-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-rc-3"
+  },
+  {
+    "target": "astryx",
+    "prompt_id": "io-3",
+    "iter_id": "f2410ae4",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/io-3. Explore it to find available components.\n\n## Task\n\nA file upload button that shows progress and calls an upload endpoint\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/io-3/io-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/io-3/io-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-io-3"
+  },
+  {
+    "target": "astryx",
+    "prompt_id": "ps-3",
+    "iter_id": "f2410ae4",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/ps-3. Explore it to find available components.\n\n## Task\n\nCreate an admin panel page layout with a fixed header, collapsible left sidebar, main content area, and a right panel for details. Wrap everything in the Astryx theme.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/ps-3/ps-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/ps-3/ps-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-ps-3"
+  },
+  {
+    "target": "astryx",
+    "prompt_id": "ty-5",
+    "iter_id": "f2410ae4",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/ty-5. Explore it to find available components.\n\n## Task\n\nBuild a landing page hero with a large display heading that says 'Build faster with Astryx', a subheading paragraph, and a CTA button\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/ty-5/ty-5.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/ty-5/ty-5.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-ty-5"
+  },
+  {
+    "target": "astryx",
+    "prompt_id": "tc-4",
+    "iter_id": "f2410ae4",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/tc-4. Explore it to find available components.\n\n## Task\n\nCreate a theme switcher that lets users pick between three themes: Default, Midnight (dark purple), and Earth (warm brown tones). Show a preview card for each theme.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/tc-4/tc-4.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/f2410ae4/projects/tc-4/tc-4.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-tc-4"
+  },
+  {
+    "target": "astryx-tailwind",
+    "prompt_id": "fwc-9",
+    "iter_id": "e319ab53",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/fwc-9. Explore it to find available components.\n\n## Task\n\nBuild a meeting scheduler with a date picker and a time input for start time. The meeting duration should default to 30 minutes.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/fwc-9/fwc-9.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/fwc-9/fwc-9.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-tailwind-fwc-9"
+  },
+  {
+    "target": "astryx-tailwind",
+    "prompt_id": "wd-1",
+    "iter_id": "e319ab53",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/wd-1. Explore it to find available components.\n\n## Task\n\nBuild a checkout flow: cart summary \u2192 shipping \u2192 payment \u2192 confirmation\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/wd-1/wd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/wd-1/wd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-tailwind-wd-1"
+  },
+  {
+    "target": "astryx-tailwind",
+    "prompt_id": "cwm-2",
+    "iter_id": "e319ab53",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/cwm-2. Explore it to find available components.\n\n## Task\n\nA GitHub-style issue label picker with color dots and search\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/cwm-2/cwm-2.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/cwm-2/cwm-2.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-tailwind-cwm-2"
+  },
+  {
+    "target": "astryx-tailwind",
+    "prompt_id": "sd-1",
+    "iter_id": "e319ab53",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/sd-1. Explore it to find available components.\n\n## Task\n\nShow a dashboard widget with loading \u2192 error \u2192 data states\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/sd-1/sd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/sd-1/sd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-tailwind-sd-1"
+  },
+  {
+    "target": "astryx-tailwind",
+    "prompt_id": "dd-1",
+    "iter_id": "e319ab53",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/dd-1. Explore it to find available components.\n\n## Task\n\nA table of users with sortable columns and search\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/dd-1/dd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/dd-1/dd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-tailwind-dd-1"
+  },
+  {
+    "target": "astryx-tailwind",
+    "prompt_id": "rc-3",
+    "iter_id": "e319ab53",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/rc-3. Explore it to find available components.\n\n## Task\n\nCards that stack vertically on mobile but show in a grid on desktop\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/rc-3/rc-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/rc-3/rc-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-tailwind-rc-3"
+  },
+  {
+    "target": "astryx-tailwind",
+    "prompt_id": "io-3",
+    "iter_id": "e319ab53",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/io-3. Explore it to find available components.\n\n## Task\n\nA file upload button that shows progress and calls an upload endpoint\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/io-3/io-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/io-3/io-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-tailwind-io-3"
+  },
+  {
+    "target": "astryx-tailwind",
+    "prompt_id": "ps-3",
+    "iter_id": "e319ab53",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/ps-3. Explore it to find available components.\n\n## Task\n\nCreate an admin panel page layout with a fixed header, collapsible left sidebar, main content area, and a right panel for details. Wrap everything in the Astryx theme.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/ps-3/ps-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/ps-3/ps-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-tailwind-ps-3"
+  },
+  {
+    "target": "astryx-tailwind",
+    "prompt_id": "ty-5",
+    "iter_id": "e319ab53",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/ty-5. Explore it to find available components.\n\n## Task\n\nBuild a landing page hero with a large display heading that says 'Build faster with Astryx', a subheading paragraph, and a CTA button\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/ty-5/ty-5.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/ty-5/ty-5.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-tailwind-ty-5"
+  },
+  {
+    "target": "astryx-tailwind",
+    "prompt_id": "tc-4",
+    "iter_id": "e319ab53",
+    "task_prompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/tc-4. Explore it to find available components.\n\n## Task\n\nCreate a theme switcher that lets users pick between three themes: Default, Midnight (dark purple), and Earth (warm brown tones). Show a preview card for each theme.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/tc-4/tc-4.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/e319ab53/projects/tc-4/tc-4.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-astryx-tailwind-tc-4"
+  },
+  {
+    "target": "baseline",
+    "prompt_id": "fwc-9",
+    "iter_id": "728a6c6f",
+    "task_prompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/fwc-9. Explore it to find available components.\n\n## Task\n\nBuild a meeting scheduler with a date picker and a time input for start time. The meeting duration should default to 30 minutes.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/fwc-9/fwc-9.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/fwc-9/fwc-9.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-baseline-fwc-9"
+  },
+  {
+    "target": "baseline",
+    "prompt_id": "wd-1",
+    "iter_id": "728a6c6f",
+    "task_prompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/wd-1. Explore it to find available components.\n\n## Task\n\nBuild a checkout flow: cart summary \u2192 shipping \u2192 payment \u2192 confirmation\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/wd-1/wd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/wd-1/wd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-baseline-wd-1"
+  },
+  {
+    "target": "baseline",
+    "prompt_id": "cwm-2",
+    "iter_id": "728a6c6f",
+    "task_prompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/cwm-2. Explore it to find available components.\n\n## Task\n\nA GitHub-style issue label picker with color dots and search\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/cwm-2/cwm-2.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/cwm-2/cwm-2.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-baseline-cwm-2"
+  },
+  {
+    "target": "baseline",
+    "prompt_id": "sd-1",
+    "iter_id": "728a6c6f",
+    "task_prompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/sd-1. Explore it to find available components.\n\n## Task\n\nShow a dashboard widget with loading \u2192 error \u2192 data states\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/sd-1/sd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/sd-1/sd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-baseline-sd-1"
+  },
+  {
+    "target": "baseline",
+    "prompt_id": "dd-1",
+    "iter_id": "728a6c6f",
+    "task_prompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/dd-1. Explore it to find available components.\n\n## Task\n\nA table of users with sortable columns and search\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/dd-1/dd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/dd-1/dd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-baseline-dd-1"
+  },
+  {
+    "target": "baseline",
+    "prompt_id": "rc-3",
+    "iter_id": "728a6c6f",
+    "task_prompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/rc-3. Explore it to find available components.\n\n## Task\n\nCards that stack vertically on mobile but show in a grid on desktop\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/rc-3/rc-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/rc-3/rc-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-baseline-rc-3"
+  },
+  {
+    "target": "baseline",
+    "prompt_id": "io-3",
+    "iter_id": "728a6c6f",
+    "task_prompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/io-3. Explore it to find available components.\n\n## Task\n\nA file upload button that shows progress and calls an upload endpoint\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/io-3/io-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/io-3/io-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-baseline-io-3"
+  },
+  {
+    "target": "baseline",
+    "prompt_id": "ps-3",
+    "iter_id": "728a6c6f",
+    "task_prompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/ps-3. Explore it to find available components.\n\n## Task\n\nCreate an admin panel page layout with a fixed header, collapsible left sidebar, main content area, and a right panel for details. Wrap everything in the Astryx theme.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/ps-3/ps-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/ps-3/ps-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-baseline-ps-3"
+  },
+  {
+    "target": "baseline",
+    "prompt_id": "ty-5",
+    "iter_id": "728a6c6f",
+    "task_prompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/ty-5. Explore it to find available components.\n\n## Task\n\nBuild a landing page hero with a large display heading that says 'Build faster with Astryx', a subheading paragraph, and a CTA button\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/ty-5/ty-5.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/ty-5/ty-5.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-baseline-ty-5"
+  },
+  {
+    "target": "baseline",
+    "prompt_id": "tc-4",
+    "iter_id": "728a6c6f",
+    "task_prompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/tc-4. Explore it to find available components.\n\n## Task\n\nCreate a theme switcher that lets users pick between three themes: Default, Midnight (dark purple), and Earth (warm brown tones). Show a preview card for each theme.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/tc-4/tc-4.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/728a6c6f/projects/tc-4/tc-4.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-baseline-tc-4"
+  },
+  {
+    "target": "html",
+    "prompt_id": "fwc-9",
+    "iter_id": "20ebdc83",
+    "task_prompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/fwc-9. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nBuild a meeting scheduler with a date picker and a time input for start time. The meeting duration should default to 30 minutes.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/fwc-9/fwc-9.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/fwc-9/fwc-9.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-html-fwc-9"
+  },
+  {
+    "target": "html",
+    "prompt_id": "wd-1",
+    "iter_id": "20ebdc83",
+    "task_prompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/wd-1. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nBuild a checkout flow: cart summary \u2192 shipping \u2192 payment \u2192 confirmation\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/wd-1/wd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/wd-1/wd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-html-wd-1"
+  },
+  {
+    "target": "html",
+    "prompt_id": "cwm-2",
+    "iter_id": "20ebdc83",
+    "task_prompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/cwm-2. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nA GitHub-style issue label picker with color dots and search\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/cwm-2/cwm-2.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/cwm-2/cwm-2.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-html-cwm-2"
+  },
+  {
+    "target": "html",
+    "prompt_id": "sd-1",
+    "iter_id": "20ebdc83",
+    "task_prompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/sd-1. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nShow a dashboard widget with loading \u2192 error \u2192 data states\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/sd-1/sd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/sd-1/sd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-html-sd-1"
+  },
+  {
+    "target": "html",
+    "prompt_id": "dd-1",
+    "iter_id": "20ebdc83",
+    "task_prompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/dd-1. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nA table of users with sortable columns and search\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/dd-1/dd-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/dd-1/dd-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-html-dd-1"
+  },
+  {
+    "target": "html",
+    "prompt_id": "rc-3",
+    "iter_id": "20ebdc83",
+    "task_prompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/rc-3. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nCards that stack vertically on mobile but show in a grid on desktop\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/rc-3/rc-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/rc-3/rc-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-html-rc-3"
+  },
+  {
+    "target": "html",
+    "prompt_id": "io-3",
+    "iter_id": "20ebdc83",
+    "task_prompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/io-3. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nA file upload button that shows progress and calls an upload endpoint\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/io-3/io-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/io-3/io-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-html-io-3"
+  },
+  {
+    "target": "html",
+    "prompt_id": "ps-3",
+    "iter_id": "20ebdc83",
+    "task_prompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/ps-3. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nCreate an admin panel page layout with a fixed header, collapsible left sidebar, main content area, and a right panel for details. Wrap everything in the Astryx theme.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/ps-3/ps-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/ps-3/ps-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-html-ps-3"
+  },
+  {
+    "target": "html",
+    "prompt_id": "ty-5",
+    "iter_id": "20ebdc83",
+    "task_prompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/ty-5. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nBuild a landing page hero with a large display heading that says 'Build faster with Astryx', a subheading paragraph, and a CTA button\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/ty-5/ty-5.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/ty-5/ty-5.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-html-ty-5"
+  },
+  {
+    "target": "html",
+    "prompt_id": "tc-4",
+    "iter_id": "20ebdc83",
+    "task_prompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/tc-4. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nCreate a theme switcher that lets users pick between three themes: Default, Midnight (dark purple), and Earth (warm brown tones). Show a preview card for each theme.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/tc-4/tc-4.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/tc-4/tc-4.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+    "label": "vibe-html-tc-4"
+  }
+]

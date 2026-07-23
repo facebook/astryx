@@ -1,0 +1,14 @@
+{
+  "promptId": "tc-4",
+  "category": "theme-customization",
+  "prompt": "Create a theme switcher that lets users pick between three themes: Default, Midnight (dark purple), and Earth (warm brown tones). Show a preview card for each theme.",
+  "expectedComponents": [
+    "Theme",
+    "Card",
+    "Button"
+  ],
+  "target": "html",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/tc-4. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nCreate a theme switcher that lets users pick between three themes: Default, Midnight (dark purple), and Earth (warm brown tones). Show a preview card for each theme.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/tc-4/tc-4.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/20ebdc83/projects/tc-4/tc-4.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-23T11:06:25.797Z"
+}
