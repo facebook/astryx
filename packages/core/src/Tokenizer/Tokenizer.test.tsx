@@ -14,6 +14,7 @@ import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
+import {TestIcon} from '../__tests__/TestIcon';
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -818,6 +819,51 @@ describe('Tokenizer', () => {
     });
   });
 
+  describe('startIcon', () => {
+    it('does not render a start icon when omitted', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      expect(document.querySelector('svg')).not.toBeInTheDocument();
+    });
+
+    it('renders a ReactNode start icon before the tokens', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[{id: '1', label: 'Alice'}]}
+          onChange={() => {}}
+          startIcon={<TestIcon data-testid="start-icon" />}
+        />,
+      );
+      const icon = screen.getByTestId('start-icon');
+      const token = screen.getByText('Alice');
+      expect(icon).toBeInTheDocument();
+      expect(
+        icon.compareDocumentPosition(token) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('renders an IconType (SVG component) start icon', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          startIcon={TestIcon}
+        />,
+      );
+      expect(document.querySelector('svg')).toBeInTheDocument();
+    });
+  });
+
   describe('disabledMessage', () => {
     const h = {hidden: true} as const;
     const isOpen = (el: Element) => el.matches(':popover-open');
@@ -951,7 +997,9 @@ describe('Tokenizer', () => {
           />
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
     });
   });
 });

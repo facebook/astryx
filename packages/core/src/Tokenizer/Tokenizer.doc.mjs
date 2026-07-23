@@ -166,6 +166,13 @@ export const docs = {
       description: 'Callback fired when the search query text changes.',
     },
     {
+      name: 'startIcon',
+      type: 'ReactNode | IconType',
+      description:
+        'Icon to display at the start of the input, before any tokens. Accepts a semantic icon name, an SVG icon component, or a ReactNode directly.',
+      slotElements: [{__element: 'Icon', props: {icon: 'search', size: 'sm'}}],
+    },
+    {
       name: 'endContent',
       type: 'ReactNode',
       description:
@@ -371,6 +378,12 @@ export const docsZh = {
       description: '\u641c\u7d22\u67e5\u8be2\u6587\u672c\u53d8\u66f4\u65f6\u89e6\u53d1\u7684\u56de\u8c03\u3002',
     },
     {
+      name: 'startIcon',
+      type: 'ReactNode | IconType',
+      description:
+        '\u5728\u8f93\u5165\u6846\u5f00\u5934\uff08token \u4e4b\u524d\uff09\u663e\u793a\u7684\u56fe\u6807\u3002\u63a5\u53d7\u8bed\u4e49\u56fe\u6807\u540d\u79f0\u3001SVG \u56fe\u6807\u7ec4\u4ef6\u6216\u76f4\u63a5\u4f20\u5165 ReactNode\u3002',
+    },
+    {
       name: 'endContent',
       type: 'ReactNode',
       description:
@@ -460,6 +473,7 @@ export const docsDense = {
     size: 'Input+token size.',
     debounceMs: 'Search debounce delay ms. 0 for sync sources.',
     onChangeQuery: 'Fired on search query text change.',
+    startIcon: 'Icon at input start, before tokens. Icon name, SVG component, or ReactNode.',
     endContent: 'Content at input row end. For buttons, counts, controls.',
     handleRef: 'Imperative handle for focus() and blur() control.',
     xstyle: 'StyleX layout styles (margins, positioning). Must be stylex.create() value.',
