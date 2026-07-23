@@ -11,14 +11,40 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 /**
+ * A package manager we can install with and run binaries through.
+ * @typedef {'yarn' | 'pnpm' | 'bun' | 'npm'} PackageManager
+ */
+
+/**
+ * Result of package-manager detection. `'npx'` is the sentinel for "nothing
+ * detected" — no lockfile, no `packageManager` field, no runner user-agent —
+ * so callers fall back to npm/npx. It is a distinct value from {@link PackageManager}
+ * because it means "undetected", not "npm was chosen".
+ * @typedef {PackageManager | 'npx'} DetectedPackageManager
+ */
+
+/** @type {readonly PackageManager[]} */
+const KNOWN_PMS = ['yarn', 'pnpm', 'bun', 'npm'];
+
+/**
+ * Narrow an arbitrary string to a known {@link PackageManager}.
+ * @param {string} name
+ * @returns {name is PackageManager}
+ */
+function isKnownPackageManager(name) {
+  return /** @type {readonly string[]} */ (KNOWN_PMS).includes(name);
+}
+
+/**
  * Detect the package manager used in a project directory.
  * Walks up from targetDir looking for lockfiles.
  *
+ * Returns `'npx'` when nothing can be detected — see {@link DetectedPackageManager}.
+ *
  * @param {string} [targetDir=process.cwd()]
- * @returns {'yarn'|'pnpm'|'bun'|'npm'}
+ * @returns {DetectedPackageManager}
  */
 export function detectPackageManager(targetDir = process.cwd()) {
-  const KNOWN_PMS = new Set(['yarn', 'pnpm', 'bun', 'npm']);
   let dir = path.resolve(targetDir);
   const root = path.parse(dir).root;
 
@@ -36,7 +62,7 @@ export function detectPackageManager(targetDir = process.cwd()) {
         const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
         if (pkg.packageManager) {
           const name = pkg.packageManager.split('@')[0];
-          if (KNOWN_PMS.has(name)) return name;
+          if (isKnownPackageManager(name)) return name;
         }
       } catch {
         // Best-effort: unreadable/invalid package.json — keep walking up.
@@ -50,7 +76,7 @@ export function detectPackageManager(targetDir = process.cwd()) {
   const ua = process.env.npm_config_user_agent;
   if (ua) {
     const name = ua.split('/')[0];
-    if (KNOWN_PMS.has(name)) return name;
+    if (isKnownPackageManager(name)) return name;
   }
 
   return 'npx';
