@@ -49,7 +49,7 @@ function SaveButton() {
         },
         {
           type: 'prose',
-          text: "Astryx ships translations only for English today. First-party translations for other locales are on the roadmap; track https://github.com/facebook/astryx/issues/3641. In the meantime, if you want astryx UI translated into another locale, you can ship your own catalog through the `messages` prop (covered in the next section). If you're using `useTranslator` for your own strings, you'll want to ship your own catalog either way, since astryx only carries the fallback for `@astryx.*` keys, not the ones you author.",
+          text: "Astryx ships translations only for English today. First-party translations for other locales are on the roadmap. In the meantime, if you want astryx UI translated into another locale, you can ship your own catalog through the `messages` prop (covered in the next section). If you're using `useTranslator` for your own strings, you'll want to ship your own catalog either way, since astryx only carries the fallback for `@astryx.*` keys, not the ones you author.",
         },
       ],
     },
@@ -78,7 +78,7 @@ import fr from './locales/astryx/fr.json';
         },
         {
           type: 'prose',
-          text: 'A community-maintained set of astryx translations is on the roadmap but not shipped yet. For now, consumer apps that ship in multiple languages own their astryx catalogs alongside their app catalogs. Contributions to a first-party set are welcome; track discussion at https://github.com/facebook/astryx/issues/3641.',
+          text: 'A community-maintained set of astryx translations is on the roadmap but not shipped yet. For now, consumer apps that ship in multiple languages own their astryx catalogs alongside their app catalogs. Translations are coordinated through Crowdin — contribute at https://crowdin.com/project/astryx.',
         },
       ],
     },
@@ -236,6 +236,10 @@ export default function App() {
         {
           type: 'prose',
           text: "Astryx's own strings live in `packages/core/locales/en.json`. New user-facing strings must go through `useTranslator`; this is enforced by the `@astryx/no-hardcoded-i18n-string` ESLint rule. See the AI contribution guide for the alias-and-resolve pattern used when adding new keys.",
+        },
+        {
+          type: 'prose',
+          text: 'Translators: Crowdin is the preferred way to contribute — join a language at https://crowdin.com/project/astryx, translate strings in the web UI, and your work syncs back to the repo without opening a PR. Direct PRs against `packages/core/locales/*.json` also work if you prefer that flow.',
         },
       ],
     },
