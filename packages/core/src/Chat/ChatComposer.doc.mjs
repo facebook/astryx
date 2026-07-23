@@ -60,7 +60,7 @@ export const docs = {
       name: 'elevation',
       type: "'none' | 'low'",
       description:
-        "Resting elevation of the composer body. `low` (the default) keeps today's raised look — low at rest, bumping to med on hover / focus. `none` flattens it so depth comes from the border and focus ring instead.",
+        "Resting elevation of the composer body. `low` (the default) keeps today's raised look — low at rest, bumping to med on hover / focus. `none` flattens it and draws a border with the same rest / hover / focus treatment as a text input (emphasized border → accent on focus, matching inset rings).",
       default: "'low'",
     },
     {

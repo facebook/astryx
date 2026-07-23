@@ -18,8 +18,8 @@ export default function ChatComposerFlat() {
   return (
     <Stack direction="vertical" gap={2} style={{width: '100%', maxWidth: 450}}>
       <Text type="supporting" color="secondary">
-        elevation=&quot;none&quot; — flat; depth comes from the border and focus
-        ring
+        elevation=&quot;none&quot; — flat, with a text-input-style border and
+        focus ring
       </Text>
       <ChatComposer
         elevation="none"

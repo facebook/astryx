@@ -86,7 +86,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'Prop defaults preserve current appearance: every surface defaults to `none` except ChatComposer, which defaults to `low` to keep its raised look. Set `elevation="none"` to flatten it. Thumbnail keeps its existing hover-only shadow at the `none` default.',
+          text: 'Prop defaults preserve current appearance: every surface defaults to `none` except ChatComposer, which defaults to `low` to keep its raised look. Set `elevation="none"` to flatten it — the flat composer draws a border with the same rest / hover / focus treatment as a text input. Thumbnail keeps its existing hover-only shadow at the `none` default.',
         },
         {
           type: 'code',
