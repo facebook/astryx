@@ -78,10 +78,7 @@ export interface TestResult {
 }
 
 export type RefinementTarget =
-  | 'skill_doc'
-  | 'component_api'
-  | 'component_naming'
-  | 'examples';
+  'skill_doc' | 'component_api' | 'component_naming' | 'examples';
 
 export type EffortEstimate = 'trivial' | 'moderate' | 'significant';
 
@@ -182,10 +179,7 @@ export interface DesignSystemIssue {
 export interface CodeQualityIssue {
   severity: 'critical' | 'moderate' | 'minor';
   category:
-    | 'state-management'
-    | 'event-handling'
-    | 'typescript'
-    | 'performance';
+    'state-management' | 'event-handling' | 'typescript' | 'performance';
   issue: string;
   recommendation: string;
   codeSnippet?: string;
@@ -260,6 +254,61 @@ export interface MaintainabilityMetrics {
   darkModeSupport: boolean;
 }
 
+/**
+ * One axe-core violation, aggregated per rule across scanned themes.
+ * Produced by axe-previews.ts, consumed by universal-eval.ts.
+ */
+export interface AxeViolationRecord {
+  /** axe rule id, e.g. 'color-contrast' */
+  id: string;
+  impact: 'critical' | 'serious' | 'moderate' | 'minor';
+  /** Human-readable rule description from axe */
+  help: string;
+  /** Number of affected DOM nodes (max across themes) */
+  nodes: number;
+  /** Themes in which the violation appeared ('light' | 'dark') */
+  themes: string[];
+}
+
+/**
+ * Runtime axe scan result for one prompt's rendered preview.
+ * Stored per iteration in axe-results.json, keyed by promptId —
+ * the same sidecar pattern as build-errors.json.
+ */
+export interface AxeResultForPrompt {
+  target: string;
+  themesScanned: string[];
+  violations: AxeViolationRecord[];
+  /** Count of axe rules that passed */
+  passes: number;
+  /** Count of axe rules that could not be fully evaluated */
+  incomplete: number;
+}
+
+export type AxeResults = Record<string, AxeResultForPrompt>;
+
+/**
+ * Accessibility dimension metadata (issue #4145): surfaces how much signal
+ * the score is actually based on, so a 100 from "nothing was eligible to
+ * fire" is distinguishable from a 100 earned on real checks.
+ */
+export interface A11yMetrics {
+  /** Total static-rule sites that were eligible to fire */
+  eligibleSites: number;
+  /** Eligible-site count per static rule */
+  eligibleByRule: Record<string, number>;
+  /** Number of static findings that fired */
+  rulesFired: number;
+  /** True when runtime axe results backed this score */
+  runtime: boolean;
+  axeViolationCount?: number;
+  /** Violation count per axe impact level */
+  axeImpacts?: Record<string, number>;
+  axePasses?: number;
+  axeIncomplete?: number;
+  themesScanned?: string[];
+}
+
 export interface DimensionScore<M = undefined> {
   score: number;
   findings?: UniversalFinding[];
@@ -279,7 +328,7 @@ export interface DesignMetrics {
 
 export interface UniversalScore {
   correctness: DimensionScore;
-  accessibility: DimensionScore;
+  accessibility: DimensionScore<A11yMetrics>;
   codeQuality: DimensionScore;
   efficiency: DimensionScore<EfficiencyMetrics>;
   maintainability: DimensionScore<MaintainabilityMetrics>;

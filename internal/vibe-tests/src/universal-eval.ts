@@ -9,7 +9,10 @@
  *
  * Dimensions:
  *   1. Correctness      — Does it work? (hallucinations, valid APIs)
- *   2. Accessibility     — Is it usable by everyone? (labels, semantics)
+ *   2. Accessibility     — Composition hygiene (static scan) + runtime axe-core
+ *                          results when an axe-results.json sidecar exists.
+ *                          Static-only scores measure raw-HTML footgun avoidance,
+ *                          NOT component accessibility (see issue #4145).
  *   3. Code Quality      — Is the code well-structured? (complexity, patterns)
  *   4. Efficiency        — How much ceremony vs intent? (DRY + conciseness + decisions/element)
  *   5. Maintainability   — How much breaks on change? (coupling, magic values, locality)
@@ -22,6 +25,16 @@ import type {
   DimensionScore,
   EfficiencyMetrics,
   MaintainabilityMetrics,
+  A11yMetrics,
+  AxeResultForPrompt,
+  AxeResults,
+} from './types.js';
+
+export type {
+  A11yMetrics,
+  AxeResultForPrompt,
+  AxeResults,
+  AxeViolationRecord,
 } from './types.js';
 
 import * as _fs from 'node:fs';
@@ -235,12 +248,88 @@ function analyzeCorrectness(
 }
 
 // ============================================================
-// 2. Accessibility
+// 2. Accessibility (static hygiene + optional runtime axe results)
 // ============================================================
 
-function analyzeAccessibility(code: string): DimensionScore {
+/** Cache for axe-results.json per iteration directory */
+const axeResultsCache = new Map<string, AxeResults | null>();
+
+/**
+ * Load axe-results.json from the iteration directory — the runtime a11y
+ * sidecar written by axe-previews.ts. Returns null if not found
+ * (older iterations, or the browser stage hasn't run).
+ */
+export function loadAxeResults(iterDir: string): AxeResults | null {
+  if (axeResultsCache.has(iterDir)) {
+    return axeResultsCache.get(iterDir) ?? null;
+  }
+
+  const axePath = _path.join(iterDir, 'axe-results.json');
+  if (!_fs.existsSync(axePath)) {
+    axeResultsCache.set(iterDir, null);
+    return null;
+  }
+
+  try {
+    const data = JSON.parse(_fs.readFileSync(axePath, 'utf-8')) as AxeResults;
+    axeResultsCache.set(iterDir, data);
+    return data;
+  } catch {
+    axeResultsCache.set(iterDir, null);
+    return null;
+  }
+}
+
+/**
+ * Label for the accessibility dimension, honest about what backs the score:
+ * without runtime axe data the static scan only measures whether raw-HTML
+ * footguns were avoided — component-composed output passes by construction.
+ */
+export function getA11yDimensionLabel(runtime: boolean): string {
+  return runtime
+    ? 'Accessibility (runtime + hygiene)'
+    : 'A11y Hygiene (composition)';
+}
+
+/** Penalty per axe violation rule, by axe impact level. */
+const AXE_IMPACT_PENALTY: Record<string, number> = {
+  critical: 15,
+  serious: 10,
+  moderate: 8,
+  minor: 3,
+};
+
+/**
+ * Static rules whose defect class axe verifies on the rendered DOM
+ * (image-alt, label, button-name, heading-order). When runtime results are
+ * present these stay as findings but stop penalizing, so one underlying
+ * defect isn't counted twice. 'click-non-interactive' is NOT here: React
+ * attaches handlers synthetically, so the rendered DOM carries no onClick
+ * attribute for axe to see — the static scan is the only coverage.
+ */
+const AXE_COVERED_STATIC_RULES = new Set([
+  'icon-button-no-label',
+  'input-no-label',
+  'img-no-alt',
+  'heading-skip',
+]);
+
+function analyzeAccessibility(
+  code: string,
+  axeResult?: AxeResultForPrompt | null,
+): DimensionScore<A11yMetrics> {
   const findings: UniversalFinding[] = [];
   const lines = code.split('\n');
+
+  // Eligible sites per rule — how many constructs each rule examined.
+  // All zeros means the score is 100 by construction, not by merit.
+  const eligibleByRule: Record<string, number> = {
+    'click-non-interactive': 0,
+    'icon-button-no-label': 0,
+    'input-no-label': 0,
+    'img-no-alt': 0,
+    'heading-skip': 0,
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -254,6 +343,7 @@ function analyzeAccessibility(code: string): DimensionScore {
       /<(span|div|p|td|tr|li|img|svg)\b[^>]*\bonClick\b/i,
     );
     if (clickMatch) {
+      eligibleByRule['click-non-interactive']++;
       if (
         !nearby.includes('role="button"') &&
         !nearby.includes("role='button'") &&
@@ -276,6 +366,9 @@ function analyzeAccessibility(code: string): DimensionScore {
       const hasIcon = /(<svg|Icon|icon)/.test(btnContext);
       const hasLabel = /(aria-label|ariaLabel|label=)/.test(btnContext);
       const hasText = />[^<]*\w{2,}[^<]*</.test(btnContext);
+      if (hasIcon) {
+        eligibleByRule['icon-button-no-label']++;
+      }
       if (hasIcon && !hasLabel && !hasText) {
         findings.push({
           rule: 'icon-button-no-label',
@@ -288,6 +381,7 @@ function analyzeAccessibility(code: string): DimensionScore {
 
     // Form inputs without labels (skip Astryx inputs with built-in labels)
     if (line.match(/<(input|Input)\b/) && !line.includes('type="hidden"')) {
+      eligibleByRule['input-no-label']++;
       const hasLabel = /(label|Label|aria-label|ariaLabel)/.test(nearby);
       if (!hasLabel) {
         findings.push({
@@ -300,13 +394,16 @@ function analyzeAccessibility(code: string): DimensionScore {
     }
 
     // Images without alt
-    if (line.includes('<img') && !line.includes('alt=')) {
-      findings.push({
-        rule: 'img-no-alt',
-        severity: 'moderate',
-        detail: 'Image without alt text',
-        line: lineNum,
-      });
+    if (line.includes('<img')) {
+      eligibleByRule['img-no-alt']++;
+      if (!line.includes('alt=')) {
+        findings.push({
+          rule: 'img-no-alt',
+          severity: 'moderate',
+          detail: 'Image without alt text',
+          line: lineNum,
+        });
+      }
     }
   }
 
@@ -322,6 +419,7 @@ function analyzeAccessibility(code: string): DimensionScore {
       headingLevels.push(parseInt(xh[1]));
     }
   }
+  eligibleByRule['heading-skip'] = Math.max(0, headingLevels.length - 1);
   for (let i = 1; i < headingLevels.length; i++) {
     if (headingLevels[i] > headingLevels[i - 1] + 1) {
       findings.push({
@@ -332,8 +430,16 @@ function analyzeAccessibility(code: string): DimensionScore {
     }
   }
 
+  const staticFindings = findings.slice();
+  const runtime = axeResult != null;
+
   let score = 100;
-  for (const f of findings) {
+  for (const f of staticFindings) {
+    // Runtime axe already scores these defect classes on the rendered DOM —
+    // don't double-penalize (same principle as tsc vs phantom props above).
+    if (runtime && AXE_COVERED_STATIC_RULES.has(f.rule)) {
+      continue;
+    }
     switch (f.severity) {
       case 'critical':
         score -= 15;
@@ -347,7 +453,40 @@ function analyzeAccessibility(code: string): DimensionScore {
     }
   }
 
-  return {score: clamp(score), findings};
+  const axeImpacts: Record<string, number> = {};
+  if (axeResult) {
+    for (const v of axeResult.violations) {
+      score -= AXE_IMPACT_PENALTY[v.impact] ?? 8;
+      axeImpacts[v.impact] = (axeImpacts[v.impact] ?? 0) + 1;
+      findings.push({
+        rule: `axe:${v.id}`,
+        severity:
+          v.impact === 'critical' || v.impact === 'serious'
+            ? 'critical'
+            : v.impact,
+        detail: `[${v.impact}] ${v.help} (${v.nodes} node${v.nodes === 1 ? '' : 's'}; themes: ${v.themes.join(', ')})`,
+        count: v.nodes,
+      });
+    }
+  }
+
+  const metrics: A11yMetrics = {
+    eligibleSites: Object.values(eligibleByRule).reduce((a, b) => a + b, 0),
+    eligibleByRule,
+    rulesFired: staticFindings.length,
+    runtime,
+    ...(axeResult
+      ? {
+          axeViolationCount: axeResult.violations.length,
+          axeImpacts,
+          axePasses: axeResult.passes,
+          axeIncomplete: axeResult.incomplete,
+          themesScanned: axeResult.themesScanned,
+        }
+      : {}),
+  };
+
+  return {score: clamp(score), findings, metrics};
 }
 
 // ============================================================
@@ -1005,14 +1144,16 @@ function analyzeMaintainability(
  * @param target - The target system ('astryx' | 'astryx-tailwind' | 'baseline' | 'html')
  * @param options - Optional context for enhanced scoring
  * @param options.tscResult - tsc type check results (from build-errors.json)
- * @param options.iterDir - Path to iteration directory (for loading build-errors.json)
- * @param options.promptId - Prompt ID (for looking up tsc results)
+ * @param options.axeResult - runtime axe scan results (from axe-results.json)
+ * @param options.iterDir - Path to iteration directory (for loading sidecars)
+ * @param options.promptId - Prompt ID (for looking up sidecar results)
  */
 export function evaluate(
   code: string,
   target: string,
   options?: {
     tscResult?: TscResult | null;
+    axeResult?: AxeResultForPrompt | null;
     iterDir?: string;
     promptId?: string;
   },
@@ -1024,9 +1165,16 @@ export function evaluate(
     tscResult = buildErrors?.[options.promptId] ?? null;
   }
 
+  // Resolve axe result the same way
+  let axeResult = options?.axeResult;
+  if (axeResult === undefined && options?.iterDir && options?.promptId) {
+    const axeResults = loadAxeResults(options.iterDir);
+    axeResult = axeResults?.[options.promptId] ?? null;
+  }
+
   return {
     correctness: analyzeCorrectness(code, target, tscResult),
-    accessibility: analyzeAccessibility(code),
+    accessibility: analyzeAccessibility(code, axeResult),
     codeQuality: analyzeCodeQuality(code),
     efficiency: analyzeEfficiency(code, target),
     maintainability: analyzeMaintainability(code, target),
