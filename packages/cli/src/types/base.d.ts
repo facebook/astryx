@@ -11,10 +11,12 @@
 import type {
   ComponentListResponse,
   ComponentBriefResponse,
+  ComponentFullResponse,
   ComponentDetailResponse,
   ComponentDetailPropsResponse,
   ComponentDetailSourceResponse,
   ComponentDetailShowcaseResponse,
+  ComponentDetailBlocksResponse,
 } from './component';
 import type {
   DiscoverListResponse,
@@ -42,8 +44,13 @@ import type {
 } from './hook';
 import type {SwizzleListResponse, SwizzleCopyResponse} from './swizzle';
 import type {ThemeBuildResponse} from './theme';
-import type {UpgradeListResponse, UpgradeRunResponse} from './upgrade';
+import type {
+  UpgradeListResponse,
+  UpgradeRunResponse,
+  UpgradeStatusResponse,
+} from './upgrade';
 import type {SearchResponse} from './search';
+import type {BuildHelpResponse} from './build';
 import type {ErrorCode} from './error-codes';
 import type {ManifestResponse} from './manifest';
 import type {DoctorResponse} from './doctor';
@@ -74,10 +81,12 @@ export type CLIResult<T> = T | CLIError | CLIUnsupportedError;
 export type CLIAnyResponse =
   | ComponentListResponse
   | ComponentBriefResponse
+  | ComponentFullResponse
   | ComponentDetailResponse
   | ComponentDetailPropsResponse
   | ComponentDetailSourceResponse
   | ComponentDetailShowcaseResponse
+  | ComponentDetailBlocksResponse
   | DiscoverListResponse
   | DiscoverDetailResponse
   | DiscoverDetailDocResponse
@@ -99,7 +108,9 @@ export type CLIAnyResponse =
   | ThemeBuildResponse
   | UpgradeListResponse
   | UpgradeRunResponse
+  | UpgradeStatusResponse
   | SearchResponse
+  | BuildHelpResponse
   | ManifestResponse
   | DoctorResponse
   | ValidateIntegrationResponse;
