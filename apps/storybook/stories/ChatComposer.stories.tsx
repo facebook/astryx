@@ -361,9 +361,7 @@ export const Feedback: Story = {
             <div style={{width: '100%'}}>
               <List>
                 <ListItem
-                  label={
-                    <Text weight="bold">Do you want to proceed?</Text>
-                  }
+                  label={<Text weight="bold">Do you want to proceed?</Text>}
                 />
                 {options.map(opt => (
                   <ListItem
@@ -386,4 +384,19 @@ export const Feedback: Story = {
       />
     );
   },
+};
+
+/**
+ * Flat composer — `elevation="none"` drops the resting shadow so depth comes
+ * from the border and focus ring instead. The default is `low` (raised).
+ */
+export const Flat: Story = {
+  render: () => (
+    <ChatComposer
+      elevation="none"
+      onSubmit={value => {
+        console.log('Submit:', value);
+      }}
+    />
+  ),
 };

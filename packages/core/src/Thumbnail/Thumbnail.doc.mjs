@@ -46,6 +46,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'elevation',
+      type: "'none' | 'low' | 'med' | 'high'",
+      description:
+        'Resting shadow depth. `none` (the default) keeps the existing hover-only shadow; set a level to raise the tile at rest.',
+      default: "'none'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
@@ -101,6 +108,7 @@ export const docsZh = {
     onClick: '\u70B9\u51FB\u5904\u7406\u5668\u3002\u6DFB\u52A0\u6309\u94AE\u8BED\u4E49\u548C\u60AC\u505C\u9634\u5F71\u3002',
     isLoading: '\u663E\u793A\u9AA8\u67B6\u5C4F\uFF08\u65E0 src\uFF09\u6216\u4E0A\u4F20\u8986\u76D6\u5C42\uFF08\u6709 src\uFF09\u3002',
     isDisabled: '\u662F\u5426\u7981\u7528\u7F29\u7565\u56FE\u3002',
+    elevation: '\u9759\u6B62\u9634\u5F71\u6DF1\u5EA6\uFF1Anone\uFF08\u9ED8\u8BA4\uFF0C\u4FDD\u7559\u4EC5\u60AC\u505C\u9634\u5F71\uFF09| low | med | high\u3002',
     xstyle: '\u7528\u4E8E\u5E03\u5C40\u81EA\u5B9A\u4E49\u7684 StyleX \u6837\u5F0F\u3002\u5FC5\u987B\u662F stylex.create() \u7684\u503C\uFF0C\u800C\u975E\u5185\u8054\u6837\u5F0F\u5BF9\u8C61\u3002',
     className: '\u6839\u5143\u7D20\u7684 CSS \u7C7B\u540D\u3002\u5EFA\u8BAE\u4F7F\u7528 xstyle\u3002',
     style: '\u6839\u5143\u7D20\u7684\u5185\u8054\u6837\u5F0F\u3002\u5EFA\u8BAE\u4F7F\u7528 xstyle\u3002',
@@ -141,6 +149,7 @@ export const docsDense = {
     onClick: '(e) => void. Adds button semantics + hover shadow.',
     isLoading: 'Skeleton (no src) or upload overlay (with src). Default: false.',
     isDisabled: 'Disabled state. Default: false.',
+    elevation: 'Resting shadow depth: none (keeps hover-only shadow) | low | med | high.',
     xstyle: 'stylex.create() for layout.',
     className: 'CSS class. Prefer xstyle.',
     style: 'Inline styles. Prefer xstyle.',

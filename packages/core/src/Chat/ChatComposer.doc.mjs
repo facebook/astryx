@@ -57,6 +57,13 @@ export const docs = {
       default: "'balanced'",
     },
     {
+      name: 'elevation',
+      type: "'none' | 'low'",
+      description:
+        "Resting elevation of the composer body. `low` (the default) keeps today's raised look — low at rest, bumping to med on hover / focus. `none` flattens it so depth comes from the border and focus ring instead.",
+      default: "'low'",
+    },
+    {
       name: 'drawer',
       type: 'ReactNode',
       description: 'Slot: collapsible drawer above the input: attachments, context chips, etc. Use ChatComposerDrawer.',
@@ -185,6 +192,7 @@ export const docsZh = {
     placeholder: '输入为空时显示的占位文本。',
     isDisabled: '禁用编写器。',
     density: '视觉密度。',
+    elevation: "编写器主体的静止高度。low（默认）保持当前的抬起外观——静止时 low，悬停/聚焦时升至 med。none 则扁平化。",
     drawer: '插槽：输入上方的可折叠抽屉——附件、上下文标签等。使用 ChatComposerDrawer。',
     headerActions: '插槽：标题左侧操作按钮（附件、提及按钮）。使用仅图标 size="sm" 按钮。',
     headerContext: '插槽：标题右侧上下文信息（上下文窗口使用情况、ProgressBar、辅助文本）。',
@@ -210,6 +218,7 @@ export const docsDense = {
     placeholder: 'placeholder when empty',
     isDisabled: 'disabled; use during streaming or unmet prereqs',
     density: 'visual density',
+    elevation: "resting elevation of composer body: low (default; low→med on hover/focus) | none (flat)",
     drawer: 'slot: collapsible drawer above input: attachments, context chips, etc.; use ChatComposerDrawer',
     headerActions: 'slot: left header actions (attach, mention); icon-only sm buttons',
     headerContext: 'slot: right header context info (window usage, ProgressBar, text)',

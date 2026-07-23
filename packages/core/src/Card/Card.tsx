@@ -17,7 +17,12 @@
 
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {borderVars, colorVars, radiusVars} from '../theme/tokens.stylex';
+import {
+  borderVars,
+  colorVars,
+  radiusVars,
+  shadowVars,
+} from '../theme/tokens.stylex';
 import {container} from '../Layout/container.stylex';
 import type {SpacingToken} from '../Layout/container.stylex';
 import {
@@ -27,7 +32,7 @@ import {
   containerPaddingBlockEndVarStyles,
   spacingStepToToken,
 } from '../Layout/padding.stylex';
-import type {SizeValue, SpacingStep} from '../utils/types';
+import type {Elevation, SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -73,6 +78,13 @@ const styles = stylex.create({
     '--_card-radius': radiusVars['--radius-container'],
     borderRadius: 'var(--_card-radius)',
     overflow: 'clip',
+    // Resting elevation is set via --_card-elevation (see elevationStyles).
+    // The shadow list also reads --_card-ring so composing surfaces — e.g.
+    // SelectableCard's inset selection ring — can layer their own shadow
+    // alongside elevation instead of clobbering the single box-shadow property.
+    // Unset vars fall back to a transparent no-op shadow.
+    boxShadow:
+      'var(--_card-ring, 0 0 transparent), var(--_card-elevation, 0 0 transparent)',
   },
   // The border is drawn *inside* the padding — its width is subtracted from
   // each side — so total inset (border + padding) equals the padding token
@@ -133,6 +145,18 @@ const variantStyles = stylex.create({
   yellow: {
     backgroundColor: colorVars['--color-background-yellow'],
   },
+});
+
+// Elevation → shadow-token map. Sets the private --_card-elevation variable
+// (not box-shadow directly) so it composes with --_card-ring in the shadow
+// list above — a selection ring and a resting elevation coexist without one
+// overwriting the other. 'none' is a transparent no-op (not the CSS literal
+// `none`, which would be invalid inside the comma-separated shadow list).
+const elevationStyles = stylex.create({
+  none: {'--_card-elevation': '0 0 transparent'},
+  low: {'--_card-elevation': shadowVars['--shadow-low']},
+  med: {'--_card-elevation': shadowVars['--shadow-med']},
+  high: {'--_card-elevation': shadowVars['--shadow-high']},
 });
 
 // Dynamic styles for sizing props
@@ -208,6 +232,13 @@ export interface CardProps extends BaseProps<HTMLDivElement> {
    * @default 'default'
    */
   variant?: CardVariant;
+
+  /**
+   * Resting elevation — the shadow depth the card sits at.
+   * `none` is flat; `low`/`med`/`high` map to the shadow token scale.
+   * @default 'none'
+   */
+  elevation?: Elevation;
 }
 
 /**
@@ -252,6 +283,7 @@ export function Card({
   children,
   padding,
   variant = 'default',
+  elevation = 'none',
   xstyle,
   className,
   style,
@@ -274,6 +306,7 @@ export function Card({
         stylex.props(
           styles.card,
           variantStyles[variant],
+          elevationStyles[elevation],
           hasFixedHeight && styles.scrollable,
           dynamicStyles.sizing(
             width ?? null,

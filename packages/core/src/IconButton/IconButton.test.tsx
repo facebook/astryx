@@ -17,10 +17,7 @@ import {IconButton} from './IconButton';
 describe('IconButton', () => {
   it('renders as an icon-only button with aria-label', () => {
     render(
-      <IconButton
-        label="Settings"
-        icon={<span data-testid="icon">⚙</span>}
-      />,
+      <IconButton label="Settings" icon={<span data-testid="icon">⚙</span>} />,
     );
     const button = screen.getByRole('button', {name: 'Settings'});
     expect(button).toHaveAttribute('aria-label', 'Settings');
@@ -29,10 +26,7 @@ describe('IconButton', () => {
 
   it('does not render label as visible text', () => {
     render(
-      <IconButton
-        label="Settings"
-        icon={<span data-testid="icon">⚙</span>}
-      />,
+      <IconButton label="Settings" icon={<span data-testid="icon">⚙</span>} />,
     );
     const button = screen.getByRole('button');
     // The label text should not appear as visible content
@@ -42,11 +36,7 @@ describe('IconButton', () => {
 
   it('forwards variant prop', () => {
     render(
-      <IconButton
-        label="Delete"
-        icon={<span>🗑</span>}
-        variant="destructive"
-      />,
+      <IconButton label="Delete" icon={<span>🗑</span>} variant="destructive" />,
     );
     expect(screen.getByRole('button', {name: 'Delete'})).toBeInTheDocument();
   });
@@ -60,11 +50,7 @@ describe('IconButton', () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
     render(
-      <IconButton
-        label="Close"
-        icon={<span>✕</span>}
-        onClick={handleClick}
-      />,
+      <IconButton label="Close" icon={<span>✕</span>} onClick={handleClick} />,
     );
 
     await user.click(screen.getByRole('button'));
@@ -104,5 +90,16 @@ describe('IconButton', () => {
 
   it('has displayName set', () => {
     expect(IconButton.displayName).toBe('IconButton');
+  });
+
+  it('forwards the elevation prop through to the underlying button', () => {
+    const classFor = (elevation: 'none' | 'med') => {
+      const {container} = render(
+        <IconButton label="Add" icon={<span>+</span>} elevation={elevation} />,
+      );
+      return container.querySelector('button')!.className;
+    };
+    // A raised FAB must render differently from the default flat icon button.
+    expect(classFor('med')).not.toBe(classFor('none'));
   });
 });

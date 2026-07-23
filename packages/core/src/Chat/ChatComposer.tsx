@@ -83,6 +83,13 @@ export interface ChatComposerProps extends Omit<
   isDisabled?: boolean;
   /** Density variant */
   density?: ChatComposerDensity;
+  /**
+   * Resting elevation of the composer body. `low` (the default) keeps today's
+   * raised look — low at rest, bumping to med on hover / focus. `none` flattens
+   * it so depth comes from the border and focus ring instead.
+   * @default 'low'
+   */
+  elevation?: 'none' | 'low';
 
   // --- Slot props ---
 
@@ -143,14 +150,7 @@ const styles = stylex.create({
     borderRadius: 'var(--_chat-composer-radius)',
     backgroundColor: colorVars['--color-background-popover'],
     cursor: 'text',
-    boxShadow: {
-      default: shadowVars['--shadow-low'],
-      ':hover': {'@media (hover: hover)': shadowVars['--shadow-med']},
-    },
     transition: `box-shadow ${durationVars['--duration-fast']} ${easeVars['--ease-standard']}`,
-    ':focus-within': {
-      boxShadow: shadowVars['--shadow-med'],
-    },
   },
   header: {
     display: 'flex',
@@ -252,6 +252,23 @@ const styles = stylex.create({
   },
 });
 
+// Resting elevation for the composer body, narrowed to two steps.
+// - `low` (default) preserves today's look: low at rest, bumping to med on
+//   hover / focus-within (a CSS-only interaction state the component owns).
+// - `none` is flat; depth then comes from the border + focus ring instead.
+const elevationStyles = stylex.create({
+  low: {
+    boxShadow: {
+      default: shadowVars['--shadow-low'],
+      ':hover': {'@media (hover: hover)': shadowVars['--shadow-med']},
+    },
+    ':focus-within': {
+      boxShadow: shadowVars['--shadow-med'],
+    },
+  },
+  none: {boxShadow: 'none'},
+});
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -280,6 +297,7 @@ export function ChatComposer(props: ChatComposerProps) {
     placeholder: placeholderFromProps,
     isDisabled = false,
     density = 'balanced',
+    elevation = 'low',
     drawer,
     headerActions,
     headerContext,
@@ -402,6 +420,7 @@ export function ChatComposer(props: ChatComposerProps) {
           onClick={handleBodyClick}
           {...stylex.props(
             styles.body,
+            elevationStyles[elevation],
             density === 'compact' && styles.compact,
             xstyle,
           )}>

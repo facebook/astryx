@@ -29,6 +29,10 @@ const meta: Meta<typeof ClickableCard> = {
         'yellow',
       ],
     },
+    elevation: {
+      control: 'inline-radio',
+      options: ['none', 'low', 'med', 'high'],
+    },
   },
   parameters: {
     docs: {
