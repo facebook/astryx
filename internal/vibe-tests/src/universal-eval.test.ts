@@ -347,6 +347,75 @@ describe('accessibility runtime fold-in', () => {
 });
 
 // ============================================================
+// Edge cases: malformed sidecars and basis semantics
+// ============================================================
+
+describe('accessibility fold-in edge cases', () => {
+  it('survives a sidecar entry with no violations array instead of crashing the run', () => {
+    // A truncated or hand-edited axe-results.json entry: promptId present,
+    // violations missing. Must score as a clean runtime scan, not throw.
+    const malformed = {target: 'html'} as unknown as AxeResultForPrompt;
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: malformed,
+    });
+    expect(accessibility.score).toBe(100);
+    expect(accessibility.metrics?.runtime).toBe(true);
+    expect(accessibility.metrics?.axeViolationCount).toBe(0);
+  });
+
+  it('keeps runtime metrics on a clean scan with zero violations', () => {
+    const clean: AxeResultForPrompt = {
+      target: 'astryx',
+      themesScanned: ['light', 'dark'],
+      passes: 30,
+      incomplete: 0,
+      violations: [],
+    };
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: clean,
+    });
+    expect(accessibility.score).toBe(100);
+    expect(accessibility.metrics?.runtime).toBe(true);
+    expect(accessibility.metrics?.axeViolationCount).toBe(0);
+    expect(accessibility.metrics?.axePasses).toBe(30);
+  });
+
+  it('treats an explicitly null axe result as static-basis scoring', () => {
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: null,
+    });
+    expect(accessibility.metrics?.runtime).toBe(false);
+  });
+
+  it('counts a rule-eligible site that does not fire', () => {
+    const code = `export default () => <div role="button" tabIndex={0} onClick={() => {}}>go</div>;`;
+    const {accessibility} = evaluate(code, 'html');
+    expect(accessibility.metrics?.eligibleByRule['click-non-interactive']).toBe(
+      1,
+    );
+    expect(accessibility.metrics?.rulesFired).toBe(0);
+    expect(accessibility.score).toBe(100);
+  });
+
+  it('tolerates a violation record with no themes list', () => {
+    const axe = {
+      target: 'html',
+      themesScanned: ['light'],
+      passes: 1,
+      incomplete: 0,
+      violations: [{id: 'label', impact: 'critical', help: 'labels', nodes: 1}],
+    } as unknown as AxeResultForPrompt;
+    const {accessibility} = evaluate(COMPOSED_CODE, 'astryx', {
+      axeResult: axe,
+    });
+    expect(accessibility.score).toBe(85);
+    expect(
+      accessibility.findings?.find(f => f.rule === 'axe:label'),
+    ).toBeDefined();
+  });
+});
+
+// ============================================================
 // New: honest dimension label (issue #4145 proposal 3)
 // ============================================================
 

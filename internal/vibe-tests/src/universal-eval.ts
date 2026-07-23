@@ -454,8 +454,11 @@ function analyzeAccessibility(
   }
 
   const axeImpacts: Record<string, number> = {};
+  // Tolerate truncated or hand-edited sidecar entries — a malformed record
+  // must degrade to "no violations", never crash the aggregate run.
+  const axeViolations = axeResult?.violations ?? [];
   if (axeResult) {
-    for (const v of axeResult.violations) {
+    for (const v of axeViolations) {
       score -= AXE_IMPACT_PENALTY[v.impact] ?? 8;
       axeImpacts[v.impact] = (axeImpacts[v.impact] ?? 0) + 1;
       findings.push({
@@ -464,7 +467,7 @@ function analyzeAccessibility(
           v.impact === 'critical' || v.impact === 'serious'
             ? 'critical'
             : v.impact,
-        detail: `[${v.impact}] ${v.help} (${v.nodes} node${v.nodes === 1 ? '' : 's'}; themes: ${v.themes.join(', ')})`,
+        detail: `[${v.impact}] ${v.help} (${v.nodes} node${v.nodes === 1 ? '' : 's'}; themes: ${(v.themes ?? []).join(', ')})`,
         count: v.nodes,
       });
     }
@@ -477,7 +480,7 @@ function analyzeAccessibility(
     runtime,
     ...(axeResult
       ? {
-          axeViolationCount: axeResult.violations.length,
+          axeViolationCount: axeViolations.length,
           axeImpacts,
           axePasses: axeResult.passes,
           axeIncomplete: axeResult.incomplete,

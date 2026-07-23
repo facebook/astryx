@@ -281,6 +281,11 @@ export function enumeratePreviews(
       if (prompts && !prompts.includes(promptId)) {
         continue;
       }
+      // A malformed entry (string instead of target map) would otherwise
+      // iterate as characters and leak garbage paths
+      if (typeof targets !== 'object' || targets == null) {
+        continue;
+      }
       for (const [target, relPath] of Object.entries(
         targets as Record<string, string>,
       )) {

@@ -135,6 +135,20 @@ describe('enumeratePreviews', () => {
     expect(previews[0]).toMatchObject({promptId: 'dd-2', target: 'html'});
   });
 
+  it('returns an empty list when the previews directory does not exist', () => {
+    expect(enumeratePreviews(tmpDir())).toEqual([]);
+  });
+
+  it('returns an empty list for a malformed manifest whose entries are not target maps', () => {
+    const iterDir = tmpDir();
+    fs.mkdirSync(path.join(iterDir, 'previews'), {recursive: true});
+    fs.writeFileSync(
+      path.join(iterDir, 'previews', 'manifest.json'),
+      JSON.stringify({'tc-1': 'previews/tc-1/html.html'}),
+    );
+    expect(enumeratePreviews(iterDir)).toEqual([]);
+  });
+
   it('filters by the requested prompt ids', () => {
     const iterDir = tmpDir();
     for (const id of ['tc-1', 'tc-2']) {
