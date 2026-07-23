@@ -78,6 +78,19 @@ const STATIC_EXPORTS = {
     types: './dist/authoring/index.d.ts',
     default: './dist/authoring/index.js',
   },
+  // Canonical home for Astryx doc typing: the shape types + `create*` authoring
+  // factories. Barrel plus a wildcard so each shape is importable directly
+  // (e.g. `@astryxdesign/core/doc-types/ComponentDoc`).
+  './doc-types': {
+    source: './src/doc-types/index.ts',
+    types: './dist/doc-types/index.d.ts',
+    default: './dist/doc-types/index.js',
+  },
+  './doc-types/*': {
+    source: './src/doc-types/*.ts',
+    types: './dist/doc-types/*.d.ts',
+    default: './dist/doc-types/*.js',
+  },
   './theme/tokens': {
     source: './src/theme/tokens.ts',
     types: './dist/theme/tokens.d.ts',
