@@ -25,6 +25,9 @@ export {
 // InfoTip — accessible info-icon help affordance (RFC facebook/astryx#3349)
 export {InfoTip, type InfoTipProps, type InfoTipSize} from './InfoTip';
 
+// LineClamp — clamp arbitrary content to N lines (facebook/astryx#4180)
+export {LineClamp, type LineClampProps} from './LineClamp';
+
 // Chat — experimental reasoning display
 export {
   ChatReasoning,
