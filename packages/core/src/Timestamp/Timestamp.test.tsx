@@ -619,6 +619,131 @@ describe('Timestamp', () => {
       expect(screen.getByTestId('ts').getAttribute('aria-label')).toBeNull();
     });
 
+    it('renders nothing for an unparseable value even with entries', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const {container} = render(
+          <Timestamp
+            value="not-a-date"
+            tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+          />,
+        );
+        // The invalid-value bail-out runs before any tooltip work, so there is
+        // no half-rendered tooltip anchored to nothing.
+        expect(container).toBeEmptyDOMElement();
+      } finally {
+        warn.mockRestore();
+      }
+    });
+
+    it('shows configured entries when auto resolves to an absolute format', async () => {
+      render(
+        <Timestamp
+          value={VALUE}
+          format="auto"
+          autoThreshold={0}
+          tooltipEntries={[
+            {timezoneID: 'UTC', format: 'system_date_time', label: 'UTC'},
+          ]}
+          data-testid="ts"
+        />,
+      );
+      // autoThreshold={0} forces the absolute branch regardless of the clock.
+      const layer = await screen.findByRole('tooltip', {hidden: true});
+      expect(layer.textContent).toContain('2026-02-19 17:00:00');
+      expect(screen.getByTestId('ts')).toHaveAttribute('tabindex', '0');
+    });
+
+    it('accepts a unix-seconds value alongside entries', async () => {
+      render(
+        <Timestamp
+          value={Date.parse(VALUE) / 1000}
+          format="relative"
+          tooltipEntries={[
+            {timezoneID: 'UTC', format: 'system_date_time', label: 'UTC'},
+          ]}
+        />,
+      );
+      const layer = await screen.findByRole('tooltip', {hidden: true});
+      expect(layer.textContent).toContain('2026-02-19 17:00:00');
+    });
+
+    it('pairs exactly one label cell with one value cell per entry', async () => {
+      render(
+        <Timestamp
+          value={VALUE}
+          format="relative"
+          tooltipEntries={[
+            {timezoneID: 'UTC', label: 'UTC'},
+            {timezoneID: 'Asia/Tokyo'},
+            {timezoneID: 'Europe/London', label: 'London'},
+          ]}
+        />,
+      );
+      const layer = await screen.findByRole('tooltip', {hidden: true});
+      // An unlabeled entry still emits its label cell, so the two-column grid
+      // stays aligned and the <dl> stays valid markup.
+      expect(layer.querySelectorAll('dt')).toHaveLength(3);
+      expect(layer.querySelectorAll('dd')).toHaveLength(3);
+      expect(layer.querySelectorAll('dt')[1].textContent).toBe('');
+    });
+
+    it('gives the tab stop back when entries are removed', () => {
+      const {rerender} = render(
+        <Timestamp
+          value={VALUE}
+          format="date_time"
+          tooltipEntries={[{timezoneID: 'UTC'}]}
+          data-testid="ts"
+        />,
+      );
+      expect(screen.getByTestId('ts')).toHaveAttribute('tabindex', '0');
+
+      rerender(<Timestamp value={VALUE} format="date_time" data-testid="ts" />);
+      // The widened gate is driven purely by entry presence, so dropping the
+      // prop must also drop the tab stop rather than stranding one.
+      expect(screen.getByTestId('ts')).not.toHaveAttribute('tabindex');
+    });
+
+    it('describes an absolute-format timestamp with its tooltip', async () => {
+      render(
+        <Timestamp
+          value={VALUE}
+          format="date_time"
+          tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+          data-testid="ts"
+        />,
+      );
+      const layer = await screen.findByRole('tooltip', {hidden: true});
+      const el = screen.getByTestId('ts');
+      // An absolute format carries no aria-label, so aria-describedby is the
+      // only route the configured zones have to assistive tech.
+      expect(el.getAttribute('aria-label')).toBeNull();
+      await waitFor(() => {
+        expect(el.getAttribute('aria-describedby')).toBe(layer.id);
+      });
+      expect(layer.id).toBeTruthy();
+    });
+
+    it('leaves no tooltip and no description when hasTooltip is false', () => {
+      render(
+        <Timestamp
+          value={VALUE}
+          format="relative"
+          hasTooltip={false}
+          tooltipEntries={[{timezoneID: 'UTC', label: 'UTC'}]}
+          data-testid="ts"
+        />,
+      );
+      expect(
+        screen.queryByRole('tooltip', {hidden: true}),
+      ).not.toBeInTheDocument();
+      // No orphaned reference pointing at a tooltip that was never rendered.
+      expect(
+        screen.getByTestId('ts').getAttribute('aria-describedby'),
+      ).toBeNull();
+    });
+
     it('does not crash on an unknown time zone', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       try {

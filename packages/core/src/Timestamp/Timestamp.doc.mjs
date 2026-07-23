@@ -107,6 +107,7 @@ export const docs = {
       {guidance: false, description: 'Avoid system_date or system_time formats in user-facing UI; they are meant for developer tools, logs, and machine-readable contexts.'},
       {guidance: false, description: 'Don\'t disable the tooltip on relative timestamps; users expect to hover for the full date when they see "3 hours ago".'},
       {guidance: false, description: 'Don\'t stack many zones into one tooltip; it is capped at 300px wide and long labelled lines wrap. Two or three entries read well.'},
+      {guidance: false, description: 'Don\'t pass a fixed-offset abbreviation like "EST" as timezoneID; it is a valid identifier but never observes daylight saving, so it reads an hour wrong for half the year. Use the region id, "America/New_York".'},
     ],
     anatomy: [
       {name: 'Formatted text', required: true, description: 'The rendered date, time, or relative label like "2 hours ago" or "Mar 21, 2025".'},
@@ -147,6 +148,7 @@ export const docsZh = {
       {guidance: false, description: 'Avoid system_date or system_time formats in user-facing UI; they are meant for developer tools, logs, and machine-readable contexts.'},
       {guidance: false, description: 'Don\'t disable the tooltip on relative timestamps; users expect to hover for the full date when they see "3 hours ago".'},
       {guidance: false, description: 'Don\'t stack many zones into one tooltip; it is capped at 300px wide and long labelled lines wrap. Two or three entries read well.'},
+      {guidance: false, description: 'Don\'t pass a fixed-offset abbreviation like "EST" as timezoneID; it is a valid identifier but never observes daylight saving, so it reads an hour wrong for half the year. Use the region id, "America/New_York".'},
     ],
     anatomy: [
       {name: 'Formatted text', required: true, description: 'The rendered date, time, or relative label like "2 hours ago" or "Mar 21, 2025".'},
@@ -168,6 +170,7 @@ export const docsDense = {
       {guidance: true, description: 'isTimezoneShown for multi-timezone audiences.'},
       {guidance: true, description: 'tooltipEntries to compare zones on hover; label each entry once more than one zone is shown.'},
       {guidance: true, description: 'isLive for dashboards so relative time stays current.'},
+      {guidance: false, description: 'Don\'t use fixed-offset ids like "EST" for timezoneID; they skip DST. Use region ids like "America/New_York".'},
       {guidance: false, description: 'Don\'t show raw Unix timestamps or ISO strings; always use Timestamp.'},
       {guidance: false, description: 'Avoid system_* formats in user-facing UI; those are for dev tools and logs.'},
       {guidance: false, description: 'Don\'t disable tooltip on relative timestamps; users expect the full date on hover.'},

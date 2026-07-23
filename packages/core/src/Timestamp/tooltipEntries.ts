@@ -47,6 +47,11 @@ export interface TimestampTooltipEntry {
    * IANA time zone identifier, e.g. `'UTC'`, `'America/Los_Angeles'`.
    * Omit it — or pass `'local'` — for the viewer's own zone.
    *
+   * Prefer region identifiers. Fixed-offset abbreviations such as `'EST'` are
+   * accepted by the platform but never observe daylight saving, so they read
+   * an hour wrong for half the year — `'America/New_York'` is what people
+   * usually mean by "Eastern".
+   *
    * An identifier the platform does not recognize falls back to the viewer's
    * zone with a console warning rather than throwing.
    */
@@ -77,6 +82,15 @@ export interface TimestampTooltipLine {
 const LOCAL_ZONE_ALIAS = 'local';
 
 /**
+ * Zone identifiers already reported as unknown.
+ *
+ * Resolution runs once per entry on every render, so without this a single
+ * typo on a live timestamp would emit the same warning every tick, forever.
+ * One report per bad identifier is enough to act on.
+ */
+const warnedTimezoneIDs = new Set<string>();
+
+/**
  * Resolves an entry's zone to something safe to hand to `Intl`.
  *
  * Returns `undefined` for the viewer's own zone, which is also what `Intl`
@@ -98,9 +112,12 @@ function resolveTimezoneID(timezoneID: string | undefined): string | undefined {
   try {
     new Intl.DateTimeFormat(undefined, {timeZone: timezoneID});
   } catch {
-    console.warn(
-      `Timestamp: unknown time zone ${JSON.stringify(timezoneID)} in tooltipEntries. Falling back to the viewer's time zone.`,
-    );
+    if (!warnedTimezoneIDs.has(timezoneID)) {
+      warnedTimezoneIDs.add(timezoneID);
+      console.warn(
+        `Timestamp: unknown time zone ${JSON.stringify(timezoneID)} in tooltipEntries. Falling back to the viewer's time zone.`,
+      );
+    }
     return undefined;
   }
 
@@ -202,19 +219,27 @@ function getLocalWallClock(date: Date): WallClock {
  *
  * `'full'` always has one (that is the style). `system_*` never does — those
  * are machine shapes and a trailing "PST" would break anything parsing them,
- * which is also why `isTimezoneShown` has never applied to them. The two
- * human formats that can carry one do so only when the tooltip is showing more
- * than one zone and the reader therefore needs to tell the lines apart.
+ * which is also why `isTimezoneShown` has never applied to them.
+ *
+ * The two human formats that can carry one do so when either the reader has
+ * to tell several lines apart, or the line shows a zone the consumer named
+ * explicitly. That second case matters even for a lone entry: the tooltip is
+ * the `<time>` element's `aria-describedby`, and that element's accessible
+ * name is the absolute time in the *viewer's* zone — so an unmarked foreign
+ * time is announced directly after a local one with nothing to distinguish
+ * them. A line the consumer did not steer stays unmarked, matching how the
+ * visible text reads with `isTimezoneShown` off.
  */
 function shouldShowZoneName(
   format: TimestampTooltipFormat,
   hasMultipleZones: boolean,
+  isNamedZone: boolean,
 ): boolean {
   if (format === 'full') {
     return true;
   }
   if (format === 'date_time' || format === 'time') {
-    return hasMultipleZones;
+    return hasMultipleZones || isNamedZone;
   }
   return false;
 }
@@ -225,7 +250,11 @@ function formatLine(
   timezoneID: string | undefined,
   hasMultipleZones: boolean,
 ): string {
-  const showZoneName = shouldShowZoneName(format, hasMultipleZones);
+  const showZoneName = shouldShowZoneName(
+    format,
+    hasMultipleZones,
+    timezoneID !== undefined,
+  );
   const zone = timezoneID === undefined ? {} : {timeZone: timezoneID};
 
   switch (format) {
