@@ -229,12 +229,17 @@ export interface IconProps extends Omit<
    * Don't set `label` when an interactive parent (Button, IconButton, link)
    * already names the control — that produces a duplicate announcement.
    *
+   * Meaningful, standalone icon: give it a label.
+   *
    * @example
    * ```
-   * // Meaningful, standalone icon
    * <Icon icon="success" label="Completed" />
+   * ```
    *
-   * // Decorative icon (default) — omit label
+   * Decorative icon (the default): omit label.
+   *
+   * @example
+   * ```
    * <Icon icon="search" />
    * ```
    */
