@@ -50,6 +50,16 @@ import type {DoctorResponse} from './doctor';
 import type {ValidateIntegrationResponse} from './validate-integration';
 
 /**
+ * A "did you mean…" suggestion attached to an error. `reason` is optional:
+ * some call sites emit bare `{name}` (e.g. a list of candidate component names)
+ * with no per-item explanation.
+ */
+export interface Suggestion {
+  name: string;
+  reason?: string;
+}
+
+/**
  * Structured error. Check `'error' in result` to discriminate.
  *
  * Branch on `code` (a stable machine-readable identifier), never on the
@@ -58,7 +68,7 @@ import type {ValidateIntegrationResponse} from './validate-integration';
 export interface CLIError {
   error: string;
   code: ErrorCode;
-  suggestions?: Array<{name: string; reason: string}>;
+  suggestions?: Suggestion[];
 }
 
 /** Returned by the fallback hook for commands without --json support. */
@@ -129,7 +139,7 @@ export function jsonOut<T extends CLIResponseType>(
  */
 export function jsonError(
   message: string,
-  suggestions?: Array<{name: string; reason: string}>,
+  suggestions?: Suggestion[],
   code?: ErrorCode,
 ): never;
 

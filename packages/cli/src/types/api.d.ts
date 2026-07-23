@@ -44,17 +44,14 @@ import type {
 import type {SearchResponse, SearchDomain} from './search';
 import type {ErrorCode} from './error-codes';
 import type {DoctorResponse} from './doctor';
+import type {Suggestion} from './base';
 
 /** Structured API error with a stable machine-readable code. */
 export declare class AstryxError extends Error {
   /** Stable error code; consumers branch on this, never the message. */
   code: ErrorCode;
-  suggestions?: Array<{name: string; reason: string}>;
-  constructor(
-    message: string,
-    suggestions?: Array<{name: string; reason: string}>,
-    code?: ErrorCode,
-  );
+  suggestions?: Suggestion[];
+  constructor(message: string, suggestions?: Suggestion[], code?: ErrorCode);
 }
 
 // ── Component ────────────────────────────────────────────────────────
@@ -100,9 +97,7 @@ export interface DocsOptions {
 }
 
 type DocsResult =
-  | DocsListResponse
-  | DocsDetailResponse
-  | DocsDetailSectionResponse;
+  DocsListResponse | DocsDetailResponse | DocsDetailSectionResponse;
 
 export declare function docs(
   topic?: string,

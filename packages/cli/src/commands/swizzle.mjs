@@ -358,7 +358,7 @@ export function registerSwizzle(program) {
       const feedback = buildFeedback(dirName, owner.issuesUrl);
 
       if (json) {
-        /** @type {Record<string, unknown>} */
+        /** @type {import('../types/swizzle').SwizzleCopyResponse['data']} */
         const payload = {
           component: dirName,
           package: owner.package,
