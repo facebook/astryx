@@ -425,6 +425,24 @@ describe('formatTooltipLines', () => {
     }
   });
 
+  it('renders two alias spellings of one zone identically to a single one', () => {
+    // 'UTC' and 'GMT' are aliases, so the distinctness key counts them as two
+    // zones. That can never show, because a line whose zone the consumer named
+    // is marked whether or not a second zone is present — all three renderings
+    // below must agree. If the marker rule ever narrows back to "more than one
+    // zone", this pair would start disagreeing with the single entry and read
+    // as two lines that need telling apart while being character-identical.
+    const pair = formatTooltipLines(INSTANT, [
+      {timezoneID: 'UTC', format: 'date_time'},
+      {timezoneID: 'GMT', format: 'date_time'},
+    ]);
+    const solo = formatTooltipLines(INSTANT, [
+      {timezoneID: 'UTC', format: 'date_time'},
+    ]);
+    expect(pair[0].value).toBe(solo[0].value);
+    expect(pair[1].value).toBe(solo[0].value);
+  });
+
   it('renders the same zone spelled in different casing identically', () => {
     // Zone ids are case-insensitive per ECMA-402, and the distinctness key
     // lowercases to match, so neither line can drift from the other.
