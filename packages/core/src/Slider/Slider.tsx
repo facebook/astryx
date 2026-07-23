@@ -271,7 +271,11 @@ const styles = stylex.create({
     color: colorVars['--color-text-primary'],
     whiteSpace: 'nowrap',
     flexShrink: 0,
+    fontVariantNumeric: 'tabular-nums',
   },
+  textValueReserved: (minWidth: string) => ({
+    minWidth,
+  }),
   marksContainer: {
     position: 'absolute',
   },
@@ -325,13 +329,35 @@ function clamp(val: number, min: number, max: number): number {
   return Math.min(Math.max(val, min), max);
 }
 
+function getDecimalPrecision(num: number): number {
+  if (!Number.isFinite(num)) {
+    return 0;
+  }
+  const str = String(num);
+  const exp = str.indexOf('e-');
+  if (exp !== -1) {
+    return Number(str.slice(exp + 2));
+  }
+  const dot = str.indexOf('.');
+  return dot === -1 ? 0 : str.length - dot - 1;
+}
+
 function snapToStep(val: number, min: number, step: number): number {
   if (step <= 0) {
     return val;
   }
   const steps = Math.round((val - min) / step);
-  return min + steps * step;
+  // Rounding to the precision of min/step keeps decimal steps from
+  // accumulating float artifacts (0.2 + 0.1 -> 0.30000000000000004) in the
+  // emitted value, aria-valuenow, and the visible value label.
+  const precision = Math.min(
+    Math.max(getDecimalPrecision(step), getDecimalPrecision(min)),
+    20,
+  );
+  return Number((min + steps * step).toFixed(precision));
 }
+
+const RANGE_SEPARATOR = ' – ';
 
 function getPercent(val: number, min: number, max: number): number {
   if (max === min) {
@@ -766,15 +792,30 @@ export function Slider({ref, ...props}: SliderProps) {
     return {bottom: '0%', height: `${p}%`};
   })();
 
-  // Text value display
-  const textDisplay =
-    valueDisplay === 'text' ? (
-      <span {...stylex.props(styles.textValue)}>
+  // Text value display. The label sits in the same flex row as the track
+  // (which flex-grows), so a label that changes width while dragging resizes
+  // the track and shifts the thumb under the pointer. Reserve the width of the
+  // widest formatted candidate up front (tabular-nums keeps digits equal
+  // width) so the track size stays put.
+  let textDisplay = null;
+  if (valueDisplay === 'text') {
+    const candidates = [min, max, min + step, max - step].map(v =>
+      clamp(snapToStep(v, min, step), min, max),
+    );
+    const widest = Math.max(...candidates.map(v => displayValue(v).length));
+    const reservedCh = isRange ? widest * 2 + RANGE_SEPARATOR.length : widest;
+    textDisplay = (
+      <span
+        {...stylex.props(
+          styles.textValue,
+          styles.textValueReserved(`${reservedCh}ch`),
+        )}>
         {isRange
-          ? `${displayValue(values[0])} – ${displayValue(values[1])}`
+          ? `${displayValue(values[0])}${RANGE_SEPARATOR}${displayValue(values[1])}`
           : displayValue(values[0])}
       </span>
-    ) : null;
+    );
+  }
 
   return (
     <Field
