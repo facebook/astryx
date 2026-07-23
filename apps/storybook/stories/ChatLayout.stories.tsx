@@ -472,9 +472,7 @@ export const FullAIChat: StoryObj = {
             placeholder="Ask about the codebase..."
           />
         }
-        footerActions={
-          <Button label="Claude Opus" variant="ghost" size="md" />
-        }
+        footerActions={<Button label="Claude Opus" variant="ghost" size="md" />}
         sendActions={
           <Button
             label="Microphone"
@@ -817,6 +815,77 @@ export const PanelView: StoryObj = {
                 </ChatMessage>
               );
             })}
+          </ChatMessageList>
+        </ChatLayout>
+      </div>
+    );
+  },
+};
+
+// =============================================================================
+// Load-earlier history data
+// =============================================================================
+
+const HISTORY_PAGE_SIZE = 20;
+
+type HistoryEntry = {id: number; role: 'user' | 'assistant'; text: string};
+
+const FULL_HISTORY: HistoryEntry[] = Array.from({length: 100}, (_, i) => ({
+  id: i + 1,
+  role: i % 2 === 0 ? 'user' : 'assistant',
+  text:
+    i % 2 === 0
+      ? `Question #${i + 1}: what does step ${i + 1} of the release do?`
+      : `Answer #${i + 1}: step ${i + 1} runs after the build finishes — it verifies the artifacts and publishes them to the registry.`,
+}));
+
+/**
+ * Long transcript paged in with scrollToTopAction. Scroll to the top:
+ * a page of earlier history loads (spinner while pending) and the reading
+ * position is preserved across the prepend. The action is swapped to
+ * undefined once the full history is loaded.
+ */
+export const LoadEarlierHistory: StoryObj = {
+  name: 'Load Earlier History',
+  render: () => {
+    const [messages, setMessages] = useState<HistoryEntry[]>(() =>
+      FULL_HISTORY.slice(-HISTORY_PAGE_SIZE),
+    );
+
+    const hasEarlier = messages.length < FULL_HISTORY.length;
+
+    const loadEarlier = useCallback(async () => {
+      // Simulated backend latency so the top spinner is visible.
+      await new Promise(resolve => setTimeout(resolve, 800));
+      setMessages(prev => {
+        const firstIndex = FULL_HISTORY.findIndex(m => m.id === prev[0]?.id);
+        if (firstIndex <= 0) {
+          return prev;
+        }
+        const start = Math.max(0, firstIndex - HISTORY_PAGE_SIZE);
+        return [...FULL_HISTORY.slice(start, firstIndex), ...prev];
+      });
+    }, []);
+
+    return (
+      <div style={{height: '100vh', display: 'flex', flexDirection: 'column'}}>
+        <ChatLayout
+          composer={
+            <ChatComposer onSubmit={() => {}} placeholder="Message…" />
+          }>
+          <ChatMessageList
+            scrollToTopAction={hasEarlier ? loadEarlier : undefined}>
+            {messages.map(msg =>
+              msg.role === 'user' ? (
+                <ChatMessage key={msg.id} sender="user">
+                  <ChatMessageBubble>{msg.text}</ChatMessageBubble>
+                </ChatMessage>
+              ) : (
+                <ChatMessage key={msg.id} sender="assistant">
+                  <Markdown density="compact">{msg.text}</Markdown>
+                </ChatMessage>
+              ),
+            )}
           </ChatMessageList>
         </ChatLayout>
       </div>
