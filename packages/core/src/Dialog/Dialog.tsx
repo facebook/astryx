@@ -16,7 +16,15 @@
  * - /packages/cli/templates/blocks/components/Dialog/ (showcase blocks)
  */
 
-import {useEffect, useMemo, useRef, type ReactNode} from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {useScrollLock} from '../hooks/useScrollLock';
@@ -318,6 +326,9 @@ export interface DialogProps extends BaseProps<HTMLDialogElement> {
  *
  * Designed to be used with Layout as its child for structured content.
  * Uses the browser's built-in modal behavior for optimal accessibility.
+ * When a DialogHeader is rendered inside, its title automatically names the
+ * dialog via aria-labelledby; pass `aria-label` or `aria-labelledby` to
+ * override.
  *
  * @example
  * ```
@@ -354,7 +365,35 @@ export function Dialog({
   const paddingToken = spacingStepToToken[effectivePadding] as SpacingToken;
 
   const isFullscreen = variant === 'fullscreen';
-  const dialogContextValue = useMemo(() => ({isInline}), [isInline]);
+
+  // Default accessible name: publish a title id through DialogContext so a
+  // DialogHeader can label this dialog via aria-labelledby (mirrors
+  // AlertDialog's explicit useId wiring). The header registers its presence
+  // so aria-labelledby is only emitted when the title element actually
+  // exists — a reference to a nonexistent id would itself be an a11y defect.
+  const titleId = useId();
+  const [hasHeaderTitle, setHasHeaderTitle] = useState(false);
+  // Ref mirror of hasHeaderTitle: the header's registration effect and this
+  // component's unnamed-dialog warning effect run in the same commit, so the
+  // warning reads the ref to see a just-registered title.
+  const hasHeaderTitleRef = useRef(false);
+  const registerTitle = useCallback(() => {
+    hasHeaderTitleRef.current = true;
+    setHasHeaderTitle(true);
+    return () => {
+      hasHeaderTitleRef.current = false;
+      setHasHeaderTitle(false);
+    };
+  }, []);
+
+  const dialogContextValue = useMemo(
+    () => ({isInline, titleId, registerTitle}),
+    [isInline, titleId, registerTitle],
+  );
+
+  // Consumer-provided labels always win over the DialogHeader default.
+  const hasConsumerName =
+    props['aria-label'] != null || props['aria-labelledby'] != null;
 
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -445,6 +484,26 @@ export function Dialog({
     dialog.addEventListener('keydown', handleKeyDown);
     return () => dialog.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isInline, allowEscape, onOpenChange]);
+
+  // Dev-time guardrail: an open modal should always have an accessible name.
+  // Warn once per component instance (in an effect) rather than on every
+  // render — mirrors the unnamed-dialog warning in usePopover.
+  const warnedUnnamedDialogRef = useRef(false);
+  useEffect(() => {
+    if (
+      isOpen &&
+      !isInline &&
+      !hasConsumerName &&
+      !hasHeaderTitleRef.current &&
+      !warnedUnnamedDialogRef.current
+    ) {
+      warnedUnnamedDialogRef.current = true;
+      console.warn(
+        'Dialog: open dialog has no accessible name. Add a DialogHeader ' +
+          'with a `title`, or pass `aria-label`/`aria-labelledby`.',
+      );
+    }
+  }, [isOpen, isInline, hasConsumerName]);
 
   // Handle backdrop click — when the user clicks the ::backdrop pseudo-element,
   // the event target is the <dialog> element itself; clicks on child content
@@ -576,6 +635,14 @@ export function Dialog({
       onClick={handleClick}
       onCancel={handleCancel}
       aria-modal="true"
+      // Default name from the DialogHeader title. This attribute is written
+      // after {...safeProps}, so it must re-assert any consumer-provided
+      // aria-labelledby (falling back to it) — otherwise a trailing `undefined`
+      // here would clobber the spread value and strip the consumer's label.
+      aria-labelledby={
+        props['aria-labelledby'] ??
+        (!hasConsumerName && hasHeaderTitle ? titleId : undefined)
+      }
       {...(purpose === 'required' ? {role: 'alertdialog'} : undefined)}>
       {innerContent}
     </dialog>

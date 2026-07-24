@@ -212,10 +212,7 @@ describe('Dialog', () => {
 
   it('forwards additional props to dialog element', () => {
     render(
-      <Dialog
-        isOpen={true}
-        onOpenChange={() => {}}
-        data-testid="custom-dialog">
+      <Dialog isOpen={true} onOpenChange={() => {}} data-testid="custom-dialog">
         Content
       </Dialog>,
     );
@@ -264,6 +261,82 @@ describe('Dialog', () => {
       );
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
       expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+  });
+
+  describe('accessible name', () => {
+    it('is labelled by the DialogHeader title by default', () => {
+      render(
+        <Dialog isOpen={true} onOpenChange={() => {}}>
+          <DialogHeader title="Dialog title" />
+        </Dialog>,
+      );
+      const dialog = screen.getByRole('dialog');
+      const heading = screen.getByRole('heading', {name: 'Dialog title'});
+      expect(heading.id).not.toBe('');
+      expect(dialog).toHaveAttribute('aria-labelledby', heading.id);
+      expect(dialog).toHaveAccessibleName('Dialog title');
+    });
+
+    it('prefers a consumer-provided aria-label over the header title', () => {
+      render(
+        <Dialog isOpen={true} onOpenChange={() => {}} aria-label="Custom name">
+          <DialogHeader title="Dialog title" />
+        </Dialog>,
+      );
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).not.toHaveAttribute('aria-labelledby');
+      expect(dialog).toHaveAccessibleName('Custom name');
+    });
+
+    it('prefers a consumer-provided aria-labelledby over the header title', () => {
+      render(
+        <>
+          <span id="external-label">External name</span>
+          <Dialog
+            isOpen={true}
+            onOpenChange={() => {}}
+            aria-labelledby="external-label">
+            <DialogHeader title="Dialog title" />
+          </Dialog>
+        </>,
+      );
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveAttribute('aria-labelledby', 'external-label');
+      expect(dialog).toHaveAccessibleName('External name');
+    });
+
+    it('omits aria-labelledby and warns when open with no name source', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        render(
+          <Dialog isOpen={true} onOpenChange={() => {}}>
+            Content
+          </Dialog>,
+        );
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).not.toHaveAttribute('aria-labelledby');
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('accessible name'),
+        );
+      } finally {
+        warnSpy.mockRestore();
+      }
+    });
+
+    it('does not warn when the header provides a title', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        render(
+          <Dialog isOpen={true} onOpenChange={() => {}}>
+            <DialogHeader title="Dialog title" />
+          </Dialog>,
+        );
+        expect(warnSpy).not.toHaveBeenCalled();
+      } finally {
+        warnSpy.mockRestore();
+      }
     });
   });
 

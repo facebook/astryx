@@ -111,7 +111,7 @@ export const docs = {
       { guidance: false, description: 'Use the fullscreen variant for simple confirmations; it is meant for complex content like editors or long forms.' },
     ],
     anatomy: [
-      {name: 'Header', required: true, description: 'Title, optional subtitle, and close button. The title receives focus on open for accessibility.'},
+      {name: 'Header', required: true, description: 'Title, optional subtitle, and close button. The title receives focus on open and labels the dialog via aria-labelledby.'},
       {name: 'Body', required: true, description: 'The main content area: text, forms, lists, or any layout.'},
       {name: 'Footer', required: false, description: 'Action buttons like Save/Cancel or Accept/Decline, aligned to the end.'},
       {name: 'Backdrop', required: true, description: 'Semi-transparent overlay behind the dialog that blocks page interaction.'},
@@ -133,7 +133,7 @@ export const docsZh = {
       { guidance: false, description: 'Use the fullscreen variant for simple confirmations; it is meant for complex content like editors or long forms.' },
     ],
     anatomy: [
-      {name: 'Header', required: true, description: 'Title, optional subtitle, and close button. The title receives focus on open for accessibility.'},
+      {name: 'Header', required: true, description: 'Title, optional subtitle, and close button. The title receives focus on open and labels the dialog via aria-labelledby.'},
       {name: 'Body', required: true, description: 'The main content area: text, forms, lists, or any layout.'},
       {name: 'Footer', required: false, description: 'Action buttons like Save/Cancel or Accept/Decline, aligned to the end.'},
       {name: 'Backdrop', required: true, description: 'Semi-transparent overlay behind the dialog that blocks page interaction.'},
