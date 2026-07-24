@@ -155,6 +155,22 @@ describe('ChatComposerInput', () => {
     });
   });
 
+  describe('composer focus control', () => {
+    it('registers a focus control so a body click focuses the input', () => {
+      render(
+        <ChatComposer onSubmit={() => {}} input={<ChatComposerInput />} />,
+      );
+      const editable = screen.getByRole('textbox');
+      // Walk to the composer body: editable → input root → inputArea → body.
+      const inputRoot = editable.parentElement!;
+      const inputArea = inputRoot.parentElement!;
+      const body = inputArea.parentElement!;
+      // Click empty space in the body → shell drives the registered control.
+      fireEvent.click(body);
+      expect(document.activeElement).toBe(editable);
+    });
+  });
+
   describe('Enter submit behavior', () => {
     it('does not submit on Enter while IME composition is in progress', () => {
       const onSubmit = vi.fn();

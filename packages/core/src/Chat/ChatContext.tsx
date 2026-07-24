@@ -5,11 +5,14 @@
 /**
  * @file ChatContext.tsx
  * @input Uses React createContext
- * @output Exports ChatMessageContext for sharing sender/density between Chat components
- * @position Internal context; consumed by ChatMessage and ChatMessageBubble
+ * @output Exports Chat message/list/composer/layout contexts. The composer
+ *   context (value + input-control registration) is public composition API,
+ *   re-exported from Chat/index.ts for custom inputs.
+ * @position Shared contexts; consumed by ChatMessage, ChatComposer,
+ *   ChatComposerInput, ChatSendButton, and custom inputs.
  */
 
-import {createContext, use} from 'react';
+import {createContext, use, type RefObject} from 'react';
 
 export type ChatMessageSender = 'user' | 'assistant' | 'system';
 export type ChatDensity = 'compact' | 'balanced' | 'spacious';
@@ -19,8 +22,9 @@ export interface ChatMessageContextValue {
   density: ChatDensity;
 }
 
-export const ChatMessageContext =
-  createContext<ChatMessageContextValue | null>(null);
+export const ChatMessageContext = createContext<ChatMessageContextValue | null>(
+  null,
+);
 ChatMessageContext.displayName = 'ChatMessageContext';
 
 export function useChatMessageContext(): ChatMessageContextValue | null {
@@ -31,9 +35,7 @@ export interface ChatListContextValue {
   density: ChatDensity;
 }
 
-export const ChatListContext = createContext<ChatListContextValue | null>(
-  null,
-);
+export const ChatListContext = createContext<ChatListContextValue | null>(null);
 ChatListContext.displayName = 'ChatListContext';
 
 export function useChatListContext(): ChatListContextValue | null {
@@ -44,6 +46,21 @@ export function useChatListContext(): ChatListContextValue | null {
 // Composer context — shared state between ChatComposer and ChatComposerInput
 // =============================================================================
 
+/**
+ * Imperative surface the composer shell can invoke on its input slot.
+ *
+ * The input is one slot inside the composer body — it does not span the whole
+ * body — so shell-level interactions like "click empty space to focus the
+ * input" must flow shell → input. A custom input registers this control (via
+ * `ChatComposerContextValue.inputControlRef`) so the shell can drive it
+ * without knowing its DOM shape. Optional methods can be added over time;
+ * inputs implement only what they support.
+ */
+export interface ChatComposerInputControl {
+  /** Move keyboard focus into the input. */
+  focus: () => void;
+}
+
 export interface ChatComposerContextValue {
   value: string;
   onChange: (value: string) => void;
@@ -53,6 +70,15 @@ export interface ChatComposerContextValue {
   isStopShown: boolean;
   canSend: boolean;
   onStop?: () => void;
+  /**
+   * Mutable handle the input slot populates with its {@link
+   * ChatComposerInputControl}. The shell reads `.current` to drive the input
+   * (e.g. focus on body click). A custom input assigns
+   * `inputControlRef.current = { focus }` on mount and clears it on unmount.
+   * When unset, the shell falls back to focusing a `contenteditable`/`textarea`
+   * it finds in the body.
+   */
+  inputControlRef?: RefObject<ChatComposerInputControl | null>;
 }
 
 export const ChatComposerContext =
@@ -74,8 +100,9 @@ export interface ChatLayoutContextValue {
   contentRef: (el: HTMLElement | null) => void;
 }
 
-export const ChatLayoutContext =
-  createContext<ChatLayoutContextValue | null>(null);
+export const ChatLayoutContext = createContext<ChatLayoutContextValue | null>(
+  null,
+);
 ChatLayoutContext.displayName = 'ChatLayoutContext';
 
 export function useChatLayoutContext(): ChatLayoutContextValue | null {
