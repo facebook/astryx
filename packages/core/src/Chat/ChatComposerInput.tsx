@@ -11,9 +11,10 @@
  *
  * ContentEditable-based rich input for the chat composer.
  * Supports trigger menus (@ mentions, / commands) via SearchSource,
- * inline token rendering, serialization, configurable Enter-to-submit
- * (with IME-composition guarding and an onKeyDown seam), message
- * history, paste/drop file handling, and mobile-safe touch typography.
+ * inline token rendering, serialization, Enter-to-submit with
+ * IME-composition guarding and an onKeyDown seam for platform-specific
+ * key handling, message history, paste/drop file handling, and
+ * mobile-safe touch typography.
  *
  *
  * SYNC: When modified, update:
@@ -190,24 +191,18 @@ export interface ChatComposerInputProps extends Omit<
   /** Submit handler (Enter without Shift) */
   onSubmit?: (value: string) => void;
   /**
-   * Whether pressing Enter (without Shift) submits the message.
-   *
-   * Pass a boolean for a fixed policy, or a predicate to decide per
-   * keystroke — e.g. send on Enter on desktop but insert a newline on a
-   * touch keyboard. When it resolves `false`, Enter falls through to the
-   * browser and inserts a line break instead of submitting.
-   *
-   * IME composition is always respected: Enter never submits while a
-   * composition is in progress, regardless of this prop.
-   * @default true
-   */
-  shouldSubmitOnEnter?:
-    boolean | ((event: KeyboardEvent<HTMLDivElement>) => boolean);
-  /**
    * Key-down handler invoked before the built-in Enter/history behavior
-   * (but after an open trigger menu consumes the event). Call
-   * `event.preventDefault()` to fully take over the keystroke and suppress
-   * the default submit/history handling.
+   * (but after an open trigger menu consumes the event).
+   *
+   * This is the seam for platform- or app-specific key handling:
+   * - Call `event.preventDefault()` to suppress the default submit (e.g.
+   *   let Enter insert a newline on a touch keyboard).
+   * - Add behavior by acting on the event yourself (e.g. submit on
+   *   Cmd/Ctrl+Enter) without calling `preventDefault()`, so the default
+   *   handling still runs for other keys.
+   *
+   * IME composition is always respected regardless of this handler: Enter
+   * never submits while a composition is in progress.
    */
   onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
 }
@@ -321,7 +316,6 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
     pasteAsToken: pasteAsTokenProp,
     onFiles,
     onSubmit = composerCtx?.onSubmit,
-    shouldSubmitOnEnter = true,
     onKeyDown: onKeyDownProp,
     xstyle,
     className,
@@ -556,15 +550,6 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) {
           return;
         }
-        // Consumer opt-out — let Enter insert a newline instead of submitting
-        // (e.g. soft keyboards on touch devices).
-        const submits =
-          typeof shouldSubmitOnEnter === 'function'
-            ? shouldSubmitOnEnter(e)
-            : shouldSubmitOnEnter;
-        if (!submits) {
-          return;
-        }
 
         e.preventDefault();
         if (!editableRef.current) {
@@ -630,15 +615,7 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         }
       }
     },
-    [
-      hasHistory,
-      onSubmit,
-      onChange,
-      emitChange,
-      triggerMenu,
-      shouldSubmitOnEnter,
-      onKeyDownProp,
-    ],
+    [hasHistory, onSubmit, onChange, emitChange, triggerMenu, onKeyDownProp],
   );
 
   const handlePaste = useCallback(

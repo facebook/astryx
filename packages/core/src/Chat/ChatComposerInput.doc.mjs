@@ -81,15 +81,9 @@ export const docs = {
       description: 'Called when the user presses Enter without Shift. The serialized value includes token placeholders.',
     },
     {
-      name: 'shouldSubmitOnEnter',
-      type: 'boolean | ((event) => boolean)',
-      description: 'Whether Enter (without Shift) submits. Pass a predicate to decide per keystroke — e.g. send on Enter on desktop but insert a newline on a touch keyboard. IME composition is always respected regardless of this value.',
-      default: 'true',
-    },
-    {
       name: 'onKeyDown',
       type: '(event) => void',
-      description: 'Key-down handler invoked before the built-in Enter/history behavior (after any open trigger menu). Call event.preventDefault() to fully take over the keystroke.',
+      description: 'Key-down handler invoked before the built-in Enter/history behavior (after any open trigger menu). The seam for platform-specific keys: call event.preventDefault() to suppress the default submit (e.g. newline on a touch keyboard), or act on the event yourself to add behavior (e.g. submit on Cmd/Ctrl+Enter). IME composition is always respected — Enter never submits mid-composition.',
     },
   ],
 };
@@ -113,8 +107,7 @@ export const docsZh = {
     onPaste: '粘贴文本时调用。用于拦截或转换粘贴内容。',
     onFiles: '粘贴或拖放文件到输入时调用。用于处理附件。',
     onSubmit: '用户不按 Shift 按 Enter 时调用。序列化值包含标记占位符。',
-    shouldSubmitOnEnter: '是否按 Enter（不按 Shift）提交。可传入谓词以按键判断——例如桌面端按 Enter 发送，触控键盘则插入换行。无论此值为何，始终尊重输入法组字状态。',
-    onKeyDown: '在内置 Enter/历史处理之前（在打开的触发菜单之后）调用的按键处理器。调用 event.preventDefault() 可完全接管该按键。',
+    onKeyDown: '在内置 Enter/历史处理之前（在打开的触发菜单之后）调用的按键处理器。平台特定按键的接缝：调用 event.preventDefault() 可抑制默认提交（例如触控键盘上插入换行），或自行处理事件以添加行为（例如 Cmd/Ctrl+Enter 提交）。始终尊重输入法组字状态——组字过程中 Enter 永不提交。',
   },
 };
 
@@ -137,7 +130,6 @@ export const docsDense = {
     onPaste: 'paste handler; intercept/transform pasted content',
     onFiles: 'file paste/drop handler; use for attachments',
     onSubmit: 'Enter w/o Shift handler; serialized value includes token placeholders',
-    shouldSubmitOnEnter: 'bool | (event)=>bool; whether Enter submits. predicate for per-keystroke (desktop send / touch newline). IME composition always respected',
-    onKeyDown: 'keydown handler before built-in Enter/history (after trigger menu); preventDefault() to take over',
+    onKeyDown: 'keydown handler before built-in Enter/history (after trigger menu); preventDefault() to suppress default submit (touch newline) or act on event to add behavior (Cmd/Ctrl+Enter). IME composition always respected',
   },
 };

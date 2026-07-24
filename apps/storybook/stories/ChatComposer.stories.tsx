@@ -96,10 +96,12 @@ export const Simplest: Story = {
 
 /**
  * Platform-specific Enter behavior. Pass a custom `ChatComposerInput` in the
- * `input` slot with `shouldSubmitOnEnter` — here a predicate that sends on
- * Enter on a pointer device but inserts a newline on a touch keyboard, so a
- * soft-keyboard Return never strands a multi-line prompt. IME composition is
- * always respected regardless.
+ * `input` slot and handle keys through `onKeyDown` — the single seam for
+ * platform quirks. Here, on a touch keyboard we `preventDefault()` Enter so a
+ * soft-keyboard Return inserts a newline instead of sending (and never strands
+ * a multi-line prompt); on a pointer device Enter sends as usual. The same
+ * seam covers shortcuts like Cmd/Ctrl+Enter — just call submit yourself.
+ * IME composition is always respected regardless.
  */
 export const EnterBehavior: Story = {
   render: () => {
@@ -116,7 +118,11 @@ export const EnterBehavior: Story = {
                 ? 'Enter inserts a newline on touch — use Send'
                 : 'Enter sends; Shift+Enter for a newline'
             }
-            shouldSubmitOnEnter={() => !isCoarsePointer}
+            onKeyDown={e => {
+              if (isCoarsePointer && e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+              }
+            }}
           />
         }
       />
