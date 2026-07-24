@@ -9,11 +9,11 @@
     "customConditions": ["source"]
   },
   "include": [
-    "src/types/**/*.d.ts",
-    "src/lib/json.mjs",
-    "src/lib/manifest.mjs",
-    "src/lib/parse.mjs",
-    "src/config.mjs",
+    "types/**/*.d.ts",
+    "lib/json.mjs",
+    "lib/manifest.mjs",
+    "lib/parse.mjs",
+    "authoring/config.mjs",
     "../core/src/docs-types.ts"
   ]
 }

@@ -60,7 +60,13 @@ export default defineConfig(
       // (see the dedicated CLI block lower down). Scoped to packages/cli on
       // purpose — other packages' .mjs stay unlinted (#2468).
       "**/*.mjs",
-      "!packages/cli/src/**/*.mjs",
+      "!packages/cli/api/**/*.mjs",
+      "!packages/cli/cli/**/*.mjs",
+      "!packages/cli/codemods/**/*.mjs",
+      "!packages/cli/authoring/**/*.mjs",
+      "!packages/cli/lib/**/*.mjs",
+      "!packages/cli/utils/**/*.mjs",
+      "!packages/cli/schemas/**/*.mjs",
       "!packages/cli/bin/**/*.mjs",
       "**/*.test-violations.tsx",
       "apps/example-nextjs/*.js",
@@ -314,7 +320,16 @@ export default defineConfig(
   // .mjs sources a Node language environment and enforces the JSON-stdout
   // contract (#2467) at author time via @astryx/no-raw-console-cli.
   {
-    files: ["packages/cli/src/**/*.mjs", "packages/cli/bin/**/*.mjs"],
+    files: [
+      "packages/cli/api/**/*.mjs",
+      "packages/cli/cli/**/*.mjs",
+      "packages/cli/codemods/**/*.mjs",
+      "packages/cli/authoring/**/*.mjs",
+      "packages/cli/lib/**/*.mjs",
+      "packages/cli/utils/**/*.mjs",
+      "packages/cli/schemas/**/*.mjs",
+      "packages/cli/bin/**/*.mjs",
+    ],
     plugins: {
       '@astryx': astryxEslintPlugin,
     },
@@ -360,7 +375,16 @@ export default defineConfig(
   // Copyright header for CLI .mjs sources (the main copyright block only
   // covers .ts/.tsx).
   {
-    files: ["packages/cli/src/**/*.mjs", "packages/cli/bin/**/*.mjs"],
+    files: [
+      "packages/cli/api/**/*.mjs",
+      "packages/cli/cli/**/*.mjs",
+      "packages/cli/codemods/**/*.mjs",
+      "packages/cli/authoring/**/*.mjs",
+      "packages/cli/lib/**/*.mjs",
+      "packages/cli/utils/**/*.mjs",
+      "packages/cli/schemas/**/*.mjs",
+      "packages/cli/bin/**/*.mjs",
+    ],
     plugins: {
       '@astryx': astryxEslintPlugin,
     },

@@ -32,41 +32,48 @@
   "exports": {
     ".": "./bin/astryx.mjs",
     "./json": {
-      "types": "./src/types/index.d.ts",
-      "import": "./src/lib/parse.mjs"
+      "types": "./types/index.d.ts",
+      "import": "./lib/parse.mjs"
     },
     "./api": {
-      "types": "./src/types/api.d.ts",
-      "import": "./src/api/index.mjs"
+      "types": "./types/api.d.ts",
+      "import": "./api/index.mjs"
     },
     "./config": {
-      "types": "./src/types/config.d.ts",
-      "import": "./src/config.mjs"
+      "types": "./types/config.d.ts",
+      "import": "./authoring/config.mjs"
     },
     "./integration": {
-      "types": "./src/types/integration.d.ts",
-      "import": "./src/integration.mjs"
+      "types": "./types/integration.d.ts",
+      "import": "./authoring/integration.mjs"
     },
     "./doc": {
-      "types": "./src/types/doc.d.ts",
-      "import": "./src/doc.mjs"
+      "types": "./types/doc.d.ts",
+      "import": "./authoring/doc.mjs"
     },
     "./template": {
-      "types": "./src/types/template-api.d.ts",
-      "import": "./src/template.mjs"
+      "types": "./types/template-api.d.ts",
+      "import": "./authoring/template.mjs"
     },
     "./codemod": {
-      "types": "./src/types/codemod.d.ts",
-      "import": "./src/codemod.mjs"
+      "types": "./types/codemod.d.ts",
+      "import": "./authoring/codemod.mjs"
     },
     "./xle": {
-      "types": "./src/lib/xle/browser.d.ts",
-      "import": "./src/lib/xle/browser.mjs"
+      "types": "./lib/xle/browser.d.ts",
+      "import": "./lib/xle/browser.mjs"
     }
   },
   "files": [
     "bin",
-    "src",
+    "api",
+    "cli",
+    "codemods",
+    "authoring",
+    "lib",
+    "utils",
+    "types",
+    "schemas",
     "scripts/postinstall.mjs",
     "templates",
     "docs",

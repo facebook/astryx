@@ -117,6 +117,9 @@ export default defineConfig({
           globalSetup: ['./vitest.global-setup.node.mjs'],
           include: [
             'packages/**/src/**/*.test.{ts,tsx,mjs}',
+            // The CLI dissolved its src/ wrapper (pillars live at the package
+            // root), so collect its colocated tests wherever they now live.
+            'packages/cli/**/*.test.{ts,tsx,mjs}',
             'internal/**/*.test.{ts,tsx,mjs}',
             'scripts/**/*.test.{ts,tsx,mjs}',
             '.github/scripts/**/*.test.{ts,tsx,mjs}',
