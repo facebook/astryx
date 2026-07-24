@@ -136,6 +136,13 @@ export const docs = {
       default: '1',
     },
     {
+      name: 'format',
+      type: "'date' | 'date_long' | 'date_weekday' | 'system_date' | ((value: ISODateString) => string)",
+      description:
+        "How the committed date value is displayed. Named values are reused from Timestamp's format vocabulary: 'date' shows 'Mar 21, 2026', 'date_long' shows 'March 21, 2026', 'date_weekday' shows 'Wed, Mar 21, 2026', 'system_date' shows '2026-03-21'. A function receives the ISO value and returns a custom string. Applies only to the committed value, never to text being typed.",
+      default: "'date_long'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -389,6 +396,13 @@ export const docsZh = {
       default: '1',
     },
     {
+      name: 'format',
+      type: "'date' | 'date_long' | 'date_weekday' | 'system_date' | ((value: ISODateString) => string)",
+      description:
+        "已选日期的显示格式。命名值复用 Timestamp 的格式词汇：'date' 显示 'Mar 21, 2026'，'date_long' 显示 'March 21, 2026'，'date_weekday' 显示 'Wed, Mar 21, 2026'，'system_date' 显示 '2026-03-21'。函数接收 ISO 值并返回自定义字符串。仅作用于已提交的值，不影响正在输入的文本。",
+      default: "'date_long'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
@@ -481,6 +495,8 @@ export const docsDense = {
     labelTooltip: 'tooltip text via info icon at label end',
     hasClear: 'Shows clear button when date is set. Clears value on click.',
     numberOfMonths: 'months shown simultaneously in calendar popover',
+    format:
+      "committed-value display: 'date_long' (default, March 21, 2026), 'date' (Mar 21, 2026), 'date_weekday' (Wed, Mar 21, 2026), 'system_date' (2026-03-21), or (iso)=>string; reuses Timestamp vocabulary. Committed value only, not while typing.",
     xstyle: 'StyleX styles for layout; must be stylex.create() value',
   },
 };

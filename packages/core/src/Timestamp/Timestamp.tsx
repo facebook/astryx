@@ -24,6 +24,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {colorVars} from '../theme/tokens.stylex';
+import {SHARED_DATE_FORMAT_OPTIONS} from '../utils/plainDate';
 
 const LazyXDSTooltip = lazy(async () =>
   import('../Tooltip/Tooltip').then(mod => ({default: mod.Tooltip})),
@@ -37,6 +38,8 @@ export type TimestampFormat =
   | 'relative'
   | 'auto'
   | 'date'
+  | 'date_long'
+  | 'date_weekday'
   | 'date_time'
   | 'time'
   | 'system_date'
@@ -53,6 +56,8 @@ export interface TimestampProps extends BaseProps<HTMLTimeElement> {
    * - `'relative'`: "2 hours ago", "yesterday", "now"
    * - `'auto'`: Relative for recent times, `date_time` for older
    * - `'date'`: "Mar 21, 2025"
+   * - `'date_long'`: "March 21, 2025"
+   * - `'date_weekday'`: "Wed, Mar 21, 2025"
    * - `'date_time'`: "Mar 21, 2025, 2:51 PM"
    * - `'time'`: "2:51 PM"
    * - `'system_date'`: "2025-03-21"
@@ -249,11 +254,22 @@ function formatTimestamp(
 ): string {
   switch (format) {
     case 'date':
-      return new Intl.DateTimeFormat(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      }).format(date);
+      return new Intl.DateTimeFormat(
+        undefined,
+        SHARED_DATE_FORMAT_OPTIONS.date,
+      ).format(date);
+
+    case 'date_long':
+      return new Intl.DateTimeFormat(
+        undefined,
+        SHARED_DATE_FORMAT_OPTIONS.date_long,
+      ).format(date);
+
+    case 'date_weekday':
+      return new Intl.DateTimeFormat(
+        undefined,
+        SHARED_DATE_FORMAT_OPTIONS.date_weekday,
+      ).format(date);
 
     case 'date_time':
       return new Intl.DateTimeFormat(undefined, {

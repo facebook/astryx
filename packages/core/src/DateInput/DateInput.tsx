@@ -57,9 +57,9 @@ import {getInputARIA, parseDateInput} from '../utils';
 import {
   plainDateFromISO,
   plainDateToISO,
-  plainDateFormat,
-  DATE_FORMAT_LONG,
+  formatSharedDate,
 } from '../utils/plainDate';
+import type {TimestampFormat} from '../Timestamp';
 
 const styles = stylex.create({
   iconButton: {
@@ -126,6 +126,25 @@ const sizeStyles = stylex.create({
 });
 
 export type DateInputSize = keyof typeof sizeStyles;
+
+/**
+ * Named display formats for a committed date value. These are the date-only
+ * members of Timestamp's `format` vocabulary — reused verbatim (via
+ * `Extract`) so the same literal renders the same date shape in both
+ * `Timestamp` and `DateInput`:
+ * - `'date'`: locale short-month date, e.g. "Mar 21, 2026"
+ * - `'date_long'`: locale long-month date, e.g. "March 21, 2026" (the default)
+ * - `'date_weekday'`: short weekday + date, e.g. "Wed, Mar 21, 2026"
+ * - `'system_date'`: ISO 8601 calendar date, e.g. "2026-03-21"
+ *
+ * Because `DateInputFormat` is `Extract`ed from `TimestampFormat`, the two
+ * types stay in compile-time lockstep: renaming or removing one of these
+ * members from `TimestampFormat` breaks this type at build time.
+ */
+export type DateInputFormat = Extract<
+  TimestampFormat,
+  'date' | 'date_long' | 'date_weekday' | 'system_date'
+>;
 
 // Re-export shared types for convenience
 
@@ -283,6 +302,37 @@ export interface DateInputProps extends Omit<
    * @default 1
    */
   numberOfMonths?: 1 | 2;
+
+  /**
+   * How the committed date value is displayed in the text field. Accepts a
+   * named format reused from `Timestamp`'s `format` vocabulary (so the same
+   * literal renders the same date shape in both components) or a function that
+   * maps the ISO value to a custom display string.
+   *
+   * - `'date_long'` (default): long-month date, e.g. "March 21, 2026"
+   * - `'date'`: short-month date, e.g. "Mar 21, 2026"
+   * - `'date_weekday'`: short weekday + date, e.g. "Wed, Mar 21, 2026"
+   * - `'system_date'`: ISO 8601 calendar date, e.g. "2026-03-21"
+   * - `(value: ISODateString) => string`: fully custom display string
+   *
+   * Formatting applies only to the committed value — never to text the user is
+   * actively typing. A custom function's output that `parseDateInput` cannot
+   * read back can't be re-committed after an edit; external `value` changes
+   * always recompute the display from the ISO value.
+   *
+   * @default 'date_long'
+   * @example
+   * ```
+   * <DateInput label="Ship date" value={date} onChange={setDate} format="date" />
+   * <DateInput
+   *   label="Ship date"
+   *   value={date}
+   *   onChange={setDate}
+   *   format={iso => new Date(iso + 'T00:00').toDateString()}
+   * />
+   * ```
+   */
+  format?: DateInputFormat | ((value: ISODateString) => string);
 }
 
 /**
@@ -318,6 +368,7 @@ export function DateInput({
   labelTooltip,
   hasClear = false,
   numberOfMonths = 1,
+  format = 'date_long',
   width,
   xstyle,
   className,
@@ -404,12 +455,26 @@ export function DateInput({
     }
   }
 
+  // Format a committed ISO value for display. The default `date_long` renders
+  // the long-month shape (byte-identical to the historical hardcoded
+  // DATE_FORMAT_LONG rendering, so still non-breaking); a function is called
+  // with the ISO value; every other named member reuses Timestamp's shared
+  // date mapping. Applies ONLY to the committed value, never to in-progress
+  // typed input.
+  const formatCommittedValue = useCallback(
+    (iso: ISODateString): string =>
+      typeof format === 'function'
+        ? format(iso)
+        : formatSharedDate(plainDateFromISO(iso), format),
+    [format],
+  );
+
   // Display value: pending input if typing, otherwise formatted value
   const displayValue =
     pendingInput !== null
       ? pendingInput
       : optimisticValue && /^\d{4}-\d{2}-\d{2}$/.test(optimisticValue)
-        ? plainDateFormat(plainDateFromISO(optimisticValue), DATE_FORMAT_LONG)
+        ? formatCommittedValue(optimisticValue)
         : '';
 
   // Check if current input is valid (for styling purposes)

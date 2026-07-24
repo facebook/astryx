@@ -834,4 +834,112 @@ describe('DateInput', () => {
       expect(input).not.toHaveAttribute('aria-disabled');
     });
   });
+
+  describe('format', () => {
+    it('defaults to the long-month date_long shape', () => {
+      // Non-breaking default: byte-identical to the historical hardcoded
+      // DATE_FORMAT_LONG rendering. `format` now defaults to 'date_long'.
+      render(<DateInput label="Date" value="2026-01-25" onChange={() => {}} />);
+      expect(screen.getByDisplayValue('January 25, 2026')).toBeInTheDocument();
+    });
+
+    it('renders the long-month shape for explicit format="date_long"', () => {
+      // Explicit date_long is identical to the unset default above and to the
+      // old hardcoded long-month output — real named parity with Timestamp.
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date_long"
+        />,
+      );
+      expect(screen.getByDisplayValue('January 25, 2026')).toBeInTheDocument();
+    });
+
+    it('renders the short-month shape for format="date"', () => {
+      // Same literal + same shape as <Timestamp format="date" />.
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date"
+        />,
+      );
+      expect(screen.getByDisplayValue('Jan 25, 2026')).toBeInTheDocument();
+    });
+
+    it('renders the ISO shape for format="system_date"', () => {
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="system_date"
+        />,
+      );
+      expect(screen.getByDisplayValue('2026-01-25')).toBeInTheDocument();
+    });
+
+    it('renders a weekday prefix for format="date_weekday"', () => {
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date_weekday"
+        />,
+      );
+      // 2026-01-25 is a Sunday; assert the weekday-prefixed shape without
+      // over-fitting locale punctuation.
+      const input = screen.getByRole('combobox');
+      expect(input).toHaveValue('Sun, Jan 25, 2026');
+    });
+
+    it('supports a custom function format', () => {
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format={iso => `custom:${iso}`}
+        />,
+      );
+      expect(screen.getByDisplayValue('custom:2026-01-25')).toBeInTheDocument();
+    });
+
+    it('does not apply format to in-progress typed input', async () => {
+      const user = userEvent.setup();
+      render(
+        <DateInput label="Date" onChange={() => {}} format="system_date" />,
+      );
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+      await user.type(input, 'January 25');
+      // While typing, the raw text is shown verbatim — not reformatted.
+      expect(input).toHaveValue('January 25');
+    });
+
+    it('recomputes the display in format on external value change', () => {
+      const {rerender} = render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date"
+        />,
+      );
+      expect(screen.getByDisplayValue('Jan 25, 2026')).toBeInTheDocument();
+      rerender(
+        <DateInput
+          label="Date"
+          value="2026-03-10"
+          onChange={() => {}}
+          format="date"
+        />,
+      );
+      expect(screen.getByDisplayValue('Mar 10, 2026')).toBeInTheDocument();
+    });
+  });
 });
