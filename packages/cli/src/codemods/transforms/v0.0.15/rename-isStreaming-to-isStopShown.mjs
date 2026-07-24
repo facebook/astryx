@@ -26,13 +26,18 @@ export const meta = {
 
 const TARGET_COMPONENTS = new Set(['XDSChatComposer', 'XDSChatSendButton']);
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
   // Rename JSX prop on target components only
-  root.find(j.JSXOpeningElement).forEach((path) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     const componentName = name.type === 'JSXIdentifier' ? name.name : null;
     if (!TARGET_COMPONENTS.has(componentName)) return;

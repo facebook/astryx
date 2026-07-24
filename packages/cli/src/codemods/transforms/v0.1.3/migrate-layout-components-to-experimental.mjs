@@ -58,6 +58,11 @@ const MANUAL =
  * @param {{jscodeshift: Function}} api
  * @returns {string|null}
  */
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -105,7 +110,7 @@ export default function transformer(file, api) {
   // `components` was the only documented `layout` key. Anything else is
   // unexpected and we cannot safely guess intent.
   const otherLayoutKeys = layoutProp.value.properties.filter(
-    p => p !== componentsProp,
+    (/** @type {any} */ p) => p !== componentsProp,
   );
   if (otherLayoutKeys.length > 0) {
     throw new Error(
@@ -148,7 +153,7 @@ export default function transformer(file, api) {
   // Remove the migrated data from `layout`. Since `components` was the only
   // key (asserted above), remove the entire `layout` property.
   configObject.properties = configObject.properties.filter(
-    p => p !== layoutProp,
+    (/** @type {any} */ p) => p !== layoutProp,
   );
 
   return root.toSource();
@@ -157,9 +162,9 @@ export default function transformer(file, api) {
 /**
  * Resolve the wrapped config object literal from a default-export declaration.
  * Handles `{ ... }` and `createConfig({ ... })`.
- * @returns {object|null} the ObjectExpression node, or null if not analyzable
+ * @returns {any} the ObjectExpression node, or null if not analyzable
  */
-function resolveConfigObject(j, declaration) {
+function resolveConfigObject(/** @type {any} */ j, /** @type {any} */ declaration) {
   if (!declaration) return null;
   if (j.ObjectExpression.check(declaration)) {
     return declaration;
@@ -177,10 +182,10 @@ function resolveConfigObject(j, declaration) {
 /**
  * Find a (non-computed, non-spread) property on an object literal by key name.
  * Supports Identifier and string-literal keys.
- * @returns {object|undefined} the property node
+ * @returns {any} the property node
  */
-function findObjectProperty(j, objectExpression, name) {
-  return objectExpression.properties.find(prop => {
+function findObjectProperty(/** @type {any} */ j, /** @type {any} */ objectExpression, /** @type {any} */ name) {
+  return objectExpression.properties.find((/** @type {any} */ prop) => {
     if (
       !j.ObjectProperty.check(prop) &&
       !j.Property.check(prop)
@@ -200,8 +205,8 @@ function findObjectProperty(j, objectExpression, name) {
  * Build the migrated `components` ObjectExpression from the old one.
  * @returns {object} ObjectExpression
  */
-function buildMigratedComponents(j, oldComponents) {
-  const newProps = oldComponents.properties.map(prop => {
+function buildMigratedComponents(/** @type {any} */ j, /** @type {any} */ oldComponents) {
+  const newProps = oldComponents.properties.map((/** @type {any} */ prop) => {
     if (
       (!j.ObjectProperty.check(prop) && !j.Property.check(prop)) ||
       prop.computed
@@ -239,14 +244,14 @@ function buildMigratedComponents(j, oldComponents) {
 }
 
 /** Build `{ components: <obj> }` for `experimental.xle`. */
-function buildXleObject(j, migratedComponents) {
+function buildXleObject(/** @type {any} */ j, /** @type {any} */ migratedComponents) {
   return j.objectExpression([
     j.objectProperty(j.identifier('components'), migratedComponents),
   ]);
 }
 
 /** Clone a property key node so we don't reuse a node across the tree. */
-function cloneKey(j, key) {
+function cloneKey(/** @type {any} */ j, /** @type {any} */ key) {
   if (j.Identifier.check(key)) return j.identifier(key.name);
   if (j.StringLiteral.check(key)) return j.stringLiteral(key.value);
   if (j.Literal.check(key)) return j.literal(key.value);
@@ -254,7 +259,7 @@ function cloneKey(j, key) {
 }
 
 /** Build a fresh string literal preserving the original raw quoting if possible. */
-function cloneStringLiteral(j, value) {
+function cloneStringLiteral(/** @type {any} */ j, /** @type {any} */ value) {
   if (j.StringLiteral.check(value)) return j.stringLiteral(value.value);
   return j.literal(value.value);
 }

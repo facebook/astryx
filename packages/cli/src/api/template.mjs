@@ -23,6 +23,39 @@ import {Project} from '../lib/project.mjs';
 const CORE_PACKAGE = '@astryxdesign/core';
 
 /**
+ * A discovered template (page or block), normalized across core, external, and
+ * integration sources. Not every source populates every field, so
+ * source-specific extras (`aspectRatio`, `isShowcase`, `package`) are optional.
+ * @typedef {object} DiscoveredTemplate
+ * @property {'page'|'block'} type
+ * @property {string} dirName
+ * @property {string} name
+ * @property {string} description
+ * @property {string} [category]
+ * @property {boolean} [isReady]
+ * @property {boolean} [scaffold]
+ * @property {number} [aspectRatio]
+ * @property {string[]} [componentsUsed]
+ * @property {boolean} [isShowcase]
+ * @property {string} filePath
+ * @property {string} docPath
+ * @property {string} [package]
+ */
+
+/**
+ * An integration-template discovery error.
+ * @typedef {object} TemplateDiscoveryError
+ * @property {string} package
+ * @property {string} [template]
+ * @property {string} message
+ */
+
+/**
+ * The loaded metadata object from a template spec (loose — authored shape).
+ * @typedef {Record<string, any> | undefined | null} TemplateDocModule
+ */
+
+/**
  * Canonical basename suffixes for template-spec files, in precedence order.
  * A template spec exports a `createBlockTemplate`/`createPageTemplate` result
  * (a scaffoldable TEMPLATE), so `.template.*` is the descriptive family name.
@@ -60,6 +93,7 @@ function matchedTemplateSuffix(file) {
  */
 const TEMPLATE_SUFFIX_RE = /\.(template|doc)\.(ts|mjs|js)$/;
 
+/** @type {ReturnType<typeof createJiti> | undefined} */
 let jitiInstance;
 /** Lazily-created jiti for loading `.ts` template specs (JSX-capable). */
 function getJiti() {
@@ -68,7 +102,6 @@ function getJiti() {
   }
   return jitiInstance;
 }
-
 
 /**
  * Load an integration template doc module and validate it against the template
@@ -145,7 +178,7 @@ export function stripTemplateAssetRefs(source) {
  * native dynamic import. Returns null if the file does not exist.
  *
  * @param {string} docPath absolute path to the spec file
- * @returns {Promise<Record<string, unknown> | undefined | null>}
+ * @returns {Promise<TemplateDocModule>}
  */
 async function loadDocModule(docPath) {
   if (!fs.existsSync(docPath)) return null;
@@ -159,6 +192,7 @@ async function loadDocModule(docPath) {
 export {discoverAll as discoverTemplates};
 
 export function listTemplates() {
+  /** @type {string[]} */
   const all = [];
   if (fs.existsSync(PAGES_DIR)) {
     all.push(
@@ -171,7 +205,13 @@ export function listTemplates() {
   return all.sort();
 }
 
+/**
+ * @param {string} dir
+ * @param {RegExp} pattern
+ * @returns {string[]}
+ */
 function findDocFiles(dir, pattern) {
+  /** @type {string[]} */
   const results = [];
   if (!fs.existsSync(dir)) return results;
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
@@ -205,6 +245,7 @@ async function discoverPages() {
     .readdirSync(PAGES_DIR, {withFileTypes: true})
     .filter(e => e.isDirectory());
 
+  /** @type {DiscoveredTemplate[]} */
   const templates = [];
   for (const dir of dirs) {
     const dirPath = path.join(PAGES_DIR, dir.name);
@@ -228,9 +269,11 @@ async function discoverPages() {
 
 async function discoverBlocks() {
   const docFiles = findDocFiles(BLOCKS_DIR, TEMPLATE_SUFFIX_RE);
+  /** @type {DiscoveredTemplate[]} */
   const blocks = [];
   for (const docPath of docFiles) {
     const suffix = matchedTemplateSuffix(docPath);
+    if (!suffix) continue;
     const basename = path.basename(docPath, suffix);
     const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
     if (!fs.existsSync(tsxPath)) continue;
@@ -262,6 +305,7 @@ async function discoverBlocks() {
  */
 async function discoverExternalBlocks(cwd = process.cwd()) {
   const externals = discoverExternalPackages(cwd);
+  /** @type {DiscoveredTemplate[]} */
   const blocks = [];
 
   for (const ext of externals) {
@@ -269,6 +313,7 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
     const docFiles = findDocFiles(ext.blocksDir, TEMPLATE_SUFFIX_RE);
     for (const docPath of docFiles) {
       const suffix = matchedTemplateSuffix(docPath);
+      if (!suffix) continue;
       const basename = path.basename(docPath, suffix);
       const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
       if (!fs.existsSync(tsxPath)) continue;
@@ -297,6 +342,7 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
 /**
  * Discover all blocks — core + external packages.
  * @param {string} [cwd]
+ * @returns {Promise<DiscoveredTemplate[]>}
  */
 async function discoverAllBlocks(cwd = process.cwd()) {
   const [core, external] = await Promise.all([
@@ -306,6 +352,10 @@ async function discoverAllBlocks(cwd = process.cwd()) {
   return [...core, ...external];
 }
 
+/**
+ * @param {string} [cwd]
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
 async function discoverAll(cwd = process.cwd()) {
   const [pages, blocks, integration] = await Promise.all([
     discoverPages(),
@@ -323,7 +373,7 @@ async function discoverAll(cwd = process.cwd()) {
  * when the caller wants to warn about malformed integration templates.
  *
  * @param {string} [cwd]
- * @returns {Promise<{templates: object[], errors: {package: string, template?: string, message: string}[]}>}
+ * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}
  */
 async function discoverAllWithErrors(cwd = process.cwd()) {
   const [pages, blocks, integration] = await Promise.all([
@@ -348,8 +398,10 @@ export {discoverAllWithErrors};
  * @returns {string[]}
  */
 function findIntegrationDocFiles(root) {
+  /** @type {string[]} */
   const results = [];
   if (!fs.existsSync(root)) return results;
+  /** @param {string} dir */
   const walk = dir => {
     for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
       const full = path.join(dir, entry.name);
@@ -377,16 +429,21 @@ function findIntegrationDocFiles(root) {
  * template is skipped (recorded in `errors`).
  *
  * @param {string} [cwd]
- * @returns {Promise<{templates: object[], errors: {package: string, template?: string, message: string}[]}>}
+ * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}
  */
 async function discoverIntegrationTemplates(cwd = process.cwd()) {
+  /** @type {DiscoveredTemplate[]} */
   const templates = [];
+  /** @type {TemplateDiscoveryError[]} */
   const errors = [];
 
   let loadedIntegrations;
   try {
     const project = await Project.load(cwd);
-    loadedIntegrations = project.loadedIntegrations;
+    loadedIntegrations =
+      /** @type {import('../lib/integrations.mjs').LoadedIntegration[]} */ (
+        project.loadedIntegrations
+      );
   } catch {
     // Config load failures are surfaced elsewhere (discover/doctor); here we
     // simply contribute no integration templates.
@@ -409,10 +466,12 @@ async function discoverIntegrationTemplates(cwd = process.cwd()) {
  * than thrown. Exposed for `validate-integration`.
  *
  * @param {{name?: string, __spec?: string, templates?: string}} integration
- * @returns {Promise<{templates: object[], errors: {package: string, template?: string, message: string}[]}>}
+ * @returns {Promise<{templates: DiscoveredTemplate[], errors: TemplateDiscoveryError[]}>}
  */
 export async function discoverIntegrationTemplatesForOne(integration) {
+  /** @type {DiscoveredTemplate[]} */
   const templates = [];
+  /** @type {TemplateDiscoveryError[]} */
   const errors = [];
 
   const root = integration?.templates;
@@ -421,6 +480,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
 
   for (const docPath of findIntegrationDocFiles(root)) {
     const suffix = matchedTemplateSuffix(docPath);
+    if (!suffix) continue;
     const id = path
       .relative(root, docPath)
       .slice(0, -suffix.length)
@@ -444,7 +504,7 @@ export async function discoverIntegrationTemplatesForOne(integration) {
       errors.push({
         package: pkgLabel,
         template: id,
-        message: `Template "${id}" failed to load: ${err.message}`,
+        message: `Template "${id}" failed to load: ${/** @type {any} */ (err).message}`,
       });
       continue;
     }
@@ -480,10 +540,15 @@ export async function discoverIntegrationTemplatesForOne(integration) {
   return {templates, errors};
 }
 
+/**
+ * @param {string} componentName
+ * @param {string} [cwd]
+ * @returns {Promise<DiscoveredTemplate[]>}
+ */
 export async function findRelatedBlocks(componentName, cwd) {
   const blocks = await discoverAllBlocks(cwd);
   return blocks.filter(b =>
-    b.componentsUsed.some(c => c.toLowerCase() === componentName.toLowerCase()),
+    (b.componentsUsed ?? []).some(c => c.toLowerCase() === componentName.toLowerCase()),
   );
 }
 
@@ -506,7 +571,7 @@ export async function findShowcase(componentName, cwd, options) {
     return true;
   });
 
-  const toResult = b => ({
+  const toResult = (/** @type {DiscoveredTemplate} */ b) => ({
     name: b.name,
     aspectRatio: b.aspectRatio,
     filePath: b.filePath,
@@ -515,14 +580,14 @@ export async function findShowcase(componentName, cwd, options) {
 
   // Priority 1: own directory (components/Badge/ for "Badge")
   const dirMatch = showcases.find(b => {
-    const catDir = path.basename(b.category).toLowerCase();
+    const catDir = path.basename(b.category ?? '').toLowerCase();
     return catDir === lc;
   });
   if (dirMatch) return toResult(dirMatch);
 
   // Priority 2: componentsUsed in any directory (ClickableCard in Card/)
   const usedMatch = showcases.find(b =>
-    b.componentsUsed.some(c => c.toLowerCase() === lc),
+    (b.componentsUsed ?? []).some(c => c.toLowerCase() === lc),
   );
   if (usedMatch) return toResult(usedMatch);
 
@@ -540,6 +605,10 @@ const UBIQUITOUS = new Set([
   'Icon',
 ]);
 
+/**
+ * @param {string} pagePath
+ * @returns {string[]}
+ */
 export function extractComponents(pagePath) {
   const src = fs.readFileSync(pagePath, 'utf-8');
   // Match JSX opening tags, e.g. `<Section` or the legacy `<XDSSection`.
@@ -548,6 +617,7 @@ export function extractComponents(pagePath) {
   // JSX-tag boundary keeps this precise (avoids matching imports/comments/
   // identifiers) while remaining prefix-agnostic.
   const tagRegex = /<(XDS)?([A-Z]\w+)/g;
+  /** @type {string[]} */
   const matches = [];
   let m;
   while ((m = tagRegex.exec(src)) !== null) {
@@ -617,10 +687,11 @@ const SPATIAL_PROPS = [
  * @returns {string[]}
  */
 function extractSpatialAttrs(tagText) {
+  /** @type {string[]} */
   const attrs = [];
   for (const name of SPATIAL_PROPS) {
     const eqMatch = tagText.match(new RegExp(`\\b${name}\\s*=\\s*`));
-    if (eqMatch) {
+    if (eqMatch && eqMatch.index != null) {
       const start = eqMatch.index;
       let i = eqMatch.index + eqMatch[0].length;
       const rest = tagText.slice(i);
@@ -662,13 +733,19 @@ function extractSpatialAttrs(tagText) {
   return attrs;
 }
 
+/**
+ * @param {string} source
+ * @returns {string}
+ */
 function extractSkeleton(source) {
   const lines = source.split('\n');
+  /** @type {string[]} */
   const out = [];
   let depth = 0;
   let capturing = false;
   let inDefaultExport = false;
   const MAX_LINES = 35;
+  /** @type {string[]} */
   const depthStack = [];
 
   for (let i = 0; i < lines.length; i++) {

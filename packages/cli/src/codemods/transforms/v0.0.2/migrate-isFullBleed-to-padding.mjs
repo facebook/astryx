@@ -29,6 +29,11 @@ const TARGET_COMPONENTS = [
   'XDSLayoutPanel',
 ];
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -39,10 +44,10 @@ export default function transformer(file, api) {
       .find(j.JSXOpeningElement, {
         name: {name: componentName},
       })
-      .forEach((path) => {
+      .forEach((/** @type {any} */ path) => {
         const attrs = path.node.attributes;
         const isFullBleedIndex = attrs.findIndex(
-          (attr) =>
+          (/** @type {any} */ attr) =>
             attr.type === 'JSXAttribute' && attr.name.name === 'isFullBleed',
         );
 
@@ -57,7 +62,7 @@ export default function transformer(file, api) {
         if (value === null) {
           attrs.splice(isFullBleedIndex, 1);
           const hasPadding = attrs.some(
-            (a) => a.type === 'JSXAttribute' && a.name.name === 'padding',
+            (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name.name === 'padding',
           );
           if (!hasPadding) {
             attrs.push(
@@ -82,7 +87,7 @@ export default function transformer(file, api) {
             // isFullBleed={true} → padding={0}
             attrs.splice(isFullBleedIndex, 1);
             const hasPadding = attrs.some(
-              (a) => a.type === 'JSXAttribute' && a.name.name === 'padding',
+              (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name.name === 'padding',
             );
             if (!hasPadding) {
               attrs.push(

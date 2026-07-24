@@ -48,7 +48,7 @@ const PACKAGE_RENAMES = new Map([
   ['@xds/theme-y2k', '@astryxdesign/theme-y2k'],
 ]);
 
-function renamePackageSpecifier(value) {
+function renamePackageSpecifier(/** @type {any} */ value) {
   if (typeof value !== 'string') return value;
   for (const [from, to] of PACKAGE_RENAMES) {
     if (value === from) return to;
@@ -57,12 +57,17 @@ function renamePackageSpecifier(value) {
   return value;
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
-  root.find(j.TSModuleDeclaration).forEach(path => {
+  root.find(j.TSModuleDeclaration).forEach((/** @type {any} */ path) => {
     const id = path.node.id;
     // Module augmentations name the module with a string literal id; a
     // `namespace Foo {}` uses an Identifier id, which we ignore.

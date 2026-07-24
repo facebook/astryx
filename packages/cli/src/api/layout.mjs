@@ -28,13 +28,30 @@ import {discoverTemplates, stripTemplateAssetRefs} from './template.mjs';
 import {Project} from '../lib/project.mjs';
 
 /**
+ * @typedef {object} LayoutBlock
+ * @property {string} dirName
+ * @property {string} name
+ * @property {'template'|'component'} kind
+ * @property {string} [type]
+ * @property {string} [description]
+ * @property {string} [category]
+ * @property {string} [importPath]
+ * @property {string} [filePath]
+ * @property {boolean} [isDefault]
+ */
+
+/**
  * The catalog a `{hint}` can resolve to: template blocks (spliced inline) plus
  * any app-registered local components from astryx.config.mjs
  * `experimental.xle.components` (imported by name). App components are how XLE
  * reaches domain pieces — the KpiCard/chart/drawer set that the
  * @astryxdesign/core registry can't see.
+ *
+ * @param {string} cwd
+ * @returns {Promise<LayoutBlock[]>}
  */
 async function loadBlocks(cwd) {
+  /** @type {LayoutBlock[]} */
   const blocks = [];
   try {
     const all = await discoverTemplates(cwd);
@@ -44,6 +61,7 @@ async function loadBlocks(cwd) {
   }
   try {
     const project = await Project.load(cwd);
+    /** @type {Record<string, {from?: string, description?: string, default?: boolean}>} */
     const components = project.config.experimental?.xle?.components ?? {};
     for (const [name, spec] of Object.entries(components)) {
       const importPath = spec.from;
@@ -65,11 +83,17 @@ async function loadBlocks(cwd) {
   return blocks;
 }
 
+/** @param {string} name */
 const normKey = (name) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-/** Collect the block names referenced by {hints} anywhere in the doc. */
+/**
+ * Collect the block names referenced by {hints} anywhere in the doc.
+ * @param {import('../lib/xle/xle-ast').XLEDoc} doc
+ */
 function collectHintNames(doc) {
+  /** @type {Set<string>} */
   const names = new Set();
+  /** @param {import('../lib/xle/xle-ast').XLEItem} node */
   const visitNode = (node) => {
     if (!node || node.kind === 'group') {
       (node?.children || []).forEach(visit);
@@ -77,11 +101,17 @@ function collectHintNames(doc) {
     }
     if (node.hint?.block) names.add(node.hint.block.name);
     for (const slot of node.slots || []) {
-      if (slot.value?.hint?.block) names.add(slot.value.hint.block.name);
-      (slot.value?.subexpr || []).forEach(visit);
+      const value = slot.value;
+      if (value && typeof value === 'object' && 'hint' in value && value.hint?.block) {
+        names.add(value.hint.block.name);
+      }
+      if (value && typeof value === 'object' && 'subexpr' in value) {
+        (value.subexpr || []).forEach(visit);
+      }
     }
     (node.children || []).forEach(visit);
   };
+  /** @param {import('../lib/xle/xle-ast').XLEItem} item */
   const visit = (item) => (item?.kind === 'group' ? item.children.forEach(visit) : visitNode(item));
   doc.roots.forEach(visit);
   doc.overlays.forEach(visit);
@@ -92,24 +122,30 @@ function collectHintNames(doc) {
  * Build the blockModules map expand() needs: import-mode for app components,
  * splice-mode (reading + asset-stripping the block source) for template blocks.
  * Only blocks actually referenced are read.
+ *
+ * @param {import('../lib/xle/xle-ast').XLEDoc} doc
+ * @param {LayoutBlock[]} blocks
+ * @returns {Map<string, import('../lib/xle/xle-ast').BlockModule>}
  */
 function buildBlockModules(doc, blocks) {
   const referenced = collectHintNames(doc);
   if (referenced.size === 0) return new Map();
   const byKey = new Map(blocks.map(b => [normKey(b.dirName), b]));
+  /** @type {Map<string, import('../lib/xle/xle-ast').BlockModule>} */
   const modules = new Map();
   for (const name of referenced) {
     const block = byKey.get(normKey(name));
     if (!block) continue;
     if (block.kind === 'component') {
-      modules.set(name, {mode: 'import', componentName: block.name, importPath: block.importPath, isDefault: block.isDefault});
+      modules.set(name, /** @type {import('../lib/xle/xle-ast').BlockModule} */ (/** @type {unknown} */ ({mode: 'import', componentName: block.name, importPath: block.importPath, isDefault: block.isDefault})));
     } else if (block.filePath && fs.existsSync(block.filePath)) {
-      modules.set(name, {mode: 'splice', componentName: block.dirName, source: stripTemplateAssetRefs(fs.readFileSync(block.filePath, 'utf-8'))});
+      modules.set(name, /** @type {import('../lib/xle/xle-ast').BlockModule} */ ({mode: 'splice', componentName: block.dirName, source: stripTemplateAssetRefs(fs.readFileSync(block.filePath, 'utf-8'))}));
     }
   }
   return modules;
 }
 
+/** @param {import('../lib/xle/xle-ast').RawIssue} issue */
 function formatIssue(issue) {
   const where = issue.line != null ? `line ${issue.line}: ` : '';
   return `${where}${issue.message}`;
@@ -118,11 +154,17 @@ function formatIssue(issue) {
 /**
  * Parse + validate, throwing structured XDSErrors on failure.
  * Returns {doc, registry, blocks, warnings}.
+ *
+ * @param {string} expression
+ * @param {{form?: 'compact'|'outline'|'auto', loose?: boolean, cwd?: string}} [options]
  */
 async function analyze(expression, {form = 'auto', loose = false, cwd = process.cwd()} = {}) {
-  const registry = await buildRegistry({cwd});
+  const registry = /** @type {import('../lib/xle/xle-ast').Registry} */ (
+    /** @type {unknown} */ (await buildRegistry({cwd}))
+  );
   const blocks = await loadBlocks(cwd);
 
+  /** @type {import('../lib/xle/xle-ast').XLEDoc} */
   let doc;
   try {
     doc = parse(expression, {form});
@@ -212,6 +254,9 @@ export async function layoutExpand(expression, options = {}) {
 /**
  * `astryx layout check "<expr>" [--form compact|outline]`
  * Validates without expanding; echoes both canonical surfaces.
+ *
+ * @param {string} expression
+ * @param {{form?: 'compact'|'outline'|'auto', loose?: boolean, cwd?: string}} [options]
  */
 export async function layoutCheck(expression, options = {}) {
   const {form = 'auto', loose = false, cwd = process.cwd()} = options;
@@ -233,16 +278,20 @@ export async function layoutCheck(expression, options = {}) {
 /**
  * `astryx layout grammar` — the agent cheatsheet, with the alias table
  * generated from this branch's registry (never hand-maintained).
+ *
+ * @param {{cwd?: string}} [options]
  */
 export async function layoutGrammar(options = {}) {
   const {cwd = process.cwd()} = options;
   const registry = await buildRegistry({cwd});
 
+  /** @type {string[]} */
   const aliasLines = [];
+  /** @type {Map<string, string[]>} */
   const byTarget = new Map();
   for (const [alias, target] of registry.aliases) {
     if (!byTarget.has(target)) byTarget.set(target, []);
-    byTarget.get(target).push(alias);
+    byTarget.get(target)?.push(alias);
   }
   for (const [target, aliases] of [...byTarget.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     aliasLines.push(`${aliases.join('/')}=${target}`);

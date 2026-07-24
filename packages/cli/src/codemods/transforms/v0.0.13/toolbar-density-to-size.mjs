@@ -24,17 +24,23 @@ export const meta = {
 };
 
 /** Map from old density values to new size values (null = remove prop). */
+/** @type {Record<string, string | null>} */
 const DENSITY_TO_SIZE = {
   compact: 'sm',
   default: null, // md is the default, no prop needed
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
-  root.find(j.JSXOpeningElement).forEach((path) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     const componentName =
       name.type === 'JSXIdentifier' ? name.name : null;
@@ -42,7 +48,7 @@ export default function transformer(file, api) {
 
     const attrs = path.node.attributes;
     const densityIdx = attrs.findIndex(
-      (a) => a.type === 'JSXAttribute' && a.name?.name === 'density',
+      (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name?.name === 'density',
     );
     if (densityIdx === -1) return;
 
@@ -106,7 +112,7 @@ export default function transformer(file, api) {
   if (importsToolbar) {
     // jscodeshift uses Property (default parser) or ObjectProperty (babel/tsx parser)
     const PropertyType = j.ObjectProperty ?? j.Property;
-    root.find(PropertyType, {key: {name: 'density'}}).forEach((path) => {
+    root.find(PropertyType, {key: {name: 'density'}}).forEach((/** @type {any} */ path) => {
       const value = path.node.value;
 
       // args: { density: 'compact' } → args: { size: 'sm' }
@@ -140,7 +146,7 @@ export default function transformer(file, api) {
         path.node.key = j.identifier('size');
         // Update options array if present
         const optionsProp = value.properties.find(
-          (p) => p.key?.name === 'options',
+          (/** @type {any} */ p) => p.key?.name === 'options',
         );
         if (optionsProp && optionsProp.value.type === 'ArrayExpression') {
           optionsProp.value = j.arrayExpression([

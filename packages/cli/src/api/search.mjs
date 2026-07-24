@@ -47,6 +47,21 @@ import {AstryxError} from './error.mjs';
 const DOCS_DIR = path.join(CLI_ROOT, 'docs');
 
 /**
+ * A search candidate gathered from one content domain. Extra underscore-
+ * prefixed fields carry domain-specific payload used only by {@link toResult}.
+ * @typedef {object} Candidate
+ * @property {'component'|'hook'|'doc'|'template'} domain
+ * @property {string} name
+ * @property {string[]} [keywords]
+ * @property {string} [description]
+ * @property {string[]} [prose]
+ * @property {string} [_import]
+ * @property {string} [_title]
+ * @property {string} [_displayName]
+ * @property {'page'|'block'} [_kind]
+ */
+
+/**
  * Synonym / intent map: product-language terms an agent is likely to type,
  * expanded to the catalog's vocabulary so oblique queries still rank. Keys and
  * values are matched bidirectionally (typing any value also pulls in the key
@@ -72,10 +87,19 @@ const SYNONYMS = {
 
 // Flatten into a token -> Set(expansions) lookup (bidirectional).
 const SYNONYM_INDEX = (() => {
+  /** @type {Map<string, Set<string>>} */
   const idx = new Map();
+  /**
+   * @param {string} a
+   * @param {string} b
+   */
   const add = (a, b) => {
-    if (!idx.has(a)) idx.set(a, new Set());
-    idx.get(a).add(b);
+    let set = idx.get(a);
+    if (!set) {
+      set = new Set();
+      idx.set(a, set);
+    }
+    set.add(b);
   };
   for (const [key, vals] of Object.entries(SYNONYMS)) {
     for (const v of vals) {
@@ -159,6 +183,8 @@ const MIN_TOKEN_SCORE = 50;
 /**
  * Best score for a token against a candidate, fanning out through synonyms
  * (synonym hits are discounted so a direct hit always wins).
+ * @param {string} tok
+ * @param {Candidate} candidate
  * @returns {{score: number, reason: string} | null}
  */
 function bestForToken(tok, candidate) {
@@ -176,6 +202,12 @@ function bestForToken(tok, candidate) {
   return best;
 }
 
+/**
+ * @param {string} term - Lowercased full query.
+ * @param {string[]} tokens - Content tokens from tokenizeQuery(term).
+ * @param {Candidate} candidate
+ * @returns {{score: number, reason: string} | null}
+ */
 export function scoreQuery(term, tokens, candidate) {
   const full = scoreCandidate(term, candidate);
 
@@ -192,6 +224,7 @@ export function scoreQuery(term, tokens, candidate) {
   // strong hits, then reward coverage so candidates matching more terms win.
   let sum = 0;
   let matched = 0;
+  /** @type {string[]} */
   const hitTerms = [];
   for (const tok of tokens) {
     const h = bestForToken(tok, candidate);
@@ -235,6 +268,10 @@ export function scoreQuery(term, tokens, candidate) {
 export function scoreCandidate(term, {name, keywords = [], description = '', prose = []}) {
   let best = 0;
   let reason = '';
+  /**
+   * @param {number} score
+   * @param {string} why
+   */
   const consider = (score, why) => {
     if (score > best) {
       best = score;
@@ -299,7 +336,12 @@ export function scoreCandidate(term, {name, keywords = [], description = '', pro
   return best > 0 ? {score: best, reason} : null;
 }
 
-/** Load a doc module's `docs`/`doc` export, swallowing errors. */
+/**
+ * Load a doc module's `docs`/`doc` export, swallowing errors.
+ * @param {string} docPath
+ * @param {string} [exportName]
+ * @returns {Promise<any>}
+ */
 async function loadModuleDoc(docPath, exportName = 'docs') {
   try {
     const mod = await import(pathToFileURL(docPath).href);
@@ -313,13 +355,16 @@ async function loadModuleDoc(docPath, exportName = 'docs') {
  * Build component candidates: name + keywords + usage/description from the
  * component's .doc.mjs.
  * @param {string} coreDir
+ * @returns {Promise<Candidate[]>}
  */
 async function gatherComponents(coreDir) {
   const grouped = discoverComponents(coreDir);
   const names = Object.values(grouped).flat();
+  /** @type {Candidate[]} */
   const candidates = [];
   for (const comp of names) {
     const readme = findComponentReadme(coreDir, comp);
+    /** @type {string[]} */
     let keywords = [];
     let description = '';
     if (readme && readme.endsWith('.doc.mjs')) {
@@ -344,13 +389,16 @@ async function gatherComponents(coreDir) {
  * Build hook candidates: name + keywords + usage/description from the hook's
  * .doc.mjs.
  * @param {string} coreDir
+ * @returns {Promise<Candidate[]>}
  */
 async function gatherHooks(coreDir) {
   const grouped = discoverHooks(coreDir);
   const names = Object.values(grouped).flat();
+  /** @type {Candidate[]} */
   const candidates = [];
   for (const hookName of names) {
     const docPath = findHookDoc(coreDir, hookName);
+    /** @type {string[]} */
     let keywords = [];
     let description = '';
     let importPath = '@astryxdesign/core/hooks';
@@ -373,9 +421,13 @@ async function gatherHooks(coreDir) {
   return candidates;
 }
 
-/** Build doc-topic candidates: topic name + description + section prose. */
+/**
+ * Build doc-topic candidates: topic name + description + section prose.
+ * @returns {Promise<Candidate[]>}
+ */
 async function gatherDocs() {
   if (!fs.existsSync(DOCS_DIR)) return [];
+  /** @type {Candidate[]} */
   const candidates = [];
   for (const file of fs.readdirSync(DOCS_DIR)) {
     const match = file.match(/^([\w-]+)\.doc\.mjs$/);
@@ -383,6 +435,7 @@ async function gatherDocs() {
     const topic = match[1];
     const doc = await loadModuleDoc(path.join(DOCS_DIR, file));
     let description = '';
+    /** @type {string[]} */
     const prose = [];
     if (doc) {
       description = doc.description || '';
@@ -405,7 +458,11 @@ async function gatherDocs() {
   return candidates;
 }
 
-/** Build template candidates (page + block) from the template discovery API. */
+/**
+ * Build template candidates (page + block) from the template discovery API.
+ * @param {string} cwd
+ * @returns {Promise<Candidate[]>}
+ */
 async function gatherTemplates(cwd) {
   let templates;
   try {
@@ -444,7 +501,7 @@ async function gatherTemplates(cwd) {
  * carries enough to act on it: the domain, name, a one-line description, and
  * the follow-up command (and import path where relevant).
  *
- * @param {object} c - candidate
+ * @param {Candidate} c - candidate
  * @param {number} score
  * @param {string} reason
  */
@@ -522,6 +579,7 @@ export async function search(query, options = {}) {
   }
 
   // Gather candidates from each requested domain in parallel.
+  /** @param {string} d */
   const wants = d => !type || type === d;
   const [components, hooks, docTopics, templates] = await Promise.all([
     wants('component') ? gatherComponents(coreDir) : [],
@@ -543,6 +601,7 @@ export async function search(query, options = {}) {
   }
 
   // Sort by score desc, then domain (stable order), then name.
+  /** @type {Record<string, number>} */
   const domainOrder = {component: 0, hook: 1, doc: 2, template: 3};
   scored.sort(
     (a, b) =>

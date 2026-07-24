@@ -79,3 +79,88 @@ export declare function createCodemod<T extends AstryxCodemodDef>(
 export declare function createConfigCodemod<T extends AstryxConfigCodemodDef>(
   def: T,
 ): AstryxConfigCodemod;
+
+// ---------------------------------------------------------------------------
+// Internal types (used by the CLI codemod runner infrastructure & transforms).
+// These are not part of the public authoring surface but are shared across the
+// .mjs files under src/codemods/ so JSDoc annotations stay consistent.
+// ---------------------------------------------------------------------------
+
+/**
+ * jscodeshift transform signature. jscodeshift ships no type declarations, so
+ * the AST surface (`api.jscodeshift`, paths, node attributes) is untyped by
+ * design; transforms operate on it dynamically.
+ */
+export type CodemodTransform = (
+  file: AstryxCodemodFile,
+  api: CodemodTransformApi,
+) => string | null | undefined;
+
+/**
+ * The `api` argument as seen INSIDE a transform implementation. Identical to
+ * {@link AstryxCodemodApi} except `jscodeshift` is typed as the callable
+ * factory (jscodeshift ships no types, so the AST it returns is untyped). Used
+ * by the .mjs transforms so `const j = api.jscodeshift; j(file.source)` type-checks.
+ */
+export interface CodemodTransformApi {
+  jscodeshift: JscodeshiftFactory;
+  stats: (...args: unknown[]) => void;
+  report: (...args: unknown[]) => void;
+}
+
+/**
+ * A normalized codemod entry as produced by both the core registry runner and
+ * integration discovery. See the header of `run-codemod.mjs` for the contract.
+ */
+export interface CodemodEntry {
+  /** Unique id within its package/version (e.g. the transform module name). */
+  id: string;
+  /** Whether this is a source-file codemod or a config-file codemod. */
+  type: 'code' | 'config';
+  /** The codemod itself. */
+  codemod: {
+    title: string;
+    description?: string;
+    isOptional?: boolean;
+    fileExtensions?: string[];
+    transform: CodemodTransform;
+  };
+  /** Owning package name. */
+  package: string;
+  /** Owning package version. */
+  version?: string;
+}
+
+/** The result of running a single codemod over one or more files. */
+export interface CodemodRunResult {
+  filesChanged: number;
+  writtenFiles: string[];
+  errors: Array<{file: string; codemod: string; error: string}>;
+}
+
+/** The console-like log surface used across the codemod runners. */
+export interface CliLog {
+  step: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
+  success: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  message?: (...args: unknown[]) => void;
+}
+
+/**
+ * The jscodeshift factory (the module's default export / `withParser` root).
+ * Callable and carries `withParser`; both return an untyped jscodeshift API.
+ *
+ * `any` is unavoidable here: jscodeshift ships no types and its AST/builder
+ * surface is fully dynamic (`j(src)`, `j.JSXElement`, `path.node`, …). `unknown`
+ * would break the callable + index access the transforms rely on.
+ */
+export interface JscodeshiftFactory {
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  (...args: any[]): any;
+  withParser: (parser: string) => any;
+  /** AST node types and builders (j.JSXElement, j.jsxAttribute, ...) are untyped. */
+  [key: string]: any;
+  /* eslint-enable @typescript-eslint/no-explicit-any */
+}

@@ -68,7 +68,7 @@ const XDS_CORE_SOURCE = /^@xds\/core(\/.*)?$/;
  * Compute the bare (unprefixed) name for an XDS-prefixed identifier.
  * Returns null if the name is not XDS-prefixed in a renameable way.
  */
-function bareName(name) {
+function bareName(/** @type {any} */ name) {
   if (name.startsWith('useXDS') && name.length > 'useXDS'.length) {
     return 'use' + name.slice('useXDS'.length);
   }
@@ -91,7 +91,7 @@ function bareName(name) {
 const MOCK_METHOD_NAMES = new Set(['mock', 'doMock']);
 const MOCK_OBJECT_NAMES = new Set(['vi', 'jest']);
 
-function isMockCallee(callee) {
+function isMockCallee(/** @type {any} */ callee) {
   if (
     callee.type === 'MemberExpression' &&
     !callee.computed &&
@@ -105,7 +105,7 @@ function isMockCallee(callee) {
   return callee.type === 'Identifier' && callee.name === 'mock';
 }
 
-function isXdsCoreMockCall(node) {
+function isXdsCoreMockCall(/** @type {any} */ node) {
   if (node.type !== 'CallExpression' || !isMockCallee(node.callee))
     return false;
   const [arg] = node.arguments;
@@ -119,7 +119,7 @@ function isXdsCoreMockCall(node) {
 // Rename XDS-prefixed object-property KEYS (not values, not nested objects)
 // within the given AST subtree. Used only on a recognized @xds/core mock
 // factory, so the scope guard lives at the call site.
-function renameMockFactoryKeys(node, seen, onChange) {
+function renameMockFactoryKeys(/** @type {any} */ node, /** @type {any} */ seen, /** @type {any} */ onChange) {
   if (!node || typeof node !== 'object') return;
   if (Array.isArray(node)) {
     for (const child of node) renameMockFactoryKeys(child, seen, onChange);
@@ -158,6 +158,11 @@ function renameMockFactoryKeys(node, seen, onChange) {
   }
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -176,12 +181,12 @@ export default function transformer(file, api) {
   // declaration. We gather: import locals, and top-level function/class/var
   // declaration names (the realistic collision sources for component wrappers).
   const existingBindings = new Set();
-  root.find(j.ImportDeclaration).forEach(path => {
+  root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     for (const spec of path.node.specifiers || []) {
       if (spec.local && spec.local.name) existingBindings.add(spec.local.name);
     }
   });
-  const collectDeclName = node => {
+  const collectDeclName = (/** @type {any} */ node) => {
     if (!node) return;
     if (
       (node.type === 'FunctionDeclaration' ||
@@ -195,7 +200,7 @@ export default function transformer(file, api) {
       }
     }
   };
-  root.find(j.Program).forEach(path => {
+  root.find(j.Program).forEach((/** @type {any} */ path) => {
     for (const stmt of path.node.body) {
       collectDeclName(stmt);
       // Unwrap `export function X` / `export const X`.
@@ -209,11 +214,11 @@ export default function transformer(file, api) {
   });
 
   // 1. Rewrite import specifiers from @xds/core
-  root.find(j.ImportDeclaration).forEach(path => {
+  root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     const source = path.node.source.value;
     if (typeof source !== 'string' || !XDS_CORE_SOURCE.test(source)) return;
 
-    path.node.specifiers = (path.node.specifiers || []).map(spec => {
+    path.node.specifiers = (path.node.specifiers || []).map((/** @type {any} */ spec) => {
       if (spec.type !== 'ImportSpecifier') return spec; // default/namespace
       const importedName = spec.imported.name;
       const bare = bareName(importedName);
@@ -253,7 +258,7 @@ export default function transformer(file, api) {
   });
 
   // 2. Rewrite re-exports from @xds/core
-  root.find(j.ExportNamedDeclaration).forEach(path => {
+  root.find(j.ExportNamedDeclaration).forEach((/** @type {any} */ path) => {
     if (!path.node.source) return;
     const source = path.node.source.value;
     if (typeof source !== 'string' || !XDS_CORE_SOURCE.test(source)) return;
@@ -279,7 +284,7 @@ export default function transformer(file, api) {
   // not a reference to an imported binding, so it must match the renamed export
   // name of the mocked module regardless of what the file imports.
   const seenMockNodes = new Set();
-  root.find(j.CallExpression).forEach(path => {
+  root.find(j.CallExpression).forEach((/** @type {any} */ path) => {
     if (!isXdsCoreMockCall(path.node)) return;
     // Only walk the factory argument(s), never the module-path string.
     for (const arg of path.node.arguments.slice(1)) {
@@ -295,7 +300,7 @@ export default function transformer(file, api) {
 
   // 4. Rename references to renamed local bindings
   // Identifiers (type refs, value refs, etc.)
-  root.find(j.Identifier).forEach(path => {
+  root.find(j.Identifier).forEach((/** @type {any} */ path) => {
     const newName = localRenames.get(path.node.name);
     if (!newName) return;
     // Skip object property keys like `{ XDSButton: ... }` (not a reference to
@@ -322,7 +327,7 @@ export default function transformer(file, api) {
   });
 
   // JSX element names: <XDSButton> -> <Button>
-  root.find(j.JSXIdentifier).forEach(path => {
+  root.find(j.JSXIdentifier).forEach((/** @type {any} */ path) => {
     const newName = localRenames.get(path.node.name);
     if (newName) {
       path.node.name = newName;
@@ -344,7 +349,7 @@ export default function transformer(file, api) {
   // renamed binding. Renaming already-bare names is a no-op, so re-visiting a
   // node the earlier passes handled is harmless.
   const seenTypeNodes = new Set();
-  const renameTypeReferences = node => {
+  const renameTypeReferences = (/** @type {any} */ node) => {
     if (!node || typeof node !== 'object') return;
     if (Array.isArray(node)) {
       for (const child of node) renameTypeReferences(child);

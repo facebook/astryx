@@ -77,7 +77,7 @@ for (const props of COMPONENT_PROPS.values()) {
  * Check if a key matches a target prop — exact or case-insensitive suffix.
  * e.g. "dotVariant" matches because it ends with "variant".
  */
-function matchesPropName(keyName) {
+function matchesPropName(/** @type {any} */ keyName) {
   if (TARGET_PROP_NAMES.has(keyName)) return true;
   const lower = keyName.toLowerCase();
   for (const prop of TARGET_PROP_NAMES) {
@@ -86,6 +86,11 @@ function matchesPropName(keyName) {
   return false;
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -96,7 +101,7 @@ export default function transformer(file, api) {
    * Unwraps TSAsExpression (e.g. 'positive' as const) to reach the literal.
    * @returns {boolean} whether a rename occurred
    */
-  function renameValue(node, {precise = false} = {}) {
+  function renameValue(/** @type {any} */ node, {precise = false} = {}) {
     if (!node) return false;
 
     // Unwrap TSAsExpression (e.g. 'positive' as const → StringLiteral)
@@ -123,11 +128,11 @@ export default function transformer(file, api) {
   /**
    * Rename elements in an array (handles TSAsExpression wrapping).
    */
-  function renameArrayElements(node, {precise = false} = {}) {
+  function renameArrayElements(/** @type {any} */ node, {precise = false} = {}) {
     let arrayNode = node;
     if (arrayNode.type === 'TSAsExpression') arrayNode = arrayNode.expression;
     if (arrayNode.type !== 'ArrayExpression') return;
-    arrayNode.elements.forEach((el) => {
+    arrayNode.elements.forEach((/** @type {any} */ el) => {
       if (renameValue(el, {precise})) hasChanges = true;
     });
   }
@@ -139,7 +144,7 @@ export default function transformer(file, api) {
   );
 
   // 1. JSX attributes on target components
-  root.find(j.JSXOpeningElement).forEach((path) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     const componentName = name.type === 'JSXIdentifier' ? name.name : null;
     if (!componentName) return;
@@ -148,14 +153,14 @@ export default function transformer(file, api) {
     // For non-target components, only check suffixed props if file imports targets
     if (!isDirectTarget && !importsTarget) return;
 
-    path.node.attributes.forEach((attr) => {
+    path.node.attributes.forEach((/** @type {any} */ attr) => {
       if (attr.type !== 'JSXAttribute') return;
       const attrName = attr.name.name;
 
       if (isDirectTarget) {
         // Direct targets: only their specific props
         const targetProps = COMPONENT_PROPS.get(componentName);
-        if (!targetProps.has(attrName)) return;
+        if (!targetProps || !targetProps.has(attrName)) return;
       } else {
         // Non-target components: suffixed prop names only
         // (e.g. dotVariant on ChangelogSection wrapping XDSStatusDot)
@@ -201,7 +206,7 @@ export default function transformer(file, api) {
   //    Handles args objects, config objects, Storybook argTypes, etc.
   if (importsTarget) {
     const PropertyType = j.ObjectProperty ?? j.Property;
-    root.find(PropertyType).forEach((path) => {
+    root.find(PropertyType).forEach((/** @type {any} */ path) => {
       const key = path.node.key;
       const keyName =
         key.type === 'Identifier'
@@ -223,7 +228,7 @@ export default function transformer(file, api) {
       // variant: { options: ['positive', 'negative', ...] }
       if (value.type === 'ObjectExpression') {
         const optionsProp = value.properties.find(
-          (p) => p.key && (p.key.name === 'options' || p.key.value === 'options'),
+          (/** @type {any} */ p) => p.key && (p.key.name === 'options' || p.key.value === 'options'),
         );
         if (optionsProp) {
           renameArrayElements(optionsProp.value);
@@ -237,7 +242,7 @@ export default function transformer(file, api) {
 
   // 3. TypeScript type references: 'positive' | 'negative' in union types
   if (importsTarget) {
-    root.find(j.TSLiteralType).forEach((path) => {
+    root.find(j.TSLiteralType).forEach((/** @type {any} */ path) => {
       const lit = path.node.literal;
       if (renameValue(lit)) hasChanges = true;
     });

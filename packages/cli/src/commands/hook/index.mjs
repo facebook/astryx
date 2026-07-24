@@ -19,6 +19,21 @@ import {ERROR_CODES} from '../../lib/error-codes.mjs';
 import {hook as hookApi} from '../../api/hook.mjs';
 import {findRelatedBlocks} from '../../api/template.mjs';
 
+/**
+ * The api layer's hook() widens its return to `{type: string, data: unknown}`,
+ * so annotate the command-local result with the precise discriminated union from
+ * src/types/hook to get narrowing + typed data.
+ *
+ * @typedef {(
+ *   | import('../../types/hook').HookListResponse
+ *   | import('../../types/hook').HookBriefResponse
+ *   | import('../../types/hook').HookFullResponse
+ *   | import('../../types/hook').HookDetailResponse
+ *   | import('../../types/hook').HookDetailParamsResponse
+ * )} HookResult
+ */
+
+/** @param {import('commander').Command} program */
 export function registerHook(program) {
   program
     .command('hook [name]')
@@ -26,7 +41,12 @@ export function registerHook(program) {
     .option('--list', 'List all hooks grouped by category')
     .option('--category <category>', 'List hooks in a specific category')
     .option('--params', 'Print only the parameters table')
-    .action(async (name, options) => {
+    .action(
+      /**
+       * @param {string|undefined} name
+       * @param {{list?: boolean, category?: string, params?: boolean}} options
+       */
+      async (name, options) => {
       const run = getCliInvocation();
       const zh = program.opts().zh || false;
       const lang = program.opts().lang || null;
@@ -43,18 +63,20 @@ export function registerHook(program) {
         return;
       }
 
+      /** @type {HookResult} */
       let result;
       try {
-        result = await hookApi(name, {
+        result = /** @type {HookResult} */ (await hookApi(name, {
           cwd: process.cwd(),
           list: options.list,
           category: options.category,
           params: options.params,
           detail,
           lang, zh,
-        });
+        }));
       } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions, code: e.code});
+        const err = /** @type {import('../../api/error.mjs').AstryxError} */ (e);
+        cliError(err.message, {suggestions: err.suggestions, code: err.code});
         return;
       }
 
@@ -123,6 +145,7 @@ export function registerHook(program) {
           }
           // Show related block templates from relatedComponents
           const relatedComps = result.data.relatedComponents || [];
+          /** @type {import('../../api/template.mjs').DiscoveredTemplate[]} */
           const allBlocks = [];
           for (const comp of relatedComps) {
             const blocks = await findRelatedBlocks(comp);

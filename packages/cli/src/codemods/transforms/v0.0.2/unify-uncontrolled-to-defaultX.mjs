@@ -32,6 +32,11 @@ const RENAMES = [
   },
 ];
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -42,8 +47,8 @@ export default function transformer(file, api) {
       .find(j.JSXOpeningElement, {
         name: {name: component},
       })
-      .forEach((path) => {
-        path.node.attributes.forEach((attr) => {
+      .forEach((/** @type {any} */ path) => {
+        path.node.attributes.forEach((/** @type {any} */ attr) => {
           if (attr.type === 'JSXAttribute' && attr.name.name === oldProp) {
             attr.name.name = newProp;
             hasChanges = true;

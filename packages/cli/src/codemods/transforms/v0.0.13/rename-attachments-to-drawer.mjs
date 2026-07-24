@@ -22,15 +22,22 @@ export const meta = {
   pr: '#1714',
 };
 
+/** @type {Record<string, string>} */
 const IMPORT_RENAMES = {
   XDSChatComposerAttachments: 'XDSChatComposerDrawer',
   XDSChatComposerAttachmentsProps: 'XDSChatComposerDrawerProps',
 };
 
+/** @type {Record<string, string>} */
 const CSS_CLASS_RENAMES = {
   'xds-chat-composer-attachments': 'xds-chat-composer-drawer',
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -40,7 +47,7 @@ export default function transformer(file, api) {
   const localToComponent = new Map();
 
   // --- 1. Rename imports ---
-  root.find(j.ImportSpecifier).forEach((path) => {
+  root.find(j.ImportSpecifier).forEach((/** @type {any} */ path) => {
     const importedName = path.node.imported.name;
     const newName = IMPORT_RENAMES[importedName];
     if (!newName) return;
@@ -66,7 +73,7 @@ export default function transformer(file, api) {
 
     root
       .find(j.JSXIdentifier, {name: oldName})
-      .forEach((path) => {
+      .forEach((/** @type {any} */ path) => {
         const parent = path.parent.node;
         if (
           parent.type === 'JSXOpeningElement' ||
@@ -79,7 +86,7 @@ export default function transformer(file, api) {
   }
 
   // --- 3. Rename `attachments` prop → `drawer` on XDSChatComposer ---
-  root.find(j.JSXOpeningElement).forEach((path) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     const componentName = name.type === 'JSXIdentifier' ? name.name : null;
     if (componentName !== 'XDSChatComposer') return;
@@ -97,7 +104,7 @@ export default function transformer(file, api) {
   });
 
   // --- 4. Rename type references ---
-  root.find(j.TSTypeReference).forEach((path) => {
+  root.find(j.TSTypeReference).forEach((/** @type {any} */ path) => {
     const typeName = path.node.typeName;
     if (typeName.type === 'Identifier') {
       const newName = IMPORT_RENAMES[typeName.name];
@@ -109,7 +116,7 @@ export default function transformer(file, api) {
   });
 
   // Also handle plain Identifier references (e.g. typeof, React.ComponentProps<typeof X>)
-  root.find(j.Identifier, {name: 'XDSChatComposerAttachments'}).forEach((path) => {
+  root.find(j.Identifier, {name: 'XDSChatComposerAttachments'}).forEach((/** @type {any} */ path) => {
     const parent = path.parent.node;
     if (
       parent.type === 'ImportSpecifier' ||
@@ -122,7 +129,7 @@ export default function transformer(file, api) {
     hasChanges = true;
   });
 
-  root.find(j.Identifier, {name: 'XDSChatComposerAttachmentsProps'}).forEach((path) => {
+  root.find(j.Identifier, {name: 'XDSChatComposerAttachmentsProps'}).forEach((/** @type {any} */ path) => {
     const parent = path.parent.node;
     if (parent.type === 'ImportSpecifier') return;
     path.node.name = 'XDSChatComposerDrawerProps';
@@ -130,7 +137,7 @@ export default function transformer(file, api) {
   });
 
   // --- 5. Rename CSS class strings ---
-  root.find(j.StringLiteral).forEach((path) => {
+  root.find(j.StringLiteral).forEach((/** @type {any} */ path) => {
     for (const [oldClass, newClass] of Object.entries(CSS_CLASS_RENAMES)) {
       if (path.node.value.includes(oldClass)) {
         path.node.value = path.node.value.replace(
@@ -143,7 +150,7 @@ export default function transformer(file, api) {
   });
 
   // Also check template literals
-  root.find(j.TemplateLiteral).forEach((path) => {
+  root.find(j.TemplateLiteral).forEach((/** @type {any} */ path) => {
     for (const quasi of path.node.quasis) {
       for (const [oldClass, newClass] of Object.entries(CSS_CLASS_RENAMES)) {
         if (quasi.value.raw.includes(oldClass)) {

@@ -77,12 +77,15 @@ const HIDDEN_RE = /(?:^|\n) {0,4}hidden:\s*true/;
 /**
  * Read the `group`, `hiddenComponents`, and `hidden` fields from a
  * component's .doc.mjs file (synchronous).
+ * @param {string} docPath
+ * @returns {{group: string | null, hiddenComponents: Set<string>, hidden: boolean}}
  */
 function readDocMeta(docPath) {
   try {
     const content = fs.readFileSync(docPath, 'utf-8');
     const groupMatch = GROUP_RE.exec(content);
     const hiddenCompsMatch = HIDDEN_COMPONENTS_RE.exec(content);
+    /** @type {Set<string>} */
     const hiddenSet = new Set();
     if (hiddenCompsMatch) {
       for (const m of hiddenCompsMatch[1].matchAll(/['"]([^'"]+)['"]/g)) {
@@ -109,13 +112,20 @@ function readDocMeta(docPath) {
  *
  * Keys are sorted alphabetically (groups and ungrouped components interleaved).
  * Components within each group are also sorted alphabetically.
+ * @param {string} coreDir
+ * @returns {Record<string, string[]>}
  */
 export function discoverComponents(coreDir) {
   const srcDir = path.join(coreDir, 'src');
   /** @type {Map<string, string|null>} componentName → group */
   const componentGroups = new Map();
 
+  /**
+   * @param {string} dirPath
+   * @returns {string[]}
+   */
   function collectXDSFiles(dirPath) {
+    /** @type {string[]} */
     const results = [];
     if (!fs.existsSync(dirPath)) return results;
     const entries = fs.readdirSync(dirPath, {withFileTypes: true});
@@ -185,7 +195,7 @@ export function discoverComponents(coreDir) {
   for (const [name, group] of componentGroups) {
     if (group) {
       if (!groups.has(group)) groups.set(group, []);
-      groups.get(group).push(name);
+      groups.get(group)?.push(name);
     } else {
       ungrouped.push(name);
     }
@@ -220,6 +230,9 @@ export function discoverComponents(coreDir) {
  * Find the .doc.mjs file for a component.
  * For sub-components (e.g. StackItem), returns the parent's .doc.mjs
  * if the sub-component is documented there.
+ * @param {string} coreDir
+ * @param {string} name
+ * @returns {string | null}
  */
 export function findComponentReadme(coreDir, name) {
   const srcDir = path.join(coreDir, 'src');
@@ -278,6 +291,9 @@ export function findComponentReadme(coreDir, name) {
  * `useResizable.ts`), so `.ts` candidates are searched alongside `.tsx`. Without
  * this, deriving the import path for a `.ts`-authored function falls back to the
  * bare `@astryxdesign/core` root instead of its tree-shakeable subpath.
+ * @param {string} coreDir
+ * @param {string} name
+ * @returns {string | null}
  */
 export function findComponentSource(coreDir, name) {
   const srcDir = path.join(coreDir, 'src');
@@ -292,6 +308,10 @@ export function findComponentSource(coreDir, name) {
     `${name}.ts`,
   ];
 
+  /**
+   * @param {string} dirPath
+   * @returns {string | null}
+   */
   function searchDir(dirPath) {
     if (!fs.existsSync(dirPath)) return null;
     const entries = fs.readdirSync(dirPath, {withFileTypes: true});
@@ -337,6 +357,9 @@ export function findComponentSource(coreDir, name) {
 /**
  * Compute the Levenshtein (edit) distance between two strings.
  * Used for fuzzy-matching component names. Dependency-free.
+ * @param {string} coreDir
+ * @param {string} componentName
+ * @returns {string}
  */
 export function resolveImportPath(coreDir, componentName) {
   const srcDir = path.join(coreDir, 'src');
@@ -376,11 +399,15 @@ export function resolveImportPath(coreDir, componentName) {
  * Scans for *.doc.mjs files and returns their names as a flat array.
  *
  * @deprecated Use discoverExternalComponentsGrouped for group-aware discovery.
+ * @param {string} docsDir
+ * @returns {string[]}
  */
 export function discoverExternalComponents(docsDir) {
   if (!fs.existsSync(docsDir)) return [];
+  /** @type {string[]} */
   const components = [];
 
+  /** @param {string} dirPath */
   function scanDir(dirPath) {
     const entries = fs.readdirSync(dirPath, {withFileTypes: true});
     for (const entry of entries) {
@@ -405,6 +432,8 @@ export function discoverExternalComponents(docsDir) {
  * Returns a Record<string, string[]> matching the shape of discoverComponents():
  * - Grouped components: `{ 'App Chrome': ['AppShell', 'SideNav', 'TopNav'] }`
  * - Ungrouped components: `{ 'Diff': ['Diff'] }`
+ * @param {string} docsDir
+ * @returns {Record<string, string[]>}
  */
 export function discoverExternalComponentsGrouped(docsDir) {
   if (!fs.existsSync(docsDir)) return {};
@@ -412,6 +441,7 @@ export function discoverExternalComponentsGrouped(docsDir) {
   /** @type {Map<string, string|null>} componentName → group */
   const componentGroups = new Map();
 
+  /** @param {string} dirPath */
   function scanDir(dirPath) {
     const entries = fs.readdirSync(dirPath, {withFileTypes: true});
     for (const entry of entries) {
@@ -440,7 +470,7 @@ export function discoverExternalComponentsGrouped(docsDir) {
   for (const [name, group] of componentGroups) {
     if (group) {
       if (!groups.has(group)) groups.set(group, []);
-      groups.get(group).push(name);
+      groups.get(group)?.push(name);
     } else {
       ungrouped.push(name);
     }
@@ -472,11 +502,18 @@ export function discoverExternalComponentsGrouped(docsDir) {
 /**
  * Find a component's doc file in an external package's docs directory.
  * Returns the path to {Name}.doc.mjs or null.
+ * @param {string} docsDir
+ * @param {string} name
+ * @returns {string | null}
  */
 export function findExternalComponentDoc(docsDir, name) {
   if (!fs.existsSync(docsDir)) return null;
   const target = `${name}.doc.mjs`;
 
+  /**
+   * @param {string} dirPath
+   * @returns {string | null}
+   */
   function scanDir(dirPath) {
     const entries = fs.readdirSync(dirPath, {withFileTypes: true});
     for (const entry of entries) {
@@ -538,6 +575,7 @@ export function discoverIntegrationComponents(integration) {
   /** @type {Map<string, {name: string, package: string, docPath: string, sourcePath: string|null, issuesUrl: string|undefined, group: string|null}>} */
   const byName = new Map();
 
+  /** @param {string} dirPath */
   function scanDir(dirPath) {
     const entries = fs.readdirSync(dirPath, {withFileTypes: true});
     for (const entry of entries) {
@@ -582,6 +620,10 @@ export function findIntegrationComponentDoc(integration, name) {
   const componentsDir = integration?.components;
   if (!componentsDir || !fs.existsSync(componentsDir)) return null;
 
+  /**
+   * @param {string} dirPath
+   * @returns {string | null}
+   */
   function scanDir(dirPath) {
     const entries = fs.readdirSync(dirPath, {withFileTypes: true});
     // Exact same-stem match (precedence order) first in this dir.

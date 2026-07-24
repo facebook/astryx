@@ -15,6 +15,7 @@ export const meta = {
   pr: '#945',
 };
 
+/** @type {Record<string, string>} */
 const VARIANT_MAP = {
   success: 'positive',
   error: 'negative',
@@ -23,12 +24,12 @@ const VARIANT_MAP = {
   neutral: 'neutral',
 };
 
-function isDotMode(path) {
+function isDotMode(/** @type {any} */ path) {
   const opening = path.node.openingElement;
 
   // Dot mode is indicated by shape="dot" prop
   const hasShapeDot = opening.attributes.some(
-    (attr) =>
+    (/** @type {any} */ attr) =>
       attr.type === 'JSXAttribute' &&
       attr.name.type === 'JSXIdentifier' &&
       attr.name.name === 'shape' &&
@@ -40,7 +41,7 @@ function isDotMode(path) {
 
   // If icon prop is present, leave alone
   const hasIcon = opening.attributes.some(
-    (attr) =>
+    (/** @type {any} */ attr) =>
       attr.type === 'JSXAttribute' &&
       attr.name.type === 'JSXIdentifier' &&
       attr.name.name === 'icon',
@@ -50,13 +51,18 @@ function isDotMode(path) {
   return true;
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
   // Find all XDSBadge JSX elements
-  root.find(j.JSXElement).forEach((path) => {
+  root.find(j.JSXElement).forEach((/** @type {any} */ path) => {
     const opening = path.node.openingElement;
     if (
       opening.name.type !== 'JSXIdentifier' ||
@@ -69,11 +75,12 @@ export default function transformer(file, api) {
 
     // Map variant
     const variantAttr = opening.attributes.find(
-      (attr) =>
+      (/** @type {any} */ attr) =>
         attr.type === 'JSXAttribute' &&
         attr.name.name === 'variant',
     );
 
+    /** @type {string | null} */
     let newVariantValue = 'neutral'; // default
     if (variantAttr) {
       if (
@@ -140,7 +147,7 @@ export default function transformer(file, api) {
   if (!hasChanges) return undefined;
 
   // Handle imports
-  const badgeImports = root.find(j.ImportDeclaration).filter((path) => {
+  const badgeImports = root.find(j.ImportDeclaration).filter((/** @type {any} */ path) => {
     const source = path.node.source.value;
     return (
       typeof source === 'string' &&
@@ -165,7 +172,7 @@ export default function transformer(file, api) {
     root
       .find(j.ImportDefaultSpecifier)
       .filter(
-        (path) => path.node.local.name === 'XDSStatusDot',
+        (/** @type {any} */ path) => path.node.local.name === 'XDSStatusDot',
       )
       .size() > 0;
 
@@ -176,7 +183,7 @@ export default function transformer(file, api) {
     );
 
     // Insert after the last existing xds import, or at the top
-    const xdsImports = root.find(j.ImportDeclaration).filter((path) => {
+    const xdsImports = root.find(j.ImportDeclaration).filter((/** @type {any} */ path) => {
       const source = path.node.source.value;
       return typeof source === 'string' && source.includes('@xds/core');
     });
@@ -195,11 +202,11 @@ export default function transformer(file, api) {
 
   // Remove XDSBadge import if no remaining usages
   if (remainingBadgeUsages === 0) {
-    badgeImports.forEach((path) => {
+    badgeImports.forEach((/** @type {any} */ path) => {
       const specifiers = path.node.specifiers;
       if (!specifiers) return;
 
-      const filtered = specifiers.filter((s) => {
+      const filtered = specifiers.filter((/** @type {any} */ s) => {
         if (
           s.type === 'ImportSpecifier' &&
           s.imported.type === 'Identifier' &&

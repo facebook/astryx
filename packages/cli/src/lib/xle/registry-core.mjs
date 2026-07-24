@@ -74,6 +74,8 @@ export const SPACING_STEPS = [0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10];
  * Parse enum values from a doc.mjs prop type string.
  * "'a' | 'b' | 'c'" → ['a','b','c'];  "1|2|3" → [1,2,3];
  * "SpacingStep" → SPACING_STEPS. Mixed/non-enum types → null.
+ * @param {string | undefined | null} type
+ * @returns {Array<string | number> | null}
  */
 export function parseEnumValues(type) {
   if (!type || typeof type !== 'string') return null;
@@ -83,6 +85,7 @@ export function parseEnumValues(type) {
   }
   const parts = t.split('|').map(p => p.trim());
   if (parts.length < 2) return null;
+  /** @type {Array<string | number>} */
   const values = [];
   for (const part of parts) {
     const str = part.match(/^'([^']*)'$/) || part.match(/^"([^"]*)"$/);
@@ -93,14 +96,21 @@ export function parseEnumValues(type) {
   return values;
 }
 
+/** @param {string} name */
 export function normalizeName(name) {
   return name.replace(/^XDS/, '');
 }
 
 /**
  * Index one doc entry's props into the registry component shape.
+ * @param {string} name
+ * @param {import('./xle-ast').DocProp[]} props
+ * @param {string} dirName
+ * @param {string} importPath
+ * @returns {import('./xle-ast').RegistryComponent}
  */
 export function toComponentEntry(name, props, dirName, importPath) {
+  /** @type {Map<string, import('./xle-ast').RegistryProp>} */
   const propMap = new Map();
   for (const p of props || []) {
     propMap.set(p.name, {
@@ -119,10 +129,14 @@ export function toComponentEntry(name, props, dirName, importPath) {
 /**
  * Resolve a node name (alias, bare name, or XDS-prefixed name) to a
  * registry component entry, or null.
+ * @param {import('./xle-ast').Registry} registry
+ * @param {string | null} name
+ * @returns {import('./xle-ast').RegistryComponent | null}
  */
 export function resolveComponent(registry, name) {
+  if (name == null) return null;
   const viaAlias = registry.aliases.get(name);
-  if (viaAlias) return registry.components.get(viaAlias);
+  if (viaAlias) return registry.components.get(viaAlias) ?? null;
   const bare = normalizeName(name);
   return registry.components.get(bare) || null;
 }
@@ -130,6 +144,8 @@ export function resolveComponent(registry, name) {
 /**
  * Serialize a built registry (with Map fields) to a plain JSON-safe object
  * so a Node build step can ship it to the browser.
+ * @param {import('./xle-ast').Registry} registry
+ * @returns {import('./browser').SerializedRegistry}
  */
 export function serializeRegistry(registry) {
   return {
@@ -139,7 +155,7 @@ export function serializeRegistry(registry) {
       dirName: c.dirName,
       importPath: c.importPath,
       undocumented: c.undocumented || false,
-      props: [...c.props.values()],
+      props: /** @type {Array<Record<string, unknown>>} */ (/** @type {unknown} */ ([...c.props.values()])),
     })),
     aliases: [...registry.aliases.entries()],
     componentNames: registry.componentNames,
@@ -149,17 +165,26 @@ export function serializeRegistry(registry) {
 /**
  * Hydrate a serialized registry back into the Map-bearing shape that
  * validate()/expand() expect. Inverse of serializeRegistry.
+ * @param {import('./browser').SerializedRegistry} json
+ * @returns {import('./xle-ast').Registry}
  */
 export function hydrateRegistry(json) {
+  /** @type {Map<string, import('./xle-ast').RegistryComponent>} */
   const components = new Map();
   for (const c of json.components) {
+    /** @type {Map<string, import('./xle-ast').RegistryProp>} */
+    const props = new Map();
+    for (const p of c.props) {
+      const prop = /** @type {import('./xle-ast').RegistryProp} */ (/** @type {unknown} */ (p));
+      props.set(String(p.name), prop);
+    }
     components.set(c.name, {
       name: c.name,
       exportName: c.exportName,
       dirName: c.dirName,
       importPath: c.importPath,
       undocumented: c.undocumented || false,
-      props: new Map(c.props.map(p => [p.name, p])),
+      props,
     });
   }
   return {

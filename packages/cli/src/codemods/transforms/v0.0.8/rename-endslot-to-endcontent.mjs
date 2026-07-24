@@ -23,13 +23,18 @@ export const meta = {
   pr: '#895',
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
   // 1. Rename JSX prop: <XDSButton endSlot={...} /> → <XDSButton endContent={...} />
-  root.find(j.JSXAttribute, {name: {name: 'endSlot'}}).forEach((path) => {
+  root.find(j.JSXAttribute, {name: {name: 'endSlot'}}).forEach((/** @type {any} */ path) => {
     path.node.name.name = 'endContent';
     hasChanges = true;
   });
@@ -37,7 +42,7 @@ export default function transformer(file, api) {
   // 2. Rename in all Identifier nodes named 'endSlot' that are object keys
   //    This covers both Property and ObjectProperty (parser-dependent),
   //    object literals, destructuring patterns, etc.
-  root.find(j.Identifier, {name: 'endSlot'}).forEach((path) => {
+  root.find(j.Identifier, {name: 'endSlot'}).forEach((/** @type {any} */ path) => {
     const parent = path.parent.node;
 
     // Object property key: { endSlot: value } or { endSlot } (shorthand)

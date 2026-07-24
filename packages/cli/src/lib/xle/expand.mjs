@@ -21,24 +21,31 @@ import {mergeImports, renderImport, prepareSpliceModule} from './splice.mjs';
 
 const INDENT = '  ';
 
+/** @param {string | null | undefined} text */
 function slugify(text) {
   return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
 
+/** @param {string} text */
 function camelCase(text) {
   const parts = slugify(text).split('-').filter(Boolean);
   if (parts.length === 0) return 'item';
   return parts[0] + parts.slice(1).map(p => p[0].toUpperCase() + p.slice(1)).join('');
 }
 
+/** @param {import('./xle-ast').XLEValue} value */
 function escapeAttr(value) {
   return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
+/**
+ * @param {import('./xle-ast').XLEItem} item
+ * @returns {import('./xle-ast').XLEItem}
+ */
 function cloneItem(item) {
   // .bound holds a registry reference (Map props) — rebuild it after the
   // JSON round-trip of the plain AST fields.
-  const {bound, ...rest} = item;
+  const {bound, ...rest} = /** @type {import('./xle-ast').XLENode} */ (item);
   const copy = JSON.parse(JSON.stringify(rest, (key, value) => {
     if (key === 'bound') return undefined;
     return value;
@@ -58,16 +65,25 @@ function cloneItem(item) {
 /**
  * Substitute Emmet-style `$` counters in payloads and string props.
  * `\$` escapes a literal dollar sign (prices etc.).
+ * @param {string} text
+ * @param {number} index
  */
 function subCounterText(text, index) {
   return text.replace(/\\\$|\$/g, m => (m === '\\$' ? '$' : String(index)));
 }
 
-/** Strip `\$` escapes when a node is NOT repeated (single emission). */
+/**
+ * Strip `\$` escapes when a node is NOT repeated (single emission).
+ * @param {string} text
+ */
 function unescapeCounterText(text) {
   return text.replace(/\\\$/g, '$');
 }
 
+/**
+ * @param {import('./xle-ast').XLEItem} node
+ * @param {number} index
+ */
 function substituteCounter(node, index) {
   if (node.kind === 'group') {
     for (const child of node.children) substituteCounter(child, index);
@@ -86,44 +102,69 @@ function substituteCounter(node, index) {
 }
 
 class Emitter {
+  /**
+   * @param {import('./xle-ast').Registry} registry
+   * @param {{componentName?: string, blockModules?: Map<string, import('./xle-ast').BlockModule>}} [options]
+   */
   constructor(registry, options = {}) {
     this.registry = registry;
     // importPath → {named:Set, types:Set, default, namespace, sideEffect}
+    /** @type {Map<string, import('./xle-ast').ImportEntry>} */
     this.imports = new Map();
+    /** @type {import('./xle-ast').StateEntry[]} */
     this.states = [];
+    /** @type {Set<string>} */
     this.usedStateNames = new Set();
+    /** @type {string[]} */
     this.todos = [];
+    /** @type {Set<string>} */
     this.componentsUsed = new Set();
     this.componentName = options.componentName || 'GeneratedLayout';
     // canonical block key → prepared module ({mode, componentName, ...})
     this.blockModules = options.blockModules || new Map();
     // names of blocks already co-defined in this module (dedup)
+    /** @type {Map<string, string>} */
     this.splicedBlocks = new Map(); // key → componentName
+    /** @type {string[]} */
     this.blockDefs = []; // co-defined block source bodies, in first-use order
   }
 
+  /**
+   * @param {string} source
+   * @returns {import('./xle-ast').ImportEntry}
+   */
   importEntry(source) {
     if (!this.imports.has(source)) {
       this.imports.set(source, {named: new Set(), types: new Set(), default: null, namespace: null, sideEffect: false});
     }
-    return this.imports.get(source);
+    return /** @type {import('./xle-ast').ImportEntry} */ (this.imports.get(source));
   }
 
+  /** @param {import('./xle-ast').RegistryComponent} component */
   addImport(component) {
     this.importEntry(component.importPath).named.add(component.exportName);
     this.componentsUsed.add(component.name);
   }
 
+  /**
+   * @param {string} source
+   * @param {string} name
+   */
   addNamedImport(source, name) {
     this.importEntry(source).named.add(name);
   }
 
+  /**
+   * @param {string} name
+   * @returns {import('./xle-ast').RegistryComponent | undefined}
+   */
   requireComponent(name) {
     const component = this.registry.components.get(name);
     if (component) this.addImport(component);
     return component;
   }
 
+  /** @param {string} base */
   stateName(base) {
     let name = camelCase(base);
     if (!/^[a-z]/.test(name)) name = 'v' + name;
@@ -134,6 +175,10 @@ class Emitter {
     return candidate;
   }
 
+  /**
+   * @param {string} base
+   * @param {string} initial
+   */
   addState(base, initial) {
     const name = this.stateName(base);
     const setter = 'set' + name[0].toUpperCase() + name.slice(1);
@@ -143,12 +188,16 @@ class Emitter {
 
   // ── value → JSX prop text ────────────────────────────────────────────
 
+  /**
+   * @param {import('./xle-ast').XLEValue} value
+   * @returns {string | null}
+   */
   jsxValue(value) {
     if (value === true) return null; // bare flag
     if (value === false) return '{false}';
     if (typeof value === 'number') return `{${value}}`;
     if (typeof value === 'string') return `"${escapeAttr(value)}"`;
-    if (value && value.__expr) return `{${value.__expr}}`;
+    if (value && typeof value === 'object' && '__expr' in value) return `{${value.__expr}}`;
     if (Array.isArray(value)) {
       return `{[${value.map(v => (typeof v === 'string' ? `'${v}'` : String(v))).join(', ')}]}`;
     }
@@ -161,6 +210,10 @@ class Emitter {
     return `{${String(value)}}`;
   }
 
+  /**
+   * @param {string} key
+   * @param {import('./xle-ast').XLEValue} value
+   */
   propText(key, value) {
     const v = this.jsxValue(value);
     return v === null ? key : `${key}=${v}`;
@@ -168,10 +221,14 @@ class Emitter {
 
   // ── scaffolding ──────────────────────────────────────────────────────
 
+  /**
+   * @param {import('./xle-ast').RegistryProp} prop
+   * @param {import('./xle-ast').XLENode} node
+   */
   initialFor(prop, node) {
     const type = (prop.type || '').trim();
-    if (node.bound.component.name === 'TabList') {
-      const tabs = node.children.filter(c => c.kind === 'node');
+    if (node.bound?.component.name === 'TabList') {
+      const tabs = /** @type {import('./xle-ast').XLENode[]} */ (node.children.filter(c => c.kind === 'node'));
       const chosen = tabs.find(t => t.selected) || tabs[0];
       return chosen ? `'${slugify(chosen.payload || chosen.name)}'` : `''`;
     }
@@ -185,6 +242,11 @@ class Emitter {
     return 'undefined';
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {import('./xle-ast').RegistryComponent} component
+   * @param {Map<string, import('./xle-ast').XLEValue>} props
+   */
   scaffoldState(node, component, props) {
     for (const valueKey of ['value', 'page']) {
       const valueProp = component.props.get(valueKey);
@@ -199,6 +261,12 @@ class Emitter {
     }
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {import('./xle-ast').RegistryComponent} component
+   * @param {Map<string, import('./xle-ast').XLEValue>} props
+   * @param {Set<string>} slotKeys
+   */
   fillRequired(node, component, props, slotKeys) {
     for (const prop of component.props.values()) {
       if (!prop.required || props.has(prop.name) || slotKeys.has(prop.name)) continue;
@@ -221,7 +289,14 @@ class Emitter {
 
   // ── node emission ────────────────────────────────────────────────────
 
+  /**
+   * @param {import('./xle-ast').XLEItem[]} items
+   * @param {number} depth
+   * @param {import('./xle-ast').EmitContext} [context]
+   * @returns {string[]}
+   */
   emitItems(items, depth, context = {}) {
+    /** @type {string[]} */
     const lines = [];
     for (const item of items) {
       if (item.kind === 'group') {
@@ -237,7 +312,7 @@ class Emitter {
       }
       const count = item.repeat || 1;
       for (let i = 1; i <= count; i++) {
-        const clone = count > 1 ? cloneItem(item) : item;
+        const clone = count > 1 ? /** @type {import('./xle-ast').XLENode} */ (cloneItem(item)) : item;
         if (count > 1) {
           clone.repeat = null;
           substituteCounter(clone, i);
@@ -248,6 +323,12 @@ class Emitter {
     return lines;
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {number} depth
+   * @param {import('./xle-ast').EmitContext} [context]
+   * @returns {string[]}
+   */
   emitNode(node, depth, context = {}) {
     if (!node.bound) {
       // Anonymous block reference — emit just the block, no wrapper element.
@@ -259,6 +340,7 @@ class Emitter {
     const pad = INDENT.repeat(depth);
 
     const props = new Map(node.bound.props);
+    /** @type {string | null} */
     let textChild = null;
 
     // Payload → primary text prop, else text child. Required props win
@@ -273,7 +355,7 @@ class Emitter {
       if (target && !props.has(target)) props.set(target, node.payload);
       else textChild = node.payload;
     }
-    if (node.payload2 != null && component.props.has('value') && !component.props.get('value').required) {
+    if (node.payload2 != null && component.props.has('value') && !component.props.get('value')?.required) {
       props.set('value', node.payload2);
     }
 
@@ -292,9 +374,11 @@ class Emitter {
     props.delete('__opens');
     props.delete('__fill');
     if (opens) {
-      const target = opens.idref || opens;
+      const opensRef = /** @type {import('./xle-ast').IdRef} */ (opens);
+      const target = opensRef.idref || opens;
       const handler = component.props.has('onClick') ? 'onClick' : 'clickAction';
-      props.set(handler, {__expr: `() => {/* TODO(xle): open #${target.idref ?? target} */}`});
+      const targetId = typeof target === 'object' && target != null && 'idref' in target ? target.idref : target;
+      props.set(handler, {__expr: `() => {/* TODO(xle): open #${targetId} */}`});
     }
 
     // Slots → element-valued props (keys collected first so required-prop
@@ -302,12 +386,14 @@ class Emitter {
     const slotKeys = new Set(node.bound.slots.map(s => s.key));
     this.fillRequired(node, component, props, slotKeys);
 
+    /** @type {Array<[string, string[]]>} */
     const slotEntries = [];
     for (const slot of node.bound.slots) {
       slotEntries.push([slot.key, this.emitSlotValue(slot, depth + 1)]);
     }
 
     // Structural routing.
+    /** @type {import('./xle-ast').XLEItem[]} */
     let children = node.children;
     if (component.name === 'Layout') {
       const routed = this.routeLayoutChildren(node, props, slotEntries, depth);
@@ -356,12 +442,21 @@ class Emitter {
     return lines;
   }
 
+  /**
+   * @param {import('./xle-ast').RegistryComponent} component
+   * @param {Map<string, import('./xle-ast').XLEValue>} props
+   * @param {Array<[string, string[]]>} slotEntries
+   * @param {string[]} bodyLines
+   * @param {number} depth
+   * @returns {string[]}
+   */
   renderTag(component, props, slotEntries, bodyLines, depth) {
     const pad = INDENT.repeat(depth);
     const propTexts = [...props.entries()].map(([k, v]) => this.propText(k, v));
     const slotTexts = slotEntries.map(([key, valueLines]) => ({key, valueLines}));
     const tag = component.exportName;
 
+    /** @type {string[]} */
     const open = [];
     const simple = slotTexts.length === 0 && propTexts.join(' ').length <= 60;
     if (simple) {
@@ -385,6 +480,11 @@ class Emitter {
     return [...open, ...bodyLines, `${pad}</${tag}>`];
   }
 
+  /**
+   * @param {import('./xle-ast').Slot} slot
+   * @param {number} _depth
+   * @returns {string[]}
+   */
   emitSlotValue(slot, _depth) {
     const value = slot.value;
     if (value == null) {
@@ -394,17 +494,17 @@ class Emitter {
       const text = this.requireComponent('Text');
       return [text ? `<${text.exportName}>${value}</${text.exportName}>` : `<>${value}</>`];
     }
-    if (value.hint) {
+    if ('hint' in value) {
       return [
         '<>',
         ...this.emitHint(value.hint, 1).map(l => l.trimStart()).map(l => INDENT + l),
         '</>',
       ];
     }
-    if (value.idref) {
+    if ('idref' in value) {
       return [`null /* TODO(xle): reference #${value.idref} */`];
     }
-    if (value.subexpr) {
+    if ('subexpr' in value) {
       const lines = this.emitItems(value.subexpr, 0, {});
       if (value.subexpr.length > 1) return ['<>', ...lines.map(l => INDENT + l), '</>'];
       return lines;
@@ -412,6 +512,11 @@ class Emitter {
     return ['null'];
   }
 
+  /**
+   * @param {import('./xle-ast').Hint} hint
+   * @param {number} depth
+   * @returns {string[]}
+   */
   emitHint(hint, depth) {
     const pad = INDENT.repeat(depth);
     if (hint.block) {
@@ -436,6 +541,9 @@ class Emitter {
   /**
    * Register a referenced block (import-mode app component, or splice-mode
    * template block co-defined once) and return the JSX component name to use.
+   * @param {string} key
+   * @param {import('./xle-ast').BlockModule} mod
+   * @returns {string | null | undefined}
    */
   referenceBlock(key, mod) {
     if (this.splicedBlocks.has(key)) return this.splicedBlocks.get(key);
@@ -468,18 +576,27 @@ class Emitter {
     return name;
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {Map<string, import('./xle-ast').XLEValue>} props
+   * @param {Array<[string, string[]]>} slotEntries
+   * @param {number} depth
+   * @returns {import('./xle-ast').XLEItem[]}
+   */
   routeLayoutChildren(node, props, slotEntries, depth) {
+    /** @type {Record<string, string>} */
     const family = {
       LayoutHeader: 'header',
       LayoutContent: 'content',
       LayoutFooter: 'footer',
     };
     const assigned = new Set(slotEntries.map(([k]) => k));
+    /** @type {import('./xle-ast').XLEItem[]} */
     const loose = [];
     let panelCount = 0;
     for (const child of node.children) {
-      const childName = child.bound?.component?.name;
-      let slotName = family[childName];
+      const childName = child.kind === 'node' ? child.bound?.component?.name : undefined;
+      let slotName = childName ? family[childName] : undefined;
       if (childName === 'LayoutPanel') {
         slotName = panelCount === 0 ? 'start' : 'end';
         panelCount++;
@@ -493,7 +610,7 @@ class Emitter {
     }
     // Loose children auto-wrap into an implicit LayoutContent slot.
     if (loose.length > 0 && !assigned.has('content')) {
-      const lc = this.requireComponent('LayoutContent');
+      const lc = /** @type {import('./xle-ast').RegistryComponent} */ (this.requireComponent('LayoutContent'));
       const inner = this.emitItems(loose, 1, {});
       slotEntries.push(['content', [`<${lc.exportName}>`, ...inner, `</${lc.exportName}>`]]);
     } else if (loose.length > 0) {
@@ -503,8 +620,13 @@ class Emitter {
     return [];
   }
 
-  /** Expand groups/repeats into a flat node list (clones carry repeat=null). */
+  /**
+   * Expand groups/repeats into a flat node list (clones carry repeat=null).
+   * @param {import('./xle-ast').XLEItem[]} items
+   * @returns {import('./xle-ast').XLENode[]}
+   */
   flattenItems(items) {
+    /** @type {import('./xle-ast').XLENode[]} */
     const out = [];
     for (const item of items) {
       const count = item.repeat || 1;
@@ -521,26 +643,37 @@ class Emitter {
     return out;
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @returns {import('./xle-ast').XLEItem[]}
+   */
   partitionTableChildren(node) {
     const flat = this.flattenItems(node.children);
     const rows = flat.filter(c => c.kind === 'node' && c.bound?.component?.name === 'TableRow');
     if (rows.length === 0 || rows.length !== flat.length) return node.children;
-    const isHeaderRow = (row) => {
+    const isHeaderRow = (/** @type {import('./xle-ast').XLENode} */ row) => {
       const cells = this.flattenItems(row.children);
       return cells.length > 0 && cells.every(c => c.bound?.component?.name === 'TableHeaderCell');
     };
     const headerRows = rows.filter(isHeaderRow);
     const bodyRows = rows.filter(r => !isHeaderRow(r));
+    /**
+     * @param {string} name
+     * @param {import('./xle-ast').XLENode[]} rowNodes
+     * @returns {import('./xle-ast').XLENode}
+     */
     const wrap = (name, rowNodes) => {
       const comp = this.requireComponent(name);
+      /** @type {import('./xle-ast').XLENode} */
       const wrapper = {
         kind: 'node', name, id: null, enumMods: [], payload: null, payload2: null,
         attrs: [], slots: [], hint: null, repeat: null, selected: false,
         children: rowNodes, line: node.line, col: node.col,
-        bound: {component: comp, props: new Map(), slots: [], stray: []},
+        bound: {component: /** @type {import('./xle-ast').RegistryComponent} */ (comp), props: new Map(), slots: [], stray: []},
       };
       return wrapper;
     };
+    /** @type {import('./xle-ast').XLEItem[]} */
     const out = [];
     if (headerRows.length > 0) out.push(wrap('TableHeader', headerRows));
     if (bodyRows.length > 0) out.push(wrap('TableBody', bodyRows));
@@ -551,9 +684,9 @@ class Emitter {
 /**
  * Expand a validated document into a complete TSX module.
  *
- * @param {{roots: any[], overlays: any[]}} doc
- * @param {object} registry
- * @param {{componentName?: string}} [options]
+ * @param {{roots: import('./xle-ast').XLEItem[], overlays: import('./xle-ast').XLEItem[]}} doc
+ * @param {import('./xle-ast').Registry} registry
+ * @param {{componentName?: string, blockModules?: Map<string, import('./xle-ast').BlockModule>}} [options]
  * @returns {{code: string, componentsUsed: string[], states: number, todos: string[]}}
  */
 export function expand(doc, registry, options = {}) {

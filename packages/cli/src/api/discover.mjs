@@ -14,18 +14,27 @@ import {levenshteinDistance} from '../lib/string-utils.mjs';
 import {AstryxError} from './error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
+/**
+ * @typedef {import('../lib/package-scanner.mjs').ScannedPackage} ScannedPackage
+ */
+
+/**
+ * @param {unknown} docs
+ * @returns {string | null}
+ */
 function validateDocs(docs) {
   if (!docs || typeof docs !== 'object')
     return 'docs export is missing or not an object';
-  if (typeof docs.name !== 'string' || !docs.name)
+  const d = /** @type {Record<string, any>} */ (docs);
+  if (typeof d.name !== 'string' || !d.name)
     return 'docs.name is missing or not a string';
-  if (!docs.usage || typeof docs.usage.description !== 'string')
+  if (!d.usage || typeof d.usage.description !== 'string')
     return 'docs.usage.description is missing or not a string';
-  if (docs.props && !Array.isArray(docs.props))
+  if (d.props && !Array.isArray(d.props))
     return 'docs.props must be an array';
-  if (docs.components && !Array.isArray(docs.components))
+  if (d.components && !Array.isArray(d.components))
     return 'docs.components must be an array';
-  if (docs.usage?.bestPractices && !Array.isArray(docs.usage.bestPractices))
+  if (d.usage?.bestPractices && !Array.isArray(d.usage.bestPractices))
     return 'docs.usage.bestPractices must be an array';
   return null;
 }
@@ -36,11 +45,21 @@ function validateDocs(docs) {
  * @param {boolean} [options.components]
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
- * @returns {Promise<{type: string, data: unknown}>}
+ * @returns {Promise<
+ *   import('../types/discover').DiscoverListResponse |
+ *   import('../types/discover').DiscoverDetailResponse |
+ *   import('../types/discover').DiscoverDetailDocResponse |
+ *   import('../types/discover').DiscoverSearchResponse
+ * >}
  */
 export async function discover(query, options = {}) {
   const {lang = null, zh = false} = options;
   const project = await Project.load();
+  const loadedIntegrations =
+    /** @type {import('../lib/integrations.mjs').LoadedIntegration[]} */ (
+      project.loadedIntegrations
+    );
+  /** @param {ScannedPackage} pkg */
   const toEntry = pkg => ({
     name: pkg.name,
     category: pkg.category,
@@ -52,7 +71,7 @@ export async function discover(query, options = {}) {
 
   // External packages come from configured integrations that declare a
   // components root. Each becomes a scannable package keyed by its docsDir.
-  const explicitPackages = project.loadedIntegrations
+  const explicitPackages = loadedIntegrations
     .filter(integration => integration.components)
     .map(integration => ({
       name: integration.name,
@@ -64,7 +83,10 @@ export async function discover(query, options = {}) {
     return {type: 'discover.list', data: [], meta: {configured: false}};
   }
 
-  const packages = scanAllPackages([], explicitPackages);
+  const packages = scanAllPackages(
+    [],
+    /** @type {ScannedPackage[]} */ (/** @type {unknown} */ (explicitPackages)),
+  );
 
   if (packages.length === 0) {
     return {type: 'discover.list', data: [], meta: {configured: true}};
@@ -105,7 +127,7 @@ export async function discover(query, options = {}) {
     return await loadAndValidate(exact, {lang, zh});
   }
 
-  const substringMatches = [];
+  const substringMatches = /** @type {Array<{pkg: ScannedPackage, comp: string}>} */ ([]);
   for (const pkg of packages) {
     for (const comp of pkg.components) {
       if (comp.toLowerCase().includes(lower)) {
@@ -134,7 +156,7 @@ export async function discover(query, options = {}) {
   }
 
   // Fuzzy fallback
-  const allComponents = [];
+  const allComponents = /** @type {Array<{pkg: ScannedPackage, comp: string}>} */ ([]);
   for (const pkg of packages) {
     for (const comp of pkg.components) {
       allComponents.push({pkg, comp});
@@ -167,6 +189,13 @@ export async function discover(query, options = {}) {
   );
 }
 
+/**
+ * @param {ScannedPackage[]} packages
+ * @param {string} compName
+ * @param {string} pkgName
+ * @param {{lang?: string|null, zh?: boolean}} opts
+ * @returns {Promise<import('../types/discover').DiscoverDetailDocResponse>}
+ */
 async function resolveComponentDocs(packages, compName, pkgName, {lang, zh}) {
   const pkg = packages.find(p => p.name === pkgName);
   if (!pkg)
@@ -202,13 +231,21 @@ async function resolveComponentDocs(packages, compName, pkgName, {lang, zh}) {
   return await loadAndValidate(result, {lang, zh});
 }
 
+/**
+ * @param {{docPath: string, componentName: string, pkg: ScannedPackage}} result
+ * @param {{lang?: string|null, zh?: boolean}} opts
+ * @returns {Promise<import('../types/discover').DiscoverDetailDocResponse>}
+ */
 async function loadAndValidate(result, {lang, zh}) {
   let docs;
   try {
-    docs = await loadDocs(result.docPath, {zh, lang});
+    docs = await loadDocs(
+      result.docPath,
+      /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang}),
+    );
   } catch (e) {
     throw new AstryxError(
-      `Failed to load docs for ${result.componentName}: ${e.message}`,
+      `Failed to load docs for ${result.componentName}: ${/** @type {any} */ (e).message}`,
       undefined,
       ERROR_CODES.ERR_INVALID_DOC,
     );

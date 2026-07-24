@@ -35,7 +35,7 @@ const PACKAGE_RENAMES = new Map([
   ['@xds/theme-y2k', '@astryxdesign/theme-y2k'],
 ]);
 
-function renamePackageSpecifier(value) {
+function renamePackageSpecifier(/** @type {any} */ value) {
   if (typeof value !== 'string') return value;
   for (const [from, to] of PACKAGE_RENAMES) {
     if (value === from) return to;
@@ -44,7 +44,7 @@ function renamePackageSpecifier(value) {
   return value;
 }
 
-function rewriteLiteral(node) {
+function rewriteLiteral(/** @type {any} */ node) {
   if (!node || typeof node.value !== 'string') return false;
   const next = renamePackageSpecifier(node.value);
   if (next === node.value) return false;
@@ -66,7 +66,7 @@ const COLLAPSED_THEME_SOURCES = new Set([
   '@xds/theme-daily',
 ]);
 
-function isCollapsedThemeSource(value) {
+function isCollapsedThemeSource(/** @type {any} */ value) {
   if (typeof value !== 'string') return false;
   for (const src of COLLAPSED_THEME_SOURCES) {
     if (value === src || value.startsWith(src + '/')) return true;
@@ -84,7 +84,7 @@ function isCollapsedThemeSource(value) {
 const MOCK_METHOD_NAMES = new Set(['mock', 'doMock']);
 const MOCK_OBJECT_NAMES = new Set(['vi', 'jest']);
 
-function isMockCall(callee) {
+function isMockCall(/** @type {any} */ callee) {
   if (
     callee.type === 'MemberExpression' &&
     !callee.computed &&
@@ -98,9 +98,9 @@ function isMockCall(callee) {
   return callee.type === 'Identifier' && callee.name === 'mock';
 }
 
-function remapThemeExportNames(importPath, j) {
+function remapThemeExportNames(/** @type {any} */ importPath, /** @type {any} */ j) {
   let changed = false;
-  importPath.node.specifiers = (importPath.node.specifiers || []).map(spec => {
+  importPath.node.specifiers = (importPath.node.specifiers || []).map((/** @type {any} */ spec) => {
     if (spec.type !== 'ImportSpecifier') return spec;
     const importedName = spec.imported.name;
     const renamed = THEME_EXPORT_RENAMES.get(importedName);
@@ -116,12 +116,17 @@ function remapThemeExportNames(importPath, j) {
   return changed;
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
-  root.find(j.ImportDeclaration).forEach(path => {
+  root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     // Remap collapsed-theme export names BEFORE rewriting the source specifier
     // (the check keys off the original @xds/theme-default|daily path).
     if (isCollapsedThemeSource(path.node.source.value)) {
@@ -130,15 +135,15 @@ export default function transformer(file, api) {
     hasChanges = rewriteLiteral(path.node.source) || hasChanges;
   });
 
-  root.find(j.ExportNamedDeclaration).forEach(path => {
+  root.find(j.ExportNamedDeclaration).forEach((/** @type {any} */ path) => {
     hasChanges = rewriteLiteral(path.node.source) || hasChanges;
   });
 
-  root.find(j.ExportAllDeclaration).forEach(path => {
+  root.find(j.ExportAllDeclaration).forEach((/** @type {any} */ path) => {
     hasChanges = rewriteLiteral(path.node.source) || hasChanges;
   });
 
-  root.find(j.CallExpression).forEach(path => {
+  root.find(j.CallExpression).forEach((/** @type {any} */ path) => {
     const isDynamicImport = path.node.callee.type === 'Import';
     const isRequire =
       path.node.callee.type === 'Identifier' &&
@@ -160,7 +165,7 @@ export default function transformer(file, api) {
   // position. Re-visiting a node the loop above handled is harmless: the
   // literal is already rewritten, so the second pass is a no-op.
   const seenTypeImportNodes = new Set();
-  const rewriteTSImportTypes = node => {
+  const rewriteTSImportTypes = (/** @type {any} */ node) => {
     if (!node || typeof node !== 'object') return;
     if (Array.isArray(node)) {
       for (const child of node) rewriteTSImportTypes(child);

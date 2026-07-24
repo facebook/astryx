@@ -27,6 +27,26 @@ import {findRelatedBlocks} from '../../api/template.mjs';
 import {Project} from '../../lib/project.mjs';
 import {warnOnIntegrationIssues} from '../../lib/integration-warnings.mjs';
 
+/**
+ * The api layer's component() widens its return to `{type: string, data: unknown}`,
+ * so annotate the command-local result with the precise discriminated union from
+ * src/types/component to get narrowing + typed data.
+ *
+ * @typedef {(
+ *   | import('../../types/component').ComponentListResponse
+ *   | import('../../types/component').ComponentBriefResponse
+ *   | import('../../types/component').ComponentFullResponse
+ *   | import('../../types/component').ComponentDetailResponse
+ *   | import('../../types/component').ComponentDetailPropsResponse
+ *   | import('../../types/component').ComponentDetailSourceResponse
+ *   | import('../../types/component').ComponentDetailShowcaseResponse
+ *   | import('../../types/component').ComponentDetailBlocksResponse
+ * )} ComponentResult
+ */
+
+/**
+ * @param {import('commander').Command} program
+ */
 export function registerComponent(program) {
   program
     .command('component [name]')
@@ -38,7 +58,7 @@ export function registerComponent(program) {
     .option('--showcase', 'Print showcase source code')
     .option('--blocks', 'List example blocks: showcase, examples, and related')
     .option('--package <name>', 'Scope lookup to an external package (e.g. @acme/xds-widgets)')
-    .action(async (name, options) => {
+    .action(async (/** @type {string | undefined} */ name, /** @type {{list?: boolean, category?: string, props?: boolean, source?: boolean, showcase?: boolean, blocks?: boolean, package?: string}} */ options) => {
       const run = getCliInvocation();
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
@@ -67,9 +87,10 @@ export function registerComponent(program) {
         // Never let the nudge break the command.
       }
 
+      /** @type {ComponentResult} */
       let result;
       try {
-        result = await componentApi(name, {
+        result = /** @type {ComponentResult} */ (await componentApi(name, {
           cwd: process.cwd(),
           list: options.list,
           category: options.category,
@@ -80,16 +101,19 @@ export function registerComponent(program) {
           blocks: options.blocks,
           detail,
           lang, zh, dense,
-        });
+        }));
       } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions, code: e.code});
+        const err = /** @type {import('../../api/error.mjs').AstryxError} */ (e);
+        cliError(err.message, {suggestions: err.suggestions, code: err.code});
         return;
       }
 
       if (json) return jsonOut(result.type, result.data);
 
       // ── Text output ────────────────────────────────────────────
-      const coreDir = findCoreDir(process.cwd());
+      // The api layer already resolved against core (result exists), so core is
+      // present on this path; narrow away the null branch findCoreDir allows.
+      const coreDir = /** @type {string} */ (findCoreDir(process.cwd()));
       const themeData = resolveTheme(process.cwd());
 
       switch (result.type) {
@@ -101,6 +125,7 @@ export function registerComponent(program) {
           const CORE_PKG = '@astryxdesign/core';
           // Names that appear under more than one package across the whole
           // listing — these must always be package-qualified to disambiguate.
+          /** @type {Map<string, Set<string>>} */
           const nameCounts = new Map();
           for (const items of Object.values(result.data)) {
             for (const item of items) {
@@ -109,7 +134,9 @@ export function registerComponent(program) {
               nameCounts.set(item.name, set);
             }
           }
+          /** @param {string} n */
           const isCollision = n => (nameCounts.get(n)?.size ?? 0) > 1;
+          /** @param {import('../../types/component').ComponentListEntry} item */
           const pkgSuffix = item => {
             if (item.package !== CORE_PKG) return `  [${item.package}]`;
             if (isCollision(item.name)) return `  [${item.package}]`;

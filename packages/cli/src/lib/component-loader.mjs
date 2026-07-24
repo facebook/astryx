@@ -37,6 +37,7 @@ export async function loadComponentDoc(
   {zh = false, dense = false, lang} = {},
 ) {
   const mod = await importUserModule(docPath);
+  /** @type {any} */
   const authored = mod?.default ?? mod?.docs;
 
   const result = ComponentDocSchema.safeParse(authored);
@@ -52,16 +53,23 @@ export async function loadComponentDoc(
     locale === 'zh' ? 'docsZh' : locale === 'dense' ? 'docsDense' : null;
   if (!translationKey || !mod[translationKey]) return docs;
 
+  /** @type {any} */
   const translation = mod[translationKey];
-  if (translation.props || translation.components?.some(c => c.props)) {
+  if (translation.props || translation.components?.some((/** @type {any} */ c) => c.props)) {
     return translation;
   }
   return mergeTranslation(docs, translation);
 }
 
+/**
+ * @param {any} docs
+ * @param {any} translation
+ * @returns {any}
+ */
 export function mergeTranslation(docs, translation) {
   if (!translation) return docs;
 
+  /** @type {any} */
   const merged = {...docs};
 
   // Merge prose into usage
@@ -77,7 +85,7 @@ export function mergeTranslation(docs, translation) {
 
   // Merge prop descriptions for single-component docs
   if (translation.propDescriptions && merged.props) {
-    merged.props = merged.props.map(prop => {
+    merged.props = merged.props.map((/** @type {any} */ prop) => {
       const desc = translation.propDescriptions[prop.name];
       return desc != null ? {...prop, description: desc} : prop;
     });
@@ -88,7 +96,7 @@ export function mergeTranslation(docs, translation) {
   // translation has an entry. Names may include dots (e.g. 'options.isActive');
   // the lookup is keyed by the exact param name.
   if (translation.paramDescriptions && merged.params) {
-    merged.params = merged.params.map(param => {
+    merged.params = merged.params.map((/** @type {any} */ param) => {
       const desc = translation.paramDescriptions[param.name];
       return desc != null ? {...param, description: desc} : param;
     });
@@ -97,7 +105,7 @@ export function mergeTranslation(docs, translation) {
   // Merge hook return descriptions (HookTranslationDoc). Returns are an array
   // of {name, type, description}; override description by name where present.
   if (translation.returnDescriptions && merged.returns) {
-    merged.returns = merged.returns.map(ret => {
+    merged.returns = merged.returns.map((/** @type {any} */ ret) => {
       const desc = translation.returnDescriptions[ret.name];
       return desc != null ? {...ret, description: desc} : ret;
     });
@@ -105,15 +113,15 @@ export function mergeTranslation(docs, translation) {
 
   // Merge sub-component translations
   if (translation.components && merged.components) {
-    merged.components = merged.components.map((comp, i) => {
-      const trans = translation.components.find(t => t.name === comp.name)
+    merged.components = merged.components.map((/** @type {any} */ comp, /** @type {any} */ i) => {
+      const trans = translation.components.find((/** @type {any} */ t) => t.name === comp.name)
         || translation.components[i];
       if (!trans) return comp;
 
       const mergedComp = {...comp};
       if (trans.description) mergedComp.description = trans.description;
       if (trans.propDescriptions && comp.props) {
-        mergedComp.props = comp.props.map(prop => {
+        mergedComp.props = comp.props.map((/** @type {any} */ prop) => {
           const desc = trans.propDescriptions[prop.name];
           return desc != null ? {...prop, description: desc} : prop;
         });
@@ -130,6 +138,9 @@ export function mergeTranslation(docs, translation) {
  * Supports --lang flag: 'zh' for Chinese, 'dense' for compressed format.
  * Also supports legacy --zh and --dense flags.
  * Translations are merged onto the base docs, keeping structure intact.
+ * @param {string} readmePath
+ * @param {{zh?: boolean, dense?: boolean, lang?: string}} [opts]
+ * @returns {Promise<any>}
  */
 export async function loadDocs(readmePath, {zh = false, dense = false, lang} = {}) {
   const mod = await import(pathToFileURL(readmePath).href);
@@ -151,7 +162,7 @@ export async function loadDocs(readmePath, {zh = false, dense = false, lang} = {
   // `isIconOnly`. A reader of the translated docs cannot discover a prop that
   // is not there. Overlay it instead, so an untranslated prop falls back to
   // its English entry. (Same principle as the reference-doc overlays, #2182.)
-  if (translation.props || translation.components?.some(c => c.props)) {
+  if (translation.props || translation.components?.some((/** @type {any} */ c) => c.props)) {
     return overlayComponentDoc(docs, translation);
   }
 
@@ -172,11 +183,14 @@ export async function loadDocs(readmePath, {zh = false, dense = false, lang} = {
  * @returns {any} Merged doc with every base prop present.
  */
 function overlayComponentDoc(docs, translation) {
-  /** Merge one prop list: keep base entries and order, translate what's covered. */
+  /** Merge one prop list: keep base entries and order, translate what's covered.
+   * @param {any[] | undefined} baseProps
+   * @param {any[] | undefined} tProps
+   */
   const overlayProps = (baseProps, tProps) => {
     if (!baseProps) return baseProps;
-    const byName = new Map((tProps ?? []).map(p => [p.name, p]));
-    return baseProps.map(prop => {
+    const byName = new Map((tProps ?? []).map((/** @type {any} */ p) => [p.name, p]));
+    return baseProps.map((/** @type {any} */ prop) => {
       const t = byName.get(prop.name);
       // Take the translated text, but never let it drop the prop's contract
       // (type/default/required stay authoritative from the English doc).
@@ -190,9 +204,9 @@ function overlayComponentDoc(docs, translation) {
 
   if (docs.components) {
     const tByName = new Map(
-      (translation.components ?? []).map(c => [c.name, c]),
+      (translation.components ?? []).map((/** @type {any} */ c) => [c.name, c]),
     );
-    merged.components = docs.components.map(base => {
+    merged.components = docs.components.map((/** @type {any} */ base) => {
       const t = tByName.get(base.name);
       if (!t) return base;
       return {...base, ...t, props: overlayProps(base.props, t.props)};

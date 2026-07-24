@@ -104,11 +104,11 @@ const SECTION_VARIANTS = new Set(['section', 'transparent', 'muted']);
 const DIVIDER_VARIANTS = new Set(['subtle', 'strong']);
 const ORIENTATIONS = new Set(['horizontal', 'vertical']);
 
-function attr(name, value) {
+function attr(/** @type {any} */ name, /** @type {any} */ value) {
   return `[data-${name}="${value}"]`;
 }
 
-function valueToAttr(component, value) {
+function valueToAttr(/** @type {any} */ component, /** @type {any} */ value) {
   // Numeric-prefixed classes emitted as prop-value (level-2, gap-4, cols-3).
   let match = value.match(/^level-(\d+)$/);
   if (match) return attr('level', match[1]);
@@ -211,8 +211,8 @@ function valueToAttr(component, value) {
 
 const SELECTOR_RE = /\.((?:xds-[a-z0-9-]+))(\.(?:-?[_a-zA-Z][_a-zA-Z0-9-]*))+/g;
 
-export function migrateThemeSelectors(source) {
-  return source.replace(SELECTOR_RE, (full, component) => {
+export function migrateThemeSelectors(/** @type {any} */ source) {
+  return source.replace(SELECTOR_RE, (/** @type {any} */ full, /** @type {any} */ component) => {
     const classChain = full.slice(component.length + 1);
     const values = classChain.split('.').filter(Boolean);
 
@@ -229,6 +229,10 @@ export function migrateThemeSelectors(source) {
   });
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file) {
   const result = migrateThemeSelectors(file.source);
   return result === file.source ? undefined : result;

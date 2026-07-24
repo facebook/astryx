@@ -21,6 +21,7 @@
 
 import {humanLog} from './json.mjs';
 
+/** @param {unknown} msg */
 const toStr = (msg) => (msg === undefined || msg === null ? '' : String(msg));
 
 /**
@@ -29,20 +30,28 @@ const toStr = (msg) => (msg === undefined || msg === null ? '' : String(msg));
  * every one of these, keeping machine-readable stdout clean.
  */
 export const log = {
+  /** @param {unknown} msg */
   message: (msg) => humanLog(toStr(msg)),
+  /** @param {unknown} msg */
   info: (msg) => humanLog(toStr(msg)),
+  /** @param {unknown} msg */
   step: (msg) => humanLog(toStr(msg)),
+  /** @param {unknown} msg */
   success: (msg) => humanLog(`✓ ${toStr(msg)}`),
+  /** @param {unknown} msg */
   warn: (msg) => humanLog(`⚠ ${toStr(msg)}`),
+  /** @param {unknown} msg */
   error: (msg) => humanLog(`✗ ${toStr(msg)}`),
 };
 
-/** Banner printed at the start of a multi-step command. */
+/** Banner printed at the start of a multi-step command.
+ * @param {unknown} title */
 export function intro(title) {
   humanLog(`\n${toStr(title)}`);
 }
 
-/** Footer printed at the end of a multi-step command. */
+/** Footer printed at the end of a multi-step command.
+ * @param {unknown} message */
 export function outro(message) {
   humanLog(`${toStr(message)}\n`);
 }

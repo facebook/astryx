@@ -78,6 +78,7 @@ export function findProjectRoot(startDir = process.cwd()) {
  * Returns array of { name, category, docsDir, blocksDir }.
  */
 export function discoverExternalPackages(startDir = process.cwd()) {
+  /** @type {Array<{name: string, category: string, docsDir: string, blocksDir: string | null}>} */
   const externals = [];
   let dir = startDir;
 
@@ -96,6 +97,7 @@ export function discoverExternalPackages(startDir = process.cwd()) {
 
   if (!nodeModulesDir) return externals;
 
+  /** @param {string} searchDir */
   const scanDir = (searchDir) => {
     if (!fs.existsSync(searchDir)) return;
     const entries = fs.readdirSync(searchDir, {withFileTypes: true});
@@ -141,6 +143,7 @@ export function discoverExternalPackages(startDir = process.cwd()) {
 /**
  * List available component directories in packages/core/src.
  * Returns directory names that contain Astryx*.tsx files.
+ * @param {string} coreDir
  */
 export function listComponents(coreDir) {
   const srcDir = path.join(coreDir, 'src');

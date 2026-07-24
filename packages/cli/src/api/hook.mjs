@@ -72,7 +72,7 @@ export async function hook(name, options = {}) {
           const docPath = findHookDoc(coreDir, hookName);
           if (docPath) {
             try {
-              const docs = await loadDocs(docPath, {zh, lang});
+              const docs = await loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang}));
               entries.push({
                 name: hookName,
                 description: docs.usage?.description || '',
@@ -94,7 +94,7 @@ export async function hook(name, options = {}) {
           const docPath = findHookDoc(coreDir, hookName);
           if (docPath) {
             try {
-              entries.push(await loadDocs(docPath, {zh, lang}));
+              entries.push(await loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang})));
             } catch {
               entries.push({name: hookName});
             }
@@ -119,7 +119,7 @@ export async function hook(name, options = {}) {
           const docPath = findHookDoc(coreDir, hookName);
           if (docPath) {
             try {
-              const docs = await loadDocs(docPath, {zh, lang});
+              const docs = await loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang}));
               result[cat].push({
                 name: hookName,
                 description: docs.usage?.description || '',
@@ -145,7 +145,7 @@ export async function hook(name, options = {}) {
           const docPath = findHookDoc(coreDir, hookName);
           if (docPath) {
             try {
-              result[cat].push(await loadDocs(docPath, {zh, lang}));
+              result[cat].push(await loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang})));
             } catch {
               result[cat].push({name: hookName});
             }
@@ -186,7 +186,7 @@ export async function hook(name, options = {}) {
     );
   }
 
-  const docs = await loadDocs(docPath, {zh, lang});
+  const docs = await loadDocs(docPath, /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang}));
 
   if (params) {
     return {type: 'hook.detail.params', data: docs.params || []};

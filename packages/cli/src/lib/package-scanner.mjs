@@ -6,9 +6,28 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+/**
+ * A discovered documentation package (its package.json declares `astryx.docs`).
+ * @typedef {object} ScannedPackage
+ * @property {string} name
+ * @property {string} [version]
+ * @property {string} [description]
+ * @property {string} [displayName]
+ * @property {string} dir
+ * @property {Record<string, any>} astryx
+ * @property {string} category
+ * @property {string} docsDir
+ * @property {string[]} components
+ */
+
+/**
+ * @param {string} scanDir
+ * @returns {ScannedPackage[]}
+ */
 export function scanDirectory(scanDir) {
   if (!fs.existsSync(scanDir)) return [];
   const entries = fs.readdirSync(scanDir, {withFileTypes: true});
+  /** @type {ScannedPackage[]} */
   const packages = [];
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
@@ -40,7 +59,13 @@ export function scanDirectory(scanDir) {
   return packages;
 }
 
+/**
+ * @param {string[]} packageDirs
+ * @param {ScannedPackage[]} [explicitPackages]
+ * @returns {ScannedPackage[]}
+ */
 export function scanAllPackages(packageDirs, explicitPackages = []) {
+  /** @type {ScannedPackage[]} */
   const all = [];
   const seen = new Set();
 
@@ -62,10 +87,17 @@ export function scanAllPackages(packageDirs, explicitPackages = []) {
   return all;
 }
 
+/**
+ * @param {string} docsDir
+ * @returns {string[]}
+ */
 function discoverDocComponents(docsDir) {
   if (!fs.existsSync(docsDir)) return [];
+  /** @type {string[]} */
   const components = [];
+  /** @param {string} dir */
   function walk(dir) {
+    /** @type {import('node:fs').Dirent[]} */
     let entries;
     try {
       entries = fs.readdirSync(dir, {withFileTypes: true});
@@ -84,6 +116,11 @@ function discoverDocComponents(docsDir) {
   return components.sort();
 }
 
+/**
+ * @param {ScannedPackage[]} packages
+ * @param {string} name
+ * @returns {{pkg: ScannedPackage, docPath: string, componentName: string} | null}
+ */
 export function findComponentInPackages(packages, name) {
   const lower = name.toLowerCase();
   for (const pkg of packages) {
@@ -95,9 +132,19 @@ export function findComponentInPackages(packages, name) {
   return null;
 }
 
+/**
+ * @param {string} docsDir
+ * @param {string} name
+ * @returns {string | null}
+ */
 function findDocFile(docsDir, name) {
   const target = name + '.doc.mjs';
+  /**
+   * @param {string} dir
+   * @returns {string | null}
+   */
   function walk(dir) {
+    /** @type {import('node:fs').Dirent[]} */
     let entries;
     try {
       entries = fs.readdirSync(dir, {withFileTypes: true});

@@ -43,13 +43,22 @@ import type {
   HookDetailParamsResponse,
 } from './hook';
 import type {SwizzleListResponse, SwizzleCopyResponse} from './swizzle';
-import type {ThemeBuildResponse} from './theme';
+import type {
+  ThemeBuildResponse,
+  ThemeListResponse,
+  ThemeAddResponse,
+} from './theme';
 import type {
   UpgradeListResponse,
   UpgradeRunResponse,
   UpgradeStatusResponse,
 } from './upgrade';
 import type {SearchResponse} from './search';
+import type {
+  LayoutExpandResponse,
+  LayoutCheckResponse,
+  LayoutGrammarResponse,
+} from './layout';
 import type {BuildHelpResponse} from './build';
 import type {ErrorCode} from './error-codes';
 import type {ManifestResponse} from './manifest';
@@ -116,10 +125,15 @@ export type CLIAnyResponse =
   | SwizzleListResponse
   | SwizzleCopyResponse
   | ThemeBuildResponse
+  | ThemeListResponse
+  | ThemeAddResponse
   | UpgradeListResponse
   | UpgradeRunResponse
   | UpgradeStatusResponse
   | SearchResponse
+  | LayoutExpandResponse
+  | LayoutCheckResponse
+  | LayoutGrammarResponse
   | BuildHelpResponse
   | ManifestResponse
   | DoctorResponse

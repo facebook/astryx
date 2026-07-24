@@ -40,7 +40,10 @@ const FOUNDATION = [
 ];
 const ALWAYS = new Set([...FRAME, ...FOUNDATION]);
 
-/** Print the build playbook (shown when `build` is run with no query). */
+/**
+ * Print the build playbook (shown when `build` is run with no query).
+ * @param {string} run - The CLI invocation prefix (e.g. `npx astryx`).
+ */
 function printPlaybook(run) {
   const lines = [
     '',
@@ -71,6 +74,9 @@ function printPlaybook(run) {
   for (const l of lines) humanLog(l);
 }
 
+/**
+ * @param {import('commander').Command} program
+ */
 export function registerBuild(program) {
   program
     .command('build [query]')
@@ -78,7 +84,7 @@ export function registerBuild(program) {
     .option('--type <domain>', 'Filter the kit to one domain (component|hook|template)')
     .option('--limit <n>', 'Max candidates to draw from (default 60)')
     .option('--detail', 'Verbose output (include import paths and match reason)')
-    .action(async (query, options) => {
+    .action(async (/** @type {string | undefined} */ query, /** @type {{type?: import('../types/search').SearchDomain, limit?: string, detail?: boolean}} */ options) => {
       const run = getCliInvocation();
       const json = program.opts().json || false;
 
@@ -100,11 +106,15 @@ export function registerBuild(program) {
         limit = parsed;
       }
 
+      /** @type {import('../types/search').SearchResponse} */
       let result;
       try {
-        result = await searchApi(query, {cwd: process.cwd(), type: options.type, limit});
+        result = /** @type {import('../types/search').SearchResponse} */ (
+          await searchApi(query, {cwd: process.cwd(), type: options.type, limit})
+        );
       } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions});
+        const err = /** @type {import('../api/error.mjs').AstryxError} */ (e);
+        cliError(err.message, {suggestions: err.suggestions});
         return;
       }
 
@@ -133,7 +143,7 @@ export function registerBuild(program) {
         .slice(0, 6);
       const directMatch = pages.length > 0 && pages[0].score >= PAGE_DIRECT;
 
-      const printItem = (r, label) => {
+      const printItem = (/** @type {import('../types/search').SearchResultEntry} */ r, /** @type {string} */ label) => {
         const display = r.domain === 'template' && r.displayName ? r.displayName : r.name;
         humanLog('');
         humanLog(`  [${label}] ${display}`);

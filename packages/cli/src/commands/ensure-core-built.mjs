@@ -40,6 +40,7 @@ const BUILD_TIMEOUT_MS = 180_000;
 const STALE_LOCK_MS = BUILD_TIMEOUT_MS + 20_000;
 const POLL_MS = 250;
 
+/** @param {number} ms */
 function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
@@ -67,7 +68,7 @@ function tryAcquire() {
     fs.mkdirSync(LOCK_DIR);
     return true;
   } catch (err) {
-    if (err.code !== 'EEXIST') {
+    if (/** @type {NodeJS.ErrnoException} */ (err).code !== 'EEXIST') {
       throw err;
     }
     if (lockIsStale()) {
@@ -76,7 +77,7 @@ function tryAcquire() {
         fs.mkdirSync(LOCK_DIR);
         return true;
       } catch (retryErr) {
-        if (retryErr.code !== 'EEXIST') {
+        if (/** @type {NodeJS.ErrnoException} */ (retryErr).code !== 'EEXIST') {
           throw retryErr;
         }
       }

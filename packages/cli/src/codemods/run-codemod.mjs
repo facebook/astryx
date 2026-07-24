@@ -49,7 +49,9 @@ const PARSEABLE_EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js', '.mjs', '.cjs'];
  * @returns {string[]}
  */
 export function findSourceFiles(dir) {
+  /** @type {string[]} */
   const results = [];
+  /** @param {string} currentDir */
   function walk(currentDir) {
     let entries;
     try {
@@ -74,6 +76,7 @@ export function findSourceFiles(dir) {
 /**
  * No-op log surface for silent (`--json`) mode.
  * @param {boolean} silent
+ * @returns {import('../types/codemod').CliLog}
  */
 export function makeLog(silent) {
   return silent
@@ -84,9 +87,9 @@ export function makeLog(silent) {
 /**
  * Apply a config codemod to the consumer's astryx.config.* file.
  *
- * @param {object} entry normalized codemod entry {id, codemod, package}
- * @param {{apply: boolean, log: object, jscodeshift: Function}} ctx
- * @returns {{filesChanged: number, writtenFiles: string[], errors: Array}}
+ * @param {import('../types/codemod').CodemodEntry} entry normalized codemod entry {id, codemod, package}
+ * @param {{apply: boolean, log: import('../types/codemod').CliLog, jscodeshift: import('../types/codemod').JscodeshiftFactory}} ctx
+ * @returns {import('../types/codemod').CodemodRunResult}
  */
 export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
   const {codemod, id, package: pkg} = entry;
@@ -135,11 +138,12 @@ export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
       errors: [],
     };
   } catch (err) {
-    log.error(`    ✗ ${relativePath} — ${err.message}`);
+    const message = /** @type {any} */ (err).message;
+    log.error(`    ✗ ${relativePath} — ${message}`);
     return {
       filesChanged: 0,
       writtenFiles: [],
-      errors: [{file: relativePath, codemod: name, error: err.message}],
+      errors: [{file: relativePath, codemod: name, error: message}],
     };
   }
 }
@@ -147,10 +151,10 @@ export function runConfigCodemod(entry, {apply, log, jscodeshift}) {
 /**
  * Apply a code codemod to discovered source files.
  *
- * @param {object} entry normalized codemod entry {id, codemod, package}
+ * @param {import('../types/codemod').CodemodEntry} entry normalized codemod entry {id, codemod, package}
  * @param {string[]} files
- * @param {{apply: boolean, log: object, jscodeshift: Function}} ctx
- * @returns {{filesChanged: number, writtenFiles: string[], errors: Array}}
+ * @param {{apply: boolean, log: import('../types/codemod').CliLog, jscodeshift: import('../types/codemod').JscodeshiftFactory}} ctx
+ * @returns {import('../types/codemod').CodemodRunResult}
  */
 export function runCodeCodemod(entry, files, {apply, log, jscodeshift}) {
   const {codemod, id, package: pkg} = entry;
@@ -158,7 +162,9 @@ export function runCodeCodemod(entry, files, {apply, log, jscodeshift}) {
   const extensions = new Set(codemod.fileExtensions ?? DEFAULT_CODE_EXTENSIONS);
 
   let filesChanged = 0;
+  /** @type {string[]} */
   const writtenFiles = [];
+  /** @type {Array<{file: string, codemod: string, error: string}>} */
   const errors = [];
 
   for (const filePath of files) {
@@ -198,8 +204,9 @@ export function runCodeCodemod(entry, files, {apply, log, jscodeshift}) {
         log.warn(`    ~ ${relativePath} (would change)`);
       }
     } catch (err) {
-      log.error(`    ✗ ${relativePath} — ${err.message}`);
-      errors.push({file: relativePath, codemod: name, error: err.message});
+      const message = /** @type {any} */ (err).message;
+      log.error(`    ✗ ${relativePath} — ${message}`);
+      errors.push({file: relativePath, codemod: name, error: message});
     }
   }
 

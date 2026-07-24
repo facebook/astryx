@@ -33,6 +33,11 @@ const SIMPLE_RENAMES = [
  */
 const MERGE_COMPONENTS = ['XDSHoverCard', 'XDSTooltip'];
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -44,8 +49,8 @@ export default function transformer(file, api) {
       .find(j.JSXOpeningElement, {
         name: {name: component},
       })
-      .forEach((path) => {
-        path.node.attributes.forEach((attr) => {
+      .forEach((/** @type {any} */ path) => {
+        path.node.attributes.forEach((/** @type {any} */ attr) => {
           if (attr.type === 'JSXAttribute' && attr.name.name === oldProp) {
             attr.name.name = 'onOpenChange';
             hasChanges = true;
@@ -60,13 +65,13 @@ export default function transformer(file, api) {
       .find(j.JSXOpeningElement, {
         name: {name: component},
       })
-      .forEach((path) => {
+      .forEach((/** @type {any} */ path) => {
         const attrs = path.node.attributes;
         const onShowAttr = attrs.find(
-          (a) => a.type === 'JSXAttribute' && a.name.name === 'onShow',
+          (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name.name === 'onShow',
         );
         const onHideAttr = attrs.find(
-          (a) => a.type === 'JSXAttribute' && a.name.name === 'onHide',
+          (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name.name === 'onHide',
         );
 
         if (onShowAttr && onHideAttr) {

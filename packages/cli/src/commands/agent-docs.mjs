@@ -143,9 +143,11 @@ export function parseBlockVersion(content) {
  */
 export function inspectAgentDocs(targetDir, installedVersion) {
   const version = installedVersion ?? getXdsVersion(findCoreDir(targetDir));
+  /** @type {Array<{path: string, blockVersion: string|null, legacy: boolean, stale: boolean}>} */
   const files = [];
 
   for (const rel of discoverAgentDocs(targetDir)) {
+    /** @type {string} */
     let content;
     try {
       content = fs.readFileSync(path.join(targetDir, rel), 'utf-8');
@@ -165,9 +167,10 @@ export function inspectAgentDocs(targetDir, installedVersion) {
   const staleEntries = files.filter(f => f.stale);
   const staleFiles = staleEntries.map(f => f.path);
   const blockVersions = [
-    ...new Set(staleEntries.map(f => f.blockVersion).filter(Boolean)),
+    ...new Set(staleEntries.map(f => f.blockVersion).filter(/** @returns {v is string} */ (v) => v != null)),
   ];
 
+  /** @type {'missing' | 'stale' | 'current'} */
   let status;
   if (files.length === 0) status = 'missing';
   else if (staleFiles.length > 0) status = 'stale';
@@ -195,7 +198,7 @@ export function resolveAgentPaths(targetDir, agent) {
     return {inject: [], create: [AGENTS_MD, CLAUDE_DIR_MD]};
   }
 
-  const searchPaths = AGENT_PRESETS[agent];
+  const searchPaths = /** @type {Record<string, string[]>} */ (AGENT_PRESETS)[agent];
   if (!searchPaths) {
     return {inject: [], create: [AGENTS_MD]};
   }
@@ -258,6 +261,10 @@ export function detectStylingSystem(targetDir) {
  * `stylingSystem` tailors the custom-styling guidance to what the project has
  * configured (see {@link detectStylingSystem}) so the agent never reaches for a
  * styling path that isn't compiled here.
+ *
+ * @param {string} version
+ * @param {{coreDir?: string|null, invocation?: string, stylingSystem?: 'stylex'|'tailwind'|'css', zh?: boolean, lang?: string}} [options]
+ * @returns {string}
  */
 export function generateCompressedIndex(version, {coreDir, invocation = getCliInvocation(), stylingSystem = 'css'} = {}) {
   const run = invocation;
@@ -337,7 +344,7 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   if (fs.existsSync(docsDir)) {
     const topics = fs.readdirSync(docsDir)
       .map(f => f.match(/^(\w+)\.doc\.mjs$/))
-      .filter(Boolean)
+      .filter(/** @returns {m is RegExpMatchArray} */ (m) => m != null)
       .map(m => m[1])
       .sort();
     if (topics.length > 0) lines.push(`  docs <topic>       ${topics.join(', ')}`);
@@ -351,6 +358,8 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
 
 /**
  * Get Astryx version from core package.
+ * @param {string|null} coreDir
+ * @returns {string}
  */
 export function getXdsVersion(coreDir) {
   if (coreDir) {
@@ -419,6 +428,9 @@ export function injectXdsBlock(filePath, compressedIndex, {createIfMissing = fal
 /**
  * Inject or update Astryx section in AGENTS.md.
  * Always creates the file if it doesn't exist.
+ *
+ * @param {string} targetDir
+ * @param {string} version
  */
 export function injectAgentsMd(targetDir, version) {
   const agentsPath = path.join(targetDir, AGENTS_MD);
@@ -436,6 +448,8 @@ export function injectAgentsMd(targetDir, version) {
  * Inject or update Astryx section in CLAUDE.md.
  * Only injects if CLAUDE.md already exists.
  *
+ * @param {string} targetDir
+ * @param {string} version
  * @returns {boolean} Whether the file was written
  */
 export function injectClaudeMd(targetDir, version) {
@@ -451,6 +465,8 @@ export function injectClaudeMd(targetDir, version) {
  * Remove Astryx section from a file.
  * If the file becomes empty (only boilerplate header remains), deletes it.
  *
+ * @param {string} filePath
+ * @param {{deleteIfEmpty?: boolean}} [options]
  * @returns {boolean} Whether the Astryx section was found and removed
  */
 export function removeXdsBlock(filePath, {deleteIfEmpty = false} = {}) {
@@ -487,6 +503,7 @@ export function removeXdsBlock(filePath, {deleteIfEmpty = false} = {}) {
 
 /**
  * Remove Astryx section from all known agent doc files.
+ * @param {string} targetDir
  */
 export function removeAgentDocs(targetDir) {
   const allPaths = discoverAgentDocs(targetDir);
@@ -528,6 +545,7 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
   const invocation = getCliInvocation(targetDir);
   const stylingSystem = detectStylingSystem(targetDir);
   const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, invocation, stylingSystem});
+  /** @type {string[]} */
   const written = [];
 
   // Explicit paths override everything
@@ -603,6 +621,7 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
 
 const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'all'];
 
+/** @param {import('commander').Command} program */
 export function registerAgentDocs(program) {
   program
     .command('agent-docs')
@@ -610,7 +629,7 @@ export function registerAgentDocs(program) {
     .option('--remove', 'Remove the design system section from all agent doc files')
     .option('--agent <tool>', 'Target tool: claude, cursor, codex, hermes, all')
     .option('--agent-docs-path <path...>', 'Explicit file path(s) to write to')
-    .action(options => {
+    .action(/** @param {{remove?: boolean, agent?: string, agentDocsPath?: string|string[]}} options */ options => {
       const targetDir = process.cwd();
       const coreDir = findCoreDir(targetDir);
       const version = getXdsVersion(coreDir);

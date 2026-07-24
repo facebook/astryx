@@ -16,6 +16,7 @@ export const meta = {
     'Replaces semantic radius prop values (inner, content, element, container) with numeric equivalents (0, 1, 2, 3).',
 };
 
+/** @type {Record<string, number>} */
 const RADIUS_MAP = {
   inner: 0,
   content: 1,
@@ -23,6 +24,11 @@ const RADIUS_MAP = {
   container: 3,
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -32,7 +38,7 @@ export default function transformer(file, api) {
     .find(j.JSXOpeningElement, {
       name: {name: 'XDSSkeleton'},
     })
-    .forEach((path) => {
+    .forEach((/** @type {any} */ path) => {
       const attrs = path.node.attributes;
       for (const attr of attrs) {
         if (attr.type !== 'JSXAttribute') continue;

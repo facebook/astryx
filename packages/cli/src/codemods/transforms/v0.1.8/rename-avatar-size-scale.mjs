@@ -80,7 +80,7 @@ const UNIQUE = new Set(['tiny', 'xsmall']);
  * Unwraps `'small' as const`. In non-precise contexts, ambiguous names are
  * skipped. Returns true when a rename occurred.
  */
-function renameValue(node, {precise = false} = {}) {
+function renameValue(/** @type {any} */ node, {precise = false} = {}) {
   if (!node) return false;
   const target = node.type === 'TSAsExpression' ? node.expression : node;
   const isString =
@@ -95,7 +95,7 @@ function renameValue(node, {precise = false} = {}) {
 }
 
 /** Extract a plain string value from a literal-ish node, or null. */
-function literalString(node) {
+function literalString(/** @type {any} */ node) {
   const target = node?.type === 'TSAsExpression' ? node.expression : node;
   if (
     target &&
@@ -107,6 +107,11 @@ function literalString(node) {
   return null;
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -114,7 +119,7 @@ export default function transformer(file, api) {
 
   // Track alias-aware local names for the target components.
   const targetLocals = new Set();
-  root.find(j.ImportDeclaration).forEach((path) => {
+  root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     if (!IMPORT_SOURCES.has(path.node.source.value)) return;
     for (const spec of path.node.specifiers ?? []) {
       if (
@@ -128,14 +133,14 @@ export default function transformer(file, api) {
 
   if (targetLocals.size === 0) return undefined;
 
-  function renameArrayElements(node) {
+  function renameArrayElements(/** @type {any} */ node) {
     let arr = node;
     if (arr.type === 'TSAsExpression') arr = arr.expression;
     if (arr.type !== 'ArrayExpression') return;
     // If the array contains a name unique to Avatar's scale (tiny/xsmall), the
     // whole collection is unambiguously the Avatar size enum, so it is safe to
     // rename the ambiguous members too. Otherwise stay conservative.
-    const precise = arr.elements.some((el) => UNIQUE.has(literalString(el)));
+    const precise = arr.elements.some((/** @type {any} */ el) => UNIQUE.has(literalString(el)));
     for (const el of arr.elements) {
       if (renameValue(el, {precise})) hasChanges = true;
     }
@@ -143,7 +148,7 @@ export default function transformer(file, api) {
 
   // 1. `size` JSX attributes on target components — PRECISE (component known),
   //    so all five names, including the ambiguous ones, are renamed here.
-  root.find(j.JSXOpeningElement).forEach((path) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     const componentName = name.type === 'JSXIdentifier' ? name.name : null;
     if (!componentName || !targetLocals.has(componentName)) return;
@@ -182,7 +187,7 @@ export default function transformer(file, api) {
   //    arrays — NON-PRECISE (the component isn't known here), so only the
   //    unique names tiny/xsmall are renamed.
   const PropertyType = j.ObjectProperty ?? j.Property;
-  root.find(PropertyType).forEach((path) => {
+  root.find(PropertyType).forEach((/** @type {any} */ path) => {
     const key = path.node.key;
     const keyName =
       key.type === 'Identifier'
@@ -204,7 +209,7 @@ export default function transformer(file, api) {
     // size: { control: 'select', options: ['tiny', ...] }
     if (value.type === 'ObjectExpression') {
       const optionsProp = value.properties.find(
-        (p) => p.key && (p.key.name === 'options' || p.key.value === 'options'),
+        (/** @type {any} */ p) => p.key && (p.key.name === 'options' || p.key.value === 'options'),
       );
       if (optionsProp) renameArrayElements(optionsProp.value);
     }
@@ -216,7 +221,7 @@ export default function transformer(file, api) {
   //    are renamed. This avoids corrupting unrelated unions that happen to use
   //    common words like 'medium' (e.g. a priority or breakpoint type) in a
   //    file that also imports Avatar.
-  root.find(j.TSLiteralType).forEach((path) => {
+  root.find(j.TSLiteralType).forEach((/** @type {any} */ path) => {
     if (renameValue(path.node.literal)) hasChanges = true;
   });
 
@@ -225,7 +230,7 @@ export default function transformer(file, api) {
   //    e.g. `(['tiny', 'xsmall', 'small', 'medium', 'large'] as const).map(...)`
   //    used to render every size. The unique name proves the whole array is the
   //    Avatar enum, so its ambiguous members can be renamed safely.
-  root.find(j.ArrayExpression).forEach((path) => {
+  root.find(j.ArrayExpression).forEach((/** @type {any} */ path) => {
     renameArrayElements(path.node);
   });
 

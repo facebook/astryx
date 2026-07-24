@@ -27,7 +27,7 @@ export const meta = {
 
 const COMPONENTS = new Set(['XDSSelector', 'XDSMultiSelector']);
 
-function isXDSCoreSource(source) {
+function isXDSCoreSource(/** @type {any} */ source) {
   return (
     source === '@xds/core' ||
     source === '@xds/core/Selector' ||
@@ -35,7 +35,7 @@ function isXDSCoreSource(source) {
   );
 }
 
-function sourceCanImport(source, importedName) {
+function sourceCanImport(/** @type {any} */ source, /** @type {any} */ importedName) {
   if (source === '@xds/core') {
     return COMPONENTS.has(importedName);
   }
@@ -48,11 +48,11 @@ function sourceCanImport(source, importedName) {
   return false;
 }
 
-function collectSelectorNames(root, j) {
+function collectSelectorNames(/** @type {any} */ root, /** @type {any} */ j) {
   const localNames = new Map();
   const namespaceNames = new Set();
 
-  root.find(j.ImportDeclaration).forEach(path => {
+  root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     const source = path.node.source.value;
     if (typeof source !== 'string' || !isXDSCoreSource(source)) {
       return;
@@ -80,7 +80,7 @@ function collectSelectorNames(root, j) {
   return {localNames, namespaceNames};
 }
 
-function getComponentName(name, localNames, namespaceNames) {
+function getComponentName(/** @type {any} */ name, /** @type {any} */ localNames, /** @type {any} */ namespaceNames) {
   if (name.type === 'JSXIdentifier') {
     return localNames.get(name.name) ?? null;
   }
@@ -98,24 +98,24 @@ function getComponentName(name, localNames, namespaceNames) {
   return null;
 }
 
-function isWhitespaceText(node) {
+function isWhitespaceText(/** @type {any} */ node) {
   return node.type === 'JSXText' && node.value.trim() === '';
 }
 
-function isEmptyExpression(node) {
+function isEmptyExpression(/** @type {any} */ node) {
   return (
     node.type === 'JSXExpressionContainer' &&
     node.expression.type === 'JSXEmptyExpression'
   );
 }
 
-function getMeaningfulChildren(children) {
+function getMeaningfulChildren(/** @type {any} */ children) {
   return children.filter(
-    child => !isWhitespaceText(child) && !isEmptyExpression(child),
+    (/** @type {any} */ child) => !isWhitespaceText(child) && !isEmptyExpression(child),
   );
 }
 
-function isRenderableExpression(expression) {
+function isRenderableExpression(/** @type {any} */ expression) {
   return (
     expression.type === 'ArrowFunctionExpression' ||
     expression.type === 'FunctionExpression' ||
@@ -124,12 +124,17 @@ function isRenderableExpression(expression) {
   );
 }
 
-function getJSXAttribute(openingElement, name) {
+function getJSXAttribute(/** @type {any} */ openingElement, /** @type {any} */ name) {
   return openingElement.attributes.find(
-    attr => attr.type === 'JSXAttribute' && attr.name.name === name,
+    (/** @type {any} */ attr) => attr.type === 'JSXAttribute' && attr.name.name === name,
   );
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -140,7 +145,7 @@ export default function transformer(file, api) {
     return undefined;
   }
 
-  root.find(j.JSXElement).forEach(path => {
+  root.find(j.JSXElement).forEach((/** @type {any} */ path) => {
     const componentName = getComponentName(
       path.node.openingElement.name,
       localNames,

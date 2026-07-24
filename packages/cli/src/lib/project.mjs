@@ -57,6 +57,29 @@ import {
   configContentHash,
 } from './config-cache.mjs';
 
+/**
+ * Extract a human-readable message from an unknown thrown value.
+ * Reproduces the historical `err?.message ?? String(err)` behavior in a
+ * strict-checkJs-safe way: prefer a non-nullish `.message` (covers Error
+ * instances and error-like objects thrown by integration code), else `String()`.
+ * @param {unknown} err
+ * @returns {string}
+ */
+function errorMessage(err) {
+  const message =
+    err && typeof err === 'object' && 'message' in err
+      ? /** @type {{message: unknown}} */ (err).message
+      : undefined;
+  return message == null ? String(err) : String(message);
+}
+
+/**
+ * An integration issue tagged with the owner package. The base
+ * {@link import('../types/integration').AstryxIntegrationIssue} fields plus the
+ * `package` that produced it, which Project tracks for routing/dedup.
+ * @typedef {import('../types/integration').AstryxIntegrationIssue & {package: string}} ProjectIntegrationIssue
+ */
+
 /** Conventional config basenames, in load-precedence order. */
 export const CONFIG_BASENAMES = [
   'astryx.config.ts',
@@ -117,13 +140,13 @@ export class Project {
   #config;
   /** @type {string[]} */
   #integrations;
-  /** @type {Array<object>} */
+  /** @type {import('./integrations.mjs').LoadedIntegration[]} */
   #loadedIntegrations;
   /** @type {import('./config-cache.mjs').ConfigCache} */
   #cache;
   /** @type {string} */
   #hash;
-  /** @type {import('../types/integration').AstryxIntegrationIssue[]} */
+  /** @type {ProjectIntegrationIssue[]} */
   #issues = [];
   /**
    * Package names of integrations whose issues have already been collected
@@ -137,9 +160,9 @@ export class Project {
    * @param {object} init
    * @param {string} init.cwd
    * @param {string|null} init.configPath
-   * @param {object} init.config validated AstryxConfig surface
+   * @param {import('../types/config').AstryxConfig} init.config validated AstryxConfig surface
    * @param {string[]} init.integrations
-   * @param {Array<object>} init.loadedIntegrations
+   * @param {import('./integrations.mjs').LoadedIntegration[]} init.loadedIntegrations
    * @param {import('./config-cache.mjs').ConfigCache} init.cache
    * @param {string} init.hash config content hash
    */
@@ -175,8 +198,11 @@ export class Project {
     const configPath = findConfigPath(cwd);
     const hash = configContentHash(configPath);
 
+    /** @type {import('../types/config').AstryxConfig} */
     let config = {integrations: []};
+    /** @type {string[]} */
     let integrations = [];
+    /** @type {import('./integrations.mjs').LoadedIntegration[]} */
     let loadedIntegrations = [];
 
     if (configPath) {
@@ -204,7 +230,7 @@ export class Project {
   /**
    * The validated config surface (same data loadConfig returned, minus the
    * resolved `loadedIntegrations` which is exposed separately).
-   * @returns {{integrations?: string[], issuesUrl?: string, hooks?: object, experimental?: object}}
+   * @returns {import('../types/config').AstryxConfig}
    */
   get config() {
     return this.#config;
@@ -215,7 +241,7 @@ export class Project {
     return this.#integrations;
   }
 
-  /** Resolved loaded integrations (lib/integrations.mjs shape). @returns {Array<object>} */
+  /** Resolved loaded integrations (lib/integrations.mjs shape). @returns {import('./integrations.mjs').LoadedIntegration[]} */
   get loadedIntegrations() {
     return this.#loadedIntegrations;
   }
@@ -245,7 +271,7 @@ export class Project {
    */
   async #memo(kind, produce) {
     const key = cacheKey(this.#hash, this.#cwd, kind);
-    const hit = this.#cache.get(key);
+    const hit = /** @type {{value: T} | undefined} */ (this.#cache.get(key));
     if (hit !== undefined) return hit.value;
     const value = await produce();
     this.#cache.set(key, {value});
@@ -272,7 +298,10 @@ export class Project {
     });
   }
 
-  /** Package label for a loaded integration. */
+  /** Package label for a loaded integration.
+   * @param {import('./integrations.mjs').LoadedIntegration} integration
+   * @returns {string}
+   */
   #pkgLabel(integration) {
     return integration?.name ?? integration?.__spec ?? '(integration)';
   }
@@ -281,7 +310,7 @@ export class Project {
    * Validate one loaded integration and collect any issues. Marks the
    * integration visited so issues() won't redo the work. Best-effort: a
    * validator throwing is itself recorded as an issue, never propagated.
-   * @param {object} integration
+   * @param {import('./integrations.mjs').LoadedIntegration} integration
    */
   async #collectIssues(integration) {
     const pkg = this.#pkgLabel(integration);
@@ -294,7 +323,7 @@ export class Project {
       this.#pushIssue(pkg, {
         code: 'integration_error',
         severity: 'error',
-        message: err?.message ?? String(err),
+        message: errorMessage(err),
       });
     }
   }
@@ -311,7 +340,7 @@ export class Project {
   async components() {
     return this.#memo('components', async () => {
       const coreDir = findCoreDir(this.#cwd);
-      /** @type {Array<object>} */
+      /** @type {Array<{name: string, package: string, group: string|null, docPath: string|null, sourcePath: string|null, issuesUrl: string|undefined}>} */
       const records = [];
 
       // Core records (no integrations) — never integration-broken.
@@ -343,7 +372,7 @@ export class Project {
           this.#pushIssue(pkg, {
             code: 'invalid_component',
             severity: 'error',
-            message: err?.message ?? String(err),
+            message: errorMessage(err),
           });
         }
       }
@@ -362,7 +391,7 @@ export class Project {
    */
   async templates() {
     return this.#memo('templates', async () => {
-      /** @type {Array<object>} */
+      /** @type {any[]} */
       const templates = [];
 
       // Core + external-package templates (discoverTemplates internally also
@@ -371,7 +400,7 @@ export class Project {
       // path so the skip+warn policy and issue collection apply, then dedupe).
       try {
         const core = await discoverTemplates(this.#cwd);
-        for (const t of core) {
+        for (const t of /** @type {any[]} */ (core)) {
           // Skip integration-owned templates here; they are re-added (and
           // issue-collected) per integration below to honor skip+warn.
           if (t.package && t.package !== CORE_PACKAGE) continue;
@@ -405,7 +434,7 @@ export class Project {
           this.#pushIssue(pkg, {
             code: 'invalid_template',
             severity: 'error',
-            message: err?.message ?? String(err),
+            message: errorMessage(err),
           });
         }
       }
@@ -431,6 +460,7 @@ export class Project {
 
       // Discover integration codemods per integration so a single broken
       // integration is skipped (issue collected) without losing the others.
+      /** @type {import('./integrations.mjs').LoadedIntegration[]} */
       const good = [];
       for (const integration of this.#loadedIntegrations) {
         await this.#collectIssues(integration);
@@ -449,7 +479,7 @@ export class Project {
           this.#pushIssue(pkg, {
             code: 'invalid_codemod',
             severity: 'error',
-            message: err?.message ?? String(err),
+            message: errorMessage(err),
           });
         }
       }

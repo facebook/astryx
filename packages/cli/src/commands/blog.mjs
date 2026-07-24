@@ -18,6 +18,39 @@ import {humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {blog as blogApi} from '../api/blog.mjs';
 
+/**
+ * @typedef {object} BlogPost
+ * @property {string} slug
+ * @property {string} title
+ * @property {string} [description]
+ * @property {string} [date]
+ * @property {string} [type]
+ * @property {string[]} [authors]
+ * @property {string} [link]
+ * @property {string | null} [textUrl]
+ */
+
+/**
+ * @typedef {object} BlogListData
+ * @property {string} feedUrl
+ * @property {BlogPost[]} posts
+ */
+
+/**
+ * @typedef {BlogPost & {feedUrl: string, text: string}} BlogDetailData
+ */
+
+/**
+ * @typedef {(
+ *   | {type: 'blog.list', data: BlogListData}
+ *   | {type: 'blog.detail', data: BlogDetailData}
+ * )} BlogResult
+ */
+
+/**
+ * @param {BlogListData} data
+ * @param {string} run
+ */
 function formatList({feedUrl, posts}, run) {
   const lines = [`\nAstryx blog · feed: ${feedUrl}\n`];
   if (posts.length === 0) {
@@ -35,17 +68,25 @@ function formatList({feedUrl, posts}, run) {
   return lines.join('\n');
 }
 
+/**
+ * @param {import('commander').Command} program
+ */
 export function registerBlog(program) {
   program
     .command('blog [slug]', {hidden: true})
     .description('Read the Astryx blog from the published feed')
-    .action(async slug => {
+    .action(async (/** @type {string | undefined} */ slug) => {
       const run = getRunPrefix();
+      /** @type {BlogResult} */
       let result;
       try {
-        result = await blogApi(slug);
+        result = /** @type {BlogResult} */ (await blogApi(slug));
       } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
+        const err = /** @type {import('../api/error.mjs').AstryxError} */ (e);
+        cliError(err.message, {
+          suggestions: err.suggestions || [],
+          code: err.code,
+        });
         return;
       }
 

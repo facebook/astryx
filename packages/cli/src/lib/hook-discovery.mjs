@@ -15,6 +15,8 @@ const CATEGORY_RE = /(?:^|\n) {0,4}category:\s*['"]([^'"]+)['"]/;
 
 /**
  * Read the `category` field from a hook's .doc.mjs file (synchronous).
+ * @param {string} docPath
+ * @returns {{category: string | null}}
  */
 function readHookMeta(docPath) {
   try {
@@ -31,6 +33,8 @@ function readHookMeta(docPath) {
 /**
  * Extract the hook name from a doc filename.
  * e.g. 'useFocusTrap.doc.mjs' → 'useFocusTrap'
+ * @param {string} fileName
+ * @returns {string}
  */
 function hookNameFromFile(fileName) {
   return fileName.replace('.doc.mjs', '');
@@ -41,6 +45,8 @@ function hookNameFromFile(fileName) {
  * Returns Record<category, hookName[]> similar to discoverComponents.
  * Categories from HookDoc.category: focus, layout, animation, interaction, data, media, streaming
  * Hooks without a category go in 'Other'.
+ * @param {string} coreDir
+ * @returns {Record<string, string[]>}
  */
 export function discoverHooks(coreDir) {
   const srcDir = path.join(coreDir, 'src');
@@ -77,7 +83,7 @@ export function discoverHooks(coreDir) {
   const groups = new Map();
   for (const [hookName, category] of hookCategories) {
     if (!groups.has(category)) groups.set(category, []);
-    groups.get(category).push(hookName);
+    groups.get(category)?.push(hookName);
   }
 
   // Sort members within each group
@@ -103,6 +109,8 @@ export function discoverHooks(coreDir) {
 
 /**
  * Recursively scan a directory for use*.doc.mjs files.
+ * @param {string} dirPath
+ * @param {Map<string, string>} hookCategories
  */
 function scanDirForHookDocs(dirPath, hookCategories) {
   if (!fs.existsSync(dirPath)) return;
@@ -199,6 +207,9 @@ export function findHookDoc(coreDir, name) {
 
 /**
  * Recursively search a directory for a hook doc matching any of the candidate names.
+ * @param {string} dirPath
+ * @param {string[]} candidates
+ * @returns {string | null}
  */
 function searchDirForHookDoc(dirPath, candidates) {
   if (!fs.existsSync(dirPath)) return null;
@@ -221,6 +232,8 @@ function searchDirForHookDoc(dirPath, candidates) {
 
 /**
  * Get all discovered hook names as a flat array (for fuzzy matching).
+ * @param {string} coreDir
+ * @returns {string[]}
  */
 export function getAllHookNames(coreDir) {
   const hooks = discoverHooks(coreDir);

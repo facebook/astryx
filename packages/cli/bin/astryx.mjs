@@ -26,6 +26,7 @@ import {realpathSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 
 const binDir = dirname(realpathSync(fileURLToPath(import.meta.url)));
+/** @param {string} rel */
 const importSrc = rel =>
   import(pathToFileURL(join(binDir, '..', 'src', rel)).href);
 
@@ -72,6 +73,7 @@ function inJsonMode() {
   return isJsonMode() || process.argv.slice(2).includes('--json');
 }
 
+/** @param {unknown} err */
 function handleFatal(err) {
   // CommanderError (parse errors, --help, unknown command) routes
   // through the JSON shim so that a --json consumer always gets a

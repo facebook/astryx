@@ -13,7 +13,11 @@ import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 const DOCS_DIR = path.join(CLI_ROOT, 'docs');
 
+/**
+ * @returns {Record<string, string>}
+ */
 function discoverTopics() {
+  /** @type {Record<string, string>} */
   const topics = {};
   if (!fs.existsSync(DOCS_DIR)) return topics;
   for (const file of fs.readdirSync(DOCS_DIR)) {
@@ -23,6 +27,11 @@ function discoverTopics() {
   return topics;
 }
 
+/**
+ * @param {string} docPath
+ * @param {{lang?: string|null}} [opts]
+ * @returns {Promise<import('../types/docs').DocsDetailResponse['data']>}
+ */
 async function loadReferenceDocs(docPath, {lang} = {}) {
   const mod = await import(pathToFileURL(docPath).href);
   const docs = mod.docs;
@@ -45,6 +54,7 @@ async function loadReferenceDocs(docPath, {lang} = {}) {
   // printed the colour table under a "Spacing" heading (#2182). An overlay may
   // now cover any subset of sections, in any order; sections it does not name
   // keep their base content.
+  /** @type {Map<string, any>} */
   const bySection = new Map();
   for (const ts of translation.sections ?? []) {
     if (ts?.section != null) bySection.set(ts.section, ts);
@@ -53,32 +63,43 @@ async function loadReferenceDocs(docPath, {lang} = {}) {
   return {
     ...docs,
     description: translation.description || docs.description,
-    sections: docs.sections.map(section => {
-      const ts = bySection.get(section.title);
-      if (!ts) return section;
-      return {
-        ...section,
-        title: ts.title || section.title,
-        content: section.content.map((block, bi) => {
-          const tb = ts.content?.[bi];
-          if (!tb) return block;
-          if (tb.type === 'prose' && block.type === 'prose') return {...block, text: tb.text};
-          if (tb.type === 'list' && block.type === 'list') return {...block, items: tb.items};
-          return block;
-        }),
-      };
-    }),
+    sections: docs.sections.map(
+      (/** @type {import('../../../core/src/docs-types').ReferenceSection} */ section) => {
+        const ts = bySection.get(section.title);
+        if (!ts) return section;
+        return {
+          ...section,
+          title: ts.title || section.title,
+          content: section.content.map(
+            (
+              /** @type {import('../../../core/src/docs-types').ContentBlock} */ block,
+              /** @type {number} */ bi,
+            ) => {
+              const tb = ts.content?.[bi];
+              if (!tb) return block;
+              if (tb.type === 'prose' && block.type === 'prose') return {...block, text: tb.text};
+              if (tb.type === 'list' && block.type === 'list') return {...block, items: tb.items};
+              return block;
+            },
+          ),
+        };
+      },
+    ),
   };
 }
 
 /**
  * Resolve token-ref blocks by inlining the referenced section's table.
  * This allows section docs to reference token tables without duplicating data.
+ * @param {import('../types/docs').DocsDetailResponse['data']} docsData
+ * @param {Record<string, string>} topics
+ * @returns {Promise<import('../types/docs').DocsDetailResponse['data']>}
  */
 async function resolveTokenRefs(docsData, topics) {
   const resolved = {...docsData, sections: [...docsData.sections]};
   for (let si = 0; si < resolved.sections.length; si++) {
     const section = resolved.sections[si];
+    /** @type {import('../../../core/src/docs-types').ContentBlock[]} */
     const newContent = [];
     for (const block of section.content) {
       if (block.type === 'token-ref') {
@@ -90,7 +111,8 @@ async function resolveTokenRefs(docsData, topics) {
         const refMod = await import(pathToFileURL(refPath).href);
         const refDocs = refMod.docs;
         const refSection = refDocs.sections.find(
-          s => s.title.toLowerCase() === block.section.toLowerCase(),
+          (/** @type {import('../../../core/src/docs-types').ReferenceSection} */ s) =>
+            s.title.toLowerCase() === block.section.toLowerCase(),
         );
         if (!refSection) {
           newContent.push({type: 'prose', text: `[token-ref: section "${block.section}" not found in "${block.topic}"]`});
@@ -125,7 +147,11 @@ async function resolveTokenRefs(docsData, topics) {
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
- * @returns {Promise<{type: string, data: unknown}>}
+ * @returns {Promise<
+ *   import('../types/docs').DocsListResponse |
+ *   import('../types/docs').DocsDetailResponse |
+ *   import('../types/docs').DocsDetailSectionResponse
+ * >}
  */
 export async function docs(topic, section, options = {}) {
   const {lang = null, zh = false, dense = false} = options;

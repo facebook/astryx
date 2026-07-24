@@ -13,8 +13,14 @@
  * @position lib — shared by string-utils.mjs and lib/xle/validate.mjs
  */
 
+/**
+ * @param {string} a
+ * @param {string} b
+ * @returns {number}
+ */
 export function levenshteinDistance(a, b) {
   const m = a.length, n = b.length;
+  /** @type {number[][]} */
   const dp = Array.from({length: m + 1}, () => Array(n + 1).fill(0));
   for (let i = 0; i <= m; i++) dp[i][0] = i;
   for (let j = 0; j <= n; j++) dp[0][j] = j;

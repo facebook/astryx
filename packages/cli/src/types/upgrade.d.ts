@@ -55,9 +55,16 @@ export interface UpgradeRunResponse {
     from: string;
     to: string;
     codemods: number;
-    depsUpdated: string[];
+    /** Integration packages processed in this upgrade (by name/spec). */
+    integrations: string[];
     agentDocsRefreshed: boolean;
     agentDocs: AgentDocsSummary;
+    /** Total files changed across core + integration codemods (apply mode). */
+    filesChanged?: number;
+    /** Total transforms that reported a change. */
+    transformsApplied?: number;
+    /** Per-codemod errors, when any codemod failed. */
+    errors?: Array<{file: string; codemod: string; error: string}>;
   };
 }
 

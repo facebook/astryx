@@ -13,10 +13,14 @@
  * @position lib/xle — inverse of parse.mjs
  */
 
+/**
+ * @param {import('./xle-ast').XLEValue} value
+ * @returns {string}
+ */
 function valueText(value) {
   if (typeof value === 'string') return /[\s,'"]/.test(value) ? `'${value}'` : value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  if (value && value.idref) return `#${value.idref}`;
+  if (value && /** @type {any} */ (value).idref) return `#${/** @type {any} */ (value).idref}`;
   if (Array.isArray(value)) return `[${value.map(valueText).join(',')}]`;
   if (typeof value === 'object' && value !== null) {
     return `{${Object.entries(value)
@@ -26,6 +30,10 @@ function valueText(value) {
   return String(value);
 }
 
+/**
+ * @param {import('./xle-ast').Hint} hint
+ * @returns {string}
+ */
 function hintText(hint) {
   let out = hint.name;
   for (const flag of hint.flags || []) out += ` +${flag}`;
@@ -33,6 +41,7 @@ function hintText(hint) {
   return `{${out}}`;
 }
 
+/** @param {import('./xle-ast').XLENode} node */
 function attrTokens(node) {
   const tokens = [];
   for (const attr of node.attrs) {
@@ -43,17 +52,22 @@ function attrTokens(node) {
   return tokens;
 }
 
+/** @param {import('./xle-ast').XLENode} node */
 function slotTokensCompact(node) {
   return node.slots.map(slot => {
     if (slot.value == null) return `@${slot.key}`;
     if (typeof slot.value === 'string') return `@${slot.key}='${slot.value}'`;
-    if (slot.value.hint) return `@${slot.key}=${hintText(slot.value.hint)}`;
-    if (slot.value.idref) return `@${slot.key}=#${slot.value.idref}`;
-    if (slot.value.subexpr) return `@${slot.key}=(${siblingsCompact(slot.value.subexpr)})`;
+    if ('hint' in slot.value) return `@${slot.key}=${hintText(slot.value.hint)}`;
+    if (/** @type {any} */ (slot.value).idref) return `@${slot.key}=#${/** @type {any} */ (slot.value).idref}`;
+    if ('subexpr' in slot.value) return `@${slot.key}=(${siblingsCompact(slot.value.subexpr)})`;
     return `@${slot.key}`;
   });
 }
 
+/**
+ * @param {import('./xle-ast').XLENode} node
+ * @returns {string}
+ */
 function nodeCompact(node) {
   let out = node.name || '';
   if (node.id) out += `#${node.id}`;
@@ -72,6 +86,10 @@ function nodeCompact(node) {
   return out;
 }
 
+/**
+ * @param {import('./xle-ast').XLEItem} item
+ * @returns {string}
+ */
 function termCompact(item) {
   if (item.kind === 'group') {
     let out = `(${siblingsCompact(item.children)})`;
@@ -82,6 +100,10 @@ function termCompact(item) {
   return nodeCompact(item);
 }
 
+/**
+ * @param {import('./xle-ast').XLEItem[]} items
+ * @returns {string}
+ */
 function siblingsCompact(items) {
   return items
     .map((item, i) => {
@@ -96,6 +118,7 @@ function siblingsCompact(items) {
     .join(' + ');
 }
 
+/** @param {import('./xle-ast').XLEDoc} doc */
 export function toCompact(doc) {
   let out = siblingsCompact(doc.roots);
   for (const overlay of doc.overlays) {
@@ -106,6 +129,11 @@ export function toCompact(doc) {
 
 // ── outline ────────────────────────────────────────────────────────────────
 
+/**
+ * @param {import('./xle-ast').XLENode} node
+ * @param {number} depth
+ * @returns {string[]}
+ */
 function nodeOutlineLines(node, depth) {
   const pad = '  '.repeat(depth);
   let line = node.name || '';
@@ -121,21 +149,23 @@ function nodeOutlineLines(node, depth) {
 
   const lines = [pad + line.trimStart()];
   for (const slot of node.slots) {
-    if (slot.value && slot.value.subexpr) {
-      if (slot.value.subexpr.length === 1 && isSimpleNode(slot.value.subexpr[0])) {
-        const sub = nodeOutlineLines(slot.value.subexpr[0], 0)[0];
+    const sv = slot.value;
+    if (sv && typeof sv === 'object' && 'subexpr' in sv) {
+      const first = sv.subexpr[0];
+      if (sv.subexpr.length === 1 && first && isSimpleNode(first)) {
+        const sub = nodeOutlineLines(first, 0)[0];
         lines.push(`${pad}  ${slot.key}: ${sub}`);
         // simple = no children, so the single line is complete
       } else {
         lines.push(`${pad}  ${slot.key}:`);
-        for (const sub of slot.value.subexpr) lines.push(...itemOutlineLines(sub, depth + 2));
+        for (const sub of sv.subexpr) lines.push(...itemOutlineLines(sub, depth + 2));
       }
-    } else if (typeof slot.value === 'string') {
-      lines.push(`${pad}  ${slot.key}: "${slot.value}"`);
-    } else if (slot.value && slot.value.hint) {
-      lines.push(`${pad}  ${slot.key}: ${hintText(slot.value.hint)}`);
-    } else if (slot.value && slot.value.idref) {
-      lines.push(`${pad}  ${slot.key}: #${slot.value.idref}`);
+    } else if (typeof sv === 'string') {
+      lines.push(`${pad}  ${slot.key}: "${sv}"`);
+    } else if (sv && typeof sv === 'object' && 'hint' in sv) {
+      lines.push(`${pad}  ${slot.key}: ${hintText(sv.hint)}`);
+    } else if (sv && /** @type {any} */ (sv).idref) {
+      lines.push(`${pad}  ${slot.key}: #${/** @type {any} */ (sv).idref}`);
     } else {
       lines.push(`${pad}  ${slot.key}:`);
     }
@@ -144,10 +174,19 @@ function nodeOutlineLines(node, depth) {
   return lines;
 }
 
+/**
+ * @param {import('./xle-ast').XLEItem} item
+ * @returns {item is import('./xle-ast').XLENode}
+ */
 function isSimpleNode(item) {
   return item.kind === 'node' && item.children.length === 0 && item.slots.length === 0;
 }
 
+/**
+ * @param {import('./xle-ast').XLEItem} item
+ * @param {number} depth
+ * @returns {string[]}
+ */
 function itemOutlineLines(item, depth) {
   if (item.kind === 'group') {
     // A repeat-less group exists only to disambiguate compact-form
@@ -163,6 +202,7 @@ function itemOutlineLines(item, depth) {
   return nodeOutlineLines(item, depth);
 }
 
+/** @param {import('./xle-ast').XLEDoc} doc */
 export function toOutline(doc) {
   const lines = [];
   for (const item of doc.roots) lines.push(...itemOutlineLines(item, 0));

@@ -50,6 +50,7 @@ export const meta = {
 // Token string renames (CSS custom property names)
 // =============================================================================
 
+/** @type {Record<string, string>} */
 const TOKEN_MAP = {
   // Color — Core Semantic
   '--color-secondary': '--color-neutral',
@@ -195,6 +196,7 @@ const TOKEN_MAP = {
 // JS identifier renames (import names, variable references)
 // =============================================================================
 
+/** @type {Record<string, string>} */
 const IDENTIFIER_MAP = {
   lineHeightVars: 'typeScaleVars',
   lineHeightDefaults: 'typeScaleDefaults',
@@ -213,21 +215,26 @@ const OLD_TOKENS_PATTERN = new RegExp(
   'g',
 );
 
-function replaceTokens(str) {
-  return str.replace(OLD_TOKENS_PATTERN, (match) => TOKEN_MAP[match] || match);
+function replaceTokens(/** @type {any} */ str) {
+  return str.replace(OLD_TOKENS_PATTERN, (/** @type {any} */ match) => TOKEN_MAP[match] || match);
 }
 
 // =============================================================================
 // Transformer
 // =============================================================================
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
   // --- Pass 1: Rename token strings in string literals ---
-  const replaceInStringNode = (path) => {
+  const replaceInStringNode = (/** @type {any} */ path) => {
     if (typeof path.node.value !== 'string') return;
     const original = path.node.value;
     const replaced = replaceTokens(original);
@@ -238,14 +245,14 @@ export default function transformer(file, api) {
   };
 
   root.find(j.StringLiteral).forEach(replaceInStringNode);
-  root.find(j.Literal).forEach((path) => {
+  root.find(j.Literal).forEach((/** @type {any} */ path) => {
     if (typeof path.node.value === 'string') {
       replaceInStringNode(path);
     }
   });
 
   // --- Pass 2: Rename token strings in template literals ---
-  root.find(j.TemplateLiteral).forEach((path) => {
+  root.find(j.TemplateLiteral).forEach((/** @type {any} */ path) => {
     for (const quasi of path.node.quasis) {
       const original = quasi.value.raw;
       const replaced = replaceTokens(original);
@@ -263,7 +270,7 @@ export default function transformer(file, api) {
   // Special handling for imports: if the target name already exists as an import
   // specifier in the same declaration, remove the old specifier instead of renaming
   // it (avoids duplicate identifier declarations).
-  root.find(j.ImportSpecifier).forEach((importPath) => {
+  root.find(j.ImportSpecifier).forEach((/** @type {any} */ importPath) => {
     const oldName = importPath.node.imported.name;
     if (!Object.hasOwn(IDENTIFIER_MAP, oldName)) return;
 
@@ -271,7 +278,7 @@ export default function transformer(file, api) {
     const declaration = importPath.parent.node;
     const siblings = declaration.specifiers || [];
     const targetExists = siblings.some(
-      (s) =>
+      (/** @type {any} */ s) =>
         s !== importPath.node &&
         s.type === 'ImportSpecifier' &&
         s.imported.name === newName,
@@ -295,7 +302,7 @@ export default function transformer(file, api) {
   });
 
   // Rename remaining non-import identifier references
-  root.find(j.Identifier).forEach((path) => {
+  root.find(j.Identifier).forEach((/** @type {any} */ path) => {
     if (!Object.hasOwn(IDENTIFIER_MAP, path.node.name)) return;
     // Skip import specifiers (already handled above)
     if (path.parent.node.type === 'ImportSpecifier') return;

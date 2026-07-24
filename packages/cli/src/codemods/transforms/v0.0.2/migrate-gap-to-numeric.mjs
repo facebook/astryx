@@ -23,6 +23,7 @@ export const meta = {
 /**
  * Mapping from string token to numeric value.
  */
+/** @type {Record<string, number>} */
 const TOKEN_TO_NUMBER = {
   space0: 0,
   'space0.5': 0.5,
@@ -58,12 +59,17 @@ const XDS_LAYOUT_ELEMENTS = new Set([
   'XDSStackItem',
 ]);
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
-  root.find(j.JSXOpeningElement).forEach((elementPath) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ elementPath) => {
     const nameNode = elementPath.node.name;
     // Only handle simple identifier element names like <XDSStack>. Skip member
     // expressions (e.g. <Foo.Bar>) and namespaced names — they're never XDS.
