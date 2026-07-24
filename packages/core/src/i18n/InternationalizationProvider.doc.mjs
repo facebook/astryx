@@ -20,7 +20,29 @@ export const docs = {
   ],
   usage: {
     description:
-      "Wraps your app to set the active locale and (optionally) merge additional translation catalogs + per-locale overrides. Astryx components inside the subtree resolve their strings against this context. If no provider is present, components fall back to the shipped English defaults.",
+      'Wraps your app to set the active locale and (optionally) merge additional translation catalogs + per-locale overrides. Astryx components inside the subtree resolve their strings against this context. If no provider is present, components fall back to the shipped English defaults.',
+    bestPractices: [
+      {
+        guidance: true,
+        description:
+          'Use shipped Astryx locale catalogs from `@astryxdesign/core/locales/*` when one exists for your target locale.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use a same-shape local catalog only when Astryx has not shipped that locale yet or you are testing in-progress translations.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use real BCP 47 tags such as `fr`, `pt-BR`, or `ar`; regional locales fall back to their base language before English.',
+      },
+      {
+        guidance: false,
+        description:
+          'Cast custom catalog maps to `any`; the i18n package exports `MessagesByLocale` and `Catalog` for local catalog typing.',
+      },
+    ],
   },
   props: [
     {
@@ -35,7 +57,7 @@ export const docs = {
       type: 'MessagesByLocale',
       required: false,
       description:
-        'Optional map of BCP 47 tag to translation catalog. The shipped "en" catalog is always available and does not need to be listed here.',
+        'Optional map of BCP 47 tag to translation catalog. Import shipped catalogs from `@astryxdesign/core/locales/*`; the shipped "en" catalog is always available and does not need to be listed here.',
     },
     {
       name: 'overrides',
@@ -49,6 +71,59 @@ export const docs = {
       type: 'ReactNode',
       required: true,
       description: 'Content to render with the internationalization provider.',
+    },
+  ],
+  examples: [
+    {
+      label: 'Load a shipped Astryx locale catalog',
+      code: `import type {ReactNode} from 'react';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
+import frFR from '@astryxdesign/core/locales/fr-FR.json';
+
+export function AppI18n({children}: {children: ReactNode}) {
+  return (
+    <InternationalizationProvider locale="fr-FR" messages={{'fr-FR': frFR}}>
+      {children}
+    </InternationalizationProvider>
+  );
+}`,
+    },
+    {
+      label: 'Override one Astryx string',
+      code: `import type {ReactNode} from 'react';
+import {InternationalizationProvider} from '@astryxdesign/core/i18n';
+
+export function AppI18n({children}: {children: ReactNode}) {
+  return (
+    <InternationalizationProvider
+      locale="en"
+      overrides={{
+        en: {'@astryx.selector.placeholder': 'Choose...'},
+      }}
+    >
+      {children}
+    </InternationalizationProvider>
+  );
+}`,
+    },
+    {
+      label: 'Provide a local fallback catalog',
+      code: `import type {ReactNode} from 'react';
+import {
+  InternationalizationProvider,
+  type MessagesByLocale,
+} from '@astryxdesign/core/i18n';
+import ptBR from './locales/pt-BR.json';
+
+const messages: MessagesByLocale = {'pt-BR': ptBR};
+
+export function AppI18n({children}: {children: ReactNode}) {
+  return (
+    <InternationalizationProvider locale="pt-BR" messages={messages}>
+      {children}
+    </InternationalizationProvider>
+  );
+}`,
     },
   ],
 };
