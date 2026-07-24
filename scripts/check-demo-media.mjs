@@ -2,7 +2,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * Source check: Thumbnail block examples must use CORS-safe demo media.
+ * Source check: image-backed demos that need reliable browser rendering must
+ * use CORS-safe demo media.
  *
  * Thumbnail's remove-button overlay uses useImageMode, which FETCHES the image
  * (`fetch(src, {mode: 'cors'})` -> createImageBitmap -> OffscreenCanvas
@@ -19,10 +20,15 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const THUMBNAIL_BLOCK_DIR = path.resolve(
-  __dirname,
-  '../packages/cli/templates/blocks/components/Thumbnail',
+const ROOT = path.resolve(__dirname, '..');
+const THUMBNAIL_BLOCK_DIR = path.join(
+  ROOT,
+  'packages/cli/templates/blocks/components/Thumbnail',
 );
+const THEMES_PAGE_FILES = [
+  'apps/docsite/src/components/ThemePackagePage.tsx',
+  'apps/docsite/src/components/themeShowcaseContent.ts',
+].map(file => path.join(ROOT, file));
 
 // Cross-origin demo CDN that cannot be CORS-sampled by useImageMode.
 const CROSS_ORIGIN_MEDIA = 'lookaside.facebook.com';
@@ -51,6 +57,18 @@ for (const file of files) {
   }
 }
 
+for (const file of THEMES_PAGE_FILES) {
+  const source = fs.readFileSync(file, 'utf-8');
+  checked++;
+
+  if (source.includes(CROSS_ORIGIN_MEDIA)) {
+    errors.push({
+      file: path.relative(ROOT, file),
+      issue: `references cross-origin ${CROSS_ORIGIN_MEDIA} media — /themes artwork must be same-origin so Chrome and Firefox do not depend on flaky CDN fetches`,
+    });
+  }
+}
+
 if (errors.length > 0) {
   console.error('❌ Thumbnail demo-media errors:\n');
   for (const {file, issue} of errors) {
@@ -63,5 +81,5 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `✅ ${checked} image-backed Thumbnail example(s) checked — all use CORS-safe demo media.`,
+  `✅ ${checked} CORS-sensitive demo media source(s) checked — all use same-origin or self-contained media.`,
 );
