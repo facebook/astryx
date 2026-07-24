@@ -49,6 +49,37 @@ describe('build API', () => {
     expect(names).not.toContain('AppShell');
   });
 
+  it('applies grouping caps, score floors, and directMatch threshold', async () => {
+    const r = await build('dashboard', {cwd: REPO});
+    if (r.type !== 'build.kit') throw new Error('expected build.kit');
+    const {pages, blocks, domain, directMatch} = r.data;
+
+    // Caps: pages ≤ 3, blocks ≤ 5, domain ≤ 6.
+    expect(pages.length).toBeLessThanOrEqual(3);
+    expect(blocks.length).toBeLessThanOrEqual(5);
+    expect(domain.length).toBeLessThanOrEqual(6);
+
+    // Score floors: pages ≥ PAGE_FLOOR(50); blocks/domain ≥ DOMAIN_FLOOR(55).
+    for (const p of pages) expect(p.score).toBeGreaterThanOrEqual(50);
+    for (const b of blocks) expect(b.score).toBeGreaterThanOrEqual(55);
+    for (const d of domain) expect(d.score).toBeGreaterThanOrEqual(55);
+
+    // directMatch iff the top page is a confident match (PAGE_DIRECT = 95).
+    expect(directMatch).toBe(pages.length > 0 && pages[0].score >= 95);
+
+    // Domain partitioning: pages = non-block templates, blocks = block templates,
+    // domain = components/hooks.
+    for (const p of pages) {
+      expect(p.domain).toBe('template');
+      expect(p.kind).not.toBe('block');
+    }
+    for (const b of blocks) {
+      expect(b.domain).toBe('template');
+      expect(b.kind).toBe('block');
+    }
+    for (const d of domain) expect(['component', 'hook']).toContain(d.domain);
+  });
+
   it('no matches → build.kit with hasResults=false and empty groups', async () => {
     const r = await build('zzznomatch99', {cwd: REPO});
     expect(r.type).toBe('build.kit');
