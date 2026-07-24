@@ -7,7 +7,7 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableTreeState',
   description:
-    'State management companion for useTableTreeData. Owns the expanded set (controlled or uncontrolled) and flattens nested data into the visible row array; collapsed subtrees are unmounted, not hidden, so the table body contains exactly the visible rows. Returns expandAll/collapseAll helpers and a ready-to-use config for the tree plugin. Note: because collapsed rows unmount, cell-local React state inside collapsed subtrees is lost on collapse; lift state that must survive.',
+    'State management companion for useTableTreeData. Owns the expanded set (controlled or uncontrolled) and flattens nested data into the visible row array; collapsed subtrees are unmounted, not hidden, so the table body contains exactly the visible rows. Returns expandAll/collapseAll helpers, the aggregate isAllExpanded state (true/false/indeterminate) for a header expand-all control, and a ready-to-use config for the tree plugin. Note: because collapsed rows unmount, cell-local React state inside collapsed subtrees is lost on collapse; lift state that must survive.',
   props: [
     {
       name: 'data',
@@ -79,7 +79,7 @@ export const docsDense = {
   name: 'useTableTreeState',
   displayName: 'useTableTreeState',
   description:
-    'State companion for useTableTreeData. Owns expanded set (controlled or uncontrolled), flattens nested data to visible rows (collapsed subtrees unmounted, not hidden). Returns {visibleData, treeConfig, expandedIds, expandAll, collapseAll}. Cell-local state in collapsed subtrees is lost on collapse; lift state that must survive.',
+    'State companion for useTableTreeData. Owns expanded set (controlled or uncontrolled), flattens nested data to visible rows (collapsed subtrees unmounted, not hidden). Returns {visibleData, treeConfig, expandedIds, isAllExpanded, expandAll, collapseAll} (isAllExpanded = true/false/indeterminate for a header expand-all control). Cell-local state in collapsed subtrees is lost on collapse; lift state that must survive.',
   propDescriptions: {
     data: 'nested data; rows carry child rows under childrenKey. Flat data => plugin is a no-op.',
     idKey: 'row ID accessor: property name or fn returning unique id',

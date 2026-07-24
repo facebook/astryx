@@ -55,14 +55,18 @@ const columns: TableColumn<FileRow>[] = [
 ];
 
 function TreeTable(
-  props: Partial<UseTableTreeStateConfig<FileRow>> & {data?: FileRow[]},
+  props: Partial<UseTableTreeStateConfig<FileRow>> & {
+    data?: FileRow[];
+    hasExpandAllControl?: boolean;
+  },
 ) {
+  const {hasExpandAllControl, ...stateProps} = props;
   const {visibleData, treeConfig} = useTableTreeState<FileRow>({
     data: props.data ?? fileTree,
     idKey: 'id',
-    ...props,
+    ...stateProps,
   });
-  const tree = useTableTreeData(treeConfig);
+  const tree = useTableTreeData({...treeConfig, hasExpandAllControl});
 
   return (
     <Table data={visibleData} columns={columns} idKey="id" plugins={{tree}} />
@@ -590,5 +594,133 @@ describe('useTableTreeData — composition with sorting', () => {
     // Roots desc: src > README.md; src's children desc: utils.ts > components.
     // Children stay directly under their parent.
     expect(names).toEqual(['src', 'utils.ts', 'components', 'README.md']);
+  });
+});
+
+// =============================================================================
+// header expand-all control
+// =============================================================================
+
+describe('useTableTreeData: expand-all header control', () => {
+  /** The header row is the first row; return its expand-all toggle if present. */
+  function queryExpandAllButton(): HTMLElement | null {
+    const headerRow = screen.getAllByRole('row')[0];
+    return (
+      within(headerRow).queryByRole('button', {name: /expand all/i}) ??
+      within(headerRow).queryByRole('button', {name: /collapse all/i})
+    );
+  }
+
+  it('renders no expand-all control by default', () => {
+    render(<TreeTable defaultExpandedIds={['src']} />);
+    expect(queryExpandAllButton()).toBeNull();
+  });
+
+  it('renders an "Expand all" toggle in the tree column header when enabled and collapsed', () => {
+    render(<TreeTable hasExpandAllControl />);
+    const headerRow = screen.getAllByRole('row')[0];
+    expect(
+      within(headerRow).getByRole('button', {name: /expand all/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('expands every row when the collapsed toggle is clicked', async () => {
+    const user = userEvent.setup();
+    render(<TreeTable hasExpandAllControl />);
+
+    // Collapsed: only roots are visible.
+    expect(getBodyRows()).toHaveLength(2);
+
+    await user.click(
+      within(screen.getAllByRole('row')[0]).getByRole('button', {
+        name: /expand all/i,
+      }),
+    );
+
+    // Every level is now visible.
+    expect(
+      getBodyRows().map(r => within(r).getByText(/.+/, {selector: 'td *'})),
+    ).not.toHaveLength(2);
+    expect(screen.getByText('Button.tsx')).toBeInTheDocument();
+  });
+
+  it('relabels the toggle "Collapse all" once everything is expanded', () => {
+    render(
+      <TreeTable
+        hasExpandAllControl
+        defaultExpandedIds={['src', 'components']}
+      />,
+    );
+    const headerRow = screen.getAllByRole('row')[0];
+    expect(
+      within(headerRow).getByRole('button', {name: /collapse all/i}),
+    ).toBeInTheDocument();
+  });
+
+  it('collapses back to roots when the expanded toggle is clicked', async () => {
+    const user = userEvent.setup();
+    render(
+      <TreeTable
+        hasExpandAllControl
+        defaultExpandedIds={['src', 'components']}
+      />,
+    );
+    expect(screen.getByText('Button.tsx')).toBeInTheDocument();
+
+    await user.click(
+      within(screen.getAllByRole('row')[0]).getByRole('button', {
+        name: /collapse all/i,
+      }),
+    );
+
+    expect(getBodyRows()).toHaveLength(2);
+    expect(screen.queryByText('Button.tsx')).not.toBeInTheDocument();
+  });
+
+  it('marks the toggle aria-expanded=false in the indeterminate (partial) state', () => {
+    // 'src' expanded but 'components' not: partially expanded.
+    render(<TreeTable hasExpandAllControl defaultExpandedIds={['src']} />);
+    const headerRow = screen.getAllByRole('row')[0];
+    const toggle = within(headerRow).getByRole('button', {
+      name: /expand all/i,
+    });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('does not render the control for flat data even when enabled', () => {
+    const flat: FileRow[] = [
+      {id: 'a', name: 'A', size: 1},
+      {id: 'b', name: 'B', size: 2},
+    ];
+    render(<TreeTable data={flat} hasExpandAllControl />);
+    expect(queryExpandAllButton()).toBeNull();
+  });
+
+  it('renders the toggle inline with the header label, not stacked above it', () => {
+    render(<TreeTable hasExpandAllControl />);
+    const headerRow = screen.getAllByRole('row')[0];
+    const toggle = within(headerRow).getByRole('button', {
+      name: /expand all/i,
+    });
+    // The tree column's <th> holds the label text ('Name'). The bug was that
+    // the toggle went into the `before` slot, which BaseTable renders as a
+    // block sibling of the label, stacking the chevron ABOVE the title. The
+    // fix wraps the label + toggle in one inline-flex container, so they must
+    // share the same immediate parent (the toggle is a sibling of the label,
+    // not in a separate stacked slot).
+    const th = toggle.closest('th');
+    expect(th).not.toBeNull();
+    const label = within(th as HTMLElement).getByText('Name');
+    const wrapper = label.parentElement as HTMLElement;
+    expect(wrapper).toContainElement(toggle);
+    // The toggle precedes the label within that shared wrapper (chevron sits
+    // to the LEFT of the title). StyleX compiles the inline-flex layout to a
+    // class on this wrapper; assert the class is present (real CSS is not
+    // applied in jsdom, so we check the class hook, not computed display).
+    expect(wrapper.className).not.toBe('');
+    const kids = Array.from(wrapper.childNodes);
+    expect(kids.indexOf(toggle)).toBeLessThan(
+      kids.findIndex(n => n.textContent === 'Name' || n.contains(label)),
+    );
   });
 });

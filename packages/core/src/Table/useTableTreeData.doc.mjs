@@ -30,6 +30,29 @@ export const docs = {
       required: true,
     },
     {
+      name: 'hasExpandAllControl',
+      type: 'boolean',
+      description:
+        'Show an expand-all/collapse-all toggle in the tree column header. Requires isAllExpanded plus onExpandAll/onCollapseAll (all supplied by useTableTreeState).',
+      default: 'false',
+    },
+    {
+      name: 'isAllExpanded',
+      type: "boolean | 'indeterminate'",
+      description:
+        'Aggregate expansion state across every expandable row, driving the header expand-all toggle. true when all are expanded, false when none are, indeterminate when some are.',
+    },
+    {
+      name: 'onExpandAll',
+      type: '() => void',
+      description: 'Expand every expandable row. Wired to the header control.',
+    },
+    {
+      name: 'onCollapseAll',
+      type: '() => void',
+      description: 'Collapse every row. Wired to the header control.',
+    },
+    {
       name: 'indent',
       type: "'sm' | 'md' | 'lg'",
       description:
@@ -71,5 +94,11 @@ export const docsDense = {
     indent:
       "indent step per level: 'sm' | 'md' | 'lg' (spacing-3/4/6). Defaults to 'md'.",
     treeColumnKey: 'column carrying indent + expander. Defaults to first column.',
+    hasExpandAllControl:
+      'show expand-all/collapse-all toggle in tree column header. Needs isAllExpanded + onExpandAll/onCollapseAll (from useTableTreeState). Defaults to false.',
+    isAllExpanded:
+      "aggregate state driving the header toggle: true (all) | false (none) | 'indeterminate' (some).",
+    onExpandAll: 'expand every expandable row (header control)',
+    onCollapseAll: 'collapse every row (header control)',
   },
 };

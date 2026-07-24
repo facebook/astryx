@@ -74,6 +74,12 @@ export interface UseTableTreeStateResult<T extends Record<string, unknown>> {
   treeConfig: UseTableTreeDataConfig<T>;
   /** The current expanded row ids. */
   expandedIds: ReadonlySet<string>;
+  /**
+   * Aggregate expansion state across every expandable row: `true` when all are
+   * expanded, `false` when none are, `'indeterminate'` when some but not all
+   * are. Drives the header expand-all control. Reports `false` for flat data.
+   */
+  isAllExpanded: boolean | 'indeterminate';
   /** Expand every expandable row in the tree. */
   expandAll: () => void;
   /** Collapse every row. */
@@ -211,6 +217,25 @@ export function useTableTreeState<T extends Record<string, unknown>>(
 
   const hasExpandableRows = allExpandableIds.length > 0;
 
+  // Aggregate state for the header expand-all control. Only expandable ids
+  // count toward the total, so expanded ids that match a leaf or no row at
+  // all never skew the tally.
+  const isAllExpanded: boolean | 'indeterminate' = useMemo(() => {
+    if (!hasExpandableRows) {
+      return false;
+    }
+    const expandedCount = allExpandableIds.filter(id =>
+      expandedIds.has(id),
+    ).length;
+    if (expandedCount === 0) {
+      return false;
+    }
+    if (expandedCount === allExpandableIds.length) {
+      return true;
+    }
+    return 'indeterminate';
+  }, [hasExpandableRows, allExpandableIds, expandedIds]);
+
   const onToggleItem = useCallback(
     (item: T) => {
       const id = getId(item);
@@ -243,11 +268,30 @@ export function useTableTreeState<T extends Record<string, unknown>>(
       getRowMeta,
       onToggleItem,
       hasExpandableRows,
+      isAllExpanded,
+      onExpandAll: expandAll,
+      onCollapseAll: collapseAll,
       indent,
       treeColumnKey,
     }),
-    [getRowMeta, onToggleItem, hasExpandableRows, indent, treeColumnKey],
+    [
+      getRowMeta,
+      onToggleItem,
+      hasExpandableRows,
+      isAllExpanded,
+      expandAll,
+      collapseAll,
+      indent,
+      treeColumnKey,
+    ],
   );
 
-  return {visibleData, treeConfig, expandedIds, expandAll, collapseAll};
+  return {
+    visibleData,
+    treeConfig,
+    expandedIds,
+    isAllExpanded,
+    expandAll,
+    collapseAll,
+  };
 }

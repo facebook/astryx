@@ -43,7 +43,12 @@ import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, spacingVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {mergeRefs} from '../../../utils';
-import type {TablePlugin, TableColumn, BodyRowRenderProps} from '../../types';
+import type {
+  TablePlugin,
+  TableColumn,
+  BodyRowRenderProps,
+  HeaderCellRenderProps,
+} from '../../types';
 import {useTranslator} from '../../../i18n';
 
 // =============================================================================
@@ -78,6 +83,22 @@ export interface UseTableTreeDataConfig<T extends Record<string, unknown>> {
    * identically to a Table without the plugin.
    */
   hasExpandableRows: boolean;
+  /**
+   * Aggregate expansion state across every expandable row. When provided
+   * together with `onExpandAll`/`onCollapseAll`, the tree column header shows
+   * an expand-all toggle. `useTableTreeState` supplies all three.
+   */
+  isAllExpanded?: boolean | 'indeterminate';
+  /** Expand every expandable row. Wired to the header expand-all control. */
+  onExpandAll?: () => void;
+  /** Collapse every row. Wired to the header expand-all control. */
+  onCollapseAll?: () => void;
+  /**
+   * Show the expand-all/collapse-all toggle in the tree column header. Needs
+   * `isAllExpanded` and `onExpandAll`/`onCollapseAll` to be present.
+   * @default false
+   */
+  hasExpandAllControl?: boolean;
   /**
    * Indent step per level, as spacing tokens.
    * @default 'md'
@@ -243,6 +264,13 @@ const treeStyles = stylex.create({
     height: '24px',
     flexShrink: '0',
   },
+  /** Header expand-all toggle: same affordance as a row expander. */
+  headerCell: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
+    minWidth: 0,
+  },
 });
 
 // =============================================================================
@@ -275,6 +303,53 @@ function TreeExpander({
         {...stylex.props(
           treeStyles.chevron,
           isExpanded && treeStyles.chevronExpanded,
+        )}>
+        <Icon icon="chevronRight" size="xsm" />
+      </span>
+    </button>
+  );
+}
+
+/**
+ * Header expand-all/collapse-all toggle. Rendered in the tree column header
+ * when `hasExpandAllControl` is set and the state hook supplies the aggregate
+ * `isAllExpanded` plus `onExpandAll`/`onCollapseAll`. Shares the chevron
+ * affordance with the per-row expander; the chevron points down (expanded)
+ * only when every expandable row is expanded, matching the row expander.
+ */
+function TreeExpandAllToggle({
+  isAllExpanded,
+  onExpandAll,
+  onCollapseAll,
+}: {
+  isAllExpanded: boolean | 'indeterminate';
+  onExpandAll: () => void;
+  onCollapseAll: () => void;
+}) {
+  const t = useTranslator();
+  const allExpanded = isAllExpanded === true;
+  return (
+    <button
+      type="button"
+      {...stylex.props(treeStyles.expanderButton)}
+      onClick={e => {
+        e.stopPropagation();
+        if (allExpanded) {
+          onCollapseAll();
+        } else {
+          onExpandAll();
+        }
+      }}
+      aria-label={
+        allExpanded
+          ? t('@astryx.tableTree.collapseAllRows')
+          : t('@astryx.tableTree.expandAllRows')
+      }
+      aria-expanded={allExpanded}>
+      <span
+        {...stylex.props(
+          treeStyles.chevron,
+          allExpanded && treeStyles.chevronExpanded,
         )}>
         <Icon icon="chevronRight" size="xsm" />
       </span>
@@ -380,6 +455,11 @@ export function useTableTreeData<T extends Record<string, unknown>>(
     output: TableColumn<T>[];
   } | null>(null);
 
+  // The resolved tree column key, written by transformColumns (pipeline step 1)
+  // and read by transformHeaderCell (step 4) to place the expand-all toggle on
+  // the same column that carries the row expanders.
+  const treeKeyRef = useRef<string | undefined>(undefined);
+
   // The plugin object is created once per store and never changes shape:
   // every transform reads the live config through the store, and
   // internally no-ops when hasExpandableRows is false. Swapping between
@@ -426,6 +506,7 @@ export function useTableTreeData<T extends Record<string, unknown>>(
           ? treeColumnKey
           : (columns.find(c => !c.key.startsWith('__'))?.key ??
             columns[0]?.key);
+        treeKeyRef.current = treeKey;
 
         // Migration guarantee: flat data renders identically to a Table
         // without the plugin.
@@ -457,6 +538,52 @@ export function useTableTreeData<T extends Record<string, unknown>>(
             });
         columnsCacheRef.current = {input: columns, treeKey, wrapped, output};
         return output;
+      },
+
+      transformHeaderCell(
+        props: HeaderCellRenderProps,
+        column: TableColumn<T>,
+      ): HeaderCellRenderProps {
+        const {
+          hasExpandableRows,
+          hasExpandAllControl,
+          isAllExpanded,
+          onExpandAll,
+          onCollapseAll,
+        } = store.getConfig();
+
+        // Only the tree column carries the toggle, and only when the control
+        // is enabled, the data is actually hierarchical, and the state hook
+        // supplied the aggregate state plus both handlers. Otherwise this is a
+        // pass-through (flat data stays a no-op).
+        if (
+          !hasExpandAllControl ||
+          !hasExpandableRows ||
+          column.key !== treeKeyRef.current ||
+          isAllExpanded === undefined ||
+          !onExpandAll ||
+          !onCollapseAll
+        ) {
+          return props;
+        }
+
+        // Wrap the header label + the toggle in one inline-flex row so the
+        // chevron sits to the LEFT of the title on the same line. BaseTable
+        // only applies its own flex row for the `after` slot, so a bare
+        // `before` would stack above the label in the block-level <th>.
+        return {
+          ...props,
+          content: (
+            <span {...stylex.props(treeStyles.headerCell)}>
+              <TreeExpandAllToggle
+                isAllExpanded={isAllExpanded}
+                onExpandAll={onExpandAll}
+                onCollapseAll={onCollapseAll}
+              />
+              {props.content}
+            </span>
+          ),
+        };
       },
 
       transformBodyRow(props: BodyRowRenderProps, item: T) {
