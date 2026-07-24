@@ -1,44 +1,21 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file build command — the page-building assistant.
+ * @file build command — thin wrapper around api/build.
  *
- * Two modes:
- *   astryx build                  → the PLAYBOOK: how to build a page with Astryx
- *   astryx build "<what>"         → a COMPOSITION KIT for what you're building:
- *                                   the closest page template (scaffold or layout
- *                                   reference), the blocks that cover parts, and
- *                                   the components to fill gaps, plus a one-line
- *                                   "Compose:" suggestion.
+ *   astryx build                  → the PLAYBOOK (how to build a page)
+ *   astryx build "<what>"         → a COMPOSITION KIT (closest page template,
+ *                                   blocks, components) with a recommended START.
  *
- * `build` is the opinionated "assemble a page" verb. For a neutral lookup across
- * the whole CLI, use `astryx search <query>` instead.
+ * All grouping/scoring lives in api/build; this file only parses flags and
+ * renders. Command strings are prefixed for the caller's package manager here
+ * (never in the API payload) via formatCliCommand/getCliInvocation.
  */
 
 import {getCliInvocation, formatCliCommand} from '../../utils/package-manager.mjs';
 import {jsonOut, humanLog} from '../../lib/json.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
-import {search as searchApi} from '../../api/search/search.mjs';
-
-/** A page scoring at/above this is confident enough to call a direct match. */
-const PAGE_DIRECT = 95;
-/** Below this a page is too weak to even offer as a layout reference. */
-const PAGE_FLOOR = 50;
-/** Below this a block/domain-component match is incidental noise, not surfaced. */
-const DOMAIN_FLOOR = 55;
-
-/**
- * Always-surfaced primitives. Every page needs a shell + layout/typography/
- * action atoms, but these never keyword-match an idea ("dashboard" != "Stack"),
- * so search alone never returns them. We list them unconditionally so an agent
- * composing from scratch has the whole kit (esp. off-template).
- */
-const FRAME = ['AppShell', 'TopNav', 'SideNav', 'Layout'];
-const FOUNDATION = [
-  'VStack', 'HStack', 'Grid', 'StackItem', 'Card', 'Section',
-  'Text', 'Heading', 'Button', 'Icon', 'Badge', 'Divider',
-];
-const ALWAYS = new Set([...FRAME, ...FOUNDATION]);
+import {build as buildApi} from '../../api/build/build.mjs';
 
 /**
  * Print the build playbook (shown when `build` is run with no query).
@@ -88,14 +65,15 @@ export function registerBuild(program) {
       const run = getCliInvocation();
       const json = program.opts().json || false;
 
-      // No query → print the playbook (the "how to build" skill).
+      // No query → the playbook. Still routed through the API for the envelope.
       if (!query || !String(query).trim()) {
-        if (json) return jsonOut('build.help', {playbook: true});
+        const result = await buildApi(undefined, {cwd: process.cwd()});
+        if (json) return jsonOut(result.type, result.data);
         printPlaybook(run);
         return;
       }
 
-      // Default to a deep pool so each role section has candidates after grouping.
+      // Arg validation stays in the CLI.
       let limit = 60;
       if (options.limit != null) {
         const parsed = Number.parseInt(options.limit, 10);
@@ -106,11 +84,11 @@ export function registerBuild(program) {
         limit = parsed;
       }
 
-      /** @type {import('../../types/search').SearchResponse} */
+      /** @type {import('../../types/build').BuildKitResponse} */
       let result;
       try {
-        result = /** @type {import('../../types/search').SearchResponse} */ (
-          await searchApi(query, {cwd: process.cwd(), type: options.type, limit})
+        result = /** @type {import('../../types/build').BuildKitResponse} */ (
+          await buildApi(query, {cwd: process.cwd(), type: options.type, limit})
         );
       } catch (e) {
         const err = /** @type {import('../../api/error.mjs').AstryxError} */ (e);
@@ -120,28 +98,16 @@ export function registerBuild(program) {
 
       if (json) return jsonOut(result.type, result.data);
 
-      const {query: q, results} = result.data;
+      const {query: q, hasResults, directMatch, pages, blocks, domain, frame, foundation} =
+        result.data;
 
-      if (results.length === 0) {
+      if (!hasResults) {
         humanLog('');
         humanLog(`No matches for "${q}".`);
         humanLog(`Try a broader term, or browse: ${run} component --list`);
         humanLog('');
         return;
       }
-
-      // ── Group results by role (the build kit) ──────────────────────
-      const pages = results
-        .filter(r => r.domain === 'template' && r.kind !== 'block' && r.score >= PAGE_FLOOR)
-        .slice(0, 3);
-      const blocks = results
-        .filter(r => r.domain === 'template' && r.kind === 'block' && r.score >= DOMAIN_FLOOR)
-        .slice(0, 5);
-      // Idea-specific atoms = matched components/hooks MINUS the always-on kit.
-      const domain = results
-        .filter(r => (r.domain === 'component' || r.domain === 'hook') && r.score >= DOMAIN_FLOOR && !ALWAYS.has(r.name))
-        .slice(0, 6);
-      const directMatch = pages.length > 0 && pages[0].score >= PAGE_DIRECT;
 
       const printItem = (/** @type {import('../../types/search').SearchResultEntry} */ r, /** @type {string} */ label) => {
         const display = r.domain === 'template' && r.displayName ? r.displayName : r.name;
@@ -177,7 +143,7 @@ export function registerBuild(program) {
 
       // FRAME — always (the page shell).
       humanLog('');
-      humanLog(`FRAME — page shell (always): ${FRAME.join(', ')}`);
+      humanLog(`FRAME — page shell (always): ${frame.join(', ')}`);
       humanLog(`          full-page → AppShell; or Layout + SideNav/TopNav. ${run} component AppShell`);
 
       // BLOCKS — idea-specific composed patterns.
@@ -196,7 +162,7 @@ export function registerBuild(program) {
 
       // FOUNDATION — always (layout/typography/actions).
       humanLog('');
-      humanLog(`FOUNDATION — always available (layout/text/actions): ${FOUNDATION.join(' ')}`);
+      humanLog(`FOUNDATION — always available (layout/text/actions): ${foundation.join(' ')}`);
 
       // SETUP — so it renders / stays on-system.
       humanLog('');

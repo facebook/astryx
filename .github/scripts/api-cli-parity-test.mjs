@@ -254,6 +254,14 @@ add('discover (list)', ['discover'],
 // checks (and their statuses) is deterministic and must match exactly.
 add('doctor', ['doctor'], () => apiCall(api.doctor, {cwd: ROOT}));
 
+// Build — playbook signal (build.help) + composition kit (build.kit).
+add('build', ['build'],
+  () => apiCall(api.build, undefined, {cwd: ROOT}));
+add('build dashboard', ['build', 'dashboard'],
+  () => apiCall(api.build, 'dashboard', {cwd: ROOT}));
+add('build (no match)', ['build', 'zzznomatch99'],
+  () => apiCall(api.build, 'zzznomatch99', {cwd: ROOT}));
+
 // Other commands — probe with safe read-only args (no API yet)
 const otherCommands = [
   ['swizzle', '--list'],

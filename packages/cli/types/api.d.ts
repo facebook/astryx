@@ -52,6 +52,7 @@ import type {
 } from './layout';
 import type {ValidateIntegrationResponse} from './validate-integration';
 import type {AstryxIntegrationIssue} from './integration';
+import type {BuildHelpResponse, BuildKitResponse} from './build';
 import type {Suggestion} from './base';
 
 /** Structured API error with a stable machine-readable code. */
@@ -193,6 +194,23 @@ export declare function search(
   query: string,
   options?: SearchOptions,
 ): Promise<SearchResponse>;
+
+// ── Build ────────────────────────────────────────────────────────────
+
+export interface BuildOptions {
+  cwd?: string;
+  type?: SearchDomain;
+  limit?: number;
+}
+
+/**
+ * Page-building assistant. No query → `build.help` (playbook signal); a query →
+ * `build.kit` (grouped composition kit of raw search entries + frame/foundation).
+ */
+export declare function build(
+  query?: string,
+  options?: BuildOptions,
+): Promise<BuildHelpResponse | BuildKitResponse>;
 
 // ── Doctor ──────────────────────────────────
 

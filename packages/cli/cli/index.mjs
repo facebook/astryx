@@ -56,6 +56,7 @@ export const JSON_SUPPORTED = new Set([
   'docs',
   'discover',
   'search',
+  'build',
   'swizzle',
   'template',
   'hook',
