@@ -12,6 +12,9 @@
  * - Root container: layout-only wrapper (flex column), no visual styling, no theme target
  * - Header area (themeProps 'banner'): colored status background with icon, title, description, actions, dismiss
  * - Content area (themeProps 'banner-content'): collapsible card background for additional content (children)
+ * - Icon wrapper (themeProps 'banner-icon'): carries the default status icon
+ *   color (info → accent, others → their status tokens); the default Icon
+ *   renders color="inherit" so theme 'banner-icon' overrides reach the glyph (#4166)
  * - No left border accent — color is expressed through the full header background
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
  * - When children are provided, a collapse/expand toggle button appears in the end area
@@ -206,12 +209,39 @@ const statusRole: Record<BannerStatus, 'alert' | 'status'> = {
 // Status → Icon color mapping
 // =============================================================================
 
-const statusIconColor = {
-  info: 'accent',
-  warning: 'warning',
-  error: 'error',
-  success: 'success',
-} as const;
+/**
+ * Default color for the status icon, applied on the icon WRAPPER (the
+ * 'banner-icon' theming target), not on the Icon itself. The default Icon
+ * renders with color="inherit" and its SVG strokes/fills use currentColor,
+ * so the glyph picks the color up through inheritance.
+ *
+ * Why: theme component overrides ('banner-icon' + 'status:X') style the
+ * wrapper element only. When the Icon hard-coded its own color variant
+ * (info → accent), those overrides could never reach the glyph (#4166).
+ * With the color on the wrapper and the glyph inheriting, an override that
+ * sets `color` lands above these StyleX defaults (@layer astryx-theme) and
+ * flows into the SVG.
+ *
+ * The tokens match the Icon color variants used previously (info → accent,
+ * others → their semantic status tokens), so default rendering is unchanged.
+ * Themes that re-scope these tokens on the banner root (e.g. 'status:info':
+ * {'--color-accent': ...}) also keep working — var() still resolves inside
+ * the banner subtree.
+ */
+const statusIconColorStyles = stylex.create({
+  info: {
+    color: colorVars['--color-accent'],
+  },
+  warning: {
+    color: colorVars['--color-warning'],
+  },
+  error: {
+    color: colorVars['--color-error'],
+  },
+  success: {
+    color: colorVars['--color-success'],
+  },
+});
 
 // =============================================================================
 // Styles
@@ -426,7 +456,6 @@ export function Banner({
   const contentId = useId();
   const defaultIconName = defaultIconNames[status];
   const role = statusRole[status];
-  const iconColor = statusIconColor[status];
   const hasChildren = children != null;
 
   if (isDismissed) {
@@ -484,13 +513,19 @@ export function Banner({
         <div
           {...mergeProps(
             themeProps('banner-icon', {status}),
-            stylex.props(styles.iconWrapper),
+            // The status color default lives on this wrapper (see
+            // statusIconColorStyles) and only for the default icon, so a
+            // custom `icon` keeps its current inherited color.
+            stylex.props(
+              styles.iconWrapper,
+              icon == null && statusIconColorStyles[status],
+            ),
           )}
           aria-hidden="true">
           {icon != null ? (
             icon
           ) : (
-            <Icon icon={defaultIconName} size="md" color={iconColor} />
+            <Icon icon={defaultIconName} size="md" color="inherit" />
           )}
         </div>
         <div {...stylex.props(styles.headerContent)}>
