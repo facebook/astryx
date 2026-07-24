@@ -347,12 +347,12 @@ describe('computeOverflow — multi-row (maxRows)', () => {
 });
 
 describe('computeOverflow — resize behavior (shrink/grow re-clamps, never exceeds cap)', () => {
-  const base = {
+  const base: Partial<ComputeOverflowInput> = {
     widths: [50, 50, 50, 50, 50],
     gap: 10,
     indicatorWidth: 30,
     maxVisibleItems: 3,
-  } as const;
+  };
 
   it('grows back only up to the cap', () => {
     // Huge container would fit all 5, cap holds at 3.
