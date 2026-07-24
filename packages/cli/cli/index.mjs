@@ -19,7 +19,7 @@ import {cliError} from '../lib/cli-error.mjs';
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 import {levenshteinDistance} from '../lib/string-utils.mjs';
 import {installJsonShim} from '../lib/json-shim.mjs';
-import {isAstryxInitialized} from './commands/agent-docs.mjs';
+import {isAstryxInitialized} from '../lib/agent-docs/agent-docs.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

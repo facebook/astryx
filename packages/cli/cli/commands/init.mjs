@@ -20,7 +20,7 @@ import * as fs from 'node:fs';
 import {CLI_ROOT} from '../../utils/paths.mjs';
 import {PathSafetyError} from '../../utils/path-safety.mjs';
 import {getCliInvocation} from '../../utils/package-manager.mjs';
-import {installAgentDocs, removeAgentDocs} from './agent-docs.mjs';
+import {installAgentDocs, removeAgentDocs} from '../../lib/agent-docs/agent-docs.mjs';
 import {listTemplates} from './template.mjs';
 import {humanLog} from '../../lib/json.mjs';
 import {cliError} from '../../lib/cli-error.mjs';

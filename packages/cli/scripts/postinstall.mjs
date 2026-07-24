@@ -41,7 +41,7 @@ export function shouldNudge({scriptPath, npmCommand, isSetUp} = {}) {
 /** @param {string} root @returns {Promise<boolean>} */
 async function projectIsSetUp(root) {
   try {
-    const {isAstryxInitialized} = await import('../cli/commands/agent-docs.mjs');
+    const {isAstryxInitialized} = await import('../lib/agent-docs/agent-docs.mjs');
     return isAstryxInitialized(root);
   } catch {
     return false; // best-effort — if the check can't load, fall through and nudge
