@@ -43,6 +43,30 @@ const testColumns: TableColumn<TestRow>[] = [
 
 const ciBudgetMultiplier = process.env.CI === 'true' ? 1.5 : 1;
 
+// A single wall-clock sample is flaky when the whole suite runs in parallel
+// forks: scheduler contention can inflate one measurement well past a tight
+// budget. The fastest of a few runs approximates the un-contended cost — a
+// real regression raises the minimum too — so the budgets below stay tight
+// without flapping. Same technique as measureBest in
+// Markdown/parser.perf.test.ts (#3848). `fn` returns a cleanup callback; it
+// runs outside the timed section so teardown never pollutes the sample.
+async function measureBest(
+  runs: number,
+  fn: () => (() => void) | Promise<() => void>,
+): Promise<number> {
+  let best = Infinity;
+  for (let i = 0; i < runs; i++) {
+    const start = performance.now();
+    const cleanup = await fn();
+    const elapsed = performance.now() - start;
+    if (elapsed < best) {
+      best = elapsed;
+    }
+    cleanup();
+  }
+  return best;
+}
+
 // =============================================================================
 // Test: Table doesn't re-render when unrelated state changes
 // =============================================================================
@@ -437,28 +461,30 @@ describe('Table render performance', () => {
   // ===========================================================================
 
   describe('render benchmarks', () => {
-    it('should render 100 rows within performance budget', () => {
+    it('should render 100 rows within performance budget', async () => {
       const data = createTestData(100);
 
-      const startTime = performance.now();
-      render(<Table data={data} columns={testColumns} idKey="id" />);
-      const endTime = performance.now();
-
-      const renderTime = endTime - startTime;
+      const renderTime = await measureBest(3, () => {
+        const {unmount} = render(
+          <Table data={data} columns={testColumns} idKey="id" />,
+        );
+        return unmount;
+      });
       console.log(`100 rows initial render: ${renderTime.toFixed(2)}ms`);
 
       // Should render within 200ms (generous budget for CI variance)
       expect(renderTime).toBeLessThan(200);
     });
 
-    it('should render 500 rows within performance budget', () => {
+    it('should render 500 rows within performance budget', async () => {
       const data = createTestData(500);
 
-      const startTime = performance.now();
-      render(<Table data={data} columns={testColumns} idKey="id" />);
-      const endTime = performance.now();
-
-      const renderTime = endTime - startTime;
+      const renderTime = await measureBest(3, () => {
+        const {unmount} = render(
+          <Table data={data} columns={testColumns} idKey="id" />,
+        );
+        return unmount;
+      });
       console.log(`500 rows initial render: ${renderTime.toFixed(2)}ms`);
 
       // CI runners vary more than local machines, so keep the local budget
@@ -490,15 +516,19 @@ describe('Table render performance', () => {
         );
       }
 
-      render(<TestComponent />);
-
-      const startTime = performance.now();
-      await act(async () => {
-        screen.getByRole('button').click();
-      });
-      const endTime = performance.now();
-
-      const updateTime = endTime - startTime;
+      // Best-of-3 like the render benchmarks above, but the mount is setup
+      // rather than the measured work, so each sample renders a fresh table
+      // outside the timed section and only the committed update is timed.
+      let updateTime = Infinity;
+      for (let i = 0; i < 3; i++) {
+        const {unmount} = render(<TestComponent />);
+        const startTime = performance.now();
+        await act(async () => {
+          screen.getByRole('button').click();
+        });
+        updateTime = Math.min(updateTime, performance.now() - startTime);
+        unmount();
+      }
       console.log(`100 rows single update: ${updateTime.toFixed(2)}ms`);
 
       // Update should be fast

@@ -75,7 +75,10 @@ function simulateStreamingIncremental(
 // budget). The fastest of a few runs approximates the un-contended cost —
 // a real regression raises the minimum too — so budgets stay tight without
 // flapping. The streaming budget tests below keep a single run: their
-// budgets carry 10x+ headroom, which contention cannot realistically eat.
+// multi-second budgets carry ~4x headroom over the observed CI cost, and
+// each sets an explicit vitest timeout above its budget (see the note on
+// the streaming tests) so the harness cannot kill the test before the
+// budget assertion runs.
 function measureBest<T>(
   runs: number,
   fn: () => T,
@@ -128,67 +131,92 @@ describe('parseMarkdown performance', () => {
   }
 
   // Streaming with full re-parse
+  //
+  // These budgets exceed vitest's 5s default testTimeout, so each test passes
+  // an explicit timeout above its budget — otherwise the harness kills the
+  // test before the budget assertion ever runs (the XL re-parse takes ~3.6s
+  // on a healthy CI runner and timed out at 5s on a contended one). The
+  // timeout is 2x the budget so a perf regression still fails on the
+  // assertion, with a clear elapsed-time message, not on a harness timeout.
+  // The XL budget is 15s: ~4x the observed CI cost, tight enough that a real
+  // slowdown of the parser still trips it.
   for (const size of [
     {name: 'Medium', paragraphs: 50, maxMs: 5000},
-    {name: 'XL', paragraphs: 500, maxMs: 30000},
+    {name: 'XL', paragraphs: 500, maxMs: 15000},
   ]) {
-    it(`streaming full re-parse ${size.name} under ${size.maxMs}ms`, () => {
-      const text = generateAIResponse(size.paragraphs);
-      const chunkSize = 50;
-      const iterations = Math.ceil(text.length / chunkSize);
-      const start = performance.now();
-      const result = simulateStreamingFullReparse(text, chunkSize);
-      const elapsed = performance.now() - start;
-      console.log(
-        `  ${size.name} streaming full re-parse: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
-      );
-      expect(elapsed).toBeLessThan(size.maxMs);
-      expect(result.length).toBeGreaterThan(0);
-    });
+    it(
+      `streaming full re-parse ${size.name} under ${size.maxMs}ms`,
+      {timeout: size.maxMs * 2},
+      () => {
+        const text = generateAIResponse(size.paragraphs);
+        const chunkSize = 50;
+        const iterations = Math.ceil(text.length / chunkSize);
+        const start = performance.now();
+        const result = simulateStreamingFullReparse(text, chunkSize);
+        const elapsed = performance.now() - start;
+        console.log(
+          `  ${size.name} streaming full re-parse: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
+        );
+        expect(elapsed).toBeLessThan(size.maxMs);
+        expect(result.length).toBeGreaterThan(0);
+      },
+    );
   }
 
-  // Streaming with incremental parse
+  // Streaming with incremental parse (explicit timeouts and the XL budget:
+  // see comment above)
   for (const size of [
     {name: 'Medium', paragraphs: 50, maxMs: 5000},
-    {name: 'XL', paragraphs: 500, maxMs: 30000},
+    {name: 'XL', paragraphs: 500, maxMs: 15000},
   ]) {
-    it(`streaming incremental ${size.name} under ${size.maxMs}ms`, () => {
-      const text = generateAIResponse(size.paragraphs);
-      const chunkSize = 50;
-      const iterations = Math.ceil(text.length / chunkSize);
-      const start = performance.now();
-      const result = simulateStreamingIncremental(text, chunkSize);
-      const elapsed = performance.now() - start;
-      console.log(
-        `  ${size.name} streaming incremental: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
-      );
-      expect(elapsed).toBeLessThan(size.maxMs);
-      expect(result.length).toBeGreaterThan(0);
-    });
+    it(
+      `streaming incremental ${size.name} under ${size.maxMs}ms`,
+      {timeout: size.maxMs * 2},
+      () => {
+        const text = generateAIResponse(size.paragraphs);
+        const chunkSize = 50;
+        const iterations = Math.ceil(text.length / chunkSize);
+        const start = performance.now();
+        const result = simulateStreamingIncremental(text, chunkSize);
+        const elapsed = performance.now() - start;
+        console.log(
+          `  ${size.name} streaming incremental: ${elapsed.toFixed(2)}ms (${iterations} iterations)`,
+        );
+        expect(elapsed).toBeLessThan(size.maxMs);
+        expect(result.length).toBeGreaterThan(0);
+      },
+    );
   }
 
   // --- Incremental vs Full speedup benchmark ---
-  it('incremental parse is faster than full re-parse for streaming', () => {
-    const text = generateAIResponse(200);
-    const chunkSize = 50;
+  // Best-of-3 on both sides means six streaming simulations; give it the same
+  // headroom as the streaming budget tests so contention can't hit the 5s
+  // default timeout.
+  it(
+    'incremental parse is faster than full re-parse for streaming',
+    {timeout: 30000},
+    () => {
+      const text = generateAIResponse(200);
+      const chunkSize = 50;
 
-    // The assertion below compares a ratio of two measurements, so noise on
-    // either side can flip it — measure both as best-of-3.
-    const {elapsed: fullElapsed} = measureBest(3, () =>
-      simulateStreamingFullReparse(text, chunkSize),
-    );
-    const {elapsed: incrElapsed} = measureBest(3, () =>
-      simulateStreamingIncremental(text, chunkSize),
-    );
+      // The assertion below compares a ratio of two measurements, so noise on
+      // either side can flip it — measure both as best-of-3.
+      const {elapsed: fullElapsed} = measureBest(3, () =>
+        simulateStreamingFullReparse(text, chunkSize),
+      );
+      const {elapsed: incrElapsed} = measureBest(3, () =>
+        simulateStreamingIncremental(text, chunkSize),
+      );
 
-    const speedup = fullElapsed / incrElapsed;
-    console.log(`\n  === Incremental vs Full Re-parse Speedup ===`);
-    console.log(`  Input: ${text.length} chars, chunk size: ${chunkSize}`);
-    console.log(`  Full re-parse:  ${fullElapsed.toFixed(2)}ms`);
-    console.log(`  Incremental:    ${incrElapsed.toFixed(2)}ms`);
-    console.log(`  Speedup ratio:  ${speedup.toFixed(2)}x\n`);
+      const speedup = fullElapsed / incrElapsed;
+      console.log(`\n  === Incremental vs Full Re-parse Speedup ===`);
+      console.log(`  Input: ${text.length} chars, chunk size: ${chunkSize}`);
+      console.log(`  Full re-parse:  ${fullElapsed.toFixed(2)}ms`);
+      console.log(`  Incremental:    ${incrElapsed.toFixed(2)}ms`);
+      console.log(`  Speedup ratio:  ${speedup.toFixed(2)}x\n`);
 
-    // Incremental should be at least as fast (allowing small margin for noise)
-    expect(incrElapsed).toBeLessThanOrEqual(fullElapsed * 1.1);
-  });
+      // Incremental should be at least as fast (allowing small margin for noise)
+      expect(incrElapsed).toBeLessThanOrEqual(fullElapsed * 1.1);
+    },
+  );
 });
