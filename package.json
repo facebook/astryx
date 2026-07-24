@@ -16,6 +16,7 @@
     "check:executable-bits": "node scripts/check-executable-bits.mjs",
     "check:demo-media": "node scripts/check-demo-media.mjs",
     "check:sync": "node scripts/check-sync.js",
+    "check:theming": "node scripts/check-theming-targets.mjs",
     "lint": "pnpm check:repo && eslint . --cache",
     "lint:strict": "pnpm check:repo && ASTRYX_STRICT_LINT=1 eslint . --cache",
     "storybook": "pnpm -F @astryxdesign/storybook dev",

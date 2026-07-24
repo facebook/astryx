@@ -128,6 +128,11 @@ export const docsZh = {
       { guidance: false, description: 'Wrap a disabled CheckboxList in Tooltip to explain why it is disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.' },
     ],
   },
+  theming: {
+    targets: [
+      {className: 'astryx-checkbox-list'},
+    ],
+  },
 };
 
 /** @type {import('../docs-types').TranslationDoc} */
