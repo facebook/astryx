@@ -239,6 +239,10 @@
     "defaultMessage": "Avatars",
     "description": "Screen-reader-only fallback name for a horizontal cluster of user avatar images. Plural noun; consumers usually override with \"Team members\", \"Attendees\", etc."
   },
+  "@astryx.avatarGroup.keyboardHint": {
+    "defaultMessage": "Use arrow keys to move between avatars",
+    "description": "Screen-reader-only instruction attached (via aria-describedby) to a group of interactive avatars that share a single Tab stop. Tells keyboard users the Left/Right arrow keys move focus between the avatars. Only announced when the group has interactive (link/button) avatars."
+  },
   "@astryx.banner.dismiss": {
     "defaultMessage": "Dismiss",
     "description": "\"Dismiss\" = close/hide this notification (not \"reject a person\"). Aria label AND tooltip on the small X button on a Banner."

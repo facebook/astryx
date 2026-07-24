@@ -600,3 +600,40 @@ export const NumericSizes: Story = {
     </div>
   ),
 };
+
+/**
+ * Interactive avatars. `href` renders an `<a>` (native right-click / Cmd+click);
+ * `onClick` renders a `<button>`. Both get a focus-visible accent ring. A
+ * meaningful `name`/`alt` is required so the control has an accessible name.
+ */
+export const Interactive: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>As a link (href)</h4>
+        <div {...stylex.props(styles.row)}>
+          <Avatar name="Ada Lovelace" href="https://example.com/ada" />
+          <Avatar
+            name="Grace Hopper"
+            src="https://i.pravatar.cc/150?img=5"
+            href="https://example.com/grace"
+          />
+        </div>
+      </div>
+      <div>
+        <h4 {...stylex.props(styles.heading)}>As a button (onClick)</h4>
+        <div {...stylex.props(styles.row)}>
+          <Avatar
+            name="Alan Turing"
+            onClick={() => alert('Open Alan Turing')}
+          />
+          <Avatar
+            name="Katherine Johnson"
+            src="https://i.pravatar.cc/150?img=9"
+            onClick={() => alert('Open Katherine Johnson')}
+          />
+        </div>
+      </div>
+    </div>
+  ),
+};

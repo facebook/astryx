@@ -74,6 +74,34 @@ export const docs = {
         },
       ],
     },
+    {
+      name: 'href',
+      type: 'string',
+      description:
+        'When set, the avatar renders as an interactive link (`<a>` or a custom link component) pointing here — the same element-swap rule as Button. Requires a meaningful accessible name via `alt` or `name`. Inside an AvatarGroup, interactive avatars share a single Tab stop and are reached with arrow keys.',
+    },
+    {
+      name: 'as',
+      type: 'ElementType',
+      description:
+        'Custom link component used when `href` is set (e.g. Next.js `Link`). Overrides the provider-level LinkProvider default. Only applies with `href`.',
+    },
+    {
+      name: 'target',
+      type: 'string',
+      description: 'Link target attribute. Only applies with `href`.',
+    },
+    {
+      name: 'rel',
+      type: 'string',
+      description: 'Link rel attribute. Only applies with `href`.',
+    },
+    {
+      name: 'onClick',
+      type: '(e: MouseEvent) => void',
+      description:
+        'Click handler. When set without `href`, the avatar renders as a focusable `<button type="button">`. Requires a meaningful accessible name via `alt` or `name`.',
+    },
   ],
   components: [
     {name: 'AvatarStatusDot'},
@@ -115,6 +143,11 @@ export const docsDense = {
     alt: 'alt text; falls back to name',
     size: "avatar size. Named ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or numeric px.",
     status: 'corner content for status indicators',
+    href: 'renders avatar as a link (<a>/custom). Needs alt/name. Button-style element swap.',
+    as: 'custom link component for href (e.g. Next Link). Only with href.',
+    target: 'link target. Only with href.',
+    rel: 'link rel. Only with href.',
+    onClick: 'click handler → renders <button> when no href. Needs alt/name.',
   },
   components: [
     {name: 'AvatarStatusDot', description: 'size-aware status indicator rendered in the Avatar corner'},
