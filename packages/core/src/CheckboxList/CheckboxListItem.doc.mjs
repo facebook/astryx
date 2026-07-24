@@ -7,13 +7,20 @@ export const docs = {
   subComponentOf: 'CheckboxList',
   displayName: 'Checkbox List Item',
   isHiddenFromOverview: true,
-  description: 'Individual checkbox item with label, description, and end content slot. Works in collection mode (inside CheckboxList) or standalone mode (inside List).',
+  description:
+    'Individual checkbox item with label, description, and end content slot. Works in collection mode (inside CheckboxList) or standalone mode (inside List).',
   props: [
     {
       name: 'label',
       type: 'string',
       description: 'Primary text label for the item.',
       required: true,
+    },
+    {
+      name: 'accessibleLabel',
+      type: 'string',
+      description:
+        'Plain-text accessible name for the checkbox when label is a ReactNode. Without it, rich-label items all announce as the generic "Checkbox" to screen readers.',
     },
     {
       name: 'value',
@@ -69,19 +76,36 @@ export const docs = {
       description: 'Direct check handler (standalone mode only).',
     },
   ],
+  examples: [
+    {
+      label: 'Rich label with an accessible name',
+      code: `<CheckboxListItem
+  label={<span>Pro plan <Badge label="Recommended" /></span>}
+  accessibleLabel="Pro plan"
+  value="pro"
+/>`,
+    },
+  ],
 };
 
 export const docsZh = {
   name: 'CheckboxListItem',
   isHiddenFromOverview: true,
   displayName: 'Checkbox List Item',
-  description: '单个复选框选项，包含标签、描述和尾部内容插槽。可在集合模式或独立模式下使用。',
+  description:
+    '单个复选框选项，包含标签、描述和尾部内容插槽。可在集合模式或独立模式下使用。',
   props: [
     {
       name: 'label',
       type: 'string',
       description: '选项的主要文本标签。',
       required: true,
+    },
+    {
+      name: 'accessibleLabel',
+      type: 'string',
+      description:
+        '当 label 是 ReactNode 时，复选框的纯文本无障碍名称。缺少它时，富标签选项都会向屏幕阅读器播报为通用的 "Checkbox"。',
     },
     {
       name: 'value',
@@ -128,9 +152,12 @@ export const docsDense = {
   name: 'CheckboxListItem',
   isHiddenFromOverview: true,
   displayName: 'Checkbox List Item',
-  description: 'Individual checkbox item w/ label, description, end content slot.',
+  description:
+    'Individual checkbox item w/ label, description, end content slot.',
   propDescriptions: {
     label: 'Primary text label for item.',
+    accessibleLabel:
+      'Plain-text checkbox name when label is a ReactNode. Without it, rich-label items all announce as "Checkbox".',
     value: 'Identity key (required inside CheckboxList).',
     description: 'Secondary text below label.',
     endContent: 'Content rendered after label area.',

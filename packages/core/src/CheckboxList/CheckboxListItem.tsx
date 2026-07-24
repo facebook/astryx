@@ -16,7 +16,7 @@
  * - /packages/cli/templates/blocks/components/CheckboxList/ (showcase blocks)
  */
 
-import {use, type MouseEvent, type ReactNode} from 'react';
+import {use, useEffect, useRef, type MouseEvent, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
@@ -51,6 +51,24 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
    * child components control their own text behavior).
    */
   label: ReactNode;
+  /**
+   * Plain-text accessible name for the checkbox when `label` is a ReactNode.
+   *
+   * A string `label` names the checkbox automatically. A rich (ReactNode)
+   * `label` cannot, so pass a concise string equivalent here — otherwise the
+   * checkbox falls back to the generic name "Checkbox" and every rich-label
+   * item in a list announces identically to screen readers.
+   *
+   * @example
+   * ```
+   * <CheckboxListItem
+   *   label={<span>Pro plan <Badge label="Recommended" /></span>}
+   *   accessibleLabel="Pro plan"
+   *   value="pro"
+   * />
+   * ```
+   */
+  accessibleLabel?: string;
   /**
    * Identity key for collection mode (REQUIRED inside CheckboxList).
    * Throws a runtime error if missing when used inside CheckboxList.
@@ -119,6 +137,7 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
  */
 export function CheckboxListItem({
   label,
+  accessibleLabel,
   value,
   description,
   endContent,
@@ -141,6 +160,33 @@ export function CheckboxListItem({
       'CheckboxListItem requires a `value` prop when used inside CheckboxList with a value array.',
     );
   }
+
+  // Accessible name for the (visually hidden) checkbox label. A string
+  // `label` names it directly; a rich label needs `accessibleLabel`.
+  const checkboxLabel =
+    typeof label === 'string'
+      ? label
+      : (accessibleLabel ?? t('@astryx.checkboxList.item.checkbox'));
+
+  // Dev-time guardrail: a rich label without `accessibleLabel` leaves the
+  // checkbox with the generic name "Checkbox". Warn once per item instance
+  // (in an effect) rather than on every render.
+  const warnedUnnamedCheckboxRef = useRef(false);
+  useEffect(() => {
+    if (
+      typeof label !== 'string' &&
+      accessibleLabel == null &&
+      !warnedUnnamedCheckboxRef.current
+    ) {
+      warnedUnnamedCheckboxRef.current = true;
+      console.warn(
+        'CheckboxListItem: `label` is a ReactNode, so the checkbox falls ' +
+          'back to the generic accessible name "Checkbox". Pass ' +
+          '`accessibleLabel` with a concise string equivalent of the visible ' +
+          'label so screen readers can tell items apart.',
+      );
+    }
+  }, [label, accessibleLabel]);
 
   // Density from list context for checkbox sizing
   const listCtx = use(ListContext);
@@ -226,11 +272,7 @@ export function CheckboxListItem({
       style={style}
       startContent={
         <CheckboxInput
-          label={
-            typeof label === 'string'
-              ? label
-              : t('@astryx.checkboxList.item.checkbox')
-          }
+          label={checkboxLabel}
           isLabelHidden
           value={resolvedChecked}
           onChange={() => handleToggle()}
