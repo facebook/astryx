@@ -31,7 +31,13 @@ import {
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
-import {borderVars, colorVars, spacingVars} from '../theme/tokens.stylex';
+import {
+  borderVars,
+  colorVars,
+  durationVars,
+  easeVars,
+  spacingVars,
+} from '../theme/tokens.stylex';
 import {mergeProps, mergeRefs} from '../utils';
 import {
   SideNavCollapseContext,
@@ -70,6 +76,15 @@ const styles = stylex.create({
   },
   rootCollapsed: {
     width: spacingVars['--spacing-12'],
+  },
+  rootAnimated: {
+    transitionProperty: 'width',
+    transitionDuration: durationVars['--duration-fast'],
+    transitionTimingFunction: easeVars['--ease-standard'],
+    // Honour a reduced-motion preference: snap instead of slide.
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0s',
+    },
   },
   stickyTop: {
     display: 'flex',
@@ -290,6 +305,13 @@ export interface SideNavProps extends BaseProps<HTMLElement> {
         onCollapsedChange?: (isCollapsed: boolean) => void;
         hasButton?: boolean;
         buttonLabel?: string;
+        /** Width (px) of the collapsed nav. Defaults to the icon rail.
+         *  `0` hides it entirely — for focused single-pane UIs (e.g. chat)
+         *  where the rail is not wanted. A fully hidden nav is also made
+         *  `inert`, so its links can't take keyboard focus while invisible. */
+        collapsedWidth?: number;
+        /** Animate the width change between expanded and collapsed. */
+        isAnimated?: boolean;
       };
 }
 
@@ -339,6 +361,8 @@ export function SideNav({
   const defaultIsCollapsed = collapsibleConfig.defaultIsCollapsed ?? false;
   const controlledCollapsed = collapsibleConfig.isCollapsed;
   const onCollapsedChange = collapsibleConfig.onCollapsedChange;
+  const collapsedWidth = collapsibleConfig.collapsedWidth;
+  const isAnimated = collapsibleConfig.isAnimated ?? false;
 
   // Resizable config
   const resizableConfig = typeof resizable === 'object' ? resizable : {};
@@ -497,10 +521,31 @@ export function SideNav({
   // consumer places a SideNavCollapseButton in the header instead).
   const showCollapseButton = isCollapsible && hasCollapseButton;
 
-  // When resizable, override the nav width via inline style
-  const resizableNavStyle: React.CSSProperties | undefined = isResizable
-    ? {...(style ?? {}), width: collapsed ? undefined : resizableHook.size}
-    : style;
+  // Nav width, in precedence order:
+  //   collapsed + explicit collapsedWidth -> that width (0 = fully hidden)
+  //   collapsed, no collapsedWidth        -> undefined, so the `rootCollapsed`
+  //                                          class supplies the icon rail
+  //   expanded + resizable                -> the dragged size
+  //   expanded                            -> undefined, so `root` supplies 260
+  // The collapsed branch has to win over the resizable one: useResizable
+  // already drives its own size to 0 on collapse, but SideNav has always
+  // discarded that and let the rail class through. An explicit collapsedWidth
+  // is the consumer overriding the rail, so it beats both.
+  const hasCollapsedWidth = collapsed && collapsedWidth != null;
+  const navWidth = hasCollapsedWidth
+    ? collapsedWidth
+    : isResizable && !collapsed
+      ? resizableHook.size
+      : undefined;
+  const navStyle: React.CSSProperties | undefined =
+    hasCollapsedWidth || isResizable
+      ? {...(style ?? {}), width: navWidth}
+      : style;
+
+  // A nav collapsed to zero width is invisible but still in the DOM, so its
+  // links would keep taking keyboard focus and stay in the a11y tree. `inert`
+  // removes both. The icon rail is *visible*, so it stays interactive.
+  const isFullyHidden = collapsed && collapsedWidth === 0;
 
   const navElement = (
     <nav
@@ -508,11 +553,17 @@ export function SideNav({
       role="navigation"
       aria-label={t('@astryx.sideNav.label')}
       data-testid={testId}
+      inert={isFullyHidden || undefined}
       {...mergeProps(
         themeProps('side-nav'),
-        stylex.props(styles.root, collapsed && styles.rootCollapsed, xstyle),
+        stylex.props(
+          styles.root,
+          collapsed && styles.rootCollapsed,
+          isAnimated && styles.rootAnimated,
+          xstyle,
+        ),
         className,
-        resizableNavStyle,
+        navStyle,
       )}
       {...props}>
       {hasStickyTop && (

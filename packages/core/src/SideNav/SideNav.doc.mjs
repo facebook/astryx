@@ -98,8 +98,8 @@ export const docs = {
     },
     {
       name: 'collapsible',
-      type: 'boolean | { defaultIsCollapsed?: boolean; isCollapsed?: boolean; onCollapsedChange?: (isCollapsed: boolean) => void; hasButton?: boolean; buttonLabel?: string }',
-      description: 'Enables collapse behavior. true for uncontrolled with default toggle button, or an object for controlled mode and advanced config (defaultIsCollapsed, isCollapsed + onCollapsedChange, hasButton, buttonLabel).',
+      type: 'boolean | { defaultIsCollapsed?: boolean; isCollapsed?: boolean; onCollapsedChange?: (isCollapsed: boolean) => void; hasButton?: boolean; buttonLabel?: string; collapsedWidth?: number; isAnimated?: boolean }',
+      description: 'Enables collapse behavior. true for uncontrolled with default toggle button, or an object for controlled mode and advanced config (defaultIsCollapsed, isCollapsed + onCollapsedChange, hasButton, buttonLabel). collapsedWidth sets the collapsed width in px — it defaults to the icon rail, and 0 hides the nav entirely (a fully hidden nav is also made inert, so its links cannot take keyboard focus while invisible). isAnimated animates the width change.',
       default: 'false',
     },
     {

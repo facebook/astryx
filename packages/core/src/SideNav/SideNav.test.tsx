@@ -1347,3 +1347,157 @@ describe('SideNavItem — mobile drawer close-on-activate', () => {
     expect(closeMobileNav).not.toHaveBeenCalled();
   });
 });
+
+describe('SideNav collapsedWidth (#2331)', () => {
+  it('collapses to the icon rail by default', () => {
+    // Regression guard: the existing 48px rail must survive this feature.
+    render(
+      <SideNav collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}>
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation').style.width).toBe('');
+  });
+
+  it('collapses to zero width when collapsedWidth is 0', () => {
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+        }}>
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation').style.width).toBe('0px');
+  });
+
+  it('honours a custom non-zero collapsedWidth', () => {
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: () => {},
+          collapsedWidth: 72,
+        }}>
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation').style.width).toBe('72px');
+  });
+
+  it('does not apply collapsedWidth while expanded', () => {
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: false,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+        }}>
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation').style.width).not.toBe('0px');
+  });
+
+  it('hides a fully-collapsed nav from keyboard and assistive tech', () => {
+    // A 0-width nav is invisible; leaving its links tabbable would strand focus
+    // on something the user cannot see.
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+        }}>
+        <SideNavItem label="Home" href="/" data-testid="item" />
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation', {hidden: true})).toHaveAttribute(
+      'inert',
+    );
+  });
+
+  it('keeps the icon rail reachable — it is still visible', () => {
+    render(
+      <SideNav collapsible={{isCollapsed: true, onCollapsedChange: () => {}}}>
+        <SideNavItem label="Home" href="/" data-testid="item" />
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation')).not.toHaveAttribute('inert');
+  });
+
+  it('does not make an expanded zero-width-capable nav inert', () => {
+    render(
+      <SideNav
+        collapsible={{
+          isCollapsed: false,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+        }}>
+        <SideNavItem label="Home" href="/" data-testid="item" />
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation')).not.toHaveAttribute('inert');
+  });
+
+  it('applies a width transition when isAnimated is set', () => {
+    const {rerender} = render(
+      <SideNav collapsible={{isCollapsed: false, onCollapsedChange: () => {}}}>
+        Content
+      </SideNav>,
+    );
+    const plain = screen.getByRole('navigation').className;
+
+    rerender(
+      <SideNav
+        collapsible={{
+          isCollapsed: false,
+          onCollapsedChange: () => {},
+          isAnimated: true,
+        }}>
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation').className).not.toBe(plain);
+  });
+
+  it('does not animate by default', () => {
+    const {rerender} = render(
+      <SideNav
+        collapsible={{
+          isCollapsed: false,
+          onCollapsedChange: () => {},
+          isAnimated: true,
+        }}>
+        Content
+      </SideNav>,
+    );
+    const animated = screen.getByRole('navigation').className;
+
+    rerender(
+      <SideNav collapsible={{isCollapsed: false, onCollapsedChange: () => {}}}>
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation').className).not.toBe(animated);
+  });
+
+  it('collapsedWidth wins over the resizable width when collapsed', () => {
+    // SideNav drops the resizable width on collapse so the rail can win; the
+    // explicit collapsedWidth must beat both.
+    render(
+      <SideNav
+        resizable
+        collapsible={{
+          isCollapsed: true,
+          onCollapsedChange: () => {},
+          collapsedWidth: 0,
+        }}>
+        Content
+      </SideNav>,
+    );
+    expect(screen.getByRole('navigation').style.width).toBe('0px');
+  });
+});
