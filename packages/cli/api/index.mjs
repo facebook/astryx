@@ -28,4 +28,9 @@ export {themeAdd, listThemes} from './theme/theme-add.mjs';
 export {hook} from './hook/hook.mjs';
 export {search} from './search/search.mjs';
 export {doctor} from './doctor/doctor.mjs';
+export {layoutExpand, layoutCheck, layoutGrammar} from './layout/layout.mjs';
+export {
+  validateIntegration,
+  summarizeIssues,
+} from './integration/validate-integration.mjs';
 export {AstryxError} from './error.mjs';

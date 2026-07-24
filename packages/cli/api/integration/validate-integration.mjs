@@ -352,6 +352,34 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
 }
 
 /**
+ * Unified entry: validate the LOCAL integration (no `pkg`) or an INSTALLED one
+ * (`pkg` given) and return the `integration.validate` envelope. The no-manifest
+ * local case is guidance, not an error — it comes back with `name: null` and no
+ * issues so the CLI can print a hint and stay exit-0.
+ *
+ * This is the seam that keeps the CLI a thin wrapper: the command handler calls
+ * this and only chooses how to render (human vs --json) + the exit code.
+ *
+ * @param {string} [pkg] installed package name; omit to validate the cwd package
+ * @param {{cwd?: string}} [options]
+ * @returns {Promise<import('../../types/validate-integration').ValidateIntegrationResponse>}
+ */
+export async function validateIntegration(pkg, options = {}) {
+  const {cwd = process.cwd()} = options;
+  const result = pkg
+    ? await validateInstalledIntegration(pkg, cwd)
+    : await validateLocalIntegration(cwd);
+  return {
+    type: 'integration.validate',
+    data: {
+      name: result.found ? result.name ?? null : null,
+      version: result.found ? result.version ?? null : null,
+      issues: result.issues,
+    },
+  };
+}
+
+/**
  * Summarize issues by severity.
  * @param {Issue[]} issues
  * @returns {{errors: number, warnings: number}}

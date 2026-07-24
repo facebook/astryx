@@ -44,6 +44,14 @@ import type {
 import type {SearchResponse, SearchDomain} from './search';
 import type {ErrorCode} from './error-codes';
 import type {DoctorResponse} from './doctor';
+import type {
+  LayoutForm,
+  LayoutExpandResponse,
+  LayoutCheckResponse,
+  LayoutGrammarResponse,
+} from './layout';
+import type {ValidateIntegrationResponse} from './validate-integration';
+import type {AstryxIntegrationIssue} from './integration';
 import type {Suggestion} from './base';
 
 /** Structured API error with a stable machine-readable code. */
@@ -195,3 +203,58 @@ export interface DoctorOptions {
 export declare function doctor(
   options?: DoctorOptions,
 ): Promise<DoctorResponse>;
+
+// ── Layout ───────────────────────────────────────────────────────────
+
+export interface LayoutExpandOptions {
+  targetPath?: string;
+  form?: LayoutForm;
+  loose?: boolean;
+  name?: string;
+  cwd?: string;
+}
+
+export declare function layoutExpand(
+  expression: string,
+  options?: LayoutExpandOptions,
+): Promise<LayoutExpandResponse>;
+
+export interface LayoutCheckOptions {
+  form?: LayoutForm;
+  loose?: boolean;
+  cwd?: string;
+}
+
+export declare function layoutCheck(
+  expression: string,
+  options?: LayoutCheckOptions,
+): Promise<LayoutCheckResponse>;
+
+export interface LayoutGrammarOptions {
+  cwd?: string;
+}
+
+export declare function layoutGrammar(
+  options?: LayoutGrammarOptions,
+): Promise<LayoutGrammarResponse>;
+
+// ── Validate integration ─────────────────────────────────────────────
+
+export interface ValidateIntegrationOptions {
+  cwd?: string;
+}
+
+/**
+ * Validate the local integration (no `pkg`) or an installed one (`pkg` given).
+ * The no-manifest local case returns `{ name: null, version: null, issues: [] }`.
+ */
+export declare function validateIntegration(
+  pkg?: string,
+  options?: ValidateIntegrationOptions,
+): Promise<ValidateIntegrationResponse>;
+
+/** Count issues by severity. */
+export declare function summarizeIssues(issues: AstryxIntegrationIssue[]): {
+  errors: number;
+  warnings: number;
+};
