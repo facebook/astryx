@@ -166,7 +166,7 @@ const styles = stylex.create({
   indeterminateMark: {
     display: 'none',
     backgroundColor: colorVars['--color-on-accent'],
-    borderRadius: 1,
+    borderRadius: radiusVars['--radius-full'],
   },
   indeterminateMarkVisible: {
     display: 'block',
