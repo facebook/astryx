@@ -104,6 +104,11 @@ const styles = stylex.create({
     position: 'relative',
     display: 'inline-flex',
     flexShrink: 0,
+    // The wrapper is not clipped (so the status dot can overflow), so it must be
+    // rounded itself: a themed fallback background lands on `.astryx-avatar` (the
+    // class-bearing wrapper) as well as the internal var, and an unrounded
+    // wrapper would show that fill as square corners behind the circular content.
+    borderRadius: radiusVars['--radius-full'],
   },
   content: {
     display: 'flex',
