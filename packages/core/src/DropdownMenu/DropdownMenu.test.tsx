@@ -740,8 +740,14 @@ describe('DropdownMenu keyboard access for menuitemradio/menuitemcheckbox (#3829
 
     await user.click(screen.getByRole('button', {name: /Sort/}));
     // Anchor the search on 'Edit' so typeahead scans forward and meets the
-    // disabled 'Newest' (also an 'n' match) before the enabled 'Nightly' —
-    // it must skip it and keep its match index aligned with the focus list.
+    // disabled 'Newest' (also an 'n' match) before the enabled 'Nightly'.
+    // This pins the `:not([aria-disabled="true"])` in MENU_ITEM_SELECTOR: the
+    // menus never pass useTypeahead's `isDisabled` option, so that clause is
+    // the only thing keeping disabled rows out of the typeahead list. An
+    // arrow-key test cannot cover it — useListFocus re-filters disabled items
+    // independently, so arrow navigation is guarded twice over.
+    // The disabled row keeps tabIndex={-1} on purpose: it stays focusable, so
+    // the selector clause is the sole reason focus skips it.
     screen.getByRole('menuitem', {name: 'Edit', hidden: true}).focus();
     fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {key: 'n'});
     expect(

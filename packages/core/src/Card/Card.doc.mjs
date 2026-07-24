@@ -62,10 +62,17 @@ export const docs = {
     },
     {
       name: 'variant',
-      type: "'default' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
+      type: "'default' | 'transparent' | 'muted' | 'blue' | 'cyan' | 'gray' | 'green' | 'orange' | 'pink' | 'purple' | 'red' | 'teal' | 'yellow'",
       description:
-        'Background color variant. `default` uses the standard card background. `muted` uses the muted background for de-emphasised cards. The non-semantic variants use the corresponding `--color-<name>-background` token.',
+        'Background color variant. `default` uses the standard card background. `transparent` drops the background entirely. `muted` uses the muted background for de-emphasised cards. The non-semantic variants use the corresponding `--color-background-<name>` token.',
       default: "'default'",
+    },
+    {
+      name: 'elevation',
+      type: "'none' | 'low' | 'med' | 'high'",
+      description:
+        'Resting shadow depth. `none` is flat; `low`/`med`/`high` map to the shadow token scale. Raise a card only when it needs to float above surrounding content.',
+      default: "'none'",
     },
   ],
   playground: {
@@ -127,6 +134,7 @@ export const docsZh = {
     {name: 'minHeight', type: 'SizeValue', description: '卡片最小高度。'},
     {name: 'children', type: 'ReactNode', description: '在卡片内部渲染的内容。'},
     {name: 'padding', type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10', description: '使用间距比例的内边距。', default: '4'},
+    {name: 'elevation', type: "'none' | 'low' | 'med' | 'high'", description: '静止阴影深度。`none` 为扁平；`low`/`med`/`high` 对应阴影令牌比例。', default: "'none'"},
   ],
   theming: {
     container: true,
@@ -169,6 +177,7 @@ export const docsDense = {
     minHeight: 'min card height',
     children: 'content inside card',
     padding: 'internal padding via spacing scale',
-    variant: 'background color variant; `default` = standard card bg, `muted` = muted bg for de-emphasised cards; non-semantic variants use the corresponding `--color-<name>-background` token',
+    variant: 'background color variant; `default` = standard card bg, `transparent` = no background at all, `muted` = muted bg for de-emphasised cards; non-semantic variants use the corresponding `--color-background-<name>` token',
+    elevation: 'resting shadow depth: none (flat) | low | med | high (shadow token scale). Raise only to float above content.',
   },
 };

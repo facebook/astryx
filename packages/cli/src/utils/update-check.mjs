@@ -14,12 +14,13 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {semverGt} from './semver.mjs';
+import {getCliInvocation} from './package-manager.mjs';
 
 /**
  * Read the latest available version from local signals.
- * No network calls — purely filesystem and env var checks.
+ * No network calls — purely an env-var check ($ASTRYX_LATEST_VERSION),
+ * so it takes no arguments.
  *
- * @param {string} [cwd] - Project directory (default: process.cwd())
  * @returns {string|null} Latest version string, or null if unknown
  */
 export function getLatestVersion() {
@@ -63,7 +64,7 @@ export function getInstalledVersion(cwd = process.cwd()) {
  * @returns {string|null} FYI hint string, or null if up to date / unknown
  */
 export function checkForUpdate(cwd = process.cwd()) {
-  const latest = getLatestVersion(cwd);
+  const latest = getLatestVersion();
   if (!latest) return null;
 
   // Persist for subsequent commands in this shell session
@@ -75,7 +76,7 @@ export function checkForUpdate(cwd = process.cwd()) {
   // Use semver-aware comparison so '0.0.20' is correctly treated as greater
   // than '0.0.5' (lexicographic compare gets that backwards).
   if (semverGt(latest, installed)) {
-    return `FYI: A newer version of @astryxdesign/core (${latest}) is available. Install the new package version, then run: astryx upgrade --from <old-version> --apply`;
+    return `FYI: A newer version of @astryxdesign/core (${latest}) is available. Install the new package version, then run: ${getCliInvocation()} upgrade --from <old-version> --apply`;
   }
 
   return null;

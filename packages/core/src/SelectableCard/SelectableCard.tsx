@@ -14,6 +14,7 @@
  * - /apps/storybook/stories/SelectableCard.stories.tsx (storybook stories)
  * - /packages/cli/templates/blocks/components/Card/SelectableCardShowcase.tsx (showcase block)
  * - /packages/cli/templates/blocks/components/Card/SelectableCardMulti.tsx (block)
+ * - /packages/cli/templates/blocks/components/Card/SelectableCardElevated.tsx (block)
  *
  * Composes Card for all visual styling. Adds selection state with
  * an inset box-shadow (zero layout jitter) and useClickableContainer
@@ -36,7 +37,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
-import type {SizeValue, SpacingStep} from '../utils/types';
+import type {Elevation, SizeValue, SpacingStep} from '../utils/types';
 import {mergeProps, mergeRefs} from '../utils';
 import {Card} from '../Card/Card';
 import type {CardVariant} from '../Card/Card';
@@ -103,51 +104,54 @@ const styles = stylex.create({
     whiteSpace: 'nowrap',
     borderWidth: 0,
   },
-  // Selection indicator — inset box-shadow for the thick inner ring (zero layout
-  // jitter) plus borderColor change on the card's own border for a cohesive look.
+  // Selection indicator — an inset ring drawn via the card's --_card-ring
+  // shadow slot (zero layout jitter) plus a borderColor change on the card's
+  // own border for a cohesive look. Routing the ring through --_card-ring
+  // (rather than box-shadow directly) lets it compose with the card's
+  // elevation instead of clobbering it.
   selected: {
     borderColor: colorVars['--color-accent'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-accent']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-accent']}`,
   },
   selectedBlue: {
     borderColor: colorVars['--color-border-blue'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-blue']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-blue']}`,
   },
   selectedCyan: {
     borderColor: colorVars['--color-border-cyan'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-cyan']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-cyan']}`,
   },
   selectedGray: {
     borderColor: colorVars['--color-border-gray'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-gray']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-gray']}`,
   },
   selectedGreen: {
     borderColor: colorVars['--color-border-green'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-green']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-green']}`,
   },
   selectedOrange: {
     borderColor: colorVars['--color-border-orange'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-orange']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-orange']}`,
   },
   selectedPink: {
     borderColor: colorVars['--color-border-pink'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-pink']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-pink']}`,
   },
   selectedPurple: {
     borderColor: colorVars['--color-border-purple'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-purple']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-purple']}`,
   },
   selectedRed: {
     borderColor: colorVars['--color-border-red'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-red']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-red']}`,
   },
   selectedTeal: {
     borderColor: colorVars['--color-border-teal'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-teal']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-teal']}`,
   },
   selectedYellow: {
     borderColor: colorVars['--color-border-yellow'],
-    boxShadow: `inset 0 0 0 2px ${colorVars['--color-border-yellow']}`,
+    '--_card-ring': `inset 0 0 0 2px ${colorVars['--color-border-yellow']}`,
   },
 });
 
@@ -228,6 +232,13 @@ export interface SelectableCardProps extends Omit<BaseProps, 'onChange'> {
    */
   variant?: CardVariant;
 
+  /**
+   * Resting elevation — the shadow depth the card sits at.
+   * The selection ring composes on top, so a selected card keeps its shadow.
+   * @default 'none'
+   */
+  elevation?: Elevation;
+
   /** Width of the card. */
   width?: SizeValue;
 
@@ -278,6 +289,7 @@ export function SelectableCard({
   children,
   padding,
   variant = 'default',
+  elevation = 'none',
   width,
   height,
   maxWidth,
@@ -328,6 +340,7 @@ export function SelectableCard({
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
+      elevation={elevation}
       {...mergeProps(
         themeProps('selectable-card', {
           variant,

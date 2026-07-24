@@ -628,7 +628,11 @@ export function SideNavItem({
         <button
           type="button"
           onClick={handleToggleClick}
-          aria-label={isItemCollapsed ? t('@astryx.sideNavItem.expand', {label}) : t('@astryx.sideNavItem.collapse', {label})}
+          aria-label={
+            isItemCollapsed
+              ? t('@astryx.sideNavItem.expand', {label})
+              : t('@astryx.sideNavItem.collapse', {label})
+          }
           aria-expanded={!isItemCollapsed}
           aria-controls={`${id}-children`}
           {...stylex.props(styles.expandToggle)}>

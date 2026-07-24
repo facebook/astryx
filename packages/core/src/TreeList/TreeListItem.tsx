@@ -29,7 +29,6 @@ import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity} from './TreeListTypes';
-import {treeItemScope} from './treeListItem.markers.stylex';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -47,6 +46,19 @@ const styles = stylex.create({
     // The treeitem row is the roving-tabindex focus owner; suppress the
     // native focus ring in favor of the row's :focus-visible outline below.
     outline: 'none',
+    // Publish this row's own focus state as an inheritable CSS variable
+    // instead of matching it via an ancestor selector. Every nested <li>
+    // redeclares these vars (default: 'none' / '0'), so a descendant row's
+    // default shadows an ancestor's active value — the ring can never leak
+    // past the nearest containing treeitem, however deep the tree nests.
+    '--_tree-focus-outline': {
+      default: 'none',
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    '--_tree-focus-outline-offset': {
+      default: '0',
+      ':focus-visible': '2px',
+    },
   },
   childGroup: {
     margin: 0,
@@ -86,17 +98,14 @@ const styles = stylex.create({
   },
   focusVisibleOutline: {
     outline: {
-      default: 'none',
-      // Focus lives on the treeitem row (the <li>) via roving tabindex.
-      // Scoped to the row's OWN treeitem so focusing a parent does not leak
-      // the ring onto descendant rows. Also support inner focusable actions.
-      [stylex.when.ancestor(':focus-visible', treeItemScope)]:
-        `2px solid ${colorVars['--color-accent']}`,
+      // Reads the row's own --_tree-focus-outline (published on the <li> in
+      // `wrapper`), which resolves to the nearest containing treeitem only.
+      default: 'var(--_tree-focus-outline, none)',
+      // Also support inner focusable actions.
       ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
-      default: '0',
-      [stylex.when.ancestor(':focus-visible', treeItemScope)]: '2px',
+      default: 'var(--_tree-focus-outline-offset, 0)',
       ':has(:focus-visible)': '2px',
     },
   },
@@ -451,7 +460,7 @@ export function TreeListItem({
       data-tree-id={id}
       data-tree-level={nestedLevel + 1}
       data-tree-disabled={isDisabled || undefined}
-      {...stylex.props(styles.wrapper, treeItemScope)}>
+      {...stylex.props(styles.wrapper)}>
       <div {...stylex.props(styles.treeBranches)}>
         <TreeListBranches
           ancestorsIsLast={ancestorsIsLast}

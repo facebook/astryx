@@ -493,7 +493,7 @@ export function HeroFloatingCards({
             <Avatar
               src={REWARD_MEMBER_AVATAR}
               name={REWARD_MEMBER_NAME}
-              size="xsmall"
+              size="sm"
             />
             <Text type="supporting" color="secondary">
               {REWARD_MEMBER_NAME}

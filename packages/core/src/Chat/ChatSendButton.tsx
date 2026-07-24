@@ -96,7 +96,11 @@ export function ChatSendButton(props: ChatSendButtonProps): ReactNode {
   return (
     <Button
       ref={ref}
-      label={isStopShown ? t('@astryx.chatSendButton.stop') : t('@astryx.chatSendButton.send')}
+      label={
+        isStopShown
+          ? t('@astryx.chatSendButton.stop')
+          : t('@astryx.chatSendButton.send')
+      }
       variant={isStopShown ? 'secondary' : 'primary'}
       size={size}
       icon={

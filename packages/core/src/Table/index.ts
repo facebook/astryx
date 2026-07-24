@@ -28,10 +28,12 @@ export {useTableColumnResize} from './plugins/columnResize';
 export {useTableStickyColumns} from './plugins/stickyColumns';
 export {useTableGroupedRows} from './plugins/groupedRows';
 export {useTableRowIndex} from './plugins/rowIndex';
+export {useTableRowStatus} from './plugins/rowStatus';
 export {
   useTableRowExpansion,
   useTableRowExpansionState,
 } from './plugins/rowExpansion';
+export {useTableTreeData, useTableTreeState} from './plugins/tree';
 export {resolveContextActions} from './tableContextMenu';
 export {
   useTableFiltering,
@@ -109,6 +111,16 @@ export type {
   UseTableGroupedRowsConfig,
   UseTableGroupedRowsResult,
 } from './plugins/groupedRows';
+export type {
+  UseTableRowStatusConfig,
+  TableRowStatus,
+} from './plugins/rowStatus';
+export type {
+  TableTreeRowMeta,
+  UseTableTreeDataConfig,
+  UseTableTreeStateConfig,
+  UseTableTreeStateResult,
+} from './plugins/tree';
 export type {
   UseTableFilteringConfig,
   TableFilterState,

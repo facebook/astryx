@@ -42,6 +42,7 @@ import {Divider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerPlacement} from '../Layer/useLayer';
 import {Spinner} from '../Spinner';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {
   colorVars,
   sizeVars,
@@ -536,6 +537,23 @@ function DefaultOption({option}: {option: SelectorOptionData}) {
   );
 }
 
+// Case-insensitive substring filter over the selectable options. Shared by the
+// `filteredItems` memo (rendering) and the search-change handler, which needs
+// the count for the *next* query synchronously to announce it exactly once per
+// keystroke rather than reacting to state in an effect.
+function filterOptionsByQuery(
+  items: SelectorOptionData[],
+  query: string,
+): SelectorOptionData[] {
+  if (!query) {
+    return items;
+  }
+  const q = query.toLowerCase();
+  return items.filter(item =>
+    (item.label ?? item.value).toLowerCase().includes(q),
+  );
+}
+
 /**
  * A selector/dropdown component for choosing from a list of options.
  *
@@ -641,15 +659,10 @@ export function Selector<T extends SelectorOptionType>(
   );
 
   // Filter items by search query
-  const filteredItems = useMemo(() => {
-    if (!searchQuery) {
-      return selectableItems;
-    }
-    const query = searchQuery.toLowerCase();
-    return selectableItems.filter(item =>
-      (item.label ?? item.value).toLowerCase().includes(query),
-    );
-  }, [selectableItems, searchQuery]);
+  const filteredItems = useMemo(
+    () => filterOptionsByQuery(selectableItems, searchQuery),
+    [selectableItems, searchQuery],
+  );
 
   // Find selected item and its index for positioning
   const selectedItemIndex = useMemo(() => {
@@ -665,11 +678,20 @@ export function Selector<T extends SelectorOptionType>(
   // Ref for listbox to measure selected item position
   const listboxRef = useRef<HTMLDivElement>(null);
 
+  // Announce match counts / "No results found" politely as the user types, so
+  // screen-reader users hear how many options remain. Filtering was previously
+  // silent (comboboxes-7). Mirrors BaseTypeahead, which announces from its
+  // query-change callback (not a reactive effect) via the same useAnnounce hook.
+  const announce = useAnnounce();
+
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
+    // Clear any lingering result count when the popover closes so stale status
+    // text does not linger in the a11y tree.
+    announce('');
     triggerRef.current?.focus();
-  }, []);
+  }, [announce]);
 
   const popover = usePopover({
     onHide: handleLayerHide,
@@ -688,6 +710,29 @@ export function Selector<T extends SelectorOptionType>(
     }
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
+
+  // Announce the filtered result count from the query-change handler (matching
+  // BaseTypeahead) rather than a reactive effect: computing the count for the
+  // next query here fires the announcement exactly once per keystroke and does
+  // not re-speak on unrelated re-renders.
+  const handleSearchChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const nextQuery = event.target.value;
+      setSearchQuery(nextQuery);
+      if (nextQuery.length === 0) {
+        // Emptying the query clears the region rather than announcing a count.
+        announce('');
+        return;
+      }
+      const count = filterOptionsByQuery(selectableItems, nextQuery).length;
+      announce(
+        count === 0
+          ? 'No results found'
+          : `${count} result${count === 1 ? '' : 's'}`,
+      );
+    },
+    [announce, selectableItems],
+  );
 
   // Calculate offset to position selected item over trigger. Explicit
   // placement opts out of the selector-specific overlay behavior and uses the
@@ -810,13 +855,17 @@ export function Selector<T extends SelectorOptionType>(
           aria-label={t('@astryx.selector.searchOptions')}
           type="text"
           value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
           onKeyDown={e => {
             // Arrow keys navigate options; Enter selects; Escape/Tab close.
-            // Home/End are left to the input for caret movement.
+            // Home/End are left to the input for caret movement (APG editable
+            // combobox); PageUp/PageDown are the sanctioned substitute for
+            // jumping to the first/last option.
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
+              e.key === 'PageUp' ||
+              e.key === 'PageDown' ||
               e.key === 'Enter' ||
               e.key === 'Escape' ||
               e.key === 'Tab'
@@ -835,6 +884,7 @@ export function Selector<T extends SelectorOptionType>(
     listboxId,
     searchQuery,
     searchPlaceholder,
+    handleSearchChange,
     onKeyDown,
     popover.isOpen,
     highlightedIndex,

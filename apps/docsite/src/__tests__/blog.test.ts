@@ -91,6 +91,15 @@ describe('validatePostFrontmatter', () => {
     expect(meta.coverImage).toBeNull();
     expect(meta.relatedDocs).toBeNull();
     expect(meta.updatedAt).toBeNull();
+    expect(meta.dek).toBeNull();
+  });
+
+  it('accepts an optional article dek', () => {
+    const meta = validatePostFrontmatter('slug', {
+      ...VALID_FM,
+      dek: '[Launch](/blog/introducing-astryx). One month in.',
+    });
+    expect(meta.dek).toBe('[Launch](/blog/introducing-astryx). One month in.');
   });
 
   it.each(['title', 'description', 'date', 'type'])('requires "%s"', field => {
@@ -227,6 +236,17 @@ describe('discoverPosts (temp fixtures)', () => {
 
   it('returns an empty array for a missing directory', () => {
     expect(discoverPosts(path.join(dir, 'nope'))).toEqual([]);
+  });
+
+  it('discovers posts with CRLF line endings', () => {
+    write('windows.md', fm({title: 'Windows'}).replace(/\n/g, '\r\n'));
+    expect(discoverPosts(dir)).toEqual([
+      expect.objectContaining({
+        slug: 'windows',
+        title: 'Windows',
+        body: 'Body content here.',
+      }),
+    ]);
   });
 
   it('discovers posts and sorts latest-first', () => {

@@ -16,15 +16,17 @@
  * - /packages/cli/templates/blocks/components/Stepper/ (showcase blocks)
  */
 
-import {useMemo, type ReactNode} from 'react';
+import {Children, useMemo, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 
+import {spacingVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {mergeProps} from '@astryxdesign/core/utils';
 import type {BaseProps} from '@astryxdesign/core';
 import {themeProps} from '@astryxdesign/core/utils';
 import {
   StepperContext,
   type StepperOrientation,
+  type StepperIndicatorPosition,
   type StepperContextValue,
 } from './StepperContext';
 
@@ -59,9 +61,16 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    * @default 'balanced'
    */
   density?: 'compact' | 'balanced' | 'spacious';
+  /**
+   * Controls where each step's indicator sits relative to the connector track.
+   * - 'separated': indicator lives in the label row, distinct from the progress
+   *   bar (the original Astryx layout).
+   * - 'on-track': indicator is slotted into the connector line as a node on the
+   *   track (EPS-aligned design).
+   * @default 'separated'
+   */
+  indicatorPosition?: StepperIndicatorPosition;
 }
-
-const STEP_GAP = '2px';
 
 const styles = stylex.create({
   root: {
@@ -74,11 +83,22 @@ const styles = stylex.create({
   horizontal: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: STEP_GAP,
+    gap: spacingVars['--spacing-0-5'],
   },
   vertical: {
     flexDirection: 'column',
-    gap: STEP_GAP,
+    gap: spacingVars['--spacing-0-5'],
+  },
+  // On-track: steps must abut so their connector segments form one continuous
+  // line, so the inter-step gap collapses to zero.
+  horizontalOnTrack: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 0,
+  },
+  verticalOnTrack: {
+    flexDirection: 'column',
+    gap: 0,
   },
 });
 
@@ -87,8 +107,9 @@ const styles = stylex.create({
  * with visual indicators for completed, active, and upcoming states.
  *
  * Each Step child must provide a `step` prop (zero-based index) so it
- * can derive its state from the parent's activeStep. CSS :last-child
- * handles connector hiding — no child introspection needed.
+ * can derive its state from the parent's activeStep. The parent supplies
+ * the total `stepCount` via context so the on-track layout can hide the
+ * trailing connector on the final step.
  *
  * Rendered as an ordered list (`<ol>`/`<li>`) rather than a `nav`
  * landmark: a stepper communicates *progress through a sequence*, not a
@@ -113,12 +134,14 @@ export function Stepper({
   onStepClick,
   label = 'Progress',
   density = 'balanced',
+  indicatorPosition = 'separated',
   xstyle,
   className,
   style,
   ref,
   ...rest
 }: StepperProps) {
+  const stepCount = Children.count(children);
   const ctxValue = useMemo<StepperContextValue>(
     () => ({
       activeStep,
@@ -126,9 +149,28 @@ export function Stepper({
       isNonLinear: onStepClick != null,
       onStepClick: onStepClick ?? null,
       density,
+      indicatorPosition,
+      stepCount,
     }),
-    [activeStep, orientation, onStepClick, density],
+    [
+      activeStep,
+      orientation,
+      onStepClick,
+      density,
+      indicatorPosition,
+      stepCount,
+    ],
   );
+
+  const isOnTrack = indicatorPosition === 'on-track';
+  const orientationStyle =
+    orientation === 'horizontal'
+      ? isOnTrack
+        ? styles.horizontalOnTrack
+        : styles.horizontal
+      : isOnTrack
+        ? styles.verticalOnTrack
+        : styles.vertical;
 
   return (
     <StepperContext value={ctxValue}>
@@ -137,12 +179,8 @@ export function Stepper({
         aria-label={label}
         {...rest}
         {...mergeProps(
-          themeProps('stepper', {orientation}),
-          stylex.props(
-            styles.root,
-            orientation === 'horizontal' ? styles.horizontal : styles.vertical,
-            xstyle,
-          ),
+          themeProps('stepper', {orientation, indicatorPosition}),
+          stylex.props(styles.root, orientationStyle, xstyle),
           className,
           style,
         )}>

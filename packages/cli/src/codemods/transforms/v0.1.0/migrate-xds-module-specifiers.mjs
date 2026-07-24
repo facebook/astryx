@@ -12,8 +12,9 @@
 export const meta = {
   title: 'Migrate module specifiers from @xds/* to @astryxdesign/*',
   description:
-    'Updates JS/TS import, export, dynamic import, and require module ' +
-    'specifiers from @xds/* to the @astryxdesign/* packages used by Astryx v0.1.0.',
+    'Updates JS/TS import, export, dynamic import, require, TS import-type, ' +
+    'and test-framework mock (vi.mock / jest.mock) module specifiers from ' +
+    '@xds/* to the @astryxdesign/* packages used by Astryx v0.1.0.',
   pr: '#3092',
   fileExtensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs'],
 };
@@ -73,6 +74,30 @@ function isCollapsedThemeSource(value) {
   return false;
 }
 
+// Test-framework mock calls take the mocked module path as their first
+// argument (`vi.mock('@xds/core/Text', factory)`). That path is a plain string
+// literal -- not an ImportDeclaration source -- so it slips past the import/
+// export handlers and, left unrewritten, the mock would target the stale
+// `@xds/*` path and stop intercepting the renamed `@astryxdesign/*` import.
+// Recognized callees: `vi.mock`, `vi.doMock`, `jest.mock`, `jest.doMock`, and
+// a bare `mock(...)` (destructured from the test runner).
+const MOCK_METHOD_NAMES = new Set(['mock', 'doMock']);
+const MOCK_OBJECT_NAMES = new Set(['vi', 'jest']);
+
+function isMockCall(callee) {
+  if (
+    callee.type === 'MemberExpression' &&
+    !callee.computed &&
+    callee.object.type === 'Identifier' &&
+    MOCK_OBJECT_NAMES.has(callee.object.name) &&
+    callee.property.type === 'Identifier' &&
+    MOCK_METHOD_NAMES.has(callee.property.name)
+  ) {
+    return true;
+  }
+  return callee.type === 'Identifier' && callee.name === 'mock';
+}
+
 function remapThemeExportNames(importPath, j) {
   let changed = false;
   importPath.node.specifiers = (importPath.node.specifiers || []).map(spec => {
@@ -118,12 +143,53 @@ export default function transformer(file, api) {
     const isRequire =
       path.node.callee.type === 'Identifier' &&
       path.node.callee.name === 'require';
-    if (!isDynamicImport && !isRequire) return;
-    const [arg] = path.node.arguments;
-    if (arg?.type === 'StringLiteral' || arg?.type === 'Literal') {
-      hasChanges = rewriteLiteral(arg) || hasChanges;
+    if (isDynamicImport || isRequire || isMockCall(path.node.callee)) {
+      const [arg] = path.node.arguments;
+      if (arg?.type === 'StringLiteral' || arg?.type === 'Literal') {
+        hasChanges = rewriteLiteral(arg) || hasChanges;
+      }
     }
   });
+
+  // TS `import(...)` TYPE specifiers -- e.g. the `import('@xds/core/Text')` in
+  // `typeof import('@xds/core/Text')` -- parse to a `TSImportType` node, not a
+  // dynamic-import CallExpression, so the handler above never reaches them.
+  // ast-types' traversal also doesn't descend into a `TSImportType` nested in a
+  // generic type-argument position (e.g. `orig<typeof import('@xds/core/Text')>()`),
+  // so `j.find(j.TSImportType)` misses it. Walk the raw AST to cover every
+  // position. Re-visiting a node the loop above handled is harmless: the
+  // literal is already rewritten, so the second pass is a no-op.
+  const seenTypeImportNodes = new Set();
+  const rewriteTSImportTypes = node => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (const child of node) rewriteTSImportTypes(child);
+      return;
+    }
+    if (seenTypeImportNodes.has(node)) return;
+    seenTypeImportNodes.add(node);
+
+    if (node.type === 'TSImportType' && node.argument) {
+      hasChanges = rewriteLiteral(node.argument) || hasChanges;
+    }
+
+    for (const key of Object.keys(node)) {
+      if (
+        key === 'loc' ||
+        key === 'start' ||
+        key === 'end' ||
+        key === 'range' ||
+        key === 'comments' ||
+        key === 'leadingComments' ||
+        key === 'trailingComments' ||
+        key === 'tokens'
+      ) {
+        continue;
+      }
+      rewriteTSImportTypes(node[key]);
+    }
+  };
+  rewriteTSImportTypes(root.get().node);
 
   return hasChanges ? root.toSource() : undefined;
 }

@@ -10,7 +10,13 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateInput} from './DateInput';
@@ -133,21 +139,27 @@ describe('DateInput', () => {
   });
 
   it('announces an alert message when typed input is invalid', () => {
-    render(<DateInput label="Date" onChange={() => {}} />);
+    // Scope to the component's own container: the embedded Calendar uses the
+    // shared `useAnnounce` hook, whose global polite/assertive live-region pair
+    // (both mounted on document.body by any announce) would otherwise make a
+    // document-wide `getByRole('alert')` ambiguous.
+    const {container} = render(<DateInput label="Date" onChange={() => {}} />);
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, {target: {value: '13/45/2024'}});
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Invalid date');
+    expect(within(container).getByRole('alert')).toHaveTextContent(
+      'Invalid date',
+    );
   });
 
   it('does not announce an alert message when input is valid', () => {
-    render(<DateInput label="Date" onChange={() => {}} />);
+    const {container} = render(<DateInput label="Date" onChange={() => {}} />);
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, {target: {value: '03/15/2026'}});
 
-    expect(screen.getByRole('alert')).toHaveTextContent('');
+    expect(within(container).getByRole('alert')).toHaveTextContent('');
     expect(screen.queryByText('Invalid date')).not.toBeInTheDocument();
   });
 

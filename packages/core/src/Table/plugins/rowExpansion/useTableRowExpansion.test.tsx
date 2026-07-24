@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, renderHook, screen, fireEvent} from '@testing-library/react';
 import {useState} from 'react';
 import {Table} from '../../Table';
 import type {TableColumn} from '../../types';
@@ -151,5 +151,94 @@ describe('useTableRowExpansion', () => {
     fireEvent.click(screen.getByRole('button', {name: /collapse all rows/i}));
     expect(screen.queryByText('File A1')).not.toBeInTheDocument();
     expect(screen.queryByText('File B1')).not.toBeInTheDocument();
+  });
+});
+
+describe('useTableRowExpansionState cycle guard', () => {
+  /** A row whose children array contains the row itself (plus a real child). */
+  function makeSelfReferential(): TreeItem[] {
+    const x: TreeItem = {id: 'x', name: 'Self', children: []};
+    const y: TreeItem = {id: 'y', name: 'Leaf Y', children: []};
+    x.children.push(x, y);
+    return [x];
+  }
+
+  /** root -> child -> grand, where grand's children point back at root. */
+  function makeDeepCycle(): TreeItem[] {
+    const root: TreeItem = {id: 'root', name: 'Root', children: []};
+    const child: TreeItem = {id: 'child', name: 'Child', children: []};
+    const grand: TreeItem = {id: 'grand', name: 'Grand', children: []};
+    root.children.push(child);
+    child.children.push(grand);
+    grand.children.push(root);
+    return [root];
+  }
+
+  function renderState(baseData: TreeItem[], expandedKeys: Set<string>) {
+    const setExpandedKeys = vi.fn();
+    const hook = renderHook(() =>
+      useTableRowExpansionState<TreeItem>({
+        baseData,
+        getChildren: item => item.children,
+        getRowKey: item => item.id,
+        expandedKeys,
+        setExpandedKeys,
+      }),
+    );
+    return {hook, setExpandedKeys};
+  }
+
+  it('terminates on a self-referential expanded row and flattens each key once', () => {
+    const {hook} = renderState(makeSelfReferential(), new Set(['x']));
+    const {data, expansionConfig} = hook.result.current;
+    expect(data.map(item => item.id)).toEqual(['x', 'y']);
+    expect(expansionConfig.getDepth?.(data[0])).toBe(0);
+    expect(expansionConfig.getDepth?.(data[1])).toBe(1);
+  });
+
+  it('terminates on a deeper cycle back to the root and flattens each key once', () => {
+    const {hook} = renderState(
+      makeDeepCycle(),
+      new Set(['root', 'child', 'grand']),
+    );
+    const {data, expansionConfig} = hook.result.current;
+    expect(data.map(item => item.id)).toEqual(['root', 'child', 'grand']);
+    expect(expansionConfig.getDepth?.(data[0])).toBe(0);
+    expect(expansionConfig.getDepth?.(data[1])).toBe(1);
+    expect(expansionConfig.getDepth?.(data[2])).toBe(2);
+    // The cycle guard keeps isAllExpanded computable — true, not a crash.
+    expect(expansionConfig.isAllExpanded).toBe(true);
+  });
+
+  it('terminates when collecting allExpandableKeys on cyclic data with nothing expanded', () => {
+    const {hook, setExpandedKeys} = renderState(
+      makeDeepCycle(),
+      new Set<string>(),
+    );
+    const {data, expansionConfig} = hook.result.current;
+    expect(data.map(item => item.id)).toEqual(['root']);
+    expansionConfig.onToggleExpandAll?.(true);
+    const nextKeys = setExpandedKeys.mock.calls[0][0] as Set<string>;
+    expect(Array.from(nextKeys)).toEqual(['root', 'child', 'grand']);
+  });
+
+  it('re-walks a shared child under each expanded parent (ancestor-path, not visited-set, semantics)', () => {
+    const leaf: TreeItem = {id: 'leaf', name: 'Leaf', children: []};
+    const shared: TreeItem = {id: 's', name: 'Shared', children: [leaf]};
+    const p1: TreeItem = {id: 'p1', name: 'Parent 1', children: [shared]};
+    const p2: TreeItem = {id: 'p2', name: 'Parent 2', children: [shared]};
+    const {hook} = renderState([p1, p2], new Set(['p1', 'p2', 's']));
+    // 's' is on neither parent's ancestor path, so it must flatten under
+    // both — the guard only skips true cycles, matching pre-guard behavior
+    // for acyclic (DAG-shaped) data.
+    const {data} = hook.result.current;
+    expect(data.map(item => item.id)).toEqual([
+      'p1',
+      's',
+      'leaf',
+      'p2',
+      's',
+      'leaf',
+    ]);
   });
 });

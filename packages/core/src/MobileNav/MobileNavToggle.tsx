@@ -69,7 +69,13 @@ export function MobileNavToggle({
 }: MobileNavToggleProps) {
   const t = useTranslator();
   const label = labelFromProps ?? t('@astryx.mobileNav.toggle.open');
-  const {isMobile, isMobileNavEnabled, toggleMobileNav} = useAppShellMobile();
+  const {
+    isMobile,
+    isMobileNavEnabled,
+    isMobileNavOpen,
+    mobileNavId,
+    toggleMobileNav,
+  } = useAppShellMobile();
 
   // Don't render above the breakpoint or when mobile nav is disabled
   if (!isMobile || !isMobileNavEnabled) {
@@ -83,6 +89,8 @@ export function MobileNavToggle({
       label={label}
       icon={children ?? <Icon icon="menu" color="inherit" />}
       onClick={toggleMobileNav}
+      aria-expanded={isMobileNavOpen}
+      aria-controls={mobileNavId || undefined}
       data-testid={testId ?? 'mobile-nav-toggle'}
       xstyle={xstyle}
       className={className}

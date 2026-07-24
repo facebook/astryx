@@ -119,6 +119,7 @@ export default defineConfig({
             'packages/**/src/**/*.test.{ts,tsx,mjs}',
             'internal/**/*.test.{ts,tsx,mjs}',
             'scripts/**/*.test.{ts,tsx,mjs}',
+            '.github/scripts/**/*.test.{ts,tsx,mjs}',
           ],
           exclude: [
             ...configDefaults.exclude,

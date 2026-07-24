@@ -85,8 +85,7 @@ describe('SelectableCard', () => {
         label="Disabled"
         isSelected={false}
         onChange={handleChange}
-        isDisabled
-      >
+        isDisabled>
         Content
       </SelectableCard>,
     );
@@ -101,12 +100,55 @@ describe('SelectableCard', () => {
         label="Disabled"
         isSelected={false}
         onChange={handleChange}
-        isDisabled
-      >
+        isDisabled>
         <span>Content</span>
       </SelectableCard>,
     );
     fireEvent.click(screen.getByText('Content'));
     expect(handleChange).not.toHaveBeenCalled();
+  });
+
+  describe('elevation', () => {
+    const noop = () => {};
+
+    it('forwards a distinct elevation class to the card for each level', () => {
+      const classFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
+        const {container} = render(
+          <SelectableCard
+            label="Card"
+            isSelected={false}
+            onChange={noop}
+            elevation={elevation}>
+            Content
+          </SelectableCard>,
+        );
+        return container.firstElementChild!.className;
+      };
+      const classes = new Set([
+        classFor('none'),
+        classFor('low'),
+        classFor('med'),
+        classFor('high'),
+      ]);
+      expect(classes.size).toBe(4);
+    });
+
+    it('still varies elevation while selected (ring composes with elevation)', () => {
+      const selectedClassFor = (elevation: 'none' | 'med') => {
+        const {container} = render(
+          <SelectableCard
+            label="Card"
+            isSelected
+            onChange={noop}
+            elevation={elevation}>
+            Content
+          </SelectableCard>,
+        );
+        return container.firstElementChild!.className;
+      };
+      // A selected card at 'med' must differ from a selected card at 'none' —
+      // proving the selection ring does not clobber the elevation shadow.
+      expect(selectedClassFor('med')).not.toBe(selectedClassFor('none'));
+    });
   });
 });

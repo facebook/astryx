@@ -276,7 +276,9 @@ export function ChatLayout({
   const defaultScrollButton = (
     <ChatLayoutScrollButton
       isVisible={scroll.isScrolledUp || newMsgs.hasNewMessages}
-      label={newMsgs.hasNewMessages ? t('@astryx.chatLayout.newMessages') : undefined}
+      label={
+        newMsgs.hasNewMessages ? t('@astryx.chatLayout.newMessages') : undefined
+      }
       onClick={() => {
         newMsgs.dismiss();
         scroll.scrollToBottom();

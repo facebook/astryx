@@ -89,4 +89,47 @@ describe('migrate-xds-module-specifiers', () => {
     expect(output).not.toContain('defaultTheme');
     expect(output).not.toContain('neutralTheme as');
   });
+
+  it('rewrites the mocked module path in vi.mock (including the inline import() type arg)', async () => {
+    const input = [
+      "vi.mock('@xds/core/Text', async orig => ({",
+      "  ...(await orig<typeof import('@xds/core/Text')>()),",
+      '}));',
+    ].join('\n');
+    const output = await applyTransform(input);
+    expect(output).toMatch(/vi\.mock\(['"]@astryxdesign\/core\/Text['"]/);
+    // The inline dynamic import() type argument is rewritten too.
+    expect(output).toMatch(/import\(['"]@astryxdesign\/core\/Text['"]\)/);
+    expect(output).not.toContain('@xds/');
+  });
+
+  it('rewrites the mocked module path in jest.mock (bare @xds/core)', async () => {
+    const output = await applyTransform(
+      "jest.mock('@xds/core', () => ({}));",
+      'test.ts',
+    );
+    expect(output).toMatch(/jest\.mock\(['"]@astryxdesign\/core['"]/);
+    expect(output).not.toContain('@xds/');
+  });
+
+  it('rewrites vi.doMock / jest.doMock and a bare mock() call', async () => {
+    const output = await applyTransform(
+      [
+        "vi.doMock('@xds/lab/Thing', () => ({}));",
+        "jest.doMock('@xds/core/Text', () => ({}));",
+        "mock('@xds/core', () => ({}));",
+      ].join('\n'),
+      'test.ts',
+    );
+    expect(output).toMatch(/vi\.doMock\(['"]@astryxdesign\/lab\/Thing['"]/);
+    expect(output).toMatch(/jest\.doMock\(['"]@astryxdesign\/core\/Text['"]/);
+    expect(output).toMatch(/[^.]mock\(['"]@astryxdesign\/core['"]/);
+    expect(output).not.toContain('@xds/');
+  });
+
+  it('does NOT rewrite the mock path for a non-@xds package', async () => {
+    const input = "vi.mock('some-other-pkg', () => ({useXDSFoo: () => 1}));";
+    const output = await applyTransform(input);
+    expect(output).toBe(input);
+  });
 });

@@ -12,7 +12,12 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ContextMenu} from './ContextMenu';
-import {ContextMenuItem} from './index';
+import {
+  ContextMenuItem,
+  ContextMenuCheckboxItem,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+} from './index';
 import {DropdownMenuItem} from '../DropdownMenu/DropdownMenuItem';
 import {Divider} from '../Divider';
 
@@ -538,6 +543,75 @@ describe('ContextMenu compound mode', () => {
   });
 });
 
+describe('ContextMenu selectable items', () => {
+  it('renders checkbox and radio items with correct roles and state', () => {
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <ContextMenuRadioGroup
+              value="name"
+              onChange={() => {}}
+              aria-label="Sort by">
+              <ContextMenuRadioItem value="name" label="Sort by name" />
+              <ContextMenuRadioItem value="date" label="Sort by date" />
+            </ContextMenuRadioGroup>
+            <ContextMenuCheckboxItem label="Show hidden" value={true} />
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Sort by name', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(
+      screen.getByRole('menuitemradio', {name: 'Sort by date', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'false');
+    expect(
+      screen.getByRole('menuitemcheckbox', {name: 'Show hidden', hidden: true}),
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(
+      screen.getByRole('group', {name: 'Sort by', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('fires onChange for radio and checkbox items', async () => {
+    const user = userEvent.setup();
+    const onSort = vi.fn();
+    const onToggle = vi.fn();
+    render(
+      <ContextMenu
+        menuContent={
+          <>
+            <ContextMenuRadioGroup
+              value="name"
+              onChange={onSort}
+              aria-label="Sort by">
+              <ContextMenuRadioItem value="name" label="Sort by name" />
+              <ContextMenuRadioItem value="date" label="Sort by date" />
+            </ContextMenuRadioGroup>
+            <ContextMenuCheckboxItem
+              label="Show hidden"
+              value={false}
+              onChange={onToggle}
+            />
+          </>
+        }>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    await user.click(
+      screen.getByRole('menuitemradio', {name: 'Sort by date', hidden: true}),
+    );
+    expect(onSort).toHaveBeenCalledWith('date');
+    await user.click(
+      screen.getByRole('menuitemcheckbox', {name: 'Show hidden', hidden: true}),
+    );
+    expect(onToggle).toHaveBeenCalledWith(true);
+  });
+});
+
 describe('ContextMenu keyboard access for menuitemradio/menuitemcheckbox (#3829)', () => {
   it('arrow navigation reaches consumer-rendered menuitemradio and menuitemcheckbox items', () => {
     render(
@@ -684,8 +758,14 @@ describe('ContextMenu keyboard access for menuitemradio/menuitemcheckbox (#3829)
 
     fireEvent.contextMenu(screen.getByText('Right-click me'));
     // Anchor the search on 'Cut' so typeahead scans forward and meets the
-    // disabled 'Newest' (also an 'n' match) before the enabled 'Nightly' —
-    // it must skip it and keep its match index aligned with the focus list.
+    // disabled 'Newest' (also an 'n' match) before the enabled 'Nightly'.
+    // This pins the `:not([aria-disabled="true"])` in MENU_ITEM_SELECTOR: the
+    // menus never pass useTypeahead's `isDisabled` option, so that clause is
+    // the only thing keeping disabled rows out of the typeahead list. An
+    // arrow-key test cannot cover it — useListFocus re-filters disabled items
+    // independently, so arrow navigation is guarded twice over.
+    // The disabled row keeps tabIndex={-1} on purpose: it stays focusable, so
+    // the selector clause is the sole reason focus skips it.
     screen.getByRole('menuitem', {name: 'Cut', hidden: true}).focus();
     fireEvent.keyDown(screen.getByRole('menu', {hidden: true}), {key: 'n'});
     expect(

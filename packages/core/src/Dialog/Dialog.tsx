@@ -152,7 +152,13 @@ const styles = stylex.create({
   open: {
     display: 'flex',
     opacity: 1,
-    animationName: enterDirectional,
+    // Disable the entry keyframe animation under
+    // `prefers-reduced-motion: reduce` so the dialog appears instantly
+    // instead of translating/scaling in (same pattern as layerAnimations).
+    animationName: {
+      default: enterDirectional,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
   },
   // Backdrop using ::backdrop pseudo-element
   backdrop: {
@@ -508,6 +514,10 @@ export function Dialog({
     </div>
   );
 
+  // Filter out native open to prevent InvalidStateError when accidentally passed
+  const hasPosition = position != null && !isFullscreen;
+  const {open: _open, ...safeProps} = props as Record<string, unknown>;
+
   // --- Inline rendering path (for documentation previews) ---
   if (isInline) {
     if (!isOpen) {
@@ -516,6 +526,7 @@ export function Dialog({
 
     return (
       <div
+        {...safeProps}
         {...mergeProps(
           themeProps('dialog', {variant}),
           stylex.props(
@@ -529,8 +540,7 @@ export function Dialog({
         )}
         data-testid={
           (props as Record<string, unknown>)['data-testid'] as
-            | string
-            | undefined
+            string | undefined
         }>
         {innerContent}
       </div>
@@ -538,18 +548,11 @@ export function Dialog({
   }
 
   // --- Standard modal rendering path ---
-  const hasPosition = position != null && !isFullscreen;
-
-  // Filter out native open to prevent InvalidStateError when accidentally passed
-  const {open: _open, ...safeProps} = props as Record<string, unknown>;
 
   return (
     <dialog
       ref={mergeRefs(ref, dialogRef)}
-      onClick={handleClick}
-      onCancel={handleCancel}
-      aria-modal="true"
-      role={purpose === 'required' ? 'alertdialog' : undefined}
+      {...safeProps}
       {...mergeProps(
         themeProps('dialog', {variant}),
         stylex.props(
@@ -570,7 +573,10 @@ export function Dialog({
         className,
         style,
       )}
-      {...safeProps}>
+      onClick={handleClick}
+      onCancel={handleCancel}
+      aria-modal="true"
+      {...(purpose === 'required' ? {role: 'alertdialog'} : undefined)}>
       {innerContent}
     </dialog>
   );

@@ -12,7 +12,7 @@
  * - Hermes Agent: .hermes.md or HERMES.md (existing), else AGENTS.md
  *
  * Auto-detect: discovers existing files and updates them in place.
- * Default (no existing files): creates .claude/CLAUDE.md.
+ * Default (no existing files): creates AGENTS.md (the tool-agnostic standard).
  *
  * --agent <tool>: target a specific tool preset (claude, cursor, codex, hermes, all)
  * --agent-docs-path <path>: explicit file path(s)
@@ -22,7 +22,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {findCoreDir, CLI_ROOT} from '../utils/paths.mjs';
 import {assertWithin, PathSafetyError} from '../utils/path-safety.mjs';
-import {getRunPrefix} from '../utils/package-manager.mjs';
+import {getCliInvocation} from '../utils/package-manager.mjs';
 import {discoverComponents} from '../lib/component-discovery.mjs';
 import {humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
@@ -31,6 +31,9 @@ import {ERROR_CODES} from '../lib/error-codes.mjs';
 const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';
 const CLAUDE_DIR_MD = '.claude/CLAUDE.md'; // cross-platform literal
+const CURSOR_RULES = '.cursorrules';
+const HERMES_DOT_MD = '.hermes.md';
+const HERMES_MD = 'HERMES.md';
 
 
 const MARKER_START = '<!-- ASTRYX:START -->';
@@ -45,20 +48,132 @@ const LEGACY_MARKER_END = '<!-- XDS:END -->';
  */
 const AGENT_PRESETS = {
   claude: [CLAUDE_MD, CLAUDE_DIR_MD],
-  cursor: ['.cursorrules', AGENTS_MD],
+  cursor: [CURSOR_RULES, AGENTS_MD],
   codex: [AGENTS_MD],
-  hermes: ['.hermes.md', 'HERMES.md', AGENTS_MD],
+  hermes: [HERMES_DOT_MD, HERMES_MD, AGENTS_MD],
 };
 
 /**
- * Find all existing agent doc files in a directory.
- * Searches all known locations (AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, .cursorrules).
+ * The canonical set of EVERY location an --agent preset (or the default) can
+ * write the Astryx block. SINGLE SOURCE OF TRUTH: discovery, removal, and the
+ * `isAstryxInitialized` predicate all derive from this list, so "where init
+ * writes" and "where we look" can never drift. (Explicit --agent-docs-path
+ * targets are user-chosen and not enumerable here.)
+ */
+const AGENT_DOC_PATHS = [
+  AGENTS_MD, // Codex / ChatGPT / generic
+  CLAUDE_MD, // Claude Code (root)
+  CLAUDE_DIR_MD, // Claude Code (.claude/CLAUDE.md)
+  CURSOR_RULES, // Cursor
+  HERMES_DOT_MD, // Hermes
+  HERMES_MD, // Hermes
+];
+
+/**
+ * Find all existing agent doc files in a directory, across EVERY location any
+ * preset can write (see {@link AGENT_DOC_PATHS}: AGENTS.md, CLAUDE.md,
+ * .claude/CLAUDE.md, .cursorrules, .hermes.md, HERMES.md).
  * @param {string} targetDir
  * @returns {string[]} Relative paths of existing agent doc files
  */
 export function discoverAgentDocs(targetDir) {
-  const allPaths = [AGENTS_MD, CLAUDE_MD, CLAUDE_DIR_MD, '.cursorrules'];
-  return allPaths.filter(p => fs.existsSync(path.join(targetDir, p)));
+  return AGENT_DOC_PATHS.filter(p => fs.existsSync(path.join(targetDir, p)));
+}
+
+/**
+ * Single source of truth for "is Astryx set up in this project?" — true when any
+ * agent-doc file already carries the Astryx marker, i.e. `init` / `agent-docs`
+ * has run. Reused by the init & upgrade commands, the per-command setup nudge
+ * (enforcement layer 3), and the cli postinstall nudge (layer 2). Core's
+ * postinstall (separate package, layer 1) mirrors the same marker contract.
+ *
+ * @param {string} [targetDir=process.cwd()]
+ * @returns {boolean}
+ */
+export function isAstryxInitialized(targetDir = process.cwd()) {
+  for (const rel of discoverAgentDocs(targetDir)) {
+    try {
+      const content = fs.readFileSync(path.join(targetDir, rel), 'utf-8');
+      if (content.includes(MARKER_START) || content.includes(LEGACY_MARKER_START)) {
+        return true;
+      }
+    } catch {
+      // Unreadable file — ignore and keep checking the others.
+    }
+  }
+  return false;
+}
+
+/**
+ * Parse the Astryx version a managed block was generated for, from its header
+ * line ("Astryx v1.2.3 · N components"). Returns null when the block predates
+ * the versioned header (e.g. a legacy XDS block) or has no header at all.
+ *
+ * @param {string} content File contents, or just the block text.
+ * @returns {string|null}
+ */
+export function parseBlockVersion(content) {
+  const match = /Astryx v(\d+\.\d+\.\d+[^\s·]*)/.exec(content ?? '');
+  return match ? match[1] : null;
+}
+
+/**
+ * Read-only staleness assessment of the managed agent-docs block(s) against the
+ * installed core version. This is the detection half of the `astryx upgrade`
+ * agent-docs refresh: it never writes, so `upgrade` can run it on EVERY path —
+ * including the up-to-date / no-codemods short-circuits — and decide whether to
+ * rewrite a stale block, nudge an uninitialized repo, or stay silent.
+ *
+ * A managed block is:
+ * - `stale`   — it carries a legacy XDS marker, has no parseable version, or
+ *               records a version other than the installed one.
+ * - `current` — every managed block already matches the installed version.
+ * And the project is `missing` when no managed block exists anywhere (the repo
+ * has agent-doc files without our markers, or none at all — i.e. never `init`ed).
+ *
+ * @param {string} targetDir
+ * @param {string} [installedVersion] Defaults to the installed core version.
+ * @returns {{
+ *   installedVersion: string,
+ *   status: 'missing' | 'stale' | 'current',
+ *   files: Array<{path: string, blockVersion: string|null, legacy: boolean, stale: boolean}>,
+ *   staleFiles: string[],
+ *   blockVersions: string[],
+ * }}
+ */
+export function inspectAgentDocs(targetDir, installedVersion) {
+  const version = installedVersion ?? getXdsVersion(findCoreDir(targetDir));
+  const files = [];
+
+  for (const rel of discoverAgentDocs(targetDir)) {
+    let content;
+    try {
+      content = fs.readFileSync(path.join(targetDir, rel), 'utf-8');
+    } catch {
+      continue; // Unreadable — treat as absent.
+    }
+    const hasNew = content.includes(MARKER_START);
+    const hasLegacy = content.includes(LEGACY_MARKER_START);
+    if (!hasNew && !hasLegacy) continue; // Not a block we manage.
+
+    const legacy = !hasNew && hasLegacy;
+    const blockVersion = parseBlockVersion(content);
+    const stale = legacy || blockVersion == null || blockVersion !== version;
+    files.push({path: rel, blockVersion, legacy, stale});
+  }
+
+  const staleEntries = files.filter(f => f.stale);
+  const staleFiles = staleEntries.map(f => f.path);
+  const blockVersions = [
+    ...new Set(staleEntries.map(f => f.blockVersion).filter(Boolean)),
+  ];
+
+  let status;
+  if (files.length === 0) status = 'missing';
+  else if (staleFiles.length > 0) status = 'stale';
+  else status = 'current';
+
+  return {installedVersion: version, status, files, staleFiles, blockVersions};
 }
 
 /**
@@ -144,8 +259,8 @@ export function detectStylingSystem(targetDir) {
  * configured (see {@link detectStylingSystem}) so the agent never reaches for a
  * styling path that isn't compiled here.
  */
-export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPrefix(), stylingSystem = 'css'} = {}) {
-  const run = `${runPrefix} astryx`;
+export function generateCompressedIndex(version, {coreDir, invocation = getCliInvocation(), stylingSystem = 'css'} = {}) {
+  const run = invocation;
   const lines = [MARKER_START];
 
   // Component count from live discovery
@@ -197,6 +312,20 @@ export function generateCompressedIndex(version, {coreDir, runPrefix = getRunPre
     lines.push("- Custom styling: component props first; else style/className with tokens — var(--color-*|--spacing-*|--radius-*). No raw hex/px. (No StyleX/Tailwind compiler here — don't use xstyle/utility classes.)");
   }
   lines.push('- Tokens for every value (`astryx docs tokens`). Brand/accent via `astryx theme` — never override --color-* in :root.');
+  // Self-check — post-generation pass. Validated via vibe tests (internal/vibe-tests/
+  // prompt-purity-test): on complex multi-step UIs the rules above alone still leave raw
+  // CSS in ~11-13% of runs; a re-read-and-fix pass cuts that ~4x at negligible token cost.
+  // The fix names the sanctioned escape hatch for the configured system.
+  const selfCheckFix = {
+    stylex:
+      'replace any className=, style={{…}}, raw <div>/<span> layout, imported .css/@apply, or hardcoded #hex/px with the component or the xstyle prop + a token',
+    tailwind:
+      'replace any style={{…}}, raw <div>/<span> layout, imported .css/@apply, or hardcoded/arbitrary value (e.g. bg-[#fff], p-[13px]) with the component or a token-backed utility',
+    css: 'replace any raw <div>/<span> layout, imported .css/@apply, or hardcoded value (#hex, 16px) with the component or a token (var(--color-*|--spacing-*|…))',
+  };
+  lines.push(
+    `- SELF-CHECK before you finish: re-read the file and ${selfCheckFix[stylingSystem] ?? selfCheckFix.css}. If unsure a component/prop exists, run \`astryx component <Name>\` / \`astryx search "<thing>"\`; don't hand-roll CSS.`,
+  );
   lines.push('');
 
   // Command reference — build/template/component are covered in WORKFLOW above.
@@ -378,11 +507,11 @@ export function removeAgentDocs(targetDir) {
 
 /**
  * Programmatic entry point for installing agent docs.
- * Used by the init wizard, upgrade command, and agent-docs command.
+ * Used by the init command, upgrade command, and agent-docs command.
  *
  * Strategy (when no agent/paths specified):
  * - Discover all existing agent doc files and update them
- * - If nothing found, create .claude/CLAUDE.md as default
+ * - If nothing found, create AGENTS.md as default (tool-agnostic standard)
  *
  * @param {string} targetDir
  * @param {object} [options]
@@ -396,9 +525,9 @@ export function removeAgentDocs(targetDir) {
 export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onlyReplace = false} = {}) {
   const coreDir = findCoreDir(targetDir);
   const version = getXdsVersion(coreDir);
-  const runPrefix = getRunPrefix(targetDir);
+  const invocation = getCliInvocation(targetDir);
   const stylingSystem = detectStylingSystem(targetDir);
-  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, runPrefix, stylingSystem});
+  const compressedIndex = generateCompressedIndex(version, {coreDir, zh, lang, invocation, stylingSystem});
   const written = [];
 
   // Explicit paths override everything
@@ -457,14 +586,16 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
     return written;
   }
 
-  // Nothing exists — create .claude/CLAUDE.md as default (skip if onlyReplace)
+  // Nothing exists — create root AGENTS.md as the default (skip if onlyReplace).
+  // AGENTS.md is the tool-agnostic standard (Codex/Copilot, Cursor, and most
+  // agents read it), so it's the safe default. Claude-specific output is opt-in
+  // via `--agent claude` (→ .claude/CLAUDE.md); `--agent all` writes both.
   if (onlyReplace) return written;
 
-  const defaultPath = CLAUDE_DIR_MD;
-  fs.mkdirSync(path.join(targetDir, '.claude'), {recursive: true});
+  const defaultPath = AGENTS_MD;
   injectXdsBlock(path.join(targetDir, defaultPath), compressedIndex, {
     createIfMissing: true,
-    header: `# CLAUDE.md\n\nProject-specific guidance for AI coding agents.`,
+    header: `# AGENTS.md\n\nProject-specific guidance for AI coding agents.`,
   });
   written.push(defaultPath);
   return written;
@@ -524,8 +655,7 @@ export function registerAgentDocs(program) {
         throw err;
       }
 
-      const runPrefix = getRunPrefix(targetDir);
-      const run = `${runPrefix} astryx`;
+      const run = getCliInvocation(targetDir);
 
       for (const t of targets) {
         humanLog(`✓ ${t}`);

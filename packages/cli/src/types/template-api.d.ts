@@ -15,4 +15,7 @@ export type {
   AstryxTemplate,
 } from '@astryxdesign/core/authoring';
 
-export {createPageTemplate, createBlockTemplate} from '@astryxdesign/core/authoring';
+export {
+  createPageTemplate,
+  createBlockTemplate,
+} from '@astryxdesign/core/authoring';

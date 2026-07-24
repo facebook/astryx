@@ -13,6 +13,8 @@ import {
 import {render, screen, fireEvent, act} from '@testing-library/react';
 import React, {useState} from 'react';
 import {PowerSearch} from './PowerSearch';
+import {PowerSearchEditPopover} from './PowerSearchEditPopover';
+import {useInternalConfig} from './useInternalConfig';
 import type {PowerSearchConfig, PowerSearchFilter} from './types';
 
 // =============================================================================
@@ -215,5 +217,70 @@ describe('PowerSearch', () => {
     const popoverText = getEditPopoverText(container);
     expect(popoverText).toContain('Priority');
     expect(popoverText).toContain('equals');
+  });
+
+  it('does not save/close edit popover when Enter is consumed by child listbox option selection', () => {
+    const multiConfig: PowerSearchConfig = {
+      name: 'test-multi',
+      fields: [
+        {
+          key: 'status',
+          label: 'Status',
+          operators: [
+            {
+              key: 'any_of',
+              label: 'is any of',
+              value: {
+                type: 'enum_list',
+                values: [
+                  {value: 'open', label: 'Open'},
+                  {value: 'closed', label: 'Closed'},
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const onSave = vi.fn();
+    const onCancel = vi.fn();
+
+    function MultiSelectHarness() {
+      const internalConfig = useInternalConfig(multiConfig);
+      return (
+        <PowerSearchEditPopover
+          config={internalConfig}
+          filter={{
+            field: 'status',
+            operator: 'any_of',
+            value: {type: 'enum_list', value: ['open']},
+          }}
+          mode="edit"
+          onSave={onSave}
+          onCancel={onCancel}
+        />
+      );
+    }
+
+    const {container} = render(<MultiSelectHarness />);
+
+    const input = container.querySelector('input');
+    expect(input).not.toBeNull();
+
+    // Fire an Enter event that has been defaultPrevented (e.g. child typeahead option selection)
+    const enterEvent = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true,
+    });
+    enterEvent.preventDefault();
+
+    act(() => {
+      input?.dispatchEvent(enterEvent);
+    });
+
+    // onSave should NOT be called because the event was already consumed (defaultPrevented)
+    expect(onSave).not.toHaveBeenCalled();
   });
 });

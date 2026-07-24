@@ -31,6 +31,11 @@ const meta: Meta<typeof Button> = {
       options: ['sm', 'md', 'lg'],
       description: 'Size variant',
     },
+    elevation: {
+      control: 'inline-radio',
+      options: ['none', 'low', 'med', 'high'],
+      description: 'Resting shadow depth (for floating buttons / FABs)',
+    },
     isLoading: {
       control: 'boolean',
       description: 'Loading state',
@@ -270,11 +275,7 @@ export const LinkButton: Story = {
           rel="noopener noreferrer"
           variant="secondary"
         />
-        <Button
-          label="Ghost link"
-          href="https://example.com"
-          variant="ghost"
-        />
+        <Button label="Ghost link" href="https://example.com" variant="ghost" />
       </div>
       <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
         <Button
@@ -326,7 +327,6 @@ export const Truncation: Story = {
             label="A very long button label that overflows"
             variant="primary"
             icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
-            isIconOnly
           />
         </div>
       </div>
@@ -353,9 +353,23 @@ export const Truncation: Story = {
           label="A very long button label that shows fully"
           variant="primary"
           icon={<Cog6ToothIcon style={{width: 16, height: 16}} />}
-          isIconOnly
         />
       </div>
+    </div>
+  ),
+};
+
+export const Elevations: Story = {
+  render: () => (
+    <div style={{display: 'flex', gap: 24, alignItems: 'center'}}>
+      {(['none', 'low', 'med', 'high'] as const).map(elevation => (
+        <div key={elevation} style={{textAlign: 'center'}}>
+          <p style={{fontSize: 12, color: '#666', marginBottom: 8}}>
+            elevation=&quot;{elevation}&quot;
+          </p>
+          <Button label={elevation} variant="primary" elevation={elevation} />
+        </div>
+      ))}
     </div>
   ),
 };

@@ -27,7 +27,7 @@ export default function CarouselSnap() {
         {TEAM.map(person => (
           <Card key={person.name} width={180} minHeight={140}>
             <Stack direction="vertical" gap={3} hAlign="center">
-              <Avatar name={person.name} size="medium" />
+              <Avatar name={person.name} size="lg" />
               <Stack direction="vertical" gap={1} hAlign="center">
                 <Text type="body" weight="bold">
                   {person.name}

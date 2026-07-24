@@ -14,6 +14,7 @@
  * - /apps/storybook/stories/ClickableCard.stories.tsx (storybook stories)
  * - /packages/cli/templates/blocks/components/Card/ClickableCardShowcase.tsx (showcase block)
  * - /packages/cli/templates/blocks/components/Card/ClickableCardWithNestedButton.tsx (block)
+ * - /packages/cli/templates/blocks/components/Card/ClickableCardElevated.tsx (block)
  *
  * Composes Card for all visual styling (radius, padding, variants,
  * container tokens, theming). Adds an interactive wrapper with
@@ -37,7 +38,7 @@ import {
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
-import type {SizeValue, SpacingStep} from '../utils/types';
+import type {SizeValue, SpacingStep, Elevation} from '../utils/types';
 import {mergeProps, mergeRefs} from '../utils';
 import {Card} from '../Card/Card';
 import type {CardVariant} from '../Card/Card';
@@ -197,6 +198,13 @@ export interface ClickableCardProps extends BaseProps {
    */
   variant?: CardVariant;
 
+  /**
+   * Resting elevation — the shadow depth the card sits at. Often raised to
+   * signal that the whole card is clickable.
+   * @default 'none'
+   */
+  elevation?: Elevation;
+
   /** Width of the card. */
   width?: SizeValue;
 
@@ -253,6 +261,7 @@ export function ClickableCard({
   children,
   padding,
   variant = 'default',
+  elevation = 'none',
   width,
   height,
   maxWidth,
@@ -297,6 +306,7 @@ export function ClickableCard({
       maxWidth={maxWidth}
       padding={padding}
       variant={variant}
+      elevation={elevation}
       {...mergeProps(themeProps('clickable-card', {variant}), {
         className: classNameProp,
         style,

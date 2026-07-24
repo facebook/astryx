@@ -14,12 +14,15 @@ function mockContainer(width: number): HTMLElement {
 function mockMeasure(
   itemWidths: number[],
   indicatorWidth?: number,
+  itemHeight = 0,
 ): HTMLElement {
-  const children: {offsetWidth: number}[] = itemWidths.map(w => ({
-    offsetWidth: w,
-  }));
+  const children: {offsetWidth: number; offsetHeight: number}[] =
+    itemWidths.map(w => ({
+      offsetWidth: w,
+      offsetHeight: itemHeight,
+    }));
   if (indicatorWidth != null) {
-    children.push({offsetWidth: indicatorWidth});
+    children.push({offsetWidth: indicatorWidth, offsetHeight: itemHeight});
   }
   return {children} as unknown as HTMLElement;
 }
@@ -329,6 +332,95 @@ describe('useOverflow', () => {
     // Single item is the last item, so reservedWidth=0 → 200 > 100 → break at count=0
     expect(result.current.visibleCount).toBe(0);
     expect(result.current.hasOverflow).toBe(true);
+  });
+});
+
+describe('useOverflow with maxVisibleItems (cap)', () => {
+  it('caps visible items even when they all fit', () => {
+    const {result} = renderHook(() =>
+      useOverflow(5, {gap: 10, maxVisibleItems: 3}),
+    );
+
+    act(() => {
+      result.current.measureRef(mockMeasure([50, 50, 50, 50, 50], 30));
+      result.current.containerRef(mockContainer(10000));
+    });
+
+    expect(result.current.visibleCount).toBe(3);
+    expect(result.current.hasOverflow).toBe(true);
+  });
+
+  it('cap does not raise a fit-limited count', () => {
+    const {result} = renderHook(() =>
+      useOverflow(4, {gap: 10, maxVisibleItems: 4}),
+    );
+
+    act(() => {
+      result.current.measureRef(mockMeasure([50, 50, 50, 50], 30));
+      result.current.containerRef(mockContainer(150));
+    });
+
+    expect(result.current.visibleCount).toBe(2);
+  });
+
+  it('min wins when maxVisibleItems < minVisibleItems and warns in dev', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {result} = renderHook(() =>
+      useOverflow(5, {gap: 10, minVisibleItems: 3, maxVisibleItems: 1}),
+    );
+
+    act(() => {
+      result.current.measureRef(mockMeasure([50, 50, 50, 50, 50], 30));
+      result.current.containerRef(mockContainer(10000));
+    });
+
+    expect(result.current.visibleCount).toBe(3);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
+
+describe('useOverflow with maxRows (multi-row)', () => {
+  it('exposes rows and rowHeight', () => {
+    const {result} = renderHook(() => useOverflow(6, {gap: 10, maxRows: 2}));
+
+    act(() => {
+      result.current.measureRef(mockMeasure([50, 50, 50, 50, 50, 50], 40, 24));
+      result.current.containerRef(mockContainer(170));
+    });
+
+    // 3 items per row (170), 2 rows → all 6 fit
+    expect(result.current.visibleCount).toBe(6);
+    expect(result.current.rows).toBe(2);
+    expect(result.current.rowHeight).toBe(24);
+    expect(result.current.hasOverflow).toBe(false);
+  });
+
+  it('collapses items beyond maxRows into the indicator', () => {
+    const {result} = renderHook(() => useOverflow(8, {gap: 10, maxRows: 2}));
+
+    act(() => {
+      result.current.measureRef(
+        mockMeasure([50, 50, 50, 50, 50, 50, 50, 50], 40, 24),
+      );
+      result.current.containerRef(mockContainer(170));
+    });
+
+    expect(result.current.visibleCount).toBe(5);
+    expect(result.current.rows).toBe(2);
+    expect(result.current.hasOverflow).toBe(true);
+  });
+
+  it('maxRows=1 matches single-line behavior', () => {
+    const {result} = renderHook(() => useOverflow(4, {gap: 10, maxRows: 1}));
+
+    act(() => {
+      result.current.measureRef(mockMeasure([50, 50, 50, 50], 30, 24));
+      result.current.containerRef(mockContainer(150));
+    });
+
+    expect(result.current.visibleCount).toBe(2);
+    expect(result.current.rows).toBe(1);
   });
 });
 

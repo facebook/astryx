@@ -232,7 +232,7 @@ export default function Home() {
               <Card>
                 <VStack gap={3}>
                   <HStack gap={2} vAlign="center">
-                    <Avatar name="Jane Doe" size="small" />
+                    <Avatar name="Jane Doe" size="md" />
                     <VStack gap={0}>
                       <Text type="label">Jane Doe</Text>
                       <Text type="supporting" color="secondary">

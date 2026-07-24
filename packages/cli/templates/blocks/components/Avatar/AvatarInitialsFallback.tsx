@@ -18,7 +18,7 @@ export default function AvatarInitialsFallback() {
     <Stack direction="horizontal" gap={6} vAlign="center">
       {NAMES.map(({name, note}) => (
         <Stack key={name} direction="vertical" gap={2} hAlign="center">
-          <Avatar name={name} size="medium" />
+          <Avatar name={name} size="lg" />
           <Text type="supporting" color="secondary">
             {note}
           </Text>

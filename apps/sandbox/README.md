@@ -17,7 +17,7 @@ This automatically generates `AGENTS.md` with the Astryx component index via `as
 If `AGENTS.md` is missing, regenerate it:
 
 ```bash
-npx astryx init --features agents
+npx @astryxdesign/cli init --features agents
 ```
 
 ## How it works
@@ -89,12 +89,12 @@ Edits trigger incremental dist rebuilds via Babel CLI (a few seconds), and CSS l
 
 | File                       | Purpose                                                                  |
 | -------------------------- | ------------------------------------------------------------------------ |
-| `package.json`             | Dependencies; uses PostCSS path for StyleX                              |
+| `package.json`             | Dependencies; uses PostCSS path for StyleX                               |
 | `babel.config.js`          | StyleX babel plugin config (as plugin, not preset)                       |
-| `postcss.config.js`        | StyleX PostCSS plugin: extracts CSS from `@stylex;` directive           |
+| `postcss.config.js`        | StyleX PostCSS plugin: extracts CSS from `@stylex;` directive            |
 | `next.config.mjs`          | Static export, basePath for GitHub Pages, webpack alias for theme tokens |
 | `tsconfig.json`            | TypeScript config with workspace path aliases                            |
-| `src/app/globals.css`      | `@stylex;` injection point: PostCSS replaces this with extracted CSS    |
+| `src/app/globals.css`      | `@stylex;` injection point: PostCSS replaces this with extracted CSS     |
 | `src/app/providers.tsx`    | Client-side theme provider wrapper                                       |
 | `src/app/layout.tsx`       | Root layout with sidebar navigation                                      |
 | `src/app/Sidebar.tsx`      | Sidebar navigation component                                             |

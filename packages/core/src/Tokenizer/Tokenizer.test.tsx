@@ -9,11 +9,16 @@
  * SYNC: When Tokenizer.tsx changes, update tests to match
  */
 
-import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
+import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
 import {render, screen, fireEvent, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
 
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
@@ -58,6 +63,10 @@ beforeAll(() => {
 afterAll(() => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (HTMLElement.prototype as any).matches = originalMatches;
+});
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
 });
 
 // Test data
@@ -921,6 +930,130 @@ describe('Tokenizer', () => {
       expect(screen.getByRole('combobox')).toBeDisabled();
     });
   });
+  describe('announcements', () => {
+    it('announces removal politely on Backspace with an empty input', async () => {
+      const onChange = vi.fn();
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={onChange}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      fireEvent.keyDown(input, {key: 'Backspace'});
+      expect(onChange).toHaveBeenCalledWith([users[0]], {
+        item: users[1],
+        type: 'remove',
+      });
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Removed Bob');
+      });
+    });
+
+    it("announces removal politely when clicking a token's remove button", async () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0], users[1]]}
+          onChange={() => {}}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', {name: 'Remove Alice'}));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Removed Alice');
+      });
+    });
+
+    it('announces addition politely when selecting a search result', async () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          hasEntriesOnFocus
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      fireEvent.focus(input);
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      fireEvent.click(screen.getByText('Alice'));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Added Alice');
+      });
+    });
+
+    it('announces addition politely when creating a token with hasCreate', async () => {
+      const emptySource: SearchSource = {
+        search: () => [],
+        bootstrap: () => [],
+      };
+      render(
+        <Tokenizer
+          label="Tags"
+          searchSource={emptySource}
+          value={[]}
+          onChange={() => {}}
+          hasCreate
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'new-tag'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      fireEvent.click(screen.getByText('Create "new-tag"'));
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Added new-tag');
+      });
+    });
+
+    it('does not announce on mount', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[users[0]]}
+          onChange={() => {}}
+        />,
+      );
+      // The live regions are created lazily on first announce, so a mount
+      // with pre-selected tokens must not create (or speak through) one.
+      expect(politeRegion()).toBeNull();
+    });
+
+    it('does not announce add/remove while typing', async () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          debounceMs={0}
+        />,
+      );
+      const input = screen.getByRole('combobox');
+      await act(async () => {
+        fireEvent.change(input, {target: {value: 'Ali'}});
+      });
+      await act(async () => {
+        await new Promise(r => setTimeout(r, 50));
+      });
+      // BaseTypeahead announces result counts while typing (existing
+      // behavior); typing alone must not produce add/remove announcements.
+      expect(politeRegion()?.textContent ?? '').not.toMatch(/Added|Removed/);
+    });
+  });
+
   describe('form participation', () => {
     it('submits one entry per token id under htmlName', () => {
       const {container} = render(
@@ -951,7 +1084,9 @@ describe('Tokenizer', () => {
           />
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
     });
   });
 });

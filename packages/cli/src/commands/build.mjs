@@ -15,7 +15,7 @@
  * the whole CLI, use `astryx search <query>` instead.
  */
 
-import {getRunPrefix} from '../utils/package-manager.mjs';
+import {getCliInvocation, formatCliCommand} from '../utils/package-manager.mjs';
 import {jsonOut, humanLog} from '../lib/json.mjs';
 import {cliError} from '../lib/cli-error.mjs';
 import {search as searchApi} from '../api/search.mjs';
@@ -47,25 +47,25 @@ function printPlaybook(run) {
     'How to build a page with Astryx',
     '',
     "1. Find a starting point for what you're building:",
-    `     ${run} astryx build "<what you're building>"`,
+    `     ${run} build "<what you're building>"`,
     '   → returns the closest [page] template, the [block]s that cover parts,',
     '     and the [component]s to fill the gaps, with a "Compose:" suggestion.',
     '',
     '2. If a [page] template matches → scaffold it and adapt:',
-    `     ${run} astryx template <name> [path]`,
+    `     ${run} template <name> [path]`,
     '',
     '3. If nothing matches exactly → compose:',
-    `     ${run} astryx template <name> --skeleton   # study a close page's layout`,
-    `     ${run} astryx template <BlockName>         # drop in each block from the kit`,
-    `     ${run} astryx component <Name>             # fill remaining gaps (read props)`,
+    `     ${run} template <name> --skeleton   # study a close page's layout`,
+    `     ${run} template <BlockName>         # drop in each block from the kit`,
+    `     ${run} component <Name>             # fill remaining gaps (read props)`,
     '',
     '4. Rules (keep it on-system):',
     '   - No <div>/raw HTML for layout — use VStack/HStack/Grid/Stack/Card etc.',
-    '   - No style={{}} — use component props; design tokens via `astryx docs tokens`.',
+    `   - No style={{}} — use component props; design tokens via \`${run} docs tokens\`.`,
     '   - Wrap the app in <Theme theme={...}> and import core reset.css + astryx.css.',
     '',
-    `Tip: \`${run} astryx build "<idea>"\` is the fastest way in. For a neutral`,
-    `lookup of any component/doc/template, use \`${run} astryx search <query>\`.`,
+    `Tip: \`${run} build "<idea>"\` is the fastest way in. For a neutral`,
+    `lookup of any component/doc/template, use \`${run} search <query>\`.`,
     '',
   ];
   for (const l of lines) humanLog(l);
@@ -79,7 +79,7 @@ export function registerBuild(program) {
     .option('--limit <n>', 'Max candidates to draw from (default 60)')
     .option('--detail', 'Verbose output (include import paths and match reason)')
     .action(async (query, options) => {
-      const run = getRunPrefix();
+      const run = getCliInvocation();
       const json = program.opts().json || false;
 
       // No query → print the playbook (the "how to build" skill).
@@ -115,7 +115,7 @@ export function registerBuild(program) {
       if (results.length === 0) {
         humanLog('');
         humanLog(`No matches for "${q}".`);
-        humanLog(`Try a broader term, or browse: ${run} astryx component --list`);
+        humanLog(`Try a broader term, or browse: ${run} component --list`);
         humanLog('');
         return;
       }
@@ -138,7 +138,7 @@ export function registerBuild(program) {
         humanLog('');
         humanLog(`  [${label}] ${display}`);
         if (r.description) humanLog(`          ${r.description}`);
-        humanLog(`          → ${run} ${r.command}`);
+        humanLog(`          → ${formatCliCommand(r.command)}`);
         if (options.detail) {
           if (r.import) humanLog(`          import: ${r.import}`);
           humanLog(`          match: ${r.reason} (score ${r.score})`);
@@ -151,9 +151,9 @@ export function registerBuild(program) {
       // START — the single recommended path.
       humanLog('');
       if (directMatch) {
-        humanLog(`START → Scaffold the \`${pages[0].name}\` page template, then adapt: ${run} astryx template ${pages[0].name} ./src/App.tsx`);
+        humanLog(`START → Scaffold the \`${pages[0].name}\` page template, then adapt: ${run} template ${pages[0].name} ./src/App.tsx`);
       } else if (pages.length) {
-        humanLog(`START → No exact page template. Use \`${pages[0].name}\` as a layout reference (${run} astryx template ${pages[0].name} --skeleton) and compose the pieces below.`);
+        humanLog(`START → No exact page template. Use \`${pages[0].name}\` as a layout reference (${run} template ${pages[0].name} --skeleton) and compose the pieces below.`);
       } else {
         humanLog(`START → No page template fits. Frame with AppShell and compose the blocks + components below.`);
       }
@@ -168,7 +168,7 @@ export function registerBuild(program) {
       // FRAME — always (the page shell).
       humanLog('');
       humanLog(`FRAME — page shell (always): ${FRAME.join(', ')}`);
-      humanLog(`          full-page → AppShell; or Layout + SideNav/TopNav. ${run} astryx component AppShell`);
+      humanLog(`          full-page → AppShell; or Layout + SideNav/TopNav. ${run} component AppShell`);
 
       // BLOCKS — idea-specific composed patterns.
       if (blocks.length) {

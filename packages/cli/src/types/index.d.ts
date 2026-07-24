@@ -10,6 +10,7 @@ export * from './swizzle';
 export * from './theme';
 export * from './upgrade';
 export * from './search';
+export * from './build';
 export * from './error-codes';
 export * from './manifest';
 export * from './doctor';

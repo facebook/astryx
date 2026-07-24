@@ -96,6 +96,52 @@ describe('Icon', () => {
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 
+  it('sizes component-mode icons in rem so they scale with root font-size', () => {
+    const sizes = {
+      xsm: '0.75rem',
+      sm: '1rem',
+      md: '1.25rem',
+      lg: '1.5rem',
+    } as const;
+    for (const [size, expected] of Object.entries(sizes)) {
+      const {unmount} = render(
+        <Icon
+          icon={TestIcon}
+          size={size as keyof typeof sizes}
+          data-testid="icon"
+        />,
+      );
+      const style = getComputedStyle(screen.getByTestId('icon'));
+      expect(style.width).toBe(expected);
+      expect(style.height).toBe(expected);
+      unmount();
+    }
+  });
+
+  it('sizes registry (string-mode) icons in rem, including fontSize', () => {
+    const sizes = {
+      xsm: '0.75rem',
+      sm: '1rem',
+      md: '1.25rem',
+      lg: '1.5rem',
+    } as const;
+    for (const [size, expected] of Object.entries(sizes)) {
+      const {unmount} = render(
+        <Icon
+          icon="check"
+          size={size as keyof typeof sizes}
+          data-testid="icon"
+        />,
+      );
+      const style = getComputedStyle(screen.getByTestId('icon'));
+      expect(style.width).toBe(expected);
+      expect(style.height).toBe(expected);
+      // fontSize is expressed in rem so 1em-based registry icons scale too.
+      expect(style.fontSize).toBe(expected);
+      unmount();
+    }
+  });
+
   it('forwards ref correctly', () => {
     const ref = vi.fn();
     render(<Icon icon={TestIcon} ref={ref} />);
@@ -136,5 +182,101 @@ describe('Icon', () => {
     expect(icon).toHaveAttribute('role', 'img');
     expect(icon).toHaveAttribute('aria-label', 'Done');
     expect(icon).toHaveAttribute('aria-hidden', 'false');
+  });
+
+  describe('label (accessible name)', () => {
+    it('makes a component-mode icon meaningful: role="img" + aria-label, no aria-hidden', () => {
+      render(<Icon icon={TestIcon} label="Completed" data-testid="icon" />);
+      const icon = screen.getByTestId('icon');
+      expect(icon).toHaveAttribute('role', 'img');
+      expect(icon).toHaveAttribute('aria-label', 'Completed');
+      expect(icon).not.toHaveAttribute('aria-hidden');
+    });
+
+    it('makes a string-mode (registry) icon meaningful: role="img" + aria-label, no aria-hidden', () => {
+      render(<Icon icon="check" label="Completed" data-testid="icon" />);
+      const icon = screen.getByTestId('icon');
+      expect(icon).toHaveAttribute('role', 'img');
+      expect(icon).toHaveAttribute('aria-label', 'Completed');
+      expect(icon).not.toHaveAttribute('aria-hidden');
+    });
+
+    it('keeps the decorative default when label is omitted (component mode)', () => {
+      render(<Icon icon={TestIcon} data-testid="icon" />);
+      const icon = screen.getByTestId('icon');
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+      expect(icon).not.toHaveAttribute('role');
+      expect(icon).not.toHaveAttribute('aria-label');
+    });
+
+    it('keeps the decorative default when label is omitted (string mode)', () => {
+      render(<Icon icon="check" data-testid="icon" />);
+      const icon = screen.getByTestId('icon');
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+      expect(icon).not.toHaveAttribute('role');
+      expect(icon).not.toHaveAttribute('aria-label');
+    });
+
+    it('treats an empty string label as decorative (component mode)', () => {
+      render(<Icon icon={TestIcon} label="" data-testid="icon" />);
+      const icon = screen.getByTestId('icon');
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+      expect(icon).not.toHaveAttribute('role');
+      expect(icon).not.toHaveAttribute('aria-label');
+    });
+
+    it('treats an empty string label as decorative (string mode)', () => {
+      render(<Icon icon="check" label="" data-testid="icon" />);
+      const icon = screen.getByTestId('icon');
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+      expect(icon).not.toHaveAttribute('role');
+      expect(icon).not.toHaveAttribute('aria-label');
+    });
+
+    it('lets an explicit aria-hidden win over label (component mode)', () => {
+      render(
+        <Icon icon={TestIcon} label="Close" aria-hidden data-testid="icon" />,
+      );
+      const icon = screen.getByTestId('icon');
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('lets an explicit aria-hidden win over label (string mode)', () => {
+      render(
+        <Icon icon="check" label="Close" aria-hidden data-testid="icon" />,
+      );
+      const icon = screen.getByTestId('icon');
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('lets an explicit aria-label override the label-derived name (component mode)', () => {
+      render(
+        <Icon
+          icon={TestIcon}
+          label="Close"
+          aria-label="Dismiss"
+          data-testid="icon"
+        />,
+      );
+      expect(screen.getByTestId('icon')).toHaveAttribute(
+        'aria-label',
+        'Dismiss',
+      );
+    });
+
+    it('lets an explicit role override the label-derived role (string mode)', () => {
+      render(
+        <Icon
+          icon="check"
+          label="Close"
+          role="presentation"
+          data-testid="icon"
+        />,
+      );
+      expect(screen.getByTestId('icon')).toHaveAttribute(
+        'role',
+        'presentation',
+      );
+    });
   });
 });

@@ -18,7 +18,7 @@ import {
   formatBriefAll,
 } from '../../lib/component-format.mjs';
 import {resolveTheme} from '../../lib/resolve-theme.mjs';
-import {getRunPrefix} from '../../utils/package-manager.mjs';
+import {getCliInvocation} from '../../utils/package-manager.mjs';
 import {jsonOut, humanLog} from '../../lib/json.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../lib/error-codes.mjs';
@@ -39,7 +39,7 @@ export function registerComponent(program) {
     .option('--blocks', 'List example blocks: showcase, examples, and related')
     .option('--package <name>', 'Scope lookup to an external package (e.g. @acme/xds-widgets)')
     .action(async (name, options) => {
-      const run = getRunPrefix();
+      const run = getCliInvocation();
       const zh = program.opts().zh || false;
       const dense = program.opts().dense || false;
       const lang = program.opts().lang || null;
@@ -142,7 +142,7 @@ export function registerComponent(program) {
             }
             humanLog('');
             humanLog(`Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`);
-            humanLog(`Usage: ${run} astryx component <name>`);
+            humanLog(`Usage: ${run} component <name>`);
             humanLog('');
           }
           break;
@@ -165,7 +165,7 @@ export function registerComponent(program) {
             humanLog('');
           }
           humanLog(`Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`);
-          humanLog(`Usage: ${run} astryx component <name>`);
+          humanLog(`Usage: ${run} component <name>`);
           humanLog('');
           break;
         }

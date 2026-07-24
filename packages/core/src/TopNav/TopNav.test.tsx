@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TopNav} from './TopNav';
 import {TopNavRenderContext} from './TopNavRenderContext';
@@ -296,6 +296,85 @@ describe('TopNavHeading', () => {
     const ref = vi.fn();
     render(<TopNavHeading heading="Test" ref={ref} />);
     expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
+  });
+
+  // ===========================================================================
+  // Menu popover semantics — the popup must not be announced as a modal
+  // dialog, and role="menu" must be scoped to the actual menu items so the
+  // heading button is not an invalid child of the menu.
+  // ===========================================================================
+
+  // The popover layer keeps `popover` content display:none in jsdom even
+  // when open, hiding it from role queries — so these tests assert the
+  // popup's ARIA semantics at the DOM level instead.
+  describe('menu popover semantics', () => {
+    const menuItems = (
+      <>
+        <div role="menuitem">Alpha</div>
+        <div role="menuitem">Beta</div>
+      </>
+    );
+
+    it('does not wrap the heading menu popup in a modal dialog', async () => {
+      const user = userEvent.setup();
+      render(<TopNavHeading heading="My App" menu={menuItems} />);
+      await user.click(screen.getByRole('button', {name: 'Open menu'}));
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+      expect(document.querySelector('[aria-modal="true"]')).toBeNull();
+    });
+
+    it('scopes role="menu" to only menuitem children with an accessible name', async () => {
+      const user = userEvent.setup();
+      render(<TopNavHeading heading="My App" menu={menuItems} />);
+      await user.click(screen.getByRole('button', {name: 'Open menu'}));
+      const menu = document.querySelector('[role="menu"]');
+      expect(menu).not.toBeNull();
+      expect(menu).toHaveAttribute('aria-label', 'My App');
+      const children = Array.from(menu!.children);
+      expect(children.length).toBeGreaterThan(0);
+      for (const child of children) {
+        expect(child).toHaveAttribute('role', 'menuitem');
+      }
+    });
+
+    it('keeps the popup heading button outside the menu and closes on click', async () => {
+      const user = userEvent.setup();
+      render(<TopNavHeading heading="My App" menu={menuItems} />);
+      const trigger = screen.getByRole('button', {name: 'Open menu'});
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      const menu = document.querySelector('[role="menu"]');
+      expect(menu).not.toBeNull();
+      // The heading replica button in the popup is a sibling of the menu,
+      // not an invalid menu child.
+      const headingButton = Array.from(
+        document.querySelectorAll('button'),
+      ).find(b => b !== trigger && b.textContent?.includes('My App'));
+      expect(headingButton).toBeDefined();
+      expect(menu!.contains(headingButton!)).toBe(false);
+      // Clicking it still closes the popup.
+      fireEvent.click(headingButton!);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('applies the same semantics in mixed mode (menu + hrefs)', async () => {
+      const user = userEvent.setup();
+      render(
+        <TopNavHeading
+          heading="Product"
+          headingHref="/product"
+          menu={menuItems}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Open menu'}));
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+      const menu = document.querySelector('[role="menu"]');
+      expect(menu).not.toBeNull();
+      expect(menu).toHaveAttribute('aria-label', 'Product');
+      for (const child of Array.from(menu!.children)) {
+        expect(child).toHaveAttribute('role', 'menuitem');
+      }
+    });
   });
 });
 

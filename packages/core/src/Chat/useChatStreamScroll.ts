@@ -4,7 +4,7 @@
 
 /**
  * @file useChatStreamScroll.ts
- * @input Uses React refs, state, callbacks
+ * @input Uses React refs, state, callbacks, useMediaQuery
  * @output Exports useChatStreamScroll hook for AI chat scroll behavior
  * @position Utility hook — used by ChatLayout, also usable standalone
  *
@@ -12,6 +12,11 @@
  * - Locked (default): content growth auto-scrolls to bottom via rAF spring
  * - Scrolling up (any source): unlocks immediately
  * - Scrolling settles at bottom: re-locks on scrollend
+ * - The first fill positions instantly (whether content is present at
+ *   mount or arrives async); only subsequent growth springs
+ * - `scrollToBottom({behavior: 'instant'})` jumps in one frame, no animation
+ * - Under `prefers-reduced-motion`, every spring path falls back to the
+ *   same instant jump — following still works, it just doesn't animate
  *
  * Uses scroll direction (lastScrollTop comparison) to detect user
  * intent — works for wheel, touch, scrollbar drag, keyboard, everything.
@@ -23,10 +28,24 @@
  */
 
 import {useCallback, useEffect, useRef, useState} from 'react';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 
 // =============================================================================
 // Types
 // =============================================================================
+
+export interface ChatScrollToBottomOptions {
+  /**
+   * `'instant'` jumps to the bottom in a single frame instead of running
+   * the spring animation. Use for programmatic positioning (opening a
+   * conversation, restoring a session) — keep the default `'spring'` for
+   * user-initiated scrolls like the scroll-to-bottom button. Mirrors the
+   * DOM's `scrollTo({behavior})`. When the user prefers reduced motion,
+   * `'spring'` also jumps instantly.
+   * @default 'spring'
+   */
+  behavior?: 'instant' | 'spring';
+}
 
 export interface UseChatStreamScrollOptions {
   /**
@@ -81,7 +100,7 @@ export interface UseChatStreamScrollReturn {
   isLocked: boolean;
 
   /** Scroll to the bottom of the container and re-lock. */
-  scrollToBottom: () => void;
+  scrollToBottom: (options?: ChatScrollToBottomOptions) => void;
 
   /** Scroll so a specific element is at the top of the visible area. No lock change. */
   scrollToMessage: (el: HTMLElement) => void;
@@ -118,6 +137,9 @@ export function useChatStreamScroll({
   const [isLocked, setIsLocked] = useState(true);
 
   const lockedRef = useRef(true);
+  // True until the initial fill has been positioned — consumed by the first
+  // scrollIfLocked that sees scrollable content.
+  const initialFillPendingRef = useRef(true);
   const velocityRef = useRef(0);
   const animatingRef = useRef(false);
   const lastTickRef = useRef<number | undefined>(undefined);
@@ -171,22 +193,57 @@ export function useChatStreamScroll({
     requestAnimationFrame(animate);
   }, [scrollRef, damping, stiffness, mass]);
 
+  // Jump to the bottom in a single frame — cancels any in-flight spring so
+  // a later animation tick can't fight the assignment.
+  const jumpToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) {
+      return;
+    }
+    animatingRef.current = false;
+    velocityRef.current = 0;
+    lastTickRef.current = undefined;
+    el.scrollTop = el.scrollHeight - el.clientHeight;
+    lastScrollTopRef.current = el.scrollTop;
+  }, [scrollRef]);
+
+  const prefersReducedMotion = useMediaQuery(
+    '(prefers-reduced-motion: reduce)',
+  );
+
+  // Every spring entry point (scrollToBottom, lock, scrollIfLocked growth
+  // follow) funnels through here, so this one branch covers them all.
   const startAnimation = useCallback(() => {
-    if (!animatingRef.current && lockedRef.current) {
+    if (!lockedRef.current) {
+      return;
+    }
+    if (prefersReducedMotion) {
+      jumpToBottom();
+      return;
+    }
+    if (!animatingRef.current) {
       animatingRef.current = true;
       lastTickRef.current = undefined;
       requestAnimationFrame(animate);
     }
-  }, [animate]);
+  }, [animate, jumpToBottom, prefersReducedMotion]);
 
   // --- Public API ---
 
-  const scrollToBottom = useCallback(() => {
-    lockedRef.current = true;
-    setIsLocked(true);
-    setIsScrolledUp(false);
-    startAnimation();
-  }, [startAnimation]);
+  const scrollToBottom = useCallback(
+    (options?: ChatScrollToBottomOptions) => {
+      lockedRef.current = true;
+      setIsLocked(true);
+      setIsScrolledUp(false);
+      initialFillPendingRef.current = false;
+      if (options?.behavior === 'instant') {
+        jumpToBottom();
+        return;
+      }
+      startAnimation();
+    },
+    [startAnimation, jumpToBottom],
+  );
 
   const scrollToMessage = useCallback(
     (el: HTMLElement) => {
@@ -232,10 +289,25 @@ export function useChatStreamScroll({
     if (!enabled) {
       return;
     }
-    if (lockedRef.current) {
-      startAnimation();
+    if (!lockedRef.current) {
+      return;
     }
-  }, [enabled, startAnimation]);
+    // Initial fill: content appearing for the first time (e.g. an
+    // async-loaded conversation) positions in one frame instead of
+    // spring-flying from the top. Stays pending through empty/loading
+    // resizes until the container is actually scrollable.
+    const el = scrollRef.current;
+    if (
+      initialFillPendingRef.current &&
+      el &&
+      el.scrollHeight > el.clientHeight
+    ) {
+      initialFillPendingRef.current = false;
+      jumpToBottom();
+      return;
+    }
+    startAnimation();
+  }, [enabled, startAnimation, jumpToBottom, scrollRef]);
 
   // --- Event listeners ---
 
@@ -314,11 +386,12 @@ export function useChatStreamScroll({
     el.addEventListener('wheel', onWheel, {passive: true});
     el.addEventListener('touchmove', onTouchMove, {passive: true});
 
-    // Initial scroll to bottom
+    // Initial scroll to bottom — content already present at mount.
     requestAnimationFrame(() => {
       if (el.scrollHeight > el.clientHeight) {
         el.scrollTop = el.scrollHeight - el.clientHeight;
         lastScrollTopRef.current = el.scrollTop;
+        initialFillPendingRef.current = false;
       }
     });
 

@@ -807,7 +807,9 @@ export function CodeBlock({
         e.stopPropagation();
         void handleCopy();
       }}
-      aria-label={copied ? t('@astryx.codeBlock.copied') : t('@astryx.codeBlock.copyCode')}
+      aria-label={
+        copied ? t('@astryx.codeBlock.copied') : t('@astryx.codeBlock.copyCode')
+      }
       {...stylex.props(
         styles.copyButton,
         !showHeader && styles.copyButtonAbsolute,
@@ -923,6 +925,12 @@ export function CodeBlock({
       {canCollapse ? (
         <div
           id={regionId}
+          // While collapsed, the region is only hidden visually (0fr grid
+          // row); inert also removes it from the tab order and accessibility
+          // tree so keyboard users cannot Tab into the invisible scroll
+          // container (tabIndex=0). aria-controls pointing at an inert
+          // element remains a valid, resolvable reference.
+          inert={isCollapsed ? true : undefined}
           {...stylex.props(
             styles.collapseGrid,
             isCollapsed && styles.collapseGridCollapsed,

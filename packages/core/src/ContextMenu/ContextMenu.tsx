@@ -46,6 +46,10 @@ import {
   DropdownMenuContext,
   type DropdownMenuContextValue,
 } from '../DropdownMenu/DropdownMenuContext';
+import {
+  MENU_ITEM_ROLES,
+  MENU_ITEM_SELECTOR,
+} from '../DropdownMenu/menuItemRoles';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTypeahead} from '../hooks/useTypeahead';
 import {useLongPress} from '../hooks/useLongPress';
@@ -178,13 +182,6 @@ export type ContextMenuProps = ContextMenuDataProps | ContextMenuCompoundProps;
 // =============================================================================
 // ContextMenu
 // =============================================================================
-
-// Compound-mode menuContent may render selectable items (menuitemradio /
-// menuitemcheckbox) — all three menu item roles are keyboard-navigable
-// (#3829). Keep the role list in listKeyDown's Enter/Space check in sync
-// with this selector.
-const MENU_ITEM_SELECTOR =
-  '[role="menuitem"]:not([aria-disabled="true"]), [role="menuitemradio"]:not([aria-disabled="true"]), [role="menuitemcheckbox"]:not([aria-disabled="true"])';
 
 /**
  * A context menu component that appears on right-click at cursor position.
@@ -346,13 +343,11 @@ export function ContextMenu({
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
-        const focusedRole = focused?.getAttribute('role');
         if (
-          focusedRole === 'menuitem' ||
-          focusedRole === 'menuitemradio' ||
-          focusedRole === 'menuitemcheckbox'
+          focused &&
+          MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
         ) {
-          focused?.click();
+          focused.click();
         }
         return;
       }

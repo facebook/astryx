@@ -37,6 +37,13 @@ export const docs = {
       default: "\'md\'",
     },
     {
+      name: 'elevation',
+      type: "'none' | 'low' | 'med' | 'high'",
+      description:
+        'Resting shadow depth. The most common FAB shape is an icon-only button, so raise it with `low`/`med`/`high` for a floating action button. `none` is the default flat button.',
+      default: "'none'",
+    },
+    {
       name: 'isLoading',
       type: 'boolean',
       description: 'Shows a loading spinner and disables interaction.',
@@ -95,6 +102,7 @@ export const docsDense = {
     icon: 'icon element rendered inside button',
     variant: 'visual style variant',
     size: 'size variant',
+    elevation: 'resting shadow depth: none|low|med|high; raise for a floating action button (FAB)',
     isLoading: 'shows loading spinner + disables interaction',
     isDisabled: 'disables button',
     tooltip: 'tooltip text shown on hover',

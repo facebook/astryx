@@ -40,9 +40,11 @@ const selectableColumns: TableColumn<SelectableUser>[] = [
 function SelectionTable({
   getIsItemSelectable,
   getIsItemEnabled,
+  getRowLabel,
 }: {
   getIsItemSelectable?: (item: SelectableUser) => boolean;
   getIsItemEnabled?: (item: SelectableUser) => boolean;
+  getRowLabel?: (item: SelectableUser) => string;
 }) {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
@@ -75,6 +77,7 @@ function SelectionTable({
     },
     getIsItemSelectable,
     getIsItemEnabled,
+    getRowLabel,
   });
 
   return (
@@ -107,6 +110,19 @@ describe('useTableSelection', () => {
     render(<SelectionTable />);
     const rowCheckboxes = screen.getAllByLabelText('Select row');
     expect(rowCheckboxes).toHaveLength(3);
+  });
+
+  it('derives per-row accessible names from getRowLabel', () => {
+    render(<SelectionTable getRowLabel={item => item.name} />);
+    expect(screen.getByLabelText('Select Alice')).toBeInTheDocument();
+    expect(screen.getByLabelText('Select Bob')).toBeInTheDocument();
+    expect(screen.getByLabelText('Select Charlie')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Select row')).not.toBeInTheDocument();
+  });
+
+  it('keeps the "Select all rows" header label when getRowLabel is provided', () => {
+    render(<SelectionTable getRowLabel={item => item.name} />);
+    expect(screen.getByLabelText('Select all rows')).toBeInTheDocument();
   });
 
   it('toggles individual row selection on click', async () => {

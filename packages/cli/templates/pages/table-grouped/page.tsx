@@ -22,7 +22,10 @@ import {Badge} from '@astryxdesign/core/Badge';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {Selector} from '@astryxdesign/core/Selector';
 import {PowerSearch} from '@astryxdesign/core/PowerSearch';
-import type {PowerSearchConfig, PowerSearchFilter} from '@astryxdesign/core/PowerSearch';
+import type {
+  PowerSearchConfig,
+  PowerSearchFilter,
+} from '@astryxdesign/core/PowerSearch';
 import {Dialog, DialogHeader} from '@astryxdesign/core/Dialog';
 import {Popover} from '@astryxdesign/core/Popover';
 import {RadioList, RadioListItem} from '@astryxdesign/core/RadioList';
@@ -798,19 +801,15 @@ function TaskDetailPanel({
           </MetadataListItem>
           <MetadataListItem label="Assignee">
             <HStack gap={2} vAlign="center">
-              <Avatar name={task.assignee} size="xsmall" />
+              <Avatar name={task.assignee} size="sm" />
               <Text type="body">{task.assignee}</Text>
             </HStack>
           </MetadataListItem>
           <MetadataListItem label="Project">
             {task.project || '\u2014'}
           </MetadataListItem>
-          <MetadataListItem label="Created">
-            {task.created}
-          </MetadataListItem>
-          <MetadataListItem label="Updated">
-            {task.updated}
-          </MetadataListItem>
+          <MetadataListItem label="Created">{task.created}</MetadataListItem>
+          <MetadataListItem label="Updated">{task.updated}</MetadataListItem>
         </MetadataList>
 
         {task.tags.length > 0 && (
@@ -942,11 +941,7 @@ export default function DataTableTemplate() {
                       </RadioList>
                     </VStack>
                   }>
-                  <Button
-                    label="View Options"
-                    variant="secondary"
-                    size="md"
-                  />
+                  <Button label="View Options" variant="secondary" size="md" />
                 </Popover>
               </HStack>
             </VStack>
@@ -1066,7 +1061,7 @@ export default function DataTableTemplate() {
                             </Text>
                           </TableCell>
                           <TableCell>
-                            <Avatar name={task.assignee} size="xsmall" />
+                            <Avatar name={task.assignee} size="sm" />
                           </TableCell>
                           <TableCell>
                             <DropdownMenu

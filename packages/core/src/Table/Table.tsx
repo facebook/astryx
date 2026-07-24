@@ -136,7 +136,7 @@ const scrollWrapperStyles = stylex.create({
 function TableScrollWrapper({
   children,
   htmlProps,
-  styles: pluginStyles,
+  xstyle: pluginStyles,
   beforeTable,
   afterTable,
 }: {
@@ -144,7 +144,7 @@ function TableScrollWrapper({
   htmlProps?: React.HTMLAttributes<HTMLDivElement> & {
     ref?: React.Ref<HTMLDivElement>;
   };
-  styles?: StyleXStyles[];
+  xstyle?: StyleXStyles[];
   beforeTable?: React.ReactNode;
   afterTable?: React.ReactNode;
 }) {
@@ -196,7 +196,7 @@ function buildTableStylePlugin<
             ? `${existingClass} ${tableClass}`
             : tableClass,
         },
-        styles: [...props.styles, tableStyles.base],
+        xstyle: [...props.xstyle, tableStyles.base],
       };
     },
   };
@@ -275,7 +275,7 @@ function TableInner<T extends Record<string, unknown>>({
  *   columns={[
  *     { key: 'name', header: 'Name', width: proportional(1), renderCell: (u) => (
  *       <HStack gap={2} align="center">
- *         <Avatar name={u.name} size="small" />
+ *         <Avatar name={u.name} size="md" />
  *         <Text weight="semibold">{u.name}</Text>
  *       </HStack>
  *     )},

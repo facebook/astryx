@@ -21,16 +21,19 @@ describe('Thumbnail', () => {
   });
 
   it('shows skeleton when isLoading with no src', () => {
-    const {container} = render(
-      <Thumbnail isLoading data-testid="thumb" />,
-    );
+    const {container} = render(<Thumbnail isLoading data-testid="thumb" />);
     expect(container.querySelector('.astryx-skeleton')).toBeInTheDocument();
     expect(screen.queryByRole('img')).toBeNull();
   });
 
   it('shows image with upload overlay when isLoading with src', () => {
     render(
-      <Thumbnail src="/local.jpg" alt="Uploading" isLoading data-testid="thumb" />,
+      <Thumbnail
+        src="/local.jpg"
+        alt="Uploading"
+        isLoading
+        data-testid="thumb"
+      />,
     );
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', '/local.jpg');
@@ -75,7 +78,6 @@ describe('Thumbnail', () => {
     ).toBeInTheDocument();
   });
 
-
   it('label is shown via tooltip, not as inline text', () => {
     render(<Thumbnail label="photo.png" data-testid="thumb" />);
     // Label should exist in DOM (tooltip) but not as a direct child text node
@@ -117,9 +119,7 @@ describe('Thumbnail', () => {
 
   it('is not interactive when isLoading', () => {
     const onClick = vi.fn();
-    render(
-      <Thumbnail src="/img.jpg" alt="Test" onClick={onClick} isLoading />,
-    );
+    render(<Thumbnail src="/img.jpg" alt="Test" onClick={onClick} isLoading />);
     expect(screen.queryByRole('button')).toBeNull();
   });
 
@@ -127,5 +127,35 @@ describe('Thumbnail', () => {
     const ref = vi.fn();
     render(<Thumbnail ref={ref} data-testid="thumb" />);
     expect(ref).toHaveBeenCalled();
+  });
+
+  describe('elevation', () => {
+    // The elevation class lives on the image container (the shadow surface),
+    // which is the root's first element child.
+    const imageContainerClass = (
+      elevation: 'none' | 'low' | 'med' | 'high',
+    ) => {
+      const {container} = render(
+        <Thumbnail src="/x.png" alt="x" elevation={elevation} />,
+      );
+      return container.firstElementChild!.firstElementChild!.className;
+    };
+
+    it('renders a distinct class for each elevation level', () => {
+      const classes = new Set([
+        imageContainerClass('none'),
+        imageContainerClass('low'),
+        imageContainerClass('med'),
+        imageContainerClass('high'),
+      ]);
+      expect(classes.size).toBe(4);
+    });
+
+    it('defaults to flat (elevation none)', () => {
+      const {container: def} = render(<Thumbnail src="/x.png" alt="x" />);
+      expect(def.firstElementChild!.firstElementChild!.className).toBe(
+        imageContainerClass('none'),
+      );
+    });
   });
 });

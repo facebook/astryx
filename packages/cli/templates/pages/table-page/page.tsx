@@ -16,7 +16,10 @@ import {Button} from '@astryxdesign/core/Button';
 import {IconButton} from '@astryxdesign/core/IconButton';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Avatar} from '@astryxdesign/core/Avatar';
-import {PowerSearch, usePowerSearchConfig} from '@astryxdesign/core/PowerSearch';
+import {
+  PowerSearch,
+  usePowerSearchConfig,
+} from '@astryxdesign/core/PowerSearch';
 import type {PowerSearchFilter} from '@astryxdesign/core/PowerSearch';
 import {Table, proportional, pixel} from '@astryxdesign/core/Table';
 import type {TableColumn} from '@astryxdesign/core/Table';
@@ -353,7 +356,7 @@ const columns: TableColumn<DogRow>[] = [
     width: proportional(2),
     renderCell: (item: DogRow) => (
       <HStack gap={3} vAlign="center">
-        <Avatar name={item.name} size="small" />
+        <Avatar name={item.name} size="md" />
         <VStack gap={0}>
           <Text type="body">{item.name}</Text>
           <Text type="supporting" color="secondary">
@@ -367,9 +370,7 @@ const columns: TableColumn<DogRow>[] = [
     key: 'biography',
     header: 'Biography',
     width: proportional(5),
-    renderCell: (item: DogRow) => (
-      <Text type="body">{item.biography}</Text>
-    ),
+    renderCell: (item: DogRow) => <Text type="body">{item.biography}</Text>,
   },
   {
     key: 'age',
@@ -406,10 +407,7 @@ export default function TablePageTemplate() {
               icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
               variant="ghost"
             />
-            <Button
-              label="Add"
-              icon={<Icon icon={PlusIcon} size="sm" />}
-            />
+            <Button label="Add" icon={<Icon icon={PlusIcon} size="sm" />} />
           </HStack>
         </LayoutHeader>
       }

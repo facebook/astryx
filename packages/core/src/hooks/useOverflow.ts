@@ -10,15 +10,19 @@
  *
  * Measures children rendered in a hidden container to determine how many fit
  * in the available width, without flickering. Uses ResizeObserver to react
- * to container size changes.
+ * to container size changes. Supports an optional item cap (`maxVisibleItems`)
+ * and bounded multi-row wrapping (`maxRows`); the fit/clamp/row-packing math
+ * lives in the pure `computeOverflow` helper.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
+ * - /packages/core/src/hooks/computeOverflow.ts (the pure computation)
  */
 
 import {useState, useCallback, useRef} from 'react';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {computeOverflow} from './computeOverflow';
 
 export interface UseOverflowOptions {
   /**
@@ -32,6 +36,23 @@ export interface UseOverflowOptions {
    * @default 0
    */
   minVisibleItems?: number;
+
+  /**
+   * Maximum number of items to ever show, even if they all fit. The ceiling
+   * partner to `minVisibleItems`. `undefined` means no cap. When it is less
+   * than `minVisibleItems`, the floor wins and a dev-only warning is emitted.
+   * @default undefined
+   */
+  maxVisibleItems?: number;
+
+  /**
+   * Wrap items across up to this many rows before collapsing the rest into the
+   * overflow indicator. `undefined` (or `1`) keeps the single-line behavior.
+   * A number, not a boolean: unbounded wrapping is a plain flex-wrap layout,
+   * not overflow collapse. Assumes uniform row height.
+   * @default undefined
+   */
+  maxRows?: number;
 
   /**
    * Which end to collapse items from.
@@ -61,6 +82,10 @@ export interface UseOverflowReturn {
   visibleCount: number;
   /** Whether any items are overflowing */
   hasOverflow: boolean;
+  /** Number of rows the visible items occupy (1 for the single-line path) */
+  rows: number;
+  /** Measured max item height in pixels; used to size the multi-row container */
+  rowHeight: number;
 }
 
 /**
@@ -88,13 +113,29 @@ export function useOverflow(
   const {
     gap = 0,
     minVisibleItems = 0,
+    maxVisibleItems,
+    maxRows,
     collapseFrom = 'end',
     behavior = 'observeSelf',
   } = options;
 
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    maxVisibleItems != null &&
+    maxVisibleItems < minVisibleItems
+  ) {
+    console.warn(
+      `useOverflow: maxVisibleItems (${maxVisibleItems}) is less than ` +
+        `minVisibleItems (${minVisibleItems}); the floor wins and ` +
+        `minVisibleItems items will be shown.`,
+    );
+  }
+
   const observeParent = behavior === 'observeParent';
 
   const [visibleCount, setVisibleCount] = useState(itemCount);
+  const [rows, setRows] = useState(1);
+  const [rowHeight, setRowHeight] = useState(0);
   const containerElRef = useRef<HTMLElement | null>(null);
   const measureElRef = useRef<HTMLElement | null>(null);
   const observedElRef = useRef<HTMLElement | null>(null);
@@ -134,44 +175,45 @@ export function useOverflow(
     if (children.length === 0) {
       // eslint-disable-next-line @eslint-react/set-state-in-effect -- overflow count is derived from measured DOM widths
       setVisibleCount(0);
+      // eslint-disable-next-line @eslint-react/set-state-in-effect -- derived from measured DOM
+      setRows(0);
       return;
     }
 
-    // Collect widths of all children
     const widths = children.map(child => child.offsetWidth);
+    const measuredRowHeight = children.reduce(
+      (max, child) => Math.max(max, child.offsetHeight || 0),
+      0,
+    );
 
-    // Determine how many items fit
-    let totalWidth = 0;
-    let count = 0;
-
-    const orderedWidths =
-      collapseFrom === 'end' ? widths : [...widths].reverse();
-
-    for (let i = 0; i < orderedWidths.length; i++) {
-      const itemWidth = orderedWidths[i];
-      const gapWidth = i > 0 ? gap : 0;
-      const candidateWidth = totalWidth + itemWidth + gapWidth;
-
-      // If this isn't the last item, we need to reserve space for the indicator
-      const isLastItem = i === orderedWidths.length - 1;
-      const reservedWidth = isLastItem
-        ? 0
-        : indicatorWidth + (count > 0 || indicatorWidth > 0 ? gap : 0);
-
-      if (
-        candidateWidth + reservedWidth > availableWidth &&
-        count >= minVisibleItems
-      ) {
-        break;
-      }
-
-      totalWidth = candidateWidth;
-      count++;
-    }
+    const {visibleCount: nextVisible, rows: nextRows} = computeOverflow({
+      widths,
+      gap,
+      availableWidth,
+      indicatorWidth,
+      minVisibleItems,
+      maxVisibleItems,
+      maxRows,
+      collapseFrom,
+    });
 
     // eslint-disable-next-line @eslint-react/set-state-in-effect -- overflow count is derived from measured DOM widths
-    setVisibleCount(Math.max(Math.min(count, itemCount), minVisibleItems));
-  }, [itemCount, gap, minVisibleItems, collapseFrom, observeParent]);
+    setVisibleCount(nextVisible);
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- derived from measured DOM
+    setRows(prev => (prev === nextRows ? prev : nextRows));
+    // eslint-disable-next-line @eslint-react/set-state-in-effect -- derived from measured DOM
+    setRowHeight(prev =>
+      prev === measuredRowHeight ? prev : measuredRowHeight,
+    );
+  }, [
+    itemCount,
+    gap,
+    minVisibleItems,
+    maxVisibleItems,
+    maxRows,
+    collapseFrom,
+    observeParent,
+  ]);
 
   const containerRef = useCallback(
     (el: HTMLElement | null) => {
@@ -217,5 +259,7 @@ export function useOverflow(
     measureRef,
     visibleCount,
     hasOverflow,
+    rows,
+    rowHeight,
   };
 }

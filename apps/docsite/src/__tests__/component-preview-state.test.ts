@@ -128,6 +128,40 @@ describe('component detail preview state', () => {
     expect(getMissingRequiredProps(knobs, state)).toEqual([]);
   });
 
+  it('seeds DropdownMenu items from playground defaults so the preview is not empty', () => {
+    const knobs = pickPrimaryProps('DropdownMenu', [
+      prop({name: 'button', type: 'DropdownMenuButtonProps'}),
+      prop({name: 'items', type: 'DropdownMenuOption[]', required: true}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {
+        button: {label: 'Actions'},
+        items: [{label: 'Edit'}, {label: 'Duplicate'}, {label: 'Delete'}],
+      },
+    });
+
+    expect(Array.isArray(state.items)).toBe(true);
+    expect((state.items as unknown[]).length).toBe(3);
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
+  it('seeds DropdownMenuItem label and description from playground defaults', () => {
+    const knobs = pickPrimaryProps('DropdownMenuItem', [
+      prop({name: 'icon', type: 'IconType'}),
+      prop({name: 'label', type: 'ReactNode'}),
+      prop({name: 'description', type: 'ReactNode'}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {label: 'Edit', description: 'Modify this item'},
+    });
+
+    expect(state.label).toBe('Edit');
+    expect(state.description).toBe('Modify this item');
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
   it("satisfies Icon's required, non-generatable icon prop via playground defaults", () => {
     const knobs = pickPrimaryProps('Icon', [
       prop({

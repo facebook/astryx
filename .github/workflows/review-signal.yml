@@ -21,11 +21,17 @@
 #                         area-gated — a theme/template edit is where design
 #                         lives. Requests review from DESIGNOWNERS. Skipped when
 #                         the author is a DESIGNOWNER (design self-serves design).
+#                         Besides the path signals, the DIFF CONTENT is scored
+#                         by .github/scripts/lib/classify-visual.js (#3667) —
+#                         most component styling here is an inline stylex.create
+#                         edit in a .tsx, which no path pattern can see.
 #
 # Either label DISABLES auto-merge so the PR can't merge unattended, and is
 # cleared when an entitled owner approves (code → CODEOWNER; design → DESIGNOWNER
-# or CODEOWNER). Detection is path-based and deterministic; the Copilot reviewer
-# reads these labels to focus its review (see .github/copilot-instructions.md).
+# or CODEOWNER). Code detection is path-based and deterministic; design adds a
+# content-based diff score (deterministic too — same diff, same score). The
+# Copilot reviewer reads these labels to focus its review (see
+# .github/copilot-instructions.md).
 #
 # HARD GATE (code review only): this emits a "review-required" COMMIT STATUS.
 # When code review is needed it's set to `pending`, which blocks a required
@@ -41,10 +47,11 @@
 # self-serve code.
 #
 # Uses pull_request_target so it can label / request reviewers / disable
-# auto-merge on fork PRs. It reads the PR file LIST via the API and the eng/
-# design owner lists from repo VARIABLES (vars.ENGOWNERS / vars.DESIGNOWNERS) —
-# no checkout, no owner-file content API. It never checks out or runs
-# PR-controlled code. Do not add checkout or build steps here.
+# auto-merge on fork PRs. It reads the PR file LIST, the PR DIFF TEXT, and the
+# eng/design owner lists from repo VARIABLES (vars.ENGOWNERS / vars.DESIGNOWNERS)
+# via the API — no owner-file content API, no checkout. It never checks out or
+# runs PR-controlled code (the diff is scanned as data; the classifier it feeds
+# is loaded from the BASE ref, not the PR). Do not add checkout or build steps here.
 
 name: Review signal
 
@@ -311,6 +318,44 @@ jobs:
             if (paths.some((p) => /^packages\/themes\/.+\/src\/.+\.tsx?$/.test(p))) designReasons.push('theme/token change');
             if (paths.some((p) => /^packages\/cli\/templates\/.+\.tsx$/.test(p))) designReasons.push('template change');
             if (paths.some(isDocsiteVisual)) designReasons.push('docsite visual change');
+
+            // Content-based visual signal (#3667). The path signals above
+            // cannot see the most common visual change in this codebase: an
+            // inline `stylex.create` edit inside a component .tsx (no
+            // .stylex.ts touched). Score the diff CONTENT with the shared
+            // classifier. Safety: both the classifier source and the diff come
+            // from the API — the source from the BASE ref (trusted), the diff
+            // as inert text. Best-effort: any failure (huge diff 406, missing
+            // file on old base) logs a warning and falls back to path signals.
+            if (designReasons.length === 0) {
+              try {
+                const { data: libFile } = await github.rest.repos.getContent({
+                  owner, repo, ref: pr.base.ref,
+                  path: '.github/scripts/lib/classify-visual.js',
+                });
+                const libSrc = Buffer.from(libFile.content, 'base64').toString('utf8');
+                const mod = { exports: {} };
+                new Function('module', 'exports', 'require', libSrc)(
+                  mod, mod.exports,
+                  () => { throw new Error('classify-visual.js must stay dependency-free'); },
+                );
+                const { data: diff } = await github.request(
+                  'GET /repos/{owner}/{repo}/pulls/{pull_number}',
+                  { owner, repo, pull_number: pr.number,
+                    headers: { accept: 'application/vnd.github.diff' } },
+                );
+                const vc = mod.exports.classifyVisualDiff(String(diff), {
+                  ignorePath: isSafeSpace,
+                });
+                core.info(`visual content score: ${vc.score} (${vc.bucket})`);
+                if (vc.bucket === 'visual' || vc.bucket === 'likely-visual') {
+                  designReasons.push(`visual diff content (score ${vc.score})`);
+                }
+              } catch (e) {
+                core.warning(`Content-based visual signal skipped: ${e.message}`);
+              }
+            }
+
             // Design owners self-serve design — no design tag for them.
             const designAffecting = designReasons.length > 0 && !authorIsDesign;
 

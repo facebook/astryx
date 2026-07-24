@@ -307,7 +307,7 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
             onClick: toggle,
             'aria-expanded': !collapsed,
           },
-          styles: [...props.styles, styles.headerRow],
+          xstyle: [...props.xstyle, styles.headerRow],
           children: (
             // colSpan larger than the column count is clamped by the browser
             // to the actual number of columns, so the header always spans the
@@ -325,8 +325,12 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
                   }}
                   aria-label={
                     collapsed
-                      ? t('@astryx.tableGroupedRows.expandGroup', {groupKey: header.groupKey})
-                      : t('@astryx.tableGroupedRows.collapseGroup', {groupKey: header.groupKey})
+                      ? t('@astryx.tableGroupedRows.expandGroup', {
+                          groupKey: header.groupKey,
+                        })
+                      : t('@astryx.tableGroupedRows.collapseGroup', {
+                          groupKey: header.groupKey,
+                        })
                   }
                   aria-expanded={!collapsed}>
                   <span

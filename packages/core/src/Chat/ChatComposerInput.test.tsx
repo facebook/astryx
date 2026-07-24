@@ -155,6 +155,93 @@ describe('ChatComposerInput', () => {
     });
   });
 
+  describe('Enter submit behavior', () => {
+    it('does not submit on Enter while IME composition is in progress', () => {
+      const onSubmit = vi.fn();
+      render(<ChatComposerInput onSubmit={onSubmit} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'こんにちは';
+      fireEvent.input(textbox);
+      // isComposing is surfaced on the native event during IME composition.
+      fireEvent.keyDown(textbox, {key: 'Enter', isComposing: true});
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('does not submit on Enter for the legacy keyCode 229 composing signal', () => {
+      const onSubmit = vi.fn();
+      render(<ChatComposerInput onSubmit={onSubmit} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'ㅎ';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter', keyCode: 229});
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('lets onKeyDown suppress the default submit via preventDefault (touch-newline recipe)', () => {
+      // The documented "insert a newline instead of sending" pattern: a
+      // consumer preventDefaults Enter (e.g. on a coarse pointer).
+      const onSubmit = vi.fn();
+      const onKeyDown = vi.fn(e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+        }
+      });
+      render(<ChatComposerInput onSubmit={onSubmit} onKeyDown={onKeyDown} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+      expect(onKeyDown).toHaveBeenCalled();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('lets onKeyDown add behavior (Cmd/Ctrl+Enter submit) without preventDefault', () => {
+      // Adding a submit shortcut is just handling the event yourself; the
+      // built-in Enter handling still runs for the plain-Enter case.
+      const onSubmit = vi.fn();
+      const handle = vi.fn();
+      const onKeyDown = vi.fn(e => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+          handle();
+        }
+      });
+      render(<ChatComposerInput onSubmit={onSubmit} onKeyDown={onKeyDown} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter', metaKey: true});
+      expect(handle).toHaveBeenCalled();
+      // Consumer did not preventDefault, so the built-in submit also fires.
+      expect(onSubmit).toHaveBeenCalledWith('hello');
+    });
+
+    it('calls onKeyDown before submit and lets preventDefault take over', () => {
+      const onSubmit = vi.fn();
+      const onKeyDown = vi.fn(e => {
+        e.preventDefault();
+      });
+      render(<ChatComposerInput onSubmit={onSubmit} onKeyDown={onKeyDown} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+      expect(onKeyDown).toHaveBeenCalled();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('calls onKeyDown but still submits when the consumer does not preventDefault', () => {
+      const onSubmit = vi.fn();
+      const onKeyDown = vi.fn();
+      render(<ChatComposerInput onSubmit={onSubmit} onKeyDown={onKeyDown} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+      expect(onKeyDown).toHaveBeenCalled();
+      expect(onSubmit).toHaveBeenCalledWith('hello');
+    });
+  });
+
   // Controlled-value sync used to overwrite `textContent` on every
   // distinct render, which (a) collapsed the caret to offset 0
   // (visible after a slash-command pick like

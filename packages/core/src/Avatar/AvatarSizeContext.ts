@@ -18,7 +18,7 @@ import {createContext} from 'react';
  * Context that provides the resolved numeric avatar size (in pixels)
  * to child components like AvatarStatusDot.
  *
- * Default value of 36 matches the default 'small' avatar size.
+ * Default value of 36 matches the default 'md' avatar size.
  */
 export const AvatarSizeContext = createContext<number>(36);
 AvatarSizeContext.displayName = 'AvatarSizeContext';

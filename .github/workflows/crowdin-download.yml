@@ -1,0 +1,125 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# Crowdin download — pull translated locale files from Crowdin and open a PR
+# against main.
+#
+# TRIGGER: workflow_dispatch ONLY for now, so a maintainer can smoke-test the
+# full flow (download → prettier → PR) before we automate it. A follow-up PR
+# will add a cron schedule once we're confident the PR that comes out looks
+# right end-to-end.
+#
+# Why not use Crowdin's built-in PR creation? Its PR flow is limited (title/
+# body/labels), so we let the Crowdin action land translations on a staging
+# branch (`l10n/crowdin`) and use peter-evans/create-pull-request to open the
+# actual PR with the metadata we want. Downloaded JSON is run through prettier
+# so the diff matches the repo's formatting.
+name: Crowdin Download
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: crowdin-download
+  cancel-in-progress: false
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+
+      # crowdin/github-action@v2.16.4 — pinned by SHA per repo policy.
+      # download_translations writes files into the working tree; we do NOT let
+      # the action push or open its own PR — peter-evans handles that below so
+      # we control title/body/labels.
+      - name: Download translations from Crowdin
+        uses: crowdin/github-action@e0c8f73cdc0fafde9396e056c5038217000a32d1
+        with:
+          upload_sources: false
+          upload_translations: false
+          download_translations: true
+          push_translations: false
+          create_pull_request: false
+          localization_branch_name: l10n/crowdin
+        env:
+          CROWDIN_PROJECT_ID: ${{ vars.CROWDIN_PROJECT_ID }}
+          CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+
+      # crowdin/github-action runs inside a Docker container as root, so any
+      # files it writes into the working tree are owned by root. Later steps
+      # run as the `runner` user and can't overwrite those files (EACCES).
+      # Reclaim ownership of anything in the locales dir before subsequent
+      # steps touch it.
+      - name: Reclaim ownership of downloaded files
+        run: sudo chown -R "$(id -u):$(id -g)" packages/core/locales
+
+      # Skip the `skip_untranslated_files` flag in crowdin.yml (Crowdin's CLI
+      # rejects `skip_untranslated_files + skip_untranslated_strings` together).
+      # `skip_untranslated_strings` alone strips untranslated keys inside a
+      # file, but Crowdin still emits an empty `{}` file for a target language
+      # that has zero translations. Delete those here so `en.json`'s siblings
+      # only include locales that have real content.
+      - name: Drop empty locale files
+        run: |
+          shopt -s nullglob
+          removed=0
+          for f in packages/core/locales/*.json; do
+            case "$f" in
+              packages/core/locales/en.json|packages/core/locales/pseudo.json) continue ;;
+            esac
+            # A JSON object with no entries. `jq` returns 0 for `{}`.
+            if [ "$(jq -r 'if type == "object" then length else -1 end' "$f")" = "0" ]; then
+              rm "$f"
+              removed=$((removed + 1))
+            fi
+          done
+          echo "Removed $removed empty locale file(s)."
+
+      # If any locale JSON survived, normalize it with prettier so the diff
+      # matches the repo's formatting conventions. Shell guard makes the step
+      # a no-op when no locale files remain — the expected state until
+      # translators start contributing.
+      - name: Normalize locale JSON with prettier
+        run: |
+          shopt -s nullglob
+          files=(packages/core/locales/*.json)
+          # Filter out en.json (the source) — we only re-format translated files.
+          filtered=()
+          for f in "${files[@]}"; do
+            case "$f" in
+              packages/core/locales/en.json|packages/core/locales/pseudo.json) continue ;;
+            esac
+            filtered+=("$f")
+          done
+          if [ "${#filtered[@]}" -gt 0 ]; then
+            pnpm exec prettier --write "${filtered[@]}"
+          else
+            echo "No translated locale files present; nothing to normalize."
+          fi
+
+      # peter-evans/create-pull-request@v7.0.11 — pinned by SHA per repo policy.
+      - name: Open translations PR
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676
+        with:
+          branch: l10n/crowdin
+          base: main
+          title: 'chore(i18n): translations update from Crowdin'
+          commit-message: 'chore(i18n): translations update from Crowdin'
+          author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+          committer: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+          labels: i18n
+          body: |
+            Automated translations pulled from Crowdin.
+
+            Source: https://crowdin.com/project/astryx
+
+            Locale JSON has been normalized with `prettier`. Review the diff
+            for any strings that shifted meaning or formatting, then merge
+            when ready.

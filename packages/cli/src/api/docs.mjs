@@ -38,11 +38,23 @@ async function loadReferenceDocs(docPath, {lang} = {}) {
   const translation = translationMod.docsZh || translationMod.docsDense;
   if (!translation) return docs;
 
+  // Overlays are keyed to a base section by title (`section`), not by array
+  // position. Position-keying silently grafted each overlay title onto whatever
+  // base section happened to share its index, so an overlay that omitted or
+  // reordered a section corrupted every section after it — `docs tokens --dense`
+  // printed the colour table under a "Spacing" heading (#2182). An overlay may
+  // now cover any subset of sections, in any order; sections it does not name
+  // keep their base content.
+  const bySection = new Map();
+  for (const ts of translation.sections ?? []) {
+    if (ts?.section != null) bySection.set(ts.section, ts);
+  }
+
   return {
     ...docs,
     description: translation.description || docs.description,
-    sections: docs.sections.map((section, si) => {
-      const ts = translation.sections?.[si];
+    sections: docs.sections.map(section => {
+      const ts = bySection.get(section.title);
       if (!ts) return section;
       return {
         ...section,

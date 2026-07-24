@@ -25,6 +25,11 @@ const meta: Meta<typeof Thumbnail> = {
       control: 'boolean',
       description: 'Whether the thumbnail is disabled',
     },
+    elevation: {
+      control: 'inline-radio',
+      options: ['none', 'low', 'med', 'high'],
+      description: 'Resting shadow depth',
+    },
   },
 };
 
@@ -132,9 +137,7 @@ export const Placeholder: Story = {
         </p>
       );
     }
-    return (
-      <Thumbnail label="report.pdf" onRemove={() => setVisible(false)} />
-    );
+    return <Thumbnail label="report.pdf" onRemove={() => setVisible(false)} />;
   },
 };
 

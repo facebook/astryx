@@ -38,6 +38,7 @@ import {Icon} from '../Icon';
 import type {IconType} from '../Icon';
 
 import {renderDropdownItems} from './renderDropdownItems';
+import {MENU_ITEM_ROLES, MENU_ITEM_SELECTOR} from './menuItemRoles';
 import {
   DropdownMenuContext,
   type DropdownMenuContextValue,
@@ -179,13 +180,6 @@ export type DropdownMenuProps =
 // locale.
 const DEFAULT_BUTTON_I18N_KEY = '@astryx.dropdownMenu.label' as const;
 
-// Compound-mode children may render selectable items (menuitemradio /
-// menuitemcheckbox) — all three menu item roles are keyboard-navigable
-// (#3829). Keep the role list in listKeyDown's Enter/Space check in sync
-// with this selector.
-const MENU_ITEM_SELECTOR =
-  '[role="menuitem"]:not([aria-disabled="true"]), [role="menuitemradio"]:not([aria-disabled="true"]), [role="menuitemcheckbox"]:not([aria-disabled="true"])';
-
 export function DropdownMenu({
   button: buttonFromProps,
   isMenuOpen: controlledIsOpen,
@@ -262,7 +256,10 @@ export function DropdownMenu({
     popover.hide();
   }, [popover]);
 
-  // Single keyboard navigation path for both modes
+  // Single keyboard navigation path for both modes.
+  // The selector matches plain items plus selectable items
+  // (menuitemradio/menuitemcheckbox) so lab checkbox/radio rows are reachable
+  // and roved to alongside plain items — not just role="menuitem".
   const {
     listRef,
     handleKeyDown: listNavKeyDown,
@@ -313,13 +310,11 @@ export function DropdownMenu({
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const focused = document.activeElement as HTMLElement | null;
-        const focusedRole = focused?.getAttribute('role');
         if (
-          focusedRole === 'menuitem' ||
-          focusedRole === 'menuitemradio' ||
-          focusedRole === 'menuitemcheckbox'
+          focused &&
+          MENU_ITEM_ROLES.has(focused.getAttribute('role') ?? '')
         ) {
-          focused?.click();
+          focused.click();
         }
         return;
       }

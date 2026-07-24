@@ -69,9 +69,12 @@ const DEFAULT_THEME_PACKAGE = '@astryxdesign/theme-neutral';
 
 // The CLI command that copies a theme into the consumer's project as
 // editable source (see `astryx theme add`). The destination defaults to
-// `src/themes/<slug>/`, so the bare command is copy-paste runnable.
+// `src/themes/<slug>/`. We invoke the scoped package (`@astryxdesign/cli`)
+// rather than the bare `astryx` bin so the copy-paste command works even when
+// the CLI isn't installed yet — bare `npx astryx` would resolve to an
+// unrelated package on the npm registry.
 function themeScaffoldCommand(slug: string): string {
-  return `npx astryx theme add ${slug}`;
+  return `npx @astryxdesign/cli theme add ${slug}`;
 }
 
 // Strip "Theme: " prefix and " Theme" suffix from the registered

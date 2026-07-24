@@ -46,8 +46,10 @@ import {
   borderVars,
   durationVars,
   easeVars,
+  shadowVars,
 } from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import type {Elevation} from '../utils/types';
 import {edgeCompSlot} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -158,6 +160,13 @@ export interface BannerProps extends BaseProps<HTMLDivElement> {
    */
   container?: BannerContainer;
   /**
+   * Resting elevation — the shadow depth the banner sits at. Use for a
+   * floating banner that hovers above content. `none` is the default inline
+   * banner.
+   * @default 'none'
+   */
+  elevation?: Elevation;
+  /**
    * Whether the content area (children) starts expanded.
    * Only relevant when children are provided.
    * @default false
@@ -214,6 +223,11 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     fontFamily: 'inherit',
+  },
+  // When elevated, a card-container banner rounds its root so the shadow
+  // follows the same silhouette as the header/content border-radius.
+  rootElevatedCard: {
+    borderRadius: radiusVars['--radius-container'],
   },
   // Header area — colored status background with icon, title, description, actions
   // This is the primary theme target ('banner')
@@ -323,6 +337,18 @@ const statusStyles = stylex.create({
   },
 });
 
+// Resting elevation for the banner. Applied to the root so the shadow wraps
+// the whole banner (header + optional content). 'none' is the default and
+// leaves the layout-only root untouched. For the `card` container the root is
+// rounded (rootElevatedCard) so the shadow follows the card silhouette; the
+// full-width `section` container stays square.
+const elevationStyles = stylex.create({
+  none: {boxShadow: 'none'},
+  low: {boxShadow: shadowVars['--shadow-low']},
+  med: {boxShadow: shadowVars['--shadow-med']},
+  high: {boxShadow: shadowVars['--shadow-high']},
+});
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -381,6 +407,7 @@ export function Banner({
   onDismiss,
   endContent,
   container = 'card',
+  elevation = 'none',
   defaultIsExpanded = false,
   children,
   xstyle,
@@ -429,7 +456,16 @@ export function Banner({
     <div
       ref={ref}
       role={role}
-      {...mergeProps(stylex.props(styles.root, xstyle), className, style)}
+      {...mergeProps(
+        stylex.props(
+          styles.root,
+          elevationStyles[elevation],
+          isCard && elevation !== 'none' && styles.rootElevatedCard,
+          xstyle,
+        ),
+        className,
+        style,
+      )}
       {...rest}>
       {/* Header: colored status background — primary theme target ('banner') */}
       <div
@@ -474,8 +510,16 @@ export function Banner({
               <Button
                 variant="ghost"
                 size="sm"
-                label={isExpanded ? t('@astryx.banner.collapse') : t('@astryx.banner.expand')}
-                tooltip={isExpanded ? t('@astryx.banner.collapse') : t('@astryx.banner.expand')}
+                label={
+                  isExpanded
+                    ? t('@astryx.banner.collapse')
+                    : t('@astryx.banner.expand')
+                }
+                tooltip={
+                  isExpanded
+                    ? t('@astryx.banner.collapse')
+                    : t('@astryx.banner.expand')
+                }
                 icon={
                   <span
                     {...stylex.props(

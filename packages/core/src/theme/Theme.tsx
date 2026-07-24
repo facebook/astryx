@@ -127,7 +127,7 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
           `For better performance, use the pre-built theme:\n\n` +
           `  import {${theme.name}Theme} from '@astryxdesign/theme-${theme.name}/built';\n` +
           `  import '@astryxdesign/theme-${theme.name}/theme.css';\n\n` +
-          `For custom themes, run \`npx astryx theme build <file>\` to generate ` +
+          `For custom themes, run \`npx @astryxdesign/cli theme build <file>\` to generate ` +
           `the built artifacts.`,
       );
     }

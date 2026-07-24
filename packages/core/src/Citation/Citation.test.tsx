@@ -20,6 +20,7 @@ const probe = stylex.create({
   secondaryText: {color: colorVars['--color-text-secondary']},
   accentText: {color: colorVars['--color-text-accent']},
   badgeBackground: {backgroundColor: colorVars['--color-accent-muted']},
+  pointerCursor: {cursor: 'pointer'},
 });
 
 function atomicClasses(style: (typeof probe)[keyof typeof probe]): string[] {
@@ -115,6 +116,56 @@ describe('Citation', () => {
     );
     const el = screen.getByTestId('citation');
     for (const cls of atomicClasses(probe.badgeBackground)) {
+      expect(el.classList.contains(cls)).toBe(true);
+    }
+  });
+
+  // The interactive (pointer) treatment is keyed on `source.url`: a citation
+  // with no url is non-interactive and must keep the default cursor.
+  const noUrlSource = {title: 'No link'};
+
+  it('does not use the pointer cursor without a url in the label variant', () => {
+    render(<Citation source={noUrlSource} number={1} data-testid="citation" />);
+    const el = screen.getByTestId('citation');
+    for (const cls of atomicClasses(probe.pointerCursor)) {
+      expect(el.classList.contains(cls)).toBe(false);
+    }
+  });
+
+  it('uses the pointer cursor with a url in the label variant', () => {
+    render(<Citation source={source} number={1} data-testid="citation" />);
+    const el = screen.getByTestId('citation');
+    for (const cls of atomicClasses(probe.pointerCursor)) {
+      expect(el.classList.contains(cls)).toBe(true);
+    }
+  });
+
+  it('does not use the pointer cursor without a url in the number variant', () => {
+    render(
+      <Citation
+        source={noUrlSource}
+        number={1}
+        variant="number"
+        data-testid="citation"
+      />,
+    );
+    const el = screen.getByTestId('citation');
+    for (const cls of atomicClasses(probe.pointerCursor)) {
+      expect(el.classList.contains(cls)).toBe(false);
+    }
+  });
+
+  it('uses the pointer cursor with a url in the number variant', () => {
+    render(
+      <Citation
+        source={source}
+        number={1}
+        variant="number"
+        data-testid="citation"
+      />,
+    );
+    const el = screen.getByTestId('citation');
+    for (const cls of atomicClasses(probe.pointerCursor)) {
       expect(el.classList.contains(cls)).toBe(true);
     }
   });

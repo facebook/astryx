@@ -9,14 +9,26 @@
  * SYNC: When Calendar.tsx changes, update tests accordingly
  */
 
-import {describe, it, expect, vi} from 'vitest';
-import {act, render, screen, within} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
+import {act, render, screen, within, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {getButton} from '../__tests__/fastRoleQueries';
 import * as stylex from '@stylexjs/stylex';
 import {Calendar} from './Calendar';
 import type {CalendarHandle} from './Calendar';
+import type {ISODateString} from './Calendar';
 import {calendarStyles} from './styles';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSSFlat} from '../theme/generateThemeRules';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
+
+function politeRegion(): HTMLElement | null {
+  return document.querySelector('[data-astryx-live-region="polite"]');
+}
 
 /**
  * Helper to find a day button by its day number.
@@ -545,6 +557,98 @@ describe('Calendar', () => {
     expect(getButton('Next month')).toBeInTheDocument();
   });
 
+  // ─── Month Change Announcements ──────────────────────────────
+
+  describe('month change announcements', () => {
+    it('does not announce on initial render', () => {
+      render(<Calendar focusDate="2026-01-01" />);
+      // The live region is only created lazily on first announce; mounting the
+      // calendar must not speak the initial month.
+      expect(politeRegion()).toBeNull();
+    });
+
+    it('announces the new month politely when clicking next', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" />);
+
+      await user.click(screen.getByRole('button', {name: 'Next month'}));
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('February 2026');
+      });
+    });
+
+    it('announces the new month politely when clicking previous', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-02-01" />);
+
+      await user.click(screen.getByRole('button', {name: 'Previous month'}));
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('January 2026');
+      });
+    });
+
+    it('announces the next month when paging the grid with PageDown', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" />);
+
+      // PageDown from a focused day pages the visible grid to the next month.
+      getDayButton(15).focus();
+      await user.keyboard('{PageDown}');
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('February 2026');
+      });
+    });
+
+    it('announces the newly visible month when navigated via the handle', async () => {
+      let handle: CalendarHandle | null = null;
+      render(
+        <Calendar
+          focusDate="2026-01-01"
+          handleRef={h => {
+            handle = h;
+          }}
+        />,
+      );
+
+      act(() => {
+        handle?.navigateTo('2026-03-01');
+      });
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('March 2026');
+      });
+    });
+
+    it('announces both months in a two-month view', async () => {
+      const user = userEvent.setup();
+      render(<Calendar numberOfMonths={2} focusDate="2026-01-01" />);
+
+      await user.click(screen.getByRole('button', {name: 'Next month'}));
+
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('February 2026 – March 2026');
+      });
+    });
+
+    it('does not announce when selecting a date leaves the visible month unchanged', async () => {
+      const user = userEvent.setup();
+      render(<Calendar focusDate="2026-01-01" />);
+
+      // Selecting an in-month day does not move the grid, so nothing should be
+      // announced (the live region stays uncreated).
+      await user.click(getDayButton(15));
+
+      // Allow the announce rAF a chance to run before asserting silence.
+      await act(async () => {
+        await new Promise(resolve => requestAnimationFrame(resolve));
+      });
+      expect(politeRegion()).toBeNull();
+    });
+  });
+
   // ─── Bug Regression Tests ───────────────────────────────────
 
   it('day buttons have data-date attribute with ISO string', () => {
@@ -778,6 +882,196 @@ describe('Calendar', () => {
 
       await user.click(getButton('Next month'));
       expect(screen.getByText('February 2026')).toBeInTheDocument();
+    });
+  });
+
+
+  // ─── Day-cell marker theming (#4286) ─────────────────────────
+  describe('day-cell marker theme state', () => {
+    // Tests use the real "today" (as the existing aria-current tests do) since
+    // Calendar derives it internally. Helpers pin the exact ISO strings.
+    function todayISO(): ISODateString {
+      const n = new Date();
+      return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}` as ISODateString;
+    }
+    function isoOffsetFromToday(deltaDays: number): ISODateString {
+      const n = new Date();
+      n.setDate(n.getDate() + deltaDays);
+      return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}` as ISODateString;
+    }
+    function todayCell(): HTMLElement {
+      const el = document.querySelector<HTMLElement>(
+        `button[data-date="${todayISO()}"]`,
+      );
+      expect(el).not.toBeNull();
+      return el as HTMLElement;
+    }
+
+    it('reflects marker="today-only" for a plain today cell (no selection)', () => {
+      render(<Calendar />);
+      const cell = todayCell();
+      expect(cell).toHaveAttribute('data-marker', 'today-only');
+      expect(cell).toHaveAttribute('data-today', 'today');
+      expect(cell).not.toHaveAttribute('data-selected');
+      expect(cell).not.toHaveAttribute('data-in-range');
+    });
+
+    it('reflects marker="today-in-range" when today is strictly inside a range', () => {
+      render(
+        <Calendar
+          mode="range"
+          value={{start: isoOffsetFromToday(-2), end: isoOffsetFromToday(2)}}
+        />,
+      );
+      const cell = todayCell();
+      // Today is inside the range but not an endpoint: the today-in-range ring
+      // is shown, so `marker` reflects that compound state precisely.
+      expect(cell).toHaveAttribute('data-marker', 'today-in-range');
+      expect(cell).toHaveAttribute('data-in-range', 'in-range');
+      expect(cell).not.toHaveAttribute('data-selected');
+    });
+
+    it('shows no marker state when today is the single-selected date', () => {
+      render(<Calendar mode="single" value={todayISO()} />);
+      const cell = todayCell();
+      // A single-mode selected cell shows no ring by default — `marker` is
+      // absent, while `selected` (which owns the selected treatment) is present.
+      expect(cell).not.toHaveAttribute('data-marker');
+      expect(cell).toHaveAttribute('data-selected', 'selected');
+      expect(cell).toHaveAttribute('data-today', 'today');
+    });
+
+    it('preserves the today-in-range ring on a today range endpoint', () => {
+      render(
+        <Calendar
+          mode="range"
+          value={{start: todayISO(), end: isoOffsetFromToday(3)}}
+        />,
+      );
+      const cell = todayCell();
+      // A range endpoint is NOT `isSelected` (that flag is single-mode only),
+      // so by default the today-in-range ring IS drawn on a today endpoint
+      // alongside the endpoint styling. `marker` mirrors that exactly — this
+      // asserts the default rendering is preserved, byte-for-byte.
+      expect(cell).toHaveAttribute('data-marker', 'today-in-range');
+      expect(cell).toHaveAttribute('data-in-range', 'in-range');
+    });
+
+    it('omits the marker state for non-today cells', () => {
+      render(<Calendar />);
+      const other = document.querySelector(
+        `button[data-date="${isoOffsetFromToday(1)}"]`,
+      );
+      // Guard against the +1 day landing in an adjacent month with outside days
+      // hidden; if present it must carry no marker.
+      if (other) {
+        expect(other).not.toHaveAttribute('data-marker');
+      }
+    });
+
+    it('exposes the marker states as themeable defineTheme targets', () => {
+      // jsdom can't resolve the @layer cascade, so the DOM-reflection tests
+      // above cover that the right state renders; this asserts the state is
+      // reachable by a theme via the sanctioned defineTheme channel.
+      const theme = defineTheme({
+        name: 'calendar-marker-test',
+        components: {
+          'calendar-day': {
+            'marker:today-only': {
+              boxShadow: 'inset 0 0 0 2px var(--color-accent)',
+            },
+            'marker:today-in-range': {
+              boxShadow: 'inset 0 0 0 2px var(--color-text-primary)',
+            },
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-calendar-day.today-only');
+      expect(css).toContain('.astryx-calendar-day.today-in-range');
+      expect(css).toContain('box-shadow: inset 0 0 0 2px var(--color-accent)');
+      expect(css).toContain(
+        'box-shadow: inset 0 0 0 2px var(--color-text-primary)',
+      );
+    });
+  });
+
+  // ─── Theming targets ─────────────────────────────────────────
+  describe('theming targets', () => {
+    it('renders the astryx-calendar-nav target on both month-nav buttons', () => {
+      render(<Calendar focusDate="2026-01-01" />);
+
+      const prev = getButton('Previous month');
+      const next = getButton('Next month');
+
+      // Dedicated, stable theme target — scoped to the nav controls, not the
+      // global astryx-button handle that hits every Button in the app.
+      expect(prev).toHaveClass('astryx-calendar-nav');
+      expect(next).toHaveClass('astryx-calendar-nav');
+
+      // Direction is reflected so a theme can target one arrow alone.
+      expect(prev).toHaveAttribute('data-nav', 'prev');
+      expect(next).toHaveAttribute('data-nav', 'next');
+    });
+
+    it('reflects the disabled nav state as a data attribute at the range edges', () => {
+      // Clamp navigation so "Previous month" is disabled and "Next" is not.
+      render(
+        <Calendar focusDate="2026-01-15" min="2026-01-01" max="2026-03-31" />,
+      );
+
+      const prev = getButton('Previous month');
+      const next = getButton('Next month');
+
+      expect(prev).toHaveAttribute('data-disabled', 'disabled');
+      expect(next).not.toHaveAttribute('data-disabled');
+    });
+
+    it('keeps the default nav rendering unchanged (still a ghost icon button)', () => {
+      render(<Calendar focusDate="2026-01-01" />);
+
+      // The new target is additive — the nav still carries the stock Button
+      // classes, so default appearance is preserved.
+      const prev = getButton('Previous month');
+      expect(prev).toHaveClass('astryx-button');
+      expect(prev).toHaveClass('ghost');
+      expect(prev.tagName).toBe('BUTTON');
+    });
+
+    it('renders the astryx-calendar-day target with its reflected states', () => {
+      render(
+        <Calendar mode="single" value="2026-01-15" focusDate="2026-01-01" />,
+      );
+
+      const selected = getDayButton(15);
+      expect(selected).toHaveClass('astryx-calendar-day');
+      expect(selected).toHaveAttribute('data-selected', 'selected');
+
+      // A non-selected weekday cell still carries the base target and no
+      // selected/today reflection.
+      const plain = getDayButton(20);
+      expect(plain).toHaveClass('astryx-calendar-day');
+      expect(plain).not.toHaveAttribute('data-selected');
+    });
+
+    it('exposes calendar-nav as a themeable defineTheme target', () => {
+      // The generated CSS is what proves the target is reachable by a theme:
+      // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
+      // above and this generation assertion together cover the seam.
+      const theme = defineTheme({
+        name: 'calendar-nav-test',
+        components: {
+          'calendar-nav': {
+            base: {color: 'var(--color-accent)'},
+            'nav:next': {backgroundColor: 'var(--color-accent-muted)'},
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-calendar-nav {');
+      expect(css).toContain('color: var(--color-accent)');
+      expect(css).toContain('.astryx-calendar-nav.next');
+      expect(css).toContain('background-color: var(--color-accent-muted)');
     });
   });
 });

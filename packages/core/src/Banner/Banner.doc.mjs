@@ -82,6 +82,13 @@ export const docs = {
       default: "'card'",
     },
     {
+      name: 'elevation',
+      type: "'none' | 'low' | 'med' | 'high'",
+      description:
+        'Resting shadow depth. Use for a floating banner that hovers above content; `none` is the default inline banner. A `card`-container banner rounds its shadow to match.',
+      default: "'none'",
+    },
+    {
       name: 'children',
       type: 'ReactNode',
       description:
@@ -157,6 +164,7 @@ export const docsZh = {
     {name: 'onDismiss', type: '() => void', description: '点击关闭按钮时调用；无论是否提供此回调，横幅都会自动隐藏。'},
     {name: 'endContent', type: 'ReactNode', description: '渲染在头部区域末端对齐的操作内容，通常是按钮或链接。'},
     {name: 'container', type: "'card' | 'section'", description: '视觉变体：card 带圆角；section 无圆角全宽，适用于页面级场景。', default: "'card'"},
+    {name: 'elevation', type: "'none' | 'low' | 'med' | 'high'", description: '静止阴影深度。用于悬浮于内容之上的浮动横幅；none 为默认内联横幅。', default: "'none'"},
     {name: 'children', type: 'ReactNode', description: '渲染在彩色头部下方卡片背景区域的内容。'},
     {name: 'defaultIsExpanded', type: 'boolean', description: '内容区域（children）是否初始展开。仅在提供 children 时相关。', default: 'false'},
     {
@@ -230,6 +238,7 @@ export const docsDense = {
     onDismiss: 'dismiss callback; banner self-hides regardless',
     endContent: 'end-aligned action in header, typically button/link',
     container: 'card=border-radius; section=full-width no radius for page-level',
+    elevation: 'resting shadow depth: none|low|med|high; raise for a floating banner',
     children: 'content in card-bg area below colored header',
     xstyle: 'StyleX layout customization via stylex.create()',
   },

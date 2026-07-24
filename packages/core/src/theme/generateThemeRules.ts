@@ -301,6 +301,10 @@ export function generateThemeRules(theme: DefinedTheme): string[] {
   // 4. Prop-level color overrides (for text/heading/link specificity)
   generateColorOverrides(theme.components || {}, parts);
 
+  // 5. Text `size`-prop font-size overrides (so an explicit size beats a
+  //    themed type's font-size across the astryx-base → astryx-theme layers)
+  generateSizeOverrides(theme.components || {}, parts);
+
   // (on-media rules are generated separately — see generateOnMediaCSS)
 
   return parts;
@@ -497,6 +501,58 @@ function generateColorOverrides(
         );
       }
     }
+  }
+}
+
+/**
+ * Map a Text `size` prop value to its raw font-size token.
+ * Mirrors `sizeStyles` in `Text/text.stylex.ts` (note `xsm` → `--font-size-xs`).
+ * <!-- SYNC: packages/core/src/Text/text.stylex.ts (sizeStyles) -->
+ */
+const TEXT_SIZE_TOKEN_MAP: Record<string, string> = {
+  '4xs': 'var(--font-size-4xs)',
+  '3xs': 'var(--font-size-3xs)',
+  '2xs': 'var(--font-size-2xs)',
+  xsm: 'var(--font-size-xs)',
+  sm: 'var(--font-size-sm)',
+  base: 'var(--font-size-base)',
+  lg: 'var(--font-size-lg)',
+  xl: 'var(--font-size-xl)',
+  '2xl': 'var(--font-size-2xl)',
+  '3xl': 'var(--font-size-3xl)',
+  '4xl': 'var(--font-size-4xl)',
+};
+
+/**
+ * Generate `size`-prop font-size overrides for the Text component.
+ *
+ * The `size` prop is documented as a font-size override that wins over the
+ * size implied by `type`. Its StyleX class lives in `@layer astryx-base`, but a
+ * theme's per-type font-size rule (`.astryx-text.<type>`) lives in the higher
+ * `@layer astryx-theme`, so the layer cascade let the theme silently shadow
+ * `size` for any `type` the theme styled. Re-emitting the size classes here —
+ * same layer as the type rules, same `.astryx-text.<x>` specificity, later in
+ * source — restores `size` as a real override.
+ *
+ * Only `font-size` is overridden; line-height and other type properties are
+ * intentionally preserved, matching the prop's documented contract.
+ *
+ * Gated on the theme touching `text` (which includes the auto-generated
+ * type-scale rules) — with no theme type rule to beat, the base-layer StyleX
+ * class already wins and no override is needed.
+ */
+function generateSizeOverrides(
+  components: Record<string, unknown>,
+  parts: string[],
+): void {
+  if (!('text' in components)) {
+    return;
+  }
+  for (const [sizeName, sizeValue] of Object.entries(TEXT_SIZE_TOKEN_MAP)) {
+    const suffix = parseStyleKey(`size:${sizeName}`);
+    parts.push(
+      `  ${componentClassSelector('text', suffix)} { font-size: ${sizeValue}; }`,
+    );
   }
 }
 
