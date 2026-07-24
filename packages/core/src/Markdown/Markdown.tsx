@@ -53,6 +53,9 @@ import {
   parseMarkdownIncremental,
   createIncrementalState,
   trimStreamingArtifacts,
+  inlineText,
+  slugify,
+  uniqueSlug,
 } from './parser';
 import type {BlockNode, InlineNode, IncrementalState} from './parser';
 import {themeProps} from '../utils/themeProps';
@@ -108,6 +111,7 @@ export interface MarkdownComponents {
   heading?: React.ComponentType<{
     level: 1 | 2 | 3 | 4 | 5 | 6;
     children: React.ReactNode;
+    id?: string;
   }>;
   paragraph?: React.ComponentType<{children: React.ReactNode}>;
   image?: React.ComponentType<{src: string; alt: string}>;
@@ -1045,6 +1049,7 @@ function renderBlock(
   inlinePlugins: MarkdownInlinePlugin[] | undefined,
   components: Partial<MarkdownComponents> | undefined,
   t: TranslatorFn,
+  headingIdMap?: Map<BlockNode, string>,
 ): SyncReactNode {
   const blockAlignMargin = BLOCK_ALIGN_MARGIN[contentAlign];
   const blockAlignStyle =
@@ -1071,10 +1076,11 @@ function renderBlock(
           components,
         ),
       );
+      const headingId = headingIdMap?.get(node);
       const HeadingComp = components?.heading;
       if (HeadingComp) {
         return (
-          <HeadingComp key={index} level={level}>
+          <HeadingComp key={index} level={level} id={headingId}>
             {headingChildren}
           </HeadingComp>
         );
@@ -1083,6 +1089,7 @@ function renderBlock(
       return (
         <Tag
           key={index}
+          id={headingId}
           {...stylex.props(
             styles.headingBase,
             headingStyles[level],
@@ -1200,6 +1207,7 @@ function renderBlock(
             inlinePlugins,
             components,
             t,
+            headingIdMap,
           ),
         );
         return <BlockquoteComp key={index}>{bqC}</BlockquoteComp>;
@@ -1234,6 +1242,7 @@ function renderBlock(
               inlinePlugins,
               components,
               t,
+              headingIdMap,
             ),
           )}
         </Blockquote>
@@ -1305,6 +1314,7 @@ function renderBlock(
                         inlinePlugins,
                         components,
                         t,
+                        headingIdMap,
                       ),
                     )}
                   </>
@@ -1384,6 +1394,7 @@ function renderBlock(
                       inlinePlugins,
                       components,
                       t,
+                      headingIdMap,
                     ),
                   )}
                 </>
@@ -1620,6 +1631,22 @@ export function Markdown({
     return parseMarkdown(children, parseOptions);
   }, [display, smoothedText, children, isStreaming, parseOptions]);
 
+  const headingIdMap = useMemo(() => {
+    if (display === 'inline' || blocks.length === 0) {
+      return undefined;
+    }
+    const map = new Map<BlockNode, string>();
+    const counts = new Map<string, number>();
+    for (const block of blocks) {
+      if (block.type === 'heading') {
+        const label = inlineText(block.children).trim();
+        const id = uniqueSlug(slugify(label), counts);
+        map.set(block, id);
+      }
+    }
+    return map;
+  }, [display, blocks]);
+
   const inlineNodes = useMemo(() => {
     if (display !== 'inline') {
       return [];
@@ -1733,6 +1760,7 @@ export function Markdown({
           inlinePlugins,
           components,
           t,
+          headingIdMap,
         ),
       )}
     </div>

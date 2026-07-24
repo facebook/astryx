@@ -22,6 +22,14 @@ describe('Markdown', () => {
     expect(screen.getByText('Heading 2').tagName).toBe('H2');
   });
 
+  it('renders headings with generated id attributes matching useOutlineFromMarkdown', () => {
+    render(<Markdown>{'# Overview\n\n# Installation'}</Markdown>);
+    const overviewHeading = screen.getByText('Overview');
+    const installationHeading = screen.getByText('Installation');
+    expect(overviewHeading).toHaveAttribute('id', 'overview');
+    expect(installationHeading).toHaveAttribute('id', 'installation');
+  });
+
   it('renders paragraphs as block <div> (never <p>) for composition safety', () => {
     render(<Markdown>{'Hello world'}</Markdown>);
     // Markdown paragraphs render as <div> so block-level inline content
