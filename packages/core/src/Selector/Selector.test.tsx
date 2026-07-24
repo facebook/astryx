@@ -1054,6 +1054,126 @@ describe('Selector', () => {
       expect(onChange).toHaveBeenLastCalledWith('Cat');
     });
 
+    it('matches on the label and commits the value', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      // Values deliberately crossed against labels: a native select matches
+      // the rendered text and reports the value.
+      function Harness() {
+        const [value, setValue] = useState<string | undefined>(undefined);
+        return (
+          <Selector
+            label="Fruit"
+            options={[
+              {value: 'zzz', label: 'Apple'},
+              {value: 'apple', label: 'Zebra'},
+            ]}
+            value={value}
+            onChange={next => {
+              setValue(next);
+              onChange(next);
+            }}
+          />
+        );
+      }
+      render(<Harness />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      type('a', trigger);
+
+      expect(onChange).toHaveBeenCalledWith('zzz');
+      expect(trigger).toHaveTextContent('Apple');
+
+      // No other label starts with "a" — the option whose *value* is 'apple'
+      // is labelled Zebra — so a second press stays put and commits nothing.
+      type('a', trigger);
+      expect(onChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('matches across sections, ignoring dividers and group titles', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={[
+            'Almond',
+            {type: 'divider'},
+            {
+              type: 'section',
+              title: 'Tropical',
+              options: [
+                {value: 'mango', label: 'Mango'},
+                {value: 'papaya', label: 'Papaya'},
+              ],
+            },
+          ]}
+          onChange={onChange}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      type('p', trigger);
+      expect(onChange).toHaveBeenCalledWith('papaya');
+
+      // The section title "Tropical" is decoration, not an option.
+      onChange.mockClear();
+      type('t', trigger);
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('keeps aria-activedescendant on the matched option across a section', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={[
+            'Almond',
+            {type: 'divider'},
+            {
+              type: 'section',
+              title: 'Berries',
+              options: [{value: 'blueberry', label: 'Blueberry'}],
+            },
+          ]}
+          value="Almond"
+          onChange={() => {}}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      await user.keyboard('{Enter}'); // opens on Almond
+      type('b', trigger);
+
+      const activeId = trigger.getAttribute('aria-activedescendant');
+      expect(document.getElementById(activeId ?? '')).toHaveTextContent(
+        'Blueberry',
+      );
+    });
+
+    it('anchors at the top when the value matches no option', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={['Apple', 'Apricot']}
+          value="Durian"
+          onChange={onChange}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      type('a', trigger);
+
+      // Nothing is really selected, so the first match must stay reachable.
+      expect(onChange).toHaveBeenCalledWith('Apple');
+    });
+
     it('lets Space open the menu after an abandoned typeahead', async () => {
       const user = userEvent.setup();
       render(<Selector label="Fruit" options={OPTIONS} />);
