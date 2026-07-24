@@ -278,25 +278,26 @@ export const AllVariations: Story = {
 /**
  * Theme the selected-date and today rings precisely via `defineTheme`.
  *
- * The day cell reflects a compound `ring` state that maps 1:1 to the treatment
- * actually drawn — `ring:today-only` for a plain today cell and
- * `ring:today-in-range` for today inside a range — plus the existing `selected`
- * state for the selection fill. A theme can restyle each without needing a
- * `:not()` exclusion or over-matching the states where no ring is shown.
+ * The day cell reflects a compound `marker` state that maps 1:1 to the
+ * treatment actually drawn — `marker:today-only` for a plain today cell and
+ * `marker:today-in-range` for today inside a range — plus the existing
+ * `selected` state for the selection fill. A theme can restyle each without
+ * needing a `:not()` exclusion or over-matching the states where no ring is
+ * shown.
  *
  * Defaults are unchanged; this story only demonstrates the override channel.
  */
-const ringTheme = defineTheme({
-  name: 'calendar-ring-demo',
+const markerTheme = defineTheme({
+  name: 'calendar-marker-demo',
   components: {
     'calendar-day': {
       selected: {
         backgroundColor: 'var(--color-success)',
       },
-      'ring:today-only': {
+      'marker:today-only': {
         boxShadow: 'inset 0 0 0 2px var(--color-accent)',
       },
-      'ring:today-in-range': {
+      'marker:today-in-range': {
         boxShadow: 'inset 0 0 0 2px var(--color-warning)',
       },
     },
@@ -307,7 +308,7 @@ export const ThemedSelectedAndTodayRing: Story = {
   render: () => {
     const [value, setValue] = useState<DateRange | undefined>(undefined);
     return (
-      <Theme theme={ringTheme} mode="light">
+      <Theme theme={markerTheme} mode="light">
         <Calendar
           mode="range"
           value={value}

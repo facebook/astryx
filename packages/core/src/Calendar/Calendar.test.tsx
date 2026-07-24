@@ -885,8 +885,8 @@ describe('Calendar', () => {
     });
   });
 
-  // ─── Day-cell ring theming (#4286) ───────────────────────────
-  describe('day-cell ring theme state', () => {
+  // ─── Day-cell marker theming (#4286) ─────────────────────────
+  describe('day-cell marker theme state', () => {
     // Tests use the real "today" (as the existing aria-current tests do) since
     // Calendar derives it internally. Helpers pin the exact ISO strings.
     function todayISO(): ISODateString {
@@ -906,16 +906,16 @@ describe('Calendar', () => {
       return el as HTMLElement;
     }
 
-    it('reflects ring="today-only" for a plain today cell (no selection)', () => {
+    it('reflects marker="today-only" for a plain today cell (no selection)', () => {
       render(<Calendar />);
       const cell = todayCell();
-      expect(cell).toHaveAttribute('data-ring', 'today-only');
+      expect(cell).toHaveAttribute('data-marker', 'today-only');
       expect(cell).toHaveAttribute('data-today', 'today');
       expect(cell).not.toHaveAttribute('data-selected');
       expect(cell).not.toHaveAttribute('data-in-range');
     });
 
-    it('reflects ring="today-in-range" when today is strictly inside a range', () => {
+    it('reflects marker="today-in-range" when today is strictly inside a range', () => {
       render(
         <Calendar
           mode="range"
@@ -924,18 +924,18 @@ describe('Calendar', () => {
       );
       const cell = todayCell();
       // Today is inside the range but not an endpoint: the today-in-range ring
-      // is shown, so `ring` reflects that compound state precisely.
-      expect(cell).toHaveAttribute('data-ring', 'today-in-range');
+      // is shown, so `marker` reflects that compound state precisely.
+      expect(cell).toHaveAttribute('data-marker', 'today-in-range');
       expect(cell).toHaveAttribute('data-in-range', 'in-range');
       expect(cell).not.toHaveAttribute('data-selected');
     });
 
-    it('shows no ring state when today is the single-selected date', () => {
+    it('shows no marker state when today is the single-selected date', () => {
       render(<Calendar mode="single" value={todayISO()} />);
       const cell = todayCell();
-      // A single-mode selected cell shows no ring by default — `ring` is
+      // A single-mode selected cell shows no ring by default — `marker` is
       // absent, while `selected` (which owns the selected treatment) is present.
-      expect(cell).not.toHaveAttribute('data-ring');
+      expect(cell).not.toHaveAttribute('data-marker');
       expect(cell).toHaveAttribute('data-selected', 'selected');
       expect(cell).toHaveAttribute('data-today', 'today');
     });
@@ -950,36 +950,36 @@ describe('Calendar', () => {
       const cell = todayCell();
       // A range endpoint is NOT `isSelected` (that flag is single-mode only),
       // so by default the today-in-range ring IS drawn on a today endpoint
-      // alongside the endpoint styling. `ring` mirrors that exactly — this
+      // alongside the endpoint styling. `marker` mirrors that exactly — this
       // asserts the default rendering is preserved, byte-for-byte.
-      expect(cell).toHaveAttribute('data-ring', 'today-in-range');
+      expect(cell).toHaveAttribute('data-marker', 'today-in-range');
       expect(cell).toHaveAttribute('data-in-range', 'in-range');
     });
 
-    it('omits the ring state for non-today cells', () => {
+    it('omits the marker state for non-today cells', () => {
       render(<Calendar />);
       const other = document.querySelector(
         `button[data-date="${isoOffsetFromToday(1)}"]`,
       );
       // Guard against the +1 day landing in an adjacent month with outside days
-      // hidden; if present it must carry no ring.
+      // hidden; if present it must carry no marker.
       if (other) {
-        expect(other).not.toHaveAttribute('data-ring');
+        expect(other).not.toHaveAttribute('data-marker');
       }
     });
 
-    it('exposes the ring states as themeable defineTheme targets', () => {
+    it('exposes the marker states as themeable defineTheme targets', () => {
       // jsdom can't resolve the @layer cascade, so the DOM-reflection tests
       // above cover that the right state renders; this asserts the state is
       // reachable by a theme via the sanctioned defineTheme channel.
       const theme = defineTheme({
-        name: 'calendar-ring-test',
+        name: 'calendar-marker-test',
         components: {
           'calendar-day': {
-            'ring:today-only': {
+            'marker:today-only': {
               boxShadow: 'inset 0 0 0 2px var(--color-accent)',
             },
-            'ring:today-in-range': {
+            'marker:today-in-range': {
               boxShadow: 'inset 0 0 0 2px var(--color-text-primary)',
             },
           },
