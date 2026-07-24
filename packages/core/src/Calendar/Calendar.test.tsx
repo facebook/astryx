@@ -16,7 +16,10 @@ import {getButton} from '../__tests__/fastRoleQueries';
 import * as stylex from '@stylexjs/stylex';
 import {Calendar} from './Calendar';
 import type {CalendarHandle} from './Calendar';
+import type {ISODateString} from './Calendar';
 import {calendarStyles} from './styles';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSSFlat} from '../theme/generateThemeRules';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 afterEach(() => {
@@ -879,6 +882,116 @@ describe('Calendar', () => {
 
       await user.click(getButton('Next month'));
       expect(screen.getByText('February 2026')).toBeInTheDocument();
+    });
+  });
+
+  // ─── Day-cell ring theming (#4286) ───────────────────────────
+  describe('day-cell ring theme state', () => {
+    // Tests use the real "today" (as the existing aria-current tests do) since
+    // Calendar derives it internally. Helpers pin the exact ISO strings.
+    function todayISO(): ISODateString {
+      const n = new Date();
+      return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}` as ISODateString;
+    }
+    function isoOffsetFromToday(deltaDays: number): ISODateString {
+      const n = new Date();
+      n.setDate(n.getDate() + deltaDays);
+      return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}` as ISODateString;
+    }
+    function todayCell(): HTMLElement {
+      const el = document.querySelector<HTMLElement>(
+        `button[data-date="${todayISO()}"]`,
+      );
+      expect(el).not.toBeNull();
+      return el as HTMLElement;
+    }
+
+    it('reflects ring="today-only" for a plain today cell (no selection)', () => {
+      render(<Calendar />);
+      const cell = todayCell();
+      expect(cell).toHaveAttribute('data-ring', 'today-only');
+      expect(cell).toHaveAttribute('data-today', 'today');
+      expect(cell).not.toHaveAttribute('data-selected');
+      expect(cell).not.toHaveAttribute('data-in-range');
+    });
+
+    it('reflects ring="today-in-range" when today is strictly inside a range', () => {
+      render(
+        <Calendar
+          mode="range"
+          value={{start: isoOffsetFromToday(-2), end: isoOffsetFromToday(2)}}
+        />,
+      );
+      const cell = todayCell();
+      // Today is inside the range but not an endpoint: the today-in-range ring
+      // is shown, so `ring` reflects that compound state precisely.
+      expect(cell).toHaveAttribute('data-ring', 'today-in-range');
+      expect(cell).toHaveAttribute('data-in-range', 'in-range');
+      expect(cell).not.toHaveAttribute('data-selected');
+    });
+
+    it('shows no ring state when today is the single-selected date', () => {
+      render(<Calendar mode="single" value={todayISO()} />);
+      const cell = todayCell();
+      // A single-mode selected cell shows no ring by default — `ring` is
+      // absent, while `selected` (which owns the selected treatment) is present.
+      expect(cell).not.toHaveAttribute('data-ring');
+      expect(cell).toHaveAttribute('data-selected', 'selected');
+      expect(cell).toHaveAttribute('data-today', 'today');
+    });
+
+    it('preserves the today-in-range ring on a today range endpoint', () => {
+      render(
+        <Calendar
+          mode="range"
+          value={{start: todayISO(), end: isoOffsetFromToday(3)}}
+        />,
+      );
+      const cell = todayCell();
+      // A range endpoint is NOT `isSelected` (that flag is single-mode only),
+      // so by default the today-in-range ring IS drawn on a today endpoint
+      // alongside the endpoint styling. `ring` mirrors that exactly — this
+      // asserts the default rendering is preserved, byte-for-byte.
+      expect(cell).toHaveAttribute('data-ring', 'today-in-range');
+      expect(cell).toHaveAttribute('data-in-range', 'in-range');
+    });
+
+    it('omits the ring state for non-today cells', () => {
+      render(<Calendar />);
+      const other = document.querySelector(
+        `button[data-date="${isoOffsetFromToday(1)}"]`,
+      );
+      // Guard against the +1 day landing in an adjacent month with outside days
+      // hidden; if present it must carry no ring.
+      if (other) {
+        expect(other).not.toHaveAttribute('data-ring');
+      }
+    });
+
+    it('exposes the ring states as themeable defineTheme targets', () => {
+      // jsdom can't resolve the @layer cascade, so the DOM-reflection tests
+      // above cover that the right state renders; this asserts the state is
+      // reachable by a theme via the sanctioned defineTheme channel.
+      const theme = defineTheme({
+        name: 'calendar-ring-test',
+        components: {
+          'calendar-day': {
+            'ring:today-only': {
+              boxShadow: 'inset 0 0 0 2px var(--color-accent)',
+            },
+            'ring:today-in-range': {
+              boxShadow: 'inset 0 0 0 2px var(--color-text-primary)',
+            },
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-calendar-day.today-only');
+      expect(css).toContain('.astryx-calendar-day.today-in-range');
+      expect(css).toContain('box-shadow: inset 0 0 0 2px var(--color-accent)');
+      expect(css).toContain(
+        'box-shadow: inset 0 0 0 2px var(--color-text-primary)',
+      );
     });
   });
 });

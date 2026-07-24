@@ -941,6 +941,20 @@ function DayCell({
   });
 
   const endpoint = isEndpoint(state);
+
+  // The day's focus-ring treatment, derived once so the reflected `ring` theme
+  // state and the StyleX ring styles below share a single source of truth.
+  // `state.isSelected` is single-select only, so a range endpoint that is today
+  // still qualifies for the today-in-range ring (unchanged prior behavior).
+  const showsTodayRing = state.isToday && !state.isSelected && !state.isInRange;
+  const showsTodayInRangeRing =
+    state.isToday && !state.isSelected && state.isInRange;
+  const ringState: 'today-only' | 'today-in-range' | null = showsTodayRing
+    ? 'today-only'
+    : showsTodayInRangeRing
+      ? 'today-in-range'
+      : null;
+
   const rangeRounding = computeRangeRounding(state, {
     prevInRange: neighbors.prevInRange,
     nextInRange: neighbors.nextInRange,
@@ -1010,28 +1024,27 @@ function DayCell({
             today: state.isToday ? 'today' : null,
             disabled: state.effectivelyDisabled ? 'disabled' : null,
             'in-range': state.isInRange ? 'in-range' : null,
+            // `ring` reflects the day's *actual* focus-ring treatment as a
+            // single compound state, so a theme can target exactly the states
+            // the ring is drawn under without needing `:not()` in the theme
+            // key. It is null unless a ring is shown:
+            //   'today-only'     → today, not single-selected, not in a range
+            //   'today-in-range' → today, not single-selected, inside a range
+            // `isSelected` here is single-select only (see computeDayCellState),
+            // so a today range endpoint still shows the today-in-range ring —
+            // `ring` mirrors the StyleX conditions below exactly, preserving the
+            // default rendering.
+            ring: ringState,
           }),
           stylex.props(
             dayCellStyles.day,
             dayCellTheme.day,
             isOutside && dayCellStyles.dayOutside,
             isOutside && dayCellTheme.dayOutside,
-            state.isToday &&
-              !state.isSelected &&
-              !state.isInRange &&
-              dayCellStyles.dayToday,
-            state.isToday &&
-              !state.isSelected &&
-              !state.isInRange &&
-              dayCellTheme.dayToday,
-            state.isToday &&
-              !state.isSelected &&
-              state.isInRange &&
-              dayCellStyles.dayTodayInRange,
-            state.isToday &&
-              !state.isSelected &&
-              state.isInRange &&
-              dayCellTheme.dayTodayInRange,
+            showsTodayRing && dayCellStyles.dayToday,
+            showsTodayRing && dayCellTheme.dayToday,
+            showsTodayInRangeRing && dayCellStyles.dayTodayInRange,
+            showsTodayInRangeRing && dayCellTheme.dayTodayInRange,
             endpoint && dayCellStyles.daySelected,
             endpoint && dayCellTheme.daySelected,
             state.effectivelyDisabled && dayCellStyles.dayDisabled,

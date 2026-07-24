@@ -7,6 +7,7 @@ import {
   type ISODateString,
   type DateRange,
 } from '@astryxdesign/core/Calendar';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 const meta: Meta<typeof Calendar> = {
   title: 'Core/Calendar',
@@ -270,6 +271,49 @@ export const AllVariations: Story = {
           </p>
         </div>
       </div>
+    );
+  },
+};
+
+/**
+ * Theme the selected-date and today rings precisely via `defineTheme`.
+ *
+ * The day cell reflects a compound `ring` state that maps 1:1 to the treatment
+ * actually drawn — `ring:today-only` for a plain today cell and
+ * `ring:today-in-range` for today inside a range — plus the existing `selected`
+ * state for the selection fill. A theme can restyle each without needing a
+ * `:not()` exclusion or over-matching the states where no ring is shown.
+ *
+ * Defaults are unchanged; this story only demonstrates the override channel.
+ */
+const ringTheme = defineTheme({
+  name: 'calendar-ring-demo',
+  components: {
+    'calendar-day': {
+      selected: {
+        backgroundColor: 'var(--color-success)',
+      },
+      'ring:today-only': {
+        boxShadow: 'inset 0 0 0 2px var(--color-accent)',
+      },
+      'ring:today-in-range': {
+        boxShadow: 'inset 0 0 0 2px var(--color-warning)',
+      },
+    },
+  },
+});
+
+export const ThemedSelectedAndTodayRing: Story = {
+  render: () => {
+    const [value, setValue] = useState<DateRange | undefined>(undefined);
+    return (
+      <Theme theme={ringTheme} mode="light">
+        <Calendar
+          mode="range"
+          value={value}
+          onChange={range => setValue(range)}
+        />
+      </Theme>
     );
   },
 };
