@@ -333,6 +333,147 @@ describe('ChatComposerInput', () => {
     });
   });
 
+  // ArrowUp/ArrowDown recall previously submitted messages, but only at
+  // the text boundaries — otherwise the caret can't move between lines
+  // of a multi-line draft. ArrowUp recalls at the very start, ArrowDown
+  // at the very end; mid-text the browser moves the caret (default not
+  // prevented).
+  describe('message history navigation', () => {
+    function submit(textbox: HTMLElement, value: string) {
+      textbox.textContent = value;
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+    }
+
+    function placeCaret(node: Node, offset: number) {
+      const sel = window.getSelection()!;
+      const range = document.createRange();
+      range.setStart(node, offset);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    it('recalls the previous message on ArrowUp at the start of the draft', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'first');
+      submit(textbox, 'second');
+
+      // Fresh empty draft — caret is trivially at the start.
+      textbox.focus();
+      placeCaret(textbox, 0);
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+      expect(prevented).toBe(true);
+      expect(textbox.textContent).toBe('second');
+    });
+
+    it('does not recall on ArrowUp when the caret is mid-text', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'first');
+
+      textbox.textContent = 'aaa';
+      fireEvent.input(textbox);
+      textbox.focus();
+      // Caret between the a's — not at the very start.
+      placeCaret(textbox.firstChild!, 1);
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+      // Default is not prevented: the browser moves the caret up a line.
+      expect(prevented).toBe(false);
+      expect(textbox.textContent).toBe('aaa');
+    });
+
+    it('does not recall on ArrowUp from the first line of a multi-line draft when not at the start', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'first');
+
+      // Multi-line draft: "aaa" <br> "bbb".
+      textbox.innerHTML = 'aaa<br>bbb';
+      fireEvent.input(textbox);
+      textbox.focus();
+      // Caret mid first line.
+      placeCaret(textbox.firstChild!, 2);
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+
+      expect(prevented).toBe(false);
+      expect(textbox.querySelector('br')).not.toBeNull();
+    });
+
+    it('steps back and forth through history at the boundaries', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'first');
+      submit(textbox, 'second');
+
+      textbox.focus();
+      placeCaret(textbox, 0);
+
+      // Up to the most recent, then further back.
+      fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+      expect(textbox.textContent).toBe('second');
+      // Recalled text is fully selected — Up again steps further back.
+      fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+      expect(textbox.textContent).toBe('first');
+      // Down steps forward again.
+      fireEvent.keyDown(textbox, {key: 'ArrowDown'});
+      expect(textbox.textContent).toBe('second');
+    });
+
+    it('restores the pending draft on ArrowDown past the newest message', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      submit(textbox, 'first');
+
+      textbox.textContent = 'draft';
+      fireEvent.input(textbox);
+      textbox.focus();
+      // Caret at the very start — ArrowUp recalls and stashes the draft.
+      placeCaret(textbox.firstChild!, 0);
+
+      fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+      expect(textbox.textContent).toBe('first');
+      // The recalled message is fully selected, so ArrowDown steps
+      // forward past the newest entry and restores the stashed draft.
+      fireEvent.keyDown(textbox, {key: 'ArrowDown'});
+      expect(textbox.textContent).toBe('draft');
+    });
+
+    it('does nothing when there is no history', () => {
+      render(<ChatComposerInput onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      textbox.focus();
+      placeCaret(textbox.firstChild!, 0);
+
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+      expect(prevented).toBe(false);
+      expect(textbox.textContent).toBe('hello');
+    });
+
+    it('does not recall when hasHistory is false', () => {
+      render(<ChatComposerInput hasHistory={false} onSubmit={() => {}} />);
+      const textbox = screen.getByRole('textbox');
+      // Even after "submitting", history is disabled.
+      textbox.textContent = 'first';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      textbox.focus();
+      placeCaret(textbox.firstChild!, 0);
+
+      const prevented = !fireEvent.keyDown(textbox, {key: 'ArrowUp'});
+      expect(prevented).toBe(false);
+      expect(textbox.textContent).toBe('hello');
+    });
+  });
+
   describe('file handling', () => {
     it('calls onFiles on paste with files', () => {
       const onFiles = vi.fn();
