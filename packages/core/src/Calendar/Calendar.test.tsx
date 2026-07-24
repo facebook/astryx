@@ -885,6 +885,7 @@ describe('Calendar', () => {
     });
   });
 
+
   // ─── Day-cell marker theming (#4286) ─────────────────────────
   describe('day-cell marker theme state', () => {
     // Tests use the real "today" (as the existing aria-current tests do) since
@@ -992,6 +993,85 @@ describe('Calendar', () => {
       expect(css).toContain(
         'box-shadow: inset 0 0 0 2px var(--color-text-primary)',
       );
+    });
+  });
+
+  // ─── Theming targets ─────────────────────────────────────────
+  describe('theming targets', () => {
+    it('renders the astryx-calendar-nav target on both month-nav buttons', () => {
+      render(<Calendar focusDate="2026-01-01" />);
+
+      const prev = getButton('Previous month');
+      const next = getButton('Next month');
+
+      // Dedicated, stable theme target — scoped to the nav controls, not the
+      // global astryx-button handle that hits every Button in the app.
+      expect(prev).toHaveClass('astryx-calendar-nav');
+      expect(next).toHaveClass('astryx-calendar-nav');
+
+      // Direction is reflected so a theme can target one arrow alone.
+      expect(prev).toHaveAttribute('data-nav', 'prev');
+      expect(next).toHaveAttribute('data-nav', 'next');
+    });
+
+    it('reflects the disabled nav state as a data attribute at the range edges', () => {
+      // Clamp navigation so "Previous month" is disabled and "Next" is not.
+      render(
+        <Calendar focusDate="2026-01-15" min="2026-01-01" max="2026-03-31" />,
+      );
+
+      const prev = getButton('Previous month');
+      const next = getButton('Next month');
+
+      expect(prev).toHaveAttribute('data-disabled', 'disabled');
+      expect(next).not.toHaveAttribute('data-disabled');
+    });
+
+    it('keeps the default nav rendering unchanged (still a ghost icon button)', () => {
+      render(<Calendar focusDate="2026-01-01" />);
+
+      // The new target is additive — the nav still carries the stock Button
+      // classes, so default appearance is preserved.
+      const prev = getButton('Previous month');
+      expect(prev).toHaveClass('astryx-button');
+      expect(prev).toHaveClass('ghost');
+      expect(prev.tagName).toBe('BUTTON');
+    });
+
+    it('renders the astryx-calendar-day target with its reflected states', () => {
+      render(
+        <Calendar mode="single" value="2026-01-15" focusDate="2026-01-01" />,
+      );
+
+      const selected = getDayButton(15);
+      expect(selected).toHaveClass('astryx-calendar-day');
+      expect(selected).toHaveAttribute('data-selected', 'selected');
+
+      // A non-selected weekday cell still carries the base target and no
+      // selected/today reflection.
+      const plain = getDayButton(20);
+      expect(plain).toHaveClass('astryx-calendar-day');
+      expect(plain).not.toHaveAttribute('data-selected');
+    });
+
+    it('exposes calendar-nav as a themeable defineTheme target', () => {
+      // The generated CSS is what proves the target is reachable by a theme:
+      // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
+      // above and this generation assertion together cover the seam.
+      const theme = defineTheme({
+        name: 'calendar-nav-test',
+        components: {
+          'calendar-nav': {
+            base: {color: 'var(--color-accent)'},
+            'nav:next': {backgroundColor: 'var(--color-accent-muted)'},
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-calendar-nav {');
+      expect(css).toContain('color: var(--color-accent)');
+      expect(css).toContain('.astryx-calendar-nav.next');
+      expect(css).toContain('background-color: var(--color-accent-muted)');
     });
   });
 });
