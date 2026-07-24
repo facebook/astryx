@@ -22,13 +22,14 @@ export const docs = {
       {name: 'Photo', required: false, description: 'The profile image, loaded from the src URL. Shown when available.'},
       {name: 'Initials', required: false, description: 'One or two letters extracted from the name. Shown when no photo is available.'},
       {name: 'Default icon', required: false, description: 'A generic person silhouette. Shown when there is no photo or name.'},
-      {name: 'Status dot', required: false, description: 'A small indicator in the bottom-right corner showing availability (online, away, busy).'},
+      {name: 'Status dot', required: false, description: 'A small indicator in the bottom-right corner showing availability (online, away, busy). Each variant pairs colour with a distinct shape so status does not rely on colour alone.'},
     ],
   },
   theming: {
     targets: [
       {className: 'astryx-avatar', visualProps: ['size']},
       {className: 'astryx-avatar-status-dot', visualProps: ['variant']},
+      {className: 'astryx-avatar-status-dot-glyph', visualProps: ['shape']},
     ],
   },
   description: 'Displays a user avatar with image, initials fallback, and optional status indicator.',
@@ -65,9 +66,10 @@ export const docs = {
       description: 'Corner content for status indicators.',
       slotElements: [
         {
-          __element: 'StatusDot',
+          __element: 'AvatarStatusDot',
           props: {
-            variant: 'online',
+            variant: 'success',
+            label: 'Online',
           },
         },
       ],
