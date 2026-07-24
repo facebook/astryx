@@ -143,6 +143,23 @@ describe('CheckboxInput', () => {
     expect(checkbox).toHaveAttribute('aria-describedby', description.id);
   });
 
+  it('works when clicking on the description', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <CheckboxInput
+        label="Subscribe"
+        description="Receive weekly updates"
+        value={false}
+        onChange={handleChange}
+      />,
+    );
+
+    const description = screen.getByText('Receive weekly updates');
+    await user.click(description);
+    expect(handleChange).toHaveBeenCalledWith(true, expect.any(Object));
+  });
+
   it('is disabled when isDisabled prop is true', () => {
     render(
       <CheckboxInput

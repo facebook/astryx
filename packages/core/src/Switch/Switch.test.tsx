@@ -145,6 +145,23 @@ describe('Switch', () => {
     expect(switchEl).toHaveAttribute('aria-describedby', description.id);
   });
 
+  it('works when clicking on the description', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+    render(
+      <Switch
+        label="Dark mode"
+        description="Switch to a darker color scheme"
+        value={false}
+        onChange={handleChange}
+      />,
+    );
+
+    const description = screen.getByText('Switch to a darker color scheme');
+    await user.click(description);
+    expect(handleChange).toHaveBeenCalledWith(true, expect.any(Object));
+  });
+
   it('is disabled when isDisabled prop is true', () => {
     render(
       <Switch

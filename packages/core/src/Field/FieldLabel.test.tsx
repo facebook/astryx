@@ -26,6 +26,20 @@ describe('FieldLabel', () => {
     expect(label).toHaveAttribute('for', 'email-input');
   });
 
+  it('nests description inside the label element so clicking it activates the label', () => {
+    render(
+      <FieldLabel
+        label="Subscribe"
+        inputID="subscribe-input"
+        description="Receive weekly updates"
+        descriptionID="subscribe-desc"
+      />,
+    );
+    const label = screen.getByText('Subscribe').closest('label');
+    const description = screen.getByText('Receive weekly updates');
+    expect(label).toContainElement(description);
+  });
+
   it('renders Optional text when isOptional is true', () => {
     render(<FieldLabel label="Name" inputID="name-input" isOptional />);
     expect(screen.getByText(/Optional/)).toBeInTheDocument();
