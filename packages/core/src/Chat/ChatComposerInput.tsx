@@ -46,7 +46,12 @@ import {
 import {mergeProps} from '../utils';
 import {useTriggerMenu} from './useTriggerMenu';
 import {useChatComposerTokens, isCustomToken} from './useChatComposerTokens';
-import {ensureCaretInside, insertTextAtCursor} from './chatComposerSelection';
+import {
+  ensureCaretInside,
+  insertTextAtCursor,
+  isSelectionAtStart,
+  isSelectionAtEnd,
+} from './chatComposerSelection';
 import {ChatPastedTextToken} from './ChatPastedTextToken';
 import {
   useChatPasteAsToken,
@@ -573,12 +578,30 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
         return;
       }
 
-      // History navigation (only when trigger menu is not active)
+      // History navigation (only when trigger menu is not active).
+      // Recall only at the text boundaries so the caret can still move
+      // between lines in a multi-line draft: ArrowUp recalls the
+      // previous message when the caret is at the very start, ArrowDown
+      // steps forward when it's at the very end. A recalled message is
+      // shown fully selected (see `selectAll` below); that spans both
+      // boundaries at once, so repeated presses keep stepping through
+      // history. Mid-text, we bail before `preventDefault` and let the
+      // browser move the caret up/down a line.
       if (hasHistory && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
         if (!editableRef.current) {
           return;
         }
-        const text = serialize(editableRef.current);
+        const editable = editableRef.current;
+        const isCollapsed = window.getSelection()?.isCollapsed ?? true;
+        const atStart = isSelectionAtStart(editable);
+        const atEnd = isSelectionAtEnd(editable);
+        const canRecallPrev = atStart && (isCollapsed || atEnd);
+        const canRecallNext = atEnd && (isCollapsed || atStart);
+        if (e.key === 'ArrowUp' ? !canRecallPrev : !canRecallNext) {
+          return;
+        }
+
+        const text = serialize(editable);
         const history = historyRef.current;
         if (history.length === 0) {
           return;
