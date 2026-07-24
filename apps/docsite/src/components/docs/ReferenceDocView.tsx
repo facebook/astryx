@@ -25,18 +25,63 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+function uniqueSlug(
+  value: string,
+  seen: Map<string, number>,
+  fallback: string,
+): string {
+  const base = slugify(value) || fallback;
+  const count = seen.get(base) ?? 0;
+  seen.set(base, count + 1);
+  return count === 0 ? base : `${base}-${count + 1}`;
+}
+
+function normalizeHeadingLevel(level: number | undefined): 3 | 4 | 5 | 6 {
+  return level === 4 || level === 5 || level === 6 ? level : 3;
+}
+
 /**
- * Build unique anchor ids for each section, deduping collisions by suffixing
- * an index so every outline link resolves to exactly one element.
+ * Build unique anchor ids for sections and nested heading blocks, deduping
+ * collisions so every outline link resolves to exactly one element.
  */
-function buildSectionIds(sections: DocSection[]): string[] {
+function buildOutline(sections: DocSection[]): {
+  sectionIds: string[];
+  blockIds: Map<string, string>;
+  outline: OutlineItem[];
+} {
   const seen = new Map<string, number>();
-  return sections.map(section => {
-    const base = slugify(section.title) || 'section';
-    const count = seen.get(base) ?? 0;
-    seen.set(base, count + 1);
-    return count === 0 ? base : `${base}-${count + 1}`;
+  const sectionIds: string[] = [];
+  const blockIds = new Map<string, string>();
+  const outline: OutlineItem[] = [];
+
+  sections.forEach((section, sectionIndex) => {
+    const sectionId = uniqueSlug(section.title, seen, 'section');
+    sectionIds.push(sectionId);
+    outline.push({
+      id: sectionId,
+      label: section.title,
+      level: 2,
+    });
+
+    section.content.forEach((block, blockIndex) => {
+      if (block.type !== 'heading' || !block.text) {
+        return;
+      }
+      const blockId = uniqueSlug(
+        `${section.title} ${block.text}`,
+        seen,
+        `${sectionId}-heading`,
+      );
+      blockIds.set(`${sectionIndex}:${blockIndex}`, blockId);
+      outline.push({
+        id: blockId,
+        label: block.text,
+        level: normalizeHeadingLevel(block.level),
+      });
+    });
   });
+
+  return {sectionIds, blockIds, outline};
 }
 
 function isBestPracticesSection(section: DocSection): boolean {
@@ -85,12 +130,7 @@ export function ReferenceDocView({
   sections: DocSection[];
   sectionOverrides?: SectionOverrides;
 }) {
-  const sectionIds = buildSectionIds(sections);
-  const outline: OutlineItem[] = sections.map((section, i) => ({
-    id: sectionIds[i],
-    label: section.title,
-    level: 2,
-  }));
+  const {sectionIds, blockIds, outline} = buildOutline(sections);
 
   return (
     <DocPageLayout title={title} description={description} outline={outline}>
@@ -108,9 +148,24 @@ export function ReferenceDocView({
                 <AnchorHeading id={id} level={2} type="display-3">
                   {section.title}
                 </AnchorHeading>
-                {section.content.map((block, blockIndex) => (
-                  <ContentBlockRenderer key={blockIndex} block={block} />
-                ))}
+                {section.content.map((block, blockIndex) => {
+                  if (block.type === 'heading') {
+                    const blockId = blockIds.get(`${i}:${blockIndex}`);
+                    if (blockId != null) {
+                      return (
+                        <AnchorHeading
+                          key={blockIndex}
+                          id={blockId}
+                          level={normalizeHeadingLevel(block.level)}>
+                          {block.text ?? ''}
+                        </AnchorHeading>
+                      );
+                    }
+                  }
+                  return (
+                    <ContentBlockRenderer key={blockIndex} block={block} />
+                  );
+                })}
               </>
             )}
           </VStack>
