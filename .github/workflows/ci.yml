@@ -104,37 +104,60 @@ jobs:
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- packages/core/src/ | grep -v -E '(hooks|theme|utils)/' | head -1)
           echo "has_components=$( [ -n "$CHANGED" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
-  # Run tests (parallel with build)
-  test:
+  # Run tests (parallel with build), split into two vitest shards so the suite
+  # stays off the CI critical path. Measured before sharding: the single test
+  # job ran ~5m30s — already the bottleneck on re-pushes (warm Next cache drops
+  # build-sandbox to ~3m30s), in the merge queue, and on main (neither runs
+  # build-sandbox). Two shards, not more: each extra shard re-pays ~30s of
+  # runner setup plus the node project's globalSetup core build, vitest shards
+  # by file count (not duration), and anything under build-sandbox's cold ~6m30s
+  # is invisible on first pushes anyway. Bump the matrix if the suite outgrows
+  # the sandbox build again.
+  # Repo-sync checks run once, on the first shard only.
+  test-shard:
+    name: test (shard ${{ matrix.shard }})
     needs: [check-scope]
+    if: needs.check-scope.outputs.docsite_only != 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1/2', '2/2']
     steps:
-      - name: Skip for docsite-only changes
-        if: needs.check-scope.outputs.docsite_only == 'true'
-        run: echo "Docsite-only PR — skipping full test suite"
-
       - uses: actions/checkout@v7
-        if: needs.check-scope.outputs.docsite_only != 'true'
 
       - uses: ./.github/actions/setup
-        if: needs.check-scope.outputs.docsite_only != 'true'
 
       - name: Check copyright headers
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: matrix.shard == '1/2'
         run: ./scripts/add-copyright.sh --check
 
       - name: Check package.json exports are in sync
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: matrix.shard == '1/2'
         run: node scripts/sync-exports.js --check
 
       - name: Check token docs are in sync
-        if: needs.check-scope.outputs.docsite_only != 'true'
+        if: matrix.shard == '1/2'
         run: node scripts/generate-token-docs.mjs --check
 
-      - run: pnpm test
-        if: needs.check-scope.outputs.docsite_only != 'true'
+      - run: pnpm test --shard=${{ matrix.shard }}
+
+  # Join gate that keeps the historical `test` check name (same pattern as the
+  # `build` join below): branch protection and tooling keyed on "test" keep
+  # working, and it fails when either shard fails. Skipped shards (docsite-only
+  # PRs) skip this gate too, matching the old single-job behavior.
+  test:
+    needs: [test-shard]
+    if: ${{ !cancelled() && needs.test-shard.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Assert shards succeeded
+        run: |
+          echo "test-shard: ${{ needs.test-shard.result }}"
+          [ "${{ needs.test-shard.result }}" = "success" ] || exit 1
 
   # Build storybook + typecheck + analyze components (parallel with test and
   # build-sandbox). Uploads the storybook preview and analysis artifacts for
