@@ -6,5 +6,9 @@
   "@astryx.pagination.next": {
     "defaultMessage": "Aller à la page suivante",
     "description": "Aria label for the next-page button."
+  },
+  "@astryx.selector.placeholder": {
+    "defaultMessage": "Sélectionner…",
+    "description": "Placeholder text on an empty Selector trigger button (a dropdown). Imperative verb; trailing `…` is one character. Very short — appears on the button face."
   }
 }
