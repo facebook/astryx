@@ -8,6 +8,15 @@
     "types": ["node"],
     "strict": true
   },
-  "include": ["src/**/*.mjs", "src/**/*.ts"],
+  "include": [
+    "src/**/*.mjs",
+    "src/**/*.ts",
+    "bin/**/*.mjs",
+    "scripts/**/*.mjs",
+    "docs/**/*.mjs",
+    "templates/**/*.mjs",
+    "templates/**/*.ts",
+    "templates/**/*.tsx"
+  ],
   "exclude": ["src/**/*.test.mjs"]
 }
