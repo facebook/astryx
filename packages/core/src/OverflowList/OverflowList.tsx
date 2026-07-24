@@ -31,7 +31,7 @@ const styles = stylex.create({
   container: {
     display: 'flex',
     alignItems: 'center',
-    overflow: 'hidden',
+    overflow: 'clip',
     whiteSpace: 'nowrap',
     minWidth: 0,
   },
@@ -39,7 +39,7 @@ const styles = stylex.create({
     display: 'flex',
     flexWrap: 'wrap',
     alignContent: 'flex-start',
-    overflow: 'hidden',
+    overflow: 'clip',
     whiteSpace: 'normal',
     minWidth: 0,
   },
@@ -288,7 +288,6 @@ export function OverflowList({
             gapStyles[gap],
             isMultiRow &&
               rowHeight > 0 &&
-              maxRows != null &&
               multiRowHeight.height(maxRows, rowHeight, gapPx),
             observeParent && hasOverflow && styles.fillParent,
             xstyle,
