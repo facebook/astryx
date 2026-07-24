@@ -45,6 +45,9 @@ export type {
   ChatMessageBubbleVariant,
 } from './ChatMessageBubble';
 
+export {ChatMessageContent} from './ChatMessageContent';
+export type {ChatMessageContentProps} from './ChatMessageContent';
+
 export {ChatMessageMetadata} from './ChatMessageMetadata';
 export type {
   ChatMessageMetadataProps,

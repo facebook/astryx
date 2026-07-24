@@ -17,7 +17,7 @@ export const docs = {
     {
       name: 'children',
       type: 'ReactNode',
-      description: 'Free-form content: bubbles, asset lists, tool calls, images.',
+      description: 'Free-form content: bubbles, asset lists, tool calls, images. Custom (non-bubble) children render flush with the message edge; wrap them in ChatMessageContent to align them with the bubble text column.',
       required: true,
     },
     {
@@ -67,7 +67,7 @@ export const docsZh = {
   description: '发送者上下文包装器，根据发送者角色处理头像、名称、元数据和对齐方式。',
   propDescriptions: {
     sender: '消息发送者，控制对齐和布局。',
-    children: '自由内容：气泡、资源列表、工具调用、图片。',
+    children: '自由内容：气泡、资源列表、工具调用、图片。非气泡的自定义子内容默认与消息边缘齐平，可用 ChatMessageContent 包裹使其与气泡文本列对齐。',
     avatar: '消息旁边渲染的头像元素。通常是 Avatar。',
     name: '消息正文上方渲染的发送者名称。当第一个子元素不是气泡时使用。',
     metadata: '消息正文下方渲染的元数据。当最后一个子元素不是气泡时使用。',
@@ -81,7 +81,7 @@ export const docsDense = {
   description: 'sender context wrapper; handles avatar+name+metadata+alignment by sender role',
   propDescriptions: {
     sender: 'who sent; controls alignment+layout',
-    children: 'free-form: bubbles, assets, tool calls, images',
+    children: 'free-form: bubbles, assets, tool calls, images; wrap non-bubble content in ChatMessageContent to align with bubble text column',
     avatar: 'avatar element beside msg; typically Avatar',
     name: 'sender name above body; use when first child is raw (not bubble)',
     displayName: 'sender name above body; use when first child is raw (not bubble)',
