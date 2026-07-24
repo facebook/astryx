@@ -22,6 +22,13 @@ const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 const OPTS = {cwd: REPO_ROOT};
 
+// The API-level search walks the source tree and imports every `.doc.mjs` to
+// build its index; that takes several seconds and gets slower under the
+// full-suite parallel load — enough to cross the default 5s per-test limit.
+// The CLI-level cases spawn a subprocess (its own 30s cap) but still run under
+// the vitest per-test timeout. Give both the same generous scan budget.
+const SCAN_TIMEOUT = 30_000;
+
 function runCli(args) {
   const res = spawnSync('node', [CLI_BIN, ...args], {
     cwd: REPO_ROOT,
@@ -52,7 +59,7 @@ describe('search() API — ranking', () => {
     expect(iconButton.score).toBeGreaterThanOrEqual(70);
     expect(iconButton.reason.toLowerCase()).toContain('keyword');
   });
-});
+}, SCAN_TIMEOUT);
 
 describe('search() API — cross-domain', () => {
   it('returns results from more than one domain for a broad query', async () => {
@@ -74,7 +81,7 @@ describe('search() API — cross-domain', () => {
       expect(r.command.length).toBeGreaterThan(0);
     }
   });
-});
+}, SCAN_TIMEOUT);
 
 describe('search() API — filters', () => {
   it('--type component returns only components', async () => {
@@ -100,7 +107,7 @@ describe('search() API — filters', () => {
   it('rejects an unknown --type', async () => {
     await expect(search('x', {...OPTS, type: 'bogus'})).rejects.toThrow(/Unknown --type/);
   });
-});
+}, SCAN_TIMEOUT);
 
 describe('search() API — fuzzy / typo tolerance', () => {
   it('finds Button for the typo "buton"', async () => {
@@ -109,7 +116,7 @@ describe('search() API — fuzzy / typo tolerance', () => {
     expect(button).toBeTruthy();
     expect(button.domain).toBe('component');
   });
-});
+}, SCAN_TIMEOUT);
 
 describe('search() API — empty + envelope', () => {
   it('returns an empty result set (not an error) for a no-match query', async () => {
@@ -135,7 +142,7 @@ describe('search() API — empty + envelope', () => {
     expect(top).toHaveProperty('description');
     expect(top).toHaveProperty('command');
   });
-});
+}, SCAN_TIMEOUT);
 
 describe('scoreCandidate()', () => {
   it('scores an exact name match at 100', () => {
@@ -199,4 +206,4 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(r.stdout).toContain('astryx component Button');
     expect(r.stdout).toContain('[component]');
   });
-});
+}, SCAN_TIMEOUT);
