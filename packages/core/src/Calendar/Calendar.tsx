@@ -452,6 +452,10 @@ export function Calendar({ref, ...props}: CalendarProps) {
       {/* Header with navigation */}
       <div {...stylex.props(calendarStyles.header)}>
         <Button
+          {...themeProps('calendar-nav', {
+            direction: 'prev',
+            disabled: !canNavigatePrevious ? 'disabled' : null,
+          })}
           label={t('@astryx.calendar.previousMonth')}
           variant="ghost"
           icon={
@@ -472,6 +476,10 @@ export function Calendar({ref, ...props}: CalendarProps) {
         </span>
 
         <Button
+          {...themeProps('calendar-nav', {
+            direction: 'next',
+            disabled: !canNavigateNext ? 'disabled' : null,
+          })}
           label={t('@astryx.calendar.nextMonth')}
           variant="ghost"
           icon={

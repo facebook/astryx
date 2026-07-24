@@ -318,3 +318,52 @@ export const ThemedSelectedAndTodayRing: Story = {
     );
   },
 };
+
+/**
+ * Theme the month-nav controls and the selected-date ring independently of the
+ * rest of the app, using `defineTheme`.
+ *
+ * - `components['calendar-nav']` scopes overrides to the prev/next month
+ *   buttons only (via the `astryx-calendar-nav` target), instead of the global
+ *   `astryx-button` handle that would hit every Button in the app. The
+ *   `direction` visual prop and `disabled` state are reflected as data
+ *   attributes, so a theme can target one arrow or the disabled edge alone.
+ * - `components['calendar-day'].selected` restyles the selected-date treatment
+ *   (the `astryx-calendar-day` target with its `selected` state).
+ */
+const navRingTheme = defineTheme({
+  name: 'calendar-nav-ring',
+  components: {
+    'calendar-nav': {
+      base: {
+        color: 'var(--color-accent)',
+        borderRadius: 'var(--radius-inner)',
+      },
+      'direction:next': {
+        backgroundColor: 'var(--color-accent-muted)',
+      },
+    },
+    'calendar-day': {
+      selected: {
+        backgroundColor: 'var(--color-success)',
+        boxShadow: 'inset 0 0 0 2px var(--color-on-accent)',
+      },
+    },
+  },
+});
+
+export const ThemedNavAndSelectedRing: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString>('2026-01-15');
+    return (
+      <Theme theme={navRingTheme} mode="light">
+        <Calendar
+          mode="single"
+          value={value}
+          onChange={val => setValue(val)}
+          focusDate="2026-01-01"
+        />
+      </Theme>
+    );
+  },
+};

@@ -111,6 +111,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-calendar', visualProps: ['mode']},
+      {className: 'astryx-calendar-nav', visualProps: ['direction'], states: ['disabled']},
       {className: 'astryx-calendar-day', states: ['selected', 'today', 'disabled', 'in-range', 'marker']},
     ],
   },
@@ -155,6 +156,15 @@ export const docsZh = {
         className: 'astryx-calendar',
         visualProps: [
           'mode',
+        ],
+      },
+      {
+        className: 'astryx-calendar-nav',
+        visualProps: [
+          'direction',
+        ],
+        states: [
+          'disabled',
         ],
       },
       {
