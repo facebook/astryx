@@ -115,6 +115,10 @@ export interface AvatarStatusDotProps extends BaseProps<HTMLDivElement> {
    * Describes the meaning of the indicator for screen readers
    * (e.g. "Online", "Accepted", "John Doe is busy").
    *
+   * When omitted, a default label is derived from the variant
+   * ("Online", "Away", "Busy") so the status is never conveyed by
+   * colour alone (WCAG 2.1 SC 1.4.1).
+   *
    * Note: inside an Avatar the label is currently not announced — the
    * Avatar root is `role="img"`, which prunes descendant semantics.
    * Pass it anyway; composing status into the avatar's accessible name
@@ -198,6 +202,22 @@ const variantStyleMap: Partial<
   success: styles.success,
   neutral: styles.neutral,
   error: styles.error,
+};
+
+/**
+ * Default accessible labels per variant, used when no explicit `label` prop
+ * is provided. Ensures screen readers always have a status meaning to
+ * announce, even at the smallest avatar tier where shape glyphs are too
+ * small to be reliably perceived (WCAG 2.1 SC 1.4.1).
+ *
+ * Uses presence-oriented naming ("Online", "Away", "Busy") rather than
+ * semantic variant names ("Success", "Neutral", "Error") because the dot
+ * represents a person's real-time status.
+ */
+const defaultVariantLabels: Partial<Record<AvatarStatusDotVariant, string>> = {
+  success: 'Online',
+  neutral: 'Away',
+  error: 'Busy',
 };
 
 /**
@@ -341,11 +361,18 @@ export function AvatarStatusDot({
   // the dot's small inner field would make each illegible.
   const glyphShape = showsIcon ? undefined : glyphShapeMap[variant];
 
+  // Resolve label: explicit prop → default per variant → none.
+  // A default label ensures screen readers always convey status meaning,
+  // even when the consumer doesn't provide one (WCAG 2.1 SC 1.4.1).
+  const resolvedLabel = label ?? defaultVariantLabels[variant];
+
   return (
     <div
       {...props}
       ref={ref}
-      {...(label ? {role: 'img', 'aria-label': label} : undefined)}
+      {...(resolvedLabel
+        ? {role: 'img', 'aria-label': resolvedLabel}
+        : undefined)}
       {...mergeProps(
         themeProps('avatar-status-dot', {variant}),
         stylex.props(
