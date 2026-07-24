@@ -77,7 +77,18 @@ const styles = stylex.create({
     outline: 'none',
     // Native <dialog> uses display:none when closed.
     // Open state applied via isOpen prop to avoid :where([open]) specificity issues.
+    // `display` participates in the transition with allow-discrete so it flips
+    // to none only after the slide-out finishes. That also keeps the dialog
+    // rendered until close() has actually run: an open modal dialog that isn't
+    // rendered still blocks the whole document, and a browser that fails to
+    // un-block it on close leaves the page inert with no error (#4290).
     display: 'none',
+    transitionProperty: 'display',
+    transitionDuration: durationVars['--duration-medium'],
+    transitionBehavior: 'allow-discrete',
+    '@media (prefers-reduced-motion: reduce)': {
+      transitionDuration: '0.01s',
+    },
   },
   open: {
     display: 'flex',
@@ -360,9 +371,14 @@ export function MobileNav({
     } else if (dialog.open) {
       document.documentElement.style.overflow = '';
 
+      // Close part-way through the slide-out, never on its boundary: the
+      // dialog stays rendered only until the `display` transition ends, and
+      // closing an unrendered modal dialog is what wedges the page (#4290).
+      // Under reduced motion the transition is 0.01s, so close on the next
+      // tick rather than racing it.
       const duration = window.matchMedia('(prefers-reduced-motion: reduce)')
         .matches
-        ? 10
+        ? 0
         : 250;
       closeTimeoutRef.current = setTimeout(() => {
         dialog.close();
@@ -375,20 +391,27 @@ export function MobileNav({
         closeTimeoutRef.current = null;
       }
       document.documentElement.style.overflow = '';
-      // Close the native dialog on teardown if it's still open. Inside AppShell
-      // the drawer is mounted in an <Activity> that switches to mode="hidden"
-      // when the drawer closes; React then runs this cleanup (with a stale
-      // isOpen) instead of re-running the effect with isOpen=false, so the
-      // close branch above never fires. If we leave the <dialog> `open` here,
-      // showModal() is skipped on the next open (the dialog is already open in
-      // the hidden tree) and the drawer can never be re-opened. Closing it
-      // unconditionally on teardown keeps the native dialog state in sync so a
-      // subsequent open cleanly calls showModal() again.
-      if (dialog.open) {
+    };
+  }, [isOpen, side]);
+
+  // Close the native dialog on unmount if it's still open. Inside AppShell the
+  // drawer is mounted in an <Activity> that switches to mode="hidden" when the
+  // drawer closes; React then runs effect cleanups (with a stale isOpen)
+  // instead of re-running the effect with isOpen=false, so the close branch
+  // above never fires. If we leave the <dialog> `open` here, showModal() is
+  // skipped on the next open (the dialog is already open in the hidden tree)
+  // and the drawer can never be re-opened — see MobileNavReopen.test.tsx.
+  // This must be a separate unmount-only effect: putting it in the open/close
+  // effect above would close the dialog on every isOpen flip and cut off the
+  // delayed slide-out close.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    return () => {
+      if (dialog?.open) {
         dialog.close();
       }
     };
-  }, [isOpen, side]);
+  }, []);
 
   // Handle native cancel event (Escape key) — prevent default and route through onOpenChange
   const handleCancel = useCallback(
