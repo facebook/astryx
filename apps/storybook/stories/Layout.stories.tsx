@@ -743,9 +743,7 @@ export const ThemedLayout: Story = {
   render: () => (
     <HStack gap={6} xstyle={styles.storySection}>
       <VStack gap={3}>
-        <p {...stylex.props(styles.sectionLabel)}>
-          Stone Theme
-        </p>
+        <p {...stylex.props(styles.sectionLabel)}>Stone Theme</p>
         <Theme theme={stoneTheme}>
           <Card width={400}>
             <Layout
@@ -779,9 +777,7 @@ export const ThemedLayout: Story = {
       </VStack>
 
       <VStack gap={3}>
-        <p {...stylex.props(styles.sectionLabel)}>
-          Neutral Theme
-        </p>
+        <p {...stylex.props(styles.sectionLabel)}>Neutral Theme</p>
         <Theme theme={neutralTheme}>
           <Card width={400}>
             <Layout
@@ -1364,6 +1360,147 @@ export const ContentWidthInAppShell: Story = {
             }
           />
         </AppShell>
+      </div>
+    </VStack>
+  ),
+};
+
+// =============================================================================
+// Shell Width Stories
+// =============================================================================
+
+export const ShellWidthCappedShell: Story = {
+  name: 'Shell Width — Capped Shell',
+  render: () => (
+    <VStack gap={4} xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>
+        shellWidth=640 in a 900px container; the ENTIRE shell (header, panel,
+        content, footer) is capped and centered, and dividers end at the shell
+        edge
+      </p>
+      <div {...stylex.props(styles.cwContainer, styles.cwContainer900)}>
+        <Layout
+          shellWidth={640}
+          defaultHasDividers
+          header={
+            <LayoutHeader>
+              <h3 {...stylex.props(styles.heading)}>Header</h3>
+              <p {...stylex.props(styles.bodyText)}>
+                The header and its divider stop at the 640px shell edge
+              </p>
+            </LayoutHeader>
+          }
+          start={
+            <LayoutPanel width={160} hasDivider role="navigation">
+              <NavItem active>General</NavItem>
+              <NavItem>Account</NavItem>
+            </LayoutPanel>
+          }
+          content={
+            <LayoutContent>
+              <p {...stylex.props(styles.bodyText)}>
+                Unlike contentWidth (which caps only slot content while dividers
+                stay full-bleed), shellWidth caps the whole shell. The container
+                background shows on both sides of the shell.
+              </p>
+            </LayoutContent>
+          }
+          footer={
+            <LayoutFooter>
+              <HStack gap={2} hAlign="end">
+                <Button label="Cancel" variant="secondary">
+                  Cancel
+                </Button>
+                <Button label="Save" variant="primary">
+                  Save
+                </Button>
+              </HStack>
+            </LayoutFooter>
+          }
+        />
+      </div>
+    </VStack>
+  ),
+};
+
+export const ShellWidthWithContentWidth: Story = {
+  name: 'Shell Width — With Content Width',
+  render: () => (
+    <VStack gap={4} xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>
+        shellWidth=800 + contentWidth=560 in a 1200px container: the shell
+        (including dividers) is capped at 800px, and slot content is further
+        constrained to 560px within it
+      </p>
+      <div {...stylex.props(styles.cwContainer, styles.cwContainer1200)}>
+        <Layout
+          shellWidth={800}
+          contentWidth={560}
+          defaultHasDividers
+          header={
+            <LayoutHeader>
+              <h3 {...stylex.props(styles.heading)}>Both Constraints</h3>
+            </LayoutHeader>
+          }
+          content={
+            <LayoutContent>
+              <p {...stylex.props(styles.bodyText)}>
+                The divider spans the 800px shell (not the full 1200px
+                container), while this text is centered within a 560px content
+                column.
+              </p>
+              <br />
+              <div {...stylex.props(styles.placeholder)}>
+                Placeholder content block
+              </div>
+            </LayoutContent>
+          }
+          footer={
+            <LayoutFooter>
+              <HStack gap={2} hAlign="end">
+                <Button label="Continue" variant="primary">
+                  Continue
+                </Button>
+              </HStack>
+            </LayoutFooter>
+          }
+        />
+      </div>
+    </VStack>
+  ),
+};
+
+export const ShellWidthWiderThanContainer: Story = {
+  name: 'Shell Width — Wider Than Container',
+  render: () => (
+    <VStack gap={4} xstyle={styles.storySection}>
+      <p {...stylex.props(styles.sectionLabel)}>
+        shellWidth=2000 in a 350px container, degrades gracefully to 100%
+      </p>
+      <div {...stylex.props(styles.cwContainer, styles.cwContainer350)}>
+        <Layout
+          shellWidth={2000}
+          defaultHasDividers
+          header={
+            <LayoutHeader>
+              <h3 {...stylex.props(styles.heading)}>Overflow</h3>
+            </LayoutHeader>
+          }
+          content={
+            <LayoutContent>
+              <p {...stylex.props(styles.bodyText)}>
+                The shellWidth is 2000px but the container is only 350px. The
+                shell fills 100% of the available space, with no overflow or
+                scrollbar.
+              </p>
+            </LayoutContent>
+          }
+          footer={
+            <LayoutFooter>
+              <p {...stylex.props(styles.bodyText)}>Footer</p>
+            </LayoutFooter>
+          }
+        />
       </div>
     </VStack>
   ),

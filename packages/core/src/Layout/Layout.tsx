@@ -10,6 +10,8 @@
  *   Building a page with a sidebar? Use Layout with start/end slots.
  *   Need a header + scrollable content? Use Layout with header + content slots.
  *   Manages padding collapse, scroll containment, and responsive slot sizing automatically.
+ *   Width capping: `contentWidth` caps slot content (dividers stay full-bleed);
+ *   `shellWidth` caps and centers the entire shell (dividers end at the shell edge).
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Layout/Layout.doc.mjs
@@ -84,6 +86,11 @@ const dynamicStyles = stylex.create({
     maxWidth: typeof width === 'number' ? `${width}px` : width,
     marginInline: 'auto',
   }),
+  shellWidth: (width: SizeValue) => ({
+    width: '100%',
+    maxWidth: typeof width === 'number' ? `${width}px` : width,
+    marginInline: 'auto',
+  }),
 });
 
 export interface LayoutProps extends Omit<BaseProps, 'content'> {
@@ -108,6 +115,21 @@ export interface LayoutProps extends Omit<BaseProps, 'content'> {
    * - `960` — content pages, component demos, wider layouts
    */
   contentWidth?: SizeValue;
+
+  /**
+   * Maximum width of the ENTIRE shell — header, panels, content, footer, and
+   * their dividers — centered with `margin-inline: auto` when narrower than
+   * the available space. Numbers are treated as pixels, strings are used
+   * as-is (e.g., '90rem').
+   *
+   * Contrast with `contentWidth`, which caps only the content within each
+   * slot while headers, footers, and their dividers stay full-bleed. With
+   * `shellWidth`, dividers stop at the shell edge and, on viewports wider
+   * than the cap, the page or container background shows on both sides of
+   * the shell (this is the intended look; prefer `contentWidth` if you want
+   * full-bleed header and divider treatment).
+   */
+  shellWidth?: SizeValue;
 
   /**
    * End panel slot (right in LTR, left in RTL).
@@ -234,6 +256,7 @@ export function Layout({
   height = 'fill',
   padding,
   ref,
+  shellWidth,
   start,
   xstyle,
   className,
@@ -283,6 +306,7 @@ export function Layout({
             padding != null && layoutPaddingOuterXVarStyles[padding],
             padding != null && layoutPaddingOuterYVarStyles[padding],
             contentWidth != null && dynamicStyles.contentWidthVar(contentWidth),
+            shellWidth != null && dynamicStyles.shellWidth(shellWidth),
           )}>
           <AreaProvider area="header">{header}</AreaProvider>
           <div

@@ -93,6 +93,18 @@ export const docs = {
       description: 'Height behavior: fill the container or grow with content.',
       default: "'fill'",
     },
+    {
+      name: 'contentWidth',
+      type: 'number | string',
+      description:
+        'Maximum width of the content within each slot (header, content, footer, panels), centered when narrower than the available space. Dividers remain full-bleed. Numbers are pixels, strings are used as-is. Common widths: 640 for forms, 960 for content pages.',
+    },
+    {
+      name: 'shellWidth',
+      type: 'number | string',
+      description:
+        'Maximum width of the entire shell (header, panels, content, footer, and their dividers), centered when narrower than the available space. Dividers end at the shell edge and the surrounding background shows on both sides on wide viewports. Use contentWidth instead to keep headers and dividers full-bleed. Numbers are pixels, strings are used as-is.',
+    },
   ],
   components: [
     {name: 'LayoutHeader'},
