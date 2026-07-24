@@ -311,8 +311,7 @@ type NumberInputPropsClearable = NumberInputPropsBase & {
 };
 
 export type NumberInputProps =
-  | NumberInputPropsNonClearable
-  | NumberInputPropsClearable;
+  NumberInputPropsNonClearable | NumberInputPropsClearable;
 
 /**
  * Parse and validate a string input as a number.

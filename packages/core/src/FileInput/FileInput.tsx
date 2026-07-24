@@ -745,7 +745,15 @@ export function FileInput({
         aria-disabled={showsDisabledMessage ? 'true' : undefined}
         onClick={handleClick}
         onKeyDown={handleKeyDown}
-        aria-label={label}
+        // aria-label suppresses child content from the accessible name, so
+        // compose the selected filenames into it — otherwise a screen-reader
+        // user refocusing the control hears only the field label and cannot
+        // tell what (if anything) is attached.
+        aria-label={
+          hasFiles && fileNames
+            ? t('@astryx.fileInput.triggerWithFiles', {label, fileNames})
+            : label
+        }
         aria-busy={isLoading || undefined}
         // These describe the operable control, so they belong on the focusable
         // role="button" wrapper — not the hidden tabIndex={-1} file input the
@@ -785,7 +793,10 @@ export function FileInput({
         />
         {isDropzone ? renderDropzoneContent() : renderCompactContent()}
         {hasFiles && !isDisabled && !isLoading && (
-          <InputClearButton label={t('@astryx.fileInput.clearLabel', {label})} onClick={handleClear} />
+          <InputClearButton
+            label={t('@astryx.fileInput.clearLabel', {label})}
+            onClick={handleClear}
+          />
         )}
       </div>
       <div

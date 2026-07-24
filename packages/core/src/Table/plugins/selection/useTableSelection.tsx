@@ -68,6 +68,18 @@ export interface UseTableSelectionConfig<T extends Record<string, unknown>> {
   getIsItemSelectable?: (item: T) => boolean;
   /** Is this row's checkbox interactive? Disabled rows show disabled checkbox. @default () => true */
   getIsItemEnabled?: (item: T) => boolean;
+  /**
+   * Derive a human-readable identity for a row, used in the row checkbox's
+   * hidden label as `Select ${getRowLabel(item)}`. Without it, every row
+   * checkbox announces an undifferentiated "Select row" to screen readers.
+   *
+   * @example
+   * ```
+   * getRowLabel: item => item.name
+   * // Checkbox accessible names: "Select Alice", "Select Bob", ...
+   * ```
+   */
+  getRowLabel?: (item: T) => string;
 }
 
 // =============================================================================
@@ -235,6 +247,7 @@ function SelectionCellContentInner<T extends Record<string, unknown>>({
   const isSelected = useIsItemSelected(store, item);
   const selectable = config.getIsItemSelectable?.(item) ?? true;
   const enabled = config.getIsItemEnabled?.(item) ?? true;
+  const rowLabel = config.getRowLabel?.(item);
 
   if (!selectable) {
     return null;
@@ -242,7 +255,11 @@ function SelectionCellContentInner<T extends Record<string, unknown>>({
 
   return (
     <CheckboxInput
-      label={t('@astryx.table.selection.selectRow')}
+      label={
+        rowLabel != null
+          ? t('@astryx.table.selection.selectRowNamed', {label: rowLabel})
+          : t('@astryx.table.selection.selectRow')
+      }
       isLabelHidden
       value={isSelected}
       onChange={() =>

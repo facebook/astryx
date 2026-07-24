@@ -858,10 +858,14 @@ export function Selector<T extends SelectorOptionType>(
           onChange={handleSearchChange}
           onKeyDown={e => {
             // Arrow keys navigate options; Enter selects; Escape/Tab close.
-            // Home/End are left to the input for caret movement.
+            // Home/End are left to the input for caret movement (APG editable
+            // combobox); PageUp/PageDown are the sanctioned substitute for
+            // jumping to the first/last option.
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
+              e.key === 'PageUp' ||
+              e.key === 'PageDown' ||
               e.key === 'Enter' ||
               e.key === 'Escape' ||
               e.key === 'Tab'

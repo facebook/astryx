@@ -1,5 +1,5 @@
 ---
-applyTo: "packages/**"
+applyTo: 'packages/**'
 ---
 
 # Package review instructions
@@ -9,25 +9,25 @@ against Astryx's API guidance and component review protocol.
 
 ## Step 0 — Triage first: categorize, assess risk, pick a path
 
-Before reviewing in depth, do a fast triage. It decides *how hard* to look and
+Before reviewing in depth, do a fast triage. It decides _how hard_ to look and
 in what order, so effort lands where the risk is — and so the risk checks
 (especially breaking changes) happen **up front**, not as an afterthought.
 
 **1. Categorize the PR** (by what it changes, not just the title prefix):
 
-| Category | Signals |
-|---|---|
+| Category                | Signals                                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------------- |
 | **test / docs / chore** | only `*.test.tsx`, `*.doc.mjs`, stories, CI, build config — no shipped runtime/API change |
-| **bug fix** | behavior change to existing code, no new public surface |
-| **new API surface** | new component, new prop/variant, new exported hook/type, changed signature |
-| **refactor / internal** | behavior-preserving restructure, shared-util migration |
+| **bug fix**             | behavior change to existing code, no new public surface                                   |
+| **new API surface**     | new component, new prop/variant, new exported hook/type, changed signature                |
+| **refactor / internal** | behavior-preserving restructure, shared-util migration                                    |
 
 **2. Assess risk — the two questions that gate everything:**
 
 - **Is it a breaking change?** Scan for: a removed/renamed public export, prop,
   or variant; a **new required** field on a public type/context/props; a changed
   default; a changed function signature; or changed DOM/class/ARIA output
-  consumers may depend on. (The tell for an *accidental* breaking change:
+  consumers may depend on. (The tell for an _accidental_ breaking change:
   unrelated tests/examples/call sites had to be edited — see the silent-breaking
   rule in Judgment.) A real breaking change must be **intentional and signalled
   with a `[breaking]` changeset category** (pre-1.0 stays a `patch` bump — never
@@ -63,8 +63,8 @@ in what order, so effort lands where the risk is — and so the risk checks
 > reviewer must **not**
 > approve or merge it — even if it's clean, additive, and passing CI. Flag it as
 > **⚠️ Needs human/maintainer judgment on the API surface** and leave the
-> approve/merge decision to a human. "Additive and non-breaking" is *not*
-> sufficient to auto-approve API surface — whether the API *should exist* and
+> approve/merge decision to a human. "Additive and non-breaking" is _not_
+> sufficient to auto-approve API surface — whether the API _should exist_ and
 > take this shape is a human call. Behavior-only fixes, tests, docs, and chores
 > from contributors can still take the fast/standard path.
 
@@ -77,7 +77,7 @@ breaking-change question is answered on every PR.
 
 The shared **Review buckets** and **Review Signal** model lives in the root
 `copilot-instructions.md` — apply it. This section defines what counts as
-**high-risk** *within `packages/**`*, which is what drives the signal:
+**high-risk** _within `packages/**`_, which is what drives the signal:
 
 A change in this scope is **high-risk** when it involves any of:
 
@@ -92,7 +92,7 @@ A change in this scope is **high-risk** when it involves any of:
   breaking change to a shared type/context (see Judgment).
 
 Anything else in this scope is **low-risk** for signal purposes. The one
-explicitly low-risk *area* inside `packages/**` is **`packages/themes/**`**
+explicitly low-risk _area_ inside `packages/**` is **`packages/themes/**`**
 (theme values); a theme-only change does not trip the high-risk gate — though
 still apply the design blast-radius check in Judgment (a token change can
 regress everywhere it composites).
@@ -101,13 +101,13 @@ The high-risk determination is also computed deterministically by
 `.github/workflows/review-signal.yml`, which applies the **`needs:code-review`**
 label and disables auto-merge on high-risk PRs. If the PR carries that label,
 lead with 🔴 and focus on the high-risk surface (see the label note in the root
-instructions). Frame the review by bucket — the bucket sets *tone*, the area
-sets the *gate*:
+instructions). Frame the review by bucket — the bucket sets _tone_, the area
+sets the _gate_:
 
-- **Contributor** → your review is the *initial pass* that tells a code owner
+- **Contributor** → your review is the _initial pass_ that tells a code owner
   where to focus. For a new prop / API change / new component / new package, add
   the explicit **⚠️ Needs human/maintainer judgment on the API surface** note —
-  additive and passing CI is *not* sufficient to imply approval.
+  additive and passing CI is _not_ sufficient to imply approval.
 - **Design owner** → same checks, framed for a designer: name what crosses into
   engineering territory and needs an engineer's eye.
 - **Eng team** → assistant framing: surface the same findings as input to the
@@ -124,11 +124,11 @@ Once triaged, weight the review by what the PR is trying to do:
   passing evidence and ask for it — a fix without a regression test can silently
   break again.
 - **Tests** — a test PR must earn its merge by testing the **contract, not the
-  implementation**. A passing test that exists is necessary but *not* sufficient
+  implementation**. A passing test that exists is necessary but _not_ sufficient
   to approve; judge it against the bar below and, if it's implementation-coupled
   or padding, request changes (kindly) naming the specific assertions to cut or
-  refocus. The one-line test: *does this protect a promise a consumer relies on,
-  or does it just mirror the code?* If it would break on a harmless refactor yet
+  refocus. The one-line test: _does this protect a promise a consumer relies on,
+  or does it just mirror the code?_ If it would break on a harmless refactor yet
   survive a real bug, it's slop.
   - **✅ Worth testing** — the public behavioral contract (state transitions,
     controlled/uncontrolled, callbacks fire with the right args, documented edge
@@ -141,14 +141,14 @@ Once triaged, weight the review by what the PR is trying to do:
     (change-detector tests); snapshot dumps with no behavioral assertion;
     re-testing React or the library ("useState updates", "prop passed through"
     with no logic between); trivial padding ("renders without crashing" as the
-    *only* assertion, or `it.each` explosions with no distinct risk per case);
+    _only_ assertion, or `it.each` explosions with no distinct risk per case);
     and computed style/token/pixel assertions (that's brittle design territory).
 - **Docs** — validate against reality. Check that the documentation is actually
   correct (matches the code/API/behavior on this branch). When a claim is a
   matter of best practice or judgment rather than fact, **call it out for a
   maintainer** rather than asserting it's right or wrong.
-- **New features / new components** — whether this is the *right way to expose
-  the functionality* is a human judgment call. **Do not render a verdict on the
+- **New features / new components** — whether this is the _right way to expose
+  the functionality_ is a human judgment call. **Do not render a verdict on the
   API design here.** You may still run the mechanical, convention, and
   convergence checks below, but explicitly **flag that maintainers should review
   the API surface carefully** (and that new surface should be spec'd and
@@ -167,7 +167,7 @@ Add an explicit **"⚠️ Needs engineering / human judgment"** note when the ch
 involves any of:
 
 - **New public API surface or an API-shape decision** — a new component, a new
-  prop/variant, or changing an existing prop's contract. (The *right* shape is a
+  prop/variant, or changing an existing prop's contract. (The _right_ shape is a
   human call — see New features above.)
 - **New runtime complexity** — effects, refs, observers
   (`MutationObserver`/`ResizeObserver`/`IntersectionObserver`), imperative DOM
@@ -182,15 +182,15 @@ involves any of:
 - **Escape hatches / breaking the system** — raw CSS, non-token values,
   `swizzle`d source, or overriding a system default; these need a documented
   rationale an engineer signs off on.
-- **Anything the change *asserts* works but can't be verified from the diff** —
+- **Anything the change _asserts_ works but can't be verified from the diff** —
   performance claims, cross-browser/RTL/theme behavior, SSR/hydration.
 
 Pure presentational work well within the system — composing existing components,
 using tokens and documented props, adding a story or realistic mock data — does
 **not** need this flag. Reserve it for the cases above so it stays meaningful.
 
-When you raise it, be specific: name *what* in the diff needs the deeper look and
-*why* (e.g. "the `ResizeObserver` in `X.tsx` is a runtime-complexity + perf
+When you raise it, be specific: name _what_ in the diff needs the deeper look and
+_why_ (e.g. "the `ResizeObserver` in `X.tsx` is a runtime-complexity + perf
 decision — an engineer should confirm a container query wouldn't do"), so the
 designer knows exactly what to hand off.
 
@@ -228,7 +228,7 @@ don't evaluate it in isolation. First check whether other components already
 express the same capability, and push to converge on the existing shape:
 
 - **Search for prior art.** Look for existing components with a prop of similar
-  *purpose* or *behavior* — the same axis of variation, even under a different
+  _purpose_ or _behavior_ — the same axis of variation, even under a different
   name (e.g. `size` vs `scale`, `isLoading` vs `busy`, `tone` vs `variant` vs
   `color`, `density` vs `compact`). Comparable components should already be
   siblings in the same family; check those first, then the wider system.
@@ -250,12 +250,12 @@ express the same capability, and push to converge on the existing shape:
 ### Plugins & hooks that extend a host component
 
 Some components expose a plugin/hook surface (e.g. `Table` with
-`useTable*` plugins). These extend a host, so review them for consistency *with
-that host*, not in isolation — recurring issues seen in real review:
+`useTable*` plugins). These extend a host, so review them for consistency _with
+that host_, not in isolation — recurring issues seen in real review:
 
 - **Mirror the host's API shape, in and out.** A plugin should accept and return
   the same shapes the host already uses. If `Table` accepts `idKey` (a key that
-  may be a string *or* a getter, so callers avoid writing callbacks), a plugin
+  may be a string _or_ a getter, so callers avoid writing callbacks), a plugin
   should accept the same rather than forcing a bespoke callback — and should
   **name its outputs to match the host's props** so they compose directly.
   Prefer `const {idKey} = usePlugin(); <Table idKey={idKey} />` over exporting
@@ -264,7 +264,7 @@ that host*, not in isolation — recurring issues seen in real review:
 - **Semantic values first, arbitrary as the escape hatch.** When a plugin/prop
   takes a visual value (color, status, tone), the first-class API is the
   system's **semantic tokens** (`color: 'accent'` / `'success'`), not raw values.
-  Allowing arbitrary values is fine as an escape hatch, but the *default* shape
+  Allowing arbitrary values is fine as an escape hatch, but the _default_ shape
   should be system semantics — flag an API where the raw/arbitrary form is the
   primary one.
 - **Decide host-level vs plugin-level deliberately** — especially for
@@ -292,7 +292,7 @@ For hooks (plugins or otherwise), watch two things that bit real Table PRs:
 
 ## Design review
 
-Some package changes are also *design* changes. When a diff affects how a
+Some package changes are also _design_ changes. When a diff affects how a
 component **looks or behaves visually**, review it against
 **[Design Conventions](https://github.com/facebook/astryx/wiki/Design-Conventions)** —
 the design-side sibling of API Conventions — in addition to the checks below.
@@ -327,7 +327,7 @@ flag the concrete "smells" that page names:
   arbitrary z-index and hairline-border-plus-diffuse-shadow or colored glows.
 - **Typography** — role tokens; hierarchy ≥1.25 size ratio; body ≥12px; leading
   ≥1.3; flag flat hierarchy, all-caps/justified/gradient body, lines >~75ch.
-- **Color** — every fg/bg pair passes WCAG AA in light *and* dark; interaction
+- **Color** — every fg/bg pair passes WCAG AA in light _and_ dark; interaction
   tints are alpha overlays (not opaque); status pairs color with an icon (never
   color alone); one clear primary action; no pure `#000`/`#fff`.
 - **Motion** — duration matches the change's weight; only `transform`/`opacity`
@@ -361,13 +361,13 @@ high-attention (post a note rather than hard-blocking — this is advisory).
 
 **Flag a diff that adds a brand-new component directory under
 `packages/core/src/<Name>/` with no prior presence in `packages/lab/src/`.**
-That's a component skipping the staging step. (A lab→core *promotion* — a delete
+That's a component skipping the staging step. (A lab→core _promotion_ — a delete
 under `packages/lab/src/**` paired with the add in core — is the healthy path
-and is fine; the concern is the *net-new* component that was never in lab.)
+and is fine; the concern is the _net-new_ component that was never in lab.)
 
 When you see a net-new core component, ask the author to confirm either that it
 went through lab, or that it genuinely meets the core bar that lab explicitly
-does *not* guarantee:
+does _not_ guarantee:
 
 - Full keyboard + a11y (ARIA contracts, focus, `:hover` guarded by
   `@media (hover: hover)`)
@@ -408,7 +408,7 @@ regardless of author, and confirm:
 - **A tracking/spec issue is linked** establishing the need and scope.
 
 Never approve a net-new package on convention-cleanliness alone; whether it
-*should exist* is a human call.
+_should exist_ is a human call.
 
 ### New template added already-visible (not `hidden`)
 
@@ -417,7 +417,7 @@ the template design bar. The CLI reads `hidden: true` and
 `hiddenComponents: ['Name', ...]` from a template's `.doc.mjs`; hidden entries
 are skipped from `--list`.
 
-**Flag a diff that adds a *new* template/block whose `.doc.mjs` is not
+**Flag a diff that adds a _new_ template/block whose `.doc.mjs` is not
 `hidden: true`** (i.e. it's publicly listed from the moment it lands). A new
 template appearing already-visible skipped the hidden-staging step and may not
 be hardened yet. Ask the author to confirm it meets the template design bar
@@ -445,10 +445,10 @@ and the Design review section above), or to add `hidden: true` until it does.
 - **Avoid unnecessary wrapper elements — prefer props and hooks.** Astryx favors
   attaching behavior/style to existing elements over adding a new wrapper node.
   Flag an added wrapper when a lighter path exists:
-  - *Styling:* components extend `BaseProps` (they take `xstyle`), so apply style
+  - _Styling:_ components extend `BaseProps` (they take `xstyle`), so apply style
     directly — `<Divider xstyle={hasOutline && styles.titleDivider} />` — instead
     of wrapping the component in a styled `<div>`.
-  - *Behavior:* reach for the behavior **hook** or **prop** the system already
+  - _Behavior:_ reach for the behavior **hook** or **prop** the system already
     exposes rather than a wrapper component. E.g. a tooltip is available via the
     `tooltip` prop / `useTooltip` hook, and there are hooks for many behaviors
     (`useHoverCard`, `useClickableContainer`, `useCollapsible`, `useFocusTrap`,
@@ -470,11 +470,11 @@ and the Design review section above), or to add `hidden: true` until it does.
     or **`useTreeFocus`**; typeahead → **`useTypeahead`**; a keyboard-shortcut
     hint → **`useKeyboardHint`**; focus trapping → **`useFocusTrap`**; interactive
     role/state wiring → **`useInteractiveRole`**.
-  These already implement the WAI-ARIA APG patterns and are tested, so reusing
-  them keeps behavior consistent across the system. A genuinely new a11y pattern
-  with no existing primitive is fine — but call it out for careful review (see
-  "When to flag for engineering / human judgment") rather than landing a bespoke
-  implementation quietly.
+    These already implement the WAI-ARIA APG patterns and are tested, so reusing
+    them keeps behavior consistent across the system. A genuinely new a11y pattern
+    with no existing primitive is fine — but call it out for careful review (see
+    "When to flag for engineering / human judgment") rather than landing a bespoke
+    implementation quietly.
 - **Docs in sync** — JSDoc file headers, `SYNC:` reminders, and `.doc.mjs`.
   `@example` fences in JSDoc must be plain ` ``` ` (never language-tagged), or
   Storybook autodocs won't render them.
@@ -499,8 +499,8 @@ checks, flag it.
     especially should be rare and deliberate.
   - **Worsen the experience it's trying to help** — e.g. announcing on every
     keystroke, or moving focus in a way that traps or disorients.
-  Prefer announcing on a real state transition, debouncing/coalescing where the
-  content is noisy, and reserving `assertive` for genuinely urgent messages.
+    Prefer announcing on a real state transition, debouncing/coalescing where the
+    content is noisy, and reserving `assertive` for genuinely urgent messages.
 - **`useEffect` is a smell.** Treat a new/changed Effect as something to justify,
   not accept by default. Most UI logic doesn't need one — look for whether it
   belongs in an **event handler / callback** (logic that responds to a user
@@ -509,7 +509,7 @@ checks, flag it.
   state). Use React's own guidance as the bar:
   [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
   and [Synchronizing with Effects](https://react.dev/learn/synchronizing-with-effects).
-  Genuine Effects synchronize with an *external* system (subscriptions, the DOM,
+  Genuine Effects synchronize with an _external_ system (subscriptions, the DOM,
   network, non-React widgets) — those are fine; call out the ones that don't.
 - **Overly complex behavior for a simple need.** Flag heavy runtime machinery
   added where a simpler, declarative solution exists — the classic being a
@@ -532,18 +532,18 @@ checks, flag it.
   instead — and whether the breaking change is worth it. (Real case: a new
   required `aria-controls` id on a mobile-nav context forced edits to surfaces
   that didn't otherwise need it.)
-- **Unintended behavior/logic change.** Compare what the diff *actually changes*
+- **Unintended behavior/logic change.** Compare what the diff _actually changes_
   against what the PR says it does. Flag behavior the author likely didn't mean
   to touch — a value, default, condition, or output that changed as a side effect
   of the intended edit and that the description never mentions. This is different
-  from scope contamination (unrelated *files* bundled in); here the collateral
-  change is *inside* the area the author was working on, so it's easy to miss.
+  from scope contamination (unrelated _files_ bundled in); here the collateral
+  change is _inside_ the area the author was working on, so it's easy to miss.
   Watch especially for:
   - **Design/token changes — judge by presentation impact, not the token type.**
     When a change touches a token, theme value, or style, reason about **how it
     renders and where that could break**, not just that a value changed. Ask:
     does this alter contrast, legibility, or emphasis? Does it change how a value
-    *composites* over other surfaces or in a different theme/mode (a change that
+    _composites_ over other surfaces or in a different theme/mode (a change that
     looks fine on the one screen the author checked but regresses elsewhere)?
     Does it shift layout, spacing rhythm, or elevation order? Does it hold in
     both light and dark, and against every surface the token appears on? The
@@ -557,11 +557,11 @@ checks, flag it.
     (`>=` vs `>`), an early-return, or a guard that changed as a byproduct.
   - **Generated-output drift** — a regenerated theme CSS / registry / token file
     whose diff contains changes beyond the intended one.
-  When you spot this, don't assume malice or intent — surface it as a question:
-  "this also changes X (was `a`, now `b`) — does that hold everywhere it's used?"
-  Naming it lets the author confirm or revert. The author being unaware, and
-  having checked only the surface they were working on, is exactly why the
-  reviewer checks the blast radius of a design change.
+    When you spot this, don't assume malice or intent — surface it as a question:
+    "this also changes X (was `a`, now `b`) — does that hold everywhere it's used?"
+    Naming it lets the author confirm or revert. The author being unaware, and
+    having checked only the surface they were working on, is exactly why the
+    reviewer checks the blast radius of a design change.
 - **Other smells.** State expressed by unmounting focusable elements (toggle
   visibility so focus/a11y survive), unnecessary `useState` (prefer derived
   values or refs, especially from interaction handlers), and excessive comments.

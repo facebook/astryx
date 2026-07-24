@@ -473,4 +473,25 @@ describe('Button', () => {
       );
     });
   });
+
+  it('exposes aria-busy on the link-rendered button while loading', () => {
+    // Non-interruptible loading disables the button, which falls back to
+    // <button> rendering — so an anchor only shows loading when interruptible.
+    render(
+      <Button
+        label="Docs"
+        href="https://example.com"
+        isLoading
+        isInterruptible
+      />,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('does not set aria-busy on the link-rendered button when not loading', () => {
+    render(<Button label="Docs" href="https://example.com" />);
+    const link = screen.getByRole('link');
+    expect(link).not.toHaveAttribute('aria-busy');
+  });
 });

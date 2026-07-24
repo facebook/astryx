@@ -29,9 +29,13 @@ export interface SwizzleCopyResponse {
   type: 'swizzle.copy';
   data: {
     component: string;
+    /** Owner package the component source was copied from. */
+    package: string;
     outputDir: string;
     filesCopied: number;
     files: string[];
+    /** Whether any copied file uses StyleX (requires build-time setup). */
+    usesStyleX: boolean;
     feedback?: SwizzleFeedback;
   };
 }

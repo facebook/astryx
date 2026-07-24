@@ -14,7 +14,7 @@
 import {ERROR_CODES} from '../lib/error-codes.mjs';
 
 export class AstryxError extends Error {
-  /** @type {Array<{name: string, reason: string}> | undefined} */
+  /** @type {import('../types/base').Suggestion[] | undefined} */
   suggestions;
 
   /**
@@ -26,7 +26,7 @@ export class AstryxError extends Error {
 
   /**
    * @param {string} message
-   * @param {Array<{name: string, reason: string}>} [suggestions]
+   * @param {import('../types/base').Suggestion[]} [suggestions]
    * @param {string} [code] - Stable error code. Defaults to ERR_UNKNOWN.
    */
   constructor(message, suggestions, code) {

@@ -101,6 +101,12 @@ export interface ContextRenderProps {
    */
   role?: string;
   /**
+   * Accessible name applied to the popover container via `aria-label`.
+   * Pair with `role` so layers with a named role (e.g. `'dialog'`) expose a
+   * proper name to assistive technology.
+   */
+  'aria-label'?: string;
+  /**
    * StyleX styles for the popover container.
    */
   xstyle?: StyleXStyles;
@@ -525,6 +531,7 @@ export function useLayer(
         alignment = 'center',
         positioning = 'anchor',
         role,
+        'aria-label': ariaLabel,
         xstyle,
         className: extraClassName,
         style: extraStyle,
@@ -561,6 +568,7 @@ export function useLayer(
           ref={popoverRefCallback}
           id={id}
           role={role}
+          aria-label={ariaLabel}
           popover={lightDismiss ? 'auto' : 'manual'}
           className={combinedClassName}
           style={{...stylexResult.style, ...anchorStyle, ...extraStyle}}

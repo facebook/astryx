@@ -152,7 +152,13 @@ const styles = stylex.create({
   open: {
     display: 'flex',
     opacity: 1,
-    animationName: enterDirectional,
+    // Disable the entry keyframe animation under
+    // `prefers-reduced-motion: reduce` so the dialog appears instantly
+    // instead of translating/scaling in (same pattern as layerAnimations).
+    animationName: {
+      default: enterDirectional,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
   },
   // Backdrop using ::backdrop pseudo-element
   backdrop: {
@@ -531,7 +537,11 @@ export function Dialog({
           ),
           className,
           style,
-        )}>
+        )}
+        data-testid={
+          (props as Record<string, unknown>)['data-testid'] as
+            string | undefined
+        }>
         {innerContent}
       </div>
     );

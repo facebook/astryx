@@ -699,7 +699,9 @@ export function useTriggerMenu(
       <div
         id={listboxId}
         role="listbox"
-        aria-label={trigger?.menuLabel ?? t('@astryx.chatTriggerMenu.suggestions')}
+        aria-label={
+          trigger?.menuLabel ?? t('@astryx.chatTriggerMenu.suggestions')
+        }
         {...mergeProps(
           themeProps('trigger-menu'),
           stylex.props(styles.dropdown),

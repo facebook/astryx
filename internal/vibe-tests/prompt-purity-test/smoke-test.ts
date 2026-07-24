@@ -34,7 +34,9 @@ function check(name: string, fn: () => void) {
     console.log(`  PASS  ${name}`);
   } catch (e) {
     failures++;
-    console.error(`  FAIL  ${name}\n        ${e instanceof Error ? e.message : String(e)}`);
+    console.error(
+      `  FAIL  ${name}\n        ${e instanceof Error ? e.message : String(e)}`,
+    );
   }
 }
 
@@ -45,7 +47,9 @@ function softCheck(name: string, fn: () => void) {
     passed++;
     console.log(`  PASS  ${name}`);
   } catch (e) {
-    console.warn(`  WARN  ${name}\n        ${e instanceof Error ? e.message : String(e)}`);
+    console.warn(
+      `  WARN  ${name}\n        ${e instanceof Error ? e.message : String(e)}`,
+    );
   }
 }
 
@@ -77,16 +81,29 @@ export default function App() {
 
 console.log('\nA. Veer/catch classifier (fabricated timelines)');
 
-check('detectMarkers finds className/inlineStyle/cssImport/tailwind/hardcodedColor in dirty code', () => {
-  const types = new Set(detectMarkers(DIRTY).map(h => h.type));
-  for (const t of ['className', 'inlineStyle', 'cssImport', 'tailwind', 'hardcodedColor'] as const) {
-    assert.ok(types.has(t), `expected marker "${t}"`);
-  }
-});
+check(
+  'detectMarkers finds className/inlineStyle/cssImport/tailwind/hardcodedColor in dirty code',
+  () => {
+    const types = new Set(detectMarkers(DIRTY).map(h => h.type));
+    for (const t of [
+      'className',
+      'inlineStyle',
+      'cssImport',
+      'tailwind',
+      'hardcodedColor',
+    ] as const) {
+      assert.ok(types.has(t), `expected marker "${t}"`);
+    }
+  },
+);
 
 check('detectMarkers finds nothing hard in pure Astryx code', () => {
   const hard = detectMarkers(PURE).filter(h => h.severity === 'hard');
-  assert.equal(hard.length, 0, `unexpected hard markers: ${hard.map(h => h.type).join(', ')}`);
+  assert.equal(
+    hard.length,
+    0,
+    `unexpected hard markers: ${hard.map(h => h.type).join(', ')}`,
+  );
 });
 
 check('purityScore: pure high (>90), dirty low (<50)', () => {
@@ -96,7 +113,14 @@ check('purityScore: pure high (>90), dirty low (<50)', () => {
 
 check('neverVeered: single clean write', () => {
   const c = classifyTimeline([PURE]);
-  assert.ok(c.neverVeered && !c.everVeered && !c.caught && !c.veeredUncaught && !c.noOutput, JSON.stringify(c));
+  assert.ok(
+    c.neverVeered &&
+      !c.everVeered &&
+      !c.caught &&
+      !c.veeredUncaught &&
+      !c.noOutput,
+    JSON.stringify(c),
+  );
 });
 
 check('caught: dirty then clean (veered, then fixed)', () => {
@@ -118,74 +142,143 @@ check('noOutput: empty timeline', () => {
   assert.ok(c.noOutput && !c.everVeered && !c.neverVeered, JSON.stringify(c));
 });
 
-check('caughtInReasoning: mentioned Tailwind but never wrote a hard marker', () => {
-  const c = classifyTimeline([PURE], {transcriptText: 'I considered using Tailwind here but Astryx has a component for it.'});
-  assert.ok(c.mentionedVeerInReasoning && c.neverVeered && c.caughtInReasoning, JSON.stringify(c));
-});
+check(
+  'caughtInReasoning: mentioned Tailwind but never wrote a hard marker',
+  () => {
+    const c = classifyTimeline([PURE], {
+      transcriptText:
+        'I considered using Tailwind here but Astryx has a component for it.',
+    });
+    assert.ok(
+      c.mentionedVeerInReasoning && c.neverVeered && c.caughtInReasoning,
+      JSON.stringify(c),
+    );
+  },
+);
 
 // ── B. setup wiring ──────────────────────────────────────────────────
 
-console.log('\nB. setup-purity.mjs wiring (real astryx init into a temp sandbox)');
+console.log(
+  '\nB. setup-purity.mjs wiring (real astryx init into a temp sandbox)',
+);
 
 const smokeOut = fs.mkdtempSync(path.join(os.tmpdir(), 'purity-smoke-'));
 const expId = 'smoke' + crypto.randomBytes(2).toString('hex');
 let setupOk = false;
 
-check('setup-purity.mjs builds A-control + B-selfcheck for dd-1 (1 rep)', () => {
-  execFileSync(
-    process.execPath,
-    [
-      path.join(EXP_DIR, 'setup-purity.mjs'),
-      '--exp', expId,
-      '--out', smokeOut,
-      '--conditions', 'A-control,B-selfcheck',
-      '--prompts', 'dd-1',
-      '--reps', '1',
-    ],
-    {stdio: 'pipe'},
-  );
-  assert.ok(fs.existsSync(path.join(smokeOut, expId, 'purity-config.json')), 'purity-config.json missing');
-  setupOk = true;
-});
+check(
+  'setup-purity.mjs builds A-control + B-selfcheck for dd-1 (1 rep)',
+  () => {
+    execFileSync(
+      process.execPath,
+      [
+        path.join(EXP_DIR, 'setup-purity.mjs'),
+        '--exp',
+        expId,
+        '--out',
+        smokeOut,
+        '--conditions',
+        'A-control,B-selfcheck',
+        '--prompts',
+        'dd-1',
+        '--reps',
+        '1',
+      ],
+      {stdio: 'pipe'},
+    );
+    assert.ok(
+      fs.existsSync(path.join(smokeOut, expId, 'purity-config.json')),
+      'purity-config.json missing',
+    );
+    setupOk = true;
+  },
+);
 
-const proj = (cond: string) => path.join(smokeOut, expId, cond, 'projects', 'dd-1');
+const proj = (cond: string) =>
+  path.join(smokeOut, expId, cond, 'projects', 'dd-1');
 
 check('control AGENTS.md has NO self-check; candidate AGENTS.md HAS it', () => {
   assert.ok(setupOk, 'setup did not complete');
   const a = fs.readFileSync(path.join(proj('A-control'), 'AGENTS.md'), 'utf-8');
-  const b = fs.readFileSync(path.join(proj('B-selfcheck'), 'AGENTS.md'), 'utf-8');
-  assert.ok(!a.includes('PURITY SELF-CHECK'), 'control should not contain the self-check block');
-  assert.ok(b.includes('PURITY SELF-CHECK'), 'candidate should contain the self-check block');
-  assert.ok(b.includes('re-read the file'), 'candidate should contain the B-selfcheck text');
+  const b = fs.readFileSync(
+    path.join(proj('B-selfcheck'), 'AGENTS.md'),
+    'utf-8',
+  );
+  assert.ok(
+    !a.includes('PURITY SELF-CHECK'),
+    'control should not contain the self-check block',
+  );
+  assert.ok(
+    b.includes('PURITY SELF-CHECK'),
+    'candidate should contain the self-check block',
+  );
+  assert.ok(
+    b.includes('re-read the file'),
+    'candidate should contain the B-selfcheck text',
+  );
 });
 
-check('injected prompt recommends the Astryx xstyle/StyleX path (stylex detected)', () => {
-  assert.ok(setupOk, 'setup did not complete');
-  const a = fs.readFileSync(path.join(proj('A-control'), 'AGENTS.md'), 'utf-8');
-  assert.ok(/xstyle|StyleX/i.test(a), 'AGENTS.md should reference xstyle/StyleX (styling system should detect as stylex)');
-});
+check(
+  'injected prompt recommends the Astryx xstyle/StyleX path (stylex detected)',
+  () => {
+    assert.ok(setupOk, 'setup did not complete');
+    const a = fs.readFileSync(
+      path.join(proj('A-control'), 'AGENTS.md'),
+      'utf-8',
+    );
+    assert.ok(
+      /xstyle|StyleX/i.test(a),
+      'AGENTS.md should reference xstyle/StyleX (styling system should detect as stylex)',
+    );
+  },
+);
 
-check('base package.json lists a StyleX compiler plugin (drives stylex detection)', () => {
-  assert.ok(setupOk, 'setup did not complete');
-  const pkg = JSON.parse(fs.readFileSync(path.join(proj('A-control'), 'package.json'), 'utf-8'));
-  assert.ok(pkg.devDependencies?.['@stylexjs/babel-plugin'], 'missing @stylexjs/babel-plugin');
-});
+check(
+  'base package.json lists a StyleX compiler plugin (drives stylex detection)',
+  () => {
+    assert.ok(setupOk, 'setup did not complete');
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(proj('A-control'), 'package.json'), 'utf-8'),
+    );
+    assert.ok(
+      pkg.devDependencies?.['@stylexjs/babel-plugin'],
+      'missing @stylexjs/babel-plugin',
+    );
+  },
+);
 
 check('logging astryx shim is installed', () => {
   assert.ok(setupOk, 'setup did not complete');
   const shim = path.join(proj('A-control'), 'node_modules', '.bin', 'astryx');
   assert.ok(fs.existsSync(shim), 'shim missing');
-  assert.ok(fs.readFileSync(shim, 'utf-8').includes('.astryx-invocations.log'), 'shim does not log invocations');
+  assert.ok(
+    fs.readFileSync(shim, 'utf-8').includes('.astryx-invocations.log'),
+    'shim does not log invocations',
+  );
 });
 
-check('no answer leak: expectedComponents never appears in the task prompt', () => {
-  assert.ok(setupOk, 'setup did not complete');
-  const task = JSON.parse(fs.readFileSync(path.join(smokeOut, expId, 'B-selfcheck', 'tasks', 'dd-1.json'), 'utf-8'));
-  assert.ok(!task.taskPrompt.includes('expectedComponents'), 'taskPrompt leaks the expectedComponents key');
-  for (const comp of task.expectedComponents ?? []) {
-    assert.ok(!task.taskPrompt.includes(comp), `taskPrompt leaks expected component "${comp}"`);
-  }
-});
+check(
+  'no answer leak: expectedComponents never appears in the task prompt',
+  () => {
+    assert.ok(setupOk, 'setup did not complete');
+    const task = JSON.parse(
+      fs.readFileSync(
+        path.join(smokeOut, expId, 'B-selfcheck', 'tasks', 'dd-1.json'),
+        'utf-8',
+      ),
+    );
+    assert.ok(
+      !task.taskPrompt.includes('expectedComponents'),
+      'taskPrompt leaks the expectedComponents key',
+    );
+    for (const comp of task.expectedComponents ?? []) {
+      assert.ok(
+        !task.taskPrompt.includes(comp),
+        `taskPrompt leaks expected component "${comp}"`,
+      );
+    }
+  },
+);
 
 // ── C. runner dry-run (best-effort) ──────────────────────────────────
 
@@ -194,16 +287,38 @@ console.log('\nC. run-purity.ts --dry-run (headless pipeline; best-effort)');
 softCheck('dry-run creates run.json with status "dry-run"', () => {
   assert.ok(setupOk, 'setup did not complete');
   try {
-    execFileSync('npx', ['tsx', path.join(EXP_DIR, 'run-purity.ts'), '--experiment', expId, '--out', smokeOut, '--dry-run'], {
-      stdio: 'pipe',
-      cwd: EXP_DIR,
-    });
+    execFileSync(
+      'npx',
+      [
+        'tsx',
+        path.join(EXP_DIR, 'run-purity.ts'),
+        '--experiment',
+        expId,
+        '--out',
+        smokeOut,
+        '--dry-run',
+      ],
+      {
+        stdio: 'pipe',
+        cwd: EXP_DIR,
+      },
+    );
   } catch (e) {
     // Non-fatal: environment may not resolve `npx tsx` here. The classifier + wiring
     // checks are the load-bearing ones; surface this as a soft note instead.
-    throw new Error(`could not run dry-run via "npx tsx" (${e instanceof Error ? e.message : String(e)}) — run it manually to verify`, {cause: e});
+    throw new Error(
+      `could not run dry-run via "npx tsx" (${e instanceof Error ? e.message : String(e)}) — run it manually to verify`,
+      {cause: e},
+    );
   }
-  const runJson = path.join(smokeOut, expId, 'A-control', 'runs', 'dd-1', 'run.json');
+  const runJson = path.join(
+    smokeOut,
+    expId,
+    'A-control',
+    'runs',
+    'dd-1',
+    'run.json',
+  );
   assert.ok(fs.existsSync(runJson), 'run.json not created by dry-run');
   assert.equal(JSON.parse(fs.readFileSync(runJson, 'utf-8')).status, 'dry-run');
 });
@@ -216,5 +331,7 @@ try {
   /* ignore */
 }
 
-console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}  (${passed} passed, ${failures} failed)\n`);
+console.log(
+  `\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}  (${passed} passed, ${failures} failed)\n`,
+);
 process.exit(failures === 0 ? 0 : 1);

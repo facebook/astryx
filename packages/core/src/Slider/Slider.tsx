@@ -4,7 +4,7 @@
 
 /**
  * @file Slider.tsx
- * @input Uses React, useId, useRef, useCallback, Field, Tooltip, useTooltip
+ * @input Uses React, useId, useRef, useCallback, Field, Tooltip, useTooltip, VisuallyHidden
  * @output Exports Slider component, SliderProps, SliderSingleProps, SliderRangeProps, SliderBaseProps
  * @position Core implementation; consumed by index.ts, tested by Slider.test.tsx
  *
@@ -38,6 +38,7 @@ import {
 import {Field} from '../Field/Field';
 import {Tooltip} from '../Tooltip/Tooltip';
 import {useTooltip} from '../Tooltip';
+import {VisuallyHidden} from '../VisuallyHidden';
 import type {InputStatus} from '../Field/types';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -393,6 +394,7 @@ export function Slider({ref, ...props}: SliderProps) {
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  const requiredID = useId();
 
   const trackRef = useRef<HTMLDivElement>(null);
   const draggingThumbRef = useRef<number | null>(null);
@@ -412,6 +414,12 @@ export function Slider({ref, ...props}: SliderProps) {
     isEnabled: showsDisabledMessage,
   });
 
+  // Required state. `aria-required` is not a supported property of
+  // role="slider" in WAI-ARIA 1.2, so the thumb instead points its
+  // aria-describedby at a visually hidden "Required" span — mirroring the
+  // Field label's visible indicator (where isOptional takes precedence).
+  const conveysRequired = isRequired && !isOptional;
+
   // Build aria-describedby
   const describedByParts: string[] = [];
   if (description) {
@@ -419,6 +427,9 @@ export function Slider({ref, ...props}: SliderProps) {
   }
   if (status?.message) {
     describedByParts.push(statusMessageID);
+  }
+  if (conveysRequired) {
+    describedByParts.push(requiredID);
   }
   if (showsDisabledMessage) {
     describedByParts.push(disabledMessageTooltip.describedBy);
@@ -921,6 +932,9 @@ export function Slider({ref, ...props}: SliderProps) {
 
         {textDisplay}
       </div>
+      {conveysRequired && (
+        <VisuallyHidden id={requiredID}>Required</VisuallyHidden>
+      )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>

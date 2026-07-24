@@ -6,7 +6,8 @@ export const docs = {
   name: 'useTableSelection',
   subComponentOf: 'Table',
   displayName: 'useTableSelection',
-  description: 'Hook that returns a TablePlugin implementing row selection with checkboxes, select-all, and aria-selected. Uses React Context for independent checkbox re-renders.',
+  description:
+    'Hook that returns a TablePlugin implementing row selection with checkboxes, select-all, and aria-selected. Uses React Context for independent checkbox re-renders.',
   props: [
     {
       name: 'getIsItemSelected',
@@ -17,7 +18,8 @@ export const docs = {
     {
       name: 'onSelectItem',
       type: '(event: {item: T; isSelected: boolean}) => void',
-      description: 'Called when a row checkbox is toggled. isSelected is the new desired state.',
+      description:
+        'Called when a row checkbox is toggled. isSelected is the new desired state.',
       required: true,
     },
     {
@@ -29,25 +31,58 @@ export const docs = {
     {
       name: 'getIsAllSelected',
       type: '() => boolean',
-      description: 'Returns whether all selectable items are currently selected.',
+      description:
+        'Returns whether all selectable items are currently selected.',
       required: true,
     },
     {
       name: 'getIsIndeterminate',
       type: '() => boolean',
-      description: 'Returns whether selection is partial (some but not all). Renders the select-all checkbox in indeterminate state.',
+      description:
+        'Returns whether selection is partial (some but not all). Renders the select-all checkbox in indeterminate state.',
     },
     {
       name: 'getIsItemSelectable',
       type: '(item: T) => boolean',
-      description: 'Returns whether a row should show a checkbox. Non-selectable rows render nothing in the selection cell.',
+      description:
+        'Returns whether a row should show a checkbox. Non-selectable rows render nothing in the selection cell.',
       default: '() => true',
     },
     {
       name: 'getIsItemEnabled',
       type: '(item: T) => boolean',
-      description: 'Returns whether a row checkbox is interactive. Disabled rows show a disabled checkbox.',
+      description:
+        'Returns whether a row checkbox is interactive. Disabled rows show a disabled checkbox.',
       default: '() => true',
+    },
+    {
+      name: 'getRowLabel',
+      type: '(item: T) => string',
+      description:
+        'Derives a human-readable identity for a row; the row checkbox\'s hidden label becomes `Select ${getRowLabel(item)}` so screen readers announce which row each checkbox selects. Falls back to "Select row" when omitted.',
+    },
+  ],
+  examples: [
+    {
+      label: 'Accessible per-row checkbox names',
+      code: `
+const selectionPlugin = useTableSelection({
+  getIsItemSelected: item => selectedIds.has(item.id),
+  onSelectItem: ({item, isSelected}) => toggle(item.id, isSelected),
+  onSelectAll: ({isAllSelected}) => selectAll(isAllSelected),
+  getIsAllSelected: () => selectedIds.size === users.length,
+  // Screen readers announce "Select Alice", "Select Bob", ...
+  // instead of an undifferentiated "Select row" for every checkbox.
+  getRowLabel: item => item.name,
+});
+
+<Table
+  data={users}
+  columns={columns}
+  idKey="id"
+  plugins={{selection: selectionPlugin}}
+/>;
+`,
     },
   ],
 };
@@ -55,7 +90,8 @@ export const docs = {
 export const docsZh = {
   name: 'useTableSelection',
   displayName: 'useTableSelection',
-  description: '返回 TablePlugin 的 Hook，实现带复选框、全选和 aria-selected 的行选择功能。使用 React Context 实现独立的复选框重新渲染。',
+  description:
+    '返回 TablePlugin 的 Hook，实现带复选框、全选和 aria-selected 的行选择功能。使用 React Context 实现独立的复选框重新渲染。',
   props: [
     {
       name: 'getIsItemSelected',
@@ -84,12 +120,14 @@ export const docsZh = {
     {
       name: 'getIsIndeterminate',
       type: '() => boolean',
-      description: '返回选择是否为部分选中（部分但非全部）。将全选复选框渲染为不确定状态。',
+      description:
+        '返回选择是否为部分选中（部分但非全部）。将全选复选框渲染为不确定状态。',
     },
     {
       name: 'getIsItemSelectable',
       type: '(item: T) => boolean',
-      description: '返回行是否应显示复选框。不可选择的行在选择单元格中不渲染任何内容。',
+      description:
+        '返回行是否应显示复选框。不可选择的行在选择单元格中不渲染任何内容。',
       default: '() => true',
     },
     {
@@ -98,20 +136,33 @@ export const docsZh = {
       description: '返回行复选框是否可交互。禁用的行显示禁用状态的复选框。',
       default: '() => true',
     },
+    {
+      name: 'getRowLabel',
+      type: '(item: T) => string',
+      description:
+        '为行派生人类可读的标识；行复选框的隐藏标签变为 `Select ${getRowLabel(item)}`，让屏幕阅读器播报每个复选框选择的是哪一行。省略时回退为 "Select row"。',
+    },
   ],
 };
 
 export const docsDense = {
   name: 'useTableSelection',
   displayName: 'useTableSelection',
-  description: 'Hook returning TablePlugin for row selection w/ checkboxes, select-all, aria-selected. Uses React Context for independent checkbox re-renders.',
+  description:
+    'Hook returning TablePlugin for row selection w/ checkboxes, select-all, aria-selected. Uses React Context for independent checkbox re-renders.',
   propDescriptions: {
     getIsItemSelected: 'Returns whether item is selected.',
-    onSelectItem: 'Called on row checkbox toggle; isSelected = new desired state.',
+    onSelectItem:
+      'Called on row checkbox toggle; isSelected = new desired state.',
     onSelectAll: 'Called on select-all header checkbox toggle.',
     getIsAllSelected: 'Returns whether all selectable items are selected.',
-    getIsIndeterminate: 'Returns partial selection state; renders indeterminate checkbox.',
-    getIsItemSelectable: 'Returns whether row shows checkbox; non-selectable rows render nothing.',
-    getIsItemEnabled: 'Returns whether row checkbox is interactive; disabled rows show disabled checkbox.',
+    getIsIndeterminate:
+      'Returns partial selection state; renders indeterminate checkbox.',
+    getIsItemSelectable:
+      'Returns whether row shows checkbox; non-selectable rows render nothing.',
+    getIsItemEnabled:
+      'Returns whether row checkbox is interactive; disabled rows show disabled checkbox.',
+    getRowLabel:
+      'Derives row identity for the checkbox\'s hidden label: `Select ${getRowLabel(item)}`. Falls back to "Select row" when omitted.',
   },
 };

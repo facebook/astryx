@@ -8,7 +8,7 @@ export const docs = {
   category: 'Data Input',
   isHiddenFromOverview: true,
   description:
-    'Status message component for form field validation feedback.',
+    'Status message component for form field validation feedback. Messages are announced to screen readers through persistent live regions (assertive for errors, polite otherwise), so conditional mounting is safe.',
   theming: {
     targets: [
       {className: 'astryx-field-status', visualProps: ['type', 'variant']},
@@ -66,12 +66,24 @@ export const docs = {
 /** @type {import('../docs-types').TranslationDoc} */
 export const docsDense = {
   description:
-    'Validation feedback message for fields/custom controls. Supports error, warning, success and attached/detached variants.',
+    'Validation feedback message for fields/custom controls. Supports error, warning, success and attached/detached variants. Announced via persistent live regions (assertive for errors, polite otherwise).',
   usage: {
     bestPractices: [
-      {guidance: true, description: 'Use attached status below bordered inputs when message belongs to that input.'},
-      {guidance: true, description: 'Use detached status for checkboxes, switches, and custom controls where overlap is visually awkward.'},
-      {guidance: false, description: 'Use FieldStatus for general alerts or page-level notices; use Banner or Toast instead.'},
+      {
+        guidance: true,
+        description:
+          'Use attached status below bordered inputs when message belongs to that input.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use detached status for checkboxes, switches, and custom controls where overlap is visually awkward.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use FieldStatus for general alerts or page-level notices; use Banner or Toast instead.',
+      },
     ],
   },
   propDescriptions: {

@@ -135,7 +135,9 @@ export function ChatLayoutScrollButton({
         )}>
         <Button
           label={label ?? t('@astryx.chatLayoutScrollButton.scrollToBottom')}
-          aria-label={label ?? t('@astryx.chatLayoutScrollButton.scrollToBottom')}
+          aria-label={
+            label ?? t('@astryx.chatLayoutScrollButton.scrollToBottom')
+          }
           icon={<Icon icon="chevronDown" size="md" />}
           variant="ghost"
           size="md"

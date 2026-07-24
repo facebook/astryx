@@ -348,9 +348,10 @@ describe('FileInput', () => {
       fireEvent.change(fileInputEl(), {
         target: {files: [createFile('note.txt', 100)]},
       });
-      // A rejected selection creates no polite region (only the error goes to
-      // the existing role="status" region).
-      expect(politeRegion()).toBeNull();
+      // A rejected selection announces nothing politely. (The region pair may
+      // exist because the validation error itself is announced assertively via
+      // FieldStatus, but the polite channel must stay empty.)
+      expect(politeRegion()?.textContent ?? '').toBe('');
     });
   });
 
@@ -638,6 +639,54 @@ describe('FileInput', () => {
         />,
       );
       expect(screen.getByText('doc.pdf')).toBeInTheDocument();
+    });
+  });
+
+  describe('trigger accessible name', () => {
+    it('includes the selected file name in the trigger name', () => {
+      const file = createFile('report.pdf', 1024, 'application/pdf');
+      render(<FileInput label="Document" value={file} onChange={() => {}} />);
+      expect(
+        screen.getByRole('button', {name: 'Document, report.pdf'}),
+      ).toBeInTheDocument();
+    });
+
+    it('includes all selected file names when multiple files are selected', () => {
+      const files = [createFile('a.txt', 100), createFile('b.txt', 200)];
+      render(
+        <FileInput
+          label="Files"
+          value={files}
+          onChange={() => {}}
+          isMultiple
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Files, a.txt, b.txt'}),
+      ).toBeInTheDocument();
+    });
+
+    it('uses exactly the label when no files are selected', () => {
+      render(<FileInput label="Document" value={null} onChange={() => {}} />);
+      expect(screen.getByRole('button', {name: 'Document'})).toHaveAttribute(
+        'aria-label',
+        'Document',
+      );
+    });
+
+    it('includes the selected file name in dropzone mode', () => {
+      const file = createFile('doc.pdf', 100, 'application/pdf');
+      render(
+        <FileInput
+          label="Upload"
+          value={file}
+          onChange={() => {}}
+          mode="dropzone"
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Upload, doc.pdf'}),
+      ).toBeInTheDocument();
     });
   });
 

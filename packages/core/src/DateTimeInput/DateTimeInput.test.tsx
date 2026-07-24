@@ -185,6 +185,41 @@ describe('DateTimeInput', () => {
     );
   });
 
+  it('opens the calendar popover on ArrowDown (keyboard, forms-13)', () => {
+    render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    input.focus();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    // skipAutoFocus keeps focus in the input, per the APG date-picker pattern
+    expect(input).toHaveFocus();
+  });
+
+  it('opens the calendar popover on Alt+ArrowDown (keyboard, forms-13)', () => {
+    render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, {key: 'ArrowDown', altKey: true});
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('does not open on ArrowDown when disabled', () => {
+    render(<DateTimeInput label="Meeting" isDisabled onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('does not re-trigger on ArrowDown when the calendar is already open', () => {
+    render(<DateTimeInput label="Meeting" onChange={() => {}} />);
+    const input = screen.getByRole('combobox');
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+    // A second ArrowDown is a no-op: the calendar stays open
+    fireEvent.keyDown(input, {key: 'ArrowDown'});
+    expect(input).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('calendar button is focusable and clickable', () => {
     render(<DateTimeInput label="Meeting" onChange={() => {}} />);
     const button = getButton('Open calendar');

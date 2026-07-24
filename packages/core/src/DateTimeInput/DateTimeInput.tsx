@@ -719,12 +719,22 @@ export function DateTimeInput({
       if (e.key === 'Escape' && popover.isOpen) {
         e.preventDefault();
         popover.hide();
+      } else if (
+        (e.key === 'ArrowDown' || (e.altKey && e.key === 'ArrowDown')) &&
+        !popover.isOpen
+      ) {
+        // APG combobox: ArrowDown (and Alt+ArrowDown) opens the calendar
+        // popover from the keyboard, keeping focus in the input (forms-13).
+        e.preventDefault();
+        if (!isEffectivelyDisabled) {
+          popover.show({skipAutoFocus: true});
+        }
       } else if (e.key === 'Enter') {
         e.preventDefault();
         commitDatePendingInput();
       }
     },
-    [popover, commitDatePendingInput],
+    [popover, commitDatePendingInput, isEffectivelyDisabled],
   );
 
   // --- Time handlers ---
@@ -1000,7 +1010,9 @@ export function DateTimeInput({
             disabled={isEffectivelyDisabled && !showsDisabledMessage}
             aria-disabled={showsDisabledMessage ? 'true' : undefined}
             readOnly={showsDisabledMessage || undefined}
-            aria-label={timeLabel ?? t('@astryx.dateTimeInput.timeSuffix', {label})}
+            aria-label={
+              timeLabel ?? t('@astryx.dateTimeInput.timeSuffix', {label})
+            }
             aria-describedby={ariaDescribedBy}
             aria-required={isRequired === true ? 'true' : undefined}
             aria-invalid={

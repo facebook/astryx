@@ -11,10 +11,12 @@
 import type {
   ComponentListResponse,
   ComponentBriefResponse,
+  ComponentFullResponse,
   ComponentDetailResponse,
   ComponentDetailPropsResponse,
   ComponentDetailSourceResponse,
   ComponentDetailShowcaseResponse,
+  ComponentDetailBlocksResponse,
 } from './component';
 import type {
   DiscoverListResponse,
@@ -42,12 +44,27 @@ import type {
 } from './hook';
 import type {SwizzleListResponse, SwizzleCopyResponse} from './swizzle';
 import type {ThemeBuildResponse} from './theme';
-import type {UpgradeListResponse, UpgradeRunResponse} from './upgrade';
+import type {
+  UpgradeListResponse,
+  UpgradeRunResponse,
+  UpgradeStatusResponse,
+} from './upgrade';
 import type {SearchResponse} from './search';
+import type {BuildHelpResponse} from './build';
 import type {ErrorCode} from './error-codes';
 import type {ManifestResponse} from './manifest';
 import type {DoctorResponse} from './doctor';
 import type {ValidateIntegrationResponse} from './validate-integration';
+
+/**
+ * A "did you mean…" suggestion attached to an error. `reason` is optional:
+ * some call sites emit bare `{name}` (e.g. a list of candidate component names)
+ * with no per-item explanation.
+ */
+export interface Suggestion {
+  name: string;
+  reason?: string;
+}
 
 /**
  * Structured error. Check `'error' in result` to discriminate.
@@ -58,7 +75,7 @@ import type {ValidateIntegrationResponse} from './validate-integration';
 export interface CLIError {
   error: string;
   code: ErrorCode;
-  suggestions?: Array<{name: string; reason: string}>;
+  suggestions?: Suggestion[];
 }
 
 /** Returned by the fallback hook for commands without --json support. */
@@ -74,10 +91,12 @@ export type CLIResult<T> = T | CLIError | CLIUnsupportedError;
 export type CLIAnyResponse =
   | ComponentListResponse
   | ComponentBriefResponse
+  | ComponentFullResponse
   | ComponentDetailResponse
   | ComponentDetailPropsResponse
   | ComponentDetailSourceResponse
   | ComponentDetailShowcaseResponse
+  | ComponentDetailBlocksResponse
   | DiscoverListResponse
   | DiscoverDetailResponse
   | DiscoverDetailDocResponse
@@ -99,7 +118,9 @@ export type CLIAnyResponse =
   | ThemeBuildResponse
   | UpgradeListResponse
   | UpgradeRunResponse
+  | UpgradeStatusResponse
   | SearchResponse
+  | BuildHelpResponse
   | ManifestResponse
   | DoctorResponse
   | ValidateIntegrationResponse;
@@ -129,7 +150,7 @@ export function jsonOut<T extends CLIResponseType>(
  */
 export function jsonError(
   message: string,
-  suggestions?: Array<{name: string; reason: string}>,
+  suggestions?: Suggestion[],
   code?: ErrorCode,
 ): never;
 

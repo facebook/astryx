@@ -18,9 +18,9 @@ import {getCliInvocation} from './package-manager.mjs';
 
 /**
  * Read the latest available version from local signals.
- * No network calls — purely filesystem and env var checks.
+ * No network calls — purely an env-var check ($ASTRYX_LATEST_VERSION),
+ * so it takes no arguments.
  *
- * @param {string} [cwd] - Project directory (default: process.cwd())
  * @returns {string|null} Latest version string, or null if unknown
  */
 export function getLatestVersion() {
@@ -64,7 +64,7 @@ export function getInstalledVersion(cwd = process.cwd()) {
  * @returns {string|null} FYI hint string, or null if up to date / unknown
  */
 export function checkForUpdate(cwd = process.cwd()) {
-  const latest = getLatestVersion(cwd);
+  const latest = getLatestVersion();
   if (!latest) return null;
 
   // Persist for subsequent commands in this shell session

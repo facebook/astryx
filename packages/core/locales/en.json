@@ -263,6 +263,10 @@
     "defaultMessage": "Scroll right",
     "description": "Screen-reader-only label on the right arrow button in a Carousel. Pairs with `carousel.scrollLeft`; same RTL note."
   },
+  "@astryx.carousel.slideLabel": {
+    "defaultMessage": "Slide {current, number} of {total, number}",
+    "description": "Screen-reader accessible name for one slide in a Carousel, giving its position. `current` is the 1-based slide number; `total` is the slide count."
+  },
   "@astryx.chat.status.sending": {
     "defaultMessage": "Sending",
     "description": "Chat send-status caption under an outgoing message while it is being transmitted. Part of the set sending → sent → delivered → read (or failed) — keep tense/aspect consistent."
@@ -410,6 +414,10 @@
   "@astryx.table.selection.selectRow": {
     "defaultMessage": "Select row",
     "description": "Aria label for the \"select row\" checkbox on a Table row."
+  },
+  "@astryx.table.selection.selectRowNamed": {
+    "defaultMessage": "Select {label}",
+    "description": "Aria label for a Table row's selection checkbox when a per-row label is available (via getRowLabel). `label` is the row's human-readable identity, e.g. \"Alice\"."
   },
   "@astryx.table.sort.ascending": {
     "defaultMessage": "Sort ascending",
@@ -678,6 +686,10 @@
   "@astryx.fileInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that removes the selected file from a FileInput. Example: `Clear Attachment`, `Clear Résumé`."
+  },
+  "@astryx.fileInput.triggerWithFiles": {
+    "defaultMessage": "{label}, {fileNames}",
+    "description": "Accessible name for a FileInput trigger that has files attached, composing the field label with the selected filenames. Example: `Attachments, report.pdf, notes.txt`."
   },
   "@astryx.lightbox.mediaViewer": {
     "defaultMessage": "Media viewer",

@@ -318,6 +318,23 @@ export function useCombobox({
           }
           break;
 
+        // PageUp/PageDown mirror Home/End. In search mode Home/End stay on
+        // the input for caret movement (APG editable combobox), so these are
+        // the sanctioned substitute for jumping to the first/last option.
+        case 'PageUp':
+          e.preventDefault();
+          if (isOpen && enabledIndices.length > 0) {
+            setHighlightedIndex(enabledIndices[0]);
+          }
+          break;
+
+        case 'PageDown':
+          e.preventDefault();
+          if (isOpen && enabledIndices.length > 0) {
+            setHighlightedIndex(enabledIndices[enabledIndices.length - 1]);
+          }
+          break;
+
         case 'Delete':
         case 'Backspace':
           // Keyboard equivalent of the clear button (comboboxes-2): clear the
