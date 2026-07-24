@@ -1,0 +1,14 @@
+{
+  "promptId": "dd-4",
+  "category": "data-display",
+  "prompt": "Create a user profile page with tabs for Overview, Activity, and Settings. Each tab should show different content. The Overview tab should be selected by default.",
+  "expectedComponents": [
+    "TabList",
+    "Tab",
+    "Card"
+  ],
+  "target": "astryx-tailwind",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/d835c4fe/projects/dd-4. Explore it to find available components.\n\n## Task\n\nCreate a user profile page with tabs for Overview, Activity, and Settings. Each tab should show different content. The Overview tab should be selected by default.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/d835c4fe/projects/dd-4/dd-4.tsx\nWrite metadata to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/d835c4fe/projects/dd-4/dd-4.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-24T11:12:19.419Z"
+}

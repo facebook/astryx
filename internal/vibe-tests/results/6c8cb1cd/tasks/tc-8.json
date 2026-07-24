@@ -1,0 +1,12 @@
+{
+  "promptId": "tc-8",
+  "category": "theme-customization",
+  "prompt": "Create a brutalist theme for Astryx — zero border radius, high contrast black and white, bold borders, and a hot pink accent color. Wire it up with Theme.",
+  "expectedComponents": [
+    "Theme"
+  ],
+  "target": "astryx",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/6c8cb1cd/projects/tc-8. Explore it to find available components.\n\n## Task\n\nCreate a brutalist theme for Astryx — zero border radius, high contrast black and white, bold borders, and a hot pink accent color. Wire it up with Theme.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/6c8cb1cd/projects/tc-8/tc-8.tsx\nWrite metadata to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/6c8cb1cd/projects/tc-8/tc-8.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-24T11:12:19.415Z"
+}

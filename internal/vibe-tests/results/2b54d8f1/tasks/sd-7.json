@@ -1,0 +1,14 @@
+{
+  "promptId": "sd-7",
+  "category": "state-driven",
+  "prompt": "Build a file upload component that shows a progress bar during upload. Display the filename, file size, and percentage complete. Show a success state when done.",
+  "expectedComponents": [
+    "ProgressBar",
+    "Text",
+    "Button"
+  ],
+  "target": "baseline",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/2b54d8f1/projects/sd-7. Explore it to find available components.\n\n## Task\n\nBuild a file upload component that shows a progress bar during upload. Display the filename, file size, and percentage complete. Show a success state when done.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/2b54d8f1/projects/sd-7/sd-7.tsx\nWrite metadata to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/2b54d8f1/projects/sd-7/sd-7.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-24T11:12:19.424Z"
+}

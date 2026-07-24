@@ -1,0 +1,13 @@
+{
+  "promptId": "io-1",
+  "category": "integration-oriented",
+  "prompt": "A form that validates email and posts to /api/subscribe",
+  "expectedComponents": [
+    "TextInput",
+    "Button"
+  ],
+  "target": "baseline",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/2b54d8f1/projects/io-1. Explore it to find available components.\n\n## Task\n\nA form that validates email and posts to /api/subscribe\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/2b54d8f1/projects/io-1/io-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/2b54d8f1/projects/io-1/io-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-24T11:12:19.425Z"
+}

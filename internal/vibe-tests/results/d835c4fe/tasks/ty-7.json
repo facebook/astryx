@@ -1,0 +1,13 @@
+{
+  "promptId": "ty-7",
+  "category": "typography",
+  "prompt": "Render a markdown-formatted changelog that includes headings, paragraphs, bullet lists, and inline code. The content should use proper typography styling.",
+  "expectedComponents": [
+    "Heading",
+    "Text"
+  ],
+  "target": "astryx-tailwind",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using the Astryx design system with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/d835c4fe/projects/ty-7. Explore it to find available components.\n\n## Task\n\nRender a markdown-formatted changelog that includes headings, paragraphs, bullet lists, and inline code. The content should use proper typography styling.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/d835c4fe/projects/ty-7/ty-7.tsx\nWrite metadata to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/d835c4fe/projects/ty-7/ty-7.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-24T11:12:19.421Z"
+}

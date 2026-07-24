@@ -1,0 +1,13 @@
+{
+  "promptId": "cwm-1",
+  "category": "clone-with-modification",
+  "prompt": "Something like Stripe's pricing table but with monthly/annual toggle",
+  "expectedComponents": [
+    "Card",
+    "Button"
+  ],
+  "target": "astryx",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using the Astryx design system.\nYour project is at /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/6c8cb1cd/projects/cwm-1. Explore it to find available components.\n\n## Task\n\nSomething like Stripe's pricing table but with monthly/annual toggle\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/6c8cb1cd/projects/cwm-1/cwm-1.tsx\nWrite metadata to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/6c8cb1cd/projects/cwm-1/cwm-1.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<component names you looked up>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-24T11:12:19.409Z"
+}

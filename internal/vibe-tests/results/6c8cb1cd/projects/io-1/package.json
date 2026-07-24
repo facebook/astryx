@@ -1,0 +1,14 @@
+{
+  "name": "my-app",
+  "private": true,
+  "dependencies": {
+    "@astryxdesign/core": "*",
+    "@astryxdesign/theme-neutral": "*",
+    "@stylexjs/stylex": "^0.10",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@astryxdesign/cli": "*"
+  }
+}

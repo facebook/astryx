@@ -1,0 +1,12 @@
+{
+  "promptId": "rc-3",
+  "category": "responsive-context",
+  "prompt": "Cards that stack vertically on mobile but show in a grid on desktop",
+  "expectedComponents": [
+    "Card"
+  ],
+  "target": "html",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using ONLY plain HTML elements and inline CSS.\nYour project is at /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/fcee8dcd/projects/rc-3. Do NOT use any component library.\nUse standard HTML elements (div, button, input, etc.) with inline styles or a styles object.\n\n## Task\n\nCards that stack vertically on mobile but show in a grid on desktop\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/fcee8dcd/projects/rc-3/rc-3.tsx\nWrite metadata to: /vercel/sandbox/repos/xds-worktrees/vibe-runner-0724/internal/vibe-tests/results/fcee8dcd/projects/rc-3/rc-3.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": []}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-07-24T11:12:19.427Z"
+}

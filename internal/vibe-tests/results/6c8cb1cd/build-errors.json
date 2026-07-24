@@ -1,0 +1,259 @@
+{
+  "cwm-1": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 33,
+        "message": "Type '{ value: string; onChange: Dispatch<SetStateAction<string>>; label: string; items: { value: string; label: string; }[]; }' is not assignable to type 'IntrinsicAttributes & SegmentedControlProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 38,
+        "message": "Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 42,
+        "message": "Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 46,
+        "message": "Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 46,
+        "message": "Type '\"baseline\"' is not assignable to type '\"end\" | \"start\" | \"center\" | \"stretch\" | undefined'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 5,
+    "buildSuccess": false
+  },
+  "dd-4": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 13,
+        "message": "Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 41,
+        "message": "Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 54,
+        "message": "Type '{ label: string; defaultValue: string; }' is not assignable to type 'IntrinsicAttributes & TextInputProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 55,
+        "message": "Type '{ label: string; defaultValue: string; }' is not assignable to type 'IntrinsicAttributes & TextInputProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 56,
+        "message": "Type '{ label: string; defaultValue: string; }' is not assignable to type 'IntrinsicAttributes & TextInputProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 71,
+        "message": "Type '{ value: string; onChange: Dispatch<SetStateAction<string>>; items: { value: string; label: string; }[]; }' is not assignable to type 'IntrinsicAttributes & TabListProps'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 6,
+    "buildSuccess": false
+  },
+  "fwc-4": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 17,
+        "message": "Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "io-1": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 45,
+        "message": "Type '{ children: string[]; variant: string; title: string; }' is not assignable to type 'IntrinsicAttributes & BannerProps'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "ps-3": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 22,
+        "message": "Property 'Header' does not exist on type 'typeof AppShell'.",
+        "code": "TS2339"
+      },
+      {
+        "line": 23,
+        "message": "Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 31,
+        "message": "Property 'Header' does not exist on type 'typeof AppShell'.",
+        "code": "TS2339"
+      },
+      {
+        "line": 32,
+        "message": "Property 'Sidebar' does not exist on type 'typeof AppShell'.",
+        "code": "TS2339"
+      },
+      {
+        "line": 35,
+        "message": "Type '{ items: { id: string; label: string; }[]; activeItem: string; onItemClick: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & SideNavProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 40,
+        "message": "Property 'Sidebar' does not exist on type 'typeof AppShell'.",
+        "code": "TS2339"
+      }
+    ],
+    "errorCount": 6,
+    "buildSuccess": false
+  },
+  "rc-3": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "sd-7": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "tc-8": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 21,
+        "message": "Object literal may only specify known properties, and ''--color-background'' does not exist in type 'Partial<Record<TokenName, TokenValue>>'.",
+        "code": "TS2353"
+      },
+      {
+        "line": 42,
+        "message": "Type 'string' is not assignable to type 'StyleOverrides'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 43,
+        "message": "Type 'string' is not assignable to type 'StyleOverrides'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 54,
+        "message": "Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 66,
+        "message": "Property 'value' is missing in type '{ label: string; placeholder: string; }' but required in type 'TextInputProps'.",
+        "code": "TS2741"
+      }
+    ],
+    "errorCount": 5,
+    "buildSuccess": false
+  },
+  "ty-7": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "wd-4": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 44,
+        "message": "Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 49,
+        "message": "Type 'Todo[]' is not assignable to type 'Record<string, unknown>[]'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 52,
+        "message": "Object literal may only specify known properties, and 'id' does not exist in type 'TableColumn<Record<string, unknown>>'.",
+        "code": "TS2353"
+      },
+      {
+        "line": 54,
+        "message": "Parameter 'row' implicitly has an 'any' type.",
+        "code": "TS7006"
+      },
+      {
+        "line": 56,
+        "message": "Type '{ isSelected: boolean; onChange: () => void; label: string; }' is not assignable to type 'IntrinsicAttributes & CheckboxInputProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 62,
+        "message": "Object literal may only specify known properties, and 'id' does not exist in type 'TableColumn<Record<string, unknown>>'.",
+        "code": "TS2353"
+      },
+      {
+        "line": 62,
+        "message": "Parameter 'row' implicitly has an 'any' type.",
+        "code": "TS7006"
+      },
+      {
+        "line": 64,
+        "message": "Object literal may only specify known properties, and 'id' does not exist in type 'TableColumn<Record<string, unknown>>'.",
+        "code": "TS2353"
+      },
+      {
+        "line": 66,
+        "message": "Parameter 'row' implicitly has an 'any' type.",
+        "code": "TS7006"
+      },
+      {
+        "line": 69,
+        "message": "Object literal may only specify known properties, and 'id' does not exist in type 'TableColumn<Record<string, unknown>>'.",
+        "code": "TS2353"
+      },
+      {
+        "line": 71,
+        "message": "Parameter 'row' implicitly has an 'any' type.",
+        "code": "TS7006"
+      },
+      {
+        "line": 73,
+        "message": "Object literal may only specify known properties, and 'id' does not exist in type 'TableColumn<Record<string, unknown>>'.",
+        "code": "TS2353"
+      },
+      {
+        "line": 73,
+        "message": "Parameter 'row' implicitly has an 'any' type.",
+        "code": "TS7006"
+      },
+      {
+        "line": 76,
+        "message": "Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 14,
+    "buildSuccess": false
+  }
+}

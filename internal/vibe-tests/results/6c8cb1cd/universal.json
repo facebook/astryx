@@ -1,0 +1,966 @@
+{
+  "averages": {
+    "correctness": 54,
+    "accessibility": 99,
+    "codeQuality": 99,
+    "efficiency": 89,
+    "maintainability": 94
+  },
+  "overall": 87,
+  "byPrompt": {
+    "cwm-1": {
+      "correctness": {
+        "score": 25,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ value: string; onChange: Dispatch<SetStateAction<string>>; label: string; items: { value: string; label: string; }[]; }' is not assignable to type 'IntrinsicAttributes & SegmentedControlProps'.",
+            "line": 33
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+            "line": 38
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+            "line": 42
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+            "line": 46
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"baseline\"' is not assignable to type '\"end\" | \"start\" | \"center\" | \"stretch\" | undefined'.",
+            "line": 46
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 97,
+        "findings": [
+          {
+            "rule": "heading-skip",
+            "severity": "minor",
+            "detail": "Heading level skipped: h1 → h3"
+          }
+        ]
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 91,
+        "findings": [],
+        "metrics": {
+          "totalLines": 71,
+          "codeLines": 65,
+          "stylingLines": 0,
+          "boilerplateLines": 14,
+          "logicLines": 51,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.2153846153846154,
+          "decisionsPerElement": 0.7,
+          "elementCount": 15,
+          "stylingDecisionCount": 11,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 1,
+          "avgStateSpread": 24
+        }
+      }
+    },
+    "dd-4": {
+      "correctness": {
+        "score": 10,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+            "line": 13
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+            "line": 41
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ label: string; defaultValue: string; }' is not assignable to type 'IntrinsicAttributes & TextInputProps'.",
+            "line": 54
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ label: string; defaultValue: string; }' is not assignable to type 'IntrinsicAttributes & TextInputProps'.",
+            "line": 55
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ label: string; defaultValue: string; }' is not assignable to type 'IntrinsicAttributes & TextInputProps'.",
+            "line": 56
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ value: string; onChange: Dispatch<SetStateAction<string>>; items: { value: string; label: string; }[]; }' is not assignable to type 'IntrinsicAttributes & TabListProps'.",
+            "line": 71
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 97,
+        "findings": [
+          {
+            "rule": "index-key",
+            "severity": "minor",
+            "detail": "Array index as key",
+            "line": 40
+          }
+        ]
+      },
+      "efficiency": {
+        "score": 84,
+        "findings": [
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 3 times",
+            "count": 3,
+            "example": "{action: \"_\", time: \"_\"},"
+          },
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 3 times",
+            "count": 3,
+            "example": "{value: \"_\", label: \"_\"},"
+          }
+        ],
+        "metrics": {
+          "totalLines": 85,
+          "codeLines": 78,
+          "stylingLines": 0,
+          "boilerplateLines": 8,
+          "logicLines": 70,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.10256410256410256,
+          "decisionsPerElement": 0.6,
+          "elementCount": 27,
+          "stylingDecisionCount": 16,
+          "duplicateRatio": 0.08
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 6,
+          "avgStateSpread": 16
+        }
+      }
+    },
+    "fwc-4": {
+      "correctness": {
+        "score": 85,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+            "line": 17
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 89,
+        "findings": [],
+        "metrics": {
+          "totalLines": 26,
+          "codeLines": 22,
+          "stylingLines": 0,
+          "boilerplateLines": 6,
+          "logicLines": 16,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.2727272727272727,
+          "decisionsPerElement": 0.6,
+          "elementCount": 7,
+          "stylingDecisionCount": 4,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 2,
+          "avgStateSpread": 3
+        }
+      }
+    },
+    "io-1": {
+      "correctness": {
+        "score": 85,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ children: string[]; variant: string; title: string; }' is not assignable to type 'IntrinsicAttributes & BannerProps'.",
+            "line": 45
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 96,
+        "findings": [],
+        "metrics": {
+          "totalLines": 67,
+          "codeLines": 60,
+          "stylingLines": 0,
+          "boilerplateLines": 6,
+          "logicLines": 54,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.1,
+          "decisionsPerElement": 0.7,
+          "elementCount": 6,
+          "stylingDecisionCount": 4,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 92,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 2,
+          "avgStateSpread": 39
+        }
+      }
+    },
+    "ps-3": {
+      "correctness": {
+        "score": 10,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2339: Property 'Header' does not exist on type 'typeof AppShell'.",
+            "line": 22
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+            "line": 23
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2339: Property 'Header' does not exist on type 'typeof AppShell'.",
+            "line": 31
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2339: Property 'Sidebar' does not exist on type 'typeof AppShell'.",
+            "line": 32
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ items: { id: string; label: string; }[]; activeItem: string; onItemClick: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & SideNavProps'.",
+            "line": 35
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2339: Property 'Sidebar' does not exist on type 'typeof AppShell'.",
+            "line": 40
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 87,
+        "findings": [
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 4 times",
+            "count": 4,
+            "example": "{id: \"_\", label: \"_\"},"
+          }
+        ],
+        "metrics": {
+          "totalLines": 54,
+          "codeLines": 49,
+          "stylingLines": 0,
+          "boilerplateLines": 7,
+          "logicLines": 42,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.14285714285714285,
+          "decisionsPerElement": 0.7,
+          "elementCount": 10,
+          "stylingDecisionCount": 7,
+          "duplicateRatio": 0.08
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 2,
+          "avgStateSpread": 28
+        }
+      }
+    },
+    "rc-3": {
+      "correctness": {
+        "score": 100,
+        "findings": []
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 97,
+        "findings": [
+          {
+            "rule": "index-key",
+            "severity": "minor",
+            "detail": "Array index as key",
+            "line": 36
+          }
+        ]
+      },
+      "efficiency": {
+        "score": 76,
+        "findings": [
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 3 times",
+            "count": 3,
+            "example": "{title: \"_\", description: \"_\", tag: \"_\"},"
+          }
+        ],
+        "metrics": {
+          "totalLines": 52,
+          "codeLines": 46,
+          "stylingLines": 10,
+          "boilerplateLines": 10,
+          "logicLines": 26,
+          "stylingRatio": 0.21739130434782608,
+          "boilerplateRatio": 0.21739130434782608,
+          "decisionsPerElement": 1.2,
+          "elementCount": 9,
+          "stylingDecisionCount": 11,
+          "duplicateRatio": 0.07
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 1,
+          "avgStateSpread": 0
+        }
+      }
+    },
+    "sd-7": {
+      "correctness": {
+        "score": 100,
+        "findings": []
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 84,
+        "findings": [
+          {
+            "rule": "duplicate-lines",
+            "severity": "moderate",
+            "detail": "Line repeated 3 times",
+            "count": 3,
+            "example": "{name: \"_\", size: N, progress: N, status: \"_\"},"
+          }
+        ],
+        "metrics": {
+          "totalLines": 63,
+          "codeLines": 56,
+          "stylingLines": 0,
+          "boilerplateLines": 13,
+          "logicLines": 43,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.23214285714285715,
+          "decisionsPerElement": 0.8,
+          "elementCount": 13,
+          "stylingDecisionCount": 11,
+          "duplicateRatio": 0.05
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 5,
+          "avgStateSpread": 14
+        }
+      }
+    },
+    "tc-8": {
+      "correctness": {
+        "score": 25,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2353: Object literal may only specify known properties, and ''--color-background'' does not exist in type 'Partial<Record<TokenName, TokenValue>>'.",
+            "line": 21
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'StyleOverrides'.",
+            "line": 42
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'string' is not assignable to type 'StyleOverrides'.",
+            "line": 43
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+            "line": 54
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2741: Property 'value' is missing in type '{ label: string; placeholder: string; }' but required in type 'TextInputProps'.",
+            "line": 66
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 97,
+        "findings": [
+          {
+            "rule": "heading-skip",
+            "severity": "minor",
+            "detail": "Heading level skipped: h1 → h3"
+          }
+        ]
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 96,
+        "findings": [],
+        "metrics": {
+          "totalLines": 73,
+          "codeLines": 69,
+          "stylingLines": 0,
+          "boilerplateLines": 7,
+          "logicLines": 62,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.10144927536231885,
+          "decisionsPerElement": 0.6,
+          "elementCount": 14,
+          "stylingDecisionCount": 8,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 52,
+        "findings": [
+          {
+            "rule": "magic-values",
+            "severity": "moderate",
+            "detail": "6 magic values (hardcoded colors, spacing, or typography)",
+            "count": 6
+          }
+        ],
+        "metrics": {
+          "semanticRatio": 0.33,
+          "magicValueCount": 6,
+          "semanticValueCount": 3,
+          "avgStateSpread": 0
+        }
+      }
+    },
+    "ty-7": {
+      "correctness": {
+        "score": 100,
+        "findings": []
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 96,
+        "findings": [],
+        "metrics": {
+          "totalLines": 50,
+          "codeLines": 34,
+          "stylingLines": 0,
+          "boilerplateLines": 3,
+          "logicLines": 31,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.08823529411764706,
+          "decisionsPerElement": 0.3,
+          "elementCount": 3,
+          "stylingDecisionCount": 1,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 100,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 0,
+          "avgStateSpread": 0
+        }
+      }
+    },
+    "wd-4": {
+      "correctness": {
+        "score": 0,
+        "findings": [
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+            "line": 44
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type 'Todo[]' is not assignable to type 'Record<string, unknown>[]'.",
+            "line": 49
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'TableColumn<Record<string, unknown>>'.",
+            "line": 52
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS7006: Parameter 'row' implicitly has an 'any' type.",
+            "line": 54
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '{ isSelected: boolean; onChange: () => void; label: string; }' is not assignable to type 'IntrinsicAttributes & CheckboxInputProps'.",
+            "line": 56
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'TableColumn<Record<string, unknown>>'.",
+            "line": 62
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS7006: Parameter 'row' implicitly has an 'any' type.",
+            "line": 62
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'TableColumn<Record<string, unknown>>'.",
+            "line": 64
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS7006: Parameter 'row' implicitly has an 'any' type.",
+            "line": 66
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'TableColumn<Record<string, unknown>>'.",
+            "line": 69
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS7006: Parameter 'row' implicitly has an 'any' type.",
+            "line": 71
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'TableColumn<Record<string, unknown>>'.",
+            "line": 73
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS7006: Parameter 'row' implicitly has an 'any' type.",
+            "line": 73
+          },
+          {
+            "rule": "type-error",
+            "severity": "critical",
+            "detail": "TS2322: Type '\"row\"' is not assignable to type '\"vertical\" | \"horizontal\" | undefined'.",
+            "line": 76
+          }
+        ]
+      },
+      "accessibility": {
+        "score": 100,
+        "findings": []
+      },
+      "codeQuality": {
+        "score": 100,
+        "findings": []
+      },
+      "efficiency": {
+        "score": 92,
+        "findings": [],
+        "metrics": {
+          "totalLines": 84,
+          "codeLines": 77,
+          "stylingLines": 0,
+          "boilerplateLines": 15,
+          "logicLines": 62,
+          "stylingRatio": 0,
+          "boilerplateRatio": 0.19480519480519481,
+          "decisionsPerElement": 0.3,
+          "elementCount": 11,
+          "stylingDecisionCount": 3,
+          "duplicateRatio": 0
+        }
+      },
+      "maintainability": {
+        "score": 92,
+        "findings": [],
+        "metrics": {
+          "semanticRatio": 1,
+          "magicValueCount": 0,
+          "semanticValueCount": 1,
+          "avgStateSpread": 39
+        }
+      }
+    }
+  },
+  "byCategory": {
+    "clone-with-modification": {
+      "correctness": 25,
+      "accessibility": 97,
+      "codeQuality": 100,
+      "efficiency": 91,
+      "maintainability": 100
+    },
+    "data-display": {
+      "correctness": 10,
+      "accessibility": 100,
+      "codeQuality": 97,
+      "efficiency": 84,
+      "maintainability": 100
+    },
+    "feature-with-constraint": {
+      "correctness": 85,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 89,
+      "maintainability": 100
+    },
+    "integration-oriented": {
+      "correctness": 85,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 96,
+      "maintainability": 92
+    },
+    "page-setup": {
+      "correctness": 10,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 87,
+      "maintainability": 100
+    },
+    "responsive-context": {
+      "correctness": 100,
+      "accessibility": 100,
+      "codeQuality": 97,
+      "efficiency": 76,
+      "maintainability": 100
+    },
+    "state-driven": {
+      "correctness": 100,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 84,
+      "maintainability": 100
+    },
+    "theme-customization": {
+      "correctness": 25,
+      "accessibility": 97,
+      "codeQuality": 100,
+      "efficiency": 96,
+      "maintainability": 52
+    },
+    "typography": {
+      "correctness": 100,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 96,
+      "maintainability": 100
+    },
+    "workflow-description": {
+      "correctness": 0,
+      "accessibility": 100,
+      "codeQuality": 100,
+      "efficiency": 92,
+      "maintainability": 92
+    }
+  },
+  "darkModeRate": 0,
+  "cost": {
+    "totalDurationMs": 5468780,
+    "avgDurationMs": 546878,
+    "avgOutputChars": 1957,
+    "avgOutputLines": 63,
+    "avgDocsRead": 6.3,
+    "estimatedInputTokens": 43125,
+    "estimatedOutputTokens": 4893,
+    "byPrompt": {
+      "cwm-1": {
+        "durationMs": 546880,
+        "outputChars": 2549,
+        "outputLines": 71,
+        "docsRead": [
+          "Card",
+          "Stack",
+          "Heading",
+          "Text",
+          "Button",
+          "SegmentedControl",
+          "Badge"
+        ],
+        "estimatedInputTokens": 4750,
+        "estimatedOutputTokens": 637
+      },
+      "dd-4": {
+        "durationMs": 546879,
+        "outputChars": 2516,
+        "outputLines": 85,
+        "docsRead": [
+          "TabList",
+          "Stack",
+          "Heading",
+          "Text",
+          "Avatar",
+          "Card",
+          "Button",
+          "TextInput"
+        ],
+        "estimatedInputTokens": 5375,
+        "estimatedOutputTokens": 629
+      },
+      "fwc-4": {
+        "durationMs": 546881,
+        "outputChars": 1001,
+        "outputLines": 26,
+        "docsRead": [
+          "Dialog",
+          "DialogHeader",
+          "Button",
+          "Stack",
+          "Text"
+        ],
+        "estimatedInputTokens": 3500,
+        "estimatedOutputTokens": 250
+      },
+      "io-1": {
+        "durationMs": 546877,
+        "outputChars": 2013,
+        "outputLines": 67,
+        "docsRead": [
+          "Stack",
+          "TextInput",
+          "Button",
+          "Text",
+          "Heading",
+          "Banner"
+        ],
+        "estimatedInputTokens": 4125,
+        "estimatedOutputTokens": 503
+      },
+      "ps-3": {
+        "durationMs": 546876,
+        "outputChars": 1761,
+        "outputLines": 54,
+        "docsRead": [
+          "AppShell",
+          "SideNav",
+          "Stack",
+          "Heading",
+          "Text",
+          "Button",
+          "Collapsible"
+        ],
+        "estimatedInputTokens": 4750,
+        "estimatedOutputTokens": 440
+      },
+      "rc-3": {
+        "durationMs": 546878,
+        "outputChars": 1510,
+        "outputLines": 52,
+        "docsRead": [
+          "Card",
+          "Stack",
+          "Heading",
+          "Text",
+          "Badge"
+        ],
+        "estimatedInputTokens": 3500,
+        "estimatedOutputTokens": 378
+      },
+      "sd-7": {
+        "durationMs": 546879,
+        "outputChars": 2241,
+        "outputLines": 63,
+        "docsRead": [
+          "Stack",
+          "Text",
+          "Heading",
+          "ProgressBar",
+          "Button",
+          "Card",
+          "Badge"
+        ],
+        "estimatedInputTokens": 4750,
+        "estimatedOutputTokens": 560
+      },
+      "tc-8": {
+        "durationMs": 546874,
+        "outputChars": 2067,
+        "outputLines": 73,
+        "docsRead": [
+          "defineTheme",
+          "Stack",
+          "Heading",
+          "Text",
+          "Button",
+          "Card",
+          "TextInput",
+          "Badge"
+        ],
+        "estimatedInputTokens": 5375,
+        "estimatedOutputTokens": 517
+      },
+      "ty-7": {
+        "durationMs": 546876,
+        "outputChars": 1238,
+        "outputLines": 50,
+        "docsRead": [
+          "Markdown",
+          "Stack",
+          "Card"
+        ],
+        "estimatedInputTokens": 2250,
+        "estimatedOutputTokens": 310
+      },
+      "wd-4": {
+        "durationMs": 546880,
+        "outputChars": 2675,
+        "outputLines": 84,
+        "docsRead": [
+          "Table",
+          "Pagination",
+          "Stack",
+          "Heading",
+          "Badge",
+          "CheckboxInput",
+          "Button"
+        ],
+        "estimatedInputTokens": 4750,
+        "estimatedOutputTokens": 669
+      }
+    }
+  }
+}
