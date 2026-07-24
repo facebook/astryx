@@ -207,6 +207,10 @@ export const radiusDefaults = {
   // cards in the same view. Tracks --radius-page's value by default but is a
   // distinct token so chat rounding can be themed independently. See #2072.
   '--radius-chat': '28px',
+  // Default radius for avatars. Tracks --radius-full by default to keep them
+  // circular, but is a distinct token so avatars can be themed to be rounded
+  // or square globally.
+  '--radius-avatar': '9999px',
   '--radius-full': '9999px',
 } as const;
 

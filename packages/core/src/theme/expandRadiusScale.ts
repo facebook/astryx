@@ -94,6 +94,7 @@ export function expandRadiusScale(
     // Chat surfaces track the page step (× 7) so they scale with the theme
     // multiplier, but remain a distinct token for independent theming. #2072
     '--radius-chat': `${Math.round(base * 7 * multiplier)}px`,
+    '--radius-avatar': '9999px',
     '--radius-full': '9999px',
   };
 }

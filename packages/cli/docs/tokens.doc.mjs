@@ -3,7 +3,7 @@
 // AUTO-GENERATED — do not edit manually.
 // Source: packages/core/src/theme/tokens.stylex.ts
 // Run: node scripts/generate-token-docs.mjs
-// Total: 184 tokens across 12 categories.
+// Total: 185 tokens across 12 categories.
 
 /** @type {import('../../core/src/docs-types').ReferenceDoc} */
 
@@ -598,6 +598,10 @@ export const docs = {
             [
               "--radius-chat",
               "28px"
+            ],
+            [
+              "--radius-avatar",
+              "9999px"
             ],
             [
               "--radius-full",

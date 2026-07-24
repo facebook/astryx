@@ -81,6 +81,11 @@ const meta: Meta<typeof Avatar> = {
         false: undefined,
       },
     },
+    shape: {
+      control: 'select',
+      options: ['circle', 'rounded', 'square'],
+      description: 'The visual shape of the avatar',
+    },
   },
 };
 
@@ -100,6 +105,45 @@ export const WithImage: Story = {
     name: 'Jane Smith',
     size: 'lg',
   },
+};
+
+export const Shapes: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>
+        Shapes (circle, rounded, square)
+      </h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar
+          src="https://i.pravatar.cc/150?img=1"
+          name="Circle Avatar"
+          shape="circle"
+          size="medium"
+          status={<AvatarStatusDot variant="success" />}
+        />
+        <Avatar
+          src="https://i.pravatar.cc/150?img=2"
+          name="Rounded Avatar"
+          shape="rounded"
+          size="medium"
+          status={<AvatarStatusDot variant="success" />}
+        />
+        <Avatar
+          src="https://i.pravatar.cc/150?img=3"
+          name="Square Avatar"
+          shape="square"
+          size="medium"
+          status={<AvatarStatusDot variant="success" />}
+        />
+      </div>
+      <h4 {...stylex.props(styles.heading)}>Shapes with Fallbacks</h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar name="John Doe" shape="circle" size="medium" />
+        <Avatar name="Jane Doe" shape="rounded" size="medium" />
+        <Avatar name="Jack Doe" shape="square" size="medium" />
+      </div>
+    </div>
+  ),
 };
 
 export const AllSizes: Story = {
