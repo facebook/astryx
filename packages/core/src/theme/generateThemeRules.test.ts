@@ -190,6 +190,61 @@ describe('generateThemeRules', () => {
     expect(rules.some(r => r.includes('.astryx-text.accent'))).toBe(true);
   });
 
+  // --- Size-prop overrides (so `size` beats a themed `type`) ---
+
+  it('emits Text size-prop font-size overrides in the same layer as type rules', () => {
+    // Digit-leading sizes are prefixed (size-2xs); word sizes stay bare.
+    const sizeRule = rules.find(
+      r => r.includes('.astryx-text.size-2xs') && r.includes('font-size'),
+    );
+    expect(sizeRule).toBeDefined();
+    expect(sizeRule).toContain('var(--font-size-2xs)');
+
+    // `xsm` maps to the --font-size-xs token (matches sizeStyles).
+    const xsmRule = rules.find(r => r.includes('.astryx-text.xsm'));
+    expect(xsmRule).toBeDefined();
+    expect(xsmRule).toContain('var(--font-size-xs)');
+
+    // Overrides set only font-size — line-height/family come from `type`.
+    expect(xsmRule).not.toContain('line-height');
+  });
+
+  it('emits a size override for every TextSize value', () => {
+    const sizes = [
+      'size-4xs',
+      'size-3xs',
+      'size-2xs',
+      'xsm',
+      'sm',
+      'base',
+      'lg',
+      'xl',
+      'size-2xl',
+      'size-3xl',
+      'size-4xl',
+    ];
+    for (const cls of sizes) {
+      expect(
+        rules.some(
+          r => r.includes(`.astryx-text.${cls}`) && r.includes('font-size'),
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it('orders size overrides after the themed type font-size rules', () => {
+    // Source order breaks specificity ties within a layer, so the size
+    // override must come after the `.astryx-text.<type>` type rule.
+    const typeIdx = rules.findIndex(
+      r => r.includes('.astryx-text.supporting') && r.includes('font-size'),
+    );
+    const sizeIdx = rules.findIndex(
+      r => r.includes('.astryx-text.size-2xs') && r.includes('font-size'),
+    );
+    expect(typeIdx).toBeGreaterThanOrEqual(0);
+    expect(sizeIdx).toBeGreaterThan(typeIdx);
+  });
+
   // --- Consistency ---
 
   it('generateThemeCSS returns prose and component blocks with @scope', () => {
@@ -201,6 +256,16 @@ describe('generateThemeRules', () => {
     for (const rule of rules) {
       expect(combined).toContain(rule);
     }
+  });
+
+  it('routes Text size overrides into the component (astryx-theme) block', () => {
+    // The size override only beats a themed type if it lands in the same
+    // layer as the type rules (astryx-theme / component block), not the
+    // reset-tier prose block.
+    const {prose, component} = generateThemeCSS(theme);
+    expect(component).toContain('.astryx-text.size-2xs');
+    expect(component).toContain('.astryx-text.xsm');
+    expect(prose).not.toContain('.astryx-text.size-2xs');
   });
 });
 
