@@ -58,6 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {url: url('/changelog'), changeFrequency: 'weekly', priority: 0.6},
     {url: url('/community'), changeFrequency: 'monthly', priority: 0.5},
     {url: url('/playground'), changeFrequency: 'monthly', priority: 0.6},
+    {url: url('/llms.txt'), changeFrequency: 'weekly', priority: 0.5},
   ];
 
   const componentEntries: MetadataRoute.Sitemap =
