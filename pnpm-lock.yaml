@@ -664,6 +664,21 @@ importers:
         specifier: ^0.46.0
         version: 0.46.0(typescript@6.0.3)
 
+  packages/richtext:
+    dependencies:
+      '@astryxdesign/core':
+        specifier: 0.1.8
+        version: link:../core
+      '@stylexjs/stylex':
+        specifier: ^0.19.0
+        version: 0.19.0
+      react:
+        specifier: '>=19.0.0'
+        version: 19.2.7
+      react-dom:
+        specifier: '>=19.0.0'
+        version: 19.2.7(react@19.2.7)
+
   packages/themes/butter:
     dependencies:
       '@astryxdesign/core':
