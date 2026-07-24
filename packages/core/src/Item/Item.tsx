@@ -5,7 +5,7 @@
 /**
  * @file Item.tsx
  * @input Uses React, ReactNode, StyleXStyles, theme tokens
- * @output Exports Item component, ItemProps type
+ * @output Exports Item component, ItemProps and ItemVariant types
  * @position Core layout primitive; consumed by index.ts, tested by Item.test.tsx
  *
  * SYNC: When modified, update these files to stay in sync:
@@ -19,6 +19,7 @@
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
+  borderVars,
   colorVars,
   radiusVars,
   spacingVars,
@@ -38,6 +39,20 @@ import {themeProps} from '../utils/themeProps';
 
 export type ItemAlign = 'center' | 'start';
 export type ItemDensity = 'compact' | 'balanced' | 'spacious';
+
+/**
+ * Surface treatment for Item. Shares Card's background and border tokens so
+ * themes style the two consistently, but keeps Item's element-scale radius
+ * (`--radius-element`) rather than Card's container radius.
+ *
+ * - `default`: card background with a visible border — mirrors Card `default`
+ * - `outline`: visible border, no background fill
+ * - `muted`: muted background, no border — mirrors Card `muted`
+ *
+ * Omitting the prop keeps Item transparent, which is the right default for the
+ * lists and menus Item is mostly used in.
+ */
+export type ItemVariant = 'default' | 'outline' | 'muted';
 
 export interface ItemProps extends BaseProps<HTMLElement> {
   /** Ref forwarded to the root element. */
@@ -90,6 +105,15 @@ export interface ItemProps extends BaseProps<HTMLElement> {
    * @default 'balanced'
    */
   density?: ItemDensity;
+
+  /**
+   * Surface treatment: `default` (card background + border), `outline`
+   * (border only), or `muted` (muted background, no border). Uses Card's
+   * tokens at Item's element radius.
+   *
+   * Opt-in — omit it to keep Item transparent.
+   */
+  variant?: ItemVariant;
 
   /**
    * Max lines before label truncates. When set, overflow is hidden
@@ -157,7 +181,10 @@ const styles = stylex.create({
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
-    paddingInline: spacingVars['--spacing-2'],
+    // Values come from the density styles below; the bordered variants subtract
+    // the border width from these same vars.
+    paddingInline: 'var(--_item-padding-inline)',
+    paddingBlock: 'var(--_item-padding-block)',
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
@@ -166,18 +193,38 @@ const styles = stylex.create({
   alignStart: {
     alignItems: 'flex-start',
   },
+  // Interaction overlays are painted as background-image layers rather than
+  // background-color, so they composite *over* the variant surface (which owns
+  // background-color) instead of replacing it. Without this, `muted` would show
+  // no hover at all — --color-background-muted and --color-overlay-hover are the
+  // same value in light mode — and `default` would lose its opaque card surface
+  // on hover. Same technique as TreeListItem and AvatarGroupOverflow.
   interactive: {
     cursor: 'pointer',
-    transitionProperty: 'background-color',
+    transitionProperty: 'background-image',
     transitionDuration: durationVars['--duration-fast-min'],
     transitionTimingFunction: easeVars['--ease-standard'],
-    backgroundColor: {
-      default: 'transparent',
+    backgroundImage: {
+      default: null,
       ':hover': {
-        '@media (hover: hover)': colorVars['--color-overlay-hover'],
+        '@media (hover: hover)': `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
       },
-      ':active': colorVars['--color-overlay-pressed'],
+      ':active': `linear-gradient(${colorVars['--color-overlay-pressed']}, ${colorVars['--color-overlay-pressed']})`,
     },
+  },
+  // The border is drawn *inside* the padding — its width is subtracted from
+  // each side — so the total inset (border + padding) equals the density's
+  // padding token rather than exceeding it. Longhands on purpose: StyleX gives
+  // shorthands lower specificity, so these reliably outrank the density
+  // shorthand regardless of rule order. Mirrors Card's withBorder.
+  withBorder: {
+    borderWidth: borderVars['--border-width'],
+    borderStyle: 'solid',
+    borderColor: colorVars['--color-border-emphasized'],
+    paddingInlineStart: `calc(var(--_item-padding-inline) - ${borderVars['--border-width']})`,
+    paddingInlineEnd: `calc(var(--_item-padding-inline) - ${borderVars['--border-width']})`,
+    paddingBlockStart: `calc(var(--_item-padding-block) - ${borderVars['--border-width']})`,
+    paddingBlockEnd: `calc(var(--_item-padding-block) - ${borderVars['--border-width']})`,
   },
   focusVisibleOutline: {
     outline: {
@@ -190,10 +237,10 @@ const styles = stylex.create({
     },
   },
   highlighted: {
-    backgroundColor: colorVars['--color-overlay-hover'],
+    backgroundImage: `linear-gradient(${colorVars['--color-overlay-hover']}, ${colorVars['--color-overlay-hover']})`,
   },
   selected: {
-    backgroundColor: colorVars['--color-accent-muted'],
+    backgroundImage: `linear-gradient(${colorVars['--color-accent-muted']}, ${colorVars['--color-accent-muted']})`,
   },
   disabled: {
     cursor: 'not-allowed',
@@ -281,16 +328,35 @@ const dynamicStyles = stylex.create({
   }),
 });
 
+// Each density publishes its padding as local custom properties (consumed by
+// `root`) so the bordered variants can subtract the border width from whichever
+// padding is in play, without duplicating a density × variant matrix.
 const densityStyles = stylex.create({
   compact: {
-    paddingBlock: spacingVars['--spacing-1'],
+    '--_item-padding-inline': spacingVars['--spacing-2'],
+    '--_item-padding-block': spacingVars['--spacing-1'],
   },
   balanced: {
-    paddingBlock: spacingVars['--spacing-2'],
+    '--_item-padding-inline': spacingVars['--spacing-2'],
+    '--_item-padding-block': spacingVars['--spacing-2'],
   },
   spacious: {
-    paddingBlock: spacingVars['--spacing-3'],
-    paddingInline: spacingVars['--spacing-3'],
+    '--_item-padding-inline': spacingVars['--spacing-3'],
+    '--_item-padding-block': spacingVars['--spacing-3'],
+  },
+});
+
+// Variant surfaces own background-color — the layer *below* the interaction
+// overlays. Card's tokens, so themes style Item and Card consistently.
+const variantStyles = stylex.create({
+  default: {
+    backgroundColor: colorVars['--color-background-card'],
+  },
+  outline: {
+    backgroundColor: 'transparent',
+  },
+  muted: {
+    backgroundColor: colorVars['--color-background-muted'],
   },
 });
 
@@ -323,6 +389,7 @@ export function Item({
   endContent,
   align = 'center',
   density = 'balanced',
+  variant,
   labelLines,
   descriptionLines,
   onClick,
@@ -474,15 +541,19 @@ export function Item({
       aria-selected={isSelected || undefined}
       aria-disabled={isDisabled || undefined}
       {...mergeProps(
-        themeProps('item', {density, align}),
+        themeProps('item', {density, align, variant}),
         stylex.props(
           styles.root,
           densityStyles[density],
           align === 'start' && styles.alignStart,
+          variant != null && variantStyles[variant],
           isInteractive && styles.interactive,
           isInteractive && styles.focusVisibleOutline,
           isHighlighted && styles.highlighted,
           isSelected && styles.selected,
+          // After the density padding so the border-inset calc wins; it reads
+          // the --_item-padding-* vars published above.
+          (variant === 'default' || variant === 'outline') && styles.withBorder,
           isDisabled && !hasParentRole && styles.disabled,
           xstyle,
         ),
