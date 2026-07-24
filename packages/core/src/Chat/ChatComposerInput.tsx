@@ -384,6 +384,20 @@ export function ChatComposerInput(props: ChatComposerInputProps) {
   selfRef.current = handle;
   useImperativeHandle(handleRef, () => handle);
 
+  // Register a focus control with the composer shell so body-click-to-focus
+  // works without the shell sniffing the input's DOM shape. Cleared on
+  // unmount so the shell falls back cleanly if the input goes away.
+  const inputControlRef = composerCtx?.inputControlRef;
+  useEffect(() => {
+    if (!inputControlRef) {
+      return;
+    }
+    inputControlRef.current = {focus: () => editableRef.current?.focus()};
+    return () => {
+      inputControlRef.current = null;
+    };
+  }, [inputControlRef]);
+
   useEffect(() => {
     if (controlledValue === undefined || !editableRef.current) {
       return;
