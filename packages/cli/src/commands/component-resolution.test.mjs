@@ -6,6 +6,12 @@ import {findShowcase, findRelatedBlocks} from '../api/template.mjs';
 
 const CWD = {cwd: '.'};
 
+// These cases resolve components by walking the source tree and importing
+// every `.doc.mjs`, which takes several seconds and gets slower under the
+// full-suite parallel load — enough to cross the default 5s per-test limit.
+// Give the filesystem scans the same generous budget the spawned-CLI cases use.
+const SCAN_TIMEOUT = 30_000;
+
 // ─── Bug: sub-component doc resolution ──────────────────────────
 // When asking for a sub-component (Code, HStack, Heading, SideNavItem),
 // the API should scope the response to that specific sub-component,
@@ -68,7 +74,7 @@ describe('component() sub-component scoping', () => {
     const result = await component('SideNav', CWD);
     expect(result.data.name).toBe('SideNav');
   });
-});
+}, SCAN_TIMEOUT);
 
 // ─── Bug: findShowcase priority ─────────────────────────────────
 // findShowcase should prioritize exact directory matches over
@@ -111,7 +117,7 @@ describe('findShowcase() priority', () => {
     const result = await findShowcase('NonExistentWidget');
     expect(result).toBeNull();
   });
-});
+}, SCAN_TIMEOUT);
 
 // ─── Feature: component() → blocks (showcase, examples, related) ─
 // The blocks API returns three separate lists so consumers can use
@@ -174,4 +180,4 @@ describe('component() blocks integration', () => {
     expect(result.data.showcase.name).toBe('ThemeShowcase');
     expect(result.data.showcase.isShowcase).toBe(true);
   });
-});
+}, SCAN_TIMEOUT);
