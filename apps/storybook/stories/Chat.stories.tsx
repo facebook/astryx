@@ -546,3 +546,61 @@ export const MultiBubble: StoryObj = {
     </div>
   ),
 };
+export const Alignment: StoryObj = {
+  name: 'Alignment',
+  render: () => {
+    const shortConversation = (align: 'top' | 'bottom') => (
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          border: '1px solid var(--color-border-primary)',
+          borderRadius: 8,
+          overflow: 'hidden',
+        }}>
+        <div
+          style={{
+            padding: '8px 12px',
+            borderBottom: '1px solid var(--color-border-primary)',
+            fontSize: 12,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}>
+          align=&quot;{align}&quot;
+        </div>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+          }}>
+          <ChatMessageList align={align}>
+            <ChatMessage sender="user">
+              <ChatMessageBubble>Just one short message.</ChatMessageBubble>
+            </ChatMessage>
+            <ChatMessage
+              sender="assistant"
+              avatar={<Avatar name="Navi" size="small" />}>
+              <ChatMessageBubble>
+                {align === 'top'
+                  ? 'Top alignment keeps messages at the top — good for logs and document-style lists.'
+                  : 'Bottom alignment keeps a short thread just above the composer — the familiar messaging layout.'}
+              </ChatMessageBubble>
+            </ChatMessage>
+          </ChatMessageList>
+        </div>
+      </div>
+    );
+
+    return (
+      <div style={{display: 'flex', gap: 16, height: 420}}>
+        {shortConversation('bottom')}
+        {shortConversation('top')}
+      </div>
+    );
+  },
+};
