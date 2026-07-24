@@ -385,6 +385,48 @@ describe('derived var expansion', () => {
     expect(rule).toContain('--_button-radius: 8px');
   });
 
+  it('emits internal vars for avatar fallback typography (base)', () => {
+    const theme = defineTheme({
+      name: 'test-derived-avatar',
+      components: {
+        avatar: {
+          base: {
+            fontWeight: 'var(--font-weight-normal)',
+            color: 'var(--color-text-secondary)',
+            backgroundColor: 'var(--color-accent-muted)',
+          },
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const rule = rules.find(r => r.includes('.astryx-avatar'));
+    expect(rule).toBeDefined();
+    expect(rule).toContain(
+      '--_avatar-fallback-font-weight: var(--font-weight-normal)',
+    );
+    expect(rule).toContain(
+      '--_avatar-fallback-color: var(--color-text-secondary)',
+    );
+    expect(rule).toContain(
+      '--_avatar-fallback-background: var(--color-accent-muted)',
+    );
+  });
+
+  it('emits a per-size fallback font-size for avatar (size:sm)', () => {
+    const theme = defineTheme({
+      name: 'test-derived-avatar-size',
+      components: {
+        avatar: {
+          'size:sm': {fontSize: '9px'},
+        },
+      },
+    });
+    const rules = generateThemeRules(theme);
+    const rule = rules.find(r => r.includes('.astryx-avatar.sm'));
+    expect(rule).toBeDefined();
+    expect(rule).toContain('--_avatar-fallback-font-size: 9px');
+  });
+
   it('does not emit derived vars for components without registry entries', () => {
     const theme = defineTheme({
       name: 'test-no-derived',

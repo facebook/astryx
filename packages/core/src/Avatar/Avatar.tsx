@@ -104,6 +104,11 @@ const styles = stylex.create({
     position: 'relative',
     display: 'inline-flex',
     flexShrink: 0,
+    // The wrapper is not clipped (so the status dot can overflow), so it must be
+    // rounded itself: a themed fallback background lands on `.astryx-avatar` (the
+    // class-bearing wrapper) as well as the internal var, and an unrounded
+    // wrapper would show that fill as square corners behind the circular content.
+    borderRadius: radiusVars['--radius-full'],
   },
   content: {
     display: 'flex',
@@ -124,10 +129,14 @@ const styles = stylex.create({
     justifyContent: 'center',
     width: '100%',
     height: '100%',
-    backgroundColor: colorVars['--color-neutral'],
-    color: colorVars['--color-text-secondary'],
+    // Fallback surface (initials + default icon). Each property reads an
+    // Avatar-scoped internal var so a theme can re-scope the fallback wash and
+    // initials weight/color without forking; the defaults reproduce today's
+    // exact output. See derivedVarRegistry (avatar) + Avatar.doc.mjs theming.
+    backgroundColor: `var(--_avatar-fallback-background, ${colorVars['--color-neutral']})`,
+    color: `var(--_avatar-fallback-color, ${colorVars['--color-text-secondary']})`,
     fontFamily: typographyVars['--font-family-body'],
-    fontWeight: fontWeightVars['--font-weight-medium'],
+    fontWeight: `var(--_avatar-fallback-font-weight, ${fontWeightVars['--font-weight-medium']})`,
     textTransform: 'uppercase',
   },
   status: {
@@ -143,8 +152,13 @@ const dynamicStyles = stylex.create({
     width: size,
     height: size,
   }),
+  // Initials font size defaults to the proportional `size × ratio` scale but is
+  // reachable via the `--_avatar-fallback-font-size` derived var, so a theme can
+  // set a per-size type scale (e.g. `components.avatar['size:sm']`).
   fontSize: (size: number) => ({
-    fontSize: size * INITIALS_FONT_SIZE_RATIO,
+    fontSize: `var(--_avatar-fallback-font-size, ${
+      size * INITIALS_FONT_SIZE_RATIO
+    }px)`,
   }),
   statusPosition: (size: number) => ({
     bottom: size * CIRCLE_EDGE_OFFSET_RATIO,
