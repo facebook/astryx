@@ -236,6 +236,27 @@ describe('Markdown', () => {
     expect(img!.getAttribute('src')).toBe('image.png');
   });
 
+  it('uses the components.image override for a standalone (block) image', () => {
+    // A standalone image line parses as a block image; its render path must
+    // honor components.image just like the inline image path does.
+    render(
+      <Markdown
+        components={{
+          image: ({src, alt}) => (
+            <span data-testid="custom-image" data-src={src}>
+              {alt}
+            </span>
+          ),
+        }}>
+        {'![alt text](image.png)'}
+      </Markdown>,
+    );
+    expect(document.querySelector('img')).not.toBeInTheDocument();
+    const custom = screen.getByTestId('custom-image');
+    expect(custom).toHaveTextContent('alt text');
+    expect(custom.getAttribute('data-src')).toBe('image.png');
+  });
+
   it('shifts heading levels with headingLevelStart', () => {
     render(<Markdown headingLevelStart={3}>{'# Heading 1'}</Markdown>);
     expect(screen.getByText('Heading 1').tagName).toBe('H3');
