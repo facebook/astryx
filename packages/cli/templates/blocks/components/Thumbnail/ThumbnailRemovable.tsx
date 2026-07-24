@@ -51,30 +51,58 @@ const IMAGES = [
 ];
 
 export default function ThumbnailRemovable() {
-  const [items, setItems] = useState(IMAGES);
+  const [always, setAlways] = useState(IMAGES);
+  const [onHover, setOnHover] = useState(IMAGES);
 
   return (
     <Stack direction="vertical" gap={4}>
-      <Text type="supporting" color="secondary">
-        Remove button adapts contrast to image luminance
-      </Text>
-      <Stack direction="horizontal" gap={3} vAlign="center">
-        {items.map(item => (
-          <Thumbnail
-            key={item.id}
-            src={item.src}
-            alt={item.alt}
-            label={item.label}
-            onRemove={() =>
-              setItems(prev => prev.filter(i => i.id !== item.id))
-            }
-          />
-        ))}
-        {items.length === 0 && (
-          <Text type="supporting" color="secondary">
-            All removed.
-          </Text>
-        )}
+      <Stack direction="vertical" gap={2}>
+        <Text type="supporting" color="secondary">
+          Always visible — the remove button is shown at rest
+        </Text>
+        <Stack direction="horizontal" gap={3} vAlign="center">
+          {always.map(item => (
+            <Thumbnail
+              key={item.id}
+              src={item.src}
+              alt={item.alt}
+              label={item.label}
+              onRemove={() =>
+                setAlways(prev => prev.filter(i => i.id !== item.id))
+              }
+            />
+          ))}
+          {always.length === 0 && (
+            <Text type="supporting" color="secondary">
+              All removed.
+            </Text>
+          )}
+        </Stack>
+      </Stack>
+
+      <Stack direction="vertical" gap={2}>
+        <Text type="supporting" color="secondary">
+          On hover — the remove button appears on hover or keyboard focus
+        </Text>
+        <Stack direction="horizontal" gap={3} vAlign="center">
+          {onHover.map(item => (
+            <Thumbnail
+              key={item.id}
+              src={item.src}
+              alt={item.alt}
+              label={item.label}
+              showRemoveOn="hover"
+              onRemove={() =>
+                setOnHover(prev => prev.filter(i => i.id !== item.id))
+              }
+            />
+          ))}
+          {onHover.length === 0 && (
+            <Text type="supporting" color="secondary">
+              All removed.
+            </Text>
+          )}
+        </Stack>
       </Stack>
     </Stack>
   );
