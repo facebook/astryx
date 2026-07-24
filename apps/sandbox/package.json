@@ -41,7 +41,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "commander": "^12.1.0",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "@astryxdesign/build": "*"
   }
 }
