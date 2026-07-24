@@ -25,10 +25,10 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
-import {mergeProps} from '../utils';
+import {mergeProps, isRenderable} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
-import type {TreeListDensity} from './TreeListTypes';
+import type {TreeListDensity, TreeListExpandIconState} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -211,6 +211,25 @@ const styles = stylex.create({
   chevronCollapsed: {
     transform: 'rotate(0deg)',
   },
+  // Custom icons from renderExpandIcon swap per state instead of rotating —
+  // no transform, no transition.
+  customExpandIcon: {
+    display: 'flex',
+  },
+  // Indicator slot for leaf items when renderExpandIcon supplies a leaf icon.
+  // Same metrics as the chevron toggle so leaves align, but non-interactive.
+  leafIconContainer: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: spacingVars['--spacing-4'],
+    height: spacingVars['--spacing-4'],
+    fontSize: spacingVars['--spacing-4'],
+    color: colorVars['--color-icon-secondary'],
+    marginInlineStart: spacingVars['--spacing-1'],
+    marginInlineEnd: `calc(${spacingVars['--spacing-1']} * -1)`,
+  },
 });
 
 const densityStyles = stylex.create({
@@ -267,6 +286,12 @@ export interface TreeListItemInternalProps {
   ancestorsIsLast: ReadonlyArray<boolean>;
   isExpanded: boolean;
   onToggle?: (id: string) => void;
+  /**
+   * Custom expand/collapse indicator (see TreeListProps.renderExpandIcon).
+   * Non-renderable returns fall back to the default chevron for parents and
+   * to no indicator (with the leaf alignment offset) for leaves.
+   */
+  renderExpandIcon?: (state: TreeListExpandIconState) => ReactNode;
   density: TreeListDensity;
   /** Pre-rendered children subtree (rendered by the parent recursion) */
   renderedChildren?: ReactNode;
@@ -303,6 +328,7 @@ export function TreeListItem({
   ancestorsIsLast,
   isExpanded,
   onToggle,
+  renderExpandIcon,
   density,
   renderedChildren,
   posInSet,
@@ -346,7 +372,17 @@ export function TreeListItem({
     return undefined;
   }, [onClick, hasChildren, onToggle, id, isDisabled]);
 
-  const computedMarginLeft = hasChildren
+  const customIcon =
+    renderExpandIcon != null
+      ? renderExpandIcon({isExpanded, hasChildren, isDisabled})
+      : null;
+  const hasCustomIcon = isRenderable(customIcon);
+
+  // A leaf occupies the indicator slot only when renderExpandIcon supplies an
+  // icon for it; otherwise the leaf keeps the alignment offset below.
+  const hasIndicator = hasChildren || hasCustomIcon;
+
+  const computedMarginLeft = hasIndicator
     ? `calc(${nestedLevel} * ${spacingVars['--spacing-4']})`
     : `calc(${nestedLevel} * ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
 
@@ -365,7 +401,11 @@ export function TreeListItem({
     </>
   );
 
-  const chevronIcon = (
+  const indicatorIcon = hasCustomIcon ? (
+    // Custom state-aware icons replace the rotation animation entirely — an
+    // open-folder icon must not also be rotated 90°.
+    <span {...stylex.props(styles.customExpandIcon)}>{customIcon}</span>
+  ) : (
     <span
       {...stylex.props(
         styles.chevronSvg,
@@ -375,7 +415,7 @@ export function TreeListItem({
     </span>
   );
 
-  const chevron = hasChildren ? (
+  const indicator = hasChildren ? (
     handleToggle != null ? (
       // Real toggle button whenever expand/collapse is supported, so the row
       // can be expanded from the keyboard even when the item has no onClick/href
@@ -395,17 +435,21 @@ export function TreeListItem({
         tabIndex={-1}
         onClick={handleToggle}
         {...stylex.props(styles.chevronButton)}>
-        {chevronIcon}
+        {indicatorIcon}
       </button>
     ) : (
       // Non-interactive chevron only when toggling is not wired up at all
-      <span {...stylex.props(styles.chevronContainer)}>{chevronIcon}</span>
+      <span {...stylex.props(styles.chevronContainer)}>{indicatorIcon}</span>
     )
+  ) : hasCustomIcon ? (
+    // Leaf indicator slot (e.g. a file icon in a folder tree). Never a toggle:
+    // leaves have nothing to expand.
+    <span {...stylex.props(styles.leafIconContainer)}>{customIcon}</span>
   ) : null;
 
   const innerContent = (
     <>
-      {chevron}
+      {indicator}
       {startContent != null && (
         <span {...stylex.props(styles.startContent)}>{startContent}</span>
       )}

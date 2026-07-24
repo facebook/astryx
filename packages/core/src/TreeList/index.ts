@@ -12,5 +12,9 @@
  */
 
 export {TreeList} from './TreeList';
-export type {TreeListProps, TreeListDensity} from './TreeList';
+export type {
+  TreeListProps,
+  TreeListDensity,
+  TreeListExpandIconState,
+} from './TreeList';
 export type {TreeListItemData} from './TreeListTypes';

@@ -7,6 +7,7 @@ import {Icon} from '@astryxdesign/core/Icon';
 import {Badge} from '@astryxdesign/core/Badge';
 import {
   FolderIcon,
+  FolderOpenIcon,
   DocumentIcon,
   Cog6ToothIcon,
   ChevronRightIcon,
@@ -134,6 +135,18 @@ export const WithIcons: Story = {
         startContent: <Icon icon={DocumentIcon} />,
       },
     ],
+  },
+};
+
+export const CustomExpandIcons: Story = {
+  args: {
+    items: fileTreeItems,
+    renderExpandIcon: ({isExpanded, hasChildren}) =>
+      hasChildren ? (
+        <Icon icon={isExpanded ? FolderOpenIcon : FolderIcon} />
+      ) : (
+        <Icon icon={DocumentIcon} />
+      ),
   },
 };
 
@@ -265,12 +278,22 @@ export const WithEndContent: Story = {
         isExpanded: true,
         endContent: <Badge label="3" />,
         children: [
-          {id: 'unread', label: 'Unread', onClick: noop, endContent: <Badge label="3" />},
+          {
+            id: 'unread',
+            label: 'Unread',
+            onClick: noop,
+            endContent: <Badge label="3" />,
+          },
           {id: 'starred', label: 'Starred', onClick: noop},
         ],
       },
       {id: 'sent', label: 'Sent', onClick: noop},
-      {id: 'drafts', label: 'Drafts', onClick: noop, endContent: <Badge label="1" />},
+      {
+        id: 'drafts',
+        label: 'Drafts',
+        onClick: noop,
+        endContent: <Badge label="1" />,
+      },
     ],
   },
 };
@@ -292,7 +315,12 @@ export const DisabledItems: Story = {
           },
         ],
       },
-      {id: 'disabled-parent', label: 'Disabled Parent', onClick: noop, isDisabled: true},
+      {
+        id: 'disabled-parent',
+        label: 'Disabled Parent',
+        onClick: noop,
+        isDisabled: true,
+      },
     ],
   },
 };
