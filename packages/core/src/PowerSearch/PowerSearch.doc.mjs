@@ -84,6 +84,13 @@ export const docs = {
         'Validation status object with type and optional message.',
     },
     {
+      name: 'startIcon',
+      type: 'ReactNode | IconType',
+      description:
+        'Icon to display at the start of the input, before any filter tokens. Forwarded to the internal Tokenizer. Accepts a semantic icon name, an SVG icon component, or a ReactNode directly.',
+      slotElements: [{__element: 'Icon', props: {icon: 'search', size: 'sm'}}],
+    },
+    {
       name: 'maxTokenLength',
       type: 'number',
       description: 'Max character length for filter value display in tokens.',
@@ -236,6 +243,12 @@ export const docsZh = {
       description: '带有类型和可选消息的验证状态对象。',
     },
     {
+      name: 'startIcon',
+      type: 'ReactNode | IconType',
+      description:
+        '在输入框开头（筛选 token 之前）显示的图标，转发给内部的 Tokenizer。接受语义图标名称、SVG 图标组件或直接传入 ReactNode。',
+    },
+    {
       name: 'maxTokenLength',
       type: 'number',
       description: '令牌中过滤器值显示的最大字符长度。',
@@ -318,6 +331,7 @@ export const docsDense = {
     isReadOnly: 'Prevent adding, editing, or removing filters.',
     isDisabled: 'Disables entire component.',
     status: 'Validation status object w/ type + optional message.',
+    startIcon: 'Icon at input start, before filter tokens. Forwarded to internal Tokenizer.',
     maxTokenLength: 'Max char length for filter value display in tokens.',
     popoverSaveButtonLabel: 'Label for save button in edit popover.',
     timezoneID: 'Timezone ID for date formatting (e.g. "America/New_York").',

@@ -15,6 +15,7 @@ import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
+import {TestIcon} from '../__tests__/TestIcon';
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
@@ -824,6 +825,51 @@ describe('Tokenizer', () => {
       });
 
       expect(screen.getByText('Create "NewTag"')).toBeInTheDocument();
+    });
+  });
+
+  describe('startIcon', () => {
+    it('does not render a start icon when omitted', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      expect(document.querySelector('svg')).not.toBeInTheDocument();
+    });
+
+    it('renders a ReactNode start icon before the tokens', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[{id: '1', label: 'Alice'}]}
+          onChange={() => {}}
+          startIcon={<TestIcon data-testid="start-icon" />}
+        />,
+      );
+      const icon = screen.getByTestId('start-icon');
+      const token = screen.getByText('Alice');
+      expect(icon).toBeInTheDocument();
+      expect(
+        icon.compareDocumentPosition(token) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('renders an IconType (SVG component) start icon', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          startIcon={TestIcon}
+        />,
+      );
+      expect(document.querySelector('svg')).toBeInTheDocument();
     });
   });
 
