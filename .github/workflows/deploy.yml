@@ -81,6 +81,12 @@ jobs:
       - name: Typecheck template docs
         run: pnpm -F @astryxdesign/cli typecheck:template-docs
 
+      # Full-package strict checkJs over the CLI (src, bin, scripts, docs, and
+      # the emitted templates). Requires the `pnpm build` above so the template
+      # .tsx sources can resolve the built @astryxdesign/{core,charts,lab} types.
+      - name: Typecheck CLI (strict)
+        run: pnpm -F @astryxdesign/cli typecheck:strict
+
       - name: Typecheck storybook
         run: pnpm -F @astryxdesign/storybook typecheck
 
