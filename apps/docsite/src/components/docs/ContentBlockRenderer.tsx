@@ -6,12 +6,23 @@ import {ProseBlock} from './ProseBlock';
 import {CodeBlockRenderer} from './CodeBlock';
 import {TableBlock} from './TableBlock';
 import {ListBlock} from './ListBlock';
+import {Heading} from '@astryxdesign/core/Text';
 import type {ContentBlock} from '../../generated/docsRegistry';
 
 export function ContentBlockRenderer({block}: {block: ContentBlock}) {
   switch (block.type) {
     case 'prose':
       return <ProseBlock text={block.text ?? ''} />;
+    case 'heading': {
+      const headingBlock = block as ContentBlock & {
+        level?: 3 | 4 | 5 | 6;
+      };
+      return (
+        <Heading level={headingBlock.level ?? 3}>
+          {headingBlock.text ?? ''}
+        </Heading>
+      );
+    }
     case 'code':
       return (
         <CodeBlockRenderer

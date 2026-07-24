@@ -40,6 +40,9 @@ function formatBlock(block, detail) {
     case 'prose':
       return block.text;
 
+    case 'heading':
+      return `${'#'.repeat(block.level || 3)} ${block.text}`;
+
     case 'code':
       if (detail === 'compact' || detail === 'brief') return null;
       {
