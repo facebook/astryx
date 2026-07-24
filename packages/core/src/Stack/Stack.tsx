@@ -2,9 +2,9 @@
 
 /**
  * @file Stack.tsx
- * @input Uses React, ElementType, stack utility
+ * @input Uses React, ElementType, stack utility, padding/sticky stylex helpers
  * @output Exports Stack polymorphic component and StackProps
- * @position Layout/Stack component; uses stack.stylex.ts
+ * @position Layout/Stack component; uses stack.stylex.ts + Layout/sticky.stylex.ts
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stack/Stack.doc.mjs
@@ -28,6 +28,7 @@ import {
   paddingInlineStyles,
   paddingBlockStyles,
 } from '../Layout/padding.stylex';
+import {stickyStyles, stickyOffsetStyles} from '../Layout/sticky.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
@@ -158,6 +159,30 @@ export interface StackProps extends BaseProps<HTMLElement> {
   isScrollable?: boolean;
 
   /**
+   * Pins the stack to the block-start edge of its nearest scroll container
+   * (`position: sticky`) so it stays in view while a sibling scrolls — the
+   * common "sticky info column / filter rail / docs sidebar" pattern.
+   *
+   * Also sets `align-self: flex-start` so the stack does not stretch to fill
+   * its flex/grid track (a stretched item has no room to stick). Pair with
+   * `stickyOffset` to leave a gap below the pinned edge. Override the
+   * alignment via `xstyle` if you need the sticky stack to stretch.
+   * @default false
+   */
+  isSticky?: boolean;
+
+  /**
+   * Block-start inset applied while `isSticky` is set, using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   *
+   * Maps to `inset-block-start: var(--spacing-N)` (writing-mode aware), so the
+   * stack sticks `stickyOffset` below the container edge instead of flush.
+   * No effect unless `isSticky` is also set.
+   * @default 0
+   */
+  stickyOffset?: SpacingStep;
+
+  /**
    * Whether items should wrap.
    * - `nowrap`: Items stay on one line (default)
    * - `wrap`: Items wrap to next line
@@ -200,6 +225,10 @@ export interface StackProps extends BaseProps<HTMLElement> {
  *   <Item />
  *   <Item />
  * </Stack>
+ * // Sticky info column that stays in view while a sibling scrolls
+ * <Stack gap={0} isSticky stickyOffset={8}>
+ *   <ProductInfo />
+ * </Stack>
  * ```
  */
 export function Stack({
@@ -213,6 +242,8 @@ export function Stack({
   paddingInline,
   paddingBlock,
   isScrollable,
+  isSticky,
+  stickyOffset,
   width,
   height,
   maxWidth,
@@ -258,6 +289,8 @@ export function Stack({
     resolvedPaddingInline != null && paddingInlineStyles[resolvedPaddingInline],
     resolvedPaddingBlock != null && paddingBlockStyles[resolvedPaddingBlock],
     isScrollable && overflowStyles.scrollable,
+    isSticky && stickyStyles.sticky,
+    isSticky && stickyOffsetStyles[stickyOffset ?? 0],
     xstyle,
   );
 

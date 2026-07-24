@@ -23,14 +23,7 @@ import type {CSSProperties} from 'react';
 
 // Custom CSS here is limited to what Astryx components can't express today:
 // - image fill + corner radius (no Image primitive — #2582)
-// - the sticky info column (no sticky prop on Astryx layout primitives — #2613)
-// Keeps the info column in view while the gallery scrolls. No sticky prop on
-// Astryx layout primitives.
-const stickyInfo: CSSProperties = {
-  position: 'sticky',
-  top: 'var(--spacing-8)',
-  alignSelf: 'start',
-};
+// The sticky info column now uses VStack's isSticky/stickyOffset props (#2613).
 // Fills the AspectRatio box + rounds corners. No objectFit/radius props on
 // AspectRatio (#2582).
 const heroImage: CSSProperties = {
@@ -287,7 +280,7 @@ export default function ProductDetailTemplate() {
               selected={selectedThumb}
               onSelect={setSelectedThumb}
             />
-            <VStack gap={0} style={stickyInfo}>
+            <VStack gap={0} isSticky stickyOffset={8}>
               <ProductInfo />
             </VStack>
           </Grid>
