@@ -31,18 +31,13 @@ describe('Item', () => {
   });
 
   it('renders marker', () => {
-    render(
-      <Item label="Item" marker={<span data-testid="marker">•</span>} />,
-    );
+    render(<Item label="Item" marker={<span data-testid="marker">•</span>} />);
     expect(screen.getByTestId('marker')).toBeInTheDocument();
   });
 
   it('renders startContent', () => {
     render(
-      <Item
-        label="Item"
-        startContent={<span data-testid="avatar">A</span>}
-      />,
+      <Item label="Item" startContent={<span data-testid="avatar">A</span>} />,
     );
     expect(screen.getByTestId('avatar')).toBeInTheDocument();
   });
@@ -255,12 +250,7 @@ describe('Item', () => {
   it('does not fire onClick when disabled item is clicked', async () => {
     const onClick = vi.fn();
     render(
-      <Item
-        label="Disabled"
-        onClick={onClick}
-        isDisabled
-        data-testid="item"
-      />,
+      <Item label="Disabled" onClick={onClick} isDisabled data-testid="item" />,
     );
     const item = screen.getByTestId('item');
     item.dispatchEvent(new MouseEvent('click', {bubbles: true}));
@@ -276,13 +266,29 @@ describe('Item', () => {
   // Selected state
   // ===========================================================================
 
-  it('applies aria-selected when isSelected', () => {
+  it('does not apply aria-selected on the default div root', () => {
+    // aria-selected is invalid ARIA on a generic div (axe: aria-allowed-attr).
+    // Selection stays visual-only unless a permitted role is passed.
     render(<Item label="Selected" isSelected data-testid="item" />);
+    expect(screen.getByTestId('item')).not.toHaveAttribute('aria-selected');
+  });
+
+  it('applies aria-selected when isSelected and the role permits it', () => {
+    render(
+      <Item label="Selected" isSelected role="option" data-testid="item" />,
+    );
     expect(screen.getByTestId('item')).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('does not apply aria-selected when the role does not permit it', () => {
+    render(
+      <Item label="Selected" isSelected role="menuitem" data-testid="item" />,
+    );
+    expect(screen.getByTestId('item')).not.toHaveAttribute('aria-selected');
+  });
+
   it('does not apply aria-selected when not selected', () => {
-    render(<Item label="Not Selected" data-testid="item" />);
+    render(<Item label="Not Selected" role="option" data-testid="item" />);
     expect(screen.getByTestId('item')).not.toHaveAttribute('aria-selected');
   });
 
