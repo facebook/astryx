@@ -254,16 +254,43 @@ describe('AvatarStatusDot', () => {
     });
   });
 
+  describe('default accessible labels (WCAG 1.4.1 — colour is not the only signal)', () => {
+    it('renders a default accessible label per variant when no label prop is given', () => {
+      expect(renderDot({variant: 'success'})).toHaveAttribute(
+        'aria-label',
+        'Online',
+      );
+      expect(renderDot({variant: 'neutral'})).toHaveAttribute(
+        'aria-label',
+        'Away',
+      );
+      expect(renderDot({variant: 'error'})).toHaveAttribute(
+        'aria-label',
+        'Busy',
+      );
+    });
+
+    it('uses explicit label over default variant label', () => {
+      const dot = renderDot({variant: 'success', label: 'Verified'});
+      expect(dot).toHaveAttribute('aria-label', 'Verified');
+    });
+
+    it('sets role="img" when a default label is resolved', () => {
+      const dot = renderDot({variant: 'success'});
+      expect(dot).toHaveAttribute('role', 'img');
+    });
+
+    it('has no img role for custom augmented variants without a default label', () => {
+      const dot = renderDot({variant: 'away' as AvatarStatusDotVariant});
+      expect(dot).not.toHaveAttribute('role');
+    });
+  });
+
   describe('existing contract', () => {
     it('exposes role="img" with the label as accessible name when label is provided', () => {
       const dot = renderDot({variant: 'success', label: 'Online'});
       expect(dot).toHaveAttribute('role', 'img');
       expect(dot).toHaveAttribute('aria-label', 'Online');
-    });
-
-    it('has no img role without a label', () => {
-      const dot = renderDot({variant: 'success'});
-      expect(dot).not.toHaveAttribute('role');
     });
 
     it('reflects the variant as a data attribute for theming', () => {
