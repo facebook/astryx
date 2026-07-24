@@ -18,6 +18,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {useState} from 'react';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
 import {InputGroup, InputGroupText} from '../InputGroup';
@@ -62,6 +63,20 @@ afterEach(() => {
 const h = {hidden: true} as const;
 
 const OPTIONS = ['Apple', 'Banana', 'Cherry'];
+
+// Mirrors TYPEAHEAD_RESET_MS in hooks.ts — how long the buffer survives.
+const TYPEAHEAD_RESET_MS = 500;
+
+/**
+ * Type onto an element with no awaits between keystrokes. Typeahead only
+ * accumulates while keys land inside the reset window, so an awaited
+ * `user.keyboard` per character would put CI stalls on the critical path.
+ */
+function type(text: string, element: HTMLElement) {
+  for (const key of text) {
+    fireEvent.keyDown(element, {key});
+  }
+}
 
 function rect({
   top,
@@ -843,6 +858,302 @@ describe('Selector', () => {
         delete (HTMLElement.prototype as unknown as {scrollIntoView?: unknown})
           .scrollIntoView;
       }
+    });
+  });
+
+  describe('typeahead', () => {
+    it('selects the matching option by typing on the closed trigger', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+
+      await user.tab();
+      await user.keyboard('c');
+
+      expect(onChange).toHaveBeenCalledWith('Cherry');
+      // Native select parity: the value changes without opening the menu.
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
+    });
+
+    it('cycles through options sharing a first letter on repeated presses', async () => {
+      const user = userEvent.setup();
+      function Harness() {
+        const [value, setValue] = useState<string | undefined>(undefined);
+        return (
+          <Selector
+            label="City"
+            options={['Austin', 'Chicago', 'Cleveland', 'Columbus']}
+            value={value}
+            onChange={setValue}
+          />
+        );
+      }
+      render(<Harness />);
+
+      await user.tab();
+      await user.keyboard('c');
+      expect(screen.getByRole('combobox')).toHaveTextContent('Chicago');
+      await user.keyboard('c');
+      expect(screen.getByRole('combobox')).toHaveTextContent('Cleveland');
+      await user.keyboard('c');
+      expect(screen.getByRole('combobox')).toHaveTextContent('Columbus');
+      // Wraps back around past non-matching options.
+      await user.keyboard('c');
+      expect(screen.getByRole('combobox')).toHaveTextContent('Chicago');
+    });
+
+    it('treats a space mid-buffer as part of the match, not as open', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="State"
+          options={['New Jersey', 'New York']}
+          onChange={onChange}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      // Synchronous keydowns: the buffer only accumulates while keystrokes
+      // land inside the 500ms window, and awaiting between them would put a
+      // CI stall on the critical path.
+      type('new y', trigger);
+
+      expect(onChange).toHaveBeenLastCalledWith('New York');
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('opens and seeds the search input when typing on a closed hasSearch trigger', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} hasSearch />);
+
+      await user.tab();
+      await user.keyboard('c');
+
+      const search = screen.getByPlaceholderText('Search...');
+      expect(search).toHaveValue('c');
+      await waitFor(() => expect(search).toHaveFocus());
+    });
+
+    it('accumulates a multi-character prefix and resets it after the timeout', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={['Apple', 'Banana', 'Blueberry']}
+          onChange={onChange}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      type('b', trigger);
+      expect(onChange).toHaveBeenLastCalledWith('Banana');
+      // Within the window the buffer accumulates: "bl" → Blueberry.
+      type('l', trigger);
+      expect(onChange).toHaveBeenLastCalledWith('Blueberry');
+
+      // Past the window the buffer starts fresh: "a" → Apple. A surviving
+      // buffer would search "bla" and match nothing, so only a real reset
+      // gets here — worth the one real wait in the suite.
+      await new Promise(resolve =>
+        setTimeout(resolve, TYPEAHEAD_RESET_MS + 100),
+      );
+      type('a', trigger);
+      expect(onChange).toHaveBeenLastCalledWith('Apple');
+    });
+
+    it('skips disabled options when matching', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={[{value: 'Cherry', disabled: true}, 'Coconut']}
+          onChange={onChange}
+        />,
+      );
+
+      await user.tab();
+      await user.keyboard('c');
+
+      expect(onChange).toHaveBeenCalledWith('Coconut');
+      expect(onChange).not.toHaveBeenCalledWith('Cherry');
+    });
+
+    it('moves the highlight without committing when typing with the menu open', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="City"
+          options={['Austin', 'Chicago', 'Cleveland']}
+          onChange={onChange}
+        />,
+      );
+
+      await user.tab();
+      await user.keyboard('{Enter}'); // open
+      const trigger = screen.getByRole('combobox');
+
+      await user.keyboard('c');
+      let activeId = trigger.getAttribute('aria-activedescendant');
+      expect(document.getElementById(activeId ?? '')).toHaveTextContent(
+        'Chicago',
+      );
+
+      // Repeated press cycles the highlight, still without committing.
+      await user.keyboard('c');
+      activeId = trigger.getAttribute('aria-activedescendant');
+      expect(document.getElementById(activeId ?? '')).toHaveTextContent(
+        'Cleveland',
+      );
+      expect(onChange).not.toHaveBeenCalled();
+
+      await user.keyboard('{Enter}');
+      expect(onChange).toHaveBeenCalledWith('Cleveland');
+    });
+
+    it('does not fire onChange when the only match is already selected', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Cherry"
+          onChange={onChange}
+        />,
+      );
+
+      await user.tab();
+      await user.keyboard('c');
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('ignores printable keys pressed with ctrl or meta modifiers', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<Selector label="Fruit" options={OPTIONS} onChange={onChange} />);
+
+      await user.tab();
+      await user.keyboard('{Control>}c{/Control}{Meta>}b{/Meta}');
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('announces the committed option to screen readers', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} onChange={() => {}} />);
+
+      await user.tab();
+      await user.keyboard('c');
+
+      // The trigger keeps focus and the menu never opens, so nothing else
+      // prompts a re-read. A polite live region carries the new value.
+      expect(screen.getByRole('status')).toHaveTextContent('Cherry');
+    });
+
+    it('does not select while focusable-disabled', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          onChange={onChange}
+          isDisabled
+          disabledMessage="Ask an admin"
+        />,
+      );
+
+      // aria-disabled keeps the trigger focusable, so keydowns still arrive.
+      screen.getByRole('combobox').focus();
+      await user.keyboard('c');
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('cycles without duplicating changeAction while an action is pending', async () => {
+      const user = userEvent.setup();
+      const calls: string[] = [];
+      render(
+        <Selector
+          label="City"
+          options={['Chicago', 'Cleveland']}
+          value={undefined}
+          changeAction={async value => {
+            calls.push(value);
+            // Never settles, so the value prop never catches up to what the
+            // trigger already shows.
+            await new Promise<void>(() => {});
+          }}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      type('cc', trigger);
+
+      // The anchor must come from the optimistic value, not the stale prop:
+      // otherwise the second press re-matches Chicago and re-fires the action.
+      expect(calls).toEqual(['Chicago', 'Cleveland']);
+    });
+
+    it('starts a fresh buffer after selecting from the open menu', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <Selector
+          label="Animal"
+          options={['Cat', 'Dog']}
+          onChange={onChange}
+        />,
+      );
+
+      await user.tab();
+      await user.keyboard('{Enter}'); // open
+      await user.keyboard('d'); // highlight Dog
+      await user.keyboard('{Enter}'); // commit Dog, closes
+      onChange.mockClear();
+
+      // The stale 'd' must not linger: 'c' is a fresh buffer, not "dc".
+      await user.keyboard('c');
+      expect(onChange).toHaveBeenCalledWith('Cat');
+    });
+
+    it('lets Space open the menu after an abandoned typeahead', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      await user.keyboard('{Enter}'); // open
+      await user.keyboard('z'); // no match; buffer holds "z"
+      await user.keyboard('{Escape}'); // close, abandoning the buffer
+
+      // A live "z" buffer would swallow Space as a match character.
+      await user.keyboard(' ');
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('seeds every character typed before the search input takes focus', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} hasSearch />);
+
+      await user.tab();
+      // The popup opens on the first key, but focus only moves to the search
+      // input on the next frame — the second key still lands on the trigger.
+      await user.keyboard('ch');
+
+      const search = screen.getByPlaceholderText('Search...');
+      await waitFor(() => expect(search).toHaveValue('ch'));
     });
   });
 

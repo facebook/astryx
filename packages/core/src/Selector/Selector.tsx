@@ -767,6 +767,17 @@ export function Selector<T extends SelectorOptionType>(
     }
   }, [onChange, changeAction, startTransition, setOptimisticValue]);
 
+  // Announces a value committed by typing on the closed trigger. That path
+  // changes the selection without opening the popup or moving focus, so no
+  // other event prompts assistive tech to re-read the trigger.
+  const [liveMessage, setLiveMessage] = useState('');
+
+  // Type-to-find appends to the query rather than replacing it: characters
+  // typed before focus reaches the search input must not be dropped.
+  const appendSearchQuery = useCallback((char: string) => {
+    setSearchQuery(query => query + char);
+  }, []);
+
   // Selector behavior (keyboard nav, typeahead, selection)
   const {
     highlightedIndex,
@@ -778,7 +789,10 @@ export function Selector<T extends SelectorOptionType>(
     onItemMouseEnter,
   } = useCombobox({
     selectableItems: filteredItems,
-    value: normalizedValue,
+    // The optimistic value, not the raw prop: with a pending changeAction the
+    // prop still holds the old selection, which would anchor typeahead cycling
+    // to a stale option and re-fire the action for a value already committed.
+    value: optimisticValue,
     isDisabled,
     isOpen: popover.isOpen,
     hasSearch,
@@ -786,7 +800,13 @@ export function Selector<T extends SelectorOptionType>(
       popover.show();
       if (hasSearch) {
         requestAnimationFrame(() => {
-          searchRef.current?.focus();
+          const input = searchRef.current;
+          if (input) {
+            input.focus();
+            // When typeahead seeded the query, place the caret after it so
+            // the user keeps typing where they left off.
+            input.setSelectionRange(input.value.length, input.value.length);
+          }
         });
       }
     }, [popover, hasSearch]),
@@ -794,6 +814,14 @@ export function Selector<T extends SelectorOptionType>(
     onSelect: useCallback(
       (newValue: string) => {
         onChange?.(newValue);
+        if (!popover.isOpen) {
+          // Committed by typing on the closed trigger: nothing else will
+          // announce it, so put the new label in the live region.
+          const committed = selectableItems.find(
+            item => item.value === newValue,
+          );
+          setLiveMessage(committed?.label ?? newValue);
+        }
         if (changeAction) {
           startTransition(async () => {
             setOptimisticValue(newValue);
@@ -801,9 +829,17 @@ export function Selector<T extends SelectorOptionType>(
           });
         }
       },
-      [onChange, changeAction, startTransition, setOptimisticValue],
+      [
+        onChange,
+        changeAction,
+        startTransition,
+        setOptimisticValue,
+        popover.isOpen,
+        selectableItems,
+      ],
     ),
     onClear: hasClear ? clearValue : undefined,
+    onSearchSeed: appendSearchQuery,
     listboxId,
   });
 
@@ -1125,6 +1161,10 @@ export function Selector<T extends SelectorOptionType>(
           style: popoverOffsetStyle,
         },
       )}
+
+      <VisuallyHidden role="status" aria-live="polite">
+        {liveMessage}
+      </VisuallyHidden>
 
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
