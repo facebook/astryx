@@ -126,6 +126,54 @@ These are intentional and documented; they slightly favor baseline, making Astry
 - **Maintainability:** Tailwind scale values (`p-4`, `text-sm`) count as semantic, which is generous compared to how raw `16px` is counted for HTML
 - **Astryx+Tailwind scoring:** The hybrid target counts styling decisions from both Astryx props and Tailwind classes. This may inflate its decision count relative to pure Astryx, but accurately reflects the code's actual styling surface area
 
+## Accessibility Scoring
+
+The `accessibility` dimension has two bases (see issue #4145):
+
+- **A11y Hygiene (composition)** — the default static scan of generated
+  consumer code. Its rules can only fire on raw-HTML footguns (`<img>` without
+  `alt`, unlabeled `<input>`, `onClick` on a `<div>`, ...), so
+  component-composed output scores ~100 **by construction** — it measures
+  footgun avoidance, not whether the result is accessible. Reports label it as
+  hygiene, and `metrics.eligibleSites` records how many sites the rules could
+  even examine; 0 means the score carries no signal.
+- **Accessibility (runtime + hygiene)** — when `axe-results.json` exists in
+  the iteration directory, axe-core violations from the rendered preview DOM
+  (light + dark, headless Chromium) fold into the score by impact
+  (critical -15, serious -10, moderate -8, minor -3 per violation rule).
+  Static rules that axe verifies at runtime (image-alt, labels, button-name,
+  heading-order) stop penalizing so one defect isn't counted twice;
+  `click-non-interactive` stays static-only because React attaches handlers
+  synthetically and the rendered DOM carries nothing for axe to see.
+
+Generate the sidecar after building previews — target-neutral, the same axe
+rules run against every target's rendered output:
+
+```bash
+pnpm -F @astryxdesign/vibe-tests axe:previews --iterations <id>
+```
+
+The CI screenshot workflow (`vibe-screenshots.yml`) runs this automatically
+after capturing screenshots. Re-run `aggregate` afterwards to fold the
+results into `universal.json`.
+
+Two caveats, both disclosed in the report output:
+
+- A prompt with no built preview (e.g. its code doesn't compile) never gets
+  axe data and falls back to hygiene-only scoring — correctness already
+  penalizes the compile failure, but its a11y number carries no runtime
+  signal. The aggregate prints how many prompts were actually scanned.
+- The sidecar snapshots the previews at scan time: after re-generating or
+  correcting result code, re-run `axe:previews` (like `build-previews` for
+  `build-errors.json`) or the folded runtime data is stale.
+
+The `a11y-manifests/` guarantee diffs remain **unscored**: the astryx and
+baseline manifests use different component vocabularies (e.g. `CheckboxInput`
+vs `Checkbox`) and only 2 of 4 targets have a manifest, so naive wiring would
+give some targets a penalty surface others lack — breaking Fair Evaluators
+(invariant 1). Wiring them in needs a name-mapping layer and per-target
+manifests first.
+
 ## Directory Structure
 
 ```
@@ -138,6 +186,7 @@ internal/vibe-tests/
 │   ├── universal-compare.ts  # Cross-target comparison
 │   ├── build-previews.ts     # TSX → HTML compilation + tsc
 │   ├── screenshot-previews.ts # Playwright screenshots
+│   ├── axe-previews.ts       # Runtime axe-core a11y scan → axe-results.json
 │   ├── build-report.ts       # Vite HTML report
 │   └── deploy-report.ts      # gh-pages deployment
 ├── .baseline/           # Real shadcn/ui components for baseline tsc

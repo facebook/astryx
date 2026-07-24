@@ -24,6 +24,7 @@
     "preview:dev": "vite --config app/vite.config.preview.ts",
     "preview:build": "vite build --config app/vite.config.preview.ts",
     "screenshot:previews": "tsx src/screenshot-previews.ts",
+    "axe:previews": "tsx src/axe-previews.ts",
     "design-judge": "tsx src/design-judge.ts",
     "design-judge:dry": "tsx src/design-judge.ts --dry-run",
     "correct": "tsx src/correct-previews.ts",
