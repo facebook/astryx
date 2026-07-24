@@ -1,0 +1,5 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";import{t}from"./react-B7Te67-h.js";import{a as n,s as r}from"./themeProps-_oSbOSxB.js";import{t as i}from"./jsx-runtime-DqZldVDK.js";function a({mode:e,children:t}){return(0,o.jsx)(`div`,{[n(`media`)]:e,className:`astryxjp7ctv astryx1tgivj0`,children:t})}var o,s=e((()=>{t(),r(),o=i(),a.displayName=`MediaTheme`,a.__docgenInfo={description:`Inverted surface theming context.
+
+Wraps children with \`data-astryx-media\` — the theme's CSS targets this
+attribute to apply inverted tokens. Parent component overrides flow
+through unchanged; only tokens change for the surface context.`,methods:[],displayName:`MediaTheme`,props:{mode:{required:!0,tsType:{name:`union`,raw:`'dark' | 'light'`,elements:[{name:`literal`,value:`'dark'`},{name:`literal`,value:`'light'`}]},description:'The surface luminance context for children.\n- `"dark"` — children are on a dark background (get light text/icons)\n- `"light"` — children are on a light background (get dark text/icons)'},children:{required:!0,tsType:{name:`ReactReactNode`,raw:`React.ReactNode`},description:`Content to render in the media context`}}}}));export{s as n,a as t};

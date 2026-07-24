@@ -1,0 +1,8 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";import{t}from"./jsx-runtime-DqZldVDK.js";import{A as n,E as r,M as i,O as a,t as o}from"./src-D3ty3G8C.js";import{i as s,r as c}from"./_data-DTSixHX1.js";var l,u,d,f;e((()=>{o(),c(),l=t(),u={title:`Charts/Chrome/Axes & Grids`,argTypes:{horizontalGrid:{control:`boolean`},verticalGrid:{control:`boolean`},bottomAxisLine:{control:`boolean`},leftAxisLine:{control:`boolean`},showTicks:{control:`boolean`}},args:{horizontalGrid:!0,verticalGrid:!1,bottomAxisLine:!0,leftAxisLine:!1,showTicks:!1}},d={render:e=>(0,l.jsx)(i,{data:s,xKey:`month`,series:[r(`revenue`,{color:`#3b82f6`})],grid:(0,l.jsx)(a,{horizontal:e.horizontalGrid,vertical:e.verticalGrid}),axes:(0,l.jsxs)(l.Fragment,{children:[(0,l.jsx)(n,{position:`bottom`,showAxisLine:e.bottomAxisLine,showTicks:e.showTicks}),(0,l.jsx)(n,{position:`left`,showAxisLine:e.leftAxisLine,showTicks:e.showTicks})]}),height:300})},d.parameters={...d.parameters,docs:{...d.parameters?.docs,source:{originalSource:`{
+  render: args => <Chart data={monthlyData} xKey="month" series={[bar('revenue', {
+    color: '#3b82f6'
+  })]} grid={<ChartGrid horizontal={args.horizontalGrid} vertical={args.verticalGrid} />} axes={<>
+          <ChartAxis position="bottom" showAxisLine={args.bottomAxisLine} showTicks={args.showTicks} />
+          <ChartAxis position="left" showAxisLine={args.leftAxisLine} showTicks={args.showTicks} />
+        </>} height={300} />
+}`,...d.parameters?.docs?.source},description:{story:`Toggle grid lines, axis edge lines, and tick marks independently.`,...d.parameters?.docs?.description}}},f=[`Playground`]}))();export{d as Playground,f as __namedExportsOrder,u as default};

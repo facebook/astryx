@@ -1,0 +1,1 @@
+import{n as e}from"./rolldown-runtime-DaJ6WEGw.js";import{n as t,r as n}from"./InteractiveRoleContext-CKTxABhp.js";function r({href:e,onClick:t,isDisabled:r=!1}){let i=n();return e!=null&&!r?`link`:t==null?i??`inert`:`button`}var i=e((()=>{t()}));export{r as n,i as t};

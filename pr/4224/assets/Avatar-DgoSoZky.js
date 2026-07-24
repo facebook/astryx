@@ -1,0 +1,61 @@
+import{a as e,n as t}from"./rolldown-runtime-DaJ6WEGw.js";import{t as n}from"./react-DvlgmmzG.js";import{l as r,n as i,t as a,u as o}from"./themeProps-DlHa58hS.js";import{d as s,t as c,y as l}from"./utils-SBEvDdeo.js";import{t as u}from"./jsx-runtime-cM__dR4X.js";var d,f,p=t((()=>{d=e(n(),1),f=(0,d.createContext)(36),f.displayName=`AvatarSizeContext`}));function m(){return(0,h.use)(g)}var h,g,_=t((()=>{h=e(n(),1),g=(0,h.createContext)(null),g.displayName=`AvatarGroupContext`}));function v(e){if(typeof e==`number`)return e;switch(e){case`xsm`:return 20;case`sm`:return 24;case`md`:return 36;case`lg`:return 48;case`xl`:return 128}}function y(e){let t=e.trim().split(/\s+/);return t.length===0?``:t.length===1?t[0].charAt(0).toUpperCase():(t[0].charAt(0)+t[t.length-1].charAt(0)).toUpperCase()}function b({size:e}){return(0,C.jsx)(`svg`,{width:e*.6,height:e*.6,viewBox:`0 0 24 24`,fill:`currentColor`,"aria-hidden":`true`,children:(0,C.jsx)(`path`,{d:`M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z`})})}function x({alt:e,"data-testid":t,fallbackSrc:n,name:r,size:a=`md`,src:s,status:c,xstyle:u,className:d,style:p,ref:h,...g}){let[_,x]=(0,S.useState)(void 0),[w,T]=(0,S.useState)(void 0),D=s&&_!==s,O=!D&&n&&w!==n,j=!D&&!O&&r,N=!D&&!O&&!r,P=e||r,F=!P,I=m(),L=I?.size??a,R=(0,S.useMemo)(()=>v(L),[L]);return(0,C.jsx)(f,{value:R,children:(0,C.jsxs)(`div`,{...g,ref:h,role:F?`presentation`:`img`,"aria-label":F?void 0:P,"aria-hidden":F||void 0,"data-testid":t,...l(i(`avatar`,{size:L}),o(E.wrapper,I&&A.ring,I&&A.overlap,I&&M.overlap(-I.overlap),u),d,p),children:[(0,C.jsxs)(`div`,{...o(E.content,k.size(R)),children:[D&&(0,C.jsx)(`img`,{src:s,alt:``,onError:()=>x(s),className:`astryxh8yej3 astryx5yr21d astryxl1xv1r`}),O&&(0,C.jsx)(`img`,{src:n,alt:``,onError:()=>T(n),className:`astryxh8yej3 astryx5yr21d astryxl1xv1r`}),j&&(0,C.jsx)(`div`,{...o(E.fallback,k.fontSize(R)),children:y(r)}),N&&(0,C.jsx)(`div`,{className:`astryx78zum5 astryx6s0dn4 astryxl56j7k astryxh8yej3 astryx5yr21d astryx17x4s8c astryxv1l7n4 astryx9ynric astryx1e4wzip astryxtvhhri`,children:(0,C.jsx)(b,{size:R})})]}),c&&(0,C.jsx)(`div`,{...o(E.status,k.statusPosition(R)),children:c})]})})}var S,C,w,T,E,D,O,k,A,j,M,N=t((()=>{S=e(n(),1),r(),p(),_(),c(),a(),C=u(),w=(1-1/Math.SQRT2)/2,T=.4,E={wrapper:{kVAEAm:`astryx1n2onr6`,k1xSpc:`astryx3nfvp2`,kmuXW:`astryx2lah0s`,$$css:!0},content:{k1xSpc:`astryx78zum5`,kGNEyG:`astryx6s0dn4`,kjj79g:`astryxl56j7k`,kaIpWk:`astryxjspbzw`,kVQacm:`astryxb3r6kr`,kfSwDN:`astryx87ps6o`,$$css:!0},fallback:{k1xSpc:`astryx78zum5`,kGNEyG:`astryx6s0dn4`,kjj79g:`astryxl56j7k`,kzqmXN:`astryxh8yej3`,kZKoxP:`astryx5yr21d`,kWkggS:`astryx17x4s8c`,kMwMTN:`astryxv1l7n4`,kMv6JI:`astryx9ynric`,k63SB2:`astryx1e4wzip`,kP9fke:`astryxtvhhri`,$$css:!0},status:{kVAEAm:`astryx10l6tqk`,$$css:!0}},D={kGuDYH:`astryxdmh292`,$$css:!0},O={krVfgx:`astryx1nqzi6q`,kCIrl2:`astryx7ok3n0`,kLqNvP:``,kt4wiu:``,k3aq6I:`astryx4v1no5`,$$css:!0},k={size:e=>[{kzqmXN:e==null?e:`astryx5lhr3w`,kZKoxP:e==null?e:`astryx16ye13r`,$$css:!0},{"--x-width":(e=>typeof e==`number`?e+`px`:e??void 0)(e),"--x-height":(e=>typeof e==`number`?e+`px`:e??void 0)(e)}],fontSize:e=>[D,{"--x-fontSize":(e=>typeof e==`number`?e+`px`:e??void 0)(e*T)}],statusPosition:e=>[O,{"--x-bottom":(e=>typeof e==`number`?e+`px`:e??void 0)(e*w),"--x-right":(e=>typeof e==`number`?e+`px`:e??void 0)(e*w)}]},A={ring:{kaIpWk:`astryxjspbzw`,kMzoRj:`astryxdh2fpr`,ksu8eU:`astryx1y0btm7`,kVAM5u:`astryx1touxvs`,kWkggS:`astryx10xzikg`,kB7OPa:`astryx1afcbsf`,$$css:!0},overlap:{keTefX:`astryx1sik18w`,$$css:!0}},j={"--_avatar-group-overlap":`astryxlz5hwt`,$$css:!0},M={overlap:e=>[j,{"--x---_avatar-group-overlap":`${e}px`==null?void 0:`${e}px`}]},x.displayName=`Avatar`,x.__docgenInfo={description:`Avatar component for displaying user profile pictures.
+
+Displays an image when available, falling back to initials derived from
+the name prop, or a generic person icon if neither is provided.
+
+@example
+\`\`\`
+<Avatar src="/user.jpg" name="John Doe" />
+<Avatar name="Jane Smith" size="xl" />
+<Avatar src="/user.jpg" status={<OnlineIndicator />} />
+\`\`\``,methods:[],displayName:`Avatar`,props:{xstyle:{required:!1,tsType:{name:`StyleXStyles`},description:"StyleX styles created via `stylex.create()`. Merged with the component's\nbase styles inside a single `stylex.props()` call for optimal deduplication.\n\n@example\n```\nconst overrides = stylex.create({ root: { marginBottom: 8 } });\n<Component xstyle={overrides.root} />\n```"},ref:{required:!1,tsType:{name:`ReactRef`,raw:`React.Ref<HTMLDivElement>`,elements:[{name:`HTMLDivElement`}]},description:`Ref forwarded to the root element`},alt:{required:!1,tsType:{name:`string`},description:"The alt text shown on hover and made accessible to screen readers.\nFalls back to `name` if not provided."},"data-testid":{required:!1,tsType:{name:`string`},description:`testid for tests.`},fallbackSrc:{required:!1,tsType:{name:`string`},description:"Fallback image source when primary `src` fails to load.\nIf this also fails, shows initials derived from `name`."},name:{required:!1,tsType:{name:`string`},description:`The user's name. Used for:
+- Generating initials when no image is available
+- Default alt text if \`alt\` is not provided`},size:{required:!1,tsType:{name:`union`,raw:`AvatarNamedSize | AvatarNumericSize`,elements:[{name:`union`,raw:`'xsm' | 'sm' | 'md' | 'lg' | 'xl'`,elements:[{name:`literal`,value:`'xsm'`},{name:`literal`,value:`'sm'`},{name:`literal`,value:`'md'`},{name:`literal`,value:`'lg'`},{name:`literal`,value:`'xl'`}]},{name:`union`,raw:`16 | 20 | 24 | 32 | 36 | 40 | 48 | 60 | 64 | 72 | 96 | 128 | 144 | 180`,elements:[{name:`literal`,value:`16`},{name:`literal`,value:`20`},{name:`literal`,value:`24`},{name:`literal`,value:`32`},{name:`literal`,value:`36`},{name:`literal`,value:`40`},{name:`literal`,value:`48`},{name:`literal`,value:`60`},{name:`literal`,value:`64`},{name:`literal`,value:`72`},{name:`literal`,value:`96`},{name:`literal`,value:`128`},{name:`literal`,value:`144`},{name:`literal`,value:`180`}]}]},description:"The size of the avatar. A named size (`xsm` 20px, `sm` 24px, `md` 36px,\n`lg` 48px, `xl` 128px) or a specific pixel value.\n@default 'md'",defaultValue:{value:`'md'`,computed:!1}},src:{required:!1,tsType:{name:`string`},description:`The primary image source for the avatar.`},status:{required:!1,tsType:{name:`ReactNode`},description:`Content displayed in the corner of the avatar.
+Typically used for status indicators or badges.`}},composes:[`Omit`]}}));function P(e){return e<=36?{dotSize:10,borderWidth:1,iconSize:0,tier:`small`}:e<=72?{dotSize:20,borderWidth:2,iconSize:12,tier:`medium`}:{dotSize:32,borderWidth:4,iconSize:18,tier:`large`}}function F({shape:e,field:t,stroke:n}){let r=t/2;return(0,R.jsx)(`svg`,{"aria-hidden":`true`,viewBox:`0 0 ${t} ${t}`,width:t,height:t,fill:`none`,...i(`avatar-status-dot-glyph`,{shape:e}),children:e===`ring`?(0,R.jsx)(`circle`,{cx:r,cy:r,r:(t-n)/2,fill:`none`,stroke:`currentColor`,strokeWidth:n}):(0,R.jsx)(`line`,{x1:t*(1-G)/2+n/2,y1:r,x2:t*1.75/2-n/2,y2:r,stroke:`currentColor`,strokeWidth:n,strokeLinecap:`round`})})}function I({ref:e,variant:t=`success`,label:n,icon:r,xstyle:a,className:c,style:u,...d}){let{dotSize:p,borderWidth:m,iconSize:h,tier:g}=P((0,L.use)(f)),_=s(r)&&h>0,v=_?void 0:U[t];return(0,R.jsxs)(`div`,{...d,ref:e,...n?{role:`img`,"aria-label":n}:void 0,...l(i(`avatar-status-dot`,{variant:t}),o(z.dot,H[t],V.size(p,m),a),c,u),children:[_&&(0,R.jsx)(`span`,{"aria-hidden":`true`,...o(z.icon,V.iconSize(h)),children:r}),v&&(0,R.jsx)(F,{shape:v,field:p-m*2,stroke:W[g]})]})}var L,R,z,B,V,H,U,W,G,K=t((()=>{L=e(n(),1),r(),p(),c(),a(),R=u(),z={dot:{kaIpWk:`astryxjspbzw`,ksu8eU:`astryx1y0btm7`,kVAM5u:`astryx1touxvs`,kB7OPa:`astryx9f619`,k1xSpc:`astryx78zum5`,kGNEyG:`astryx6s0dn4`,kjj79g:`astryxl56j7k`,$$css:!0},success:{kWkggS:`astryxdsz4j9`,kMwMTN:`astryxrkvqaz`,$$css:!0},neutral:{kWkggS:`astryx10xzikg`,kMwMTN:`astryxv1l7n4`,$$css:!0},error:{kWkggS:`astryx1pjz0fi`,kMwMTN:`astryxrkvqaz`,$$css:!0},icon:{k1xSpc:`astryx78zum5`,kGNEyG:`astryx6s0dn4`,kjj79g:`astryxl56j7k`,kLWn49:`astryx14ju556`,$$css:!0}},B={kjGldf:``,k2ei4v:``,kZ1KPB:``,ke9TFa:``,kWqL5O:``,kLoX6v:``,kEafiO:``,kt9PQ7:``,$$css:!0},V={size:(e,t)=>[B,{kzqmXN:e==null?e:`astryx5lhr3w`,kZKoxP:e==null?e:`astryx16ye13r`,kMzoRj:t==null?t:`astryx1mw0n95`,$$css:!0},{"--x-width":(e=>typeof e==`number`?e+`px`:e??void 0)(e),"--x-height":(e=>typeof e==`number`?e+`px`:e??void 0)(e),"--x-borderWidth":(e=>typeof e==`number`?e+`px`:e??void 0)(t)}],iconSize:e=>[{kzqmXN:e==null?e:`astryx5lhr3w`,kZKoxP:e==null?e:`astryx16ye13r`,$$css:!0},{"--x-width":(e=>typeof e==`number`?e+`px`:e??void 0)(e),"--x-height":(e=>typeof e==`number`?e+`px`:e??void 0)(e)}]},H={success:z.success,neutral:z.neutral,error:z.error},U={neutral:`ring`,error:`minus`},W={small:1,medium:1.5,large:2},G=.75,I.displayName=`AvatarStatusDot`,I.__docgenInfo={description:`A status indicator dot that automatically scales to match the parent
+Avatar's size.
+
+Each variant pairs a colour with a distinct built-in shape (filled dot,
+ring, minus bar) so status stays distinguishable without colour
+perception (WCAG 2.1 SC 1.4.1). Themes can target the shape glyph via
+the \`astryx-avatar-status-dot-glyph\` class and its \`data-shape\`
+attribute.
+
+Must be used inside an Avatar's \`status\` prop so it can read
+the avatar size from context.
+
+@example
+\`\`\`
+<Avatar
+  name="John Doe"
+  size="lg"
+  status={<AvatarStatusDot variant="success" label="Online" />}
+/>
+<Avatar
+  name="Jane Smith"
+  size="xl"
+  status={<AvatarStatusDot variant="success" label="Verified" icon={<CheckIcon />} />}
+/>
+\`\`\``,methods:[],displayName:`AvatarStatusDot`,props:{xstyle:{required:!1,tsType:{name:`StyleXStyles`},description:"StyleX styles created via `stylex.create()`. Merged with the component's\nbase styles inside a single `stylex.props()` call for optimal deduplication.\n\n@example\n```\nconst overrides = stylex.create({ root: { marginBottom: 8 } });\n<Component xstyle={overrides.root} />\n```"},ref:{required:!1,tsType:{name:`ReactRef`,raw:`React.Ref<HTMLDivElement>`,elements:[{name:`HTMLDivElement`}]},description:``},variant:{required:!1,tsType:{name:`AvatarStatusDotVariantMap`},description:"The semantic variant of the dot. Each variant pairs a colour with a\ndistinct built-in shape so status is never conveyed by colour alone\n(WCAG 2.1 SC 1.4.1):\n- `success` — filled green dot (e.g. online, accepted)\n- `neutral` — grey ring (e.g. away, offline, pending)\n- `error` — red dot with a minus bar (e.g. busy, do not disturb)\n\nMatches the `variant` naming convention from `StatusDot`.\n@default 'success'",defaultValue:{value:`'success'`,computed:!1}},label:{required:!1,tsType:{name:`string`},description:`Accessible label for the status dot.
+Describes the meaning of the indicator for screen readers
+(e.g. "Online", "Accepted", "John Doe is busy").
+
+Note: inside an Avatar the label is currently not announced — the
+Avatar root is \`role="img"\`, which prunes descendant semantics.
+Pass it anyway; composing status into the avatar's accessible name
+is a planned Avatar-level fix.`},icon:{required:!1,tsType:{name:`ReactNode`},description:`Optional icon to render centered inside the dot.
+Accepts any ReactNode (typically an SVG icon).
+The icon is automatically sized to fit the dot and hidden
+at the smallest avatar sizes where there isn't enough room.
+
+A rendered icon replaces the variant's built-in shape glyph, so use a
+different icon per status — the same icon on every variant leaves the
+statuses distinguishable by colour alone (WCAG 1.4.1). At the smallest
+avatar sizes the built-in glyph still shows instead of the icon.
+Booleans and empty strings are ignored (safe for \`cond && <Icon />\`),
+but a component that renders nothing still counts as an icon and
+suppresses the glyph.
+
+@example
+\`\`\`
+<AvatarStatusDot variant="success" label="Verified" icon={<CheckIcon />} />
+\`\`\``}},composes:[`Omit`]}})),q=t((()=>{N(),K()}));export{N as a,_ as c,x as i,m as l,I as n,v as o,K as r,g as s,q as t};

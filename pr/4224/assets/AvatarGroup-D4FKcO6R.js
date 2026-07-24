@@ -1,0 +1,30 @@
+import{a as e,n as t}from"./rolldown-runtime-DaJ6WEGw.js";import{t as n}from"./react-DvlgmmzG.js";import{l as r,n as i,t as a,u as o}from"./themeProps-DlHa58hS.js";import{t as s,y as c}from"./utils-SBEvDdeo.js";import{t as l}from"./jsx-runtime-cM__dR4X.js";import{r as u,t as d}from"./i18n-BRp86Ovh.js";import{c as f,l as p,o as m,s as h,t as g}from"./Avatar-DgoSoZky.js";function _({children:e,size:t=`md`,"data-testid":n,"aria-label":r,xstyle:a,className:s,style:l,ref:d,...f}){let p=u(),g=r??p(`@astryx.avatarGroup.label`),_=m(t),S=Math.round(_*b);return(0,y.jsx)(h,{value:(0,v.useMemo)(()=>({size:t,overlap:S,numericSize:_}),[t,S,_]),children:(0,y.jsx)(`div`,{...f,ref:d,role:`group`,"aria-label":g,"data-testid":n,...c(i(`avatar-group`,{size:t}),o(x.root,a),s,l),children:e})})}var v,y,b,x,S=t((()=>{v=e(n(),1),g(),r(),s(),f(),a(),d(),y=l(),b=.25,x={root:{k1xSpc:`astryx3nfvp2`,kGNEyG:`astryx6s0dn4`,$$css:!0}},_.displayName=`AvatarGroup`,_.__docgenInfo={description:`Stacked avatar display showing multiple avatars overlapping with an
+optional overflow indicator. Uses a compositional children-based API
+so each avatar can carry its own props (status dots, click handlers, etc.).
+
+Consumers handle slicing — pass only the avatars you want visible,
+then add an AvatarGroupOverflow for the "+N" indicator.
+
+@example
+\`\`\`
+<AvatarGroup size="lg">
+  {users.slice(0, 3).map(u => (
+    <Avatar key={u.id} src={u.src} name={u.name} />
+  ))}
+  <AvatarGroupOverflow count={users.length - 3} />
+</AvatarGroup>
+\`\`\``,methods:[],displayName:`AvatarGroup`,props:{xstyle:{required:!1,tsType:{name:`StyleXStyles`},description:"StyleX styles created via `stylex.create()`. Merged with the component's\nbase styles inside a single `stylex.props()` call for optimal deduplication.\n\n@example\n```\nconst overrides = stylex.create({ root: { marginBottom: 8 } });\n<Component xstyle={overrides.root} />\n```"},ref:{required:!1,tsType:{name:`ReactRef`,raw:`React.Ref<HTMLDivElement>`,elements:[{name:`HTMLDivElement`}]},description:`Ref forwarded to the root element.`},children:{required:!0,tsType:{name:`ReactNode`},description:`Avatar children, optionally followed by one AvatarGroupOverflow.
+Consumers are responsible for slicing to the desired visible count.`},size:{required:!1,tsType:{name:`union`,raw:`AvatarNamedSize | AvatarNumericSize`,elements:[{name:`union`,raw:`'xsm' | 'sm' | 'md' | 'lg' | 'xl'`,elements:[{name:`literal`,value:`'xsm'`},{name:`literal`,value:`'sm'`},{name:`literal`,value:`'md'`},{name:`literal`,value:`'lg'`},{name:`literal`,value:`'xl'`}]},{name:`union`,raw:`16 | 20 | 24 | 32 | 36 | 40 | 48 | 60 | 64 | 72 | 96 | 128 | 144 | 180`,elements:[{name:`literal`,value:`16`},{name:`literal`,value:`20`},{name:`literal`,value:`24`},{name:`literal`,value:`32`},{name:`literal`,value:`36`},{name:`literal`,value:`40`},{name:`literal`,value:`48`},{name:`literal`,value:`60`},{name:`literal`,value:`64`},{name:`literal`,value:`72`},{name:`literal`,value:`96`},{name:`literal`,value:`128`},{name:`literal`,value:`144`},{name:`literal`,value:`180`}]}]},description:`Size applied to all avatars via context.
+@default 'md'`,defaultValue:{value:`'md'`,computed:!1}},"data-testid":{required:!1,tsType:{name:`string`},description:`Test ID for integration testing.`}},composes:[`Omit`]}}));function C({ref:e,count:t,onClick:n,children:r,xstyle:a,className:s,style:l,...u}){let d=p(),f=d?.numericSize??36,m=d?.overlap??0,h=`${t} more`,g=r??`+${t}`;return n?(0,w.jsx)(`button`,{ref:e,type:`button`,onClick:n,...u,"aria-label":h,...c(i(`avatar-group-overflow`),o(D.base,D.button,D.overlap,j.size(f),j.fontSize(f),j.overlap(-m),a),s,l),children:g}):(0,w.jsx)(`span`,{ref:e,...u,"aria-label":h,...c(i(`avatar-group-overflow`),o(D.base,D.overlap,j.size(f),j.fontSize(f),j.overlap(-m),a),s,l),children:g})}var w,T,E,D,O,k,A,j,M=t((()=>{n(),r(),s(),f(),a(),w=l(),T=2,E=.35,D={base:{kVAEAm:`astryx1n2onr6`,k1xSpc:`astryx78zum5`,kGNEyG:`astryx6s0dn4`,kjj79g:`astryxl56j7k`,kaIpWk:`astryxjspbzw`,kWkggS:`astryx10xzikg`,kMwMTN:`astryxv1l7n4`,kMv6JI:`astryx9ynric`,k63SB2:`astryx1e4wzip`,kfSwDN:`astryx87ps6o`,kMzoRj:`astryxdh2fpr`,ksu8eU:`astryx1y0btm7`,kVAM5u:`astryx1touxvs`,kB7OPa:`astryx9f619`,kg3NbH:`astryxf314gf`,kKwaWg:`astryx14bno8m`,$$css:!0},button:{kkrTdU:`astryx1ypdohk`,k8WAf4:`astryxt970qd`,kKwaWg:`astryx14bno8m astryxbfmc0r astryx1nocapi`,kI3sdo:`astryx1a2a7pz astryx17nn4n9`,kInvED:`astryx7s97pk`,$$css:!0},overlap:{keTefX:`astryx13hpdyo`,$$css:!0}},O={k7Eaqz:`astryxkj4a21`,kZKoxP:`astryx16ye13r`,$$css:!0},k={kGuDYH:`astryxdmh292`,$$css:!0},A={"--_avatar-group-overlap":`astryxlz5hwt`,$$css:!0},j={size:e=>[O,{"--x-minWidth":(e=>typeof e==`number`?e+`px`:e??void 0)(e+T*2),"--x-height":(e=>typeof e==`number`?e+`px`:e??void 0)(e+T*2)}],fontSize:e=>[k,{"--x-fontSize":(e=>typeof e==`number`?e+`px`:e??void 0)(e*E)}],overlap:e=>[A,{"--x---_avatar-group-overlap":`${e}px`==null?void 0:`${e}px`}]},C.displayName=`AvatarGroupOverflow`,C.__docgenInfo={description:`Overflow indicator for AvatarGroup. Shows a "+N" count and
+optionally handles clicks.
+
+@example
+\`\`\`
+<AvatarGroup size="lg">
+  {users.slice(0, 3).map(u => (
+    <Avatar key={u.id} src={u.src} name={u.name} />
+  ))}
+  <AvatarGroupOverflow count={users.length - 3} onClick={showAll} />
+</AvatarGroup>
+\`\`\``,methods:[],displayName:`AvatarGroupOverflow`,props:{ref:{required:!1,tsType:{name:`ReactRef`,raw:`React.Ref<HTMLElement>`,elements:[{name:`HTMLElement`}]},description:``},count:{required:!0,tsType:{name:`number`},description:`The overflow count to display.`},onClick:{required:!1,tsType:{name:`signature`,type:`function`,raw:`() => void`,signature:{arguments:[],return:{name:`void`}}},description:`Callback fired when the overflow indicator is clicked.
+When provided, the indicator renders as a focusable button.`},children:{required:!1,tsType:{name:`ReactNode`},description:`Custom content to render instead of the default "+N" label.`}},composes:[`Omit`]}})),N=t((()=>{S(),M()}));export{S as a,_ as i,C as n,M as r,N as t};

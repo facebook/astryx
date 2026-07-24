@@ -1,0 +1,1 @@
+import{a as e,n as t}from"./rolldown-runtime-DaJ6WEGw.js";import{t as n}from"./react-DvlgmmzG.js";function r(){return(0,i.use)(a)}var i,a,o=t((()=>{i=e(n(),1),a=(0,i.createContext)(null),a.displayName=`InteractiveRoleContext`}));export{o as n,r,a as t};

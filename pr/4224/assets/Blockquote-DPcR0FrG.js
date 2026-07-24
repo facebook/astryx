@@ -1,0 +1,9 @@
+import{n as e}from"./rolldown-runtime-DaJ6WEGw.js";import{l as t,n,t as r,u as i}from"./themeProps-DlHa58hS.js";import{t as a,y as o}from"./utils-SBEvDdeo.js";import{t as s}from"./jsx-runtime-cM__dR4X.js";function c({children:e,cite:t,xstyle:r,className:a,style:s,ref:c,...d}){return(0,l.jsxs)(`blockquote`,{ref:c,...o(n(`blockquote`),i(u.root,r),a,s),...d,children:[e,t!=null&&(0,l.jsx)(`footer`,{children:(0,l.jsx)(`cite`,{className:`astryx1lliihq astryxtbrsbv astryx141an7d astryx1ltkj2j astryx1j61x8r`,children:t})})]})}var l,u,d=e((()=>{t(),a(),r(),l=s(),u={root:{k2ei4v:`astryxtpqe59`,kVhnKS:`astryx1t7ytsu`,kGJrpR:`astryx14ydlgx`,kZCmMZ:`astryx1rey3nv`,kMwMTN:`astryxv1l7n4`,keTefX:`astryx1lziwak`,k71WvV:`astryx14z9mp`,keoZOQ:`astryxdj266r`,k1K539:`astryxat24cr`,$$css:!0}},c.displayName=`Blockquote`,c.__docgenInfo={description:`Blockquote component for displaying quoted content.
+
+Renders a semantic \`<blockquote>\` with an accent-colored left border
+and secondary text color, matching the Astryx visual language.
+
+@example
+\`\`\`
+<Blockquote>Design is not just what it looks like.</Blockquote>
+\`\`\``,methods:[],displayName:`Blockquote`,props:{xstyle:{required:!1,tsType:{name:`StyleXStyles`},description:"StyleX styles created via `stylex.create()`. Merged with the component's\nbase styles inside a single `stylex.props()` call for optimal deduplication.\n\n@example\n```\nconst overrides = stylex.create({ root: { marginBottom: 8 } });\n<Component xstyle={overrides.root} />\n```"},ref:{required:!1,tsType:{name:`ReactRef`,raw:`React.Ref<HTMLQuoteElement>`,elements:[{name:`HTMLQuoteElement`}]},description:`Ref forwarded to the root <blockquote> element`},children:{required:!0,tsType:{name:`ReactNode`},description:`Content of the blockquote`},cite:{required:!1,tsType:{name:`ReactNode`},description:`Optional attribution for the quote. Rendered in a <footer> with <cite>.`}},composes:[`Omit`]}}));export{d as n,c as t};

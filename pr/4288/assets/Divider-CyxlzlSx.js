@@ -1,0 +1,16 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";import{l as t,n,t as r,u as i}from"./themeProps-_oSbOSxB.js";import{S as a,t as o}from"./utils-CD2ovDaz.js";import{t as s}from"./jsx-runtime-DqZldVDK.js";function c({orientation:e=`horizontal`,label:t,variant:r=`subtle`,isFullBleed:o=!1,xstyle:s,className:c,style:p,ref:m,...h}){let g=e===`horizontal`;return(0,l.jsxs)(`div`,{ref:m,role:`separator`,"aria-orientation":e,...a(n(`divider`,{variant:r,orientation:e}),i(g?u.horizontal:u.vertical,o&&(g?f.horizontal:f.vertical),s),c,p),...h,children:[(0,l.jsx)(`div`,{...i(g?d.horizontalLine:d.verticalLine,d[r])}),t&&(0,l.jsx)(`div`,{...{0:{className:`astryx2lah0s astryxrrkdod astryx141an7d astryx1ltkj2j astryxv1l7n4`},1:{className:`astryx2lah0s astryx141an7d astryx1ltkj2j astryxv1l7n4 astryxnjsko4 astryx8o8v82`}}[!g<<0],children:t}),t&&(0,l.jsx)(`div`,{...i(g?d.horizontalLine:d.verticalLine,d[r])})]})}var l,u,d,f,p=e((()=>{t(),o(),r(),l=s(),u={horizontal:{k1xSpc:`astryx78zum5`,kGNEyG:`astryx6s0dn4`,kzqmXN:`astryxh8yej3`,$$css:!0},vertical:{k1xSpc:`astryx3nfvp2`,kXwgrk:`astryxdt5ytf`,kGNEyG:`astryx6s0dn4`,kZKoxP:`astryx5yr21d`,$$css:!0}},d={horizontalLine:{kZKoxP:`astryxsyqizj`,kzQI83:`astryx1iyjqo2`,kmuXW:`astryxs83m0k`,$$css:!0},verticalLine:{kzqmXN:`astryxjk4fl7`,kzQI83:`astryx1iyjqo2`,kmuXW:`astryxs83m0k`,$$css:!0},subtle:{kWkggS:`astryx1m4xfpy`,$$css:!0},strong:{kWkggS:`astryx7njt3n`,$$css:!0}},f={horizontal:{keTefX:`astryxojxgvx`,k71WvV:`astryx1fcf3bl`,kzqmXN:`astryxx6qvi6`,$$css:!0},vertical:{keoZOQ:`astryx1sa9bsh`,k1K539:`astryx6h7pi7`,kZKoxP:`astryx12qplqi`,$$css:!0}},c.displayName=`Divider`,c.__docgenInfo={description:`Divider component for visual separation of content.
+
+Provides horizontal and vertical dividers with optional labels.
+Uses Astryx design tokens for colors and spacing.
+
+@example
+\`\`\`
+<Divider label="or" />
+\`\`\``,methods:[],displayName:`Divider`,props:{xstyle:{required:!1,tsType:{name:`StyleXStyles`},description:"StyleX styles created via `stylex.create()`. Merged with the component's\nbase styles inside a single `stylex.props()` call for optimal deduplication.\n\n@example\n```\nconst overrides = stylex.create({ root: { marginBottom: 8 } });\n<Component xstyle={overrides.root} />\n```"},ref:{required:!1,tsType:{name:`ReactRef`,raw:`React.Ref<HTMLDivElement>`,elements:[{name:`HTMLDivElement`}]},description:`Ref forwarded to the root element`},orientation:{required:!1,tsType:{name:`union`,raw:`'horizontal' | 'vertical'`,elements:[{name:`literal`,value:`'horizontal'`},{name:`literal`,value:`'vertical'`}]},description:`Orientation of the divider.
+@default 'horizontal'`,defaultValue:{value:`'horizontal'`,computed:!1}},label:{required:!1,tsType:{name:`ReactNode`},description:`Optional label to display centered on the divider.
+Rendered with small, secondary text styling.`},variant:{required:!1,tsType:{name:`DividerVariantMap`},description:`Visual weight of the divider line.
+- 'subtle': Uses --color-border (default)
+- 'strong': Uses --color-border-emphasized
+@default 'subtle'`,defaultValue:{value:`'subtle'`,computed:!1}},isFullBleed:{required:!1,tsType:{name:`boolean`},description:`Makes the divider escape its parent's container padding.
+Uses negative margins to extend to the container edges.
+@default false`,defaultValue:{value:`false`,computed:!1}}},composes:[`Omit`]}}));export{p as n,c as t};

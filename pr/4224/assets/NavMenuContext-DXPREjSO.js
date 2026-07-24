@@ -1,0 +1,1 @@
+import{a as e,n as t}from"./rolldown-runtime-DaJ6WEGw.js";import{t as n}from"./react-DvlgmmzG.js";function r(){return(0,a.use)(o)}function i(){return(0,a.use)(s)}var a,o,s,c=t((()=>{a=e(n(),1),o=(0,a.createContext)(null),o.displayName=`NavHeadingCloseContext`,s=(0,a.createContext)(null),s.displayName=`NavHeadingMenuContext`}));export{i as a,r as i,s as n,c as r,o as t};
