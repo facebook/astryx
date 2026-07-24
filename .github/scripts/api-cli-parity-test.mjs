@@ -262,9 +262,14 @@ add('build dashboard', ['build', 'dashboard'],
 add('build (no match)', ['build', 'zzznomatch99'],
   () => apiCall(api.build, 'zzznomatch99', {cwd: ROOT}));
 
+// Swizzle — list + not-found are read-only; the api matches the CLI envelope.
+add('swizzle --list', ['swizzle', '--list'],
+  () => apiCall(api.swizzle, undefined, {list: true, cwd: ROOT}));
+add('swizzle (not found)', ['swizzle', 'NotARealComponent99'],
+  () => apiCall(api.swizzle, 'NotARealComponent99', {cwd: ROOT}));
+
 // Other commands — probe with safe read-only args (no API yet)
 const otherCommands = [
-  ['swizzle', '--list'],
   ['upgrade', '--list'],
 ];
 for (const args of otherCommands) {

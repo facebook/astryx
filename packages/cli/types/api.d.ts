@@ -53,6 +53,7 @@ import type {
 import type {ValidateIntegrationResponse} from './validate-integration';
 import type {AstryxIntegrationIssue} from './integration';
 import type {BuildHelpResponse, BuildKitResponse} from './build';
+import type {SwizzleListResponse, SwizzleCopyResponse} from './swizzle';
 import type {Suggestion} from './base';
 
 /** Structured API error with a stable machine-readable code. */
@@ -211,6 +212,30 @@ export declare function build(
   query?: string,
   options?: BuildOptions,
 ): Promise<BuildHelpResponse | BuildKitResponse>;
+
+// ── Swizzle ──────────────────────────────────────────────────────────
+
+export interface SwizzleOptions {
+  cwd?: string;
+  /** Output directory (must resolve inside cwd). Defaults to ./components/astryx. */
+  output?: string;
+  /** Scope to a specific owning package when a name is ambiguous. */
+  package?: string;
+  /** Force the list response even with a component argument. */
+  list?: boolean;
+  /** Overwrite existing files instead of erroring. */
+  overwrite?: boolean;
+}
+
+/**
+ * List swizzlable components (no name / `list`) or copy one component's source
+ * into the project (side effect) and return a `swizzle.copy` receipt. Errors
+ * throw AstryxError (ERR_UNKNOWN_COMPONENT, ERR_AMBIGUOUS_COMPONENT, …).
+ */
+export declare function swizzle(
+  component?: string,
+  options?: SwizzleOptions,
+): Promise<SwizzleListResponse | SwizzleCopyResponse>;
 
 // ── Doctor ──────────────────────────────────
 
