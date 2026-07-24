@@ -4,6 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {
   ChatComposer,
   ChatComposerDrawer,
+  ChatComposerInput,
   ChatSendButton,
 } from '@astryxdesign/core/Chat';
 import {Token} from '@astryxdesign/core/Token';
@@ -91,6 +92,36 @@ export const Simplest: Story = {
       }}
     />
   ),
+};
+
+/**
+ * Platform-specific Enter behavior. Pass a custom `ChatComposerInput` in the
+ * `input` slot with `shouldSubmitOnEnter` — here a predicate that sends on
+ * Enter on a pointer device but inserts a newline on a touch keyboard, so a
+ * soft-keyboard Return never strands a multi-line prompt. IME composition is
+ * always respected regardless.
+ */
+export const EnterBehavior: Story = {
+  render: () => {
+    const isCoarsePointer =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(pointer: coarse)').matches;
+    return (
+      <ChatComposer
+        onSubmit={value => console.log('Submit:', value)}
+        input={
+          <ChatComposerInput
+            placeholder={
+              isCoarsePointer
+                ? 'Enter inserts a newline on touch — use Send'
+                : 'Enter sends; Shift+Enter for a newline'
+            }
+            shouldSubmitOnEnter={() => !isCoarsePointer}
+          />
+        }
+      />
+    );
+  },
 };
 
 /** With streaming state and stop button */
@@ -361,9 +392,7 @@ export const Feedback: Story = {
             <div style={{width: '100%'}}>
               <List>
                 <ListItem
-                  label={
-                    <Text weight="bold">Do you want to proceed?</Text>
-                  }
+                  label={<Text weight="bold">Do you want to proceed?</Text>}
                 />
                 {options.map(opt => (
                   <ListItem

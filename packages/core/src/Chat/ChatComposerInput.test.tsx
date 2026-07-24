@@ -155,6 +155,99 @@ describe('ChatComposerInput', () => {
     });
   });
 
+  describe('Enter submit behavior', () => {
+    it('does not submit on Enter while IME composition is in progress', () => {
+      const onSubmit = vi.fn();
+      render(<ChatComposerInput onSubmit={onSubmit} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'こんにちは';
+      fireEvent.input(textbox);
+      // isComposing is surfaced on the native event during IME composition.
+      fireEvent.keyDown(textbox, {key: 'Enter', isComposing: true});
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('does not submit on Enter for the legacy keyCode 229 composing signal', () => {
+      const onSubmit = vi.fn();
+      render(<ChatComposerInput onSubmit={onSubmit} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'ㅎ';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter', keyCode: 229});
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('does not submit when shouldSubmitOnEnter is false', () => {
+      const onSubmit = vi.fn();
+      render(
+        <ChatComposerInput onSubmit={onSubmit} shouldSubmitOnEnter={false} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      const event = fireEvent.keyDown(textbox, {key: 'Enter'});
+      expect(onSubmit).not.toHaveBeenCalled();
+      // Default is not prevented, so the browser inserts a newline.
+      expect(event).toBe(true);
+    });
+
+    it('submits when shouldSubmitOnEnter is true (explicit)', () => {
+      const onSubmit = vi.fn();
+      render(
+        <ChatComposerInput onSubmit={onSubmit} shouldSubmitOnEnter={true} />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+      expect(onSubmit).toHaveBeenCalledWith('hello');
+    });
+
+    it('consults the shouldSubmitOnEnter predicate per keystroke', () => {
+      // Simulate desktop send / touch newline: predicate returns false.
+      const onSubmit = vi.fn();
+      const predicate = vi.fn(() => false);
+      render(
+        <ChatComposerInput
+          onSubmit={onSubmit}
+          shouldSubmitOnEnter={predicate}
+        />,
+      );
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+      expect(predicate).toHaveBeenCalled();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('calls onKeyDown before submit and lets preventDefault take over', () => {
+      const onSubmit = vi.fn();
+      const onKeyDown = vi.fn(e => {
+        e.preventDefault();
+      });
+      render(<ChatComposerInput onSubmit={onSubmit} onKeyDown={onKeyDown} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+      expect(onKeyDown).toHaveBeenCalled();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('calls onKeyDown but still submits when the consumer does not preventDefault', () => {
+      const onSubmit = vi.fn();
+      const onKeyDown = vi.fn();
+      render(<ChatComposerInput onSubmit={onSubmit} onKeyDown={onKeyDown} />);
+      const textbox = screen.getByRole('textbox');
+      textbox.textContent = 'hello';
+      fireEvent.input(textbox);
+      fireEvent.keyDown(textbox, {key: 'Enter'});
+      expect(onKeyDown).toHaveBeenCalled();
+      expect(onSubmit).toHaveBeenCalledWith('hello');
+    });
+  });
+
   // Controlled-value sync used to overwrite `textContent` on every
   // distinct render, which (a) collapsed the caret to offset 0
   // (visible after a slash-command pick like
