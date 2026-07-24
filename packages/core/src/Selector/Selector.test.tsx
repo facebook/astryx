@@ -16,9 +16,12 @@ import {useState} from 'react';
 import {Selector} from './Selector';
 import {SelectorOption} from './SelectorOption';
 import {InputGroup, InputGroupText} from '../InputGroup';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 // Mock showPopover and hidePopover methods since they're not implemented in jsdom
 beforeEach(() => {
+  // The live regions are a document-level singleton; start each test clean.
+  __resetLiveRegionsForTest();
   HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
     this.setAttribute('popover-open', '');
     const event = new Event('toggle', {bubbles: false});
@@ -49,8 +52,11 @@ const h = {hidden: true} as const;
 
 const OPTIONS = ['Apple', 'Banana', 'Cherry'];
 
-// Mirrors TYPEAHEAD_RESET_MS in hooks.ts — how long the buffer survives.
-const TYPEAHEAD_RESET_MS = 500;
+// Mirrors useTypeahead's default resetMs — how long the typed buffer survives.
+const TYPEAHEAD_RESET_MS = 750;
+
+const politeRegion = () =>
+  document.querySelector('[data-astryx-live-region="polite"]');
 
 /**
  * Type onto an element with no awaits between keystrokes. Typeahead only
@@ -715,6 +721,54 @@ describe('Selector', () => {
       expect(screen.getByRole('combobox')).toHaveTextContent('Chicago');
     });
 
+    it('advances past the current selection on a fresh single-letter press', async () => {
+      const user = userEvent.setup();
+      function Harness() {
+        const [value, setValue] = useState<string | undefined>('Chicago');
+        return (
+          <Selector
+            label="City"
+            options={['Austin', 'Chicago', 'Cleveland', 'Columbus']}
+            value={value}
+            onChange={setValue}
+          />
+        );
+      }
+      render(<Harness />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      // Native select parity: the selected option's own initial moves on to
+      // the next match. Anchoring the search AT the selection instead of after
+      // it re-matches the current value, and the duplicate-select guard then
+      // swallows the keystroke entirely.
+      type('c', trigger);
+
+      expect(trigger).toHaveTextContent('Cleveland');
+    });
+
+    it('advances the highlight past the current one with the menu open', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="City"
+          options={['Austin', 'Chicago', 'Cleveland', 'Columbus']}
+          value="Chicago"
+          onChange={() => {}}
+        />,
+      );
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      await user.keyboard('{Enter}'); // opens with the highlight on Chicago
+      type('c', trigger);
+
+      const activeId = trigger.getAttribute('aria-activedescendant');
+      expect(document.getElementById(activeId ?? '')).toHaveTextContent(
+        'Cleveland',
+      );
+    });
+
     it('treats a space mid-buffer as part of the match, not as open', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
@@ -729,8 +783,8 @@ describe('Selector', () => {
       const trigger = screen.getByRole('combobox');
       await user.tab();
       // Synchronous keydowns: the buffer only accumulates while keystrokes
-      // land inside the 500ms window, and awaiting between them would put a
-      // CI stall on the critical path.
+      // land inside the TYPEAHEAD_RESET_MS window, and awaiting between them
+      // would put a CI stall on the critical path.
       type('new y', trigger);
 
       expect(onChange).toHaveBeenLastCalledWith('New York');
@@ -752,21 +806,32 @@ describe('Selector', () => {
     it('accumulates a multi-character prefix and resets it after the timeout', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
-      render(
-        <Selector
-          label="Fruit"
-          options={['Apple', 'Banana', 'Blueberry']}
-          onChange={onChange}
-        />,
-      );
+      // Controlled: the committed value has to feed back in, or the match
+      // anchor stays -1 for the whole test and never gets exercised.
+      function Harness() {
+        const [value, setValue] = useState<string | undefined>(undefined);
+        return (
+          <Selector
+            label="Fruit"
+            options={['Apple', 'Banana', 'Blueberry']}
+            value={value}
+            onChange={next => {
+              setValue(next);
+              onChange(next);
+            }}
+          />
+        );
+      }
+      render(<Harness />);
 
       const trigger = screen.getByRole('combobox');
       await user.tab();
       type('b', trigger);
-      expect(onChange).toHaveBeenLastCalledWith('Banana');
-      // Within the window the buffer accumulates: "bl" → Blueberry.
+      expect(trigger).toHaveTextContent('Banana');
+      // Within the window the buffer accumulates: "bl" → Blueberry. A
+      // multi-character buffer refines, so it may keep the current match.
       type('l', trigger);
-      expect(onChange).toHaveBeenLastCalledWith('Blueberry');
+      expect(trigger).toHaveTextContent('Blueberry');
 
       // Past the window the buffer starts fresh: "a" → Apple. A surviving
       // buffer would search "bla" and match nothing, so only a real reset
@@ -775,25 +840,34 @@ describe('Selector', () => {
         setTimeout(resolve, TYPEAHEAD_RESET_MS + 100),
       );
       type('a', trigger);
-      expect(onChange).toHaveBeenLastCalledWith('Apple');
+      expect(trigger).toHaveTextContent('Apple');
     });
 
     it('skips disabled options when matching', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
-      render(
-        <Selector
-          label="Fruit"
-          options={[{value: 'Cherry', disabled: true}, 'Coconut']}
-          onChange={onChange}
-        />,
-      );
+      function Harness() {
+        const [value, setValue] = useState<string | undefined>(undefined);
+        return (
+          <Selector
+            label="Fruit"
+            options={[{value: 'Cherry', disabled: true}, 'Coconut']}
+            value={value}
+            onChange={setValue}
+          />
+        );
+      }
+      render(<Harness />);
 
+      const trigger = screen.getByRole('combobox');
       await user.tab();
-      await user.keyboard('c');
+      type('c', trigger);
+      expect(trigger).toHaveTextContent('Coconut');
 
-      expect(onChange).toHaveBeenCalledWith('Coconut');
-      expect(onChange).not.toHaveBeenCalledWith('Cherry');
+      // The skip has to survive cycling too: with Coconut current, the next
+      // press wraps onto the disabled Cherry and must pass over it.
+      type('c', trigger);
+      expect(trigger).toHaveTextContent('Coconut');
+      expect(trigger).not.toHaveTextContent('Cherry');
     });
 
     it('moves the highlight without committing when typing with the menu open', async () => {
@@ -824,6 +898,12 @@ describe('Selector', () => {
         'Cleveland',
       );
       expect(onChange).not.toHaveBeenCalled();
+      // aria-activedescendant already announces each match, so announcing
+      // again here would make a screen reader say every match twice.
+      // useAnnounce writes its text in a rAF callback, so let a frame pass —
+      // asserting before it runs would pass no matter what the code does.
+      await new Promise(resolve => requestAnimationFrame(() => resolve(null)));
+      expect(politeRegion()?.textContent ?? '').toBe('');
 
       await user.keyboard('{Enter}');
       expect(onChange).toHaveBeenCalledWith('Cleveland');
@@ -866,8 +946,10 @@ describe('Selector', () => {
       await user.keyboard('c');
 
       // The trigger keeps focus and the menu never opens, so nothing else
-      // prompts a re-read. A polite live region carries the new value.
-      expect(screen.getByRole('status')).toHaveTextContent('Cherry');
+      // prompts a re-read. The polite live region carries the new value.
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('Cherry');
+      });
     });
 
     it('does not select while focusable-disabled', async () => {
@@ -896,7 +978,7 @@ describe('Selector', () => {
       render(
         <Selector
           label="City"
-          options={['Chicago', 'Cleveland']}
+          options={['Chicago', 'Cleveland', 'Columbus']}
           value={undefined}
           changeAction={async value => {
             calls.push(value);
@@ -909,11 +991,12 @@ describe('Selector', () => {
 
       const trigger = screen.getByRole('combobox');
       await user.tab();
-      type('cc', trigger);
+      type('ccc', trigger);
 
-      // The anchor must come from the optimistic value, not the stale prop:
-      // otherwise the second press re-matches Chicago and re-fires the action.
-      expect(calls).toEqual(['Chicago', 'Cleveland']);
+      // The anchor must come from the optimistic value, not the stale prop.
+      // Three options make that observable: with a stale anchor every press
+      // re-matches Chicago, which the duplicate guard then swallows.
+      expect(calls).toEqual(['Chicago', 'Cleveland', 'Columbus']);
     });
 
     it('starts a fresh buffer after selecting from the open menu', async () => {
@@ -936,6 +1019,39 @@ describe('Selector', () => {
       // The stale 'd' must not linger: 'c' is a fresh buffer, not "dc".
       await user.keyboard('c');
       expect(onChange).toHaveBeenCalledWith('Cat');
+    });
+
+    it('starts a fresh buffer after the value is cleared', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      function Harness() {
+        const [value, setValue] = useState<string | null>('Dog');
+        return (
+          <Selector
+            label="Animal"
+            options={['Cat', 'Dog']}
+            hasClear
+            value={value}
+            onChange={next => {
+              setValue(next);
+              onChange(next);
+            }}
+          />
+        );
+      }
+      render(<Harness />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.tab();
+      // Fills the buffer with 'd' without committing — Dog is already current.
+      type('d', trigger);
+      fireEvent.keyDown(trigger, {key: 'Delete'});
+      expect(onChange).toHaveBeenLastCalledWith(null);
+
+      // The stale 'd' must not survive the clear: 'c' is a fresh buffer, not
+      // "dc", which would match nothing and leave the value cleared.
+      type('c', trigger);
+      expect(onChange).toHaveBeenLastCalledWith('Cat');
     });
 
     it('lets Space open the menu after an abandoned typeahead', async () => {

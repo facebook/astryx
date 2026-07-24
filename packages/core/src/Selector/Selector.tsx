@@ -63,6 +63,8 @@ import {
   getSelectableOptions,
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
+import {useTypeahead} from '../hooks/useTypeahead';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {SelectorOption} from './SelectorOption';
 import {getInputARIA, mergeProps} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
@@ -604,6 +606,7 @@ export function Selector<T extends SelectorOptionType>(
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(normalizedValue);
   const isBusy = isLoading || optimisticValue !== normalizedValue;
+  const announce = useAnnounce();
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the trigger container (which already exists)
@@ -660,9 +663,15 @@ export function Selector<T extends SelectorOptionType>(
   // Ref for listbox to measure selected item position
   const listboxRef = useRef<HTMLDivElement>(null);
 
+  // Typeahead is defined below (it needs the popover), but closing and clearing
+  // must drop its pending buffer — otherwise a stale prefix survives the reset
+  // window and poisons the next keystroke ("Dog" then "c" would search "dc").
+  const resetTypeaheadRef = useRef<() => void>(() => {});
+
   // Layer for dropdown positioning
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
+    resetTypeaheadRef.current();
     triggerRef.current?.focus();
   }, []);
 
@@ -708,6 +717,7 @@ export function Selector<T extends SelectorOptionType>(
   // Clear the current value. Shared by the clear button and the keyboard
   // Delete/Backspace path so clearing is reachable without a mouse.
   const clearValue = useCallback(() => {
+    resetTypeaheadRef.current();
     onChange?.(null);
     if (changeAction) {
       startTransition(async () => {
@@ -717,21 +727,29 @@ export function Selector<T extends SelectorOptionType>(
     }
   }, [onChange, changeAction, startTransition, setOptimisticValue]);
 
-  // Announces a value committed by typing on the closed trigger. That path
-  // changes the selection without opening the popup or moving focus, so no
-  // other event prompts assistive tech to re-read the trigger.
-  const [liveMessage, setLiveMessage] = useState('');
-
   // Type-to-find appends to the query rather than replacing it: characters
   // typed before focus reaches the search input must not be dropped.
   const appendSearchQuery = useCallback((char: string) => {
     setSearchQuery(query => query + char);
   }, []);
 
-  // Selector behavior (keyboard nav, typeahead, selection)
+  const commitValue = useCallback(
+    (newValue: string) => {
+      onChange?.(newValue);
+      if (changeAction) {
+        startTransition(async () => {
+          setOptimisticValue(newValue);
+          await changeAction(newValue);
+        });
+      }
+    },
+    [onChange, changeAction, startTransition, setOptimisticValue],
+  );
+
+  // Selector behavior (keyboard nav, selection)
   const {
     highlightedIndex,
-    setHighlightedIndex: _setHighlightedIndex,
+    setHighlightedIndex,
     getItemId,
     onTriggerClick,
     onKeyDown,
@@ -740,8 +758,9 @@ export function Selector<T extends SelectorOptionType>(
   } = useCombobox({
     selectableItems: filteredItems,
     // The optimistic value, not the raw prop: with a pending changeAction the
-    // prop still holds the old selection, which would anchor typeahead cycling
-    // to a stale option and re-fire the action for a value already committed.
+    // prop still holds the old selection, so the popup would open with the
+    // highlight on it and Delete/Backspace could clear a value the action has
+    // already replaced.
     value: optimisticValue,
     isDisabled,
     isOpen: popover.isOpen,
@@ -753,45 +772,57 @@ export function Selector<T extends SelectorOptionType>(
           const input = searchRef.current;
           if (input) {
             input.focus();
-            // When typeahead seeded the query, place the caret after it so
-            // the user keeps typing where they left off.
+            // When typing seeded the query, place the caret after it so the
+            // user keeps typing where they left off.
             input.setSelectionRange(input.value.length, input.value.length);
           }
         });
       }
     }, [popover, hasSearch]),
     onClose: popover.hide,
-    onSelect: useCallback(
-      (newValue: string) => {
-        onChange?.(newValue);
-        if (!popover.isOpen) {
-          // Committed by typing on the closed trigger: nothing else will
-          // announce it, so put the new label in the live region.
-          const committed = selectableItems.find(
-            item => item.value === newValue,
-          );
-          setLiveMessage(committed?.label ?? newValue);
-        }
-        if (changeAction) {
-          startTransition(async () => {
-            setOptimisticValue(newValue);
-            await changeAction(newValue);
-          });
-        }
-      },
-      [
-        onChange,
-        changeAction,
-        startTransition,
-        setOptimisticValue,
-        popover.isOpen,
-        selectableItems,
-      ],
-    ),
+    onSelect: commitValue,
     onClear: hasClear ? clearValue : undefined,
     onSearchSeed: appendSearchQuery,
     listboxId,
   });
+
+  // Type-to-select, shared with the other collections (menus, listboxes).
+  // Open, it walks the highlight — aria-activedescendant announces each match.
+  // Closed, it commits the match like a native select, which changes the value
+  // without opening the popup or moving focus, so nothing else would prompt
+  // assistive tech to re-read the trigger: announce it explicitly.
+  const typeahead = useTypeahead({
+    getItemLabels: () => selectableItems.map(item => item.label ?? item.value),
+    isDisabled: index => selectableItems[index]?.disabled === true,
+    // Cycle onward from the highlight when open, from the committed selection
+    // when closed — the optimistic one, so a pending changeAction cannot strand
+    // cycling on the first match. -1 means nothing is selected or highlighted,
+    // which the hook reads as "search from the top".
+    getCurrentIndex: () =>
+      popover.isOpen ? highlightedIndex : selectedItemIndex,
+    onMatch: index => {
+      const item = selectableItems[index];
+      if (popover.isOpen) {
+        setHighlightedIndex(index);
+      } else if (item.value !== optimisticValue) {
+        commitValue(item.value);
+        announce(item.label ?? item.value);
+      }
+    },
+  });
+  resetTypeaheadRef.current = typeahead.reset;
+
+  const handleTriggerKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      // With hasSearch the query input owns typing, so type-to-select is off.
+      if (!isDisabled && !hasSearch && typeahead.onKeyDown(e)) {
+        e.preventDefault();
+        return;
+      }
+      onKeyDown(e);
+    },
+    [isDisabled, hasSearch, typeahead, onKeyDown],
+  );
 
   // Keep the highlighted option visible during keyboard navigation. The
   // listbox is a fixed-height scroll container, so without this the virtual
@@ -1027,7 +1058,7 @@ export function Selector<T extends SelectorOptionType>(
           // still blocked by the isDisabled guards in useCombobox.
           disabled={isDisabled && !showsDisabledMessage}
           aria-disabled={showsDisabledMessage ? 'true' : undefined}
-          onKeyDown={onKeyDown}
+          onKeyDown={handleTriggerKeyDown}
           tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
           {...stylex.props(styles.trigger)}>
           <span {...stylex.props(styles.triggerLabel)}>
@@ -1105,10 +1136,6 @@ export function Selector<T extends SelectorOptionType>(
           style: popoverOffsetStyle,
         },
       )}
-
-      <VisuallyHidden role="status" aria-live="polite">
-        {liveMessage}
-      </VisuallyHidden>
 
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

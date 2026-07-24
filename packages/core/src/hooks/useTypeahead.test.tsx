@@ -106,4 +106,53 @@ describe('useTypeahead', () => {
     expect(api.onKeyDown(key(' '))).toBe(false);
     expect(onMatch).not.toHaveBeenCalled();
   });
+
+  it('starts a fresh single-character search after the current item', () => {
+    const {onMatch, api} = setup({current: 0}); // Apple is current
+    api.onKeyDown(key('a'));
+    // A single-character search begins at current + 1, so pressing the current
+    // item's own initial advances instead of re-matching it into a dead key.
+    expect(onMatch).toHaveBeenCalledWith(1); // Apricot
+  });
+
+  it('searches from the top when there is no current item', () => {
+    // The last item also matches, so this distinguishes "from the top" from
+    // wrapping backwards off -1 and hitting the bottom of the list first.
+    const onMatch = vi.fn();
+    const {result} = renderHook(() =>
+      useTypeahead({
+        getItemLabels: () => ['Apple', 'Berry', 'Avocado'],
+        onMatch,
+        getCurrentIndex: () => -1,
+      }),
+    );
+    result.current.onKeyDown(key('a'));
+    expect(onMatch).toHaveBeenCalledWith(0); // Apple, not Avocado
+  });
+
+  it('keeps the current item in range once the buffer is multi-character', () => {
+    const {onMatch, api} = setup({current: 0});
+    api.onKeyDown(key('a')); // single char: advances to Apricot
+    expect(onMatch).toHaveBeenLastCalledWith(1);
+    api.onKeyDown(key('p')); // "ap" refines, so Apple is a candidate again
+    expect(onMatch).toHaveBeenLastCalledWith(0);
+  });
+
+  it('matches characters composed with Option/Alt', () => {
+    const onMatch = vi.fn();
+    const {result} = renderHook(() =>
+      useTypeahead({
+        getItemLabels: () => ['Ångström', 'Berlin'],
+        onMatch,
+        getCurrentIndex: () => -1,
+      }),
+    );
+    // Option+a on macOS emits a printable 'å' with altKey set. Excluding it
+    // makes accented labels untypeable; real chords still carry ctrl/meta.
+    const handled = result.current.onKeyDown(
+      new KeyboardEvent('keydown', {key: 'å', altKey: true}),
+    );
+    expect(handled).toBe(true);
+    expect(onMatch).toHaveBeenCalledWith(0);
+  });
 });
