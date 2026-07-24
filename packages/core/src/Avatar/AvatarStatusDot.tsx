@@ -25,8 +25,7 @@ import {themeProps} from '../utils/themeProps';
 
 /**
  * Discrete size tier of the status dot, derived from the avatar size.
- * Keys the built-in shape glyph geometry, which must stay in whole pixels
- * per tier so the glyph centers crisply on 1x displays.
+ * Keys the built-in shape glyph's stroke weight — see `GLYPH_STROKE_WIDTH`.
  */
 type StatusDotSizeTier = 'small' | 'medium' | 'large';
 
@@ -37,11 +36,14 @@ type StatusDotSizeTier = 'small' | 'medium' | 'large';
  * Uses discrete size tiers rather than a continuous ratio so the dot
  * looks intentional at every avatar size:
  *
- *   | Avatar size  | Tier   | Dot  | Border | Icon | Ring hole | Minus bar |
- *   |--------------|--------|------|--------|------|-----------|-----------|
- *   | ≤ 36px       | small  | 10px | 1px    | —    | 4px       | 6×2px     |
- *   | 40–72px      | medium | 20px | 2px    | 12px | 8px       | 12×4px    |
- *   | ≥ 96px       | large  | 32px | 4px    | 18px | 12px      | 18×6px    |
+ *   | Avatar size  | Tier   | Dot  | Border | Icon | Field | Glyph stroke |
+ *   |--------------|--------|------|--------|------|-------|--------------|
+ *   | ≤ 36px       | small  | 10px | 1px    | —    | 8px   | 1px          |
+ *   | 40–72px      | medium | 20px | 2px    | 12px | 16px  | 1.5px        |
+ *   | ≥ 96px       | large  | 32px | 4px    | 18px | 24px  | 2px          |
+ *
+ * "Field" is the dot's inner field — the dot minus both borders — that the
+ * shape glyph is drawn into; see `GLYPH_STROKE_WIDTH` for the stroke ladder.
  *
  * Icons are not rendered at the smallest tier — there isn't enough
  * room for them to be legible. The built-in shape glyphs (see
@@ -76,8 +78,9 @@ function resolveStatusDotSize(avatarSize: number): {
  * }
  * ```
  *
- * Custom variants render no background fill and no built-in shape glyph —
- * the theme must supply the fill, and should also supply a non-colour mark
+ * Custom variants render no background fill, no ink colour, and no built-in
+ * shape glyph — the theme must supply the fill and, if it passes an `icon`,
+ * a `color` for it to paint with. It should also supply a non-colour mark
  * so the status is not distinguishable by colour alone (a WCAG 1.4.1
  * failure): pass `icon`, or theme a glyph onto the dot via
  * `.astryx-avatar-status-dot[data-variant="..."]` (e.g. a `::before` mark).
@@ -150,20 +153,29 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Each variant sets both the plate colour and the ink colour. Everything
+  // drawn on the dot — the shape glyph and any user `icon` — paints from
+  // `currentColor`, so the two can never drift out of contrast.
   success: {
     backgroundColor: colorVars['--color-success'],
+    color: colorVars['--color-background-surface'],
   },
+  // The ring variant inverts: a hollow shape only reads as hollow if its
+  // interior is not the variant colour, so the plate is surface and the
+  // colour moves to the stroke. This also keeps a user `icon` legible on
+  // it — surface ink on a surface plate would be invisible.
   neutral: {
-    backgroundColor: colorVars['--color-text-secondary'],
+    backgroundColor: colorVars['--color-background-surface'],
+    color: colorVars['--color-text-secondary'],
   },
   error: {
     backgroundColor: colorVars['--color-error'],
+    color: colorVars['--color-background-surface'],
   },
   icon: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: colorVars['--color-background-surface'],
     lineHeight: 0,
   },
 });
@@ -190,10 +202,12 @@ const variantStyleMap: Partial<
 
 /**
  * Built-in shape glyph per variant, so each status differs by shape and not
- * only by colour (WCAG 2.1 SC 1.4.1). The glyph is a surface-coloured cutout
- * painted over the dot:
- * - `ring` — a centered hole; the dot reads as a hollow ring (away/offline).
- * - `minus` — a horizontal bar; the dot reads as "do not disturb" (busy).
+ * only by colour (WCAG 2.1 SC 1.4.1). The glyph is a stroked inline SVG
+ * painted in `currentColor`:
+ * - `ring` — a stroked circle on a surface plate; the dot reads as hollow
+ *   (away/offline).
+ * - `minus` — a round-capped bar across the filled dot; the dot reads as
+ *   "do not disturb" (busy).
  *
  * `success` stays the plain filled dot — filled, hollow, and barred are the
  * three distinct fill topologies. Custom augmented variants have no entry
@@ -209,42 +223,78 @@ const glyphShapeMap: Partial<
 };
 
 /**
- * Glyph geometry per tier, in whole pixels so the glyph centers crisply
- * inside the dot's inner field (dot minus borders) on 1x displays:
- * ring hole = 50% of the inner field; minus bar = 75% × 25% of it.
+ * Glyph stroke weight per tier, in px of the dot's inner field.
  *
- * The cutout uses the same surface token as the dot's border, so border and
- * glyph read as one contiguous surface plate regardless of theme.
+ * Roughly `field / 12`, floored at 1px so the smallest tier stays visible.
+ * That lands on the 1 / 1.5 / 2 ladder the rest of the system draws with —
+ * `Icon`'s default set strokes at 1.5 in a 24 viewBox, as does the
+ * `CheckboxInput` checkmark — rather than the 25% band a CSS box cutout
+ * produced, which was several times heavier than any other glyph we ship.
  */
-const glyphStyles = stylex.create({
-  base: {
-    backgroundColor: colorVars['--color-background-surface'],
-    borderRadius: radiusVars['--radius-full'],
-    flexShrink: 0,
-  },
-  ringSmall: {width: 4, height: 4},
-  ringMedium: {width: 8, height: 8},
-  ringLarge: {width: 12, height: 12},
-  minusSmall: {width: 6, height: 2},
-  minusMedium: {width: 12, height: 4},
-  minusLarge: {width: 18, height: 6},
-});
-
-const glyphSizeStyleMap: Record<
-  AvatarStatusDotGlyphShape,
-  Record<StatusDotSizeTier, stylex.StyleXStyles>
-> = {
-  ring: {
-    small: glyphStyles.ringSmall,
-    medium: glyphStyles.ringMedium,
-    large: glyphStyles.ringLarge,
-  },
-  minus: {
-    small: glyphStyles.minusSmall,
-    medium: glyphStyles.minusMedium,
-    large: glyphStyles.minusLarge,
-  },
+const GLYPH_STROKE_WIDTH: Record<StatusDotSizeTier, number> = {
+  small: 1,
+  medium: 1.5,
+  large: 2,
 };
+
+/** Fraction of the inner field the minus bar spans, cap to cap. */
+const MINUS_BAR_SPAN = 0.75;
+
+/**
+ * The built-in shape glyph, drawn as a stroked inline SVG in `currentColor`.
+ *
+ * Stroking (rather than a CSS box) is what buys sub-pixel control and round
+ * line caps, so the mark stays intentional at every tier — including the
+ * 10px dot, where a box cutout can only land on whole pixels.
+ *
+ * `viewBox` is one user unit per px of the inner field, so every value here
+ * is literal px.
+ */
+function StatusDotGlyph({
+  shape,
+  field,
+  stroke,
+}: {
+  shape: AvatarStatusDotGlyphShape;
+  field: number;
+  stroke: number;
+}) {
+  const center = field / 2;
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox={`0 0 ${field} ${field}`}
+      width={field}
+      height={field}
+      fill="none"
+      {...themeProps('avatar-status-dot-glyph', {shape})}>
+      {shape === 'ring' ? (
+        // Radius is to the stroke centreline, so the ring's outer edge lands
+        // exactly on the inner field and never clips against the border.
+        <circle
+          cx={center}
+          cy={center}
+          r={(field - stroke) / 2}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+        />
+      ) : (
+        // Ends inset by half the stroke so the round caps land inside the
+        // span rather than overhanging it.
+        <line
+          x1={(field * (1 - MINUS_BAR_SPAN)) / 2 + stroke / 2}
+          y1={center}
+          x2={(field * (1 + MINUS_BAR_SPAN)) / 2 - stroke / 2}
+          y2={center}
+          stroke="currentColor"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+        />
+      )}
+    </svg>
+  );
+}
 
 /**
  * A status indicator dot that automatically scales to match the parent
@@ -315,12 +365,10 @@ export function AvatarStatusDot({
         </span>
       )}
       {glyphShape && (
-        <span
-          aria-hidden="true"
-          {...mergeProps(
-            themeProps('avatar-status-dot-glyph', {shape: glyphShape}),
-            stylex.props(glyphStyles.base, glyphSizeStyleMap[glyphShape][tier]),
-          )}
+        <StatusDotGlyph
+          shape={glyphShape}
+          field={dotSize - borderWidth * 2}
+          stroke={GLYPH_STROKE_WIDTH[tier]}
         />
       )}
     </div>

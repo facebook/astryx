@@ -3,6 +3,7 @@
 import {describe, it, expect} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import * as stylex from '@stylexjs/stylex';
+import {colorVars} from '../theme/tokens.stylex';
 import {Avatar} from './Avatar';
 import {AvatarStatusDot, type AvatarStatusDotVariant} from './AvatarStatusDot';
 
@@ -66,44 +67,154 @@ describe('AvatarStatusDot', () => {
       }
     });
 
-    it('pins the exact glyph geometry per shape and tier', () => {
-      // StyleX atomic classes are deterministic: the same property/value
-      // compiles to the same class, so a local probe style pins the
-      // component's geometry in absolute pixels (ring hole 50% of the
-      // inner field, minus bar 75% x 25% — whole pixels per tier).
-      const expectedGeometry = stylex.create({
-        ringSmall: {width: 4, height: 4},
-        ringMedium: {width: 8, height: 8},
-        ringLarge: {width: 12, height: 12},
-        minusSmall: {width: 6, height: 2},
-        minusMedium: {width: 12, height: 4},
-        minusLarge: {width: 18, height: 6},
-      });
+    it('draws the glyph as an inline svg sized to the dot inner field', () => {
+      // The glyph is a stroked <svg>, matching how the rest of the system
+      // draws marks (Icon's defaultIcons, the CheckboxInput checkmark).
+      // Its viewBox is 1 user unit per px of the dot's inner field
+      // (dot minus both borders), so stroke widths below are literal px.
       const cases = [
-        ['neutral', 36, expectedGeometry.ringSmall],
-        ['neutral', 48, expectedGeometry.ringMedium],
-        ['neutral', 128, expectedGeometry.ringLarge],
-        ['error', 36, expectedGeometry.minusSmall],
-        ['error', 48, expectedGeometry.minusMedium],
-        ['error', 128, expectedGeometry.minusLarge],
+        [36, 8],
+        [48, 16],
+        [128, 24],
       ] as const;
-      for (const [variant, size, probe] of cases) {
-        const glyph = renderDot({variant}, size).querySelector(
+      for (const [avatarSize, field] of cases) {
+        const glyph = renderDot({variant: 'neutral'}, avatarSize).querySelector(
           GLYPH_SELECTOR,
-        ) as HTMLElement;
-        // Compare atomic classes only — dev mode prepends a per-file debug
-        // class (`File__style.key`) that legitimately differs between the
-        // probe and the component.
-        const atomicClasses = (stylex.props(probe).className ?? '')
-          .split(' ')
-          .filter(cls => !cls.includes('__'));
-        expect(atomicClasses.length).toBeGreaterThan(0);
-        for (const cls of atomicClasses) {
-          expect(
-            glyph.className,
-            `${variant} at avatar size ${size}`,
-          ).toContain(cls);
-        }
+        ) as SVGElement;
+        expect(glyph.tagName.toLowerCase(), `avatar ${avatarSize}`).toBe('svg');
+        expect(glyph.getAttribute('viewBox'), `avatar ${avatarSize}`).toBe(
+          `0 0 ${field} ${field}`,
+        );
+        expect(glyph.getAttribute('width'), `avatar ${avatarSize}`).toBe(
+          String(field),
+        );
+        expect(glyph.getAttribute('height'), `avatar ${avatarSize}`).toBe(
+          String(field),
+        );
+      }
+    });
+
+    it('strokes the ring at the system glyph weight, not a quarter of the field', () => {
+      // stroke ~= field / 12, floored at 1px for the smallest tier, which
+      // puts these on the icon family's 1 / 1.5 / 2 ladder (~6-12% of the
+      // field) instead of the 25% band a CSS box cutout produced.
+      const cases = [
+        // avatar size, field, stroke, radius = (field - stroke) / 2
+        [36, 8, 1, 3.5],
+        [48, 16, 1.5, 7.25],
+        [128, 24, 2, 11],
+      ] as const;
+      for (const [avatarSize, field, stroke, radius] of cases) {
+        const circle = renderDot(
+          {variant: 'neutral'},
+          avatarSize,
+        ).querySelector(`${GLYPH_SELECTOR} circle`) as SVGCircleElement;
+        expect(circle, `avatar ${avatarSize}`).not.toBeNull();
+        expect(
+          circle.getAttribute('stroke-width'),
+          `avatar ${avatarSize}`,
+        ).toBe(String(stroke));
+        // Radius is to the stroke centreline, so the ring's outer edge lands
+        // exactly on the inner field and never clips against the border.
+        expect(circle.getAttribute('r'), `avatar ${avatarSize}`).toBe(
+          String(radius),
+        );
+        expect(circle.getAttribute('cx'), `avatar ${avatarSize}`).toBe(
+          String(field / 2),
+        );
+        expect(circle.getAttribute('cy'), `avatar ${avatarSize}`).toBe(
+          String(field / 2),
+        );
+        expect(circle.getAttribute('fill'), `avatar ${avatarSize}`).toBe(
+          'none',
+        );
+      }
+    });
+
+    it('strokes the minus bar at the same weight, spanning 75% of the field with round caps', () => {
+      // Ends are inset by half the stroke so the round caps land inside the
+      // 75% span rather than overhanging it.
+      const cases = [
+        // avatar size, field, stroke, x1, x2
+        [36, 8, 1, 1.5, 6.5],
+        [48, 16, 1.5, 2.75, 13.25],
+        [128, 24, 2, 4, 20],
+      ] as const;
+      for (const [avatarSize, field, stroke, x1, x2] of cases) {
+        const line = renderDot({variant: 'error'}, avatarSize).querySelector(
+          `${GLYPH_SELECTOR} line`,
+        ) as SVGLineElement;
+        expect(line, `avatar ${avatarSize}`).not.toBeNull();
+        expect(line.getAttribute('stroke-width'), `avatar ${avatarSize}`).toBe(
+          String(stroke),
+        );
+        expect(line.getAttribute('x1'), `avatar ${avatarSize}`).toBe(
+          String(x1),
+        );
+        expect(line.getAttribute('x2'), `avatar ${avatarSize}`).toBe(
+          String(x2),
+        );
+        expect(line.getAttribute('y1'), `avatar ${avatarSize}`).toBe(
+          String(field / 2),
+        );
+        expect(line.getAttribute('y2'), `avatar ${avatarSize}`).toBe(
+          String(field / 2),
+        );
+        expect(
+          line.getAttribute('stroke-linecap'),
+          `avatar ${avatarSize}`,
+        ).toBe('round');
+      }
+    });
+
+    it('paints both glyphs from currentColor so the dot owns the ink colour', () => {
+      for (const variant of ['neutral', 'error'] as const) {
+        const mark = renderDot({variant}, 48).querySelector(
+          `${GLYPH_SELECTOR} circle, ${GLYPH_SELECTOR} line`,
+        ) as SVGElement;
+        expect(mark.getAttribute('stroke'), variant).toBe('currentColor');
+      }
+    });
+
+    it('fills the ring variant with surface and inks it with the variant colour', () => {
+      // A ring only reads as hollow if its interior is not the variant
+      // colour, so `neutral` inverts: surface fill, coloured stroke.
+      // StyleX atomic classes are deterministic, so a local probe pins it.
+      const probe = stylex.create({
+        ring: {
+          backgroundColor: colorVars['--color-background-surface'],
+          color: colorVars['--color-text-secondary'],
+        },
+      });
+      const dot = renderDot({variant: 'neutral'}, 48);
+      const atomicClasses = (stylex.props(probe.ring).className ?? '')
+        .split(' ')
+        // Dev mode prepends a per-file `File__style.key` debug class that
+        // legitimately differs between the probe and the component.
+        .filter(cls => !cls.includes('__'));
+      expect(atomicClasses.length).toBeGreaterThan(0);
+      for (const cls of atomicClasses) {
+        expect(dot.className).toContain(cls);
+      }
+    });
+
+    it('lets a user icon inherit the dot ink instead of hard-coding surface', () => {
+      // Surface ink on the surface-filled ring variant would be invisible.
+      const probe = stylex.create({
+        surfaceInk: {color: colorVars['--color-background-surface']},
+      });
+      renderDot(
+        {variant: 'neutral', icon: <svg data-testid="user-icon" />},
+        48,
+      );
+      const iconWrapper = screen.getByTestId('user-icon')
+        .parentElement as HTMLElement;
+      const surfaceInkClasses = (stylex.props(probe.surfaceInk).className ?? '')
+        .split(' ')
+        .filter(cls => !cls.includes('__'));
+      expect(surfaceInkClasses.length).toBeGreaterThan(0);
+      for (const cls of surfaceInkClasses) {
+        expect(iconWrapper.className).not.toContain(cls);
       }
     });
 
