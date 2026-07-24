@@ -73,7 +73,7 @@ function typeOf(r) {
 
 console.log('Discovering...');
 
-const api = await import('../../packages/cli/src/api/index.mjs');
+const api = await import('../../packages/cli/api/index.mjs');
 
 const componentList = cliJson(['component', '--list']);
 // `component --list` data is package-qualified: each group value is an array

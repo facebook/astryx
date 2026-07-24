@@ -13,14 +13,14 @@
 // `node-version.mjs` is intentionally dependency-free so it loads on the
 // unsupported runtimes this guard protects against.
 //
-// Sibling `src/` modules are resolved by this bin's REAL path. When the CLI is
-// installed as a package, `npx astryx` runs this file through the
-// `node_modules/.bin/astryx` symlink, and some Node versions resolve relative
-// specifiers from the symlink's directory (→ `node_modules/src/...`) rather
-// than the real package — breaking bare `../src/...` imports with a cryptic
-// ERR_MODULE_NOT_FOUND. realpath-ing `import.meta.url` makes these imports
-// resolve correctly however the bin is invoked (symlink, copy, or Windows
-// shim). Uses only built-ins, so the version gate below still runs first.
+// Sibling package modules (e.g. `cli/`, `lib/`) are resolved by this bin's REAL
+// path. When the CLI is installed as a package, `npx astryx` runs this file
+// through the `node_modules/.bin/astryx` symlink, and some Node versions resolve
+// relative specifiers from the symlink's directory rather than the real package
+// — breaking bare `../…` imports with a cryptic ERR_MODULE_NOT_FOUND.
+// realpath-ing `import.meta.url` makes these imports resolve correctly however
+// the bin is invoked (symlink, copy, or Windows shim). Uses only built-ins, so
+// the version gate below still runs first.
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {realpathSync} from 'node:fs';
 import {dirname, join} from 'node:path';
@@ -28,7 +28,7 @@ import {dirname, join} from 'node:path';
 const binDir = dirname(realpathSync(fileURLToPath(import.meta.url)));
 /** @param {string} rel */
 const importSrc = rel =>
-  import(pathToFileURL(join(binDir, '..', 'src', rel)).href);
+  import(pathToFileURL(join(binDir, '..', rel)).href);
 
 const {isNodeVersionSupported, unsupportedNodeMessage} =
   await importSrc('lib/node-version.mjs');
@@ -55,7 +55,7 @@ if (!isNodeVersionSupported(process.versions.node)) {
 
 // Imports that transitively load `styleText` must happen AFTER the gate above,
 // so they are dynamically imported here rather than at the top of the module.
-const {program} = await importSrc('index.mjs');
+const {program} = await importSrc('cli/index.mjs');
 const {isJsonMode, toErrorEnvelope} = await importSrc('lib/json.mjs');
 const {handleCommanderError} = await importSrc('lib/json-shim.mjs');
 

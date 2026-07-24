@@ -8,8 +8,8 @@
     "types": ["node"]
   },
   "include": [
-    "src/types/**/*.d.ts",
-    "src/types/api.contract.assert.ts",
+    "types/**/*.d.ts",
+    "types/api.contract.assert.ts",
     "../core/src/docs-types.ts"
   ]
 }
