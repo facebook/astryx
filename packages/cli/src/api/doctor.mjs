@@ -49,7 +49,7 @@ const _require = createRequire(import.meta.url);
  * @typedef {object} DoctorContext
  * @property {string} cwd - Directory to diagnose.
  * @property {string} nodeVersion - Running Node version.
- * @property {string|null} coreDir - Resolved @astryxdesign/core directory, or null.
+ * @property {string|null} coreDir - Resolved core package directory, or null.
  * @property {string|null} configPath - Resolved astryx.config.mjs path, or null.
  * @property {string|null} configTheme - theme value read from config, or null.
  */
@@ -104,6 +104,7 @@ function findNodeModules(startDir) {
  */
 function findThemePackages(cwd) {
   const nm = findNodeModules(cwd);
+  /** @type {Array<{name: string, version: string|null}>} */
   const found = [];
   if (!nm) return found;
   const scopeDir = path.join(nm, '@astryxdesign');
@@ -317,7 +318,7 @@ export async function checkConfig(ctx) {
       id: 'config',
       label: 'astryx.config.mjs',
       status: 'fail',
-      message: `astryx.config.mjs failed to load: ${err.message}`,
+      message: `astryx.config.mjs failed to load: ${/** @type {any} */ (err).message}`,
       fix: 'Fix the syntax/runtime error in astryx.config.mjs so it imports cleanly.',
     };
   }
@@ -490,7 +491,8 @@ export async function runChecks(options = {}) {
   let configTheme = null;
   try {
     const project = await Project.load(cwd);
-    configTheme = project.config?.theme ?? null;
+    configTheme =
+      /** @type {{theme?: string}} */ (project.config ?? {}).theme ?? null;
   } catch {
     // Best-effort: a missing/invalid config leaves configTheme null.
   }
@@ -504,6 +506,7 @@ export async function runChecks(options = {}) {
     configTheme,
   };
 
+  /** @type {DoctorCheck[]} */
   const checks = [];
   // checkConfig is async; run it in its declared slot (after themes).
   for (const fn of SYNC_CHECKS) {

@@ -30,24 +30,24 @@ export const meta = {
     'Moves trailing content on `XDSDropdownMenuItem`, `XDSContextMenuItem`, and `XDSSelectorOption` from deprecated `children` usage to the `endContent` prop.',
 };
 
-function isWhitespaceText(node) {
+function isWhitespaceText(/** @type {any} */ node) {
   return node.type === 'JSXText' && node.value.trim() === '';
 }
 
-function isEmptyExpression(node) {
+function isEmptyExpression(/** @type {any} */ node) {
   return (
     node.type === 'JSXExpressionContainer' &&
     node.expression.type === 'JSXEmptyExpression'
   );
 }
 
-function getMeaningfulChildren(children) {
+function getMeaningfulChildren(/** @type {any} */ children) {
   return children.filter(
-    child => !isWhitespaceText(child) && !isEmptyExpression(child),
+    (/** @type {any} */ child) => !isWhitespaceText(child) && !isEmptyExpression(child),
   );
 }
 
-function createEndContentValue(j, children) {
+function createEndContentValue(/** @type {any} */ j, /** @type {any} */ children) {
   if (children.length === 0) {
     return null;
   }
@@ -74,18 +74,23 @@ function createEndContentValue(j, children) {
   );
 }
 
-function getJSXAttribute(openingElement, name) {
+function getJSXAttribute(/** @type {any} */ openingElement, /** @type {any} */ name) {
   return openingElement.attributes.find(
-    attr => attr.type === 'JSXAttribute' && attr.name.name === name,
+    (/** @type {any} */ attr) => attr.type === 'JSXAttribute' && attr.name.name === name,
   );
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
-  root.find(j.JSXElement).forEach(path => {
+  root.find(j.JSXElement).forEach((/** @type {any} */ path) => {
       const elementName = path.node.openingElement.name;
       if (
         elementName.type !== 'JSXIdentifier' ||

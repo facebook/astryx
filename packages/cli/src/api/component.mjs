@@ -30,16 +30,38 @@ import {AstryxError} from './error.mjs';
 import {findShowcase, findRelatedBlocks} from './template.mjs';
 
 /**
+ * A loaded component doc. `loadDocs` returns the authored `.doc.mjs` shape,
+ * which is either a single-component or multi-component doc; this loose view
+ * captures the fields the API reads across both forms.
+ * @typedef {object} LoadedComponentDoc
+ * @property {string} [name]
+ * @property {string} [description]
+ * @property {any[]} [props]
+ * @property {any[]} [components]
+ * @property {{description?: string}} [usage]
+ * @property {any} [theming]
+ */
+
+/**
+ * Options object for `loadDocs`, matching its declared parameter shape (used
+ * as a cast target so `lang` (which the API may hold as `string|null`) type
+ * checks against `loadDocs`'s `lang?: string`).
+ * @typedef {{zh?: boolean, dense?: boolean, lang?: string}} LoadDocsOpts
+ */
+
+/**
  * Load the configured integrations for `cwd`, swallowing any config errors so
  * component discovery never hard-fails on a malformed/absent integration. An
  * empty list means "core only".
  * @param {string} cwd
- * @returns {Promise<Array<{name: string, components?: string, issuesUrl?: string}>>}
+ * @returns {Promise<import('../lib/integrations.mjs').LoadedIntegration[]>}
  */
 async function loadIntegrationsSafely(cwd) {
   try {
     const project = await Project.load(cwd);
-    return project.loadedIntegrations;
+    return /** @type {import('../lib/integrations.mjs').LoadedIntegration[]} */ (
+      project.loadedIntegrations
+    );
   } catch {
     return [];
   }
@@ -47,7 +69,7 @@ async function loadIntegrationsSafely(cwd) {
 
 /**
  * Resolve a loaded integration by package name.
- * @param {Array<{name: string}>} loadedIntegrations
+ * @param {import('../lib/integrations.mjs').LoadedIntegration[]} loadedIntegrations
  * @param {string} packageName
  */
 function findLoadedIntegration(loadedIntegrations, packageName) {
@@ -133,7 +155,7 @@ export async function component(name, options = {}) {
           const readme = findComponentReadme(coreDir, comp);
           if (readme && readme.endsWith('.doc.mjs')) {
             try {
-              const docs = await loadDocs(readme, {zh, lang});
+              const docs = /** @type {LoadedComponentDoc} */ (await loadDocs(readme, /** @type {LoadDocsOpts} */ ({zh, lang})));
               entries.push({name: comp, description: docs.usage?.description || docs.description || '', import: resolveImportPath(coreDir, comp)});
             } catch {
               entries.push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
@@ -151,7 +173,7 @@ export async function component(name, options = {}) {
           const readme = findComponentReadme(coreDir, comp);
           if (readme && readme.endsWith('.doc.mjs')) {
             try {
-              entries.push(await loadDocs(readme, {zh, lang, dense}));
+              entries.push(await loadDocs(readme, /** @type {LoadDocsOpts} */ ({zh, lang, dense})));
             } catch {
               entries.push({name: `XDS${comp}`, description: ''});
             }
@@ -181,7 +203,7 @@ export async function component(name, options = {}) {
           const readme = findComponentReadme(coreDir, comp);
           if (readme && readme.endsWith('.doc.mjs')) {
             try {
-              const docs = await loadDocs(readme, {zh, lang});
+              const docs = /** @type {LoadedComponentDoc} */ (await loadDocs(readme, /** @type {LoadDocsOpts} */ ({zh, lang})));
               result[cat].push({name: comp, description: docs.usage?.description || docs.description || '', import: resolveImportPath(coreDir, comp)});
             } catch {
               result[cat].push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
@@ -203,7 +225,7 @@ export async function component(name, options = {}) {
           const readme = findComponentReadme(coreDir, comp);
           if (readme && readme.endsWith('.doc.mjs')) {
             try {
-              result[cat].push(await loadDocs(readme, {zh, lang, dense}));
+              result[cat].push(await loadDocs(readme, /** @type {LoadDocsOpts} */ ({zh, lang, dense})));
             } catch {
               result[cat].push({name: `XDS${comp}`, description: ''});
             }
@@ -238,7 +260,7 @@ export async function component(name, options = {}) {
         const groupLabel = rec.group ?? integration.name;
         const key = `${groupLabel} (${integration.name})`;
         if (!byGroup.has(key)) byGroup.set(key, []);
-        byGroup.get(key).push({name: rec.name, package: integration.name});
+        byGroup.get(key)?.push({name: rec.name, package: integration.name});
       }
       for (const [key, members] of byGroup) {
         members.sort((a, b) => a.name.localeCompare(b.name));
@@ -334,14 +356,14 @@ export async function component(name, options = {}) {
    * `package`, the resolved `import` specifier, and `sourceAvailable` (whether
    * a swizzleable source file exists for the owner). Existing doc fields
    * (name, usage, props, …) are preserved.
-   * @param {object} docs
+   * @param {LoadedComponentDoc} docs
    * @param {{package: string, sourcePath: string|null}} owner
    * @param {string} componentName
    */
   function withOwnership(docs, owner, componentName) {
     const importSpec =
       owner.package === CORE_PACKAGE
-        ? resolveImportPath(coreDir, componentName)
+        ? resolveImportPath(/** @type {string} */ (coreDir), componentName)
         : `${owner.package}/${componentName}`;
     return {
       ...docs,
@@ -368,7 +390,7 @@ export async function component(name, options = {}) {
         }
         return {type: 'component.detail.source', data: {component: dirName, source: fs.readFileSync(owner.sourcePath, 'utf-8')}};
       }
-      const docs = await loadDocs(owner.docPath, {zh, dense, lang});
+      const docs = /** @type {LoadedComponentDoc} */ (await loadDocs(owner.docPath, /** @type {LoadDocsOpts} */ ({zh, dense, lang})));
       if (props) {
         const p = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
         return {type: 'component.detail.props', data: p};
@@ -389,7 +411,7 @@ export async function component(name, options = {}) {
         }
         return {type: 'component.detail.source', data: {component: dirName, source: fs.readFileSync(owner.sourcePath, 'utf-8')}};
       }
-      const docs = await loadDocs(owner.docPath, {zh, dense, lang});
+      const docs = /** @type {LoadedComponentDoc} */ (await loadDocs(owner.docPath, /** @type {LoadDocsOpts} */ ({zh, dense, lang})));
       if (props) {
         const p = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
         return {type: 'component.detail.props', data: p};
@@ -420,7 +442,7 @@ export async function component(name, options = {}) {
 
     const extDocPath = findExternalComponentDoc(ext.docsDir, dirName);
     if (extDocPath && extDocPath.endsWith('.doc.mjs')) {
-      const docs = await loadDocs(extDocPath, {zh, dense, lang});
+      const docs = /** @type {LoadedComponentDoc} */ (await loadDocs(extDocPath, /** @type {LoadDocsOpts} */ ({zh, dense, lang})));
 
       if (props) {
         const p = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
@@ -461,7 +483,7 @@ export async function component(name, options = {}) {
     if (showcase) {
       throw new AstryxError(`No showcase found for "${name}"`, undefined, ERROR_CODES.ERR_NO_SHOWCASE);
     }
-    const docs = await loadDocs(owner.docPath, {zh, dense, lang});
+    const docs = /** @type {LoadedComponentDoc} */ (await loadDocs(owner.docPath, /** @type {LoadDocsOpts} */ ({zh, dense, lang})));
     if (props) {
       const p = docs.props || (docs.components ? docs.components.flatMap(c => c.props || []) : []);
       return {type: 'component.detail.props', data: p};
@@ -546,12 +568,12 @@ export async function component(name, options = {}) {
     throw new AstryxError(`No .doc.mjs found for "${resolvedName}". The component needs a typed doc file.`, undefined, ERROR_CODES.ERR_NO_DOC);
   }
 
-  const docs = await loadDocs(readmePath, {zh, dense, lang});
+  const docs = /** @type {LoadedComponentDoc} */ (await loadDocs(readmePath, /** @type {LoadDocsOpts} */ ({zh, dense, lang})));
 
   // ── Blocks mode ──────────────────────────────────────────────
   if (blocks) {
     const allBlocks = await findRelatedBlocks(dirName);
-    const toEntry = (b) => ({
+    const toEntry = (/** @type {any} */ b) => ({
       name: b.dirName,
       displayName: b.name,
       description: b.description,
@@ -561,7 +583,7 @@ export async function component(name, options = {}) {
 
     // Examples: blocks in the component's own directory, or
     // componentsUsed match for sub-components without a directory.
-    const ownDir = allBlocks.filter(b => path.basename(b.category) === dirName);
+    const ownDir = allBlocks.filter((/** @type {any} */ b) => path.basename(b.category) === dirName);
     const examples = ownDir.length > 0
       ? ownDir
       : allBlocks.filter(b => b.componentsUsed?.some(c => c === dirName));
@@ -595,6 +617,7 @@ export async function component(name, options = {}) {
     : null;
 
   if (matchingComponent) {
+    /** @type {LoadedComponentDoc & {parentDoc?: string, import?: string}} */
     const scoped = {
       name: dirName,
       description: matchingComponent.description,

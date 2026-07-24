@@ -15,6 +15,23 @@ import * as path from 'node:path';
 import {AstryxIntegrationSchema} from './config-schema.mjs';
 import {loadModuleWithSchema, findPresentFiles} from './module-loader.mjs';
 
+/**
+ * A fully-resolved, loaded integration. Identity (`name`, `version`) comes from
+ * the package's package.json; the `components`/`templates`/`codemods` roots are
+ * absolute paths resolved from the manifest. The `__`-prefixed fields are
+ * internal bookkeeping used by validate-integration and Project.
+ * @typedef {object} LoadedIntegration
+ * @property {string} name
+ * @property {string} [version]
+ * @property {string} [components]
+ * @property {string} [templates]
+ * @property {string} [codemods]
+ * @property {string} [issuesUrl]
+ * @property {string} __spec
+ * @property {string} __packageDir
+ * @property {string} __manifestFile
+ */
+
 /** Conventional manifest basenames, in load-precedence order. */
 export const MANIFEST_BASENAMES = [
   'astryx.integration.ts',
@@ -85,8 +102,10 @@ function resolveManifestPath(packageDir, spec) {
  *
  * @param {string[]} [specs] package names
  * @param {{cwd?: string}} [options]
+ * @returns {Promise<LoadedIntegration[]>}
  */
 export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
+  /** @type {LoadedIntegration[]} */
   const integrations = [];
   const seen = new Set();
 
@@ -112,6 +131,7 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
       {label: `Integration ${spec}`},
     );
 
+    /** @param {string | null | undefined} value */
     const resolveRoot = value =>
       value == null ? undefined : path.resolve(packageDir, value);
 

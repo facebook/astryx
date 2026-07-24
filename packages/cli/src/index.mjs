@@ -102,7 +102,7 @@ program
     if (extras.length > 0) {
       const unknown = String(extras[0]);
       const known = (program.commands || [])
-        .filter((c) => !c._hidden && c.name() !== 'help')
+        .filter((c) => !(/** @type {any} */ (c)._hidden) && c.name() !== 'help')
         .map((c) => c.name());
       const close = known
         .map((name) => ({name, distance: levenshteinDistance(unknown.toLowerCase(), name.toLowerCase())}))
@@ -162,6 +162,7 @@ program
  */
 function fullCommandName(actionCommand) {
   const parts = [];
+  /** @type {import('commander').Command | null} */
   let cmd = actionCommand;
   while (cmd && cmd !== program) {
     parts.unshift(cmd.name());
@@ -307,10 +308,10 @@ for (const cmd of commands) {
     // Command fails to load but CLI still works
     program
       .command(cmd.name)
-      .description(`(failed to load: ${e.message})`)
+      .description(`(failed to load: ${/** @type {any} */ (e).message})`)
       .action(() => {
         console.error(`Command "${cmd.name}" failed to load:`);
-        console.error(e.message);
+        console.error(/** @type {any} */ (e).message);
         process.exit(1);
       });
   }
@@ -348,9 +349,9 @@ program
   .command('postinstall', {hidden: true})
   .action(() => {
     const r = getCliInvocation();
-    const pad = (s, len) => s + ' '.repeat(Math.max(0, len - s.length));
+    const pad = (/** @type {string} */ s, /** @type {number} */ len) => s + ' '.repeat(Math.max(0, len - s.length));
     const W = 49; // inner width of the box
-    const line = (s) => `  │ ${pad(s, W)}│`;
+    const line = (/** @type {string} */ s) => `  │ ${pad(s, W)}│`;
     console.log(`
   ╭${'─'.repeat(W + 2)}╮
 ${line('')}

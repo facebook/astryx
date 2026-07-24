@@ -54,7 +54,7 @@ const TODO_COMMENT =
  * property is not a simple liftable entry (spread, computed key, method,
  * getter/setter, non-string literal key).
  */
-function getPropertyKeyName(prop) {
+function getPropertyKeyName(/** @type {any} */ prop) {
   if (prop.type !== 'ObjectProperty' && prop.type !== 'Property') return null;
   // espree-style Property nodes: skip methods and accessors
   if (prop.method || (prop.kind != null && prop.kind !== 'init')) return null;
@@ -70,6 +70,11 @@ function getPropertyKeyName(prop) {
   return null;
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -77,7 +82,7 @@ export default function transformer(file, api) {
 
   // --- 1. Track local names for the Table import (alias-aware) ---
   const tableLocals = new Set();
-  root.find(j.ImportDeclaration).forEach((path) => {
+  root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     if (!TABLE_IMPORT_SOURCES.has(path.node.source.value)) return;
     for (const spec of path.node.specifiers ?? []) {
       if (spec.type === 'ImportSpecifier' && spec.imported.name === 'Table') {
@@ -88,14 +93,14 @@ export default function transformer(file, api) {
 
   if (tableLocals.size === 0) return undefined;
 
-  function attachTodo(attr) {
+  function attachTodo(/** @type {any} */ attr) {
     if (!attr.comments) attr.comments = [];
-    if (attr.comments.some((c) => c.value === TODO_COMMENT)) return;
+    if (attr.comments.some((/** @type {any} */ c) => c.value === TODO_COMMENT)) return;
     attr.comments.push(j.commentBlock(TODO_COMMENT, false, true));
     hasChanges = true;
   }
 
-  function buildAttributeValue(valueNode) {
+  function buildAttributeValue(/** @type {any} */ valueNode) {
     if (
       valueNode.type === 'StringLiteral' ||
       (valueNode.type === 'Literal' && typeof valueNode.value === 'string')
@@ -106,14 +111,14 @@ export default function transformer(file, api) {
   }
 
   // --- 2. Rewrite tableProps on tracked <Table> elements ---
-  root.find(j.JSXOpeningElement).forEach((path) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     const componentName = name.type === 'JSXIdentifier' ? name.name : null;
     if (!componentName || !tableLocals.has(componentName)) return;
 
     const attrs = path.node.attributes;
     const tablePropsAttr = attrs.find(
-      (a) => a.type === 'JSXAttribute' && a.name?.name === 'tableProps',
+      (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name?.name === 'tableProps',
     );
     if (!tablePropsAttr) return;
 
@@ -135,22 +140,24 @@ export default function transformer(file, api) {
     // Objects containing spreads, computed keys, or methods are treated
     // as dynamic: no partial lift, just the TODO comment.
     const allSimple = obj.properties.every(
-      (prop) => getPropertyKeyName(prop) !== null,
+      (/** @type {any} */ prop) => getPropertyKeyName(prop) !== null,
     );
     if (!allSimple) {
       attachTodo(tablePropsAttr);
       return;
     }
 
+    /** @type {any[]} */
     const lifted = [];
+    /** @type {any[]} */
     const kept = [];
     for (const prop of obj.properties) {
       const keyName = getPropertyKeyName(prop);
       const collidesWithSibling = attrs.some(
-        (a) => a.type === 'JSXAttribute' && a.name?.name === keyName,
+        (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name?.name === keyName,
       );
       const collidesWithLifted = lifted.some(
-        (a) => a.name.name === keyName,
+        (/** @type {any} */ a) => a.name.name === keyName,
       );
       if (
         !LIFTABLE_KEY_RE.test(keyName) ||

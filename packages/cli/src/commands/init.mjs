@@ -62,6 +62,10 @@ export function getNextSteps(invocation) {
 
 // ─── Feature: agents ─────────────────────────────────────────────────────────
 
+/**
+ * @param {string} targetDir
+ * @param {{agent?: string, agentDocsPath?: string | string[]}} [opts]
+ */
 function runAgents(targetDir, {agent, agentDocsPath} = {}) {
   try {
     const paths = agentDocsPath
@@ -93,6 +97,10 @@ function runTheme() {
 
 // ─── Feature: template ───────────────────────────────────────────────────────
 
+/**
+ * @param {string} targetDir
+ * @param {{templateName?: string}} [opts]
+ */
 function runTemplate(targetDir, {templateName} = {}) {
   const templates = listTemplates();
   if (templates.length === 0) return;
@@ -124,6 +132,9 @@ function runTemplate(targetDir, {templateName} = {}) {
 
 // ─── Command ─────────────────────────────────────────────────────────────────
 
+/**
+ * @param {import('commander').Command} program
+ */
 export function registerInit(program) {
   program
     .command('init')
@@ -133,7 +144,7 @@ export function registerInit(program) {
     .option('--remove-agents', 'Remove AI agent docs from all agent doc files')
     .option('--agent <tool>', 'Target AI tool for agent docs: claude, cursor, codex, hermes, all')
     .option('--agent-docs-path <path...>', 'Explicit file path(s) for agent docs')
-    .action((options) => {
+    .action((/** @type {{features?: string, all?: boolean, removeAgents?: boolean, agent?: string, agentDocsPath?: string | string[]}} */ options) => {
       const targetDir = process.cwd();
 
       // Remove mode
@@ -147,7 +158,7 @@ export function registerInit(program) {
       if (options.features || options.all) {
         const features = options.all
           ? VALID_FEATURES
-          : options.features.split(',').map(f => f.trim().toLowerCase());
+          : /** @type {string} */ (options.features).split(',').map(f => f.trim().toLowerCase());
 
         const invalid = features.filter(f => !VALID_FEATURES.includes(f));
         if (invalid.length > 0) {

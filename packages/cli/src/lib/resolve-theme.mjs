@@ -25,6 +25,9 @@ const _require = createRequire(import.meta.url);
 /**
  * Try to load a module, returning the default export or the module itself.
  * Returns null if the module cannot be found.
+ * @param {string} specifier
+ * @param {string} cwd
+ * @returns {unknown}
  */
 function tryLoadModule(specifier, cwd) {
   // For relative/absolute paths, resolve against cwd
@@ -49,6 +52,8 @@ function tryLoadModule(specifier, cwd) {
  * Extract theme data from a loaded module.
  * Handles both `module.default` and direct `module` patterns,
  * as well as named exports like `module.theme` or `module.{name}Theme`.
+ * @param {any} mod
+ * @returns {any}
  */
 function extractTheme(mod) {
   if (!mod || typeof mod !== 'object') return null;

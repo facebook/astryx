@@ -19,15 +19,19 @@ import {getCliInvocation} from '../utils/package-manager.mjs';
  * Keep the `astryx-` literal in sync with packages/core/src/naming.ts
  * (NAMESPACE / classPrefix), the same way build-theme.mjs mirrors it.
  * <!-- SYNC: packages/core/src/naming.ts (namespace prefix source of truth) -->
+ * @param {import('../../../core/src/docs-types').ThemingTarget} target
+ * @returns {string}
  */
 function targetKey(target) {
   return target.className.replace(/^astryx-/, '');
 }
 
+/** @param {string} name @returns {string} */
 function dataAttrForName(name) {
   return `data-${name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}`;
 }
 
+/** @param {import('../../../core/src/docs-types').ThemingTarget} target @returns {string[]} */
 function getTargetDataAttributes(target) {
   return [
     ...(target.visualProps || []).map(dataAttrForName),
@@ -43,13 +47,17 @@ function getTargetDataAttributes(target) {
  * than the header has columns gets the excess *discarded*, so an unescaped
  * `gap: 0 | 0.5 | ...` silently eats its own Default and Description columns.
  * <!-- SYNC: packages/core/src/Markdown/parser.ts (splits on unescaped pipes) -->
+ * @param {unknown} value
+ * @returns {string}
  */
 export function mdCell(value) {
   return String(value ?? '').replace(/\|/g, '\\|');
 }
 
+/** @param {import('../../../core/src/docs-types').PropDoc[]} [props] @returns {string} */
 function formatPropsTable(props) {
   if (!props || props.length === 0) return '';
+  /** @type {string[]} */
   const lines = [];
   lines.push('| Prop | Type | Default | Description |');
   lines.push('|------|------|---------|-------------|');
@@ -72,6 +80,8 @@ function formatPropsTable(props) {
  * and was being printed literally as the string "undefined". Emit the
  * description only when present, and when there are no inline props point the
  * reader at the sub-component's own docs instead of a blank/`undefined` block.
+ * @param {any} comp
+ * @returns {string[]}
  */
 function formatSubComponent(comp) {
   const out = [`### ${comp.name}\n`];
@@ -92,6 +102,9 @@ function formatSubComponent(comp) {
  * the visualProps and the variant prop in the component's props list.
  * Returns an array of variant strings from the `variant` prop type,
  * or the variants from target visualProps.
+ * @param {import('../../../core/src/docs-types').ThemingTarget} target
+ * @param {any} docs
+ * @returns {string[]}
  */
 function getTargetVariants(target, docs) {
   if (!target.visualProps?.length) return [];
@@ -99,12 +112,12 @@ function getTargetVariants(target, docs) {
   // If variant is a visualProp, try to resolve the actual variant values from props
   if (target.visualProps.includes('variant')) {
     const allProps = docs.props || (docs.components?.[0]?.props) || [];
-    const variantProp = allProps.find(p => p.name === 'variant');
+    const variantProp = allProps.find((/** @type {any} */ p) => p.name === 'variant');
     if (variantProp && variantProp.type.includes('|')) {
       return variantProp.type
         .replace(/['"]/g, '')
         .split('|')
-        .map(v => v.trim())
+        .map((/** @type {string} */ v) => v.trim())
         .filter(Boolean);
     }
   }
@@ -115,6 +128,8 @@ function getTargetVariants(target, docs) {
 
 /**
  * Get the state classes for a theming target from the states field.
+ * @param {import('../../../core/src/docs-types').ThemingTarget} target
+ * @returns {string[]}
  */
 function getTargetStates(target) {
   return target.states || [];
@@ -123,13 +138,14 @@ function getTargetStates(target) {
 /**
  * Format the theming targets table, merging in theme variants if available.
  *
- * @param {object} docs - Component doc object
- * @param {object|null} themeData - Resolved theme data with variants
+ * @param {any} docs - Component doc object
+ * @param {any} themeData - Resolved theme data with variants
  * @returns {string} Markdown table
  */
 function formatTargetsTable(docs, themeData) {
   if (!docs.theming?.targets?.length) return '';
 
+  /** @type {string[]} */
   const lines = [];
   lines.push('| Component class | Preferred data attributes | Props | States |');
   lines.push('|-----------------|---------------------------|-------|--------|');
@@ -146,7 +162,7 @@ function formatTargetsTable(docs, themeData) {
     // Build variant display: core variants plain, theme variants with * suffix
     const variantParts = [
       ...coreVariants,
-      ...themeVariants.map(v => `${v}*`),
+      ...themeVariants.map((/** @type {string} */ v) => `${v}*`),
     ];
 
     const variantsStr = variantParts.length > 0 ? variantParts.join(', ') : '—';
@@ -166,12 +182,13 @@ function formatTargetsTable(docs, themeData) {
 /**
  * Format full component docs (default mode, replaces cleanReadme).
  *
- * @param {object} docs - Component doc object
+ * @param {any} docs - Component doc object
  * @param {object} [options] - Options
- * @param {object|null} [options.themeData] - Resolved theme data
+ * @param {any} [options.themeData] - Resolved theme data
  * @param {string|null} [options.importHint] - Import path hint (e.g. '@astryxdesign/core/Button')
  */
 export function formatFull(docs, options = {}) {
+  /** @type {string[]} */
   const sections = [];
 
   sections.push(`# ${docs.name}\n`);
@@ -245,8 +262,8 @@ export function formatFull(docs, options = {}) {
 
       // Note about theme variants if any are present
       if (themeData?.variants) {
-        const componentKeys = docs.theming.targets.map(t => targetKey(t));
-        const hasThemeVariants = componentKeys.some(k => themeData.variants[k]?.length > 0);
+        const componentKeys = docs.theming.targets.map((/** @type {any} */ t) => targetKey(t));
+        const hasThemeVariants = componentKeys.some((/** @type {any} */ k) => themeData.variants[k]?.length > 0);
         if (hasThemeVariants) {
           sections.push(`_\\* = custom variant from ${themeData.name || 'active'} theme_\n`);
         }
@@ -290,7 +307,7 @@ export function formatFull(docs, options = {}) {
 
     // Component CSS vars — split into public (directly settable) and private (set via derived)
     if (docs.theming?.vars?.length) {
-      const publicVars = docs.theming.vars.filter(v => !v.private && !v.derived);
+      const publicVars = docs.theming.vars.filter((/** @type {any} */ v) => !v.private && !v.derived);
 
       if (publicVars.length > 0) {
         sections.push('**Themeable CSS variables** — additional properties that can be overridden in `defineTheme` component overrides.\n');
@@ -309,12 +326,12 @@ export function formatFull(docs, options = {}) {
       if (docs.theming?.derived?.length) {
         const varsKey = docs.theming.targets?.length ? targetKey(docs.theming.targets[0]) : docs.theming.componentKey || '';
         const derivedExamples = docs.theming.derived
-          .filter(d => d.vars?.length)
-          .map(d => `      ${d.property}: '...',`)
+          .filter((/** @type {any} */ d) => d.vars?.length)
+          .map((/** @type {any} */ d) => `      ${d.property}: '...',`)
           .join('\n');
         const expandExamples = docs.theming.derived
-          .filter(d => d.expand === 'container')
-          .map(d => `      ${d.property}: '...',  // expands to container layout tokens`)
+          .filter((/** @type {any} */ d) => d.expand === 'container')
+          .map((/** @type {any} */ d) => `      ${d.property}: '...',  // expands to container layout tokens`)
           .join('\n');
         const allExamples = [derivedExamples, expandExamples].filter(Boolean).join('\n');
         if (allExamples) {
@@ -331,6 +348,10 @@ export function formatFull(docs, options = {}) {
 /**
  * Format compact docs for LLM consumption (replaces extractCompact + ensureImportStatement).
  * Includes: import, best practices, props, theming.
+ * @param {any} docs
+ * @param {string} componentName
+ * @param {string} [importHint]
+ * @returns {string}
  */
 export function formatCompact(docs, componentName, importHint) {
   // Bare name (un-prefix migration P5a): the CLI now presents component names
@@ -339,6 +360,7 @@ export function formatCompact(docs, componentName, importHint) {
     ? componentName.slice(3)
     : componentName;
 
+  /** @type {string[]} */
   const sections = [];
 
   sections.push(`# ${docs.name}\n`);
@@ -346,7 +368,7 @@ export function formatCompact(docs, componentName, importHint) {
   sections.push(desc + '\n');
 
   if (docs.usage?.anatomy?.length) {
-    sections.push('Anatomy: ' + docs.usage.anatomy.map(el => {
+    sections.push('Anatomy: ' + docs.usage.anatomy.map((/** @type {any} */ el) => {
       const req = el.required ? '' : ' (optional)';
       return `${el.name}${req}`;
     }).join(', ') + '\n');
@@ -396,7 +418,7 @@ export function formatCompact(docs, componentName, importHint) {
     propLines.push('| CSS Property | Sets |');
     propLines.push('|-------------|------|');
     for (const d of docs.theming.derived) {
-      const target = d.expand === 'container' ? 'container layout tokens' : (d.vars || []).map(v => `\`${mdCell(v)}\``).join(', ');
+      const target = d.expand === 'container' ? 'container layout tokens' : (d.vars || []).map((/** @type {any} */ v) => `\`${mdCell(v)}\``).join(', ');
       propLines.push(`| \`${mdCell(d.property)}\` | ${target} |`);
     }
     sections.push(propLines.join('\n') + '\n');
@@ -426,12 +448,20 @@ export function formatCompact(docs, componentName, importHint) {
  */
 const SIGNATURE_UNION_MAX_MEMBERS = 8;
 
+/**
+ * @param {any} docs
+ * @param {string} componentName
+ * @param {string} [importHint]
+ * @param {{themeData?: any}} [options]
+ * @returns {string}
+ */
 export function formatBrief(docs, componentName, importHint, options = {}) {
   const displayName = componentName.startsWith('XDS')
     ? componentName.slice(3)
     : componentName;
 
   // Find the right props and examples for this component
+  /** @type {any[]} */
   let props = [];
   let description = docs.usage?.description || docs.description || '';
   let examples = docs.examples || [];
@@ -439,7 +469,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
   if ('props' in docs) {
     props = docs.props;
   } else if ('components' in docs) {
-    const entry = docs.components.find(c => c.name === displayName);
+    const entry = docs.components.find((/** @type {any} */ c) => c.name === displayName);
     if (entry) {
       props = entry.props;
       description = entry.description;
@@ -448,7 +478,9 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
   }
 
   // Build signature from union-type props
+  /** @type {string[]} */
   const signatureProps = [];
+  /** @type {string[]} */
   const otherProps = [];
 
   for (const prop of props) {
@@ -457,7 +489,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
         ? prop.type
             .replace(/['"]/g, '')
             .split('|')
-            .map(v => v.trim())
+            .map((/** @type {string} */ v) => v.trim())
         : null;
     if (values && values.length <= SIGNATURE_UNION_MAX_MEMBERS) {
       signatureProps.push(`${prop.name}: ${values.join('|')}`);
@@ -469,6 +501,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
   }
 
   // Build output
+  /** @type {string[]} */
   const output = [];
 
   // Signature line
@@ -490,8 +523,8 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
   // Component vars (if any — only show public vars)
   if (docs.theming?.vars?.length) {
     const varNames = docs.theming.vars
-      .filter(v => !v.derived && !v.private)
-      .map(v => `${v.name} (${v.default})`)
+      .filter((/** @type {any} */ v) => !v.derived && !v.private)
+      .map((/** @type {any} */ v) => `${v.name} (${v.default})`)
       .join(', ');
     if (varNames) {
       output.push(`  Vars: ${varNames}`);
@@ -501,7 +534,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
   // Derived properties (if any)
   if (docs.theming?.derived?.length) {
     const derivedNames = docs.theming.derived
-      .map(d => d.expand === 'container' ? `${d.property} → container tokens` : `${d.property} → ${(d.vars || []).join(', ')}`)
+      .map((/** @type {any} */ d) => d.expand === 'container' ? `${d.property} → container tokens` : `${d.property} → ${(d.vars || []).join(', ')}`)
       .join('; ');
     output.push(`  Derived: ${derivedNames}`);
   }
@@ -509,7 +542,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
 // Theme targets (component class, preferred data attrs, props, states) with theme variant merging
   if (docs.theming?.targets?.length) {
     const { themeData = null } = options;
-    const targetParts = docs.theming.targets.map(t => {
+    const targetParts = docs.theming.targets.map((/** @type {any} */ t) => {
       const parts = [t.className];
       const dataAttrs = getTargetDataAttributes(t);
       if (dataAttrs.length) parts.push(`preferred attrs: ${dataAttrs.join(', ')}`);
@@ -518,7 +551,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
       // Merge theme variants
       const componentKey = targetKey(t);
       const themeVars = themeData?.variants?.[componentKey];
-      if (themeVars?.length) parts.push(`theme: ${themeVars.map(v => v + '*').join(', ')}`);
+      if (themeVars?.length) parts.push(`theme: ${themeVars.map((/** @type {any} */ v) => v + '*').join(', ')}`);
       return parts.join(' ');
     });
     output.push(`  Targets: ${targetParts.join(' | ')}`);
@@ -533,7 +566,7 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
   if (examples.length > 0) {
     const code = examples[0].code;
     const codeLine =
-      code.split('\n').find(l => l.trim().startsWith('<XDS')) ||
+      code.split('\n').find((/** @type {string} */ l) => l.trim().startsWith('<XDS')) ||
       code.split('\n')[0];
     output.push(`  ${codeLine.trim()}`);
   }
@@ -543,6 +576,9 @@ export function formatBrief(docs, componentName, importHint, options = {}) {
 
 /**
  * Format only the props tables (replaces extractProps).
+ * @param {any} docs
+ * @param {string} componentName
+ * @returns {string}
  */
 export function formatProps(docs, componentName) {
   if ('props' in docs) {
@@ -550,6 +586,7 @@ export function formatProps(docs, componentName) {
   }
 
   if ('components' in docs) {
+    /** @type {string[]} */
     const sections = [];
     for (const comp of docs.components) {
       sections.push(`### ${comp.name} Props\n`);
@@ -563,9 +600,13 @@ export function formatProps(docs, componentName) {
 
 /**
  * Format brief summaries for ALL components in one output.
+ * @param {string} coreDir
+ * @param {{zh?: boolean, lang?: string, themeData?: any}} [options]
+ * @returns {Promise<string>}
  */
 export async function formatBriefAll(coreDir, {zh = false, lang, themeData = null} = {}) {
   const components = discoverComponents(coreDir);
+  /** @type {string[]} */
   const output = [];
 
   for (const [key, comps] of Object.entries(components)) {

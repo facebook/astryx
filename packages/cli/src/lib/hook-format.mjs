@@ -16,14 +16,16 @@ import {mdCell} from './component-format.mjs';
 /**
  * Build a signature string from hook docs.
  * e.g. 'useFocusTrap(options: UseFocusTrapOptions): { containerRef, focusFirst }'
+ * @param {any} docs
+ * @returns {string}
  */
 function buildSignature(docs) {
   const name = docs.name;
 
   // Build params string — only top-level params (skip options.foo nested params)
-  const topParams = (docs.params || []).filter(p => !p.name.includes('.'));
+  const topParams = (docs.params || []).filter((/** @type {any} */ p) => !p.name.includes('.'));
   const paramStr = topParams
-    .map(p => {
+    .map((/** @type {any} */ p) => {
       const opt = p.required ? '' : '?';
       return `${p.name}${opt}: ${p.type}`;
     })
@@ -37,7 +39,7 @@ function buildSignature(docs) {
   } else if (returns.length === 1 && returns[0].name === 'value') {
     returnStr = returns[0].type;
   } else {
-    returnStr = `{ ${returns.map(r => r.name).join(', ')} }`;
+    returnStr = `{ ${returns.map((/** @type {any} */ r) => r.name).join(', ')} }`;
   }
 
   return `${name}(${paramStr}): ${returnStr}`;
@@ -45,9 +47,12 @@ function buildSignature(docs) {
 
 /**
  * Format a parameters table (matches component props table style).
+ * @param {any[]} [params]
+ * @returns {string}
  */
 function formatParamsTable(params) {
   if (!params || params.length === 0) return '';
+  /** @type {string[]} */
   const lines = [];
   lines.push('| Param | Type | Default | Description |');
   lines.push('|-------|------|---------|-------------|');
@@ -63,9 +68,12 @@ function formatParamsTable(params) {
 
 /**
  * Format a returns table.
+ * @param {any[]} [returns]
+ * @returns {string}
  */
 function formatReturnsTable(returns) {
   if (!returns || returns.length === 0) return '';
+  /** @type {string[]} */
   const lines = [];
   lines.push('| Field | Type | Description |');
   lines.push('|-------|------|-------------|');
@@ -81,8 +89,11 @@ function formatReturnsTable(returns) {
  * Format full hook docs (default mode).
  * Matches component formatFull structure:
  *   # Name, description, anatomy→params, best practices, props→params+returns, theming→related
+ * @param {any} docs
+ * @returns {string}
  */
 export function formatHookFull(docs) {
+  /** @type {string[]} */
   const sections = [];
 
   sections.push(`# ${docs.name}\n`);
@@ -119,8 +130,12 @@ export function formatHookFull(docs) {
  * Format compact hook docs for LLM consumption.
  * Matches component formatCompact structure:
  *   # Name, description, ## Import, ## Best Practices, ## Parameters, ## Returns
+ * @param {any} docs
+ * @param {string} [importPath]
+ * @returns {string}
  */
 export function formatHookCompact(docs, importPath) {
+  /** @type {string[]} */
   const sections = [];
 
   sections.push(`# ${docs.name}\n`);
@@ -159,6 +174,7 @@ export function formatHookCompact(docs, importPath) {
   }
 
   // Related components (compact footer)
+  /** @type {string[]} */
   const relatedParts = [];
   if (docs.relatedComponents?.length) {
     relatedParts.push(`Components: ${docs.relatedComponents.join(', ')}`);
@@ -181,8 +197,11 @@ export function formatHookCompact(docs, importPath) {
  *   signature  ← from 'import/path'
  *   description
  *   key params
+ * @param {any} docs
+ * @returns {string}
  */
 export function formatHookBrief(docs) {
+  /** @type {string[]} */
   const output = [];
 
   // Signature line with import hint (matches component brief)
@@ -204,8 +223,8 @@ export function formatHookBrief(docs) {
 
   // Key params (matches component brief 'prop · prop' line)
   const paramNames = (docs.params || [])
-    .filter(p => !p.name.includes('.'))
-    .map(p => p.required ? `${p.name}: ${p.type.split('|')[0].trim()}` : p.name);
+    .filter((/** @type {any} */ p) => !p.name.includes('.'))
+    .map((/** @type {any} */ p) => p.required ? `${p.name}: ${p.type.split('|')[0].trim()}` : p.name);
   if (paramNames.length > 0) {
     output.push(`  ${paramNames.join(' \u00b7 ')}`);
   }
@@ -216,9 +235,12 @@ export function formatHookBrief(docs) {
 /**
  * Format brief summaries for ALL hooks in one output.
  * Matches component formatBriefAll: group headers with ##.
+ * @param {string} coreDir
+ * @returns {Promise<string>}
  */
 export async function formatHookBriefAll(coreDir) {
   const hooks = discoverHooks(coreDir);
+  /** @type {string[]} */
   const output = [];
 
   for (const [category, hookNames] of Object.entries(hooks)) {
@@ -243,6 +265,8 @@ export async function formatHookBriefAll(coreDir) {
 
 /**
  * Format only the parameters table (matches component formatProps).
+ * @param {any} docs
+ * @returns {string}
  */
 export function formatHookParams(docs) {
   if (docs.params?.length) {

@@ -731,6 +731,9 @@ export type TokenPreviewType =
 export interface ReferenceSection {
   /** Section title, e.g. "Spacing Tokens", "Light/Dark Mode" */
   title: string;
+  /** Navigation category ('guide' | 'foundations'). Mirrors the parent doc's
+   *  category so sections can be grouped independently in the docsite nav. */
+  category?: string;
   /** Ordered content blocks. Mix prose, code, tables, and lists freely. */
   content: ContentBlock[];
   /** Preview type for token tables in this section. When set, the docsite

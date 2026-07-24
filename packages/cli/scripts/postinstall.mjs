@@ -24,11 +24,11 @@ const HERE = fileURLToPath(import.meta.url);
  * Pure decision: should the postinstall print the setup nudge? Split out so the
  * matrix is unit-testable without an actual npm install.
  *
- * @param {object} opts
- * @param {string} opts.scriptPath - Absolute path of this script (location tells
+ * @param {object} [opts]
+ * @param {string} [opts.scriptPath] - Absolute path of this script (location tells
  *   us dependency vs monorepo vs npx-cache).
  * @param {string} [opts.npmCommand] - process.env.npm_command ('install', 'exec', …).
- * @param {boolean} opts.isSetUp - Whether the project already ran init.
+ * @param {boolean} [opts.isSetUp] - Whether the project already ran init.
  * @returns {boolean}
  */
 export function shouldNudge({scriptPath, npmCommand, isSetUp} = {}) {

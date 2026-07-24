@@ -75,7 +75,8 @@ function error(code, message) {
  * @param {Issue[]} issues
  */
 function checkRoots(resolved, issues) {
-  for (const kind of ['components', 'templates', 'codemods']) {
+  const kinds = /** @type {const} */ (['components', 'templates', 'codemods']);
+  for (const kind of kinds) {
     const root = resolved[kind];
     if (root == null) continue;
     if (!fs.existsSync(root)) {
@@ -93,7 +94,7 @@ function checkRoots(resolved, issues) {
  * Validate the integration's codemods via the landed discovery. Discovery is
  * strict (throws on bad export / duplicate id); we convert any throw into an
  * `invalid_codemod` error.
- * @param {object} integration loaded-integration-shaped object
+ * @param {import('../lib/integrations.mjs').LoadedIntegration} integration loaded-integration-shaped object
  * @param {Issue[]} issues
  */
 async function checkCodemods(integration, issues) {
@@ -101,14 +102,14 @@ async function checkCodemods(integration, issues) {
   try {
     await discoverIntegrationCodemods([integration]);
   } catch (err) {
-    issues.push(error('invalid_codemod', err.message));
+    issues.push(error('invalid_codemod', /** @type {any} */ (err).message));
   }
 }
 
 /**
  * Validate the integration's templates via the landed discovery. Per-template
  * problems are reported as `invalid_template` errors.
- * @param {object} integration loaded-integration-shaped object
+ * @param {import('../lib/integrations.mjs').LoadedIntegration} integration loaded-integration-shaped object
  * @param {Issue[]} issues
  */
 async function checkTemplates(integration, issues) {
@@ -119,7 +120,7 @@ async function checkTemplates(integration, issues) {
       issues.push(error('invalid_template', e.message));
     }
   } catch (err) {
-    issues.push(error('invalid_template', err.message));
+    issues.push(error('invalid_template', /** @type {any} */ (err).message));
   }
 }
 
@@ -132,7 +133,7 @@ async function checkTemplates(integration, issues) {
  * `discoverIntegrationComponents` returns ownership records and does not throw
  * on a missing same-stem source — it records `sourcePath: null`. We surface
  * each such record as an `invalid_component` error.
- * @param {object} integration loaded-integration-shaped object
+ * @param {import('../lib/integrations.mjs').LoadedIntegration} integration loaded-integration-shaped object
  * @param {Issue[]} issues
  */
 async function checkComponents(integration, issues) {
@@ -152,13 +153,13 @@ async function checkComponents(integration, issues) {
       }
     }
   } catch (err) {
-    issues.push(error('invalid_component', err.message));
+    issues.push(error('invalid_component', /** @type {any} */ (err).message));
   }
 }
 
 /**
  * Run every contribution validator against a loaded-integration-shaped object.
- * @param {object} integration
+ * @param {import('../lib/integrations.mjs').LoadedIntegration} integration
  * @param {Issue[]} issues
  */
 async function runContributionChecks(integration, issues) {
@@ -181,7 +182,7 @@ async function runContributionChecks(integration, issues) {
  * contribution checks (roots + codemods/templates/components) because those can
  * regress independently of the manifest (a deleted directory, a broken template).
  *
- * @param {object} loaded loaded-integration-shaped object
+ * @param {import('../lib/integrations.mjs').LoadedIntegration} loaded loaded-integration-shaped object
  * @returns {Promise<Issue[]>}
  */
 export async function validateLoadedIntegration(loaded) {
@@ -210,6 +211,7 @@ export async function validateLoadedIntegration(loaded) {
 async function validateAtPackageDir(packageDir, identity) {
   /** @type {Issue[]} */
   const issues = [];
+  /** @type {ValidateResult} */
   const result = {
     found: true,
     name: identity.name,
@@ -254,10 +256,11 @@ async function validateAtPackageDir(packageDir, identity) {
       `Integration manifest (${path.basename(manifestFile)})`,
     );
   } catch (err) {
-    issues.push(error('invalid_manifest', err.message));
+    issues.push(error('invalid_manifest', /** @type {any} */ (err).message));
     return result;
   }
 
+  /** @param {string | null | undefined} value */
   const resolveRoot = value =>
     value == null ? undefined : path.resolve(packageDir, value);
 
@@ -300,6 +303,7 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
     return {found: false, issues: []};
   }
 
+  /** @type {{name?: string, version?: string}} */
   let pkg = {};
   try {
     pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
@@ -323,6 +327,7 @@ export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
   const packageDir = resolvePackageDir(spec, cwd);
   const pkgJsonPath = path.join(packageDir, 'package.json');
 
+  /** @type {{name?: string, version?: string}} */
   let pkg;
   try {
     pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));

@@ -36,6 +36,11 @@ const APPSHELL_DEPRECATED_PROPS = [
   'defaultIsSideNavCollapsed',
 ];
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -46,16 +51,17 @@ export default function transformer(file, api) {
     .find(j.JSXOpeningElement, {
       name: {name: 'XDSSideNav'},
     })
-    .forEach((path) => {
+    .forEach((/** @type {any} */ path) => {
       const attrs = path.node.attributes;
 
       // Find isCollapsible
       const isCollapsibleIdx = attrs.findIndex(
-        (a) => a.type === 'JSXAttribute' && a.name.name === 'isCollapsible',
+        (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name.name === 'isCollapsible',
       );
       if (isCollapsibleIdx === -1) return;
 
       // Collect all collapse-related props
+      /** @type {Record<string, any>} */
       const collapseProps = {};
       const indicesToRemove = [];
 
@@ -129,7 +135,7 @@ export default function transformer(file, api) {
     .find(j.JSXOpeningElement, {
       name: {name: 'XDSAppShell'},
     })
-    .forEach((path) => {
+    .forEach((/** @type {any} */ path) => {
       const attrs = path.node.attributes;
       for (let i = attrs.length - 1; i >= 0; i--) {
         const attr = attrs[i];

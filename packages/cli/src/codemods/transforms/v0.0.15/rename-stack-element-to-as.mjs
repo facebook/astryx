@@ -17,6 +17,11 @@ const TARGET_COMPONENTS = new Set([
   'XDSStackItem',
 ]);
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -24,12 +29,12 @@ export default function transformer(file, api) {
 
   root
     .find(j.JSXOpeningElement)
-    .filter((path) => {
+    .filter((/** @type {any} */ path) => {
       const name = path.node.name;
       return name.type === 'JSXIdentifier' && TARGET_COMPONENTS.has(name.name);
     })
-    .forEach((path) => {
-      path.node.attributes.forEach((attr) => {
+    .forEach((/** @type {any} */ path) => {
+      path.node.attributes.forEach((/** @type {any} */ attr) => {
         if (attr.type === 'JSXAttribute' && attr.name.name === 'element') {
           attr.name.name = 'as';
           hasChanges = true;

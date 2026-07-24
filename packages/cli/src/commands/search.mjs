@@ -28,6 +28,9 @@ const DOMAIN_LABEL = {
   template: 'template',
 };
 
+/**
+ * @param {import('commander').Command} program
+ */
 export function registerSearch(program) {
   program
     .command('search <query>')
@@ -35,7 +38,7 @@ export function registerSearch(program) {
     .option('--type <domain>', `Filter to one domain (${SEARCH_DOMAINS.join('|')})`)
     .option('--limit <n>', 'Max number of results (default 20)')
     .option('--detail', 'Verbose output (include import paths and match reason)')
-    .action(async (query, options) => {
+    .action(async (/** @type {string} */ query, /** @type {{type?: import('../types/search').SearchDomain, limit?: string, detail?: boolean}} */ options) => {
       const json = program.opts().json || false;
 
       let limit = 20;
@@ -48,15 +51,19 @@ export function registerSearch(program) {
         limit = parsed;
       }
 
+      /** @type {import('../types/search').SearchResponse} */
       let result;
       try {
-        result = await searchApi(query, {
-          cwd: process.cwd(),
-          type: options.type,
-          limit,
-        });
+        result = /** @type {import('../types/search').SearchResponse} */ (
+          await searchApi(query, {
+            cwd: process.cwd(),
+            type: options.type,
+            limit,
+          })
+        );
       } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions});
+        const err = /** @type {import('../api/error.mjs').AstryxError} */ (e);
+        cliError(err.message, {suggestions: err.suggestions});
         return;
       }
 

@@ -19,6 +19,11 @@ export const meta = {
   pr: '#706',
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -28,7 +33,7 @@ export default function transformer(file, api) {
     .find(j.JSXElement, {
       openingElement: {name: {name: 'XDSBadge'}},
     })
-    .forEach((path) => {
+    .forEach((/** @type {any} */ path) => {
       const {children} = path.node;
 
       // Skip if already self-closing or no children
@@ -36,7 +41,7 @@ export default function transformer(file, api) {
 
       // Filter out whitespace-only JSXText nodes
       const meaningful = children.filter(
-        (c) => !(c.type === 'JSXText' && !c.value.trim()),
+        (/** @type {any} */ c) => !(c.type === 'JSXText' && !c.value.trim()),
       );
 
       // Only transform single-child cases

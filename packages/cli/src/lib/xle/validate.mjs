@@ -19,7 +19,10 @@ import {levenshteinDistance} from '../levenshtein.mjs';
 import {KEY_ALIASES} from './parse.mjs';
 import {resolveComponent} from './registry-core.mjs';
 
-/** Boolean flag synonyms — agent-frequency spellings of isX/hasX props. */
+/**
+ * Boolean flag synonyms — agent-frequency spellings of isX/hasX props.
+ * @type {Record<string, string>}
+ */
 const FLAG_SYNONYMS = {
   req: 'isRequired', opt: 'isOptional', dis: 'isDisabled',
   scroll: 'isScrollable', divider: 'hasDivider', dividers: 'hasDivider',
@@ -30,6 +33,12 @@ const FLAG_SYNONYMS = {
 /** Props the expander treats as the node's primary text payload, in order. */
 export const PAYLOAD_PROPS = ['label', 'title', 'heading'];
 
+/**
+ * @param {string} input
+ * @param {string[]} candidates
+ * @param {number} [max]
+ * @returns {string[]}
+ */
 function suggest(input, candidates, max = 4) {
   const lower = input.toLowerCase();
   return candidates
@@ -45,6 +54,7 @@ function suggest(input, candidates, max = 4) {
     .map(s => s.name);
 }
 
+/** @param {string} name */
 function normalizeBlockKey(name) {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -53,6 +63,9 @@ function normalizeBlockKey(name) {
  * Resolve a word to a prop assignment via, in order: synonym table,
  * exact boolean prop, is/has-prefixed boolean prop, unique enum value.
  * Returns {prop, value} or null.
+ * @param {import('./xle-ast').RegistryComponent} component
+ * @param {string} word
+ * @returns {{prop: string, value: string|boolean, ambiguous?: undefined} | {ambiguous: string[], prop?: undefined, value?: undefined} | null}
  */
 function resolveWord(component, word) {
   const synonym = FLAG_SYNONYMS[word];
@@ -67,6 +80,7 @@ function resolveWord(component, word) {
     if (pref && pref.isBoolean) return {prop: prefix + cap, value: true};
   }
   // Unique enum membership across all enum-typed props.
+  /** @type {string[]} */
   const hits = [];
   for (const prop of component.props.values()) {
     if (prop.enumValues && prop.enumValues.includes(word)) hits.push(prop.name);
@@ -76,7 +90,12 @@ function resolveWord(component, word) {
   return null;
 }
 
-/** Map axis-neutral j=/a= keys onto the component's real alignment props. */
+/**
+ * Map axis-neutral j=/a= keys onto the component's real alignment props.
+ * @param {import('./xle-ast').RegistryComponent} component
+ * @param {string} key
+ * @returns {string}
+ */
 function resolveAxisKey(component, key) {
   const main = key === '__mainAxis';
   if (component.name === 'VStack') return main ? 'vAlign' : 'hAlign';
@@ -87,9 +106,14 @@ function resolveAxisKey(component, key) {
   return generic;
 }
 
-/** Grid's `columns` object shorthand: {min,max,fit|fill} → real keys. */
+/**
+ * Grid's `columns` object shorthand: {min,max,fit|fill} → real keys.
+ * @param {import('./xle-ast').XLEValue} value
+ * @returns {import('./xle-ast').XLEValue}
+ */
 function normalizeColumnsObject(value) {
   if (typeof value !== 'object' || value == null || Array.isArray(value)) return value;
+  /** @type {Record<string, import('./xle-ast').XLEValue>} */
   const out = {};
   for (const [k, v] of Object.entries(value)) {
     if (k === 'min') out.minWidth = v;
@@ -100,19 +124,35 @@ function normalizeColumnsObject(value) {
 }
 
 export class Validation {
+  /**
+   * @param {import('./xle-ast').Registry} registry
+   * @param {import('./browser').XLEBlock[]} [blocks]
+   * @param {{loose?: boolean}} [options]
+   */
   constructor(registry, blocks, {loose = false} = {}) {
     this.registry = registry;
     this.blocks = blocks || [];
     this.blockIndex = new Map(this.blocks.map(b => [normalizeBlockKey(b.dirName), b]));
     this.loose = loose;
+    /** @type {import('./xle-ast').RawIssue[]} */
     this.errors = [];
+    /** @type {import('./xle-ast').RawIssue[]} */
     this.warnings = [];
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {string} message
+   * @param {string[]} [suggestions]
+   */
   error(node, message, suggestions = []) {
     this.errors.push({message, line: node.line, col: node.col, suggestions});
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {string} message
+   */
   warn(node, message) {
     this.warnings.push({message, line: node.line, col: node.col});
   }
@@ -121,6 +161,10 @@ export class Validation {
     return [...this.registry.aliases.keys(), ...this.registry.componentNames];
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {import('./xle-ast').XLENode | null} parent
+   */
   bindNode(node, parent) {
     // Anonymous block reference ({block} with no host element).
     if (!node.name && node.hint) {
@@ -134,7 +178,7 @@ export class Validation {
       this.error(
         node,
         `Unknown component or alias '${node.name}'`,
-        suggest(node.name, this.nameCandidates()),
+        suggest(node.name ?? '', this.nameCandidates()),
       );
       node.bound = null;
     } else {
@@ -148,6 +192,10 @@ export class Validation {
     for (const child of node.children) this.bindAny(child, node);
   }
 
+  /**
+   * @param {import('./xle-ast').XLEItem} item
+   * @param {import('./xle-ast').XLENode | null} parent
+   */
   bindAny(item, parent) {
     if (item.kind === 'group') {
       for (const child of item.children) this.bindAny(child, parent);
@@ -156,7 +204,12 @@ export class Validation {
     }
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {import('./xle-ast').RegistryComponent} component
+   */
   bindAttrs(node, component) {
+    if (!node.bound) return;
     if (component.undocumented) {
       // No prop metadata for this export — bind raw and tell the author
       // nothing was checked, rather than rejecting valid props.
@@ -200,7 +253,7 @@ export class Validation {
           this.error(
             node,
             `'!${attr.key}' does not match a boolean prop of ${component.name}`,
-            suggest(attr.key, [...component.props.keys()].filter(p => component.props.get(p).isBoolean)),
+            suggest(attr.key, [...component.props.keys()].filter(p => component.props.get(p)?.isBoolean)),
           );
         } else {
           node.bound.props.set(hit.prop, false);
@@ -209,7 +262,13 @@ export class Validation {
     }
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {import('./xle-ast').RegistryComponent} component
+   * @param {import('./xle-ast').KvAttr} attr
+   */
   bindKv(node, component, attr) {
+    if (!node.bound) return;
     let key = attr.key.split('.')[0];
     key = KEY_ALIASES[key] ?? key;
 
@@ -253,7 +312,12 @@ export class Validation {
     node.bound.props.set(key, value);
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {import('./xle-ast').RegistryComponent} component
+   */
   bindMods(node, component) {
+    if (!node.bound) return;
     for (const mod of node.enumMods) {
       const hit = resolveWord(component, mod);
       if (!hit || hit.ambiguous) {
@@ -273,33 +337,45 @@ export class Validation {
     }
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {import('./xle-ast').RegistryComponent} component
+   */
   bindSlots(node, component) {
+    if (!node.bound) return;
     for (const slot of node.slots) {
       const prop = component.props.get(slot.key);
       if (!prop) {
         this.error(
           node,
           `${component.name} has no slot prop '${slot.key}'`,
-          suggest(slot.key, [...component.props.keys()].filter(k => component.props.get(k).isNode)),
+          suggest(slot.key, [...component.props.keys()].filter(k => component.props.get(k)?.isNode)),
         );
         continue;
       }
       if (!prop.isNode && !prop.isFunction) {
         this.warn(node, `${component.name}.${slot.key} is typed '${prop.type}' — slot value may not fit`);
       }
-      if (slot.value && slot.value.subexpr) {
-        for (const sub of slot.value.subexpr) this.bindAny(sub, node);
+      const sv = slot.value;
+      if (sv && typeof sv === 'object' && 'subexpr' in sv) {
+        for (const sub of sv.subexpr) this.bindAny(sub, node);
       }
-      if (slot.value && slot.value.hint) this.bindHintRef(node, slot.value.hint);
+      if (sv && typeof sv === 'object' && 'hint' in sv) this.bindHintRef(node, sv.hint);
       node.bound.slots.push(slot);
     }
   }
 
+  /** @param {import('./xle-ast').XLENode} node */
   bindHint(node) {
     this.bindHintRef(node, node.hint);
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {import('./xle-ast').Hint | null} hint
+   */
   bindHintRef(node, hint) {
+    if (!hint) return;
     const block = this.blockIndex.get(normalizeBlockKey(hint.name));
     if (block) {
       hint.block = {name: block.dirName, description: block.description, category: block.category};
@@ -308,7 +384,7 @@ export class Validation {
     const nearest = suggest(
       normalizeBlockKey(hint.name),
       [...this.blockIndex.keys()],
-    ).map(k => this.blockIndex.get(k).dirName);
+    ).map(k => this.blockIndex.get(k)?.dirName).filter(/** @returns {d is string} */ (d) => d != null);
     if (this.loose) {
       this.warn(node, `Unknown block '{${hint.name}}' — emitting a TODO placeholder (running with --loose)`);
     } else {
@@ -320,6 +396,11 @@ export class Validation {
     }
   }
 
+  /**
+   * @param {import('./xle-ast').XLENode} node
+   * @param {import('./xle-ast').RegistryComponent} component
+   * @param {import('./xle-ast').XLENode | null} parent
+   */
   checkPairings(node, component, parent) {
     const parentName = parent?.bound?.component?.name ?? parent?.name;
     if (component.name === 'AppShell' && parent) {
@@ -337,11 +418,11 @@ export class Validation {
 /**
  * Validate (and bind) a parsed document in place.
  *
- * @param {{roots: any[], overlays: any[]}} doc
- * @param {object} registry - from buildRegistry()
- * @param {Array<object>} blocks - from template discovery (dirName et al)
+ * @param {import('./xle-ast').XLEDoc} doc
+ * @param {import('./xle-ast').Registry} registry - from buildRegistry()
+ * @param {import('./browser').XLEBlock[]} [blocks] - from template discovery (dirName et al)
  * @param {{loose?: boolean}} [options]
- * @returns {{errors: Array, warnings: Array}}
+ * @returns {{errors: import('./xle-ast').RawIssue[], warnings: import('./xle-ast').RawIssue[]}}
  */
 export function validate(doc, registry, blocks, options = {}) {
   const v = new Validation(registry, blocks, options);

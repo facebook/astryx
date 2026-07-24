@@ -23,11 +23,21 @@ import {hydrateRegistry} from './registry-core.mjs';
 export {parse, detectForm, XLEParseError, validate, expand, toCompact, toOutline};
 export {hydrateRegistry, serializeRegistry, ALIAS_TABLE, resolveComponent, SPACING_STEPS} from './registry-core.mjs';
 
-/** Accept either a hydrated registry (Map fields) or serialized JSON. */
+/**
+ * Accept either a hydrated registry (Map fields) or serialized JSON.
+ * @param {import('./xle-ast').Registry | import('./browser').SerializedRegistry | object} registry
+ * @returns {import('./xle-ast').Registry}
+ */
 function asRegistry(registry) {
-  return registry && registry.components instanceof Map ? registry : hydrateRegistry(registry);
+  return registry && /** @type {any} */ (registry).components instanceof Map
+    ? /** @type {import('./xle-ast').Registry} */ (registry)
+    : hydrateRegistry(/** @type {import('./browser').SerializedRegistry} */ (registry));
 }
 
+/**
+ * @param {import('./xle-ast').RawIssue | {message: string, line?: number, col?: number}} issue
+ * @returns {string}
+ */
 function formatIssue(issue) {
   const where = issue.line != null ? `line ${issue.line}: ` : '';
   return `${where}${issue.message}`;
@@ -38,12 +48,12 @@ function formatIssue(issue) {
  * twin of `layout check`. Never throws on invalid input; returns the errors.
  *
  * @param {string} expression
- * @param {object} registry - serialized or hydrated
+ * @param {import('./xle-ast').Registry | import('./browser').SerializedRegistry | object} registry - serialized or hydrated
  * @param {object} [opts]
- * @param {Array} [opts.blocks] - block list for {hint} resolution (default [])
+ * @param {import('./browser').XLEBlock[]} [opts.blocks] - block list for {hint} resolution (default [])
  * @param {'compact'|'outline'|'auto'} [opts.form]
  * @param {boolean} [opts.loose]
- * @returns {{ok: boolean, valid?: boolean, form?: string, errors: Array, warnings: string[], compact?: string, outline?: string, parseError?: object}}
+ * @returns {import('./browser').CheckResult}
  */
 export function checkExpression(expression, registry, opts = {}) {
   const {blocks = [], form = 'auto', loose = false} = opts;
@@ -79,13 +89,13 @@ export function checkExpression(expression, registry, opts = {}) {
  * Returns either {code, ...} or {errors} (never writes files).
  *
  * @param {string} expression
- * @param {object} registry
+ * @param {import('./xle-ast').Registry | import('./browser').SerializedRegistry | object} registry
  * @param {object} [opts]
- * @param {Array} [opts.blocks]
+ * @param {import('./browser').XLEBlock[]} [opts.blocks]
  * @param {'compact'|'outline'|'auto'} [opts.form]
  * @param {boolean} [opts.loose]
  * @param {string} [opts.name] - generated component name (PascalCase)
- * @param {Map} [opts.blockModules] - prepared block sources/imports for splicing;
+ * @param {Map<string, import('./xle-ast').BlockModule>} [opts.blockModules] - prepared block sources/imports for splicing;
  *   omit in the browser (hints stay as TODO markers without sources)
  */
 export function expandExpression(expression, registry, opts = {}) {

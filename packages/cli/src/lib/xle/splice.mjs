@@ -29,9 +29,12 @@ const IMPORT_RE =
  * default, namespace, and side-effect imports (incl. simple multiline named
  * lists). Returns {imports, rest} where rest is the source with those import
  * lines removed.
+ * @param {string} source
+ * @returns {{imports: import('./xle-ast').ParsedImport[], rest: string}}
  */
 export function parseImportStatements(source) {
   const lines = source.split('\n');
+  /** @type {import('./xle-ast').ParsedImport[]} */
   const imports = [];
   const kept = [];
   for (let i = 0; i < lines.length; i++) {
@@ -74,7 +77,7 @@ export function parseImportStatements(source) {
  *
  * @param {string} source - raw block TSX
  * @param {string} fallbackName - PascalCase name to use if no export name found
- * @returns {{componentName: string, imports: object[], body: string} | null}
+ * @returns {import('./xle-ast').PreparedSpliceModule | null}
  */
 export function prepareSpliceModule(source, fallbackName) {
   const {imports, rest} = parseImportStatements(source);
@@ -106,6 +109,8 @@ export function prepareSpliceModule(source, fallbackName) {
 /**
  * Merge a parsed import list into an emitter import map.
  * The map is Map<source, {named:Set, types:Set, default?:string, namespace?:string, sideEffect?:bool}>.
+ * @param {Map<string, import('./xle-ast').ImportEntry>} map
+ * @param {import('./xle-ast').ParsedImport[]} imports
  */
 export function mergeImports(map, imports) {
   for (const imp of imports) {
@@ -113,6 +118,7 @@ export function mergeImports(map, imports) {
       map.set(imp.source, {named: new Set(), types: new Set(), default: null, namespace: null, sideEffect: false});
     }
     const entry = map.get(imp.source);
+    if (!entry) continue;
     if (imp.sideEffect) entry.sideEffect = true;
     if (imp.default) entry.default = imp.default;
     if (imp.namespace) entry.namespace = imp.namespace;
@@ -120,7 +126,12 @@ export function mergeImports(map, imports) {
   }
 }
 
-/** Render one merged import entry to a statement string. */
+/**
+ * Render one merged import entry to a statement string.
+ * @param {string} source
+ * @param {import('./xle-ast').ImportEntry} entry
+ * @returns {string}
+ */
 export function renderImport(source, entry) {
   if (entry.sideEffect && !entry.default && !entry.namespace && entry.named.size === 0 && entry.types.size === 0) {
     return `import '${source}';`;

@@ -58,7 +58,7 @@ const RENDER_PROP_TYPES = new Set([
 ]);
 
 /** Resolve the base type name from a TS type annotation node. */
-function typeNameOf(typeAnnotation) {
+function typeNameOf(/** @type {any} */ typeAnnotation) {
   // `x: TableRenderProps`
   const t = typeAnnotation?.typeAnnotation ?? typeAnnotation;
   if (!t) return null;
@@ -68,6 +68,11 @@ function typeNameOf(typeAnnotation) {
   return null;
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -77,7 +82,7 @@ export default function transformer(file, api) {
   // Function/arrow params: (props: TableRenderProps) => ...
   const renderPropBindings = new Set();
 
-  function collectParam(param) {
+  function collectParam(/** @type {any} */ param) {
     if (
       param.type === 'Identifier' &&
       RENDER_PROP_TYPES.has(typeNameOf(param.typeAnnotation))
@@ -88,19 +93,19 @@ export default function transformer(file, api) {
 
   root
     .find(j.Function)
-    .forEach((p) => (p.node.params ?? []).forEach(collectParam));
+    .forEach((/** @type {any} */ p) => (p.node.params ?? []).forEach(collectParam));
   root
     .find(j.FunctionDeclaration)
-    .forEach((p) => (p.node.params ?? []).forEach(collectParam));
+    .forEach((/** @type {any} */ p) => (p.node.params ?? []).forEach(collectParam));
   root
     .find(j.FunctionExpression)
-    .forEach((p) => (p.node.params ?? []).forEach(collectParam));
+    .forEach((/** @type {any} */ p) => (p.node.params ?? []).forEach(collectParam));
   root
     .find(j.ArrowFunctionExpression)
-    .forEach((p) => (p.node.params ?? []).forEach(collectParam));
+    .forEach((/** @type {any} */ p) => (p.node.params ?? []).forEach(collectParam));
 
   // Variable declarations: `const rp: BodyCellRenderProps = ...`
-  root.find(j.VariableDeclarator).forEach((p) => {
+  root.find(j.VariableDeclarator).forEach((/** @type {any} */ p) => {
     const id = p.node.id;
     if (
       id?.type === 'Identifier' &&
@@ -119,10 +124,10 @@ export default function transformer(file, api) {
   //  2. A spread of a tracked render-prop binding (`{...props, styles: [...]}`)
   //     — the common "carry the render-prop object forward, override styles"
   //     shape. (Only counts when `renderPropBindings` is non-empty.)
-  function isRenderPropShapedObject(objExpr) {
+  function isRenderPropShapedObject(/** @type {any} */ objExpr) {
     if (objExpr.type !== 'ObjectExpression') return false;
     const keyNames = objExpr.properties
-      .map((pr) =>
+      .map((/** @type {any} */ pr) =>
         pr.type === 'ObjectProperty' || pr.type === 'Property'
           ? pr.key?.name ?? pr.key?.value
           : null,
@@ -133,7 +138,7 @@ export default function transformer(file, api) {
     }
     // Spread of a tracked render-prop binding.
     const spreadsRenderProp = objExpr.properties.some(
-      (pr) =>
+      (/** @type {any} */ pr) =>
         (pr.type === 'SpreadElement' || pr.type === 'ExperimentalSpreadProperty') &&
         pr.argument?.type === 'Identifier' &&
         renderPropBindings.has(pr.argument.name),
@@ -146,7 +151,7 @@ export default function transformer(file, api) {
     // render-prop-shaped object literals (htmlProps + styles siblings);
     // never touch bare `styles` in this file (too ambiguous).
     let touched = false;
-    root.find(j.ObjectExpression).forEach((p) => {
+    root.find(j.ObjectExpression).forEach((/** @type {any} */ p) => {
       if (!isRenderPropShapedObject(p.node)) return;
       for (const prop of p.node.properties) {
         if (
@@ -165,7 +170,7 @@ export default function transformer(file, api) {
   }
 
   // --- 2. Rewrite `<binding>.styles` member access -> `.xstyle`. ---
-  root.find(j.MemberExpression).forEach((p) => {
+  root.find(j.MemberExpression).forEach((/** @type {any} */ p) => {
     const {object, property, computed} = p.node;
     if (computed) return;
     if (property?.type !== 'Identifier' || property.name !== 'styles') return;
@@ -177,7 +182,7 @@ export default function transformer(file, api) {
   });
 
   // --- 3. Rewrite `styles:` keys on render-prop-shaped object literals. ---
-  root.find(j.ObjectExpression).forEach((p) => {
+  root.find(j.ObjectExpression).forEach((/** @type {any} */ p) => {
     if (!isRenderPropShapedObject(p.node)) return;
     for (const prop of p.node.properties) {
       if (

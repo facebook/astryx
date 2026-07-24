@@ -41,6 +41,7 @@ const CODEMOD_EXTENSIONS = ['.ts', '.mjs', '.js'];
  * @returns {Array<{id: string, file: string}>}
  */
 function collectCodemodFiles(versionDir) {
+  /** @type {Array<{id: string, file: string}>} */
   const out = [];
 
   /** @param {string} dir */
@@ -74,7 +75,7 @@ function collectCodemodFiles(versionDir) {
  *   for that version (across all integrations).
  */
 export async function discoverIntegrationCodemods(loadedIntegrations = []) {
-  /** @type {Map<string, Array<{id: string, type: string, codemod: object, package: string}>>} */
+  /** @type {Map<string, Array<{id: string, type: 'code'|'config', codemod: object, package: string}>>} */
   const byVersion = new Map();
 
   for (const integration of loadedIntegrations ?? []) {
@@ -158,10 +159,12 @@ export async function discoverIntegrationCodemods(loadedIntegrations = []) {
  */
 export function selectIntegrationCodemods(byVersion, from, to) {
   const versions = [...byVersion.keys()].sort(semverCompare);
+  /** @type {Array<{version: string, codemods: Array<object>}>} */
   const results = [];
   for (const version of versions) {
     if (semverCompare(version, from) > 0 && semverCompare(version, to) <= 0) {
-      results.push({version, codemods: byVersion.get(version)});
+      const codemods = byVersion.get(version);
+      if (codemods) results.push({version, codemods});
     }
   }
   return results;

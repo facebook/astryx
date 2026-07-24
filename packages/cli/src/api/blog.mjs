@@ -20,6 +20,10 @@ const MAX_BYTES = 5 * 1024 * 1024; // 5 MB — a blog feed is never larger.
 
 const FEED_URL = new URL('/rss.xml', SITE_URL).toString();
 
+/**
+ * @param {string} url
+ * @returns {Promise<string>}
+ */
 async function fetchText(url) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -31,7 +35,12 @@ async function fetchText(url) {
     });
   } catch (e) {
     clearTimeout(timer);
-    const reason = e.name === 'AbortError' ? 'timed out' : e.message;
+    const reason =
+      e instanceof Error
+        ? e.name === 'AbortError'
+          ? 'timed out'
+          : e.message
+        : String(e);
     throw new AstryxError(
       `Could not reach ${url}: ${reason}`,
       [],
@@ -61,6 +70,7 @@ async function fetchText(url) {
  * Defense in depth: a post's plaintext URL comes from feed content. Require it
  * to live on the canonical origin so even a tampered feed can't redirect the
  * CLI to another host.
+ * @param {string} target
  */
 function assertCanonicalOrigin(target) {
   let targetOrigin;
@@ -82,6 +92,10 @@ function assertCanonicalOrigin(target) {
   }
 }
 
+/**
+ * @param {string} value
+ * @returns {string}
+ */
 function unescapeXml(value) {
   return value
     .replace(/&lt;/g, '<')
@@ -91,12 +105,23 @@ function unescapeXml(value) {
     .replace(/&amp;/g, '&');
 }
 
+/**
+ * @param {string} item
+ * @param {string} name
+ * @returns {string}
+ */
 function tag(item, name) {
   const m = item.match(new RegExp(`<${name}[^>]*>([\\s\\S]*?)</${name}>`));
   return m ? unescapeXml(m[1].trim()) : '';
 }
 
+/**
+ * @param {string} item
+ * @param {string} name
+ * @returns {string[]}
+ */
 function tagAll(item, name) {
+  /** @type {string[]} */
   const out = [];
   const re = new RegExp(`<${name}[^>]*>([\\s\\S]*?)</${name}>`, 'g');
   let m;
@@ -104,7 +129,11 @@ function tagAll(item, name) {
   return out;
 }
 
-/** Extract the plaintext alternate href from an <item>. */
+/**
+ * Extract the plaintext alternate href from an <item>.
+ * @param {string} item
+ * @returns {string | null}
+ */
 function textHref(item) {
   // Match the atom:link alternate regardless of attribute order/quoting; then
   // confirm it's the text/plain alternate before trusting the href.
@@ -121,7 +150,11 @@ function textHref(item) {
   return null;
 }
 
-/** Derive a slug from a post link (last path segment). */
+/**
+ * Derive a slug from a post link (last path segment).
+ * @param {string} link
+ * @returns {string}
+ */
 function slugFromLink(link) {
   try {
     const path = new URL(link).pathname.replace(/\/$/, '');
@@ -131,6 +164,9 @@ function slugFromLink(link) {
   }
 }
 
+/**
+ * @param {string} xml
+ */
 function parseFeed(xml) {
   const items = [];
   const re = /<item>([\s\S]*?)<\/item>/g;

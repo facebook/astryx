@@ -17,6 +17,11 @@
  */
 
 export class XLEParseError extends Error {
+  /**
+   * @param {string} message
+   * @param {number} line
+   * @param {number} col
+   */
   constructor(message, line, col) {
     super(message);
     this.name = 'XLEParseError';
@@ -25,7 +30,10 @@ export class XLEParseError extends Error {
   }
 }
 
-/** Keys that expand to full prop names before validation. */
+/**
+ * Keys that expand to full prop names before validation.
+ * @type {Record<string, string>}
+ */
 export const KEY_ALIASES = {
   p: 'padding', pad: 'padding', g: 'gap', c: 'columns', cols: 'columns',
   w: 'width', h: 'height', cp: 'contentPadding', mw: 'maxWidth',
@@ -38,6 +46,12 @@ export const KEY_ALIASES = {
 /** Fused shorthand letters (`p6`, `g4`, `cp2`…) — letter must be a KEY_ALIAS. */
 const FUSED = new Set(['p', 'g', 'c', 'w', 'h', 'cp', 'mw', 'mh', 'rg', 'cg']);
 
+/**
+ * @param {string|null} name
+ * @param {number} line
+ * @param {number} col
+ * @returns {import('./xle-ast').XLENode}
+ */
 export function makeNode(name, line, col) {
   return {
     kind: 'node',
@@ -57,20 +71,30 @@ export function makeNode(name, line, col) {
   };
 }
 
+/**
+ * @param {number} line
+ * @param {number} col
+ * @returns {import('./xle-ast').XLEGroup}
+ */
 function makeGroup(line, col) {
   return {kind: 'group', repeat: null, children: [], line, col};
 }
 
 // ─── shared low-level helpers ──────────────────────────────────────────────
 
-const isIdentStart = (ch) => /[A-Za-z]/.test(ch);
-const isIdent = (ch) => /[A-Za-z0-9_-]/.test(ch);
+const isIdentStart = (/** @type {string} */ ch) => /[A-Za-z]/.test(ch);
+const isIdent = (/** @type {string} */ ch) => /[A-Za-z0-9_-]/.test(ch);
 
 /**
  * Split a string into tokens at depth-0 whitespace, where (), [], {} and
  * quotes raise depth. Used for attr blocks and outline lines.
+ * @param {string} str
+ * @param {number} line
+ * @param {number} startCol
+ * @returns {Array<{text: string, col: number}>}
  */
 function tokenize(str, line, startCol) {
+  /** @type {Array<{text: string, col: number}>} */
   const tokens = [];
   let i = 0;
   while (i < str.length) {
@@ -78,6 +102,7 @@ function tokenize(str, line, startCol) {
     if (i >= str.length) break;
     const start = i;
     let depth = 0;
+    /** @type {string|null} */
     let quote = null;
     while (i < str.length) {
       const ch = str[i];
@@ -101,7 +126,11 @@ function tokenize(str, line, startCol) {
   return tokens;
 }
 
-/** Parse a scalar/object/list attr value string into a JS value. */
+/**
+ * Parse a scalar/object/list attr value string into a JS value.
+ * @param {string} raw
+ * @returns {import('./xle-ast').XLEValue}
+ */
 export function parseValue(raw) {
   const s = raw.trim();
   if (/^(['"]).*\1$/.test(s)) return s.slice(1, -1);
@@ -110,6 +139,7 @@ export function parseValue(raw) {
   if (s === 'false') return false;
   if (s.startsWith('#')) return {idref: s.slice(1)};
   if (s.startsWith('{') && s.endsWith('}')) {
+    /** @type {Record<string, import('./xle-ast').XLEValue>} */
     const obj = {};
     for (const part of splitTop(s.slice(1, -1), ',')) {
       const idx = part.indexOf(':');
@@ -125,10 +155,16 @@ export function parseValue(raw) {
   return s; // bare ident — enum string
 }
 
-/** Split on a separator at bracket/quote depth 0. */
+/**
+ * Split on a separator at bracket/quote depth 0.
+ * @param {string} str
+ * @param {string} sep
+ * @returns {string[]}
+ */
 function splitTop(str, sep) {
   const parts = [];
   let depth = 0;
+  /** @type {string|null} */
   let quote = null;
   let cur = '';
   for (const ch of str) {
@@ -151,7 +187,13 @@ function splitTop(str, sep) {
   return parts.map(p => p.trim()).filter(Boolean);
 }
 
-/** Parse `{name +flag +flag2 :arg}` hint body (without braces). */
+/**
+ * Parse `{name +flag +flag2 :arg}` hint body (without braces).
+ * @param {string} body
+ * @param {number} line
+ * @param {number} col
+ * @returns {import('./xle-ast').Hint}
+ */
 function parseHintBody(body, line, col) {
   const m = body.trim().match(/^([a-z0-9][a-z0-9-]*)((?:\s*\+[a-z0-9-]+)*)(?:\s*:(.*))?$/);
   if (!m) {
@@ -169,8 +211,10 @@ function parseHintBody(body, line, col) {
 }
 
 /**
- * Interpret one attribute token. Returns an attr record or mutates node
- * for special tokens (slots are returned as {kind:'slot'} records too).
+ * Interpret one attribute token. Returns an attr record or a slot record.
+ * @param {{text: string, col: number}} token
+ * @param {number} line
+ * @returns {import('./xle-ast').Attr | import('./xle-ast').Slot}
  */
 function parseAttrToken(token, line) {
   const {text, col} = token;
@@ -182,6 +226,7 @@ function parseAttrToken(token, line) {
     }
     const name = text.slice(1, eq);
     const rest = text.slice(eq + 1);
+    /** @type {import('./xle-ast').SlotValue} */
     let value;
     if (rest.startsWith('(') && rest.endsWith(')')) {
       value = {subexpr: parseCompactSiblings(new CompactStream(rest.slice(1, -1), line, col + eq + 2))};
@@ -203,6 +248,7 @@ function parseAttrToken(token, line) {
 
   // key=value (split at first depth-0 '=')
   let depth = 0;
+  /** @type {string|null} */
   let quote = null;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
@@ -240,6 +286,11 @@ function parseAttrToken(token, line) {
 // ─── compact (XLE) surface ─────────────────────────────────────────────────
 
 class CompactStream {
+  /**
+   * @param {string} src
+   * @param {number} [line]
+   * @param {number} [col]
+   */
   constructor(src, line = 1, col = 1) {
     this.src = src;
     this.i = 0;
@@ -253,21 +304,29 @@ class CompactStream {
     const col = (lines.length === 1 ? this.baseCol : 1) + lines[lines.length - 1].length;
     return {line, col};
   }
+  /** @param {number} [offset] */
   peek(offset = 0) { return this.src[this.i + offset]; }
   next() { return this.src[this.i++]; }
   eof() { return this.i >= this.src.length; }
   skipWs() { while (!this.eof() && /\s/.test(this.peek())) this.i++; }
+  /** @param {string} message */
   error(message) {
     const {line, col} = this.pos();
     throw new XLEParseError(message, line, col);
   }
-  /** Consume through the matching close bracket; returns inner text. */
+  /**
+   * Consume through the matching close bracket; returns inner text.
+   * @param {string} open
+   * @param {string} close
+   * @returns {string}
+   */
   readBalanced(open, close) {
     const startPos = this.pos();
     if (this.peek() !== open) this.error(`Expected '${open}'`);
     this.next();
     const start = this.i;
     let depth = 1;
+    /** @type {string|null} */
     let quote = null;
     while (!this.eof()) {
       const ch = this.next();
@@ -292,6 +351,10 @@ class CompactStream {
   }
 }
 
+/**
+ * @param {CompactStream} s
+ * @returns {import('./xle-ast').XLENode}
+ */
 function parseCompactNode(s) {
   const {line, col} = s.pos();
   let name = '';
@@ -359,6 +422,10 @@ function parseCompactNode(s) {
   return node;
 }
 
+/**
+ * @param {CompactStream} s
+ * @returns {import('./xle-ast').XLEItem}
+ */
 function parseCompactTerm(s) {
   s.skipWs();
   if (s.peek() === '(') {
@@ -387,11 +454,20 @@ function parseCompactTerm(s) {
   return parseCompactNode(s);
 }
 
+/**
+ * @param {import('./xle-ast').XLEItem} node
+ * @returns {import('./xle-ast').XLENode}
+ */
 function structuredCloneNode(node) {
   return JSON.parse(JSON.stringify(node));
 }
 
+/**
+ * @param {CompactStream} s
+ * @returns {import('./xle-ast').XLEItem[]}
+ */
 function parseCompactSiblings(s) {
+  /** @type {import('./xle-ast').XLEItem[]} */
   const terms = [];
   for (;;) {
     s.skipWs();
@@ -410,12 +486,17 @@ function parseCompactSiblings(s) {
   return terms;
 }
 
+/**
+ * @param {string} source
+ * @returns {import('./xle-ast').XLEDoc}
+ */
 export function parseCompact(source) {
   const parts = source.split(/;;/);
   const main = new CompactStream(parts[0]);
   const roots = parseCompactSiblings(main);
   main.skipWs();
   if (!main.eof()) main.error(`Unexpected '${main.peek()}'`);
+  /** @type {import('./xle-ast').XLEItem[]} */
   const overlays = [];
   for (const part of parts.slice(1)) {
     const s = new CompactStream(part);
@@ -428,20 +509,35 @@ export function parseCompact(source) {
 
 // ─── outline (XLO) surface ─────────────────────────────────────────────────
 
-/** Parse one outline line's node chain: `Layout > LayoutContent pad=0 !scroll`. */
+/**
+ * Parse one outline line's node chain: `Layout > LayoutContent pad=0 !scroll`.
+ * @param {string} text
+ * @param {number} line
+ * @returns {{head: import('./xle-ast').XLENode, tail: import('./xle-ast').XLENode}}
+ */
 function parseOutlineChain(text, line) {
   const segments = splitTop(text, '>');
+  /** @type {import('./xle-ast').XLENode | null} */
   let head = null;
+  /** @type {import('./xle-ast').XLENode | null} */
   let tail = null;
   for (const segment of segments) {
     const node = parseOutlineNodeSegment(segment, line);
     if (!head) head = node;
-    else tail.children.push(node);
+    else /** @type {import('./xle-ast').XLENode} */ (tail).children.push(node);
     tail = node;
   }
-  return {head, tail};
+  return /** @type {{head: import('./xle-ast').XLENode, tail: import('./xle-ast').XLENode}} */ ({
+    head,
+    tail,
+  });
 }
 
+/**
+ * @param {string} segment
+ * @param {number} line
+ * @returns {import('./xle-ast').XLENode}
+ */
 function parseOutlineNodeSegment(segment, line) {
   const tokens = tokenize(segment, line, 0);
   if (tokens.length === 0) throw new XLEParseError('Empty node', line, 1);
@@ -487,10 +583,17 @@ function parseOutlineNodeSegment(segment, line) {
   return node;
 }
 
+/**
+ * @param {string} source
+ * @returns {import('./xle-ast').XLEDoc}
+ */
 export function parseOutline(source) {
+  /** @type {import('./xle-ast').XLEItem[]} */
   const roots = [];
+  /** @type {import('./xle-ast').XLEItem[]} */
   const overlays = [];
   // Stack frames: {indent, container: array, node|null}
+  /** @type {Array<{indent: number, container: import('./xle-ast').XLEItem[], node: import('./xle-ast').XLENode | null}>} */
   const stack = [{indent: -1, container: roots, node: null}];
   let inOverlays = false;
 
@@ -499,7 +602,7 @@ export function parseOutline(source) {
     const raw = lines[li];
     const lineNo = li + 1;
     if (raw.trim() === '' || raw.trim().startsWith('#') || raw.trim().startsWith('//')) continue;
-    const indent = raw.match(/^[ \t]*/)[0].replace(/\t/g, '  ').length;
+    const indent = /** @type {RegExpMatchArray} */ (raw.match(/^[ \t]*/))[0].replace(/\t/g, '  ').length;
     const text = raw.trim();
 
     if (text === 'overlays:') {
@@ -530,6 +633,7 @@ export function parseOutline(source) {
           `Slot '${slotMatch[1]}:' has no parent component`, lineNo, indent + 1,
         );
       }
+      /** @type {import('./xle-ast').Slot & {value: {subexpr: import('./xle-ast').XLEItem[]}}} */
       const slot = {kind: 'slot', key: slotMatch[1], value: {subexpr: []}, line: lineNo, col: indent + 1};
       parent.node.slots.push(slot);
       const inline = slotMatch[2].trim();
@@ -557,6 +661,8 @@ export function parseOutline(source) {
  * Detect which surface the source uses. Multi-line input is outline
  * unless every line break sits inside an operator chain (trailing
  * `>`/`+`/`;;` or unclosed brackets), which is multi-line compact.
+ * @param {string} source
+ * @returns {'compact'|'outline'}
  */
 export function detectForm(source) {
   const lines = source.split('\n').map(l => l.trim()).filter(l => l !== '' && !l.startsWith('#') && !l.startsWith('//'));

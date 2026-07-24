@@ -66,6 +66,7 @@ export const meta = {
 
 // Ordered longest-first to prevent partial matches
 // (e.g. --color-educational-deemphasized must match before --color-educational)
+/** @type {Record<string, string>} */
 const TOKEN_MAP = {
   '--color-educational-deemphasized': '--color-info-muted',
   '--color-divider-high-contrast': '--color-border-strong',
@@ -114,17 +115,22 @@ const OLD_TOKENS_PATTERN = new RegExp(
   'g',
 );
 
-function replaceTokens(str) {
-  return str.replace(OLD_TOKENS_PATTERN, (match) => TOKEN_MAP[match] || match);
+function replaceTokens(/** @type {any} */ str) {
+  return str.replace(OLD_TOKENS_PATTERN, (/** @type {any} */ match) => TOKEN_MAP[match] || match);
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
   // Replace in string literals (StringLiteral or Literal with string value)
-  const replaceInStringNode = (path) => {
+  const replaceInStringNode = (/** @type {any} */ path) => {
     if (typeof path.node.value !== 'string') return;
     const original = path.node.value;
     const replaced = replaceTokens(original);
@@ -135,14 +141,14 @@ export default function transformer(file, api) {
   };
 
   root.find(j.StringLiteral).forEach(replaceInStringNode);
-  root.find(j.Literal).forEach((path) => {
+  root.find(j.Literal).forEach((/** @type {any} */ path) => {
     if (typeof path.node.value === 'string') {
       replaceInStringNode(path);
     }
   });
 
   // Replace in template literal quasis
-  root.find(j.TemplateLiteral).forEach((path) => {
+  root.find(j.TemplateLiteral).forEach((/** @type {any} */ path) => {
     for (const quasi of path.node.quasis) {
       const original = quasi.value.raw;
       const replaced = replaceTokens(original);

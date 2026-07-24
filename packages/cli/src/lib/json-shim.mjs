@@ -65,6 +65,7 @@ function jsonActive() {
 export function buildHelpEnvelope(cmd) {
   // Reconstruct the fully-qualified command name (e.g. "astryx theme build").
   const nameParts = [];
+  /** @type {import('commander').Command | null} */
   let c = cmd;
   while (c) {
     nameParts.unshift(c.name());
@@ -81,7 +82,7 @@ export function buildHelpEnvelope(cmd) {
   });
 
   const subcommands = cmd.commands
-    .filter((s) => !s._hidden)
+    .filter((s) => !(/** @type {any} */ (s))._hidden)
     .map((s) => ({name: s.name(), description: s.description() || ''}));
 
   return {
@@ -227,10 +228,14 @@ let Command_outputHelp_patched = false;
  * @param {import('commander').Command} cmd
  */
 function patchOutputHelp(cmd) {
-  if (cmd.__xdsHelpPatched) return;
-  cmd.__xdsHelpPatched = true;
+  // Commander instances are monkeypatched at runtime with an internal
+  // `__xdsHelpPatched` marker and a replacement `outputHelp`, neither of which
+  // is in commander's public types — treat the instance as untyped here.
+  const anyCmd = /** @type {any} */ (cmd);
+  if (anyCmd.__xdsHelpPatched) return;
+  anyCmd.__xdsHelpPatched = true;
   const original = cmd.outputHelp.bind(cmd);
-  cmd.outputHelp = function patchedOutputHelp(contextOptions) {
+  anyCmd.outputHelp = function patchedOutputHelp(/** @type {any} */ contextOptions) {
     if (jsonActive()) {
       if (!process.__xdsJsonHandled) {
         process.__xdsJsonHandled = true;
@@ -254,7 +259,7 @@ function patchPrototype(CommandCtor) {
   if (proto.__xdsHelpPatched) return;
   proto.__xdsHelpPatched = true;
   const original = proto.outputHelp;
-  proto.outputHelp = function patchedProtoOutputHelp(contextOptions) {
+  proto.outputHelp = function patchedProtoOutputHelp(/** @type {any} */ contextOptions) {
     if (jsonActive()) {
       if (!process.__xdsJsonHandled) {
         process.__xdsJsonHandled = true;

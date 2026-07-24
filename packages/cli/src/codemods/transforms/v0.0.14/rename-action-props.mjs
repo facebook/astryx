@@ -30,6 +30,7 @@ export const meta = {
  * Map of old prop names → new prop names.
  * Ordered longest-first to avoid partial matches during iteration.
  */
+/** @type {Record<string, string>} */
 const PROP_RENAMES = {
   onPressedChangeAction: 'pressedChangeAction',
   onScrollToTopAction: 'scrollToTopAction',
@@ -37,13 +38,18 @@ const PROP_RENAMES = {
   onClickAction: 'clickAction',
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
   // --- 1. Rename JSX attributes ---
-  root.find(j.JSXAttribute).forEach((path) => {
+  root.find(j.JSXAttribute).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     if (name.type !== 'JSXIdentifier') return;
 
@@ -59,7 +65,7 @@ export default function transformer(file, api) {
   // Must run before step 3 so the ObjectPattern keys are renamed first and tracked.
   const renamedBindings = new Map(); // oldLocalName → newLocalName
 
-  root.find(j.ObjectPattern).forEach((path) => {
+  root.find(j.ObjectPattern).forEach((/** @type {any} */ path) => {
     for (const prop of path.node.properties) {
       if (prop.type !== 'ObjectProperty') continue;
       const key = prop.key;
@@ -97,7 +103,7 @@ export default function transformer(file, api) {
   // --- 3. Rename object property keys (e.g. { onChangeAction: fn }) ---
   // Covers cases like useXDSImperativeAlertDialog({ onAction: ... })
   // Skips ObjectProperty inside ObjectPattern (already handled in step 2).
-  root.find(j.ObjectProperty).forEach((path) => {
+  root.find(j.ObjectProperty).forEach((/** @type {any} */ path) => {
     // Skip if inside a destructuring pattern
     if (path.parent.node.type === 'ObjectPattern') return;
 
@@ -121,7 +127,7 @@ export default function transformer(file, api) {
 
   // --- 4. Rename interface/type property signatures ---
   // Covers: interface Props { onChangeAction?: ... } → { changeAction?: ... }
-  root.find(j.TSPropertySignature).forEach((path) => {
+  root.find(j.TSPropertySignature).forEach((/** @type {any} */ path) => {
     const key = path.node.key;
     if (key.type === 'Identifier') {
       const newName = PROP_RENAMES[key.name];
@@ -136,7 +142,7 @@ export default function transformer(file, api) {
   // When { onChangeAction } was renamed to { changeAction }, all references
   // to the local variable `onChangeAction` must become `changeAction`.
   if (renamedBindings.size > 0) {
-    root.find(j.Identifier).forEach((path) => {
+    root.find(j.Identifier).forEach((/** @type {any} */ path) => {
       const newName = renamedBindings.get(path.node.name);
       if (!newName) return;
 

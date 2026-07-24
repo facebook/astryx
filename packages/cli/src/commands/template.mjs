@@ -16,6 +16,34 @@ import {getCliInvocation} from '../utils/package-manager.mjs';
 
 export {discoverTemplates, listTemplates} from '../api/template.mjs';
 
+/**
+ * A template entry as produced by the discover* helpers in api/template.mjs.
+ * The api layer returns these as `object[]`; this local shape captures the
+ * fields the command consumes. Remove once api/template.mjs exports a precise
+ * type for its discovered templates.
+ * @typedef {object} DiscoveredTemplate
+ * @property {'page' | 'block'} type
+ * @property {string} dirName
+ * @property {string} name
+ * @property {string} filePath
+ */
+
+/**
+ * The discriminated response returned by the template API. The api layer
+ * currently declares `{type: string, data: unknown}`; narrow it here to the
+ * precise union so the switch below type-checks. Replace with the api's own
+ * return type once it is tightened.
+ * @typedef {(
+ *   import('../types/template').TemplateListResponse |
+ *   import('../types/template').TemplateShowResponse |
+ *   import('../types/template').TemplateSkeletonResponse |
+ *   import('../types/template').TemplateCopyResponse
+ * )} TemplateResponse
+ */
+
+/**
+ * @param {import('commander').Command} program
+ */
 export function registerTemplate(program) {
   program
     .command('template [name] [path]')
@@ -25,7 +53,13 @@ export function registerTemplate(program) {
     .option('--package <pkg>', 'Narrow to templates from a specific package')
     .option('--skeleton', 'Show layout skeleton with spatial annotations (padding, gap, nesting)')
     .option('-f, --overwrite', 'Overwrite existing files without prompting')
-    .action(async (name, targetPath, options) => {
+    .action(
+      /**
+       * @param {string | undefined} name
+       * @param {string | undefined} targetPath
+       * @param {{list?: boolean, type?: string, package?: string, skeleton?: boolean, overwrite?: boolean}} options
+       */
+      async (name, targetPath, options) => {
       const json = program.opts().json || false;
       const run = getCliInvocation();
 
@@ -34,7 +68,12 @@ export function registerTemplate(program) {
       // validate-integration. Best-effort; suppressed in --json mode.
       try {
         const project = await Project.load(process.cwd());
-        await warnOnIntegrationIssues(project.loadedIntegrations, {json});
+        await warnOnIntegrationIssues(
+          /** @type {Array<import('../lib/integrations.mjs').LoadedIntegration>} */ (
+            project.loadedIntegrations
+          ),
+          {json},
+        );
       } catch {
         // Never let the nudge break the command.
       }
@@ -59,20 +98,24 @@ export function registerTemplate(program) {
         }
       }
 
+      /** @type {TemplateResponse} */
       let result;
       try {
-        result = await templateApi(name, {
-          list: options.list,
-          skeleton: options.skeleton,
-          type: options.type,
-          package: options.package,
-          targetPath,
-          cwd: process.cwd(),
-        });
+        result = /** @type {TemplateResponse} */ (
+          await templateApi(name, {
+            list: options.list,
+            skeleton: options.skeleton,
+            type: /** @type {'page' | 'block' | undefined} */ (options.type),
+            package: options.package,
+            targetPath,
+            cwd: process.cwd(),
+          })
+        );
       } catch (e) {
         // template API throws structured errors with {name, reason} suggestions —
         // pass them through untouched so the CLI envelope matches the API.
-        cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
+        const err = /** @type {import('../api/error.mjs').AstryxError} */ (e);
+        cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
         return;
       }
 
@@ -82,6 +125,7 @@ export function registerTemplate(program) {
         case 'template.list': {
           const pages = result.data.filter(t => t.type === 'page');
           const blocks = result.data.filter(t => t.type === 'block');
+          /** @param {import('../types/template').TemplateListEntry} t */
           const renderEntry = t => {
             const status = t.isReady ? '' : ' (WIP)';
             const pkg =
@@ -139,12 +183,19 @@ export function registerTemplate(program) {
  * Path-safety enforcement happens inside the API; here we only need
  * enough precision to check existence — a false negative just means the
  * API will catch the issue and abort.
+ *
+ * @param {string} name
+ * @param {string} targetPath
+ * @returns {Promise<string | null>}
  */
 async function detectTemplateCollision(name, targetPath) {
   const {discoverTemplates} = await import('../api/template.mjs');
+  /** @type {DiscoveredTemplate[]} */
   let templates;
   try {
-    templates = await discoverTemplates(process.cwd());
+    templates = /** @type {DiscoveredTemplate[]} */ (
+      await discoverTemplates(process.cwd())
+    );
   } catch {
     return null;
   }

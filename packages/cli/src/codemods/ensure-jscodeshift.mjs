@@ -64,7 +64,7 @@ function installJscodeshift(silent = false) {
     log.success('jscodeshift installed.');
     return true;
   } catch (err) {
-    log.error(`Failed to install jscodeshift: ${err.message}`);
+    log.error(`Failed to install jscodeshift: ${/** @type {any} */ (err).message}`);
     return false;
   }
 }

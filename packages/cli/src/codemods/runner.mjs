@@ -51,6 +51,7 @@ export function fixDirectiveCorruption(code) {
  * @returns {string[]}
  */
 function findSourceFiles(dir) {
+  /** @type {string[]} */
   const results = [];
   const extensions = new Set([
     '.tsx',
@@ -65,6 +66,7 @@ function findSourceFiles(dir) {
     '.less',
   ]);
 
+  /** @param {string} currentDir */
   function walk(currentDir) {
     let entries;
     try {
@@ -96,8 +98,9 @@ function findSourceFiles(dir) {
  *
  * @param {string} result - The transformed source code
  * @param {string} source - The original source code
- * @param {Function} j - jscodeshift instance (with parser configured)
- * @returns {{ valid: boolean, reason?: string }}
+ * @param {import('../types/codemod').JscodeshiftFactory} j - jscodeshift instance (with parser configured)
+ * @param {{parse?: boolean}} [options]
+ * @returns {{ valid: true } | { valid: false, reason: string }}
  */
 export function validateOutput(result, source, j, {parse = true} = {}) {
   // Check 1: Re-parse the output — catches syntax-breaking corruption
@@ -105,9 +108,10 @@ export function validateOutput(result, source, j, {parse = true} = {}) {
     try {
       j(result);
     } catch (parseError) {
+      const message = /** @type {any} */ (parseError).message;
       return {
         valid: false,
-        reason: `transform produced unparseable output: ${parseError.message}`,
+        reason: `transform produced unparseable output: ${message}`,
       };
     }
   }
@@ -147,9 +151,9 @@ export function validateOutput(result, source, j, {parse = true} = {}) {
  * with the same `(file, api) => string | null | undefined` contract used by
  * `createConfigCodemod`.
  *
- * @param {{name: string, transform: Function, meta: object, optional?: boolean}} transformEntry
+ * @param {{name: string, transform: import('../types/codemod').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, optional?: boolean}} transformEntry
  * @param {string} version
- * @returns {{id: string, type: 'code'|'config', codemod: object, package: string, version: string}}
+ * @returns {import('../types/codemod').CodemodEntry}
  */
 function toUnifiedEntry(transformEntry, version) {
   const {name, transform, meta, optional} = transformEntry;
@@ -171,14 +175,14 @@ function toUnifiedEntry(transformEntry, version) {
 /**
  * Run codemods against source files.
  *
- * @param {Array<{version: string, transforms: Array}>} versionManifests
+ * @param {Array<{version: string, transforms: Array<{name: string, transform: import('../types/codemod').CodemodTransform, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, optional?: boolean}>}>} versionManifests
  * @param {object} options
  * @param {boolean} options.apply - Write changes to disk
  * @param {string} options.path - Source directory to scan
  * @param {string|undefined} options.codemod - Run only this specific transform
  * @param {Set<string>} [options.skipCodemods] - Transform names to exclude
  * @param {boolean} [options.silent] - Suppress all human-facing output (for --json)
- * @returns {{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, writtenFiles: string[], errors: Array, skippedOptional: Array}}
+ * @returns {Promise<{totalFilesChanged: number, totalTransformsApplied: number, totalValidationBlocked: number, writtenFiles: string[], errors: Array<{file: string, codemod: string, error: string}>, skippedOptional: Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} | {ok: false, reason: string, resolvedPath: string}>}
  */
 export async function runCodemods(
   versionManifests,
@@ -208,11 +212,11 @@ export async function runCodemods(
     return {ok: false, reason: 'source_path_missing', resolvedPath};
   }
 
+  /** @type {string[]} */
   let files = [];
   if (sourcePathExists) {
     log.step(`Scanning ${resolvedPath} for source files...`);
     files = findSourceFiles(resolvedPath);
-
     if (files.length === 0) {
       log.warn('No source files found.');
     } else {
@@ -223,15 +227,20 @@ export async function runCodemods(
   }
 
   // Dynamically import jscodeshift
-  const jscodeshift = (await import('jscodeshift')).default;
+  const jscodeshift =
+    /** @type {import('../types/codemod').JscodeshiftFactory} */ (
+      (await import('jscodeshift')).default
+    );
 
   let totalFilesChanged = 0;
   let totalTransformsApplied = 0;
   let totalValidationBlocked = 0;
+  /** @type {Array<{file: string, codemod: string, error: string}>} */
   const errors = [];
+  /** @type {string[]} */
   const writtenFiles = [];
+  /** @type {Array<{name: string, meta: {title: string, description?: string, fileExtensions?: string[], codemodType?: string}, version: string}>} */
   const skippedOptional = [];
-
   for (const {version, transforms} of versionManifests) {
     log.step(`Applying v${version} codemods...`);
 
@@ -333,8 +342,9 @@ export async function runCodemods(
             }
           }
         } catch (err) {
-          log.error(`    ✗ ${relativePath} — ${err.message}`);
-          errors.push({file: relativePath, codemod: name, error: err.message});
+          const message = /** @type {any} */ (err).message;
+          log.error(`    ✗ ${relativePath} — ${message}`);
+          errors.push({file: relativePath, codemod: name, error: message});
         }
       }
 

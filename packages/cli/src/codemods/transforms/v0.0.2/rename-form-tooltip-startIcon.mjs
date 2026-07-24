@@ -25,23 +25,29 @@ const FORM_COMPONENTS = new Set([
   'XDSTimeInput',
 ]);
 
+/** @type {Record<string, string>} */
 const PROP_RENAMES = {
   tooltip: 'labelTooltip',
   startIcon: 'labelIcon',
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
-  root.find(j.JSXOpeningElement).forEach((path) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     if (name.type !== 'JSXIdentifier' || !FORM_COMPONENTS.has(name.name)) {
       return;
     }
 
-    path.node.attributes.forEach((attr) => {
+    path.node.attributes.forEach((/** @type {any} */ attr) => {
       if (attr.type === 'JSXAttribute' && attr.name.name in PROP_RENAMES) {
         attr.name.name = PROP_RENAMES[attr.name.name];
         hasChanges = true;

@@ -45,13 +45,18 @@ const IDENTIFIER_RENAMES = new Map([
   ['XDSDateRangePickerStatusType', 'XDSDateRangeInputStatusType'],
 ]);
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
   // 1. Rename import/export source paths
-  root.find(j.ImportDeclaration).forEach((path) => {
+  root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     const source = path.node.source.value;
     const renamed = IMPORT_PATH_RENAMES.get(source);
     if (renamed) {
@@ -60,7 +65,7 @@ export default function transformer(file, api) {
     }
   });
 
-  root.find(j.ExportNamedDeclaration).forEach((path) => {
+  root.find(j.ExportNamedDeclaration).forEach((/** @type {any} */ path) => {
     if (path.node.source) {
       const source = path.node.source.value;
       const renamed = IMPORT_PATH_RENAMES.get(source);
@@ -72,7 +77,7 @@ export default function transformer(file, api) {
   });
 
   // 2. Rename all identifiers (covers imports, type refs, variable names)
-  root.find(j.Identifier).forEach((path) => {
+  root.find(j.Identifier).forEach((/** @type {any} */ path) => {
     const renamed = IDENTIFIER_RENAMES.get(path.node.name);
     if (renamed) {
       path.node.name = renamed;
@@ -81,7 +86,7 @@ export default function transformer(file, api) {
   });
 
   // 3. Rename JSX element names
-  root.find(j.JSXIdentifier).forEach((path) => {
+  root.find(j.JSXIdentifier).forEach((/** @type {any} */ path) => {
     const renamed = IDENTIFIER_RENAMES.get(path.node.name);
     if (renamed) {
       path.node.name = renamed;
@@ -90,7 +95,7 @@ export default function transformer(file, api) {
   });
 
   // 4. Rename string literals (covers displayName assignments)
-  root.find(j.StringLiteral).forEach((path) => {
+  root.find(j.StringLiteral).forEach((/** @type {any} */ path) => {
     const renamed = IDENTIFIER_RENAMES.get(path.node.value);
     if (renamed) {
       path.node.value = renamed;
@@ -99,7 +104,7 @@ export default function transformer(file, api) {
   });
 
   // Also handle Literal nodes (parser-dependent)
-  root.find(j.Literal).forEach((path) => {
+  root.find(j.Literal).forEach((/** @type {any} */ path) => {
     if (typeof path.node.value === 'string') {
       const renamed = IDENTIFIER_RENAMES.get(path.node.value);
       if (renamed) {

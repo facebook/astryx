@@ -11,6 +11,11 @@ export const meta = {
   pr: '#437',
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -20,8 +25,8 @@ export default function transformer(file, api) {
     .find(j.JSXOpeningElement, {
       name: {name: 'XDSBanner'},
     })
-    .forEach((path) => {
-      path.node.attributes.forEach((attr) => {
+    .forEach((/** @type {any} */ path) => {
+      path.node.attributes.forEach((/** @type {any} */ attr) => {
         if (attr.type === 'JSXAttribute' && attr.name.name === 'endButton') {
           attr.name.name = 'endContent';
           hasChanges = true;

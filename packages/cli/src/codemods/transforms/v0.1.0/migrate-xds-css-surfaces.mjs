@@ -9,19 +9,18 @@
  * consumer CSS that targeted those surfaces is now broken.
  *
  * This transform performs precise, targeted string replacements on CSS/SCSS
- * files for the documented surfaces only:
+ * files for the documented surfaces only (selectors, layer names, and package
+ * stylesheet imports):
  *
- *   .xds-*                  (class-name prefix in selectors — matched only
- *                            after a `.` so it is a class selector)
- *   [data-xds-theme         (theme attribute selector)
- *   [data-xds-theme-prose   (prose-theme attribute selector)
- *   [data-xds-media         (media attribute selector)
- *   @layer xds-theme        (cascade layer name — incl. comma-separated
- *   @layer xds-base          `@layer a, b;` statement lists and nested blocks)
- *   @import '@xds/...'      (package stylesheet imports — scope rewrite, plus
- *                            the @xds/core/xds.css -> @astryxdesign/core/
- *                            astryx.css file rename and the theme-default /
- *                            theme-daily -> theme-neutral collapse)
+ * - `.xds-*` class-name prefix in selectors (matched only after a `.` so it is
+ *   a class selector).
+ * - `[data-xds-theme`, `[data-xds-theme-prose`, `[data-xds-media` attribute
+ *   selectors.
+ * - `\@layer xds-theme` / `\@layer xds-base` cascade layer names, including
+ *   comma-separated `\@layer a, b;` statement lists and nested blocks.
+ * - `\@import '\@xds/...'` package stylesheet imports: scope rewrite, plus the
+ *   `\@xds/core/xds.css` -> `\@astryxdesign/core/astryx.css` file rename and the
+ *   `theme-default` / `theme-daily` -> `theme-neutral` collapse.
  *
  * It deliberately does NOT blindly replace every `xds` substring: a bare
  * `xds` in a comment, a custom-property value, or an unrelated identifier is
@@ -51,8 +50,8 @@ const XDS_LAYER_NAMES = new Map([
   ['xds-base', 'astryx-base'],
 ]);
 
-function rewriteLayerPrelude(prelude) {
-  return prelude.replace(/\bxds-(?:theme|base)\b/g, name =>
+function rewriteLayerPrelude(/** @type {any} */ prelude) {
+  return prelude.replace(/\bxds-(?:theme|base)\b/g, (/** @type {any} */ name) =>
     XDS_LAYER_NAMES.get(name) ?? name,
   );
 }
@@ -64,7 +63,7 @@ function rewriteLayerPrelude(prelude) {
 //   @xds/theme-default/*         -> @astryxdesign/theme-neutral/*   (collapse)
 //   @xds/theme-daily/*           -> @astryxdesign/theme-neutral/*   (collapse)
 // Returns the original value unchanged if it is not an @xds/* specifier.
-function rewriteImportSpecifier(spec) {
+function rewriteImportSpecifier(/** @type {any} */ spec) {
   if (!spec.startsWith('@xds/')) return spec;
   // Theme package collapse (default/daily -> neutral).
   let next = spec
@@ -85,6 +84,7 @@ function rewriteImportSpecifier(spec) {
 
 // Ordered, non-overlapping replacements. Each pattern is intentionally narrow
 // so we never touch a bare `xds` substring outside these surfaces.
+/** @type {Array<{re: RegExp, to: any}>} */
 const REPLACEMENTS = [
   // Class-name prefix: only when preceded by a `.` (a class selector).
   {re: /\.xds-/g, to: '.astryx-'},
@@ -92,18 +92,22 @@ const REPLACEMENTS = [
   {re: /\[data-xds-/g, to: '[data-astryx-'},
   // Cascade-layer preludes: `@layer <names>` up to the block `{` or `;`.
   // Rewrite only the recognized xds-* layer tokens inside the prelude.
-  {re: /@layer\b[^{;]*/g, to: match => rewriteLayerPrelude(match)},
+  {re: /@layer\b[^{;]*/g, to: (/** @type {any} */ match) => rewriteLayerPrelude(match)},
   // Package stylesheet imports: `@import '@xds/...'` or `@import url('@xds/...')`.
   // Rewrite only the quoted @xds/* specifier, preserving the quote style.
   {
     re: /@import\s+(?:url\(\s*)?(['"])(@xds\/[^'"]+)\1/g,
-    to: (match, quote, spec) => {
+    to: (/** @type {any} */ match, /** @type {any} */ quote, /** @type {any} */ spec) => {
       const next = rewriteImportSpecifier(spec);
       return next === spec ? match : match.replace(spec, next);
     },
   },
 ];
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file /*, api */) {
   const source = file.source;
   if (typeof source !== 'string') return undefined;

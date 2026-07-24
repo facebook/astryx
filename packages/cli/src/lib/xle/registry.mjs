@@ -40,6 +40,11 @@ export {
   hydrateRegistry,
 } from './registry-core.mjs';
 
+/**
+ * @param {Record<string, string[]>} grouped
+ * @param {string} member
+ * @returns {string|null}
+ */
 function findDirFor(grouped, member) {
   for (const [dir, members] of Object.entries(grouped)) {
     if (members.includes(member)) return dir;
@@ -90,7 +95,7 @@ function readDirExportedComponents(coreDir, dirName) {
   return [...names];
 }
 
-let cachedRegistry = null;
+let cachedRegistry = /** @type {import('./xle-ast').Registry | null} */ (null);
 
 /**
  * Build (and cache) the registry: every documented component keyed by its
@@ -123,7 +128,7 @@ export async function buildRegistry({cwd = process.cwd()} = {}) {
     }
     const importPath = resolveImportPath(coreDir, dirName);
 
-    const register = (rawName, props) => {
+    const register = (/** @type {string} */ rawName, /** @type {import('./xle-ast').DocProp[]} */ props) => {
       const name = normalizeName(rawName);
       const entry = toComponentEntry(name, props, dirName, importPath);
       const existing = components.get(name);
@@ -147,7 +152,7 @@ export async function buildRegistry({cwd = process.cwd()} = {}) {
   // props go missing and valid attrs (e.g. Heading[level=2]) get rejected.
   // Read every .doc.mjs in each contributing dir and upgrade props, keyed to
   // each component's own export subpath. Props-only: never adds empty entries.
-  const upgradeFromDoc = (rawName, props, fallbackDir) => {
+  const upgradeFromDoc = (/** @type {string} */ rawName, /** @type {import('./xle-ast').DocProp[]} */ props, /** @type {string} */ fallbackDir) => {
     if (!props || props.length === 0) return;
     const name = normalizeName(rawName);
     // Prefer the component's own export subpath (Heading → @astryxdesign/core/Heading);
@@ -193,7 +198,7 @@ export async function buildRegistry({cwd = process.cwd()} = {}) {
   //     (TableHeader/Body/Footer became bare files with no own .doc.mjs after
   //     the un-prefix migration), so we recover them from the real export
   //     surface here.
-  const registerUndocumented = (name, dirName) => {
+  const registerUndocumented = (/** @type {string} */ name, /** @type {string} */ dirName) => {
     if (components.has(name)) return;
     const entry = toComponentEntry(name, [], dirName, resolveImportPath(coreDir, name));
     entry.undocumented = true;

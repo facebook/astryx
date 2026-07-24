@@ -50,6 +50,11 @@ export const meta = {
   pr: '#1321',
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -61,7 +66,7 @@ export default function transformer(file, api) {
   // Uses direct body manipulation instead of jscodeshift's insertAfter(),
   // which has a known bug that corrupts 'use client' directives into
   // double semicolons ('use client';;).
-  function insertAfterInBody(targetPath, newNode) {
+  function insertAfterInBody(/** @type {any} */ targetPath, /** @type {any} */ newNode) {
     const body = root.get().node.program.body;
     const targetIndex = body.indexOf(targetPath.node);
     if (targetIndex !== -1) {
@@ -69,14 +74,14 @@ export default function transformer(file, api) {
     } else {
       // Fallback: insert after all imports
       const lastImportIdx = body.findLastIndex(
-        (n) => n.type === 'ImportDeclaration',
+        (/** @type {any} */ n) => n.type === 'ImportDeclaration',
       );
       body.splice(lastImportIdx + 1, 0, newNode);
     }
   }
 
   // ---- 1. JSX elements: convert icon-only XDSButton to XDSIconButton ----
-  root.find(j.JSXOpeningElement).forEach((path) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     const componentName =
       name.type === 'JSXIdentifier' ? name.name : null;
@@ -85,13 +90,13 @@ export default function transformer(file, api) {
     const attrs = path.node.attributes;
 
     const hasIcon = attrs.some(
-      (a) => a.type === 'JSXAttribute' && a.name?.name === 'icon',
+      (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name?.name === 'icon',
     );
     const hasChildren = attrs.some(
-      (a) => a.type === 'JSXAttribute' && a.name?.name === 'children',
+      (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name?.name === 'children',
     );
     const hasIsIconOnly = attrs.some(
-      (a) => a.type === 'JSXAttribute' && a.name?.name === 'isIconOnly',
+      (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name?.name === 'isIconOnly',
     );
 
     if (!hasIcon || hasChildren || hasIsIconOnly) return;
@@ -101,7 +106,7 @@ export default function transformer(file, api) {
     const hasJSXChildren =
       parent.type === 'JSXElement' &&
       parent.children &&
-      parent.children.some((child) => {
+      parent.children.some((/** @type {any} */ child) => {
         if (child.type === 'JSXText') return child.value.trim() !== '';
         return true;
       });
@@ -128,7 +133,7 @@ export default function transformer(file, api) {
   });
 
   // ---- 2. Remove redundant children that match label ----
-  root.find(j.JSXElement).forEach((path) => {
+  root.find(j.JSXElement).forEach((/** @type {any} */ path) => {
     const opening = path.node.openingElement;
     const name = opening.name;
     const componentName =
@@ -137,13 +142,13 @@ export default function transformer(file, api) {
 
     const attrs = opening.attributes;
     const hasIcon = attrs.some(
-      (a) => a.type === 'JSXAttribute' && a.name?.name === 'icon',
+      (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name?.name === 'icon',
     );
     if (!hasIcon) return;
 
     // Get label value
     const labelAttr = attrs.find(
-      (a) => a.type === 'JSXAttribute' && a.name?.name === 'label',
+      (/** @type {any} */ a) => a.type === 'JSXAttribute' && a.name?.name === 'label',
     );
     if (!labelAttr || !labelAttr.value) return;
 
@@ -177,7 +182,7 @@ export default function transformer(file, api) {
   });
 
   // ---- 3. Object literals: add isIconOnly to button config objects ----
-  root.find(j.JSXOpeningElement).forEach((path) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     const componentName =
       name.type === 'JSXIdentifier' ? name.name : null;
@@ -185,7 +190,7 @@ export default function transformer(file, api) {
 
     const attrs = path.node.attributes;
     const buttonAttr = attrs.find(
-      (a) =>
+      (/** @type {any} */ a) =>
         a.type === 'JSXAttribute' &&
         a.name?.name === 'button' &&
         a.value?.type === 'JSXExpressionContainer' &&
@@ -197,13 +202,13 @@ export default function transformer(file, api) {
     const props = obj.properties;
 
     const hasIcon = props.some(
-      (p) => (p.type === 'Property' || p.type === 'ObjectProperty') && p.key?.name === 'icon',
+      (/** @type {any} */ p) => (p.type === 'Property' || p.type === 'ObjectProperty') && p.key?.name === 'icon',
     );
     const hasChildren = props.some(
-      (p) => (p.type === 'Property' || p.type === 'ObjectProperty') && p.key?.name === 'children',
+      (/** @type {any} */ p) => (p.type === 'Property' || p.type === 'ObjectProperty') && p.key?.name === 'children',
     );
     const hasIsIconOnly = props.some(
-      (p) => (p.type === 'Property' || p.type === 'ObjectProperty') && p.key?.name === 'isIconOnly',
+      (/** @type {any} */ p) => (p.type === 'Property' || p.type === 'ObjectProperty') && p.key?.name === 'isIconOnly',
     );
 
     if (hasIcon && !hasChildren && !hasIsIconOnly) {
@@ -222,7 +227,7 @@ export default function transformer(file, api) {
     hasRemainingXDSButton = true;
   });
   // Also check for XDSButton in type annotations (e.g. typeof XDSButton)
-  root.find(j.Identifier, {name: 'XDSButton'}).forEach((path) => {
+  root.find(j.Identifier, {name: 'XDSButton'}).forEach((/** @type {any} */ path) => {
     // Skip JSX identifiers (already counted above) and import specifiers
     if (path.parent.node.type === 'JSXOpeningElement' ||
         path.parent.node.type === 'JSXClosingElement' ||
@@ -232,9 +237,9 @@ export default function transformer(file, api) {
 
   if (needsIconButtonImport) {
     let alreadyImported = false;
-    root.find(j.ImportDeclaration).forEach((path) => {
+    root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
       if (path.node.specifiers.some(
-        (s) => s.type === 'ImportSpecifier' && s.imported.name === 'XDSIconButton',
+        (/** @type {any} */ s) => s.type === 'ImportSpecifier' && s.imported.name === 'XDSIconButton',
       )) {
         alreadyImported = true;
       }
@@ -244,13 +249,13 @@ export default function transformer(file, api) {
       // Handle @xds/core/Button import — may need splitting if it has
       // other specifiers (type imports, other components)
       if (!hasRemainingXDSButton) {
-        root.find(j.ImportDeclaration).forEach((path) => {
+        root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
           if (alreadyImported) return;
           const source = path.node.source.value;
           if (source !== '@xds/core/Button') return;
           const specs = path.node.specifiers;
           const btnIdx = specs.findIndex(
-            (s) => s.type === 'ImportSpecifier' && s.imported.name === 'XDSButton',
+            (/** @type {any} */ s) => s.type === 'ImportSpecifier' && s.imported.name === 'XDSButton',
           );
           if (btnIdx === -1) return;
 
@@ -276,7 +281,7 @@ export default function transformer(file, api) {
 
       // For barrel imports, add the specifier
       if (!alreadyImported) {
-        root.find(j.ImportDeclaration).forEach((path) => {
+        root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
           if (alreadyImported) return;
           if (path.node.source.value === '@xds/core') {
             path.node.specifiers.push(
@@ -296,7 +301,7 @@ export default function transformer(file, api) {
 
         const xdsImports = root
           .find(j.ImportDeclaration)
-          .filter((p) => p.node.source.value.startsWith('@xds/'));
+          .filter((/** @type {any} */ p) => p.node.source.value.startsWith('@xds/'));
 
         if (xdsImports.length > 0) {
           insertAfterInBody(xdsImports.at(-1), newImport);

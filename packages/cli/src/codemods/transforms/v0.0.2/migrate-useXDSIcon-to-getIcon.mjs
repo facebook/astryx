@@ -18,6 +18,11 @@ export const meta = {
   pr: '#531',
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -28,13 +33,13 @@ export default function transformer(file, api) {
     .find(j.CallExpression, {
       callee: {type: 'Identifier', name: 'useXDSIcon'},
     })
-    .forEach((path) => {
+    .forEach((/** @type {any} */ path) => {
       path.node.callee.name = 'getIcon';
       hasChanges = true;
     });
 
   // 2. Update import specifiers: useXDSIcon → getIcon
-  root.find(j.ImportSpecifier).forEach((path) => {
+  root.find(j.ImportSpecifier).forEach((/** @type {any} */ path) => {
     const imported = path.node.imported;
     if (imported.type === 'Identifier' && imported.name === 'useXDSIcon') {
       const oldLocal = path.node.local ? path.node.local.name : null;
@@ -48,11 +53,11 @@ export default function transformer(file, api) {
   });
 
   // 3. Remove IconRegistryContext from import specifiers
-  root.find(j.ImportDeclaration).forEach((path) => {
+  root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     const specifiers = path.node.specifiers;
     if (!specifiers) return;
 
-    const filtered = specifiers.filter((s) => {
+    const filtered = specifiers.filter((/** @type {any} */ s) => {
       if (
         s.type === 'ImportSpecifier' &&
         s.imported.type === 'Identifier' &&
@@ -73,7 +78,7 @@ export default function transformer(file, api) {
   });
 
   // 4. Update import source: '../Icon/IconRegistry' or similar → '../Icon/globalIconRegistry'
-  root.find(j.ImportDeclaration).forEach((path) => {
+  root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     const source = path.node.source.value;
     if (typeof source === 'string' && source.includes('IconRegistry') && !source.includes('globalIconRegistry')) {
       path.node.source.value = source.replace(
@@ -85,7 +90,7 @@ export default function transformer(file, api) {
   });
 
   // 5. Remove <IconRegistryContext.Provider> wrappers — replace with children
-  root.find(j.JSXElement).forEach((path) => {
+  root.find(j.JSXElement).forEach((/** @type {any} */ path) => {
     const opening = path.node.openingElement;
     if (
       opening.name.type === 'JSXMemberExpression' &&
@@ -113,7 +118,7 @@ export default function transformer(file, api) {
     .find(j.VariableDeclarator, {
       init: {type: 'Identifier', name: 'IconRegistryContext'},
     })
-    .forEach((path) => {
+    .forEach((/** @type {any} */ path) => {
       j(path.parent).remove();
       hasChanges = true;
     });

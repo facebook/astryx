@@ -32,6 +32,11 @@ export const meta = {
   pr: '#966',
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -40,7 +45,7 @@ export default function transformer(file, api) {
   // 1. Remove size JSX prop from target components
   root
     .find(j.JSXOpeningElement)
-    .filter((path) => {
+    .filter((/** @type {any} */ path) => {
       const name = path.node.name;
       // Handle simple names like <XDSStatusDot>
       if (name.type === 'JSXIdentifier') {
@@ -48,10 +53,10 @@ export default function transformer(file, api) {
       }
       return false;
     })
-    .forEach((path) => {
+    .forEach((/** @type {any} */ path) => {
       const attrs = path.node.attributes;
       const sizeIdx = attrs.findIndex(
-        (attr) =>
+        (/** @type {any} */ attr) =>
           attr.type === 'JSXAttribute' &&
           attr.name &&
           attr.name.name === 'size',
@@ -63,7 +68,7 @@ export default function transformer(file, api) {
     });
 
   // 2. Remove size type imports (XDSStatusDotSize, XDSProgressBarSize)
-  root.find(j.ImportDeclaration).forEach((path) => {
+  root.find(j.ImportDeclaration).forEach((/** @type {any} */ path) => {
     const specifiers = path.node.specifiers;
     if (!specifiers) return;
 

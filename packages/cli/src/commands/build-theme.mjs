@@ -32,10 +32,12 @@ import {themeAdd} from '../api/theme-add.mjs';
 // path: core's generator. There is no in-CLI fallback implementation — if this
 // import fails, the build fails (see the ERR_CORE_NOT_FOUND guard in the theme
 // action). A built, resolvable `@astryxdesign/core` is a hard requirement.
-let _defineTheme = null;
-let _generateThemeRulesSplit = null;
-let _generateOnMediaCSS = null;
-let _coreImportError = null;
+// A built, resolvable `@astryxdesign/core` is a hard requirement. These are
+// populated from a dynamic import (a runtime boundary), so `any` is intentional.
+/** @type {any} */ let _defineTheme = null;
+/** @type {any} */ let _generateThemeRulesSplit = null;
+/** @type {any} */ let _generateOnMediaCSS = null;
+/** @type {any} */ let _coreImportError = null;
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
   _defineTheme = coreTheme.defineTheme;
@@ -75,9 +77,11 @@ function generatedHeader(sourceFile, lang = 'js', command) {
 /**
  * Convert a theme name to a valid JS identifier.
  * e.g. 'default-minimal' → 'defaultMinimal', 'ocean' → 'ocean'
+ * @param {string} name
+ * @returns {string}
  */
 function toIdentifier(name) {
-  return name.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+  return name.replace(/-([a-z])/g, (/** @type {string} */ _, /** @type {string} */ c) => c.toUpperCase());
 }
 
 /**
@@ -85,6 +89,9 @@ function toIdentifier(name) {
  * from the cwd-relative dir (most consumers import from a file under src/) but
  * keeps the rest of the path (e.g. `themes/gothic`). Callers note the path is
  * relative to the consumer's file.
+ * @param {string} relDir
+ * @param {string} base
+ * @returns {string}
  */
 function importSpecifier(relDir, base) {
   const normalized = relDir === '.' ? '' : relDir;
@@ -95,11 +102,13 @@ function importSpecifier(relDir, base) {
 /**
  * Convert a kebab-case component name to PascalCase.
  * e.g. 'button' → 'Button', 'progress-bar' → 'ProgressBar', 'avatar-status-dot' → 'AvatarStatusDot'
+ * @param {string} name
+ * @returns {string}
  */
 function toPascalCase(name) {
   return name
     .split('-')
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((/** @type {string} */ part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join('');
 }
 
@@ -107,6 +116,8 @@ function toPascalCase(name) {
  * Load known built-in values for a component's visual props from its .doc.mjs file.
  * Parses the type string (e.g. "'info' | 'warning' | 'error' | 'success'") to extract values.
  * Returns a map of { propName: string[] } for props that are visual (listed in theming targets).
+ * @param {string} componentName
+ * @returns {Promise<Record<string, string[]>>}
  */
 async function loadKnownValues(componentName) {
   // Resolve core src relative to the CLI package, not cwd (which may be a theme package)
@@ -140,6 +151,7 @@ async function loadKnownValues(componentName) {
     if (allProps.length === 0) return {};
 
     // Collect visual prop names from theming targets
+    /** @type {Set<string>} */
     const visualProps = new Set();
     for (const target of doc.theming.targets) {
       if (target.visualProps) {
@@ -148,6 +160,7 @@ async function loadKnownValues(componentName) {
     }
 
     // Extract values from prop type strings
+    /** @type {Record<string, string[]>} */
     const result = {};
     for (const prop of allProps) {
       if (!visualProps.has(prop.name)) continue;
@@ -156,7 +169,7 @@ async function loadKnownValues(componentName) {
       // Parse union type: "'info' | 'warning' | 'error' | 'success'" → ['info', 'warning', 'error', 'success']
       const matches = prop.type.match(/'([^']+)'/g);
       if (matches) {
-        result[prop.name] = matches.map(m => m.replace(/'/g, ''));
+        result[prop.name] = matches.map((/** @type {string} */ m) => m.replace(/'/g, ''));
       }
     }
     return result;
@@ -166,12 +179,17 @@ async function loadKnownValues(componentName) {
 }
 
 // Cache for loaded known values
+/** @type {Map<string, Record<string, string[]>>} */
 const _knownValuesCache = new Map();
+/**
+ * @param {string} componentName
+ * @returns {Promise<Record<string, string[]>>}
+ */
 async function getKnownValues(componentName) {
   if (!_knownValuesCache.has(componentName)) {
     _knownValuesCache.set(componentName, await loadKnownValues(componentName));
   }
-  return _knownValuesCache.get(componentName);
+  return _knownValuesCache.get(componentName) ?? {};
 }
 
 /**
@@ -195,10 +213,15 @@ function resolveCoreRoot() {
  * actually sees), falling back to the `src/<Component>/index.ts` in the
  * monorepo. Returns the file contents, or '' if nothing is found.
  */
+/** @type {Map<string, string>} */
 const _componentDeclCache = new Map();
+/**
+ * @param {string} pascalName
+ * @returns {string}
+ */
 function readComponentDeclarations(pascalName) {
   if (_componentDeclCache.has(pascalName)) {
-    return _componentDeclCache.get(pascalName);
+    return _componentDeclCache.get(pascalName) ?? '';
   }
   let contents = '';
   const coreRoot = resolveCoreRoot();
@@ -230,6 +253,9 @@ function readComponentDeclarations(pascalName) {
  * `HeadingType`, `ButtonSize`) are NOT augmentable, so a generated augmentation
  * against them is dead code. We check that the name is exported (directly or
  * re-exported) as a type/interface.
+ * @param {string} pascalName
+ * @param {string} interfaceName
+ * @returns {boolean}
  */
 function componentHasAugmentableInterface(pascalName, interfaceName) {
   const decl = readComponentDeclarations(pascalName);
@@ -254,7 +280,7 @@ function componentHasAugmentableInterface(pascalName, interfaceName) {
  * generating a `declare module` block for them would be dead code — those are
  * skipped.
  *
- * @param {object} themeDef - Theme definition (resolved by defineTheme)
+ * @param {{components?: Record<string, Record<string, Record<string, unknown>>>}} themeDef - Theme definition (resolved by defineTheme)
  * @returns {Promise<string|null>} TypeScript declaration content, or null if no augmentations needed
  */
 async function generateVariantDeclarationsAsync(themeDef) {
@@ -263,6 +289,7 @@ async function generateVariantDeclarationsAsync(themeDef) {
   }
 
   // Collect custom values: { component: { prop: [value, ...] } }
+  /** @type {Record<string, Record<string, Set<string>>>} */
   const customValues = {};
 
   for (const [component, rules] of Object.entries(themeDef.components)) {
@@ -336,6 +363,8 @@ async function generateVariantDeclarationsAsync(themeDef) {
 
 /**
  * Resolve a token value — [light, dark] tuple becomes light-dark()
+ * @param {unknown} value
+ * @returns {unknown}
  */
 function resolveTokenValue(value) {
   if (Array.isArray(value)) {
@@ -347,12 +376,14 @@ function resolveTokenValue(value) {
 // Theme @scope selector helpers. Keep the `astryx` literal in sync with
 // packages/core/src/naming.ts (NAMESPACE) and generateThemeRules.ts.
 // Theme scopes to data-astryx-theme; the static build path must match.
-const themeScopeStart = name => `[data-astryx-theme="${name}"]`;
+const themeScopeStart = (/** @type {string} */ name) => `[data-astryx-theme="${name}"]`;
 const THEME_SCOPE_TO = `[data-astryx-theme]`;
 
 /**
  * Import a theme module using jiti and find the defineTheme() result.
  * Returns the resolved DefinedTheme object.
+ * @param {string} filePath
+ * @returns {Promise<any>}
  */
 async function importThemeModule(filePath) {
   const jiti = createJiti(import.meta.url, {
@@ -376,6 +407,10 @@ async function importThemeModule(filePath) {
   );
 }
 
+/**
+ * @param {any} value
+ * @returns {boolean}
+ */
 function isThemeObject(value) {
   return (
     value &&
@@ -389,6 +424,8 @@ function isThemeObject(value) {
 /**
  * Extract the theme definition from a JS/TS file.
  * Tries jiti first (full TS support), falls back to regex+eval.
+ * @param {string} filePath
+ * @returns {Promise<any>}
  */
 async function extractThemeDefinition(filePath) {
   try {
@@ -397,8 +434,9 @@ async function extractThemeDefinition(filePath) {
     try {
       return extractThemeDefinitionLegacy(filePath);
     } catch {
+      const je = /** @type {Error} */ (jitiError);
       throw new Error(
-        `Failed to load theme from ${filePath}: ${jitiError.message}\n` +
+        `Failed to load theme from ${filePath}: ${je.message}\n` +
         `Make sure all imports in the theme file are resolvable.`,
       );
     }
@@ -408,6 +446,8 @@ async function extractThemeDefinition(filePath) {
 /**
  * Fallback extraction via regex + eval.
  * Only works for plain object literals — can't follow imports or variables.
+ * @param {string} filePath
+ * @returns {any}
  */
 function extractThemeDefinitionLegacy(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
@@ -433,8 +473,9 @@ function extractThemeDefinitionLegacy(filePath) {
      
     return eval(`(${objStr})`);
   } catch (e) {
+    const err = /** @type {Error} */ (e);
     throw new Error(
-      `Failed to parse theme definition in ${filePath}: ${e.message}\n` +
+      `Failed to parse theme definition in ${filePath}: ${err.message}\n` +
       `Make sure the defineTheme() argument is a plain object literal.`,
       {cause: e},
     );
@@ -448,6 +489,8 @@ function extractThemeDefinitionLegacy(filePath) {
  * Looks for patterns like:
  *   import { defaultIconRegistry } from './icons';
  *   icons: defaultIconRegistry,
+ * @param {string} filePath
+ * @returns {{exportName: string, importPath: string} | null}
  */
 function extractIconInfo(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
@@ -456,7 +499,7 @@ function extractIconInfo(filePath) {
   const iconsMatch = content.match(/icons:\s*([a-zA-Z_][a-zA-Z0-9_]*)/);
   if (!iconsMatch) return null;
 
-  const varName = iconsMatch[1];
+  const varName = /** @type {string} */ (iconsMatch[1]);
 
   // Find the import for that variable
   const importRegex = new RegExp(
@@ -467,7 +510,7 @@ function extractIconInfo(filePath) {
 
   return {
     exportName: varName,
-    importPath: importMatch[1],
+    importPath: /** @type {string} */ (importMatch[1]),
   };
 }
 
@@ -475,6 +518,9 @@ function extractIconInfo(filePath) {
  * Generate a minimal JS module for a built theme.
  * Includes the theme name, marker, and re-exports the icon registry.
  * All styling is in the CSS file.
+ * @param {any} themeDef
+ * @param {{exportName: string, importPath: string} | null} iconInfo
+ * @returns {string}
  */
 function generateBuiltModule(themeDef, iconInfo) {
   const iconImport = iconInfo
@@ -486,6 +532,7 @@ function generateBuiltModule(themeDef, iconInfo) {
     : '';
 
   // Resolve token values — tuples become light-dark() strings
+  /** @type {Record<string, unknown>} */
   const resolvedTokens = {};
   if (themeDef.tokens) {
     for (const [key, value] of Object.entries(themeDef.tokens)) {
@@ -516,6 +563,10 @@ ${iconReExport}`;
 
 /**
  * Generate TypeScript declarations for a built theme module.
+ * @param {any} themeDef
+ * @param {{exportName: string, importPath: string} | null} iconInfo
+ * @param {string | null} variantsFileName
+ * @returns {string}
  */
 function generateBuiltTypes(themeDef, iconInfo, variantsFileName) {
   const iconType = iconInfo
@@ -543,6 +594,7 @@ ${iconType}export declare const ${toIdentifier(themeDef.name)}Theme: DefinedThem
 /**
  * Known Astryx component names and their visual props.
  * Used to warn on typos in defineTheme component overrides.
+ * @type {Record<string, string[]>}
  */
 const KNOWN_COMPONENTS = {
   appshell: ['position'],
@@ -604,8 +656,11 @@ const KNOWN_COMPONENTS = {
  * Validate component overrides in a theme definition.
  * Warns on unknown component names and unknown prop names.
  * Returns array of warning strings.
+ * @param {{components?: Record<string, Record<string, unknown>>}} themeDef
+ * @returns {string[]}
  */
 function validateComponentOverrides(themeDef) {
+  /** @type {string[]} */
   const warnings = [];
   if (!themeDef.components) return warnings;
 
@@ -668,8 +723,11 @@ function validateComponentOverrides(themeDef) {
  * (e.g. borderRadius, padding) instead.
  *
  * Returns array of error strings.
+ * @param {{components?: Record<string, Record<string, Record<string, unknown>>>}} themeDef
+ * @returns {string[]}
  */
 function validatePrivateVars(themeDef) {
+  /** @type {string[]} */
   const errors = [];
   if (!themeDef.components) return errors;
 
@@ -706,14 +764,14 @@ function resolveCliBin() {
  * Resolves with the child's exit code; never rejects.
  *
  * @param {string} file - The theme file argument, as the user passed it.
- * @param {object} options - Parsed command options (only `out` is forwarded).
+ * @param {{out?: string}} options - Parsed command options (only `out` is forwarded).
  * @returns {Promise<number>}
  */
 function runThemeBuildOnceChild(file, options) {
   const cliBin = resolveCliBin();
   const args = [cliBin, 'theme', 'build', file];
   if (options.out) args.push('--out', options.out);
-  return new Promise(resolve => {
+  return new Promise((/** @type {(code: number) => void} */ resolve) => {
     const child = spawn(process.execPath, args, {
       stdio: 'inherit',
       env: process.env,
@@ -732,7 +790,7 @@ function runThemeBuildOnceChild(file, options) {
  *
  * @param {string} file - The theme file argument, as the user passed it.
  * @param {string} filePath - Absolute path to the theme file.
- * @param {object} options - Parsed command options.
+ * @param {{out?: string}} options - Parsed command options.
  * @returns {Promise<void>} Resolves when the watcher is stopped (Ctrl-C).
  */
 async function runThemeBuildWatch(file, filePath, options) {
@@ -745,7 +803,8 @@ async function runThemeBuildWatch(file, filePath, options) {
 
   let building = false;
   let queued = false;
-  let debounce = null;
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let debounce;
 
   const rebuild = async () => {
     if (building) {
@@ -776,7 +835,7 @@ async function runThemeBuildWatch(file, filePath, options) {
     debounce = setTimeout(rebuild, 100);
   });
 
-  await new Promise(resolve => {
+  await new Promise((/** @type {(value?: void) => void} */ resolve) => {
     const stop = () => {
       clearTimeout(debounce);
       watcher.close();
@@ -788,11 +847,14 @@ async function runThemeBuildWatch(file, filePath, options) {
   });
 }
 
+/**
+ * @param {import('commander').Command} program
+ */
 export function registerTheme(program) {
   const theme = program
     .command('theme')
     .description('Theme tools — build, export, and manage themes')
-    .action((options, cmd) => {
+    .action((/** @type {unknown} */ options, /** @type {import('commander').Command} */ cmd) => {
       // Parent group has no default behaviour. If the user passed an
       // unknown subcommand (e.g. `astryx theme bogus`), Commander hands it to
       // us as a positional in cmd.args — exit 1 with a clear error.
@@ -816,7 +878,7 @@ export function registerTheme(program) {
       '-w, --watch',
       'Rebuild automatically when the theme file changes (Ctrl-C to stop)',
     )
-    .action(async (file, options) => {
+    .action(async (/** @type {string} */ file, /** @type {{out?: string, watch?: boolean}} */ options) => {
       const filePath = path.resolve(process.cwd(), file);
       const json = program.opts().json || false;
 
@@ -846,7 +908,8 @@ export function registerTheme(program) {
       try {
         themeDef = await extractThemeDefinition(filePath);
       } catch (e) {
-        cliError(e.message, {code: ERROR_CODES.ERR_THEME_LOAD});
+        const err = /** @type {Error} */ (e);
+        cliError(err.message, {code: ERROR_CODES.ERR_THEME_LOAD});
         return;
       }
 
@@ -992,7 +1055,10 @@ export function registerTheme(program) {
       const augmentationSource = resolvedTheme || themeDef;
       const variantDecl = await generateVariantDeclarationsAsync(augmentationSource);
       const variantsFileName = variantDecl ? `${baseName}.variants.d.ts` : null;
-      const variantDtsPath = variantDecl ? path.join(outDir, variantsFileName) : null;
+      const variantDtsPath =
+        variantDecl && variantsFileName
+          ? path.join(outDir, variantsFileName)
+          : null;
       const variantContent = variantDecl
         ? generatedHeader(sourceRelative, 'ts', buildCommand) + variantDecl
         : null;
@@ -1013,11 +1079,12 @@ export function registerTheme(program) {
         {dest: jsPath, content: jsContent},
         {dest: dtsPath, content: dtsContent},
       ];
-      if (variantDtsPath) {
+      if (variantDtsPath && variantContent) {
         writes.push({dest: variantDtsPath, content: variantContent});
       }
 
       fs.mkdirSync(outDir, {recursive: true});
+      /** @type {Array<{tmp: string, dest: string}>} */
       const staged = [];
       try {
         for (const w of writes) {
@@ -1033,7 +1100,7 @@ export function registerTheme(program) {
         for (const s of staged) {
           try { fs.rmSync(s.tmp, {force: true}); } catch { /* best-effort */ }
         }
-        const msg = `Failed to write theme outputs: ${err.message}`;
+        const msg = `Failed to write theme outputs: ${/** @type {Error} */ (err).message}`;
         cliError(msg, {code: ERROR_CODES.ERR_WRITE_FAILED});
         return;
       }
@@ -1044,7 +1111,7 @@ export function registerTheme(program) {
         humanLog(`  ${size} KB`);
         humanLog(`✓ ${path.relative(process.cwd(), jsPath)}`);
         humanLog(`✓ ${path.relative(process.cwd(), dtsPath)}`);
-        if (variantDtsPath) {
+        if (variantDtsPath && variantDecl) {
           const augCount = (variantDecl.match(/': true;/g) || []).length;
           humanLog(`✓ ${path.relative(process.cwd(), variantDtsPath)} (${augCount} type augmentations)`);
         }
@@ -1060,7 +1127,7 @@ export function registerTheme(program) {
             css: path.relative(process.cwd(), outPath),
             js: path.relative(process.cwd(), jsPath),
             dts: path.relative(process.cwd(), dtsPath),
-            ...(variantDecl ? {variantsDts: path.relative(process.cwd(), variantDtsPath)} : {}),
+            ...(variantDecl && variantDtsPath ? {variantsDts: path.relative(process.cwd(), variantDtsPath)} : {}),
           },
           warnings: warningMessages,
         });
@@ -1107,15 +1174,21 @@ Or with a <link> tag:
     .description('List themes available to add')
     .action(async () => {
       const json = program.opts().json || false;
+      /** @type {import('../types/theme').ThemeListResponse} */
       let result;
       try {
-        result = await themeAdd(undefined, {list: true, cwd: process.cwd()});
+        result = /** @type {import('../types/theme').ThemeListResponse} */ (
+          await themeAdd(undefined, {list: true, cwd: process.cwd()})
+        );
       } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
+        const err = /** @type {import('../api/error.mjs').AstryxError} */ (e);
+        cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
         return;
       }
 
-      if (json) return jsonOut(result.type, result.data);
+      // theme.list is not registered in CLIResponseType (base.d.ts, owned by the
+      // coordinator) — cast the discriminant until it is added there.
+      if (json) return jsonOut(/** @type {any} */ (result.type), result.data);
 
       const themes = result.data;
       if (themes.length === 0) {
@@ -1137,26 +1210,32 @@ Or with a <link> tag:
     .description('Scaffold a theme into your project as editable source')
     .option('-f, --overwrite', 'Overwrite existing files without prompting')
     .option('--list', 'List available themes')
-    .action(async (slug, targetPath, options) => {
+    .action(async (/** @type {string | undefined} */ slug, /** @type {string | undefined} */ targetPath, /** @type {{list?: boolean, overwrite?: boolean}} */ options) => {
       const json = program.opts().json || false;
 
       // The CLI is non-interactive: never prompt to confirm an overwrite.
       // Existing files require an explicit --overwrite; otherwise themeAdd's
       // ERR_FILE_EXISTS guard rejects the write.
+      /** @type {import('../types/theme').ThemeListResponse | import('../types/theme').ThemeAddResponse} */
       let result;
       try {
-        result = await themeAdd(slug, {
-          list: options.list,
-          targetPath,
-          overwrite: options.overwrite,
-          cwd: process.cwd(),
-        });
+        result = /** @type {import('../types/theme').ThemeListResponse | import('../types/theme').ThemeAddResponse} */ (
+          await themeAdd(slug, {
+            list: options.list,
+            targetPath,
+            overwrite: options.overwrite,
+            cwd: process.cwd(),
+          })
+        );
       } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
+        const err = /** @type {import('../api/error.mjs').AstryxError} */ (e);
+        cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
         return;
       }
 
-      if (json) return jsonOut(result.type, result.data);
+      // theme.list/theme.add are not registered in CLIResponseType (base.d.ts,
+      // owned by the coordinator) — cast the discriminant until they are added.
+      if (json) return jsonOut(/** @type {any} */ (result.type), result.data);
 
       if (result.type === 'theme.list') {
         const themes = result.data;

@@ -82,8 +82,18 @@ function detectInstalledTargetVersion() {
   return null;
 }
 
+/**
+ * @param {(string | null | undefined | false)[] | undefined} files
+ * @returns {string[]}
+ */
 function uniqueFiles(files) {
-  return [...new Set((files ?? []).filter(Boolean))];
+  return [
+    ...new Set(
+      (files ?? []).filter(
+        /** @returns {f is string} */ f => Boolean(f),
+      ),
+    ),
+  ];
 }
 
 /**
@@ -126,14 +136,18 @@ async function runPostCodemodHooks(hooks, context, silent) {
       continue;
     }
 
-    await execFileAsync(cmd.command, cmd.args ?? [], {
-      cwd: cmd.options?.cwd ?? packageDir,
-      timeout: cmd.options?.timeout ?? 300_000,
-      stdio: 'pipe',
-      encoding: 'utf-8',
-      ...cmd.options,
-      env: {...process.env, ...(cmd.options?.env ?? {})},
-    });
+    await execFileAsync(
+      cmd.command,
+      cmd.args ?? [],
+      /** @type {import('node:child_process').ExecFileOptions & {encoding: 'utf-8'}} */ ({
+        cwd: cmd.options?.cwd ?? packageDir,
+        timeout: cmd.options?.timeout ?? 300_000,
+        stdio: 'pipe',
+        encoding: 'utf-8',
+        ...cmd.options,
+        env: {...process.env, ...(cmd.options?.env ?? {})},
+      }),
+    );
     log.success(`Post-codemod hook ${label} completed.`);
   }
 }
@@ -236,7 +250,26 @@ export function refreshAgentDocs({cwd, installedVersion, apply, json}) {
 }
 
 /**
+ * A single core transform entry as produced by the registry manifests. The
+ * registry's declared return type omits the optional `optional` flag and the
+ * `pr`/`codemodType` meta fields that the transform modules actually carry;
+ * this local shape captures what the upgrade command reads. Remove once
+ * codemods/registry.mjs declares these fields on its return type.
+ * @typedef {object} CoreTransformEntry
+ * @property {string} name
+ * @property {import('../types/codemod').CodemodTransform} transform
+ * @property {{title: string, description?: string, pr?: string, codemodType?: string}} meta
+ * @property {boolean} [optional]
+ */
+
+/**
+ * A version-scoped group of core transforms from the registry.
+ * @typedef {{version: string, transforms: CoreTransformEntry[]}} CoreVersionManifest
+ */
+
+/**
  * Register the `upgrade` command (codemod-driven version migration).
+ * @param {import('commander').Command} program
  */
 export function registerUpgrade(program) {
   program
@@ -260,6 +293,10 @@ export function registerUpgrade(program) {
     .option(
       '--integration <package-or-file>',
       'Explicit integration package name or integration file path (repeatable)',
+      /**
+       * @param {string} value
+       * @param {string[]} previous
+       */
       (value, previous) => [...(previous ?? []), value],
       [],
     )
@@ -270,7 +307,21 @@ export function registerUpgrade(program) {
       false,
     )
     .option('--list', 'List available codemods', false)
-    .action(async options => {
+    .action(
+      /**
+       * @param {{
+       *   list?: boolean,
+       *   from?: string,
+       *   apply: boolean,
+       *   force?: boolean,
+       *   codemod?: string,
+       *   skipCodemod?: string[],
+       *   integration?: string[],
+       *   path: string,
+       *   installDeps?: boolean,
+       * }} options
+       */
+      async options => {
       const json = program.opts().json || false;
       if (!json) p.intro('Upgrade');
 
@@ -301,7 +352,9 @@ export function registerUpgrade(program) {
         // over every version and re-walked getTransformsBetween('0.0.0', v),
         // so each codemod was printed once per release that included it
         // (31 unique × 9 ≈ 201 lines on the current registry).
-        const manifests = await getTransformsBetween('0.0.0', latestVersion);
+        const manifests = /** @type {CoreVersionManifest[]} */ (
+          await getTransformsBetween('0.0.0', latestVersion)
+        );
         for (const {version, transforms} of manifests) {
           for (const {name, meta, optional} of transforms) {
             codemods.push({
@@ -333,7 +386,8 @@ export function registerUpgrade(program) {
         return;
       }
 
-      const currentVersion = options.from;
+      // Guarded above: reaching here means --from passed isValidSemver, so it's a string.
+      const currentVersion = /** @type {string} */ (options.from);
       const installed = detectInstalledTargetVersion();
       if (!installed) {
         const msg =
@@ -400,9 +454,9 @@ export function registerUpgrade(program) {
       // Resolve CORE transforms from the registry. These do not need the loaded
       // config. Integration codemods are discovered later, AFTER the config
       // loads successfully (they require a valid config to resolve).
-      const versionManifests = [
+      const versionManifests = /** @type {CoreVersionManifest[]} */ ([
         ...(await getTransformsBetween(currentVersion, targetVersion)),
-      ];
+      ]);
 
       // Does the selected core set include >=1 CONFIG codemod? A config codemod
       // is the established convention `meta.codemodType === 'config'` (see
@@ -470,6 +524,15 @@ export function registerUpgrade(program) {
         skipCodemods,
         silent: json,
       });
+      // runCodemods returns either a success accounting or a
+      // {ok: false, reason} sentinel (e.g. source_path_missing). Narrow to the
+      // success shape so downstream property reads type-check; the sentinel
+      // branch collapses to null and the `?? 0`/`?? []` fallbacks below treat
+      // it as "no files changed", matching the existing runtime behavior.
+      const coreResult =
+        codemodResult && 'totalFilesChanged' in codemodResult
+          ? codemodResult
+          : null;
 
       // STEP 4 — Load the consumer's config (STRICT validation; unchanged). On
       // --apply this now sees the repaired config the core codemod just wrote.
@@ -477,8 +540,11 @@ export function registerUpgrade(program) {
       // here. Wrap in a graceful dry-run catch (see below).
       // Assigned inside the try below; every catch branch returns, so these
       // are always set before any later read.
+      /** @type {Array<import('../lib/integrations.mjs').LoadedIntegration>} */
       let integrations;
+      /** @type {import('../types/config').PostCodemodHook[]} */
       let postCodemodHooks;
+      /** @type {Array<{version: string, codemods: import('../types/codemod').CodemodEntry[]}>} */
       let integrationVersionGroups;
       try {
         const project = await Project.load(process.cwd());
@@ -489,6 +555,7 @@ export function registerUpgrade(program) {
         ]);
         integrations = await loadIntegrations(integrationSpecs);
       } catch (err) {
+        const configErr = /** @type {Error} */ (err);
         // GRACEFUL DRY-RUN CATCH. A config that fails strict validation is the
         // EXPECTED, fixable case ONLY when we are in dry-run AND a pending core
         // config codemod just PREVIEWED a change to the config — i.e. the very
@@ -499,7 +566,7 @@ export function registerUpgrade(program) {
         // gate and aborts below — preserving the strictness contract.) This is
         // the reason this PR reorders the pipeline.
         const codemodWouldFixConfig =
-          hasCoreConfigCodemod && (codemodResult?.totalFilesChanged ?? 0) > 0;
+          hasCoreConfigCodemod && (coreResult?.totalFilesChanged ?? 0) > 0;
         if (!options.apply && codemodWouldFixConfig) {
           const codemodFlags = coreConfigCodemodNames
             .map(name => `--codemod ${name}`)
@@ -518,7 +585,7 @@ export function registerUpgrade(program) {
               status: 'config_fixable',
               from: currentVersion,
               to: targetVersion,
-              configError: err.message,
+              configError: configErr.message,
               configCodemods: coreConfigCodemodNames,
               suggestedCommand,
               message: guidance,
@@ -539,11 +606,11 @@ export function registerUpgrade(program) {
         // refresh already ran (it's independent of config), so surface it.
         if (json)
           return jsonError(
-            err.message,
-            {agentDocs},
+            configErr.message,
+            /** @type {import('../types/base').Suggestion[]} */ (/** @type {unknown} */ ({agentDocs})),
             ERROR_CODES.ERR_INVALID_ARGUMENT,
           );
-        p.log.error(err.message);
+        p.log.error(configErr.message);
         p.outro('Aborted');
         process.exitCode = 1;
         return;
@@ -574,12 +641,21 @@ export function registerUpgrade(program) {
       // hard-failing the upgrade. An EXECUTION-time failure (a transform
       // throwing) is handled later by the codemod-error gate, which still
       // aborts the upgrade.
+      /** @type {Map<string, Array<import('../types/codemod').CodemodEntry>>} */
       const integrationCodemodsByVersion = new Map();
       for (const integration of integrations) {
         if (!integration?.codemods) continue;
         try {
           const byVersion = await discoverIntegrationCodemods([integration]);
-          for (const [version, list] of byVersion) {
+          for (const [version, rawList] of byVersion) {
+            // discoverIntegrationCodemods declares `codemod: object` (loose); the
+            // runtime entries carry the full CodemodEntry.codemod shape. Narrow
+            // to the map's element type. Report: integration-discovery.mjs's
+            // @returns should declare CodemodEntry instead of the loose object.
+            const list =
+              /** @type {Array<import('../types/codemod').CodemodEntry>} */ (
+                /** @type {unknown} */ (rawList)
+              );
             const existing = integrationCodemodsByVersion.get(version);
             if (existing) existing.push(...list);
             else integrationCodemodsByVersion.set(version, [...list]);
@@ -589,11 +665,14 @@ export function registerUpgrade(program) {
           // above surfaces the underlying issue. Best-effort, non-blocking.
         }
       }
-      integrationVersionGroups = selectIntegrationCodemods(
-        integrationCodemodsByVersion,
-        currentVersion,
-        targetVersion,
-      );
+      integrationVersionGroups =
+        /** @type {Array<{version: string, codemods: import('../types/codemod').CodemodEntry[]}>} */ (
+          selectIntegrationCodemods(
+            integrationCodemodsByVersion,
+            currentVersion,
+            targetVersion,
+          )
+        );
       const hasIntegrationCodemods = integrationVersionGroups.some(
         g => g.codemods.length > 0,
       );
@@ -630,7 +709,7 @@ export function registerUpgrade(program) {
       if (totalTransforms === 0 && totalOptional === 0) {
         const msg = `Codemod "${options.codemod}" not found. Use --list to see available codemods.`;
         if (json)
-          return jsonError(msg, {agentDocs}, ERROR_CODES.ERR_UNKNOWN_CODEMOD);
+          return jsonError(msg, /** @type {import('../types/base').Suggestion[]} */ (/** @type {unknown} */ ({agentDocs})), ERROR_CODES.ERR_UNKNOWN_CODEMOD);
         p.log.error(msg);
         p.outro('Aborted');
         process.exitCode = 1;
@@ -647,6 +726,26 @@ export function registerUpgrade(program) {
         }
       }
 
+      /**
+       * Terminal upgrade receipt. NOTE: the shape emitted here (with
+       * `integrations`, `filesChanged`, `transformsApplied`, `errors`) is what
+       * the command has always produced and what upgrade.test/config-ordering
+       * assert on; it does NOT match `UpgradeRunResponse.data` in
+       * types/upgrade.d.ts (which declares a stale `depsUpdated` field and omits
+       * these). The jsonOut call below is cast to bridge that drift. See the
+       * report: types/upgrade.d.ts needs reconciling with the real envelope.
+       * @type {{
+       *   from: string,
+       *   to: string,
+       *   codemods: number,
+       *   integrations: string[],
+       *   agentDocsRefreshed: boolean,
+       *   agentDocs: import('../types/upgrade').AgentDocsSummary,
+       *   filesChanged?: number,
+       *   transformsApplied?: number,
+       *   errors?: Array<{file: string, codemod: string, error: string}>,
+       * }}
+       */
       const receipt = {
         from: currentVersion,
         to: targetVersion,
@@ -679,17 +778,17 @@ export function registerUpgrade(program) {
       // Merge core + integration codemod results into a single accounting so
       // hooks, receipts, and error gating see both.
       const mergedFilesChanged =
-        (codemodResult?.totalFilesChanged ?? 0) +
+        (coreResult?.totalFilesChanged ?? 0) +
         (integrationResult?.totalFilesChanged ?? 0);
       const mergedTransformsApplied =
-        (codemodResult?.totalTransformsApplied ?? 0) +
+        (coreResult?.totalTransformsApplied ?? 0) +
         (integrationResult?.totalTransformsApplied ?? 0);
       const mergedWrittenFiles = [
-        ...(codemodResult?.writtenFiles ?? []),
+        ...(coreResult?.writtenFiles ?? []),
         ...(integrationResult?.writtenFiles ?? []),
       ];
       const mergedErrors = [
-        ...(codemodResult?.errors ?? []),
+        ...(coreResult?.errors ?? []),
         ...(integrationResult?.errors ?? []),
       ];
 
@@ -714,13 +813,14 @@ export function registerUpgrade(program) {
             json,
           );
         } catch (err) {
+          const hookErr = /** @type {Error} */ (err);
           if (json)
             return jsonError(
-              `Post-codemod hook failed: ${err.message}`,
-              {receipt},
+              `Post-codemod hook failed: ${hookErr.message}`,
+              /** @type {import('../types/base').Suggestion[]} */ (/** @type {unknown} */ ({receipt})),
               ERROR_CODES.ERR_CODEMOD_FAILED,
             );
-          p.log.error(`Post-codemod hook failed: ${err.message}`);
+          p.log.error(`Post-codemod hook failed: ${hookErr.message}`);
           p.outro('Upgrade failed');
           process.exitCode = 1;
           return;
@@ -738,7 +838,7 @@ export function registerUpgrade(program) {
       if (receipt.errors?.length > 0) {
         const msg = `Upgrade completed with ${receipt.errors.length} codemod error${receipt.errors.length === 1 ? '' : 's'}.`;
         if (json) {
-          return jsonError(msg, {receipt}, ERROR_CODES.ERR_CODEMOD_FAILED);
+          return jsonError(msg, /** @type {import('../types/base').Suggestion[]} */ (/** @type {unknown} */ ({receipt})), ERROR_CODES.ERR_CODEMOD_FAILED);
         }
         p.outro('Upgrade failed');
         process.exitCode = 1;
@@ -746,7 +846,15 @@ export function registerUpgrade(program) {
       }
 
       if (json) {
-        return jsonOut('upgrade.run', receipt);
+        // The emitted receipt intentionally differs from UpgradeRunResponse.data
+        // (see the typedef note above and the report): cast to the declared
+        // envelope shape until types/upgrade.d.ts is reconciled.
+        return jsonOut(
+          'upgrade.run',
+          /** @type {import('../types/upgrade').UpgradeRunResponse['data']} */ (
+            /** @type {unknown} */ (receipt)
+          ),
+        );
       }
       p.outro(options.apply ? 'Upgrade complete' : 'Dry run complete');
     });

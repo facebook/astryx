@@ -13,6 +13,10 @@ export {levenshteinDistance} from './levenshtein.mjs';
 /**
  * Find the closest component names to a given (possibly misspelled) name.
  * Returns matches sorted by distance, filtered to maxDistance.
+ * @param {string} name
+ * @param {Record<string, string[]>} components
+ * @param {number} [maxDistance]
+ * @returns {{name: string, distance: number}[]}
  */
 export function findClosestComponents(name, components, maxDistance = 3) {
   const allNames = Object.values(components).flat();
@@ -45,6 +49,11 @@ export function findClosestComponents(name, components, maxDistance = 3) {
  *    20  name Levenshtein distance 3
  *
  * Each result: { name, score, reason }
+ *
+ * @param {string} needle
+ * @param {string} coreDir
+ * @param {Record<string, string[]>} components
+ * @returns {Promise<{name: string, score: number, reason: string}[]>}
  */
 export async function searchComponents(needle, coreDir, components) {
   const {pathToFileURL} = await import('node:url');
@@ -53,8 +62,14 @@ export async function searchComponents(needle, coreDir, components) {
 
   const term = needle.toLowerCase();
   const allNames = Object.values(components).flat();
+  /** @type {Map<string, {name: string, score: number, reason: string}>} */
   const scored = new Map();
 
+  /**
+   * @param {string} name
+   * @param {number} score
+   * @param {string} reason
+   */
   function addMatch(name, score, reason) {
     const existing = scored.get(name);
     if (!existing || score > existing.score) {

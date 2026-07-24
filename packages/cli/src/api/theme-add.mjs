@@ -21,19 +21,39 @@ const MANIFEST_PATH = path.join(THEMES_DIR, 'manifest.json');
 const META_COPYRIGHT_HEADER_RE =
   /^(\uFEFF?(?:#![^\r\n]*(?:\r?\n))?)\/\/ Copyright \(c\) Meta Platforms, Inc\. and affiliates\.\r?\n(?:\r?\n)*/;
 
+/**
+ * A single bundled theme entry from `templates/themes/manifest.json`.
+ * @typedef {object} BundledTheme
+ * @property {string} slug
+ * @property {string} displayName
+ * @property {string} description
+ * @property {boolean} maintained
+ * @property {string} entry
+ * @property {string} exportName
+ * @property {string[]} files
+ */
+
+/**
+ * @param {string} source
+ * @returns {string}
+ */
 function stripCopyrightHeader(source) {
   return source.replace(META_COPYRIGHT_HEADER_RE, '$1');
 }
 
-/** Parsed `themes` array from the bundle manifest (empty if not generated). */
+/**
+ * Parsed `themes` array from the bundle manifest (empty if not generated).
+ * @returns {BundledTheme[]}
+ */
 export function listThemes() {
   if (!fs.existsSync(MANIFEST_PATH)) return [];
+  /** @type {{themes?: BundledTheme[]}} */
   let manifest;
   try {
     manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf-8'));
   } catch (err) {
     throw new AstryxError(
-      `Theme bundle manifest is unreadable (${MANIFEST_PATH}): ${err.message}`,
+      `Theme bundle manifest is unreadable (${MANIFEST_PATH}): ${/** @type {any} */ (err).message}`,
       undefined,
       ERROR_CODES.ERR_NO_SOURCE,
     );
@@ -41,12 +61,20 @@ export function listThemes() {
   return Array.isArray(manifest.themes) ? manifest.themes : [];
 }
 
+/**
+ * @param {string} [slug]
+ * @returns {BundledTheme | undefined}
+ */
 function findTheme(slug) {
   if (!slug) return undefined;
   const lc = String(slug).toLowerCase();
   return listThemes().find(t => t.slug.toLowerCase() === lc);
 }
 
+/**
+ * @param {string} slug
+ * @returns {string}
+ */
 function defaultTargetDir(slug) {
   return path.join('src', 'themes', slug);
 }
@@ -160,7 +188,7 @@ export async function themeAdd(slug, options = {}) {
       }
     }
     throw new AstryxError(
-      `Failed to write theme files: ${err.message}`,
+      `Failed to write theme files: ${/** @type {any} */ (err).message}`,
       undefined,
       ERROR_CODES.ERR_WRITE_FAILED,
     );

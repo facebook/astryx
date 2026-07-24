@@ -23,24 +23,30 @@ const TITLE_PROP_COMPONENTS = new Set([
   'XDSTopNavHeading',
 ]);
 
+/** @type {Record<string, string>} */
 const IMPORT_RENAMES = {
   XDSTopNavTitle: 'XDSTopNavHeading',
   XDSTopNavTitleProps: 'XDSTopNavHeadingProps',
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
   // 1. Rename `title` prop to `heading` on target components
-  root.find(j.JSXOpeningElement).forEach((path) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     if (name.type !== 'JSXIdentifier' || !TITLE_PROP_COMPONENTS.has(name.name)) {
       return;
     }
 
-    path.node.attributes.forEach((attr) => {
+    path.node.attributes.forEach((/** @type {any} */ attr) => {
       if (attr.type === 'JSXAttribute' && attr.name.name === 'title') {
         attr.name.name = 'heading';
         hasChanges = true;
@@ -49,13 +55,13 @@ export default function transformer(file, api) {
   });
 
   // 2. Rename <XDSTopNavTitle> to <XDSTopNavHeading> (opening and closing tags)
-  root.find(j.JSXIdentifier, {name: 'XDSTopNavTitle'}).forEach((path) => {
+  root.find(j.JSXIdentifier, {name: 'XDSTopNavTitle'}).forEach((/** @type {any} */ path) => {
     path.node.name = 'XDSTopNavHeading';
     hasChanges = true;
   });
 
   // 3. Rename import specifiers: XDSTopNavTitle → XDSTopNavHeading, XDSTopNavTitleProps → XDSTopNavHeadingProps
-  root.find(j.ImportSpecifier).forEach((path) => {
+  root.find(j.ImportSpecifier).forEach((/** @type {any} */ path) => {
     const imported = path.node.imported;
     if (imported.type === 'Identifier' && imported.name in IMPORT_RENAMES) {
       const oldName = imported.name;

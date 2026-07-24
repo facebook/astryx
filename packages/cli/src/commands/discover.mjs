@@ -16,12 +16,20 @@ import {cliError} from '../lib/cli-error.mjs';
 import {discover as discoverApi} from '../api/discover.mjs';
 import {getCliInvocation} from '../utils/package-manager.mjs';
 
+/**
+ * @param {import('commander').Command} program
+ */
 export function registerDiscover(program) {
   program
     .command('discover [query]')
     .description('Discover external packages and components')
     .option('--components', 'List components only')
-    .action(async (query, options) => {
+    .action(
+      /**
+       * @param {string | undefined} query
+       * @param {{components?: boolean}} options
+       */
+      async (query, options) => {
       const detail = program.opts().detail || 'full';
       const json = program.opts().json || false;
       const lang = program.opts().lang || null;
@@ -32,7 +40,8 @@ export function registerDiscover(program) {
       try {
         result = await discoverApi(query, {components: options.components, lang, zh});
       } catch (e) {
-        cliError(e.message, {suggestions: e.suggestions, code: e.code});
+        const err = /** @type {import('../api/error.mjs').AstryxError} */ (e);
+        cliError(err.message, {suggestions: err.suggestions, code: err.code});
         return;
       }
 
@@ -40,7 +49,7 @@ export function registerDiscover(program) {
         // Forward optional meta (e.g. configured flag for discover.list) as a
         // sibling of data via jsonOut, so the envelope still carries
         // apiVersion and goes through the single sanctioned emit path.
-        return jsonOut(result.type, result.data, result.meta);
+        return jsonOut(result.type, result.data, 'meta' in result ? result.meta : undefined);
       }
 
       switch (result.type) {

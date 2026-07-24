@@ -21,6 +21,7 @@ import * as fs from 'node:fs';
 import {createJiti} from 'jiti';
 import {formatZodError} from './config-schema.mjs';
 
+/** @type {ReturnType<typeof createJiti> | undefined} */
 let jitiInstance;
 function getJiti() {
   if (!jitiInstance) {

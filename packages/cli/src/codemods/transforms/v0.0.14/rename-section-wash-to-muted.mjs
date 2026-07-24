@@ -26,6 +26,11 @@ export const meta = {
 /** Components affected by this rename. */
 const TARGET_COMPONENTS = new Set(['XDSSection', 'XDSToolbar']);
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -33,12 +38,12 @@ export default function transformer(file, api) {
 
   // 1. Rename JSX attribute value: variant="wash" → variant="muted"
   //    Only on XDSSection and XDSToolbar.
-  root.find(j.JSXOpeningElement).forEach((path) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     const componentName = name.type === 'JSXIdentifier' ? name.name : null;
     if (!componentName || !TARGET_COMPONENTS.has(componentName)) return;
 
-    path.node.attributes.forEach((attr) => {
+    path.node.attributes.forEach((/** @type {any} */ attr) => {
       if (attr.type !== 'JSXAttribute') return;
       if (attr.name.name !== 'variant') return;
 
@@ -79,7 +84,7 @@ export default function transformer(file, api) {
 
   if (importsTarget) {
     const PropertyType = j.ObjectProperty ?? j.Property;
-    root.find(PropertyType, {key: {name: 'variant'}}).forEach((path) => {
+    root.find(PropertyType, {key: {name: 'variant'}}).forEach((/** @type {any} */ path) => {
       const value = path.node.value;
 
       // variant: 'wash' → variant: 'muted'
@@ -95,10 +100,10 @@ export default function transformer(file, api) {
       // variant: { options: ['...', 'wash', '...'] } → replace 'wash' with 'muted'
       if (value.type === 'ObjectExpression') {
         const optionsProp = value.properties.find(
-          (p) => p.key && p.key.name === 'options',
+          (/** @type {any} */ p) => p.key && p.key.name === 'options',
         );
         if (optionsProp && optionsProp.value.type === 'ArrayExpression') {
-          optionsProp.value.elements.forEach((el) => {
+          optionsProp.value.elements.forEach((/** @type {any} */ el) => {
             if (
               el &&
               (el.type === 'StringLiteral' || el.type === 'Literal') &&
@@ -117,7 +122,7 @@ export default function transformer(file, api) {
   // 3. JSX text children: replace "wash" text content adjacent to target components.
   //    Covers labels like <h4>wash</h4> that describe the variant in Storybook stories.
   if (importsTarget) {
-    root.find(j.JSXText).forEach((path) => {
+    root.find(j.JSXText).forEach((/** @type {any} */ path) => {
       if (path.node.value.trim() === 'wash') {
         path.node.value = path.node.value.replace('wash', 'muted');
         if (path.node.raw) path.node.raw = path.node.raw.replace('wash', 'muted');

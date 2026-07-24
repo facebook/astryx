@@ -23,6 +23,7 @@ export const meta = {
   pr: '#1503',
 };
 
+/** @type {Record<string, string>} */
 const RENAMES = {
   checkCircle: 'success',
   xCircle: 'error',
@@ -31,13 +32,18 @@ const RENAMES = {
 /** Prop names that accept XDSIconName values */
 const ICON_PROPS = new Set(['icon', 'name', 'selectedIcon']);
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
   // Helper: rename a string literal node if it matches a deprecated name
-  function renameStringLiteral(node) {
+  function renameStringLiteral(/** @type {any} */ node) {
     if (!node) return false;
     if (node.type === 'StringLiteral' || node.type === 'Literal') {
       const newName = RENAMES[node.value];
@@ -51,7 +57,8 @@ export default function transformer(file, api) {
   }
 
   // Helper: recursively rename deprecated icon strings inside an expression
-  function renameInExpression(node) {
+  /** @returns {boolean} */
+  function renameInExpression(/** @type {any} */ node) {
     if (!node) return false;
     let changed = false;
     if (node.type === 'StringLiteral' || node.type === 'Literal') {
@@ -67,7 +74,7 @@ export default function transformer(file, api) {
   }
 
   // 1. JSX attributes: icon="checkCircle" or icon={cond ? 'checkCircle' : 'copy'}
-  root.find(j.JSXAttribute).forEach((path) => {
+  root.find(j.JSXAttribute).forEach((/** @type {any} */ path) => {
     const attrName = path.node.name?.name;
     if (!ICON_PROPS.has(attrName)) return;
 
@@ -92,7 +99,7 @@ export default function transformer(file, api) {
 
   if (looksLikeIconRegistry) {
     const PropertyType = j.ObjectProperty ?? j.Property;
-    root.find(PropertyType).forEach((path) => {
+    root.find(PropertyType).forEach((/** @type {any} */ path) => {
       const key = path.node.key;
       if (!key) return;
       const keyName =
@@ -110,7 +117,7 @@ export default function transformer(file, api) {
   // 3. String literals in objects with icon-related keys
   //    e.g. { label: "TestX", href: "/pages/testx", icon: "checkCircle" }
   const PropertyType2 = j.ObjectProperty ?? j.Property;
-  root.find(PropertyType2).forEach((path) => {
+  root.find(PropertyType2).forEach((/** @type {any} */ path) => {
     const key = path.node.key;
     const keyName = key?.type === 'Identifier' ? key.name : key?.value;
     if (!ICON_PROPS.has(keyName)) return;

@@ -19,6 +19,11 @@ import {docs as docsApi} from '../api/docs.mjs';
 
 // ─── Formatting ──────────────────────────────────────────────────────────────
 
+/**
+ * @param {string[]} headers
+ * @param {string[][]} rows
+ * @returns {string}
+ */
 function formatTable(headers, rows) {
   const widths = headers.map((h, i) =>
     Math.max(h.length, ...rows.map(r => (r[i] || '').length)),
@@ -31,10 +36,20 @@ function formatTable(headers, rows) {
   return `${head}\n${sep}\n${body}`;
 }
 
+/**
+ * @param {string[]} headers
+ * @param {string[][]} rows
+ * @returns {string}
+ */
 function formatTableCompact(headers, rows) {
   return rows.map(r => r.join(' = ')).join('\n');
 }
 
+/**
+ * @param {import('../../../core/src/docs-types').ContentBlock} block
+ * @param {'full' | 'compact' | 'brief'} detail
+ * @returns {string | null}
+ */
 function formatBlock(block, detail) {
   switch (block.type) {
     case 'prose':
@@ -60,7 +75,7 @@ function formatBlock(block, detail) {
       return formatTable(block.headers, block.rows);
 
     case 'list': {
-      const prefix = block.style === 'ordered' ? (i) => `${i + 1}. `
+      const prefix = block.style === 'ordered' ? (/** @type {number} */ i) => `${i + 1}. `
         : block.style === 'dont' ? () => '❌ '
         : block.style === 'do' ? () => '✓ '
         : () => '- ';
@@ -72,6 +87,11 @@ function formatBlock(block, detail) {
   }
 }
 
+/**
+ * @param {import('../../../core/src/docs-types').ReferenceSection} section
+ * @param {'full' | 'compact' | 'brief'} detail
+ * @returns {string}
+ */
 function formatSection(section, detail) {
   const blocks = section.content
     .map(b => formatBlock(b, detail))
@@ -86,6 +106,11 @@ function formatSection(section, detail) {
   return `${heading}\n\n${blocks.join('\n\n')}`;
 }
 
+/**
+ * @param {import('../../../core/src/docs-types').ReferenceDoc} docs
+ * @param {'full' | 'compact' | 'brief'} detail
+ * @returns {string}
+ */
 function formatReferenceFull(docs, detail) {
   if (detail === 'brief') {
     const header = `${docs.title}: ${docs.description}`;
@@ -103,11 +128,14 @@ function formatReferenceFull(docs, detail) {
 
 // ─── Command ─────────────────────────────────────────────────────────────────
 
+/**
+ * @param {import('commander').Command} program
+ */
 export function registerDocs(program) {
   program
     .command('docs [topic] [section]')
     .description('Print reference docs')
-    .action(async (topic, section) => {
+    .action(async (/** @type {string | undefined} */ topic, /** @type {string | undefined} */ section) => {
       const run = getCliInvocation();
       const lang = program.opts().lang || null;
       const zh = program.opts().zh || false;
@@ -121,7 +149,8 @@ export function registerDocs(program) {
       } catch (e) {
         // docs API throws structured errors with {name, reason} suggestions —
         // pass them through untouched so the CLI envelope matches the API.
-        cliError(e.message, {suggestions: e.suggestions || [], code: e.code});
+        const err = /** @type {import('../api/error.mjs').AstryxError} */ (e);
+        cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
         return;
       }
 

@@ -34,6 +34,7 @@ export const meta = {
     'Renames --elevation-* to --shadow-base/menu/hover/dialog and --inset-shadow-border-*. Also migrates --shadow-1/2/3/4 from the brief numeric naming period.',
 };
 
+/** @type {Record<string, string>} */
 const TOKEN_MAP = {
   '--elevation-input-hover-success': '--inset-shadow-border-positive',
   '--elevation-input-hover-warning': '--inset-shadow-border-warning',
@@ -49,6 +50,7 @@ const TOKEN_MAP = {
   '--shadow-4': '--shadow-dialog',
 };
 
+/** @type {Record<string, string>} */
 const IDENTIFIER_MAP = {
   elevationDefaults: 'shadowDefaults',
   elevationVars: 'shadowVars',
@@ -64,16 +66,21 @@ const OLD_TOKENS_PATTERN = new RegExp(
   'g',
 );
 
-function replaceTokens(str) {
-  return str.replace(OLD_TOKENS_PATTERN, (match) => TOKEN_MAP[match] || match);
+function replaceTokens(/** @type {any} */ str) {
+  return str.replace(OLD_TOKENS_PATTERN, (/** @type {any} */ match) => TOKEN_MAP[match] || match);
 }
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
-  const replaceInStringNode = (path) => {
+  const replaceInStringNode = (/** @type {any} */ path) => {
     if (typeof path.node.value !== 'string') return;
     const original = path.node.value;
     const replaced = replaceTokens(original);
@@ -84,11 +91,11 @@ export default function transformer(file, api) {
   };
 
   root.find(j.StringLiteral).forEach(replaceInStringNode);
-  root.find(j.Literal).forEach((path) => {
+  root.find(j.Literal).forEach((/** @type {any} */ path) => {
     if (typeof path.node.value === 'string') replaceInStringNode(path);
   });
 
-  root.find(j.TemplateLiteral).forEach((path) => {
+  root.find(j.TemplateLiteral).forEach((/** @type {any} */ path) => {
     for (const quasi of path.node.quasis) {
       const originalRaw = quasi.value.raw;
       const replacedRaw = replaceTokens(originalRaw);
@@ -100,7 +107,7 @@ export default function transformer(file, api) {
     }
   });
 
-  root.find(j.Identifier).forEach((path) => {
+  root.find(j.Identifier).forEach((/** @type {any} */ path) => {
     if (Object.hasOwn(IDENTIFIER_MAP, path.node.name)) {
       path.node.name = IDENTIFIER_MAP[path.node.name];
       hasChanges = true;

@@ -26,6 +26,7 @@ const TARGET_COMPONENTS = new Set([
   'XDSSideNavHeading',
 ]);
 
+/** @type {Record<string, string>} */
 const PROP_RENAMES = {
   title: 'heading',
   titleHref: 'headingHref',
@@ -35,24 +36,30 @@ const PROP_RENAMES = {
   subtitleHref: 'subheadingHref',
 };
 
+/** @type {Record<string, string>} */
 const IMPORT_RENAMES = {
   XDSSideNavHeader: 'XDSSideNavHeading',
   XDSSideNavHeaderProps: 'XDSSideNavHeadingProps',
 };
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
   // 1. Rename props on target components
-  root.find(j.JSXOpeningElement).forEach((path) => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     if (name.type !== 'JSXIdentifier' || !TARGET_COMPONENTS.has(name.name)) {
       return;
     }
 
-    path.node.attributes.forEach((attr) => {
+    path.node.attributes.forEach((/** @type {any} */ attr) => {
       if (attr.type === 'JSXAttribute' && attr.name.name in PROP_RENAMES) {
         attr.name.name = PROP_RENAMES[attr.name.name];
         hasChanges = true;
@@ -61,13 +68,13 @@ export default function transformer(file, api) {
   });
 
   // 2. Rename <XDSSideNavHeader> to <XDSSideNavHeading> (opening and closing tags)
-  root.find(j.JSXIdentifier, {name: 'XDSSideNavHeader'}).forEach((path) => {
+  root.find(j.JSXIdentifier, {name: 'XDSSideNavHeader'}).forEach((/** @type {any} */ path) => {
     path.node.name = 'XDSSideNavHeading';
     hasChanges = true;
   });
 
   // 3. Rename import specifiers
-  root.find(j.ImportSpecifier).forEach((path) => {
+  root.find(j.ImportSpecifier).forEach((/** @type {any} */ path) => {
     const imported = path.node.imported;
     if (imported.type === 'Identifier' && imported.name in IMPORT_RENAMES) {
       const oldName = imported.name;

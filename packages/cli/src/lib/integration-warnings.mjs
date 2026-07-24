@@ -28,7 +28,7 @@ import {validateLoadedIntegration} from '../api/validate-integration.mjs';
  *
  *   Warning: <pkg> has N integration issue(s). Run: astryx validate-integration <pkg>
  *
- * @param {Array<object>} loadedIntegrations the Project's loaded integrations
+ * @param {Array<import('./integrations.mjs').LoadedIntegration>} loadedIntegrations the Project's loaded integrations
  * @param {{json?: boolean}} [options]
  * @returns {Promise<void>}
  */

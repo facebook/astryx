@@ -83,6 +83,7 @@ export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
 function buildFeedback(component, issuesUrl) {
   if (!issuesUrl) return null;
 
+  /** @type {{issuesUrl: string, ghCommand?: string}} */
   const feedback = {issuesUrl};
 
   // Accept any github.com/<owner>/<repo>/issues(/new)? form.
@@ -103,7 +104,7 @@ function buildFeedback(component, issuesUrl) {
  * empty list means "core only". The core issues URL is routed through the
  * Project (config.issuesUrl, falling back to the default core tracker).
  * @param {string} cwd
- * @returns {Promise<{loadedIntegrations: Array<object>, issuesUrl: string|undefined, project: Project|null}>}
+ * @returns {Promise<{loadedIntegrations: import('../lib/integrations.mjs').LoadedIntegration[], issuesUrl: string|undefined, project: Project|null}>}
  */
 async function loadConfigSafely(cwd) {
   try {
@@ -162,13 +163,19 @@ function resolveOwners(coreDir, loadedIntegrations, name, coreIssuesUrl) {
   return owners;
 }
 
-/** Whether a filename should be excluded from the swizzle copy. */
+/**
+ * Whether a filename should be excluded from the swizzle copy.
+ * @param {string} file
+ */
 function isExcludedFromCopy(file) {
   return (
     file.includes('.test.') || file.includes('.doc.') || file === 'README.md'
   );
 }
 
+/**
+ * @param {import('commander').Command} program
+ */
 export function registerSwizzle(program) {
   program
     .command('swizzle [component]')
@@ -177,7 +184,7 @@ export function registerSwizzle(program) {
     .option('--package <pkg>', 'Scope to a specific owning package')
     .option('--list', 'List available components')
     .option('-f, --overwrite', 'Overwrite existing files without prompting')
-    .action(async (component, options) => {
+    .action(async (/** @type {string | undefined} */ component, /** @type {{output: string, package?: string, list?: boolean, overwrite?: boolean}} */ options) => {
       const coreDir = findCoreDir(process.cwd());
       const json = program.opts().json || false;
       const run = getCliInvocation();

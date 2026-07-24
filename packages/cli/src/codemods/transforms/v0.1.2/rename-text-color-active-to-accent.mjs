@@ -40,13 +40,18 @@ const NEW_VALUE = 'accent';
 /** Components whose `color` prop accepts a TextColor value. */
 const TARGET_COMPONENTS = new Set(['Text', 'Heading', 'Link', 'Timestamp']);
 
+/**
+ * @param {import('../../../types/codemod').AstryxCodemodFile} file
+ * @param {import('../../../types/codemod').CodemodTransformApi} api
+ * @returns {string | null | undefined}
+ */
 export default function transformer(file, api) {
   const j = api.jscodeshift;
   const root = j(file.source);
   let hasChanges = false;
 
   /** Rewrite a string-literal node when it equals the old value. */
-  function renameStringLiteral(node) {
+  function renameStringLiteral(/** @type {any} */ node) {
     if (!node) return false;
     if (
       (node.type === 'StringLiteral' || node.type === 'Literal') &&
@@ -60,7 +65,8 @@ export default function transformer(file, api) {
   }
 
   /** Recursively rewrite the old value inside ternary/logical expressions. */
-  function renameInExpression(node) {
+  /** @returns {boolean} */
+  function renameInExpression(/** @type {any} */ node) {
     if (!node) return false;
     let changed = false;
     if (node.type === 'StringLiteral' || node.type === 'Literal') {
@@ -79,12 +85,12 @@ export default function transformer(file, api) {
   }
 
   // --- 1. JSX attribute: color="active" / color={'active'} on target components ---
-  root.find(j.JSXOpeningElement).forEach(path => {
+  root.find(j.JSXOpeningElement).forEach((/** @type {any} */ path) => {
     const name = path.node.name;
     const componentName = name.type === 'JSXIdentifier' ? name.name : null;
     if (!componentName || !TARGET_COMPONENTS.has(componentName)) return;
 
-    path.node.attributes.forEach(attr => {
+    path.node.attributes.forEach((/** @type {any} */ attr) => {
       if (attr.type !== 'JSXAttribute') return;
       if (!attr.name || attr.name.name !== 'color') return;
 
@@ -104,27 +110,27 @@ export default function transformer(file, api) {
   const importsTarget =
     root
       .find(j.ImportSpecifier)
-      .filter(p => TARGET_COMPONENTS.has(p.node.imported?.name))
+      .filter((/** @type {any} */ p) => TARGET_COMPONENTS.has(p.node.imported?.name))
       .size() > 0;
 
   if (importsTarget) {
     const PropertyType = j.ObjectProperty ?? j.Property;
 
     // --- 2. Object property: { color: 'active' } / { color: 'active' as const } ---
-    root.find(PropertyType, {key: {name: 'color'}}).forEach(path => {
+    root.find(PropertyType, {key: {name: 'color'}}).forEach((/** @type {any} */ path) => {
       if (renameInExpression(path.node.value)) hasChanges = true;
     });
 
     // --- 3. Storybook argTypes: color: { options: [..., 'active', ...] } ---
-    root.find(PropertyType, {key: {name: 'color'}}).forEach(path => {
+    root.find(PropertyType, {key: {name: 'color'}}).forEach((/** @type {any} */ path) => {
       const value = path.node.value;
       if (!value || value.type !== 'ObjectExpression') return;
 
       const optionsProp = value.properties.find(
-        p => p.key && (p.key.name === 'options' || p.key.value === 'options'),
+        (/** @type {any} */ p) => p.key && (p.key.name === 'options' || p.key.value === 'options'),
       );
       if (optionsProp && optionsProp.value.type === 'ArrayExpression') {
-        optionsProp.value.elements.forEach(el => {
+        optionsProp.value.elements.forEach((/** @type {any} */ el) => {
           if (renameStringLiteral(el)) hasChanges = true;
         });
       }
