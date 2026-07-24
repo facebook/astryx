@@ -635,3 +635,27 @@ export const MaxLengthVariations: Story = {
     );
   },
 };
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState('Too short');
+    const [b, setB] = useState('Too short');
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
+        <TextArea
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Must be at least 50 characters'}}
+        />
+        <TextArea
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Must be at least 50 characters'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};

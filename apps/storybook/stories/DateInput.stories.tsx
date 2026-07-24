@@ -366,3 +366,31 @@ export const ClearableWithStatus: Story = {
     status: {type: 'error', message: 'Date is in the past'},
   },
 };
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    const [b, setB] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+        <DateInput
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'This date is not available'}}
+        />
+        <DateInput
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'This date is not available'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};

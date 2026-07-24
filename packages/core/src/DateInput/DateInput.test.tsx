@@ -835,3 +835,26 @@ describe('DateInput', () => {
     });
   });
 });
+
+
+describe('DateInput statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <DateInput label="Date" onChange={() => {}} status={{type: 'error', message: 'Bad date'}} />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <DateInput label="Date" onChange={() => {}} status={{type: 'error', message: 'Bad date'}} statusVariant="detached" />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
+  });
+});

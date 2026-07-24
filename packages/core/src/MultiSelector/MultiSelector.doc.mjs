@@ -156,6 +156,13 @@ export const docs = {
           description: 'Validation status with an optional message.',
         },
         {
+          name: 'statusVariant',
+          type: "'attached' | 'detached'",
+          description:
+            'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+          default: "'attached'",
+        },
+        {
           name: 'renderOption',
           type: '(option: MultiSelectorOptionData) => ReactNode',
           description:
@@ -250,6 +257,7 @@ export const docsZh = {
         isRequired: '将字段标记为必填。',
         isLoading: '在触发器中显示加载旋转器。',
         status: '带可选消息的验证状态。',
+        statusVariant: '状态消息的放置方式：attached 直接叠加在输入框下方；detached 作为独立元素浮于下方并留有间距。',
         renderOption:
           '每个可选选项的自定义渲染函数。不会用于分隔线、分组或全选行。',
         xstyle: '布局自定义的 StyleX 样式，必须是 stylex.create() 值。',
@@ -375,6 +383,7 @@ export const docsDense = {
         isRequired: 'marks required',
         isLoading: 'spinner in trigger',
         status: 'validation status w/ optional message',
+        statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
         renderOption:
           'custom render fn per selectable option; not dividers/sections/select-all',
         xstyle: 'StyleX layout styles; stylex.create() only',

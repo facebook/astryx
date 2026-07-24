@@ -555,3 +555,27 @@ export const ClearableWithUnits: Story = {
     max: 100,
   },
 };
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<number | null>(-5);
+    const [b, setB] = useState<number | null>(-5);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+        <NumberInput
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Must be a positive number'}}
+        />
+        <NumberInput
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Must be a positive number'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};

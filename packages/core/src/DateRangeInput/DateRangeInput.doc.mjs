@@ -128,6 +128,13 @@ export const docs = {
       description: 'Status indicator for error, warning, or success states.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
+    },
+    {
       name: 'labelTooltip',
       type: 'string',
       description: 'Tooltip text via info icon at label end.',
@@ -296,6 +303,7 @@ export const docsDense = {
     placeholder: 'placeholder when empty',
     size: 'trigger size',
     status: 'error/warning/success status',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     labelTooltip: 'tooltip via info icon at label end',
     numberOfMonths: 'months in calendar (default 2)',
     changeAction:

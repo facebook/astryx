@@ -44,6 +44,7 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -199,6 +200,13 @@ export interface TextInputProps extends Omit<
    */
   status?: InputStatus;
   /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
+  /**
    * The size of the input.
    * - 'sm': Compact size (18px height)
    * - 'md': Default size (26px height)
@@ -280,6 +288,7 @@ export function TextInput({
   disabledMessage,
   startIcon,
   status,
+  statusVariant = 'attached',
   size: sizeProp,
   onChange,
   changeAction,
@@ -495,6 +504,7 @@ export function TextInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {inputWrapper}

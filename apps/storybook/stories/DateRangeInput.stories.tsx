@@ -333,3 +333,27 @@ export const AllVariations: Story = {
     );
   },
 };
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<DateRange | null>(null);
+    const [b, setB] = useState<DateRange | null>(null);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
+        <DateRangeInput
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'Please select a date range'}}
+        />
+        <DateRangeInput
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'Please select a date range'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};
