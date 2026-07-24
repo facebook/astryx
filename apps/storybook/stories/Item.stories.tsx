@@ -38,6 +38,7 @@ const meta: Meta<typeof Item> = {
   argTypes: {
     align: {control: 'select', options: ['center', 'start']},
     density: {control: 'select', options: ['compact', 'balanced', 'spacious']},
+    variant: {control: 'select', options: ['default', 'outline', 'muted']},
   },
 };
 
@@ -257,6 +258,64 @@ export const Disabled: Story = {
         description="This item cannot be interacted with"
         onClick={() => {}}
         isDisabled
+      />
+    </Stack>
+  ),
+};
+
+/**
+ * Surface variants. `variant` is opt-in — an Item without it stays transparent,
+ * which is what lists and menus want. The three variants share Card's tokens but
+ * keep Item's element-scale radius.
+ */
+export const Variants: Story = {
+  render: () => (
+    <Stack gap={2}>
+      <Item label="No variant" description="Transparent — the default" />
+      <Item
+        variant="default"
+        label="default"
+        description="Card background with a visible border"
+      />
+      <Item
+        variant="outline"
+        label="outline"
+        description="Border only, no fill"
+      />
+      <Item
+        variant="muted"
+        label="muted"
+        description="Muted background, no border"
+      />
+    </Stack>
+  ),
+};
+
+/**
+ * Hover and selection composite *over* the variant surface rather than
+ * replacing it, so a bordered or filled Item still gives interaction feedback.
+ */
+export const VariantsInteractive: Story = {
+  render: () => (
+    <Stack gap={2}>
+      <Item
+        variant="default"
+        label="Clickable default"
+        description="Hover me"
+        onClick={() => {}}
+      />
+      <Item
+        variant="outline"
+        label="Selected outline"
+        description="Selection tint over the border"
+        isSelected
+        onClick={() => {}}
+      />
+      <Item
+        variant="muted"
+        label="Clickable muted"
+        description="Hover still reads, even though muted and the hover overlay share a token value in light mode"
+        onClick={() => {}}
       />
     </Stack>
   ),
