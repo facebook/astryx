@@ -73,6 +73,11 @@ const meta: Meta<typeof Avatar> = {
       control: 'text',
       description: 'Alt text (falls back to name)',
     },
+    tooltip: {
+      control: 'text',
+      description:
+        'Hover/focus tooltip. Omitted or true shows the name; a string shows that text; false disables it. Set false when wrapping in your own Tooltip/HoverCard.',
+    },
     status: {
       control: 'boolean',
       description: 'Show status indicator dot',
@@ -596,6 +601,83 @@ export const NumericSizes: Story = {
         <Avatar name="72" size={72} />
         <Avatar name="96" size={96} />
         <Avatar name="128" size={128} />
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * By default, hovering (or keyboard-focusing) any named Avatar reveals its
+ * `name` in a tooltip. No configuration required.
+ */
+export const NameTooltip: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>
+        Default name tooltip (hover or focus each avatar)
+      </h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar
+          src="https://i.pravatar.cc/150?img=11"
+          name="Ada Lovelace"
+          size="lg"
+        />
+        <Avatar name="Grace Hopper" size="lg" />
+        <Avatar
+          src="https://i.pravatar.cc/150?img=12"
+          name="Katherine Johnson"
+          size="lg"
+        />
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Pass a string to `tooltip` to show custom text instead of the `name` —
+ * without wrapping the Avatar in a `Tooltip`. Handy when the display name
+ * differs from a short handle, or when you want to add a role/title.
+ */
+export const CustomTooltip: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>Custom tooltip text</h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar
+          src="https://i.pravatar.cc/150?img=13"
+          name="alovelace"
+          tooltip="Ada Lovelace — Mathematician"
+          size="lg"
+        />
+        <Avatar
+          name="ghopper"
+          tooltip="Grace Hopper — Rear Admiral"
+          size="lg"
+        />
+      </div>
+    </div>
+  ),
+};
+
+/**
+ * Set `tooltip={false}` to opt out of the built-in name tooltip — for example
+ * when you supply your own richer overlay (a `Tooltip` or `HoverCard`) around
+ * the Avatar and don't want a second popup.
+ */
+export const TooltipDisabled: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>
+        Tooltip disabled (no popup on hover)
+      </h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar
+          src="https://i.pravatar.cc/150?img=14"
+          name="Ada Lovelace"
+          tooltip={false}
+          size="lg"
+        />
+        <Avatar name="Grace Hopper" tooltip={false} size="lg" />
       </div>
     </div>
   ),
