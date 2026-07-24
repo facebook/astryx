@@ -61,7 +61,10 @@ export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
       const parts = importPath.replace(/^\.\.\//, '').split('/');
       const topDir = parts[0];
 
-      // Map to the owner package subpath
+      // Map BaseProps through the core barrel; other imports keep using owner subpaths.
+      if (ownerPackage === CORE_PACKAGE && topDir === 'BaseProps') {
+        return `${prefix}${ownerPackage}${suffix}`;
+      }
       return `${prefix}${ownerPackage}/${topDir}${suffix}`;
     },
   );
