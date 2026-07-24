@@ -25,10 +25,10 @@ const meta: Meta<typeof Thumbnail> = {
       control: 'boolean',
       description: 'Whether the thumbnail is disabled',
     },
-    elevation: {
+    showRemoveOn: {
       control: 'inline-radio',
-      options: ['none', 'low', 'med', 'high'],
-      description: 'Resting shadow depth',
+      options: ['always', 'hover'],
+      description: 'When the remove button is visible',
     },
   },
 };
@@ -74,6 +74,46 @@ export const WithRemove: Story = {
         label="photo.png"
         onRemove={() => setVisible(false)}
       />
+    );
+  },
+};
+
+export const RemoveOnHover: Story = {
+  name: 'Remove on hover',
+  render: () => {
+    const initial = [
+      {id: 1, src: LIGHT_IMAGE, label: 'light.jpg', alt: 'Light image'},
+      {id: 2, src: WARM_IMAGE, label: 'warm.jpg', alt: 'Warm tones'},
+      {id: 3, src: MIXED_IMAGE, label: 'mixed.jpg', alt: 'Mixed tones'},
+    ];
+    const [items, setItems] = useState(initial);
+    return (
+      <div>
+        <p style={{fontSize: 12, color: '#888', marginBottom: 8}}>
+          Remove button is hidden until you hover the thumbnail (or focus it
+          with the keyboard).
+        </p>
+        <div style={{display: 'flex', gap: 8, alignItems: 'flex-start'}}>
+          {items.map(item => (
+            <Thumbnail
+              key={item.id}
+              src={item.src}
+              alt={item.alt}
+              label={item.label}
+              showRemoveOn="hover"
+              onRemove={() =>
+                setItems(prev => prev.filter(i => i.id !== item.id))
+              }
+            />
+          ))}
+          {items.length === 0 && (
+            <p style={{color: '#888', fontSize: 12}}>
+              All removed.{' '}
+              <button onClick={() => setItems(initial)}>Reset</button>
+            </p>
+          )}
+        </div>
+      </div>
     );
   },
 };

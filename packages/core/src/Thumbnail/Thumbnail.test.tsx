@@ -129,33 +129,59 @@ describe('Thumbnail', () => {
     expect(ref).toHaveBeenCalled();
   });
 
-  describe('elevation', () => {
-    // The elevation class lives on the image container (the shadow surface),
-    // which is the root's first element child.
-    const imageContainerClass = (
-      elevation: 'none' | 'low' | 'med' | 'high',
-    ) => {
-      const {container} = render(
-        <Thumbnail src="/x.png" alt="x" elevation={elevation} />,
+  describe('showRemoveOn', () => {
+    // The reveal style lives on the slot <div> that wraps the remove button
+    // (ancestor-marker styles can't ride on a child component's xstyle prop),
+    // so assert on the button's parent element.
+    const removeSlotClass = (
+      showRemoveOn?: 'always' | 'hover',
+    ): {className: string; unmount: () => void} => {
+      const view = render(
+        <Thumbnail
+          label="file.png"
+          onRemove={vi.fn()}
+          showRemoveOn={showRemoveOn}
+        />,
       );
-      return container.firstElementChild!.firstElementChild!.className;
+      const slot = screen.getByRole('button', {
+        name: 'Remove file.png',
+      }).parentElement!;
+      return {className: slot.className, unmount: view.unmount};
     };
 
-    it('renders a distinct class for each elevation level', () => {
-      const classes = new Set([
-        imageContainerClass('none'),
-        imageContainerClass('low'),
-        imageContainerClass('med'),
-        imageContainerClass('high'),
-      ]);
-      expect(classes.size).toBe(4);
+    it('renders the remove button in the DOM even when showRemoveOn="hover"', () => {
+      // Hover reveal is CSS-only (opacity) — the button must stay mounted so
+      // it remains reachable by keyboard and assistive tech.
+      render(
+        <Thumbnail label="file.png" onRemove={vi.fn()} showRemoveOn="hover" />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Remove file.png'}),
+      ).toBeInTheDocument();
     });
 
-    it('defaults to flat (elevation none)', () => {
-      const {container: def} = render(<Thumbnail src="/x.png" alt="x" />);
-      expect(def.firstElementChild!.firstElementChild!.className).toBe(
-        imageContainerClass('none'),
+    it('applies a distinct slot class when showRemoveOn="hover" vs "always"', () => {
+      const always = removeSlotClass('always');
+      always.unmount();
+      const hover = removeSlotClass('hover');
+      expect(hover.className).not.toBe(always.className);
+    });
+
+    it('defaults to "always" (same slot class as an explicit always)', () => {
+      const def = removeSlotClass(undefined);
+      def.unmount();
+      const always = removeSlotClass('always');
+      expect(def.className).toBe(always.className);
+    });
+
+    it('still fires onRemove when revealed on hover', async () => {
+      const user = userEvent.setup();
+      const onRemove = vi.fn();
+      render(
+        <Thumbnail label="file.png" onRemove={onRemove} showRemoveOn="hover" />,
       );
+      await user.click(screen.getByRole('button', {name: 'Remove file.png'}));
+      expect(onRemove).toHaveBeenCalledOnce();
     });
   });
 });
