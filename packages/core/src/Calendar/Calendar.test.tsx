@@ -1010,8 +1010,8 @@ describe('Calendar', () => {
       expect(next).toHaveClass('astryx-calendar-nav');
 
       // Direction is reflected so a theme can target one arrow alone.
-      expect(prev).toHaveAttribute('data-direction', 'prev');
-      expect(next).toHaveAttribute('data-direction', 'next');
+      expect(prev).toHaveAttribute('data-nav', 'prev');
+      expect(next).toHaveAttribute('data-nav', 'next');
     });
 
     it('reflects the disabled nav state as a data attribute at the range edges', () => {
@@ -1063,7 +1063,7 @@ describe('Calendar', () => {
         components: {
           'calendar-nav': {
             base: {color: 'var(--color-accent)'},
-            'direction:next': {backgroundColor: 'var(--color-accent-muted)'},
+            'nav:next': {backgroundColor: 'var(--color-accent-muted)'},
           },
         },
       });

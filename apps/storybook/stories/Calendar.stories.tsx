@@ -326,7 +326,7 @@ export const ThemedSelectedAndTodayRing: Story = {
  * - `components['calendar-nav']` scopes overrides to the prev/next month
  *   buttons only (via the `astryx-calendar-nav` target), instead of the global
  *   `astryx-button` handle that would hit every Button in the app. The
- *   `direction` visual prop and `disabled` state are reflected as data
+ *   `nav` visual prop and `disabled` state are reflected as data
  *   attributes, so a theme can target one arrow or the disabled edge alone.
  * - `components['calendar-day'].selected` restyles the selected-date treatment
  *   (the `astryx-calendar-day` target with its `selected` state).
@@ -339,7 +339,7 @@ const navRingTheme = defineTheme({
         color: 'var(--color-accent)',
         borderRadius: 'var(--radius-inner)',
       },
-      'direction:next': {
+      'nav:next': {
         backgroundColor: 'var(--color-accent-muted)',
       },
     },
