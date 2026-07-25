@@ -82,13 +82,14 @@ const styles = stylex.create({
     // rendered until close() has actually run: an open modal dialog that isn't
     // rendered still blocks the whole document, and a browser that fails to
     // un-block it on close leaves the page inert with no error (#4290).
+    // Deliberately not shortened under reduced motion: `display` is discrete,
+    // so a long hold animates nothing — it is only the window the close has to
+    // land inside. The visible transitions (the drawer's transform and the
+    // backdrop's opacity) are the ones that respect the preference.
     display: 'none',
     transitionProperty: 'display',
     transitionDuration: durationVars['--duration-medium'],
     transitionBehavior: 'allow-discrete',
-    '@media (prefers-reduced-motion: reduce)': {
-      transitionDuration: '0.01s',
-    },
   },
   open: {
     display: 'flex',
@@ -193,6 +194,65 @@ const dynamicStyles = stylex.create({
     maxWidth: `${w}px`,
   }),
 });
+
+// =============================================================================
+// Close timing
+// =============================================================================
+
+/** Longest the drawer will wait before closing, however long the hold is. */
+const MAX_CLOSE_DELAY_MS = 250;
+/** Fraction of the hold to close at, so the close never lands on its boundary. */
+const CLOSE_WITHIN_HOLD = 0.6;
+
+/** Shortest duration in a `transition-duration` list, in ms; null if unreadable. */
+function parseShortestDurationMs(value: string): number | null {
+  const durations = value
+    .split(',')
+    .map(part => {
+      const trimmed = part.trim();
+      const ms = Number.parseFloat(trimmed);
+      if (!Number.isFinite(ms)) {
+        return null;
+      }
+      return trimmed.endsWith('ms')
+        ? ms
+        : trimmed.endsWith('s')
+          ? ms * 1000
+          : null;
+    })
+    .filter((ms): ms is number => ms !== null);
+
+  return durations.length ? Math.min(...durations) : null;
+}
+
+/**
+ * How long to wait before closing the native dialog.
+ *
+ * The drawer is only rendered for as long as its `display` transition runs, and
+ * closing an unrendered modal dialog is what leaves the page inert (#4290). So
+ * the close has to land inside that hold. The hold is `--duration-medium`,
+ * which themes rewrite — the shipped y2k theme sets it to exactly 250ms — so
+ * read the hold in effect rather than assuming it.
+ */
+function resolveCloseDelay(dialog: HTMLDialogElement): number {
+  // Reduced motion makes the close sooner; it must not make the hold shorter.
+  // Shrinking both leaves no slack — one slow frame between the commit and this
+  // macrotask and the drawer has already stopped being rendered.
+  const cap = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ? 0
+    : MAX_CLOSE_DELAY_MS;
+
+  const hold = parseShortestDurationMs(
+    window.getComputedStyle(dialog).transitionDuration,
+  );
+
+  // The hold is unreadable — an unresolved var() outside a real browser.
+  if (hold === null) {
+    return cap;
+  }
+
+  return hold <= 0 ? 0 : Math.min(cap, hold * CLOSE_WITHIN_HOLD);
+}
 
 // =============================================================================
 // Types
@@ -371,18 +431,9 @@ export function MobileNav({
     } else if (dialog.open) {
       document.documentElement.style.overflow = '';
 
-      // Close part-way through the slide-out, never on its boundary: the
-      // dialog stays rendered only until the `display` transition ends, and
-      // closing an unrendered modal dialog is what wedges the page (#4290).
-      // Under reduced motion the transition is 0.01s, so close on the next
-      // tick rather than racing it.
-      const duration = window.matchMedia('(prefers-reduced-motion: reduce)')
-        .matches
-        ? 0
-        : 250;
       closeTimeoutRef.current = setTimeout(() => {
         dialog.close();
-      }, duration);
+      }, resolveCloseDelay(dialog));
     }
 
     return () => {

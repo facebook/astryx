@@ -60,6 +60,10 @@ describe('MobileNav stays rendered while it closes', () => {
     // click past. See the file header.
     expect(style.transitionProperty).toContain('display');
     expect(style.transitionBehavior).toBe('allow-discrete');
+    // A zero hold is the bug wearing the fix's clothes: the drawer stops being
+    // rendered on the next style recalc, before any effect can close it.
+    expect(style.transitionDuration.trim()).not.toBe('');
+    expect(style.transitionDuration).not.toBe('0s');
   });
 
   it('keeps the native dialog open until the slide-out has run', () => {

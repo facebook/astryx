@@ -8,4 +8,6 @@
 
 `display` now takes part in the transition with `transition-behavior: allow-discrete`, so it flips to `none` only once the slide-out has finished — including when React's `<Activity mode="hidden">` hides the drawer inside AppShell, where the hide is applied as an inline `!important` style. The unmount close also moves into its own effect, matching `lab/Drawer`: keeping it in the open/close effect meant its cleanup closed the dialog on every `isOpen` flip and cut off the delayed close, so the slide-out never played.
 
+The close delay is derived from the hold actually in effect rather than assumed. That hold is `--duration-medium`, which themes rewrite — the shipped y2k theme sets it to exactly 250ms, as does the documented "Snappy" motion preset — so a fixed 250ms delay sat on the hold's boundary, and any shorter theme landed past it. `prefers-reduced-motion` now shortens the delay instead of the hold: shrinking both left no slack, so one slow frame between the commit and the close reproduced the original fault on the accessibility setting.
+
 @AKnassa
