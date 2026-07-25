@@ -202,6 +202,16 @@ export const docs = {
         'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
     },
     {
+      name: 'onFocus',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: 'Fires when focus enters the tokenizer input.',
+    },
+    {
+      name: 'onBlur',
+      type: '(e: FocusEvent<HTMLInputElement>) => void',
+      description: 'Fires when focus leaves the tokenizer input.',
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
