@@ -42,51 +42,98 @@ until they merge to `main`.
 Focus review on production and consumer-facing changes. Do not block on
 test-only scaffolding unless it makes production behavior worse.
 
-## Review buckets — framing by author
+## Blocking criteria — score the failure, not its likelihood
 
-Who opened the PR changes *how* the reviewer frames its findings — not *what* it
-looks for, and not whether the PR can merge. The checks are the same; only the
-tone rotates. Resolve the author into one bucket, in this order:
+A finding's severity is set by **what breaks if it ships**, not by how likely
+the trigger is, who wrote it, or whether a linter already flagged it. A rare
+path to data loss is still a blocker; a lint-suppressed hardcode is still a
+blocker. Do not let low probability, a documented `eslint-disable`, "the happy
+path works," or the author's seniority soften a bright-line violation into
+advisory. Score the failure first; use likelihood only to prioritize the fix,
+never to decide whether it blocks.
 
-1. **Design owner** — the author's `@handle` is in `.github/DESIGNOWNERS`.
-   (Checked *first*; a design owner who is also an eng owner is still framed as a
-   design owner.)
-2. **Eng team** — otherwise, the author's `@handle` is in `.github/ENGOWNERS`
-   (the authoritative Astryx engineering-team list — distinct from CODEOWNERS,
-   which is only the default-reviewer subset).
-3. **Contributor** — otherwise: an internal or external contributor. (As a
-   sanity check, a contributor's PR reports `author_association`
-   `CONTRIBUTOR`/`FIRST_TIME_CONTRIBUTOR`/`NONE`; if a handle isn't in either
-   owners file, treat it as a contributor.)
+When a finding is blocking, **lead with 🔴, recommend request-changes, cite the
+specific rule, and point at the concrete fix** (the token to use, the API a
+sibling already establishes, the accessible path that must work). Separate the
+*finding* from the *remedy*: a blocking bug stays blocking even when the exact
+fix is an open question — state the block, then ask about the approach.
 
-> **Why explicit owners files, not `author_association`.** On a public
-> `facebook/*` repo, org-level `MEMBER` is far broader than this team and the
-> collaborator list inherits the whole org. The owners files are the precise,
-> intentional source of truth for who is on the eng and design teams here.
+**🔴 Always blocking:**
 
-| Bucket | Reviewer's framing |
-|---|---|
-| **Eng team** | *Assistant* to the author's own judgment — surface potential issues for them to weigh. |
-| **Design owner** | Same checks, framed for a designer — name what crosses into engineering territory and needs an engineer's eye. |
-| **Contributor** | *Initial review pass* — the first sweep, so human reviewers know where to focus scrutiny; findings are a triage map, not a verdict. |
+- **Hardcoded colors.** Every color is either a token — `var(--color-*)` — or
+  **derived from tokens** via `color-mix()` / `light-dark()` / `calc()` whose
+  inputs are vars. **No raw hex/rgb/hsl anywhere**, including as an argument to
+  `light-dark()` or `color-mix()`, behind a `const`, or under an
+  `eslint-disable`. "No suitable token exists" is **not** an exception: prefer an
+  existing semantic token (e.g. `--color-overlay` for a scrim), derive from one
+  (the on-media absolutes `--color-on-dark` / `--color-on-light` for fixed
+  values over images), or add a token. Same rule for spacing, radius, and
+  shadow — token or derived-from-token, never a raw value.
+- **Removing a themeable surface.** Replacing a token, a `themeProps` target, or
+  a `MediaTheme`-flowed override with a fixed value so a theme can no longer
+  influence it. Ask *"is this still themeable?"* before *"is this lint-clean?"*.
+  A value pinned on `xstyle` / `style` sits at the top of the cascade (see the
+  Cascade Model in [Theming Infrastructure](https://github.com/facebook/astryx/wiki/Theming-Infrastructure))
+  and takes that surface out of the theme system — blocking even when it renders
+  correctly.
+- **Raw CSS or hand-rolled JS style workarounds** for anything StyleX supports
+  (verify against `internal/stylex-capabilities/CAPABILITIES.md`), or raw HTML
+  where an Astryx primitive exists.
+- **A broken accessible path — any modality.** Mouse, keyboard, screen reader,
+  and touch must all keep the control operable. Touch is an operable modality:
+  hover-gated reveals break **hybrid devices** (touchscreen laptops report
+  `hover: hover` + `pointer: fine`), so a control that only appears on `:hover`
+  can leave an invisible-but-clickable element — especially destructive ones.
+  Prefer `@media (any-pointer: coarse)` ("the device *has* touch", incl.
+  hybrids) over `hover: none` for "always show". Also blocking: focus lost on
+  state change, a focusable element removed from the DOM, or an interactive
+  target below the minimum size.
+- **Hardcoded user-facing strings.** All UI text goes through `useTranslator()`
+  / the i18n key system (`@astryx/no-hardcoded-i18n-string`), and new keys must
+  match the required format (`@astryx/i18n-key-format`).
+- **Public API-convention violations** (see [API Conventions](https://github.com/facebook/astryx/wiki/API-Conventions)) —
+  booleans not `is`/`has`-prefixed, wrong callback shape (`onValueChange` for the
+  primary change instead of `onChange`; missing `onChangeAction` async pattern),
+  inventing a name when a sibling convention exists (match `showOn`, `endContent`,
+  etc.), dropping `...rest` / passthrough, or `xstyle`/`className`/`style`
+  overwritten instead of merged via `mergeProps`. Public API shape is hard to
+  walk back — treat it as blocking, not a nit.
+- **A real bug or breaking change**, including *latent* ones: a passthrough
+  silently dropped, a feature that breaks when composed with another, a
+  regression in an existing behavior.
+- **Public-repo leak** — internal identifiers (T/D/S/P-numbers), infra names,
+  unixnames or `@meta.com` emails, or tool/assistant fingerprints in any
+  committed text (code, comments, PR title/body, changeset).
+- **Missing changeset** for a consumer-visible change.
 
-> **The merge gate is set by the workflow, from area + author.** Buckets shape
-> *how Copilot frames its comment*; the `review-signal` workflow decides whether
-> a PR is *blocked from auto-merge*. It applies two labels and disables
-> auto-merge when either fires:
->
-> - **`needs:code-review`** — a high-risk **code** area (new package, new
->   component/module, public API surface) not confined to low-risk areas.
->   Requests review from CODEOWNERS. **Eng owners self-serve code** — their
->   high-risk PRs are not tagged or gated.
-> - **`needs:design-review`** — a **design-affecting** change anywhere (StyleX,
->   theme/token files, templates, a new component). Requests review from
->   DESIGNOWNERS. **Design owners self-serve design** — their design PRs are not
->   tagged or gated.
->
-> So each team self-serves its own domain; the gate protects everyone else. A
-> code owner's approval clears `needs:code-review`; a design owner's (or code
-> owner's) approval clears `needs:design-review`.
+**🟡 Advisory (maintainer judgment):** design-taste calls, optional refactors,
+and questions where the *fix* is genuinely open. The underlying *finding* may
+still be blocking — if so, file it as 🔴 and route only the remedy to judgment.
+
+**🟢 Clean:** none of the above, within what's verifiable. Never a merge
+guarantee.
+
+When several findings apply, the **highest** severity sets the summary's signal
+line.
+
+## Same bar for every author
+
+**Who opened the PR does not change the review.** Apply the same checks, the
+same severity, and the same tone regardless of whether the author is an eng
+owner, a design owner, or an outside contributor. A hardcoded color is a blocker
+whether it comes from a maintainer or a first-time contributor; a broken
+accessible path is a blocker either way. Do not soften a finding because of who
+wrote it, and do not treat an owner's PR as pre-vetted.
+
+> **The merge gate is a separate, workflow-driven mechanism.** The
+> `review-signal` workflow applies two labels from the changed paths and
+> disables auto-merge when either fires — `needs:code-review` (high-risk code
+> area) and `needs:design-review` (design-affecting change). Copilot **reads**
+> these labels to focus its review but never sets, clears, or gates on them; an
+> entitled owner's approval clears them. Which team self-serves which domain is
+> the workflow's concern, not the reviewer's — your job is to surface every
+> finding at its true severity for every PR. See
+> [Review gate](./REVIEW_GATE.md) for the gating policy.
 
 **High-risk vs. low-risk areas.** *High-risk* = public API changes, new
 components/modules, new packages, or a suspected regression. *Low-risk* = themes
@@ -101,17 +148,21 @@ review matters).
 Open the summary comment with one signal line so posture is scannable at a
 glance:
 
-- 🔴 **Code review required** — a review-signal label is present
-  (`needs:code-review` and/or `needs:design-review`; see below). Name the
-  trigger(s).
-- 🟡 **Maintainer judgment recommended** — no hard trigger, but something crosses
+- 🔴 **Blocking** — either a blocking finding from
+  [Blocking criteria](#blocking-criteria--score-the-failure-not-its-likelihood)
+  is present, or a review-signal label is (`needs:code-review` and/or
+  `needs:design-review`). Name the specific trigger(s) — the rule violated and
+  the file, or the label. A content blocker counts even on a PR the workflow
+  left unlabeled (e.g. a hardcoded color in a low-risk docsite change).
+- 🟡 **Maintainer judgment recommended** — no blocker, but something crosses
   into human-judgment territory (see the per-file "engineering / human judgment"
   notes). Advisory.
 - 🟢 **No review blockers found** — clean within what the reviewer can verify.
   Not a guarantee, and never merge permission.
 
-State the reason on the same line, e.g. `🔴 Code review required — new component
-in packages/core`.
+State the reason on the same line, e.g. `🔴 Blocking — hardcoded color in
+Thumbnail.tsx (colors must be a token or derived from one)` or `🔴 Blocking —
+new component in packages/core (needs:code-review)`.
 
 ## Summary comment vs. inline comments
 
