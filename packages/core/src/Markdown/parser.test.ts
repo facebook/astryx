@@ -769,6 +769,17 @@ describe('citation parsing', () => {
       });
     });
 
+    it('rejects <javascript:...> angle-bracket autolinks (XSS prevention)', () => {
+      const result = parseInline('see <javascript:alert(1)> ok', {
+        autolink: 'gfm',
+      });
+      // Should NOT produce a link node with javascript: href
+      const linkNodes = result.filter(
+        (n): n is Extract<typeof n, {type: 'link'}> => n.type === 'link',
+      );
+      expect(linkNodes).toHaveLength(0);
+    });
+
     it('parses <email> angle-bracket autolinks', () => {
       const result = parseInline('mail <user@example.com> please', {
         autolink: 'gfm',

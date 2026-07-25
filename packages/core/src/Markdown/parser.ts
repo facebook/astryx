@@ -275,7 +275,7 @@ function matchReferenceLink(
       // matches nothing.
       const label = rawLabel === '' ? linkText : rawLabel;
       const href = linkDefs.get(normalizeLinkLabel(label));
-      if (href != null) {
+      if (href != null && isSafeUrl(href)) {
         return {
           node: {type: 'link', href, children: parseInlineImpl(linkText, opts)},
           end: labelClose + 1,
@@ -290,7 +290,7 @@ function matchReferenceLink(
     return null;
   }
   const href = linkDefs.get(normalizeLinkLabel(linkText));
-  if (href == null) {
+  if (href == null || !isSafeUrl(href)) {
     return null;
   }
   return {
@@ -816,6 +816,10 @@ function scanAutolinksInText(text: string): AutolinkMatch[] {
     let m: RegExpExecArray | null;
     while ((m = re.exec(text)) !== null) {
       const url = m[1];
+      // Skip dangerous URL schemes (javascript:, vbscript:, data:text/html)
+      if (!isSafeUrl(url)) {
+        continue;
+      }
       matches.push({
         start: m.index,
         end: m.index + m[0].length,

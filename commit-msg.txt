@@ -1,0 +1,16 @@
+fix: extend URL scheme sanitization to autolinks and reference links
+
+The initial fix only covered inline `[text](url)` links and `![alt](src)`
+images. Two additional XSS vectors remained:
+
+1. **Angle-bracket autolinks**: `<javascript:alert(1)>` matched the
+   `ANGLE_SCHEME` regex (`[a-zA-Z][a-zA-Z0-9+.-]*`) and produced a
+   clickable link node with a `javascript:` href.
+
+2. **Reference links**: A link definition `[label]: javascript:alert(1)`
+   followed by `[label]` also produced a dangerous link node.
+
+Both paths now filter through the same `isSafeUrl()` helper that rejects
+`javascript:`, `vbscript:`, and `data:text/html` schemes.
+
+Added test for angle-bracket autolink XSS rejection.
