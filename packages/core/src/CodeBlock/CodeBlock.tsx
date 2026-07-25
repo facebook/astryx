@@ -552,16 +552,15 @@ interface ParsedDiff {
 function isHunkHeader(line: string): boolean {
   return line === '@@' || line.startsWith('@@ ') || line.startsWith('@@@');
 }
-// File-level headers occur only BEFORE the first hunk. Inside a hunk `---`/`+++` are content (a removed
-// `--` / added `++` line), so they must NOT be matched there — the caller gates this on `sawHunk`.
+// `---`/`+++` file headers occur only BEFORE a hunk. Inside a hunk they are content (a removed `--` /
+// added `++` line), so they must NOT be matched there — the caller gates this on `sawHunk`. (`diff `/
+// `index ` are handled separately: they can never be content, and they re-arm header detection.)
 function isFileHeader(line: string): boolean {
   return (
     line === '---' ||
     line.startsWith('--- ') ||
     line === '+++' ||
-    line.startsWith('+++ ') ||
-    line.startsWith('diff ') ||
-    line.startsWith('index ')
+    line.startsWith('+++ ')
   );
 }
 
@@ -596,6 +595,14 @@ function parseUnifiedDiff(code: string): ParsedDiff {
     if (line.startsWith('\\ ')) {
       meta.add(n);
       lines.push(line);
+      return;
+    }
+    // `diff --git` / `index ` begin a NEW file section (multi-file patch): always metadata, and they
+    // re-arm header detection so the next file's `---`/`+++` are recognized as headers again.
+    if (line.startsWith('diff ') || line.startsWith('index ')) {
+      meta.add(n);
+      lines.push(line);
+      sawHunk = false;
       return;
     }
     // File headers count only OUTSIDE a hunk body; inside a hunk `---`/`+++` are removed/added content.

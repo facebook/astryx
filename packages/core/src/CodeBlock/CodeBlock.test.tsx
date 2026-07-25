@@ -438,6 +438,33 @@ describe('CodeBlock language="diff"', () => {
     );
   });
 
+  it('re-arms header detection across a multi-file patch', () => {
+    // The 2nd file's diff/---/+++ headers must be metadata, not treated as in-hunk content.
+    const diff = [
+      'diff --git a/f1 b/f1',
+      '--- a/f1',
+      '+++ b/f1',
+      '@@ -1 +1 @@',
+      '-a',
+      '+b',
+      'diff --git a/f2 b/f2',
+      '--- a/f2',
+      '+++ b/f2',
+      '@@ -1 +1 @@',
+      '-c',
+      '+d',
+    ].join('\n');
+    const {container} = render(<CodeBlock code={diff} language="diff" />);
+    // 2nd file's header lines are metadata (the multi-file fix), not add/remove content.
+    expect(getLine(container, 7).dataset.lineType).toBeUndefined(); // diff --git a/f2
+    expect(getLine(container, 8).dataset.lineType).toBeUndefined(); // --- a/f2
+    expect(getLine(container, 9).dataset.lineType).toBeUndefined(); // +++ b/f2
+    expect(getLine(container, 11).dataset.lineType).toBe('remove');
+    expect(getLine(container, 12).dataset.lineType).toBe('add');
+    fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('b\nd'); // post-image of both files
+  });
+
   it('treats ---/+++ inside a hunk as content, not file headers', () => {
     // A removed line whose content is `--` (wire `---`) and an added `++` (wire `+++`).
     const diff = ['@@ -1 +1 @@', '---', '+++'].join('\n');
