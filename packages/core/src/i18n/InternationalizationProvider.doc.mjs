@@ -135,6 +135,28 @@ export const docsDense = {
   usage: {
     description:
       'Wraps app to set active locale and (optionally) merge translation catalogs + per-locale overrides. Astryx components resolve strings against this context; missing keys fall back to shipped English.',
+    bestPractices: [
+      {
+        guidance: true,
+        description:
+          'Use shipped Astryx locale catalogs from `@astryxdesign/core/locales/*` when one exists for the target locale.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use a same-shape local catalog only when Astryx has not shipped that locale yet or when testing in-progress translations.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use real BCP 47 tags like `fr`, `pt-BR`, or `ar`; regional locales fall back to base language before English.',
+      },
+      {
+        guidance: false,
+        description:
+          'Cast custom catalog maps to `any`; the i18n package exports `MessagesByLocale` and `Catalog` for local catalog typing.',
+      },
+    ],
   },
   propDescriptions: {
     locale:
