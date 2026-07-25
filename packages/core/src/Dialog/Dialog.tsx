@@ -46,6 +46,7 @@ import {
 } from '../Layout/padding.stylex';
 import type {SpacingStep} from '../utils/types';
 import {mergeProps, mergeRefs} from '../utils';
+import {devWarn} from '../utils/devWarning';
 import {DialogContext} from './DialogContext';
 import {themeProps} from '../utils/themeProps';
 
@@ -494,8 +495,8 @@ export function Dialog({
   }, [isOpen, isInline, allowEscape, onOpenChange]);
 
   // Dev-time guardrail: an open modal should always have an accessible name.
-  // Warn once per component instance (in an effect) rather than on every
-  // render — mirrors the unnamed-dialog warning in usePopover.
+  // The header-title check reads the DOM, so this stays in an effect; the ref
+  // keeps it to one warning per component instance.
   const warnedUnnamedDialogRef = useRef(false);
   useEffect(() => {
     const hasHeaderTitle =
@@ -508,8 +509,9 @@ export function Dialog({
       !warnedUnnamedDialogRef.current
     ) {
       warnedUnnamedDialogRef.current = true;
-      console.warn(
-        'Dialog: open dialog has no accessible name. Add a DialogHeader ' +
+      devWarn(
+        'Dialog',
+        'open dialog has no accessible name. Add a DialogHeader ' +
           'with a `title`, or pass `aria-label`/`aria-labelledby`.',
       );
     }

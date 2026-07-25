@@ -21,6 +21,7 @@ import * as stylex from '@stylexjs/stylex';
 import {Text} from '../Text';
 import type {TextType, TextSize, TextColor, TextWeight} from '../theme/types';
 import {mergeProps, mergeRefs} from '../utils';
+import {useDevWarning} from '../hooks/useDevWarning';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {colorVars} from '../theme/tokens.stylex';
@@ -415,11 +416,14 @@ export function Timestamp({
     return () => clearInterval(timer);
   }, [isLive, isValidDate, effectiveFormat, diffSeconds]);
 
+  useDevWarning(
+    'Timestamp',
+    `could not parse value ${JSON.stringify(value)} as a date. Rendering nothing.`,
+    !isValidDate,
+  );
+
   // Placed after all hooks so the hook order stays stable across renders.
   if (!isValidDate) {
-    console.warn(
-      `Timestamp: could not parse value ${JSON.stringify(value)} as a date. Rendering nothing.`,
-    );
     return null;
   }
 

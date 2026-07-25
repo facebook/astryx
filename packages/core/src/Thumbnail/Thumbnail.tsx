@@ -25,7 +25,6 @@
  * - /packages/cli/templates/blocks/components/Thumbnail/ (showcase blocks)
  */
 
-import {useEffect, useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -42,6 +41,7 @@ import {Spinner} from '../Spinner';
 import {Tooltip} from '../Tooltip/Tooltip';
 import {MediaTheme} from '../theme/MediaTheme';
 import {useImageMode} from '../hooks/useImageMode';
+import {useDevWarning} from '../hooks/useDevWarning';
 import type {BaseProps} from '../BaseProps';
 import type {Elevation} from '../utils/types';
 import {mergeProps} from '../utils';
@@ -313,26 +313,21 @@ export function Thumbnail({
   // technology. That is fine when the thumbnail is otherwise named — `label`
   // (or a consumer-provided aria name) becomes the group's accessible name —
   // but with no name source at all the group falls back to a generic
-  // "thumbnail". Warn once per component instance (in an effect) rather than
-  // on every render.
+  // "thumbnail".
   const hasNameSource =
     alt != null ||
     label != null ||
     props['aria-label'] != null ||
     props['aria-labelledby'] != null;
-  const warnedUnnamedImageRef = useRef(false);
-  useEffect(() => {
-    if (hasSrc && !hasNameSource && !warnedUnnamedImageRef.current) {
-      warnedUnnamedImageRef.current = true;
-      console.warn(
-        'Thumbnail: `src` is set without `alt` or `label`. The image is ' +
-          'treated as decorative and hidden from assistive technology, and ' +
-          'the thumbnail falls back to a generic "thumbnail" name. Pass ' +
-          '`alt` to describe the image content, or `label` (file name) to ' +
-          'name the thumbnail.',
-      );
-    }
-  }, [hasSrc, hasNameSource]);
+  useDevWarning(
+    'Thumbnail',
+    '`src` is set without `alt` or `label`. The image is ' +
+      'treated as decorative and hidden from assistive technology, and ' +
+      'the thumbnail falls back to a generic "thumbnail" name. Pass ' +
+      '`alt` to describe the image content, or `label` (file name) to ' +
+      'name the thumbnail.',
+    hasSrc && !hasNameSource,
+  );
 
   const imageContent = (
     <>

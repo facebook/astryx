@@ -16,12 +16,13 @@
  * - /packages/cli/templates/blocks/components/CheckboxList/ (showcase blocks)
  */
 
-import {use, useEffect, useRef, type MouseEvent, type ReactNode} from 'react';
+import {use, type MouseEvent, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {composeEventHandlers} from '../utils';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
@@ -171,24 +172,15 @@ export function CheckboxListItem({
       : t('@astryx.checkboxList.item.checkbox'));
 
   // Dev-time guardrail: a rich label without `aria-label` leaves the
-  // checkbox with the generic name "Checkbox". Warn once per item instance
-  // (in an effect) rather than on every render.
-  const warnedUnnamedCheckboxRef = useRef(false);
-  useEffect(() => {
-    if (
-      typeof label !== 'string' &&
-      ariaLabel == null &&
-      !warnedUnnamedCheckboxRef.current
-    ) {
-      warnedUnnamedCheckboxRef.current = true;
-      console.warn(
-        'CheckboxListItem: `label` is a ReactNode, so the checkbox falls ' +
-          'back to the generic accessible name "Checkbox". Pass ' +
-          '`aria-label` with a concise string equivalent of the visible ' +
-          'label so screen readers can tell items apart.',
-      );
-    }
-  }, [label, ariaLabel]);
+  // checkbox with the generic name "Checkbox".
+  useDevWarning(
+    'CheckboxListItem',
+    '`label` is a ReactNode, so the checkbox falls ' +
+      'back to the generic accessible name "Checkbox". Pass ' +
+      '`aria-label` with a concise string equivalent of the visible ' +
+      'label so screen readers can tell items apart.',
+    typeof label !== 'string' && ariaLabel == null,
+  );
 
   // Density from list context for checkbox sizing
   const listCtx = use(ListContext);

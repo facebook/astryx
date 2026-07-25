@@ -483,8 +483,8 @@ describe('Drawer', () => {
     });
 
     it('dev-warns and ignores isCollapsed on a modal drawer', () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
+      const consoleWarn = vi
+        .spyOn(console, 'warn')
         .mockImplementation(() => {});
       try {
         render(
@@ -497,20 +497,20 @@ describe('Drawer', () => {
             Content
           </Drawer>,
         );
-        expect(consoleError).toHaveBeenCalledWith(
-          expect.stringContaining('[Drawer]'),
+        expect(consoleWarn).toHaveBeenCalledWith(
+          expect.stringContaining('Drawer:'),
         );
         expect(
           screen.queryByRole('button', {name: 'Expand Inspector'}),
         ).not.toBeInTheDocument();
       } finally {
-        consoleError.mockRestore();
+        consoleWarn.mockRestore();
       }
     });
 
     it('dev-warns and ignores isCollapsed on a sheet', () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
+      const consoleWarn = vi
+        .spyOn(console, 'warn')
         .mockImplementation(() => {});
       try {
         render(
@@ -525,14 +525,14 @@ describe('Drawer', () => {
             Content
           </Drawer>,
         );
-        expect(consoleError).toHaveBeenCalledWith(
-          expect.stringContaining('[Drawer]'),
+        expect(consoleWarn).toHaveBeenCalledWith(
+          expect.stringContaining('Drawer:'),
         );
         expect(
           screen.queryByRole('button', {name: 'Expand Inspector'}),
         ).not.toBeInTheDocument();
       } finally {
-        consoleError.mockRestore();
+        consoleWarn.mockRestore();
       }
     });
   });
