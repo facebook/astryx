@@ -299,7 +299,10 @@ const styles = stylex.create({
     gridTemplateColumns: 'max-content 1fr',
     columnGap: spacingVars['--spacing-3'],
     '::after': {
-      content: 'attr(data-diff-marker)',
+      // Blank by default (keeps the gutter aligned for context/metadata lines). The +/- glyphs come
+      // from lineMarkerAdd/lineMarkerRemove. Deliberately a literal, NOT content: attr(data-diff-marker):
+      // some bundler CSS minifiers (Next 16) silently drop attr() content in ::after, killing the marker.
+      content: '""',
       gridColumn: '1',
       gridRow: '1',
       alignSelf: 'start',
@@ -318,7 +321,10 @@ const styles = stylex.create({
     display: 'grid',
     gridTemplateColumns: 'max-content var(--_codeblock-gutter-width) 1fr',
     '::after': {
-      content: 'attr(data-diff-marker)',
+      // Blank by default (keeps the gutter aligned for context/metadata lines). The +/- glyphs come
+      // from lineMarkerAdd/lineMarkerRemove. Deliberately a literal, NOT content: attr(data-diff-marker):
+      // some bundler CSS minifiers (Next 16) silently drop attr() content in ::after, killing the marker.
+      content: '""',
       gridColumn: '1',
       gridRow: '1',
       alignSelf: 'start',
@@ -339,6 +345,15 @@ const styles = stylex.create({
       userSelect: 'none',
       fontFamily: typographyVars['--font-family-code'],
     },
+  },
+  // The +/- glyphs, as literal `::after` content (see the note on lineMarkered) — layered over
+  // lineMarkered/lineNumberedMarkered's blank marker cell, so they inherit its grid placement.
+  lineMarkerAdd: {
+    '::after': {content: '"+"'},
+  },
+  lineMarkerRemove: {
+    // U+2212 MINUS SIGN — optically balances the plus better than a hyphen.
+    '::after': {content: '"\\2212"'},
   },
   sizeSm: {
     fontSize: typeScaleVars['--text-supporting-size'],
@@ -436,6 +451,9 @@ const CodeChunk = React.memo(function CodeChunk({
                   ? styles.lineNumberedMarkered
                   : styles.lineMarkered
                 : lineNumbers && styles.lineNumbered,
+              // Per-type glyph, layered after the blank marker cell so its ::after content wins.
+              markerMode && accent === 'add' && styles.lineMarkerAdd,
+              markerMode && accent === 'remove' && styles.lineMarkerRemove,
               accent != null && accentLineStyles[accent],
               isMeta && styles.lineMeta,
             )}>
