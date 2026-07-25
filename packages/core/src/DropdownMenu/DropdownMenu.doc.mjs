@@ -95,6 +95,12 @@ export const docs = {
       description: 'Callback fired when the trigger button is clicked.',
     },
     {
+      name: 'placement',
+      type: 'LayerPlacement',
+      description: 'Position placement for the menu popover relative to the trigger button.',
+      default: "'below'",
+    },
+    {
       name: 'hasChevron',
       type: 'boolean',
       description: 'Whether to show a chevron icon on the trigger button. Set to false for icon-only triggers.',
