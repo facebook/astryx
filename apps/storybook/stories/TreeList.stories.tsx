@@ -5,6 +5,7 @@ import {TreeList} from '@astryxdesign/core/TreeList';
 import type {TreeListItemData} from '@astryxdesign/core/TreeList';
 import {Icon} from '@astryxdesign/core/Icon';
 import {Badge} from '@astryxdesign/core/Badge';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {
   FolderIcon,
   DocumentIcon,
@@ -265,12 +266,22 @@ export const WithEndContent: Story = {
         isExpanded: true,
         endContent: <Badge label="3" />,
         children: [
-          {id: 'unread', label: 'Unread', onClick: noop, endContent: <Badge label="3" />},
+          {
+            id: 'unread',
+            label: 'Unread',
+            onClick: noop,
+            endContent: <Badge label="3" />,
+          },
           {id: 'starred', label: 'Starred', onClick: noop},
         ],
       },
       {id: 'sent', label: 'Sent', onClick: noop},
-      {id: 'drafts', label: 'Drafts', onClick: noop, endContent: <Badge label="1" />},
+      {
+        id: 'drafts',
+        label: 'Drafts',
+        onClick: noop,
+        endContent: <Badge label="1" />,
+      },
     ],
   },
 };
@@ -292,7 +303,12 @@ export const DisabledItems: Story = {
           },
         ],
       },
-      {id: 'disabled-parent', label: 'Disabled Parent', onClick: noop, isDisabled: true},
+      {
+        id: 'disabled-parent',
+        label: 'Disabled Parent',
+        onClick: noop,
+        isDisabled: true,
+      },
     ],
   },
 };
@@ -312,4 +328,53 @@ export const SelectedItems: Story = {
       },
     ],
   },
+};
+
+/**
+ * Theme the expand/collapse chevron precisely via `defineTheme`.
+ *
+ * - `components['tree-list-chevron'].base` scopes overrides to the toggle
+ *   control only (via the `astryx-tree-list-chevron` target), instead of
+ *   reaching it through the functional `[data-tree-toggle]` attribute.
+ * - `state:expanded` / `state:collapsed` restyle each open/closed state,
+ *   which the toggle reflects as a `data-state` attribute.
+ *
+ * Defaults are unchanged; this story only demonstrates the override channel.
+ */
+const chevronTheme = defineTheme({
+  name: 'tree-list-chevron-demo',
+  components: {
+    'tree-list-chevron': {
+      base: {
+        color: 'var(--color-accent)',
+      },
+      'state:expanded': {
+        color: 'var(--color-success)',
+      },
+    },
+  },
+});
+
+export const ThemedChevron: Story = {
+  render: () => (
+    <Theme theme={chevronTheme} mode="light">
+      <TreeList
+        items={[
+          {
+            id: 'root',
+            label: 'Expanded branch (accent → success)',
+            isExpanded: true,
+            children: [
+              {id: 'leaf-1', label: 'Leaf 1', onClick: noop},
+              {
+                id: 'nested',
+                label: 'Collapsed branch (accent)',
+                children: [{id: 'leaf-2', label: 'Leaf 2', onClick: noop}],
+              },
+            ],
+          },
+        ]}
+      />
+    </Theme>
+  ),
 };

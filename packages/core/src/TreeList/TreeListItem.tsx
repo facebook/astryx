@@ -394,12 +394,30 @@ export function TreeListItem({
         // a separate tab stop. Row-level Enter/Space forwards to this button.
         tabIndex={-1}
         onClick={handleToggle}
-        {...stylex.props(styles.chevronButton)}>
+        {...mergeProps(
+          // Stable theme target for the expand/collapse control. `data-tree-toggle`
+          // stays as the functional activation hook; this adds a themeable
+          // `astryx-tree-list-chevron` class and reflects the open/closed state so
+          // a theme can restyle the toggle (and each state) without a fragile
+          // `[data-tree-toggle]` selector.
+          themeProps('tree-list-chevron', {
+            state: isExpanded ? 'expanded' : 'collapsed',
+          }),
+          stylex.props(styles.chevronButton),
+        )}>
         {chevronIcon}
       </button>
     ) : (
       // Non-interactive chevron only when toggling is not wired up at all
-      <span {...stylex.props(styles.chevronContainer)}>{chevronIcon}</span>
+      <span
+        {...mergeProps(
+          themeProps('tree-list-chevron', {
+            state: isExpanded ? 'expanded' : 'collapsed',
+          }),
+          stylex.props(styles.chevronContainer),
+        )}>
+        {chevronIcon}
+      </span>
     )
   ) : null;
 

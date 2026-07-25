@@ -14,6 +14,8 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TreeList} from './TreeList';
 import type {TreeListItemData} from './TreeListTypes';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSSFlat} from '../theme/generateThemeRules';
 
 const simpleItems: TreeListItemData[] = [
   {id: 'a', label: 'Item A'},
@@ -401,6 +403,69 @@ describe('TreeList', () => {
     render(<TreeList items={simpleItems} data-testid="tree" />);
     const root = screen.getByTestId('tree');
     expect(root.className).toContain('astryx-tree-list');
+  });
+
+  // ===========================================================================
+  // Chevron theme target
+  // ===========================================================================
+
+  describe('chevron theme target', () => {
+    it('renders the astryx-tree-list-chevron target on the toggle button', () => {
+      render(<TreeList items={nestedItems} />);
+      const toggle = screen
+        .getByText('Parent')
+        .closest('li')!
+        .querySelector('[data-tree-toggle]')!;
+
+      // Dedicated, stable theme target on the expand/collapse control, so a
+      // theme can restyle the chevron without a fragile [data-tree-toggle] hook.
+      expect(toggle).toHaveClass('astryx-tree-list-chevron');
+      // Open/closed state is reflected so a theme can target each state alone.
+      expect(toggle).toHaveAttribute('data-state', 'collapsed');
+    });
+
+    it('reflects the expanded state on the toggle when open', () => {
+      render(<TreeList items={nestedItemsExpanded} />);
+      const toggle = screen
+        .getByText('Parent')
+        .closest('li')!
+        .querySelector('[data-tree-toggle]')!;
+
+      expect(toggle).toHaveClass('astryx-tree-list-chevron');
+      expect(toggle).toHaveAttribute('data-state', 'expanded');
+    });
+
+    it('keeps the functional data-tree-toggle hook alongside the new target', () => {
+      // The theme target is additive — the toggle is still a real <button> and
+      // still carries the functional activation attribute TreeList relies on.
+      render(<TreeList items={nestedItems} />);
+      const toggle = screen
+        .getByText('Parent')
+        .closest('li')!
+        .querySelector('[data-tree-toggle]')!;
+      expect(toggle.tagName).toBe('BUTTON');
+      expect(toggle).toHaveAttribute('data-tree-toggle');
+    });
+
+    it('exposes tree-list-chevron as a themeable defineTheme target', () => {
+      // The generated CSS is what proves the target is reachable by a theme:
+      // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
+      // above and this generation assertion together cover the seam.
+      const theme = defineTheme({
+        name: 'tree-list-chevron-test',
+        components: {
+          'tree-list-chevron': {
+            base: {color: 'var(--color-accent)'},
+            'state:expanded': {color: 'var(--color-text-primary)'},
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-tree-list-chevron {');
+      expect(css).toContain('color: var(--color-accent)');
+      expect(css).toContain('.astryx-tree-list-chevron.expanded');
+      expect(css).toContain('color: var(--color-text-primary)');
+    });
   });
 
   // ===========================================================================
