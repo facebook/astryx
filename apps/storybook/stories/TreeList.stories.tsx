@@ -355,6 +355,29 @@ const chevronTheme = defineTheme({
   },
 });
 
+/**
+ * Theme the item label text precisely via `defineTheme`.
+ *
+ * - `components['tree-list-item-label'].base` scopes overrides to the label
+ *   text only (via the `astryx-tree-list-item-label` target), instead of a
+ *   fragile `button:not([data-tree-toggle]) > span` structural selector.
+ * - `selected` restyles just the selected item's label (bold here), which the
+ *   label reflects as a `data-selected` attribute.
+ *
+ * Defaults are unchanged; this story only demonstrates the override channel.
+ */
+const labelTheme = defineTheme({
+  name: 'tree-list-item-label-demo',
+  components: {
+    'tree-list-item-label': {
+      selected: {
+        fontWeight: 'var(--font-weight-bold)',
+        color: 'var(--color-accent)',
+      },
+    },
+  },
+});
+
 export const ThemedChevron: Story = {
   render: () => (
     <Theme theme={chevronTheme} mode="light">
@@ -371,6 +394,32 @@ export const ThemedChevron: Story = {
                 label: 'Collapsed branch (accent)',
                 children: [{id: 'leaf-2', label: 'Leaf 2', onClick: noop}],
               },
+            ],
+          },
+        ]}
+      />
+    </Theme>
+  ),
+};
+
+export const ThemedItemLabel: Story = {
+  render: () => (
+    <Theme theme={labelTheme} mode="light">
+      <TreeList
+        items={[
+          {
+            id: 'nav',
+            label: 'Navigation',
+            isExpanded: true,
+            children: [
+              {id: 'home', label: 'Home', onClick: noop},
+              {
+                id: 'about',
+                label: 'About (selected — bold accent label)',
+                onClick: noop,
+                isSelected: true,
+              },
+              {id: 'contact', label: 'Contact', onClick: noop},
             ],
           },
         ]}

@@ -352,7 +352,20 @@ export function TreeListItem({
 
   const labelAndDescription = (
     <>
-      <span id={labelId} {...stylex.props(styles.label)}>
+      <span
+        id={labelId}
+        {...mergeProps(
+          // Stable theme target for the item's label text. The label carries no
+          // themeable handle today, so a theme can only reach it through a
+          // fragile structural selector (a content button's first span). This
+          // adds an `astryx-tree-list-item-label` class and reflects the row's
+          // `selected` state so a theme can, e.g., bold just the selected
+          // item's label via `defineTheme`.
+          themeProps('tree-list-item-label', {
+            selected: isSelected ? 'selected' : null,
+          }),
+          stylex.props(styles.label),
+        )}>
         {label}
       </span>
       {description != null && (

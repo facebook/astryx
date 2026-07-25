@@ -469,6 +469,64 @@ describe('TreeList', () => {
   });
 
   // ===========================================================================
+  // Item label theme target
+  // ===========================================================================
+
+  describe('item label theme target', () => {
+    it('renders the astryx-tree-list-item-label target on the label span', () => {
+      render(<TreeList items={simpleItems} />);
+      const label = screen.getByText('Item A');
+
+      // Dedicated, stable theme target on the label text, so a theme can style
+      // just the label without a fragile `button:not([data-tree-toggle]) > span`
+      // structural selector.
+      expect(label).toHaveClass('astryx-tree-list-item-label');
+      // A non-selected item's label carries no selected reflection.
+      expect(label).not.toHaveAttribute('data-selected');
+    });
+
+    it('reflects the selected state on the selected item label', () => {
+      render(
+        <TreeList items={[{id: 'a', label: 'Item A', isSelected: true}]} />,
+      );
+      const label = screen.getByText('Item A');
+      expect(label).toHaveClass('astryx-tree-list-item-label');
+      expect(label).toHaveAttribute('data-selected', 'selected');
+    });
+
+    it('keeps the label linked to its row via aria-labelledby', () => {
+      // The theme target is additive — the label still owns the id the
+      // interactive row references for its accessible name.
+      render(
+        <TreeList items={[{id: 'a', label: 'Item A', onClick: () => {}}]} />,
+      );
+      const label = screen.getByText('Item A');
+      const action = screen.getByRole('button');
+      expect(action).toHaveAttribute('aria-labelledby', label.id);
+    });
+
+    it('exposes tree-list-item-label as a themeable defineTheme target', () => {
+      // The generated CSS is what proves the target is reachable by a theme:
+      // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
+      // above and this generation assertion together cover the seam.
+      const theme = defineTheme({
+        name: 'tree-list-item-label-test',
+        components: {
+          'tree-list-item-label': {
+            base: {color: 'var(--color-text-primary)'},
+            selected: {fontWeight: 'var(--font-weight-bold)'},
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-tree-list-item-label {');
+      expect(css).toContain('color: var(--color-text-primary)');
+      expect(css).toContain('.astryx-tree-list-item-label.selected');
+      expect(css).toContain('font-weight: var(--font-weight-bold)');
+    });
+  });
+
+  // ===========================================================================
   // APG structural ARIA (aria-level / aria-posinset / aria-setsize)
   // ===========================================================================
 
