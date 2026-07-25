@@ -95,6 +95,34 @@ export const docs = {
           default: 'false',
         },
         {
+          name: 'size',
+          type: 'TextSize',
+          description: 'Explicit font size override forwarded to Text.',
+        },
+        {
+          name: 'weight',
+          type: 'TextWeight',
+          description: 'Font weight override forwarded to Text.',
+        },
+        {
+          name: 'color',
+          type: 'TextColor',
+          description: 'Text color forwarded to Text.',
+          default: "'accent'",
+        },
+        {
+          name: 'display',
+          type: 'TextDisplay',
+          description: 'Display type for Text.',
+          default: "'inline'",
+        },
+        {
+          name: 'maxLines',
+          type: 'number',
+          description: 'Maximum lines before truncation.',
+          default: '0',
+        },
+        {
           name: 'children',
           type: 'ReactNode',
           description: 'Link content',
