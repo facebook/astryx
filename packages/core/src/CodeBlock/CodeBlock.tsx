@@ -548,10 +548,14 @@ interface ParsedDiff {
   copyText: string;
 }
 
-function isDiffMeta(line: string): boolean {
+// A `@@ … @@` (or combined-diff `@@@`) hunk header; also marks that we are now inside a hunk body.
+function isHunkHeader(line: string): boolean {
+  return line === '@@' || line.startsWith('@@ ') || line.startsWith('@@@');
+}
+// File-level headers occur only BEFORE the first hunk. Inside a hunk `---`/`+++` are content (a removed
+// `--` / added `++` line), so they must NOT be matched there — the caller gates this on `sawHunk`.
+function isFileHeader(line: string): boolean {
   return (
-    line === '@@' ||
-    line.startsWith('@@ ') ||
     line === '---' ||
     line.startsWith('--- ') ||
     line === '+++' ||
@@ -562,10 +566,11 @@ function isDiffMeta(line: string): boolean {
 }
 
 /**
- * Parse a unified diff so `language="diff"` renders +/- washes and markers
- * without the caller pre-tagging lines, and Copy yields clean code (no +/-/@@).
- * File/hunk headers become dimmed, non-copyable metadata; `+`/`-` lines become
- * add/remove accents with their leading marker stripped from the display text.
+ * Parse a unified diff so `language="diff"` renders +/- washes and markers without the caller pre-tagging
+ * lines. Hunk (`@@`) and pre-hunk file headers become dimmed, non-copyable metadata; `+`/`-`/context
+ * lines become add/remove/context with their leading marker stripped from the display text. Copy yields
+ * the POST-IMAGE — the resulting file (context + added), never removed lines or metadata. Tolerates CRLF
+ * and the git `\ No newline at end of file` sentinel; `---`/`+++` inside a hunk are treated as content.
  */
 function parseUnifiedDiff(code: string): ParsedDiff {
   const raw = code.split('\n');
@@ -576,9 +581,25 @@ function parseUnifiedDiff(code: string): ParsedDiff {
   const accents = new Map<number, CodeBlockLineAccent>();
   const meta = new Set<number>();
   const copyParts: string[] = [];
-  raw.forEach((line, i) => {
+  let sawHunk = false;
+  raw.forEach((rawLine, i) => {
+    // Tolerate CRLF diffs: a trailing \r is transport, not content.
+    const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine;
     const n = i + 1;
-    if (isDiffMeta(line)) {
+    if (isHunkHeader(line)) {
+      meta.add(n);
+      lines.push(line);
+      sawHunk = true;
+      return;
+    }
+    // Git's "\ No newline at end of file" is metadata wherever it appears.
+    if (line.startsWith('\\ ')) {
+      meta.add(n);
+      lines.push(line);
+      return;
+    }
+    // File headers count only OUTSIDE a hunk body; inside a hunk `---`/`+++` are removed/added content.
+    if (!sawHunk && isFileHeader(line)) {
       meta.add(n);
       lines.push(line);
       return;
@@ -586,17 +607,17 @@ function parseUnifiedDiff(code: string): ParsedDiff {
     const first = line[0];
     if (first === '+') {
       accents.set(n, 'add');
-      lines.push(line.slice(1));
-      copyParts.push(line.slice(1));
+      const text = line.slice(1);
+      lines.push(text);
+      copyParts.push(text); // added → part of the post-image
     } else if (first === '-') {
       accents.set(n, 'remove');
-      lines.push(line.slice(1));
-      copyParts.push(line.slice(1));
+      lines.push(line.slice(1)); // removed → shown, but NOT in the post-image
     } else {
       // Context line: a single leading space is diff punctuation; strip it.
       const text = first === ' ' ? line.slice(1) : line;
       lines.push(text);
-      copyParts.push(text);
+      copyParts.push(text); // context → part of the post-image
     }
   });
   return {lines, accents, meta, copyText: copyParts.join('\n')};
@@ -1043,19 +1064,23 @@ export function CodeBlock({
     return map;
   }, [parsedDiff, highlightLines]);
 
-  // The marker gutter turns on only when there are add/remove lines (from a diff
-  // or explicit `{type}` entries) — a neutral highlight alone needs no marker.
+  // The marker gutter turns on only when an IN-RANGE line is add/remove (from a diff or explicit
+  // `{type}` entries) — a neutral highlight alone, or an out-of-range typed entry, needs no marker.
   const markerMode = useMemo(() => {
     if (!highlightMap) {
       return false;
     }
-    for (const accent of highlightMap.values()) {
-      if (accent === 'add' || accent === 'remove') {
+    for (const [line, accent] of highlightMap) {
+      if (
+        (accent === 'add' || accent === 'remove') &&
+        line >= 1 &&
+        line <= lines.length
+      ) {
         return true;
       }
     }
     return false;
-  }, [highlightMap]);
+  }, [highlightMap, lines.length]);
 
   const metaLines =
     parsedDiff && parsedDiff.meta.size > 0 ? parsedDiff.meta : null;

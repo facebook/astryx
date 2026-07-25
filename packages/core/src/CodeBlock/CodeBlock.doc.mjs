@@ -20,7 +20,7 @@ export const docs = {
     {
       name: 'language',
       type: 'string',
-      description: 'Language for syntax highlighting. Use "plaintext" to disable. The special value "diff" renders a unified diff: +/- lines become add/remove washes with +/- markers, @@/file headers dim as metadata, and Copy yields the code with diff punctuation stripped.',
+      description: 'Language for syntax highlighting. Use "plaintext" to disable. The special value "diff" renders a unified diff: +/- lines become add/remove washes with +/- markers, @@/file headers dim as metadata, and Copy yields the post-image (the resulting code: context + added lines, no removed lines or metadata). Tolerates CRLF and the git no-newline sentinel.',
       default: "'plaintext'",
     },
     {

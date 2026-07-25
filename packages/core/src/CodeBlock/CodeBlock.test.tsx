@@ -392,6 +392,14 @@ describe('CodeBlock diff markers', () => {
     );
     expect(container.querySelector('[data-diff-marker]')).toBeNull();
   });
+
+  it('does not switch on the marker gutter for an out-of-range typed entry', () => {
+    // LINES has 4 lines; line 99 doesn't exist, so its add accent must not enable the gutter.
+    const {container} = render(
+      <CodeBlock code={LINES} highlightLines={[{line: 99, type: 'add'}]} />,
+    );
+    expect(container.querySelector('[data-diff-marker]')).toBeNull();
+  });
 });
 
 describe('CodeBlock language="diff"', () => {
@@ -421,11 +429,39 @@ describe('CodeBlock language="diff"', () => {
     expect(getLine(container, 3).textContent?.startsWith('-')).toBe(false);
   });
 
-  it('copies the code with all diff punctuation stripped', () => {
+  it('copies the post-image — context + added, no removed lines or metadata', () => {
     render(<CodeBlock code={DIFF} language="diff" />);
     fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+    // The removed `"timeout": 10` line is NOT in the resulting file; only context + added lines are.
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      '{\n  "timeout": 10,\n  "timeout": 30,\n}',
+      '{\n  "timeout": 30,\n}',
     );
+  });
+
+  it('treats ---/+++ inside a hunk as content, not file headers', () => {
+    // A removed line whose content is `--` (wire `---`) and an added `++` (wire `+++`).
+    const diff = ['@@ -1 +1 @@', '---', '+++'].join('\n');
+    const {container} = render(<CodeBlock code={diff} language="diff" />);
+    expect(getLine(container, 2).dataset.lineType).toBe('remove');
+    expect(getLine(container, 2).textContent).toBe('--');
+    expect(getLine(container, 3).dataset.lineType).toBe('add');
+    expect(getLine(container, 3).textContent).toBe('++');
+  });
+
+  it('tolerates CRLF and excludes the no-newline sentinel from copy', () => {
+    const diff = [
+      '@@ -1 +1 @@\r',
+      ' ctx\r',
+      '-old\r',
+      '+new\r',
+      '\\ No newline at end of file',
+    ].join('\n');
+    const {container} = render(<CodeBlock code={diff} language="diff" />);
+    expect(getLine(container, 3).textContent).toBe('old'); // no dangling \r
+    expect(getLine(container, 4).dataset.lineType).toBe('add');
+    expect(getLine(container, 5).dataset.lineType).toBeUndefined(); // sentinel is metadata
+    fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+    // Post-image = context + added, CRLF normalized, sentinel dropped.
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('ctx\nnew');
   });
 });
