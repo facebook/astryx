@@ -5,6 +5,7 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Avatar} from './Avatar';
 import {AvatarStatusDot} from './AvatarStatusDot';
+import {AvatarGroup} from '../AvatarGroup';
 
 describe('Avatar', () => {
   it('exposes role="img" with the name as accessible name', () => {
@@ -209,6 +210,15 @@ describe('Avatar', () => {
       expect(screen.getByTestId('status-dot')).toBeInTheDocument();
       unmount();
     }
+  });
+
+  it('applies shapeStyles to wrapper when rendered inside AvatarGroup', () => {
+    render(
+      <AvatarGroup>
+        <Avatar name="Alice" shape="rounded" data-testid="group-avatar" />
+      </AvatarGroup>,
+    );
+    expect(screen.getByTestId('group-avatar')).toBeInTheDocument();
   });
 
   // --- Name tooltip (tooltip?: string | boolean) ---

@@ -618,6 +618,7 @@ export function Avatar({
       avatarGroup && groupStyles.ring,
       avatarGroup && groupStyles.overlap,
       avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),
+      shapeStyles[shape],
       xstyle,
     ),
     className,
