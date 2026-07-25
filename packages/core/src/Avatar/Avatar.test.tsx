@@ -173,6 +173,44 @@ describe('Avatar', () => {
     expect(img).toHaveAttribute('src', 'https://example.com/ada.jpg');
   });
 
+  it('renders without error for all shape variants', () => {
+    const shapes = ['circle', 'rounded', 'square'] as const;
+    for (const shape of shapes) {
+      const {unmount} = render(
+        <Avatar
+          name="Ana Thomas"
+          shape={shape}
+          data-testid={`avatar-${shape}`}
+        />,
+      );
+      expect(screen.getByTestId(`avatar-${shape}`)).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('defaults to circle shape (no shape prop)', () => {
+    render(<Avatar name="Lee" data-testid="avatar-default" />);
+    // Should still render with role="img" using the name as the accessible label.
+    expect(screen.getByRole('img', {name: 'Lee'})).toBeInTheDocument();
+  });
+
+  it('renders status dot for all shape variants', () => {
+    const shapes = ['circle', 'rounded', 'square'] as const;
+    const StatusDot = () => <span data-testid="status-dot" />;
+    for (const shape of shapes) {
+      const {unmount} = render(
+        <Avatar
+          name="Ana"
+          shape={shape}
+          status={<StatusDot />}
+          data-testid={`avatar-${shape}-status`}
+        />,
+      );
+      expect(screen.getByTestId('status-dot')).toBeInTheDocument();
+      unmount();
+    }
+  });
+
   // --- Name tooltip (tooltip?: string | boolean) ---
   describe('name tooltip', () => {
     const originalShowPopover = HTMLElement.prototype.showPopover;
