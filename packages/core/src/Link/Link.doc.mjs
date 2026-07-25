@@ -79,6 +79,17 @@ export const docs = {
             'Link relationship tokens. noopener noreferrer are merged automatically for target="_blank".',
         },
         {
+          name: 'download',
+          type: 'string | boolean',
+          description:
+            'Causes the browser to download the linked URL. A string specifies the suggested filename.',
+        },
+        {
+          name: 'referrerPolicy',
+          type: 'HTMLAttributeReferrerPolicy',
+          description: 'Referrer policy for the link.',
+        },
+        {
           name: 'onClick',
           type: 'MouseEventHandler',
           description: 'Click event handler',
