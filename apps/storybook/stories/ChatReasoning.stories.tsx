@@ -67,7 +67,7 @@ export const Streaming: StoryObj = {
           Working through the combinatorial constraints...
         </ChatReasoning>
         {!streaming && (
-          <p style={{marginTop: 8, fontSize: 13, color: '#888'}}>
+          <p style={{marginTop: 8, fontSize: 13, color: '#4E606F'}}>
             (Shimmer stopped after 5s)
           </p>
         )}

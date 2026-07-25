@@ -139,7 +139,7 @@ export const CollapsibleContent: Story = {
           fontSize: '13px',
           padding: '40px',
           textAlign: 'center',
-          color: '#999',
+          color: '#4E606F',
         }}>
         Flex Slot
       </div>
@@ -162,7 +162,7 @@ export const CollapsibleContentExpanded: Story = {
           fontSize: '13px',
           padding: '40px',
           textAlign: 'center',
-          color: '#999',
+          color: '#4E606F',
         }}>
         Flex Slot
       </div>

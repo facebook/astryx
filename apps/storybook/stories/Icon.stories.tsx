@@ -204,7 +204,7 @@ export const OutlineVsSolid: Story = {
           gap: '8px',
         }}>
         <Icon icon={HeartIcon} size="lg" color="error" />
-        <span style={{fontSize: '12px', color: '#666'}}>Outline</span>
+        <span style={{fontSize: '12px', color: '#4E606F'}}>Outline</span>
       </div>
       <div
         style={{
@@ -214,7 +214,7 @@ export const OutlineVsSolid: Story = {
           gap: '8px',
         }}>
         <Icon icon={HeartIconSolid} size="lg" color="error" />
-        <span style={{fontSize: '12px', color: '#666'}}>Solid</span>
+        <span style={{fontSize: '12px', color: '#4E606F'}}>Solid</span>
       </div>
       <div
         style={{
@@ -224,7 +224,7 @@ export const OutlineVsSolid: Story = {
           gap: '8px',
         }}>
         <Icon icon={StarIcon} size="lg" color="warning" />
-        <span style={{fontSize: '12px', color: '#666'}}>Outline</span>
+        <span style={{fontSize: '12px', color: '#4E606F'}}>Outline</span>
       </div>
       <div
         style={{
@@ -234,7 +234,7 @@ export const OutlineVsSolid: Story = {
           gap: '8px',
         }}>
         <Icon icon={StarIconSolid} size="lg" color="warning" />
-        <span style={{fontSize: '12px', color: '#666'}}>Solid</span>
+        <span style={{fontSize: '12px', color: '#4E606F'}}>Solid</span>
       </div>
     </div>
   ),

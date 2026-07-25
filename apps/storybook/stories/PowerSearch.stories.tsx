@@ -1331,7 +1331,7 @@ export const WithCustomComponents: Story = {
           onChange={newFilters => setFilters([...newFilters])}
           components={customComponents}
         />
-        <p style={{marginTop: 16, fontSize: 13, color: '#666'}}>
+        <p style={{marginTop: 16, fontSize: 13, color: '#4E606F'}}>
           <strong>Custom overrides:</strong> Status tokens show colored text
           (custom Token). Integer fields use a range slider editor (custom
           Editor).

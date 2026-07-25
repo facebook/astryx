@@ -95,7 +95,7 @@ export const SizeVariants: Story = {
               style={{
                 marginBottom: '8px',
                 fontSize: '12px',
-                color: '#666',
+                color: '#4E606F',
                 fontFamily: 'monospace',
               }}>
               size=\"{size}\"

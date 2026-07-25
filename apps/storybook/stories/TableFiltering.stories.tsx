@@ -121,7 +121,7 @@ export const TextFilter: Story = {
     );
     return (
       <div style={{maxWidth: 800}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Showing {data.length}/{employees.length} rows.
         </p>
         <Table
@@ -156,7 +156,7 @@ export const SelectorFilter: Story = {
     );
     return (
       <div style={{maxWidth: 800}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Enum → selector. Showing {data.length}/{employees.length} rows.
         </p>
         <Table
@@ -191,7 +191,7 @@ export const MultiSelectorFilter: Story = {
     );
     return (
       <div style={{maxWidth: 800}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Enum list → multi-selector. Showing {data.length}/{employees.length}{' '}
           rows.
         </p>
@@ -227,7 +227,7 @@ export const NumberFilter: Story = {
     );
     return (
       <div style={{maxWidth: 800}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Number field → numeric input. Showing {data.length}/{employees.length}{' '}
           rows.
         </p>
@@ -264,7 +264,7 @@ export const InlineVariant: Story = {
     );
     return (
       <div style={{maxWidth: 800}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Inline variant. Showing {data.length}/{employees.length} rows.
         </p>
         <Table
@@ -307,7 +307,7 @@ export const WithSelection: Story = {
     const selectionPlugin = useTableSelection<Employee>(selectionConfig);
     return (
       <div style={{maxWidth: 800}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Filtering + Selection. Selected: {selectedKeys.size} | Showing{' '}
           {data.length}/{employees.length} rows.
         </p>
@@ -353,7 +353,7 @@ export const WithSorting: Story = {
     const data = applySort(filtered);
     return (
       <div style={{maxWidth: 800}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Filtering + Sorting. Showing {data.length}/{employees.length} rows.
         </p>
         <Table
@@ -398,7 +398,7 @@ export const WithResize: Story = {
     );
     return (
       <div style={{maxWidth: 800}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Inline filtering + Resize. Showing {data.length}/{employees.length}{' '}
           rows.
         </p>
@@ -456,7 +456,7 @@ export const WithAllPlugins: Story = {
     const selectionPlugin = useTableSelection<Employee>(selectionConfig);
     return (
       <div style={{maxWidth: 900}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           All plugins. Selected: {selectedKeys.size} | Showing {data.length}/
           {employees.length} rows.
         </p>
@@ -498,7 +498,7 @@ export const InlineWithClear: Story = {
     );
     return (
       <div style={{maxWidth: 800}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Inline variant with clear buttons. Type to filter, then click ✕ to
           clear. Showing {data.length}/{employees.length} rows.
         </p>
@@ -535,7 +535,7 @@ export const EmptyState: Story = {
     );
     return (
       <div style={{maxWidth: 800}}>
-        <p style={{marginBottom: 8, fontSize: 14, color: '#666'}}>
+        <p style={{marginBottom: 8, fontSize: 14, color: '#4E606F'}}>
           Try filtering to get zero results; empty state appears.
         </p>
         <Table
