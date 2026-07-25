@@ -288,3 +288,144 @@ describe('CodeBlock', () => {
     expect(container.firstElementChild?.tagName).toBe('PRE');
   });
 });
+
+const LINES = 'line one\nline two\nline three\nline four';
+const MINUS = '−'; // U+2212 minus sign, the remove marker glyph.
+
+function getLine(container: HTMLElement, line: number): HTMLElement {
+  const el = container.querySelector<HTMLElement>(`[data-line="${line}"]`);
+  if (el == null) {
+    throw new Error(`line ${line} not rendered`);
+  }
+  return el;
+}
+
+describe('CodeBlock highlightLines', () => {
+  it('renders plain number arrays with the neutral accent (backward compat)', () => {
+    const {container} = render(
+      <CodeBlock code={LINES} highlightLines={[2, 3]} />,
+    );
+    expect(getLine(container, 1).dataset.lineType).toBeUndefined();
+    expect(getLine(container, 2).dataset.lineType).toBe('highlight');
+    expect(getLine(container, 3).dataset.lineType).toBe('highlight');
+    // A neutral highlight is not a diff, so no marker gutter is drawn.
+    expect(container.querySelector('[data-diff-marker]')).toBeNull();
+  });
+
+  it('renders mixed numbers and {line, type} entries with per-type accents', () => {
+    const {container} = render(
+      <CodeBlock
+        code={LINES}
+        highlightLines={[
+          1,
+          {line: 2, type: 'add'},
+          {line: 3, type: 'remove'},
+          {line: 4, type: 'highlight'},
+        ]}
+      />,
+    );
+    expect(getLine(container, 1).dataset.lineType).toBe('highlight');
+    expect(getLine(container, 2).dataset.lineType).toBe('add');
+    expect(getLine(container, 3).dataset.lineType).toBe('remove');
+    expect(getLine(container, 4).dataset.lineType).toBe('highlight');
+
+    // Each accent type gets distinct styling; a plain number matches an
+    // explicit 'highlight'.
+    expect(getLine(container, 2).className).not.toBe(
+      getLine(container, 3).className,
+    );
+    expect(getLine(container, 1).className).toBe(
+      getLine(container, 4).className,
+    );
+  });
+
+  it('defaults {line} without a type to the neutral accent', () => {
+    const {container} = render(
+      <CodeBlock code={LINES} highlightLines={[1, {line: 2}]} />,
+    );
+    expect(getLine(container, 2).dataset.lineType).toBe('highlight');
+    expect(getLine(container, 2).className).toBe(
+      getLine(container, 1).className,
+    );
+  });
+
+  it('ignores out-of-range lines', () => {
+    const {container} = render(
+      <CodeBlock
+        code={LINES}
+        highlightLines={[
+          {line: 99, type: 'add'},
+          {line: 0, type: 'remove'},
+          -5,
+        ]}
+      />,
+    );
+    expect(container.querySelector('[data-line="99"]')).toBeNull();
+    expect(container.querySelector('[data-line-type]')).toBeNull();
+  });
+});
+
+describe('CodeBlock diff markers', () => {
+  it('draws +/- gutter markers on add/remove lines (non-colour affordance)', () => {
+    const {container} = render(
+      <CodeBlock
+        code={LINES}
+        highlightLines={[
+          {line: 2, type: 'add'},
+          {line: 3, type: 'remove'},
+        ]}
+      />,
+    );
+    expect(getLine(container, 2).dataset.diffMarker).toBe('+');
+    expect(getLine(container, 3).dataset.diffMarker).toBe(MINUS);
+    // Every line carries a marker cell (blank for context) so the gutter aligns.
+    expect(getLine(container, 1).dataset.diffMarker).toBe('');
+    expect(getLine(container, 4).dataset.diffMarker).toBe('');
+  });
+
+  it('does not draw markers for a neutral-only highlight', () => {
+    const {container} = render(
+      <CodeBlock
+        code={LINES}
+        highlightLines={[{line: 2, type: 'highlight'}, 3]}
+      />,
+    );
+    expect(container.querySelector('[data-diff-marker]')).toBeNull();
+  });
+});
+
+describe('CodeBlock language="diff"', () => {
+  const DIFF = [
+    '@@ -1,3 +1,3 @@',
+    ' {',
+    '-  "timeout": 10,',
+    '+  "timeout": 30,',
+    ' }',
+  ].join('\n');
+
+  it('derives add/remove accents and markers from a unified diff', () => {
+    const {container} = render(<CodeBlock code={DIFF} language="diff" />);
+    expect(getLine(container, 3).dataset.lineType).toBe('remove');
+    expect(getLine(container, 3).dataset.diffMarker).toBe(MINUS);
+    expect(getLine(container, 4).dataset.lineType).toBe('add');
+    expect(getLine(container, 4).dataset.diffMarker).toBe('+');
+    // Hunk/file headers are metadata: no accent, no marker glyph.
+    expect(getLine(container, 1).dataset.lineType).toBeUndefined();
+    expect(getLine(container, 1).dataset.diffMarker).toBe('');
+  });
+
+  it('strips the leading +/- from the displayed code', () => {
+    const {container} = render(<CodeBlock code={DIFF} language="diff" />);
+    expect(getLine(container, 3).textContent).toBe('  "timeout": 10,');
+    expect(getLine(container, 4).textContent).toBe('  "timeout": 30,');
+    expect(getLine(container, 3).textContent?.startsWith('-')).toBe(false);
+  });
+
+  it('copies the code with all diff punctuation stripped', () => {
+    render(<CodeBlock code={DIFF} language="diff" />);
+    fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      '{\n  "timeout": 10,\n  "timeout": 30,\n}',
+    );
+  });
+});
