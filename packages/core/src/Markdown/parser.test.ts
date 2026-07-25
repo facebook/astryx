@@ -51,6 +51,48 @@ describe('parseInline', () => {
     expect(result).toEqual([{type: 'image', src: 'img.png', alt: 'alt'}]);
   });
 
+  it('rejects javascript: links as plain text (XSS prevention)', () => {
+    const result = parseInline('[click](javascript:alert(1))');
+    // Should be emitted as plain text, NOT as a link node
+    expect(result).toEqual([
+      {type: 'text', content: '[click](javascript:alert(1))'},
+    ]);
+  });
+
+  it('rejects javascript: with mixed case and whitespace (XSS prevention)', () => {
+    const result = parseInline('[click](JaVaScRiPt:alert(1))');
+    expect(result).toEqual([
+      {type: 'text', content: '[click](JaVaScRiPt:alert(1))'},
+    ]);
+  });
+
+  it('rejects vbscript: links (XSS prevention)', () => {
+    const result = parseInline('[click](vbscript:MsgBox(1))');
+    expect(result).toEqual([
+      {type: 'text', content: '[click](vbscript:MsgBox(1))'},
+    ]);
+  });
+
+  it('rejects data:text/html image src (XSS prevention)', () => {
+    const result = parseInline(
+      '![xss](data:text/html,<script>alert(1)</script>)',
+    );
+    expect(result).toEqual([
+      {
+        type: 'text',
+        content: '![xss](data:text/html,<script>alert(1)</script>)',
+      },
+    ]);
+  });
+
+  it('allows normal http/https links', () => {
+    const result = parseInline('[safe](https://example.com)');
+    expect(result[0].type).toBe('link');
+    if (result[0].type === 'link') {
+      expect(result[0].href).toBe('https://example.com');
+    }
+  });
+
   it('parses strikethrough', () => {
     const result = parseInline('~~deleted~~');
     expect(result[0].type).toBe('strikethrough');
