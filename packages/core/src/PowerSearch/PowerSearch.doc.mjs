@@ -143,6 +143,27 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'startIcon',
+      type: 'IconType | ReactNode',
+      description: 'SVG icon component displayed at the start of the input.',
+    },
+    {
+      name: 'menuWidth',
+      type: 'number',
+      description: 'Maximum width for the operator/value dropdown menu in pixels.',
+    },
+    {
+      name: 'maxOperatorMenuItems',
+      type: 'number',
+      description: 'Maximum number of items displayed in the operator dropdown.',
+    },
+    {
+      name: 'tokenOverflowBehavior',
+      type: "'wrap' | 'scroll' | 'truncate' | 'none'",
+      description: 'Controls how tokens overflow when the container is too narrow. Forwarded to Tokenizer.',
+      default: "'none'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description:
