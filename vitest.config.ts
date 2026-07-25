@@ -82,9 +82,15 @@ export default defineConfig({
     execArgv: ['--max-old-space-size=4096'],
     // Test projects (migrated from vitest.workspace.ts). Partitioning rule
     // (nothing can fall through):
-    //   - `ui`   = packages/core + packages/lab — need jsdom, the StyleX babel
-    //              transform, and the jest-dom setup; inherit all of that from
-    //              the root config via `extends: true`.
+    //   - `ui`   = packages/core + packages/lab + packages/charts +
+    //              packages/vega — need jsdom, the StyleX babel transform, and
+    //              the jest-dom setup; inherit all of that from the root config
+    //              via `extends: true`. charts also imports core by its bare
+    //              package name for *values* (Text, VStack), which resolves to
+    //              core's built dist — the alias above only rewrites *subpath*
+    //              imports to source, and lab's bare imports are type-only so
+    //              they erase. The node project's globalSetup builds core, so a
+    //              cold `pnpm test` with no dist on disk still passes (verified).
     //   - `node` = everything else (CLI, build tooling, scripts, internal
     //              utils) — no DOM, no StyleX/babel transform, no jest-dom
     //              matchers. Deliberately does NOT extend the root config so it
@@ -100,6 +106,8 @@ export default defineConfig({
           include: [
             'packages/core/src/**/*.test.{ts,tsx,mjs}',
             'packages/lab/src/**/*.test.{ts,tsx,mjs}',
+            'packages/charts/src/**/*.test.{ts,tsx,mjs}',
+            'packages/vega/src/**/*.test.{ts,tsx,mjs}',
           ],
         },
       },
@@ -125,6 +133,8 @@ export default defineConfig({
             ...configDefaults.exclude,
             'packages/core/**',
             'packages/lab/**',
+            'packages/charts/**',
+            'packages/vega/**',
           ],
         },
       },
