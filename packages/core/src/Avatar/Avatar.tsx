@@ -154,10 +154,11 @@ const styles = stylex.create({
     height: '100%',
     // Fallback surface (initials + default icon). Each property reads an
     // Avatar-scoped internal var so a theme can re-scope the fallback wash and
-    // initials weight/color without forking; the defaults reproduce today's
-    // exact output. See derivedVarRegistry (avatar) + Avatar.doc.mjs theming.
+    // initials weight/color without forking. `--color-text-primary` (not
+    // `-secondary`) is the default so initials meet WCAG AA contrast against
+    // the neutral background. See derivedVarRegistry (avatar) + Avatar.doc.mjs theming.
     backgroundColor: `var(--_avatar-fallback-background, ${colorVars['--color-neutral']})`,
-    color: `var(--_avatar-fallback-color, ${colorVars['--color-text-secondary']})`,
+    color: `var(--_avatar-fallback-color, ${colorVars['--color-text-primary']})`,
     fontFamily: typographyVars['--font-family-body'],
     fontWeight: `var(--_avatar-fallback-font-weight, ${fontWeightVars['--font-weight-medium']})`,
     textTransform: 'uppercase',
