@@ -396,6 +396,69 @@ describe('TreeList', () => {
   });
 
   // ===========================================================================
+  // Variant (guide lines)
+  // ===========================================================================
+
+  describe('variant', () => {
+    it('renders guide lines by default', () => {
+      const {container} = render(<TreeList items={nestedItemsExpanded} />);
+      expect(container.querySelector('.astryx-tree-list-guide')).not.toBeNull();
+    });
+
+    it("variant='lineGuides' renders guide lines (explicit == default)", () => {
+      const {container} = render(
+        <TreeList items={nestedItemsExpanded} variant="lineGuides" />,
+      );
+      expect(container.querySelector('.astryx-tree-list-guide')).not.toBeNull();
+    });
+
+    it("variant='noGuides' renders NO guide lines", () => {
+      const {container} = render(
+        <TreeList items={nestedItemsExpanded} variant="noGuides" />,
+      );
+      expect(container.querySelector('.astryx-tree-list-guide')).toBeNull();
+    });
+
+    it("variant='noGuides' preserves the tree structure and items", () => {
+      render(<TreeList items={nestedItemsExpanded} variant="noGuides" />);
+      // Rows, roles, and nesting are all intact — only the connectors are gone.
+      expect(screen.getByRole('tree')).toBeInTheDocument();
+      expect(screen.getAllByRole('treeitem')).toHaveLength(4);
+      expect(screen.getByText('Parent')).toBeInTheDocument();
+      expect(screen.getByText('Child 1')).toBeInTheDocument();
+      expect(screen.getByText('Child 2')).toBeInTheDocument();
+      expect(screen.getByText('Sibling')).toBeInTheDocument();
+    });
+
+    it("variant='noGuides' preserves per-level indentation on the rows", () => {
+      // Indentation lives on the row's marginLeft (not the guide element), so
+      // it must survive when the connectors are suppressed. A deeper row is
+      // indented more than a shallower one.
+      const {container} = render(
+        <TreeList items={deepItems} variant="noGuides" />,
+      );
+      const marginOf = (text: string): string => {
+        const li = screen.getByText(text).closest('li')!;
+        const styled = li.querySelector('[style*="margin-left"]');
+        return styled?.getAttribute('style') ?? '';
+      };
+      // Guides are gone…
+      expect(container.querySelector('.astryx-tree-list-guide')).toBeNull();
+      // …but each level still carries an inline margin-left, and the level
+      // multiplier grows with depth (0, 1, 2).
+      expect(marginOf('Root')).toContain('margin-left');
+      expect(marginOf('Mid')).toContain('margin-left');
+      expect(marginOf('Leaf')).toContain('margin-left');
+      const level = (text: string): number => {
+        const m = /calc\((\d+)/.exec(marginOf(text));
+        return m ? Number(m[1]) : NaN;
+      };
+      expect(level('Mid')).toBeGreaterThan(level('Root'));
+      expect(level('Leaf')).toBeGreaterThan(level('Mid'));
+    });
+  });
+
+  // ===========================================================================
   // Guide theme target
   // ===========================================================================
 

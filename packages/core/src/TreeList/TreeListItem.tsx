@@ -28,7 +28,7 @@ import {getIcon} from '../Icon/globalIconRegistry';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
-import type {TreeListDensity} from './TreeListTypes';
+import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -268,6 +268,12 @@ export interface TreeListItemInternalProps {
   isExpanded: boolean;
   onToggle?: (id: string) => void;
   density: TreeListDensity;
+  /**
+   * Guide-line visual treatment. `noGuides` suppresses the connector lines;
+   * indentation is unaffected (it lives on the row's `marginLeft`, not the
+   * guide element).
+   */
+  variant: TreeListVariant;
   /** Pre-rendered children subtree (rendered by the parent recursion) */
   renderedChildren?: ReactNode;
   /** 1-based position of this item among its siblings (aria-posinset). */
@@ -304,6 +310,7 @@ export function TreeListItem({
   isExpanded,
   onToggle,
   density,
+  variant,
   renderedChildren,
   posInSet,
   setSize,
@@ -492,13 +499,15 @@ export function TreeListItem({
       data-tree-level={nestedLevel + 1}
       data-tree-disabled={isDisabled || undefined}
       {...stylex.props(styles.wrapper)}>
-      <div {...stylex.props(styles.treeBranches)}>
-        <TreeListBranches
-          ancestorsIsLast={ancestorsIsLast}
-          isLast={isLast}
-          nestedLevel={nestedLevel}
-        />
-      </div>
+      {variant !== 'noGuides' && (
+        <div {...stylex.props(styles.treeBranches)}>
+          <TreeListBranches
+            ancestorsIsLast={ancestorsIsLast}
+            isLast={isLast}
+            nestedLevel={nestedLevel}
+          />
+        </div>
+      )}
       <div {...stylex.props(styles.rowWrapper)}>
         <div
           {...mergeProps(

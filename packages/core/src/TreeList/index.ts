@@ -12,5 +12,5 @@
  */
 
 export {TreeList} from './TreeList';
-export type {TreeListProps, TreeListDensity} from './TreeList';
-export type {TreeListItemData} from './TreeListTypes';
+export type {TreeListProps, TreeListDensity, TreeListVariant} from './TreeList';
+export type {TreeListItemData, TreeListVariantMap} from './TreeListTypes';
