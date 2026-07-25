@@ -396,6 +396,52 @@ describe('TreeList', () => {
   });
 
   // ===========================================================================
+  // Guide theme target
+  // ===========================================================================
+
+  describe('guide theme target', () => {
+    it('renders the astryx-tree-list-guide target on the connector lines', () => {
+      const {container} = render(<TreeList items={nestedItemsExpanded} />);
+      const guide = container.querySelector('.astryx-tree-list-guide');
+      // A dedicated, stable target so a theme can recolor or hide the guides
+      // without hiding the built-in connectors and reimplementing them.
+      expect(guide).not.toBeNull();
+    });
+
+    it('exposes tree-list-guide as a themeable defineTheme target', () => {
+      // jsdom cannot resolve the @layer cascade, so the generated CSS is what
+      // proves a theme override reaches the guide element.
+      const theme = defineTheme({
+        name: 'tree-list-guide-test',
+        components: {
+          'tree-list-guide': {
+            base: {backgroundColor: 'var(--color-accent)'},
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-tree-list-guide {');
+      expect(css).toContain('background-color: var(--color-accent)');
+    });
+
+    it('lets a theme hide the guides via display: none on the target', () => {
+      // Hiding the guides is done through the theme target, not a prop — the
+      // theme rule lands in @layer astryx-theme, above StyleX's base layer.
+      const theme = defineTheme({
+        name: 'tree-list-guide-hidden-test',
+        components: {
+          'tree-list-guide': {
+            base: {display: 'none'},
+          },
+        },
+      });
+      const css = generateThemeCSSFlat(theme);
+      expect(css).toContain('.astryx-tree-list-guide {');
+      expect(css).toContain('display: none');
+    });
+  });
+
+  // ===========================================================================
   // xds class name
   // ===========================================================================
 
