@@ -6,7 +6,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import {Command} from 'commander';
 import {registerUpgrade} from './upgrade.mjs';
-import {generateCompressedIndex} from './agent-docs.mjs';
+import {generateCompressedIndex} from '../../lib/agent-docs/agent-docs.mjs';
 
 let tmpDir;
 let originalCwd;

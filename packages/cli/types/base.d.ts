@@ -59,7 +59,7 @@ import type {
   LayoutCheckResponse,
   LayoutGrammarResponse,
 } from './layout';
-import type {BuildHelpResponse} from './build';
+import type {BuildHelpResponse, BuildKitResponse} from './build';
 import type {ErrorCode} from './error-codes';
 import type {ManifestResponse} from './manifest';
 import type {DoctorResponse} from './doctor';
@@ -135,6 +135,7 @@ export type CLIAnyResponse =
   | LayoutCheckResponse
   | LayoutGrammarResponse
   | BuildHelpResponse
+  | BuildKitResponse
   | ManifestResponse
   | DoctorResponse
   | ValidateIntegrationResponse;

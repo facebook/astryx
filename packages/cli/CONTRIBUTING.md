@@ -18,58 +18,73 @@ User calls API function        User runs CLI
 
 Both paths run identical code. The CLI handler just adds argument parsing and output formatting.
 
+The package is organized into pillars (no `src/` — it was dissolved in the reorg). The
+top-level directory _is_ the module boundary:
+
 ```
-src/
+packages/cli/
   api/                         # Programmatic API (exported as @astryxdesign/cli/api)
-    index.mjs                  # barrel: component, docs, discover, template, AstryxError
-    component.mjs              # component(name?, opts?) → { type, data }
-    docs.mjs                   # docs(topic?, section?, opts?) → { type, data }
-    discover.mjs               # discover(query?, opts?) → { type, data }
-    template.mjs               # template(name?, opts?) → { type, data }
-    error.mjs                  # AstryxError class (carries .suggestions)
-  commands/                    # CLI wrappers (thin: parse args → call API → format output)
-    component/index.mjs        # calls api/component.mjs
-    docs.mjs                   # calls api/docs.mjs
-    discover.mjs               # calls api/discover.mjs
-    template.mjs               # calls api/template.mjs
-    hook/index.mjs             # calls api/hook.mjs
-    swizzle.mjs                # CLI-only (side-effect: copies + rewrites imports)
-    build-theme.mjs            # CLI-only (side-effect: compiles theme to CSS)
-    upgrade.mjs                # CLI-only (side-effect: runs codemods)
-    init.mjs                   # CLI-only (interactive prompts)
-  lib/
+    index.mjs                  # barrel: component, docs, blog, discover, template,
+                               #   theme, hook, search, build, swizzle, doctor,
+                               #   layout*, validateIntegration, AstryxError
+    error.mjs                  # AstryxError class (carries .suggestions + .code)
+    component/component.mjs    # component(name?, opts?) → { type, data }
+    docs/docs.mjs              # docs(topic?, section?, opts?) → { type, data }
+    build/build.mjs            # build(query, opts?) → build.kit | build.help (raw entries)
+    swizzle/swizzle.mjs        # swizzle(component?, opts?) → receipt (side effect in API)
+    integration/               # validateIntegration(pkg?, opts?) → integration.validate
+    ...                        # one dir per command surface
+  cli/                         # CLI layer — MUST NOT be imported by api/
+    index.mjs                  # program setup + JSON_SUPPORTED set + fallback hook
+    commands/                  # thin wrappers: parse args → one API call → render
+      component/index.mjs      # calls api/component
+      swizzle.mjs              # thin: calls api/swizzle, renders receipt + error codes
+      build.mjs                # thin: calls api/build, renders kit (pm-prefixing lives here)
+      upgrade.mjs              # side-effect (codemods) — API extraction pending (see Roadmap)
+      build-theme.mjs          # side-effect (theme→CSS/TS) — API extraction pending
+      init.mjs                 # interactive prompts stay CLI-side; core → api/init pending
+  codemods/                    # version-to-version migrations (consumed by upgrade)
+  authoring/                   # component/doc authoring scaffolds
+  lib/                         # shared infra (NOT a data API)
     json.mjs                   # jsonOut(type, data), jsonError(msg) — internal
     parse.mjs                  # parseResponse, isError, assertResponse — consumer
-  types/
+    agent-docs/                # ~700-line doc generator/injector (shared: init/upgrade/hook)
+    manifest.mjs               # CLI-special: reflects the command tree (injects `program`)
+  utils/                       # small pure helpers (package-manager, path-safety, ...)
+  schemas/                     # zod/JSON schemas
+  types/                       # hand-written .d.ts (see Roadmap: migrating to generated)
     api.d.ts                   # API function signatures + AstryxError
     base.d.ts                  # CLIError, CLIResult<T>, CLIAnyResponse, CLIResponseType
     component.d.ts             # ComponentListResponse, ComponentDetailResponse, ...
-    discover.d.ts              # DiscoverListResponse, ...
-    docs.d.ts                  # DocsListResponse, ...
-    template.d.ts              # TemplateListResponse, TemplateShowResponse, ...
+    build.d.ts                 # BuildKitResponse, BuildHelpResponse
     swizzle.d.ts               # SwizzleListResponse, SwizzleCopyResponse
-    theme.d.ts                 # ThemeBuildResponse
-    upgrade.d.ts               # UpgradeListResponse, UpgradeRunResponse
-    index.d.ts                 # barrel re-export
+    ...                        # one .d.ts per command; index.d.ts is the barrel
+  bin/ scripts/ docs/ templates/
 ```
+
+**Hard boundary:** `api/` never imports from `cli/`. The API is the reusable core;
+the CLI is one consumer of it. Anything shared by both (doc generation, manifest,
+package-manager detection) lives in `lib/` or `utils/`, not `cli/`. Side-effecting
+commands perform the effect _in the API_ and return a `{type, data}` receipt; the CLI
+only chooses how to render it and what exit code to set.
 
 ## Adding a new command
 
 ### Does it need an API function?
 
-**Yes** if the command returns data that consumers might want programmatically — component docs, template source, lists, search results. Put the logic in `src/api/`, export from `@astryxdesign/cli/api`, and make the CLI handler a thin wrapper.
+**Yes** if the command returns data that consumers might want programmatically — component docs, template source, lists, search results. Put the logic in `api/`, export from `@astryxdesign/cli/api`, and make the CLI handler a thin wrapper.
 
-**No** if the command is purely interactive or only makes sense in a terminal — `init` (interactive prompts). These can live entirely in `src/commands/`.
+**No** if the command is purely interactive or only makes sense in a terminal — `init` (interactive prompts). The interactive shell can live in `cli/commands/`, but any reusable core (the actual scaffolding work) still belongs in `api/`.
 
 **Rule of thumb:** if it supports `--json`, it should have an API function. The parity test (`api-cli-parity-test.mjs`) will flag any `--json` type that doesn't have API coverage.
 
 ### 1. Write the API function
 
-Add a file in `src/api/` with all the logic. It returns `{ type, data }` on success and throws `AstryxError` on failure. The CLI handler should have zero logic — just arg parsing and text formatting:
+Add a file in `api/<command>/` with all the logic. It returns `{ type, data }` on success and throws `AstryxError` on failure. The CLI handler should have zero logic — just arg parsing and text formatting:
 
 ```javascript
-// src/api/my-command.mjs
-import {AstryxError} from './error.mjs';
+// api/my-command/my-command.mjs
+import {AstryxError} from '../error.mjs';
 
 export async function myCommand(name, options = {}) {
   if (!name) {
@@ -85,10 +100,10 @@ export async function myCommand(name, options = {}) {
 }
 ```
 
-Export it from `src/api/index.mjs`:
+Export it from `api/index.mjs`:
 
 ```javascript
-export {myCommand} from './my-command.mjs';
+export {myCommand} from './my-command/my-command.mjs';
 ```
 
 ### 2. Create the CLI wrapper
@@ -96,9 +111,9 @@ export {myCommand} from './my-command.mjs';
 The CLI handler just parses args, calls the API function, and formats the result. No business logic here:
 
 ```javascript
-// src/commands/my-command.mjs
-import {jsonOut, jsonError} from '../lib/json.mjs';
-import {myCommand} from '../api/my-command.mjs';
+// cli/commands/my-command.mjs
+import {jsonOut, jsonError} from '../../lib/json.mjs';
+import {myCommand} from '../../api/my-command/my-command.mjs';
 
 export function registerMyCommand(program) {
   program
@@ -124,7 +139,7 @@ export function registerMyCommand(program) {
 
 ### 3. Define response types
 
-Create `src/types/my-command.d.ts`:
+Create `types/my-command.d.ts`:
 
 ```typescript
 /** xds --json my-command */
@@ -147,13 +162,13 @@ export interface MyCommandDetailResponse {
 
 ### 4. Wire it up
 
-Add to `src/types/index.d.ts`:
+Add to `types/index.d.ts`:
 
 ```typescript
 export * from './my-command';
 ```
 
-Add to `CLIAnyResponse` in `src/types/base.d.ts`:
+Add to `CLIAnyResponse` in `types/base.d.ts`:
 
 ```typescript
 export type CLIAnyResponse =
@@ -207,17 +222,17 @@ packages/cli/templates/{name}/
 
 ### Adding a new option to an existing API function
 
-1. Add the option to the API function in `src/api/{command}.mjs`
-2. Pass it through from the CLI handler in `src/commands/{command}.mjs`
-3. Update the types in `src/types/api.d.ts` (add to the options interface)
-4. If it produces a new response type, also update `src/types/{command}.d.ts` and `src/types/base.d.ts`
+1. Add the option to the API function in `api/{command}/{command}.mjs`
+2. Pass it through from the CLI handler in `cli/commands/{command}.mjs`
+3. Update the types in `types/api.d.ts` (add to the options interface)
+4. If it produces a new response type, also update `types/{command}.d.ts` and `types/base.d.ts`
 
 ### Adding a new response type (e.g. `component.detail.variants`)
 
-1. Add the logic in `src/api/{command}.mjs` — return `{type: 'component.detail.variants', data: ...}`
-2. Add a TypeScript interface in `src/types/{command}.d.ts`
-3. Add it to `CLIAnyResponse` in `src/types/base.d.ts`
-4. Add it to the result union in `src/types/api.d.ts`
+1. Add the logic in `api/{command}/{command}.mjs` — return `{type: 'component.detail.variants', data: ...}`
+2. Add a TypeScript interface in `types/{command}.d.ts`
+3. Add it to `CLIAnyResponse` in `types/base.d.ts`
+4. Add it to the result union in `types/api.d.ts`
 5. The parity test will auto-detect the new type and verify API=CLI
 
 ### Renaming or removing a response type
@@ -297,7 +312,8 @@ if (!json) p.log.step('Running...');
 
 The CLI ships as hand-written `.mjs` (no build step) but is type-checked with
 TypeScript's `checkJs` against the JSDoc annotations in the source. `tsconfig.strict.json`
-runs the compiler over the **whole package** — `src`, `bin`, `scripts`, `docs`, and the
+runs the compiler over the **whole package** — every pillar (`api`, `cli`, `codemods`,
+`authoring`, `lib`, `utils`, `types`, `schemas`), plus `bin`, `scripts`, `docs`, and the
 emitted `templates` (including their `.tsx` source) — under full `strict`, including
 `noImplicitAny`, so an un-annotated parameter is an error.
 
@@ -312,3 +328,73 @@ CLI must stay strict-clean — a new un-annotated parameter or type error fails 
 locally before pushing. (The emitted `templates/**/*.tsx` import built workspace packages,
 so run `pnpm build` first or you'll see spurious "cannot find module" errors from unbuilt
 `dist` output.)
+
+## Roadmap
+
+Two tracks of planned work. Both are intentionally sequenced _after_ the thin-CLI
+extraction settles, so each lands as a focused, fully-verified increment rather than a
+rushed one where a subtle behavior change could slip past the tests.
+
+Every increment must clear the same gate before commit: shape-lock IDENTICAL (the
+`--json` payloads and human text stay byte-for-byte the same), `typecheck:strict` at 0
+errors with the file count not shrinking, `typecheck:json-api`, the vitest suite, and the
+api↔cli parity + json-smoke scripts.
+
+### 1. Finish the thin-CLI / API coverage
+
+Goal: every command is scriptable and each CLI handler is `parse → one API call →
+render`. The reusable core lives in `api/`; the CLI only parses args, renders (`jsonOut`
+or human text), and sets the exit code. Side-effecting commands do the effect in the API
+and return a `{type, data}` receipt.
+
+Remaining commands, in order (largest / highest-risk deliberately taken one at a time):
+
+1. **`upgrade`** (~860 lines — codemod pipeline, ~10 outcomes). Extract to `api/upgrade`
+   returning an `upgrade.run` receipt. Use the **injected-logger** pattern: the API takes
+   an optional logger (default no-op) so the work runs identically whether or not the CLI
+   is rendering progress; all `term-log` calls stay in the CLI. Runs codemods + a
+   post-codemod hook via `execFile`, so preserve dry-run vs `--apply` exactly.
+   - Open decision to make explicit in that PR: two error sites currently pass a metadata
+     object (`{agentDocs}` / `{receipt}`) as `jsonError`'s _suggestions_ argument, which
+     `toErrorEnvelope` silently drops (it only forwards array-shaped suggestions). Either
+     preserve the drop (shape-lock stays identical) **or** fix it as a deliberate,
+     documented additive change that puts the metadata in the receipt `data`. Do not
+     change it silently either way.
+2. **`theme build`** (~1275 lines — theme→CSS/TS compiler, ~14 file-write sites). Extract
+   the compiler into `api/theme` returning a build receipt; keep all disk writes in the
+   API, keep rendering in the CLI. Large and side-effecting — its own pass.
+3. **`init`** (~195 lines). The interactive prompts stay CLI-side; extract the scaffolding
+   core into `api/init` so the non-interactive path is scriptable.
+4. **`blog --json`**: `blog` emits `blog.list` / `blog.detail` today but has **no
+   `blog.d.ts`** — enabling/locking its `--json` surface must _also_ add the response
+   types and register them in `CLIAnyResponse`. Small, low-risk, pure win.
+5. **Data-command audit** (`component`, `docs`, `hook`, `template`): confirm no residual
+   business logic remains CLI-side after the reorg. Mostly already thin.
+
+### 2. Replace hand-written `.d.ts` with generated declarations
+
+Today the API's public types are hand-written `.d.ts` files in `types/`, kept in sync with
+the `.mjs` implementation by convention + CI. The goal is to make the annotated `.mjs` the
+single source of truth so type drift becomes a compile error instead of a review catch.
+
+Proven feasible: a JSDoc `@typedef` in a `.mjs` file plus `tsc --emitDeclarationOnly`
+generates a correct `.d.ts`, and a shared `.ts` spine can `import type { XResult } from
+'./x.mjs'` and both type-check and emit correctly.
+
+Phased plan:
+
+- **Phase 0 (done):** each API function gets a precise `@returns
+{Promise<XResult>}` pointing at its exported result union, so an implementation that
+  stops matching its declared type fails `typecheck:strict`. `discover` and `docs` are the
+  reference pattern; `build`'s `search` result is already annotated.
+- **Phase 1 — generation harness:** wire `tsc --emitDeclarationOnly` → `dist/types/` and
+  prove the generated output is byte-identical to the current hand-written `.d.ts`. No
+  behavior change; this only establishes the generator.
+- **Phase 2 — migrate per-command:** move each command's types into a colocated
+  `api/<cmd>/<cmd>.types.ts` (or JSDoc typedefs in the `.mjs`), update `base.ts`'s imports,
+  and delete `types/<cmd>.d.ts` one at a time. Start with **`blog`** — it has no `.d.ts`
+  today, so it's a pure win with nothing to keep in sync.
+- **Phase 3 — flip the export:** point `exports.types` at the generated output and stop
+  committing generated `.d.ts` by hand.
+- **Phase 4 — lock it:** add a CI check so no hand-written per-command `.d.ts` can
+  reappear.

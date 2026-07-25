@@ -50,6 +50,7 @@ export const RESPONSE_TYPES = {
   docs: ['docs.list', 'docs.detail', 'docs.detail.section'],
   discover: ['discover.list', 'discover.detail', 'discover.detail.doc', 'discover.search'],
   search: ['search'],
+  build: ['build.help', 'build.kit'],
   swizzle: ['swizzle.list', 'swizzle.copy'],
   template: [
     'template.list',
@@ -79,6 +80,7 @@ const EXAMPLES = {
   docs: ['astryx docs', 'astryx docs spacing --json'],
   discover: ['astryx discover --json'],
   search: ['astryx search modal --json', 'astryx search button --type component --json'],
+  build: ['astryx build', 'astryx build "analytics dashboard" --json'],
   swizzle: ['astryx swizzle XDSButton'],
   template: ['astryx template --json', 'astryx template dashboard ./src/app'],
   hook: ['astryx hook', 'astryx hook useToggle --json'],

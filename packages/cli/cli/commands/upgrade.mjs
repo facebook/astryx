@@ -49,7 +49,7 @@ import {
   selectIntegrationCodemods,
 } from '../../codemods/integration-discovery.mjs';
 import {runIntegrationCodemods} from '../../codemods/integration-runner.mjs';
-import {installAgentDocs, inspectAgentDocs} from './agent-docs.mjs';
+import {installAgentDocs, inspectAgentDocs} from '../../lib/agent-docs/agent-docs.mjs';
 import {getCliInvocation, formatCliCommand} from '../../utils/package-manager.mjs';
 import {isValidSemver, semverGte} from '../../utils/semver.mjs';
 import {jsonOut, jsonError} from '../../lib/json.mjs';

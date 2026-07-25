@@ -16,35 +16,32 @@
 
 import {jsonOut, humanLog} from '../../lib/json.mjs';
 import {
-  validateLocalIntegration,
-  validateInstalledIntegration,
+  validateIntegration,
   summarizeIssues,
 } from '../../api/integration/validate-integration.mjs';
 
 /**
  * Render a validation result for humans.
- * @param {import('../../api/integration/validate-integration.mjs').ValidateResult} result
+ * @param {import('../../types/validate-integration').ValidateIntegrationResponse['data']} data
  */
-function printHuman(result) {
+function printHuman(data) {
   const label =
-    result.version != null
-      ? `${result.name}@${result.version}`
-      : result.name;
+    data.version != null ? `${data.name}@${data.version}` : data.name;
   humanLog(`Validating integration: ${label}`);
 
-  if (result.issues.length === 0) {
+  if (data.issues.length === 0) {
     humanLog('\n\u2713 No issues found.');
     return;
   }
 
   humanLog('');
-  for (const issue of result.issues) {
+  for (const issue of data.issues) {
     humanLog(`  ${issue.severity} ${issue.code}: ${issue.message}`);
   }
 
-  const {errors, warnings} = summarizeIssues(result.issues);
+  const {errors, warnings} = summarizeIssues(data.issues);
   humanLog(
-    `\n${result.issues.length} issue(s): ${errors} error(s), ${warnings} warning(s)`,
+    `\n${data.issues.length} issue(s): ${errors} error(s), ${warnings} warning(s)`,
   );
 }
 
@@ -74,35 +71,18 @@ export function registerValidateIntegration(program) {
     .action(async pkg => {
       const json = program.opts().json || false;
 
-      const result = pkg
-        ? await validateInstalledIntegration(pkg)
-        : await validateLocalIntegration();
-
-      // No-arg + no local manifest: guidance, not an error.
-      if (!result.found) {
-        if (json) {
-          jsonOut('integration.validate', {
-            name: null,
-            version: null,
-            issues: [],
-          });
-        } else {
-          humanLog(NO_MANIFEST_GUIDANCE);
-        }
-        return;
-      }
+      const result = await validateIntegration(pkg);
 
       if (json) {
-        jsonOut('integration.validate', {
-          name: result.name ?? null,
-          version: result.version ?? null,
-          issues: result.issues,
-        });
+        jsonOut(result.type, result.data);
+      } else if (result.data.name === null) {
+        // No-arg + no local manifest: guidance, not an error.
+        humanLog(NO_MANIFEST_GUIDANCE);
       } else {
-        printHuman(result);
+        printHuman(result.data);
       }
 
-      const {errors} = summarizeIssues(result.issues);
+      const {errors} = summarizeIssues(result.data.issues);
       if (errors > 0) {
         process.exitCode = 1;
       }

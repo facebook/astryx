@@ -18,7 +18,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
-import {isAstryxInitialized} from './agent-docs.mjs';
+import {isAstryxInitialized} from '../../lib/agent-docs/agent-docs.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLI = path.resolve(__dirname, '..', '..', 'bin', 'astryx.mjs');

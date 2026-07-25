@@ -1,7 +1,12 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, it, expect} from 'vitest';
-import {rewriteImports} from './swizzle.mjs';
+import * as path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {rewriteImports, swizzle} from './swizzle.mjs';
+
+// api/swizzle/ -> up 3 = packages/cli, up 4 = repo root (has packages/core).
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 describe('rewriteImports', () => {
   it('rewrites ../theme/tokens to @astryxdesign/core/theme', () => {
@@ -49,5 +54,25 @@ describe('rewriteImports', () => {
         `import { helper } from './helper';`,
       ].join('\n'),
     );
+  });
+});
+
+describe('swizzle() API', () => {
+  it('no component → swizzle.list of core components', async () => {
+    const r = await swizzle(undefined, {cwd: REPO});
+    expect(r.type).toBe('swizzle.list');
+    expect(Array.isArray(r.data)).toBe(true);
+    expect(r.data).toContain('Button');
+  });
+
+  it('--list → swizzle.list even with a component arg', async () => {
+    const r = await swizzle('Button', {cwd: REPO, list: true});
+    expect(r.type).toBe('swizzle.list');
+  });
+
+  it('unknown component → AstryxError ERR_UNKNOWN_COMPONENT with suggestions', async () => {
+    await expect(swizzle('NotARealComponent99', {cwd: REPO})).rejects.toMatchObject({
+      code: 'ERR_UNKNOWN_COMPONENT',
+    });
   });
 });
