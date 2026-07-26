@@ -43,6 +43,7 @@ import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+import {thumbnailScope} from './thumbnail.markers.stylex';
 
 export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -96,6 +97,17 @@ export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
    * @default false
    */
   isDisabled?: boolean;
+  /**
+   * When the remove button is visible.
+   * - `'hover'` — the button is revealed on hover, and on keyboard focus so
+   *   it stays reachable. On any touch-capable device it stays visible.
+   *   This is the default.
+   * - `'always'` — the button is always shown.
+   *
+   * Only has an effect when `onRemove` is set.
+   * @default 'hover'
+   */
+  showRemoveOn?: 'always' | 'hover';
   /**
    * Test ID for testing frameworks.
    */
@@ -192,11 +204,14 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
 
-  removeButtonOverrides: {
+  removeSlot: {
     position: 'absolute',
     top: spacingVars['--spacing-1'],
     right: spacingVars['--spacing-1'],
     zIndex: 1,
+    lineHeight: 0,
+  },
+  removeButtonOverrides: {
     '--_button-radius': `calc(${radiusVars['--radius-element']} - ${spacingVars['--spacing-1']})`,
     height: 20,
     minWidth: 20,
@@ -220,6 +235,28 @@ const styles = stylex.create({
     borderRadius: 'inherit',
     zIndex: 1,
     lineHeight: 0,
+  },
+  // showRemoveOn="hover": the remove button is hidden at rest and revealed
+  // when the thumbnail is hovered or when focus enters it (keyboard). Only
+  // opacity is animated — the button stays mounted and focusable so tabbing
+  // to it triggers the :focus-within reveal. Any touch-capable device (incl.
+  // hybrid laptops that also report hover) keeps the button visible so the
+  // remove path is never gated behind an unavailable hover.
+  removeOnHover: {
+    opacity: {
+      default: 0,
+      [stylex.when.ancestor(':hover', thumbnailScope)]: {
+        '@media (hover: hover)': 1,
+      },
+      [stylex.when.ancestor(':focus-within', thumbnailScope)]: 1,
+      '@media (any-pointer: coarse)': 1,
+    },
+    transitionProperty: 'opacity',
+    transitionDuration: {
+      default: durationVars['--duration-fast'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
+    transitionTimingFunction: easeVars['--ease-standard'],
   },
 });
 
@@ -249,7 +286,8 @@ function ImagePlaceholder() {
  *
  * Shows a skeleton shimmer while the image loads, the image on success, or
  * a placeholder icon on failure / when no src is provided. An overlaid
- * remove button appears when `onRemove` is set.
+ * remove button appears when `onRemove` is set — revealed on hover or
+ * keyboard focus by default (`showRemoveOn`), or always shown.
  *
  * The remove button uses a fixed `--color-overlay` scrim with an
  * `--color-on-dark` icon so it stays legible on any image without sampling
@@ -259,6 +297,7 @@ function ImagePlaceholder() {
  * ```
  * <Thumbnail src="/photo.jpg" alt="Vacation photo" onRemove={() => {}} />
  * <Thumbnail src="/preview.png" alt="Preview" onClick={() => {}} label="preview.png" />
+ * <Thumbnail src="/logo.png" alt="Logo" onRemove={() => {}} showRemoveOn="always" />
  * ```
  */
 export function Thumbnail({
@@ -269,6 +308,7 @@ export function Thumbnail({
   onClick,
   isLoading = false,
   isDisabled = false,
+  showRemoveOn = 'hover',
   xstyle,
   className,
   style,
@@ -284,6 +324,8 @@ export function Thumbnail({
   const showUploadOverlay = isLoading && hasSrc;
   const showPlaceholder = !isLoading && !hasSrc;
   const isInteractive = onClick != null && !isDisabled && !isLoading;
+  const hasRemove = onRemove != null && !isDisabled;
+  const isHoverReveal = hasRemove && showRemoveOn === 'hover';
   const accessibleName =
     label && alt
       ? `${label} — ${alt}`
@@ -333,8 +375,12 @@ export function Thumbnail({
     </>
   );
 
-  const removeButtonEl =
-    onRemove != null && !isDisabled ? (
+  const removeButtonEl = hasRemove ? (
+    <div
+      {...stylex.props(
+        styles.removeSlot,
+        isHoverReveal && styles.removeOnHover,
+      )}>
       <Button
         icon={<Icon icon="close" size="xsm" />}
         label={t('@astryx.thumbnail.remove', {accessibleName})}
@@ -347,7 +393,8 @@ export function Thumbnail({
         }}
         xstyle={styles.removeButtonOverrides}
       />
-    ) : null;
+    </div>
+  ) : null;
 
   const thumbnail = (
     <div
@@ -365,6 +412,7 @@ export function Thumbnail({
       <div
         {...stylex.props(
           styles.imageContainer,
+          isHoverReveal && thumbnailScope,
           isInteractive && styles.interactive,
           isInteractive && styles.overlay,
           isInteractive && styles.hoverOnPointer,

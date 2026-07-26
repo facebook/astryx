@@ -163,4 +163,60 @@ describe('Thumbnail', () => {
     render(<Thumbnail ref={ref} data-testid="thumb" />);
     expect(ref).toHaveBeenCalled();
   });
+
+  describe('showRemoveOn', () => {
+    // The reveal style lives on the slot <div> that wraps the remove button
+    // (ancestor-marker styles can't ride on a child component's xstyle prop),
+    // so assert on the button's parent element.
+    const removeSlotClass = (
+      showRemoveOn?: 'always' | 'hover',
+    ): {className: string; unmount: () => void} => {
+      const view = render(
+        <Thumbnail
+          label="file.png"
+          onRemove={vi.fn()}
+          showRemoveOn={showRemoveOn}
+        />,
+      );
+      const slot = screen.getByRole('button', {
+        name: 'Remove file.png',
+      }).parentElement!;
+      return {className: slot.className, unmount: view.unmount};
+    };
+
+    it('renders the remove button in the DOM even when showRemoveOn="hover"', () => {
+      // Hover reveal is CSS-only (opacity) — the button must stay mounted so
+      // it remains reachable by keyboard and assistive tech.
+      render(
+        <Thumbnail label="file.png" onRemove={vi.fn()} showRemoveOn="hover" />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Remove file.png'}),
+      ).toBeInTheDocument();
+    });
+
+    it('applies a distinct slot class when showRemoveOn="hover" vs "always"', () => {
+      const always = removeSlotClass('always');
+      always.unmount();
+      const hover = removeSlotClass('hover');
+      expect(hover.className).not.toBe(always.className);
+    });
+
+    it('defaults to "hover" (same slot class as an explicit hover)', () => {
+      const def = removeSlotClass(undefined);
+      def.unmount();
+      const hover = removeSlotClass('hover');
+      expect(def.className).toBe(hover.className);
+    });
+
+    it('still fires onRemove when revealed on hover', async () => {
+      const user = userEvent.setup();
+      const onRemove = vi.fn();
+      render(
+        <Thumbnail label="file.png" onRemove={onRemove} showRemoveOn="hover" />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Remove file.png'}));
+      expect(onRemove).toHaveBeenCalledOnce();
+    });
+  });
 });

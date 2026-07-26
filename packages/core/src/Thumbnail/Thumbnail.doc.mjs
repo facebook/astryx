@@ -46,6 +46,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'showRemoveOn',
+      type: "'always' | 'hover'",
+      description:
+        'When the remove button is visible. `hover` (the default) reveals it on hover and on keyboard focus, and keeps it visible on any touch-capable device; `always` shows it at rest. Only applies when `onRemove` is set.',
+      default: "'hover'",
+    },
+    {
       name: 'xstyle',
       type: 'StyleXStyles',
       description: 'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
@@ -101,6 +108,7 @@ export const docsZh = {
     onClick: '\u70B9\u51FB\u5904\u7406\u5668\u3002\u6DFB\u52A0\u6309\u94AE\u8BED\u4E49\u548C\u60AC\u505C\u8986\u76D6\u5C42\u3002',
     isLoading: '\u663E\u793A\u9AA8\u67B6\u5C4F\uFF08\u65E0 src\uFF09\u6216\u4E0A\u4F20\u8986\u76D6\u5C42\uFF08\u6709 src\uFF09\u3002',
     isDisabled: '\u662F\u5426\u7981\u7528\u7F29\u7565\u56FE\u3002',
+    showRemoveOn: '\u4F55\u65F6\u663E\u793A\u79FB\u9664\u6309\u94AE\uFF1Ahover\uFF08\u9ED8\u8BA4\uFF0C\u60AC\u505C\u65F6\u4EE5\u53CA\u952E\u76D8\u805A\u7126\u65F6\u663E\u793A\uFF0C\u89E6\u6478\u8BBE\u5907\u4E0A\u4FDD\u6301\u53EF\u89C1\uFF09| always\uFF08\u59CB\u7EC8\u663E\u793A\uFF09\u3002\u4EC5\u5728\u8BBE\u7F6E onRemove \u65F6\u751F\u6548\u3002',
     xstyle: '\u7528\u4E8E\u5E03\u5C40\u81EA\u5B9A\u4E49\u7684 StyleX \u6837\u5F0F\u3002\u5FC5\u987B\u662F stylex.create() \u7684\u503C\uFF0C\u800C\u975E\u5185\u8054\u6837\u5F0F\u5BF9\u8C61\u3002',
     className: '\u6839\u5143\u7D20\u7684 CSS \u7C7B\u540D\u3002\u5EFA\u8BAE\u4F7F\u7528 xstyle\u3002',
     style: '\u6839\u5143\u7D20\u7684\u5185\u8054\u6837\u5F0F\u3002\u5EFA\u8BAE\u4F7F\u7528 xstyle\u3002',
@@ -141,6 +149,7 @@ export const docsDense = {
     onClick: '(e) => void. Adds button semantics + hover overlay.',
     isLoading: 'Skeleton (no src) or upload overlay (with src). Default: false.',
     isDisabled: 'Disabled state. Default: false.',
+    showRemoveOn: "When remove button shows: hover (default — reveal on hover/focus, stays visible on touch) | always. Only when onRemove set.",
     xstyle: 'stylex.create() for layout.',
     className: 'CSS class. Prefer xstyle.',
     style: 'Inline styles. Prefer xstyle.',
