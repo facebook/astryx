@@ -325,6 +325,42 @@ src/Button/
 └── Button.test.tsx   # Tests live here
 ```
 
+### Accessibility audits
+
+PRs that touch components run an axe-core audit (the `pr-a11y` CI job) over
+the Storybook stories of the changed components. The job **fails** when it
+finds a violation that is not listed in the checked-in baseline,
+`.github/a11y-baseline.json`. Violations are keyed
+`Component::Story::rule-id`, so unrelated markup churn does not invalidate
+baseline entries.
+
+To reproduce and fix a failure locally:
+
+```bash
+# One-time setup
+pnpm storybook:build
+npx playwright install chromium
+
+# Audit specific components against the baseline (what CI does)
+pnpm a11y:audit -- --components Button,Dialog
+```
+
+Fix the violation whenever possible. If it is a known, intentional exception,
+add it to the baseline (scoped to the affected components, and expect
+reviewers to ask why):
+
+```bash
+pnpm a11y:baseline -- --components Button,Dialog
+```
+
+When the audit reports baseline entries as "resolved", delete them from
+`.github/a11y-baseline.json` — the baseline should only shrink over time.
+
+> **Scope caveat:** axe-core automates only a subset of WCAG (roughly a
+> third of the success criteria). A green `pr-a11y` job does not mean a
+> component is accessible — keyboard flows, focus order, screen-reader
+> semantics, and contrast in context still need manual checks.
+
 ## Versioning & Releases
 
 We use [Changesets](https://github.com/changesets/changesets) for versioning, with a thin Astryx layer on top so changelogs stay categorized, contributor-attributed, and aligned with our pre-1.0 conventions.

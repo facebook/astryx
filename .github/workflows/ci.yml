@@ -416,15 +416,23 @@ jobs:
       - name: Install Playwright
         run: pnpm install --frozen-lockfile && npx playwright install chromium
 
+      # Fails on axe violations not present in the checked-in baseline
+      # (.github/a11y-baseline.json). See CONTRIBUTING.md "Accessibility
+      # audits" for the baseline workflow.
       - name: Run accessibility audit
         run: |
           COMPONENTS=$(cat analysis.json | jq -r '(.newComponents + .modifiedComponents) | join(",")')
           node .github/scripts/accessibility-audit.js \
             --storybook-dir apps/storybook/dist \
             --output a11y-report.json \
-            --components "$COMPONENTS"
+            --components "$COMPONENTS" \
+            --baseline .github/a11y-baseline.json \
+            --fail-on-new
 
+      # if: always() so the report artifact (and the PR comment built from it)
+      # still exists when the gate above fails.
       - name: Upload a11y artifact
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: a11y-report
