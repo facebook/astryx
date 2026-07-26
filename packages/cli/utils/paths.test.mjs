@@ -192,6 +192,61 @@ describe('discoverExternalPackages', () => {
     const result = discoverExternalPackages(tmpDir);
     expect(result).toEqual([]);
   });
+
+  // pnpm — and `file:`/`link:`/workspace deps on every package manager — install
+  // a package as a SYMLINK into node_modules. `readdirSync(withFileTypes)` does
+  // not follow links, so a symlinked package reports isDirectory() === false. It
+  // must still be discovered, or external-package support is inert under pnpm.
+  it('finds a package installed as a symlink (pnpm layout)', () => {
+    const store = path.join(
+      tmpDir,
+      'node_modules',
+      '.pnpm',
+      '@acme+widgets@1.0.0',
+      'node_modules',
+      '@acme',
+      'widgets',
+    );
+    fs.mkdirSync(path.join(store, 'src'), {recursive: true});
+    fs.writeFileSync(
+      path.join(store, 'package.json'),
+      JSON.stringify({name: '@acme/widgets', astryx: {docs: './src'}}),
+    );
+    const scopeDir = path.join(tmpDir, 'node_modules', '@acme');
+    fs.mkdirSync(scopeDir, {recursive: true});
+    fs.symlinkSync(store, path.join(scopeDir, 'widgets'), 'dir');
+
+    const result = discoverExternalPackages(tmpDir);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('@acme/widgets');
+    // docsDir resolves through the link, so the real files stay reachable.
+    expect(fs.existsSync(result[0].docsDir)).toBe(true);
+  });
+
+  it('finds a symlinked package at an unscoped node_modules entry', () => {
+    const real = path.join(tmpDir, 'linked-pkg');
+    fs.mkdirSync(path.join(real, 'src'), {recursive: true});
+    fs.writeFileSync(
+      path.join(real, 'package.json'),
+      JSON.stringify({name: 'linked-pkg', astryx: {docs: './src'}}),
+    );
+    const nm = path.join(tmpDir, 'node_modules');
+    fs.mkdirSync(nm, {recursive: true});
+    fs.symlinkSync(real, path.join(nm, 'linked-pkg'), 'dir');
+
+    const result = discoverExternalPackages(tmpDir);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('linked-pkg');
+  });
+
+  it('skips a broken symlink without throwing', () => {
+    const nm = path.join(tmpDir, 'node_modules');
+    fs.mkdirSync(nm, {recursive: true});
+    fs.symlinkSync(path.join(tmpDir, 'gone'), path.join(nm, 'ghost'), 'dir');
+
+    expect(() => discoverExternalPackages(tmpDir)).not.toThrow();
+    expect(discoverExternalPackages(tmpDir)).toEqual([]);
+  });
 });
 
 describe('listComponents', () => {

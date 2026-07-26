@@ -32,8 +32,8 @@ export const ALL_DOC_SUFFIXES = ['.doc.ts', '.doc.mjs', '.doc.js'];
  * @property {string} [version]
  * @property {string} [description]
  * @property {string} [displayName]
- * @property {string} dir
- * @property {Record<string, any>} astryx
+ * @property {string} [dir] set when the package was found by scanning a directory
+ * @property {Record<string, any>} [astryx] the raw `astryx` package.json field
  * @property {string} category
  * @property {string} docsDir
  * @property {string[]} components
@@ -58,7 +58,10 @@ export function scanDirectory(scanDir, options = {}) {
   /** @type {ScannedPackage[]} */
   const packages = [];
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
+    // Symlinks count as packages — pnpm (and `file:`/`link:`/workspace deps
+    // everywhere) install one as a link, which readdirSync does not follow, so
+    // isDirectory() is false. A broken link fails the package.json check below.
+    if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
     const pkgPath = path.join(scanDir, entry.name, 'package.json');
     if (!fs.existsSync(pkgPath)) continue;
     let pkg;
@@ -89,7 +92,8 @@ export function scanDirectory(scanDir, options = {}) {
 
 /**
  * @param {string[]} packageDirs
- * @param {ScannedPackage[]} [explicitPackages]
+ * @param {Array<Omit<ScannedPackage, 'components'> & {components?: string[]}>} [explicitPackages]
+ *   packages the caller already resolved; `components` is discovered here
  * @param {ScanOptions} [options]
  * @returns {ScannedPackage[]}
  */
@@ -124,8 +128,10 @@ export function scanAllPackages(packageDirs, explicitPackages = [], options = {}
  */
 function discoverDocComponents(docsDir, docSuffixes = DEFAULT_DOC_SUFFIXES) {
   if (!fs.existsSync(docsDir)) return [];
-  /** @type {string[]} */
-  const components = [];
+  // A name is reported once even when a package ships it at more than one path;
+  // findDocFile resolves which one wins.
+  /** @type {Set<string>} */
+  const components = new Set();
   /** @param {string} dir */
   function walk(dir) {
     /** @type {import('node:fs').Dirent[]} */
@@ -143,11 +149,11 @@ function discoverDocComponents(docsDir, docSuffixes = DEFAULT_DOC_SUFFIXES) {
         continue;
       }
       const suffix = docSuffixes.find(s => entry.name.endsWith(s));
-      if (suffix) components.push(entry.name.slice(0, -suffix.length));
+      if (suffix) components.add(entry.name.slice(0, -suffix.length));
     }
   }
   walk(docsDir);
-  return components.sort();
+  return [...components].sort();
 }
 
 /**
@@ -169,34 +175,45 @@ export function findComponentInPackages(packages, name, options = {}) {
 }
 
 /**
+ * Locate a component's doc file under `docsDir`.
+ *
+ * Breadth-first over name-sorted entries, so when a package ships the same
+ * component name at more than one path the SHALLOWEST match wins, and ties break
+ * lexicographically. A depth-first walk would resolve by readdir order, which is
+ * filesystem-dependent — the same package could yield a different component on a
+ * different machine. Breadth-first also visits fewer nodes for the common case
+ * (a component near the docs root).
+ *
  * @param {string} docsDir
  * @param {string} name
  * @param {string[]} [docSuffixes]
  * @returns {string | null}
  */
 function findDocFile(docsDir, name, docSuffixes = DEFAULT_DOC_SUFFIXES) {
-  const targets = docSuffixes.map(suffix => name + suffix);
-  /**
-   * @param {string} dir
-   * @returns {string | null}
-   */
-  function walk(dir) {
-    /** @type {import('node:fs').Dirent[]} */
-    let entries;
-    try {
-      entries = fs.readdirSync(dir, {withFileTypes: true});
-    } catch {
-      return null;
+  const targets = new Set(docSuffixes.map(suffix => name + suffix));
+  /** @type {string[]} */
+  let level = [docsDir];
+  while (level.length > 0) {
+    /** @type {string[]} */
+    const next = [];
+    for (const dir of level) {
+      /** @type {import('node:fs').Dirent[]} */
+      let entries;
+      try {
+        entries = fs.readdirSync(dir, {withFileTypes: true});
+      } catch {
+        continue;
+      }
+      entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+      for (const entry of entries) {
+        if (entry.name === 'node_modules' || entry.name === '__tests__')
+          continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) next.push(full);
+        else if (targets.has(entry.name)) return full;
+      }
     }
-    for (const entry of entries) {
-      if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        const f = walk(full);
-        if (f) return f;
-      } else if (targets.includes(entry.name)) return full;
-    }
-    return null;
+    level = next;
   }
-  return walk(docsDir);
+  return null;
 }

@@ -103,7 +103,12 @@ export function discoverExternalPackages(startDir = process.cwd()) {
     const entries = fs.readdirSync(searchDir, {withFileTypes: true});
 
     for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
+      // Symlinks count as packages. `readdirSync(withFileTypes)` does not follow
+      // links, so a pnpm-installed package (node_modules/@scope/pkg -> .pnpm/…)
+      // reports isDirectory() === false — as do `file:`/`link:`/workspace deps on
+      // every package manager. A broken link stays harmless: the package.json
+      // check below fails and the entry is skipped.
+      if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
       if (entry.name.startsWith('.') || entry.name === '.bin') continue;
 
       const fullPath = path.join(searchDir, entry.name);

@@ -110,15 +110,28 @@ function buildIntegration(
  * (`"astryx": {"docs": "./src"}`), with NO integration manifest and no entry in
  * astryx.config.mjs. This is the case issue #2090 names.
  *
+ * `subdir` nests the component below the docs root (`src/<subdir>/<Name>/`),
+ * the shape a package with more than a flat component list actually ships.
+ *
  * @param {string} project
- * @param {{name?: string, componentName?: string, docExt?: string}} [opts]
+ * @param {{name?: string, componentName?: string, docExt?: string, subdir?: string}} [opts]
  */
 function buildExternalPackage(
   project,
-  {name = '@ext/widgets', componentName = 'AppShell', docExt = '.doc.mjs'} = {},
+  {
+    name = '@ext/widgets',
+    componentName = 'AppShell',
+    docExt = '.doc.mjs',
+    subdir = '',
+  } = {},
 ) {
   const pkgDir = path.join(project, 'node_modules', ...name.split('/'));
-  const compDir = path.join(pkgDir, 'src', componentName);
+  const compDir = path.join(
+    pkgDir,
+    'src',
+    ...(subdir ? [subdir] : []),
+    componentName,
+  );
   fs.mkdirSync(compDir, {recursive: true});
   fs.writeFileSync(
     path.join(pkgDir, 'package.json'),
@@ -625,5 +638,355 @@ describe('swizzle — StyleX build setup note (#3373)', () => {
     const humanResult = runCli(['swizzle', 'Plain', '-f'], project);
     expect(humanResult.code).toBe(0);
     expect(humanResult.stdout).not.toMatch(/StyleX compiler/i);
+  });
+});
+
+describe('swizzle — a docs-only owner never blocks a swizzleable one', () => {
+  /**
+   * A package that ships reference docs at its docs ROOT can never be swizzled
+   * from (there is no isolated component dir), so it must not turn a working
+   * `swizzle Button` into ERR_AMBIGUOUS_COMPONENT and then offer itself as the
+   * fix. Installing any such package used to break core swizzles outright.
+   */
+  function buildDocsOnlyPackage(
+    project,
+    {name = '@ext/refdocs', componentName = 'Button'} = {},
+  ) {
+    const pkgDir = path.join(project, 'node_modules', ...name.split('/'));
+    const srcDir = path.join(pkgDir, 'src');
+    fs.mkdirSync(srcDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'package.json'),
+      JSON.stringify({name, version: '1.0.0', astryx: {docs: './src'}}),
+    );
+    fs.writeFileSync(
+      path.join(srcDir, `${componentName}.doc.mjs`),
+      `export const docs = {name: '${componentName}'};\n`,
+    );
+    return {pkgDir};
+  }
+
+  it('resolves to core when the only other owner has no source', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildDocsOnlyPackage(project);
+
+    const result = runCli(['--json', 'swizzle', 'Button', '-f'], project);
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.type).toBe('swizzle.copy');
+    expect(env.data.package).toBe('@astryxdesign/core');
+  });
+
+  it('resolves to core when the other owner ships a doc but no same-stem .tsx', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    // src/Button/ exists but holds index.tsx, so there is no `Button.tsx` to copy.
+    const compDir = path.join(
+      project,
+      'node_modules',
+      '@ext',
+      'kit',
+      'src',
+      'Button',
+    );
+    fs.mkdirSync(compDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(project, 'node_modules', '@ext', 'kit', 'package.json'),
+      JSON.stringify({name: '@ext/kit', astryx: {docs: './src'}}),
+    );
+    fs.writeFileSync(
+      path.join(compDir, 'Button.doc.mjs'),
+      `export const docs = {};\n`,
+    );
+    fs.writeFileSync(
+      path.join(compDir, 'index.tsx'),
+      `export const Button = () => null;\n`,
+    );
+
+    const result = runCli(['--json', 'swizzle', 'Button', '-f'], project);
+    expect(result.code).toBe(0);
+    expect(JSON.parse(result.stdout).data.package).toBe('@astryxdesign/core');
+  });
+
+  it('still reports ambiguity when BOTH owners are swizzleable', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildExternalPackage(project, {componentName: 'Button'});
+
+    const result = runCli(['--json', 'swizzle', 'Button', '-f'], project);
+    expect(result.code).not.toBe(0);
+    expect(JSON.parse(result.stdout).code).toBe('ERR_AMBIGUOUS_COMPONENT');
+  });
+
+  it('an explicit --package on a source-less owner still reports ERR_NO_SOURCE', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildDocsOnlyPackage(project);
+
+    const result = runCli(
+      ['--json', 'swizzle', 'Button', '--package', '@ext/refdocs', '-f'],
+      project,
+    );
+    expect(result.code).not.toBe(0);
+    expect(JSON.parse(result.stdout).code).toBe('ERR_NO_SOURCE');
+  });
+
+  it('reports ERR_NO_SOURCE when the source-less owner is the only one', () => {
+    writeProjectPackageJson(project);
+    buildDocsOnlyPackage(project);
+
+    const result = runCli(['--json', 'swizzle', 'Button', '-f'], project);
+    expect(result.code).not.toBe(0);
+    expect(JSON.parse(result.stdout).code).toBe('ERR_NO_SOURCE');
+  });
+});
+
+describe('swizzle — nested external components rewrite to real subpaths', () => {
+  it('never writes an <owner>/.. specifier, and reports what it could not resolve', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+
+    const pkgDir = path.join(project, 'node_modules', '@ext', 'widgets');
+    const compDir = path.join(pkgDir, 'src', 'components', 'AppShell');
+    fs.mkdirSync(compDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'package.json'),
+      JSON.stringify({
+        name: '@ext/widgets',
+        version: '2.0.0',
+        astryx: {docs: './src'},
+      }),
+    );
+    fs.writeFileSync(
+      path.join(compDir, 'AppShell.tsx'),
+      [
+        `import one from '../shared/one';`,
+        `import two from '../../theme/two';`,
+        `import out from '../../../outside';`,
+        `import sib from './sibling';`,
+        `export function AppShell() { return one + two + out + sib; }`,
+        '',
+      ].join('\n'),
+    );
+    fs.writeFileSync(
+      path.join(compDir, 'AppShell.doc.mjs'),
+      `export const docs = {};\n`,
+    );
+
+    const result = runCli(['--json', 'swizzle', 'AppShell', '-f'], project);
+    expect(result.code).toBe(0);
+    const out = fs.readFileSync(
+      path.join(project, 'components', 'astryx', 'AppShell', 'AppShell.tsx'),
+      'utf-8',
+    );
+    expect(out).not.toContain('@ext/widgets/..');
+    // Subpaths are named from the package's docs root, so they match what the
+    // package actually exports.
+    expect(out).toContain(`from '@ext/widgets/components'`);
+    expect(out).toContain(`from '@ext/widgets/theme'`);
+    // An import escaping the package cannot be named — left as written, and
+    // surfaced rather than mangled into a fake specifier.
+    expect(out).toContain(`from '../../../outside'`);
+    expect(out).toContain(`from './sibling'`);
+
+    const env = JSON.parse(result.stdout);
+    expect(env.data.unresolvedImports).toEqual(['../../../outside']);
+  });
+
+  it('omits unresolvedImports when every import resolved', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildExternalPackage(project);
+
+    const result = runCli(['--json', 'swizzle', 'AppShell', '-f'], project);
+    expect(result.code).toBe(0);
+    expect(JSON.parse(result.stdout).data.unresolvedImports).toBeUndefined();
+  });
+
+  it('warns in human output when an import could not be rewritten', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    const compDir = path.join(
+      project,
+      'node_modules',
+      '@ext',
+      'widgets',
+      'src',
+      'AppShell',
+    );
+    fs.mkdirSync(compDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(project, 'node_modules', '@ext', 'widgets', 'package.json'),
+      JSON.stringify({name: '@ext/widgets', astryx: {docs: './src'}}),
+    );
+    fs.writeFileSync(
+      path.join(compDir, 'AppShell.tsx'),
+      `import out from '../../outside';\nexport const AppShell = () => null;\n`,
+    );
+    fs.writeFileSync(
+      path.join(compDir, 'AppShell.doc.mjs'),
+      `export const docs = {};\n`,
+    );
+
+    const human = runCli(['swizzle', 'AppShell', '-f'], project);
+    expect(human.code).toBe(0);
+    expect(human.stdout).toMatch(/could not be rewritten/i);
+    expect(human.stdout).toContain('../../outside');
+  });
+});
+
+describe('swizzle — core keeps its exact import rewriting', () => {
+  it('rewrites a deep core subpath to the top-level area, as before', () => {
+    const core = buildFakeCore(project);
+    writeProjectPackageJson(project);
+    fs.writeFileSync(
+      path.join(core, 'src', 'Button', 'Button.tsx'),
+      [
+        `import {tokens} from '../theme/tokens.stylex';`,
+        `import {deep} from '../utils/nested/deep';`,
+        `import {bare} from '../hooks';`,
+        `import {helper} from './helper';`,
+        '',
+      ].join('\n'),
+    );
+
+    const result = runCli(['--json', 'swizzle', 'Button', '-f'], project);
+    expect(result.code).toBe(0);
+    const out = fs.readFileSync(
+      path.join(project, 'components', 'astryx', 'Button', 'Button.tsx'),
+      'utf-8',
+    );
+    expect(out).toContain(`from '@astryxdesign/core/theme'`);
+    expect(out).toContain(`from '@astryxdesign/core/utils'`);
+    expect(out).toContain(`from '@astryxdesign/core/hooks'`);
+    expect(out).toContain(`from './helper'`);
+  });
+});
+
+describe('swizzle — --list covers every owner it can swizzle from', () => {
+  it('includes configured integration components alongside core and externals', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildIntegration(project);
+    buildExternalPackage(project);
+
+    const result = runCli(['--json', 'swizzle', '--list'], project);
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.data).toContain('Button');
+    expect(env.data).toContain('AppShell');
+    // Swizzleable today, but invisible to --list until now.
+    expect(env.data).toContain('MetaAppShell');
+  });
+
+  it('offers integration components as not-found suggestions too', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildIntegration(project);
+
+    const result = runCli(['--json', 'swizzle', 'Nope'], project);
+    expect(result.code).not.toBe(0);
+    const names = (JSON.parse(result.stdout).suggestions ?? []).map(
+      s => s.name,
+    );
+    expect(names).toContain('MetaAppShell');
+  });
+});
+
+describe('swizzle — a symlinked package is a real package (pnpm)', () => {
+  it('swizzles from an external package installed as a symlink', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+
+    // pnpm's layout: node_modules/@ext/widgets is a link into .pnpm/.
+    const store = path.join(
+      project,
+      'node_modules',
+      '.pnpm',
+      '@ext+widgets@2.0.0',
+      'node_modules',
+      '@ext',
+      'widgets',
+    );
+    const compDir = path.join(store, 'src', 'AppShell');
+    fs.mkdirSync(compDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(store, 'package.json'),
+      JSON.stringify({
+        name: '@ext/widgets',
+        version: '2.0.0',
+        astryx: {docs: './src'},
+      }),
+    );
+    fs.writeFileSync(
+      path.join(compDir, 'AppShell.tsx'),
+      `import x from '../utils/foo';\nexport function AppShell() { return x; }\n`,
+    );
+    fs.writeFileSync(
+      path.join(compDir, 'AppShell.doc.mjs'),
+      `export const docs = {};\n`,
+    );
+
+    const scopeDir = path.join(project, 'node_modules', '@ext');
+    fs.mkdirSync(scopeDir, {recursive: true});
+    fs.symlinkSync(store, path.join(scopeDir, 'widgets'), 'dir');
+
+    const list = runCli(['--json', 'swizzle', '--list'], project);
+    expect(JSON.parse(list.stdout).data).toContain('AppShell');
+
+    const result = runCli(['--json', 'swizzle', 'AppShell', '-f'], project);
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.data.package).toBe('@ext/widgets');
+    const out = fs.readFileSync(
+      path.join(project, 'components', 'astryx', 'AppShell', 'AppShell.tsx'),
+      'utf-8',
+    );
+    expect(out).toContain(`from '@ext/widgets/utils'`);
+  });
+});
+
+describe('swizzle — duplicate component names inside one package', () => {
+  it('picks the shallowest match deterministically, not readdir order', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    const pkgDir = path.join(project, 'node_modules', '@ext', 'widgets');
+    fs.mkdirSync(pkgDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(pkgDir, 'package.json'),
+      JSON.stringify({name: '@ext/widgets', astryx: {docs: './src'}}),
+    );
+    // 'AAA' sorts BEFORE 'AppShell', so a depth-first walk descends into the
+    // deep copy first and returns it. Only a shallowest-first search picks the
+    // one at the docs root — the test would pass by luck otherwise.
+    for (const [rel, marker] of [
+      [path.join('AAA', 'nested', 'AppShell'), 'DEEP'],
+      [path.join('AppShell'), 'SHALLOW'],
+    ]) {
+      const d = path.join(pkgDir, 'src', rel);
+      fs.mkdirSync(d, {recursive: true});
+      fs.writeFileSync(
+        path.join(d, 'AppShell.tsx'),
+        `export const marker = '${marker}';\n`,
+      );
+      fs.writeFileSync(
+        path.join(d, 'AppShell.doc.mjs'),
+        `export const docs = {};\n`,
+      );
+    }
+
+    const result = runCli(['--json', 'swizzle', 'AppShell', '-f'], project);
+    expect(result.code).toBe(0);
+    const out = fs.readFileSync(
+      path.join(project, 'components', 'astryx', 'AppShell', 'AppShell.tsx'),
+      'utf-8',
+    );
+    expect(out).toContain('SHALLOW');
+    // And the name is listed once, not once per copy.
+    const list = JSON.parse(
+      runCli(['--json', 'swizzle', '--list'], project).stdout,
+    );
+    expect(list.data.filter(n => n === 'AppShell')).toHaveLength(1);
   });
 });

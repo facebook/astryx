@@ -32,6 +32,7 @@ import {
 } from '../../lib/package-scanner.mjs';
 import {
   CORE_PACKAGE,
+  discoverIntegrationComponents,
   findIntegrationComponentDoc,
   findIntegrationComponentSource,
 } from '../../lib/component-discovery.mjs';
@@ -50,15 +51,39 @@ const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
  *      '../theme/tokens.stylex' -> '@astryxdesign/core/theme'
  *      '../utils/mergeProps'     -> '@astryxdesign/core/utils'
  *
+ * Given `componentDir` + `rootDir` the specifier is RESOLVED against the owner's
+ * root instead of being guessed from the text. That matters as soon as a
+ * component can sit more than one level below the root, which external packages
+ * can: `'../../theme/x'` from `src/components/AppShell` is `src/theme/x`, so it
+ * names `<owner>/theme` — the text-only rule strips a single `../` and emits
+ * `<owner>/..`, which is not a module specifier at all. An import that escapes
+ * the root cannot be named as a subpath of it; those are left exactly as written
+ * and reported through `onUnresolved` rather than mangled into a fake one.
+ *
+ * With no directories given, the text-only rule applies. It is exact for a flat
+ * layout (core, integrations, `docs: './src'` over `src/<Name>/`) and is kept for
+ * callers that have no paths to hand.
+ *
  * @param {string} content
  * @param {string} [ownerPackage]
+ * @param {{componentDir?: string, rootDir?: string, onUnresolved?: (specifier: string) => void}} [options]
  */
-export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
+export function rewriteImports(content, ownerPackage = CORE_PACKAGE, options = {}) {
+  const {componentDir, rootDir, onUnresolved} = options;
   return content.replace(
     /(from\s+['"])(\.\.\/.+?)(['"])/g,
     (match, prefix, importPath, suffix) => {
-      const parts = importPath.replace(/^\.\.\//, '').split('/');
-      const topDir = parts[0];
+      let topDir;
+      if (componentDir && rootDir) {
+        const rel = path.relative(rootDir, path.resolve(componentDir, importPath));
+        if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) {
+          if (onUnresolved) onUnresolved(importPath);
+          return match;
+        }
+        topDir = rel.split(path.sep)[0];
+      } else {
+        topDir = importPath.replace(/^\.\.\//, '').split('/')[0];
+      }
       return `${prefix}${ownerPackage}/${topDir}${suffix}`;
     },
   );
@@ -124,13 +149,7 @@ function scanExternalPackages(cwd) {
     docsDir: ext.docsDir,
   }));
   if (externals.length === 0) return [];
-  return scanAllPackages(
-    [],
-    /** @type {import('../../lib/package-scanner.mjs').ScannedPackage[]} */ (
-      /** @type {unknown} */ (externals)
-    ),
-    {docSuffixes: ALL_DOC_SUFFIXES},
-  );
+  return scanAllPackages([], externals, {docSuffixes: ALL_DOC_SUFFIXES});
 }
 
 /**
@@ -141,7 +160,7 @@ function scanExternalPackages(cwd) {
  * @param {import('../../lib/package-scanner.mjs').ScannedPackage[]} externalPackages
  * @param {string} name
  * @param {string|undefined} coreIssuesUrl
- * @returns {Array<{package: string, sourceDir: string|null, ownerPackage: string, issuesUrl: string|undefined, componentName?: string}>}
+ * @returns {Array<{package: string, sourceDir: string|null, rootDir: string|null, ownerPackage: string, issuesUrl: string|undefined, componentName?: string}>}
  */
 function resolveOwners(
   coreDir,
@@ -151,14 +170,19 @@ function resolveOwners(
   coreIssuesUrl,
 ) {
   const owners = [];
-  const coreComponentDir = coreDir ? path.join(coreDir, 'src', name) : null;
-  if (coreComponentDir && fs.existsSync(coreComponentDir)) {
-    owners.push({
-      package: CORE_PACKAGE,
-      sourceDir: coreComponentDir,
-      ownerPackage: CORE_PACKAGE,
-      issuesUrl: coreIssuesUrl || DEFAULT_ISSUES_URL,
-    });
+  if (coreDir) {
+    const coreSrc = path.join(coreDir, 'src');
+    const coreComponentDir = path.join(coreSrc, name);
+    if (fs.existsSync(coreComponentDir)) {
+      owners.push({
+        package: CORE_PACKAGE,
+        sourceDir: coreComponentDir,
+        // Escaping imports are named against this: `src/theme/x` -> `/theme`.
+        rootDir: coreSrc,
+        ownerPackage: CORE_PACKAGE,
+        issuesUrl: coreIssuesUrl || DEFAULT_ISSUES_URL,
+      });
+    }
   }
   for (const integration of loadedIntegrations) {
     const docPath = findIntegrationComponentDoc(integration, name);
@@ -167,6 +191,7 @@ function resolveOwners(
     owners.push({
       package: integration.name,
       sourceDir: sourcePath ? path.dirname(sourcePath) : null,
+      rootDir: integration.components ?? null,
       ownerPackage: integration.name,
       issuesUrl: integration.issuesUrl,
     });
@@ -191,6 +216,9 @@ function resolveOwners(
     owners.push({
       package: pkg.name,
       sourceDir: hasOwnDir && fs.existsSync(sourceFile) ? docDir : null,
+      // The docs root is the package's subpath origin: a component nested at
+      // `src/components/AppShell` names `../../theme/x` as `<pkg>/theme`.
+      rootDir: pkg.docsDir,
       ownerPackage: pkg.name,
       issuesUrl: undefined,
       // The lookup is case-insensitive, so the package's own casing is the
@@ -226,9 +254,14 @@ export async function swizzle(component, options = {}) {
 
   const coreDir = findCoreDir(cwd);
   const externalPackages = scanExternalPackages(cwd);
-  // Core is only *required* when nothing else is swizzleable: an external
-  // `astryx.docs` package can own the component on its own (#2090).
-  if (!coreDir && externalPackages.length === 0) {
+  const {loadedIntegrations, project} = await loadConfigSafely(cwd);
+  // Core is only *required* when nothing else is swizzleable: an integration or
+  // an external `astryx.docs` package can own the component on its own (#2090).
+  if (
+    !coreDir &&
+    externalPackages.length === 0 &&
+    loadedIntegrations.length === 0
+  ) {
     throw new AstryxError(
       'Could not find @astryxdesign/core package. Make sure you are inside the design system monorepo or have @astryxdesign/core installed.',
       [],
@@ -236,10 +269,16 @@ export async function swizzle(component, options = {}) {
     );
   }
 
+  // Every owner swizzle can resolve from, so the list and the not-found
+  // suggestions describe what the command will actually accept. Integration
+  // components were swizzleable but invisible here.
   const components = [
     ...new Set([
       ...(coreDir ? listComponents(coreDir) : []),
-      ...externalPackages.flatMap(pkg => pkg.components),
+      ...loadedIntegrations.flatMap(integration =>
+        discoverIntegrationComponents(integration).map(c => c.name),
+      ),
+      ...externalPackages.flatMap(ext => ext.components),
     ]),
   ].sort();
 
@@ -249,7 +288,6 @@ export async function swizzle(component, options = {}) {
 
   const dirName = component.replace(/^XDS/, '');
 
-  const {loadedIntegrations, project} = await loadConfigSafely(cwd);
   const coreIssuesUrl = project
     ? project.issuesUrl({package: CORE_PACKAGE})
     : undefined;
@@ -269,6 +307,17 @@ export async function swizzle(component, options = {}) {
     );
   }
 
+  // An owner with no copyable source can never satisfy a swizzle, so it must not
+  // create ambiguity: a package that only DOCUMENTS a name core also owns used
+  // to turn a working `swizzle Button` into ERR_AMBIGUOUS_COMPONENT, and then
+  // offer itself as one of the two ways out. Such owners stay reachable through
+  // an explicit `--package` (which still reports ERR_NO_SOURCE, the honest
+  // answer) and still answer on their own when nobody else owns the name.
+  const swizzleable = allOwners.filter(
+    o => o.sourceDir && fs.existsSync(o.sourceDir),
+  );
+  const candidates = swizzleable.length > 0 ? swizzleable : allOwners;
+
   let owner;
   if (pkg) {
     owner = allOwners.find(o => o.package === pkg);
@@ -279,14 +328,14 @@ export async function swizzle(component, options = {}) {
         ERROR_CODES.ERR_UNKNOWN_COMPONENT,
       );
     }
-  } else if (allOwners.length > 1) {
+  } else if (candidates.length > 1) {
     throw new AstryxError(
       `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
-      allOwners.map(o => ({name: o.package, reason: 'provides this component'})),
+      candidates.map(o => ({name: o.package, reason: 'provides this component'})),
       ERROR_CODES.ERR_AMBIGUOUS_COMPONENT,
     );
   } else {
-    owner = allOwners[0];
+    owner = candidates[0];
   }
 
   if (!owner.sourceDir || !fs.existsSync(owner.sourceDir)) {
@@ -341,13 +390,19 @@ export async function swizzle(component, options = {}) {
   const files = fs.readdirSync(componentDir);
   let copied = 0;
   let usesStyleX = false;
+  /** Imports that escape the owner package, so no subpath can name them. */
+  const unresolved = new Set();
   for (const file of files) {
     if (isExcludedFromCopy(file)) continue;
     const srcPath = path.join(componentDir, file);
     if (!fs.statSync(srcPath).isFile()) continue;
     let content = fs.readFileSync(srcPath, 'utf-8');
     if (file.endsWith('.ts') || file.endsWith('.tsx')) {
-      content = rewriteImports(content, owner.ownerPackage);
+      content = rewriteImports(content, owner.ownerPackage, {
+        componentDir,
+        rootDir: owner.rootDir ?? undefined,
+        onUnresolved: specifier => unresolved.add(specifier),
+      });
     }
     if (
       (file.endsWith('.ts') || file.endsWith('.tsx')) &&
@@ -377,5 +432,9 @@ export async function swizzle(component, options = {}) {
     usesStyleX,
   };
   if (feedback) data.feedback = feedback;
+  // Only present when something needs the caller's attention — an import that
+  // pointed outside the owner package was copied verbatim and will not resolve
+  // from its new home.
+  if (unresolved.size > 0) data.unresolvedImports = [...unresolved];
   return {type: 'swizzle.copy', data};
 }
