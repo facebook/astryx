@@ -4,7 +4,7 @@
 
 /**
  * @file Button.tsx
- * @input Uses React, ButtonHTMLAttributes, ReactNode
+ * @input Uses React, ButtonHTMLAttributes, ReactNode, i18n (useTranslator)
  * @output Exports Button component, ButtonProps, ButtonVariant types
  * @position Core implementation; consumed by index.ts, tested by Button.test.tsx
  *
@@ -45,6 +45,7 @@ import {mergeProps, mergeRefs} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 /**
  * Base button styles
@@ -611,6 +612,7 @@ export function Button({
   ref,
   ...props
 }: ButtonProps): ReactNode {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const buttonGroup = useButtonGroup();
 
@@ -760,7 +762,7 @@ export function Button({
       </span>
       {/* Live region for loading state announcements */}
       <VisuallyHidden role="status" aria-live="polite">
-        {isLoadingState ? 'Loading' : ''}
+        {isLoadingState ? t('@astryx.button.loading') : ''}
       </VisuallyHidden>
     </>
   );

@@ -576,7 +576,9 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
             {
               id: 'row-expansion-toggle',
               group: 'row-expansion',
-              label: isExpanded ? 'Collapse row' : 'Expand row',
+              label: isExpanded
+                ? t('@astryx.tableRowExpansion.collapseRow')
+                : t('@astryx.tableRowExpansion.expandRow'),
               icon: (
                 <span {...stylex.props(rtlStyles.mirror)}>
                   <Icon
