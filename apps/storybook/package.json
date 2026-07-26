@@ -23,12 +23,12 @@
     "vega-lite": "^6.4.3"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "^10.4.6",
-    "@storybook/addon-links": "^10.4.6",
-    "@storybook/react": "^10.4.6",
-    "@storybook/react-vite": "^10.4.6",
+    "@storybook/addon-docs": "^10.5.2",
+    "@storybook/addon-links": "^10.5.2",
+    "@storybook/react": "^10.5.2",
+    "@storybook/react-vite": "^10.5.2",
     "@stylexjs/unplugin": "^0.19.0",
     "@astryxdesign/build": "*",
-    "storybook": "^10.4.6"
+    "storybook": "^10.5.2"
   }
 }
