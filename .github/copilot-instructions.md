@@ -88,6 +88,25 @@ fix is an open question — state the block, then ask about the approach.
   hybrids) over `hover: none` for "always show". Also blocking: focus lost on
   state change, a focusable element removed from the DOM, or an interactive
   target below the minimum size.
+- **Accessibility.** Beyond the broken-path rule above, each of these is a
+  bright line on its own:
+  - an interactive element without an accessible name;
+  - a state change not exposed to assistive tech (visual-only state);
+  - a keyboard trap, or an interaction that only works with a pointer;
+  - state signaled by color alone;
+  - focus not managed on open/close of an overlay (trap while open via
+    `useFocusTrap`, restore on close);
+  - a live announcement that bypasses `useAnnounce` (a hand-wired `aria-live`
+    node);
+  - hardcoded English in an AT-facing string (labels, announcements, hints —
+    same i18n rule as visible text);
+  - a new component that hasn't run the
+    [Accessibility Checklist](https://github.com/facebook/astryx/wiki/Accessibility-Checklist).
+
+  The `pr-a11y` axe audit catches the static/DOM-level subset of these
+  automatically; axe cannot see keyboard, focus, or announcement _behavior_ —
+  those are on the reviewer.
+
 - **Hardcoded user-facing strings.** All UI text goes through `useTranslator()`
   / the i18n key system (`@astryx/no-hardcoded-i18n-string`), and new keys must
   match the required format (`@astryx/i18n-key-format`).
