@@ -787,6 +787,18 @@
     "defaultMessage": "Media viewer",
     "description": "Screen-reader-only fallback name for the Lightbox dialog when the current media item has no alt text. Should rarely render — consumers should provide alt."
   },
+  "@astryx.lightbox.zoom": {
+    "defaultMessage": "Zoom",
+    "description": "Screen-reader-only label on the Lightbox image acting as a zoom toggle button (aria-pressed reflects zoomed state). Verb (\"to zoom\"), very short."
+  },
+  "@astryx.lightbox.zoomedIn": {
+    "defaultMessage": "Zoomed in, use arrow keys to pan",
+    "description": "Polite screen-reader announcement after zooming into a Lightbox image, including a hint that arrow keys pan while zoomed. Pairs with `lightbox.zoomedOut`."
+  },
+  "@astryx.lightbox.zoomedOut": {
+    "defaultMessage": "Zoomed out",
+    "description": "Polite screen-reader announcement after zooming back out of a Lightbox image. Pairs with `lightbox.zoomedIn`."
+  },
   "@astryx.metadataList.showMore": {
     "defaultMessage": "Show more",
     "description": "Button label under a MetadataList that reveals items hidden beyond the configured maximum. Toggles with `metadataList.showLess` — keep the pair parallel in your language."
