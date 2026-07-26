@@ -108,6 +108,66 @@ function writeProjectPackageJson(project, extra = {}) {
   );
 }
 
+/**
+ * Build a fake @astryxdesign/core with a Table component whose source spans
+ * nested subdirectories (the #3506 case). Exercises every rewrite path:
+ *   - escaping intra-package import from a nested file -> owner subpath
+ *   - escaping sibling-component import from a nested file -> owner subpath
+ *   - intra-component `../../types` from a nested file -> stays relative
+ *   - nested-sibling import -> stays relative
+ *   - top-level escaping import (legacy parity) -> owner subpath
+ */
+function buildNestedCore(project) {
+  const core = path.join(project, 'node_modules', '@astryxdesign', 'core');
+  const tableDir = path.join(core, 'src', 'Table');
+  const pagingDir = path.join(tableDir, 'plugins', 'pagination');
+  const selectionDir = path.join(tableDir, 'plugins', 'selection');
+  fs.mkdirSync(pagingDir, {recursive: true});
+  fs.mkdirSync(selectionDir, {recursive: true});
+  fs.writeFileSync(
+    path.join(core, 'package.json'),
+    '{"name":"@astryxdesign/core","version":"0.0.13"}',
+  );
+
+  // Top-level entry: escaping import (legacy parity) + nested re-export.
+  fs.writeFileSync(
+    path.join(tableDir, 'Table.tsx'),
+    [
+      `import {tokens} from '../theme/tokens.stylex';`,
+      `export {useTablePagination} from './plugins/pagination/useTablePagination';`,
+      `export const Table = () => null;`,
+      '',
+    ].join('\n'),
+  );
+  // Intra-component types file (shared target of ../../types).
+  fs.writeFileSync(
+    path.join(tableDir, 'types.ts'),
+    `export type TablePlugin = {name: string};\n`,
+  );
+  // Nested file with every rewrite category.
+  fs.writeFileSync(
+    path.join(pagingDir, 'useTablePagination.tsx'),
+    [
+      `import {spacingVars} from '../../../theme/tokens.stylex';`,
+      `import {Pagination} from '../../../Pagination';`,
+      `import type {TablePlugin} from '../../types';`,
+      `import {useTableSelection} from '../selection/useTableSelection';`,
+      `export const useTablePagination = () => null;`,
+      '',
+    ].join('\n'),
+  );
+  fs.writeFileSync(
+    path.join(selectionDir, 'useTableSelection.tsx'),
+    `export const useTableSelection = () => null;\n`,
+  );
+  // A nested test/doc that must be excluded at every level.
+  fs.writeFileSync(
+    path.join(pagingDir, 'useTablePagination.test.tsx'),
+    `it('noop', () => {});\n`,
+  );
+  return core;
+}
+
 function runCli(args, cwd) {
   try {
     const out = execFileSync('node', [CLI_BIN, ...args], {
@@ -342,5 +402,55 @@ describe('swizzle — StyleX build setup note (#3373)', () => {
     const humanResult = runCli(['swizzle', 'Plain', '-f'], project);
     expect(humanResult.code).toBe(0);
     expect(humanResult.stdout).not.toMatch(/StyleX compiler/i);
+  });
+});
+
+describe('swizzle — nested component source (#3506)', () => {
+  it('copies the full nested subtree and rewrites imports location-aware', () => {
+    buildNestedCore(project);
+    writeProjectPackageJson(project);
+
+    const result = runCli(['--json', 'swizzle', 'Table', '-f'], project);
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.type).toBe('swizzle.copy');
+
+    // Nested files are reported and copied (not silently dropped).
+    const rels = env.data.files;
+    expect(rels).toContain('Table.tsx');
+    expect(rels).toContain('types.ts');
+    expect(rels).toContain(path.join('plugins', 'pagination', 'useTablePagination.tsx'));
+    expect(rels).toContain(path.join('plugins', 'selection', 'useTableSelection.tsx'));
+    // Nested test file excluded at every level.
+    expect(rels.some(f => f.includes('.test.'))).toBe(false);
+
+    const outDir = path.join(project, 'components', 'astryx', 'Table');
+    expect(
+      fs.existsSync(
+        path.join(outDir, 'plugins', 'pagination', 'useTablePagination.tsx'),
+      ),
+    ).toBe(true);
+    expect(
+      fs.existsSync(
+        path.join(outDir, 'plugins', 'pagination', 'useTablePagination.test.tsx'),
+      ),
+    ).toBe(false);
+
+    // Top-level entry: escaping import rewritten (legacy parity), nested
+    // re-export left relative (it resolves against the copied subtree).
+    const entry = fs.readFileSync(path.join(outDir, 'Table.tsx'), 'utf-8');
+    expect(entry).toContain(`from '@astryxdesign/core/theme'`);
+    expect(entry).toContain(`from './plugins/pagination/useTablePagination'`);
+
+    // Nested file: escaping imports -> owner subpaths; intra-component and
+    // nested-sibling imports stay relative.
+    const nested = fs.readFileSync(
+      path.join(outDir, 'plugins', 'pagination', 'useTablePagination.tsx'),
+      'utf-8',
+    );
+    expect(nested).toContain(`from '@astryxdesign/core/theme'`);
+    expect(nested).toContain(`from '@astryxdesign/core/Pagination'`);
+    expect(nested).toContain(`from '../../types'`);
+    expect(nested).toContain(`from '../selection/useTableSelection'`);
   });
 });
