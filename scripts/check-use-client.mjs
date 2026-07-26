@@ -17,9 +17,13 @@ import {fileURLToPath} from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SRC_DIR = path.resolve(__dirname, '../packages/core/src');
 
+// SYNC: kept identical to CLIENT_APIS in packages/core/src/serverSafeComponents.test.ts
 const CLIENT_APIS = [
   'createContext',
   'useContext',
+  // React 19's context read — as client-only as useContext at every call site
+  // in this package. (`use(promise)` is legal on the server; we over-approximate.)
+  'use',
   'useState',
   'useEffect',
   'useRef',
@@ -123,7 +127,10 @@ for (const file of files) {
   if (directiveLines.length === 0) {
     errors.push({file: rel, issue: 'missing directive'});
   } else if (directiveLines.length > 1) {
-    errors.push({file: rel, issue: `duplicate directives (lines ${directiveLines.map(l => l + 1).join(', ')})`});
+    errors.push({
+      file: rel,
+      issue: `duplicate directives (lines ${directiveLines.map(l => l + 1).join(', ')})`,
+    });
   } else if (directiveLines[0] !== firstStatementLine(lines)) {
     errors.push({
       file: rel,

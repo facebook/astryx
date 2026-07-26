@@ -4,8 +4,8 @@
  * @file Guards the RSC server/client boundary of every public component (#823).
  * @input Reads packages/core/package.json export map + every source file under
  *   packages/core/src, parsed with the TypeScript compiler API
- * @output Two invariants tying the presence of `'use client'` to what a
- *   component's import graph actually needs
+ * @output Unit tests for the detection rules, plus two invariants tying the
+ *   presence of `'use client'` to what a component's import graph actually needs
  * @position Cross-cutting meta-test; sibling of scripts/check-use-client.mjs
  *
  * `scripts/check-use-client.mjs` enforces one direction only, and only
@@ -44,6 +44,10 @@ const PKG_JSON = join(SRC_DIR, '..', 'package.json');
 const CLIENT_APIS = new Set([
   'createContext',
   'useContext',
+  // React 19's context read. `use(promise)` *is* legal on the server, so this
+  // over-approximates — but every `use()` call site in this package reads a
+  // context, which is exactly as client-only as useContext.
+  'use',
   'useState',
   'useEffect',
   'useRef',
@@ -148,8 +152,16 @@ function parseModule(file: string): ModuleInfo {
   if (cached) {
     return cached;
   }
+  const info = parseSource(readFileSync(file, 'utf-8'), file);
+  moduleCache.set(file, info);
+  return info;
+}
 
-  const text = readFileSync(file, 'utf-8');
+/**
+ * Parse one module's source. Split from {@link parseModule} so the detection
+ * rules can be unit-tested against source strings rather than real files.
+ */
+function parseSource(text: string, file: string): ModuleInfo {
   const sourceFile = ts.createSourceFile(
     file,
     text,
@@ -171,18 +183,24 @@ function parseModule(file: string): ModuleInfo {
   };
 
   // Directive prologue: only comments and blank lines may precede it, which
-  // the parser has already stripped by the time we see `statements`.
+  // the parser has already stripped by the time we see `statements`. Walk past
+  // *every* string-literal directive — stopping at the first non-`use client`
+  // one would let `'use strict';` hide the directive behind it.
   for (const statement of sourceFile.statements) {
     if (
       ts.isExpressionStatement(statement) &&
-      ts.isStringLiteral(statement.expression) &&
-      statement.expression.text === 'use client'
+      ts.isStringLiteral(statement.expression)
     ) {
-      info.hasUseClient = true;
+      if (statement.expression.text === 'use client') {
+        info.hasUseClient = true;
+      }
       continue;
     }
     break;
   }
+
+  /** Local names bound to the react namespace: `import React from 'react'`. */
+  const reactNamespaces = new Set<string>();
 
   for (const statement of sourceFile.statements) {
     if (ts.isImportDeclaration(statement)) {
@@ -190,18 +208,24 @@ function parseModule(file: string): ModuleInfo {
       const clause = statement.importClause;
       const typeOnly = clause ? isTypeOnlyImport(clause) : false;
 
-      if (
-        spec === 'react' &&
-        clause &&
-        !clause.isTypeOnly &&
-        clause.namedBindings &&
-        ts.isNamedImports(clause.namedBindings)
-      ) {
-        for (const element of clause.namedBindings.elements) {
-          const imported = (element.propertyName ?? element.name).text;
-          if (!element.isTypeOnly && CLIENT_APIS.has(imported)) {
-            info.clientAPIs.push(imported);
+      if (spec === 'react' && clause && !clause.isTypeOnly) {
+        const reactBindings = clause.namedBindings;
+        if (reactBindings && ts.isNamedImports(reactBindings)) {
+          for (const element of reactBindings.elements) {
+            const imported = (element.propertyName ?? element.name).text;
+            if (!element.isTypeOnly && CLIENT_APIS.has(imported)) {
+              info.clientAPIs.push(imported);
+            }
           }
+        }
+        // `import React from 'react'` and `import * as React from 'react'` put
+        // every client API one property access away, where the named scan above
+        // cannot see it. Record the local name; the sweep below finds the uses.
+        if (clause.name) {
+          reactNamespaces.add(clause.name.text);
+        }
+        if (reactBindings && ts.isNamespaceImport(reactBindings)) {
+          reactNamespaces.add(reactBindings.name.text);
         }
       }
       if (!typeOnly && spec.startsWith('react-dom')) {
@@ -272,7 +296,24 @@ function parseModule(file: string): ModuleInfo {
     }
   }
 
-  moduleCache.set(file, info);
+  // Value-position `React.useState(...)`. A type reference like
+  // `React.ReactNode` parses as a QualifiedName rather than a
+  // PropertyAccessExpression, so types never reach this branch.
+  if (reactNamespaces.size > 0) {
+    const visit = (node: ts.Node): void => {
+      if (
+        ts.isPropertyAccessExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        reactNamespaces.has(node.expression.text) &&
+        CLIENT_APIS.has(node.name.text)
+      ) {
+        info.clientAPIs.push(`${node.expression.text}.${node.name.text}`);
+      }
+      ts.forEachChild(node, visit);
+    };
+    ts.forEachChild(sourceFile, visit);
+  }
+
   return info;
 }
 
@@ -429,9 +470,71 @@ const format = (problems: {reason: string; file: string; via: string}[]) =>
     .map(p => `      ${p.file} ${p.reason}\n        via ${p.via}`)
     .join('\n');
 
+/** Parse a source string as if it were a file inside `SRC_DIR`. */
+const parse = (source: string) =>
+  parseSource(source, join(SRC_DIR, 'probe.tsx'));
+
+describe('parseSource', () => {
+  it('reads a client API from a named react import', () => {
+    expect(
+      parse(`import {useState} from 'react';\nexport const a = 1;`).clientAPIs,
+    ).toEqual(['useState']);
+  });
+
+  it('reads a client API reached through a default React binding', () => {
+    const info = parse(
+      `import React from 'react';\nexport const a = () => React.useState(0);`,
+    );
+    expect(info.clientAPIs).toEqual(['React.useState']);
+  });
+
+  it('reads a client API reached through a namespace React binding', () => {
+    const info = parse(
+      `import * as React from 'react';\nexport const C = React.createContext(false);`,
+    );
+    expect(info.clientAPIs).toEqual(['React.createContext']);
+  });
+
+  it('reads both halves of a mixed default-and-named react import', () => {
+    const info = parse(
+      `import React, {useRef} from 'react';\nexport const a = () => React.useState(0) && useRef(null);`,
+    );
+    expect(info.clientAPIs.sort()).toEqual(['React.useState', 'useRef']);
+  });
+
+  it('does not flag a React binding used only in type position', () => {
+    const info = parse(
+      `import * as React from 'react';\nexport type P = {a: React.ReactNode; b: React.KeyboardEvent};`,
+    );
+    expect(info.clientAPIs).toEqual([]);
+  });
+
+  it('treats React 19 `use` as a client API', () => {
+    // `use(Context)` is a context read, exactly as client-only as useContext.
+    expect(
+      parse(`import {use} from 'react';\nexport const a = 1;`).clientAPIs,
+    ).toEqual(['use']);
+  });
+
+  it('sees `use client` behind another prologue directive', () => {
+    expect(
+      parse(`'use strict';\n'use client';\nexport const a = 1;`).hasUseClient,
+    ).toBe(true);
+  });
+
+  it('ignores a `use client` string that follows real code', () => {
+    expect(parse(`export const a = 1;\n'use client';`).hasUseClient).toBe(
+      false,
+    );
+  });
+});
+
 describe('RSC server/client boundary (#823)', () => {
   it('finds the public component entry points', () => {
-    expect(COMPONENTS.length).toBeGreaterThan(50);
+    // The export map lists 100+ component subpaths; a floor this close to the
+    // real count catches a resolution bug that silently shrinks the covered set
+    // and turns both invariants below into no-ops.
+    expect(COMPONENTS.length).toBeGreaterThan(95);
   });
 
   it('does not mark server-safe components as "use client"', () => {
