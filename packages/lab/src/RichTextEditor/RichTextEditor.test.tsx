@@ -21,6 +21,55 @@ import {RichTextView} from './RichTextView';
 
 // A minimal valid serialized Lexical editor state containing a single
 // paragraph with the text "Hello world".
+// Builds a serialized Lexical state containing a list. `listType` is
+// 'bullet' (renders <ul>) or 'number' (renders <ol>). Used to verify that the
+// editor theme applies visible list markers rather than bare indentation.
+function makeListState(listType: 'bullet' | 'number'): string {
+  const tag = listType === 'number' ? 'ol' : 'ul';
+  return JSON.stringify({
+    root: {
+      children: [
+        {
+          children: [
+            {
+              children: [
+                {
+                  detail: 0,
+                  format: 0,
+                  mode: 'normal',
+                  style: '',
+                  text: 'Item one',
+                  type: 'text',
+                  version: 1,
+                },
+              ],
+              direction: 'ltr',
+              format: '',
+              indent: 0,
+              type: 'listitem',
+              version: 1,
+              value: 1,
+            },
+          ],
+          direction: 'ltr',
+          format: '',
+          indent: 0,
+          type: 'list',
+          version: 1,
+          listType,
+          start: 1,
+          tag,
+        },
+      ],
+      direction: 'ltr',
+      format: '',
+      indent: 0,
+      type: 'root',
+      version: 1,
+    },
+  });
+}
+
 const HELLO_STATE = JSON.stringify({
   root: {
     children: [
@@ -211,6 +260,31 @@ describe('RichTextView', () => {
     expect(screen.getByTestId('view-fallback')).toBeInTheDocument();
     // No editor surface is rendered in the error state.
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+
+  it('renders bullet lists with a disc marker (not bare indentation)', async () => {
+    const {container} = render(<RichTextView value={makeListState('bullet')} />);
+    await waitFor(() =>
+      expect(screen.getByText('Item one')).toBeInTheDocument(),
+    );
+    const ul = container.querySelector('ul');
+    expect(ul).not.toBeNull();
+    // The theme must give the <ul> a marker class so the browser draws a
+    // bullet. A bare list with only padding would show indentation only —
+    // the exact bug this guards against.
+    expect(ul?.className.trim()).not.toBe('');
+    expect(getComputedStyle(ul as Element).listStyleType).toBe('disc');
+  });
+
+  it('renders numbered lists with a decimal marker (not bare indentation)', async () => {
+    const {container} = render(<RichTextView value={makeListState('number')} />);
+    await waitFor(() =>
+      expect(screen.getByText('Item one')).toBeInTheDocument(),
+    );
+    const ol = container.querySelector('ol');
+    expect(ol).not.toBeNull();
+    expect(ol?.className.trim()).not.toBe('');
+    expect(getComputedStyle(ol as Element).listStyleType).toBe('decimal');
   });
 
   it('renders nothing (no crash) on malformed JSON with no fallback', () => {

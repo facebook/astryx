@@ -53,12 +53,31 @@ const editorTheme = stylex.create({
     borderInlineStartColor: colorVars['--color-border-emphasized'],
     color: colorVars['--color-text-secondary'],
   },
-  list: {
+  ul: {
     marginBlock: spacingVars['--spacing-1'],
     paddingInlineStart: spacingVars['--spacing-6'],
+    listStyleType: 'disc',
+    listStylePosition: 'outside',
+  },
+  ol: {
+    marginBlock: spacingVars['--spacing-1'],
+    paddingInlineStart: spacingVars['--spacing-6'],
+    listStyleType: 'decimal',
+    listStylePosition: 'outside',
+  },
+  // Nested lists: no extra vertical margin, and cycle marker styles per depth
+  // to match native browser list nesting.
+  ulNested: {
+    marginBlock: 0,
+    listStyleType: 'circle',
+  },
+  olNested: {
+    marginBlock: 0,
   },
   listItem: {
     marginBlock: spacingVars['--spacing-0-5'],
+    // Ensure the marker is shown (some CSS resets set list-style: none on li).
+    listStyleType: 'inherit',
   },
   link: {
     color: colorVars['--color-text-accent'],
@@ -94,6 +113,10 @@ const editorTheme = stylex.create({
  * class-name strings, which `stylex.props(...).className` yields.
  */
 export function sharedEditorTheme(): EditorThemeClasses {
+  const ulClass = stylex.props(editorTheme.ul).className ?? '';
+  const olClass = stylex.props(editorTheme.ol).className ?? '';
+  const ulNestedClass = stylex.props(editorTheme.ul, editorTheme.ulNested).className ?? '';
+  const olNestedClass = stylex.props(editorTheme.ol, editorTheme.olNested).className ?? '';
   return {
     paragraph: stylex.props(editorTheme.paragraph).className,
     heading: {
@@ -103,9 +126,14 @@ export function sharedEditorTheme(): EditorThemeClasses {
     },
     quote: stylex.props(editorTheme.quote).className,
     list: {
-      ul: stylex.props(editorTheme.list).className,
-      ol: stylex.props(editorTheme.list).className,
+      ul: ulClass,
+      ol: olClass,
       listitem: stylex.props(editorTheme.listItem).className,
+      nested: {
+        listitem: stylex.props(editorTheme.listItem).className,
+      },
+      ulDepth: [ulClass, ulNestedClass],
+      olDepth: [olClass, olNestedClass],
     },
     link: stylex.props(editorTheme.link).className,
     text: {
