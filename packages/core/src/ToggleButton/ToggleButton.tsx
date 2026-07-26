@@ -40,7 +40,18 @@ import {themeProps} from '../utils/themeProps';
  */
 const pressedStyles = stylex.create({
   background: {
-    backgroundColor: colorVars['--color-overlay-pressed'],
+    backgroundColor: {
+      default: colorVars['--color-overlay-pressed'],
+      // Forced colors (Windows High Contrast) strips the painted pressed
+      // overlay, which would leave icon-only toggles with no pressed
+      // indication at all. Highlight/HighlightText is the platform convention
+      // for a selected/pressed control (WCAG 1.4.11).
+      '@media (forced-colors: active)': 'Highlight',
+    },
+    color: {
+      default: null,
+      '@media (forced-colors: active)': 'HighlightText',
+    },
   },
 });
 

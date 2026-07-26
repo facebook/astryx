@@ -13,6 +13,7 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {CheckboxInput} from './CheckboxInput';
+import {getForcedColorsRules} from '../__tests__/forcedColors';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 afterEach(() => {
@@ -541,5 +542,20 @@ describe('CheckboxInput', () => {
         ...new FormData(container.querySelector('form')!).keys(),
       ]).toEqual([]);
     });
+  });
+});
+
+// jsdom cannot emulate forced-colors rendering, so this asserts that the
+// compiled output includes the forced-colors rule; visual behavior needs
+// manual verification under Windows High Contrast.
+describe('forced colors (WCAG 1.4.11)', () => {
+  it('compiles a forced-colors fill so the indeterminate mark survives Windows High Contrast', () => {
+    render(
+      <CheckboxInput label="All" value="indeterminate" onChange={() => {}} />,
+    );
+    // The painted indeterminate bar would be stripped to Canvas (invisible);
+    // CanvasText keeps it perceivable. The checkmark needs no rule — it
+    // strokes with currentColor, which forced colors maps for us.
+    expect(getForcedColorsRules()).toContain('background-color: canvastext;');
   });
 });

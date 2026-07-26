@@ -162,6 +162,21 @@ const styles = stylex.create({
     },
     transitionTimingFunction: easeVars['--ease-standard'],
     boxSizing: 'border-box',
+    // Forced colors (Windows High Contrast) strips painted backgrounds, which
+    // would leave the track invisible. A system-color border keeps the
+    // control's bounds perceivable (WCAG 1.4.11).
+    borderWidth: {
+      default: 0,
+      '@media (forced-colors: active)': '1px',
+    },
+    borderStyle: {
+      default: 'none',
+      '@media (forced-colors: active)': 'solid',
+    },
+    borderColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
   },
   trackFocus: {
     outline: {
@@ -178,6 +193,9 @@ const styles = stylex.create({
   trackOff: {
     backgroundColor: {
       default: colorVars['--color-background-gray'],
+      // Off = empty (Canvas) track; on = Highlight track, so the two states
+      // stay distinguishable under forced colors.
+      '@media (forced-colors: active)': 'Canvas',
       [stylex.when.ancestor(':hover', switchScope)]: {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-background-gray']}, ${colorVars['--color-tint-hover']} 5%)`,
       },
@@ -186,6 +204,7 @@ const styles = stylex.create({
   trackOn: {
     backgroundColor: {
       default: colorVars['--color-accent'],
+      '@media (forced-colors: active)': 'Highlight',
       [stylex.when.ancestor(':hover', switchScope)]: {
         '@media (hover: hover)': `color-mix(in srgb, ${colorVars['--color-accent']}, ${colorVars['--color-tint-hover']} 15%)`,
       },
@@ -193,6 +212,12 @@ const styles = stylex.create({
   },
   trackDisabled: {
     opacity: 0.5,
+    // Opacity dimming does not survive forced colors; GrayText is the
+    // platform's disabled affordance there.
+    borderColor: {
+      default: null,
+      '@media (forced-colors: active)': 'GrayText',
+    },
   },
   trackDisabledOff: {
     backgroundColor: colorVars['--color-background-gray'],
@@ -202,13 +227,28 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radiusVars['--radius-full'],
-    backgroundColor: colorVars['--color-background-surface'],
     transitionProperty: 'transform, width, height',
     transitionDuration: {
       default: durationVars['--duration-fast'],
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  // The thumb fill lives on the on/off styles (not the shared thumb style)
+  // because forced colors needs a per-state system color: CanvasText on the
+  // empty off track, HighlightText on the Highlight on track. Sizing stays in
+  // thumbOffSizeStyles/thumbOnSizeStyles; only the fill is state-dependent.
+  thumbOff: {
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+  },
+  thumbOn: {
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      '@media (forced-colors: active)': 'HighlightText',
+    },
   },
   labelWrapper: {
     display: 'flex',
@@ -526,6 +566,7 @@ export function Switch({
             stylex.props(
               styles.thumb,
               isOn ? thumbOnSizeStyles[size] : thumbOffSizeStyles[size],
+              isOn ? styles.thumbOn : styles.thumbOff,
             ),
           )}>
           {isBusy && <Spinner size="sm" />}

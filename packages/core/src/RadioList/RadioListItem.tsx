@@ -119,7 +119,14 @@ const styles = stylex.create({
   },
   innerDot: {
     borderRadius: '50%',
-    backgroundColor: colorVars['--color-on-accent'],
+    backgroundColor: {
+      default: colorVars['--color-on-accent'],
+      // Forced colors (Windows High Contrast) strips painted backgrounds,
+      // which would make the selected dot invisible — checked and unchecked
+      // radios would look identical. CanvasText keeps the dot perceivable on
+      // the Canvas circle fill (WCAG 1.4.11).
+      '@media (forced-colors: active)': 'CanvasText',
+    },
   },
   labelDisabled: {
     color: colorVars['--color-text-disabled'],

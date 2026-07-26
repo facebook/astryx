@@ -103,9 +103,19 @@ const styles = stylex.create({
     },
   },
   selected: {
-    color: colorVars['--color-text-primary'],
+    // Forced colors (Windows High Contrast) strips the painted surface fill
+    // and box shadow, which would leave the selected segment with no state
+    // indication beyond font weight. Highlight/HighlightText is the platform
+    // convention for a selected item (WCAG 1.4.11).
+    color: {
+      default: colorVars['--color-text-primary'],
+      '@media (forced-colors: active)': 'HighlightText',
+    },
     fontWeight: fontWeightVars['--font-weight-semibold'],
-    backgroundColor: colorVars['--color-background-surface'],
+    backgroundColor: {
+      default: colorVars['--color-background-surface'],
+      '@media (forced-colors: active)': 'Highlight',
+    },
     boxShadow: shadowVars['--shadow-low'],
   },
   disabled: {

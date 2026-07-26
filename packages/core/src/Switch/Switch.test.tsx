@@ -13,6 +13,7 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Switch} from './Switch';
+import {getForcedColorsRules} from '../__tests__/forcedColors';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
 afterEach(() => {
@@ -675,5 +676,25 @@ describe('Switch', () => {
       expect(root).toHaveAttribute('id', 'switch-1');
       expect(root).toHaveAttribute('aria-label', 'Toggle notifications');
     });
+  });
+});
+
+// jsdom cannot emulate forced-colors rendering, so these assert that the
+// compiled output includes the forced-colors rules; visual behavior needs
+// manual verification under Windows High Contrast.
+describe('forced colors (WCAG 1.4.11)', () => {
+  it('compiles forced-colors overrides so on/off state survives Windows High Contrast', () => {
+    render(<Switch label="Notifications" value={true} onChange={() => {}} />);
+    const css = getForcedColorsRules();
+    // Track outline (backgrounds are stripped; the border keeps the bounds).
+    expect(css).toContain('border-color: canvastext;');
+    // Off track stays empty; on track uses the selection color.
+    expect(css).toContain('background-color: canvas;');
+    expect(css).toContain('background-color: highlight;');
+    // Thumb fill per state.
+    expect(css).toContain('background-color: canvastext;');
+    expect(css).toContain('background-color: highlighttext;');
+    // Disabled affordance (opacity dimming does not survive forcing).
+    expect(css).toContain('border-color: graytext;');
   });
 });
