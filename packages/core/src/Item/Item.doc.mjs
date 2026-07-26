@@ -37,6 +37,7 @@ export const docs = {
         {name: 'labelLines', type: 'number', description: 'Max lines before label truncates with ellipsis.'},
         {name: 'descriptionLines', type: 'number', description: 'Max lines before description truncates with ellipsis.'},
         {name: 'onClick', type: '(event: MouseEvent) => void', description: 'Click handler. Makes the item clickable with button semantics.'},
+        {name: 'hasNestedKeyboardControl', type: 'boolean', description: 'Declares that a nested control (e.g. a checkbox in startContent) already provides keyboard access to the same action as onClick. Skips the invisible-button pattern and applies onClick as a pointer-only container click, so the row adds no second tab stop (WCAG 4.1.2). Only affects onClick; ignored with href or role.', default: 'false'},
         {name: 'href', type: 'string', description: 'Link URL. Makes the item a link via an invisible anchor element.'},
         {name: 'target', type: "'_blank' | '_self'", description: 'Link target. Only used with href. target="_blank" automatically adds noopener noreferrer.'},
         {name: 'rel', type: 'string', description: 'Link relationship tokens. noopener noreferrer are merged automatically for target="_blank".'},
@@ -90,6 +91,8 @@ export const docsZh = {
         labelLines: '标签截断前的最大行数。',
         descriptionLines: '描述截断前的最大行数。',
         onClick: '点击处理函数。使项目可点击，具有按钮语义。',
+        hasNestedKeyboardControl:
+          '声明内部嵌套控件（如 startContent 中的复选框）已为 onClick 的操作提供键盘访问。跳过不可见按钮模式，onClick 仅作为指针点击生效，行不会增加第二个 Tab 停留点（WCAG 4.1.2）。仅影响 onClick；与 href 或 role 一起使用时忽略。',
         href: '链接 URL。通过不可见锚点元素使项目成为链接。',
         target: '链接目标。仅与 href 一起使用。target="_blank" 会自动添加 noopener noreferrer。',
         rel: '链接关系标记。target="_blank" 会自动合并 noopener noreferrer。',
@@ -157,6 +160,8 @@ export const docsDense = {
         labelLines: 'Max label lines before truncation.',
         descriptionLines: 'Max description lines before truncation.',
         onClick: 'Click handler; enables button semantics.',
+        hasNestedKeyboardControl:
+          'Nested control already provides keyboard access; onClick becomes pointer-only, no second tab stop (WCAG 4.1.2). Ignored with href/role.',
         href: 'Link URL; enables anchor semantics.',
         target:
           'Link target, only with href. target="_blank" auto-adds noopener noreferrer.',

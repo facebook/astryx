@@ -109,6 +109,19 @@ export interface ItemProps extends BaseProps<HTMLElement> {
   onClick?: (event: React.MouseEvent) => void;
 
   /**
+   * Declares that a nested control inside the item (e.g. a checkbox in
+   * `startContent`) already provides keyboard access to the same action as
+   * `onClick`. When set, the item skips the invisible-button pattern and
+   * applies `onClick` as a pointer-only container click instead, so the row
+   * adds no second tab stop for the same action (WCAG 4.1.2 — one focusable
+   * control per option). Clicks on nested interactive elements are still
+   * ignored by the container handler. Only affects `onClick`; ignored when
+   * `href` or `role` is provided.
+   * @default false
+   */
+  hasNestedKeyboardControl?: boolean;
+
+  /**
    * Link URL. Makes the item a link via an invisible anchor element.
    */
   href?: string;
@@ -349,6 +362,7 @@ export function Item({
   labelLines,
   descriptionLines,
   onClick,
+  hasNestedKeyboardControl = false,
   href,
   target: targetFromProps,
   rel: relFromProps,
@@ -462,7 +476,7 @@ export function Item({
           )}>
           {labelAndDescription}
         </LinkComponent>
-      ) : onClick != null ? (
+      ) : onClick != null && !hasNestedKeyboardControl ? (
         <button
           type="button"
           onClick={onClick}

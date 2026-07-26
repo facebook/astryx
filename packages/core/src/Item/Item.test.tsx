@@ -191,6 +191,72 @@ describe('Item', () => {
   });
 
   // ===========================================================================
+  // Interactive — hasNestedKeyboardControl (pointer-only container click)
+  // ===========================================================================
+
+  it('does not render the invisible button when hasNestedKeyboardControl is set', () => {
+    const {container} = render(
+      <Item
+        label="Row"
+        onClick={() => {}}
+        hasNestedKeyboardControl
+        startContent={<input type="checkbox" aria-label="Pick row" />}
+      />,
+    );
+    // The nested control provides keyboard access — the row must not add a
+    // second focusable control for the same action (WCAG 4.1.2).
+    expect(container.querySelector('button')).not.toBeInTheDocument();
+  });
+
+  it('keeps the nested control as the only tab stop when hasNestedKeyboardControl is set', async () => {
+    const user = userEvent.setup();
+    render(
+      <Item
+        label="Row"
+        onClick={() => {}}
+        hasNestedKeyboardControl
+        startContent={<input type="checkbox" aria-label="Pick row" />}
+      />,
+    );
+    await user.tab();
+    expect(screen.getByRole('checkbox')).toHaveFocus();
+    // Next tab leaves the item entirely — no invisible row button after it.
+    await user.tab();
+    expect(screen.getByRole('checkbox')).not.toHaveFocus();
+    expect(document.body).toHaveFocus();
+  });
+
+  it('fires onClick for pointer clicks on the row surface with hasNestedKeyboardControl', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <Item
+        label="Row"
+        onClick={onClick}
+        hasNestedKeyboardControl
+        startContent={<input type="checkbox" aria-label="Pick row" />}
+      />,
+    );
+    await user.click(screen.getByText('Row'));
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not fire onClick when the nested control itself is clicked', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <Item
+        label="Row"
+        onClick={onClick}
+        hasNestedKeyboardControl
+        startContent={<input type="checkbox" aria-label="Pick row" />}
+      />,
+    );
+    await user.click(screen.getByRole('checkbox'));
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  // ===========================================================================
   // Interactive — href (invisible anchor pattern)
   // ===========================================================================
 

@@ -60,6 +60,12 @@ export const docs = {
       description: 'Click handler; enables the invisible button pattern.',
     },
     {
+      name: 'hasNestedKeyboardControl',
+      type: 'boolean',
+      description: 'Declares that a nested control (e.g. a checkbox in startContent) already provides keyboard access to the same action as onClick. Skips the invisible-button pattern and applies onClick as a pointer-only container click, so the row adds no second tab stop (WCAG 4.1.2). Only affects onClick; ignored with href.',
+      default: 'false',
+    },
+    {
       name: 'href',
       type: 'string',
       description: 'Link URL; enables the invisible anchor pattern.',
@@ -122,6 +128,11 @@ export const docsZh = {
       description: '点击处理函数；启用隐形按钮模式。',
     },
     {
+      name: 'hasNestedKeyboardControl',
+      type: 'boolean',
+      description: '声明内部嵌套控件（如 startContent 中的复选框）已为 onClick 的操作提供键盘访问。跳过隐形按钮模式，onClick 仅作为指针点击生效，行不会增加第二个 Tab 停留点（WCAG 4.1.2）。仅影响 onClick；与 href 一起使用时忽略。',
+    },
+    {
       name: 'href',
       type: 'string',
       description: '链接 URL；启用隐形锚点模式。',
@@ -162,6 +173,8 @@ export const docsDense = {
     startContent: 'Content before label area (e.g. icon, avatar).',
     endContent: 'Content after label area (e.g. badge, chevron).',
     onClick: 'Click handler; enables invisible button pattern.',
+    hasNestedKeyboardControl:
+      'Nested control already provides keyboard access; onClick becomes pointer-only, no second tab stop (WCAG 4.1.2). Ignored with href.',
     href: 'Link URL; enables invisible anchor pattern.',
     target: 'Link target attribute, only when href provided. target="_blank" auto-adds noopener noreferrer.',
     rel: 'Link relationship tokens. noopener noreferrer are merged for target="_blank".',

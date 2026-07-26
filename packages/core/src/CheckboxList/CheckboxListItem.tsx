@@ -244,6 +244,11 @@ export function CheckboxListItem({
       description={description}
       endContent={endContent}
       isDisabled={effectiveDisabled}
+      // The checkbox in startContent is the row's sole keyboard control:
+      // row clicks are pointer-only (no invisible row button), so each
+      // option is exactly one tab stop that also reports checked state
+      // (WCAG 4.1.2 / APG checkbox pattern).
+      hasNestedKeyboardControl
       onClick={
         isInteractive || onClickProp
           ? composeEventHandlers<MouseEvent>(
