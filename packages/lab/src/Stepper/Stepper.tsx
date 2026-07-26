@@ -66,7 +66,7 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    * - 'separated': indicator lives in the label row, distinct from the progress
    *   bar (the original Astryx layout).
    * - 'on-track': indicator is slotted into the connector line as a node on the
-   *   track (EPS-aligned design).
+   *   track (the on-track indicator design).
    * @default 'separated'
    */
   indicatorPosition?: StepperIndicatorPosition;

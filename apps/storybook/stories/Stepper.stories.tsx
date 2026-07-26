@@ -684,7 +684,7 @@ export const LongLabels: Story = {
 };
 
 // ============================================================
-// ON-TRACK (EPS-aligned) — indicator slotted into the connector line
+// ON-TRACK — indicator slotted into the connector line
 // ============================================================
 
 export const OnTrackVertical: Story = {
@@ -836,7 +836,7 @@ export const OnTrackComparison: Story = {
           </Stepper>
         </div>
         <div style={{maxWidth: 280}}>
-          <Text type="label">on-track (EPS-aligned)</Text>
+          <Text type="label">on-track</Text>
           <Stepper
             activeStep={active}
             orientation="vertical"

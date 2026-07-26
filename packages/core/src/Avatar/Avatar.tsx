@@ -61,7 +61,7 @@ const INITIALS_FONT_SIZE_RATIO = 0.4;
  *
  * Avatar uses the same abbreviated scale as Icon (`xsm`/`sm`/`md`/`lg`/`xl`),
  * but the values are larger because avatars align with media rather than
- * glyphs. The tiers match EPS's avatar sizes.
+ * glyphs. The tiers follow the standard avatar size scale.
  */
 type AvatarNamedSize = 'xsm' | 'sm' | 'md' | 'lg' | 'xl';
 

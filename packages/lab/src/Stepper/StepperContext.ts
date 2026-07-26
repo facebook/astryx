@@ -24,7 +24,7 @@ export type StepperDensity = 'compact' | 'balanced' | 'spacious';
  *   bar (Astryx's original layout).
  * - 'on-track': indicator is slotted *into* the connector line as a node on the
  *   track, with the label beside (vertical) or below (horizontal). Aligns with
- *   the EPS stepper design.
+ *   the on-track stepper design.
  */
 export type StepperIndicatorPosition = 'separated' | 'on-track';
 
