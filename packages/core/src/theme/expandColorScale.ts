@@ -15,11 +15,23 @@
  * ramp (seeded from the default accent's hue) while the accent tokens
  * themselves fall through to colorDefaults, same as the tokens above.
  *
+ * WCAG contrast guarantees (asserted in expandColorScale.test.ts):
+ * - Text tones are guaranteed >= 4.5:1 against their surfaces by tone
+ *   spacing alone — HCT tone is CIE L*, which fixes relative luminance
+ *   regardless of hue/chroma, so the fixed tone assignments hold for any
+ *   accent/neutralStyle (WCAG 1.4.3).
+ * - --color-border-emphasized (form-control boundaries) is tone-bumped
+ *   until it reaches >= 3:1 against the generated surface (WCAG 1.4.11).
+ * - --color-border, --color-skeleton, and --color-track are intentionally
+ *   decorative/redundant cues and are NOT held to 3:1 — see the test file
+ *   for the rationale.
+ *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/defineTheme.ts
  */
 
-import {hexToHct, tonalPalette, hexWithAlpha} from './hct';
+import {contrastRatio} from './contrast';
+import {hexToHct, hctToHex, tonalPalette, hexWithAlpha} from './hct';
 
 // =============================================================================
 // Types
@@ -103,6 +115,39 @@ function accentWithAlpha(alpha: number): string {
   return `color-mix(in srgb, var(--color-accent) ${alpha * 100}%, transparent)`;
 }
 
+/** WCAG 1.4.11 minimum contrast for non-text UI boundaries. */
+const NON_TEXT_MIN_CONTRAST = 3;
+
+/**
+ * Walk tone in `step` increments from `startTone` until the color reaches
+ * `minRatio` against `background`, and return the resulting hex.
+ *
+ * Used for tokens whose preferred tone is not guaranteed by tone spacing
+ * alone (e.g. --color-border-emphasized). Because HCT tone is CIE L*,
+ * each step moves luminance monotonically, so the loop always terminates —
+ * at worst at pure black/white (21:1 against anything mid-range).
+ */
+export function ensureContrastTone(
+  hue: number,
+  chroma: number,
+  startTone: number,
+  step: -1 | 1,
+  background: string,
+  minRatio: number,
+): string {
+  let tone = startTone;
+  let hex = hctToHex({hue, chroma, tone});
+  while (
+    contrastRatio(hex, background) < minRatio &&
+    tone + step >= 0 &&
+    tone + step <= 100
+  ) {
+    tone += step;
+    hex = hctToHex({hue, chroma, tone});
+  }
+  return hex;
+}
+
 /**
  * Expand a color scale config into Astryx color token overrides.
  *
@@ -144,6 +189,31 @@ export function expandColorScale(config: ColorScaleConfig): ColorScaleTokens {
   const textPrimaryDarkTone = isHigh ? 99 : 90;
   const textSecondaryLightTone = isHigh ? 20 : 30;
   const textSecondaryDarkTone = isHigh ? 80 : 70;
+
+  // Emphasized borders outline form controls (CheckboxInput, Selector), so
+  // they are non-text UI boundaries under WCAG 1.4.11 and must reach 3:1
+  // against the surface they sit on. The preferred tones (70 light /
+  // 30 dark) land around 2.2:1 / 1.8:1, so bump the tone toward the
+  // opposing extreme until the ratio passes. Text tones need no such loop:
+  // their spacing guarantees >= 4.5:1 for any hue/chroma (see file header).
+  const borderEmphasized = ld(
+    ensureContrastTone(
+      seedHue,
+      neutralVariantChroma,
+      70,
+      -1,
+      N[99],
+      NON_TEXT_MIN_CONTRAST,
+    ),
+    ensureContrastTone(
+      seedHue,
+      neutralVariantChroma,
+      30,
+      1,
+      N[10],
+      NON_TEXT_MIN_CONTRAST,
+    ),
+  );
 
   return {
     // Core semantic — only with a seed accent. Without one these fall through
@@ -206,8 +276,9 @@ export function expandColorScale(config: ColorScaleConfig): ColorScaleTokens {
     '--color-background-inverted': ld(N[10], N[99]),
 
     // Border
+    // Decorative hairline (~1.1:1 by design) — not a WCAG 1.4.11 boundary.
     '--color-border': ld(hexWithAlpha(N[10], 0.1), hexWithAlpha(N[95], 0.1)),
-    '--color-border-emphasized': ld(NV[70], NV[30]),
+    '--color-border-emphasized': borderEmphasized,
 
     // Effects
     '--color-skeleton': ld(NV[70], NV[30]),
