@@ -447,17 +447,14 @@ export function Avatar({
     </AvatarSizeContext>
   );
 
-  if (!showTooltip) {
-    return avatarElement;
-  }
-
-  // Render the tooltip as a sibling (no wrapper DOM) — the hook's ref is already
-  // attached to the root via `rootRef` above. `trimmedTooltip` is guaranteed
-  // non-empty here.
+  // Always return the same structure so the avatar keeps its position in the
+  // React tree regardless of the tooltip flag — toggling it must not remount
+  // the avatar subtree (and lose image-load state). The tooltip is a sibling
+  // (no wrapper DOM); the hook's ref is already on the root via `rootRef`.
   return (
     <>
       {avatarElement}
-      {tooltipHook.renderTooltip(trimmedTooltip)}
+      {showTooltip ? tooltipHook.renderTooltip(trimmedTooltip) : null}
     </>
   );
 }
