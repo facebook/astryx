@@ -34,6 +34,10 @@ export const RATIO_OPTIONS = [
   {value: 1.618, label: '1.618 — Golden Ratio'},
 ];
 
+// Every preset keeps `radius === spacing` so nested corners stay concentric by
+// default: the radius scale steps by `base` per rung (inner ×1, element ×2,
+// container ×3) and one spacing step sits between rungs, so
+// `outer-radius − spacing-1 = inner-radius` only holds when the bases match. #958
 export const UNIFIED_PRESETS = {
   compact: {
     typeBase: 12,
@@ -60,7 +64,7 @@ export const UNIFIED_PRESETS = {
     typeBase: 18,
     typeRatio: 1.414,
     spacing: 8,
-    radius: 12,
+    radius: 8,
     sizeMd: 48,
   },
 } as const;
