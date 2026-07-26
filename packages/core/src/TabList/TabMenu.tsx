@@ -31,6 +31,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {usePopover} from '../Popover/usePopover';
+import {MENU_ITEM_SELECTOR} from '../DropdownMenu/menuItemRoles';
 import {useListFocus} from '../hooks/useListFocus';
 import {useTabListContext} from './TabListContext';
 import type {TabListSize} from './TabListContext';
@@ -291,6 +292,9 @@ export function TabMenu({
     focusFirst,
   } = useListFocus<HTMLDivElement>({
     hasRovingTabIndex: true,
+    // Options render as menuitemradio (single-select menu), which the
+    // default '[role="menuitem"]' selector would not match.
+    itemSelector: MENU_ITEM_SELECTOR,
     onEscape: () => popover.hide(),
   });
 
@@ -409,9 +413,13 @@ export function TabMenu({
             return (
               <div
                 key={option.value}
-                role="menuitem"
+                // The menu is single-select: exactly one option can be the
+                // active tab, so options are radio menu items with
+                // aria-checked (APG menu-button), not plain menuitems with
+                // aria-current.
+                role="menuitemradio"
                 tabIndex={-1}
-                aria-current={isSelected ? 'true' : undefined}
+                aria-checked={isSelected}
                 onClick={() => handleSelect(option.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') {

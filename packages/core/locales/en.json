@@ -655,6 +655,10 @@
     "defaultMessage": "Search…",
     "description": "Grey placeholder text inside the empty PowerSearch input. Imperative verb; trailing `…` is one character."
   },
+  "@astryx.resizable.collapsed": {
+    "defaultMessage": "Collapsed",
+    "description": "aria-valuetext for the Resizable drag handle (role=separator) while its panel is collapsed to zero size. Replaces the numeric value announcement, since the numeric value is clamped to the minimum while collapsed. Adjective describing the panel state, not a verb/command."
+  },
   "@astryx.resizable.handle.label": {
     "defaultMessage": "Resize handle",
     "description": "Screen-reader-only accessible name for the small draggable divider between two Resizable panels (users drag it to change the split ratio)."
