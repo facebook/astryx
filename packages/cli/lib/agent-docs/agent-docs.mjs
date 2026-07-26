@@ -21,12 +21,10 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {findCoreDir, CLI_ROOT} from '../../utils/paths.mjs';
-import {assertWithin, PathSafetyError} from '../../utils/path-safety.mjs';
+import {assertWithin} from '../../utils/path-safety.mjs';
 import {getCliInvocation} from '../../utils/package-manager.mjs';
 import {discoverComponents} from '../../lib/component-discovery.mjs';
 import {humanLog} from '../../lib/json.mjs';
-import {cliError} from '../../lib/cli-error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
 
 const AGENTS_MD = 'AGENTS.md';
 const CLAUDE_MD = 'CLAUDE.md';
@@ -617,84 +615,4 @@ export function installAgentDocs(targetDir, {zh = false, lang, agent, paths, onl
   });
   written.push(defaultPath);
   return written;
-}
-
-const VALID_AGENTS = ['claude', 'cursor', 'codex', 'hermes', 'all'];
-
-/** @param {import('commander').Command} program */
-export function registerAgentDocs(program) {
-  program
-    .command('agent-docs')
-    .description('Install/update the component index for AI coding agents')
-    .option('--remove', 'Remove the design system section from all agent doc files')
-    .option('--agent <tool>', 'Target tool: claude, cursor, codex, hermes, all')
-    .option('--agent-docs-path <path...>', 'Explicit file path(s) to write to')
-    .action(/** @param {{remove?: boolean, agent?: string, agentDocsPath?: string|string[]}} options */ options => {
-      const targetDir = process.cwd();
-      const coreDir = findCoreDir(targetDir);
-      const version = getXdsVersion(coreDir);
-      const zh = program.opts().zh || false;
-      const lang = program.opts().lang || null;
-
-      if (options.remove) {
-        humanLog('\n🗑️  Removing agent docs...\n');
-        removeAgentDocs(targetDir);
-        humanLog('\n✅ Agent docs removed.\n');
-        return;
-      }
-
-      // Validate --agent
-      if (options.agent && !VALID_AGENTS.includes(options.agent)) {
-        cliError(`Unknown agent "${options.agent}". Valid: ${VALID_AGENTS.join(', ')}`, {code: ERROR_CODES.ERR_UNKNOWN_AGENT});
-        return;
-      }
-
-      humanLog(`\n📚 Installing agent docs (v${version})...\n`);
-
-      // Collect explicit paths from --agent-docs-path (commander parses variadic as array or single)
-      const explicitPaths = options.agentDocsPath
-        ? Array.isArray(options.agentDocsPath)
-          ? options.agentDocsPath
-          : [options.agentDocsPath]
-        : undefined;
-
-      let targets;
-      try {
-        targets = installAgentDocs(targetDir, {
-          zh,
-          lang,
-          agent: options.agent,
-          paths: explicitPaths,
-        });
-      } catch (err) {
-        if (err instanceof PathSafetyError) {
-          cliError(err.message, {code: ERROR_CODES.ERR_PATH_TRAVERSAL});
-          return;
-        }
-        throw err;
-      }
-
-      const run = getCliInvocation(targetDir);
-
-      for (const t of targets) {
-        humanLog(`✓ ${t}`);
-      }
-
-      humanLog(`
-✅ Agent docs installed!
-
-Your AI coding agent will now:
-  • See the component index in ${targets.join(' and ')}
-  • Run \`${run} component <name>\` to read detailed docs
-  • Run \`${run} docs principles\` for design principles
-  • Run \`${run} docs tokens\` for design token reference
-  • Follow design system patterns and avoid anti-patterns
-
-To update:
-  ${run} agent-docs
-
-To remove:
-  ${run} agent-docs --remove
-`);
-    });
 }
