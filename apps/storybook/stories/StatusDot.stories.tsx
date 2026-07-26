@@ -11,7 +11,8 @@ const meta: Meta<typeof StatusDot> = {
     variant: {
       control: 'select',
       options: ['success', 'warning', 'error', 'accent', 'neutral'],
-      description: 'Semantic color variant',
+      description:
+        'Semantic variant pairing colour with a distinct built-in shape (filled, ring, minus, bang, plus)',
     },
     label: {
       control: 'text',

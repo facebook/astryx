@@ -21,6 +21,12 @@
  *   }
  * }
  * ```
+ *
+ * Custom variants render no background fill, no ink colour, and no built-in
+ * shape glyph — the theme must supply the fill, and it should also supply a
+ * non-colour mark so the status is not distinguishable by colour alone (a
+ * WCAG 1.4.1 failure): theme a glyph onto the dot via
+ * `.astryx-statusdot[data-variant="..."]` (e.g. a `::before` mark).
  */
 export interface StatusDotVariantMap {
   success: true;

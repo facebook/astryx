@@ -11,13 +11,15 @@ export const docs = {
     {
       name: 'variant',
       type: "'success' | 'warning' | 'error' | 'accent' | 'neutral'",
-      description: 'Semantic color variant.',
+      description:
+        'Semantic variant pairing colour with a distinct built-in shape (WCAG 1.4.1): success = filled dot, neutral = ring, error = minus bar, warning = bang, accent = plus. Shared statuses match AvatarStatusDot.',
       required: true,
     },
     {
       name: 'label',
       type: 'string',
-      description: 'Accessible label surfaced via aria-label.',
+      description:
+        'Accessible label surfaced via aria-label, so the status reaches screen readers without hover.',
       required: true,
     },
     {
@@ -43,11 +45,12 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-statusdot', visualProps: ['variant']},
+      {className: 'astryx-statusdot-glyph', visualProps: ['shape']},
     ],
   },
   usage: {
     description:
-      'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
+      'A small dot that communicates status like online/offline presence or severity levels. Each of the five semantic variants pairs its colour with a distinct built-in shape (filled, ring, minus, bang, plus) so status is never conveyed by color alone. Supports an optional pulse animation. Still pair with a visible text label where space allows.',
     bestPractices: [
       { guidance: true, description: 'Use StatusDot as a binary present/absent signal; avoid encoding many distinct states in a single dot, since color and size alone cannot reliably distinguish them.' },
       { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
@@ -68,7 +71,8 @@ export const docsZh = {
     {
       name: 'variant',
       type: "'success' | 'warning' | 'error' | 'accent' | 'neutral'",
-      description: '语义颜色变体。',
+      description:
+        '语义变体，颜色与独特内置形状配对（WCAG 1.4.1）：success = 实心点，neutral = 圆环，error = 横杠，warning = 竖杠，accent = 加号。共有状态与 AvatarStatusDot 一致。',
       required: true,
     },
     {
@@ -94,11 +98,12 @@ export const docsZh = {
   theming: {
     targets: [
       {className: 'astryx-statusdot', visualProps: ['variant']},
+      {className: 'astryx-statusdot-glyph', visualProps: ['shape']},
     ],
   },
   usage: {
     description:
-      'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
+      'A small dot that communicates status like online/offline presence or severity levels. Each of the five semantic variants pairs its colour with a distinct built-in shape (filled, ring, minus, bang, plus) so status is never conveyed by color alone. Supports an optional pulse animation. Still pair with a visible text label where space allows.',
     bestPractices: [
       { guidance: true, description: 'Use StatusDot as a binary present/absent signal; avoid encoding many distinct states in a single dot, since color and size alone cannot reliably distinguish them.' },
       { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
@@ -113,10 +118,10 @@ export const docsZh = {
 
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
-  description: 'Small colored dot indicator for status display (online/offline, severity, etc).',
+  description: 'Small dot indicator for status display (online/offline, severity, etc); variants pair colour with shape (filled/ring/minus/bang/plus) per WCAG 1.4.1.',
   usage: {
     description:
-      'A small colored dot that communicates status like online/offline presence or severity levels. Supports five semantic variants and an optional pulse animation. Always pair with a visible text label, as color alone should not carry meaning.',
+      'A small dot that communicates status like online/offline presence or severity levels. Each of the five semantic variants pairs its colour with a distinct built-in shape (filled, ring, minus, bang, plus) so status is never conveyed by color alone. Supports an optional pulse animation. Still pair with a visible text label where space allows.',
     bestPractices: [
       { guidance: true, description: 'Use StatusDot as a binary present/absent signal; avoid encoding many distinct states in a single dot, since color and size alone cannot reliably distinguish them.' },
       { guidance: true, description: 'Always pair with a visible text label so status is not conveyed by color alone.' },
@@ -128,7 +133,8 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
-    variant: 'Semantic color variant.',
+    variant:
+      'Colour + shape variant: success filled, neutral ring, error minus, warning bang, accent plus.',
     label: 'Accessible label via aria-label.',
     isPulsing: 'Pulse animation; respects prefers-reduced-motion: reduce.',
     tooltip: 'Tooltip text on hover to explain status meaning.',
