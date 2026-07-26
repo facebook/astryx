@@ -7,6 +7,10 @@
  *
  * Handles the d3 margin convention: outer SVG at full size, inner <g> translated
  * by margins. Children receive scales and dimensions via context.
+ *
+ * Accessibility: the svg is exposed as a named image (role="img" + aria-label,
+ * overridable via `label`), and small datasets are mirrored in a visually
+ * hidden data table so screen reader users can read the underlying values.
  */
 
 import {
@@ -20,6 +24,7 @@ import {
 } from 'react';
 import {scaleLinear, scaleBand} from 'd3-scale';
 import type {ScaleLinear} from 'd3-scale';
+import {VisuallyHidden} from '@astryxdesign/core/VisuallyHidden';
 import {isBandScale} from './utils';
 import {ChartProvider} from './ChartContext';
 import type {ChartMargin, ChartScale} from './types';
@@ -75,11 +80,30 @@ export interface ChartProps {
    * interference on mobile.
    */
   interactive?: boolean;
+  /**
+   * Accessible name for the chart, announced by screen readers (the svg is
+   * exposed as `role="img"`). Defaults to an English description derived from
+   * the keys (e.g. "Chart of revenue by month") — pass a localized string to
+   * override.
+   */
+  label?: string;
   /** Chart contents — axes, marks, tooltips */
   children: ReactNode;
 }
 
 const DEFAULT_MARGIN: ChartMargin = {top: 16, right: 16, bottom: 32, left: 48};
+
+/**
+ * Maximum number of data points (rows × series) for which the visually hidden
+ * data-table fallback is rendered. Beyond this a table is more noise than
+ * signal for screen reader users, so larger charts are name-only.
+ */
+const MAX_TABLE_POINTS = 100;
+
+/** Stringify a cell value for the hidden data table. */
+function tableCell(value: unknown): string {
+  return value == null ? '' : String(value);
+}
 
 /**
  * Root chart container. Computes scales from data and provides them to children.
@@ -103,6 +127,7 @@ export function Chart({
   yDomain: yDomainProp,
   xDomain: xDomainProp,
   interactive = false,
+  label,
   children,
 }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -289,11 +314,18 @@ export function Chart({
     userSelect: interactive ? 'none' : undefined,
   };
 
+  const accessibleLabel = label ?? `Chart of ${yKeys.join(', ')} by ${xKey}`;
+  const showDataTable =
+    data.length > 0 &&
+    data.length * Math.max(yKeys.length, 1) <= MAX_TABLE_POINTS;
+
   return (
     <div ref={containerRef} style={containerStyle}>
       {containerWidth > 0 && (
         <svg
           ref={svgRef}
+          role="img"
+          aria-label={accessibleLabel}
           width={containerWidth}
           height={height}
           style={interactive ? {touchAction: 'none'} : undefined}>
@@ -306,6 +338,33 @@ export function Chart({
             <ChartProvider value={ctx}>{children}</ChartProvider>
           </g>
         </svg>
+      )}
+      {showDataTable && (
+        <VisuallyHidden as="div">
+          <table>
+            <caption>{`${accessibleLabel} data`}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{xKey}</th>
+                {yKeys.map(key => (
+                  <th key={key} scope="col">
+                    {key}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((d, i) => (
+                <tr key={i}>
+                  <th scope="row">{tableCell(d[xKey])}</th>
+                  {yKeys.map(key => (
+                    <td key={key}>{tableCell(d[key])}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </VisuallyHidden>
       )}
     </div>
   );
