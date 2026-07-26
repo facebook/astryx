@@ -1,0 +1,69 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+name: "Test or CI Infrastructure"
+description: Report a problem in the repo's own test suite, CI pipeline, or build tooling.
+title: "[Infra] "
+labels: ["type:test"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Before you submit
+
+        This template is for problems in the repository's **own tooling** — a flaky or misconfigured test, CI pipeline cost or reliability, build and dependency configuration. It is not for defects in a shipped component.
+
+        - A bug in an Astryx component → **Bug Report**
+        - A new component, feature, or API change → **RFC**
+
+        Infrastructure reports are judged on measurements, not impressions. A report that names the failing run and the numbers behind it can be acted on immediately; one that says a job "feels slow" cannot.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Test suite (flake, harness configuration, coverage)
+        - CI pipeline (job graph, runtime, reliability)
+        - Build tooling (bundling, codegen, type generation)
+        - Dependency configuration (versions, overrides, advisories)
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is broken, flaky, or costly today? Describe the defect in the tooling, not the change you want.
+      placeholder: "The `foo` job re-runs `bar` on every push because ... , which means ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: |
+        The concrete signal behind the report. The more reproducible, the better.
+        - Link to the failing or slow workflow run, with the job and step
+        - Measured numbers — durations, failure counts across N runs, resolved versions
+        - For flakes: how often it reproduces, and whether the failing commit is related
+      placeholder: "Run 12345678 (`test` job, step `pnpm test`) failed with ... . Across the last 50 runs on main this failed N times ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope Check
+      description: Does the same defect exist elsewhere? A sweep for sibling cases — other jobs, other test suites, other packages — helps size the fix and avoids a follow-up round.
+      placeholder: "Audited the rest of the workflows / suites: only X and Y share this pattern; Z is unaffected because ..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: direction
+    attributes:
+      label: Proposed Direction
+      description: Optional. If you already have a fix in mind, sketch it — including the trade-off you are making and what you deliberately left alone.
+    validations:
+      required: false
