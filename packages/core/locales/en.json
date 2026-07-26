@@ -307,6 +307,18 @@
     "defaultMessage": "Type to search",
     "description": "Onboarding empty-state text shown inside a CommandPalette on first open, before the user has typed anything. Imperative sentence fragment."
   },
+  "@astryx.commandPalette.resultCount": {
+    "defaultMessage": "{count, number} {count, plural, one {result} other {results}}",
+    "description": "Screen-reader-only announcement of how many commands match the CommandPalette query as the user types. Example: `12 results`, `1 result`; keep compact."
+  },
+  "@astryx.commandPalette.noResultsFor": {
+    "defaultMessage": "No results for {query}",
+    "description": "Screen-reader-only announcement when a CommandPalette query matches nothing. `{query}` is the user's verbatim search text; keep it last if your language allows so truncation-by-AT still conveys the outcome."
+  },
+  "@astryx.commandPalette.loading": {
+    "defaultMessage": "Loading",
+    "description": "Screen-reader-only announcement that a CommandPalette search has started and results are being fetched. Present-progressive form; matches the visible spinner."
+  },
   "@astryx.dateRangeInput.presetDateRanges": {
     "defaultMessage": "Preset date ranges",
     "description": "Screen-reader-only accessible name for the sidebar of quick-pick preset ranges inside a DateRangeInput popover (e.g. \"Last 7 days\", \"This month\")."
