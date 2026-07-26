@@ -251,6 +251,34 @@
     "defaultMessage": "Next month",
     "description": "Screen-reader-only label on the right-arrow button in a Calendar's month header (navigates one month forward). Pairs with `calendar.previousMonth`."
   },
+  "@astryx.calendar.daySelected": {
+    "defaultMessage": "{date}, selected",
+    "description": "Accessible name for the Calendar day button that is the current single-mode selection. `{date}` is the localized full date, e.g. \"Thursday, January 15, 2026\". The trailing state word tells screen-reader users the focused day is selected."
+  },
+  "@astryx.calendar.dayRangeStart": {
+    "defaultMessage": "{date}, range start",
+    "description": "Accessible name for the Calendar day button that begins the selected date range (or the first pick of an in-progress range). `{date}` is the localized full date."
+  },
+  "@astryx.calendar.dayRangeEnd": {
+    "defaultMessage": "{date}, range end",
+    "description": "Accessible name for the Calendar day button that ends the selected date range. `{date}` is the localized full date. Pairs with `calendar.dayRangeStart`."
+  },
+  "@astryx.calendar.dayRangeStartAndEnd": {
+    "defaultMessage": "{date}, range start and range end",
+    "description": "Accessible name for a Calendar day button that both begins and ends a completed one-day range. `{date}` is the localized full date."
+  },
+  "@astryx.calendar.dayInRange": {
+    "defaultMessage": "{date}, in range",
+    "description": "Accessible name for a Calendar day button strictly inside the selected date range (not an endpoint). `{date}` is the localized full date."
+  },
+  "@astryx.calendar.rangeStartAnnounce": {
+    "defaultMessage": "Start date {date}. Select an end date.",
+    "description": "Screen-reader announcement after the first pick of a Calendar range selection. `{date}` is the localized full date. Prompts the user that a second pick completes the range."
+  },
+  "@astryx.calendar.rangeCompleteAnnounce": {
+    "defaultMessage": "Selected range: {start} to {end}.",
+    "description": "Screen-reader announcement after the second pick completes a Calendar range selection. `{start}` and `{end}` are localized full dates in chronological order."
+  },
   "@astryx.carousel.label": {
     "defaultMessage": "Carousel",
     "description": "Screen-reader-only fallback name for a horizontally-scrolling row of items. If \"carousel\" is unfamiliar in your locale, prefer the standard term (e.g. \"slider\")."
