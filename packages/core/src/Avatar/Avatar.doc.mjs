@@ -79,7 +79,7 @@ export const docs = {
       name: 'tooltip',
       type: 'string | boolean',
       description:
-        "Tooltip shown on hover and keyboard focus. Omitted or true shows the avatar's name; a string shows that text instead; false shows no tooltip. Not auto-disabled when wrapped in your own Tooltip/HoverCard — set tooltip={false} if you supply your own overlay. No tooltip is shown when tooltip is true/omitted and there is no name.",
+        "Tooltip shown on hover and keyboard focus. Omitted or true shows the avatar's name; a string shows that text instead; false shows no tooltip. Not auto-disabled when wrapped in your own Tooltip/HoverCard. Set tooltip={false} if you supply your own overlay. No tooltip is shown when tooltip is true/omitted and there is no name.",
       default: 'true',
     },
   ],
@@ -112,6 +112,7 @@ export const docsDense = {
       {guidance: true, description: 'Always pass a name for initials fallback and screen reader alt text.'},
       {guidance: true, description: 'Match size to context: xsm/sm inline, md/lg in lists, xl for profiles.'},
       {guidance: true, description: 'Add a status dot in chat or team views where availability matters.'},
+      {guidance: true, description: 'When wrapping Avatar in your own Tooltip or HoverCard, set tooltip={false} so the built-in name tooltip does not overlap yours.'},
       {guidance: false, description: 'Use for logos or product images. Use an image or icon instead.'},
       {guidance: false, description: 'Force a square or custom shape. Avatars are always circular.'},
     ],
