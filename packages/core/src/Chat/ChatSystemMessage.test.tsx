@@ -28,6 +28,11 @@ describe('ChatSystemMessage', () => {
     expect(screen.getByText('Today')).toBeTruthy();
   });
 
+  it('exposes the divider variant label as the separator accessible name', () => {
+    render(<ChatSystemMessage variant="divider">Today</ChatSystemMessage>);
+    expect(screen.getByRole('separator')).toHaveAccessibleName('Today');
+  });
+
   it('renders icon', () => {
     render(
       <ChatSystemMessage icon={<span data-testid="icon">*</span>}>

@@ -15,7 +15,7 @@
  * - /packages/cli/templates/blocks/components/Divider/ (showcase blocks)
  */
 
-import type {ReactNode} from 'react';
+import {useId, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 
@@ -165,15 +165,27 @@ export function Divider({
   className,
   style,
   ref,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
   ...props
 }: DividerProps) {
   const isHorizontal = orientation === 'horizontal';
+  const labelId = useId();
+
+  // A separator does not derive its accessible name from its content, so the
+  // rendered label must be referenced explicitly via aria-labelledby to be
+  // exposed as the separator's name (WCAG 1.3.1). An explicit aria-label or
+  // aria-labelledby from the consumer takes precedence.
+  const resolvedLabelledBy =
+    ariaLabelledBy ?? (label && ariaLabel == null ? labelId : undefined);
 
   return (
     <div
       ref={ref}
       role="separator"
       aria-orientation={orientation}
+      aria-label={ariaLabel}
+      aria-labelledby={resolvedLabelledBy}
       {...mergeProps(
         themeProps('divider', {variant, orientation}),
         stylex.props(
@@ -196,6 +208,7 @@ export function Divider({
       />
       {label && (
         <div
+          id={labelId}
           {...stylex.props(
             labelStyles.label,
             !isHorizontal && labelStyles.verticalLabel,

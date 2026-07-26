@@ -89,24 +89,48 @@ describe('Divider', () => {
 
   it('renders vertical divider with label', () => {
     render(
-      <Divider
-        orientation="vertical"
-        label="Vertical"
-        data-testid="divider"
-      />,
+      <Divider orientation="vertical" label="Vertical" data-testid="divider" />,
     );
     const divider = screen.getByTestId('divider');
     expect(divider).toHaveAttribute('aria-orientation', 'vertical');
     expect(screen.getByText('Vertical')).toBeInTheDocument();
   });
 
-  it('renders astryx-* class names for theme targeting', () => {
+  it('exposes the label as the accessible name of the separator', () => {
+    render(<Divider label="Section" data-testid="divider" />);
+    const divider = screen.getByTestId('divider');
+    expect(divider).toHaveAttribute('aria-labelledby');
+    expect(divider).toHaveAccessibleName('Section');
+  });
+
+  it('names the separator from a ReactNode label via aria-labelledby', () => {
+    render(<Divider label={<span>Custom</span>} data-testid="divider" />);
+    expect(screen.getByTestId('divider')).toHaveAccessibleName('Custom');
+  });
+
+  it('does not set aria-labelledby without a label', () => {
+    render(<Divider data-testid="divider" />);
+    expect(screen.getByTestId('divider')).not.toHaveAttribute(
+      'aria-labelledby',
+    );
+  });
+
+  it('prefers an explicit aria-label over the rendered label', () => {
     render(
       <Divider
-        variant="strong"
-        orientation="vertical"
+        label="Section"
+        aria-label="Custom name"
         data-testid="divider"
       />,
+    );
+    const divider = screen.getByTestId('divider');
+    expect(divider).toHaveAccessibleName('Custom name');
+    expect(divider).not.toHaveAttribute('aria-labelledby');
+  });
+
+  it('renders astryx-* class names for theme targeting', () => {
+    render(
+      <Divider variant="strong" orientation="vertical" data-testid="divider" />,
     );
     const root = screen.getByTestId('divider');
     expect(root.className).toContain('astryx-divider');
