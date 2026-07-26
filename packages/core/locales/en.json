@@ -879,6 +879,26 @@
     "defaultMessage": "Expand all rows",
     "description": "Screen-reader-only label on the header expand-all/collapse-all button when at least one row is collapsed (clicking expands every expandable row). Part of the four-way set."
   },
+  "@astryx.step.goToStep": {
+    "defaultMessage": "Go to step {stepNumber, number}: {label}",
+    "description": "Accessible name for a clickable step in the lab Stepper. {stepNumber} is the 1-based position, {label} is the step's visible label."
+  },
+  "@astryx.step.goToStepWithStatus": {
+    "defaultMessage": "Go to step {stepNumber, number}: {label}, {status}",
+    "description": "Accessible name for a clickable lab Stepper step that also carries a status. {status} is one of the translated `step.status.*` words (completed/warning/error). Keep the pattern parallel to `step.goToStep`."
+  },
+  "@astryx.step.status.completed": {
+    "defaultMessage": "completed",
+    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when the step is done (either progress-completed or status=success). Lowercase adjective; it is read mid-sentence after the step label."
+  },
+  "@astryx.step.status.warning": {
+    "defaultMessage": "warning",
+    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when status=warning. Lowercase noun/adjective; read mid-sentence after the step label."
+  },
+  "@astryx.step.status.error": {
+    "defaultMessage": "error",
+    "description": "Screen-reader-only status word rendered next to a lab Stepper step label when status=error. Lowercase noun; read mid-sentence after the step label."
+  },
   "@astryx.tableTree.collapseRow": {
     "defaultMessage": "Collapse row",
     "description": "Aria label for the Table tree-data expander chevron when the row is currently expanded."
