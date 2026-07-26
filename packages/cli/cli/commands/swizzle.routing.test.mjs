@@ -56,9 +56,12 @@ function buildFakeCore(project) {
  * project root listing the integration.
  *
  * @param {string} project
- * @param {{issuesUrl?: string|null, componentName?: string}} [opts]
+ * @param {{issuesUrl?: string|null, componentName?: string, docExt?: string}} [opts]
  */
-function buildIntegration(project, {issuesUrl, componentName = 'MetaAppShell'} = {}) {
+function buildIntegration(
+  project,
+  {issuesUrl, componentName = 'MetaAppShell', docExt = '.doc.mjs'} = {},
+) {
   const intDir = path.join(project, 'node_modules', '@test', 'meta');
   const compRoot = path.join(intDir, 'components');
   const compDir = path.join(compRoot, componentName);
@@ -87,7 +90,7 @@ function buildIntegration(project, {issuesUrl, componentName = 'MetaAppShell'} =
     `export const sib = 1;\n`,
   );
   fs.writeFileSync(
-    path.join(compDir, `${componentName}.doc.mjs`),
+    path.join(compDir, `${componentName}${docExt}`),
     `export const docs = {name: '${componentName}', usage: {description: 'x'}};\n`,
   );
   fs.writeFileSync(
@@ -99,6 +102,47 @@ function buildIntegration(project, {issuesUrl, componentName = 'MetaAppShell'} =
     `export default {integrations: ['@test/meta']};\n`,
   );
   return {intDir, compDir};
+}
+
+/**
+ * Build an EXTERNAL Astryx package under <project>/node_modules — one that opts
+ * into the ecosystem purely through its own package.json
+ * (`"astryx": {"docs": "./src"}`), with NO integration manifest and no entry in
+ * astryx.config.mjs. This is the case issue #2090 names.
+ *
+ * @param {string} project
+ * @param {{name?: string, componentName?: string, docExt?: string}} [opts]
+ */
+function buildExternalPackage(
+  project,
+  {name = '@ext/widgets', componentName = 'AppShell', docExt = '.doc.mjs'} = {},
+) {
+  const pkgDir = path.join(project, 'node_modules', ...name.split('/'));
+  const compDir = path.join(pkgDir, 'src', componentName);
+  fs.mkdirSync(compDir, {recursive: true});
+  fs.writeFileSync(
+    path.join(pkgDir, 'package.json'),
+    JSON.stringify({name, version: '2.0.0', astryx: {docs: './src'}}),
+  );
+  fs.writeFileSync(
+    path.join(compDir, `${componentName}.tsx`),
+    [
+      `import x from '../utils/foo';`,
+      `import {sib} from './sibling';`,
+      `export function ${componentName}() { return x; }`,
+      '',
+    ].join('\n'),
+  );
+  fs.writeFileSync(path.join(compDir, 'sibling.ts'), `export const sib = 1;\n`);
+  fs.writeFileSync(
+    path.join(compDir, `${componentName}${docExt}`),
+    `export const docs = {name: '${componentName}', usage: {description: 'x'}};\n`,
+  );
+  fs.writeFileSync(
+    path.join(compDir, `${componentName}.test.tsx`),
+    `it('noop', () => {});\n`,
+  );
+  return {pkgDir, compDir};
 }
 
 function writeProjectPackageJson(project, extra = {}) {
@@ -275,6 +319,245 @@ describe('swizzle — ambiguous ownership', () => {
       'utf-8',
     );
     expect(out).toContain(`from '@astryxdesign/core/theme'`);
+  });
+});
+
+describe('swizzle — external packages via package.json astryx.docs (#2090)', () => {
+  it('swizzles a component owned by an external package with no integration manifest', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildExternalPackage(project);
+
+    const result = runCli(['--json', 'swizzle', 'AppShell', '-f'], project);
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.type).toBe('swizzle.copy');
+    expect(env.data.package).toBe('@ext/widgets');
+    // Doc + test excluded from the copy, sibling source included.
+    expect(env.data.files).toContain('AppShell.tsx');
+    expect(env.data.files).toContain('sibling.ts');
+    expect(env.data.files).not.toContain('AppShell.doc.mjs');
+    expect(env.data.files.some(f => f.includes('.test.'))).toBe(false);
+  });
+
+  it('rewrites escaping imports to the external package, leaving intra-component imports relative', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildExternalPackage(project);
+
+    const result = runCli(['--json', 'swizzle', 'AppShell', '-f'], project);
+    expect(result.code).toBe(0);
+    const out = fs.readFileSync(
+      path.join(project, 'components', 'astryx', 'AppShell', 'AppShell.tsx'),
+      'utf-8',
+    );
+    expect(out).toContain(`from '@ext/widgets/utils'`);
+    expect(out).toContain(`from './sibling'`);
+    expect(out).not.toContain('@astryxdesign/core');
+  });
+
+  it('resolves an external-only component when @astryxdesign/core is absent', () => {
+    writeProjectPackageJson(project);
+    buildExternalPackage(project);
+
+    const result = runCli(['--json', 'swizzle', 'AppShell', '-f'], project);
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.type).toBe('swizzle.copy');
+    expect(env.data.package).toBe('@ext/widgets');
+  });
+
+  it('accepts a .doc.ts external component, matching the integration doc suffixes', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildExternalPackage(project, {docExt: '.doc.ts'});
+
+    const result = runCli(['--json', 'swizzle', 'AppShell', '-f'], project);
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.data.package).toBe('@ext/widgets');
+    expect(env.data.files).not.toContain('AppShell.doc.ts');
+  });
+
+  it('--list includes external components alongside core', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildExternalPackage(project);
+
+    const result = runCli(['--json', 'swizzle', '--list'], project);
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.type).toBe('swizzle.list');
+    expect(env.data).toContain('Button');
+    expect(env.data).toContain('AppShell');
+  });
+
+  it('errors when a name is owned by core + an external package and no --package is given', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildExternalPackage(project, {componentName: 'Button'});
+
+    const result = runCli(['--json', 'swizzle', 'Button', '-f'], project);
+    expect(result.code).not.toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.code).toBe('ERR_AMBIGUOUS_COMPONENT');
+    const pkgs = (env.suggestions ?? []).map(s => s.name);
+    expect(pkgs).toContain('@astryxdesign/core');
+    expect(pkgs).toContain('@ext/widgets');
+  });
+
+  it('refuses a flat package whose doc sits at the docs root rather than copying its whole src tree', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    // Flat layout: docs root IS the component's directory, so there is no
+    // isolated component dir to copy.
+    const srcDir = path.join(project, 'node_modules', '@ext', 'flat', 'src');
+    fs.mkdirSync(srcDir, {recursive: true});
+    fs.writeFileSync(
+      path.join(srcDir, '..', 'package.json'),
+      JSON.stringify({name: '@ext/flat', astryx: {docs: './src'}}),
+    );
+    fs.writeFileSync(path.join(srcDir, 'Flat.doc.mjs'), `export const docs = {};\n`);
+    fs.writeFileSync(path.join(srcDir, 'Flat.tsx'), `export const Flat = 1;\n`);
+    fs.writeFileSync(path.join(srcDir, 'Other.tsx'), `export const Other = 1;\n`);
+
+    const result = runCli(['--json', 'swizzle', 'Flat', '-f'], project);
+    expect(result.code).not.toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.code).toBe('ERR_NO_SOURCE');
+    expect(
+      fs.existsSync(path.join(project, 'components', 'astryx', 'Flat')),
+    ).toBe(false);
+  });
+
+  it("ejects under the package's canonical casing, not the casing the user typed", () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildExternalPackage(project); // provides 'AppShell'
+
+    // External lookup is case-insensitive (findComponentInPackages lowercases
+    // both sides), so this resolves — but the OWNER's casing must win, because
+    // the ejected directory name is part of the output contract.
+    const result = runCli(['--json', 'swizzle', 'appshell', '-f'], project);
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.data.package).toBe('@ext/widgets');
+    expect(env.data.component).toBe('AppShell');
+    expect(env.data.outputDir).toBe(path.join('components', 'astryx', 'AppShell'));
+    // readdir reports the real on-disk name, so this holds on case-insensitive
+    // filesystems too (where existsSync('appshell') would also be true).
+    expect(fs.readdirSync(path.join(project, 'components', 'astryx'))).toEqual([
+      'AppShell',
+    ]);
+  });
+
+  it('--package resolves an ambiguous name to the external package', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildExternalPackage(project, {componentName: 'Button'});
+
+    const result = runCli(
+      ['--json', 'swizzle', 'Button', '--package', '@ext/widgets', '-f'],
+      project,
+    );
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.data.package).toBe('@ext/widgets');
+    const out = fs.readFileSync(
+      path.join(project, 'components', 'astryx', 'Button', 'Button.tsx'),
+      'utf-8',
+    );
+    expect(out).toContain(`from '@ext/widgets/utils'`);
+  });
+});
+
+describe('swizzle — canonical naming is scoped to external owners', () => {
+  it('core keeps the argument-derived name (XDS prefix stripped, nothing else)', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+
+    const result = runCli(['--json', 'swizzle', 'XDSButton', '-f'], project);
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.data.package).toBe('@astryxdesign/core');
+    expect(env.data.component).toBe('Button');
+    expect(env.data.outputDir).toBe(path.join('components', 'astryx', 'Button'));
+    expect(fs.readdirSync(path.join(project, 'components', 'astryx'))).toEqual([
+      'Button',
+    ]);
+  });
+
+  it('an integration keeps the argument-derived name', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildIntegration(project, {issuesUrl: 'https://example.com/meta/issues'});
+
+    const result = runCli(['--json', 'swizzle', 'MetaAppShell', '-f'], project);
+    expect(result.code).toBe(0);
+    const env = JSON.parse(result.stdout);
+    expect(env.data.package).toBe('@test/meta');
+    expect(env.data.component).toBe('MetaAppShell');
+    expect(env.data.outputDir).toBe(
+      path.join('components', 'astryx', 'MetaAppShell'),
+    );
+    expect(fs.readdirSync(path.join(project, 'components', 'astryx'))).toEqual([
+      'MetaAppShell',
+    ]);
+  });
+});
+
+describe('swizzle — does not change what `discover` sees (#2090 guard)', () => {
+  it('a .doc.ts integration component stays invisible to discover', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildIntegration(project, {componentName: 'TsDoc', docExt: '.doc.ts'});
+
+    // discover `import()`s the doc it finds (loadDocs), and Node refuses to
+    // strip types from a .ts under node_modules — so widening the shared
+    // package-scanner globally would turn this clean empty list into
+    // ERR_INVALID_DOC ("Stripping types is currently unsupported for files
+    // under node_modules"). The wider suffix list is opt-in per call site for
+    // exactly this reason; swizzle opts in, discover must not.
+    const list = runCli(['--json', 'discover'], project);
+    expect(list.code).toBe(0);
+    const listEnv = JSON.parse(list.stdout);
+    expect(listEnv.type).toBe('discover.list');
+    expect(listEnv.data).toEqual([]);
+
+    const named = runCli(['--json', 'discover', 'TsDoc'], project);
+    expect(named.code).toBe(0);
+    const namedEnv = JSON.parse(named.stdout);
+    expect(namedEnv.type).toBe('discover.list');
+    expect(namedEnv.data).toEqual([]);
+    expect(namedEnv.error).toBeUndefined();
+    expect(namedEnv.code).toBeUndefined();
+  });
+
+  it('a .doc.mjs integration component is still visible to discover', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildIntegration(project, {componentName: 'MjsDoc'});
+
+    const named = runCli(['--json', 'discover', 'MjsDoc'], project);
+    expect(named.code).toBe(0);
+    const env = JSON.parse(named.stdout);
+    expect(env.error).toBeUndefined();
+    expect(env.data.name).toBe('MjsDoc');
+  });
+
+  it('an external astryx.docs package is not reachable by discover at all', () => {
+    buildFakeCore(project);
+    writeProjectPackageJson(project);
+    buildExternalPackage(project);
+
+    // discover only scans CONFIGURED integrations; with none configured it
+    // reports configured:false regardless of what swizzle can now reach.
+    const list = runCli(['--json', 'discover'], project);
+    expect(list.code).toBe(0);
+    const env = JSON.parse(list.stdout);
+    expect(env.type).toBe('discover.list');
+    expect(env.data).toEqual([]);
+    expect(env.meta.configured).toBe(false);
   });
 });
 
