@@ -100,6 +100,11 @@ export default defineConfig({
           include: [
             'packages/core/src/**/*.test.{ts,tsx,mjs}',
             'packages/lab/src/**/*.test.{ts,tsx,mjs}',
+            // Resolves theme definitions through `@astryxdesign/core/theme`,
+            // which reaches `theme/tokens.stylex.ts`. That needs the StyleX
+            // babel plugin and the core alias, so it belongs here rather than
+            // in the plugin-free `node` project.
+            'internal/theme-contrast/**/*.test.{ts,tsx,mjs}',
           ],
         },
       },
@@ -128,6 +133,8 @@ export default defineConfig({
             ...configDefaults.exclude,
             'packages/core/**',
             'packages/lab/**',
+            // Claimed by the `ui` project above — needs StyleX compilation.
+            'internal/theme-contrast/**',
           ],
         },
       },
