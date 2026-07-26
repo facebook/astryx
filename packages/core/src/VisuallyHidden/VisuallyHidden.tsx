@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-'use client';
-
 /**
  * @file VisuallyHidden.tsx
  * @input Uses React createElement/ElementType, stylex
