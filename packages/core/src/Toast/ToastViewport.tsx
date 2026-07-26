@@ -3,6 +3,7 @@
 'use client';
 
 import {
+  isValidElement,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -10,10 +11,12 @@ import {
   useRef,
   useState,
 } from 'react';
+import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, durationVars, easeVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {INTERACTIVE_SELECTORS} from '../hooks/useClickableContainer';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {Toast} from './Toast';
 import {ToastContext, type ToastContextValue} from './ToastContext';
 import type {ToastEntry, ToastPosition, ToastDismissReason} from './types';
@@ -75,6 +78,29 @@ const styles = stylex.create({
     overflow: 'hidden',
   },
 });
+
+// Flatten a toast's rendered content (title, description, etc.) to the plain
+// text that should be spoken by a screen reader. Only text is announced —
+// interactive endContent is deliberately excluded (it is reachable via F6).
+function getNodeText(node: ReactNode): string {
+  if (node == null || typeof node === 'boolean') {
+    return '';
+  }
+  if (typeof node === 'string') {
+    return node;
+  }
+  if (typeof node === 'number') {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(getNodeText).filter(Boolean).join(' ');
+  }
+  if (isValidElement(node)) {
+    const {children} = node.props as {children?: ReactNode};
+    return getNodeText(children);
+  }
+  return '';
+}
 
 export interface ToastViewportProps {
   position?: ToastPosition;
@@ -275,6 +301,41 @@ export function ToastViewport({
   const findByUniqueID = useCallback((uid: string) => {
     return toastsRef.current.find(t => t.options.uniqueID === uid);
   }, []);
+
+  // Mirror each toast's text through the persistent singleton live regions.
+  // Each <Toast> also renders its own role="status"/"alert" live region, but
+  // that region is "born with content" — mounted together with its text —
+  // which many screen readers do not announce (see useAnnounce.ts). The
+  // singleton regions are mounted empty and only mutated afterwards, so this
+  // is what actually guarantees the announcement; the per-toast markup is
+  // kept for browse-mode discoverability. Runs in an effect (client-only, so
+  // SSR-safe) and dedupes by toast id + text so a toast is announced once
+  // when added and once per content update — never on unrelated re-renders.
+  const announce = useAnnounce();
+  const announcedRef = useRef<Map<string, string>>(new Map());
+  useEffect(() => {
+    const announced = announcedRef.current;
+    const liveIds = new Set<string>();
+    for (const entry of toasts) {
+      liveIds.add(entry.id);
+      const text = getNodeText(entry.options.body);
+      if (announced.get(entry.id) === text) {
+        continue;
+      }
+      announced.set(entry.id, text);
+      if (text) {
+        // Match the per-toast role mapping: error toasts render role="alert"
+        // (assertive), everything else role="status" (polite).
+        announce(text, entry.options.type === 'error' ? 'assertive' : 'polite');
+      }
+    }
+    // Forget removed toasts so their ids don't accumulate.
+    for (const id of announced.keys()) {
+      if (!liveIds.has(id)) {
+        announced.delete(id);
+      }
+    }
+  }, [toasts, announce]);
 
   const contextValue = useMemo<ToastContextValue>(
     () => ({addToast, removeToast, findByUniqueID}),
