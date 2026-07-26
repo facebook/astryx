@@ -110,6 +110,13 @@ export const docs = {
       default: 'false',
     },
     {
+      name: 'tabEscapeHint',
+      type: 'string',
+      description:
+        'Screen-reader hint describing how to move focus out of the editor, since Tab is bound to indentation (press Escape, then Tab). Visually hidden, wired via aria-describedby. Override to localize; pass "" to omit.',
+      default: "'Press Escape then Tab to move focus out of the editor.'",
+    },
+    {
       name: 'maxLength',
       type: 'number',
       description:

@@ -9,11 +9,17 @@
  * SYNC: When the editor components change, update these tests to match.
  */
 
-import {describe, it, expect, vi} from 'vitest';
+import {describe, it, expect, vi, beforeAll} from 'vitest';
 import {render, screen, waitFor, fireEvent} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {createRef, useEffect} from 'react';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import type {EditorState, LexicalEditor} from 'lexical';
+import {
+  $createListItemNode,
+  $createListNode,
+  $isListItemNode,
+} from '@lexical/list';
 import {
   $getRoot,
   $createParagraphNode,
@@ -603,6 +609,138 @@ describe('RichTextEditor', () => {
       .getAttribute('aria-describedby');
     expect(describedBy).toBeTruthy();
     expect(describedBy!.split(' ')).toContain(counter.id);
+  });
+});
+
+describe('RichTextEditor Tab keyboard trap escape (WCAG 2.1.2)', () => {
+  const DEFAULT_HINT = 'Press Escape then Tab to move focus out of the editor.';
+
+  beforeAll(() => {
+    // jsdom's Range does not implement getBoundingClientRect, which Lexical
+    // calls (via scroll-into-view) whenever it reconciles a collapsed
+    // selection while the editor is focused. Stub it so the focused-editor
+    // keyboard tests below can run without uncaught exceptions.
+    if (typeof Range.prototype.getBoundingClientRect !== 'function') {
+      Range.prototype.getBoundingClientRect = () => new DOMRect();
+    }
+  });
+
+  /**
+   * Renders the editor followed by a button, focuses the contenteditable and
+   * seeds a single-item bullet list with the caret at the start of the item —
+   * the position where TabIndentationPlugin turns Tab into an indent (and
+   * calls preventDefault, which is the keyboard trap under test).
+   */
+  async function setUpListEditor() {
+    let editorRef: LexicalEditor | undefined;
+    function CaptureEditor() {
+      const [editor] = useLexicalComposerContext();
+      useEffect(() => {
+        editorRef = editor;
+      }, [editor]);
+      return null;
+    }
+    render(
+      <>
+        <RichTextEditor label="Notes" plugins={<CaptureEditor />} />
+        <button type="button">after</button>
+      </>,
+    );
+    await waitFor(() => expect(editorRef).toBeDefined());
+    const textbox = screen.getByRole('textbox');
+    textbox.focus();
+    editorRef!.update(() => {
+      const root = $getRoot();
+      root.clear();
+      const list = $createListNode('bullet');
+      const item = $createListItemNode();
+      const text = $createTextNode('Item one');
+      item.append(text);
+      list.append(item);
+      root.append(list);
+      text.select(0, 0);
+    });
+    return {editor: editorRef!, textbox};
+  }
+
+  /** Indent of the list item containing the seeded text node. */
+  function getItemIndent(editor: LexicalEditor): number {
+    return editor.getEditorState().read(() => {
+      const text = $getRoot().getAllTextNodes()[0];
+      const item = text.getParent();
+      return $isListItemNode(item) ? item.getIndent() : -1;
+    });
+  }
+
+  it('indents the list item on Tab and keeps focus in the editor', async () => {
+    const user = userEvent.setup();
+    const {editor, textbox} = await setUpListEditor();
+    expect(getItemIndent(editor)).toBe(0);
+    await user.tab();
+    expect(getItemIndent(editor)).toBe(1);
+    // The keydown was consumed by indentation, so focus did not move.
+    expect(document.activeElement).toBe(textbox);
+  });
+
+  it('moves focus out (without indenting) on Tab after Escape', async () => {
+    const user = userEvent.setup();
+    const {editor, textbox} = await setUpListEditor();
+    await user.keyboard('{Escape}');
+    await user.tab();
+    expect(document.activeElement).not.toBe(textbox);
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', {name: 'after'}),
+    );
+    expect(getItemIndent(editor)).toBe(0);
+  });
+
+  it('re-arms indentation when another key is pressed after Escape', async () => {
+    const user = userEvent.setup();
+    const {editor, textbox} = await setUpListEditor();
+    await user.keyboard('{Escape}');
+    // Any non-modifier key press (typing, arrows, …) cancels the escape.
+    fireEvent.keyDown(textbox, {key: 'a'});
+    await user.tab();
+    expect(document.activeElement).toBe(textbox);
+    expect(getItemIndent(editor)).toBe(1);
+  });
+
+  it('does not re-arm on a bare modifier, so Escape then Shift+Tab escapes', async () => {
+    const user = userEvent.setup();
+    const {textbox} = await setUpListEditor();
+    await user.keyboard('{Escape}');
+    // Pressing Shift on its own (the first half of Shift+Tab) must not
+    // cancel the escape. fireEvent returns false when preventDefault was
+    // called — an unprevented Tab keydown means native focus movement.
+    fireEvent.keyDown(textbox, {key: 'Shift'});
+    expect(fireEvent.keyDown(textbox, {key: 'Tab', shiftKey: true})).toBe(true);
+  });
+
+  it('advertises the escape via a visually hidden aria-describedby hint', () => {
+    render(<RichTextEditor label="Notes" />);
+    const textbox = screen.getByRole('textbox');
+    const hint = screen.getByText(DEFAULT_HINT);
+    expect(hint.id).not.toBe('');
+    expect(
+      (textbox.getAttribute('aria-describedby') ?? '').split(/\s+/),
+    ).toContain(hint.id);
+  });
+
+  it('supports overriding and suppressing the hint text', () => {
+    const {unmount} = render(
+      <RichTextEditor label="Notes" tabEscapeHint="Custom escape hint" />,
+    );
+    expect(screen.getByText('Custom escape hint')).toBeInTheDocument();
+    expect(screen.queryByText(DEFAULT_HINT)).not.toBeInTheDocument();
+    unmount();
+    render(<RichTextEditor label="Notes" tabEscapeHint="" />);
+    expect(screen.queryByText(DEFAULT_HINT)).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox')).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('omits the hint when the editor is not editable', () => {
+    render(<RichTextEditor label="Notes" isReadOnly />);
+    expect(screen.queryByText(DEFAULT_HINT)).not.toBeInTheDocument();
   });
 });
 
