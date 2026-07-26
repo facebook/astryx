@@ -372,7 +372,7 @@ export function Outline({
     }
     const links = Array.from(list.querySelectorAll<HTMLElement>('a[href]'));
     const active = links.find(
-      link => link.getAttribute('aria-current') === 'true',
+      link => link.getAttribute('aria-current') === 'location',
     );
     if (active == null) {
       return;
@@ -465,7 +465,7 @@ export function Outline({
             <li key={item.id} {...stylex.props(styles.item)} role="listitem">
               <LinkComponent
                 href={`#${item.id}`}
-                aria-current={isActive ? 'true' : undefined}
+                aria-current={isActive ? 'location' : undefined}
                 onClick={handleClick(item.id)}
                 onKeyDown={handleKeyDown(item.id)}
                 {...mergeProps(
