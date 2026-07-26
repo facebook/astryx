@@ -687,6 +687,10 @@
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that removes the selected file from a FileInput. Example: `Clear Attachment`, `Clear Résumé`."
   },
+  "@astryx.fileInput.required": {
+    "defaultMessage": "Required",
+    "description": "Screen-reader-only description on the FileInput trigger indicating the field must be filled in. Mirrors the visible `Required` indicator next to the field label; conveyed via description because aria-required is not supported on role=\"button\"."
+  },
   "@astryx.fileInput.triggerWithFiles": {
     "defaultMessage": "{label}, {fileNames}",
     "description": "Accessible name for a FileInput trigger that has files attached, composing the field label with the selected filenames. Example: `Attachments, report.pdf, notes.txt`."

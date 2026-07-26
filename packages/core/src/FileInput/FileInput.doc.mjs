@@ -78,7 +78,7 @@ export const docs = {
       name: 'isRequired',
       type: 'boolean',
       description:
-        'Displays a "Required" indicator next to the label and sets aria-required. Mutually exclusive with isOptional.',
+        'Displays a "Required" indicator next to the label and adds a screen-reader-only "Required" description to the trigger (aria-required is not supported on role="button"). Mutually exclusive with isOptional.',
       default: 'false',
     },
     {
@@ -308,7 +308,7 @@ export const docsDense = {
     isLabelHidden: 'Visually hides label; keeps screen reader access.',
     description: 'Description text between label+input.',
     isOptional: 'Shows "Optional" indicator.',
-    isRequired: 'Shows "Required" indicator+sets aria-required.',
+    isRequired: 'Shows "Required" indicator+SR-only trigger description.',
     isDisabled: 'Disables input, prevents interaction.',
     disabledMessage:
       'Explains why input is disabled. With isDisabled, shows tooltip on hover/focus + keeps trigger focusable via aria-disabled (opening picker stays blocked). Use instead of wrapping a disabled FileInput in Tooltip.',
