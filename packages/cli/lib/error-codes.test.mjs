@@ -102,6 +102,8 @@ describe('error codes: end-to-end JSON envelopes', () => {
     {name: 'unknown command', args: ['bogus-cmd', '--json'], code: 'ERR_UNKNOWN_COMMAND'},
     {name: 'invalid --lang', args: ['docs', 'color', '--lang', 'fr', '--json'], code: 'ERR_INVALID_LANG'},
     {name: 'invalid --detail', args: ['docs', 'color', '--detail', 'bogus', '--json'], code: 'ERR_INVALID_DETAIL'},
+    {name: 'invalid --form', args: ['layout', 'expand', 'VStack', '--form', 'bogus', '--json'], code: 'ERR_INVALID_FORM'},
+    {name: 'invalid --form (check)', args: ['layout', 'check', 'VStack', '--form', 'bogus', '--json'], code: 'ERR_INVALID_FORM'},
     {name: 'unknown option', args: ['component', 'Button', '--bogus-flag', '--json'], code: 'ERR_INVALID_OPTION'},
     {name: 'missing argument', args: ['theme', 'build', '--json'], code: 'ERR_MISSING_ARGUMENT'},
     // `theme` is not on the --json allowlist, so --json on any theme subcommand

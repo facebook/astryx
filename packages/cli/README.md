@@ -137,6 +137,7 @@ if (isError(result)) {
 | `ERR_MISSING_ARGUMENT`   | A required positional argument was omitted (e.g. `astryx theme build` with no file).   |
 | `ERR_INVALID_LANG`       | `--lang` was given a value outside its choices (`en`, `zh`, `dense`).                  |
 | `ERR_INVALID_DETAIL`     | `--detail` was given a value outside its choices (`full`, `compact`, `brief`).         |
+| `ERR_INVALID_FORM`       | `--form` was given a value outside its choices (`auto`, `compact`, `outline`).         |
 | `ERR_NODE_VERSION`       | The running Node.js version is below the supported minimum.                            |
 | `ERR_CORE_NOT_FOUND`     | `@astryxdesign/core` could not be located (not installed / not in a monorepo).         |
 | `ERR_UNKNOWN_COMPONENT`  | No component matched the requested name.                                               |

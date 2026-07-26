@@ -151,6 +151,8 @@ function formatIssue(issue) {
   return `${where}${issue.message}`;
 }
 
+const LAYOUT_FORMS = ['auto', 'compact', 'outline'];
+
 /**
  * Parse + validate, throwing structured XDSErrors on failure.
  * Returns {doc, registry, blocks, warnings}.
@@ -159,6 +161,14 @@ function formatIssue(issue) {
  * @param {{form?: 'compact'|'outline'|'auto', loose?: boolean, cwd?: string}} [options]
  */
 async function analyze(expression, {form = 'auto', loose = false, cwd = process.cwd()} = {}) {
+  if (!LAYOUT_FORMS.includes(form)) {
+    throw new AstryxError(
+      `Unknown layout form "${form}". Valid forms: ${LAYOUT_FORMS.join(', ')}`,
+      LAYOUT_FORMS.map(name => ({name, reason: 'valid form'})),
+      ERROR_CODES.ERR_INVALID_FORM,
+    );
+  }
+
   const registry = /** @type {import('../../lib/xle/xle-ast').Registry} */ (
     /** @type {unknown} */ (await buildRegistry({cwd}))
   );

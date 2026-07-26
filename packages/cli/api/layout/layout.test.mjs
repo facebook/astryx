@@ -22,6 +22,11 @@ beforeAll(async () => {
 }, 120_000);
 
 const SLOW = 30_000;
+const LAYOUT_FORM_SUGGESTIONS = [
+  {name: 'auto', reason: 'valid form'},
+  {name: 'compact', reason: 'valid form'},
+  {name: 'outline', reason: 'valid form'},
+];
 
 /** Assert TSX parses cleanly; returns the source file for inspection. */
 function expectValidTsx(code) {
@@ -139,6 +144,18 @@ describe('layoutExpand', () => {
     });
   });
 
+  it('rejects an unknown input form', async () => {
+    await expect(
+      layoutExpand('VStack', {
+        form: /** @type {any} */ ('garbage'),
+      }),
+    ).rejects.toMatchObject({
+      code: 'ERR_INVALID_FORM',
+      message: expect.stringMatching(/Unknown layout form "garbage"/),
+      suggestions: LAYOUT_FORM_SUGGESTIONS,
+    });
+  });
+
   it('surfaces parse errors with positions', async () => {
     await expect(layoutExpand('V > > C')).rejects.toMatchObject({
       code: 'ERR_LAYOUT_PARSE',
@@ -163,6 +180,33 @@ describe('layoutCheck', () => {
     expect(all).toMatch(/no prop 'padding'/);
     expect(all).toMatch(/must be one of/);
     expect(all).toMatch(/Unknown block/);
+  });
+
+  it('rejects an unknown input form', async () => {
+    await expect(
+      layoutCheck('VStack', {
+        form: /** @type {any} */ ('garbage'),
+      }),
+    ).rejects.toMatchObject({
+      code: 'ERR_INVALID_FORM',
+      message: expect.stringMatching(/Unknown layout form "garbage"/),
+      suggestions: LAYOUT_FORM_SUGGESTIONS,
+    });
+  });
+});
+
+describe('supported input forms', () => {
+  it.each([
+    ['auto', 'compact'],
+    ['compact', 'compact'],
+    ['outline', 'outline'],
+  ])('accepts %s input', async (form, expected) => {
+    const options = {form: /** @type {'auto'|'compact'|'outline'} */ (form)};
+    const expanded = await layoutExpand('VStack', options);
+    const checked = await layoutCheck('VStack', options);
+
+    expect(expanded.data.form).toBe(expected);
+    expect(checked.data.form).toBe(expected);
   });
 });
 

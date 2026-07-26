@@ -44,6 +44,7 @@
  *   | 'ERR_MISSING_ARGUMENT'
  *   | 'ERR_INVALID_LANG'
  *   | 'ERR_INVALID_DETAIL'
+ *   | 'ERR_INVALID_FORM'
  *   | 'ERR_NODE_VERSION'
  *   | 'ERR_CORE_NOT_FOUND'
  *   | 'ERR_UNKNOWN_COMPONENT'
@@ -106,6 +107,8 @@ export const ERROR_CODES = Object.freeze({
   ERR_INVALID_LANG: 'ERR_INVALID_LANG',
   /** `--detail` was given a value outside its choices (full, compact, brief). */
   ERR_INVALID_DETAIL: 'ERR_INVALID_DETAIL',
+  /** `--form` was given a value outside its choices (auto, compact, outline). */
+  ERR_INVALID_FORM: 'ERR_INVALID_FORM',
 
   // ── Environment / runtime ────────────────────────────────────────
   /** The running Node.js version is below the supported minimum. */
