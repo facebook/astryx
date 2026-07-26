@@ -23,10 +23,12 @@ const NO_DISABLED: number[] = [];
 function Grid({
   disabled = NO_DISABLED,
   seed = 0,
+  dir,
   ...opts
 }: {
   disabled?: number[];
   seed?: number;
+  dir?: 'ltr' | 'rtl';
 } & Partial<Parameters<typeof useGridFocus>[0]>) {
   const {gridRef, handleKeyDown, handleFocus} = useGridFocus<HTMLDivElement>({
     columns: 3,
@@ -41,6 +43,7 @@ function Grid({
     <div
       ref={gridRef}
       role="grid"
+      dir={dir}
       onKeyDown={handleKeyDown}
       onFocus={handleFocus}>
       {Array.from({length: 9}, (_, i) => (
@@ -128,5 +131,43 @@ describe('useGridFocus roving tabindex (hasRovingTabIndex)', () => {
     expect(screen.getByTestId('cell-1')).toHaveFocus();
     // cell-1 kept its seeded -1; the hook did not promote it.
     expect(screen.getByTestId('cell-1')).toHaveAttribute('tabindex', '-1');
+  });
+});
+
+describe('useGridFocus RTL auto-detection (WCAG 1.3.2)', () => {
+  // jsdom reflects the `dir` attribute into computed style only on the element
+  // that carries it, so tests set dir="rtl" on the grid container itself — the
+  // element the hook reads via gridRef.
+
+  it('auto-detects dir="rtl": ArrowLeft moves forward (next cell)', () => {
+    render(<Grid seed={1} dir="rtl" />);
+    const grid = screen.getByRole('grid');
+    screen.getByTestId('cell-1').focus();
+    fireEvent.keyDown(grid, {key: 'ArrowLeft'});
+    expect(screen.getByTestId('cell-2')).toHaveFocus();
+  });
+
+  it('auto-detects dir="rtl": ArrowRight moves backward (previous cell)', () => {
+    render(<Grid seed={1} dir="rtl" />);
+    const grid = screen.getByRole('grid');
+    screen.getByTestId('cell-1').focus();
+    fireEvent.keyDown(grid, {key: 'ArrowRight'});
+    expect(screen.getByTestId('cell-0')).toHaveFocus();
+  });
+
+  it('leaves vertical navigation unaffected under dir="rtl"', () => {
+    render(<Grid seed={0} dir="rtl" />);
+    const grid = screen.getByRole('grid');
+    screen.getByTestId('cell-0').focus();
+    fireEvent.keyDown(grid, {key: 'ArrowDown'});
+    expect(screen.getByTestId('cell-3')).toHaveFocus();
+  });
+
+  it('explicit isRtl={false} overrides a dir="rtl" container', () => {
+    render(<Grid seed={1} dir="rtl" isRtl={false} />);
+    const grid = screen.getByRole('grid');
+    screen.getByTestId('cell-1').focus();
+    fireEvent.keyDown(grid, {key: 'ArrowRight'});
+    expect(screen.getByTestId('cell-2')).toHaveFocus();
   });
 });

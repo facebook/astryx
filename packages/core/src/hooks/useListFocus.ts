@@ -4,16 +4,20 @@
 
 /**
  * @file useListFocus.ts
- * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect
+ * @input Uses React useCallback, useRef, useIsomorphicLayoutEffect,
+ *   isRtlElement
  * @output Exports useListFocus hook for linear list keyboard navigation
  * @position Core hook; used by TabMenu for dropdown menu navigation, Toolbar
  *   for roving tabindex, ButtonGroup, ContextMenu, NavHeadingMenu, and more.
+ *   Auto-detects RTL from the container's computed direction so horizontal
+ *   arrow keys follow visual direction (WCAG 1.3.2).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
  */
 
 import {useCallback, useRef} from 'react';
+import {isRtlElement} from './isRtlElement';
 import {useIsomorphicLayoutEffect} from './useIsomorphicLayoutEffect';
 
 /**
@@ -62,7 +66,12 @@ export interface UseListFocusOptions {
    * Whether the list is in a right-to-left context. When true, ArrowLeft and
    * ArrowRight are swapped so horizontal navigation follows visual direction.
    * Only affects horizontal (`'horizontal'`/`'both'`) navigation.
-   * @default false
+   *
+   * When omitted, the direction is auto-detected from the container's computed
+   * `direction` (read lazily on keydown, only for horizontal arrow keys), so
+   * lists inside `dir="rtl"` subtrees flip automatically. Pass an explicit
+   * boolean to override detection.
+   * @default undefined (auto-detect from the container)
    */
   isRtl?: boolean;
 
@@ -275,7 +284,7 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
     onEscape,
     orientation = 'vertical',
     hasHomeEnd = true,
-    isRtl = false,
+    isRtl,
     hasRovingTabIndex = false,
     hasCaretGuard = false,
   } = options;
@@ -486,11 +495,18 @@ export function useListFocus<T extends HTMLElement = HTMLElement>(
       const vertical = orientation === 'vertical' || orientation === 'both';
 
       // Resolve which keys advance vs retreat, honoring RTL for horizontal.
+      // Direction is resolved lazily — getComputedStyle runs only when a
+      // horizontal arrow key is actually pressed (SSR-safe, no layout thrash
+      // on unrelated keys) — and an explicit `isRtl` always wins.
       const nextKeys: string[] = [];
       const prevKeys: string[] = [];
       if (horizontal) {
-        nextKeys.push(isRtl ? 'ArrowLeft' : 'ArrowRight');
-        prevKeys.push(isRtl ? 'ArrowRight' : 'ArrowLeft');
+        const rtl =
+          e.key === 'ArrowLeft' || e.key === 'ArrowRight'
+            ? (isRtl ?? isRtlElement(listRef.current))
+            : false;
+        nextKeys.push(rtl ? 'ArrowLeft' : 'ArrowRight');
+        prevKeys.push(rtl ? 'ArrowRight' : 'ArrowLeft');
       }
       if (vertical) {
         nextKeys.push('ArrowDown');
