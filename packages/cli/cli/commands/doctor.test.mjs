@@ -247,6 +247,29 @@ describe('doctor — individual checks', () => {
     expect(res.status).toBe('pass');
   });
 
+  it('peer-deps: WARN flags a missing @stylexjs/stylex with a runnable fix (#4276)', () => {
+    // The pnpm strict-node_modules case: React is there, StyleX is not, and
+    // every core component throws on import. The fix line must actually name
+    // the scoped package — `npm install ` is not a command.
+    const coreDir = installCore('0.1.8', {
+      '@stylexjs/stylex': '^0.19.0',
+      react: '>=19.0.0',
+    });
+    installPkg('react', '19.0.0');
+    const res = checkPeerDeps({cwd: tmpDir, coreDir});
+    expect(res.status).toBe('warn');
+    expect(res.message).toContain('@stylexjs/stylex');
+    expect(res.fix).toContain('@stylexjs/stylex');
+  });
+
+  it('peer-deps: PASS when @stylexjs/stylex is installed (#4276)', () => {
+    const coreDir = installCore('0.1.8', {'@stylexjs/stylex': '^0.19.0'});
+    installPkg('@stylexjs/stylex', '0.19.0');
+    const res = checkPeerDeps({cwd: tmpDir, coreDir});
+    expect(res.status).toBe('pass');
+    expect(res.message).toContain('@stylexjs/stylex');
+  });
+
   it('package-manager: INFO, reports yarn from lockfile', () => {
     fs.writeFileSync(path.join(tmpDir, 'yarn.lock'), '');
     const res = checkPackageManager({cwd: tmpDir});

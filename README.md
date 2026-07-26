@@ -41,15 +41,15 @@ Install Astryx and a theme:
 
 ```bash
 # npm
-npm install @astryxdesign/core @astryxdesign/theme-neutral
+npm install @astryxdesign/core @stylexjs/stylex @astryxdesign/theme-neutral
 npm install -D @astryxdesign/cli
 
 # pnpm
-pnpm add @astryxdesign/core @astryxdesign/theme-neutral
+pnpm add @astryxdesign/core @stylexjs/stylex @astryxdesign/theme-neutral
 pnpm add -D @astryxdesign/cli
 
 # yarn
-yarn add @astryxdesign/core @astryxdesign/theme-neutral
+yarn add @astryxdesign/core @stylexjs/stylex @astryxdesign/theme-neutral
 yarn add -D @astryxdesign/cli
 ```
 

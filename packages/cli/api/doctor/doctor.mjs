@@ -406,7 +406,14 @@ export function checkPeerDeps(ctx) {
     };
   }
 
+  // `missing` carries name@range for the human message; `missingNames` keeps
+  // the bare names for the fix command. Deriving one from the other by
+  // splitting on '@' loses scoped packages entirely — `@stylexjs/stylex@^0.19.0`
+  // split on '@' starts with an empty segment, so the fix rendered as
+  // `npm install ` with nothing to install (#4276).
   const missing = [];
+  /** @type {string[]} */
+  const missingNames = [];
   for (const name of peerNames) {
     let present = false;
     try {
@@ -421,7 +428,10 @@ export function checkPeerDeps(ctx) {
         // Still unresolved — leave present at its initial false.
       }
     }
-    if (!present) missing.push(`${name}@${peers[name]}`);
+    if (!present) {
+      missing.push(`${name}@${peers[name]}`);
+      missingNames.push(name);
+    }
   }
 
   if (missing.length > 0) {
@@ -430,7 +440,7 @@ export function checkPeerDeps(ctx) {
       label: '@astryxdesign/core peer dependencies',
       status: 'warn',
       message: `Missing peer dependencies: ${missing.join(', ')}.`,
-      fix: `Install the required peers, e.g. \`npm install ${missing.map(m => m.split('@')[0]).join(' ')}\`.`,
+      fix: `Install the required peers, e.g. \`npm install ${missingNames.join(' ')}\`.`,
     };
   }
 

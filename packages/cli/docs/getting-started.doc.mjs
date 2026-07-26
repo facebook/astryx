@@ -21,7 +21,7 @@ export const docs = {
           type: 'code',
           lang: 'text',
           label: 'Paste this into your AI',
-          code: 'Install @astryxdesign/core, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions.',
+          code: 'Install @astryxdesign/core, @stylexjs/stylex, @astryxdesign/theme-neutral, and @astryxdesign/cli in this project, then run `npx @astryxdesign/cli init` to set up agent docs. Read the generated files to learn the conventions.',
         },
       ],
     },
@@ -36,7 +36,11 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Terminal',
-          code: `npm install @astryxdesign/core @astryxdesign/theme-neutral @astryxdesign/cli`,
+          code: `npm install @astryxdesign/core @stylexjs/stylex @astryxdesign/theme-neutral @astryxdesign/cli`,
+        },
+        {
+          type: 'prose',
+          text: '`@stylexjs/stylex` is a required peer dependency of the core package — its pre-built components import it at runtime. npm and yarn auto-install peers, so it is easy to miss; pnpm with a strict `node_modules` does not, and every component throws on import without it. Run `astryx doctor` to verify.',
         },
         {
           type: 'prose',

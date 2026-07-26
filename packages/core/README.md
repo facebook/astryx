@@ -78,7 +78,7 @@ astryx gap-report                   # report a missing capability
 Install Astryx and a theme:
 
 ```bash
-npm install @astryxdesign/core @astryxdesign/theme-neutral
+npm install @astryxdesign/core @stylexjs/stylex @astryxdesign/theme-neutral
 ```
 
 Then pick your setup below based on your framework and styling approach.
@@ -226,7 +226,7 @@ export default function Page() {
 Use the pre-built dist alongside StyleX for your own styles.
 
 ```bash
-npm install @astryxdesign/core @astryxdesign/theme-neutral
+npm install @astryxdesign/core @stylexjs/stylex @astryxdesign/theme-neutral
 ```
 
 **`src/app/globals.css`**
@@ -242,7 +242,7 @@ Providers and layout are the same as the Tailwind example (use `@astryxdesign/th
 ### Vite
 
 ```bash
-npm install @astryxdesign/core @astryxdesign/theme-neutral
+npm install @astryxdesign/core @stylexjs/stylex @astryxdesign/theme-neutral
 ```
 
 Same CSS imports and providers as above. No build plugins needed; Astryx ships pre-built.

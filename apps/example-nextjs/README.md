@@ -9,7 +9,7 @@ No StyleX build plugin needed; Astryx ships pre-compiled CSS and JS. This is the
 ### 1. Install dependencies
 
 ```bash
-npm install @astryxdesign/core @astryxdesign/theme-neutral next react react-dom
+npm install @astryxdesign/core @stylexjs/stylex @astryxdesign/theme-neutral next react react-dom
 npm install --save-dev @types/react @types/react-dom typescript
 ```
 
