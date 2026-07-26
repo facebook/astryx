@@ -873,7 +873,13 @@ export function registerTheme(program) {
   theme
     .command('build <file>')
     .description('Compile a defineTheme file to CSS + JS')
-    .option('-o, --out <path>', 'Output CSS file path')
+    // Names the CSS file, but every other artifact (.js/.d.ts/.variants.d.ts)
+    // is written to this path's dirname — so it is an output *directory*
+    // contract, not a CSS-only one (#4276).
+    .option(
+      '-o, --out <path>',
+      'Output directory for all theme artifacts (named by the CSS path)',
+    )
     .option(
       '-w, --watch',
       'Rebuild automatically when the theme file changes (Ctrl-C to stop)',
