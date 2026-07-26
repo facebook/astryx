@@ -24,6 +24,16 @@
  *      NOT flagged.
  *   2. Object property assignments of the same names inside .tsx files.
  *   3. Destructure defaults (`function Foo({label = 'X'})`) of the same names.
+ *   4. Call arguments: hardcoded first arguments to configured callees
+ *      (default: `announce`, the live-region announcer returned by
+ *      `useAnnounce()`). Matches by CALLEE NAME only — no import/scope
+ *      tracing — so any local function named `announce` is checked. That is
+ *      a deliberate simplicity tradeoff: false positives require shadowing
+ *      the hook's conventional name, which the codebase does not do.
+ *      Only plain string literals and template literals WITHOUT expressions
+ *      are flagged; templates with interpolations, identifiers, and t(...)
+ *      results are allowed (interpolated announcements are caught by the
+ *      i18n sweep, not this conservative check).
  *
  * Ignores:
  *   - Test files (*.test.*, __tests__/**)
@@ -39,10 +49,22 @@
  *     const label = labelFromProps ?? t('foo.label');
  *   }
  *
+ * Good:
+ *   announce(t('tokenizer.announce.added', {label}));
+ *   announce(message);
+ *
  * Bad:
  *   <button aria-label="Close">
  *   {key: 'contains', label: 'contains'}
  *   function Foo({label = 'Cancel'})
+ *   announce('Copied');
+ *
+ * Options:
+ *   callees: string[] — function names whose first argument is a user-facing
+ *     text sink. Default: ['announce'].
+ *   allowedCalleeStrings: string[] — exact string values temporarily exempted
+ *     from the callee check (grandfathered sites tracked for removal).
+ *     Default: [].
  */
 
 /**
@@ -227,12 +249,34 @@ const rule = {
         'Hardcoded default {{value}} for prop `{{name}}`. ' +
         'Use the alias-and-resolve pattern: `{{name}}: {{name}}FromProps` in the destructure, then ' +
         '`const {{name}} = {{name}}FromProps ?? t(\'<namespace>.<component>.<key>\');` inside the body.',
+      hardcodedCallArg:
+        'Hardcoded user-facing string {{value}} passed to `{{name}}()`. ' +
+        'Route through `t(\'<namespace>.<component>.<key>\')` via `useTranslator()` so it can be localized.',
     },
-    schema: [],
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          callees: {
+            type: 'array',
+            items: {type: 'string'},
+          },
+          allowedCalleeStrings: {
+            type: 'array',
+            items: {type: 'string'},
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
   },
   create(context) {
     const filename = context.filename;
     if (shouldIgnoreFile(filename)) return {};
+
+    const options = context.options[0] || {};
+    const callees = new Set(options.callees ?? ['announce']);
+    const allowedCalleeStrings = new Set(options.allowedCalleeStrings ?? []);
 
     return {
       // 1. JSX attribute string literals:  <X label="Cancel">
@@ -321,6 +365,39 @@ const rule = {
           context,
           /*isDefault*/ true,
         );
+      },
+
+      // 4. Call argument: `announce('Copied')`
+      //    Matches by callee NAME only (no import/scope tracing) — see the
+      //    file header for the rationale and limitation. Deliberately
+      //    conservative about what counts as hardcoded: plain string
+      //    literals and expression-free template literals. Templates with
+      //    interpolations, identifiers, and t(...) calls are all allowed.
+      CallExpression(node) {
+        if (node.callee.type !== 'Identifier') return;
+        const name = node.callee.name;
+        if (!callees.has(name)) return;
+        const arg = node.arguments[0];
+        if (arg == null) return;
+
+        let value = null;
+        if (arg.type === 'Literal' && typeof arg.value === 'string') {
+          value = arg.value;
+        } else if (
+          arg.type === 'TemplateLiteral' &&
+          arg.expressions.length === 0 &&
+          arg.quasis.length === 1
+        ) {
+          value = arg.quasis[0].value?.cooked ?? arg.quasis[0].value?.raw;
+        }
+        if (typeof value !== 'string') return;
+        if (!looksUserFacing(value)) return;
+        if (allowedCalleeStrings.has(value)) return;
+        context.report({
+          node: arg,
+          messageId: 'hardcodedCallArg',
+          data: {value: JSON.stringify(value), name},
+        });
       },
     };
   },
