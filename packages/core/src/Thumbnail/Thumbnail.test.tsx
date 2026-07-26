@@ -163,34 +163,4 @@ describe('Thumbnail', () => {
     render(<Thumbnail ref={ref} data-testid="thumb" />);
     expect(ref).toHaveBeenCalled();
   });
-
-  describe('elevation', () => {
-    // The elevation class lives on the image container (the shadow surface),
-    // which is the root's first element child.
-    const imageContainerClass = (
-      elevation: 'none' | 'low' | 'med' | 'high',
-    ) => {
-      const {container} = render(
-        <Thumbnail src="/x.png" alt="x" elevation={elevation} />,
-      );
-      return container.firstElementChild!.firstElementChild!.className;
-    };
-
-    it('renders a distinct class for each elevation level', () => {
-      const classes = new Set([
-        imageContainerClass('none'),
-        imageContainerClass('low'),
-        imageContainerClass('med'),
-        imageContainerClass('high'),
-      ]);
-      expect(classes.size).toBe(4);
-    });
-
-    it('defaults to flat (elevation none)', () => {
-      const {container: def} = render(<Thumbnail src="/x.png" alt="x" />);
-      expect(def.firstElementChild!.firstElementChild!.className).toBe(
-        imageContainerClass('none'),
-      );
-    });
-  });
 });

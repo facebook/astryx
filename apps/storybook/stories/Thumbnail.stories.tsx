@@ -25,11 +25,6 @@ const meta: Meta<typeof Thumbnail> = {
       control: 'boolean',
       description: 'Whether the thumbnail is disabled',
     },
-    elevation: {
-      control: 'inline-radio',
-      options: ['none', 'low', 'med', 'high'],
-      description: 'Resting shadow depth',
-    },
   },
 };
 

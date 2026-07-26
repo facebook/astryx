@@ -43,7 +43,6 @@ import {MediaTheme} from '../theme/MediaTheme';
 import {useImageMode} from '../hooks/useImageMode';
 import {useDevWarning} from '../hooks/useDevWarning';
 import type {BaseProps} from '../BaseProps';
-import type {Elevation} from '../utils/types';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -104,12 +103,6 @@ export interface ThumbnailProps extends BaseProps<HTMLDivElement> {
    */
   isDisabled?: boolean;
   /**
-   * Resting elevation — the shadow depth the tile sits at. `none` (the default)
-   * keeps the existing hover-only shadow; a set level raises the tile at rest.
-   * @default 'none'
-   */
-  elevation?: Elevation;
-  /**
    * Test ID for testing frameworks.
    */
   'data-testid'?: string;
@@ -135,10 +128,6 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-element'],
     overflow: 'hidden',
     backgroundColor: colorVars['--color-neutral'],
-    // Resting elevation is set via --_thumbnail-elevation (see elevationStyles).
-    // Routing it through a var lets the interactive hover bump (below) override
-    // just the resting value without clobbering the elevation prop.
-    boxShadow: 'var(--_thumbnail-elevation, none)',
   },
   image: {
     width: '100%',
@@ -167,10 +156,7 @@ const styles = stylex.create({
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
     boxShadow: {
-      // Rest at the elevation prop's level (default none); bump to med on hover
-      // as before. Reading the var here keeps a set elevation visible at rest
-      // instead of being reset to flat.
-      default: 'var(--_thumbnail-elevation, none)',
+      default: 'none',
       ':hover': {
         '@media (hover: hover)': shadowVars['--shadow-med'],
       },
@@ -227,17 +213,6 @@ const styles = stylex.create({
   },
 });
 
-// Resting elevation → shadow token. Sets --_thumbnail-elevation (read by the
-// image container and the interactive hover style) rather than box-shadow
-// directly, so a set resting elevation survives the interactive hover bump.
-// 'none' is the default — the existing hover-only shadow is unchanged.
-const elevationStyles = stylex.create({
-  none: {'--_thumbnail-elevation': 'none'},
-  low: {'--_thumbnail-elevation': shadowVars['--shadow-low']},
-  med: {'--_thumbnail-elevation': shadowVars['--shadow-med']},
-  high: {'--_thumbnail-elevation': shadowVars['--shadow-high']},
-});
-
 // =============================================================================
 // Placeholder icon — a simple image silhouette
 // =============================================================================
@@ -283,7 +258,6 @@ export function Thumbnail({
   onClick,
   isLoading = false,
   isDisabled = false,
-  elevation = 'none',
   xstyle,
   className,
   style,
@@ -381,7 +355,6 @@ export function Thumbnail({
       <div
         {...stylex.props(
           styles.imageContainer,
-          elevationStyles[elevation],
           isInteractive && styles.interactive,
         )}>
         {isInteractive ? (

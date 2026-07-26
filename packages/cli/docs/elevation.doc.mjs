@@ -56,7 +56,7 @@ export const docs = {
             [
               'low',
               'The component is in the normal page flow but should read as distinct from the background. Use for emphasis or to separate the component from the surface behind it — the component still sits on the page, it is not floating over other content.',
-              'A raised Card that needs emphasis, a ChatComposer, a resting Thumbnail',
+              'A raised Card that needs emphasis, a ChatComposer',
             ],
             [
               'med',
@@ -82,11 +82,11 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Configurable surfaces expose a single `elevation` prop instead of asking consumers to hand-write a box-shadow. It takes the graded enum `none | low | med | high`, narrowed per component to the steps that surface needs: Card, ClickableCard, SelectableCard, Button, IconButton, ButtonGroup, Thumbnail, and Banner expose the full scale, while ChatComposer exposes only `none | low`. `none` is a flat literal (`box-shadow: none`); the other levels map to the `--shadow-*` tokens above, so a surface stays theme-agnostic.',
+          text: 'Configurable surfaces expose a single `elevation` prop instead of asking consumers to hand-write a box-shadow. It takes the graded enum `none | low | med | high`, narrowed per component to the steps that surface needs: Card, ClickableCard, SelectableCard, Button, IconButton, ButtonGroup, and Banner expose the full scale, while ChatComposer exposes only `none | low`. `none` is a flat literal (`box-shadow: none`); the other levels map to the `--shadow-*` tokens above, so a surface stays theme-agnostic.',
         },
         {
           type: 'prose',
-          text: 'Prop defaults preserve current appearance: every surface defaults to `none` except ChatComposer, which defaults to `low` to keep its raised look. Set `elevation="none"` to flatten it — the flat composer draws a border with the same rest / hover / focus treatment as a text input. Thumbnail keeps its existing hover-only shadow at the `none` default.',
+          text: 'Prop defaults preserve current appearance: every surface defaults to `none` except ChatComposer, which defaults to `low` to keep its raised look. Set `elevation="none"` to flatten it — the flat composer draws a border with the same rest / hover / focus treatment as a text input.',
         },
         {
           type: 'code',
