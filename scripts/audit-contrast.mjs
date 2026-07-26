@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 /**
  * Auditoría de contraste WCAG 2.1 AA — enfocada en los casos del issue #3654.
  *
