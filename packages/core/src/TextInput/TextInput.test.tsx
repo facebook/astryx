@@ -13,6 +13,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
+import {InputGroup} from '../InputGroup';
 import {TextInput} from './TextInput';
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
@@ -227,6 +228,26 @@ describe('TextInput', () => {
         />,
       );
       expect(screen.getByText('Invalid email address')).toBeInTheDocument();
+    });
+
+    it('has no dangling aria-describedby ids inside InputGroup (WCAG 1.3.1)', () => {
+      // Inside an InputGroup no Field renders, so the status message element
+      // does not exist; aria-describedby must not reference its id.
+      render(
+        <InputGroup label="Contact">
+          <TextInput
+            label="Email"
+            value=""
+            onChange={() => {}}
+            status={{type: 'error', message: 'Invalid email address'}}
+          />
+        </InputGroup>,
+      );
+      const input = screen.getByRole('textbox');
+      const describedBy = input.getAttribute('aria-describedby') ?? '';
+      for (const idToken of describedBy.split(/\s+/).filter(Boolean)) {
+        expect(document.getElementById(idToken)).not.toBeNull();
+      }
     });
 
     it('does not render status message when not provided', () => {

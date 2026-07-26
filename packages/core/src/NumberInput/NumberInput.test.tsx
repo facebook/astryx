@@ -13,6 +13,7 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
+import {InputGroup} from '../InputGroup';
 import {NumberInput} from './NumberInput';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
@@ -336,6 +337,33 @@ describe('NumberInput', () => {
       expect(screen.queryByText('%')).not.toBeInTheDocument();
       expect(screen.queryByText('GB')).not.toBeInTheDocument();
     });
+
+    it('includes the units text in the accessible description (WCAG 1.3.1)', () => {
+      render(
+        <NumberInput
+          label="Storage"
+          value={50}
+          onChange={() => {}}
+          units="GB"
+        />,
+      );
+      expect(screen.getByRole('spinbutton')).toHaveAccessibleDescription(/GB/);
+    });
+
+    it('combines units with the description in the accessible description', () => {
+      render(
+        <NumberInput
+          label="Discount"
+          value={10}
+          onChange={() => {}}
+          description="Applied at checkout"
+          units="%"
+        />,
+      );
+      const input = screen.getByRole('spinbutton');
+      expect(input).toHaveAccessibleDescription(/Applied at checkout/);
+      expect(input).toHaveAccessibleDescription(/%/);
+    });
   });
 
   describe('event callbacks', () => {
@@ -461,6 +489,26 @@ describe('NumberInput', () => {
         />,
       );
       expect(screen.getByText('Value must be positive')).toBeInTheDocument();
+    });
+
+    it('has no dangling aria-describedby ids inside InputGroup (WCAG 1.3.1)', () => {
+      // Inside an InputGroup no Field renders, so the status message element
+      // does not exist; aria-describedby must not reference its id.
+      render(
+        <InputGroup label="Price">
+          <NumberInput
+            label="Amount"
+            value={null}
+            onChange={() => {}}
+            status={{type: 'error', message: 'Value must be positive'}}
+          />
+        </InputGroup>,
+      );
+      const input = screen.getByRole('spinbutton');
+      const describedBy = input.getAttribute('aria-describedby') ?? '';
+      for (const idToken of describedBy.split(/\s+/).filter(Boolean)) {
+        expect(document.getElementById(idToken)).not.toBeNull();
+      }
     });
 
     it('does not render status message when not provided', () => {
