@@ -79,13 +79,13 @@ const styles = stylex.create({
       backgroundColor: 'transparent',
     },
     ':active::after': {
-      backgroundColor: 'color-mix(in srgb, currentColor 10%, transparent)',
+      backgroundColor: colorVars['--color-overlay-pressed'],
     },
   },
   hoverOnPointer: {
     '@media (hover: hover)': {
       ':hover::after': {
-        backgroundColor: 'color-mix(in srgb, currentColor 5%, transparent)',
+        backgroundColor: colorVars['--color-overlay-hover'],
       },
     },
   },

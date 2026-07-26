@@ -30,7 +30,6 @@ import {
   colorVars,
   radiusVars,
   spacingVars,
-  shadowVars,
   durationVars,
   easeVars,
 } from '../theme/tokens.stylex';
@@ -152,22 +151,6 @@ const styles = stylex.create({
   },
   interactive: {
     cursor: 'pointer',
-    transitionProperty: 'opacity, box-shadow',
-    transitionDuration: durationVars['--duration-fast'],
-    transitionTimingFunction: easeVars['--ease-standard'],
-    boxShadow: {
-      default: 'none',
-      ':hover': {
-        '@media (hover: hover)': shadowVars['--shadow-med'],
-      },
-    },
-    opacity: {
-      default: 1,
-      ':hover': {
-        '@media (hover: hover)': 0.85,
-      },
-      ':active': 0.75,
-    },
     outline: {
       default: null,
       ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
@@ -175,6 +158,33 @@ const styles = stylex.create({
     outlineOffset: {
       default: '0',
       ':has(:focus-visible)': '2px',
+    },
+  },
+  // Hover/pressed overlay — the exact same treatment as ClickableCard and
+  // SelectableCard. A transparent `::after` tints on hover/press instead of
+  // shifting shadow or opacity. Guarded by @media (hover: hover) so touch
+  // devices don't show a stuck hover state; active/pressed works everywhere.
+  overlay: {
+    '::after': {
+      content: '""',
+      position: 'absolute',
+      inset: 0,
+      borderRadius: 'inherit',
+      pointerEvents: 'none',
+      transitionProperty: 'background-color',
+      transitionDuration: durationVars['--duration-fast'],
+      transitionTimingFunction: easeVars['--ease-standard'],
+      backgroundColor: 'transparent',
+    },
+    ':active::after': {
+      backgroundColor: colorVars['--color-overlay-pressed'],
+    },
+  },
+  hoverOnPointer: {
+    '@media (hover: hover)': {
+      ':hover::after': {
+        backgroundColor: colorVars['--color-overlay-hover'],
+      },
     },
   },
   interactiveButton: {
@@ -356,6 +366,8 @@ export function Thumbnail({
         {...stylex.props(
           styles.imageContainer,
           isInteractive && styles.interactive,
+          isInteractive && styles.overlay,
+          isInteractive && styles.hoverOnPointer,
         )}>
         {isInteractive ? (
           <button
