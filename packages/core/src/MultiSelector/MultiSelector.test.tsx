@@ -510,6 +510,59 @@ describe('MultiSelector', () => {
     expect(options[0]).toHaveTextContent('Select all');
   });
 
+  it('select-all accessible name reflects none/partial/all selection', async () => {
+    const user = userEvent.setup();
+    const options = [
+      {value: 'apple', label: 'Apple'},
+      {value: 'banana', label: 'Banana'},
+    ];
+    const {rerender} = render(
+      <MultiSelector
+        label="Fruit"
+        options={options}
+        value={[]}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+
+    // None selected: plain name, not selected
+    let selectAll = screen.getAllByRole('option', h)[0];
+    expect(selectAll).not.toHaveAccessibleName(/partially selected/);
+    expect(selectAll).toHaveAttribute('aria-selected', 'false');
+
+    // Partial: aria-selected="mixed" is invalid on role="option", so the
+    // indeterminate state must be conveyed through the accessible name.
+    rerender(
+      <MultiSelector
+        label="Fruit"
+        options={options}
+        value={['apple']}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+    selectAll = screen.getAllByRole('option', h)[0];
+    expect(selectAll).toHaveAccessibleName('Select all, partially selected');
+    expect(selectAll).toHaveAttribute('aria-selected', 'false');
+
+    // All selected: plain name again, selected
+    rerender(
+      <MultiSelector
+        label="Fruit"
+        options={options}
+        value={['apple', 'banana']}
+        onChange={() => {}}
+        hasSelectAll
+      />,
+    );
+    selectAll = screen.getAllByRole('option', h)[0];
+    expect(selectAll).not.toHaveAccessibleName(/partially selected/);
+    expect(selectAll).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('select-all toggles via keyboard Enter', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -712,6 +765,29 @@ describe('MultiSelector', () => {
     expect(
       within(screen.getByRole('listbox', h)).getByText('No results found'),
     ).toBeInTheDocument();
+  });
+
+  it('empty-state message is not exposed as a listbox child', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    await user.type(screen.getByRole('combobox', h), 'xyz');
+
+    // role="listbox" only permits option/group children — the visual
+    // empty-state message must be presentational (it is announced through
+    // the result-count live region instead).
+    const listbox = screen.getByRole('listbox', h);
+    const empty = within(listbox).getByText('No results found');
+    expect(empty).toHaveAttribute('role', 'presentation');
   });
 
   describe('result announcements', () => {

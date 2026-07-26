@@ -613,6 +613,28 @@ describe('Selector', () => {
       expect(within(listbox).getByText('No results found')).toBeInTheDocument();
     });
 
+    it('empty-state message is not exposed as a listbox child', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+
+      // role="listbox" only permits option/group children — the visual
+      // empty-state message must be presentational (it is announced through
+      // the result-count live region instead).
+      const listbox = screen.getByRole('listbox', h);
+      const empty = within(listbox).getByText('No results found');
+      expect(empty).toHaveAttribute('role', 'presentation');
+    });
+
     it('calls onChange when selecting a filtered option', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();

@@ -158,6 +158,16 @@ export interface BaseTypeaheadProps<T extends SearchableItem> extends Omit<
   inputXStyle?: StyleXStyles;
 
   /**
+   * Tab-order override for the input element. Typeahead passes `-1` while
+   * its selected-value token is shown: the input is visually collapsed
+   * (width 0 / opacity 0) but must stay programmatically focusable for
+   * token edit/clear interactions, so removing it from the Tab order is
+   * what prevents an invisible tab stop (WCAG 2.4.3 / 2.4.7). The input
+   * remains focusable via `.focus()` regardless of this value.
+   */
+  inputTabIndex?: number;
+
+  /**
    * Ref to the anchor element for dropdown positioning.
    * The dropdown will be positioned relative to this element.
    * If not provided, the input itself is used as the anchor.
@@ -316,6 +326,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   ariaDescribedBy,
   ariaLabelledBy,
   inputXStyle,
+  inputTabIndex,
   anchorRef,
   onKeyDown: externalOnKeyDown,
   debounceMs = 150,
@@ -748,6 +759,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
         aria-describedby={ariaDescribedBy}
         aria-labelledby={ariaLabelledBy}
         aria-disabled={isFocusableDisabled ? 'true' : undefined}
+        tabIndex={inputTabIndex}
         value={query}
         onChange={handleInputChange}
         onPointerDown={() => {

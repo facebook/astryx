@@ -1129,6 +1129,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
         ? allEnabledSelected
         : optimisticValue.includes(item.value);
       const checkboxValue = isSelectAll ? selectAllState : isSelected;
+      // aria-selected="mixed" is invalid on role="option", and the tri-state
+      // checkbox is inert/decorative, so the indeterminate state must be
+      // conveyed through the option's accessible name (WCAG 4.1.2).
+      const isPartiallySelected =
+        isSelectAll && selectAllState === 'indeterminate';
 
       return (
         <div
@@ -1136,6 +1141,13 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           id={getItemId(flatIndex)}
           role="option"
           aria-selected={isSelected}
+          aria-label={
+            isPartiallySelected
+              ? t('@astryx.multiSelector.selectAllPartiallySelected', {
+                  label: selectAllLabel,
+                })
+              : undefined
+          }
           aria-disabled={item.disabled}
           onClick={() => {
             if (!item.disabled) {
@@ -1180,10 +1192,12 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       optimisticValue,
       allEnabledSelected,
       selectAllState,
+      selectAllLabel,
       getItemId,
       handleNavigableToggle,
       onItemMouseEnter,
       size,
+      t,
     ],
   );
 
@@ -1211,10 +1225,16 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       cursor = 1;
     }
 
-    // Empty state — no real items to show
+    // Empty state — no real items to show. role="presentation" keeps the
+    // message out of the listbox's accessibility tree (role="listbox" only
+    // permits option/group children); the no-results outcome is announced
+    // via the result-count live region instead.
     if (realItemCount === 0) {
       elements.push(
-        <div key="empty" {...stylex.props(styles.emptyState)}>
+        <div
+          key="empty"
+          role="presentation"
+          {...stylex.props(styles.emptyState)}>
           No results found
         </div>,
       );

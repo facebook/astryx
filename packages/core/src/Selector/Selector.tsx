@@ -963,8 +963,15 @@ export function Selector<T extends SelectorOptionType>(
 
     // Nothing matched across every group/option: show the empty state.
     if (isSearching && filteredItems.length === 0) {
+      // role="presentation" keeps the message out of the listbox's
+      // accessibility tree (role="listbox" only permits option/group
+      // children); the no-results outcome is announced via the
+      // result-count live region instead.
       return [
-        <div key="empty" {...stylex.props(styles.emptyState)}>
+        <div
+          key="empty"
+          role="presentation"
+          {...stylex.props(styles.emptyState)}>
           No results found
         </div>,
       ];
