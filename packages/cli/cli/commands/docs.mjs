@@ -8,6 +8,7 @@
  *
  * Usage:
  *   astryx docs                          List available topics
+ *   astryx docs --list                   List available topics (explicit)
  *   astryx docs <topic>                  Print full doc
  *   astryx docs <topic> <section>        Print one section
  */
@@ -135,7 +136,14 @@ export function registerDocs(program) {
   program
     .command('docs [topic] [section]')
     .description('Print reference docs')
-    .action(async (/** @type {string | undefined} */ topic, /** @type {string | undefined} */ section) => {
+    .option('--list', 'List available topics')
+    .action(
+      /**
+       * @param {string | undefined} topic
+       * @param {string | undefined} section
+       * @param {{list?: boolean}} options
+       */
+      async (topic, section, options) => {
       const run = getCliInvocation();
       const lang = program.opts().lang || null;
       const zh = program.opts().zh || false;
@@ -143,9 +151,18 @@ export function registerDocs(program) {
       const detail = program.opts().detail || 'full';
       const json = program.opts().json || false;
 
+      // `--list` is the explicit spelling of bare `astryx docs` (matching
+      // `component --list` / `template --list`), so it routes to the same
+      // docs.list branch and ignores any positional topic/section.
+      const list = options.list || false;
+
       let result;
       try {
-        result = await docsApi(topic, section, {lang, zh, dense});
+        result = await docsApi(
+          list ? undefined : topic,
+          list ? undefined : section,
+          {lang, zh, dense},
+        );
       } catch (e) {
         // docs API throws structured errors with {name, reason} suggestions —
         // pass them through untouched so the CLI envelope matches the API.
@@ -177,5 +194,6 @@ export function registerDocs(program) {
           break;
         }
       }
-    });
+    },
+    );
 }
