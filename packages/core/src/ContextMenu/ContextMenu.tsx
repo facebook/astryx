@@ -353,13 +353,22 @@ export function ContextMenu({
         }
         return;
       }
+      // APG menu pattern: Tab closes the menu. Menu items are tabIndex={-1}
+      // so Tab would otherwise leak focus into the page while the menu stayed
+      // open (menus-5). Do NOT preventDefault — closing restores focus to the
+      // previously focused element, and the browser's default Tab then
+      // continues from there to the next element.
+      if (e.key === 'Tab') {
+        closeMenu();
+        return;
+      }
       if (typeahead.onKeyDown(e)) {
         e.preventDefault();
         return;
       }
       listNavKeyDown(e);
     },
-    [listNavKeyDown, typeahead, ownsEvent],
+    [listNavKeyDown, closeMenu, typeahead, ownsEvent],
   );
 
   // Place the zero-size cursor anchor at a point in the trigger's local

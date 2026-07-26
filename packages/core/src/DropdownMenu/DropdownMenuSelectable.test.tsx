@@ -149,6 +149,44 @@ describe('DropdownMenuRadioGroup / RadioItem', () => {
     expect(onChange).toHaveBeenCalledWith('oldest');
   });
 
+  it('warns when the group has no accessible name', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <DropdownMenu button={{label: 'Sort'}}>
+          <DropdownMenuRadioGroup value="newest" onChange={() => {}}>
+            <DropdownMenuRadioItem value="newest" label="Newest" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>,
+      );
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('accessible name'),
+      );
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  it('does not warn when the group is named via aria-label', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      render(
+        <DropdownMenu button={{label: 'Sort'}}>
+          <DropdownMenuRadioGroup
+            value="newest"
+            onChange={() => {}}
+            aria-label="Sort by">
+            <DropdownMenuRadioItem value="newest" label="Newest" />
+          </DropdownMenuRadioGroup>
+        </DropdownMenu>,
+      );
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
   it('throws when a radio item is used outside a group', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() =>

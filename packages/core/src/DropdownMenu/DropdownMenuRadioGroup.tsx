@@ -14,7 +14,7 @@
  * menuitemradio rows.
  */
 
-import {useMemo, type ReactNode} from 'react';
+import {useEffect, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
@@ -102,6 +102,23 @@ export function DropdownMenuRadioGroup({
     () => ({value, onChange, hasCloseOnSelect}),
     [value, onChange, hasCloseOnSelect],
   );
+
+  // Dev-time guardrail: the group should always have an accessible name so
+  // screen readers announce the radios as a named set. Warn once per component
+  // instance (in an effect) rather than on every render — mirrors the
+  // unnamed-dialog warnings in usePopover and Dialog.
+  const hasName = rest['aria-label'] != null || rest['aria-labelledby'] != null;
+  const warnedUnnamedGroupRef = useRef(false);
+  useEffect(() => {
+    if (!hasName && !warnedUnnamedGroupRef.current) {
+      warnedUnnamedGroupRef.current = true;
+      console.warn(
+        'DropdownMenuRadioGroup: group has no accessible name. Pass ' +
+          '`aria-label` (e.g. "Sort by") or `aria-labelledby` so screen ' +
+          'readers announce the radios as a named set.',
+      );
+    }
+  }, [hasName]);
 
   return (
     <div
