@@ -163,7 +163,7 @@ const LAYOUT_FORMS = ['auto', 'compact', 'outline'];
 async function analyze(expression, {form = 'auto', loose = false, cwd = process.cwd()} = {}) {
   if (!LAYOUT_FORMS.includes(form)) {
     throw new AstryxError(
-      `Unknown layout form "${form}". Valid forms: ${LAYOUT_FORMS.join(', ')}`,
+      `Unknown layout form "${form}"`,
       LAYOUT_FORMS.map(name => ({name, reason: 'valid form'})),
       ERROR_CODES.ERR_INVALID_FORM,
     );
