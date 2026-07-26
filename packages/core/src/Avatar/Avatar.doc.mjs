@@ -76,7 +76,7 @@ export const docs = {
     {
       name: 'status',
       type: 'ReactNode',
-      description: 'Corner content for status indicators.',
+      description: 'Corner content for status indicators. A string `label` on the element (as on AvatarStatusDot) is composed into the avatar\'s accessible name (e.g. "Jane Doe, Online") so screen readers announce the status.',
       slotElements: [
         {
           __element: 'AvatarStatusDot',
@@ -163,7 +163,8 @@ export const docsDense = {
     name: 'user name for initials and alt text',
     alt: 'alt text; falls back to name',
     size: "avatar size. Named ('xsm' 20px, 'sm' 24px, 'md' 36px, 'lg' 48px, 'xl' 128px) or numeric px.",
-    status: 'corner content for status indicators',
+    status:
+      'corner content for status indicators; its `label` is composed into the avatar accessible name ("Jane Doe, Online")',
     tooltip:
       "hover/focus tooltip. true/omitted → name; string → that text; false → none. Owns its tooltip; set false when wrapping in your own Tooltip/HoverCard. Default true.",
     href: 'renders avatar as a link (<a>/custom). Needs alt/name. Button-style element swap.',

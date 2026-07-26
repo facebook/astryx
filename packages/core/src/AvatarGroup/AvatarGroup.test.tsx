@@ -4,7 +4,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {AvatarGroup} from './AvatarGroup';
 import {AvatarGroupOverflow} from './AvatarGroupOverflow';
-import {Avatar} from '../Avatar';
+import {Avatar, AvatarStatusDot} from '../Avatar';
 
 describe('AvatarGroup', () => {
   it('renders all avatar children', () => {
@@ -19,6 +19,21 @@ describe('AvatarGroup', () => {
     expect(screen.getByLabelText('Alice')).toBeInTheDocument();
     expect(screen.getByLabelText('Bob')).toBeInTheDocument();
     expect(screen.getByLabelText('Charlie')).toBeInTheDocument();
+  });
+
+  it('composes a labelled status into a grouped avatar accessible name (WCAG 4.1.2)', () => {
+    render(
+      <AvatarGroup>
+        <Avatar
+          name="Alice"
+          status={<AvatarStatusDot variant="success" label="Online" />}
+        />
+        <Avatar name="Bob" />
+      </AvatarGroup>,
+    );
+
+    expect(screen.getByLabelText('Alice, Online')).toBeInTheDocument();
+    expect(screen.getByLabelText('Bob')).toBeInTheDocument();
   });
 
   it('renders with role="group" and default aria-label', () => {

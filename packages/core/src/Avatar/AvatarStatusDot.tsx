@@ -115,10 +115,12 @@ export interface AvatarStatusDotProps extends BaseProps<HTMLDivElement> {
    * Describes the meaning of the indicator for screen readers
    * (e.g. "Online", "Accepted", "John Doe is busy").
    *
-   * Note: inside an Avatar the label is currently not announced — the
-   * Avatar root is `role="img"`, which prunes descendant semantics.
-   * Pass it anyway; composing status into the avatar's accessible name
-   * is a planned Avatar-level fix.
+   * Note: inside an Avatar the dot sits in the avatar's `role="img"`
+   * subtree, where descendant semantics are pruned — the dot is never its
+   * own stop there. Instead, Avatar reads this `label` and composes it into
+   * its own accessible name (e.g. "Jane Doe, Online"), which is how the
+   * status reaches assistive tech (WCAG 4.1.2). Standalone dots (outside an
+   * Avatar) expose `role="img"` with this label directly.
    */
   label?: string;
   /**

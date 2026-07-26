@@ -4,6 +4,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Avatar} from './Avatar';
+import {AvatarStatusDot} from './AvatarStatusDot';
 
 describe('Avatar', () => {
   it('exposes role="img" with the name as accessible name', () => {
@@ -64,6 +65,98 @@ describe('Avatar', () => {
     const img = wrapper.querySelector('img');
     expect(img).not.toBeNull();
     expect(img).toHaveAttribute('src', 'https://example.com/ada.jpg');
+  });
+
+  describe('status in the accessible name (WCAG 4.1.2)', () => {
+    // The avatar root is role="img", which prunes descendant semantics —
+    // a label inside the status subtree is never announced on its own.
+    // Avatar composes the status element's `label` into its own name.
+    it('composes the status label into the accessible name for image avatars', () => {
+      render(
+        <Avatar
+          name="Ada Lovelace"
+          src="https://example.com/ada.jpg"
+          status={<AvatarStatusDot variant="success" label="Online" />}
+        />,
+      );
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, Online'}),
+      ).toBeInTheDocument();
+    });
+
+    it('composes the status label into the accessible name for initials avatars', () => {
+      render(
+        <Avatar
+          name="Ada Lovelace"
+          status={<AvatarStatusDot variant="error" label="Busy" />}
+        />,
+      );
+      const avatar = screen.getByRole('img', {name: 'Ada Lovelace, Busy'});
+      expect(avatar).toBeInTheDocument();
+      expect(avatar).toHaveTextContent('AL');
+    });
+
+    it('composes the status label with alt when alt overrides name', () => {
+      render(
+        <Avatar
+          name="Ada"
+          alt="Ada Lovelace, profile photo"
+          status={<AvatarStatusDot label="Online" />}
+        />,
+      );
+      expect(
+        screen.getByRole('img', {name: 'Ada Lovelace, profile photo, Online'}),
+      ).toBeInTheDocument();
+    });
+
+    it('keeps the plain name when there is no status', () => {
+      render(<Avatar name="Ada Lovelace" data-testid="a" />);
+      expect(screen.getByTestId('a')).toHaveAttribute(
+        'aria-label',
+        'Ada Lovelace',
+      );
+    });
+
+    it('keeps the plain name when the status dot has no label', () => {
+      render(
+        <Avatar
+          name="Ada Lovelace"
+          data-testid="a"
+          status={<AvatarStatusDot variant="success" />}
+        />,
+      );
+      expect(screen.getByTestId('a')).toHaveAttribute(
+        'aria-label',
+        'Ada Lovelace',
+      );
+    });
+
+    it('keeps the plain name for custom status nodes without a label prop', () => {
+      render(<Avatar name="Ada Lovelace" data-testid="a" status={<span />} />);
+      expect(screen.getByTestId('a')).toHaveAttribute(
+        'aria-label',
+        'Ada Lovelace',
+      );
+    });
+
+    it('announces a labelled status even on an otherwise decorative avatar', () => {
+      // A labelled status is meaningful information on its own — the avatar
+      // must not stay aria-hidden and swallow it.
+      render(
+        <Avatar data-testid="a" status={<AvatarStatusDot label="Online" />} />,
+      );
+      const el = screen.getByTestId('a');
+      expect(el).toHaveAttribute('role', 'img');
+      expect(el).toHaveAttribute('aria-label', 'Online');
+      expect(el).not.toHaveAttribute('aria-hidden');
+    });
+
+    it('stays decorative with an unlabelled status and no name', () => {
+      render(<Avatar data-testid="a" status={<AvatarStatusDot />} />);
+      const el = screen.getByTestId('a');
+      expect(el).toHaveAttribute('aria-hidden', 'true');
+      expect(el).not.toHaveAttribute('aria-label');
+    });
   });
 
   it('retries a new fallbackSrc after a previous fallbackSrc failed to load', () => {

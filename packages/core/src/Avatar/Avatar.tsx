@@ -5,7 +5,7 @@
 /**
  * @file Avatar.tsx
  * @input Uses React, HTMLAttributes, ReactNode, useState; useTooltip
- *   (Tooltip hook) for the optional name-on-hover tooltip
+ *   (Tooltip hook) for the optional name-on-hover tooltip; useTranslator (i18n)
  * @output Exports Avatar component, AvatarProps, AvatarSize types
  * @position Core implementation; consumed by index.ts
  *
@@ -18,7 +18,7 @@
  * Last synced props: alt, fallbackSrc, name, size, src, status, href, as, target, rel, onClick
  */
 
-import {useMemo, useState, type ReactNode} from 'react';
+import {isValidElement, useMemo, useState, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -34,6 +34,7 @@ import {themeProps} from '../utils/themeProps';
 import {useTooltip} from '../Tooltip/useTooltip';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import type {LinkComponentType} from '../Link/types';
+import {useTranslator} from '../i18n';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -280,6 +281,11 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
   /**
    * Content displayed in the corner of the avatar.
    * Typically used for status indicators or badges.
+   *
+   * When the element carries a string `label` prop (as `AvatarStatusDot`
+   * does), the label is composed into the avatar's accessible name
+   * (e.g. "Jane Doe, Online") so assistive tech can reach the status —
+   * the `role="img"` root prunes descendant semantics (WCAG 4.1.2).
    */
   status?: ReactNode;
   /**
@@ -344,6 +350,24 @@ function getInitials(name: string): string {
     return words[0].charAt(0).toUpperCase();
   }
   return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+}
+
+/**
+ * Reads the accessible status label off the `status` element, when it
+ * exposes one. `AvatarStatusDot`'s `label` prop is the canonical source,
+ * but any custom status element with a string `label` prop participates.
+ *
+ * The avatar root is `role="img"`, which prunes ALL descendant semantics
+ * from the accessibility tree — a label inside the status subtree is never
+ * announced on its own. Composing it into the avatar's own accessible name
+ * is the only way the status reaches assistive tech (WCAG 4.1.2).
+ */
+function getStatusLabel(status: ReactNode): string | undefined {
+  if (!isValidElement(status)) {
+    return undefined;
+  }
+  const {label} = status.props as {label?: unknown};
+  return typeof label === 'string' && label !== '' ? label : undefined;
 }
 
 /**
@@ -412,10 +436,24 @@ export function Avatar({
   const showInitials = !showImage && !showFallbackImage && name;
   const showIcon = !showImage && !showFallbackImage && !name;
 
-  // A meaningful accessible name comes from `alt` or `name`. With neither, the
-  // avatar is decorative — expose it as `presentation`/`aria-hidden` rather than
-  // announcing a meaningless generic "Avatar" (obs-9).
-  const accessibleName = alt || name;
+  // A meaningful accessible name comes from `alt`/`name`, composed with the
+  // status element's `label` when one is present ("Jane Doe, Online") — the
+  // `role="img"` root prunes descendant semantics, so surfacing the label in
+  // the avatar's own name is the only way assistive tech can reach the
+  // status (WCAG 4.1.2). A labelled status alone is also meaningful. With
+  // neither a name nor a labelled status, the avatar is decorative — expose
+  // it as `presentation`/`aria-hidden` rather than announcing a meaningless
+  // generic "Avatar" (obs-9).
+  const t = useTranslator();
+  const nameLabel = alt || name;
+  const statusLabel = getStatusLabel(status);
+  const accessibleName =
+    nameLabel && statusLabel
+      ? t('@astryx.avatar.nameWithStatus', {
+          name: nameLabel,
+          status: statusLabel,
+        })
+      : nameLabel || statusLabel;
   const isDecorative = !accessibleName;
   const avatarGroup = useAvatarGroup();
   const resolvedSize = avatarGroup?.size ?? size;
