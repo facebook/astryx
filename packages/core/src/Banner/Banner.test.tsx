@@ -12,7 +12,7 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {Banner} from './Banner';
+import {Banner, type BannerStatus} from './Banner';
 import {registerIcons, resetIcons} from '../Icon';
 
 describe('Banner', () => {
@@ -42,6 +42,23 @@ describe('Banner', () => {
 
   it('renders success status with role="status"', () => {
     render(<Banner status="success" title="Success" />);
+    expect(screen.getByRole('status')).toBeInTheDocument();
+  });
+
+  it('falls back to role="status" for a status added by module augmentation (#4276)', () => {
+    // BannerStatus is widened by consumers via BannerStatusMap augmentation.
+    // The augmentation is compile-time only, so at runtime an unrecognised
+    // status string reaches the status→role map exactly like this cast does.
+    // (Declaring the augmentation here instead would retroactively break
+    // core's own exhaustive status maps, which are compiled in this project.)
+    const customStatus = 'neutral' as BannerStatus;
+    const {container} = render(
+      <Banner status={customStatus} title="Ambient status" />,
+    );
+
+    // The role must not silently disappear — that is a screen-reader
+    // regression a consumer cannot see and TypeScript cannot catch.
+    expect(container.firstElementChild).toHaveAttribute('role');
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 

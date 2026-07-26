@@ -32,7 +32,8 @@ export const docs = {
     {
       name: 'status',
       type: "'info' | 'warning' | 'error' | 'success'",
-      description: 'Status type controlling icon and color.',
+      description:
+        'Status type controlling icon and color. Extensible by augmenting the BannerStatusMap interface; a status added that way falls back to the info icon and role="status", so style it via the banner theme target.',
       required: true,
     },
     {
@@ -156,7 +157,7 @@ export const docsZh = {
     ],
   },
   props: [
-    {name: 'status', type: "'info' | 'warning' | 'error' | 'success'", description: '状态类型，控制图标和颜色。', required: true},
+    {name: 'status', type: "'info' | 'warning' | 'error' | 'success'", description: '状态类型，控制图标和颜色。可通过扩展 BannerStatusMap 接口新增状态；新增的状态会回退到 info 图标和 role="status"。', required: true},
     {name: 'title', type: 'ReactNode', description: '显示在头部的标题文本或 ReactNode。', required: true},
     {name: 'description', type: 'ReactNode', description: '渲染在头部标题下方的描述文本。'},
     {name: 'icon', type: 'ReactNode', description: '覆盖默认的状态图标。'},

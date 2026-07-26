@@ -16,6 +16,10 @@
  * - Each visual area owns its own border-radius (no overflow:clip on the container)
  * - When children are provided, a collapse/expand toggle button appears in the end area
  *
+ * `BannerStatus` is open (consumers widen it via `BannerStatusMap` module
+ * augmentation), so the status→icon and status→role tables are `Partial` and
+ * every read of them falls back — see FALLBACK_ICON / FALLBACK_ROLE.
+ *
  * Title and description render as <div> (not <p>): they accept arbitrary
  * ReactNode content, and <p> cannot legally contain block-level children
  * (the HTML parser reparents them, desyncing SSR markup from the hydrated
@@ -184,7 +188,16 @@ export interface BannerProps extends BaseProps<HTMLDivElement> {
 // Status → Icon mapping
 // =============================================================================
 
-const defaultIconNames: Record<BannerStatus, IconName> = {
+// `BannerStatus` is an open type — consumers widen it by augmenting
+// `BannerStatusMap`. These lookup tables therefore cover the built-in statuses
+// only, and every read of them must supply a fallback for an augmented status
+// (see FALLBACK_ICON / FALLBACK_ROLE below). They are typed `Partial<...>` so
+// the compiler enforces that, rather than promising a hit that isn't there.
+
+/** Icon used when a status has no entry in {@link defaultIconNames}. */
+const FALLBACK_ICON: IconName = 'info';
+
+const defaultIconNames: Partial<Record<BannerStatus, IconName>> = {
   info: 'info',
   warning: 'warning',
   error: 'error',
@@ -195,7 +208,17 @@ const defaultIconNames: Record<BannerStatus, IconName> = {
 // Status → ARIA role mapping
 // =============================================================================
 
-const statusRole: Record<BannerStatus, 'alert' | 'status'> = {
+/**
+ * Role used when a status has no entry in {@link statusRole}.
+ *
+ * `status` (a polite live region) rather than `alert`: an augmented status is
+ * not known to be urgent, and announcing it politely is the safe default.
+ * Dropping the role entirely is not — it silently removes the banner from the
+ * accessibility tree's live regions.
+ */
+const FALLBACK_ROLE = 'status' as const;
+
+const statusRole: Partial<Record<BannerStatus, 'alert' | 'status'>> = {
   info: 'status',
   warning: 'alert',
   error: 'alert',
@@ -369,6 +392,9 @@ const elevationStyles = stylex.create({
  * up state management for basic dismiss behavior.
  *
  * Uses `role="alert"` for error/warning and `role="status"` for info/success.
+ * A status added by augmenting `BannerStatusMap` has no entry in those maps, so
+ * it falls back to `role="status"` and the `info` icon — a banner never renders
+ * without a live-region role.
  *
  * @example
  * ```
@@ -424,8 +450,12 @@ export function Banner({
   // (disclosure pattern). The region is conditionally rendered, so aria-controls
   // below is set only while it's mounted to avoid a dangling reference.
   const contentId = useId();
-  const defaultIconName = defaultIconNames[status];
-  const role = statusRole[status];
+  // Fall back for statuses added via BannerStatusMap augmentation: without
+  // this the role vanishes (a silent a11y regression) and Icon throws on an
+  // undefined name. `iconColor` needs no fallback — `color` is optional and
+  // Icon supplies its own default.
+  const defaultIconName = defaultIconNames[status] ?? FALLBACK_ICON;
+  const role = statusRole[status] ?? FALLBACK_ROLE;
   const iconColor = statusIconColor[status];
   const hasChildren = children != null;
 
