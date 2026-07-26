@@ -1,6 +1,6 @@
 {
   "name": "@astryxdesign/richtext",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "private": true,
   "description": "Astryx rich text — a Lexical-based rich text editor and viewer. Published to npm only under the @canary dist-tag for early testing; never released as a stable (latest) version.",
   "author": "Meta Open Source",
@@ -55,7 +55,7 @@
   },
   "peerDependencies": {
     "@stylexjs/stylex": ">=0.10.0",
-    "@astryxdesign/core": "0.1.8",
+    "@astryxdesign/core": "0.1.9",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0"
   }
