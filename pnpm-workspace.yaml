@@ -20,6 +20,7 @@ linkWorkspacePackages: true
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   - '@astryxdesign/*'
+  - js-yaml@5.2.2
 
 # Single source of truth for the workspace's vite version: every consumer
 # (root test config, packages/build) declares "vite": "catalog:", so a bump
@@ -52,8 +53,8 @@ overrides:
   # is @manypkg/get-packages, and 2.x keeps the same CJS surface (default export
   # + .sync). The floor below then holds that chain on the patched 4.x line.
   read-yaml-file: ^2.1.0
-  read-yaml-file>js-yaml: ^4.2.0
-  '@changesets/parse>js-yaml': '>=4.2.0'
+  read-yaml-file>js-yaml: ^5.2.2
+  '@changesets/parse>js-yaml': '>=5.2.2'
   fast-uri: ^3.1.4
   brace-expansion: ^2.1.2
   # next pulls sharp as an optional dependency for image optimization and still
