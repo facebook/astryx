@@ -235,6 +235,10 @@
     "defaultMessage": "Mobile navigation",
     "description": "Screen-reader-only accessible name for the mobile-only navigation region on small viewports. \"Mobile\" = phone/tablet (small screen), not \"movable\"."
   },
+  "@astryx.appShell.skipToContent": {
+    "defaultMessage": "Skip to content",
+    "description": "Text of the skip link — the first focusable element on the page, visible only while keyboard-focused. Activating it jumps focus past the navigation to the main content area. Imperative verb; keep short."
+  },
   "@astryx.avatar.nameWithStatus": {
     "defaultMessage": "{name}, {status}",
     "description": "Screen-reader accessible name for an Avatar showing a status indicator; composes the person's name with the status label, e.g. \"Jane Doe, Online\". {name} = the avatar's name/alt text, {status} = the status dot's label. Adjust separator and order per locale."
