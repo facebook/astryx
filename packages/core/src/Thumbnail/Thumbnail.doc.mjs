@@ -149,7 +149,7 @@ export const docsDense = {
     onClick: '(e) => void. Adds button semantics + hover overlay.',
     isLoading: 'Skeleton (no src) or upload overlay (with src). Default: false.',
     isDisabled: 'Disabled state. Default: false.',
-    showRemoveOn: "When remove button shows: hover (default — reveal on hover/focus, stays visible on touch) | always. Only when onRemove set.",
+    showRemoveOn: "When remove button shows: hover (default: reveal on hover/focus, stays visible on touch) | always. Only when onRemove set.",
     xstyle: 'stylex.create() for layout.',
     className: 'CSS class. Prefer xstyle.',
     style: 'Inline styles. Prefer xstyle.',

@@ -21,7 +21,7 @@ export const docs = {
       name: 'label',
       type: 'string',
       description:
-        'Accessible label describing the status. Not announced inside an Avatar today (the Avatar root is role="img", which prunes child semantics) — pass it anyway; an Avatar-level name-composition fix is planned.',
+        'Accessible label describing the status. Not announced inside an Avatar today (the Avatar root is role="img", which prunes child semantics), but pass it anyway; an Avatar-level name-composition fix is planned.',
     },
     {
       name: 'icon',
@@ -80,7 +80,7 @@ export const docsDense = {
     variant:
       'colour + shape variant: success filled, neutral ring, error minus',
     label:
-      'accessible status label (not yet announced inside Avatar — role="img" prunes children)',
-    icon: 'icon centered in dot (hidden at tiny sizes); replaces the built-in shape glyph — differ it per status',
+      'accessible status label (not yet announced inside Avatar; role="img" prunes children)',
+    icon: 'icon centered in dot (hidden at tiny sizes); replaces the built-in shape glyph, so differ it per status',
   },
 };

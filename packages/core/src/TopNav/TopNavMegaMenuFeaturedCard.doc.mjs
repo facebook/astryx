@@ -27,7 +27,7 @@ export const docs = {
     {
       name: 'imageAlt',
       type: 'string',
-      description: 'Alt text for the image. When omitted, the image is explicitly decorative (alt="", role="presentation", aria-hidden) — usually correct since the card already has a visible title. Provide it only when the image conveys information beyond the title and description.',
+      description: 'Alt text for the image. When omitted, the image is explicitly decorative (alt="", role="presentation", aria-hidden), usually correct since the card already has a visible title. Provide it only when the image conveys information beyond the title and description.',
     },
     {
       name: 'linkLabel',
