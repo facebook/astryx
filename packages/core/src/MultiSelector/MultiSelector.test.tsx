@@ -15,6 +15,15 @@ import userEvent from '@testing-library/user-event';
 import {MultiSelector} from './MultiSelector';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 
+// The useAnnounce singleton live regions duplicate user-visible strings like
+// 'No results found' at document.body level, racing text queries (the same
+// class of flake fixed for Calendar month labels). Query the visible copy only.
+function visibleNoResults() {
+  return screen
+    .queryAllByText('No results found')
+    .filter(el => el.closest('[data-astryx-live-region]') === null);
+}
+
 // Module-level constants to satisfy @eslint-react/no-unstable-default-props.
 const ANNOUNCE_OPTIONS = ['Apple', 'Banana', 'Orange'] as const;
 const EMPTY_VALUE: string[] = [];
@@ -634,7 +643,7 @@ describe('MultiSelector', () => {
     const searchInput = screen.getByRole('combobox', h);
     await user.type(searchInput, 'xyz');
 
-    expect(screen.getByText('No results found')).toBeInTheDocument();
+    expect(visibleNoResults()).toHaveLength(1);
   });
 
   describe('result announcements', () => {

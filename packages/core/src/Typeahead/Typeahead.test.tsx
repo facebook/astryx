@@ -24,6 +24,15 @@ import {Typeahead} from './Typeahead';
 import {BaseTypeahead} from './BaseTypeahead';
 import type {SearchSource, SearchableItem} from './types';
 
+// The useAnnounce singleton live regions duplicate user-visible strings like
+// 'No results found' at document.body level, racing text queries (the same
+// class of flake fixed for Calendar month labels). Query the visible copy only.
+function visibleNoResults() {
+  return screen
+    .queryAllByText('No results found')
+    .filter(el => el.closest('[data-astryx-live-region]') === null);
+}
+
 // Store original matches to restore later
 const originalMatches = HTMLElement.prototype.matches;
 
@@ -604,7 +613,7 @@ describe('BaseTypeahead hasSearched reset', () => {
     fireEvent.focus(input);
 
     // The empty state text should not be visible since hasSearched was reset
-    expect(screen.queryByText('No results found')).not.toBeInTheDocument();
+    expect(visibleNoResults()).toHaveLength(0);
   });
 
   it('resets hasSearched when query is cleared without hasEntriesOnFocus', async () => {
@@ -621,14 +630,14 @@ describe('BaseTypeahead hasSearched reset', () => {
     // Type a query that returns no results
     fireEvent.change(input, {target: {value: 'xyz'}});
     await waitFor(() => {
-      expect(screen.getByText('No results found')).toBeInTheDocument();
+      expect(visibleNoResults()).toHaveLength(1);
     });
 
     // Clear the query
     fireEvent.change(input, {target: {value: ''}});
 
     // "No results found" should disappear since hasSearched is reset
-    expect(screen.queryByText('No results found')).not.toBeInTheDocument();
+    expect(visibleNoResults()).toHaveLength(0);
   });
 });
 
@@ -747,7 +756,7 @@ describe('BaseTypeahead paste behavior', () => {
     await user.paste('xyz');
 
     await waitFor(() => {
-      expect(screen.getByText('No results found')).toBeInTheDocument();
+      expect(visibleNoResults()).toHaveLength(1);
     });
   });
 
