@@ -392,6 +392,7 @@ export function Slider({ref, ...props}: SliderProps) {
   const isHorizontal = orientation === 'horizontal';
 
   const id = useId();
+  const labelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
   const requiredID = useId();
@@ -693,11 +694,25 @@ export function Slider({ref, ...props}: SliderProps) {
       ? {left: `${percent}%`}
       : {bottom: `${percent}%`, left: '50%'};
 
+    // In range mode each thumb keeps a short individual name that composes
+    // with the group label (announced via the group's aria-labelledby), per
+    // the APG multi-thumb slider pattern. In single mode the thumb takes its
+    // name from the visible label element via aria-labelledby.
     const thumbLabel = isRange
       ? thumbIndex === 0
-        ? `${label}, minimum value`
-        : `${label}, maximum value`
-      : label;
+        ? 'Minimum value'
+        : 'Maximum value'
+      : undefined;
+
+    // ARIA bounds must agree with the movement clamping in updateValue: in
+    // range mode a thumb can't cross its sibling (minus the
+    // minStepsBetweenThumbs gap), and the result is always clamped to
+    // [min, max].
+    const minGap = minStepsBetweenThumbs * step;
+    const ariaValueMin =
+      isRange && thumbIndex === 1 ? clamp(values[0] + minGap, min, max) : min;
+    const ariaValueMax =
+      isRange && thumbIndex === 0 ? clamp(values[1] - minGap, min, max) : max;
 
     // Suppress the per-thumb value bubble while the disabled-message tooltip is
     // showing, so a disabled slider surfaces the *reason* on hover/focus rather
@@ -714,14 +729,15 @@ export function Slider({ref, ...props}: SliderProps) {
         // focus-discoverable; value changes stay blocked by the isDisabled
         // guards in the pointer/keyboard handlers.
         tabIndex={isDisabled && !showsDisabledMessage ? -1 : 0}
-        aria-valuemin={min}
-        aria-valuemax={max}
+        aria-valuemin={ariaValueMin}
+        aria-valuemax={ariaValueMax}
         aria-valuenow={val}
         aria-valuetext={formatValue ? formatValue(val) : undefined}
         aria-orientation={orientation}
         aria-disabled={isDisabled || undefined}
         aria-invalid={status?.type === 'error' ? true : undefined}
         aria-label={thumbLabel}
+        aria-labelledby={!isRange ? labelID : undefined}
         aria-describedby={ariaDescribedBy}
         onKeyDown={e => handleKeyDown(thumbIndex, e)}
         {...mergeProps(
@@ -794,6 +810,14 @@ export function Slider({ref, ...props}: SliderProps) {
       isLabelHidden={isLabelHidden}
       description={description}
       inputID={id}
+      labelID={labelID}
+      // The thumb is a div[role="slider"], which a <label htmlFor> can't
+      // name (only form-associated elements are labelable). Render the label
+      // as a group label and associate it via aria-labelledby instead: the
+      // single thumb references it directly, and in range mode the
+      // role="group" container references it while each thumb keeps its own
+      // "Minimum value"/"Maximum value" name.
+      isGroupLabel
       descriptionID={description ? descriptionID : undefined}
       isOptional={isOptional}
       isRequired={isRequired}
@@ -836,7 +860,9 @@ export function Slider({ref, ...props}: SliderProps) {
           ))}
         <div
           ref={mergeRefs(ref, trackRef, disabledMessageTooltip.ref)}
-          {...(isRange ? {role: 'group', 'aria-label': label} : undefined)}
+          {...(isRange
+            ? {role: 'group', 'aria-labelledby': labelID}
+            : undefined)}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}

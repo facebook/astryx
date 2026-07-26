@@ -9,6 +9,7 @@
  * SYNC: When Slider.tsx changes, update tests to match new behavior
  */
 
+import {useState} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {render, screen, act, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -50,23 +51,17 @@ beforeEach(() => {
 describe('Slider', () => {
   // --- Aria labels ---
 
-  it('single thumb uses label as aria-label', () => {
+  it('single thumb takes its accessible name from the label', () => {
     render(<Slider label="Volume" value={50} />);
     const slider = screen.getByRole('slider');
-    expect(slider).toHaveAttribute('aria-label', 'Volume');
+    expect(slider).toHaveAccessibleName('Volume');
   });
 
-  it('range thumbs have correct aria-labels', () => {
+  it('range thumbs have individual names composing with the group label', () => {
     render(<Slider label="Price range" value={[20, 80] as [number, number]} />);
     const sliders = screen.getAllByRole('slider');
-    expect(sliders[0]).toHaveAttribute(
-      'aria-label',
-      'Price range, minimum value',
-    );
-    expect(sliders[1]).toHaveAttribute(
-      'aria-label',
-      'Price range, maximum value',
-    );
+    expect(sliders[0]).toHaveAccessibleName('Minimum value');
+    expect(sliders[1]).toHaveAccessibleName('Maximum value');
   });
 
   it('sets aria-valuetext with formatValue', () => {
@@ -97,6 +92,102 @@ describe('Slider', () => {
     const sliders = screen.getAllByRole('slider');
     expect(sliders[0]).toHaveAttribute('aria-valuenow', '25');
     expect(sliders[1]).toHaveAttribute('aria-valuenow', '75');
+    // Per the APG multi-thumb pattern, each thumb's bounds are constrained by
+    // its sibling: the lower thumb can't exceed the upper thumb's value and
+    // the upper thumb can't go below the lower thumb's value.
+    expect(sliders[0]).toHaveAttribute('aria-valuemin', '0');
+    expect(sliders[0]).toHaveAttribute('aria-valuemax', '75');
+    expect(sliders[1]).toHaveAttribute('aria-valuemin', '25');
+    expect(sliders[1]).toHaveAttribute('aria-valuemax', '100');
+  });
+
+  it('range thumb bounds update after moving a thumb', async () => {
+    const user = userEvent.setup();
+    function ControlledRange() {
+      const [value, setValue] = useState<[number, number]>([25, 75]);
+      return (
+        <Slider
+          label="Range"
+          value={value}
+          onChange={setValue}
+          min={0}
+          max={100}
+        />
+      );
+    }
+    render(<ControlledRange />);
+    const sliders = screen.getAllByRole('slider');
+    act(() => {
+      sliders[0].focus();
+    });
+    await user.keyboard('{ArrowRight}');
+    expect(sliders[0]).toHaveAttribute('aria-valuenow', '26');
+    // The upper thumb's floor tracks the lower thumb's new value.
+    expect(sliders[1]).toHaveAttribute('aria-valuemin', '26');
+    expect(sliders[0]).toHaveAttribute('aria-valuemax', '75');
+  });
+
+  it('range thumb bounds include the minStepsBetweenThumbs gap', () => {
+    render(
+      <Slider
+        label="Range"
+        value={[20, 80] as [number, number]}
+        min={0}
+        max={100}
+        step={5}
+        minStepsBetweenThumbs={2}
+      />,
+    );
+    const sliders = screen.getAllByRole('slider');
+    // minGap = 2 steps * 5 = 10
+    expect(sliders[0]).toHaveAttribute('aria-valuemax', '70');
+    expect(sliders[1]).toHaveAttribute('aria-valuemin', '30');
+  });
+
+  // --- Label association ---
+
+  // A <label htmlFor> must point at an existing form-associated element;
+  // div[role="slider"] is not labelable, so the Slider label must render as a
+  // group label instead (WCAG 1.3.1).
+  const LABELABLE_TAGS = new Set([
+    'BUTTON',
+    'INPUT',
+    'METER',
+    'OUTPUT',
+    'PROGRESS',
+    'SELECT',
+    'TEXTAREA',
+  ]);
+
+  function expectNoOrphanedLabels(container: HTMLElement) {
+    for (const labelEl of container.querySelectorAll('label[for]')) {
+      const target = document.getElementById(labelEl.getAttribute('for')!);
+      expect(target).not.toBeNull();
+      expect(LABELABLE_TAGS.has(target!.tagName)).toBe(true);
+    }
+  }
+
+  it('single mode renders the label as a group label naming the thumb', () => {
+    const {container} = render(<Slider label="Volume" value={50} />);
+    expectNoOrphanedLabels(container);
+    const slider = screen.getByRole('slider');
+    const labelledBy = slider.getAttribute('aria-labelledby');
+    expect(labelledBy).toBeTruthy();
+    expect(document.getElementById(labelledBy!)).toHaveTextContent('Volume');
+    expect(slider).toHaveAccessibleName('Volume');
+  });
+
+  it('range mode labels the slider group via aria-labelledby', () => {
+    const {container} = render(
+      <Slider label="Price range" value={[20, 80] as [number, number]} />,
+    );
+    expectNoOrphanedLabels(container);
+    const group = screen.getByRole('group', {name: 'Price range'});
+    const labelledBy = group.getAttribute('aria-labelledby');
+    expect(labelledBy).toBeTruthy();
+    expect(document.getElementById(labelledBy!)).toHaveTextContent(
+      'Price range',
+    );
   });
 
   it('sets aria-orientation for vertical', () => {
