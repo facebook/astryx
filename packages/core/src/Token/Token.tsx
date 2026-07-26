@@ -313,7 +313,9 @@ const colorStyles = stylex.create({
  * `<span>` container with an invisible `<button>` when `onClick` is provided.
  * The invisible button pattern provides real button semantics for accessibility
  * while the container uses `:focus-within` to show focus outlines around the
- * entire token.
+ * entire token. When both `href` and `onRemove` are provided, the same
+ * container pattern is used with an invisible `<a>` so the remove `<button>`
+ * renders as a sibling of the link rather than nested inside it.
  *
  * @example
  * ```
@@ -350,6 +352,20 @@ export function Token({
   // if onClick was provided — the popover attaches its own handler.
   const effectiveOnClick = onClick ?? (role === 'button' ? () => {} : null);
 
+  const removeButton = onRemove != null && (
+    <button
+      type="button"
+      aria-label={t('@astryx.token.remove', {label})}
+      onClick={e => {
+        e.stopPropagation();
+        onRemove(e);
+      }}
+      disabled={isDisabled}
+      {...stylex.props(styles.removeButton)}>
+      <Icon icon="close" size="xsm" color="inherit" />
+    </button>
+  );
+
   const content = (
     <>
       {icon}
@@ -358,19 +374,7 @@ export function Token({
         {label}
       </span>
       {endContent}
-      {onRemove != null && (
-        <button
-          type="button"
-          aria-label={t('@astryx.token.remove', {label})}
-          onClick={e => {
-            e.stopPropagation();
-            onRemove(e);
-          }}
-          disabled={isDisabled}
-          {...stylex.props(styles.removeButton)}>
-          <Icon icon="close" size="xsm" color="inherit" />
-        </button>
-      )}
+      {removeButton}
     </>
   );
 
@@ -381,11 +385,47 @@ export function Token({
   };
 
   if (role === 'link') {
+    if (onRemove == null) {
+      return (
+        <LinkComponent
+          ref={ref as React.Ref<HTMLAnchorElement>}
+          href={href as string}
+          aria-disabled={isDisabled || undefined}
+          {...sharedProps}
+          {...mergeProps(
+            themeProps('token', {color, size}),
+            stylex.props(
+              styles.base,
+              sizeStyles[size],
+              colorStyles[color],
+              styles.interactive,
+              isDisabled && styles.disabled,
+              xstyle,
+            ),
+            className,
+            style,
+          )}>
+          {content}
+        </LinkComponent>
+      );
+    }
+
+    // With a remove button, the link cannot be the root — nesting a <button>
+    // inside an <a> is invalid HTML (WCAG 4.1.2). Mirror the onClick branch:
+    // a <span> container with an invisible link and the remove button as
+    // siblings. Container clicks outside the link delegate to it.
+    const handleContainerClick = (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('button, a')) {
+        return;
+      }
+      e.currentTarget.querySelector('a')?.click();
+    };
+
     return (
-      <LinkComponent
-        ref={ref as React.Ref<HTMLAnchorElement>}
-        href={href as string}
-        aria-disabled={isDisabled || undefined}
+      <span
+        ref={ref}
+        onClick={isDisabled ? undefined : handleContainerClick}
         {...sharedProps}
         {...mergeProps(
           themeProps('token', {color, size}),
@@ -394,14 +434,29 @@ export function Token({
             sizeStyles[size],
             colorStyles[color],
             styles.interactive,
+            styles.focusVisibleOutline,
             isDisabled && styles.disabled,
             xstyle,
           ),
           className,
           style,
         )}>
-        {content}
-      </LinkComponent>
+        {icon}
+        <LinkComponent
+          href={href as string}
+          aria-disabled={isDisabled || undefined}
+          {...stylex.props(styles.invisibleButton)}>
+          <span
+            {...stylex.props(
+              styles.label,
+              isLabelHidden && styles.labelHidden,
+            )}>
+            {label}
+          </span>
+        </LinkComponent>
+        {endContent}
+        {removeButton}
+      </span>
     );
   }
 
@@ -448,19 +503,7 @@ export function Token({
           </span>
         </button>
         {endContent}
-        {onRemove != null && (
-          <button
-            type="button"
-            aria-label={t('@astryx.token.remove', {label})}
-            onClick={e => {
-              e.stopPropagation();
-              onRemove(e);
-            }}
-            disabled={isDisabled}
-            {...stylex.props(styles.removeButton)}>
-            <Icon icon="close" size="xsm" color="inherit" />
-          </button>
-        )}
+        {removeButton}
       </span>
     );
   }
