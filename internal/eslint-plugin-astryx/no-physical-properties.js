@@ -21,10 +21,13 @@
  *   that would break CI if this were an `error`. Ship at warn until RTL Phase 4
  *   (Calendar/Slider/Table) migration lands; flip to error afterward.
  *
- * NOTE: this rule intentionally does NOT provide an autofixer. A key rename can
- *   silently collide with an already-present logical key in the same object
- *   (producing a duplicate property), so replacements are surfaced as messages
- *   for a human/agent to apply deliberately.
+ * AUTOFIX: this rule is fixable (`meta.fixable: 'code'`).
+ *   - VALUE-BASED fixes are always safe: only the value literal is replaced.
+ *   - KEY-BASED fixes rename the key token, but ONLY when the logical key is not
+ *     already present in the same style object. If BOTH the physical and logical
+ *     key are present, renaming would produce a duplicate property (and the two
+ *     silently collide — last one wins in LTR), so instead of autofixing we
+ *     surface a distinct `physicalKeyConflict` message for a human to resolve.
  */
 
 /**
@@ -102,9 +105,26 @@ function getStaticValue(node) {
   return null;
 }
 
+/**
+ * Does the given ObjectExpression already contain a Property whose key is
+ * `keyName`? Handles both identifier keys (`marginLeft`) and string-literal
+ * keys (`'marginLeft'`).
+ */
+function objectHasKey(objectExpression, keyName) {
+  if (!objectExpression || objectExpression.type !== 'ObjectExpression') {
+    return false;
+  }
+  return objectExpression.properties.some((prop) => {
+    if (prop.type !== 'Property') return false;
+    const name = prop.key?.name ?? prop.key?.value;
+    return name === keyName;
+  });
+}
+
 const rule = {
   meta: {
     type: 'problem',
+    fixable: 'code',
     docs: {
       description:
         'Disallow physical left/right CSS properties and values inside ' +
@@ -119,6 +139,9 @@ const rule = {
       physicalValue:
         'Use `{{prop}}: \'{{logical}}\'` instead of ' +
         '`{{prop}}: \'{{physical}}\'` for RTL support.',
+      physicalKeyConflict:
+        '`{{physical}}` conflicts with `{{logical}}` already set on this ' +
+        'style object — remove `{{physical}}`.',
     },
     schema: [],
   },
@@ -133,12 +156,39 @@ const rule = {
         // KEY-BASED: the object key is itself a physical property.
         const logicalKey = PHYSICAL_KEY_MAP[propName];
         if (logicalKey) {
+          // Guard: if the logical key is ALSO present in the same object,
+          // renaming would create a duplicate/silent collision. Ambiguous
+          // which value the author meant — surface a distinct message, no fix.
+          if (objectHasKey(node.parent, logicalKey)) {
+            context.report({
+              node: node.key,
+              messageId: 'physicalKeyConflict',
+              data: {
+                physical: propName,
+                logical: logicalKey,
+              },
+            });
+            return;
+          }
+
+          // Preserve the original key's quoting: a string-literal key is
+          // replaced with a quoted string; an identifier key stays unquoted.
+          // All logical names are valid identifiers.
+          const isStringLiteralKey =
+            node.key.type === 'Literal' && typeof node.key.value === 'string';
+          const newKeyText = isStringLiteralKey
+            ? `'${logicalKey}'`
+            : logicalKey;
+
           context.report({
             node: node.key,
             messageId: 'physicalKey',
             data: {
               physical: propName,
               logical: logicalKey,
+            },
+            fix(fixer) {
+              return fixer.replaceText(node.key, newKeyText);
             },
           });
           return;
@@ -149,13 +199,17 @@ const rule = {
         if (valueMap) {
           const value = getStaticValue(node.value);
           if (value !== null && valueMap[value]) {
+            const logicalValue = valueMap[value];
             context.report({
               node: node.value,
               messageId: 'physicalValue',
               data: {
                 prop: propName,
                 physical: value,
-                logical: valueMap[value],
+                logical: logicalValue,
+              },
+              fix(fixer) {
+                return fixer.replaceText(node.value, `'${logicalValue}'`);
               },
             });
           }
