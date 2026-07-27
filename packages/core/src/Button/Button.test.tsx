@@ -14,6 +14,8 @@ import {render, screen, fireEvent, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Button} from './Button';
 import {Badge} from '../Badge/Badge';
+import {readFileSync} from 'node:fs';
+import {join} from 'node:path';
 
 describe('Button', () => {
   it('renders label as visible text', () => {
@@ -494,4 +496,30 @@ describe('Button', () => {
     const link = screen.getByRole('link');
     expect(link).not.toHaveAttribute('aria-busy');
   });
+});
+
+describe('Button documented theming vars', () => {
+  const source = readFileSync(join(__dirname, 'Button.tsx'), 'utf8');
+  const docSource = readFileSync(join(__dirname, 'Button.doc.mjs'), 'utf8');
+
+  // Public (non-private) theming vars documented in Button.doc.mjs must appear
+  // in the source, or the documented theming contract is a no-op (#4423).
+  const publicVars = [
+    ...new Set(
+      [...docSource.matchAll(/{name: '(--[a-z-]+)'[^}]*}/g)]
+        .filter(m => !/private:\s*true/.test(m[0]))
+        .map(m => m[1]),
+    ),
+  ];
+
+  it('documents at least the two previously-drifting vars', () => {
+    expect(publicVars).toContain('--button-disabled-opacity');
+    expect(publicVars).toContain('--button-press-scale');
+  });
+
+  for (const name of publicVars) {
+    it(`consumes documented var ${name} in the component source`, () => {
+      expect(source).toContain(name);
+    });
+  }
 });
