@@ -1,10 +1,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
-import {RichTextEditor, RichTextView} from '@astryxdesign/lab';
+import {
+  RichTextEditor,
+  RichTextView,
+  type RichTextEditorRef,
+} from '@astryxdesign/lab';
 import type {EditorState} from 'lexical';
 import {BOLD_STAR, ITALIC_STAR, UNORDERED_LIST} from '@lexical/markdown';
+import {$getRoot} from 'lexical';
 
 const meta: Meta<typeof RichTextEditor> = {
   title: 'Lab/RichTextEditor',
@@ -135,6 +140,60 @@ export const ControlledPersistence = {
           </div>
           <RichTextView value={json} />
         </div>
+      </div>
+    );
+  },
+};
+
+export const ImperativeRef = {
+  render: () => {
+    const ref = useRef<RichTextEditorRef>(null);
+    const [readout, setReadout] = useState<string>('(nothing read yet)');
+    return (
+      <div style={{display: 'grid', gap: 16, maxWidth: 560}}>
+        <RichTextEditor
+          ref={ref}
+          label="Editor with imperative ref"
+          defaultValue={SEED}
+          placeholder="Type here, then use the buttons below…"
+        />
+        <div style={{display: 'flex', gap: 8, flexWrap: 'wrap'}}>
+          <button type="button" onClick={() => ref.current?.focus()}>
+            focus()
+          </button>
+          <button type="button" onClick={() => ref.current?.clear()}>
+            clear()
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const state = ref.current?.getEditorState();
+              const text = state?.read(() => $getRoot().getTextContent());
+              setReadout(`getEditorState() text content: ${JSON.stringify(text)}`);
+            }}>
+            getEditorState()
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const editor = ref.current?.getEditor();
+              setReadout(
+                `getEditor() -> ${editor ? 'LexicalEditor instance ✓' : 'null'}`,
+              );
+            }}>
+            getEditor()
+          </button>
+        </div>
+        <pre
+          style={{
+            background: '#f5f5f5',
+            padding: 12,
+            borderRadius: 6,
+            fontSize: 13,
+            whiteSpace: 'pre-wrap',
+          }}>
+          {readout}
+        </pre>
       </div>
     );
   },
