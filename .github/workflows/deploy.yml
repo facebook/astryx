@@ -78,6 +78,12 @@ jobs:
       - name: Typecheck component docs
         run: pnpm -F @astryxdesign/core typecheck:docs
 
+      - name: Typecheck lab docs
+        run: pnpm -F @astryxdesign/lab typecheck:docs
+
+      - name: Typecheck charts docs
+        run: pnpm -F @astryxdesign/charts typecheck:docs
+
       - name: Typecheck template docs
         run: pnpm -F @astryxdesign/cli typecheck:template-docs
 

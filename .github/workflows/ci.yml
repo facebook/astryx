@@ -186,6 +186,14 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: pnpm -F @astryxdesign/core typecheck:docs
 
+      - name: Typecheck lab docs
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm -F @astryxdesign/lab typecheck:docs
+
+      - name: Typecheck charts docs
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm -F @astryxdesign/charts typecheck:docs
+
       - name: Typecheck template docs
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: pnpm -F @astryxdesign/cli typecheck:template-docs
