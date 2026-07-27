@@ -145,6 +145,7 @@ export const docs = {
       {className: 'astryx-command-palette-empty'},
       {className: 'astryx-command-palette-footer'},
       {className: 'astryx-command-palette-group'},
+      {className: 'astryx-command-palette-group-heading'},
       {className: 'astryx-command-palette-input'},
       {className: 'astryx-command-palette-item'},
       {className: 'astryx-command-palette-list'},
