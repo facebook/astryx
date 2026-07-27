@@ -145,6 +145,11 @@ export const docs = {
           'Register custom node types via the nodes prop on BOTH the editor and the RichTextView so serialized content round-trips.',
       },
       {
+        guidance: true,
+        description:
+          'Use a ref (RichTextEditorRef) to imperatively focus(), clear(), read the state via getEditorState(), or reach the LexicalEditor via getEditor(). The handle is available after mount.',
+      },
+      {
         guidance: false,
         description:
           'Use for single-line input or plain text; use TextInput or TextArea for those.',

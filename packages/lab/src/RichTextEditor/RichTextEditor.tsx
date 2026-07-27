@@ -24,7 +24,16 @@
  * dependencies — install them to use this component.
  */
 
-import {useEffect, useId, useMemo, useRef, type ReactNode} from 'react';
+import {
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  forwardRef,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -65,6 +74,7 @@ import {ListNode, ListItemNode} from '@lexical/list';
 import {HeadingNode, QuoteNode} from '@lexical/rich-text';
 import {LinkNode, AutoLinkNode} from '@lexical/link';
 import {CodeNode, CodeHighlightNode} from '@lexical/code';
+import {$getRoot} from 'lexical';
 import type {
   EditorState,
   Klass,
@@ -145,6 +155,24 @@ export interface RichTextEditorStatus {
   type: RichTextEditorStatusType;
   /** Optional message to display below the editor. */
   message?: string;
+}
+
+/**
+ * Imperative handle exposed via `ref`. Lets callers focus, clear, and read the
+ * editor without wiring a custom plugin. Available after mount.
+ */
+export interface RichTextEditorRef {
+  /** Move focus into the editor's editable surface. */
+  focus: () => void;
+  /** Remove all content, resetting the editor to a single empty paragraph. */
+  clear: () => void;
+  /** Read the current `EditorState`. Serialize with `.toJSON()` to persist. */
+  getEditorState: () => EditorState;
+  /**
+   * Access the underlying `LexicalEditor` instance for advanced use cases
+   * (custom commands, listeners, node transforms).
+   */
+  getEditor: () => LexicalEditor;
 }
 
 export interface RichTextEditorProps extends Omit<
@@ -269,40 +297,50 @@ export interface RichTextEditorProps extends Omit<
  *
  * @example
  * ```
- * import {RichTextEditor} from '@astryxdesign/lab';
+ * import {RichTextEditor, type RichTextEditorRef} from '@astryxdesign/lab';
+ *
+ * const ref = useRef<RichTextEditorRef>(null);
  * <RichTextEditor
+ *   ref={ref}
  *   label="Notes"
  *   placeholder="Write something..."
  *   onChange={state => save(JSON.stringify(state.toJSON()))}
  * />
+ * // Later: ref.current?.focus(); ref.current?.clear();
  * ```
  */
-export function RichTextEditor({
-  label,
-  isLabelHidden = false,
-  description,
-  isOptional = false,
-  isRequired = false,
-  defaultValue,
-  onChange,
-  placeholder,
-  isReadOnly = false,
-  isDisabled = false,
-  status,
-  width,
-  labelTooltip,
-  size: sizeProp,
-  nodes,
-  plugins,
-  hasMarkdownShortcuts = true,
-  transformers = TRANSFORMERS,
-  hasAutoFocus = false,
-  namespace = 'astryx-editor',
-  xstyle,
-  className,
-  style,
-  ...rest
-}: RichTextEditorProps) {
+export const RichTextEditor = forwardRef<
+  RichTextEditorRef,
+  RichTextEditorProps
+>(function RichTextEditor(
+  {
+    label,
+    isLabelHidden = false,
+    description,
+    isOptional = false,
+    isRequired = false,
+    defaultValue,
+    onChange,
+    placeholder,
+    isReadOnly = false,
+    isDisabled = false,
+    status,
+    width,
+    labelTooltip,
+    size: sizeProp,
+    nodes,
+    plugins,
+    hasMarkdownShortcuts = true,
+    transformers = TRANSFORMERS,
+    hasAutoFocus = false,
+    namespace = 'astryx-editor',
+    xstyle,
+    className,
+    style,
+    ...rest
+  }: RichTextEditorProps,
+  ref: Ref<RichTextEditorRef>,
+) {
   const size = useSize(sizeProp, 'md');
   const id = useId();
   const descriptionID = useId();
@@ -417,12 +455,13 @@ export function RichTextEditor({
               />
             )}
             {plugins}
+            <EditorRefBridge editorRef={ref} />
           </div>
         </LexicalComposer>
       </div>
     </Field>
   );
-}
+});
 
 RichTextEditor.displayName = 'RichTextEditor';
 
@@ -435,6 +474,33 @@ function AutoFocusOnMount(): null {
   useEffect(() => {
     editor.focus();
   }, [editor]);
+  return null;
+}
+
+/**
+ * Wires the imperative `RichTextEditorRef` handle. Split into its own plugin so
+ * it runs inside the composer context and can reach the `LexicalEditor` via
+ * `useLexicalComposerContext()`. Renders nothing.
+ */
+function EditorRefBridge({
+  editorRef,
+}: {
+  editorRef: Ref<RichTextEditorRef>;
+}): null {
+  const [editor] = useLexicalComposerContext();
+  useImperativeHandle(
+    editorRef,
+    () => ({
+      focus: () => editor.focus(),
+      clear: () =>
+        editor.update(() => {
+          $getRoot().clear();
+        }),
+      getEditorState: () => editor.getEditorState(),
+      getEditor: () => editor,
+    }),
+    [editor],
+  );
   return null;
 }
 

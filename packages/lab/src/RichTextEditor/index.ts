@@ -15,6 +15,7 @@
 export {RichTextEditor} from './RichTextEditor';
 export type {
   RichTextEditorProps,
+  RichTextEditorRef,
   RichTextEditorStatus,
   RichTextEditorStatusType,
   RichTextEditorSize,

@@ -11,16 +11,16 @@
 
 import {describe, it, expect, vi} from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
-import {useEffect} from 'react';
+import {createRef, useEffect} from 'react';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
-import type {LexicalEditor} from 'lexical';
+import type {EditorState, LexicalEditor} from 'lexical';
 import {$getRoot, $createParagraphNode, $createTextNode} from 'lexical';
 import {HeadingNode} from '@lexical/rich-text';
 import {
   TRANSFORMERS,
   $convertFromMarkdownString,
 } from '@lexical/markdown';
-import {RichTextEditor} from './RichTextEditor';
+import {RichTextEditor, type RichTextEditorRef} from './RichTextEditor';
 import {RichTextView} from './RichTextView';
 
 // Small plugin that captures the editor instance so tests can drive real
@@ -331,6 +331,56 @@ describe('RichTextEditor', () => {
         expect(first?.getType()).toBe('paragraph');
         expect(first?.getTextContent()).toBe('# Title');
       });
+    });
+  });
+
+  it('exposes an imperative ref handle after mount', () => {
+    const ref = createRef<RichTextEditorRef>();
+    render(<RichTextEditor ref={ref} label="Notes" />);
+    expect(ref.current).not.toBeNull();
+    expect(typeof ref.current?.focus).toBe('function');
+    expect(typeof ref.current?.clear).toBe('function');
+    expect(typeof ref.current?.getEditorState).toBe('function');
+    expect(typeof ref.current?.getEditor).toBe('function');
+  });
+
+  it('ref.focus() runs without throwing and targets the editable surface', () => {
+    const ref = createRef<RichTextEditorRef>();
+    render(<RichTextEditor ref={ref} label="Notes" />);
+    // Lexical dispatches focus via its editor command; jsdom does not always
+    // reflect programmatic contenteditable focus onto document.activeElement,
+    // so assert the call is wired and the root element is reachable rather
+    // than asserting jsdom focus state.
+    expect(() => ref.current?.focus()).not.toThrow();
+    const root = ref.current?.getEditor().getRootElement();
+    expect(root).toBe(screen.getByRole('textbox'));
+  });
+
+  it('ref.getEditorState() returns the current EditorState', () => {
+    const ref = createRef<RichTextEditorRef>();
+    render(<RichTextEditor ref={ref} label="Notes" defaultValue={HELLO_STATE} />);
+    const state = ref.current?.getEditorState();
+    expect(state).toBeDefined();
+    const text = state?.read(() => $getRoot().getTextContent());
+    expect(text).toBe('Hello world');
+  });
+
+  it('ref.getEditor() returns the underlying LexicalEditor', () => {
+    const ref = createRef<RichTextEditorRef>();
+    render(<RichTextEditor ref={ref} label="Notes" />);
+    const editor = ref.current?.getEditor();
+    expect(editor).toBeDefined();
+    expect(typeof editor?.update).toBe('function');
+  });
+
+  it('ref.clear() empties the editor content', async () => {
+    const ref = createRef<RichTextEditorRef>();
+    render(<RichTextEditor ref={ref} label="Notes" defaultValue={HELLO_STATE} />);
+    ref.current?.clear();
+    await waitFor(() => {
+      const state: EditorState | undefined = ref.current?.getEditorState();
+      const text = state?.read(() => $getRoot().getTextContent());
+      expect(text).toBe('');
     });
   });
 });

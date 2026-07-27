@@ -235,6 +235,7 @@ export {
 export {
   RichTextEditor,
   type RichTextEditorProps,
+  type RichTextEditorRef,
   type RichTextEditorStatus,
   type RichTextEditorStatusType,
   type RichTextEditorSize,
