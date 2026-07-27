@@ -3,7 +3,9 @@
 /**
  * @file Programmatic API for the Astryx CLI.
  *
- * Every function returns the same { type, data } envelope that `xds --json` outputs.
+ * Every command-shaped function returns the same { type, data } envelope that
+ * `xds --json` outputs. A few helpers (`summarizeIssues`, `findRelatedBlocks`)
+ * are plain functions over that data and return their result directly.
  * Errors throw AstryxError (with optional .suggestions).
  *
  * @example
@@ -23,7 +25,7 @@ export {component} from './component/component.mjs';
 export {docs} from './docs/docs.mjs';
 export {blog} from './blog/blog.mjs';
 export {discover} from './discover/discover.mjs';
-export {template} from './template/template.mjs';
+export {template, findRelatedBlocks} from './template/template.mjs';
 export {themeAdd, listThemes} from './theme/theme-add.mjs';
 export {hook} from './hook/hook.mjs';
 export {search} from './search/search.mjs';

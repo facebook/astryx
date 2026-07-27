@@ -34,7 +34,7 @@ import type * as Api from './api';
 import type {component} from '../api/component/component.mjs';
 import type {docs} from '../api/docs/docs.mjs';
 import type {discover} from '../api/discover/discover.mjs';
-import type {template} from '../api/template/template.mjs';
+import type {template, findRelatedBlocks} from '../api/template/template.mjs';
 
 /** Resolve to `true` only when `A` and `B` are mutually assignable. */
 type Equal<A, B> =
@@ -90,6 +90,24 @@ type _DiscoverQuery = Expect<
 type _TemplateName = Expect<
   Equal<Parameters<typeof Api.template>[0], Parameters<typeof template>[0]>
 >;
+type _FindRelatedBlocksName = Expect<
+  Equal<
+    Parameters<typeof Api.findRelatedBlocks>[0],
+    Parameters<typeof findRelatedBlocks>[0]
+  >
+>;
+type _FindRelatedBlocksCwd = Expect<
+  Equal<
+    Parameters<typeof Api.findRelatedBlocks>[1],
+    Parameters<typeof findRelatedBlocks>[1]
+  >
+>;
+type _FindRelatedBlocksReturn = Expect<
+  Equal<
+    Awaited<ReturnType<typeof Api.findRelatedBlocks>>,
+    Awaited<ReturnType<typeof findRelatedBlocks>>
+  >
+>;
 
 // Surface the assertion aliases so the file has a value/type export and the
 // checks above are not tree-shaken away by `noUnusedLocals`.
@@ -103,4 +121,7 @@ export type _ApiContractGuard = [
   _DocsSection,
   _DiscoverQuery,
   _TemplateName,
+  _FindRelatedBlocksName,
+  _FindRelatedBlocksCwd,
+  _FindRelatedBlocksReturn,
 ];

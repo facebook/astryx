@@ -188,7 +188,6 @@ async function loadDocModule(docPath) {
   return docModule.default ?? docModule.doc;
 }
 
-
 export {discoverAll as discoverTemplates};
 
 export function listTemplates() {
@@ -278,7 +277,9 @@ async function discoverBlocks() {
     const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
     if (!fs.existsSync(tsxPath)) continue;
     const doc = await loadDocModule(docPath);
-    const relPath = toPosixPath(path.relative(BLOCKS_DIR, path.dirname(docPath)));
+    const relPath = toPosixPath(
+      path.relative(BLOCKS_DIR, path.dirname(docPath)),
+    );
     blocks.push({
       type: 'block',
       dirName: basename,
@@ -295,7 +296,6 @@ async function discoverBlocks() {
   }
   return blocks;
 }
-
 
 /**
  * Discover blocks from external packages that declare `astryx.blocks` in
@@ -318,7 +318,9 @@ async function discoverExternalBlocks(cwd = process.cwd()) {
       const tsxPath = path.join(path.dirname(docPath), basename + '.tsx');
       if (!fs.existsSync(tsxPath)) continue;
       const doc = await loadDocModule(docPath);
-      const relPath = toPosixPath(path.relative(ext.blocksDir, path.dirname(docPath)));
+      const relPath = toPosixPath(
+        path.relative(ext.blocksDir, path.dirname(docPath)),
+      );
       blocks.push({
         type: 'block',
         dirName: basename,
@@ -407,7 +409,9 @@ function findIntegrationDocFiles(root) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         walk(full);
-      } else if (ALL_TEMPLATE_SUFFIXES.some(suffix => entry.name.endsWith(suffix))) {
+      } else if (
+        ALL_TEMPLATE_SUFFIXES.some(suffix => entry.name.endsWith(suffix))
+      ) {
         results.push(full);
       }
     }
@@ -548,7 +552,9 @@ export async function discoverIntegrationTemplatesForOne(integration) {
 export async function findRelatedBlocks(componentName, cwd) {
   const blocks = await discoverAllBlocks(cwd);
   return blocks.filter(b =>
-    (b.componentsUsed ?? []).some(c => c.toLowerCase() === componentName.toLowerCase()),
+    (b.componentsUsed ?? []).some(
+      c => c.toLowerCase() === componentName.toLowerCase(),
+    ),
   );
 }
 
@@ -880,7 +886,8 @@ export async function template(name, options = {}) {
   if (list || (!name && !skeleton)) {
     let filtered = templates;
     if (type) filtered = filtered.filter(t => t.type === type);
-    if (packageFilter) filtered = filtered.filter(t => pkgOf(t) === packageFilter);
+    if (packageFilter)
+      filtered = filtered.filter(t => pkgOf(t) === packageFilter);
     return {
       type: 'template.list',
       data: filtered.map(t => ({
@@ -893,6 +900,9 @@ export async function template(name, options = {}) {
         package: pkgOf(t),
         category: t.category || undefined,
         componentsUsed: t.componentsUsed ?? undefined,
+        // Blocks always carry the flag (false when not the hero); page
+        // templates have no showcase concept, so it stays absent for them.
+        isShowcase: t.isShowcase ?? undefined,
         isReady: t.isReady,
         scaffold: t.scaffold ?? false,
       })),
@@ -904,7 +914,8 @@ export async function template(name, options = {}) {
   // block); narrow with --type / --package.
   let candidates = templates.filter(t => t.dirName === name);
   if (type) candidates = candidates.filter(t => t.type === type);
-  if (packageFilter) candidates = candidates.filter(t => pkgOf(t) === packageFilter);
+  if (packageFilter)
+    candidates = candidates.filter(t => pkgOf(t) === packageFilter);
 
   if (name && candidates.length === 0) {
     throw new AstryxError(

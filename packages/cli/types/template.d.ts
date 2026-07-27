@@ -34,8 +34,37 @@ export interface TemplateListEntry {
   category?: string;
   /** Component display names the template composes. */
   componentsUsed?: string[];
+  /** Blocks only: whether this block is its component's hero showcase. */
+  isShowcase?: boolean;
   isReady: boolean;
   scaffold?: boolean;
+}
+
+/**
+ * A discovered template as `findRelatedBlocks` returns it — the raw discovery
+ * record, not the `{ type, data }` envelope the command-shaped API functions
+ * return. Sources differ, so the source-specific extras are optional.
+ */
+export interface DiscoveredTemplate {
+  type: 'page' | 'block';
+  /** Directory name; the stable id used by `template.list`. */
+  dirName: string;
+  name: string;
+  description: string;
+  category?: string;
+  isReady?: boolean;
+  scaffold?: boolean;
+  aspectRatio?: number;
+  /** Component display names the template composes. */
+  componentsUsed?: string[];
+  /** Blocks only: whether this block is its component's hero showcase. */
+  isShowcase?: boolean;
+  /** Absolute path to the template's .tsx source. */
+  filePath: string;
+  /** Absolute path to the template's .doc.mjs file. */
+  docPath: string;
+  /** Owning package; absent for core (built-in) templates. */
+  package?: string;
 }
 
 /** xds --json template <name> */

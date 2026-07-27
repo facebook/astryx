@@ -33,6 +33,7 @@ import type {
   TemplateShowResponse,
   TemplateSkeletonResponse,
   TemplateCopyResponse,
+  DiscoveredTemplate,
 } from './template';
 import type {
   HookListResponse,
@@ -301,3 +302,19 @@ export declare function summarizeIssues(issues: AstryxIntegrationIssue[]): {
   errors: number;
   warnings: number;
 };
+
+// ── Block discovery ──────────────────────────────────────────────────
+
+/**
+ * Every block whose `componentsUsed` names `componentName` (case-insensitive).
+ *
+ * Like `summarizeIssues`, this is a helper rather than a command, so it
+ * returns the raw records instead of a `{ type, data }` envelope. For the
+ * command-shaped view — hero showcase, own-directory examples, and everything
+ * else that merely uses the component — call
+ * `component(name, {blocks: true})`.
+ */
+export declare function findRelatedBlocks(
+  componentName: string,
+  cwd?: string,
+): Promise<DiscoveredTemplate[]>;
