@@ -478,6 +478,9 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         role: label ? 'dialog' : 'group',
         'aria-label': label || undefined,
         xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
+        // Theme class on the layer container (where bg/radius/shadow live),
+        // consistent with Tooltip's pattern.
+        className: themeProps('hovercard').className,
         // Render the layer as inline-safe phrasing markup so HoverCard stays
         // valid (and hydration-stable) inside inline contexts like a `<p>`.
         as: 'span' as const,
@@ -485,7 +488,11 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
 
       return layer.render(
         <span
-          {...mergeProps(themeProps('hovercard'), stylex.props(styles.content))}
+          {...mergeProps(
+            stylex.props(styles.content, props?.xstyle),
+            props?.className,
+            props?.style,
+          )}
           onMouseEnter={() => {
             isHoveringContentRef.current = true;
             clearTimeouts();
