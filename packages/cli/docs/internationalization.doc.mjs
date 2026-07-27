@@ -91,7 +91,7 @@ import fr from '@astryxdesign/core/locales/fr.json';
       content: [
         {
           type: 'prose',
-          text: "Astryx tracks text direction (`'ltr'` or `'rtl'`) alongside the locale. By default the direction is derived from the `locale` you pass to `<InternationalizationProvider>` via `Intl.Locale.getTextInfo()`, so RTL locales such as Arabic (`ar`), Hebrew (`he`), Farsi (`fa`), and Urdu (`ur`) resolve to `'rtl'` automatically.",
+          text: "Astryx tracks text direction (`'ltr'` or `'rtl'`) alongside the locale. By default the direction is derived from the `locale` you pass to `<InternationalizationProvider>` via [`Intl.Locale.getTextInfo()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo), so RTL locales such as Arabic (`ar`), Hebrew (`he`), Farsi (`fa`), and Urdu (`ur`) resolve to `'rtl'` automatically.",
         },
         {
           type: 'code',
@@ -119,11 +119,11 @@ import fr from '@astryxdesign/core/locales/fr.json';
         },
         {
           type: 'prose',
-          text: "Set the `dir` attribute on your document yourself — astryx does not write it for you. The provider tracks direction for astryx components, but the browser needs `dir` on a real DOM element (usually `<html>`) for CSS logical properties, `text-align: start/end`, bidi text, and native controls to mirror. Astryx deliberately does not mutate `document.dir`: doing so from an effect causes a server/client hydration mismatch and misses portaled overlays. Keep the DOM `dir` and the provider in sync — both should reflect the same active direction.",
+          text: "There's one more step: tell the browser about the direction too. Add a `dir` attribute to your page — usually on the `<html>` tag. This is what makes text align to the correct side, punctuation and mixed-language text flow correctly, and layouts mirror. The provider handles astryx components; the `dir` attribute handles everything else on the page.",
         },
         {
           type: 'prose',
-          text: 'In a client app, set it on `<html>` (or a subtree root) whenever the active locale changes. In a server-rendered app such as Next.js, compute it up front with the server-safe `getLocaleDirection()` helper (no provider or `\'use client\'` boundary needed; it falls back to `\'ltr\'` for malformed input).',
+          text: "Astryx doesn't set `dir` for you — you set it, alongside the same direction you pass to the provider. If your app is server-rendered (like Next.js), the `getLocaleDirection()` helper computes the direction from a locale so you can set it while the page renders:",
         },
         {
           type: 'code',
@@ -142,7 +142,11 @@ export default function RootLayout({children, params}) {
         },
         {
           type: 'prose',
-          text: 'To scope a right-to-left region inside an otherwise left-to-right page, nest both channels together on the same subtree: an inner `<InternationalizationProvider dir="rtl">` for astryx components plus a `dir="rtl"` DOM attribute on the wrapping element for CSS. (Portaled overlays opened from inside that region are a known gap that later RTL work will close.)',
+          text: 'In a plain client app, set the same attribute on `<html>` whenever the locale changes. (`getLocaleDirection()` safely returns `\'ltr\'` for anything it doesn\'t recognize, so you can call it with any locale string.)',
+        },
+        {
+          type: 'prose',
+          text: 'To make just one part of a left-to-right page right-to-left — say an Arabic quote or a comment thread — wrap that part in its own `<InternationalizationProvider dir="rtl">` and add `dir="rtl"` to the element around it. (One current limitation: pop-up overlays like menus and dialogs opened from inside that region aren\'t mirrored yet; that\'s coming in later RTL work.)',
         },
       ],
     },
