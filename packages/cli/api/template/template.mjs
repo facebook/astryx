@@ -444,9 +444,19 @@ async function discoverIntegrationTemplates(cwd = process.cwd()) {
       /** @type {import('../../lib/integrations.mjs').LoadedIntegration[]} */ (
         project.loadedIntegrations
       );
-  } catch {
-    // Config load failures are surfaced elsewhere (discover/doctor); here we
-    // simply contribute no integration templates.
+  } catch (err) {
+    // A broken astryx.config (or an integration that fails to load) can't
+    // contribute templates. Record it as a discovery error instead of
+    // swallowing it silently: a bare `catch {}` also hides unexpected bugs.
+    // discoverAll (the no-error variant that `astryx template` uses) and
+    // Project.templates() both discard this errors array, so the template
+    // command's behavior is unchanged — the full config-error UX still lives
+    // in `discover`/`doctor` via Project.issues(). Only callers that opt into
+    // errors (discoverAllWithErrors) now see the signal.
+    errors.push({
+      package: 'astryx.config',
+      message: err instanceof Error ? err.message : String(err),
+    });
     return {templates, errors};
   }
 
