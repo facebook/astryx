@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DropdownMenu} from './DropdownMenu';
 import {DropdownMenuItem} from './DropdownMenuItem';
@@ -176,6 +176,106 @@ describe('DropdownMenu', () => {
     expect(
       screen.getByRole('menuitem', {name: 'Delete', hidden: true}),
     ).toHaveFocus();
+  });
+
+  it('marks the selected item with aria-current (menuitem has no aria-selected)', () => {
+    render(
+      <DropdownMenu button={{label: 'Model'}}>
+        <DropdownMenuItem label="Opus" />
+        <DropdownMenuItem label="Sonnet" isSelected />
+      </DropdownMenu>,
+    );
+    expect(
+      screen.getByRole('menuitem', {name: 'Sonnet', hidden: true}),
+    ).toHaveAttribute('aria-current', 'true');
+    expect(
+      screen.getByRole('menuitem', {name: 'Opus', hidden: true}),
+    ).not.toHaveAttribute('aria-current');
+  });
+
+  it('moves initial focus to the selected item on open (compound children)', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu button={{label: 'Model'}}>
+        <DropdownMenuItem label="Opus" />
+        <DropdownMenuItem label="Sonnet" isSelected />
+      </DropdownMenu>,
+    );
+    await user.click(screen.getByRole('button', {name: /Model/}));
+    // openAndFocus defers focus to requestAnimationFrame.
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Sonnet', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('moves initial focus to the selected item on open (data-driven items)', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Model'}}
+        items={[{label: 'Opus'}, {label: 'Sonnet', isSelected: true}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Model/}));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Sonnet', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('falls back to focusing the first item on open when nothing is selected', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Cut'}, {label: 'Copy'}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Cut', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('focuses the selected item when opened via controlled isMenuOpen', async () => {
+    render(
+      <DropdownMenu isMenuOpen button={{label: 'Model'}} onOpenChange={vi.fn()}>
+        <DropdownMenuItem label="Opus" />
+        <DropdownMenuItem label="Sonnet" isSelected />
+      </DropdownMenu>,
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Sonnet', hidden: true}),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('focuses a selected item inside a section on open', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Model'}}
+        items={[
+          {
+            type: 'section',
+            title: 'Anthropic',
+            items: [{label: 'Opus'}, {label: 'Sonnet', isSelected: true}],
+          },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Model/}));
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', {name: 'Sonnet', hidden: true}),
+      ).toHaveFocus(),
+    );
   });
 
   it('calls onClick callback when button is clicked', async () => {

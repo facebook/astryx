@@ -99,6 +99,7 @@ export interface DropdownMenuItemData {
   label: string;
   onClick?: () => void;
   isDisabled?: boolean;
+  isSelected?: boolean;
   icon?: ReactNode | IconType;
 }
 
@@ -292,17 +293,32 @@ export function DropdownMenu({
       ),
   });
 
-  // Sync controlled open state → popover, and focus first item on open
+  // Focus the current selection on open when a consumer marks an item with
+  // `isSelected` (exposed as `aria-current`), falling back to the first item.
+  // This keeps the initial keyboard focus / highlight on the active choice in
+  // menus that represent a selection, instead of always the first item.
+  const focusInitial = useCallback(() => {
+    const selected = listRef.current?.querySelector<HTMLElement>(
+      '[role="menuitem"][aria-current="true"]:not([aria-disabled="true"])',
+    );
+    if (selected) {
+      selected.focus();
+    } else {
+      focusFirst();
+    }
+  }, [listRef, focusFirst]);
+
+  // Sync controlled open state → popover, and focus the initial item on open
   useEffect(() => {
     if (isControlled) {
       if (controlledIsOpen && !popover.isOpen) {
         popover.show();
-        requestAnimationFrame(() => focusFirst());
+        requestAnimationFrame(() => focusInitial());
       } else if (!controlledIsOpen && popover.isOpen) {
         popover.hide();
       }
     }
-  }, [controlledIsOpen, isControlled, popover, focusFirst]);
+  }, [controlledIsOpen, isControlled, popover, focusInitial]);
 
   // Extend useListFocus with Enter/Space activation + typeahead
   const listKeyDown = useCallback(
@@ -339,8 +355,8 @@ export function DropdownMenu({
 
   const openAndFocus = useCallback(() => {
     popover.show();
-    requestAnimationFrame(() => focusFirst());
-  }, [popover, focusFirst]);
+    requestAnimationFrame(() => focusInitial());
+  }, [popover, focusInitial]);
 
   const handleButtonClick = useCallback(() => {
     // If the menu was just closed by light dismiss (e.g. iOS Safari fires
