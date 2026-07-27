@@ -110,6 +110,17 @@ export default defineConfig({
           name: 'node',
           globals: true,
           environment: 'node',
+          // Many CLI suites spawn a fresh `node bin/astryx.mjs` per assertion to
+          // exercise the real process boundary (exit codes, stdout discipline,
+          // --json envelopes). With the default uncapped forks pool, ~(#CPU)
+          // forks each spawn a cold-starting child → the box oversubscribes and
+          // the 5s default testTimeout flakes non-deterministically. Cap the pool
+          // to ~half the cores (leaving headroom for each spawned child) and give
+          // spawn-backed tests/hooks a real budget. Determinism over raw
+          // parallelism — this is the reorg safety net.
+          maxWorkers: '50%',
+          testTimeout: 30_000,
+          hookTimeout: 30_000,
           // Build @astryxdesign/core once before workers fork. The build-theme
           // suites need a compiled core; doing it here (not per-suite in
           // parallel workers) avoids concurrent `rimraf dist && build`
