@@ -21,7 +21,7 @@ relatedDocs:
 
 When the user of a design system shifts from humans to agents, we have to rethink how we approach designing the system. Luckily, when our users are agents, we can now do "user" studies at scale and at any frequency.
 
-But simply asking the agent for its preference doesn't work. It results in biased responses based on context and memory. Vibe tests are our way to standardize testing procedures to be as objective as possible. This method was used extensively to inform Astryx's decisions, from API arbitration to system architecture choices — and it's also the most convincing form you can present to sway Astryx on future decisions. If you want to run a vibe test, point your agent at this [Vibe Tests wiki page](https://github.com/facebook/astryx/wiki/Vibe-Tests).
+But simply asking the agent for its preference doesn't work. It results in biased responses based on context and memory. Vibe tests are our way to standardize testing procedures to be as objective as possible. This method was used extensively to inform Astryx's decisions, from API arbitration to system architecture choices. It's also the most convincing form you can present to sway Astryx on future decisions. If you want to run a vibe test, point your agent at this [Vibe Tests wiki page](https://github.com/facebook/astryx/wiki/Vibe-Tests).
 
 This is where we are with our current methodology.
 
@@ -37,7 +37,7 @@ Because sub-agents typically carry main-agent context, [specific instructions](h
 
 ## Test conditions
 
-Narrow down to 3–5 candidates for each test. These could be small design details like component abstraction level, API naming, or configuration shapes. Or they could be framework-level decisions, like testing Astryx with StyleX against Tailwind, Shadcn, or raw HTML. Here are some real examples of things we tested and how they influenced Astryx's design:
+Narrow down to 3 to 5 candidates for each test. These could be small design details like component abstraction level, API naming, or configuration shapes. Or they could be framework-level decisions, like testing Astryx with StyleX against Tailwind, Shadcn, or raw HTML. Here are some real examples of things we tested and how they influenced Astryx's design:
 
 - [Token naming structure](https://github.com/facebook/astryx/issues/864)
 - [Selector API](https://github.com/facebook/astryx/issues/477)
@@ -60,6 +60,6 @@ Vibe tests for Astryx are typically reported under our GitHub issues and [wikis]
 
 ## Design your own
 
-Our main challenge when we set out to improve our system for AI was that the whole space was so nascent — every week a new feature or solution would pop up from the community, and LLMs were poor judges of what actually works. So vibe tests became our compass for quickly evaluating new ideas and narrowing down where to invest our efforts. You can design any kind of vibe test for new situations. For example, when the [impeccable front-end skills](https://impeccable.style/) were released, we [explored vibe testing them with Astryx components](https://github.com/facebook/astryx/issues/1000).
+Our main challenge when we set out to improve our system for AI was that the whole space was so nascent. Every week a new feature or solution would pop up from the community, and LLMs were poor judges of what actually works. So vibe tests became our compass for quickly evaluating new ideas and narrowing down where to invest our efforts. You can design any kind of vibe test for new situations. For example, when the [impeccable front-end skills](https://impeccable.style/) were released, we [explored vibe testing them with Astryx components](https://github.com/facebook/astryx/issues/1000).
 
 You can design your own vibe tests by providing a few key ingredients to an AI agent. [Have your agent follow the instructions here.](https://github.com/facebook/astryx/wiki/Designing-Vibe-Tests) We hope this methodology helps people navigate the crazy world of AI.
