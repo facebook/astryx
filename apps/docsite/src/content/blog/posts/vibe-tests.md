@@ -10,6 +10,8 @@ tags:
   - 'AI'
   - 'Testing'
   - 'Design systems'
+coverImage: '/blog/vibe-tests/cover.png'
+coverAlt: 'Astracat, the Astryx mascot, dressed as a scientist in a lab coat and round glasses, sipping a flask of blue liquid, with the words vibe and test on either side'
 relatedDocs:
   - title: 'How Astryx works'
     href: '/blog/how-astryx-works'
