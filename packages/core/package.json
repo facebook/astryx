@@ -675,6 +675,6 @@
     "rimraf": "^6.0.1"
   },
   "dependencies": {
-    "intl-messageformat": "^11.2.9"
+    "intl-messageformat": "^11.2.12"
   }
 }
