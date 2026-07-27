@@ -11,6 +11,19 @@
 
 /// <reference types="@testing-library/jest-dom" />
 import '@testing-library/jest-dom/vitest';
+import {configure} from '@testing-library/react';
+
+// Text queries (getByText/findByText/…) target VISIBLE text. Astryx's
+// `useAnnounce` renders a visually-hidden aria-live region
+// (`data-astryx-live-region`) that MIRRORS visible labels for screen readers —
+// used by ~17 components (Calendar, Pagination, Typeahead, Switch, …). So a bare
+// `getByText('January 2026')` can match BOTH the label and its announcement, and
+// whether both are present is timing-dependent (the region updates on an effect
+// after interaction). That makes such assertions liable to flaky "found multiple
+// elements" failures under load. Ignore live regions in text matching (tests
+// that assert an announcement query the region directly, e.g. by role="status").
+// Keeps the jsdom defaults (script, style).
+configure({defaultIgnore: 'script, style, [data-astryx-live-region]'});
 
 // Polyfill for matchMedia (not supported in jsdom)
 if (typeof window !== 'undefined' && !window.matchMedia) {
