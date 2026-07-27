@@ -13,7 +13,7 @@
  */
 
 import {jsonOut, jsonError} from '../../lib/json.mjs';
-import {termLogger, noopLogger} from '../../lib/cli-logger.mjs';
+import {termLogger, noopLogger} from '../../lib/term-log.mjs';
 import {AstryxError} from '../../api/error.mjs';
 import {upgrade as upgradeApi} from '../../api/upgrade/upgrade.mjs';
 

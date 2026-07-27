@@ -40,7 +40,7 @@ import {loadIntegrations} from '../../lib/integrations.mjs';
 import {warnOnIntegrationIssues} from '../../lib/integration-warnings.mjs';
 import {ERROR_CODES} from '../../lib/error-codes.mjs';
 import {AstryxError} from '../error.mjs';
-import {noopLogger} from '../../lib/cli-logger.mjs';
+import {noopLogger} from '../../lib/term-log.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -84,7 +84,7 @@ function uniqueFiles(files) {
  * Dry-run PREVIEWS (buildCommand still called, so a throw fails); apply executes.
  * @param {import('../../types/config').PostCodemodHook[]} hooks
  * @param {{packageDir: string, files: string[], apply: boolean}} context
- * @param {import('../../lib/cli-logger.mjs').CliLogger} logger
+ * @param {import('../../lib/term-log.mjs').CliLogger} logger
  */
 async function runPostCodemodHooks(hooks, context, logger) {
   if (!hooks || hooks.length === 0) return;
@@ -132,7 +132,7 @@ async function runPostCodemodHooks(hooks, context, logger) {
  * bump. The block documents the INSTALLED library, so it must be re-synced on
  * EVERY upgrade path, including the no-codemods short-circuits (#4168).
  *
- * @param {{cwd: string, installedVersion: string, apply: boolean, logger?: import('../../lib/cli-logger.mjs').CliLogger}} ctx
+ * @param {{cwd: string, installedVersion: string, apply: boolean, logger?: import('../../lib/term-log.mjs').CliLogger}} ctx
  * @returns {import('../../types/upgrade').AgentDocsSummary}
  */
 export function refreshAgentDocs({cwd, installedVersion, apply, logger = noopLogger}) {
@@ -224,7 +224,7 @@ export function refreshAgentDocs({cwd, installedVersion, apply, logger = noopLog
  * failure. Progress is emitted through `logger` (silent by default).
  *
  * @param {UpgradeOptions} [options]
- * @param {{cwd?: string, logger?: import('../../lib/cli-logger.mjs').CliLogger}} [ctx]
+ * @param {{cwd?: string, logger?: import('../../lib/term-log.mjs').CliLogger}} [ctx]
  * @returns {Promise<import('../../types/upgrade').UpgradeListResponse | import('../../types/upgrade').UpgradeStatusResponse | import('../../types/upgrade').UpgradeRunResponse>}
  */
 export async function upgrade(options = {}, {cwd = process.cwd(), logger = noopLogger} = {}) {

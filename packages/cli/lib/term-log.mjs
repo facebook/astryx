@@ -17,6 +17,12 @@
  *
  * Call sites use it as `import * as p from './term-log.mjs'` and call
  * `p.log.info(...)`, `p.intro(...)`, `p.outro(...)`.
+ *
+ * For API functions that emit progress without knowing how it's rendered, this
+ * module also exports an *injectable* flat logger (`CliLogger`): the CLI passes
+ * `termLogger` (routes here → stdout, suppressed in --json); programmatic
+ * callers get the silent `noopLogger` default, so a scripted API call stays
+ * quiet even though it isn't in --json mode.
  */
 
 import {humanLog} from './json.mjs';
@@ -55,3 +61,41 @@ export function intro(title) {
 export function outro(message) {
   humanLog(`${toStr(message)}\n`);
 }
+
+/**
+ * Injectable flat logger for API functions (side-effecting/long-running
+ * commands like upgrade). The API calls `logger.step(...)` etc. and defaults to
+ * `noopLogger`; the CLI hands it `termLogger`. Purely presentation — the API
+ * still returns its `{type, data}` result / throws.
+ *
+ * @typedef {object} CliLogger
+ * @property {(m?: unknown) => void} intro
+ * @property {(m?: unknown) => void} step
+ * @property {(m?: unknown) => void} info
+ * @property {(m?: unknown) => void} warn
+ * @property {(m?: unknown) => void} success
+ * @property {(m?: unknown) => void} error
+ * @property {(m?: unknown) => void} outro
+ */
+
+/** Silent logger — the default for programmatic API callers. @type {CliLogger} */
+export const noopLogger = {
+  intro() {},
+  step() {},
+  info() {},
+  warn() {},
+  success() {},
+  error() {},
+  outro() {},
+};
+
+/** term-log-backed logger — used by the CLI in human (non --json) mode. @type {CliLogger} */
+export const termLogger = {
+  intro: msg => intro(msg),
+  step: msg => log.step(msg),
+  info: msg => log.info(msg),
+  warn: msg => log.warn(msg),
+  success: msg => log.success(msg),
+  error: msg => log.error(msg),
+  outro: msg => outro(msg),
+};
