@@ -10,7 +10,13 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MultiSelector} from './MultiSelector';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -634,7 +640,9 @@ describe('MultiSelector', () => {
     const searchInput = screen.getByRole('combobox', h);
     await user.type(searchInput, 'xyz');
 
-    expect(screen.getByText('No results found')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('listbox', h)).getByText('No results found'),
+    ).toBeInTheDocument();
   });
 
   describe('result announcements', () => {
