@@ -26,37 +26,15 @@
  */
 
 import {describe, it, expect, beforeAll, beforeEach, afterEach} from 'vitest';
-import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {fileURLToPath} from 'node:url';
 import {ensureCoreBuilt} from './ensure-core-built.mjs';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 const COLOR_SCHEME_ROOT_DECL = ':root { color-scheme: light dark; }';
 const COLOR_SCHEME_LIGHT_DECL = 'html[data-theme="light"] { color-scheme: light; }';
 const COLOR_SCHEME_DARK_DECL = 'html[data-theme="dark"] { color-scheme: dark; }';
-
-function runCli(args, cwd) {
-  try {
-    const out = execFileSync('node', [CLI_BIN, ...args], {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {...process.env, FORCE_COLOR: '0'},
-    });
-    return {code: 0, stdout: out, stderr: ''};
-  } catch (e) {
-    return {
-      code: e.status ?? 1,
-      stdout: e.stdout?.toString() ?? '',
-      stderr: e.stderr?.toString() ?? '',
-    };
-  }
-}
 
 function writeTheme(dir, name, tokens) {
   fs.mkdirSync(dir, {recursive: true});
@@ -85,7 +63,7 @@ afterEach(() => {
 });
 
 describe('theme build color-scheme output', () => {
-  it('emits the mode-aware color-scheme rules in @layer astryx-theme for a light-dark() theme', () => {
+  it('emits the mode-aware color-scheme rules in @layer astryx-theme for a light-dark() theme', async () => {
     const project = path.join(tmpDir, 'project');
     const themesDir = path.join(project, 'themes');
     // A raw light-dark() token value is what triggers the color-scheme
@@ -98,7 +76,7 @@ describe('theme build color-scheme output', () => {
       '--color-accent': 'light-dark(#0077B6, #48CAE4)',
     });
 
-    const result = runCli(
+    const result = await runCli(
       ['theme', 'build', path.relative(project, themeFile)],
       project,
     );
@@ -127,14 +105,14 @@ describe('theme build color-scheme output', () => {
     expect(themeLayerBody).toContain(COLOR_SCHEME_DARK_DECL);
   });
 
-  it('omits all color-scheme rules for a theme with no light-dark() tokens', () => {
+  it('omits all color-scheme rules for a theme with no light-dark() tokens', async () => {
     const project = path.join(tmpDir, 'project');
     const themesDir = path.join(project, 'themes');
     const themeFile = writeTheme(themesDir, 'no-light-dark', {
       '--color-accent': '#0077B6',
     });
 
-    const result = runCli(
+    const result = await runCli(
       ['theme', 'build', path.relative(project, themeFile)],
       project,
     );

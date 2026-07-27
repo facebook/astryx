@@ -20,32 +20,15 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {spawnSync} from 'node:child_process';
-import * as path from 'node:path';
-import {fileURLToPath} from 'node:url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../bin/astryx.mjs');
-
-function runCli(args) {
-  const res = spawnSync('node', [CLI_BIN, ...args], {
-    encoding: 'utf-8',
-    timeout: 20_000,
-  });
-  return {
-    status: res.status,
-    stdout: res.stdout || '',
-    stderr: res.stderr || '',
-  };
-}
+import {runCli} from '../test-utils/run-cli.mjs';
 
 function parseJson(stdout) {
   return JSON.parse(stdout);
 }
 
 describe('--json shim: --help renders JSON envelope', () => {
-  it('astryx --help --json emits a help envelope (not raw text), exit 0', () => {
-    const {status, stdout, stderr} = runCli(['--help', '--json']);
+  it('astryx --help --json emits a help envelope (not raw text), exit 0', async () => {
+    const {status, stdout, stderr} = await runCli(['--help', '--json']);
     expect(status).toBe(0);
     expect(stderr).toBe('');
     const parsed = parseJson(stdout);
@@ -59,8 +42,8 @@ describe('--json shim: --help renders JSON envelope', () => {
     expect(subNames).toContain('theme');
   });
 
-  it('astryx component --help --json emits a subcommand help envelope', () => {
-    const {status, stdout} = runCli(['component', '--help', '--json']);
+  it('astryx component --help --json emits a subcommand help envelope', async () => {
+    const {status, stdout} = await runCli(['component', '--help', '--json']);
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
     expect(parsed.apiVersion).toBe(1);
@@ -71,8 +54,8 @@ describe('--json shim: --help renders JSON envelope', () => {
     expect(flags).toContain('--list');
   });
 
-  it('astryx theme build --help --json emits a nested subcommand help envelope', () => {
-    const {status, stdout} = runCli(['theme', 'build', '--help', '--json']);
+  it('astryx theme build --help --json emits a nested subcommand help envelope', async () => {
+    const {status, stdout} = await runCli(['theme', 'build', '--help', '--json']);
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
     expect(parsed.apiVersion).toBe(1);
@@ -83,8 +66,8 @@ describe('--json shim: --help renders JSON envelope', () => {
 });
 
 describe('--json shim: parse errors emit JSON error envelope', () => {
-  it('astryx theme build --json (missing required arg) emits error envelope, exit 1', () => {
-    const {status, stdout} = runCli(['theme', 'build', '--json']);
+  it('astryx theme build --json (missing required arg) emits error envelope, exit 1', async () => {
+    const {status, stdout} = await runCli(['theme', 'build', '--json']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
     expect(parsed.apiVersion).toBe(1);
@@ -92,8 +75,8 @@ describe('--json shim: parse errors emit JSON error envelope', () => {
     expect(parsed.error).toMatch(/file/i);
   });
 
-  it('astryx --bogus-flag --json (unknown option) emits error envelope, exit 1', () => {
-    const {status, stdout} = runCli(['--bogus-flag', '--json']);
+  it('astryx --bogus-flag --json (unknown option) emits error envelope, exit 1', async () => {
+    const {status, stdout} = await runCli(['--bogus-flag', '--json']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
     expect(parsed.apiVersion).toBe(1);
@@ -101,8 +84,8 @@ describe('--json shim: parse errors emit JSON error envelope', () => {
     expect(parsed.error).toMatch(/--bogus-flag/);
   });
 
-  it('astryx component --json --bogus-flag (unknown option on subcmd) emits error envelope, exit 1', () => {
-    const {status, stdout} = runCli(['component', '--json', '--bogus-flag']);
+  it('astryx component --json --bogus-flag (unknown option on subcmd) emits error envelope, exit 1', async () => {
+    const {status, stdout} = await runCli(['component', '--json', '--bogus-flag']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
     expect(parsed.apiVersion).toBe(1);
@@ -111,8 +94,8 @@ describe('--json shim: parse errors emit JSON error envelope', () => {
 });
 
 describe('--json shim: unknown subcommand emits error envelope', () => {
-  it('astryx bogus-cmd --json emits error envelope, exit 1 (not exit 0 + help)', () => {
-    const {status, stdout} = runCli(['bogus-cmd', '--json']);
+  it('astryx bogus-cmd --json emits error envelope, exit 1 (not exit 0 + help)', async () => {
+    const {status, stdout} = await runCli(['bogus-cmd', '--json']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
     expect(parsed.apiVersion).toBe(1);
@@ -126,8 +109,8 @@ describe('--json shim: unknown subcommand emits error envelope', () => {
 });
 
 describe('--json shim: invalid --detail choice', () => {
-  it('astryx --detail bogus --json emits a single error envelope, exit 1', () => {
-    const {status, stdout} = runCli(['--detail', 'bogus', '--json']);
+  it('astryx --detail bogus --json emits a single error envelope, exit 1', async () => {
+    const {status, stdout} = await runCli(['--detail', 'bogus', '--json']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
     expect(parsed.apiVersion).toBe(1);
@@ -142,8 +125,8 @@ describe('--json shim: invalid --detail choice', () => {
 });
 
 describe('--json shim: invalid --lang choice', () => {
-  it('astryx docs color --lang fr --json emits a single error envelope, exit 1', () => {
-    const {status, stdout} = runCli(['docs', 'color', '--lang', 'fr', '--json']);
+  it('astryx docs color --lang fr --json emits a single error envelope, exit 1', async () => {
+    const {status, stdout} = await runCli(['docs', 'color', '--lang', 'fr', '--json']);
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
     expect(parsed.apiVersion).toBe(1);
@@ -154,55 +137,55 @@ describe('--json shim: invalid --lang choice', () => {
     expect(topLevelBraces).toBe(1);
   });
 
-  it('astryx docs color --lang fr (no --json) writes to stderr and exits 1', () => {
-    const {status, stdout, stderr} = runCli(['docs', 'color', '--lang', 'fr']);
+  it('astryx docs color --lang fr (no --json) writes to stderr and exits 1', async () => {
+    const {status, stdout, stderr} = await runCli(['docs', 'color', '--lang', 'fr']);
     expect(status).toBe(1);
     expect(stdout).toBe('');
     expect(stderr).toMatch(/--lang/);
   });
 
-  it('astryx docs color --lang zh is accepted (exit 0)', () => {
-    const {status} = runCli(['docs', 'color', '--lang', 'zh']);
+  it('astryx docs color --lang zh is accepted (exit 0)', async () => {
+    const {status} = await runCli(['docs', 'color', '--lang', 'zh']);
     expect(status).toBe(0);
   });
 
-  it('astryx docs color --lang en is accepted (exit 0)', () => {
-    const {status} = runCli(['docs', 'color', '--lang', 'en']);
+  it('astryx docs color --lang en is accepted (exit 0)', async () => {
+    const {status} = await runCli(['docs', 'color', '--lang', 'en']);
     expect(status).toBe(0);
   });
 });
 
 describe('--json shim: non-JSON behavior is preserved', () => {
-  it('astryx theme build (no --json, missing arg) writes to stderr and exits 1', () => {
-    const {status, stdout, stderr} = runCli(['theme', 'build']);
+  it('astryx theme build (no --json, missing arg) writes to stderr and exits 1', async () => {
+    const {status, stdout, stderr} = await runCli(['theme', 'build']);
     expect(status).toBe(1);
     expect(stdout).toBe('');
     expect(stderr).toMatch(/missing required argument/i);
   });
 
-  it('astryx --bogus-flag (no --json) writes to stderr and exits 1', () => {
-    const {status, stdout, stderr} = runCli(['--bogus-flag']);
+  it('astryx --bogus-flag (no --json) writes to stderr and exits 1', async () => {
+    const {status, stdout, stderr} = await runCli(['--bogus-flag']);
     expect(status).toBe(1);
     expect(stdout).toBe('');
     expect(stderr).toMatch(/unknown option/i);
   });
 
-  it('astryx bogus-cmd (no --json) writes to stderr and exits 1', () => {
-    const {status, stdout, stderr} = runCli(['bogus-cmd']);
+  it('astryx bogus-cmd (no --json) writes to stderr and exits 1', async () => {
+    const {status, stdout, stderr} = await runCli(['bogus-cmd']);
     expect(status).toBe(1);
     expect(stdout).toBe('');
     expect(stderr).toMatch(/unknown command/i);
   });
 
-  it('astryx --detail bogus (no --json) writes to stderr and exits 1', () => {
-    const {status, stdout, stderr} = runCli(['--detail', 'bogus']);
+  it('astryx --detail bogus (no --json) writes to stderr and exits 1', async () => {
+    const {status, stdout, stderr} = await runCli(['--detail', 'bogus']);
     expect(status).toBe(1);
     expect(stdout).toBe('');
     expect(stderr).toMatch(/--detail/);
   });
 
-  it('astryx --help (no --json) writes raw help text to stdout, exit 0', () => {
-    const {status, stdout, stderr} = runCli(['--help']);
+  it('astryx --help (no --json) writes raw help text to stdout, exit 0', async () => {
+    const {status, stdout, stderr} = await runCli(['--help']);
     expect(status).toBe(0);
     expect(stdout).toMatch(/^Usage: astryx/);
     expect(stderr).toBe('');
@@ -210,7 +193,7 @@ describe('--json shim: non-JSON behavior is preserved', () => {
 });
 
 describe('--json shim: stdout discipline under --json', () => {
-  it('all error envelopes have empty stderr (no leak of legacy "error: ..." line)', () => {
+  it('all error envelopes have empty stderr (no leak of legacy "error: ..." line)', async () => {
     const cases = [
       ['theme', 'build', '--json'],
       ['--bogus-flag', '--json'],
@@ -219,7 +202,7 @@ describe('--json shim: stdout discipline under --json', () => {
       ['docs', 'color', '--lang', 'fr', '--json'],
     ];
     for (const args of cases) {
-      const {stderr} = runCli(args);
+      const {stderr} = await runCli(args);
       expect(stderr, `stderr should be empty for: ${args.join(' ')}`).toBe('');
     }
   });

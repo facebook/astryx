@@ -11,13 +11,12 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {spawnSync} from 'node:child_process';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {search, scoreCandidate, SEARCH_DOMAINS} from '../../api/search/search.mjs';
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 // Run against the monorepo root so @astryxdesign/core is discoverable.
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 const OPTS = {cwd: REPO_ROOT};
@@ -28,15 +27,6 @@ const OPTS = {cwd: REPO_ROOT};
 // The CLI-level cases spawn a subprocess (its own 30s cap) but still run under
 // the vitest per-test timeout. Give both the same generous scan budget.
 const SCAN_TIMEOUT = 30_000;
-
-function runCli(args) {
-  const res = spawnSync('node', [CLI_BIN, ...args], {
-    cwd: REPO_ROOT,
-    encoding: 'utf-8',
-    timeout: 30_000,
-  });
-  return {status: res.status, stdout: res.stdout || '', stderr: res.stderr || ''};
-}
 
 describe('search() API — ranking', () => {
   it('ranks an exact component name match first', async () => {
@@ -161,29 +151,29 @@ describe('scoreCandidate()', () => {
 });
 
 describe('search CLI — exit codes + JSON contract', () => {
-  it('exits 0 for a successful search', () => {
-    const r = runCli(['search', 'button']);
+  it('exits 0 for a successful search', async () => {
+    const r = await runCli(['search', 'button'], REPO_ROOT);
     expect(r.status).toBe(0);
   });
 
-  it('exits 0 for a no-match query (valid empty result, not failure)', () => {
-    const r = runCli(['search', 'zzqqxx_no_match']);
+  it('exits 0 for a no-match query (valid empty result, not failure)', async () => {
+    const r = await runCli(['search', 'zzqqxx_no_match'], REPO_ROOT);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('No results');
   });
 
-  it('exits 1 for an invalid --type', () => {
-    const r = runCli(['search', 'x', '--type', 'bogus']);
+  it('exits 1 for an invalid --type', async () => {
+    const r = await runCli(['search', 'x', '--type', 'bogus'], REPO_ROOT);
     expect(r.status).toBe(1);
   });
 
-  it('exits 1 for an invalid --limit', () => {
-    const r = runCli(['search', 'x', '--limit', '0']);
+  it('exits 1 for an invalid --limit', async () => {
+    const r = await runCli(['search', 'x', '--limit', '0'], REPO_ROOT);
     expect(r.status).toBe(1);
   });
 
-  it('emits a valid --json envelope', () => {
-    const r = runCli(['--json', 'search', 'button']);
+  it('emits a valid --json envelope', async () => {
+    const r = await runCli(['--json', 'search', 'button'], REPO_ROOT);
     expect(r.status).toBe(0);
     const parsed = JSON.parse(r.stdout);
     expect(parsed.apiVersion).toBe(1);
@@ -193,16 +183,16 @@ describe('search CLI — exit codes + JSON contract', () => {
     expect(parsed.data.results[0].name).toBe('Button');
   });
 
-  it('emits a valid --json envelope with empty results for no match', () => {
-    const r = runCli(['--json', 'search', 'zzqqxx_no_match']);
+  it('emits a valid --json envelope with empty results for no match', async () => {
+    const r = await runCli(['--json', 'search', 'zzqqxx_no_match'], REPO_ROOT);
     expect(r.status).toBe(0);
     const parsed = JSON.parse(r.stdout);
     expect(parsed.type).toBe('search');
     expect(parsed.data.results).toEqual([]);
   });
 
-  it('shows the follow-up command hint in human output', () => {
-    const r = runCli(['search', 'button']);
+  it('shows the follow-up command hint in human output', async () => {
+    const r = await runCli(['search', 'button'], REPO_ROOT);
     expect(r.stdout).toContain('astryx component Button');
     expect(r.stdout).toContain('[component]');
   });

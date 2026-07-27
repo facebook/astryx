@@ -14,7 +14,6 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -24,28 +23,10 @@ import {
   findComponentSource,
 } from './component/index.mjs';
 import {findCoreDir} from '../../utils/paths.mjs';
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
-
-function runCli(args) {
-  try {
-    const out = execFileSync('node', [CLI_BIN, ...args], {
-      cwd: REPO_ROOT,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {...process.env, FORCE_COLOR: '0'},
-    });
-    return {code: 0, stdout: out, stderr: ''};
-  } catch (e) {
-    return {
-      code: e.status ?? 1,
-      stdout: e.stdout?.toString() ?? '',
-      stderr: e.stderr?.toString() ?? '',
-    };
-  }
-}
 
 describe('import hint correctness', () => {
   const coreDir = findCoreDir();
@@ -120,8 +101,8 @@ describe('import hint correctness', () => {
     ];
 
     for (const {name, expected} of representative) {
-      it(`npx astryx component ${name} --detail brief shows ${expected}`, () => {
-        const result = runCli(['component', name, '--detail', 'brief']);
+      it(`npx astryx component ${name} --detail brief shows ${expected}`, async () => {
+        const result = await runCli(['component', name, '--detail', 'brief'], REPO_ROOT);
         expect(result.code).toBe(0);
         expect(result.stdout).toContain(expected);
       });
@@ -132,8 +113,8 @@ describe('import hint correctness', () => {
     const representative = ['Button', 'Theme', 'Table', 'CheckboxInput'];
 
     for (const name of representative) {
-      it(`npx astryx component ${name} (full) includes import statement`, () => {
-        const result = runCli(['component', name]);
+      it(`npx astryx component ${name} (full) includes import statement`, async () => {
+        const result = await runCli(['component', name], REPO_ROOT);
         expect(result.code).toBe(0);
         // The PR adds: **Import:** `import {XDS...} from '...';`
         expect(result.stdout).toMatch(/import\s*\{/);

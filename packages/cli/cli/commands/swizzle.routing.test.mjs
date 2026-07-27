@@ -4,7 +4,7 @@
  * @file Integration-routing tests for `astryx swizzle`.
  *
  * `rewriteImports` is unit-tested in swizzle.test.mjs. These tests exercise the
- * end-to-end command behavior by spawning the CLI bin against hermetic
+ * end-to-end command behavior by running the CLI in-process against hermetic
  * fixtures: a fake @astryxdesign/core under node_modules plus, for the
  * integration cases, a configured integration package (astryx.config.mjs +
  * astryx.integration.mjs + a `components` dir) — all under node_modules so the
@@ -12,14 +12,10 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {fileURLToPath} from 'node:url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 /**
  * Build a fake @astryxdesign/core under <project>/node_modules with a single
@@ -108,24 +104,6 @@ function writeProjectPackageJson(project, extra = {}) {
   );
 }
 
-function runCli(args, cwd) {
-  try {
-    const out = execFileSync('node', [CLI_BIN, ...args], {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {...process.env, FORCE_COLOR: '0'},
-    });
-    return {code: 0, stdout: out, stderr: ''};
-  } catch (e) {
-    return {
-      code: e.status ?? 1,
-      stdout: e.stdout?.toString() ?? '',
-      stderr: e.stderr?.toString() ?? '',
-    };
-  }
-}
-
 let tmpDir;
 let project;
 beforeEach(() => {
@@ -138,7 +116,7 @@ afterEach(() => {
 });
 
 describe('swizzle — core feedback routing via config', () => {
-  it('routes core feedback to config.issuesUrl when set', () => {
+  it('routes core feedback to config.issuesUrl when set', async () => {
     buildFakeCore(project);
     writeProjectPackageJson(project);
     fs.writeFileSync(
@@ -146,7 +124,7 @@ describe('swizzle — core feedback routing via config', () => {
       `export default {issuesUrl: 'https://github.com/acme/ds/issues'};\n`,
     );
 
-    const result = runCli(['--json', 'swizzle', 'Button', '-f'], project);
+    const result = await runCli(['--json', 'swizzle', 'Button', '-f'], project);
     expect(result.code).toBe(0);
     const env = JSON.parse(result.stdout);
     expect(env.type).toBe('swizzle.copy');
@@ -161,11 +139,11 @@ describe('swizzle — core feedback routing via config', () => {
     expect(out).toContain(`from './helper'`);
   });
 
-  it('falls back to the default issues URL when config has none', () => {
+  it('falls back to the default issues URL when config has none', async () => {
     buildFakeCore(project);
     writeProjectPackageJson(project);
 
-    const result = runCli(['--json', 'swizzle', 'Button', '-f'], project);
+    const result = await runCli(['--json', 'swizzle', 'Button', '-f'], project);
     expect(result.code).toBe(0);
     const env = JSON.parse(result.stdout);
     expect(env.data.feedback.issuesUrl).toBe(
@@ -175,12 +153,12 @@ describe('swizzle — core feedback routing via config', () => {
 });
 
 describe('swizzle — integration-owned components', () => {
-  it('copies the component dir (excluding test/doc), rewrites escaping imports to the owner package, routes feedback to the integration issuesUrl', () => {
+  it('copies the component dir (excluding test/doc), rewrites escaping imports to the owner package, routes feedback to the integration issuesUrl', async () => {
     buildFakeCore(project);
     writeProjectPackageJson(project);
     buildIntegration(project, {issuesUrl: 'https://example.com/meta/issues'});
 
-    const result = runCli(['--json', 'swizzle', 'MetaAppShell', '-f'], project);
+    const result = await runCli(['--json', 'swizzle', 'MetaAppShell', '-f'], project);
     expect(result.code).toBe(0);
     const env = JSON.parse(result.stdout);
     expect(env.type).toBe('swizzle.copy');
@@ -200,12 +178,12 @@ describe('swizzle — integration-owned components', () => {
     expect(out).toContain(`from './sibling'`);
   });
 
-  it('omits the feedback note when the integration ships no issuesUrl', () => {
+  it('omits the feedback note when the integration ships no issuesUrl', async () => {
     buildFakeCore(project);
     writeProjectPackageJson(project);
     buildIntegration(project, {issuesUrl: null});
 
-    const result = runCli(['--json', 'swizzle', 'MetaAppShell', '-f'], project);
+    const result = await runCli(['--json', 'swizzle', 'MetaAppShell', '-f'], project);
     expect(result.code).toBe(0);
     const env = JSON.parse(result.stdout);
     expect(env.type).toBe('swizzle.copy');
@@ -215,7 +193,7 @@ describe('swizzle — integration-owned components', () => {
 });
 
 describe('swizzle — ambiguous ownership', () => {
-  it('errors when a name is owned by core + an integration and no --package is given', () => {
+  it('errors when a name is owned by core + an integration and no --package is given', async () => {
     buildFakeCore(project);
     writeProjectPackageJson(project);
     // Integration also provides "Button" (collides with core).
@@ -224,7 +202,7 @@ describe('swizzle — ambiguous ownership', () => {
       componentName: 'Button',
     });
 
-    const result = runCli(['--json', 'swizzle', 'Button', '-f'], project);
+    const result = await runCli(['--json', 'swizzle', 'Button', '-f'], project);
     expect(result.code).not.toBe(0);
     const env = JSON.parse(result.stdout);
     expect(env.code).toBe('ERR_AMBIGUOUS_COMPONENT');
@@ -233,7 +211,7 @@ describe('swizzle — ambiguous ownership', () => {
     expect(pkgs).toContain('@test/meta');
   });
 
-  it('--package resolves an ambiguous name to the integration', () => {
+  it('--package resolves an ambiguous name to the integration', async () => {
     buildFakeCore(project);
     writeProjectPackageJson(project);
     buildIntegration(project, {
@@ -241,7 +219,7 @@ describe('swizzle — ambiguous ownership', () => {
       componentName: 'Button',
     });
 
-    const result = runCli(
+    const result = await runCli(
       ['--json', 'swizzle', 'Button', '--package', '@test/meta', '-f'],
       project,
     );
@@ -255,7 +233,7 @@ describe('swizzle — ambiguous ownership', () => {
     expect(out).toContain(`from '@test/meta/utils'`);
   });
 
-  it('--package resolves an ambiguous name to core', () => {
+  it('--package resolves an ambiguous name to core', async () => {
     buildFakeCore(project);
     writeProjectPackageJson(project);
     buildIntegration(project, {
@@ -263,7 +241,7 @@ describe('swizzle — ambiguous ownership', () => {
       componentName: 'Button',
     });
 
-    const result = runCli(
+    const result = await runCli(
       ['--json', 'swizzle', 'Button', '--package', '@astryxdesign/core', '-f'],
       project,
     );
@@ -311,18 +289,18 @@ function buildStyleXCore(project) {
 }
 
 describe('swizzle — StyleX build setup note (#3373)', () => {
-  it('reports usesStyleX and prints a setup note for StyleX components', () => {
+  it('reports usesStyleX and prints a setup note for StyleX components', async () => {
     buildStyleXCore(project);
     writeProjectPackageJson(project);
 
     // JSON payload carries the machine-readable flag.
-    const jsonResult = runCli(['--json', 'swizzle', 'Styled', '-f'], project);
+    const jsonResult = await runCli(['--json', 'swizzle', 'Styled', '-f'], project);
     expect(jsonResult.code).toBe(0);
     const env = JSON.parse(jsonResult.stdout);
     expect(env.data.usesStyleX).toBe(true);
 
     // Human output surfaces the compiler requirement + Next.js caveat.
-    const humanResult = runCli(['swizzle', 'Styled', '-f'], project);
+    const humanResult = await runCli(['swizzle', 'Styled', '-f'], project);
     expect(humanResult.code).toBe(0);
     expect(humanResult.stdout).toMatch(/StyleX compiler/i);
     expect(humanResult.stdout).toMatch(/unstyled/i);
@@ -330,16 +308,16 @@ describe('swizzle — StyleX build setup note (#3373)', () => {
     expect(humanResult.stdout).toMatch(/astryx docs styling/);
   });
 
-  it('does not print the StyleX note for components without StyleX', () => {
+  it('does not print the StyleX note for components without StyleX', async () => {
     buildStyleXCore(project);
     writeProjectPackageJson(project);
 
-    const jsonResult = runCli(['--json', 'swizzle', 'Plain', '-f'], project);
+    const jsonResult = await runCli(['--json', 'swizzle', 'Plain', '-f'], project);
     expect(jsonResult.code).toBe(0);
     const env = JSON.parse(jsonResult.stdout);
     expect(env.data.usesStyleX).toBe(false);
 
-    const humanResult = runCli(['swizzle', 'Plain', '-f'], project);
+    const humanResult = await runCli(['swizzle', 'Plain', '-f'], project);
     expect(humanResult.code).toBe(0);
     expect(humanResult.stdout).not.toMatch(/StyleX compiler/i);
   });

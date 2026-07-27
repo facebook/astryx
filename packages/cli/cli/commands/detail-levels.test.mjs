@@ -16,40 +16,27 @@
  * duplicated `compact`.
  */
 
-import {describe, it, expect} from 'vitest';
-import {spawnSync} from 'node:child_process';
+import {describe, it, expect, beforeAll} from 'vitest';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 // Repo root holds packages/core, which findCoreDir() walks up to locate.
 const REPO_ROOT = path.resolve(__dirname, '../../../..');
 
-function runCli(args) {
-  const res = spawnSync('node', [CLI_BIN, ...args], {
-    cwd: REPO_ROOT,
-    encoding: 'utf-8',
-    timeout: 60_000,
-    // component.full JSON can exceed the default 1MB stdout buffer.
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  return {
-    status: res.status,
-    stdout: res.stdout || '',
-    stderr: res.stderr || '',
-  };
-}
-
-function listOutputs(cmd) {
-  const brief = runCli([cmd, '--list', '--detail', 'brief']).stdout;
-  const compact = runCli([cmd, '--list', '--detail', 'compact']).stdout;
-  const full = runCli([cmd, '--list', '--detail', 'full']).stdout;
+async function listOutputs(cmd) {
+  const brief = (await runCli([cmd, '--list', '--detail', 'brief'], REPO_ROOT)).stdout;
+  const compact = (await runCli([cmd, '--list', '--detail', 'compact'], REPO_ROOT)).stdout;
+  const full = (await runCli([cmd, '--list', '--detail', 'full'], REPO_ROOT)).stdout;
   return {brief, compact, full};
 }
 
 describe('--detail level ordering: component --list', () => {
-  const {brief, compact, full} = listOutputs('component');
+  let brief, compact, full;
+  beforeAll(async () => {
+    ({brief, compact, full} = await listOutputs('component'));
+  }, 60_000);
 
   it('produces strictly increasing output size: brief < compact < full', () => {
     expect(brief.length).toBeGreaterThan(0);
@@ -82,8 +69,8 @@ describe('--detail level ordering: component --list', () => {
     expect(full).toMatch(/children/);
   });
 
-  it('full --json returns a valid component.full envelope', () => {
-    const {stdout} = runCli(['component', '--list', '--detail', 'full', '--json']);
+  it('full --json returns a valid component.full envelope', async () => {
+    const {stdout} = await runCli(['component', '--list', '--detail', 'full', '--json'], REPO_ROOT);
     const parsed = JSON.parse(stdout);
     expect(parsed.type).toBe('component.full');
     expect(parsed.apiVersion).toBe(1);
@@ -92,7 +79,10 @@ describe('--detail level ordering: component --list', () => {
 });
 
 describe('--detail level ordering: hook --list', () => {
-  const {brief, compact, full} = listOutputs('hook');
+  let brief, compact, full;
+  beforeAll(async () => {
+    ({brief, compact, full} = await listOutputs('hook'));
+  }, 60_000);
 
   it('produces strictly increasing output size: brief < compact < full', () => {
     expect(brief.length).toBeGreaterThan(0);
@@ -123,8 +113,8 @@ describe('--detail level ordering: hook --list', () => {
     expect(full).toMatch(/import \{/);
   });
 
-  it('full --json returns a valid hook.full envelope', () => {
-    const {stdout} = runCli(['hook', '--list', '--detail', 'full', '--json']);
+  it('full --json returns a valid hook.full envelope', async () => {
+    const {stdout} = await runCli(['hook', '--list', '--detail', 'full', '--json'], REPO_ROOT);
     const parsed = JSON.parse(stdout);
     expect(parsed.type).toBe('hook.full');
     expect(parsed.apiVersion).toBe(1);

@@ -23,33 +23,11 @@
  */
 
 import {describe, it, expect, beforeAll, beforeEach, afterEach} from 'vitest';
-import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {fileURLToPath} from 'node:url';
 import {ensureCoreBuilt} from './ensure-core-built.mjs';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
-
-function runCli(args, cwd) {
-  try {
-    const out = execFileSync('node', [CLI_BIN, ...args], {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {...process.env, FORCE_COLOR: '0'},
-    });
-    return {code: 0, stdout: out, stderr: ''};
-  } catch (e) {
-    return {
-      code: e.status ?? 1,
-      stdout: e.stdout?.toString() ?? '',
-      stderr: e.stderr?.toString() ?? '',
-    };
-  }
-}
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 function writeTheme(dir, contents) {
   fs.mkdirSync(dir, {recursive: true});
@@ -76,7 +54,7 @@ afterEach(() => {
 });
 
 describe('theme build custom-variant augmentations', () => {
-  it('targets the real (un-prefixed) core interface for a custom variant', () => {
+  it('targets the real (un-prefixed) core interface for a custom variant', async () => {
     const themeFile = writeTheme(
       tmpDir,
       `export default {
@@ -88,7 +66,7 @@ describe('theme build custom-variant augmentations', () => {
       };\n`,
     );
 
-    const result = runCli(
+    const result = await runCli(
       ['theme', 'build', path.relative(tmpDir, themeFile)],
       tmpDir,
     );
@@ -106,7 +84,7 @@ describe('theme build custom-variant augmentations', () => {
     expect(dts).not.toMatch(/XDSButtonVariantMap/);
   });
 
-  it('skips props with no augmentation point (Button size, Heading type)', () => {
+  it('skips props with no augmentation point (Button size, Heading type)', async () => {
     const themeFile = writeTheme(
       tmpDir,
       `export default {
@@ -122,7 +100,7 @@ describe('theme build custom-variant augmentations', () => {
       };\n`,
     );
 
-    const result = runCli(
+    const result = await runCli(
       ['theme', 'build', path.relative(tmpDir, themeFile)],
       tmpDir,
     );
@@ -140,7 +118,7 @@ describe('theme build custom-variant augmentations', () => {
     expect(dts).not.toContain("declare module '@astryxdesign/core/Heading'");
   });
 
-  it('does not emit a .variants.d.ts when every custom value is non-augmentable', () => {
+  it('does not emit a .variants.d.ts when every custom value is non-augmentable', async () => {
     const themeFile = writeTheme(
       tmpDir,
       `export default {
@@ -152,7 +130,7 @@ describe('theme build custom-variant augmentations', () => {
       };\n`,
     );
 
-    const result = runCli(
+    const result = await runCli(
       ['theme', 'build', path.relative(tmpDir, themeFile)],
       tmpDir,
     );
@@ -162,7 +140,7 @@ describe('theme build custom-variant augmentations', () => {
     ).toBe(false);
   });
 
-  it('references the variants file from the main .d.ts so the augmentation loads', () => {
+  it('references the variants file from the main .d.ts so the augmentation loads', async () => {
     const themeFile = writeTheme(
       tmpDir,
       `export default {
@@ -174,7 +152,7 @@ describe('theme build custom-variant augmentations', () => {
       };\n`,
     );
 
-    const result = runCli(
+    const result = await runCli(
       ['theme', 'build', path.relative(tmpDir, themeFile)],
       tmpDir,
     );

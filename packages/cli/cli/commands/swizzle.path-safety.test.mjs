@@ -3,20 +3,16 @@
 /**
  * @file Path-traversal regression tests for `astryx swizzle --output`.
  *
- * Spawns the CLI bin with a fake monorepo as cwd and asserts that
+ * Runs the CLI in-process with a fake monorepo as cwd and asserts that
  * `--output ../escaped` is rejected with a clear error AND that no
  * file is created outside the project root.
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {fileURLToPath} from 'node:url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 // Build a minimal fake monorepo: <root>/project/ contains a
 // node_modules/@astryxdesign/core/src/Button so findCoreDir succeeds, and
@@ -38,24 +34,6 @@ function buildFakeRepo(tmpDir) {
   return {project, outside};
 }
 
-function runCli(args, cwd) {
-  try {
-    const out = execFileSync('node', [CLI_BIN, ...args], {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {...process.env, FORCE_COLOR: '0'},
-    });
-    return {code: 0, stdout: out, stderr: ''};
-  } catch (e) {
-    return {
-      code: e.status ?? 1,
-      stdout: e.stdout?.toString() ?? '',
-      stderr: e.stderr?.toString() ?? '',
-    };
-  }
-}
-
 let tmpDir;
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-swizzle-paths-'));
@@ -65,10 +43,10 @@ afterEach(() => {
 });
 
 describe('swizzle path safety', () => {
-  it('rejects --output with ../ traversal and writes no file outside root', () => {
+  it('rejects --output with ../ traversal and writes no file outside root', async () => {
     const {project, outside} = buildFakeRepo(tmpDir);
 
-    const result = runCli(
+    const result = await runCli(
       ['swizzle', 'Button', '--output', '../outside-project'],
       project,
     );
@@ -82,11 +60,11 @@ describe('swizzle path safety', () => {
     expect(fs.existsSync(escaped)).toBe(false);
   });
 
-  it('rejects --output with absolute path', () => {
+  it('rejects --output with absolute path', async () => {
     const {project} = buildFakeRepo(tmpDir);
     const absTarget = path.join(tmpDir, 'absolute-target');
 
-    const result = runCli(
+    const result = await runCli(
       ['swizzle', 'Button', '--output', absTarget],
       project,
     );
@@ -96,7 +74,7 @@ describe('swizzle path safety', () => {
     expect(fs.existsSync(absTarget)).toBe(false);
   });
 
-  it('requires --overwrite in non-interactive mode when files already exist', () => {
+  it('requires --overwrite in non-interactive mode when files already exist', async () => {
     const {project} = buildFakeRepo(tmpDir);
     const outDir = path.join(project, 'components', 'astryx', 'Button');
     fs.mkdirSync(outDir, {recursive: true});
@@ -104,7 +82,7 @@ describe('swizzle path safety', () => {
     fs.writeFileSync(existingPath, '// my customizations\n');
 
     // Use --json to force non-interactive mode.
-    const result = runCli(
+    const result = await runCli(
       ['--json', 'swizzle', 'Button'],
       project,
     );

@@ -13,15 +13,12 @@
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
-import {spawnSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {fileURLToPath} from 'node:url';
 import {isAstryxInitialized} from '../../lib/agent-docs/agent-docs.mjs';
+import {runCli} from '../../test-utils/run-cli.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI = path.resolve(__dirname, '..', '..', 'bin', 'astryx.mjs');
 const MARKER = '<!-- ASTRYX:START -->';
 const NUDGE = /finish setup and install the Astryx agent prompt/;
 
@@ -37,15 +34,6 @@ function write(rel, body) {
   const p = path.join(tmp, rel);
   fs.mkdirSync(path.dirname(p), {recursive: true});
   fs.writeFileSync(p, body);
-}
-
-function run(args, cwd = tmp) {
-  return spawnSync(process.execPath, [CLI, ...args], {
-    cwd,
-    encoding: 'utf8',
-    timeout: 30_000,
-    env: {...process.env, FORCE_COLOR: '0'},
-  });
 }
 
 describe('isAstryxInitialized — centralized setup check (one place)', () => {
@@ -76,33 +64,33 @@ describe('isAstryxInitialized — centralized setup check (one place)', () => {
 describe('enforcement layer 3 — per-command setup nudge', () => {
   const asProject = () => write('package.json', '{"name":"t"}');
 
-  it('nudges on stderr after a command when not set up', () => {
+  it('nudges on stderr after a command when not set up', async () => {
     asProject();
-    const r = run(['docs', 'tokens']);
+    const r = await runCli(['docs', 'tokens'], tmp);
     expect(r.stderr).toMatch(NUDGE);
   });
 
-  it('is suppressed in --json (machine mode stays clean), stdout valid JSON', () => {
+  it('is suppressed in --json (machine mode stays clean), stdout valid JSON', async () => {
     asProject();
-    const r = run(['--json', 'docs', 'tokens']);
+    const r = await runCli(['--json', 'docs', 'tokens'], tmp);
     // --json is machine output with a clean stdout+stderr contract; the human
     // nudge must NOT leak into it (json-shim: error envelopes have empty stderr).
     expect(r.stderr).not.toMatch(NUDGE);
     expect(() => JSON.parse(r.stdout)).not.toThrow();
   });
 
-  it('is quiet once set up (marker present)', () => {
+  it('is quiet once set up (marker present)', async () => {
     asProject();
     write('AGENTS.md', MARKER);
-    expect(run(['docs', 'tokens']).stderr).not.toMatch(NUDGE);
+    expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
   });
 
-  it('is quiet outside a project (no package.json)', () => {
-    expect(run(['docs', 'tokens']).stderr).not.toMatch(NUDGE);
+  it('is quiet outside a project (no package.json)', async () => {
+    expect((await runCli(['docs', 'tokens'], tmp)).stderr).not.toMatch(NUDGE);
   });
 
-  it('does not nudge for the installer command itself', () => {
+  it('does not nudge for the installer command itself', async () => {
     asProject();
-    expect(run(['init']).stderr).not.toMatch(NUDGE);
+    expect((await runCli(['init'], tmp)).stderr).not.toMatch(NUDGE);
   });
 });

@@ -15,26 +15,8 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {spawnSync} from 'node:child_process';
-import * as path from 'node:path';
-import {fileURLToPath} from 'node:url';
 import {ERROR_CODES, isErrorCode, allErrorCodes} from './error-codes.mjs';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../bin/astryx.mjs');
-
-function runCli(args, {cwd} = {}) {
-  const res = spawnSync('node', [CLI_BIN, ...args], {
-    cwd: cwd || process.cwd(),
-    encoding: 'utf-8',
-    timeout: 20_000,
-  });
-  return {
-    status: res.status,
-    stdout: res.stdout || '',
-    stderr: res.stderr || '',
-  };
-}
+import {runCli} from '../test-utils/run-cli.mjs';
 
 /** Parse the JSON envelope from stdout. Throws if stdout isn't clean JSON. */
 function envelope(stdout) {
@@ -110,8 +92,8 @@ describe('error codes: end-to-end JSON envelopes', () => {
   ];
 
   for (const {name, args, code} of cases) {
-    it(`${name} → ${code}`, () => {
-      const {status, stdout} = runCli(args);
+    it(`${name} → ${code}`, async () => {
+      const {status, stdout} = await runCli(args);
       expect(status).toBe(1);
       const env = envelope(stdout);
       expect(env).toHaveProperty('apiVersion');
@@ -122,8 +104,8 @@ describe('error codes: end-to-end JSON envelopes', () => {
     });
   }
 
-  it('every error envelope carries a code (even unmatched paths fall back to ERR_UNKNOWN)', () => {
-    const {stdout} = runCli(['component', 'Bogus', '--json']);
+  it('every error envelope carries a code (even unmatched paths fall back to ERR_UNKNOWN)', async () => {
+    const {stdout} = await runCli(['component', 'Bogus', '--json']);
     const env = envelope(stdout);
     expect(typeof env.code).toBe('string');
     expect(env.code.length).toBeGreaterThan(0);
@@ -131,8 +113,8 @@ describe('error codes: end-to-end JSON envelopes', () => {
 });
 
 describe('error codes: human mode stays clean', () => {
-  it('the code is NOT printed in the human-facing error line', () => {
-    const {status, stderr, stdout} = runCli(['component', 'Bogus']);
+  it('the code is NOT printed in the human-facing error line', async () => {
+    const {status, stderr, stdout} = await runCli(['component', 'Bogus']);
     expect(status).toBe(1);
     // Human output goes to stderr and must not leak the machine code.
     expect(stderr).toContain('No component named');
@@ -140,11 +122,11 @@ describe('error codes: human mode stays clean', () => {
     expect(stdout).not.toContain('ERR_UNKNOWN_COMPONENT');
   });
 
-  it('unknown subcommand exits 1 in human mode (code carried internally)', () => {
+  it('unknown subcommand exits 1 in human mode (code carried internally)', async () => {
     // `theme` is not JSON-capable, so this path is human-only; we assert the
     // failure surfaces with exit 1 and a helpful message. The stable
     // ERR_UNKNOWN_SUBCOMMAND code rides along on the cliError call.
-    const {status, stderr} = runCli(['theme', 'bogus-sub']);
+    const {status, stderr} = await runCli(['theme', 'bogus-sub']);
     expect(status).toBe(1);
     expect(stderr).toContain("unknown subcommand 'theme bogus-sub'");
     expect(stderr).not.toContain('ERR_UNKNOWN_SUBCOMMAND');

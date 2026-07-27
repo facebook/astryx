@@ -13,33 +13,11 @@
  */
 
 import {describe, it, expect, beforeAll, beforeEach, afterEach} from 'vitest';
-import {execFileSync} from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import {fileURLToPath} from 'node:url';
 import {ensureCoreBuilt} from './ensure-core-built.mjs';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
-
-function runCli(args, cwd) {
-  try {
-    const out = execFileSync('node', [CLI_BIN, ...args], {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {...process.env, FORCE_COLOR: '0'},
-    });
-    return {code: 0, stdout: out, stderr: ''};
-  } catch (e) {
-    return {
-      code: e.status ?? 1,
-      stdout: e.stdout?.toString() ?? '',
-      stderr: e.stderr?.toString() ?? '',
-    };
-  }
-}
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 function writeTheme(dir, name) {
   fs.mkdirSync(dir, {recursive: true});
@@ -67,13 +45,13 @@ afterEach(() => {
 });
 
 describe('theme build install-instructions import path', () => {
-  it('emits bare ./<name> specifiers (no double slash) when out dir equals cwd', () => {
+  it('emits bare ./<name> specifiers (no double slash) when out dir equals cwd', async () => {
     // Source theme lives directly in the project root, so the output dir
     // is the cwd and the relative dir is an empty string.
     const project = path.join(tmpDir, 'project');
     const themeFile = writeTheme(project, 'cwd-theme');
 
-    const result = runCli(
+    const result = await runCli(
       ['theme', 'build', path.relative(project, themeFile)],
       project,
     );
@@ -87,11 +65,11 @@ describe('theme build install-instructions import path', () => {
     expect(result.stdout).toContain('href="./cwd-theme.css"');
   });
 
-  it('keeps the subdir in the import path for a non-src subdirectory build', () => {
+  it('keeps the subdir in the import path for a non-src subdirectory build', async () => {
     const project = path.join(tmpDir, 'project');
     const themeFile = writeTheme(path.join(project, 'themes'), 'sub-theme');
 
-    const result = runCli(
+    const result = await runCli(
       ['theme', 'build', path.relative(project, themeFile)],
       project,
     );
@@ -103,14 +81,14 @@ describe('theme build install-instructions import path', () => {
     expect(result.stdout).toContain('href="./themes/sub-theme.css"');
   });
 
-  it('strips a leading src/ from the import path (relative to a file in src/)', () => {
+  it('strips a leading src/ from the import path (relative to a file in src/)', async () => {
     const project = path.join(tmpDir, 'project');
     const themeFile = writeTheme(
       path.join(project, 'src', 'themes', 'ocean'),
       'ocean',
     );
 
-    const result = runCli(
+    const result = await runCli(
       ['theme', 'build', path.relative(project, themeFile)],
       project,
     );

@@ -15,14 +15,9 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {spawnSync} from 'node:child_process';
-import * as path from 'node:path';
-import {fileURLToPath} from 'node:url';
 import {program, JSON_SUPPORTED} from '../cli/index.mjs';
 import {buildManifest, RESPONSE_TYPES} from './manifest.mjs';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_BIN = path.resolve(__dirname, '../bin/astryx.mjs');
+import {runCli} from '../test-utils/run-cli.mjs';
 
 const manifest = buildManifest(program, {jsonSupported: JSON_SUPPORTED, version: '0.0.0-test'});
 
@@ -138,14 +133,9 @@ describe('manifest: shape', () => {
   });
 });
 
-function runCli(args) {
-  const res = spawnSync('node', [CLI_BIN, ...args], {encoding: 'utf-8', timeout: 20_000});
-  return {status: res.status, stdout: res.stdout || '', stderr: res.stderr || ''};
-}
-
 describe('manifest: e2e', () => {
-  it('astryx manifest --json emits a valid manifest envelope', () => {
-    const {status, stdout} = runCli(['manifest', '--json']);
+  it('astryx manifest --json emits a valid manifest envelope', async () => {
+    const {status, stdout} = await runCli(['manifest', '--json']);
     expect(status).toBe(0);
     const parsed = JSON.parse(stdout);
     expect(parsed.apiVersion).toBe(1);
@@ -157,8 +147,8 @@ describe('manifest: e2e', () => {
     expect(names).toContain('manifest');
   });
 
-  it('bare xds --json stays backwards-compatible AND embeds the manifest', () => {
-    const {status, stdout} = runCli(['--json']);
+  it('bare xds --json stays backwards-compatible AND embeds the manifest', async () => {
+    const {status, stdout} = await runCli(['--json']);
     expect(status).toBe(0);
     const parsed = JSON.parse(stdout);
     // Back-compat: still type:'help' with name/version/commands(names)/jsonSupported
