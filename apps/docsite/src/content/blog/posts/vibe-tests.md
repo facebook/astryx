@@ -1,6 +1,6 @@
 ---
-title: 'Vibe Tests: How we make decisions in Astryx'
-description: 'When your users are agents, you can run "user" studies at scale. Vibe tests are how we turn that into objective, repeatable decisions — from API naming to system architecture.'
+title: 'Vibe Test'
+description: 'How we make decisions in Astryx'
 date: '2026-07-27'
 type: 'engineering'
 authors:
