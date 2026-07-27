@@ -3,21 +3,19 @@
 /**
  * @file Integration tests for the global --json contract.
  *
- * These tests spawn the CLI as a subprocess (the only way to exercise
- * Commander hooks end-to-end) in a tmp directory, then assert:
+ * These drive the REAL program IN-PROCESS (createProgram + parseAsync via the
+ * shared runCli harness), which exercises Commander's preAction hooks, the
+ * --json gate, and process.exit end-to-end without a per-assertion subprocess.
+ * Assertions:
  *
  *   1. Commands NOT on the JSON_SUPPORTED allowlist reject --json BEFORE
  *      running any side effects (no files written, exit 1, valid JSON
  *      error envelope on stdout).
- *
- *   2. Commands ON the allowlist emit valid JSON envelopes for their
- *      common code paths (success and error).
- *
- *   3. The --version --json variant emits a structured envelope.
- *
- * Spawning a real subprocess (vs. importing program.mjs) is essential
- * because Commander's preAction hooks and process.exit calls only fire
- * during a real .parse() against argv.
+ *   2. Commands ON the allowlist emit valid JSON envelopes for their common
+ *      code paths (success and error).
+ *   3. The --version --json variant emits a structured envelope. This one is
+ *      intercepted at the bin argv layer (before Commander), so it is the sole
+ *      case that must spawn the real binary.
  */
 
 import {describe, it, expect, beforeEach, afterEach} from 'vitest';
@@ -26,21 +24,19 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import {fileURLToPath} from 'node:url';
+import {runCli} from '../../test-utils/run-cli.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CLI_BIN = path.resolve(__dirname, '../../bin/astryx.mjs');
 
-function runCli(args, {cwd} = {}) {
+// `--version --json` is handled at the bin argv layer (before Commander ever
+// runs), so it can only be exercised by spawning the real binary.
+function runCliSpawn(args) {
   const res = spawnSync('node', [CLI_BIN, ...args], {
-    cwd: cwd || process.cwd(),
     encoding: 'utf-8',
     timeout: 20_000,
   });
-  return {
-    status: res.status,
-    stdout: res.stdout || '',
-    stderr: res.stderr || '',
-  };
+  return {status: res.status, stdout: res.stdout || '', stderr: res.stderr || ''};
 }
 
 function parseJson(stdout) {
@@ -61,11 +57,11 @@ afterEach(() => {
 });
 
 describe('--json contract: rejects before side effects', () => {
-  it('astryx init --json --features agents does not write agent docs', () => {
+  it('astryx init --json --features agents does not write agent docs', async () => {
     const before = fs.readdirSync(tmpDir);
     expect(before).toEqual([]);
 
-    const {status, stdout} = runCli(['init', '--json', '--features', 'agents'], {cwd: tmpDir});
+    const {status, stdout} = await runCli(['init', '--json', '--features', 'agents'], {cwd: tmpDir});
 
     // 1. Exit code must be non-zero.
     expect(status).toBe(1);
@@ -84,15 +80,15 @@ describe('--json contract: rejects before side effects', () => {
     expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(false);
   });
 
-  it('astryx init --json --all does not write any files', () => {
-    const {status, stdout} = runCli(['init', '--json', '--all'], {cwd: tmpDir});
+  it('astryx init --json --all does not write any files', async () => {
+    const {status, stdout} = await runCli(['init', '--json', '--all'], {cwd: tmpDir});
     expect(status).toBe(1);
     parseJson(stdout); // valid JSON
     expect(fs.readdirSync(tmpDir)).toEqual([]);
   });
 
-  it('astryx theme --json (parent, no subcommand) rejects without printing help', () => {
-    const {status, stdout, stderr} = runCli(['theme', '--json'], {cwd: tmpDir});
+  it('astryx theme --json (parent, no subcommand) rejects without printing help', async () => {
+    const {status, stdout, stderr} = await runCli(['theme', '--json'], {cwd: tmpDir});
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
     expect(parsed.error).toMatch(/theme/);
@@ -101,15 +97,15 @@ describe('--json contract: rejects before side effects', () => {
     expect(stderr).not.toMatch(/Usage:/);
   });
 
-  it('astryx postinstall --json rejects (hidden command not on allowlist)', () => {
-    const {status, stdout} = runCli(['postinstall', '--json'], {cwd: tmpDir});
+  it('astryx postinstall --json rejects (hidden command not on allowlist)', async () => {
+    const {status, stdout} = await runCli(['postinstall', '--json'], {cwd: tmpDir});
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
     expect(parsed).toHaveProperty('error');
   });
 
-  it('error envelope is { error, suggestions? } — never { type, data }', () => {
-    const {stdout} = runCli(['init', '--json'], {cwd: tmpDir});
+  it('error envelope is { error, suggestions? } — never { type, data }', async () => {
+    const {stdout} = await runCli(['init', '--json'], {cwd: tmpDir});
     const parsed = parseJson(stdout);
     expect(parsed).toHaveProperty('error');
     expect(parsed).not.toHaveProperty('type');
@@ -119,7 +115,7 @@ describe('--json contract: rejects before side effects', () => {
 
 describe('--json contract: supported commands emit valid envelopes', () => {
   it('astryx --version --json emits { type: "version", data: { version } }', () => {
-    const {status, stdout} = runCli(['--version', '--json']);
+    const {status, stdout} = runCliSpawn(['--version', '--json']);
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
     expect(parsed.type).toBe('version');
@@ -127,8 +123,8 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(typeof parsed.data.version).toBe('string');
   });
 
-  it('astryx --json (no subcommand) emits a help envelope', () => {
-    const {status, stdout} = runCli(['--json']);
+  it('astryx --json (no subcommand) emits a help envelope', async () => {
+    const {status, stdout} = await runCli(['--json']);
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
     expect(parsed.type).toBe('help');
@@ -136,15 +132,15 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(Array.isArray(parsed.data.jsonSupported)).toBe(true);
   });
 
-  it('astryx upgrade --json --list returns the codemod list', () => {
-    const {status, stdout} = runCli(['upgrade', '--json', '--list'], {cwd: tmpDir});
+  it('astryx upgrade --json --list returns the codemod list', async () => {
+    const {status, stdout} = await runCli(['upgrade', '--json', '--list'], {cwd: tmpDir});
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
     expect(parsed.type).toBe('upgrade.list');
     expect(Array.isArray(parsed.data)).toBe(true);
   });
 
-  it('astryx upgrade --json (already up to date) emits upgrade.status', () => {
+  it('astryx upgrade --json (already up to date) emits upgrade.status', async () => {
     // Force a no-op range: from > installed target.
     const coreDir = path.join(tmpDir, 'node_modules', '@astryxdesign', 'core');
     fs.mkdirSync(coreDir, {recursive: true});
@@ -153,7 +149,7 @@ describe('--json contract: supported commands emit valid envelopes', () => {
       JSON.stringify({name: '@astryxdesign/core', version: '0.0.1'}, null, 2),
     );
 
-    const {status, stdout} = runCli(
+    const {status, stdout} = await runCli(
       ['upgrade', '--json', '--from', '99.0.0'],
       {cwd: tmpDir},
     );
@@ -165,8 +161,8 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(parsed.data.to).toBe('0.0.1');
   });
 
-  it('astryx discover --json (no config) includes meta.configured=false', () => {
-    const {status, stdout} = runCli(['discover', '--json'], {cwd: tmpDir});
+  it('astryx discover --json (no config) includes meta.configured=false', async () => {
+    const {status, stdout} = await runCli(['discover', '--json'], {cwd: tmpDir});
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
     expect(parsed.type).toBe('discover.list');
@@ -174,24 +170,24 @@ describe('--json contract: supported commands emit valid envelopes', () => {
     expect(parsed.meta).toEqual({configured: false});
   });
 
-  it('astryx template --json emits a typed envelope', () => {
-    const {status, stdout} = runCli(['template', '--json'], {cwd: tmpDir});
+  it('astryx template --json emits a typed envelope', async () => {
+    const {status, stdout} = await runCli(['template', '--json'], {cwd: tmpDir});
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
     expect(parsed.type).toBe('template.list');
     expect(Array.isArray(parsed.data)).toBe(true);
   });
 
-  it('astryx docs --json emits a typed envelope', () => {
-    const {status, stdout} = runCli(['docs', '--json'], {cwd: tmpDir});
+  it('astryx docs --json emits a typed envelope', async () => {
+    const {status, stdout} = await runCli(['docs', '--json'], {cwd: tmpDir});
     expect(status).toBe(0);
     const parsed = parseJson(stdout);
     expect(parsed.type).toMatch(/^docs\./);
   });
 
-  it('astryx doctor --json emits a doctor envelope with checks + summary', () => {
+  it('astryx doctor --json emits a doctor envelope with checks + summary', async () => {
     // Run in a bare tmp dir → @astryxdesign/core won't resolve → a FAIL → exit 1.
-    const {status, stdout} = runCli(['doctor', '--json'], {cwd: tmpDir});
+    const {status, stdout} = await runCli(['doctor', '--json'], {cwd: tmpDir});
     expect(status).toBe(1);
     const parsed = parseJson(stdout);
     expect(parsed.type).toBe('doctor');

@@ -5,6 +5,11 @@
  *
  * Registers all commands via lazy loading. If one command fails to load
  * (bad import, syntax error), the other commands still work.
+ *
+ * The program is built by {@link createProgram} — a factory so tests can drive
+ * a FRESH program in-process (via parseAsync) instead of spawning `node
+ * bin/astryx.mjs` per assertion. `bin/astryx.mjs` and legacy importers use the
+ * eager {@link program} singleton, which is just `await createProgram()`.
  */
 
 import {Command, Option} from 'commander';
@@ -29,7 +34,8 @@ const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'
 // Intercept `xds --version --json` (or `-V --json`) before Commander processes
 // the version flag and exits. Commander's built-in version handler prints the
 // raw version string and calls process.exit, bypassing our hooks — so the
-// only correct place to JSON-ify it is here.
+// only correct place to JSON-ify it is here. (Bin-time only: guarded on argv,
+// so importing this module in tests is a no-op.)
 const _argv = process.argv.slice(2);
 if (
   (_argv.includes('--version') || _argv.includes('-V')) &&
@@ -39,8 +45,6 @@ if (
   console.log(JSON.stringify({apiVersion: API_VERSION, type: 'version', data: {version: pkg.version}}, null, 2));
   process.exit(0);
 }
-
-export const program = new Command();
 
 /**
  * Allowlist of fully-qualified command names that natively support --json.
@@ -72,207 +76,22 @@ export const JSON_SUPPORTED = new Set([
   'layout grammar',
 ]);
 
-program
-  .name('astryx')
-  .description('Design system CLI — components, themes, and tooling')
-  .version(pkg.version)
-  .option('--zh', 'Output docs in Chinese Simplified')
-  .option('--dense', 'Output docs in compressed dense format (token-efficient)')
-  .addOption(
-    new Option(
-      '--lang <locale>',
-      'Output docs in specified language/format (en, zh, dense)',
-    ).choices(['en', 'zh', 'dense']),
-  )
-  .addOption(
-    new Option('--detail <level>', 'Output detail level (full, compact, brief)')
-      .choices(['full', 'compact', 'brief'])
-      .default('full'),
-  )
-  .option(
-    '--json',
-    'Output as typed JSON. Success envelope: { type, data }. Error envelope: { error, suggestions? }.',
-  )
-  .addHelpCommand('help', 'Show all commands')
-  .action((options, cmd) => {
-    // If Commander handed us a positional that didn't match any subcommand,
-    // treat it as "unknown command" — exit 1 with a helpful suggestion.
-    // This is the bare-invocation handler; if cmd.args has content here,
-    // none of the registered subcommands matched.
-    const extras = (cmd && cmd.args) || [];
-    if (extras.length > 0) {
-      const unknown = String(extras[0]);
-      const known = (program.commands || [])
-        .filter((c) => !(/** @type {any} */ (c)._hidden) && c.name() !== 'help')
-        .map((c) => c.name());
-      const close = known
-        .map((name) => ({name, distance: levenshteinDistance(unknown.toLowerCase(), name.toLowerCase())}))
-        .filter((s) => s.distance <= 3)
-        .sort((a, b) => a.distance - b.distance)
-        .slice(0, 3)
-        .map((s) => ({name: s.name, reason: 'did you mean this?'}));
-      // If we have close matches, surface those. Otherwise list all known commands
-      // so callers (including AI agents) can see what's available.
-      const suggestions = close.length > 0
-        ? close
-        : known.map((name) => ({name, reason: 'available command'}));
-      cliError(`unknown command '${unknown}'`, {suggestions, code: ERROR_CODES.ERR_UNKNOWN_COMMAND});
-      return;
-    }
-
-    // `xds` (no subcommand) — print help, or emit a JSON envelope when --json.
-    if (program.opts().json) {
-      // Emit the full capability manifest so an agent can drive the entire
-      // CLI from one call — no need to scrape `--help` text. We derive this
-      // from Commander metadata (commands, args, flags) and layer on the
-      // JSON_SUPPORTED allowlist + per-command response types. See
-      // lib/manifest.mjs.
-      //
-      // Backwards-compat: the envelope keeps `type: 'help'` and the original
-      // shallow fields (`name`, `version`, `commands` as a string[] of names,
-      // `jsonSupported`) that earlier consumers read. The richer, structured
-      // surface is embedded under `data.manifest` (and is also available
-      // standalone via `astryx manifest --json` as `type: 'manifest'`).
-      process.__xdsJsonHandled = true;
-      const manifest = buildManifest(program, {
-        jsonSupported: JSON_SUPPORTED,
-        version: pkg.version,
-      });
-      console.log(JSON.stringify({
-        apiVersion: API_VERSION,
-        type: 'help',
-        data: {
-          name: manifest.name,
-          version: manifest.version,
-          // Original flat list of command names (string[]) — kept for compat.
-          commands: manifest.commands.map((c) => c.name),
-          jsonSupported: manifest.jsonSupported,
-          // Enriched, self-describing surface (the full manifest payload).
-          manifest,
-        },
-      }, null, 2));
-      return;
-    }
-    program.help();
-  });
-
 /**
  * Compute the fully qualified command name, e.g. "theme build" or "swizzle".
  * @param {import('commander').Command} actionCommand
+ * @param {import('commander').Command} root the root program
  * @returns {string}
  */
-function fullCommandName(actionCommand) {
+function fullCommandName(actionCommand, root) {
   const parts = [];
   /** @type {import('commander').Command | null} */
   let cmd = actionCommand;
-  while (cmd && cmd !== program) {
+  while (cmd && cmd !== root) {
     parts.unshift(cmd.name());
     cmd = cmd.parent;
   }
   return parts.join(' ');
 }
-
-/**
- * Pre-action hook: gate --json BEFORE any command body runs.
- *
- * If --json is set on a command that is not on the JSON_SUPPORTED allowlist,
- * emit a structured error envelope and exit 1 — without running the command's
- * action (so no filesystem mutations, no interactive prompts, no spawned processes).
- *
- * This is the single source of truth for "command does not support --json".
- * Individual commands should NOT re-check this; they may assume that if their
- * action runs with --json, they are responsible for emitting an envelope on
- * every code path.
- */
-program.hook('preAction', (thisCommand, actionCommand) => {
-  if (!program.opts().json) return;
-  // Engage global JSON mode so humanLog()/humanWarn() across commands become
-  // no-ops — stdout now carries only the JSON envelope.
-  setJsonMode(true);
-  // The root program's own action (no subcommand) is handled directly in
-  // its action handler — let it through. fullCommandName is '' there.
-  if (actionCommand === program) return;
-  const fullName = fullCommandName(actionCommand);
-  if (JSON_SUPPORTED.has(fullName)) return;
-  process.__xdsJsonHandled = true;
-  console.log(JSON.stringify({
-    apiVersion: API_VERSION,
-    error: `JSON output is not supported for the '${fullName}' command`,
-    code: ERROR_CODES.ERR_INVALID_OPTION,
-  }, null, 2));
-  process.exit(1);
-});
-
-/**
- * Belt-and-suspenders postAction: if a "supported" command somehow forgot
- * to emit a JSON envelope on a code path, surface that as a structured error
- * rather than silent stdout corruption. This should never fire in practice;
- * if it does, it's a bug in the command implementation.
- */
-program.hook('postAction', (thisCommand, actionCommand) => {
-  if (!program.opts().json) return;
-  if (process.__xdsJsonHandled) return;
-  const fullName = fullCommandName(actionCommand);
-  console.log(JSON.stringify({
-    apiVersion: API_VERSION,
-    error: `Internal: '${fullName}' completed without emitting a JSON envelope`,
-  }, null, 2));
-  process.exit(1);
-});
-
-/**
- * Post-action hook: print update hint after any command output.
- * Only fires for commands that produce output agents read (component, docs, etc.).
- * Suppressed when --json is active to avoid contaminating stdout.
- */
-const UPDATE_HINT_COMMANDS = new Set(['component', 'docs']);
-program.hook('postAction', (thisCommand, actionCommand) => {
-  if (program.opts().json) return;
-  try {
-    if (UPDATE_HINT_COMMANDS.has(actionCommand.name())) {
-      const hint = checkForUpdate();
-      if (hint) {
-        console.error(`\n${hint}`);
-      }
-    }
-  } catch {
-    // Never let update check break the CLI
-  }
-});
-
-/**
- * Enforcement layer 3 — setup nudge. If this project hasn't run `astryx init`
- * yet (no Astryx marker in any agent-doc file — see isAstryxInitialized), remind
- * the user/agent that setup is missing.
- *
- * Uses `preAction` (not postAction) so it fires for EVERY valid command — even
- * ones whose action errors or calls process.exit (postAction is skipped then).
- *
- * Suppressed in --json: that is machine output with a strict clean stdout+stderr
- * contract (json-shim.test: "error envelopes have empty stderr"), and --json
- * consumers parse stdout, not stderr — a stderr nudge would not reach them anyway.
- * The core/cli postinstall layers already nudge at install time regardless of
- * --json; a machine-readable nudge could later be an envelope field. Also skipped
- * for the installer commands themselves and outside a project (no package.json).
- */
-const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
-program.hook('preAction', (thisCommand, actionCommand) => {
-  try {
-    if (program.opts().json) return; // machine mode — keep --json output clean
-    if (SETUP_NUDGE_EXEMPT.has(actionCommand.name())) return;
-    const cwd = process.cwd();
-    if (!fs.existsSync(path.join(cwd, 'package.json'))) return; // not a project
-    if (isAstryxInitialized(cwd)) return; // already set up — stay quiet
-    // Same wording as the core/cli postinstall nudges. #4151's getCliInvocation()
-    // renders the correct form for THIS project — scoped `npx @astryxdesign/cli`
-    // one-off, or `<pm> astryx` when installed — never the bare `npx astryx` footgun.
-    console.error(
-      `\nNext step: run \`${getCliInvocation(cwd)} init\` to finish setup and install the Astryx agent prompt.`,
-    );
-  } catch {
-    // Never let the nudge break a command.
-  }
-});
 
 /**
  * Command registry — each command is lazy-loaded so a broken command
@@ -301,59 +120,257 @@ const commands = [
   },
 ];
 
-for (const cmd of commands) {
-  try {
-    const mod = await import(cmd.path);
-    mod[cmd.register](program);
-  } catch (e) {
-    // Command fails to load but CLI still works
-    program
-      .command(cmd.name)
-      .description(`(failed to load: ${/** @type {any} */ (e).message})`)
-      .action(() => {
-        console.error(`Command "${cmd.name}" failed to load:`);
-        console.error(/** @type {any} */ (e).message);
-        process.exit(1);
-      });
-  }
-}
+const UPDATE_HINT_COMMANDS = new Set(['component', 'docs']);
+const SETUP_NUDGE_EXEMPT = new Set(['init', 'agent-docs']);
 
-// Capability manifest — a single, self-describing view of the whole CLI so
-// agents can discover every command, argument, flag, and response type without
-// scraping `--help`. `astryx manifest --json` is the dedicated surface; the bare
-// `xds --json` embeds the same payload under data.manifest for convenience.
-program
-  .command('manifest')
-  .description('Print the full CLI capability manifest (use with --json)')
-  .action(() => {
-    const manifest = buildManifest(program, {
-      jsonSupported: JSON_SUPPORTED,
-      version: pkg.version,
+/**
+ * Build a fresh, fully-wired Astryx CLI program (root options, hooks, all
+ * commands, manifest/postinstall, json-shim). Async because commands are
+ * lazy-imported. Each call returns an independent Command so tests can
+ * parseAsync repeatedly without commander state leaking between runs.
+ *
+ * @returns {Promise<import('commander').Command>}
+ */
+export async function createProgram() {
+  const program = new Command();
+
+  program
+    .name('astryx')
+    .description('Design system CLI — components, themes, and tooling')
+    .version(pkg.version)
+    .option('--zh', 'Output docs in Chinese Simplified')
+    .option('--dense', 'Output docs in compressed dense format (token-efficient)')
+    .addOption(
+      new Option(
+        '--lang <locale>',
+        'Output docs in specified language/format (en, zh, dense)',
+      ).choices(['en', 'zh', 'dense']),
+    )
+    .addOption(
+      new Option('--detail <level>', 'Output detail level (full, compact, brief)')
+        .choices(['full', 'compact', 'brief'])
+        .default('full'),
+    )
+    .option(
+      '--json',
+      'Output as typed JSON. Success envelope: { type, data }. Error envelope: { error, suggestions? }.',
+    )
+    .addHelpCommand('help', 'Show all commands')
+    .action((options, cmd) => {
+      // If Commander handed us a positional that didn't match any subcommand,
+      // treat it as "unknown command" — exit 1 with a helpful suggestion.
+      // This is the bare-invocation handler; if cmd.args has content here,
+      // none of the registered subcommands matched.
+      const extras = (cmd && cmd.args) || [];
+      if (extras.length > 0) {
+        const unknown = String(extras[0]);
+        const known = (program.commands || [])
+          .filter((c) => !(/** @type {any} */ (c)._hidden) && c.name() !== 'help')
+          .map((c) => c.name());
+        const close = known
+          .map((name) => ({name, distance: levenshteinDistance(unknown.toLowerCase(), name.toLowerCase())}))
+          .filter((s) => s.distance <= 3)
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, 3)
+          .map((s) => ({name: s.name, reason: 'did you mean this?'}));
+        // If we have close matches, surface those. Otherwise list all known commands
+        // so callers (including AI agents) can see what's available.
+        const suggestions = close.length > 0
+          ? close
+          : known.map((name) => ({name, reason: 'available command'}));
+        cliError(`unknown command '${unknown}'`, {suggestions, code: ERROR_CODES.ERR_UNKNOWN_COMMAND});
+        return;
+      }
+
+      // `xds` (no subcommand) — print help, or emit a JSON envelope when --json.
+      if (program.opts().json) {
+        // Emit the full capability manifest so an agent can drive the entire
+        // CLI from one call — no need to scrape `--help` text. We derive this
+        // from Commander metadata (commands, args, flags) and layer on the
+        // JSON_SUPPORTED allowlist + per-command response types. See
+        // lib/manifest.mjs.
+        //
+        // Backwards-compat: the envelope keeps `type: 'help'` and the original
+        // shallow fields (`name`, `version`, `commands` as a string[] of names,
+        // `jsonSupported`) that earlier consumers read. The richer, structured
+        // surface is embedded under `data.manifest` (and is also available
+        // standalone via `astryx manifest --json` as `type: 'manifest'`).
+        process.__xdsJsonHandled = true;
+        const manifest = buildManifest(program, {
+          jsonSupported: JSON_SUPPORTED,
+          version: pkg.version,
+        });
+        console.log(JSON.stringify({
+          apiVersion: API_VERSION,
+          type: 'help',
+          data: {
+            name: manifest.name,
+            version: manifest.version,
+            // Original flat list of command names (string[]) — kept for compat.
+            commands: manifest.commands.map((c) => c.name),
+            jsonSupported: manifest.jsonSupported,
+            // Enriched, self-describing surface (the full manifest payload).
+            manifest,
+          },
+        }, null, 2));
+        return;
+      }
+      program.help();
     });
-    if (program.opts().json) {
-      process.__xdsJsonHandled = true;
-      console.log(JSON.stringify({apiVersion: API_VERSION, type: 'manifest', data: manifest}, null, 2));
-      return;
-    }
-    // Human-readable summary. Agents should use --json.
-    console.log(`\n${manifest.name} v${manifest.version} — ${manifest.commands.length} commands\n`);
-    for (const c of manifest.commands) {
-      const tag = c.json ? ' [--json]' : '';
-      console.log(`  ${c.name}${tag}`);
-      if (c.description) console.log(`    ${c.description}`);
-    }
-    console.log(`\nRun \`${getCliInvocation()} manifest --json\` for the full structured manifest.\n`);
+
+  /**
+   * Pre-action hook: gate --json BEFORE any command body runs.
+   *
+   * If --json is set on a command that is not on the JSON_SUPPORTED allowlist,
+   * emit a structured error envelope and exit 1 — without running the command's
+   * action (so no filesystem mutations, no interactive prompts, no spawned processes).
+   *
+   * This is the single source of truth for "command does not support --json".
+   * Individual commands should NOT re-check this; they may assume that if their
+   * action runs with --json, they are responsible for emitting an envelope on
+   * every code path.
+   */
+  program.hook('preAction', (thisCommand, actionCommand) => {
+    if (!program.opts().json) return;
+    // Engage global JSON mode so humanLog()/humanWarn() across commands become
+    // no-ops — stdout now carries only the JSON envelope.
+    setJsonMode(true);
+    // The root program's own action (no subcommand) is handled directly in
+    // its action handler — let it through. fullCommandName is '' there.
+    if (actionCommand === program) return;
+    const fullName = fullCommandName(actionCommand, program);
+    if (JSON_SUPPORTED.has(fullName)) return;
+    process.__xdsJsonHandled = true;
+    console.log(JSON.stringify({
+      apiVersion: API_VERSION,
+      error: `JSON output is not supported for the '${fullName}' command`,
+      code: ERROR_CODES.ERR_INVALID_OPTION,
+    }, null, 2));
+    process.exit(1);
   });
 
-// Hidden command used by package.json postinstall scripts
-program
-  .command('postinstall', {hidden: true})
-  .action(() => {
-    const r = getCliInvocation();
-    const pad = (/** @type {string} */ s, /** @type {number} */ len) => s + ' '.repeat(Math.max(0, len - s.length));
-    const W = 49; // inner width of the box
-    const line = (/** @type {string} */ s) => `  │ ${pad(s, W)}│`;
-    console.log(`
+  /**
+   * Belt-and-suspenders postAction: if a "supported" command somehow forgot
+   * to emit a JSON envelope on a code path, surface that as a structured error
+   * rather than silent stdout corruption. This should never fire in practice;
+   * if it does, it's a bug in the command implementation.
+   */
+  program.hook('postAction', (thisCommand, actionCommand) => {
+    if (!program.opts().json) return;
+    if (process.__xdsJsonHandled) return;
+    const fullName = fullCommandName(actionCommand, program);
+    console.log(JSON.stringify({
+      apiVersion: API_VERSION,
+      error: `Internal: '${fullName}' completed without emitting a JSON envelope`,
+    }, null, 2));
+    process.exit(1);
+  });
+
+  /**
+   * Post-action hook: print update hint after any command output.
+   * Only fires for commands that produce output agents read (component, docs, etc.).
+   * Suppressed when --json is active to avoid contaminating stdout.
+   */
+  program.hook('postAction', (thisCommand, actionCommand) => {
+    if (program.opts().json) return;
+    try {
+      if (UPDATE_HINT_COMMANDS.has(actionCommand.name())) {
+        const hint = checkForUpdate();
+        if (hint) {
+          console.error(`\n${hint}`);
+        }
+      }
+    } catch {
+      // Never let update check break the CLI
+    }
+  });
+
+  /**
+   * Enforcement layer 3 — setup nudge. If this project hasn't run `astryx init`
+   * yet (no Astryx marker in any agent-doc file — see isAstryxInitialized), remind
+   * the user/agent that setup is missing.
+   *
+   * Uses `preAction` (not postAction) so it fires for EVERY valid command — even
+   * ones whose action errors or calls process.exit (postAction is skipped then).
+   *
+   * Suppressed in --json: that is machine output with a strict clean stdout+stderr
+   * contract (json-shim.test: "error envelopes have empty stderr"), and --json
+   * consumers parse stdout, not stderr — a stderr nudge would not reach them anyway.
+   * The core/cli postinstall layers already nudge at install time regardless of
+   * --json; a machine-readable nudge could later be an envelope field. Also skipped
+   * for the installer commands themselves and outside a project (no package.json).
+   */
+  program.hook('preAction', (thisCommand, actionCommand) => {
+    try {
+      if (program.opts().json) return; // machine mode — keep --json output clean
+      if (SETUP_NUDGE_EXEMPT.has(actionCommand.name())) return;
+      const cwd = process.cwd();
+      if (!fs.existsSync(path.join(cwd, 'package.json'))) return; // not a project
+      if (isAstryxInitialized(cwd)) return; // already set up — stay quiet
+      // Same wording as the core/cli postinstall nudges. #4151's getCliInvocation()
+      // renders the correct form for THIS project — scoped `npx @astryxdesign/cli`
+      // one-off, or `<pm> astryx` when installed — never the bare `npx astryx` footgun.
+      console.error(
+        `\nNext step: run \`${getCliInvocation(cwd)} init\` to finish setup and install the Astryx agent prompt.`,
+      );
+    } catch {
+      // Never let the nudge break a command.
+    }
+  });
+
+  for (const cmd of commands) {
+    try {
+      const mod = await import(cmd.path);
+      mod[cmd.register](program);
+    } catch (e) {
+      // Command fails to load but CLI still works
+      program
+        .command(cmd.name)
+        .description(`(failed to load: ${/** @type {any} */ (e).message})`)
+        .action(() => {
+          console.error(`Command "${cmd.name}" failed to load:`);
+          console.error(/** @type {any} */ (e).message);
+          process.exit(1);
+        });
+    }
+  }
+
+  // Capability manifest — a single, self-describing view of the whole CLI so
+  // agents can discover every command, argument, flag, and response type without
+  // scraping `--help`. `astryx manifest --json` is the dedicated surface; the bare
+  // `xds --json` embeds the same payload under data.manifest for convenience.
+  program
+    .command('manifest')
+    .description('Print the full CLI capability manifest (use with --json)')
+    .action(() => {
+      const manifest = buildManifest(program, {
+        jsonSupported: JSON_SUPPORTED,
+        version: pkg.version,
+      });
+      if (program.opts().json) {
+        process.__xdsJsonHandled = true;
+        console.log(JSON.stringify({apiVersion: API_VERSION, type: 'manifest', data: manifest}, null, 2));
+        return;
+      }
+      // Human-readable summary. Agents should use --json.
+      console.log(`\n${manifest.name} v${manifest.version} — ${manifest.commands.length} commands\n`);
+      for (const c of manifest.commands) {
+        const tag = c.json ? ' [--json]' : '';
+        console.log(`  ${c.name}${tag}`);
+        if (c.description) console.log(`    ${c.description}`);
+      }
+      console.log(`\nRun \`${getCliInvocation()} manifest --json\` for the full structured manifest.\n`);
+    });
+
+  // Hidden command used by package.json postinstall scripts
+  program
+    .command('postinstall', {hidden: true})
+    .action(() => {
+      const r = getCliInvocation();
+      const pad = (/** @type {string} */ s, /** @type {number} */ len) => s + ' '.repeat(Math.max(0, len - s.length));
+      const W = 49; // inner width of the box
+      const line = (/** @type {string} */ s) => `  │ ${pad(s, W)}│`;
+      console.log(`
   ╭${'─'.repeat(W + 2)}╮
 ${line('')}
 ${line('  Design system installed!')}
@@ -372,11 +389,20 @@ ${line(`    ${r} template      Add a page template`)}
 ${line('')}
   ╰${'─'.repeat(W + 2)}╯
 `);
-  });
+    });
 
-// Install the JSON shim AFTER all commands are registered so we can
-// patch outputHelp on every command (root + subcommands). The shim
-// extends the --json contract to cover Commander's parse-time short
-// circuits (parse errors, unknown options, --help, unknown commands).
-// See packages/cli/lib/json-shim.mjs for the rationale.
-installJsonShim(program);
+  // Install the JSON shim AFTER all commands are registered so we can
+  // patch outputHelp on every command (root + subcommands). The shim
+  // extends the --json contract to cover Commander's parse-time short
+  // circuits (parse errors, unknown options, --help, unknown commands).
+  // See packages/cli/lib/json-shim.mjs for the rationale.
+  installJsonShim(program);
+
+  return program;
+}
+
+/**
+ * Eager singleton program for `bin/astryx.mjs` and legacy importers. Tests
+ * should call {@link createProgram} to get an isolated instance.
+ */
+export const program = await createProgram();
