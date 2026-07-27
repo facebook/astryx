@@ -17,6 +17,15 @@ on:
 
 permissions: {}
 
+# Serialize cleanup runs against each other so simultaneous PR closes don't
+# race their gh-pages pushes. Deliberately NOT the "pages-deploy" group:
+# joining it could cancel a PENDING main deploy (GitHub keeps only the newest
+# pending run per group), leaving the site stale. Races against deploy.yml
+# are handled by the push retry below instead.
+concurrency:
+  group: "cleanup-previews"
+  cancel-in-progress: false
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest
@@ -53,6 +62,9 @@ jobs:
           echo ""
 
           DELETED=0
+          # Every deleted path is recorded so the push-retry below can replay
+          # the removals on top of a refreshed gh-pages tip.
+          DELETED_PATHS=()
 
           # ----- Clean legacy hash directories -----
           # Old deploy format put previews at /<7-char-hex>/. These are all
@@ -65,6 +77,7 @@ jobs:
               if [ "$DRY_RUN" != "true" ]; then
                 git rm -rf --quiet "$dir"
               fi
+              DELETED_PATHS+=("$dir")
               DELETED=$((DELETED + 1))
             done
             echo ""
@@ -86,6 +99,7 @@ jobs:
                 if [ "$DRY_RUN" != "true" ]; then
                   git rm -rf --quiet "pr/${pr_num}"
                 fi
+                DELETED_PATHS+=("pr/${pr_num}")
                 DELETED=$((DELETED + 1))
               fi
             done
@@ -104,6 +118,7 @@ jobs:
               if [ "$DRY_RUN" != "true" ]; then
                 git rm -rf --quiet "$item"
               fi
+              DELETED_PATHS+=("$item")
               ROOT_STALE=$((ROOT_STALE + 1))
               DELETED=$((DELETED + 1))
             fi
@@ -133,6 +148,7 @@ jobs:
                     if [ "$DRY_RUN" != "true" ]; then
                       git rm -rf --quiet "$screenshots_dir"
                     fi
+                    DELETED_PATHS+=("$screenshots_dir")
                     SCREENSHOT_PURGED=$((SCREENSHOT_PURGED + 1))
                     DELETED=$((DELETED + 1))
                   fi
@@ -153,12 +169,42 @@ jobs:
             exit 0
           fi
 
-          if [ "$DELETED" -gt 0 ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -m "chore: cleanup ${DELETED} stale deployments"
-            git push origin gh-pages
-            echo "Pushed cleanup commit"
-          else
+          if [ "$DELETED" -eq 0 ]; then
             echo "Nothing to clean up"
+            exit 0
           fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Push with retry. gh-pages has concurrent writers — most notably
+          # deploy.yml, which force-orphan pushes on every main push, i.e.
+          # exactly when a merged PR also fires this workflow — so a plain
+          # push loses that race with "[rejected] (fetch first)". Because
+          # force_orphan rewrites history, a rebase can't recover; instead
+          # reset to the fresh remote tip and replay the recorded deletions
+          # on top of it. deploy.yml preserves pr/ and reports/ across
+          # deploys, so the stale paths are still there to delete.
+          MAX_ATTEMPTS=5
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            if [ "$attempt" -gt 1 ]; then
+              echo "Push rejected (concurrent gh-pages update) — retrying in $((attempt * 2))s"
+              sleep $((attempt * 2))
+              git fetch --depth=1 origin gh-pages
+              git reset --hard FETCH_HEAD
+              git rm -r -f -q --ignore-unmatch -- "${DELETED_PATHS[@]}"
+              if git diff --cached --quiet; then
+                echo "Stale paths already removed upstream — nothing left to push"
+                exit 0
+              fi
+            fi
+
+            git commit -m "chore: cleanup ${DELETED} stale deployments"
+            if git push origin gh-pages; then
+              echo "Pushed cleanup commit"
+              exit 0
+            fi
+          done
+
+          echo "::error::Failed to push cleanup after ${MAX_ATTEMPTS} attempts"
+          exit 1

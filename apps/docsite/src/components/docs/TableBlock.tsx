@@ -4,7 +4,12 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {Text} from '@astryxdesign/core/Text';
-import {Table, pixel, proportional, type TableColumn} from '@astryxdesign/core/Table';
+import {
+  Table,
+  pixel,
+  proportional,
+  type TableColumn,
+} from '@astryxdesign/core/Table';
 import {Card} from '@astryxdesign/core/Card';
 import {HStack} from '@astryxdesign/core/Layout';
 import {Icon, getIconRegistry} from '@astryxdesign/core/Icon';

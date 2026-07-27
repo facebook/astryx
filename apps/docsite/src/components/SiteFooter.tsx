@@ -11,6 +11,7 @@ import {Grid, GridSpan} from '@astryxdesign/core/Grid';
 import {Divider} from '@astryxdesign/core/Divider';
 import {Section} from '@astryxdesign/core/Section';
 import {useAppShellMobile} from '@astryxdesign/core/AppShell';
+import {DocsVersionFooterLink} from './DocsVersionFooterLink';
 import {
   GITHUB_REPO,
   DISCORD_URL,
@@ -103,6 +104,7 @@ function NavLinks() {
           {item.label}
         </Link>
       ))}
+      <DocsVersionFooterLink />
     </>
   );
 }

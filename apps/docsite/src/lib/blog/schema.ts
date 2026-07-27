@@ -51,6 +51,8 @@ export interface BlogPost {
   title: string;
   /** Card excerpt, article dek, and default meta description. */
   description: string;
+  /** Optional article-only dek. Supports inline Markdown links. */
+  dek: string | null;
   /** Publish date (ISO YYYY-MM-DD). Default sort key. */
   date: string;
   /** Primary editorial organization/filter. */
@@ -67,6 +69,8 @@ export interface BlogPost {
   coverImage: string | null;
   /** Alt text for the cover image (required when coverImage is set). */
   coverAlt: string | null;
+  /** Package label on the generated release cover (default @astryxdesign/core). */
+  releasePackage: string | null;
   /** Optional curated related-doc links. */
   relatedDocs: RelatedDoc[] | null;
   /** Markdown body (frontmatter stripped). */

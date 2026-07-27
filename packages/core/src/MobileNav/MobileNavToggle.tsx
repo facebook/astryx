@@ -18,6 +18,7 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {useAppShellMobile} from '../AppShell/AppShellMobileContext';
 import type {BaseProps} from '../BaseProps';
+import {useTranslator} from '../i18n';
 
 export interface MobileNavToggleProps extends Pick<
   BaseProps,
@@ -60,14 +61,21 @@ export interface MobileNavToggleProps extends Pick<
 export function MobileNavToggle({
   ref,
   children,
-  label = 'Open navigation',
+  label: labelFromProps,
   'data-testid': testId,
   xstyle,
   className,
   style,
 }: MobileNavToggleProps) {
-  const {isMobile, isMobileNavEnabled, toggleMobileNav} =
-    useAppShellMobile();
+  const t = useTranslator();
+  const label = labelFromProps ?? t('@astryx.mobileNav.toggle.open');
+  const {
+    isMobile,
+    isMobileNavEnabled,
+    isMobileNavOpen,
+    mobileNavId,
+    toggleMobileNav,
+  } = useAppShellMobile();
 
   // Don't render above the breakpoint or when mobile nav is disabled
   if (!isMobile || !isMobileNavEnabled) {
@@ -81,6 +89,8 @@ export function MobileNavToggle({
       label={label}
       icon={children ?? <Icon icon="menu" color="inherit" />}
       onClick={toggleMobileNav}
+      aria-expanded={isMobileNavOpen}
+      aria-controls={mobileNavId || undefined}
       data-testid={testId ?? 'mobile-nav-toggle'}
       xstyle={xstyle}
       className={className}

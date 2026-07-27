@@ -34,16 +34,13 @@ export default function AspectRatioShowcase() {
         <VStack key={label} gap={2} hAlign="center">
           <AspectRatio
             ratio={ratio}
+            fit="cover"
             style={{
               height: 120,
               width: 'auto',
               borderRadius: 'var(--radius-container)',
             }}>
-            <img
-              src={src}
-              alt={alt}
-              style={{width: '100%', height: '100%', objectFit: 'cover'}}
-            />
+            <img src={src} alt={alt} />
           </AspectRatio>
           <Text type="supporting" color="secondary">
             {label}

@@ -76,11 +76,8 @@ function localCoords(e: React.PointerEvent<SVGRectElement>): {
  * Brush interaction for range selection.
  *
  * @example
- * ```tsx
- * // X-only (default)
+ * ```
  * <ChartBrush onBrush={({x}) => setZoom(x)} />
- *
- * // 2D rectangular
  * <ChartBrush mode="xy" onBrush={({x, y}, points) => setSelected(points)} />
  * ```
  */

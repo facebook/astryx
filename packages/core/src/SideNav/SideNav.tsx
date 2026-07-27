@@ -45,6 +45,7 @@ import {useResizable} from '../Resizable/useResizable';
 import type {ResizableConfig} from '../Resizable/useResizable';
 import {ResizeHandle} from '../Resizable/ResizeHandle';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Constants
@@ -330,6 +331,7 @@ export function SideNav({
   handleRef,
   ...props
 }: SideNavProps) {
+  const t = useTranslator();
   // Parse collapsible prop
   const collapsibleConfig = typeof collapsible === 'object' ? collapsible : {};
   const isCollapsible = !!collapsible;
@@ -504,7 +506,7 @@ export function SideNav({
     <nav
       ref={mergeRefs(ref, navRef)}
       role="navigation"
-      aria-label="Side navigation"
+      aria-label={t('@astryx.sideNav.label')}
       data-testid={testId}
       {...mergeProps(
         themeProps('side-nav'),
@@ -569,7 +571,7 @@ export function SideNav({
         pillPlacement="end"
         isAlwaysVisible={false}
         resizable={resizableHook.props}
-        label="Resize sidebar"
+        label={t('@astryx.sideNav.resizeSidebar')}
       />
     </div>
   ) : (

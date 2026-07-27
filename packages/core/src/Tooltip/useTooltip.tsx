@@ -190,8 +190,15 @@ export interface TooltipReturn {
   /**
    * Render function for tooltip content.
    * Returns anchor-positioned popover element.
+   *
+   * `positioning` is excluded: the tooltip always derives its position from
+   * placement/alignment, so accepting the custom opt-out here would be a
+   * silent no-op.
    */
-  renderTooltip: (children: ReactNode, props?: ContextRenderProps) => ReactNode;
+  renderTooltip: (
+    children: ReactNode,
+    props?: Omit<ContextRenderProps, 'positioning'>,
+  ) => ReactNode;
 }
 
 /**
@@ -463,7 +470,10 @@ export function useTooltip(options: TooltipOptions = {}): TooltipReturn {
 
   // Render function that wraps layer.render with tooltip styling
   const renderTooltip = useCallback(
-    (children: ReactNode, props?: ContextRenderProps): ReactNode => {
+    (
+      children: ReactNode,
+      props?: Omit<ContextRenderProps, 'positioning'>,
+    ): ReactNode => {
       const renderPlacement = props?.placement ?? placement;
       const renderProps = {
         placement: renderPlacement,

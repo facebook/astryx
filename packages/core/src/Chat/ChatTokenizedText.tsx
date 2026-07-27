@@ -91,6 +91,10 @@ export function ChatTokenizedText({
   ref,
   children,
   tokens,
+  xstyle,
+  className,
+  style,
+  ...rest
 }: ChatTokenizedTextProps) {
   if (!children || !tokens || tokens.length === 0) {
     return (
@@ -98,8 +102,11 @@ export function ChatTokenizedText({
         ref={ref}
         {...mergeProps(
           themeProps('chat-tokenized-text'),
-          stylex.props(styles.root),
-        )}>
+          stylex.props(styles.root, xstyle),
+          className,
+          style,
+        )}
+        {...rest}>
         {children ?? ''}
       </span>
     );
@@ -111,8 +118,11 @@ export function ChatTokenizedText({
       ref={ref}
       {...mergeProps(
         themeProps('chat-tokenized-text'),
-        stylex.props(styles.root),
-      )}>
+        stylex.props(styles.root, xstyle),
+        className,
+        style,
+      )}
+      {...rest}>
       {parts}
     </span>
   );
@@ -124,10 +134,7 @@ ChatTokenizedText.displayName = 'ChatTokenizedText';
 // Render
 // =============================================================================
 
-function renderTokens(
-  text: string,
-  tokens: ChatComposerToken[],
-): ReactNode[] {
+function renderTokens(text: string, tokens: ChatComposerToken[]): ReactNode[] {
   const pattern = tokens.map(t => escapeRegExp(t.value)).join('|');
   const regex = new RegExp(`(${pattern})`, 'g');
 

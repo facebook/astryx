@@ -10,7 +10,7 @@ import {Text} from '@astryxdesign/core/Text';
 export default function ChatComposerInputControlledInput() {
   const [value, setValue] = useState('');
   return (
-    <Stack direction="vertical" gap={3} style={{width: '100%', maxWidth: 450}}>
+    <Stack direction="vertical" gap={3} style={{width: 450, maxWidth: '100%'}}>
       <ChatComposer
         onSubmit={() => setValue('')}
         value={value}

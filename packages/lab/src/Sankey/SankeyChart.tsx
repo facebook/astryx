@@ -107,15 +107,14 @@ function resolveColumnCount(
  * Width is responsive but enforces minColumnWidth — scrolls when needed.
  *
  * @example
- * ```tsx
+ * ```
  * <SankeyChart
  *   nodes={nodes}
  *   links={links}
  *   columns={[
  *     {ids: ['a', 'b'], label: 'Source'},
  *     {ids: ['c', 'd'], label: 'Target'},
- *   ]}
- * >
+ *   ]}>
  *   <SankeyGrid />
  *   <SankeyLink />
  *   <SankeyNode />

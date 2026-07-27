@@ -3,12 +3,7 @@
 'use client';
 
 import {useState} from 'react';
-import {
-  VStack,
-  HStack,
-  Layout,
-  LayoutContent,
-} from '@astryxdesign/core/Layout';
+import {VStack, HStack, Layout, LayoutContent} from '@astryxdesign/core/Layout';
 import {Center} from '@astryxdesign/core/Center';
 import {Grid} from '@astryxdesign/core/Grid';
 import {Text, Heading} from '@astryxdesign/core/Text';
@@ -203,10 +198,7 @@ function ProductInfo() {
       <VStack gap={2}>
         <Text type="label">Finish</Text>
         <VStack hAlign="start">
-          <SegmentedControl
-            value={finish}
-            onChange={setFinish}
-            label="Finish">
+          <SegmentedControl value={finish} onChange={setFinish} label="Finish">
             {FINISHES.map(f => (
               <SegmentedControlItem
                 key={f.value}
@@ -286,7 +278,7 @@ export default function ProductDetailTemplate() {
 
   return (
     <Layout
-      height="auto"
+      height="fill"
       contentWidth={1200}
       content={
         <LayoutContent padding={6}>

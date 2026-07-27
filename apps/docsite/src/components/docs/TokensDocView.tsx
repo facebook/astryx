@@ -4,7 +4,9 @@
 
 import {Card} from '@astryxdesign/core/Card';
 import {VStack} from '@astryxdesign/core/Layout';
-import {useTheme} from '@astryxdesign/core/theme';
+import {Theme, useTheme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral/built';
+import {useThemeMode} from '../../app/providers';
 import {AnchorHeading} from './AnchorHeading';
 import {
   ColorTokenTable,
@@ -89,6 +91,7 @@ function TokenSection({
   Table: TableComponent;
   theme: TokenTableProps['theme'];
 }) {
+  const {mode} = useThemeMode();
   const prose = section.content.filter(block => block.type !== 'table');
   return (
     <VStack gap={4}>
@@ -99,7 +102,12 @@ function TokenSection({
         <ContentBlockRenderer key={i} block={block} />
       ))}
       <Card>
-        <Table theme={theme} />
+        {/* Resolve swatches against the canonical neutralTheme (the base theme
+            we ship), not the docsite's astryx brand skin. The resolver reads
+            from ThemeContext, so the nested Theme is what redirects it. */}
+        <Theme theme={neutralTheme} mode={mode}>
+          <Table theme={theme} />
+        </Theme>
       </Card>
     </VStack>
   );

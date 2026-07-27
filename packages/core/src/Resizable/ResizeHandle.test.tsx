@@ -20,7 +20,7 @@ import {render, screen, fireEvent, act} from '@testing-library/react';
 import {ResizeHandle} from './ResizeHandle';
 import type {ResizeHandleProps} from './ResizeHandle';
 import {useResizable} from './useResizable';
-import type {UseResizableSingleConfig} from './useResizable';
+import type {ResizableProps, UseResizableSingleConfig} from './useResizable';
 
 const KEYBOARD_STEP = 10;
 const KEYBOARD_LARGE_STEP = 50;
@@ -161,6 +161,44 @@ describe('ResizeHandle', () => {
     expect(separator).toHaveAttribute('tabindex', '-1');
     fireEvent.keyDown(separator, {key: 'ArrowRight'});
     expect(separator).toHaveAttribute('aria-valuenow', '200');
+  });
+
+  // --- Drag listener lifecycle ---
+
+  it('stops driving the region and releases window listeners when unmounted mid-drag', () => {
+    const resizable: ResizableProps = {
+      _size: 200,
+      _isCollapsed: false,
+      _onResizeStart: vi.fn(),
+      _onResizeMove: vi.fn(),
+      _onResizeEnd: vi.fn(),
+      _minSizePx: 100,
+      _maxSizePx: 400,
+      _snaps: [],
+      _collapsedSize: 40,
+      _collapsible: false,
+      _isResizableProps: true,
+    };
+    const {unmount} = render(
+      <ResizeHandle resizable={resizable} label="Resize" />,
+    );
+    const separator = screen.getByRole('separator');
+    const hitArea = separator.firstElementChild as HTMLElement;
+
+    // Start a drag and confirm moves reach the region.
+    fireEvent.pointerDown(hitArea, {clientX: 0, clientY: 0});
+    expect(resizable._onResizeStart).toHaveBeenCalledTimes(1);
+    fireEvent.pointerMove(window, {clientX: 10, clientY: 0});
+    expect(resizable._onResizeMove).toHaveBeenCalledTimes(1);
+
+    // Unmount mid-drag: the window listeners must be torn down, so further
+    // pointer moves no longer resize the (still-mounted) region, and the
+    // body cursor/user-select overrides are released.
+    unmount();
+    fireEvent.pointerMove(window, {clientX: 50, clientY: 0});
+    expect(resizable._onResizeMove).toHaveBeenCalledTimes(1);
+    expect(document.body.style.cursor).toBe('');
+    expect(document.body.style.userSelect).toBe('');
   });
 
   // --- Prop composition (ordering choice: handler sits after {...props}) ---

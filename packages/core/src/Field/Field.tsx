@@ -25,6 +25,7 @@ import {FieldStatus} from '../FieldStatus/FieldStatus';
 import {spacingVars, borderVars} from '../theme/tokens.stylex';
 import type {IconType} from '../Icon';
 import {mergeProps} from '../utils';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {FormLayoutContext} from '../FormLayout/FormLayoutContext';
 import {Text} from '../Text';
 import {themeProps} from '../utils/themeProps';
@@ -215,11 +216,11 @@ export function Field({
   const resolvedMessageID =
     status?.messageID ?? (status?.message ? `${inputID}-status` : undefined);
 
-  if (isOptional && isRequired) {
-    console.warn(
-      'Field: isOptional and isRequired are mutually exclusive. isOptional takes precedence.',
-    );
-  }
+  useDevWarning(
+    'Field',
+    'isOptional and isRequired are mutually exclusive. isOptional takes precedence.',
+    isOptional && isRequired,
+  );
 
   const labelNode = (
     <FieldLabel

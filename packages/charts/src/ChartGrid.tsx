@@ -52,6 +52,16 @@ export function ChartGrid({
 }: ChartGridProps) {
   const {width, height, xScale, yScale} = useChart();
 
+  // Sanitize the tick count before it reaches d3's `.ticks()`: it targets ~N
+  // ticks and allocates an array that large, so a huge N throws `RangeError:
+  // Invalid array length` and crashes the render, while a non-finite or
+  // negative N would misbehave. Clamp to a sane integer (0 still means "no
+  // lines") and fall back to the default for invalid input.
+  const safeTickCount =
+    Number.isFinite(tickCount) && tickCount >= 0
+      ? Math.min(Math.floor(tickCount), 1000)
+      : 5;
+
   // Skip the y=0 line when emphasizing it via the axis. Without this we'd
   // double-draw on top of the axis line. Each line carries its tick `value`,
   // used as a stable React key — the pixel position can be NaN/duplicated for
@@ -61,10 +71,10 @@ export function ChartGrid({
       return [];
     }
     return yScale
-      .ticks(tickCount)
+      .ticks(safeTickCount)
       .filter(tick => tick !== 0)
       .map(tick => ({value: tick, pos: yScale(tick)}));
-  }, [horizontal, yScale, tickCount]);
+  }, [horizontal, yScale, safeTickCount]);
 
   const vLines = useMemo(() => {
     if (!vertical) {
@@ -78,9 +88,9 @@ export function ChartGrid({
     const linear = xScale as
       ScaleLinear<number, number> | ScaleTime<number, number>;
     return linear
-      .ticks(tickCount)
+      .ticks(safeTickCount)
       .map(d => ({value: String(d), pos: linear(d as number & Date)}));
-  }, [vertical, xScale, tickCount]);
+  }, [vertical, xScale, safeTickCount]);
 
   return (
     <g>

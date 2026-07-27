@@ -26,6 +26,7 @@ import {
   plainDateSetEndOfWeekExclusive,
   plainDateGetWeekNumber,
   plainDateFormat,
+  formatSharedDate,
   DATE_FORMAT_WITH_WEEKDAY,
 } from './plainDate';
 import type {ISODateString} from './dateTypes';
@@ -519,5 +520,26 @@ describe('plainDateFormat', () => {
     );
     expect(result).toContain('2026');
     expect(result).toContain('25');
+  });
+});
+
+describe('formatSharedDate', () => {
+  const pd: PlainDate = {year: 2026, month: 1, day: 25};
+
+  it('formats the short-month "date" shape', () => {
+    expect(formatSharedDate(pd, 'date')).toBe('Jan 25, 2026');
+  });
+
+  it('formats the long-month "date_long" shape', () => {
+    expect(formatSharedDate(pd, 'date_long')).toBe('January 25, 2026');
+  });
+
+  it('formats the weekday "date_weekday" shape', () => {
+    // 2026-01-25 is a Sunday.
+    expect(formatSharedDate(pd, 'date_weekday')).toBe('Sun, Jan 25, 2026');
+  });
+
+  it('formats the ISO "system_date" shape', () => {
+    expect(formatSharedDate(pd, 'system_date')).toBe('2026-01-25');
   });
 });

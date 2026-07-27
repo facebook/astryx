@@ -1,0 +1,20 @@
+{
+  "name": "prompt-purity-prompts",
+  "description": "Curated veer-prone subset referenced BY ID from ../test-sets/default.json. Hard, layout/data/theming-heavy tasks are where agents abandon the design system for raw CSS/Tailwind. expectedComponents is eval-only and is NEVER shown to the agent (Checker Protocol §3). Referenced by id to avoid answer-leak and drift.",
+  "source": "../test-sets/default.json",
+  "selectionStrategy": "hardest, most veer-prone tasks across distinct categories; K>=5 reps per prompt per condition since veering is stochastic.",
+  "promptIds": [
+    {"id": "dd-1", "category": "data-display", "complexity": "complex"},
+    {"id": "dd-5", "category": "data-display", "complexity": "complex"},
+    {"id": "wd-1", "category": "workflow-description", "complexity": "complex"},
+    {"id": "wd-4", "category": "workflow-description", "complexity": "complex"},
+    {"id": "tc-6", "category": "theme-customization", "complexity": "complex"},
+    {"id": "ps-1", "category": "page-setup", "complexity": "moderate"}
+  ],
+  "pilotDefault": ["dd-1", "tc-6"],
+  "notes": [
+    "tc-6 explicitly asks for the XDS theme system 'not inline styles' — a direct veer probe.",
+    "dd-1/dd-5 (tables) and wd-4 (a full internal tool) strongly tempt hand-rolled markup + CSS.",
+    "IDs verified against ../test-sets/default.json. Do NOT copy prompt text or expectedComponents here."
+  ]
+}

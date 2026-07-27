@@ -622,4 +622,23 @@ describe('RadioList', () => {
       expect(input.getAttribute('name')).toBeTruthy();
     });
   });
+
+  describe('RadioListItem rest forwarding', () => {
+    it('forwards data-testid, id, and aria-* to the item root element', () => {
+      render(
+        <RadioList label="Preference" value="" onChange={() => {}}>
+          <RadioListItem
+            label="Option A"
+            value="a"
+            data-testid="item-a"
+            id="item-a-id"
+            aria-label="First option"
+          />
+        </RadioList>,
+      );
+      const item = screen.getByTestId('item-a');
+      expect(item).toHaveAttribute('id', 'item-a-id');
+      expect(item).toHaveAttribute('aria-label', 'First option');
+    });
+  });
 });

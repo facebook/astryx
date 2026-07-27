@@ -8,6 +8,8 @@
 
 import {AppShell} from '@astryxdesign/core/AppShell';
 import {SharedTopNav} from '../../components/SharedTopNav';
+import {CanaryBanner} from '../../components/CanaryBanner';
+import {CURRENT_TARGET} from '../../lib/docsVersions';
 import {SiteFooter} from '../../components/SiteFooter';
 import {getCopyrightYear} from '../../lib/copyrightYear';
 
@@ -23,6 +25,7 @@ export default async function BlogLayout({
       variant="surface"
       height="auto"
       mobileNav={false}
+      banner={CURRENT_TARGET === 'canary' ? <CanaryBanner /> : undefined}
       topNav={<SharedTopNav />}>
       {children}
       <SiteFooter year={year} />

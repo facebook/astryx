@@ -108,12 +108,12 @@ The CLI merges this onto `docs`: compressed descriptions replace English ones, b
 ## CLI Flags
 
 ```bash
-npx astryx component Button                       # Full docs (default)
-npx astryx --detail compact component Button       # Token-optimized format
-npx astryx --detail brief component Button         # Minimal one-line summary
-npx astryx --lang zh component Button              # Chinese prose, same structure
-npx astryx --lang dense component Button           # Compressed prose, same structure
-npx astryx --detail compact --lang dense component Button  # Compact + compressed
+astryx component Button                       # Full docs (default)
+astryx --detail compact component Button       # Token-optimized format
+astryx --detail brief component Button         # Minimal one-line summary
+astryx --lang zh component Button              # Chinese prose, same structure
+astryx --lang dense component Button           # Compressed prose, same structure
+astryx --detail compact --lang dense component Button  # Compact + compressed
 ```
 
 `--lang` controls which prose translation is used. `--detail` controls how much detail (full, compact, brief). They compose independently.
@@ -134,9 +134,9 @@ Content is structured as sections with ordered content blocks:
 To add a new reference doc: create `packages/cli/docs/mytopic.doc.mjs` exporting a `docs` constant. It auto-discovers.
 
 ```bash
-npx astryx docs                          # list topics
-npx astryx docs tokens                   # full output
-npx astryx docs tokens spacing           # single section
-npx astryx --detail compact docs tokens  # agent-friendly
-npx astryx --lang dense docs tokens      # compressed prose
+astryx docs                          # list topics
+astryx docs tokens                   # full output
+astryx docs tokens spacing           # single section
+astryx --detail compact docs tokens  # agent-friendly
+astryx --lang dense docs tokens      # compressed prose
 ```

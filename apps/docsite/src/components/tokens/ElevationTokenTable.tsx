@@ -44,7 +44,6 @@ export function ElevationTokenTable({theme}: TokenTableProps) {
       ]}
       density="spacious"
       dividers="rows"
-      hasHover
     />
   );
 }

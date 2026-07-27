@@ -56,7 +56,7 @@ export function computeDayCellState(input: DayCellStateInput): DayCellState {
 
   return {
     effectivelyDisabled: isDisabled || isOutside,
-    isToday: plainDateIsEqual(date, today),
+    isToday: !isOutside && plainDateIsEqual(date, today),
     isSelected: !!(
       !isOutside &&
       mode === 'single' &&
@@ -193,7 +193,9 @@ export function isRangeHighlighted(input: {
   isDisabled: boolean;
   isOutside: boolean;
 }): boolean {
-  if (input.mode !== 'range') {return false;}
+  if (input.mode !== 'range') {
+    return false;
+  }
   return isSpanHighlighted({
     date: input.date,
     spanStart: input.rangeStart,

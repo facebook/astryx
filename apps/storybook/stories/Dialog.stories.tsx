@@ -78,8 +78,8 @@ function BasicModalExample() {
             <LayoutContent>
               <Text type="body">
                 This is a modal using the native &lt;dialog&gt; element with
-                Layout for structured content. Click outside or press Escape
-                to close.
+                Layout for structured content. Click outside or press Escape to
+                close.
               </Text>
             </LayoutContent>
           }
@@ -191,9 +191,7 @@ function WideModalExample() {
           }
           content={
             <LayoutContent>
-              <Text type="body">
-                This modal has a custom width of 600px.
-              </Text>
+              <Text type="body">This modal has a custom width of 600px.</Text>
             </LayoutContent>
           }
           footer={
@@ -698,4 +696,113 @@ function AutoFocusInputExample() {
 
 export const AutoFocusInput: Story = {
   render: () => <AutoFocusInputExample />,
+};
+
+/**
+ * Nested dialogs — a dialog that opens a second dialog stacked on top.
+ *
+ * This is a behavior demonstration, not a recommended pattern: the Dialog docs
+ * advise against nesting dialogs and suggest restructuring a flow into steps
+ * within a single dialog instead. It exists so the stacking behavior of the
+ * native <dialog> top layer is observable — each modal dialog pushes its own
+ * backdrop, focus trap, and Escape handling on top of the one below it.
+ *
+ * Things to observe:
+ * - Backdrop stacking: the second dialog dims the first, which is already
+ *   dimming the page.
+ * - Focus trap: focus is trapped inside the top-most dialog while it is open.
+ * - Escape: a single Escape closes only the top-most dialog, revealing the
+ *   first again.
+ * - Scroll lock: the page body stays scroll-locked the whole time.
+ */
+function NestedDialogsExample() {
+  const [isFirstOpen, setIsFirstOpen] = useState(false);
+  const [isSecondOpen, setIsSecondOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        label="Open First Dialog"
+        variant="secondary"
+        onClick={() => setIsFirstOpen(true)}
+      />
+      <Dialog
+        isOpen={isFirstOpen}
+        onOpenChange={open => setIsFirstOpen(open)}
+        width={480}>
+        <Layout
+          header={
+            <DialogHeader
+              title="First Dialog"
+              subtitle="This is the dialog underneath"
+              onOpenChange={open => setIsFirstOpen(open)}
+            />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">
+                Open the second dialog to stack it on top. Notice how its
+                backdrop dims this one, focus moves into it, and a single Escape
+                returns you here rather than closing everything.
+              </Text>
+            </LayoutContent>
+          }
+          footer={
+            <LayoutFooter>
+              <HStack gap={2} hAlign="end">
+                <Button
+                  label="Close"
+                  variant="secondary"
+                  onClick={() => setIsFirstOpen(false)}
+                />
+                <Button
+                  label="Open Second Dialog"
+                  variant="primary"
+                  onClick={() => setIsSecondOpen(true)}
+                />
+              </HStack>
+            </LayoutFooter>
+          }
+        />
+      </Dialog>
+      <Dialog
+        isOpen={isSecondOpen}
+        onOpenChange={open => setIsSecondOpen(open)}
+        width={360}>
+        <Layout
+          header={
+            <DialogHeader
+              title="Second Dialog"
+              subtitle="Stacked on top of the first"
+              onOpenChange={open => setIsSecondOpen(open)}
+            />
+          }
+          content={
+            <LayoutContent>
+              <Text type="body">
+                This dialog sits on top of the first. Focus is trapped here
+                until it closes, and pressing Escape or Close reveals the first
+                dialog again.
+              </Text>
+            </LayoutContent>
+          }
+          footer={
+            <LayoutFooter>
+              <HStack hAlign="end">
+                <Button
+                  label="Back"
+                  variant="primary"
+                  onClick={() => setIsSecondOpen(false)}
+                />
+              </HStack>
+            </LayoutFooter>
+          }
+        />
+      </Dialog>
+    </>
+  );
+}
+
+export const NestedDialogs: Story = {
+  render: () => <NestedDialogsExample />,
 };

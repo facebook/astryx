@@ -13,14 +13,14 @@ export default function ListItemWithMedia() {
       <ListItem
         label="Ada Lovelace"
         description="Design systems engineer"
-        startContent={<Avatar name="Ada Lovelace" size="xsmall" />}
+        startContent={<Avatar name="Ada Lovelace" size="sm" />}
         endContent={<Badge label="Owner" variant="purple" />}
         onClick={() => {}}
       />
       <ListItem
         label="Grace Hopper"
         description="Platform infrastructure"
-        startContent={<Avatar name="Grace Hopper" size="xsmall" />}
+        startContent={<Avatar name="Grace Hopper" size="sm" />}
         endContent={<Badge label="On call" variant="blue" />}
         onClick={() => {}}
       />

@@ -39,6 +39,7 @@ import type {BaseProps} from '../BaseProps';
 import {useMenuHover} from '../hooks/useMenuHover';
 import {NavHeadingCloseContext} from '../NavMenu/NavMenuContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -318,6 +319,7 @@ export function TopNavHeading({
   ref,
   ...props
 }: TopNavHeadingProps) {
+  const t = useTranslator();
   const LinkComponent = useLinkComponent(as);
   // Support both headingHref and legacy href
   const headingHref = headingHrefProp ?? href;
@@ -329,7 +331,11 @@ export function TopNavHeading({
   const rootRef = useRef<HTMLElement>(null);
 
   const popover = usePopover({
-    dialogLabel: 'Navigation menu',
+    dialogLabel: t('@astryx.topNav.heading.dialogLabel'),
+    // The popup exposes its own role="menu" semantics; a role="dialog"
+    // aria-modal wrapper would announce "dialog, Navigation menu" around a
+    // menu (the anti-pattern removed in a478a3dcf).
+    role: 'none',
     hasCloseButton: false,
   });
 
@@ -494,7 +500,7 @@ export function TopNavHeading({
           {renderTextContent(
             <button
               type="button"
-              aria-label="Open menu"
+              aria-label={t('@astryx.topNav.heading.openMenu')}
               onClick={e => {
                 e.stopPropagation();
                 triggerProps.onClick();
@@ -509,13 +515,19 @@ export function TopNavHeading({
         {popover.render(
           <div
             ref={menuRef}
-            role="menu"
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <NavHeadingCloseContext value={closeMenuCtx}>
-              {menu}
-            </NavHeadingCloseContext>
+            {/* The menu role is scoped to the actual menu items so the
+                heading button above stays a valid sibling, not an invalid
+                child of a role="menu" element. */}
+            <div
+              role="menu"
+              aria-label={heading ?? t('@astryx.topNav.heading.dialogLabel')}>
+              <NavHeadingCloseContext value={closeMenuCtx}>
+                {menu}
+              </NavHeadingCloseContext>
+            </div>
           </div>,
           {
             placement: 'below',
@@ -557,7 +569,7 @@ export function TopNavHeading({
             showChevron ? (
               <button
                 type="button"
-                aria-label="Open menu"
+                aria-label={t('@astryx.topNav.heading.openMenu')}
                 onClick={e => {
                   e.stopPropagation();
                   triggerProps.onClick();
@@ -573,13 +585,19 @@ export function TopNavHeading({
         {popover.render(
           <div
             ref={menuRef}
-            role="menu"
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            <NavHeadingCloseContext value={closeMenuCtx}>
-              {menu}
-            </NavHeadingCloseContext>
+            {/* The menu role is scoped to the actual menu items so the
+                heading button above stays a valid sibling, not an invalid
+                child of a role="menu" element. */}
+            <div
+              role="menu"
+              aria-label={heading ?? t('@astryx.topNav.heading.dialogLabel')}>
+              <NavHeadingCloseContext value={closeMenuCtx}>
+                {menu}
+              </NavHeadingCloseContext>
+            </div>
           </div>,
           {
             placement: 'below',

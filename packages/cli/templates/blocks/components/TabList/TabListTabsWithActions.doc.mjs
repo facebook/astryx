@@ -7,7 +7,7 @@ export const doc = {
   name: 'TabList — With Actions',
   displayName: 'TabList — With Actions',
   description:
-    'Page header pattern with tabs on the left and action buttons pushed to the right. When hasDivider is true, pair with a smaller button size (sm) so actions don\'t overpower the tab row.',
+    'Page header pattern with tabs on the left and action buttons pushed to the right. When hasDivider is true, match the Button size to the TabList size so the tabs and actions align to a shared baseline above the divider.',
   isReady: true,
   aspectRatio: 4 / 3,
   componentsUsed: ['TabList', 'Tab', 'Button'],

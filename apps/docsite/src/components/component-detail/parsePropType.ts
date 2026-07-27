@@ -5,12 +5,15 @@ import {getIconRegistry} from '@astryxdesign/core/Icon';
 /**
  * @file parsePropType.ts
  * @input Stringified TypeScript prop types from component docs
- * @output Control descriptors and typed default/option coercion helpers
+ * @output Control descriptors, typed default/option coercion helpers, and
+ *   type-reference segments for inline definition triggers
  * @position Component detail and playground prop-control generation.
  *
  * Parses a stringified TypeScript prop type into a control descriptor
  * that the playground can render an input for. Literal unions become
- * enum controls, including mixed string-literal + boolean unions.
+ * enum controls, including mixed string-literal + boolean unions. Also
+ * splits type strings into type-reference segments so the props table can
+ * render each resolved type name as an inline definition trigger (#2682).
  */
 
 export interface ElementOption {
@@ -296,6 +299,37 @@ export function parsePropType(
   }
 
   return {kind: 'unknown'};
+}
+
+export interface TypeRefSegment {
+  text: string;
+  isRef: boolean;
+}
+
+/**
+ * Split a documented prop type string into plain-text and type-reference
+ * segments, e.g. `SearchSource<T> | null` with refs `['SearchSource']` →
+ * `[{SearchSource, isRef}, {<T> | null}]`. The props table renders each
+ * reference segment as an inline trigger that opens the type's definition
+ * (see `PropDoc.typeRefs` / `ComponentEntry.typeDefs`); surrounding type
+ * syntax stays plain text. Names are matched on word boundaries,
+ * longest-first, so overlapping names resolve to the longer one.
+ */
+export function splitTypeRefSegments(
+  typeStr: string,
+  names: readonly string[],
+): TypeRefSegment[] {
+  if (names.length === 0) {
+    return [{text: typeStr, isRef: false}];
+  }
+  const pattern = new RegExp(
+    `\\b(${[...names].sort((a, b) => b.length - a.length).join('|')})\\b`,
+    'g',
+  );
+  return typeStr
+    .split(pattern)
+    .filter(segment => segment !== '')
+    .map(segment => ({text: segment, isRef: names.includes(segment)}));
 }
 
 export function coerceEnumOption(

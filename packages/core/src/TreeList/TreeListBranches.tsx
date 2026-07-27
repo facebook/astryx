@@ -16,6 +16,7 @@
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
+import {themeProps} from '../utils/themeProps';
 
 const LINE_WIDTH = 1;
 
@@ -65,6 +66,11 @@ interface TreeListBranchesProps {
 /**
  * Renders vertical lines showing parent-child relationships in the tree.
  * Positioned in a full-height container to span the entire item including children.
+ *
+ * The line element carries the stable `astryx-tree-list-guide` theme target so a
+ * theme can recolor or hide the connectors via `defineTheme` (e.g.
+ * `backgroundColor` or `display: 'none'`) instead of hiding the built-in guides
+ * and reimplementing them.
  */
 export function TreeListBranches({
   ancestorsIsLast,
@@ -90,7 +96,10 @@ export function TreeListBranches({
                 },
               })}>
               <div
-                {...stylex.props(styles.verticalLine, styles.verticalFull)}
+                {...mergeProps(
+                  themeProps('tree-list-guide'),
+                  stylex.props(styles.verticalLine, styles.verticalFull),
+                )}
               />
             </div>
           )
@@ -103,7 +112,12 @@ export function TreeListBranches({
               left: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
             },
           })}>
-          <div {...stylex.props(styles.verticalLine, styles.verticalFull)} />
+          <div
+            {...mergeProps(
+              themeProps('tree-list-guide'),
+              stylex.props(styles.verticalLine, styles.verticalFull),
+            )}
+          />
         </div>
       )}
     </>

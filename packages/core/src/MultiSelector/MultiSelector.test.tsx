@@ -360,6 +360,30 @@ describe('MultiSelector', () => {
     expect(activeId).toBeTruthy();
   });
 
+  it('End/Home jump the highlight to the last/first option (non-search)', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+
+    const trigger = screen.getByRole('combobox');
+    await user.click(trigger);
+    const options = screen.getAllByRole('option', h);
+
+    await user.keyboard('{End}');
+    expect(trigger).toHaveAttribute(
+      'aria-activedescendant',
+      options[options.length - 1].id,
+    );
+    await user.keyboard('{Home}');
+    expect(trigger).toHaveAttribute('aria-activedescendant', options[0].id);
+  });
+
   it('toggles item with Enter key', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -535,6 +559,65 @@ describe('MultiSelector', () => {
     expect(options).toHaveLength(1);
   });
 
+  it('PageDown/PageUp jump the highlight to the last/first filtered option', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const searchInput = screen.getByRole('combobox', h);
+    // Filter to Banana and Orange so "last" means last *visible* option.
+    await user.type(searchInput, 'an');
+    const options = screen.getAllByRole('option', h);
+    expect(options).toHaveLength(2);
+
+    await user.keyboard('{PageDown}');
+    expect(searchInput).toHaveAttribute(
+      'aria-activedescendant',
+      options[options.length - 1].id,
+    );
+    await user.keyboard('{PageUp}');
+    expect(searchInput).toHaveAttribute('aria-activedescendant', options[0].id);
+  });
+
+  it('Home/End move the search caret, not the option highlight', async () => {
+    const user = userEvent.setup();
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+        hasSearch
+      />,
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Fruit'}));
+    const searchInput = screen.getByRole<HTMLInputElement>('combobox', h);
+    await user.type(searchInput, 'an');
+    expect(searchInput.selectionStart).toBe(2);
+    const activeBefore = searchInput.getAttribute('aria-activedescendant');
+    // Home/End stay on the input for caret movement (APG editable combobox);
+    // the option highlight must not move.
+    await user.keyboard('{Home}');
+    expect(searchInput.selectionStart).toBe(0);
+    expect(searchInput.getAttribute('aria-activedescendant')).toBe(
+      activeBefore,
+    );
+    await user.keyboard('{End}');
+    expect(searchInput.selectionStart).toBe(2);
+    expect(searchInput.getAttribute('aria-activedescendant')).toBe(
+      activeBefore,
+    );
+  });
+
   it('shows empty state when search has no results', async () => {
     const user = userEvent.setup();
     render(
@@ -552,6 +635,82 @@ describe('MultiSelector', () => {
     await user.type(searchInput, 'xyz');
 
     expect(screen.getByText('No results found')).toBeInTheDocument();
+  });
+
+  describe('result announcements', () => {
+    it('announces the match count politely while searching', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      // "an" matches Banana and Orange.
+      await user.type(screen.getByRole('combobox', h), 'an');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('2 results');
+      });
+    });
+
+    it('announces the singular form when one option matches', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      // "app" matches only Apple. Anchored so it cannot pass on "1 results".
+      await user.type(screen.getByRole('combobox', h), 'app');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent(/^1 result$/);
+      });
+    });
+
+    it('announces "No results found" when nothing matches', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'xyz');
+      await waitFor(() => {
+        expect(politeRegion()).toHaveTextContent('No results found');
+      });
+    });
+
+    it('does not announce results until the user searches', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={defaultOptions}
+          value={EMPTY_VALUE}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      // Popover closed: nothing announced.
+      expect(politeRegion()?.textContent ?? '').toBe('');
+      // Open with an empty query: still nothing announced.
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      expect(politeRegion()?.textContent ?? '').toBe('');
+    });
   });
 
   it('renders with description', () => {
@@ -1072,7 +1231,9 @@ describe('MultiSelector', () => {
           />
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
     });
   });
 });

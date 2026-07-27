@@ -201,11 +201,11 @@ export function InputGroup({
           labelTooltip={labelTooltip}>
           <div
             ref={ref}
+            data-testid={testId}
+            {...rest}
             role="group"
             aria-labelledby={labelID}
             aria-describedby={describedByIDs}
-            data-testid={testId}
-            {...rest}
             {...mergeProps(
               themeProps('input-group', {
                 size,

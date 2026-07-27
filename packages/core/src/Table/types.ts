@@ -223,13 +223,13 @@ export interface TableColumn<T extends Record<string, unknown>> {
 /** Props passed through the plugin pipeline for the `<table>` element */
 export interface TableRenderProps {
   htmlProps: HTMLAttributes<HTMLTableElement>;
-  styles: StyleXStyles[];
+  xstyle: StyleXStyles[];
 }
 
 /** Props passed through the plugin pipeline for the header `<tr>` */
 export interface HeaderRowRenderProps {
   htmlProps: HTMLAttributes<HTMLTableRowElement>;
-  styles: StyleXStyles[];
+  xstyle: StyleXStyles[];
   children: ReactNode;
 }
 
@@ -250,7 +250,7 @@ export interface HeaderRowRenderProps {
  */
 export interface HeaderCellRenderProps {
   htmlProps: ThHTMLAttributes<HTMLTableCellElement>;
-  styles: StyleXStyles[];
+  xstyle: StyleXStyles[];
   /** Content rendered before the header label. */
   before?: ReactNode;
   /** The header label content. Initialized from `column.header ?? column.key`. Plugins may wrap or replace. */
@@ -286,7 +286,7 @@ export interface HeaderCellRenderProps {
 /** Props passed through the plugin pipeline for each body `<tr>` */
 export interface BodyRowRenderProps {
   htmlProps: HTMLAttributes<HTMLTableRowElement>;
-  styles: StyleXStyles[];
+  xstyle: StyleXStyles[];
   children: ReactNode;
   /** Ref for the `<tr>` element. Plugins can set this to access the row DOM node. */
   ref?: Ref<HTMLTableRowElement>;
@@ -295,7 +295,7 @@ export interface BodyRowRenderProps {
 /** Props passed through the plugin pipeline for each body `<td>` */
 export interface BodyCellRenderProps {
   htmlProps: TdHTMLAttributes<HTMLTableCellElement>;
-  styles: StyleXStyles[];
+  xstyle: StyleXStyles[];
   /**
    * Right-click context-menu actions for this body cell. Plugins append their
    * actions in `transformBodyCell`; BaseTable concatenates the arrays across
@@ -341,7 +341,7 @@ export interface ScrollWrapperRenderProps {
   htmlProps: HTMLAttributes<HTMLDivElement> & {
     ref?: Ref<HTMLDivElement>;
   };
-  styles: StyleXStyles[];
+  xstyle: StyleXStyles[];
   /** Content rendered before the `<table>`, inside the scroll container. */
   beforeTable?: ReactNode;
   /** Content rendered after the `<table>`, inside the scroll container. */
@@ -389,8 +389,7 @@ export interface TableContextAction {
  * every render.
  */
 export type TableContextActions =
-  | TableContextAction[]
-  | (() => TableContextAction[]);
+  TableContextAction[] | (() => TableContextAction[]);
 
 // =============================================================================
 // Plugin Interface
@@ -543,7 +542,14 @@ export interface BaseTableProps<
 
   /** Children mode — render `<tr>`/`<td>` directly instead of data-driven */
   children?: ReactNode;
-  /** Additional HTML attributes for the `<table>` element */
+  /**
+   * Additional HTML attributes for the `<table>` element.
+   *
+   * @deprecated Pass `className`, `style`, `xstyle`, and other HTML
+   * attributes directly on the component instead — they now reach the root
+   * `<table>` and win over `tableProps` on conflicts. Migrate with
+   * `npx astryx upgrade --codemod migrate-table-tableprops-to-direct-props`.
+   */
   tableProps?: HTMLAttributes<HTMLTableElement>;
   /**
    * Optional wrapper rendered around the `<table>` element, inside the
@@ -551,15 +557,15 @@ export interface BaseTableProps<
    * horizontal scroll container so plugin chrome (pagination, toolbars)
    * stays outside the scrollable area.
    *
-   * Receives `htmlProps` (including an optional `ref`) and `styles` produced
+   * Receives `htmlProps` (including an optional `ref`) and `xstyle` produced
    * by the plugin `transformScrollWrapper` pipeline, plus `beforeTable`/`afterTable`
-   * chrome. The wrapper must spread `htmlProps` (and apply `styles`) onto its
+   * chrome. The wrapper must spread `htmlProps` (and apply `xstyle`) onto its
    * scroll-container element so plugins can attach refs / scroll listeners.
    */
   scrollWrapper?: ComponentType<{
     children: ReactNode;
     htmlProps?: HTMLAttributes<HTMLDivElement> & {ref?: Ref<HTMLDivElement>};
-    styles?: StyleXStyles[];
+    xstyle?: StyleXStyles[];
     beforeTable?: ReactNode;
     afterTable?: ReactNode;
   }>;

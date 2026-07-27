@@ -29,8 +29,8 @@ import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity} from './TreeListTypes';
-import {treeItemScope} from './treeListItem.markers.stylex';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Styles
@@ -46,6 +46,19 @@ const styles = stylex.create({
     // The treeitem row is the roving-tabindex focus owner; suppress the
     // native focus ring in favor of the row's :focus-visible outline below.
     outline: 'none',
+    // Publish this row's own focus state as an inheritable CSS variable
+    // instead of matching it via an ancestor selector. Every nested <li>
+    // redeclares these vars (default: 'none' / '0'), so a descendant row's
+    // default shadows an ancestor's active value — the ring can never leak
+    // past the nearest containing treeitem, however deep the tree nests.
+    '--_tree-focus-outline': {
+      default: 'none',
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    '--_tree-focus-outline-offset': {
+      default: '0',
+      ':focus-visible': '2px',
+    },
   },
   childGroup: {
     margin: 0,
@@ -85,17 +98,14 @@ const styles = stylex.create({
   },
   focusVisibleOutline: {
     outline: {
-      default: 'none',
-      // Focus lives on the treeitem row (the <li>) via roving tabindex.
-      // Scoped to the row's OWN treeitem so focusing a parent does not leak
-      // the ring onto descendant rows. Also support inner focusable actions.
-      [stylex.when.ancestor(':focus-visible', treeItemScope)]:
-        `2px solid ${colorVars['--color-accent']}`,
+      // Reads the row's own --_tree-focus-outline (published on the <li> in
+      // `wrapper`), which resolves to the nearest containing treeitem only.
+      default: 'var(--_tree-focus-outline, none)',
+      // Also support inner focusable actions.
       ':has(:focus-visible)': `2px solid ${colorVars['--color-accent']}`,
     },
     outlineOffset: {
-      default: '0',
-      [stylex.when.ancestor(':focus-visible', treeItemScope)]: '2px',
+      default: 'var(--_tree-focus-outline-offset, 0)',
       ':has(:focus-visible)': '2px',
     },
   },
@@ -299,6 +309,7 @@ export function TreeListItem({
   setSize,
   isTabbable,
 }: TreeListItemInternalProps) {
+  const t = useTranslator();
   const labelId = useId();
   const descriptionId = useId();
   const LinkComponent = useLinkComponent();
@@ -341,7 +352,20 @@ export function TreeListItem({
 
   const labelAndDescription = (
     <>
-      <span id={labelId} {...stylex.props(styles.label)}>
+      <span
+        id={labelId}
+        {...mergeProps(
+          // Stable theme target for the item's label text. The label carries no
+          // themeable handle today, so a theme can only reach it through a
+          // fragile structural selector (a content button's first span). This
+          // adds an `astryx-tree-list-item-label` class and reflects the row's
+          // `selected` state so a theme can, e.g., bold just the selected
+          // item's label via `defineTheme`.
+          themeProps('tree-list-item-label', {
+            selected: isSelected ? 'selected' : null,
+          }),
+          stylex.props(styles.label),
+        )}>
         {label}
       </span>
       {description != null && (
@@ -374,18 +398,39 @@ export function TreeListItem({
       <button
         type="button"
         aria-expanded={isExpanded}
-        aria-label="Toggle children"
+        aria-label={t('@astryx.treeList.toggleChildren')}
+        // Stable identity for TreeList's activateItem selector — do not
+        // remove without also updating TreeList.tsx.
+        data-tree-toggle=""
         disabled={isDisabled}
         // Roving tabindex lives on the treeitem row; the chevron toggle is not
         // a separate tab stop. Row-level Enter/Space forwards to this button.
         tabIndex={-1}
         onClick={handleToggle}
-        {...stylex.props(styles.chevronButton)}>
+        {...mergeProps(
+          // Stable theme target for the expand/collapse control. `data-tree-toggle`
+          // stays as the functional activation hook; this adds a themeable
+          // `astryx-tree-list-chevron` class and reflects the open/closed state so
+          // a theme can restyle the toggle (and each state) without a fragile
+          // `[data-tree-toggle]` selector.
+          themeProps('tree-list-chevron', {
+            state: isExpanded ? 'expanded' : 'collapsed',
+          }),
+          stylex.props(styles.chevronButton),
+        )}>
         {chevronIcon}
       </button>
     ) : (
       // Non-interactive chevron only when toggling is not wired up at all
-      <span {...stylex.props(styles.chevronContainer)}>{chevronIcon}</span>
+      <span
+        {...mergeProps(
+          themeProps('tree-list-chevron', {
+            state: isExpanded ? 'expanded' : 'collapsed',
+          }),
+          stylex.props(styles.chevronContainer),
+        )}>
+        {chevronIcon}
+      </span>
     )
   ) : null;
 
@@ -446,7 +491,7 @@ export function TreeListItem({
       data-tree-id={id}
       data-tree-level={nestedLevel + 1}
       data-tree-disabled={isDisabled || undefined}
-      {...stylex.props(styles.wrapper, treeItemScope)}>
+      {...stylex.props(styles.wrapper)}>
       <div {...stylex.props(styles.treeBranches)}>
         <TreeListBranches
           ancestorsIsLast={ancestorsIsLast}

@@ -20,6 +20,10 @@ export const docs = {
     'navigation',
   ],
   description: 'Root component. Manages open state, search, keyboard navigation, and composition slots.',
+  // Intentionally a contained isInline preview, not playground.overlay: the
+  // component stays visible on load and knobs stay live, whereas a real
+  // showModal() overlay makes the page inert — see PlaygroundConfig.overlay
+  // in docs-types.ts (#3657).
   playground: {
     defaults: {
       isOpen: true,
@@ -138,6 +142,7 @@ export const docs = {
   ],
   theming: {
     targets: [
+      {className: 'astryx-command-palette-empty'},
       {className: 'astryx-command-palette-footer'},
       {className: 'astryx-command-palette-group'},
       {className: 'astryx-command-palette-input'},

@@ -2,7 +2,7 @@
 
 /**
  * @file FieldStatus.tsx
- * @input Uses React, stylex, theme tokens
+ * @input Uses React, stylex, theme tokens, useAnnounce
  * @output Exports FieldStatus component, FieldStatusProps
  * @position Core implementation; consumed by Field, Switch, CheckboxInput, and the FieldStatus entrypoint
  *
@@ -16,9 +16,10 @@
 
 'use client';
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {mergeProps} from '../utils';
 import {
   colorVars,
@@ -113,6 +114,14 @@ export interface FieldStatusProps extends BaseProps<HTMLDivElement> {
 /**
  * A status message component for form fields.
  *
+ * Screen-reader announcements go through the persistent `useAnnounce` live
+ * regions (assertive for errors, polite otherwise) rather than `role`/
+ * `aria-live` on the rendered element. Live regions that mount together with
+ * their content are not reliably announced by assistive technology, and
+ * FieldStatus is almost always conditionally rendered by its callers. The
+ * message is announced whenever it appears — including on first mount — and
+ * whenever it changes.
+ *
  * @example
  * ```
  * <FieldStatus
@@ -138,13 +147,22 @@ export function FieldStatus({
   ...rest
 }: FieldStatusProps) {
   const entryStyle = useEntryAnimation('slideDown');
+  const announce = useAnnounce();
+
+  // Announce the message through the persistently-mounted live regions.
+  // Announce-on-mount is intentional: callers conditionally mount FieldStatus
+  // when a status appears (and whole forms can mount with a server-side
+  // validation error already present), and both cases must be heard.
+  useEffect(() => {
+    if (message) {
+      announce(message, type === 'error' ? 'assertive' : 'polite');
+    }
+  }, [announce, message, type]);
 
   return (
     <div
       ref={ref}
       id={id}
-      role={type === 'error' ? 'alert' : 'status'}
-      aria-live={type === 'error' ? 'assertive' : 'polite'}
       {...rest}
       {...mergeProps(
         themeProps('field-status', {type, variant}),

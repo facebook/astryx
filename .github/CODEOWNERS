@@ -1,5 +1,12 @@
 # Default reviewers for the Astryx repository
 # See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Cindy, Joey, and Dream review everything by default
-* @cixzhang @czarandy @josephfarina @imdreamrunner @ejhammond @nynexman4464 @marie-lucas @thedjpetersen @vjeux
+* @cixzhang @imdreamrunner @ejhammond
+
+/packages/cli/ @josephfarina
+
+# The core README is the front door for component/CLI discovery — often the
+# first (and only) doc a consumer or agent reads. Scope it to a small set of
+# discovery owners so changes get focused review rather than a silent
+# "it's just docs" merge.
+/packages/core/README.md @cixzhang @josephfarina

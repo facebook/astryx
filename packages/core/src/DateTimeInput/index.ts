@@ -14,6 +14,7 @@ export type {
   DateTimeInputProps,
   DateTimeInputSize,
   DateTimeInputHourFormat,
+  DateTimeInputTimeIncrement,
   DateTimeInputStatus,
   DateTimeInputStatusType,
   ISODateTimeString,

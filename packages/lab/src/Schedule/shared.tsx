@@ -274,32 +274,6 @@ export function getEventCategory(
   );
 }
 
-export function eventColorStyle(color: ScheduleEventColor | undefined) {
-  switch (color) {
-    case 'cyan':
-      return styles.eventCyan;
-    case 'gray':
-      return styles.eventGray;
-    case 'green':
-      return styles.eventGreen;
-    case 'orange':
-      return styles.eventOrange;
-    case 'pink':
-      return styles.eventPink;
-    case 'purple':
-      return styles.eventPurple;
-    case 'red':
-      return styles.eventRed;
-    case 'teal':
-      return styles.eventTeal;
-    case 'yellow':
-      return styles.eventYellow;
-    case 'blue':
-    default:
-      return styles.eventBlue;
-  }
-}
-
 export function eventDotColorStyle(color: ScheduleEventColor | undefined) {
   switch (color) {
     case 'cyan':
@@ -326,9 +300,7 @@ export function eventDotColorStyle(color: ScheduleEventColor | undefined) {
   }
 }
 
-export function eventSurfaceColorStyle(
-  color: ScheduleEventColor | undefined,
-) {
+export function eventSurfaceColorStyle(color: ScheduleEventColor | undefined) {
   switch (color) {
     case 'cyan':
       return styles.eventSurfaceCyan;
@@ -415,30 +387,12 @@ export function formatWeekTitle(
     : `${startMonth} ${start.year} - ${endMonth} ${end.year}`;
 }
 
-export function formatRangeTitle(
-  start: PlainDate,
-  end: PlainDate,
-  timezoneID: string,
-): string {
-  return `${formatShortDate(start, timezoneID)} - ${formatShortDate(
-    end,
-    timezoneID,
-  )}`;
-}
-
 export function formatFullDate(date: PlainDate, timezoneID: string): string {
   return formatWithPlainDate(date, timezoneID, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
     year: 'numeric',
-  });
-}
-
-export function formatShortDate(date: PlainDate, timezoneID: string): string {
-  return formatWithPlainDate(date, timezoneID, {
-    month: 'short',
-    day: 'numeric',
   });
 }
 

@@ -122,7 +122,10 @@ const styles = stylex.create({
   },
   indicator: {
     position: 'absolute',
-    bottom: '-1px',
+    // Mirrors Tab's indicator: sits on the bottom edge by default (-1px), or
+    // drops onto the divider rail when an ancestor (TabList `hasDivider` or a
+    // Toolbar with a bottom divider) sets `--_tab-indicator-bottom`.
+    bottom: 'var(--_tab-indicator-bottom, -1px)',
     left: spacingVars['--spacing-3'],
     right: spacingVars['--spacing-3'],
     height: '2px',

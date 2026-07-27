@@ -66,7 +66,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     transformOrigin: 'center',
     transitionProperty: 'transform, background-color',
-    transitionDuration: '0.06s',
+    transitionDuration: {
+      default: '0.06s',
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: 'ease-out',
   },
 });
@@ -105,6 +108,7 @@ export function ChatDictationButton({
   xstyle,
   className,
   style,
+  ...rest
 }: ChatDictationButtonProps) {
   if (isHiddenWhenUnsupported && !dictation.isSupported) {
     return null;
@@ -130,7 +134,8 @@ export function ChatDictationButton({
   return (
     <span
       ref={ref}
-      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}>
+      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}
+      {...rest}>
       {isListening && (
         <span
           aria-hidden
@@ -161,9 +166,7 @@ export function ChatDictationButton({
         aria-label={accessibleLabel}
         variant="ghost"
         size={size}
-        icon={
-          isListening ? undefined : <Icon icon="microphone" size={size} />
-        }
+        icon={isListening ? undefined : <Icon icon="microphone" size={size} />}
         isIconOnly
         onClick={dictation.toggle}
       />

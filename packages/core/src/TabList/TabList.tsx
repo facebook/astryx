@@ -29,6 +29,7 @@ import {useListFocus} from '../hooks/useListFocus';
 import {useKeyboardHint} from '../hooks/useKeyboardHint';
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 /**
  * Selector matching the focusable stops in the tab strip: every Tab
@@ -95,6 +96,14 @@ const styles = stylex.create({
     borderBottomWidth: borderVars['--border-width'],
     borderBottomStyle: 'solid',
     borderBottomColor: colorVars['--color-border'],
+    // Reserve a gap between the tabs and the divider rail so the hover pill
+    // (which fills the tab height) no longer touches the underline, and an
+    // adjacent same-size Button aligns to the tabs rather than butting the
+    // rail. The tabs keep their element-size height; this padding grows the
+    // strip. `--_tab-indicator-bottom` drops the selected indicator through
+    // the reserved gap (+ the 1px border) so it still sits on the rail.
+    paddingBlockEnd: spacingVars['--spacing-1'],
+    '--_tab-indicator-bottom': `calc(-1 * (${spacingVars['--spacing-1']} + ${borderVars['--border-width']}))`,
   },
 });
 
@@ -129,11 +138,13 @@ export function TabList({
   onKeyDown: onKeyDownProp,
   onFocus: onFocusProp,
   onBlur: onBlurProp,
-  'aria-label': ariaLabel = 'Tabs',
+  'aria-label': ariaLabelFromProps,
   'aria-orientation': _ariaOrientation,
   [EDGE_COMP_ATTR]: _edgeCompAttr,
   ...restProps
 }: TabListProps) {
+  const t = useTranslator();
+  const ariaLabel = ariaLabelFromProps ?? t('@astryx.tabList.label');
   const size = useSize(sizeProp, 'md');
 
   // Roving-tabindex keyboard navigation across the tab strip via the shared

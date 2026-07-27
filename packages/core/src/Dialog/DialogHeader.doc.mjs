@@ -12,7 +12,7 @@ export const docs = {
     {
       name: 'title',
       type: 'string',
-      description: 'Dialog title (receives focus on open).',
+      description: 'Dialog title (receives focus on open and labels the dialog via aria-labelledby).',
     },
     {
       name: 'subtitle',
@@ -158,7 +158,7 @@ export const docsDense = {
   displayName: 'Dialog Header',
   description: 'dialog header w/ title, optional subtitle, close button, start/end content slots',
   propDescriptions: {
-    title: 'dialog title (receives focus on open)',
+    title: 'dialog title (focused on open; labels dialog via aria-labelledby)',
     subtitle: 'subtitle below title',
     onOpenChange: 'close button callback (omit=no button)',
     startContent: 'content before title (e.g. back button)',

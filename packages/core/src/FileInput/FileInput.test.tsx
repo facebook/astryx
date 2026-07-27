@@ -10,7 +10,13 @@
  */
 
 import {describe, it, expect, vi, afterEach, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  createEvent,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {FileInput} from './FileInput';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
@@ -342,9 +348,10 @@ describe('FileInput', () => {
       fireEvent.change(fileInputEl(), {
         target: {files: [createFile('note.txt', 100)]},
       });
-      // A rejected selection creates no polite region (only the error goes to
-      // the existing role="status" region).
-      expect(politeRegion()).toBeNull();
+      // A rejected selection announces nothing politely. (The region pair may
+      // exist because the validation error itself is announced assertively via
+      // FieldStatus, but the polite channel must stay empty.)
+      expect(politeRegion()?.textContent ?? '').toBe('');
     });
   });
 
@@ -588,6 +595,39 @@ describe('FileInput', () => {
       expect(screen.getByText('Choose file')).toBeInTheDocument();
     });
 
+    it('keeps the drag-over state while dragging over the dropzone children', () => {
+      render(
+        <FileInput
+          label="Upload"
+          value={null}
+          onChange={() => {}}
+          mode="dropzone"
+        />,
+      );
+      const dropzone = screen.getByRole('button', {name: 'Upload'});
+      fireEvent.dragEnter(dropzone);
+      expect(screen.getByText('Drop files here')).toBeInTheDocument();
+
+      // Moving from the container onto one of its own children fires a
+      // dragleave on the container with the child as relatedTarget — the
+      // highlight must not flicker off while still inside the dropzone.
+      // (jsdom's DragEvent init drops relatedTarget, so set it directly.)
+      const child = screen.getByText('Drop files here');
+      const leaveToChild = createEvent.dragLeave(dropzone);
+      Object.defineProperty(leaveToChild, 'relatedTarget', {value: child});
+      fireEvent(dropzone, leaveToChild);
+      expect(screen.getByText('Drop files here')).toBeInTheDocument();
+
+      // Actually leaving the dropzone ends the drag-over state.
+      const leaveToOutside = createEvent.dragLeave(dropzone);
+      Object.defineProperty(leaveToOutside, 'relatedTarget', {
+        value: document.body,
+      });
+      fireEvent(dropzone, leaveToOutside);
+      expect(screen.queryByText('Drop files here')).not.toBeInTheDocument();
+      expect(screen.getByText('Choose file')).toBeInTheDocument();
+    });
+
     it('displays file name in dropzone mode', () => {
       const file = createFile('doc.pdf', 100, 'application/pdf');
       render(
@@ -599,6 +639,54 @@ describe('FileInput', () => {
         />,
       );
       expect(screen.getByText('doc.pdf')).toBeInTheDocument();
+    });
+  });
+
+  describe('trigger accessible name', () => {
+    it('includes the selected file name in the trigger name', () => {
+      const file = createFile('report.pdf', 1024, 'application/pdf');
+      render(<FileInput label="Document" value={file} onChange={() => {}} />);
+      expect(
+        screen.getByRole('button', {name: 'Document, report.pdf'}),
+      ).toBeInTheDocument();
+    });
+
+    it('includes all selected file names when multiple files are selected', () => {
+      const files = [createFile('a.txt', 100), createFile('b.txt', 200)];
+      render(
+        <FileInput
+          label="Files"
+          value={files}
+          onChange={() => {}}
+          isMultiple
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Files, a.txt, b.txt'}),
+      ).toBeInTheDocument();
+    });
+
+    it('uses exactly the label when no files are selected', () => {
+      render(<FileInput label="Document" value={null} onChange={() => {}} />);
+      expect(screen.getByRole('button', {name: 'Document'})).toHaveAttribute(
+        'aria-label',
+        'Document',
+      );
+    });
+
+    it('includes the selected file name in dropzone mode', () => {
+      const file = createFile('doc.pdf', 100, 'application/pdf');
+      render(
+        <FileInput
+          label="Upload"
+          value={file}
+          onChange={() => {}}
+          mode="dropzone"
+        />,
+      );
+      expect(
+        screen.getByRole('button', {name: 'Upload, doc.pdf'}),
+      ).toBeInTheDocument();
     });
   });
 

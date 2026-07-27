@@ -31,10 +31,9 @@ const styles = stylex.create({
   sectionLabel: {
     marginBlockEnd: spacingVars['--spacing-2'],
   },
+  // Sizing comes from fit="cover" on AspectRatio; only the radius is
+  // story-specific.
   image: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
     borderRadius: radiusVars['--radius-element'],
   },
   placeholder: {
@@ -81,6 +80,12 @@ const meta: Meta<typeof AspectRatio> = {
       description:
         'Container shape. Both respect the ratio; "ellipse" clips to an oval (circle at 1:1).',
     },
+    fit: {
+      control: 'select',
+      options: [undefined, 'cover', 'contain', 'center'],
+      description:
+        'How the child is sized inside the ratio box; omitted leaves the child unstyled.',
+    },
   },
 };
 
@@ -94,6 +99,7 @@ const PLACEHOLDER_SQUARE = 'https://picsum.photos/400/400';
 export const Default: Story = {
   args: {
     ratio: 16 / 9,
+    fit: 'cover',
   },
   render: args => (
     <div {...stylex.props(styles.container)}>
@@ -117,7 +123,7 @@ export const Widescreen16x9: Story = {
       <Text type="supporting" xstyle={styles.sectionLabel}>
         16:9 - Standard widescreen (YouTube, TV)
       </Text>
-      <AspectRatio ratio={16 / 9}>
+      <AspectRatio ratio={16 / 9} fit="cover">
         <img
           {...stylex.props(styles.image)}
           src={PLACEHOLDER_IMAGE}
@@ -134,7 +140,7 @@ export const Classic4x3: Story = {
       <Text type="supporting" xstyle={styles.sectionLabel}>
         4:3 - Classic TV and photography
       </Text>
-      <AspectRatio ratio={4 / 3}>
+      <AspectRatio ratio={4 / 3} fit="cover">
         <img
           {...stylex.props(styles.image)}
           src={PLACEHOLDER_IMAGE}
@@ -151,7 +157,7 @@ export const Square1x1: Story = {
       <Text type="supporting" xstyle={styles.sectionLabel}>
         1:1 - Square (Instagram, avatars)
       </Text>
-      <AspectRatio ratio={1}>
+      <AspectRatio ratio={1} fit="cover">
         <img
           {...stylex.props(styles.image)}
           src={PLACEHOLDER_SQUARE}
@@ -181,6 +187,7 @@ export const EllipseCircle: Story = {
   args: {
     ratio: 1,
     shape: 'ellipse',
+    fit: 'cover',
   },
   render: args => (
     <div {...stylex.props(styles.smallContainer)}>
@@ -202,6 +209,7 @@ export const EllipseOval: Story = {
   args: {
     ratio: 16 / 9,
     shape: 'ellipse',
+    fit: 'cover',
   },
   render: args => (
     <div {...stylex.props(styles.container)}>
@@ -215,6 +223,49 @@ export const EllipseOval: Story = {
           alt="Oval media"
         />
       </AspectRatio>
+    </div>
+  ),
+};
+
+export const FitModes: Story = {
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <div {...stylex.props(styles.container)}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
+          fit="cover" — fills the box, media is cropped
+        </Text>
+        <AspectRatio ratio={16 / 9} fit="cover">
+          <img
+            {...stylex.props(styles.image)}
+            src={PLACEHOLDER_SQUARE}
+            alt="Cropped to fill"
+          />
+        </AspectRatio>
+      </div>
+      <div {...stylex.props(styles.container)}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
+          fit="contain" — fills the box, media is letterboxed
+        </Text>
+        <AspectRatio ratio={16 / 9} fit="contain">
+          <img
+            {...stylex.props(styles.image)}
+            src={PLACEHOLDER_SQUARE}
+            alt="Letterboxed to stay visible"
+          />
+        </AspectRatio>
+      </div>
+      <div {...stylex.props(styles.container)}>
+        <Text type="supporting" xstyle={styles.sectionLabel}>
+          fit="center" — natural size, centered
+        </Text>
+        <AspectRatio ratio={16 / 9} fit="center">
+          <img
+            {...stylex.props(styles.image)}
+            src="https://picsum.photos/200/120"
+            alt="Natural size, centered"
+          />
+        </AspectRatio>
+      </div>
     </div>
   ),
 };
@@ -335,7 +386,7 @@ export const ImageGallery: Story = {
       </Text>
       <Grid columns={3} gap={4}>
         {Array.from({length: 6}, (_, i) => (
-          <AspectRatio key={i} ratio={4 / 3}>
+          <AspectRatio key={i} ratio={4 / 3} fit="cover">
             <img
               {...stylex.props(styles.image)}
               src={`https://picsum.photos/seed/${i + 1}/400/300`}

@@ -26,7 +26,7 @@ import type {
   SegmentedControlSize,
   SegmentedControlLayout,
 } from './SegmentedControlContext';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, composeEventHandlers} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
@@ -152,6 +152,10 @@ export function SegmentedControl({
   xstyle,
   className,
   style,
+  onKeyDown: onKeyDownProp,
+  onFocus: onFocusProp,
+  onBlur: onBlurProp,
+  ...rest
 }: SegmentedControlProps) {
   const size = useSize(sizeProp, 'md');
 
@@ -188,10 +192,14 @@ export function SegmentedControl({
 
   const handleContainerKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      onKeyDownProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
       hint.onKeyDown(e);
       handleKeyDown(e);
     },
-    [hint, handleKeyDown],
+    [onKeyDownProp, hint, handleKeyDown],
   );
 
   // Selection-follows-focus (APG radiogroup): useListFocus only *moves* focus,
@@ -202,10 +210,23 @@ export function SegmentedControl({
   // and the already-selected value is skipped so an initial Tab-in (or a click
   // on the current segment) is a no-op, matching click behavior.
   const handleContainerFocus = useCallback(
-    (e: React.FocusEvent) => {
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      onFocusProp?.(e);
+      if (e.defaultPrevented) {
+        return;
+      }
       hint.onFocus(e);
       handleFocus(e);
       if (isDisabled) {
+        return;
+      }
+      // Only select when focus moved WITHIN the group (arrow/Home/End — APG
+      // selection-follows-focus). When focus is entering from outside, Tab
+      // must stay a pure focus move: with an unmatched or disabled-selected
+      // value the roving tab stop falls back to the first enabled radio, and
+      // selecting it here would rewrite the form value on mere traversal.
+      // Clicks are unaffected: the item's own handleClick selects.
+      if (!e.currentTarget.contains(e.relatedTarget)) {
         return;
       }
       const focused = (e.target as HTMLElement | null)?.closest<HTMLElement>(
@@ -219,7 +240,7 @@ export function SegmentedControl({
         onChange(nextValue);
       }
     },
-    [hint, handleFocus, isDisabled, onChange, value],
+    [onFocusProp, hint, handleFocus, isDisabled, onChange, value],
   );
 
   const contextValue = useMemo(
@@ -238,6 +259,7 @@ export function SegmentedControl({
     <SegmentedControlContext value={contextValue}>
       <div
         ref={mergeRefs(ref, listRef, disabledMessageTooltip.ref)}
+        {...rest}
         role="radiogroup"
         aria-label={label}
         aria-disabled={isDisabled || undefined}
@@ -246,7 +268,7 @@ export function SegmentedControl({
         }
         onKeyDown={handleContainerKeyDown}
         onFocus={handleContainerFocus}
-        onBlur={hint.onBlur}
+        onBlur={composeEventHandlers(onBlurProp, hint.onBlur)}
         {...mergeProps(
           themeProps('segmented-control', {size}),
           stylex.props(

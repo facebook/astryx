@@ -54,6 +54,7 @@ import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 export type {DateRange} from '../Calendar';
 
@@ -381,7 +382,7 @@ export function DateRangeInput({
   dateConstraints,
   presets,
   hasClear = true,
-  placeholder = 'Select date range',
+  placeholder: placeholderFromProps,
   size: sizeProp,
   status,
   labelTooltip,
@@ -393,6 +394,9 @@ export function DateRangeInput({
   ref,
   ...rest
 }: DateRangeInputProps) {
+  const t = useTranslator();
+  const placeholder =
+    placeholderFromProps ?? t('@astryx.dateRangeInput.placeholder');
   const size = useSize(sizeProp, 'md');
   const id = useId();
   const descriptionID = useId();
@@ -448,8 +452,8 @@ export function DateRangeInput({
   );
 
   const popover = usePopover({
-    dialogLabel: 'Choose date range',
-    closeButtonLabel: 'Close calendar',
+    dialogLabel: t('@astryx.dateRangeInput.dialogLabel'),
+    closeButtonLabel: t('@astryx.dateInput.closeCalendar'),
   });
 
   const fireChange = useCallback(
@@ -557,7 +561,11 @@ export function DateRangeInput({
           type="button"
           onClick={handleToggle}
           disabled={isEffectivelyDisabled}
-          aria-label={popover.isOpen ? 'Close calendar' : 'Open calendar'}
+          aria-label={
+            popover.isOpen
+              ? t('@astryx.dateInput.toggleCalendarClose')
+              : t('@astryx.dateInput.openCalendar')
+          }
           tabIndex={-1}
           {...stylex.props(
             styles.iconButton,
@@ -594,7 +602,7 @@ export function DateRangeInput({
           <button
             type="button"
             onClick={handleClear}
-            aria-label={`Clear ${label}`}
+            aria-label={t('@astryx.dateInput.clear', {label})}
             {...stylex.props(styles.iconButton)}>
             <Icon icon="close" size="sm" color="secondary" />
           </button>
@@ -613,7 +621,7 @@ export function DateRangeInput({
           {presets && presets.length > 0 && (
             <div
               role="group"
-              aria-label="Preset date ranges"
+              aria-label={t('@astryx.dateRangeInput.presetDateRanges')}
               {...stylex.props(styles.presetSidebar)}>
               {presets.map(preset => {
                 const presetRange = preset.getRange();

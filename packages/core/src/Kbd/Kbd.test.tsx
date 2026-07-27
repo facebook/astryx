@@ -119,4 +119,30 @@ describe('Kbd', () => {
     expect(screen.getByText('⇧')).toBeInTheDocument();
     expect(screen.getByText('+')).toBeInTheDocument();
   });
+
+  it('keeps the computed role and aria-label when unrelated rest props are spread', () => {
+    render(<Kbd keys="mod+k" data-testid="kbd" id="shortcut" />);
+    const el = screen.getByTestId('kbd');
+    // Pass-through attributes land on the wrapper...
+    expect(el).toHaveAttribute('id', 'shortcut');
+    // ...without disturbing the computed accessibility contract.
+    expect(el).toHaveAttribute('role', 'img');
+    expect(el).toHaveAttribute('aria-label', 'Control + K');
+  });
+
+  it('computed role and aria-label win over consumer-passed overrides', () => {
+    // Contract props the component computes must not be clobbered by
+    // pass-through attributes: {...rest} is spread before role/aria-label.
+    render(
+      <Kbd
+        keys="mod+k"
+        role="presentation"
+        aria-label="custom"
+        data-testid="kbd"
+      />,
+    );
+    const el = screen.getByTestId('kbd');
+    expect(el).toHaveAttribute('role', 'img');
+    expect(el).toHaveAttribute('aria-label', 'Control + K');
+  });
 });

@@ -110,7 +110,7 @@ export default function ClassicGalleryTemplate() {
 
   return (
     <Layout
-      height="auto"
+      height="fill"
       content={
         <LayoutContent padding={0}>
           <Center axis="horizontal">

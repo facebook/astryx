@@ -10,7 +10,7 @@
  */
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {act, render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {CodeBlock} from './CodeBlock';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import {dracula} from '../theme/syntax';
@@ -70,6 +70,41 @@ describe('CodeBlock', () => {
     await waitFor(() => {
       expect(politeRegion()).toHaveTextContent('Copied');
     });
+  });
+
+  it('keeps the copied indicator a full 2s after a rapid re-copy', async () => {
+    vi.useFakeTimers();
+    try {
+      render(<CodeBlock code="const x = 1;" language="javascript" />);
+      fireEvent.click(screen.getByRole('button', {name: 'Copy code'}));
+      // Flush the async clipboard write.
+      await act(async () => {});
+      expect(screen.getByRole('button', {name: 'Copied'})).toBeInTheDocument();
+
+      // 1.5s later the user copies again.
+      act(() => {
+        vi.advanceTimersByTime(1500);
+      });
+      fireEvent.click(screen.getByRole('button', {name: 'Copied'}));
+      await act(async () => {});
+
+      // 600ms after the second copy (2.1s after the first): the first
+      // click's timer must not have reverted the indicator early.
+      act(() => {
+        vi.advanceTimersByTime(600);
+      });
+      expect(screen.getByRole('button', {name: 'Copied'})).toBeInTheDocument();
+
+      // It resets 2s after the most recent copy.
+      act(() => {
+        vi.advanceTimersByTime(1400);
+      });
+      expect(
+        screen.getByRole('button', {name: 'Copy code'}),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('does NOT collapse the block when the copy button is clicked', () => {
@@ -173,6 +208,62 @@ describe('CodeBlock', () => {
     const controlsId = header.getAttribute('aria-controls');
     expect(controlsId).toBeTruthy();
     expect(document.getElementById(controlsId as string)).not.toBeNull();
+  });
+
+  it('makes the collapsed region inert so the scroll container is unreachable', () => {
+    render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+    const region = document.getElementById(
+      header.getAttribute('aria-controls') as string,
+    )!;
+    // Expanded: the region is not inert and the scroll container is reachable.
+    expect(region).not.toHaveAttribute('inert');
+
+    fireEvent.click(header);
+    expect(header).toHaveAttribute('aria-expanded', 'false');
+    // Collapsed: the wrapper is inert, so the keyboard-focusable scroll
+    // container (tabIndex=0) inside it drops out of the tab order and the
+    // accessibility tree instead of remaining an invisible tab stop.
+    expect(region).toHaveAttribute('inert');
+    const scrollContainer = screen.getByRole('group');
+    expect(scrollContainer.closest('[inert]')).toBe(region);
+  });
+
+  it('restores focusability of the scroll container after expanding again', () => {
+    render(
+      <CodeBlock
+        code={LONG_CODE}
+        language="javascript"
+        title="example"
+        isCollapsible
+      />,
+    );
+    const header = screen
+      .getAllByRole('button')
+      .find(el => el.hasAttribute('aria-expanded'))!;
+    const region = document.getElementById(
+      header.getAttribute('aria-controls') as string,
+    )!;
+    // Collapse, then expand again.
+    fireEvent.click(header);
+    expect(region).toHaveAttribute('inert');
+    fireEvent.click(header);
+    expect(header).toHaveAttribute('aria-expanded', 'true');
+    // Expanded again: inert is removed and the scroll container is a
+    // keyboard-focusable group once more.
+    expect(region).not.toHaveAttribute('inert');
+    const scrollContainer = screen.getByRole('group');
+    expect(scrollContainer.closest('[inert]')).toBeNull();
+    expect(scrollContainer).toHaveAttribute('tabindex', '0');
   });
 
   it('applies a per-instance syntax theme via the syntaxTheme prop', () => {

@@ -337,8 +337,8 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
             ...props.htmlProps,
             style: {...props.htmlProps.style, ...offsetStyle},
           },
-          styles: [
-            ...props.styles,
+          xstyle: [
+            ...props.xstyle,
             stickyStyles.cell,
             stickyStyles.headerCell,
             side.edge === 'start' ? shadowStyles.start : shadowStyles.end,
@@ -365,8 +365,8 @@ export function useTableStickyColumns<T extends Record<string, unknown>>(
             ...props.htmlProps,
             style: {...props.htmlProps.style, ...offsetStyle},
           },
-          styles: [
-            ...props.styles,
+          xstyle: [
+            ...props.xstyle,
             stickyStyles.cell,
             stickyStyles.bodyCell,
             side.edge === 'start' ? shadowStyles.start : shadowStyles.end,

@@ -390,7 +390,7 @@ export default function AIChatConversationTemplate() {
                     {/* Assistant message: tool calls, markdown, code block */}
                     <ChatMessage
                       sender="assistant"
-                      avatar={<Avatar name="Agent" size="small" />}>
+                      avatar={<Avatar name="Agent" size="md" />}>
                       <ChatMessageBubble variant="ghost">
                         Looking into the auth files now. Let me read through the
                         code and trace the token refresh flow.
@@ -510,7 +510,7 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
                     {/* Assistant message: test results table + code block */}
                     <ChatMessage
                       sender="assistant"
-                      avatar={<Avatar name="Agent" size="small" />}>
+                      avatar={<Avatar name="Agent" size="md" />}>
                       <ChatToolCalls
                         defaultIsExpanded
                         calls={[
@@ -608,7 +608,7 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
                     {/* Assistant message: artifact card */}
                     <ChatMessage
                       sender="assistant"
-                      avatar={<Avatar name="Agent" size="small" />}>
+                      avatar={<Avatar name="Agent" size="md" />}>
                       <ChatMessageBubble variant="ghost">
                         <Markdown density="compact">
                           {`I've drafted a design doc covering the problem, the fix, and the test matrix — pulling straight from the changes we just made.\n\nOpen the document below to review it. Want me to expand any section?`}
@@ -647,7 +647,7 @@ The fix is to catch \`TokenExpiredError\` specifically and attempt a refresh bef
                     {/* Assistant message: in-progress tool call */}
                     <ChatMessage
                       sender="assistant"
-                      avatar={<Avatar name="Agent" size="small" />}>
+                      avatar={<Avatar name="Agent" size="md" />}>
                       <ChatMessageBubble variant="ghost">
                         <Markdown density="compact">
                           {`On it — adding a **Rollout & Monitoring** section with a staged flag ramp and the alert thresholds. Updating the document now.`}

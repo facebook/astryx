@@ -18,7 +18,27 @@ export {
   type DropdownMenuOption,
 } from './DropdownMenu';
 
+export {DropdownMenuItem, type DropdownMenuItemProps} from './DropdownMenuItem';
+
+// Selectable items — checkbox (independent) and radio (single-select group).
 export {
-  DropdownMenuItem,
-  type DropdownMenuItemProps,
-} from './DropdownMenuItem';
+  DropdownMenuCheckboxItem,
+  type DropdownMenuCheckboxItemProps,
+} from './DropdownMenuCheckboxItem';
+export {
+  DropdownMenuRadioGroup,
+  type DropdownMenuRadioGroupProps,
+} from './DropdownMenuRadioGroup';
+export {
+  DropdownMenuRadioItem,
+  type DropdownMenuRadioItemProps,
+} from './DropdownMenuRadioItem';
+
+// Menu-coordination context — public so consumers can build custom menu items
+// that read the menu size / close the menu.
+export {
+  DropdownMenuContext,
+  useDropdownMenuContext,
+  type DropdownMenuContextValue,
+  type DropdownMenuSize,
+} from './DropdownMenuContext';

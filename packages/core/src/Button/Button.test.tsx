@@ -243,6 +243,33 @@ describe('Button', () => {
     expect(button).toHaveAttribute('data-size', 'sm');
   });
 
+  it('applies string width as-is', () => {
+    render(<Button label="Sign in" width="100%" />);
+    const button = screen.getByRole('button');
+    // StyleX compiles the dynamic width to an inline CSS custom property.
+    expect(button.getAttribute('style')).toContain('100%');
+    expect(button.className).toContain('dynamicStyles.width');
+  });
+
+  it('applies numeric width as pixels', () => {
+    render(<Button label="Sign in" width={240} />);
+    expect(screen.getByRole('button').getAttribute('style')).toContain('240');
+  });
+
+  it('omits width styling when the prop is not provided', () => {
+    render(<Button label="Sign in" />);
+    expect(screen.getByRole('button').className).not.toContain(
+      'dynamicStyles.width',
+    );
+  });
+
+  it('applies width when rendered as a link via href', () => {
+    render(<Button label="Sign in" href="https://example.com" width="100%" />);
+    expect(
+      screen.getByRole('link', {name: 'Sign in'}).getAttribute('style'),
+    ).toContain('100%');
+  });
+
   // P0: onClick fires before clickAction, clickAction respects preventDefault
   it('fires onClick before clickAction', async () => {
     const user = userEvent.setup();
@@ -417,5 +444,54 @@ describe('Button', () => {
 
     rerender(<Button label="Submit" isLoading />);
     expect(liveRegion).toHaveTextContent('Loading');
+  });
+
+  describe('elevation', () => {
+    it('renders a distinct class for each elevation level', () => {
+      const classFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
+        const {container} = render(
+          <Button label="Save" elevation={elevation} />,
+        );
+        return container.querySelector('button')!.className;
+      };
+      const classes = new Set([
+        classFor('none'),
+        classFor('low'),
+        classFor('med'),
+        classFor('high'),
+      ]);
+      expect(classes.size).toBe(4);
+    });
+
+    it('defaults to flat (elevation none)', () => {
+      const {container: def} = render(<Button label="Save" />);
+      const {container: none} = render(
+        <Button label="Save" elevation="none" />,
+      );
+      expect(def.querySelector('button')!.className).toBe(
+        none.querySelector('button')!.className,
+      );
+    });
+  });
+
+  it('exposes aria-busy on the link-rendered button while loading', () => {
+    // Non-interruptible loading disables the button, which falls back to
+    // <button> rendering — so an anchor only shows loading when interruptible.
+    render(
+      <Button
+        label="Docs"
+        href="https://example.com"
+        isLoading
+        isInterruptible
+      />,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('does not set aria-busy on the link-rendered button when not loading', () => {
+    render(<Button label="Docs" href="https://example.com" />);
+    const link = screen.getByRole('link');
+    expect(link).not.toHaveAttribute('aria-busy');
   });
 });

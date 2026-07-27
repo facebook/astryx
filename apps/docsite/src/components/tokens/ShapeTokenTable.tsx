@@ -62,7 +62,6 @@ export function RadiusTokenTable({theme}: TokenTableProps) {
       ]}
       density="spacious"
       dividers="rows"
-      hasHover
     />
   );
 }
@@ -107,7 +106,6 @@ export function BorderTokenTable({theme}: TokenTableProps) {
       ]}
       density="spacious"
       dividers="rows"
-      hasHover
     />
   );
 }

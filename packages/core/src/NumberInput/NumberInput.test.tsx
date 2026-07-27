@@ -9,11 +9,19 @@
  * SYNC: When NumberInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {TestIcon} from '../__tests__/TestIcon';
 import {NumberInput} from './NumberInput';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+// FieldStatus announces status messages through the persistent useAnnounce
+// singletons; remove them between tests so role/aria-live queries in this
+// file never match a leftover region.
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
 
 // Mock showPopover/hidePopover since jsdom does not implement them. Used by the
 // disabledMessage tooltip.
@@ -871,9 +879,7 @@ describe('NumberInput', () => {
 describe('keyboard clearing with hasClear (#3599)', () => {
   it('commits null when the input is emptied and blurred', () => {
     const onChange = vi.fn();
-    render(
-      <NumberInput label="Qty" hasClear value={42} onChange={onChange} />,
-    );
+    render(<NumberInput label="Qty" hasClear value={42} onChange={onChange} />);
     const input = screen.getByLabelText('Qty');
     fireEvent.change(input, {target: {value: ''}});
     fireEvent.blur(input);
@@ -882,9 +888,7 @@ describe('keyboard clearing with hasClear (#3599)', () => {
 
   it('commits null when the input is emptied and Enter is pressed', () => {
     const onChange = vi.fn();
-    render(
-      <NumberInput label="Qty" hasClear value={42} onChange={onChange} />,
-    );
+    render(<NumberInput label="Qty" hasClear value={42} onChange={onChange} />);
     const input = screen.getByLabelText('Qty');
     fireEvent.change(input, {target: {value: ''}});
     fireEvent.keyDown(input, {key: 'Enter'});

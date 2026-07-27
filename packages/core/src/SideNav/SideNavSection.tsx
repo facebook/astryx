@@ -145,6 +145,7 @@ export function SideNavSection({
   className,
   style,
   'data-testid': testId,
+  ...rest
 }: SideNavSectionProps) {
   const {isCollapsed} = useSideNavCollapse();
   const id = useId();
@@ -183,15 +184,16 @@ export function SideNavSection({
   return (
     <div
       ref={ref}
-      role="group"
-      aria-labelledby={titleId}
-      data-testid={testId}
       {...mergeProps(
         themeProps('side-nav-section'),
         stylex.props(styles.root, xstyle),
         className,
         style,
-      )}>
+      )}
+      {...rest}
+      role="group"
+      aria-labelledby={titleId}
+      data-testid={testId}>
       <div
         {...mergeProps(stylex.props(styles.header), {
           style: shouldHideHeader ? visuallyHiddenStyle : undefined,

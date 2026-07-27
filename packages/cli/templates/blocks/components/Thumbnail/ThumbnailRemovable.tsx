@@ -65,6 +65,7 @@ export default function ThumbnailRemovable() {
             src={item.src}
             alt={item.alt}
             label={item.label}
+            showRemoveOn="always"
             onRemove={() =>
               setItems(prev => prev.filter(i => i.id !== item.id))
             }

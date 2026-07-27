@@ -4,7 +4,7 @@
 
 /**
  * @file useStreamingText.ts
- * @input Uses React useState, useEffect, useRef, useTheme
+ * @input Uses React useState, useEffect, useRef, useMediaQuery, useTheme
  * @output Exports useStreamingText hook for smooth text streaming
  * @position Core hook; smooths bursty streamed text into steady character reveal
  *
@@ -23,6 +23,7 @@
  */
 
 import {useEffect, useMemo, useRef, useState} from 'react';
+import {useMediaQuery} from './useMediaQuery';
 import {useTheme} from '../theme/useTheme';
 
 /**
@@ -71,7 +72,9 @@ const CHARS_PER_TICK = {
  * Smooths bursty streamed text into a steady character-by-character reveal.
  *
  * Returns a string that grows steadily toward `targetText`. When `isStreaming`
- * is false, returns the full `targetText` immediately.
+ * is false, returns the full `targetText` immediately. When the user prefers
+ * reduced motion, the progressive reveal is skipped entirely and the full
+ * `targetText` is returned immediately.
  *
  * The hook advances on word and syntax boundaries, avoiding slices inside
  * markdown markers like `**`, backticks, `[]()`, etc. This prevents visual
@@ -143,9 +146,17 @@ export function useStreamingText(
     }
   }
 
+  // Respect the user's reduced-motion preference — skip the progressive
+  // reveal and snap straight to the full text. Uses the package's SSR-safe
+  // useMediaQuery (useMediaQuery.ts) so the read stays in sync if the
+  // preference changes mid-stream.
+  const prefersReducedMotion = useMediaQuery(
+    '(prefers-reduced-motion: reduce)',
+  );
+
   // Animation loop
   useEffect(() => {
-    if (!isStreaming || speed === 'instant') {
+    if (!isStreaming || speed === 'instant' || prefersReducedMotion) {
       return;
     }
 
@@ -174,9 +185,9 @@ export function useStreamingText(
         rafRef.current = null;
       }
     };
-  }, [isStreaming, charsPerTick, tickMs, speed]);
+  }, [isStreaming, charsPerTick, tickMs, speed, prefersReducedMotion]);
 
-  if (!isStreaming || speed === 'instant') {
+  if (!isStreaming || speed === 'instant' || prefersReducedMotion) {
     return targetText;
   }
 

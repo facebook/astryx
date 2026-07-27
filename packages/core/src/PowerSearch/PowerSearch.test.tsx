@@ -16,6 +16,7 @@ import userEvent from '@testing-library/user-event';
 import {PowerSearch} from './PowerSearch';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {PowerSearchConfig, PowerSearchFilter} from './types';
+import {TestIcon} from '../__tests__/TestIcon';
 
 // =============================================================================
 // Test infrastructure
@@ -155,6 +156,25 @@ describe('PowerSearch', () => {
     });
 
     expect(screen.getByRole('combobox')).toHaveFocus();
+  });
+
+  describe('startIcon', () => {
+    it('does not render a start icon when omitted', () => {
+      render(<PowerSearch config={config} filters={[]} onChange={() => {}} />);
+      expect(document.querySelector('svg')).not.toBeInTheDocument();
+    });
+
+    it('forwards startIcon to the internal Tokenizer', () => {
+      render(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          startIcon={<TestIcon data-testid="start-icon" />}
+        />,
+      );
+      expect(screen.getByTestId('start-icon')).toBeInTheDocument();
+    });
   });
 
   describe('paste behavior', () => {

@@ -132,7 +132,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Status indicator object (`{ type, message }`) for validation feedback.',
     },
@@ -286,7 +286,7 @@ export const docsZh = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         '验证反馈的状态指示器对象（`{ type, message }`）。',
     },

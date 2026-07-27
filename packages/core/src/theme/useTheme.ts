@@ -9,14 +9,19 @@
  * @position Theme hook; used by data viz, canvas, and non-CSS consumers
  *
  * Provides synchronous access to theme token values resolved for the
- * current color mode — no DOM reads, no double render. Token resolution
- * is shared with the server-safe helpers in ./tokens.ts.
+ * current color mode — no DOM reads on the provider path, no double render.
+ * Without a reachable ThemeContext it consults `<html data-theme>` (kept in
+ * sync by Theme) via a single shared, refcounted MutationObserver before
+ * assuming OS preference; provider-path consumers subscribe to a no-op
+ * store instead (the same args-switch technique useMediaQuery uses), so
+ * mounting under a Theme never creates an observer. Token resolution is
+ * shared with the server-safe helpers in ./tokens.ts.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/index.ts
  */
 
-import {createContext, use, useMemo} from 'react';
+import {createContext, use, useMemo, useSyncExternalStore} from 'react';
 import type {ThemeMode} from './types';
 import type {DefinedTheme} from './defineTheme';
 import {resolveThemeTokens} from './tokens';
@@ -87,6 +92,76 @@ export interface UseThemeReturn {
 // Hook
 // =============================================================================
 
+function getRootThemeAttrSnapshot(): 'light' | 'dark' | null {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+  const attr = document.documentElement.getAttribute('data-theme');
+  return attr === 'light' || attr === 'dark' ? attr : null;
+}
+
+function getRootThemeAttrServerSnapshot(): 'light' | 'dark' | null {
+  return null;
+}
+
+function getNullThemeMode(): null {
+  return null;
+}
+
+// Every no-context consumer wants the same <html data-theme> attribute, so
+// one MutationObserver — refcounted via this listener set — serves all of
+// them instead of one per consumer.
+const rootThemeAttrListeners = new Set<() => void>();
+let rootThemeAttrObserver: MutationObserver | null = null;
+
+function notifyRootThemeAttrListeners(): void {
+  for (const listener of rootThemeAttrListeners) {
+    listener();
+  }
+}
+
+function subscribeRootThemeAttr(onStoreChange: () => void): () => void {
+  rootThemeAttrListeners.add(onStoreChange);
+
+  if (
+    rootThemeAttrListeners.size === 1 &&
+    typeof MutationObserver !== 'undefined'
+  ) {
+    rootThemeAttrObserver = new MutationObserver(notifyRootThemeAttrListeners);
+    rootThemeAttrObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+  }
+
+  return () => {
+    rootThemeAttrListeners.delete(onStoreChange);
+    if (rootThemeAttrListeners.size === 0 && rootThemeAttrObserver) {
+      rootThemeAttrObserver.disconnect();
+      rootThemeAttrObserver = null;
+    }
+  };
+}
+
+function subscribeNoop(): () => void {
+  return () => {};
+}
+
+/**
+ * Reads the root Theme's mode off `<html data-theme>`, live via the shared
+ * MutationObserver. Null means no root Theme has synced it (none present,
+ * or mode is 'system'). `hasCtx` switches which store this subscribes to —
+ * a no-op store when a ThemeContext exists — instead of skipping the hook
+ * call, so provider-path consumers never touch the DOM or the observer.
+ */
+function useRootThemeModeAttr(hasCtx: boolean): 'light' | 'dark' | null {
+  return useSyncExternalStore(
+    hasCtx ? subscribeNoop : subscribeRootThemeAttr,
+    hasCtx ? getNullThemeMode : getRootThemeAttrSnapshot,
+    getRootThemeAttrServerSnapshot,
+  );
+}
+
 /**
  * Access the current Astryx theme's token values, resolved for the active color mode.
  *
@@ -95,8 +170,9 @@ export interface UseThemeReturn {
  * (e.g. Vega, D3, Chart.js) that need concrete values rather than
  * CSS custom property references.
  *
- * When called outside an <Theme> provider, returns the default theme
- * tokens resolved against the current system color mode.
+ * When called outside a <Theme> provider, resolves mode from the root
+ * Theme's `<html data-theme>` when one is present, falling back to the
+ * current system color mode otherwise.
  *
  * @example
  * ```
@@ -114,10 +190,15 @@ export interface UseThemeReturn {
 export function useTheme(): UseThemeReturn {
   const ctx = use(ThemeContext);
 
+  // Falls back to the root Theme's mode via <html data-theme> when there's
+  // no ThemeContext ancestor (e.g. useToast's detached fallback viewport).
+  // Resolves to null when `ctx` is present, so it has no effect there.
+  const rootAttrMode = useRootThemeModeAttr(ctx != null);
+
   // Resolve 'system' to 'light' | 'dark' using the OS preference
   const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
 
-  const mode = ctx?.mode ?? 'system';
+  const mode = ctx?.mode ?? rootAttrMode ?? 'system';
   const theme = ctx?.theme ?? null;
 
   const effectiveMode: 'light' | 'dark' =

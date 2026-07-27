@@ -4,7 +4,8 @@
 
 /**
  * @file Avatar.tsx
- * @input Uses React, HTMLAttributes, ReactNode, useState
+ * @input Uses React, HTMLAttributes, ReactNode, useState; useTooltip
+ *   (Tooltip hook) for the optional name-on-hover tooltip
  * @output Exports Avatar component, AvatarProps, AvatarSize types
  * @position Core implementation; consumed by index.ts
  *
@@ -26,8 +27,9 @@ import {
 } from '../theme/tokens.stylex';
 import {AvatarSizeContext} from './AvatarSizeContext';
 import {useAvatarGroup} from '../AvatarGroup/AvatarGroupContext';
-import {mergeProps} from '../utils';
+import {mergeProps, mergeRefs} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {useTooltip} from '../Tooltip/useTooltip';
 
 /**
  * The offset ratio for positioning elements on a circle's edge at 45°.
@@ -55,28 +57,19 @@ const CIRCLE_EDGE_OFFSET_RATIO = (1 - 1 / Math.SQRT2) / 2;
 const INITIALS_FONT_SIZE_RATIO = 0.4;
 
 /**
- * Named size options
+ * Named size options.
+ *
+ * Avatar uses the same abbreviated scale as Icon (`xsm`/`sm`/`md`/`lg`/`xl`),
+ * but the values are larger because avatars align with media rather than
+ * glyphs. The tiers match EPS's avatar sizes.
  */
-type AvatarNamedSize = 'tiny' | 'xsmall' | 'small' | 'medium' | 'large';
+type AvatarNamedSize = 'xsm' | 'sm' | 'md' | 'lg' | 'xl';
 
 /**
  * Numeric size options (in pixels)
  */
 type AvatarNumericSize =
-  | 16
-  | 20
-  | 24
-  | 32
-  | 36
-  | 40
-  | 48
-  | 60
-  | 64
-  | 72
-  | 96
-  | 128
-  | 144
-  | 180;
+  16 | 20 | 24 | 32 | 36 | 40 | 48 | 60 | 64 | 72 | 96 | 128 | 144 | 180;
 
 /**
  * Avatar size - can be a named size or a specific pixel value
@@ -91,15 +84,15 @@ export function resolveSize(size: AvatarSize): number {
     return size;
   }
   switch (size) {
-    case 'tiny':
+    case 'xsm':
       return 20;
-    case 'xsmall':
+    case 'sm':
       return 24;
-    case 'small':
+    case 'md':
       return 36;
-    case 'medium':
+    case 'lg':
       return 48;
-    case 'large':
+    case 'xl':
       return 128;
   }
 }
@@ -141,6 +134,19 @@ const styles = stylex.create({
   },
   status: {
     position: 'absolute',
+  },
+  // Visible focus ring for the name-tooltip tab stop, matching the repo-wide
+  // focus-visible outline treatment (see Timestamp, Token, Thumbnail). Only
+  // applied when a tooltip is active so keyboard users can reveal it.
+  focusable: {
+    outline: {
+      default: null,
+      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
+    },
+    outlineOffset: {
+      default: '0',
+      ':focus-visible': '2px',
+    },
   },
 });
 
@@ -211,8 +217,9 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
    */
   name?: string;
   /**
-   * The size of the avatar.
-   * @default 'small'
+   * The size of the avatar. A named size (`xsm` 20px, `sm` 24px, `md` 36px,
+   * `lg` 48px, `xl` 128px) or a specific pixel value.
+   * @default 'md'
    */
   size?: AvatarSize;
   /**
@@ -224,6 +231,19 @@ export interface AvatarProps extends BaseProps<HTMLDivElement> {
    * Typically used for status indicators or badges.
    */
   status?: ReactNode;
+  /**
+   * Tooltip shown on hover (and keyboard focus).
+   * - omitted / `true`: show the avatar's `name`
+   * - a string: show that text instead
+   * - `false`: no tooltip
+   *
+   * The avatar owns this tooltip. It is NOT auto-disabled when wrapped in your
+   * own Tooltip/HoverCard — set `tooltip={false}` if you provide your own
+   * overlay. No tooltip is shown if `tooltip` is `true`/omitted and there is
+   * no (non-whitespace) `name`.
+   * @default true
+   */
+  tooltip?: string | boolean;
 }
 
 /**
@@ -271,8 +291,10 @@ function DefaultIcon({size}: {size: number}) {
  * @example
  * ```
  * <Avatar src="/user.jpg" name="John Doe" />
- * <Avatar name="Jane Smith" size="large" />
+ * <Avatar name="Jane Smith" size="xl" />
  * <Avatar src="/user.jpg" status={<OnlineIndicator />} />
+ * <Avatar name="jsmith" tooltip="Jane Smith, Staff Engineer" />
+ * <Avatar name="Jane" tooltip={false} />
  * ```
  */
 export function Avatar({
@@ -280,20 +302,26 @@ export function Avatar({
   'data-testid': testId,
   fallbackSrc,
   name,
-  size = 'small',
+  size = 'md',
   src,
   status,
+  tooltip = true,
   xstyle,
   className,
   style,
   ref,
   ...props
 }: AvatarProps) {
-  const [imageError, setImageError] = useState(false);
-  const [fallbackError, setFallbackError] = useState(false);
+  // Track the exact src that failed (rather than a boolean) so a changed
+  // src/fallbackSrc gets a fresh load attempt instead of the stale error.
+  const [erroredSrc, setErroredSrc] = useState<string | undefined>(undefined);
+  const [erroredFallbackSrc, setErroredFallbackSrc] = useState<
+    string | undefined
+  >(undefined);
 
-  const showImage = src && !imageError;
-  const showFallbackImage = !showImage && fallbackSrc && !fallbackError;
+  const showImage = src && erroredSrc !== src;
+  const showFallbackImage =
+    !showImage && fallbackSrc && erroredFallbackSrc !== fallbackSrc;
   const showInitials = !showImage && !showFallbackImage && name;
   const showIcon = !showImage && !showFallbackImage && !name;
 
@@ -306,18 +334,66 @@ export function Avatar({
   const resolvedSize = avatarGroup?.size ?? size;
   const numericSize = useMemo(() => resolveSize(resolvedSize), [resolvedSize]);
 
-  return (
+  // Resolve the tooltip content:
+  // - `false`            → no tooltip
+  // - a string           → that string
+  // - `true` / omitted   → the `name` (a whitespace-only name yields nothing)
+  // Note: the *visible* tooltip prefers `name` (not `alt`); the *accessible
+  // name* on the root still uses `alt || name` above, independent of this.
+  const tooltipContent =
+    tooltip === false
+      ? undefined
+      : typeof tooltip === 'string'
+        ? tooltip
+        : name;
+  const trimmedTooltip = tooltipContent?.trim();
+  const showTooltip = trimmedTooltip != null && trimmedTooltip !== '';
+  // Whether the tooltip text is a consumer-authored override (a custom string)
+  // rather than the default name. A custom description is worth wiring to
+  // `aria-describedby` (it adds information, matching Button); the default name
+  // tooltip is visual-only — its text duplicates the root `aria-label`, so
+  // describing it too would double-announce the same name (OQ-4).
+  const isCustomTooltip = typeof tooltip === 'string';
+
+  // Own the name tooltip via the Tooltip hook (the Button pattern), which
+  // returns `describedBy` as a value we choose whether to apply — the only way
+  // to satisfy the per-case aria-describedby rule (default name: none; custom
+  // string: describe) without editing Tooltip. `focusTrigger: 'auto'` shows the
+  // tooltip on keyboard focus once the root is made focusable (below).
+  const tooltipHook = useTooltip({
+    placement: 'above',
+    isEnabled: showTooltip,
+  });
+  const rootRef = mergeRefs(ref, showTooltip ? tooltipHook.ref : undefined);
+  const describedByProp =
+    showTooltip && isCustomTooltip
+      ? {
+          'aria-describedby':
+            [props['aria-describedby'], tooltipHook.describedBy]
+              .filter(Boolean)
+              .join(' ') || undefined,
+        }
+      : null;
+
+  const avatarElement = (
     <AvatarSizeContext value={numericSize}>
       <div
-        ref={ref}
+        {...props}
+        ref={rootRef}
         role={isDecorative ? 'presentation' : 'img'}
         aria-label={isDecorative ? undefined : accessibleName}
         aria-hidden={isDecorative || undefined}
+        // The root is a div[role="img"], not natively focusable. When a name
+        // tooltip is active, add a tab stop so keyboard users can reveal it
+        // (WCAG 1.4.13 / 2.1.1) — matching Timestamp/Button. Only while active.
+        tabIndex={showTooltip ? 0 : undefined}
         data-testid={testId}
+        {...describedByProp}
         {...mergeProps(
           themeProps('avatar', {size: resolvedSize}),
           stylex.props(
             styles.wrapper,
+            showTooltip && styles.focusable,
             avatarGroup && groupStyles.ring,
             avatarGroup && groupStyles.overlap,
             avatarGroup && groupDynamicStyles.overlap(-avatarGroup.overlap),
@@ -325,14 +401,13 @@ export function Avatar({
           ),
           className,
           style,
-        )}
-        {...props}>
+        )}>
         <div {...stylex.props(styles.content, dynamicStyles.size(numericSize))}>
           {showImage && (
             <img
               src={src}
               alt=""
-              onError={() => setImageError(true)}
+              onError={() => setErroredSrc(src)}
               {...stylex.props(styles.image)}
             />
           )}
@@ -340,7 +415,7 @@ export function Avatar({
             <img
               src={fallbackSrc}
               alt=""
-              onError={() => setFallbackError(true)}
+              onError={() => setErroredFallbackSrc(fallbackSrc)}
               {...stylex.props(styles.image)}
             />
           )}
@@ -370,6 +445,20 @@ export function Avatar({
         )}
       </div>
     </AvatarSizeContext>
+  );
+
+  if (!showTooltip) {
+    return avatarElement;
+  }
+
+  // Render the tooltip as a sibling (no wrapper DOM) — the hook's ref is already
+  // attached to the root via `rootRef` above. `trimmedTooltip` is guaranteed
+  // non-empty here.
+  return (
+    <>
+      {avatarElement}
+      {tooltipHook.renderTooltip(trimmedTooltip)}
+    </>
   );
 }
 

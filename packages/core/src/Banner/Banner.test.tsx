@@ -368,4 +368,34 @@ describe('Banner', () => {
     );
     expect(screen.getByTestId('custom-chevron')).toBeInTheDocument();
   });
+
+  describe('elevation', () => {
+    it('renders a distinct root class for each elevation level', () => {
+      const classFor = (elevation: 'none' | 'low' | 'med' | 'high') => {
+        const {container} = render(
+          <Banner status="info" title="Heads up" elevation={elevation} />,
+        );
+        return container.firstElementChild!.className;
+      };
+      const classes = new Set([
+        classFor('none'),
+        classFor('low'),
+        classFor('med'),
+        classFor('high'),
+      ]);
+      expect(classes.size).toBe(4);
+    });
+
+    it('defaults to flat (elevation none)', () => {
+      const {container: def} = render(
+        <Banner status="info" title="Heads up" />,
+      );
+      const {container: none} = render(
+        <Banner status="info" title="Heads up" elevation="none" />,
+      );
+      expect(def.firstElementChild!.className).toBe(
+        none.firstElementChild!.className,
+      );
+    });
+  });
 });

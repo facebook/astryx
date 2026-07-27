@@ -1,0 +1,124 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# PR Analysis Report — posts/updates the analysis comment for ALL PRs.
+#
+# Runs on workflow_run after CI completes, NOT on pull_request. That matters:
+# a pull_request workflow triggered by a fork gets a READ-ONLY token and can't
+# comment, which is why the report never appeared on external-contributor PRs.
+# workflow_run runs from the base repo with the repo's own token (pull-requests:
+# write), so it can comment on fork PRs too — one code path for every PR, no
+# drift between a fork path and a same-repo path.
+#
+# Safety: this never checks out or runs PR-controlled code. It only downloads
+# the analysis + a11y artifacts (JSON) produced by CI and posts a comment. Do
+# not add checkout of the PR head or execution of PR code here.
+
+name: PR Comment
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  comment:
+    # Only for CI runs triggered by a pull request.
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      actions: read
+    steps:
+      - name: Checkout base repo (scripts only)
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Download analysis artifact from the CI run
+        uses: actions/download-artifact@v8
+        with:
+          name: pr-analysis
+          path: pr-analysis
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Download a11y artifact from the CI run
+        uses: actions/download-artifact@v8
+        with:
+          name: a11y-report
+          path: a11y
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Generate and post PR comment
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('node:fs');
+            const { execSync } = require('node:child_process');
+
+            // The analysis artifact is only produced for non-docsite-only PRs.
+            // If it's absent, there's nothing to report — exit quietly.
+            if (!fs.existsSync('pr-analysis/analysis.json') ||
+                !fs.existsSync('pr-analysis/pr-meta.json')) {
+              core.info('No analysis artifact — nothing to comment (docsite-only or skipped).');
+              return;
+            }
+
+            const meta = JSON.parse(fs.readFileSync('pr-analysis/pr-meta.json', 'utf8'));
+            const prNumber = parseInt(meta.prNumber, 10);
+            if (!prNumber) {
+              core.warning('No PR number in metadata — cannot comment.');
+              return;
+            }
+
+            // a11y is optional (the pr-a11y job is skipped when no components
+            // changed). Fall back to an empty report so the comment still posts;
+            // generate-pr-comment.js renders the a11y section from whatever it
+            // gets.
+            let a11yPath = 'a11y/a11y-report.json';
+            if (!fs.existsSync(a11yPath)) {
+              fs.writeFileSync('a11y-empty.json',
+                '{"components":{},"summary":{"componentsAudited":0,"totalViolations":0}}');
+              a11yPath = 'a11y-empty.json';
+            }
+
+            const args = [
+              '.github/scripts/generate-pr-comment.js',
+              '--analysis', 'pr-analysis/analysis.json',
+              '--a11y', a11yPath,
+              '--storybook-url', meta.storybookUrl || '',
+              '--sandbox-url', meta.sandboxUrl || '',
+              '--run-url', meta.runUrl || '',
+              '--pr-number', String(prNumber),
+            ];
+
+            const body = execSync(`node ${args.map((a) => JSON.stringify(a)).join(' ')}`,
+              { encoding: 'utf8' });
+            fs.writeFileSync('pr-comment.md', body);
+
+            const { owner, repo } = context.repo;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner, repo, issue_number: prNumber, per_page: 100,
+            });
+            const botComment = comments.find((c) =>
+              c.user.type === 'Bot' && c.body.includes('PR Analysis Report'));
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: botComment.id, body,
+              });
+              core.info(`Updated PR Analysis Report on #${prNumber}.`);
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: prNumber, body,
+              });
+              core.info(`Posted PR Analysis Report on #${prNumber}.`);
+            }

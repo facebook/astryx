@@ -42,6 +42,7 @@ import {Divider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerPlacement} from '../Layer/useLayer';
 import {Spinner} from '../Spinner';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {
   colorVars,
   sizeVars,
@@ -64,7 +65,6 @@ import {
 } from './utils';
 import {useCombobox, useSelectedItemOffset} from './hooks';
 import {useTypeahead} from '../hooks/useTypeahead';
-import {useAnnounce} from '../hooks/useAnnounce';
 import {SelectorOption} from './SelectorOption';
 import {getInputARIA, mergeProps} from '../utils';
 import {useSize} from '../SizeContext/SizeContext';
@@ -74,6 +74,7 @@ import {themeProps} from '../utils/themeProps';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {VisuallyHidden} from '../VisuallyHidden';
+import {useTranslator} from '../i18n';
 
 const styles = stylex.create({
   // Trigger container — the enhanced click target wrapping the combobox button and clear button as siblings
@@ -537,6 +538,23 @@ function DefaultOption({option}: {option: SelectorOptionData}) {
   );
 }
 
+// Case-insensitive substring filter over the selectable options. Shared by the
+// `filteredItems` memo (rendering) and the search-change handler, which needs
+// the count for the *next* query synchronously to announce it exactly once per
+// keystroke rather than reacting to state in an effect.
+function filterOptionsByQuery(
+  items: SelectorOptionData[],
+  query: string,
+): SelectorOptionData[] {
+  if (!query) {
+    return items;
+  }
+  const q = query.toLowerCase();
+  return items.filter(item =>
+    (item.label ?? item.value).toLowerCase().includes(q),
+  );
+}
+
 /**
  * A selector/dropdown component for choosing from a list of options.
  *
@@ -554,6 +572,7 @@ function DefaultOption({option}: {option: SelectorOptionData}) {
 export function Selector<T extends SelectorOptionType>(
   props: SelectorProps<T>,
 ) {
+  const t = useTranslator();
   const {
     label,
     isLabelHidden = false,
@@ -567,7 +586,7 @@ export function Selector<T extends SelectorOptionType>(
     onChange,
     changeAction,
     isLoading = false,
-    placeholder = 'Select...',
+    placeholder: placeholderFromProps,
     size: sizeProp,
     status,
     labelTooltip,
@@ -575,7 +594,7 @@ export function Selector<T extends SelectorOptionType>(
     htmlName,
     renderOption,
     hasSearch = false,
-    searchPlaceholder = 'Search...',
+    searchPlaceholder: searchPlaceholderFromProps,
     placement,
     isDefaultOpen = false,
     'data-testid': testId,
@@ -586,6 +605,9 @@ export function Selector<T extends SelectorOptionType>(
     hasClear: hasClearProp,
     ...rest
   } = props as SelectorPropsClearable<T>;
+  const placeholder = placeholderFromProps ?? t('@astryx.selector.placeholder');
+  const searchPlaceholder =
+    searchPlaceholderFromProps ?? t('@astryx.selector.searchPlaceholder');
   const hasClear = hasClearProp === true;
   const size = useSize(sizeProp, 'md');
 
@@ -639,15 +661,10 @@ export function Selector<T extends SelectorOptionType>(
   );
 
   // Filter items by search query
-  const filteredItems = useMemo(() => {
-    if (!searchQuery) {
-      return selectableItems;
-    }
-    const query = searchQuery.toLowerCase();
-    return selectableItems.filter(item =>
-      (item.label ?? item.value).toLowerCase().includes(query),
-    );
-  }, [selectableItems, searchQuery]);
+  const filteredItems = useMemo(
+    () => filterOptionsByQuery(selectableItems, searchQuery),
+    [selectableItems, searchQuery],
+  );
 
   // Find selected item and its index for positioning
   const selectedItemIndex = useMemo(() => {
@@ -672,8 +689,11 @@ export function Selector<T extends SelectorOptionType>(
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
     resetTypeaheadRef.current();
+    // Clear any lingering result count when the popover closes so stale status
+    // text does not linger in the a11y tree.
+    announce('');
     triggerRef.current?.focus();
-  }, []);
+  }, [announce]);
 
   const popover = usePopover({
     onHide: handleLayerHide,
@@ -692,6 +712,29 @@ export function Selector<T extends SelectorOptionType>(
     }
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
+
+  // Announce the filtered result count from the query-change handler (matching
+  // BaseTypeahead) rather than a reactive effect: computing the count for the
+  // next query here fires the announcement exactly once per keystroke and does
+  // not re-speak on unrelated re-renders.
+  const handleSearchChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const nextQuery = event.target.value;
+      setSearchQuery(nextQuery);
+      if (nextQuery.length === 0) {
+        // Emptying the query clears the region rather than announcing a count.
+        announce('');
+        return;
+      }
+      const count = filterOptionsByQuery(selectableItems, nextQuery).length;
+      announce(
+        count === 0
+          ? 'No results found'
+          : `${count} result${count === 1 ? '' : 's'}`,
+      );
+    },
+    [announce, selectableItems],
+  );
 
   // Calculate offset to position selected item over trigger. Explicit
   // placement opts out of the selector-specific overlay behavior and uses the
@@ -869,16 +912,20 @@ export function Selector<T extends SelectorOptionType>(
               ? getItemId(highlightedIndex)
               : undefined
           }
-          aria-label="Search options"
+          aria-label={t('@astryx.selector.searchOptions')}
           type="text"
           value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
           onKeyDown={e => {
             // Arrow keys navigate options; Enter selects; Escape/Tab close.
-            // Home/End are left to the input for caret movement.
+            // Home/End are left to the input for caret movement (APG editable
+            // combobox); PageUp/PageDown are the sanctioned substitute for
+            // jumping to the first/last option.
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
+              e.key === 'PageUp' ||
+              e.key === 'PageDown' ||
               e.key === 'Enter' ||
               e.key === 'Escape' ||
               e.key === 'Tab'
@@ -897,10 +944,12 @@ export function Selector<T extends SelectorOptionType>(
     listboxId,
     searchQuery,
     searchPlaceholder,
+    handleSearchChange,
     onKeyDown,
     popover.isOpen,
     highlightedIndex,
     getItemId,
+    t,
   ]);
 
   // Render an individual item
@@ -1080,7 +1129,7 @@ export function Selector<T extends SelectorOptionType>(
           <button
             type="button"
             onClick={handleClear}
-            aria-label={`Clear ${label}`}
+            aria-label={t('@astryx.selector.clearLabel', {label})}
             {...stylex.props(styles.clearButton)}>
             <Icon icon="close" size="sm" color="secondary" />
           </button>

@@ -30,6 +30,7 @@ import {Icon} from '../Icon';
 import {Button} from '../Button';
 import type {BaseProps} from '../BaseProps';
 import {mergeProps} from '../utils';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -68,7 +69,10 @@ const styles = stylex.create({
     height: '32px',
     transitionProperty: 'opacity, transform, max-width',
     transitionTimingFunction: easeVars['--ease-standard'],
-    transitionDuration: durationVars['--duration-fast-max'],
+    transitionDuration: {
+      default: durationVars['--duration-fast-max'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
   },
   hidden: {
     opacity: 0,
@@ -118,11 +122,14 @@ export function ChatLayoutScrollButton({
   xstyle,
   className,
   style,
+  ...rest
 }: ChatLayoutScrollButtonProps) {
+  const t = useTranslator();
   return (
     <div
       ref={ref}
-      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}>
+      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}
+      {...rest}>
       <div
         {...stylex.props(
           styles.container,
@@ -130,8 +137,10 @@ export function ChatLayoutScrollButton({
           label ? styles.expanded : styles.collapsed,
         )}>
         <Button
-          label={label ?? 'Scroll to bottom'}
-          aria-label={label ?? 'Scroll to bottom'}
+          label={label ?? t('@astryx.chatLayoutScrollButton.scrollToBottom')}
+          aria-label={
+            label ?? t('@astryx.chatLayoutScrollButton.scrollToBottom')
+          }
           icon={<Icon icon="chevronDown" size="md" />}
           variant="ghost"
           size="md"

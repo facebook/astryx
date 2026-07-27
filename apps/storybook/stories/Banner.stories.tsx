@@ -21,6 +21,11 @@ const meta: Meta<typeof Banner> = {
       options: ['card', 'section'],
       description: 'Container type',
     },
+    elevation: {
+      control: 'inline-radio',
+      options: ['none', 'low', 'med', 'high'],
+      description: 'Resting shadow depth (for a floating banner)',
+    },
     isDismissable: {
       control: 'boolean',
       description:
@@ -62,6 +67,15 @@ export const Success: Story = {
   args: {
     status: 'success',
     title: 'Your changes have been saved successfully.',
+  },
+};
+
+export const Floating: Story = {
+  args: {
+    status: 'info',
+    title: 'This banner floats above content.',
+    description: 'A raised banner draws attention as an overlay.',
+    elevation: 'med',
   },
 };
 
@@ -229,9 +243,7 @@ export const AllFeatures: Story = {
       <Banner
         status="info"
         title="With action button"
-        endContent={
-          <Button label="Learn more" variant="secondary" size="sm" />
-        }
+        endContent={<Button label="Learn more" variant="secondary" size="sm" />}
       />
       <Banner
         status="error"

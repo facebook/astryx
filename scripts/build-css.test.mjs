@@ -104,9 +104,9 @@ describe('build-css astryx.css', () => {
     }
   });
 
-  it('does not produce per-component CSS files', () => {
+  it('does not produce per-component CSS files', async () => {
     // Verify the cleanup — no common.css or per-component styles.css
-    expect(
+    await expect(
       fs.access(path.join(CORE_DIST, 'common.css')).then(() => true, () => false),
     ).resolves.toBe(false);
   });

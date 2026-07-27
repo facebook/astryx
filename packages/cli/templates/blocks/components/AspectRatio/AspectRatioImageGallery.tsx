@@ -25,16 +25,11 @@ export default function AspectRatioImageGallery() {
     <Center width={600}>
       <Grid columns={3} gap={4} width="100%">
         {images.map(({id, alt}) => (
-          <AspectRatio key={id} ratio={4 / 3}>
+          <AspectRatio key={id} ratio={4 / 3} fit="cover">
             <img
               src="https://lookaside.facebook.com/assets/astryx/illustrative-horizontal-1.png"
               alt={alt}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                borderRadius: 8,
-              }}
+              style={{borderRadius: 8}}
             />
           </AspectRatio>
         ))}

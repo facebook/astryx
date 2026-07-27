@@ -39,13 +39,13 @@ export const docs = {
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: 'Position relative to the anchor element.',
+          description: "Position relative to the anchor element. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).",
           default: "'above'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: 'Alignment along the placement axis.',
+          description: "Alignment along the placement axis. Logical: start/end resolve against the popover\'s own inherited direction (RTL mirrors in pure CSS).",
           default: "'center'",
         },
         {
@@ -138,13 +138,13 @@ export const docsZh = {
         {
           name: 'placement',
           type: "'above' | 'below' | 'start' | 'end'",
-          description: '相对于锚点元素的位置。',
+          description: '相对于锚点元素的位置。逻辑值：start/end 根据弹出层自身继承的方向解析（RTL 镜像）。',
           default: "'above'",
         },
         {
           name: 'alignment',
           type: "'start' | 'center' | 'end'",
-          description: '沿放置轴的对齐方式。',
+          description: '沿放置轴的对齐方式。逻辑值：start/end 根据弹出层自身继承的方向解析（RTL 镜像）。',
           default: "'center'",
         },
         {
@@ -230,8 +230,8 @@ export const docsDense = {
         children: 'Trigger element(s) that activate tooltip.',
         anchorRef: 'External anchor ref for sibling mode.',
         content: 'Tooltip content, typically short text.',
-        placement: 'Position relative to anchor.',
-        alignment: 'Alignment along placement axis.',
+        placement: 'Position relative to anchor. Logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
+        alignment: 'Alignment along placement axis. Logical: start/end follow the popover\'s inherited direction (RTL mirrors).',
         delay: 'Show delay in ms.',
         hideDelay: 'Hide delay in ms.',
         focusTrigger: 'Controls when focus events trigger tooltip.',

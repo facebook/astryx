@@ -475,7 +475,11 @@ function DotGLInteractiveCanvas({
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
     const pixel = new Uint8Array(4);
-    gl.readPixels(px, texH - py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+    // Flip Y from top-origin CSS space to the framebuffer's bottom-left,
+    // 0-indexed origin. `texH - 1 - py` (not `texH - py`) keeps the read in
+    // [0, texH-1] — the bare `texH - py` reads one row too high and samples
+    // out of bounds at the very top edge.
+    gl.readPixels(px, texH - 1 - py, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
     const idx = colorToIndex(pixel[0], pixel[1], pixel[2]);

@@ -10,8 +10,15 @@
  */
 
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateInput} from './DateInput';
 import {InputGroup} from '../InputGroup';
 import {InputGroupText} from '../InputGroup/InputGroupText';
@@ -92,14 +99,14 @@ describe('DateInput', () => {
 
   it('calendar button is focusable and clickable', () => {
     render(<DateInput label="Date" onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     expect(button).toBeInTheDocument();
     expect(button).not.toBeDisabled();
   });
 
   it('calendar button is disabled when isDisabled is true', () => {
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     expect(button).toBeDisabled();
   });
 
@@ -132,21 +139,27 @@ describe('DateInput', () => {
   });
 
   it('announces an alert message when typed input is invalid', () => {
-    render(<DateInput label="Date" onChange={() => {}} />);
+    // Scope to the component's own container: the embedded Calendar uses the
+    // shared `useAnnounce` hook, whose global polite/assertive live-region pair
+    // (both mounted on document.body by any announce) would otherwise make a
+    // document-wide `getByRole('alert')` ambiguous.
+    const {container} = render(<DateInput label="Date" onChange={() => {}} />);
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, {target: {value: '13/45/2024'}});
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Invalid date');
+    expect(within(container).getByRole('alert')).toHaveTextContent(
+      'Invalid date',
+    );
   });
 
   it('does not announce an alert message when input is valid', () => {
-    render(<DateInput label="Date" onChange={() => {}} />);
+    const {container} = render(<DateInput label="Date" onChange={() => {}} />);
 
     const input = screen.getByRole('combobox');
     fireEvent.change(input, {target: {value: '03/15/2026'}});
 
-    expect(screen.getByRole('alert')).toHaveTextContent('');
+    expect(within(container).getByRole('alert')).toHaveTextContent('');
     expect(screen.queryByText('Invalid date')).not.toBeInTheDocument();
   });
 
@@ -282,7 +295,7 @@ describe('DateInput', () => {
   it('disables input and button when isLoading is true', () => {
     render(<DateInput label="Date" isLoading onChange={() => {}} />);
     expect(screen.getByRole('combobox')).toBeDisabled();
-    expect(screen.getByRole('button', {name: 'Open calendar'})).toBeDisabled();
+    expect(getButton('Open calendar')).toBeDisabled();
   });
 
   it('shows spinner when isLoading is true', () => {
@@ -475,7 +488,7 @@ describe('DateInput', () => {
 
   it('does not open popover when clicking calendar button while disabled', () => {
     render(<DateInput label="Date" isDisabled onChange={() => {}} />);
-    const button = screen.getByRole('button', {name: 'Open calendar'});
+    const button = getButton('Open calendar');
     fireEvent.click(button);
     expect(screen.getByRole('combobox')).toHaveAttribute(
       'aria-expanded',
@@ -513,23 +526,17 @@ describe('DateInput', () => {
           hasClear
         />,
       );
-      expect(
-        screen.getByRole('button', {name: 'Clear Date'}),
-      ).toBeInTheDocument();
+      expect(getButton('Clear Date')).toBeInTheDocument();
     });
 
     it('does not show clear button when value is undefined', () => {
       render(<DateInput label="Date" onChange={() => {}} hasClear />);
-      expect(
-        screen.queryByRole('button', {name: 'Clear Date'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Date')).not.toBeInTheDocument();
     });
 
     it('does not show clear button when hasClear is false', () => {
       render(<DateInput label="Date" value="2026-01-15" onChange={() => {}} />);
-      expect(
-        screen.queryByRole('button', {name: 'Clear Date'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Date')).not.toBeInTheDocument();
     });
 
     it('does not show clear button when disabled', () => {
@@ -542,9 +549,7 @@ describe('DateInput', () => {
           isDisabled
         />,
       );
-      expect(
-        screen.queryByRole('button', {name: 'Clear Date'}),
-      ).not.toBeInTheDocument();
+      expect(queryButton('Clear Date')).not.toBeInTheDocument();
     });
 
     it('calls onChange with undefined when clear is clicked', () => {
@@ -557,7 +562,7 @@ describe('DateInput', () => {
           hasClear
         />,
       );
-      fireEvent.click(screen.getByRole('button', {name: 'Clear Date'}));
+      fireEvent.click(getButton('Clear Date'));
       expect(onChange).toHaveBeenCalledWith(undefined);
     });
   });
@@ -699,9 +704,7 @@ describe('DateInput', () => {
       expect(input).toHaveAttribute('aria-disabled', 'true');
       expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
       expect(tooltip).toHaveTextContent('Scheduling is locked');
-      expect(
-        screen.getByRole('button', {name: 'Open calendar'}),
-      ).toBeDisabled();
+      expect(getButton('Open calendar')).toBeDisabled();
     });
   });
 
@@ -829,6 +832,114 @@ describe('DateInput', () => {
       const input = screen.getByRole('combobox');
       expect(input).toBeDisabled();
       expect(input).not.toHaveAttribute('aria-disabled');
+    });
+  });
+
+  describe('format', () => {
+    it('defaults to the long-month date_long shape', () => {
+      // Non-breaking default: byte-identical to the historical hardcoded
+      // DATE_FORMAT_LONG rendering. `format` now defaults to 'date_long'.
+      render(<DateInput label="Date" value="2026-01-25" onChange={() => {}} />);
+      expect(screen.getByDisplayValue('January 25, 2026')).toBeInTheDocument();
+    });
+
+    it('renders the long-month shape for explicit format="date_long"', () => {
+      // Explicit date_long is identical to the unset default above and to the
+      // old hardcoded long-month output — real named parity with Timestamp.
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date_long"
+        />,
+      );
+      expect(screen.getByDisplayValue('January 25, 2026')).toBeInTheDocument();
+    });
+
+    it('renders the short-month shape for format="date"', () => {
+      // Same literal + same shape as <Timestamp format="date" />.
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date"
+        />,
+      );
+      expect(screen.getByDisplayValue('Jan 25, 2026')).toBeInTheDocument();
+    });
+
+    it('renders the ISO shape for format="system_date"', () => {
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="system_date"
+        />,
+      );
+      expect(screen.getByDisplayValue('2026-01-25')).toBeInTheDocument();
+    });
+
+    it('renders a weekday prefix for format="date_weekday"', () => {
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date_weekday"
+        />,
+      );
+      // 2026-01-25 is a Sunday; assert the weekday-prefixed shape without
+      // over-fitting locale punctuation.
+      const input = screen.getByRole('combobox');
+      expect(input).toHaveValue('Sun, Jan 25, 2026');
+    });
+
+    it('supports a custom function format', () => {
+      render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format={iso => `custom:${iso}`}
+        />,
+      );
+      expect(screen.getByDisplayValue('custom:2026-01-25')).toBeInTheDocument();
+    });
+
+    it('does not apply format to in-progress typed input', async () => {
+      const user = userEvent.setup();
+      render(
+        <DateInput label="Date" onChange={() => {}} format="system_date" />,
+      );
+      const input = screen.getByRole('combobox');
+      await user.click(input);
+      await user.type(input, 'January 25');
+      // While typing, the raw text is shown verbatim — not reformatted.
+      expect(input).toHaveValue('January 25');
+    });
+
+    it('recomputes the display in format on external value change', () => {
+      const {rerender} = render(
+        <DateInput
+          label="Date"
+          value="2026-01-25"
+          onChange={() => {}}
+          format="date"
+        />,
+      );
+      expect(screen.getByDisplayValue('Jan 25, 2026')).toBeInTheDocument();
+      rerender(
+        <DateInput
+          label="Date"
+          value="2026-03-10"
+          onChange={() => {}}
+          format="date"
+        />,
+      );
+      expect(screen.getByDisplayValue('Mar 10, 2026')).toBeInTheDocument();
     });
   });
 });

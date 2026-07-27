@@ -4,7 +4,7 @@
 
 /**
  * @file Tokenizer.tsx
- * @input Uses React, BaseTypeahead, Field, Token
+ * @input Uses React, BaseTypeahead, Field, Token, useAnnounce
  * @output Exports Tokenizer multi-select typeahead component
  * @position Composed component; forwards DOM ref and exposes focus control via
  *   handleRef
@@ -43,6 +43,7 @@ import {renderIconSlot, type IconType} from '../Icon';
 import {OverflowList} from '../OverflowList';
 import {useLayer} from '../Layer/useLayer';
 import {useTooltip} from '../Tooltip';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {
   colorVars,
   spacingVars,
@@ -52,6 +53,7 @@ import {
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // Re-export status types for convenience
 export type {
@@ -81,9 +83,7 @@ export type TokenizerSize = 'sm' | 'md' | 'lg';
  * - `'unfocusedLayer'`: Shows a single line with "+ N more" when unfocused, expands as an overlay on focus.
  */
 export type TokenizerOverflowBehavior =
-  | 'none'
-  | 'unfocusedInline'
-  | 'unfocusedLayer';
+  'none' | 'unfocusedInline' | 'unfocusedLayer';
 
 /**
  * Imperative handle for Tokenizer handleRef.
@@ -403,6 +403,7 @@ export function Tokenizer<T extends SearchableItem>({
   ref,
   handleRef,
 }: TokenizerProps<T>) {
+  const t = useTranslator();
   const size = useSize(sizeProp, 'md');
   const inputId = useId();
   const descriptionId = useId();
@@ -560,6 +561,12 @@ export function Tokenizer<T extends SearchableItem>({
     [],
   );
 
+  // Announce token add/remove politely via the persistent live region.
+  // Tokens previously appeared and disappeared silently — Backspace on an
+  // empty input removes the trailing token, and the per-token remove buttons
+  // gave no audible feedback either.
+  const announce = useAnnounce();
+
   // Handle adding an item — detect creatable synthetic items
   const handleAdd = useCallback(
     (item: T | null) => {
@@ -584,6 +591,7 @@ export function Tokenizer<T extends SearchableItem>({
         const realItem = base as T;
         const newItems = [...value, realItem];
         onChange(newItems, {item: realItem, type: 'create'});
+        announce(`Added ${createdValue}`);
         return;
       }
 
@@ -592,18 +600,22 @@ export function Tokenizer<T extends SearchableItem>({
       }
       const newItems = [...value, item];
       onChange(newItems, {item, type: 'add'});
+      announce(`Added ${item.label}`);
     },
-    [value, onChange, isAtMax, selectedIds, hasCreate],
+    [value, onChange, isAtMax, selectedIds, hasCreate, announce],
   );
 
-  // Handle removing an item
+  // Handle removing an item. Single removal path: both Backspace on an empty
+  // input and the per-token remove buttons route through here, so the
+  // announcement covers both.
   const handleRemove = useCallback(
     (item: T) => {
       const newItems = value.filter(v => v.id !== item.id);
       onChange(newItems, {item, type: 'remove'});
+      announce(`Removed ${item.label}`);
       inputRef.current?.focus();
     },
-    [value, onChange],
+    [value, onChange, announce],
   );
 
   // Handle clearing all items
@@ -684,9 +696,11 @@ export function Tokenizer<T extends SearchableItem>({
     );
   });
 
+  // Self-authored position styles (positioning: 'custom' below): explicit
+  // anchor() insets pin the expanded layer over the field itself.
+  // `left` is physical, so this popover does not yet mirror in RTL —
+  // known follow-up from #3389.
   const popoverOverrideStyle: React.CSSProperties = {
-    positionArea: undefined,
-    positionTryFallbacks: undefined,
     top: 'anchor(top)',
     left: 'anchor(start)',
   };
@@ -784,7 +798,7 @@ export function Tokenizer<T extends SearchableItem>({
           {endContent}
           {hasClear && value.length > 0 && !isDisabled && (
             <InputClearButton
-              label="Clear all"
+              label={t('@astryx.tokenizer.clearAll')}
               onClick={e => {
                 e.stopPropagation();
                 handleClearAll();
@@ -846,8 +860,7 @@ export function Tokenizer<T extends SearchableItem>({
             {wrapperContent}
           </div>,
           {
-            placement: 'below',
-            alignment: 'start',
+            positioning: 'custom',
             xstyle: styles.layerPopover,
             style: popoverOverrideStyle,
           },

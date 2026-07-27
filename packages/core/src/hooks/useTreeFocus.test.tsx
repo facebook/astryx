@@ -44,9 +44,7 @@ function Tree({
   const nodes = isOpen && expanded.length > 0 ? expanded : collapsed;
   const {treeRef, handleKeyDown} = useTreeFocus<HTMLUListElement>({
     onToggleExpand: () => setIsOpen(o => !o),
-    onActivate: onActivate
-      ? (_item, id) => onActivate(id)
-      : undefined,
+    onActivate: onActivate ? (_item, id) => onActivate(id) : undefined,
   });
   return (
     <ul ref={treeRef} role="tree" onKeyDown={handleKeyDown}>

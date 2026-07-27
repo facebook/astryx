@@ -513,7 +513,7 @@ const columns: TableColumn<OrderRow>[] = [
 export default function TablePageChartTemplate() {
   return (
     <Layout
-      height="auto"
+      height="fill"
       header={
         <LayoutHeader hasDivider>
           <HStack gap={2} vAlign="center">

@@ -40,7 +40,7 @@ export default function ChatComposerInputSlashCommands() {
   };
 
   return (
-    <Stack direction="vertical" style={{width: '100%', maxWidth: 450}}>
+    <Stack direction="vertical" style={{width: 450, maxWidth: '100%'}}>
       <ChatComposer
         onSubmit={() => {}}
         input={

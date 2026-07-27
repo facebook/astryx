@@ -207,7 +207,7 @@ export function parseYamlFrontmatter(text) {
  * @returns {{data: Record<string, unknown>, body: string}}
  */
 export function parseFrontmatter(raw) {
-  const normalized = raw.replace(/^\uFEFF/, '');
+  const normalized = raw.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const match = normalized.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if (!match) {
     return {data: {}, body: normalized.trim()};
@@ -276,6 +276,13 @@ export function validatePostFrontmatter(slug, data) {
   if (data.coverImage != null && typeof data.coverImage !== 'string') {
     err('"coverImage" must be a string path when provided');
   }
+
+  if (
+    data.releasePackage != null &&
+    (typeof data.releasePackage !== 'string' || data.releasePackage.trim() === '')
+  ) {
+    err('"releasePackage" must be a non-empty string when provided');
+  }
   if (data.coverImage != null) {
     if (typeof data.coverAlt !== 'string' || data.coverAlt.trim() === '') {
       err('"coverAlt" is required (non-empty) when "coverImage" is set');
@@ -284,6 +291,13 @@ export function validatePostFrontmatter(slug, data) {
 
   if (data.updatedAt != null && !isValidDate(data.updatedAt)) {
     err(`"updatedAt" must be an ISO date (YYYY-MM-DD), got "${data.updatedAt}"`);
+  }
+
+  if (
+    data.dek != null &&
+    (typeof data.dek !== 'string' || data.dek.trim() === '')
+  ) {
+    err('"dek" must be a non-empty string when provided');
   }
 
   if (data.draft != null && typeof data.draft !== 'boolean') {
@@ -310,6 +324,7 @@ export function validatePostFrontmatter(slug, data) {
   return {
     title: data.title,
     description: data.description,
+    dek: data.dek ?? null,
     date: data.date,
     type: data.type,
     authors: data.authors,
@@ -318,6 +333,7 @@ export function validatePostFrontmatter(slug, data) {
     draft: data.draft === true,
     coverImage: data.coverImage ?? null,
     coverAlt: data.coverAlt ?? null,
+    releasePackage: data.releasePackage ?? null,
     relatedDocs: data.relatedDocs ?? null,
   };
 }

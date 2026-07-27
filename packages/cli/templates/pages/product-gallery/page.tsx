@@ -119,7 +119,7 @@ function ProductCard({product}: {product: Product}) {
 export default function ProductGalleryTemplate() {
   return (
     <Layout
-      height="auto"
+      height="fill"
       contentWidth={1200}
       content={
         <LayoutContent padding={6}>

@@ -182,6 +182,41 @@ describe('SideNav', () => {
     const nav = screen.getByTestId('nav');
     expect(nav.children).toHaveLength(1);
   });
+
+  it('fires a consumer onClick on the collapse button in addition to toggling', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+
+    function Example() {
+      const [isCollapsed, setIsCollapsed] = useState(false);
+      const handleRef = useRef<SideNavImperativeCollapseHandle>(null);
+      return (
+        <>
+          <SideNavCollapseButton handleRef={handleRef} onClick={onClick} />
+          <SideNav
+            handleRef={handleRef}
+            collapsible={{
+              isCollapsed,
+              onCollapsedChange: setIsCollapsed,
+              hasButton: false,
+            }}>
+            <SideNavSection title="Main">
+              <SideNavItem label="Dashboard" icon={StubIcon} />
+            </SideNavSection>
+          </SideNav>
+        </>
+      );
+    }
+
+    render(<Example />);
+    await user.click(screen.getByRole('button', {name: 'Collapse sidebar'}));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+    // Toggle still ran: the label flipped to "Expand sidebar".
+    expect(
+      screen.getByRole('button', {name: 'Expand sidebar'}),
+    ).toBeInTheDocument();
+  });
 });
 
 // =============================================================================
@@ -302,7 +337,9 @@ describe('SideNavHeading', () => {
   it('whole heading is popover trigger when menu provided without hrefs', () => {
     render(<SideNavHeading heading="My App" menu={<div>Menu</div>} />);
     const button = screen.getByRole('button');
-    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    // The popup is no longer a dialog (role: 'none' on usePopover), so the
+    // trigger advertises a generic popup rather than aria-haspopup="dialog".
+    expect(button).toHaveAttribute('aria-haspopup', 'true');
     expect(button).toHaveAttribute('aria-expanded', 'false');
   });
 
@@ -316,7 +353,7 @@ describe('SideNavHeading', () => {
     const button = screen.getByRole('button');
     // The trigger button uses aria attributes from usePopover and
     // an onClick handler from useMenuHover for click-to-lock toggle.
-    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(button).toHaveAttribute('aria-haspopup', 'true');
     expect(button).toHaveAttribute('aria-expanded');
   });
 
@@ -329,12 +366,91 @@ describe('SideNavHeading', () => {
       />,
     );
     const button = screen.getByRole('button', {name: 'Open menu'});
-    expect(button).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(button).toHaveAttribute('aria-haspopup', 'true');
   });
 
   it('passes data-testid', () => {
     render(<SideNavHeading heading="My App" data-testid="nav-header" />);
     expect(screen.getByTestId('nav-header')).toBeInTheDocument();
+  });
+
+  // ===========================================================================
+  // Menu popover semantics — the popup must not be announced as a modal
+  // dialog, and role="menu" must be scoped to the actual menu items so the
+  // heading button is not an invalid child of the menu.
+  // ===========================================================================
+
+  // The popover layer keeps `popover` content display:none in jsdom even
+  // when open, hiding it from role queries — so these tests assert the
+  // popup's ARIA semantics at the DOM level instead.
+  describe('menu popover semantics', () => {
+    const menuItems = (
+      <>
+        <div role="menuitem">Alpha</div>
+        <div role="menuitem">Beta</div>
+      </>
+    );
+
+    it('does not wrap the heading menu popup in a modal dialog', async () => {
+      const user = userEvent.setup();
+      render(<SideNavHeading heading="My App" menu={menuItems} />);
+      await user.click(screen.getByRole('button', {name: 'Open menu'}));
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+      expect(document.querySelector('[aria-modal="true"]')).toBeNull();
+    });
+
+    it('scopes role="menu" to only menuitem children with an accessible name', async () => {
+      const user = userEvent.setup();
+      render(<SideNavHeading heading="My App" menu={menuItems} />);
+      await user.click(screen.getByRole('button', {name: 'Open menu'}));
+      const menu = document.querySelector('[role="menu"]');
+      expect(menu).not.toBeNull();
+      expect(menu).toHaveAttribute('aria-label', 'My App');
+      const children = Array.from(menu!.children);
+      expect(children.length).toBeGreaterThan(0);
+      for (const child of children) {
+        expect(child).toHaveAttribute('role', 'menuitem');
+      }
+    });
+
+    it('keeps the popup heading button outside the menu and closes on click', async () => {
+      const user = userEvent.setup();
+      render(<SideNavHeading heading="My App" menu={menuItems} />);
+      const trigger = screen.getByRole('button', {name: 'Open menu'});
+      await user.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      const menu = document.querySelector('[role="menu"]');
+      expect(menu).not.toBeNull();
+      // The heading replica button in the popup is a sibling of the menu,
+      // not an invalid menu child.
+      const headingButton = Array.from(
+        document.querySelectorAll('button'),
+      ).find(b => b !== trigger && b.textContent?.includes('My App'));
+      expect(headingButton).toBeDefined();
+      expect(menu!.contains(headingButton!)).toBe(false);
+      // Clicking it still closes the popup.
+      fireEvent.click(headingButton!);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('applies the same semantics in mixed mode (menu + hrefs)', async () => {
+      const user = userEvent.setup();
+      render(
+        <SideNavHeading
+          heading="Product"
+          headingHref="/product"
+          menu={menuItems}
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Open menu'}));
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+      const menu = document.querySelector('[role="menu"]');
+      expect(menu).not.toBeNull();
+      expect(menu).toHaveAttribute('aria-label', 'Product');
+      for (const child of Array.from(menu!.children)) {
+        expect(child).toHaveAttribute('role', 'menuitem');
+      }
+    });
   });
 });
 
@@ -440,6 +556,41 @@ describe('SideNavHeading collapsed', () => {
       </CollapsedWrapper>,
     );
     expect(screen.getByTestId('nav-header')).toBeInTheDocument();
+  });
+
+  it('collapsed menu popup is not a dialog and scopes role="menu" to menu items', async () => {
+    const user = userEvent.setup();
+    render(
+      <CollapsedWrapper>
+        <SideNavHeading
+          heading="My App"
+          icon={<span data-testid="app-icon">🏠</span>}
+          menu={
+            <>
+              <div role="menuitem">Alpha</div>
+              <div role="menuitem">Beta</div>
+            </>
+          }
+        />
+      </CollapsedWrapper>,
+    );
+    await user.click(screen.getByRole('button', {name: 'My App'}));
+    // No modal dialog wrapper around the menu popup.
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.querySelector('[aria-modal="true"]')).toBeNull();
+    // role="menu" is scoped to the menu items and has a direct name.
+    const menu = document.querySelector('[role="menu"]');
+    expect(menu).not.toBeNull();
+    expect(menu).toHaveAttribute('aria-label', 'My App');
+    const children = Array.from(menu!.children);
+    expect(children.length).toBeGreaterThan(0);
+    for (const child of children) {
+      expect(child).toHaveAttribute('role', 'menuitem');
+    }
+    // No button (trigger or heading replica) lives inside the menu.
+    for (const button of Array.from(document.querySelectorAll('button'))) {
+      expect(menu!.contains(button)).toBe(false);
+    }
   });
 });
 
@@ -753,6 +904,17 @@ describe('SideNavSection', () => {
     );
     const group = screen.getByRole('group');
     expect(group.style.marginTop).toBe('16px');
+  });
+
+  it('forwards arbitrary pass-through attributes (id, aria-*) to root element', () => {
+    render(
+      <SideNavSection title="Main" id="section-1" aria-describedby="hint">
+        <SideNavItem label="Dashboard" />
+      </SideNavSection>,
+    );
+    const group = screen.getByRole('group');
+    expect(group).toHaveAttribute('id', 'section-1');
+    expect(group).toHaveAttribute('aria-describedby', 'hint');
   });
 });
 

@@ -85,7 +85,7 @@ export const docs = {
     },
     {
       name: 'status',
-      type: 'InputStatus',
+      type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         'Validation status object with type and message for error/warning/success states.',
     },

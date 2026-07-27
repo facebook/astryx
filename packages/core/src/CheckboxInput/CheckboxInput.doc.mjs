@@ -113,7 +113,7 @@ export const docs = {
     {
       name: 'labelIcon',
       type: 'IconType',
-      description: 'Icon to display before the label text. See `npx astryx docs icons` for valid semantic names.',
+      description: 'Icon to display before the label text. See `astryx docs icons` for valid semantic names.',
     },
     {
       name: 'status',

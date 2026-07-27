@@ -72,13 +72,14 @@ export const docs = {
     {
       name: 'id',
       type: 'string',
-      description: 'Unique ID for aria-describedby or other ARIA relationships.',
+      description:
+        'Unique ID for aria-describedby or other ARIA relationships.',
     },
     {
       name: 'render',
       type: '(children: ReactNode, props: ContextRenderProps | FixedRenderProps) => ReactNode',
       description:
-        'Render function for the popover element. Pass placement/alignment in context mode or x/y in fixed mode. In context mode, pass `as: "span"` to render an inline-safe layer (e.g. inside a paragraph). The layer renders inline in the React tree; the Popover API promotes it to the top layer when shown, so it escapes ancestor clipping and stacking without a portal.',
+        'Render function for the popover element. Pass placement/alignment in context mode or x/y in fixed mode. Placement/alignment are logical: they map to the self-* position-area keyword family, which resolves against the popover\'s own inherited direction, so RTL contexts mirror automatically in pure CSS. Pass `positioning: "custom"` in context mode to author position styles yourself via `style` (e.g. explicit anchor() insets or an anchor-size() cover): the hook keeps the popover behavior and position-anchor wiring but derives no position styles, including the automatic RTL mirroring, which becomes your responsibility. In context mode, pass `as: "span"` to render an inline-safe layer (e.g. inside a paragraph). The layer renders inline in the React tree; the Popover API promotes it to the top layer when shown, so it escapes ancestor clipping and stacking without a portal. When the layer would overflow the viewport, position-try fallbacks flip it to the opposite side; centered layers additionally slide along the alignment axis (span fallbacks) so they stay on-screen near viewport edges.',
     },
   ],
   usage: {
@@ -130,7 +131,7 @@ export const docsDense = {
     hide: 'hide layer.',
     isOpen: 'whether layer is open.',
     id: 'unique ARIA id.',
-    render: 'renders popover element; pass placement/alignment or x/y. Context mode accepts `as: "span"` for inline-safe layers. Renders inline; the Popover API top layer escapes clipping/stacking without a portal.',
+    render: 'renders popover element; pass placement/alignment or x/y. Placement/alignment logical: mapped to self-* position-area keywords resolved against the popover\'s inherited direction (RTL mirrors in pure CSS). `positioning: "custom"` (context mode) = author position styles yourself via `style`; keeps popover behavior + position-anchor wiring, derives nothing (incl. RTL mirroring, which becomes yours). Context mode accepts `as: "span"` for inline-safe layers. Renders inline; the Popover API top layer escapes clipping/stacking without a portal. Viewport overflow: flips to opposite side; centered layers also slide along the alignment axis (span fallbacks).',
   },
   usage: {
     description:
@@ -138,11 +139,13 @@ export const docsDense = {
     bestPractices: [
       {
         guidance: true,
-        description: 'Use context mode for trigger-anchored overlays; fixed mode for explicit coordinates.',
+        description:
+          'Use context mode for trigger-anchored overlays; fixed mode for explicit coordinates.',
       },
       {
         guidance: true,
-        description: 'Build on Popover/HoverCard/Tooltip for common overlay patterns.',
+        description:
+          'Build on Popover/HoverCard/Tooltip for common overlay patterns.',
       },
       {
         guidance: true,

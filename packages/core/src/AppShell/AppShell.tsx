@@ -24,6 +24,7 @@ import {
   isValidElement,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -53,6 +54,7 @@ import {mergeProps, mergeRefs, isRenderable} from '../utils';
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 const HasActivity = typeof React.Activity !== 'undefined';
 const ActivityWrapper = HasActivity
@@ -470,7 +472,9 @@ export function AppShell({
   className,
   style,
   ref,
+  ...rest
 }: AppShellProps) {
+  const t = useTranslator();
   // =========================================================================
   // Parse mobileNav prop — normalize to config, custom element, or disabled
   // =========================================================================
@@ -597,10 +601,14 @@ export function AppShell({
   // =========================================================================
   // Mobile context — shared with MobileNavToggle and future TopNav mobile
   // =========================================================================
+  // Stable id shared by the drawer (applied as its `id`) and the toggle
+  // (referenced via `aria-controls`) so screen readers know what it controls.
+  const mobileNavId = useId();
   const mobileContextValue = useMemo<AppShellMobileContextValue>(
     () => ({
       isMobile: isBelowBreakpoint,
       isMobileNavOpen,
+      mobileNavId,
       toggleMobileNav: () =>
         mobileNavEnabled && setMobileNavOpen(!isMobileNavOpen),
       openMobileNav: () => mobileNavEnabled && setMobileNavOpen(true),
@@ -611,6 +619,7 @@ export function AppShell({
     [
       isBelowBreakpoint,
       isMobileNavOpen,
+      mobileNavId,
       setMobileNavOpen,
       mobileNavEnabled,
       mobileNavHasToggle,
@@ -755,7 +764,7 @@ export function AppShell({
           <div
             {...stylex.props(styles.autoMobileTopBar)}
             role="navigation"
-            aria-label="Mobile navigation">
+            aria-label={t('@astryx.appShell.mobileNavigation')}>
             <SideNavRenderContext value="topbar">
               {sideNav}
             </SideNavRenderContext>
@@ -768,6 +777,7 @@ export function AppShell({
   return (
     <AppShellMobileContext value={mobileContextValue}>
       <div
+        {...rest}
         ref={mergeRefs(ref, shellRef)}
         data-testid={dataTestId}
         {...mergeProps(

@@ -127,6 +127,36 @@ describe('Collapsible', () => {
     expect(screen.getByText('Controlled content')).not.toBeVisible();
   });
 
+  it('self-toggles in uncontrolled mode even when onOpenChange is supplied', async () => {
+    // Regression: passing onOpenChange without isOpen must NOT make the
+    // component behave as controlled. Internal state should still drive
+    // visibility, and the callback should fire in addition.
+    const onOpenChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Collapsible trigger="Uncontrolled" onOpenChange={onOpenChange}>
+        <p>Uncontrolled content</p>
+      </Collapsible>,
+    );
+
+    const trigger = screen.getByRole('button', {name: /Uncontrolled/});
+    // Starts open (defaultIsOpen defaults to true).
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Uncontrolled content')).toBeVisible();
+
+    // Click collapses via internal state AND notifies.
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText('Uncontrolled content')).not.toBeVisible();
+    expect(onOpenChange).toHaveBeenNthCalledWith(1, false);
+
+    // Click again re-expands — proving the component isn't stuck.
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Uncontrolled content')).toBeVisible();
+    expect(onOpenChange).toHaveBeenNthCalledWith(2, true);
+  });
+
   it('renders chevron indicator', () => {
     render(
       <Collapsible trigger="With Chevron">
@@ -423,7 +453,7 @@ describe('CollapsibleGroup', () => {
       return root as HTMLElement;
     }
 
-    it('renders no wrapper DOM by default and with dividers="none"', () => {
+    it('renders no wrapper DOM by default and with hasDividers={false}', () => {
       const {container, rerender} = render(
         <CollapsibleGroup>
           <Collapsible trigger="Item A" value="a">
@@ -434,7 +464,7 @@ describe('CollapsibleGroup', () => {
       expect(container.querySelector('.astryx-collapsible-group')).toBeNull();
 
       rerender(
-        <CollapsibleGroup dividers="none">
+        <CollapsibleGroup hasDividers={false}>
           <Collapsible trigger="Item A" value="a">
             <p>Content A</p>
           </Collapsible>
@@ -443,9 +473,9 @@ describe('CollapsibleGroup', () => {
       expect(container.querySelector('.astryx-collapsible-group')).toBeNull();
     });
 
-    it('renders a wrapper with data attributes when dividers are enabled', () => {
+    it('renders a wrapper with default density when dividers are enabled', () => {
       const {container} = render(
-        <CollapsibleGroup dividers="between">
+        <CollapsibleGroup hasDividers>
           <Collapsible trigger="Item A" value="a">
             <p>Content A</p>
           </Collapsible>
@@ -457,25 +487,22 @@ describe('CollapsibleGroup', () => {
 
       const wrapper = container.querySelector('.astryx-collapsible-group');
       expect(wrapper).not.toBeNull();
-      expect(wrapper).toHaveAttribute('data-dividers', 'between');
       // Divided groups default to balanced density
       expect(wrapper).toHaveAttribute('data-density', 'balanced');
       expect(wrapper).toContainElement(getItem(/Item A/));
       expect(wrapper).toContainElement(getItem(/Item B/));
     });
 
-    it('reflects dividers and density on each item', () => {
+    it('reflects density on each item when dividers are enabled', () => {
       render(
-        <CollapsibleGroup dividers="all" density="compact">
+        <CollapsibleGroup hasDividers density="compact">
           <Collapsible trigger="Item A" value="a">
             <p>Content A</p>
           </Collapsible>
         </CollapsibleGroup>,
       );
 
-      const item = getItem(/Item A/);
-      expect(item).toHaveAttribute('data-dividers', 'all');
-      expect(item).toHaveAttribute('data-density', 'compact');
+      expect(getItem(/Item A/)).toHaveAttribute('data-density', 'compact');
     });
 
     it('does not reflect divider chrome on items without dividers', () => {
@@ -487,9 +514,7 @@ describe('CollapsibleGroup', () => {
         </CollapsibleGroup>,
       );
 
-      const item = getItem(/Item A/);
-      expect(item).not.toHaveAttribute('data-dividers');
-      expect(item).not.toHaveAttribute('data-density');
+      expect(getItem(/Item A/)).not.toHaveAttribute('data-density');
     });
 
     it('applies density without dividers (and without a wrapper)', () => {
@@ -507,7 +532,7 @@ describe('CollapsibleGroup', () => {
 
     it('does not leak divider chrome into nested collapsibles', () => {
       render(
-        <CollapsibleGroup dividers="between" defaultValue="outer">
+        <CollapsibleGroup hasDividers defaultValue="outer">
           <Collapsible trigger="Outer" value="outer">
             <Collapsible trigger="Nested">
               <p>Nested content</p>
@@ -516,15 +541,14 @@ describe('CollapsibleGroup', () => {
         </CollapsibleGroup>,
       );
 
-      expect(getItem(/Outer/)).toHaveAttribute('data-dividers', 'between');
-      expect(getItem(/Nested/)).not.toHaveAttribute('data-dividers');
+      expect(getItem(/Outer/)).toHaveAttribute('data-density', 'balanced');
       expect(getItem(/Nested/)).not.toHaveAttribute('data-density');
     });
 
     it('keeps group coordination working with dividers enabled', async () => {
       const user = userEvent.setup();
       render(
-        <CollapsibleGroup type="single" dividers="between" defaultValue="a">
+        <CollapsibleGroup type="single" hasDividers defaultValue="a">
           <Collapsible trigger="Item A" value="a">
             <p>Content A</p>
           </Collapsible>
@@ -543,7 +567,7 @@ describe('CollapsibleGroup', () => {
     it('applies xstyle/className/style to the wrapper in divider mode', () => {
       const {container} = render(
         <CollapsibleGroup
-          dividers="between"
+          hasDividers
           className="custom-class"
           data-testid="group">
           <Collapsible trigger="Item A" value="a">
@@ -560,7 +584,7 @@ describe('CollapsibleGroup', () => {
     it('forwards ref to the wrapper in divider mode', () => {
       const ref = {current: null as HTMLElement | null};
       const {container} = render(
-        <CollapsibleGroup dividers="between" ref={ref}>
+        <CollapsibleGroup hasDividers ref={ref}>
           <Collapsible trigger="Item A" value="a">
             <p>Content A</p>
           </Collapsible>
@@ -574,7 +598,7 @@ describe('CollapsibleGroup', () => {
 
     it('explicit density overrides the divider default', () => {
       const {container} = render(
-        <CollapsibleGroup dividers="between" density="spacious">
+        <CollapsibleGroup hasDividers density="spacious">
           <Collapsible trigger="Item A" value="a">
             <p>Content A</p>
           </Collapsible>
@@ -589,7 +613,7 @@ describe('CollapsibleGroup', () => {
     it('tolerates interleaved non-Collapsible children', async () => {
       const user = userEvent.setup();
       render(
-        <CollapsibleGroup type="single" dividers="between" defaultValue="a">
+        <CollapsibleGroup type="single" hasDividers defaultValue="a">
           <Collapsible trigger="Item A" value="a">
             <p>Content A</p>
           </Collapsible>
@@ -601,8 +625,8 @@ describe('CollapsibleGroup', () => {
       );
 
       expect(screen.getByTestId('separator')).toBeInTheDocument();
-      expect(getItem(/Item A/)).toHaveAttribute('data-dividers', 'between');
-      expect(getItem(/Item B/)).toHaveAttribute('data-dividers', 'between');
+      expect(getItem(/Item A/)).toHaveAttribute('data-density', 'balanced');
+      expect(getItem(/Item B/)).toHaveAttribute('data-density', 'balanced');
       await user.click(screen.getByRole('button', {name: /Item B/}));
       expect(screen.getByText('Content A')).not.toBeVisible();
       expect(screen.getByText('Content B')).toBeVisible();
@@ -610,9 +634,9 @@ describe('CollapsibleGroup', () => {
 
     it('lets a nested group define its own chrome instead of inheriting', () => {
       render(
-        <CollapsibleGroup dividers="between" defaultValue="outer">
+        <CollapsibleGroup hasDividers defaultValue="outer">
           <Collapsible trigger="Outer" value="outer">
-            <CollapsibleGroup type="multiple" dividers="all">
+            <CollapsibleGroup type="multiple" hasDividers density="compact">
               <Collapsible trigger="Inner divided" value="in-a">
                 <p>Inner content</p>
               </Collapsible>
@@ -626,9 +650,12 @@ describe('CollapsibleGroup', () => {
         </CollapsibleGroup>,
       );
 
-      expect(getItem(/Outer/)).toHaveAttribute('data-dividers', 'between');
-      expect(getItem(/Inner divided/)).toHaveAttribute('data-dividers', 'all');
-      expect(getItem(/Inner plain/)).not.toHaveAttribute('data-dividers');
+      expect(getItem(/Outer/)).toHaveAttribute('data-density', 'balanced');
+      expect(getItem(/Inner divided/)).toHaveAttribute(
+        'data-density',
+        'compact',
+      );
+      expect(getItem(/Inner plain/)).not.toHaveAttribute('data-density');
     });
 
     it('keeps controlled coordination and onChange shape with dividers', async () => {
@@ -637,7 +664,7 @@ describe('CollapsibleGroup', () => {
       const {rerender} = render(
         <CollapsibleGroup
           type="single"
-          dividers="all"
+          hasDividers
           value="a"
           onChange={onChange}>
           <Collapsible trigger="Item A" value="a">
@@ -657,7 +684,7 @@ describe('CollapsibleGroup', () => {
       rerender(
         <CollapsibleGroup
           type="single"
-          dividers="all"
+          hasDividers
           value="b"
           onChange={onChange}>
           <Collapsible trigger="Item A" value="a">
@@ -680,7 +707,6 @@ describe('CollapsibleGroup', () => {
       );
 
       const item = getItem(/Alone/);
-      expect(item).not.toHaveAttribute('data-dividers');
       expect(item).not.toHaveAttribute('data-density');
       expect(item.querySelector('.astryx-collapsible-group')).toBeNull();
     });

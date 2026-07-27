@@ -220,7 +220,10 @@ export function RadioListItem({
   isDisabled: isItemDisabled = false,
   startContent,
   endContent,
-  'data-testid': dataTestId,
+  xstyle,
+  className,
+  style,
+  ...rest
 }: RadioListItemProps) {
   const context = use(RadioListContext);
   if (!context) {
@@ -313,11 +316,13 @@ export function RadioListItem({
   return (
     <div
       ref={ref}
-      data-testid={dataTestId}
       {...mergeProps(
         themeProps('radio-list-item'),
-        stylex.props(styles.container, !isDisabled && radioScope),
-      )}>
+        stylex.props(styles.container, !isDisabled && radioScope, xstyle),
+        className,
+        style,
+      )}
+      {...rest}>
       <Item
         startContent={mediaContent}
         label={

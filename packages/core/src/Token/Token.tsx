@@ -34,6 +34,7 @@ import {useLinkComponent} from '../Link/useLinkComponent';
 import {useInteractiveRole} from '../hooks/useInteractiveRole';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
 
 // =============================================================================
 // Types
@@ -324,6 +325,7 @@ export function Token({
   'data-testid': testId,
   ref,
 }: TokenProps) {
+  const t = useTranslator();
   const LinkComponent = useLinkComponent();
   const role = useInteractiveRole({href, onClick, isDisabled});
 
@@ -342,7 +344,7 @@ export function Token({
       {onRemove != null && (
         <button
           type="button"
-          aria-label={`Remove ${label}`}
+          aria-label={t('@astryx.token.remove', {label})}
           onClick={e => {
             e.stopPropagation();
             onRemove(e);
@@ -432,7 +434,7 @@ export function Token({
         {onRemove != null && (
           <button
             type="button"
-            aria-label={`Remove ${label}`}
+            aria-label={t('@astryx.token.remove', {label})}
             onClick={e => {
               e.stopPropagation();
               onRemove(e);

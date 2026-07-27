@@ -15,7 +15,7 @@ describe('sharedResizeObserver', () => {
     mockDisconnect = vi.fn();
     constructorCalls = 0;
 
-    global.ResizeObserver = vi.fn((cb: ResizeObserverCallback) => {
+    global.ResizeObserver = vi.fn(function (cb: ResizeObserverCallback) {
       constructorCalls++;
       capturedCallback = cb;
       return {
@@ -23,7 +23,7 @@ describe('sharedResizeObserver', () => {
         unobserve: mockUnobserve,
         disconnect: mockDisconnect,
       };
-    });
+    }) as unknown as typeof ResizeObserver;
   });
 
   afterEach(() => {

@@ -73,6 +73,7 @@ export const docs = {
     targets: [
       {className: 'astryx-progressbar', visualProps: ['variant']},
       {className: 'astryx-progressbar-fill', visualProps: ['variant']},
+      {className: 'astryx-progressbar-track'},
     ],
   },
   usage: {
@@ -159,6 +160,7 @@ export const docsZh = {
     targets: [
       {className: 'astryx-progressbar', visualProps: ['variant']},
       {className: 'astryx-progressbar-fill', visualProps: ['variant']},
+      {className: 'astryx-progressbar-track'},
     ],
   },
   usage: {

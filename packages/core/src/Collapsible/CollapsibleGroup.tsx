@@ -7,15 +7,14 @@
  * @input Uses React useState, useCallback, CollapsibleGroupContext, StyleX, theme tokens
  * @output Exports CollapsibleGroup component and CollapsibleGroupProps
  * @position Core collapsible group coordination provider — renders no wrapper
- *   DOM unless `dividers` is enabled
+ *   DOM unless `hasDividers` is set
  *
  * CollapsibleGroup groups collapsible components (Card, etc.) with
  * coordinated open/close behavior. By default it renders only `{children}` —
- * no wrapper DOM element. When `dividers` is 'between' or 'all' it renders a
- * wrapper div that anchors the divider chrome (outer borders, reliable
- * :first-child suppression) and provides dividers/density to items via
- * CollapsibleGroupPresentationContext — each Collapsible draws its own
- * borders since StyleX has no child selectors.
+ * no wrapper DOM element. When `hasDividers` is set it renders a wrapper div
+ * that anchors reliable :first-child divider suppression and provides
+ * hasDividers/density to items via CollapsibleGroupPresentationContext — each
+ * Collapsible draws its own borders since StyleX has no child selectors.
  *
  * In "single" mode (default), only one item can be open at a time.
  * In "multiple" mode, any number of items can be open simultaneously.
@@ -30,7 +29,6 @@
 
 import React, {useCallback, useMemo, useState, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {borderVars, colorVars} from '../theme/tokens.stylex';
 import {
   CollapsibleGroupContext,
   CollapsibleGroupPresentationContext,
@@ -38,7 +36,6 @@ import {
 import type {
   CollapsibleGroupContextValue,
   CollapsibleGroupDensity,
-  CollapsibleGroupDividers,
   CollapsibleGroupPresentationValue,
 } from './CollapsibleGroupContext';
 import {mergeProps} from '../utils';
@@ -46,15 +43,11 @@ import {themeProps} from '../utils/themeProps';
 import type {BaseProps} from '../BaseProps';
 
 const styles = stylex.create({
-  // 'all' draws the group's outer top/bottom edges; between-item lines are
-  // drawn by each Collapsible (borderBlockStart, suppressed on :first-child)
-  wrapperAll: {
-    borderBlockStartWidth: borderVars['--border-width'],
-    borderBlockStartStyle: 'solid',
-    borderBlockStartColor: colorVars['--color-border'],
-    borderBlockEndWidth: borderVars['--border-width'],
-    borderBlockEndStyle: 'solid',
-    borderBlockEndColor: colorVars['--color-border'],
+  // The wrapper lays items out in a column; between-item hairlines are drawn
+  // by each Collapsible (borderBlockStart, suppressed on :first-child).
+  wrapper: {
+    display: 'flex',
+    flexDirection: 'column',
   },
 });
 
@@ -87,15 +80,14 @@ export interface CollapsibleGroupProps extends Omit<
   onChange?: (value: string | string[]) => void;
 
   /**
-   * Divider style rendered around the group's items — the accordion row
-   * chrome. 'between' draws hairlines between adjacent items; 'all' adds the
-   * group's top and bottom edges. When enabled, the group renders a wrapper
-   * div (it otherwise renders no DOM) and items get 'balanced' density unless
+   * Whether to draw hairline dividers between the group's items — the
+   * accordion row chrome. When set, the group renders a wrapper div (it
+   * otherwise renders no DOM) and items get 'balanced' density unless
    * `density` says otherwise. Pair with bare Collapsible children; Card-wrapped
    * items provide their own separation.
-   * @default "none"
+   * @default false
    */
-  dividers?: CollapsibleGroupDividers;
+  hasDividers?: boolean;
 
   /**
    * Row density controlling trigger and content block padding on the group's
@@ -140,19 +132,19 @@ function normalizeToArray(value: string | string[] | undefined): string[] {
 
 /**
  * Groups collapsible components with coordinated open/close behavior.
- * Renders no wrapper DOM unless `dividers` is enabled.
+ * Renders no wrapper DOM unless `hasDividers` is set.
  *
  * In "single" mode (default), opening one item closes the others.
  * In "multiple" mode, items toggle independently.
  *
  * @compositionHint Wrap Collapsible instances to coordinate their open/close state.
  * Each Collapsible needs a `value` prop to participate. For FAQ-style lists,
- * use `dividers` with bare Collapsible children instead of wrapping each item
- * in Card.
+ * use `hasDividers` with bare Collapsible children instead of wrapping each
+ * item in Card.
  *
  * @example
  * ```
- * <CollapsibleGroup type="single" dividers="between" defaultValue="faq1">
+ * <CollapsibleGroup type="single" hasDividers defaultValue="faq1">
  *   <Collapsible trigger="What is Astryx?" value="faq1">
  *     Astryx is a design system for building internal tools.
  *   </Collapsible>
@@ -181,7 +173,7 @@ export function CollapsibleGroup({
   defaultValue,
   value: controlledValue,
   onChange,
-  dividers = 'none',
+  hasDividers = false,
   density,
   children,
   ref,
@@ -239,27 +231,25 @@ export function CollapsibleGroup({
     [isOpen, toggle],
   );
 
-  const hasDividers = dividers !== 'none';
   const resolvedDensity = density ?? (hasDividers ? 'balanced' : null);
 
   const presentationValue = useMemo<CollapsibleGroupPresentationValue>(
-    () => ({dividers, density: resolvedDensity}),
-    [dividers, resolvedDensity],
+    () => ({hasDividers, density: resolvedDensity}),
+    [hasDividers, resolvedDensity],
   );
 
-  // The wrapper anchors divider chrome: 'all' outer borders live here, and it
-  // makes the items' :first-child suppression independent of surrounding
-  // siblings. Without dividers the group stays DOM-less (documented contract),
-  // so ref/xstyle/className/style only take effect in wrapper mode.
+  // The wrapper anchors divider chrome: it makes the items' :first-child
+  // suppression independent of surrounding siblings. Without dividers the
+  // group stays DOM-less (documented contract), so ref/xstyle/className/style
+  // only take effect in wrapper mode.
   const content = hasDividers ? (
     <div
       ref={ref as React.Ref<HTMLDivElement>}
       {...mergeProps(
         themeProps('collapsible-group', {
-          dividers,
           density: resolvedDensity ?? undefined,
         }),
-        stylex.props(dividers === 'all' && styles.wrapperAll, xstyle),
+        stylex.props(styles.wrapper, xstyle),
         className,
         style,
       )}

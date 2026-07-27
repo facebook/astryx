@@ -36,7 +36,6 @@ export interface ImperativeAlertDialogReturn {
  * @example
  * ```
  * const alert = useImperativeAlertDialog();
- *
  * const handleDelete = () => {
  *   alert.show({
  *     title: 'Delete item?',
@@ -45,7 +44,6 @@ export interface ImperativeAlertDialogReturn {
  *     onAction: async () => { await deleteItem(); alert.hide(); },
  *   });
  * };
- *
  * return (
  *   <>
  *     <button onClick={handleDelete}>Delete</button>

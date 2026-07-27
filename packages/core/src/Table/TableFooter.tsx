@@ -13,11 +13,24 @@ export interface TableFooterProps extends BaseProps<HTMLTableSectionElement> {
   children: ReactNode;
 }
 
-export function TableFooter({ref, children, xstyle}: TableFooterProps) {
+export function TableFooter({
+  ref,
+  children,
+  xstyle,
+  className,
+  style,
+  ...rest
+}: TableFooterProps) {
   return (
     <tfoot
       ref={ref}
-      {...mergeProps(themeProps('table-footer'), stylex.props(xstyle))}>
+      {...mergeProps(
+        themeProps('table-footer'),
+        stylex.props(xstyle),
+        className,
+        style,
+      )}
+      {...rest}>
       {children}
     </tfoot>
   );

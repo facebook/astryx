@@ -26,6 +26,9 @@ export const docs = {
     targets: [
       {className: 'astryx-tree-list', visualProps: ['density']},
       {className: 'astryx-tree-list-item', visualProps: ['density'], states: ['selected', 'disabled']},
+      {className: 'astryx-tree-list-chevron', states: ['state']},
+      {className: 'astryx-tree-list-item-label', states: ['selected']},
+      {className: 'astryx-tree-list-guide'},
     ],
   },
   components: [
@@ -90,6 +93,9 @@ export const docsZh = {
     targets: [
       {className: 'astryx-tree-list', visualProps: ['density']},
       {className: 'astryx-tree-list-item', visualProps: ['density'], states: ['selected', 'disabled']},
+      {className: 'astryx-tree-list-chevron', states: ['state']},
+      {className: 'astryx-tree-list-item-label', states: ['selected']},
+      {className: 'astryx-tree-list-guide'},
     ],
   },
   components: [

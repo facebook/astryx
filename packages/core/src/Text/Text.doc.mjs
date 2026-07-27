@@ -23,8 +23,8 @@ export const docs = {
   props: [
     {
       name: 'type',
-      type: "'body' | 'large' | 'label' | 'supporting' | 'code' | 'display-1' | 'display-2' | 'display-3'",
-      description: 'Semantic text type. Determines size, weight, and line-height from the theme. Note: this prop is called `type`, not `variant`.',
+      type: "'body' | 'large' | 'label' | 'supporting' | 'code' | 'display-1' | 'display-2' | 'display-3' | 'inherit'",
+      description: "Semantic text type. Determines size, weight, and line-height from the theme. 'inherit' takes all three from the surrounding text instead. Themes may add custom types. Note: this prop is called `type`, not `variant`.",
       default: "'body'",
     },
     {

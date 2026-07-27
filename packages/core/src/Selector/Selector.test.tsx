@@ -9,8 +9,14 @@
  * SYNC: When Selector.tsx API changes, update these tests.
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {Selector} from './Selector';
@@ -44,6 +50,10 @@ beforeEach(() => {
     }
     return originalMatches.call(this, selector);
   };
+});
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
 });
 
 // Helper: jsdom popover content is in the DOM but may not be
@@ -207,7 +217,33 @@ describe('Selector', () => {
       .getByRole('listbox', {hidden: true})
       .closest('[popover]');
     expect(popover?.getAttribute('style')).toContain(
-      'position-area: top span-right',
+      'position-area: self-block-start span-self-inline-end',
+    );
+  });
+
+  it('emits the direction-independent logical mapping under an RTL ancestor (#3389)', async () => {
+    // The self-* position-area keywords resolve against the popover's own
+    // inherited direction in the browser, so RTL emits the same string as
+    // LTR and the mirroring is pure CSS — jsdom can only assert the string.
+    const user = userEvent.setup();
+    render(
+      <div style={{direction: 'rtl'}}>
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Banana"
+          onChange={() => {}}
+        />
+      </div>,
+    );
+
+    await user.click(screen.getByRole('combobox'));
+
+    const popover = screen
+      .getByRole('listbox', {hidden: true})
+      .closest('[popover]');
+    expect(popover?.getAttribute('style')).toContain(
+      'position-area: self-block-end span-self-inline-end',
     );
   });
 
@@ -483,6 +519,58 @@ describe('Selector', () => {
       expect(search).toHaveAttribute('aria-activedescendant');
     });
 
+    it('PageDown/PageUp jump the highlight to the last/first filtered option', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const search = screen.getByRole('combobox', h);
+      // Filter to Apple and Banana so "last" means last *visible* option.
+      await user.type(search, 'a');
+      const options = screen.getAllByRole('option', h);
+      expect(options).toHaveLength(2);
+      await user.keyboard('{PageDown}');
+      expect(search).toHaveAttribute(
+        'aria-activedescendant',
+        options[options.length - 1].id,
+      );
+      await user.keyboard('{PageUp}');
+      expect(search).toHaveAttribute('aria-activedescendant', options[0].id);
+    });
+
+    it('Home/End move the search caret, not the option highlight', async () => {
+      const user = userEvent.setup();
+      render(
+        <Selector
+          label="Fruit"
+          options={OPTIONS}
+          value="Apple"
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      const search = screen.getByRole<HTMLInputElement>('combobox', h);
+      await user.type(search, 'an');
+      expect(search.selectionStart).toBe(2);
+      const activeBefore = search.getAttribute('aria-activedescendant');
+      // Home/End stay on the input for caret movement (APG editable
+      // combobox); the option highlight must not move.
+      await user.keyboard('{Home}');
+      expect(search.selectionStart).toBe(0);
+      expect(search.getAttribute('aria-activedescendant')).toBe(activeBefore);
+      await user.keyboard('{End}');
+      expect(search.selectionStart).toBe(2);
+      expect(search.getAttribute('aria-activedescendant')).toBe(activeBefore);
+    });
+
     it('does not render search input when hasSearch is false', async () => {
       const user = userEvent.setup();
       render(
@@ -531,7 +619,11 @@ describe('Selector', () => {
       await user.click(screen.getByRole('button', {name: 'Fruit'}));
       await user.type(screen.getByRole('combobox', h), 'xyz');
       expect(screen.queryAllByRole('option', h)).toHaveLength(0);
-      expect(screen.getByText('No results found')).toBeInTheDocument();
+      // Scope to the listbox: the polite live region also announces "No results
+      // found", so an unscoped query matches both the visible empty state and
+      // the a11y announcement.
+      const listbox = screen.getByRole('listbox', h);
+      expect(within(listbox).getByText('No results found')).toBeInTheDocument();
     });
 
     it('calls onChange when selecting a filtered option', async () => {
@@ -594,6 +686,82 @@ describe('Selector', () => {
         screen.getByPlaceholderText('Find a fruit...'),
       ).toBeInTheDocument();
     });
+
+    describe('result announcements', () => {
+      it('announces the match count politely while searching', async () => {
+        const user = userEvent.setup();
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            onChange={() => {}}
+            hasSearch
+          />,
+        );
+        await user.click(screen.getByRole('button', {name: 'Fruit'}));
+        // "a" matches Apple and Banana.
+        await user.type(screen.getByRole('combobox', h), 'a');
+        await waitFor(() => {
+          expect(politeRegion()).toHaveTextContent('2 results');
+        });
+      });
+
+      it('announces the singular form when one option matches', async () => {
+        const user = userEvent.setup();
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            onChange={() => {}}
+            hasSearch
+          />,
+        );
+        await user.click(screen.getByRole('button', {name: 'Fruit'}));
+        // "ban" matches only Banana. Anchored so it cannot pass on "1 results".
+        await user.type(screen.getByRole('combobox', h), 'ban');
+        await waitFor(() => {
+          expect(politeRegion()).toHaveTextContent(/^1 result$/);
+        });
+      });
+
+      it('announces "No results found" when nothing matches', async () => {
+        const user = userEvent.setup();
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            onChange={() => {}}
+            hasSearch
+          />,
+        );
+        await user.click(screen.getByRole('button', {name: 'Fruit'}));
+        await user.type(screen.getByRole('combobox', h), 'xyz');
+        await waitFor(() => {
+          expect(politeRegion()).toHaveTextContent('No results found');
+        });
+      });
+
+      it('does not announce results until the user searches', async () => {
+        const user = userEvent.setup();
+        render(
+          <Selector
+            label="Fruit"
+            options={OPTIONS}
+            value="Apple"
+            onChange={() => {}}
+            hasSearch
+          />,
+        );
+        // Popover closed: nothing announced.
+        expect(politeRegion()?.textContent ?? '').toBe('');
+        // Open with an empty query: still nothing announced.
+        await user.click(screen.getByRole('button', {name: 'Fruit'}));
+        expect(politeRegion()?.textContent ?? '').toBe('');
+      });
+    });
   });
 
   describe('keyboard accessibility', () => {
@@ -620,6 +788,23 @@ describe('Selector', () => {
 
       await user.keyboard('{ArrowDown}');
       expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('End/Home jump the highlight to the last/first option (non-search)', async () => {
+      const user = userEvent.setup();
+      render(<Selector label="Fruit" options={OPTIONS} />);
+
+      const trigger = screen.getByRole('combobox');
+      await user.click(trigger);
+      const options = screen.getAllByRole('option', h);
+
+      await user.keyboard('{End}');
+      expect(trigger).toHaveAttribute(
+        'aria-activedescendant',
+        options[options.length - 1].id,
+      );
+      await user.keyboard('{Home}');
+      expect(trigger).toHaveAttribute('aria-activedescendant', options[0].id);
     });
 
     it('opens and selects an option with Enter (no mouse)', async () => {
@@ -798,7 +983,7 @@ describe('Selector', () => {
       await user.tab();
       await user.keyboard('c');
 
-      const search = screen.getByPlaceholderText('Search...');
+      const search = screen.getByPlaceholderText('Search…');
       expect(search).toHaveValue('c');
       await waitFor(() => expect(search).toHaveFocus());
     });
@@ -1198,7 +1383,7 @@ describe('Selector', () => {
       // input on the next frame — the second key still lands on the trigger.
       await user.keyboard('ch');
 
-      const search = screen.getByPlaceholderText('Search...');
+      const search = screen.getByPlaceholderText('Search…');
       await waitFor(() => expect(search).toHaveValue('ch'));
     });
   });

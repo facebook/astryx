@@ -28,9 +28,11 @@ export function xPixel(
     return (xScale(String(raw)) ?? 0) + xScale.bandwidth() / 2;
   }
   // Not a band scale → the guard narrows `xScale` to the linear scale, so no
-  // cast is needed. Coerce explicitly: numbers pass through, Date/numeric-string
-  // map as d3 would, and non-numerics become NaN (an off-canvas point) rather
-  // than a silently wrong position.
+  // cast is needed. Coerce explicitly: finite numbers pass through, Date/
+  // numeric-string map as d3 would. Anything that coerces to a non-finite value
+  // — a non-numeric (→ NaN) or a raw ±Infinity — collapses to NaN, a single
+  // off-canvas sentinel that marks already skip, rather than a silently wrong
+  // position (d3 maps ±Infinity to an out-of-range pixel, not off-canvas).
   const value = typeof raw === 'number' ? raw : Number(raw);
-  return xScale(value);
+  return Number.isFinite(value) ? xScale(value) : NaN;
 }

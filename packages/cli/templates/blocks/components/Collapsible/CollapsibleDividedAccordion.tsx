@@ -8,7 +8,7 @@ import {Text} from '@astryxdesign/core/Text';
 export default function CollapsibleDividedAccordion() {
   return (
     <div style={{width: '100%', maxWidth: 400}}>
-      <CollapsibleGroup type="single" dividers="between" defaultValue="reset">
+      <CollapsibleGroup type="single" hasDividers defaultValue="reset">
         <Collapsible trigger="How do I reset my password?" value="reset">
           <Text type="body">
             Go to Settings → Security → Change Password. You'll receive a
