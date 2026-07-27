@@ -228,7 +228,11 @@ export function refreshAgentDocs({cwd, installedVersion, apply, logger = noopLog
  * @returns {Promise<import('../../types/upgrade').UpgradeListResponse | import('../../types/upgrade').UpgradeStatusResponse | import('../../types/upgrade').UpgradeRunResponse>}
  */
 export async function upgrade(options = {}, {cwd = process.cwd(), logger = noopLogger} = {}) {
-  const path_ = options.path ?? './src';
+  // Resolve the source dir against the API's cwd (not process.cwd()) so a
+  // programmatic caller in another directory scans the right tree. The runners
+  // do path.resolve(srcPath); an already-absolute path is idempotent there, so
+  // this is byte-identical for the CLI (where cwd === process.cwd()).
+  const path_ = path.resolve(cwd, options.path ?? './src');
   const apply = options.apply ?? false;
   logger.intro('Upgrade');
 

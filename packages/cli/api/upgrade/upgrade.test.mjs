@@ -125,6 +125,41 @@ describe('upgrade() — receipts', () => {
   });
 });
 
+describe('upgrade() — honors cwd for codemod scanning (no chdir)', () => {
+  it('scans the cwd source tree, not process.cwd()', async () => {
+    // Fixture lives in tmpDir; process.cwd() stays the repo root (NO chdir).
+    // The codemod runner resolves --path against the API cwd, so it must scan
+    // tmpDir/src — regression guard for the earlier process.cwd()-relative bug.
+    writePkg(tmpDir);
+    writeInstalledCore(tmpDir, '0.0.15');
+    fs.mkdirSync(path.join(tmpDir, 'src'), {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, 'src', 'index.ts'), 'const x = 1;\n');
+
+    // Capture stdout: the runner logs the directory it scans. A non-noop logger
+    // (distinct object from the module's noopLogger) keeps the runner non-silent.
+    const out = [];
+    vi.spyOn(console, 'log').mockImplementation((...a) => out.push(a.join(' ')));
+    vi.spyOn(process.stdout, 'write').mockImplementation(c => {
+      out.push(typeof c === 'string' ? c : c.toString());
+      return true;
+    });
+    const noop = () => {};
+    const logger = {
+      intro: noop, step: noop, info: noop, warn: noop, success: noop, error: noop, outro: noop,
+    };
+
+    const res = await upgrade({from: '0.0.1', apply: false, path: 'src'}, {cwd: tmpDir, logger});
+
+    const joined = out.join('\n');
+    expect(res.type).toBe('upgrade.run');
+    // Scanned the cwd tree…
+    expect(joined).toContain(path.join(tmpDir, 'src'));
+    // …and did NOT report the path missing (which is what the old,
+    // process.cwd()-relative resolution produced here).
+    expect(joined).not.toMatch(/Source path not found/);
+  });
+});
+
 describe('upgrade() — errors throw AstryxError', () => {
   it('missing --from → ERR_INVALID_ARGUMENT', async () => {
     writePkg(tmpDir);
