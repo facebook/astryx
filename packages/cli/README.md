@@ -307,24 +307,55 @@ The CLI command handlers are thin wrappers around these functions: they parse ar
 If you're spawning the CLI as a subprocess rather than importing the API directly:
 
 ```typescript
-import {parseResponse, isError, assertResponse} from '@astryxdesign/cli/json';
-import type {ComponentDetailResponse, CLIResult} from '@astryxdesign/cli/json';
+import {parseResponse, isError} from '@astryxdesign/cli/json';
+import type {
+  ComponentDetailResponse,
+  ComponentListResponse,
+  DocsListResponse,
+  // ...import the response types for the commands you consume
+} from '@astryxdesign/cli/json';
+
+// parseResponse returns the structural { type, data, meta? } envelope; `data`
+// is `unknown` until you narrow it. Reconstruct the union you care about from
+// the per-command response types, then narrow on `type`:
+type MyResponse =
+  ComponentDetailResponse | ComponentListResponse | DocsListResponse;
 
 const result = parseResponse(stdout);
 if (isError(result)) {
   console.error(result.error);
 } else {
-  switch (result.type) {
+  const r = result as MyResponse;
+  switch (r.type) {
     case 'component.detail':
-      result.data.name; // TypeScript: ComponentDoc
+      r.data.name; // narrowed to ComponentDoc
       break;
   }
 }
-
-// Or assert directly (throws on error/mismatch):
-const detail = assertResponse(stdout, 'component.detail');
-detail.data.name; // already narrowed
 ```
+
+Prefer narrowing at the call site? Wrap `assertResponse` (which throws on
+error/mismatch) with your reconstructed union:
+
+```typescript
+import {assertResponse} from '@astryxdesign/cli/json';
+import type {ComponentDetailResponse} from '@astryxdesign/cli/json';
+
+type MyResponse = ComponentDetailResponse; /* | ...others */
+
+function assertTyped<T extends MyResponse['type']>(raw: unknown, type: T) {
+  return assertResponse(raw, type) as Extract<MyResponse, {type: T}>;
+}
+
+const detail = assertTyped(stdout, 'component.detail');
+detail.data.name; // narrowed
+```
+
+> **Migration (removed in the structural-`jsonOut` release):** the central
+> `CLIAnyResponse`, `CLIResponseType`, and `CLIResponseDataMap` exports were
+> removed. `parseResponse` / `assertResponse` no longer auto-narrow `.data`.
+> Rebuild the union from the individual `*Response` types as shown above — they
+> are all still exported from `@astryxdesign/cli/json`.
 
 ### Type discriminators
 
