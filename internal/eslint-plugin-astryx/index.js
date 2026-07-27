@@ -24,6 +24,7 @@ import noClassnameClobberRule from './no-classname-clobber.js';
 import noHardcodedAnchorRule from './no-hardcoded-anchor.js';
 import noRawParagraphRule from './no-raw-paragraph.js';
 import noBorderShorthandRule from './no-border-shorthand.js';
+import noPhysicalPropertiesRule from './no-physical-properties.js';
 import noReactNamespaceHooksRule from './no-react-namespace-hooks.js';
 import copyrightHeaderRule from './copyright-header.js';
 import noRawConsoleCliRule from './no-raw-console-cli.js';
@@ -240,6 +241,7 @@ const plugin = {
     'no-hardcoded-anchor': noHardcodedAnchorRule,
     'no-raw-paragraph': noRawParagraphRule,
     'no-border-shorthand': noBorderShorthandRule,
+    'no-physical-properties': noPhysicalPropertiesRule,
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
     'require-base-props': requireBasePropsRule,
     'require-ref-prop': requireRefPropRule,
@@ -267,6 +269,12 @@ plugin.configs.strict = {
     '@astryx/no-hardcoded-anchor': 'error',
     '@astryx/no-raw-paragraph': 'error',
     '@astryx/no-border-shorthand': 'error',
+    // Deliberately 'warn' even in the strict tier (not 'error'): the core
+    // package still has known un-migrated Phase-4 physical properties
+    // (Calendar radii, Slider positioning, Table gradients) that would break CI
+    // if this were an error. Ship at warn until RTL Phase 4 (Calendar/Slider/
+    // Table) migration lands; flip to error afterward.
+    '@astryx/no-physical-properties': 'warn',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'error',
     '@astryx/require-ref-prop': 'error',
@@ -292,6 +300,9 @@ plugin.configs.recommended = {
     '@astryx/no-hardcoded-anchor': 'warn',
     '@astryx/no-raw-paragraph': 'warn',
     '@astryx/no-border-shorthand': 'warn',
+    // Warn now, flip to error after RTL Phase 4 (Calendar/Slider/Table)
+    // physical-property migration lands.
+    '@astryx/no-physical-properties': 'warn',
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'warn',
     '@astryx/require-ref-prop': 'warn',
