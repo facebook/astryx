@@ -48,7 +48,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     clip: 'rect(0, 0, 0, 0)',
     height: 1,
-    left: 0,
+    insetInlineStart: 0,
     margin: -1,
     overflow: 'hidden',
     padding: 0,

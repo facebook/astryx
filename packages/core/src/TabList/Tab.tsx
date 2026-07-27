@@ -143,8 +143,8 @@ const styles = stylex.create({
     // with a bottom divider — that ancestor sets `--_tab-indicator-bottom`
     // to drop the indicator onto the rail beneath the reserved gap.
     bottom: 'var(--_tab-indicator-bottom, -1px)',
-    left: spacingVars['--spacing-3'],
-    right: spacingVars['--spacing-3'],
+    insetInlineStart: spacingVars['--spacing-3'],
+    insetInlineEnd: spacingVars['--spacing-3'],
     height: '2px',
     borderRadius: radiusVars['--radius-full'],
     pointerEvents: 'none',

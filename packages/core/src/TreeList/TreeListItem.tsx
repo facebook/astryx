@@ -527,7 +527,7 @@ export function TreeListItem({
               isSelected && styles.selected,
             ),
           )}
-          style={{marginLeft: computedMarginLeft}}
+          style={{marginInlineStart: computedMarginLeft}}
           onClick={handleClick}>
           {innerContent}
         </div>

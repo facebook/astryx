@@ -207,7 +207,7 @@ const styles = stylex.create({
   removeSlot: {
     position: 'absolute',
     top: spacingVars['--spacing-1'],
-    right: spacingVars['--spacing-1'],
+    insetInlineEnd: spacingVars['--spacing-1'],
     zIndex: 1,
     lineHeight: 0,
   },

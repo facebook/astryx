@@ -199,7 +199,7 @@ const styles = stylex.create({
   closeButton: {
     position: 'absolute',
     top: spacingVars['--spacing-3'],
-    right: spacingVars['--spacing-3'],
+    insetInlineEnd: spacingVars['--spacing-3'],
     zIndex: 1,
   },
   navButton: {
@@ -209,15 +209,15 @@ const styles = stylex.create({
     zIndex: 1,
   },
   navPrev: {
-    left: spacingVars['--spacing-3'],
+    insetInlineStart: spacingVars['--spacing-3'],
   },
   navNext: {
-    right: spacingVars['--spacing-3'],
+    insetInlineEnd: spacingVars['--spacing-3'],
   },
   counter: {
     position: 'absolute',
     top: spacingVars['--spacing-3'],
-    left: spacingVars['--spacing-3'],
+    insetInlineStart: spacingVars['--spacing-3'],
     color: colorVars['--color-on-dark'],
     fontSize: typeScaleVars['--text-body-size'],
     lineHeight: typeScaleVars['--text-body-leading'],

@@ -49,7 +49,7 @@ const styles = stylex.create({
     },
     border: 'none',
     cursor: 'pointer',
-    textAlign: 'left',
+    textAlign: 'start',
     outline: 'none',
     textDecoration: 'none',
   },

@@ -238,8 +238,8 @@ const styles = stylex.create({
   placeholder: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     pointerEvents: 'none',
     color: colorVars['--color-text-secondary'],
     fontSize: {

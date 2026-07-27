@@ -127,9 +127,9 @@ const styles = stylex.create({
     flexDirection: 'column',
     gap: spacingVars['--spacing-1'],
     padding: spacingVars['--spacing-3'],
-    borderRightWidth: borderVars['--border-width'],
-    borderRightStyle: 'solid',
-    borderRightColor: colorVars['--color-border-emphasized'],
+    borderInlineEndWidth: borderVars['--border-width'],
+    borderInlineEndStyle: 'solid',
+    borderInlineEndColor: colorVars['--color-border-emphasized'],
     minWidth: 140,
   },
   presetButton: {

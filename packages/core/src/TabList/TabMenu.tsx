@@ -126,8 +126,8 @@ const styles = stylex.create({
     // drops onto the divider rail when an ancestor (TabList `hasDivider` or a
     // Toolbar with a bottom divider) sets `--_tab-indicator-bottom`.
     bottom: 'var(--_tab-indicator-bottom, -1px)',
-    left: spacingVars['--spacing-3'],
-    right: spacingVars['--spacing-3'],
+    insetInlineStart: spacingVars['--spacing-3'],
+    insetInlineEnd: spacingVars['--spacing-3'],
     height: '2px',
     borderRadius: radiusVars['--radius-full'],
     pointerEvents: 'none',
