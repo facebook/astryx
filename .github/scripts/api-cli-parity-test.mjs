@@ -268,10 +268,19 @@ add('swizzle --list', ['swizzle', '--list'],
 add('swizzle (not found)', ['swizzle', 'NotARealComponent99'],
   () => apiCall(api.swizzle, 'NotARealComponent99', {cwd: ROOT}));
 
+// Upgrade — list + the two argument-validation errors are read-only: they
+// return/throw before any codemod or agent-docs side effect, so the api matches
+// the CLI envelope exactly. The full run/status pipeline is covered by the
+// upgrade unit tests (side-effecting, needs a fixtured project).
+add('upgrade --list', ['upgrade', '--list'],
+  () => apiCall(api.upgrade, {list: true}, {cwd: ROOT}));
+add('upgrade (missing --from)', ['upgrade'],
+  () => apiCall(api.upgrade, {}, {cwd: ROOT}));
+add('upgrade (invalid --from)', ['upgrade', '--from', 'not-a-version'],
+  () => apiCall(api.upgrade, {from: 'not-a-version'}, {cwd: ROOT}));
+
 // Other commands — probe with safe read-only args (no API yet)
-const otherCommands = [
-  ['upgrade', '--list'],
-];
+const otherCommands = [];
 for (const args of otherCommands) {
   const probe = cliJson(args);
   if (!probe.__parse_error && !probe.error?.includes('not supported')) {

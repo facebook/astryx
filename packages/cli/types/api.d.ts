@@ -54,6 +54,11 @@ import type {ValidateIntegrationResponse} from './validate-integration';
 import type {AstryxIntegrationIssue} from './integration';
 import type {BuildHelpResponse, BuildKitResponse} from './build';
 import type {SwizzleListResponse, SwizzleCopyResponse} from './swizzle';
+import type {
+  UpgradeListResponse,
+  UpgradeStatusResponse,
+  UpgradeRunResponse,
+} from './upgrade';
 import type {Suggestion} from './base';
 
 /** Structured API error with a stable machine-readable code. */
@@ -301,3 +306,36 @@ export declare function summarizeIssues(issues: AstryxIntegrationIssue[]): {
   errors: number;
   warnings: number;
 };
+
+// ── Upgrade ──────────────────────────────────────────────────────────
+
+export interface UpgradeOptions {
+  /** Version before the dependency bump (required unless `list`). */
+  from?: string;
+  /** Write changes to disk (default: dry-run). */
+  apply?: boolean;
+  /** Run codemods even if `from` >= installed. */
+  force?: boolean;
+  /** Run a single named transform. */
+  codemod?: string;
+  /** Exclude named codemods (re-run past a failure). */
+  skipCodemod?: string[];
+  /** Explicit integration package names / file paths. */
+  integration?: string[];
+  /** Source directory to scan (default `./src`). */
+  path?: string;
+  /** Auto-install jscodeshift without prompting. */
+  installDeps?: boolean;
+  /** Return the available codemods instead of running. */
+  list?: boolean;
+}
+
+/**
+ * Run the version-to-version upgrade pipeline (codemods + agent-docs refresh).
+ * Performs the effect in `apply` mode and returns a receipt; throws AstryxError
+ * on failure.
+ */
+export declare function upgrade(
+  options?: UpgradeOptions,
+  ctx?: {cwd?: string},
+): Promise<UpgradeListResponse | UpgradeStatusResponse | UpgradeRunResponse>;

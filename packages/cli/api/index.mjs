@@ -29,6 +29,7 @@ export {hook} from './hook/hook.mjs';
 export {search} from './search/search.mjs';
 export {build} from './build/build.mjs';
 export {swizzle} from './swizzle/swizzle.mjs';
+export {upgrade} from './upgrade/upgrade.mjs';
 export {doctor} from './doctor/doctor.mjs';
 export {layoutExpand, layoutCheck, layoutGrammar} from './layout/layout.mjs';
 export {
