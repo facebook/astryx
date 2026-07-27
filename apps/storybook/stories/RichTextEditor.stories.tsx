@@ -4,6 +4,7 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {RichTextEditor, RichTextView} from '@astryxdesign/lab';
 import type {EditorState} from 'lexical';
+import {BOLD_STAR, ITALIC_STAR, UNORDERED_LIST} from '@lexical/markdown';
 
 const meta: Meta<typeof RichTextEditor> = {
   title: 'Lab/RichTextEditor',
@@ -47,6 +48,16 @@ export const Required: Story = {
     label: 'Summary',
     isRequired: true,
     placeholder: 'Required field',
+  },
+};
+
+export const CustomTransformers: Story = {
+  args: {
+    label: 'Comment',
+    description:
+      'Restricted markdown: only `*bold*`, `_italic_` and `- ` unordered lists (no headings, quotes or code).',
+    placeholder: 'Try typing "# " — it will not become a heading…',
+    transformers: [BOLD_STAR, ITALIC_STAR, UNORDERED_LIST],
   },
 };
 

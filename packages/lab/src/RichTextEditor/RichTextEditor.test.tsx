@@ -155,6 +155,18 @@ describe('RichTextEditor', () => {
     );
     expect(screen.getByTestId('custom-plugin')).toBeInTheDocument();
   });
+
+  it('accepts a custom transformers array without throwing', () => {
+    // Empty transformer set is a valid custom configuration (disables all
+    // markdown shortcuts while keeping the plugin mounted).
+    render(<RichTextEditor label="Notes" transformers={[]} />);
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+  });
+
+  it('renders when markdown shortcuts are disabled', () => {
+    render(<RichTextEditor label="Notes" hasMarkdownShortcuts={false} />);
+    expect(screen.getByRole('textbox')).toBeInTheDocument();
+  });
 });
 
 describe('RichTextView', () => {

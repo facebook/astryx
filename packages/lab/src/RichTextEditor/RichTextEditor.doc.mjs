@@ -93,8 +93,15 @@ export const docs = {
       name: 'hasMarkdownShortcuts',
       type: 'boolean',
       description:
-        'Enable Markdown shortcut typing (e.g. "# " for a heading). Uses default @lexical/markdown transformers.',
+        'Enable Markdown shortcut typing (e.g. "# " for a heading). Uses the transformers prop (defaults to the standard @lexical/markdown transformers).',
       default: 'true',
+    },
+    {
+      name: 'transformers',
+      type: 'ReadonlyArray<Transformer>',
+      description:
+        'Markdown transformers used for shortcut typing. Defaults to the standard @lexical/markdown TRANSFORMERS. Pass a custom array to support additional node types layered in via the nodes extension point. Only applied when hasMarkdownShortcuts is true.',
+      default: 'TRANSFORMERS',
     },
     {
       name: 'hasAutoFocus',

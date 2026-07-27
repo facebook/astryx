@@ -59,7 +59,7 @@ import {LinkPlugin} from '@lexical/react/LexicalLinkPlugin';
 import {TabIndentationPlugin} from '@lexical/react/LexicalTabIndentationPlugin';
 import {MarkdownShortcutPlugin} from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
-import {TRANSFORMERS} from '@lexical/markdown';
+import {TRANSFORMERS, type Transformer} from '@lexical/markdown';
 import {ListNode, ListItemNode} from '@lexical/list';
 import {HeadingNode, QuoteNode} from '@lexical/rich-text';
 import {LinkNode, AutoLinkNode} from '@lexical/link';
@@ -224,10 +224,19 @@ export interface RichTextEditorProps extends Omit<
   plugins?: ReactNode;
   /**
    * Whether to enable Markdown shortcut typing (e.g. `# ` for a heading,
-   * `- ` for a list). Uses the default `@lexical/markdown` transformers.
+   * `- ` for a list). Uses the `transformers` prop (defaults to the standard
+   * `@lexical/markdown` transformers).
    * @default true
    */
   hasMarkdownShortcuts?: boolean;
+  /**
+   * Markdown transformers used for shortcut typing and (in the future)
+   * serialization. Defaults to the standard `@lexical/markdown` `TRANSFORMERS`.
+   * Pass a custom array to support additional node types (e.g. custom
+   * transformers layered in via the `nodes` extension point). Only applied
+   * when `hasMarkdownShortcuts` is true.
+   */
+  transformers?: ReadonlyArray<Transformer>;
   /** Whether to automatically focus the editor on mount. @default false */
   hasAutoFocus?: boolean;
   /**
@@ -275,6 +284,7 @@ export function RichTextEditor({
   nodes,
   plugins,
   hasMarkdownShortcuts = true,
+  transformers = TRANSFORMERS,
   hasAutoFocus = false,
   namespace = 'astryx-editor',
   xstyle,
@@ -379,7 +389,7 @@ export function RichTextEditor({
             <LinkPlugin />
             <TabIndentationPlugin />
             {hasMarkdownShortcuts && (
-              <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+              <MarkdownShortcutPlugin transformers={[...transformers]} />
             )}
             {hasAutoFocus && <AutoFocusOnMount />}
             {onChange && (
