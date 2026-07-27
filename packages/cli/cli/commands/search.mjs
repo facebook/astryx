@@ -67,7 +67,7 @@ export function registerSearch(program) {
         return;
       }
 
-      if (json) return jsonOut(result.type, result.data);
+      if (json) return jsonOut(result);
 
       // ── Text output ──────────────────────────────────────────────
       const run = getCliInvocation();

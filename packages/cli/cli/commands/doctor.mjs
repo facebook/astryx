@@ -72,7 +72,7 @@ export function registerDoctor(program) {
       const hasFailure = report.summary.fail > 0;
 
       if (json) {
-        jsonOut('doctor', report);
+        jsonOut({type: 'doctor', data: report});
       } else {
         printHuman(report);
       }

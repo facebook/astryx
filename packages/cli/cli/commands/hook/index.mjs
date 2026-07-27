@@ -80,7 +80,7 @@ export function registerHook(program) {
         return;
       }
 
-      if (json) return jsonOut(result.type, result.data);
+      if (json) return jsonOut(result);
 
       // ── Text output ────────────────────────────────────────────
       switch (result.type) {

@@ -49,7 +49,7 @@ export function registerDiscover(program) {
         // Forward optional meta (e.g. configured flag for discover.list) as a
         // sibling of data via jsonOut, so the envelope still carries
         // apiVersion and goes through the single sanctioned emit path.
-        return jsonOut(result.type, result.data, 'meta' in result ? result.meta : undefined);
+        return jsonOut(result);
       }
 
       switch (result.type) {

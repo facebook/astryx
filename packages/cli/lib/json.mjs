@@ -19,7 +19,7 @@
  *   4. Uncaught throws in --json mode become a JSON error envelope, never a
  *      raw stack trace (see toErrorEnvelope / the bin error boundary).
  *
- * Commands call jsonOut(type, data) for success and jsonError(msg) for
+ * Commands call jsonOut({type, data}) for success and jsonError(msg) for
  * errors. Consumer-facing utilities (parseResponse, isError, assertResponse)
  * live in parse.mjs and are exported via @astryxdesign/cli/json.
  */
@@ -83,21 +83,21 @@ export function humanWarn(...args) {
 }
 
 /**
- * Output a typed JSON response envelope and mark as handled.
- * Type safety enforced via declaration in types/base.d.ts —
- * data must match the declared shape for the given type discriminator.
- * @template {import('../types/base').CLIResponseType} T
- * @param {T} type
- * @param {import('../types/base').CLIResponseDataMap[T]} data
- * @param {Record<string, unknown>} [meta] - Optional sidecar metadata (e.g.
- *   {configured: false}). Emitted as a sibling of data, never merged into it.
+ * Output a JSON response envelope and mark it handled.
+ *
+ * Structural serializer: pass a command/API result straight through as
+ * `{type, data, meta?}`. There is no central response union — the correctness
+ * of the `type` discriminator is guaranteed at each API function's `@returns`
+ * (that's the fractal source-of-truth point), not by a map in this file.
+ *
+ * @param {{type: string, data: unknown, meta?: Record<string, unknown>}} response
  * @returns {void}
  */
-export function jsonOut(type, data, meta) {
+export function jsonOut(response) {
   process.__xdsJsonHandled = true;
   /** @type {any} */
-  const envelope = {apiVersion: API_VERSION, type, data};
-  if (meta !== undefined) envelope.meta = meta;
+  const envelope = {apiVersion: API_VERSION, type: response.type, data: response.data};
+  if (response.meta !== undefined) envelope.meta = response.meta;
   console.log(JSON.stringify(envelope, null, 2));
 }
 

@@ -154,7 +154,7 @@ export function registerDocs(program) {
         return;
       }
 
-      if (json) return jsonOut(result.type, result.data);
+      if (json) return jsonOut(result);
 
       switch (result.type) {
         case 'docs.list': {

@@ -108,7 +108,7 @@ export function registerComponent(program) {
         return;
       }
 
-      if (json) return jsonOut(result.type, result.data);
+      if (json) return jsonOut(result);
 
       // ── Text output ────────────────────────────────────────────
       // The api layer already resolved against core (result exists), so core is

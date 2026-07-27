@@ -68,7 +68,7 @@ export function registerBuild(program) {
       // No query → the playbook. Still routed through the API for the envelope.
       if (!query || !String(query).trim()) {
         const result = await buildApi(undefined, {cwd: process.cwd()});
-        if (json) return jsonOut(result.type, result.data);
+        if (json) return jsonOut(result);
         printPlaybook(run);
         return;
       }
@@ -96,7 +96,7 @@ export function registerBuild(program) {
         return;
       }
 
-      if (json) return jsonOut(result.type, result.data);
+      if (json) return jsonOut(result);
 
       const {query: q, hasResults, directMatch, pages, blocks, domain, frame, foundation} =
         result.data;

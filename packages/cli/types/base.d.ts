@@ -3,67 +3,14 @@
 /**
  * Shared types for the Astryx CLI JSON API.
  *
- * CLIError and CLIUnsupportedError are the two error shapes.
- * CLIAnyResponse is the union of all success response types.
- * CLIResult<T> wraps any response with possible errors.
+ * `CLIError` and `CLIUnsupportedError` are the two error shapes. Success
+ * responses are the structural `{ type, data, meta? }` envelope (`CLIResponse`)
+ * — there is NO central union of every response. Each command's precise
+ * response type is the source of truth at its own function; import the
+ * per-command type, or use `ReturnType<typeof fn>`, when you need it.
  */
 
-import type {
-  ComponentListResponse,
-  ComponentBriefResponse,
-  ComponentFullResponse,
-  ComponentDetailResponse,
-  ComponentDetailPropsResponse,
-  ComponentDetailSourceResponse,
-  ComponentDetailShowcaseResponse,
-  ComponentDetailBlocksResponse,
-} from './component';
-import type {
-  DiscoverListResponse,
-  DiscoverDetailResponse,
-  DiscoverDetailDocResponse,
-  DiscoverSearchResponse,
-} from './discover';
-import type {
-  DocsListResponse,
-  DocsDetailResponse,
-  DocsDetailSectionResponse,
-} from './docs';
-import type {
-  TemplateListResponse,
-  TemplateShowResponse,
-  TemplateSkeletonResponse,
-  TemplateCopyResponse,
-} from './template';
-import type {
-  HookListResponse,
-  HookBriefResponse,
-  HookFullResponse,
-  HookDetailResponse,
-  HookDetailParamsResponse,
-} from './hook';
-import type {SwizzleListResponse, SwizzleCopyResponse} from './swizzle';
-import type {
-  ThemeBuildResponse,
-  ThemeListResponse,
-  ThemeAddResponse,
-} from './theme';
-import type {
-  UpgradeListResponse,
-  UpgradeRunResponse,
-  UpgradeStatusResponse,
-} from './upgrade';
-import type {SearchResponse} from './search';
-import type {
-  LayoutExpandResponse,
-  LayoutCheckResponse,
-  LayoutGrammarResponse,
-} from './layout';
-import type {BuildHelpResponse, BuildKitResponse} from './build';
 import type {ErrorCode} from './error-codes';
-import type {ManifestResponse} from './manifest';
-import type {DoctorResponse} from './doctor';
-import type {ValidateIntegrationResponse} from './validate-integration';
 
 /**
  * A "did you mean…" suggestion attached to an error. `reason` is optional:
@@ -93,72 +40,28 @@ export interface CLIUnsupportedError {
   code: ErrorCode;
 }
 
+/**
+ * A success response envelope: a `type` discriminator, its `data` payload, and
+ * an optional `meta` sidecar (emitted as a sibling of `data`, never merged in).
+ *
+ * Structural by design — there is no central union of every response `type`.
+ * A specific command narrows `data` via its own return type.
+ */
+export interface CLIResponse {
+  type: string;
+  data: unknown;
+  meta?: Record<string, unknown>;
+}
+
 /** Wrap any response type to include possible error shapes. */
 export type CLIResult<T> = T | CLIError | CLIUnsupportedError;
 
-/** Union of all possible success response types. */
-export type CLIAnyResponse =
-  | ComponentListResponse
-  | ComponentBriefResponse
-  | ComponentFullResponse
-  | ComponentDetailResponse
-  | ComponentDetailPropsResponse
-  | ComponentDetailSourceResponse
-  | ComponentDetailShowcaseResponse
-  | ComponentDetailBlocksResponse
-  | DiscoverListResponse
-  | DiscoverDetailResponse
-  | DiscoverDetailDocResponse
-  | DiscoverSearchResponse
-  | DocsListResponse
-  | DocsDetailResponse
-  | DocsDetailSectionResponse
-  | TemplateListResponse
-  | TemplateShowResponse
-  | TemplateSkeletonResponse
-  | TemplateCopyResponse
-  | HookListResponse
-  | HookBriefResponse
-  | HookFullResponse
-  | HookDetailResponse
-  | HookDetailParamsResponse
-  | SwizzleListResponse
-  | SwizzleCopyResponse
-  | ThemeBuildResponse
-  | ThemeListResponse
-  | ThemeAddResponse
-  | UpgradeListResponse
-  | UpgradeRunResponse
-  | UpgradeStatusResponse
-  | SearchResponse
-  | LayoutExpandResponse
-  | LayoutCheckResponse
-  | LayoutGrammarResponse
-  | BuildHelpResponse
-  | BuildKitResponse
-  | ManifestResponse
-  | DoctorResponse
-  | ValidateIntegrationResponse;
-
-/** Union of all type discriminator string literals. */
-export type CLIResponseType = CLIAnyResponse['type'];
-
 /**
- * Map from type discriminator to the data shape for that response.
- * Used by jsonOut to enforce type-safe data payloads.
+ * Output a JSON response envelope. Structural serializer — the correctness of
+ * the `type` discriminator is guaranteed at each API function's return type,
+ * not by a central map here.
  */
-export type CLIResponseDataMap = {
-  [R in CLIAnyResponse as R['type']]: R['data'];
-};
-
-/**
- * Output a typed JSON response envelope. The data parameter is
- * constrained to match the declared shape for the given type discriminator.
- */
-export function jsonOut<T extends CLIResponseType>(
-  type: T,
-  data: CLIResponseDataMap[T],
-): void;
+export function jsonOut(response: CLIResponse): void;
 
 /**
  * Output a structured JSON error and exit.
@@ -169,21 +72,25 @@ export function jsonError(
   code?: ErrorCode,
 ): never;
 
-/** Parse raw CLI output (string or object) into typed result. */
+/** Parse raw CLI output (string or object) into a typed result. */
 export function parseResponse(
   raw: unknown,
-): CLIAnyResponse | CLIError | CLIUnsupportedError;
+): CLIResponse | CLIError | CLIUnsupportedError;
 
 /** Type guard: returns true if result is an error. */
 export function isError(
   result: unknown,
 ): result is CLIError | CLIUnsupportedError;
 
-/** Assert a specific response type. Throws on error or type mismatch. */
-export function assertResponse<T extends CLIResponseType>(
+/**
+ * Assert a specific response type. Throws on error or type mismatch. Narrows
+ * the returned `type` to the expected literal; `data` stays `unknown` — import
+ * the per-command response type when you need a precise payload.
+ */
+export function assertResponse<T extends string>(
   raw: unknown,
   type: T,
-): Extract<CLIAnyResponse, {type: T}>;
+): CLIResponse & {type: T};
 
 declare global {
   namespace NodeJS {

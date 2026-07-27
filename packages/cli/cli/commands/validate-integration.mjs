@@ -74,7 +74,7 @@ export function registerValidateIntegration(program) {
       const result = await validateIntegration(pkg);
 
       if (json) {
-        jsonOut(result.type, result.data);
+        jsonOut(result);
       } else if (result.data.name === null) {
         // No-arg + no local manifest: guidance, not an error.
         humanLog(NO_MANIFEST_GUIDANCE);

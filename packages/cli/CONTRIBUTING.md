@@ -54,7 +54,7 @@ packages/cli/
   schemas/                     # zod/JSON schemas
   types/                       # hand-written .d.ts (see Roadmap: migrating to generated)
     api.d.ts                   # API function signatures + AstryxError
-    base.d.ts                  # CLIError, CLIResult<T>, CLIAnyResponse, CLIResponseType
+    base.d.ts                  # CLIError, CLIResult<T>, CLIResponse (structural — no central union)
     component.d.ts             # ComponentListResponse, ComponentDetailResponse, ...
     build.d.ts                 # BuildKitResponse, BuildHelpResponse
     swizzle.d.ts               # SwizzleListResponse, SwizzleCopyResponse
@@ -168,14 +168,9 @@ Add to `types/index.d.ts`:
 export * from './my-command';
 ```
 
-Add to `CLIAnyResponse` in `types/base.d.ts`:
-
-```typescript
-export type CLIAnyResponse =
-  | ...existing types...
-  | MyCommandListResponse
-  | MyCommandDetailResponse;
-```
+That's the only type wiring — there is **no central response union** to register
+in. Each response `type` is guaranteed by its own command function's `@returns`
+(the source of truth); consumers import the per-command type directly.
 
 ### 5. That's it
 
@@ -225,15 +220,14 @@ packages/cli/templates/{name}/
 1. Add the option to the API function in `api/{command}/{command}.mjs`
 2. Pass it through from the CLI handler in `cli/commands/{command}.mjs`
 3. Update the types in `types/api.d.ts` (add to the options interface)
-4. If it produces a new response type, also update `types/{command}.d.ts` and `types/base.d.ts`
+4. If it produces a new response type, add its interface to `types/{command}.d.ts` and reference it from the function's `@returns` (no central union to update)
 
 ### Adding a new response type (e.g. `component.detail.variants`)
 
 1. Add the logic in `api/{command}/{command}.mjs` — return `{type: 'component.detail.variants', data: ...}`
 2. Add a TypeScript interface in `types/{command}.d.ts`
-3. Add it to `CLIAnyResponse` in `types/base.d.ts`
-4. Add it to the result union in `types/api.d.ts`
-5. The parity test will auto-detect the new type and verify API=CLI
+3. Reference it from the function's `@returns` (and the result union in `types/api.d.ts`) — there is no central `CLIAnyResponse` to update
+4. The parity test will auto-detect the new type and verify API=CLI
 
 ### Renaming or removing a response type
 
@@ -367,7 +361,7 @@ Remaining commands, in order (largest / highest-risk deliberately taken one at a
    core into `api/init` so the non-interactive path is scriptable.
 4. **`blog --json`**: `blog` emits `blog.list` / `blog.detail` today but has **no
    `blog.d.ts`** — enabling/locking its `--json` surface must _also_ add the response
-   types and register them in `CLIAnyResponse`. Small, low-risk, pure win.
+   types (at the function's `@returns` / `types/blog.d.ts`). Small, low-risk, pure win.
 5. **Data-command audit** (`component`, `docs`, `hook`, `template`): confirm no residual
    business logic remains CLI-side after the reorg. Mostly already thin.
 

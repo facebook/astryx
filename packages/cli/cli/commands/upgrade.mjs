@@ -61,7 +61,7 @@ export function registerUpgrade(program) {
           throw e;
         }
 
-        if (json) jsonOut(result.type, result.data);
+        if (json) jsonOut(result);
       },
     );
 }

@@ -51,7 +51,7 @@ describe('json envelope shape', () => {
   });
 
   it('jsonOut stamps apiVersion + type + data', () => {
-    jsonOut('docs.list', [{name: 'Button'}]);
+    jsonOut({type: 'docs.list', data: [{name: 'Button'}]});
     const env = JSON.parse(logs[0]);
     expect(env.apiVersion).toBe(API_VERSION);
     expect(env.type).toBe('docs.list');
@@ -60,7 +60,7 @@ describe('json envelope shape', () => {
   });
 
   it('jsonOut attaches optional meta as a sibling of data', () => {
-    jsonOut('discover.list', [], {configured: false});
+    jsonOut({type: 'discover.list', data: [], meta: {configured: false}});
     const env = JSON.parse(logs[0]);
     expect(env.meta).toEqual({configured: false});
     expect(env.data).toEqual([]);

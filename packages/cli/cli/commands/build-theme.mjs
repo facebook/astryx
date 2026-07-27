@@ -1118,18 +1118,21 @@ export function registerTheme(program) {
       }
 
       if (json) {
-        return jsonOut('theme.build', {
-          name: themeDef.name,
-          tokenCount,
-          componentCount,
-          sizeKB: parseFloat(size),
-          outputs: {
-            css: path.relative(process.cwd(), outPath),
-            js: path.relative(process.cwd(), jsPath),
-            dts: path.relative(process.cwd(), dtsPath),
-            ...(variantDecl && variantDtsPath ? {variantsDts: path.relative(process.cwd(), variantDtsPath)} : {}),
+        return jsonOut({
+          type: 'theme.build',
+          data: {
+            name: themeDef.name,
+            tokenCount,
+            componentCount,
+            sizeKB: parseFloat(size),
+            outputs: {
+              css: path.relative(process.cwd(), outPath),
+              js: path.relative(process.cwd(), jsPath),
+              dts: path.relative(process.cwd(), dtsPath),
+              ...(variantDecl && variantDtsPath ? {variantsDts: path.relative(process.cwd(), variantDtsPath)} : {}),
+            },
+            warnings: warningMessages,
           },
-          warnings: warningMessages,
         });
       }
 
@@ -1186,9 +1189,7 @@ Or with a <link> tag:
         return;
       }
 
-      // theme.list is not registered in CLIResponseType (base.d.ts, owned by the
-      // coordinator) — cast the discriminant until it is added there.
-      if (json) return jsonOut(/** @type {any} */ (result.type), result.data);
+      if (json) return jsonOut(result);
 
       const themes = result.data;
       if (themes.length === 0) {
@@ -1233,9 +1234,7 @@ Or with a <link> tag:
         return;
       }
 
-      // theme.list/theme.add are not registered in CLIResponseType (base.d.ts,
-      // owned by the coordinator) — cast the discriminant until they are added.
-      if (json) return jsonOut(/** @type {any} */ (result.type), result.data);
+      if (json) return jsonOut(result);
 
       if (result.type === 'theme.list') {
         const themes = result.data;

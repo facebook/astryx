@@ -96,7 +96,7 @@ export function registerLayout(program) {
         cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
         return;
       }
-      if (json) return jsonOut(result.type, result.data);
+      if (json) return jsonOut(result);
 
       for (const warning of result.data.warnings) humanLog(`⚠ ${warning}`);
       if (result.data.written) {
@@ -137,7 +137,7 @@ export function registerLayout(program) {
         cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
         return;
       }
-      if (json) return jsonOut(result.type, result.data);
+      if (json) return jsonOut(result);
 
       const {valid, form, errors, warnings, compact, outline} = result.data;
       if (!valid) {
@@ -173,7 +173,7 @@ export function registerLayout(program) {
         cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
         return;
       }
-      if (json) return jsonOut(result.type, result.data);
+      if (json) return jsonOut(result);
       humanLog(result.data.text);
     });
 }

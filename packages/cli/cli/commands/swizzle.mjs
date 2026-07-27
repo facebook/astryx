@@ -46,7 +46,7 @@ export function registerSwizzle(program) {
         return;
       }
 
-      if (json) return jsonOut(result.type, result.data);
+      if (json) return jsonOut(result);
 
       if (result.type === 'swizzle.list') {
         const components = result.data;
