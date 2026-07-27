@@ -230,11 +230,21 @@ export interface RichTextEditorProps extends Omit<
    */
   hasMarkdownShortcuts?: boolean;
   /**
-   * Markdown transformers used for shortcut typing and (in the future)
-   * serialization. Defaults to the standard `@lexical/markdown` `TRANSFORMERS`.
+   * Markdown transformers — the single source of truth for markdown behaviour.
+   * Defaults to the standard `@lexical/markdown` `TRANSFORMERS`.
+   *
+   * The same array drives all three markdown operations in Lexical (see the
+   * lexical-playground reference, where one `PLAYGROUND_TRANSFORMERS` array
+   * feeds each):
+   *  - shortcut typing        — `registerMarkdownShortcuts` (wired here today)
+   *  - markdown -> state       — `$convertFromMarkdownString` (future import API)
+   *  - state -> markdown       — `$convertToMarkdownString` (future `getMarkdown`)
+   *
    * Pass a custom array to support additional node types (e.g. custom
-   * transformers layered in via the `nodes` extension point). Only applied
-   * when `hasMarkdownShortcuts` is true.
+   * transformers layered in via the `nodes` extension point) consistently
+   * across all three. Shortcut typing is only applied when
+   * `hasMarkdownShortcuts` is true; the array is still the intended input for
+   * the serialization APIs added in later phases.
    */
   transformers?: ReadonlyArray<Transformer>;
   /** Whether to automatically focus the editor on mount. @default false */
