@@ -28,7 +28,7 @@ export default function AvatarShowcase() {
         src="https://lookaside.facebook.com/assets/astryx/DATA-Nam-Tran.png"
         name="Nam Tran"
         size="xl"
-        status={<AvatarStatusDot variant="error" label="Online" />}
+        status={<AvatarStatusDot variant="error" label="Busy" />}
       />
     </Stack>
   );

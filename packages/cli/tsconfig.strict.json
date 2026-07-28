@@ -9,8 +9,21 @@
     "strict": true
   },
   "include": [
-    "src/**/*.mjs",
-    "src/**/*.ts",
+    "api/**/*.mjs",
+    "api/**/*.ts",
+    "cli/**/*.mjs",
+    "cli/**/*.ts",
+    "codemods/**/*.mjs",
+    "codemods/**/*.ts",
+    "lib/**/*.mjs",
+    "lib/**/*.ts",
+    "utils/**/*.mjs",
+    "utils/**/*.ts",
+    "types/**/*.ts",
+    "schemas/**/*.mjs",
+    "schemas/**/*.ts",
+    "authoring/**/*.mjs",
+    "authoring/**/*.ts",
     "bin/**/*.mjs",
     "scripts/**/*.mjs",
     "docs/**/*.mjs",
@@ -18,5 +31,5 @@
     "templates/**/*.ts",
     "templates/**/*.tsx"
   ],
-  "exclude": ["src/**/*.test.mjs"]
+  "exclude": ["**/*.test.mjs"]
 }

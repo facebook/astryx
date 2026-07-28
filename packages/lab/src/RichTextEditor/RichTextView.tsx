@@ -93,7 +93,6 @@ export interface RichTextViewProps extends BaseProps {
  * @example
  * ```
  * import {RichTextView} from '@astryxdesign/lab';
- *
  * <RichTextView value={storedEditorStateJSON} />
  * ```
  */

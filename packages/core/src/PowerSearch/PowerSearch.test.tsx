@@ -16,6 +16,7 @@ import userEvent from '@testing-library/user-event';
 import {PowerSearch} from './PowerSearch';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {PowerSearchConfig, PowerSearchFilter} from './types';
+import {TestIcon} from '../__tests__/TestIcon';
 
 // =============================================================================
 // Test infrastructure
@@ -155,6 +156,25 @@ describe('PowerSearch', () => {
     });
 
     expect(screen.getByRole('combobox')).toHaveFocus();
+  });
+
+  describe('startIcon', () => {
+    it('does not render a start icon when omitted', () => {
+      render(<PowerSearch config={config} filters={[]} onChange={() => {}} />);
+      expect(document.querySelector('svg')).not.toBeInTheDocument();
+    });
+
+    it('forwards startIcon to the internal Tokenizer', () => {
+      render(
+        <PowerSearch
+          config={config}
+          filters={[]}
+          onChange={() => {}}
+          startIcon={<TestIcon data-testid="start-icon" />}
+        />,
+      );
+      expect(screen.getByTestId('start-icon')).toBeInTheDocument();
+    });
   });
 
   describe('paste behavior', () => {
@@ -402,5 +422,28 @@ describe('PowerSearch', () => {
         expect(politeRegion()?.textContent).toMatch(/\d+ results?/);
       });
     });
+  });
+});
+
+
+describe('PowerSearch statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <PowerSearch config={config} filters={[]} onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <PowerSearch config={config} filters={[]} onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
   });
 });

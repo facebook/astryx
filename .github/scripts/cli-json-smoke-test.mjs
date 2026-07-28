@@ -234,6 +234,11 @@ console.log('\nswizzle --json');
 checkJson('swizzle --list', ['swizzle', '--list'], {expectType: 'swizzle.list'});
 checkJson('swizzle (not found)', ['swizzle', 'NonexistentComponent99'], {expectError: true});
 
+// ── Build ────────────────────────────────────────────────────────────
+console.log('\nbuild --json');
+checkJson('build (playbook)', ['build'], {expectType: 'build.help'});
+checkJson('build dashboard', ['build', 'dashboard'], {expectType: 'build.kit'});
+
 // ── Summary ──────────────────────────────────────────────────────────
 console.log(`\n${passed + failed} checks: ${passed} passed, ${failed} failed`);
 console.log(`types seen: ${[...seenTypes].sort().join(', ')}`);

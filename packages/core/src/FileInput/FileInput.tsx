@@ -4,7 +4,7 @@
 
 /**
  * @file FileInput.tsx
- * @input Uses React, useId, Field, Icon, Spinner
+ * @input Uses React, useId, Field, Icon, Spinner, VisuallyHidden
  * @output Exports FileInput component, FileInputProps, FileInputStatus
  * @position Core implementation; consumed by index.ts, tested by FileInput.test.tsx
  *
@@ -41,9 +41,11 @@ import {
   InputClearButton,
   type InputStatus,
   type InputStatusType,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon, type IconName} from '../Icon';
 import {Spinner} from '../Spinner';
+import {VisuallyHidden} from '../VisuallyHidden';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useTooltip} from '../Tooltip';
 
@@ -246,17 +248,6 @@ const styles = stylex.create({
     flex: 1,
     minWidth: 0,
   },
-  liveRegion: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    padding: 0,
-    margin: -1,
-    overflow: 'hidden',
-    clip: 'rect(0, 0, 0, 0)',
-    whiteSpace: 'nowrap',
-    borderWidth: 0,
-  },
 });
 
 const statusBorderStyles = stylex.create({
@@ -359,6 +350,13 @@ export interface FileInputProps extends Omit<
    */
   status?: InputStatus;
   /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
+  /**
    * Description text displayed below the label.
    */
   description?: string;
@@ -414,6 +412,7 @@ export function FileInput({
   isRequired = false,
   isLoading = false,
   status: statusProp,
+  statusVariant = 'attached',
   description,
   placeholder,
   mode = 'input',
@@ -430,15 +429,16 @@ export function FileInput({
   const id = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
-  const liveRegionID = useId();
+  const requiredID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   // Announce successful file selection to screen readers via a persistent
-  // live region (forms-17). The component's own role="status" region only
-  // carries validation errors, so a successful attach was previously silent.
+  // live region (forms-17). Validation errors are announced (assertively) by
+  // the FieldStatus that the derived error status mounts, so only the
+  // successful attach needs an explicit announcement here.
   const announce = useAnnounce();
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
@@ -474,10 +474,18 @@ export function FileInput({
     success: 'success',
   };
 
+  // Required state. `aria-required` is not a supported property of
+  // role="button" in WAI-ARIA 1.2 (AT does not announce it there), so the
+  // trigger instead points its aria-describedby at a visually hidden
+  // "Required" span — mirroring the Field label's visible indicator (where
+  // isOptional takes precedence) and the pattern Slider uses for its thumbs.
+  const conveysRequired = isRequired && !isOptional;
+
   const ariaDescribedBy =
     [
       description ? descriptionID : null,
       status?.message ? statusMessageID : null,
+      conveysRequired ? requiredID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
       .filter(Boolean)
@@ -515,8 +523,9 @@ export function FileInput({
       onChange(result);
 
       // Announce the successful selection politely. Validation errors are
-      // handled by the role="status" region below, so only announce the
-      // attach here (do not double-announce errors).
+      // announced assertively by the FieldStatus that the derived error
+      // status mounts, so only announce the attach here (do not
+      // double-announce errors).
       if (errors.length === 0) {
         announce(
           valid.length === 1
@@ -728,6 +737,7 @@ export function FileInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       <div
@@ -757,9 +767,15 @@ export function FileInput({
         aria-busy={isLoading || undefined}
         // These describe the operable control, so they belong on the focusable
         // role="button" wrapper — not the hidden tabIndex={-1} file input the
-        // user never focuses (forms-6).
+        // user never focuses (forms-6). Required state is conveyed through
+        // the visually hidden "Required" node in aria-describedby, not
+        // aria-required, which role="button" does not support in ARIA 1.2.
         aria-describedby={ariaDescribedBy}
-        aria-required={isRequired ? 'true' : undefined}
+        // aria-invalid is likewise unsupported on role="button", but it stays:
+        // a message-less error status (`status={{type: 'error'}}`) has no
+        // described-by replacement, and some AT still honor the attribute, so
+        // removing it would not be strictly better. Errors *with* a message
+        // are described via statusMessageID above.
         aria-invalid={status?.type === 'error' ? 'true' : undefined}
         {...dragDropProps}
         {...mergeProps(
@@ -799,13 +815,11 @@ export function FileInput({
           />
         )}
       </div>
-      <div
-        id={liveRegionID}
-        role="status"
-        aria-live="polite"
-        {...stylex.props(styles.liveRegion)}>
-        {validationError}
-      </div>
+      {conveysRequired && (
+        <VisuallyHidden id={requiredID}>
+          {t('@astryx.fileInput.required')}
+        </VisuallyHidden>
+      )}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}
     </Field>

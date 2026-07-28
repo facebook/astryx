@@ -871,7 +871,7 @@ export function Step({
     status: status ?? undefined,
   });
 
-  // ======= ON-TRACK (EPS-aligned): indicator is a node on the connector =======
+  // ======= ON-TRACK: indicator is a node on the connector =======
   if (indicatorPosition === 'on-track') {
     // Connector fill is purely progress-based (matches the separated bar):
     // the segment before the indicator is "reached" once we're at/past this

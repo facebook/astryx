@@ -7,7 +7,7 @@ export const docs = {
   title: 'Internationalization',
   category: 'guide',
   description:
-    'Localize astryx component strings, provide translation catalogs, override default text, coexist with your own i18n library, swap languages at runtime, and test translations with the pseudo locale.',
+    'Set the active locale for astryx components, load locale catalogs, coexist with your own i18n library, swap languages at runtime, and test translations with the pseudo locale.',
 
   sections: [
     {
@@ -16,13 +16,13 @@ export const docs = {
       content: [
         {
           type: 'prose',
-          text: 'Internationalization ships with `@astryxdesign/core`. There is nothing to install. Wrap your app in `<InternationalizationProvider>` and set a `locale`, and astryx components pick up localized strings automatically.',
+          text: 'Internationalization ships with `@astryxdesign/core`. There is nothing to install. Wrap your app in `<InternationalizationProvider>` and set the active `locale`; astryx components pick up localized strings from that provider.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Wrap your app',
-          code: `import {InternationalizationProvider} from '@astryxdesign/core';
+          code: `import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 
 function App() {
   return (
@@ -33,40 +33,15 @@ function App() {
 }`,
         },
         {
-          type: 'code',
-          lang: 'tsx',
-          label: 'Read strings inside a component',
-          code: `import {useTranslator} from '@astryxdesign/core';
-
-function SaveButton() {
-  const t = useTranslator();
-  return <button>{t('@myapp.actions.save')}</button>;
-}`,
-        },
-        {
           type: 'prose',
-          text: 'The hook is available to consumer components too, but using it is entirely optional: many teams keep their app strings on their existing i18n library (react-intl, i18next, next-intl, LinguiJS) and only use `useTranslator` when reading astryx keys. If you do route your own strings through it, we recommend namespacing them (`@myapp.*` or your npm scope) to keep them separated from `@astryx.*`, but this is a convention, not a requirement; the resolver treats every key as an opaque string.',
-        },
-        {
-          type: 'prose',
-          text: "Astryx ships translations only for English today. First-party translations for other locales are on the roadmap; track https://github.com/facebook/astryx/issues/3641. In the meantime, if you want astryx UI translated into another locale, you can ship your own catalog through the `messages` prop (covered in the next section). If you're using `useTranslator` for your own strings, you'll want to ship your own catalog either way, since astryx only carries the fallback for `@astryx.*` keys, not the ones you author.",
-        },
-      ],
-    },
-    {
-      title: 'Providing locale catalogs',
-      category: 'guide',
-      content: [
-        {
-          type: 'prose',
-          text: 'Astryx bundles only the English catalog today. To render in any other locale, provide a translation catalog through the `messages` prop and set `locale` accordingly. This matches how MUI, Ant Design, and AG Grid work: the consumer app supplies the catalogs it actually needs so unused translations stay out of the bundle.',
+          text: 'The provider always has the built-in English catalog. Pass additional catalogs through `messages` when you enable another locale.',
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Add French',
-          code: `import {InternationalizationProvider} from '@astryxdesign/core';
-import fr from './locales/astryx/fr.json';
+          label: 'Load an astryx locale catalog',
+          code: `import {InternationalizationProvider} from '@astryxdesign/core/i18n';
+import fr from '@astryxdesign/core/locales/fr.json';
 
 <InternationalizationProvider locale="fr" messages={{fr}}>
   <App />
@@ -74,11 +49,104 @@ import fr from './locales/astryx/fr.json';
         },
         {
           type: 'prose',
-          text: "See `@astryxdesign/core/locales/en.json` for the full inventory of keys to translate. Copy it as the starting point: every key you translate replaces the English default; anything you omit falls back through the locale chain to English (e.g. `pt-BR` walks to `pt` then to shipped `en`), so a partial translation renders as a mix rather than empty text or raw key names.",
+          text: 'Astryx ships English today, with first-party translations for other locales on the roadmap. Until a locale is available from `@astryxdesign/core/locales/*`, apps can pass a local catalog with the same shape. See `@astryxdesign/core/locales/en.json` for the current key inventory. Missing keys fall back through the locale chain to English (for example, `pt-BR` walks to `pt`, then to shipped `en`).',
         },
         {
           type: 'prose',
-          text: 'A community-maintained set of astryx translations is on the roadmap but not shipped yet. For now, consumer apps that ship in multiple languages own their astryx catalogs alongside their app catalogs. Contributions to a first-party set are welcome; track discussion at https://github.com/facebook/astryx/issues/3641.',
+          text: 'Locale catalogs only affect astryx strings. Your app can continue using its own i18n system for product copy.',
+        },
+      ],
+    },
+    {
+      title: 'Runtime language swap',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: 'Re-render `<InternationalizationProvider>` with a new `locale` prop and every astryx string updates live. No reload, no separate API call.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Toggle between locales',
+          code: `const [locale, setLocale] = useState<'en' | 'fr'>('en');
+
+<InternationalizationProvider locale={locale} messages={{fr}}>
+  <Button
+    label={locale === 'en' ? 'Français' : 'English'}
+    onClick={() => setLocale(l => (l === 'en' ? 'fr' : 'en'))}
+  />
+  <App />
+</InternationalizationProvider>;`,
+        },
+        {
+          type: 'prose',
+          text: "Persisting the user's choice (localStorage, cookie, URL segment, account setting) is up to the consumer. Astryx reads whatever `locale` you pass in.",
+        },
+      ],
+    },
+    {
+      title: 'Text direction (RTL)',
+      category: 'guide',
+      content: [
+        {
+          type: 'prose',
+          text: "Astryx tracks text direction (`'ltr'` or `'rtl'`) alongside the locale. By default the direction is derived from the `locale` you pass to `<InternationalizationProvider>` via [`Intl.Locale.getTextInfo()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Locale/getTextInfo), so RTL locales such as Arabic (`ar`), Hebrew (`he`), Farsi (`fa`), and Urdu (`ur`) resolve to `'rtl'` automatically.",
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Direction derived from locale',
+          code: `import {InternationalizationProvider} from '@astryxdesign/core/i18n';
+
+// direction resolves to 'rtl' automatically from the Arabic locale
+<InternationalizationProvider locale="ar">
+  <App />
+</InternationalizationProvider>;`,
+        },
+        {
+          type: 'prose',
+          text: 'Pass the optional `dir` prop to force a direction. This overrides the locale-derived default — useful for RTL layout testing under an English catalog, or to skip derivation when you already know the direction.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Explicit direction override',
+          code: `// force RTL layout while keeping English strings
+<InternationalizationProvider locale="en" dir="rtl">
+  <App />
+</InternationalizationProvider>;`,
+        },
+        {
+          type: 'prose',
+          text: "There's one more step: tell the browser about the direction too. Add a `dir` attribute to your page — usually on the `<html>` tag. This is what makes text align to the correct side, punctuation and mixed-language text flow correctly, and layouts mirror. The provider handles astryx components; the `dir` attribute handles everything else on the page.",
+        },
+        {
+          type: 'prose',
+          text: "Astryx doesn't set `dir` for you — you set it, alongside the same direction you pass to the provider. If your app is server-rendered (like Next.js), the `getLocaleDirection()` helper computes the direction from a locale so you can set it while the page renders:",
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Set <html dir> in a Next.js root layout',
+          code: `import {getLocaleDirection} from '@astryxdesign/core/i18n';
+
+export default function RootLayout({children, params}) {
+  const {locale} = params;
+  return (
+    <html lang={locale} dir={getLocaleDirection(locale)}>
+      <body>{children}</body>
+    </html>
+  );
+}`,
+        },
+        {
+          type: 'prose',
+          text: 'In a plain client app, set the same attribute on `<html>` whenever the locale changes. (`getLocaleDirection()` safely returns `\'ltr\'` for anything it doesn\'t recognize, so you can call it with any locale string.)',
+        },
+        {
+          type: 'prose',
+          text: 'To make just one part of a left-to-right page right-to-left — say an Arabic quote or a comment thread — wrap that part in its own `<InternationalizationProvider dir="rtl">` and add `dir="rtl"` to the element around it. (One current limitation: pop-up overlays like menus and dialogs opened from inside that region aren\'t mirrored yet; that\'s coming in later RTL work.)',
         },
       ],
     },
@@ -119,7 +187,7 @@ import fr from './locales/astryx/fr.json';
           type: 'code',
           lang: 'tsx',
           label: 'Astryx + react-intl side by side',
-          code: `import {InternationalizationProvider} from '@astryxdesign/core';
+          code: `import {InternationalizationProvider} from '@astryxdesign/core/i18n';
 import {Selector} from '@astryxdesign/core/Selector';
 import {Button} from '@astryxdesign/core/Button';
 import {FormattedMessage, IntlProvider, useIntl} from 'react-intl';
@@ -169,35 +237,56 @@ export default function App() {
         },
         {
           type: 'prose',
-          text: "Single-catalog usage (where an external i18n runtime like react-intl or i18next resolves both your app strings AND astryx's strings through one provider) is on the roadmap via a `Translator` adapter. Track https://github.com/facebook/astryx/issues/4029. For now, run the two providers side by side as shown above.",
+          text: "Single-catalog usage (where an external i18n runtime like react-intl or i18next resolves both your app strings AND astryx's strings through one provider) is on the roadmap via a `Translator` adapter. Track [facebook/astryx#4029](https://github.com/facebook/astryx/issues/4029). For now, run the two providers side by side as shown above.",
         },
       ],
     },
     {
-      title: 'Runtime language swap',
+      title: 'Using astryx as your i18n library',
       category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Re-render `<InternationalizationProvider>` with a new `locale` prop and every astryx string updates live. No reload, no separate API call.',
+          text: "For production apps with substantial localization needs, we recommend a dedicated i18n library such as react-intl, i18next, next-intl, or LinguiJS. If your app is small or you do not want another runtime, you can resolve your own strings through astryx too. Keep app keys in a separate namespace from `@astryx.*`, and include your own `en` catalog because astryx's built-in English fallback only contains astryx component strings.",
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'Toggle between locales',
-          code: `const [locale, setLocale] = useState<'en' | 'fr'>('en');
+          label: 'Translate app strings with astryx',
+          code: `import {Button} from '@astryxdesign/core/Button';
+import {
+  InternationalizationProvider,
+  useTranslator,
+  type Catalog,
+  type MessagesByLocale,
+} from '@astryxdesign/core/i18n';
 
-<InternationalizationProvider locale={locale} messages={{fr}}>
-  <Button
-    label={locale === 'en' ? 'Français' : 'English'}
-    onClick={() => setLocale(l => (l === 'en' ? 'fr' : 'en'))}
-  />
-  <App />
-</InternationalizationProvider>;`,
+const en: Catalog = {
+  '@myapp.actions.save': {defaultMessage: 'Save'},
+};
+
+const fr: Catalog = {
+  '@myapp.actions.save': {defaultMessage: 'Enregistrer'},
+};
+
+const messages: MessagesByLocale = {en, fr};
+
+function SaveButton() {
+  const t = useTranslator();
+  return <Button label={t('@myapp.actions.save')} />;
+}
+
+export default function App() {
+  return (
+    <InternationalizationProvider locale="fr" messages={messages}>
+      <SaveButton />
+    </InternationalizationProvider>
+  );
+}`,
         },
         {
           type: 'prose',
-          text: "Persisting the user's choice (localStorage, cookie, URL segment, account setting) is up to the consumer. Astryx reads whatever `locale` you pass in.",
+          text: '`Catalog` types a single locale file; `MessagesByLocale` types the map passed to `messages`. A catalog entry uses the same `{defaultMessage, description?}` shape as `@astryxdesign/core/locales/en.json`.',
         },
       ],
     },
@@ -207,25 +296,18 @@ export default function App() {
       content: [
         {
           type: 'prose',
-          text: 'Astryx generates a `pseudo` locale that wraps every string in `⟦…⟧` and replaces letters with accented look-alikes. Switching to it in development instantly reveals any astryx string that isn\'t going through the translator, plus any layout that breaks under longer text.',
+          text: 'Astryx generates a `pseudo` locale that wraps every string in `⟦…⟧` and replaces letters with accented look-alikes. Switch to it in development to catch hardcoded astryx strings and layout issues caused by longer text.',
         },
         {
           type: 'code',
           lang: 'tsx',
           label: 'Turn on pseudo-localization',
-          code: `import pseudo from '@astryxdesign/core/locales/pseudo.json';
+          code: `import {InternationalizationProvider} from '@astryxdesign/core/i18n';
+import pseudo from '@astryxdesign/core/locales/pseudo.json';
 
 <InternationalizationProvider locale="pseudo" messages={{pseudo}}>
   <App />
 </InternationalizationProvider>;`,
-        },
-        {
-          type: 'prose',
-          text: 'Any bare English text you still see on screen is a hardcoded string that needs to be routed through `useTranslator`.',
-        },
-        {
-          type: 'prose',
-          text: "Pseudoloc also has a subtle caveat worth knowing: the pseudo catalog is complete (astryx generates it from every shipped key), so a component using an astryx-shipped key will always render its pseudo version. Your handwritten translation catalogs, on the other hand, only cover the keys you translated; anything missing falls back to English. That means \"looks perfect in pseudo\" is not the same guarantee as \"looks perfect in French.\" Check each real locale by hand for coverage gaps.",
         },
       ],
     },
@@ -234,8 +316,53 @@ export default function App() {
       category: 'guide',
       content: [
         {
+          type: 'heading',
+          level: 3,
+          text: 'Developers',
+        },
+        {
+          type: 'prose',
+          text: 'Astryx component authors read strings with `useTranslator()` rather than hardcoding user-facing text.',
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'Read an astryx string',
+          code: `import {useTranslator} from '@astryxdesign/core/i18n';
+
+function SaveButton() {
+  const t = useTranslator();
+  return <button>{t('@astryx.actions.save')}</button>;
+}`,
+        },
+        {
           type: 'prose',
           text: "Astryx's own strings live in `packages/core/locales/en.json`. New user-facing strings must go through `useTranslator`; this is enforced by the `@astryx/no-hardcoded-i18n-string` ESLint rule. See the AI contribution guide for the alias-and-resolve pattern used when adding new keys.",
+        },
+        {
+          type: 'prose',
+          text: "Component authors read the ambient text direction with `useDirection()`. Reach for it only when CSS logical properties can't express the mirroring — swapping a directional icon, mirroring behavioral logic (slider math, keyboard nav), or direction-specific geometry. It returns `'ltr'` when called outside a provider, matching the silent-fallback behavior of `useTranslator`.",
+        },
+        {
+          type: 'code',
+          lang: 'tsx',
+          label: 'useDirection() in a component',
+          code: `import {useDirection} from '@astryxdesign/core/i18n';
+
+function NextButton() {
+  const direction = useDirection();
+  const icon = direction === 'rtl' ? 'chevronLeft' : 'chevronRight';
+  return <Icon icon={icon} />;
+}`,
+        },
+        {
+          type: 'heading',
+          level: 3,
+          text: 'Translators',
+        },
+        {
+          type: 'prose',
+          text: 'Crowdin is the preferred way to contribute — [join a language](https://crowdin.com/project/astryx), translate strings in the web UI, and your work syncs back to the repo without opening a PR. Direct PRs against `packages/core/locales/*.json` also work if you prefer that flow.',
         },
       ],
     },

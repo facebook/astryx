@@ -57,6 +57,12 @@ const meta: Meta<typeof DateInput> = {
       options: [1, 2],
       description: 'Number of months to display in calendar',
     },
+    format: {
+      control: 'select',
+      options: ['date_long', 'date', 'date_weekday', 'system_date'],
+      description:
+        "Display format for the committed value, reusing Timestamp's vocabulary. Defaults to 'date_long' (long-month date).",
+    },
   },
 };
 
@@ -83,6 +89,58 @@ export const WithValue: Story = {
   },
   args: {
     label: 'Event date',
+  },
+};
+
+/**
+ * The committed date value can be rendered in different shapes via `format`,
+ * reusing `Timestamp`'s format vocabulary so the same literal renders the same
+ * date shape in both components. It defaults to `'date_long'` (a long-month
+ * date, "March 21, 2026"). While the user is typing, the raw text is shown
+ * verbatim — `format` applies only to the committed value.
+ */
+export const Formats: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-03-21' as ISODateString,
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 16}}>
+        <DateInput
+          label="Default (format='date_long')"
+          value={value}
+          onChange={setValue}
+        />
+        <DateInput
+          label="format='date'"
+          value={value}
+          onChange={setValue}
+          format="date"
+        />
+        <DateInput
+          label="format='date_weekday'"
+          value={value}
+          onChange={setValue}
+          format="date_weekday"
+        />
+        <DateInput
+          label="format='system_date'"
+          value={value}
+          onChange={setValue}
+          format="system_date"
+        />
+        <DateInput
+          label="Custom function"
+          value={value}
+          onChange={setValue}
+          format={iso =>
+            new Intl.DateTimeFormat('en-GB', {dateStyle: 'full'}).format(
+              new Date(iso + 'T00:00'),
+            )
+          }
+        />
+      </div>
+    );
   },
 };
 
@@ -364,5 +422,33 @@ export const ClearableWithStatus: Story = {
   args: {
     label: 'Deadline',
     status: {type: 'error', message: 'Date is in the past'},
+  },
+};
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    const [b, setB] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+        <DateInput
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'This date is not available'}}
+        />
+        <DateInput
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'This date is not available'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
   },
 };

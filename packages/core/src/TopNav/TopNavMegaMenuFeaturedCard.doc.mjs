@@ -27,7 +27,7 @@ export const docs = {
     {
       name: 'imageAlt',
       type: 'string',
-      description: 'Alt text for the image.',
+      description: 'Alt text for the image. When omitted, the image is explicitly decorative (alt="", role="presentation", aria-hidden) — usually correct since the card already has a visible title. Provide it only when the image conveys information beyond the title and description.',
     },
     {
       name: 'linkLabel',
@@ -71,7 +71,7 @@ export const docsZh = {
     {
       name: 'imageAlt',
       type: 'string',
-      description: '图片的替代文本。',
+      description: '图片的替代文本。省略时图片会被显式标记为装饰性（alt=""、role="presentation"、aria-hidden）——由于卡片已有可见标题，这通常是正确的。仅当图片传达标题和描述之外的信息时才提供。',
     },
     {
       name: 'linkLabel',
@@ -99,7 +99,7 @@ export const docsDense = {
     title: 'Card title.',
     description: 'Description below title.',
     image: 'Image URL above body.',
-    imageAlt: 'Image alt text.',
+    imageAlt: 'Image alt text. Omitted → explicitly decorative (hidden from screen readers); usually correct since card has visible title.',
     linkLabel: 'CTA link text.',
     linkHref: 'CTA link URL.',
     children: 'Custom content below standard body.',

@@ -230,7 +230,7 @@ const styles = stylex.create({
     outline: 'none',
     backgroundColor: 'transparent',
     border: 'none',
-    textAlign: 'left',
+    textAlign: 'start',
   },
   itemHighlighted: {
     backgroundColor: colorVars['--color-overlay-hover'],

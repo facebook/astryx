@@ -16,7 +16,7 @@
  * SYNC: When modified, update this header.
  */
 
-import {ensureCoreBuilt} from './packages/cli/src/commands/ensure-core-built.mjs';
+import {ensureCoreBuilt} from './packages/cli/cli/commands/ensure-core-built.mjs';
 
 export default function setup() {
   ensureCoreBuilt();

@@ -230,6 +230,13 @@ export const docs = {
         'Status indicator that colors the border and displays an icon. When a message is provided it is rendered below the input.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
+    },
+    {
       name: 'labelTooltip',
       type: 'string',
       description:
@@ -371,6 +378,13 @@ export const docsZh = {
       type: "{type: 'warning' | 'error' | 'success', message?: string}",
       description:
         '为边框着色并显示图标的状态指示器。当提供消息时，消息渲染在输入框下方。',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+      default: "'attached'",
     },
     {
       name: 'labelTooltip',
@@ -545,6 +559,7 @@ export const docsDense = {
     placeholder: 'Placeholder when empty. Focused+empty shows format hint.',
     size: 'Input element height.',
     status: 'Colored border+icon. Message rendered below input.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     labelTooltip: 'Tooltip as info icon at label row end.',
     xstyle:
       'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',

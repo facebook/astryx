@@ -48,7 +48,7 @@ const styles = stylex.create({
     borderStyle: 'none',
     clip: 'rect(0, 0, 0, 0)',
     height: 1,
-    left: 0,
+    insetInlineStart: 0,
     margin: -1,
     overflow: 'hidden',
     padding: 0,
@@ -171,7 +171,11 @@ export function FieldLabel({
   labelTooltip,
   description,
   descriptionID,
+  className,
+  style,
+  xstyle,
   ref,
+  ...rest
 }: FieldLabelProps) {
   const statusText = isOptional ? 'Optional' : isRequired ? 'Required' : null;
 
@@ -207,13 +211,17 @@ export function FieldLabel({
         // `htmlFor` only applies to a real `<label>` associating with a single
         // control; a group label (span) has no `htmlFor`.
         htmlFor={isGroupLabel ? undefined : inputID}
+        {...rest}
         {...mergeProps(
           themeProps('field-label'),
           stylex.props(
             styles.label,
             isDisabled && styles.labelDisabled,
             isLabelHidden && styles.srOnly,
+            xstyle,
           ),
+          className,
+          style,
         )}>
         {labelContent}
       </LabelElement>

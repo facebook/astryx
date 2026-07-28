@@ -134,8 +134,8 @@ const styles = stylex.create({
   // --- Dock container ---
   dockContainer: {
     bottom: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     zIndex: 0,
     isolation: 'isolate',
     pointerEvents: 'none',
@@ -150,8 +150,8 @@ const styles = stylex.create({
   blurLayer: {
     position: 'absolute',
     bottom: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     pointerEvents: 'none',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',

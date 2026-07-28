@@ -78,7 +78,7 @@ export const docs = {
       name: 'isRequired',
       type: 'boolean',
       description:
-        'Displays a "Required" indicator next to the label and sets aria-required. Mutually exclusive with isOptional.',
+        'Displays a "Required" indicator next to the label and adds a screen-reader-only "Required" description to the trigger (aria-required is not supported on role="button"). Mutually exclusive with isOptional.',
       default: 'false',
     },
     {
@@ -118,6 +118,13 @@ export const docs = {
       type: "{type: 'error' | 'warning' | 'success', message?: string}",
       description:
         'Validation status: applies a colored border. If message is provided, displays a floating message below the input. Error type also sets aria-invalid.',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
     },
     {
       name: 'labelTooltip',
@@ -246,6 +253,13 @@ export const docsZh = {
       type: "{type: 'error' | 'warning' | 'success', message?: string}",
       description: '验证状态。',
     },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+      default: "'attached'",
+    },
   ],
   theming: {
     targets: [
@@ -308,7 +322,7 @@ export const docsDense = {
     isLabelHidden: 'Visually hides label; keeps screen reader access.',
     description: 'Description text between label+input.',
     isOptional: 'Shows "Optional" indicator.',
-    isRequired: 'Shows "Required" indicator+sets aria-required.',
+    isRequired: 'Shows "Required" indicator+SR-only trigger description.',
     isDisabled: 'Disables input, prevents interaction.',
     disabledMessage:
       'Explains why input is disabled. With isDisabled, shows tooltip on hover/focus + keeps trigger focusable via aria-disabled (opening picker stays blocked). Use instead of wrapping a disabled FileInput in Tooltip.',
@@ -316,6 +330,7 @@ export const docsDense = {
     placeholder: 'Placeholder when no files selected.',
     mode: "Visual mode: 'input' (compact) or 'dropzone' (drag-and-drop).",
     status: 'Validation status; colored border. Message floats below.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     labelTooltip: 'Tooltip in info icon at label end.',
   },
 };

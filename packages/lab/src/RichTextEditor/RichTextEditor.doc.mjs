@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('../../../core/src/docs-types').ComponentDoc} */
 
 export const docs = {
   name: 'RichTextEditor',
@@ -40,7 +40,7 @@ export const docs = {
       name: 'defaultValue',
       type: 'string',
       description:
-        'Initial serialized editor state (JSON string from editorState.toJSON()). Read once on mount — the editor is uncontrolled.',
+        'Initial serialized editor state (JSON string from editorState.toJSON()). Read once on mount; the editor is uncontrolled.',
     },
     {
       name: 'onChange',

@@ -890,14 +890,20 @@ export function DateTimeInput({
         {/* Date input */}
         <div
           ref={popover.triggerRef}
-          {...stylex.props(
-            inputWrapperStyles.base,
-            sizeStyles[size],
-            styles.dateWrapper,
-            isEffectivelyDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
+          {...mergeProps(
+            themeProps('date-time-input-date-segment', {
+              size,
+              status: status?.type ?? null,
+            }),
+            stylex.props(
+              inputWrapperStyles.base,
+              sizeStyles[size],
+              styles.dateWrapper,
+              isEffectivelyDisabled && inputWrapperStyles.disabled,
+              status && inputStatusBorderStyles[status.type],
+              status && inputStatusHoverShadowStyles[status.type],
+              status && inputStatusFocusWithinStyles[status.type],
+            ),
           )}>
           <button
             type="button"
@@ -982,14 +988,20 @@ export function DateTimeInput({
           ref={timeContainerRef}
           onClick={handleTimeWrapperClick}
           onMouseUp={handleTimeWrapperMouseUp}
-          {...stylex.props(
-            inputWrapperStyles.base,
-            sizeStyles[size],
-            styles.timeWrapper,
-            isEffectivelyDisabled && inputWrapperStyles.disabled,
-            status && inputStatusBorderStyles[status.type],
-            status && inputStatusHoverShadowStyles[status.type],
-            status && inputStatusFocusWithinStyles[status.type],
+          {...mergeProps(
+            themeProps('date-time-input-time-segment', {
+              size,
+              status: status?.type ?? null,
+            }),
+            stylex.props(
+              inputWrapperStyles.base,
+              sizeStyles[size],
+              styles.timeWrapper,
+              isEffectivelyDisabled && inputWrapperStyles.disabled,
+              status && inputStatusBorderStyles[status.type],
+              status && inputStatusHoverShadowStyles[status.type],
+              status && inputStatusFocusWithinStyles[status.type],
+            ),
           )}>
           <div {...stylex.props(styles.icon)}>
             <Icon icon="clock" size="sm" color="secondary" />

@@ -49,8 +49,8 @@ export const docs = {
     {
       name: 'options.isRtl',
       type: 'boolean',
-      description: 'Whether the list is in a right-to-left context. When true, ArrowLeft/ArrowRight are swapped for horizontal navigation so it follows visual direction.',
-      default: 'false',
+      description: 'Whether the list is in a right-to-left context. When true, ArrowLeft/ArrowRight are swapped for horizontal navigation so it follows visual direction. When omitted, auto-detected from the container computed direction on keydown.',
+      default: "undefined (auto-detect from the container's computed direction)",
       required: false,
     },
     {
@@ -127,7 +127,7 @@ export const docsDense = {
     'options.onEscape': 'callback when Escape key pressed (e.g. close menu).',
     'options.orientation': "navigation orientation. 'horizontal' uses ArrowLeft/ArrowRight, 'vertical' uses ArrowUp/ArrowDown, 'both' accepts all four arrows.",
     'options.hasHomeEnd': 'whether Home/End jump to first/last enabled item.',
-    'options.isRtl': 'when true, ArrowLeft/ArrowRight swap for horizontal nav (RTL).',
+    'options.isRtl': 'ArrowLeft/ArrowRight swap for horizontal nav (RTL). default: auto-detect from container computed direction; explicit boolean wins.',
     'options.hasRovingTabIndex': 'opt into roving-tabindex ownership: hook stamps + repairs a single tab stop across items.',
     'options.hasCaretGuard': "when true, don't steal arrow keys from a nested text input/textarea mid-line or from a contenteditable.",
   },

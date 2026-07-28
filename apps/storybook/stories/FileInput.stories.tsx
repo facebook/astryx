@@ -282,3 +282,27 @@ export const AllVariations: Story = {
     );
   },
 };
+
+export const StatusVariantComparison: Story = {
+  render: () => {
+    const [a, setA] = useState<File | File[] | null>(null);
+    const [b, setB] = useState<File | File[] | null>(null);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 320}}>
+        <FileInput
+          label="Attached (default)"
+          value={a}
+          onChange={setA}
+          status={{type: 'error', message: 'File must be under 10MB'}}
+        />
+        <FileInput
+          label="Detached"
+          value={b}
+          onChange={setB}
+          status={{type: 'error', message: 'File must be under 10MB'}}
+          statusVariant="detached"
+        />
+      </div>
+    );
+  },
+};

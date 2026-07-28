@@ -1,0 +1,261 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Programmatic API for the discover command.
+ */
+
+import {Project} from '../../lib/project.mjs';
+import {
+  scanAllPackages,
+  findComponentInPackages,
+} from '../../lib/package-scanner.mjs';
+import {loadDocs} from '../../lib/component-loader.mjs';
+import {levenshteinDistance} from '../../lib/string-utils.mjs';
+import {AstryxError} from '../error.mjs';
+import {ERROR_CODES} from '../../lib/error-codes.mjs';
+
+/**
+ * @typedef {import('../../lib/package-scanner.mjs').ScannedPackage} ScannedPackage
+ */
+
+/**
+ * @param {unknown} docs
+ * @returns {string | null}
+ */
+function validateDocs(docs) {
+  if (!docs || typeof docs !== 'object')
+    return 'docs export is missing or not an object';
+  const d = /** @type {Record<string, any>} */ (docs);
+  if (typeof d.name !== 'string' || !d.name)
+    return 'docs.name is missing or not a string';
+  if (!d.usage || typeof d.usage.description !== 'string')
+    return 'docs.usage.description is missing or not a string';
+  if (d.props && !Array.isArray(d.props))
+    return 'docs.props must be an array';
+  if (d.components && !Array.isArray(d.components))
+    return 'docs.components must be an array';
+  if (d.usage?.bestPractices && !Array.isArray(d.usage.bestPractices))
+    return 'docs.usage.bestPractices must be an array';
+  return null;
+}
+
+/**
+ * @param {string} [query]
+ * @param {object} [options]
+ * @param {boolean} [options.components]
+ * @param {string} [options.lang]
+ * @param {boolean} [options.zh]
+ * @returns {Promise<
+ *   import('../../types/discover').DiscoverListResponse |
+ *   import('../../types/discover').DiscoverDetailResponse |
+ *   import('../../types/discover').DiscoverDetailDocResponse |
+ *   import('../../types/discover').DiscoverSearchResponse
+ * >}
+ */
+export async function discover(query, options = {}) {
+  const {lang = null, zh = false} = options;
+  const project = await Project.load();
+  const loadedIntegrations =
+    /** @type {import('../../lib/integrations.mjs').LoadedIntegration[]} */ (
+      project.loadedIntegrations
+    );
+  /** @param {ScannedPackage} pkg */
+  const toEntry = pkg => ({
+    name: pkg.name,
+    category: pkg.category,
+    components: pkg.components,
+    version: pkg.version,
+    description: pkg.description,
+    displayName: pkg.displayName,
+  });
+
+  // External packages come from configured integrations that declare a
+  // components root. Each becomes a scannable package keyed by its docsDir.
+  const explicitPackages = loadedIntegrations
+    .filter(integration => integration.components)
+    .map(integration => ({
+      name: integration.name,
+      version: integration.version,
+      category: integration.name,
+      docsDir: integration.components,
+    }));
+  if (explicitPackages.length === 0) {
+    return {type: 'discover.list', data: [], meta: {configured: false}};
+  }
+
+  const packages = scanAllPackages(
+    [],
+    /** @type {ScannedPackage[]} */ (/** @type {unknown} */ (explicitPackages)),
+  );
+
+  if (packages.length === 0) {
+    return {type: 'discover.list', data: [], meta: {configured: true}};
+  }
+
+  if (!query) {
+    return {type: 'discover.list', data: packages.map(toEntry)};
+  }
+
+  // Scoped package query: @scope/name or @scope/name/Component
+  if (query.startsWith('@')) {
+    const slashIdx = query.indexOf('/', query.indexOf('/') + 1);
+    if (slashIdx > 0) {
+      const pkgName = query.slice(0, slashIdx);
+      const compName = query.slice(slashIdx + 1);
+      return await resolveComponentDocs(packages, compName, pkgName, {
+        lang,
+        zh,
+      });
+    }
+
+    const pkg = packages.find(p => p.name === query);
+    if (!pkg) {
+      throw new AstryxError(
+        `Package "${query}" not found`,
+        packages.map(p => ({name: p.name, reason: 'available package'})),
+        ERROR_CODES.ERR_UNKNOWN_PACKAGE,
+      );
+    }
+    return {type: 'discover.detail', data: toEntry(pkg)};
+  }
+
+  // Search mode
+  const lower = query.toLowerCase();
+
+  const exact = findComponentInPackages(packages, query);
+  if (exact) {
+    return await loadAndValidate(exact, {lang, zh});
+  }
+
+  const substringMatches = /** @type {Array<{pkg: ScannedPackage, comp: string}>} */ ([]);
+  for (const pkg of packages) {
+    for (const comp of pkg.components) {
+      if (comp.toLowerCase().includes(lower)) {
+        substringMatches.push({pkg, comp});
+      }
+    }
+  }
+
+  if (substringMatches.length === 1) {
+    const match = substringMatches[0];
+    const result = findComponentInPackages([match.pkg], match.comp);
+    if (result) return await loadAndValidate(result, {lang, zh});
+  }
+
+  if (substringMatches.length > 1) {
+    return {
+      type: 'discover.search',
+      data: {
+        query,
+        matches: substringMatches.map(m => ({
+          package: m.pkg.name,
+          component: m.comp,
+        })),
+      },
+    };
+  }
+
+  // Fuzzy fallback
+  const allComponents = /** @type {Array<{pkg: ScannedPackage, comp: string}>} */ ([]);
+  for (const pkg of packages) {
+    for (const comp of pkg.components) {
+      allComponents.push({pkg, comp});
+    }
+  }
+  const fuzzyMatches = allComponents
+    .map(item => ({
+      ...item,
+      distance: levenshteinDistance(lower, item.comp.toLowerCase()),
+    }))
+    .filter(m => m.distance <= 3)
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 5);
+
+  if (fuzzyMatches.length > 0) {
+    throw new AstryxError(
+      `"${query}" not found`,
+      fuzzyMatches.map(m => ({
+        name: m.pkg.name + '/' + m.comp,
+        reason: 'similar name',
+      })),
+      ERROR_CODES.ERR_NOT_FOUND,
+    );
+  }
+
+  throw new AstryxError(
+    `"${query}" not found in any package`,
+    undefined,
+    ERROR_CODES.ERR_NOT_FOUND,
+  );
+}
+
+/**
+ * @param {ScannedPackage[]} packages
+ * @param {string} compName
+ * @param {string} pkgName
+ * @param {{lang?: string|null, zh?: boolean}} opts
+ * @returns {Promise<import('../../types/discover').DiscoverDetailDocResponse>}
+ */
+async function resolveComponentDocs(packages, compName, pkgName, {lang, zh}) {
+  const pkg = packages.find(p => p.name === pkgName);
+  if (!pkg)
+    throw new AstryxError(
+      `Package "${pkgName}" not found`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_PACKAGE,
+    );
+
+  const result = findComponentInPackages([pkg], compName);
+  if (!result) {
+    const lower = compName.toLowerCase();
+    const hits = pkg.components.filter(c => c.toLowerCase().includes(lower));
+    const suggestions =
+      hits.length > 0
+        ? hits
+        : pkg.components
+            .map(c => ({
+              name: c,
+              distance: levenshteinDistance(lower, c.toLowerCase()),
+            }))
+            .filter(m => m.distance <= 3)
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, 5)
+            .map(m => m.name);
+    throw new AstryxError(
+      `Component "${compName}" not found in ${pkgName}`,
+      suggestions.map(s => ({name: s, reason: 'similar name'})),
+      ERROR_CODES.ERR_UNKNOWN_COMPONENT,
+    );
+  }
+
+  return await loadAndValidate(result, {lang, zh});
+}
+
+/**
+ * @param {{docPath: string, componentName: string, pkg: ScannedPackage}} result
+ * @param {{lang?: string|null, zh?: boolean}} opts
+ * @returns {Promise<import('../../types/discover').DiscoverDetailDocResponse>}
+ */
+async function loadAndValidate(result, {lang, zh}) {
+  let docs;
+  try {
+    docs = await loadDocs(
+      result.docPath,
+      /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang}),
+    );
+  } catch (e) {
+    throw new AstryxError(
+      `Failed to load docs for ${result.componentName}: ${/** @type {any} */ (e).message}`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_DOC,
+    );
+  }
+  const err = validateDocs(docs);
+  if (err)
+    throw new AstryxError(
+      `Invalid docs for ${result.componentName}: ${err}`,
+      undefined,
+      ERROR_CODES.ERR_INVALID_DOC,
+    );
+  return {type: 'discover.detail.doc', data: docs};
+}

@@ -239,6 +239,10 @@
     "defaultMessage": "Avatars",
     "description": "Screen-reader-only fallback name for a horizontal cluster of user avatar images. Plural noun; consumers usually override with \"Team members\", \"Attendees\", etc."
   },
+  "@astryx.avatarGroup.keyboardHint": {
+    "defaultMessage": "Use arrow keys to move between avatars",
+    "description": "Screen-reader-only instruction attached (via aria-describedby) to a group of interactive avatars that share a single Tab stop. Tells keyboard users the Left/Right arrow keys move focus between the avatars. Only announced when the group has interactive (link/button) avatars."
+  },
   "@astryx.banner.dismiss": {
     "defaultMessage": "Dismiss",
     "description": "\"Dismiss\" = close/hide this notification (not \"reject a person\"). Aria label AND tooltip on the small X button on a Banner."
@@ -687,6 +691,10 @@
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that removes the selected file from a FileInput. Example: `Clear Attachment`, `Clear Résumé`."
   },
+  "@astryx.fileInput.required": {
+    "defaultMessage": "Required",
+    "description": "Screen-reader-only description on the FileInput trigger indicating the field must be filled in. Mirrors the visible `Required` indicator next to the field label; conveyed via description because aria-required is not supported on role=\"button\"."
+  },
   "@astryx.fileInput.triggerWithFiles": {
     "defaultMessage": "{label}, {fileNames}",
     "description": "Accessible name for a FileInput trigger that has files attached, composing the field label with the selected filenames. Example: `Attachments, report.pdf, notes.txt`."
@@ -763,6 +771,14 @@
     "defaultMessage": "Expand row",
     "description": "Aria label for the Table tree-data expander chevron when the row is currently collapsed."
   },
+  "@astryx.tableTree.collapseAllRows": {
+    "defaultMessage": "Collapse all rows",
+    "description": "Aria label for the Table tree-data header toggle when all rows are expanded and clicking it collapses them."
+  },
+  "@astryx.tableTree.expandAllRows": {
+    "defaultMessage": "Expand all rows",
+    "description": "Aria label for the Table tree-data header toggle when rows are collapsed and clicking it expands them."
+  },
   "@astryx.textInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the value from a TextInput. Example: `Clear Email`, `Clear Name`."
@@ -774,6 +790,10 @@
   "@astryx.thumbnail.open": {
     "defaultMessage": "Open {accessibleName}",
     "description": "\"Open\" = launch/reveal (not \"unfold\" or the adjective). Screen-reader-only name on a clickable Thumbnail — example: `Open Sunset photo`."
+  },
+  "@astryx.thumbnail.fallbackName": {
+    "defaultMessage": "Thumbnail",
+    "description": "Generic screen-reader name for a Thumbnail (image preview) that has no `alt` or `label`. Last-resort fallback so the control is never nameless; prefer a real name via `alt` or `label`."
   },
   "@astryx.timeInput.clearLabel": {
     "defaultMessage": "Clear {label}",

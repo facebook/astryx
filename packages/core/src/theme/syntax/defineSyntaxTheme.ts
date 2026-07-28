@@ -12,6 +12,7 @@
  */
 
 import {syntaxTokenDefaults, type SyntaxTokenName} from './tokens';
+import {devWarn} from '../../utils/devWarning';
 
 // =============================================================================
 // Types
@@ -139,12 +140,10 @@ export function defineSyntaxTheme(
 ): SyntaxThemeDefinition {
   const missing = ALL_SYNTAX_KEYS.filter(key => !(key in input.tokens));
   if (missing.length > 0) {
-    console.warn(
-      '[Astryx] defineSyntaxTheme("' +
-        input.name +
-        '"): missing tokens: ' +
-        missing.join(', ') +
-        '. All 14 syntax tokens are required.',
+    devWarn(
+      'defineSyntaxTheme',
+      `"${input.name}": missing tokens: ${missing.join(', ')}. ` +
+        `All 14 syntax tokens are required.`,
     );
   }
 

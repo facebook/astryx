@@ -66,7 +66,10 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     transformOrigin: 'center',
     transitionProperty: 'transform, background-color',
-    transitionDuration: '0.06s',
+    transitionDuration: {
+      default: '0.06s',
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
     transitionTimingFunction: 'ease-out',
   },
 });

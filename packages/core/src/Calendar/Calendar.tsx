@@ -452,6 +452,10 @@ export function Calendar({ref, ...props}: CalendarProps) {
       {/* Header with navigation */}
       <div {...stylex.props(calendarStyles.header)}>
         <Button
+          {...themeProps('calendar-nav', {
+            nav: 'prev',
+            disabled: !canNavigatePrevious ? 'disabled' : null,
+          })}
           label={t('@astryx.calendar.previousMonth')}
           variant="ghost"
           icon={
@@ -472,6 +476,10 @@ export function Calendar({ref, ...props}: CalendarProps) {
         </span>
 
         <Button
+          {...themeProps('calendar-nav', {
+            nav: 'next',
+            disabled: !canNavigateNext ? 'disabled' : null,
+          })}
           label={t('@astryx.calendar.nextMonth')}
           variant="ghost"
           icon={
@@ -941,6 +949,21 @@ function DayCell({
   });
 
   const endpoint = isEndpoint(state);
+
+  // The day's focus-ring treatment, derived once so the reflected `marker`
+  // theme state and the StyleX ring styles below share a single source of
+  // truth. `state.isSelected` is single-select only, so a range endpoint that
+  // is today still qualifies for the today-in-range ring (unchanged prior
+  // behavior).
+  const showsTodayRing = state.isToday && !state.isSelected && !state.isInRange;
+  const showsTodayInRangeRing =
+    state.isToday && !state.isSelected && state.isInRange;
+  const markerState: 'today-only' | 'today-in-range' | null = showsTodayRing
+    ? 'today-only'
+    : showsTodayInRangeRing
+      ? 'today-in-range'
+      : null;
+
   const rangeRounding = computeRangeRounding(state, {
     prevInRange: neighbors.prevInRange,
     nextInRange: neighbors.nextInRange,
@@ -1010,28 +1033,27 @@ function DayCell({
             today: state.isToday ? 'today' : null,
             disabled: state.effectivelyDisabled ? 'disabled' : null,
             'in-range': state.isInRange ? 'in-range' : null,
+            // `marker` reflects the day's *actual* focus-ring treatment as a
+            // single compound state, so a theme can target exactly the states
+            // the ring is drawn under without needing `:not()` in the theme
+            // key. It is null unless a ring is shown:
+            //   'today-only'     → today, not single-selected, not in a range
+            //   'today-in-range' → today, not single-selected, inside a range
+            // `isSelected` here is single-select only (see computeDayCellState),
+            // so a today range endpoint still shows the today-in-range ring —
+            // `marker` mirrors the StyleX conditions below exactly, preserving
+            // the default rendering.
+            marker: markerState,
           }),
           stylex.props(
             dayCellStyles.day,
             dayCellTheme.day,
             isOutside && dayCellStyles.dayOutside,
             isOutside && dayCellTheme.dayOutside,
-            state.isToday &&
-              !state.isSelected &&
-              !state.isInRange &&
-              dayCellStyles.dayToday,
-            state.isToday &&
-              !state.isSelected &&
-              !state.isInRange &&
-              dayCellTheme.dayToday,
-            state.isToday &&
-              !state.isSelected &&
-              state.isInRange &&
-              dayCellStyles.dayTodayInRange,
-            state.isToday &&
-              !state.isSelected &&
-              state.isInRange &&
-              dayCellTheme.dayTodayInRange,
+            showsTodayRing && dayCellStyles.dayToday,
+            showsTodayRing && dayCellTheme.dayToday,
+            showsTodayInRangeRing && dayCellStyles.dayTodayInRange,
+            showsTodayInRangeRing && dayCellTheme.dayTodayInRange,
             endpoint && dayCellStyles.daySelected,
             endpoint && dayCellTheme.daySelected,
             state.effectivelyDisabled && dayCellStyles.dayDisabled,

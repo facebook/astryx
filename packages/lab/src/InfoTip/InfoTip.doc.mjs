@@ -1,6 +1,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('../../../core/src/docs-types').ComponentDoc} */
 
 export const docs = {
   name: 'InfoTip',
@@ -39,7 +39,7 @@ export const docs = {
   },
 };
 
-/** @type {import('../docs-types').ComponentDoc} */
+/** @type {import('../../../core/src/docs-types').ComponentDoc} */
 export const docsZh = {
   name: 'InfoTip',
   displayName: 'Info Tip',
@@ -75,7 +75,7 @@ export const docsZh = {
   },
 };
 
-/** @type {import('../docs-types').TranslationDoc} */
+/** @type {import('../../../core/src/docs-types').TranslationDoc} */
 export const docsDense = {
   description:
     'Inline info-icon help affordance: accessible "i" button trigger pre-wired into a Tooltip.',

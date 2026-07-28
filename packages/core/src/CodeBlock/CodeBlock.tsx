@@ -296,7 +296,7 @@ const styles = stylex.create({
   copyButtonAbsolute: {
     position: 'absolute',
     top: spacingVars['--spacing-2'],
-    right: spacingVars['--spacing-2'],
+    insetInlineEnd: spacingVars['--spacing-2'],
   },
 });
 

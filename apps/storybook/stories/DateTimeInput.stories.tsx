@@ -4,6 +4,7 @@ import {useState} from 'react';
 import type {Meta, StoryObj} from '@storybook/react';
 import {DateTimeInput} from '@astryxdesign/core/DateTimeInput';
 import type {ISODateTimeString} from '@astryxdesign/core/DateTimeInput';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 const meta: Meta<typeof DateTimeInput> = {
   title: 'Core/DateTimeInput',
@@ -412,6 +413,48 @@ export const AllVariations: Story = {
           }}
         />
       </div>
+    );
+  },
+};
+
+/**
+ * Theme the two segments precisely via `defineTheme`.
+ *
+ * Before the segment targets existed, the date and time wrappers were
+ * anonymous nodes with hashed atomic classes only, so a theme that restyles
+ * input geometry through the `text-input` / `date-input` / `time-input`
+ * targets could not reach them — DateTimeInput rendered visibly shorter than
+ * every other input under such a theme.
+ *
+ * `components['date-time-input-date-segment']` and its time twin scope
+ * overrides to one segment each, and both reflect `size` and `status` the same
+ * way the root does. Defaults are unchanged; this story only demonstrates the
+ * override channel.
+ */
+const segmentTheme = defineTheme({
+  name: 'date-time-input-segments-demo',
+  components: {
+    'date-time-input-date-segment': {
+      base: {borderColor: 'var(--color-accent)'},
+    },
+    'date-time-input-time-segment': {
+      base: {backgroundColor: 'var(--color-background-muted)'},
+    },
+  },
+});
+
+export const ThemedSegments: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateTimeString | undefined>();
+    return (
+      <Theme theme={segmentTheme} mode="light">
+        <DateTimeInput
+          label="Themed segments"
+          description="Date segment gets an accent border; time segment a muted fill."
+          value={value}
+          onChange={setValue}
+        />
+      </Theme>
     );
   },
 };

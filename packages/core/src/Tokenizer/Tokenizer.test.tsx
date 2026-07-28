@@ -15,6 +15,7 @@ import userEvent from '@testing-library/user-event';
 import {Tokenizer} from './Tokenizer';
 import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
 import type {SearchSource, SearchableItem} from '../Typeahead/types';
+import {TestIcon} from '../__tests__/TestIcon';
 
 function politeRegion(): HTMLElement | null {
   return document.querySelector('[data-astryx-live-region="polite"]');
@@ -827,6 +828,51 @@ describe('Tokenizer', () => {
     });
   });
 
+  describe('startIcon', () => {
+    it('does not render a start icon when omitted', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+        />,
+      );
+      expect(document.querySelector('svg')).not.toBeInTheDocument();
+    });
+
+    it('renders a ReactNode start icon before the tokens', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[{id: '1', label: 'Alice'}]}
+          onChange={() => {}}
+          startIcon={<TestIcon data-testid="start-icon" />}
+        />,
+      );
+      const icon = screen.getByTestId('start-icon');
+      const token = screen.getByText('Alice');
+      expect(icon).toBeInTheDocument();
+      expect(
+        icon.compareDocumentPosition(token) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('renders an IconType (SVG component) start icon', () => {
+      render(
+        <Tokenizer
+          label="Members"
+          searchSource={userSource}
+          value={[]}
+          onChange={() => {}}
+          startIcon={TestIcon}
+        />,
+      );
+      expect(document.querySelector('svg')).toBeInTheDocument();
+    });
+  });
+
   describe('disabledMessage', () => {
     const h = {hidden: true} as const;
     const isOpen = (el: Element) => el.matches(':popover-open');
@@ -1088,5 +1134,28 @@ describe('Tokenizer', () => {
         ...new FormData(container.querySelector('form')!).keys(),
       ]).toEqual([]);
     });
+  });
+});
+
+
+describe('Tokenizer statusVariant forwarding', () => {
+  it('defaults to attached (status renders with data-variant="attached")', () => {
+    const {container} = render(
+      <Tokenizer label="Members" searchSource={userSource} value={[]} onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'attached',
+    );
+  });
+
+  it('forwards statusVariant="detached" to the underlying Field status', () => {
+    const {container} = render(
+      <Tokenizer label="Members" searchSource={userSource} value={[]} onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+    );
+    expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
+      'data-variant',
+      'detached',
+    );
   });
 });

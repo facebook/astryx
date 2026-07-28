@@ -42,6 +42,7 @@ import {TableHeaderCell} from './TableHeaderCell';
 import {TableHeader} from './TableHeader';
 import {TableBody} from './TableBody';
 import {mergeProps} from '../utils';
+import {devError} from '../utils/devWarning';
 import {EmptyState} from '../EmptyState';
 import {Text} from '../Text';
 import {themeProps} from '../utils/themeProps';
@@ -92,10 +93,7 @@ function applyPlugins<TPlugin, TProps, TArgs extends unknown[]>(
     try {
       return transform(acc, ...args);
     } catch (error) {
-      console.error(
-        `[Table] Plugin at index ${index} threw in transform:`,
-        error,
-      );
+      devError('Table', `Plugin at index ${index} threw in transform:`, error);
       return acc;
     }
   }, initial);
@@ -593,7 +591,7 @@ function BaseTableInner<T extends Record<string, unknown>>({
       try {
         tableElement = plugin.transformTableContext(tableElement);
       } catch (error) {
-        console.error('[Table] Plugin threw in transformTableContext:', error);
+        devError('Table', 'Plugin threw in transformTableContext:', error);
       }
     }
   }

@@ -161,12 +161,12 @@ const dividerRowStyles = stylex.create({
 
 const dividerColumnStyles = stylex.create({
   cell: {
-    borderRightWidth: {
+    borderInlineEndWidth: {
       default: borderVars['--border-width'],
       ':last-child': '0',
     },
-    borderRightStyle: 'solid',
-    borderRightColor: colorVars['--color-border'],
+    borderInlineEndStyle: 'solid',
+    borderInlineEndColor: colorVars['--color-border'],
   },
 });
 

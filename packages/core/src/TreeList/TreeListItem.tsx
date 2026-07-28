@@ -28,7 +28,7 @@ import {getIcon} from '../Icon/globalIconRegistry';
 import {mergeProps} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
-import type {TreeListDensity} from './TreeListTypes';
+import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
@@ -268,6 +268,12 @@ export interface TreeListItemInternalProps {
   isExpanded: boolean;
   onToggle?: (id: string) => void;
   density: TreeListDensity;
+  /**
+   * Guide-line visual treatment. `noGuides` suppresses the connector lines;
+   * indentation is unaffected (it lives on the row's `marginLeft`, not the
+   * guide element).
+   */
+  variant: TreeListVariant;
   /** Pre-rendered children subtree (rendered by the parent recursion) */
   renderedChildren?: ReactNode;
   /** 1-based position of this item among its siblings (aria-posinset). */
@@ -304,6 +310,7 @@ export function TreeListItem({
   isExpanded,
   onToggle,
   density,
+  variant,
   renderedChildren,
   posInSet,
   setSize,
@@ -352,7 +359,20 @@ export function TreeListItem({
 
   const labelAndDescription = (
     <>
-      <span id={labelId} {...stylex.props(styles.label)}>
+      <span
+        id={labelId}
+        {...mergeProps(
+          // Stable theme target for the item's label text. The label carries no
+          // themeable handle today, so a theme can only reach it through a
+          // fragile structural selector (a content button's first span). This
+          // adds an `astryx-tree-list-item-label` class and reflects the row's
+          // `selected` state so a theme can, e.g., bold just the selected
+          // item's label via `defineTheme`.
+          themeProps('tree-list-item-label', {
+            selected: isSelected ? 'selected' : null,
+          }),
+          stylex.props(styles.label),
+        )}>
         {label}
       </span>
       {description != null && (
@@ -394,12 +414,30 @@ export function TreeListItem({
         // a separate tab stop. Row-level Enter/Space forwards to this button.
         tabIndex={-1}
         onClick={handleToggle}
-        {...stylex.props(styles.chevronButton)}>
+        {...mergeProps(
+          // Stable theme target for the expand/collapse control. `data-tree-toggle`
+          // stays as the functional activation hook; this adds a themeable
+          // `astryx-tree-list-chevron` class and reflects the open/closed state so
+          // a theme can restyle the toggle (and each state) without a fragile
+          // `[data-tree-toggle]` selector.
+          themeProps('tree-list-chevron', {
+            state: isExpanded ? 'expanded' : 'collapsed',
+          }),
+          stylex.props(styles.chevronButton),
+        )}>
         {chevronIcon}
       </button>
     ) : (
       // Non-interactive chevron only when toggling is not wired up at all
-      <span {...stylex.props(styles.chevronContainer)}>{chevronIcon}</span>
+      <span
+        {...mergeProps(
+          themeProps('tree-list-chevron', {
+            state: isExpanded ? 'expanded' : 'collapsed',
+          }),
+          stylex.props(styles.chevronContainer),
+        )}>
+        {chevronIcon}
+      </span>
     )
   ) : null;
 
@@ -461,13 +499,15 @@ export function TreeListItem({
       data-tree-level={nestedLevel + 1}
       data-tree-disabled={isDisabled || undefined}
       {...stylex.props(styles.wrapper)}>
-      <div {...stylex.props(styles.treeBranches)}>
-        <TreeListBranches
-          ancestorsIsLast={ancestorsIsLast}
-          isLast={isLast}
-          nestedLevel={nestedLevel}
-        />
-      </div>
+      {variant !== 'noGuides' && (
+        <div {...stylex.props(styles.treeBranches)}>
+          <TreeListBranches
+            ancestorsIsLast={ancestorsIsLast}
+            isLast={isLast}
+            nestedLevel={nestedLevel}
+          />
+        </div>
+      )}
       <div {...stylex.props(styles.rowWrapper)}>
         <div
           {...mergeProps(
@@ -487,7 +527,7 @@ export function TreeListItem({
               isSelected && styles.selected,
             ),
           )}
-          style={{marginLeft: computedMarginLeft}}
+          style={{marginInlineStart: computedMarginLeft}}
           onClick={handleClick}>
           {innerContent}
         </div>

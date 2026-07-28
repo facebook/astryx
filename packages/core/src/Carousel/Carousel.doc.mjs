@@ -91,6 +91,7 @@ export const docsDense = {
       {guidance: true, description: 'Enable scroll-snap when each item should land precisely at the start edge: gallery, product list.'},
       {guidance: true, description: 'Always provide an aria-label describing what the carousel contains: "Featured products", "Team members".'},
       {guidance: true, description: 'Use consistent gap + item width so the carousel looks intentional, not like content overflowing by accident.'},
+      {guidance: true, description: 'Trust built-in navigation: trackpad users swipe horizontally, mouse users hold Shift + wheel to move through items.'},
       {guidance: false, description: 'Use a carousel for content every user must see. Not everyone scrolls horizontally, so put critical content above the fold.'},
       {guidance: false, description: 'Auto-advance items. Let the user scroll at their own pace.'},
       {guidance: false, description: 'Nest carousels. A carousel inside a carousel is confusing and breaks keyboard navigation.'},

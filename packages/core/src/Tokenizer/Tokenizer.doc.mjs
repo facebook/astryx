@@ -89,6 +89,13 @@ export const docs = {
         'Validation status object with type and message for error/warning/success states.',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+      default: "'attached'",
+    },
+    {
       name: 'isLabelHidden',
       type: 'boolean',
       description: 'Visually hides the label while keeping it accessible.',
@@ -164,6 +171,13 @@ export const docs = {
       name: 'onChangeQuery',
       type: '(query: string) => void',
       description: 'Callback fired when the search query text changes.',
+    },
+    {
+      name: 'startIcon',
+      type: 'ReactNode | IconType',
+      description:
+        'Icon to display at the start of the input, before any tokens. Accepts a semantic icon name, an SVG icon component, or a ReactNode directly.',
+      slotElements: [{__element: 'Icon', props: {icon: 'search', size: 'sm'}}],
     },
     {
       name: 'endContent',
@@ -301,6 +315,13 @@ export const docsZh = {
         '\u9a8c\u8bc1\u72b6\u6001\u5bf9\u8c61\uff0c\u5305\u542b\u7c7b\u578b\u548c\u6d88\u606f\uff0c\u7528\u4e8e\u9519\u8bef/\u8b66\u544a/\u6210\u529f\u72b6\u6001\u3002',
     },
     {
+      name: 'statusVariant',
+      type: "'attached' | 'detached'",
+      description:
+        '状态消息相对于输入框的放置方式。attached 直接叠加在输入框下方（带边框处理）；detached 作为独立元素浮于下方并留有间距。',
+      default: "'attached'",
+    },
+    {
       name: 'isLabelHidden',
       type: 'boolean',
       description: '\u89c6\u89c9\u9690\u85cf\u6807\u7b7e\uff0c\u540c\u65f6\u4fdd\u6301\u5176\u53ef\u8bbf\u95ee\u6027\u3002',
@@ -369,6 +390,12 @@ export const docsZh = {
       name: 'onChangeQuery',
       type: '(query: string) => void',
       description: '\u641c\u7d22\u67e5\u8be2\u6587\u672c\u53d8\u66f4\u65f6\u89e6\u53d1\u7684\u56de\u8c03\u3002',
+    },
+    {
+      name: 'startIcon',
+      type: 'ReactNode | IconType',
+      description:
+        '\u5728\u8f93\u5165\u6846\u5f00\u5934\uff08token \u4e4b\u524d\uff09\u663e\u793a\u7684\u56fe\u6807\u3002\u63a5\u53d7\u8bed\u4e49\u56fe\u6807\u540d\u79f0\u3001SVG \u56fe\u6807\u7ec4\u4ef6\u6216\u76f4\u63a5\u4f20\u5165 ReactNode\u3002',
     },
     {
       name: 'endContent',
@@ -448,6 +475,7 @@ export const docsDense = {
     isDisabled: 'Disables input+all token interactions.',
     htmlName: 'HTML name attr; one hidden input per selected item id.',
     status: 'Validation status w/ type+message for error/warning/success.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
     isLabelHidden: 'Visually hides label; keeps a11y.',
     description: 'Helper text below label.',
     isRequired: 'Marks field required.',
@@ -460,6 +488,7 @@ export const docsDense = {
     size: 'Input+token size.',
     debounceMs: 'Search debounce delay ms. 0 for sync sources.',
     onChangeQuery: 'Fired on search query text change.',
+    startIcon: 'Icon at input start, before tokens. Icon name, SVG component, or ReactNode.',
     endContent: 'Content at input row end. For buttons, counts, controls.',
     handleRef: 'Imperative handle for focus() and blur() control.',
     xstyle: 'StyleX layout styles (margins, positioning). Must be stylex.create() value.',
