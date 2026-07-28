@@ -112,7 +112,7 @@ export const docs = {
         },
         {
           type: 'prose',
-          text: 'If your product does not use any of these, it has no anchor-positioning requirement at all; it needs only `light-dark()` (Tier 2 and up) for correct theme colors. Layout, typography, forms, buttons, cards, tables, and navigation all work down to Tier 2 with no special handling.',
+          text: 'If your product does not use any of these, it has no anchor-positioning requirement at all; it needs only `light-dark()` (Tier 2 and up) for correct theme colors. Page layout, typography, forms, buttons, cards, tables, and navigation all work down to Tier 2 with no special handling.',
         },
       ],
     },

@@ -56,7 +56,7 @@ export const docs = {
               '`@astryxdesign/core/tailwind-theme.css`',
             ],
             [
-              'Token resolver APIs',
+              'Design token resolver APIs',
               'JavaScript needs token values for charts, canvas, SVG, or config objects',
               "`resolveThemeToken(theme, '--color-data-categorical-blue', {mode})`",
             ],

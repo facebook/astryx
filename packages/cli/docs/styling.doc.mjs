@@ -22,10 +22,10 @@ export const docs = {
           type: 'table',
           headers: ['Approach', 'Use for', 'Example'],
           rows: [
-            ['StyleX', 'Component-specific overrides, reusable styles, pseudo-classes, and typed tokens', 'const styles = stylex.create(...); <Button xstyle={styles.save} />'],
-            ['Tailwind utilities', 'Layout, wrappers, and utility styling', 'className="flex gap-3 p-4"'],
-            ['className', 'Integrating with external CSS or Tailwind on components', 'className="my-card shadow-lg"'],
-            ['Styling-library token aliases', 'Keeping Panda, Chakra, MUI, Emotion, styled-components, UnoCSS, CSS Modules, or Sass in sync with the system', "colors.surface = 'var(--color-background-surface)'"],
+            ['StyleX', 'Component-specific overrides, reusable styles, pseudo-classes, and typed tokens', '`const styles = stylex.create(...); <Button xstyle={styles.save} />`'],
+            ['Tailwind utilities', 'Page layout, wrappers, and utility styling', '`className="flex gap-3 p-4"`'],
+            ['className', 'Integrating with external CSS or Tailwind on components', '`className="my-card shadow-lg"`'],
+            ['Styling-library token aliases', 'Keeping Panda, Chakra, MUI, Emotion, styled-components, UnoCSS, CSS Modules, or Sass in sync with the system', "`colors.surface = 'var(--color-background-surface)'`"],
           ],
         },
         {
