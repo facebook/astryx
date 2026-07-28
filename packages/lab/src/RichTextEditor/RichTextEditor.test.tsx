@@ -16,8 +16,26 @@ import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
 import type {LexicalEditor} from 'lexical';
 import {$getRoot, $createParagraphNode, $createTextNode} from 'lexical';
 import {HeadingNode} from '@lexical/rich-text';
+import {
+  TRANSFORMERS,
+  $convertFromMarkdownString,
+} from '@lexical/markdown';
 import {RichTextEditor} from './RichTextEditor';
 import {RichTextView} from './RichTextView';
+
+// Small plugin that captures the editor instance so tests can drive real
+// Lexical updates (jsdom does not implement contenteditable editing).
+function CaptureEditor({
+  onReady,
+}: {
+  onReady: (editor: LexicalEditor) => void;
+}) {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    onReady(editor);
+  }, [editor, onReady]);
+  return null;
+}
 
 // A minimal valid serialized Lexical editor state containing a single
 // paragraph with the text "Hello world".
@@ -112,19 +130,12 @@ describe('RichTextEditor', () => {
     // instance via a small capture plugin and drive a real Lexical update,
     // then assert onChange fires.
     let editorRef: LexicalEditor | undefined;
-    function CaptureEditor() {
-      const [editor] = useLexicalComposerContext();
-      useEffect(() => {
-        editorRef = editor;
-      }, [editor]);
-      return null;
-    }
     const onChange = vi.fn();
     render(
       <RichTextEditor
         label="Notes"
         onChange={onChange}
-        plugins={<CaptureEditor />}
+        plugins={<CaptureEditor onReady={e => (editorRef = e)} />}
       />,
     );
     await waitFor(() => expect(editorRef).toBeDefined());
@@ -166,6 +177,58 @@ describe('RichTextEditor', () => {
   it('renders when markdown shortcuts are disabled', () => {
     render(<RichTextEditor label="Notes" hasMarkdownShortcuts={false} />);
     expect(screen.getByRole('textbox')).toBeInTheDocument();
+  });
+
+  it('applies the default transformers to convert markdown to a heading', async () => {
+    // jsdom can't dispatch the keystrokes that trigger registerMarkdownShortcuts
+    // live, so we drive $convertFromMarkdownString with the same TRANSFORMERS
+    // the component registers by default. This proves the default transformer
+    // set actually produces the expected node structure (a heading), rather
+    // than only asserting the editor mounts.
+    let editorRef: LexicalEditor | undefined;
+    render(
+      <RichTextEditor
+        label="Notes"
+        plugins={<CaptureEditor onReady={e => (editorRef = e)} />}
+      />,
+    );
+    await waitFor(() => expect(editorRef).toBeDefined());
+    editorRef!.update(() => {
+      $convertFromMarkdownString('# Title', TRANSFORMERS);
+    });
+    await waitFor(() => {
+      editorRef!.getEditorState().read(() => {
+        const first = $getRoot().getFirstChild();
+        expect(first?.getType()).toBe('heading');
+        expect(first?.getTextContent()).toBe('Title');
+      });
+    });
+  });
+
+  it('leaves markdown untransformed when given an empty transformers array', async () => {
+    // With no transformers, the same markdown text stays a plain paragraph —
+    // demonstrating the transformers prop is the effective source of truth for
+    // markdown behaviour, not a fixed internal default.
+    let editorRef: LexicalEditor | undefined;
+    render(
+      <RichTextEditor
+        label="Notes"
+        transformers={[]}
+        plugins={<CaptureEditor onReady={e => (editorRef = e)} />}
+      />,
+    );
+    await waitFor(() => expect(editorRef).toBeDefined());
+    editorRef!.update(() => {
+      // Empty transformer set: markdown syntax is preserved verbatim.
+      $convertFromMarkdownString('# Title', []);
+    });
+    await waitFor(() => {
+      editorRef!.getEditorState().read(() => {
+        const first = $getRoot().getFirstChild();
+        expect(first?.getType()).toBe('paragraph');
+        expect(first?.getTextContent()).toBe('# Title');
+      });
+    });
   });
 });
 

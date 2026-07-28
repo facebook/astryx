@@ -24,7 +24,7 @@
  * dependencies — install them to use this component.
  */
 
-import {useEffect, useId, useRef, type ReactNode} from 'react';
+import {useEffect, useId, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -60,6 +60,7 @@ import {TabIndentationPlugin} from '@lexical/react/LexicalTabIndentationPlugin';
 import {MarkdownShortcutPlugin} from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
 import {TRANSFORMERS, type Transformer} from '@lexical/markdown';
+export type {Transformer} from '@lexical/markdown';
 import {ListNode, ListItemNode} from '@lexical/list';
 import {HeadingNode, QuoteNode} from '@lexical/rich-text';
 import {LinkNode, AutoLinkNode} from '@lexical/link';
@@ -316,6 +317,12 @@ export function RichTextEditor({
 
   const editable = !isReadOnly && !isDisabled;
 
+  // Stabilize the transformers array so MarkdownShortcutPlugin doesn't
+  // re-register on every render. `[...transformers]` would allocate a new
+  // array each time; memoize on the prop identity instead. (React Compiler
+  // isn't running the transform in this repo, so this isn't auto-memoized.)
+  const markdownTransformers = useMemo(() => [...transformers], [transformers]);
+
   const initialConfig: InitialConfigType = {
     namespace,
     theme: themeRef.current,
@@ -399,7 +406,7 @@ export function RichTextEditor({
             <LinkPlugin />
             <TabIndentationPlugin />
             {hasMarkdownShortcuts && (
-              <MarkdownShortcutPlugin transformers={[...transformers]} />
+              <MarkdownShortcutPlugin transformers={markdownTransformers} />
             )}
             {hasAutoFocus && <AutoFocusOnMount />}
             {onChange && (

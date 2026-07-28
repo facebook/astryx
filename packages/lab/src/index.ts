@@ -238,6 +238,7 @@ export {
   type RichTextEditorStatus,
   type RichTextEditorStatusType,
   type RichTextEditorSize,
+  type Transformer,
   RichTextView,
   type RichTextViewProps,
   sharedEditorTheme,

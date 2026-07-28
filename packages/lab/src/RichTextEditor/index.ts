@@ -18,6 +18,7 @@ export type {
   RichTextEditorStatus,
   RichTextEditorStatusType,
   RichTextEditorSize,
+  Transformer,
 } from './RichTextEditor';
 
 export {RichTextView} from './RichTextView';
