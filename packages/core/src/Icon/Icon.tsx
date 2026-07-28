@@ -304,6 +304,10 @@ export function Icon({
 
   // Component mode: render SVG component directly with ref forwarding
   const IconComponent = icon;
+  // Pull className out so it COMPOSES with the internal classes instead of
+  // clobbering them (the consumer spread lands last). All other props keep
+  // their prior last-spread precedence as escape hatches.
+  const {className: consumerClassName, ...restProps} = props;
   return (
     <IconComponent
       ref={ref}
@@ -314,8 +318,9 @@ export function Icon({
       {...mergeProps(
         themeProps('icon', {size, color}),
         stylex.props(styles.root, colorStyles[color], sizeStyles[size]),
+        consumerClassName ?? undefined,
       )}
-      {...props}
+      {...restProps}
     />
   );
 }
@@ -352,6 +357,13 @@ function IconFromRegistry({
     return null;
   }
 
+  // Separate a consumer className from the rest of the props so it composes
+  // with the internal astryx-icon + StyleX classes via mergeProps, instead of
+  // being shadowed by the later spread. Other span props keep their prior
+  // precedence (spread before the internal merge).
+  const {className: consumerClassName, ...restSpanProps} =
+    (spanProps as React.HTMLAttributes<HTMLSpanElement>) ?? {};
+
   return (
     <span
       // Derived a11y — decorative (aria-hidden) by default, or a meaningful
@@ -359,10 +371,11 @@ function IconFromRegistry({
       // prop spread so consumers can still override it with explicit
       // aria-hidden/role/aria-label. This mirrors component-mode Icon.
       {...a11yProps}
-      {...(spanProps as React.HTMLAttributes<HTMLSpanElement>)}
+      {...restSpanProps}
       {...mergeProps(
         themeProps('icon', {size, color}),
         stylex.props(styles.span, colorStyles[color], spanSizeStyles[size]),
+        consumerClassName ?? undefined,
       )}>
       {resolvedIcon}
     </span>

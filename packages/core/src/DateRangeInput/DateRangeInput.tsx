@@ -581,7 +581,14 @@ export function DateRangeInput({
             styles.iconButton,
             isEffectivelyDisabled && styles.iconButtonDisabled,
           )}>
-          <Icon icon="calendar" size="sm" color="secondary" />
+          <Icon
+            icon="calendar"
+            size="sm"
+            color="secondary"
+            {...themeProps('date-range-input-toggle-icon', {
+              state: popover.isOpen ? 'expanded' : 'collapsed',
+            })}
+          />
         </button>
         <button
           ref={ref}
@@ -614,7 +621,12 @@ export function DateRangeInput({
             onClick={handleClear}
             aria-label={t('@astryx.dateInput.clear', {label})}
             {...stylex.props(styles.iconButton)}>
-            <Icon icon="close" size="sm" color="secondary" />
+            <Icon
+              icon="close"
+              size="sm"
+              color="secondary"
+              className={themeProps('date-range-input-clear-icon').className}
+            />
           </button>
         )}
         {isBusy && <Spinner size="sm" />}

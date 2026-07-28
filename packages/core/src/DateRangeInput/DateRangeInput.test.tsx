@@ -19,6 +19,9 @@ import userEvent from '@testing-library/user-event';
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateRangeInput} from './DateRangeInput';
 import type {DateRange} from './DateRangeInput';
+import {Icon} from '../Icon';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSSFlat} from '../theme/generateThemeRules';
 
 describe('DateRangeInput', () => {
   it('renders with label', () => {
@@ -472,11 +475,15 @@ describe('DateRangeInput', () => {
   });
 });
 
-
 describe('DateRangeInput statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <DateRangeInput label="Range" value={null} onChange={() => {}} status={{type: 'error', message: 'Required'}} />,
+      <DateRangeInput
+        label="Range"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -486,11 +493,121 @@ describe('DateRangeInput statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <DateRangeInput label="Range" value={null} onChange={() => {}} status={{type: 'error', message: 'Required'}} statusVariant="detached" />,
+      <DateRangeInput
+        label="Range"
+        value={null}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
       'detached',
     );
+  });
+});
+
+describe('DateRangeInput icon theme targets', () => {
+  const RANGE: DateRange = {start: '2026-03-15', end: '2026-03-22'};
+
+  // Resolve a glyph span (the astryx-icon element) inside a given button,
+  // independent of the theme target class.
+  const iconIn = (button: HTMLElement): HTMLElement => {
+    const icon = button.querySelector('.astryx-icon');
+    if (icon == null) {
+      throw new Error('icon not found');
+    }
+    return icon as HTMLElement;
+  };
+
+  it('renders astryx-date-range-input-clear-icon on the clear glyph', () => {
+    render(
+      <DateRangeInput
+        label="Range"
+        value={RANGE}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    // The stable target lands on the icon element itself (not the button), so a
+    // theme can restyle just this glyph (color, size, hover) via defineTheme —
+    // a button-level target could not reach the icon's own color/size.
+    const icon = iconIn(getButton('Clear Range'));
+    expect(icon).toHaveClass('astryx-date-range-input-clear-icon');
+    expect(icon).toHaveClass('astryx-icon');
+  });
+
+  it('renders astryx-date-range-input-toggle-icon on the calendar-toggle glyph, reflecting state', () => {
+    render(<DateRangeInput label="Range" value={null} onChange={() => {}} />);
+    const icon = iconIn(getButton('Open calendar'));
+    expect(icon).toHaveClass('astryx-date-range-input-toggle-icon');
+    expect(icon).toHaveClass('astryx-icon');
+    // Closed by default → data-state="collapsed".
+    expect(icon).toHaveAttribute('data-state', 'collapsed');
+  });
+
+  it('renders the default icons (secondary color, sm size) byte-identically', () => {
+    // Pixel-identical default guard: the glyphs must carry the exact same
+    // StyleX color/size classes as a standalone secondary/sm icon. The added
+    // target class is purely additive — it changes nothing until a theme
+    // targets it.
+    render(
+      <DateRangeInput
+        label="Range"
+        value={RANGE}
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    const clearIcon = iconIn(getButton('Clear Range'));
+
+    const {container: refContainer} = render(
+      <Icon icon="close" size="sm" color="secondary" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(
+          c =>
+            c !== 'astryx-date-range-input-clear-icon' &&
+            c !== 'astryx-date-range-input-toggle-icon',
+        )
+        .sort();
+
+    expect(styleClasses(clearIcon)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes the icon targets so a theme reaches icon color, size, and hover', () => {
+    // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
+    // above (targets land on the icon elements) plus this generation assertion
+    // (the theme emits same-element icon rules in @layer astryx-theme) together
+    // prove the seam: a same-element theme rule wins over the icon's own
+    // base-layer color/size.
+    const theme = defineTheme({
+      name: 'date-range-input-icon-test',
+      components: {
+        'date-range-input-clear-icon': {
+          base: {
+            width: '12px',
+            height: '12px',
+            fontSize: '12px',
+            color: 'var(--color-icon-secondary)',
+            ':hover': {color: 'var(--color-icon-primary)'},
+          },
+        },
+        'date-range-input-toggle-icon': {
+          base: {width: '14px', height: '14px', fontSize: '14px'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('.astryx-date-range-input-clear-icon');
+    expect(css).toContain('.astryx-date-range-input-toggle-icon');
+    expect(css).toContain(':hover');
+    expect(css).toContain('12px');
+    expect(css).toContain('14px');
   });
 });
