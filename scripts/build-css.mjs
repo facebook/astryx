@@ -8,6 +8,7 @@
  * Usage:
  *   node scripts/build-css.mjs                 # core  → packages/core/dist/astryx.css
  *   node scripts/build-css.mjs --package lab   # lab   → packages/lab/dist/lab.css
+ *   node scripts/build-css.mjs --package assistant-ui
  *
  * This script:
  * 1. Runs Babel with the StyleX plugin over the target package's source files
@@ -47,6 +48,16 @@ const TARGETS = {
     banner: 'Astryx Lab Pre-compiled StyleX CSS — experimental components',
     // lab imports @astryxdesign/core/theme/tokens.stylex; point the resolver at
     // core's source so the cross-package token reference resolves.
+    aliases: {
+      '@astryxdesign/core/*': [path.join(ROOT, 'packages/core/src/*')],
+      '@astryxdesign/core': [path.join(ROOT, 'packages/core/src')],
+    },
+  },
+  'assistant-ui': {
+    src: path.resolve(ROOT, 'packages/assistant-ui/src'),
+    dist: path.resolve(ROOT, 'packages/assistant-ui/dist'),
+    outFile: 'assistant-ui.css',
+    banner: 'Astryx assistant-ui adapters — pre-compiled StyleX CSS',
     aliases: {
       '@astryxdesign/core/*': [path.join(ROOT, 'packages/core/src/*')],
       '@astryxdesign/core': [path.join(ROOT, 'packages/core/src')],

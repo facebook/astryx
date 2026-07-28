@@ -1,0 +1,151 @@
+{
+  "name": "@astryxdesign/assistant-ui",
+  "version": "0.1.9",
+  "private": true,
+  "description": "Experimental Astryx-native adapters for the assistant-ui runtime. Published only under the @canary dist-tag.",
+  "author": "Meta Open Source",
+  "license": "MIT",
+  "homepage": "https://github.com/facebook/astryx#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/facebook/astryx.git",
+    "directory": "packages/assistant-ui"
+  },
+  "bugs": {
+    "url": "https://github.com/facebook/astryx/issues"
+  },
+  "keywords": [
+    "astryx",
+    "assistant-ui",
+    "ai",
+    "chat",
+    "design-system"
+  ],
+  "astryx": {
+    "canaryOnly": true,
+    "_comment": "Published ONLY to the @canary dist-tag. private: true prevents an accidental stable release."
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./assistant-ui.css": {
+      "default": "./dist/assistant-ui.css"
+    },
+    "./registry": {
+      "source": "./src/registry.ts",
+      "types": "./dist/registry.d.ts",
+      "default": "./dist/registry.js"
+    },
+    "./thread": {
+      "source": "./src/thread.tsx",
+      "types": "./dist/thread.d.ts",
+      "default": "./dist/thread.js"
+    },
+    "./attachment": {
+      "source": "./src/attachment.tsx",
+      "types": "./dist/attachment.d.ts",
+      "default": "./dist/attachment.js"
+    },
+    "./follow-up-suggestions": {
+      "source": "./src/follow-up-suggestions.tsx",
+      "types": "./dist/follow-up-suggestions.d.ts",
+      "default": "./dist/follow-up-suggestions.js"
+    },
+    "./tooltip-icon-button": {
+      "source": "./src/tooltip-icon-button.tsx",
+      "types": "./dist/tooltip-icon-button.d.ts",
+      "default": "./dist/tooltip-icon-button.js"
+    },
+    "./content": {
+      "source": "./src/content.tsx",
+      "types": "./dist/content.d.ts",
+      "default": "./dist/content.js"
+    },
+    "./navigation": {
+      "source": "./src/navigation.tsx",
+      "types": "./dist/navigation.d.ts",
+      "default": "./dist/navigation.js"
+    },
+    "./tools": {
+      "source": "./src/tools.tsx",
+      "types": "./dist/tools.d.ts",
+      "default": "./dist/tools.js"
+    },
+    "./primitives": {
+      "source": "./src/primitives.tsx",
+      "types": "./dist/primitives.d.ts",
+      "default": "./dist/primitives.js"
+    },
+    "./voice": {
+      "source": "./src/voice.tsx",
+      "types": "./dist/voice.d.ts",
+      "default": "./dist/voice.js"
+    },
+    "./syntax-highlighter": {
+      "source": "./src/syntax-highlighter.tsx",
+      "types": "./dist/syntax-highlighter.d.ts",
+      "default": "./dist/syntax-highlighter.js"
+    },
+    "./mermaid-diagram": {
+      "source": "./src/mermaid-diagram.tsx",
+      "types": "./dist/mermaid-diagram.d.ts",
+      "default": "./dist/mermaid-diagram.js"
+    },
+    "./diff-viewer": {
+      "source": "./src/diff-viewer.tsx",
+      "types": "./dist/diff-viewer.d.ts",
+      "default": "./dist/diff-viewer.js"
+    },
+    "./mcp-config": {
+      "source": "./src/mcp-config.tsx",
+      "types": "./dist/mcp-config.d.ts",
+      "default": "./dist/mcp-config.js"
+    },
+    "./generative-ui": {
+      "source": "./src/generative-ui.tsx",
+      "types": "./dist/generative-ui.d.ts",
+      "default": "./dist/generative-ui.js"
+    }
+  },
+  "scripts": {
+    "prepack": "pnpm build",
+    "build": "rm -rf dist && pnpm build:esm && tsc --project tsconfig.build.json && pnpm build:css && node ../../scripts/check-no-dev-jsx.mjs",
+    "build:esm": "babel src --out-dir dist --extensions .ts,.tsx --out-file-extension .js --ignore \"**/*.test.ts,**/*.test.tsx,**/__tests__/**,**/*.perf.test.*,**/*.doc.mjs,**/*.d.ts,**/*.css,**/*.css.d.ts\" --config-file ./babel.config.cjs",
+    "build:css": "node ../../scripts/build-css.mjs --package assistant-ui",
+    "test": "vitest run --root ../..",
+    "test:watch": "vitest --root ../..",
+    "lint": "eslint src",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@assistant-ui/react": ">=0.14.0 <0.15.0",
+    "@assistant-ui/react-generative-ui": ">=0.0.8 <0.1.0",
+    "@astryxdesign/core": "0.1.9",
+    "@stylexjs/stylex": ">=0.10.0",
+    "react": ">=19.0.0",
+    "react-dom": ">=19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@assistant-ui/react-generative-ui": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@assistant-ui/react": "0.14.27",
+    "@assistant-ui/react-generative-ui": "0.0.8"
+  }
+}
