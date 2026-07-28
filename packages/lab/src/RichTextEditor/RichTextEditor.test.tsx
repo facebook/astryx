@@ -358,7 +358,9 @@ describe('RichTextEditor', () => {
 
   it('ref.getEditorState() returns the current EditorState', () => {
     const ref = createRef<RichTextEditorRef>();
-    render(<RichTextEditor ref={ref} label="Notes" defaultValue={HELLO_STATE} />);
+    render(
+      <RichTextEditor ref={ref} label="Notes" defaultValue={HELLO_STATE} />,
+    );
     const state = ref.current?.getEditorState();
     expect(state).toBeDefined();
     const text = state?.read(() => $getRoot().getTextContent());
@@ -373,15 +375,85 @@ describe('RichTextEditor', () => {
     expect(typeof editor?.update).toBe('function');
   });
 
-  it('ref.clear() empties the editor content', async () => {
+  it('ref.clear() resets the editor to a single empty paragraph', async () => {
     const ref = createRef<RichTextEditorRef>();
-    render(<RichTextEditor ref={ref} label="Notes" defaultValue={HELLO_STATE} />);
+    render(
+      <RichTextEditor ref={ref} label="Notes" defaultValue={HELLO_STATE} />,
+    );
     ref.current?.clear();
     await waitFor(() => {
       const state: EditorState | undefined = ref.current?.getEditorState();
       const text = state?.read(() => $getRoot().getTextContent());
       expect(text).toBe('');
     });
+    // The root should hold exactly one (empty) paragraph, not zero children —
+    // a bare root breaks selection/typing.
+    const state = ref.current?.getEditorState();
+    const childCount = state?.read(() => $getRoot().getChildrenSize());
+    expect(childCount).toBe(1);
+  });
+
+  it('ref.clear() fires onChange', async () => {
+    const ref = createRef<RichTextEditorRef>();
+    const onChange = vi.fn();
+    render(
+      <RichTextEditor
+        ref={ref}
+        label="Notes"
+        defaultValue={HELLO_STATE}
+        onChange={onChange}
+      />,
+    );
+    // Wait for the editor to mount and the initial state to settle so any
+    // seed-time onChange has already fired before we assert on clear().
+    await waitFor(() => expect(ref.current).not.toBeNull());
+    onChange.mockClear();
+    ref.current?.clear();
+    await waitFor(() => expect(onChange).toHaveBeenCalled());
+  });
+
+  it('ref.clear() and ref.focus() are no-ops when isReadOnly', async () => {
+    const ref = createRef<RichTextEditorRef>();
+    const onChange = vi.fn();
+    render(
+      <RichTextEditor
+        ref={ref}
+        label="Notes"
+        defaultValue={HELLO_STATE}
+        onChange={onChange}
+        isReadOnly
+      />,
+    );
+    onChange.mockClear();
+    ref.current?.focus();
+    ref.current?.clear();
+    // Give any (unexpected) async update a chance to flush before asserting.
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(onChange).not.toHaveBeenCalled();
+    const state = ref.current?.getEditorState();
+    const text = state?.read(() => $getRoot().getTextContent());
+    expect(text).toBe('Hello world');
+  });
+
+  it('ref.clear() is a no-op when isDisabled', async () => {
+    const ref = createRef<RichTextEditorRef>();
+    const onChange = vi.fn();
+    render(
+      <RichTextEditor
+        ref={ref}
+        label="Notes"
+        defaultValue={HELLO_STATE}
+        onChange={onChange}
+        isDisabled
+      />,
+    );
+    onChange.mockClear();
+    ref.current?.clear();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(onChange).not.toHaveBeenCalled();
+    const state = ref.current?.getEditorState();
+    const text = state?.read(() => $getRoot().getTextContent());
+    expect(text).toBe('Hello world');
   });
 });
 

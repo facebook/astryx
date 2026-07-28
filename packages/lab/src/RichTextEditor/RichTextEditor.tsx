@@ -74,7 +74,7 @@ import {ListNode, ListItemNode} from '@lexical/list';
 import {HeadingNode, QuoteNode} from '@lexical/rich-text';
 import {LinkNode, AutoLinkNode} from '@lexical/link';
 import {CodeNode, CodeHighlightNode} from '@lexical/code';
-import {$getRoot} from 'lexical';
+import {$getRoot, $createParagraphNode} from 'lexical';
 import type {
   EditorState,
   Klass,
@@ -162,9 +162,15 @@ export interface RichTextEditorStatus {
  * editor without wiring a custom plugin. Available after mount.
  */
 export interface RichTextEditorRef {
-  /** Move focus into the editor's editable surface. */
+  /**
+   * Move focus into the editor's editable surface. No-op when the editor is
+   * read-only or disabled.
+   */
   focus: () => void;
-  /** Remove all content, resetting the editor to a single empty paragraph. */
+  /**
+   * Remove all content, resetting the editor to a single empty paragraph.
+   * No-op when the editor is read-only or disabled.
+   */
   clear: () => void;
   /** Read the current `EditorState`. Serialize with `.toJSON()` to persist. */
   getEditorState: () => EditorState;
@@ -455,7 +461,7 @@ export const RichTextEditor = forwardRef<
               />
             )}
             {plugins}
-            <EditorRefBridge editorRef={ref} />
+            <EditorRefBridge editorRef={ref} editable={editable} />
           </div>
         </LexicalComposer>
       </div>
@@ -481,25 +487,45 @@ function AutoFocusOnMount(): null {
  * Wires the imperative `RichTextEditorRef` handle. Split into its own plugin so
  * it runs inside the composer context and can reach the `LexicalEditor` via
  * `useLexicalComposerContext()`. Renders nothing.
+ *
+ * `focus()` and `clear()` are gated on `editable` so a read-only or disabled
+ * editor cannot be mutated or focused through the imperative handle — matching
+ * the behaviour of the editable surface itself.
  */
 function EditorRefBridge({
   editorRef,
+  editable,
 }: {
   editorRef: Ref<RichTextEditorRef>;
+  editable: boolean;
 }): null {
   const [editor] = useLexicalComposerContext();
   useImperativeHandle(
     editorRef,
     () => ({
-      focus: () => editor.focus(),
-      clear: () =>
+      focus: () => {
+        if (!editable) {
+          return;
+        }
+        editor.focus();
+      },
+      clear: () => {
+        if (!editable) {
+          return;
+        }
         editor.update(() => {
-          $getRoot().clear();
-        }),
+          const root = $getRoot();
+          root.clear();
+          // Leave a single empty paragraph so the editor stays in a valid
+          // "empty" state (a bare root with zero children is not a legal
+          // editing target and breaks selection/typing).
+          root.append($createParagraphNode());
+        });
+      },
       getEditorState: () => editor.getEditorState(),
       getEditor: () => editor,
     }),
-    [editor],
+    [editor, editable],
   );
   return null;
 }
