@@ -20,6 +20,15 @@
  * appears in the manifest and every JSON-supported command has a response-type
  * entry, so adding a command without describing it fails CI.
  *
+ * DESIGN DECISION — manifest stays CLI-special; there is intentionally NO
+ * `api/manifest`. It describes the CLI's own Commander tree, so it takes the live
+ * `program` as a parameter and lives in `lib/` (shared infra the CLI can import
+ * without a cycle). An `api/manifest` entry would have to import the program from
+ * `cli/index.mjs` — the `api → cli` cycle that bit #4302 — or force programmatic
+ * callers to construct a program themselves. So `buildManifest(program)` is the
+ * intended shape, and the bare `astryx --json` / `astryx manifest --json` handlers
+ * are its only consumers. Do not "extract" this to `api/` in the reorg.
+ *
  * @input  a configured Commander `program` + the JSON_SUPPORTED allowlist
  * @output a `{ name, version, globalOptions, commands, responseTypes }` object
  * @position consumed by the bare `astryx --json` action and the `manifest` command

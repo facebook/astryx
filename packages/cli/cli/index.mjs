@@ -339,6 +339,9 @@ export async function createProgram() {
   // agents can discover every command, argument, flag, and response type without
   // scraping `--help`. `astryx manifest --json` is the dedicated surface; the bare
   // `xds --json` embeds the same payload under data.manifest for convenience.
+  // Intentionally CLI-special — no `api/manifest`. It introspects the live
+  // Commander `program`, so extracting it to `api/` would create the `api → cli`
+  // cycle from #4302. `buildManifest(program)` lives in lib/; see its header.
   program
     .command('manifest')
     .description('Print the full CLI capability manifest (use with --json)')
