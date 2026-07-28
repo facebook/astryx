@@ -174,31 +174,39 @@ export const switchContract: PatternContract = {
     }),
     expectation({
       id: 'switch-1',
-      body: 'Space toggles the switch on when focused',
+      body: 'Space toggles the switch on and back off when focused',
       priority: ExpectationPriority.BLOCKER,
       criteria: [APG_SWITCH_1, WCAG_211_KEYBOARD],
       run: async h => {
         const el = getSwitch(h);
-        if (el.isChecked()) {
-          throw new Error('expected switch to start off');
-        }
+        const start = el.isChecked();
         await h.focus(el);
         await h.press('Space');
-        if (!getSwitch(h).isChecked()) {
-          throw new Error('Space did not toggle the switch on');
+        if (getSwitch(h).isChecked() === start) {
+          throw new Error('Space did not toggle the switch');
+        }
+        // APG switch: the control must toggle back the other way too.
+        await h.press('Space');
+        if (getSwitch(h).isChecked() !== start) {
+          throw new Error('Space did not toggle the switch back');
         }
       },
     }),
     expectation({
       id: 'switch-click-toggles',
-      body: 'clicking the switch toggles its state',
+      body: 'clicking the switch toggles its state and back',
       priority: ExpectationPriority.BLOCKER,
       criteria: [WCAG_211_KEYBOARD, APG_SWITCH_1],
       run: async h => {
         const el = getSwitch(h);
+        const start = el.isChecked();
         await h.click(el);
-        if (!getSwitch(h).isChecked()) {
-          throw new Error('click did not toggle the switch on');
+        if (getSwitch(h).isChecked() === start) {
+          throw new Error('click did not toggle the switch');
+        }
+        await h.click(getSwitch(h));
+        if (getSwitch(h).isChecked() !== start) {
+          throw new Error('click did not toggle the switch back');
         }
       },
     }),
