@@ -5,6 +5,11 @@
  * customization, rewriting escaping relative imports to the OWNER package's
  * subpaths.
  *
+ * The copy is recursive: components whose source spans subdirectories (e.g.
+ * `Table/plugins/*`) eject whole, structure preserved, so their own `./`
+ * re-exports still resolve. Import rewriting is therefore resolved per file
+ * location — see `rewriteImports`.
+ *
  * Side-effecting: `swizzle(name, ...)` writes files and returns a
  * `swizzle.copy` receipt describing what it did; with no name (or `list`) it
  * returns `swizzle.list`. Errors throw AstryxError (stable code + suggestions).
@@ -29,23 +34,61 @@ import {AstryxError} from '../error.mjs';
 const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
 
 /**
+ * Stand-in component location used when a caller rewrites a top-level file
+ * without telling us where it lives. Keeps the no-location call a pure string
+ * transform while sharing one code path with the located case.
+ */
+const VIRTUAL_COMPONENT_DIR = path.join(path.sep, '__astryx_swizzle__', 'component');
+
+/** True when `child` resolves strictly inside `parent`. */
+function isInside(parent, child) {
+  const rel = path.relative(parent, child);
+  return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
+}
+
+/** True when `child` is `parent` itself or resolves inside it. */
+function isAtOrInside(parent, child) {
+  return parent === child || isInside(parent, child);
+}
+
+/**
  * Rewrite relative imports that point outside the component directory to use
- * the OWNER package's subpaths. Imports within the copied directory (./x) are
- * left untouched.
+ * the OWNER package's subpaths. Imports that stay within the copied tree are
+ * left untouched — the eject preserves structure, so they still resolve.
  *
- * e.g. with ownerPackage '@astryxdesign/core':
- *      '../theme/tokens.stylex' -> '@astryxdesign/core/theme'
- *      '../utils/mergeProps'     -> '@astryxdesign/core/utils'
+ * Each `../` specifier is resolved from the importing FILE's own directory, so
+ * a nested source file gets the same treatment as a top-level one:
+ *
+ *   Widget/index.ts            '../theme/tokens.stylex'       -> '<owner>/theme'
+ *   Widget/parts/alpha/x.ts    '../../../theme/tokens.stylex' -> '<owner>/theme'
+ *   Widget/parts/alpha/x.ts    '../../types'                  -> unchanged (inside)
+ *
+ * A specifier that escapes the package source root is left alone rather than
+ * rewritten to '<owner>/..', which resolves to nothing.
  *
  * @param {string} content
  * @param {string} [ownerPackage]
+ * @param {{componentDir?: string, fromDir?: string}} [location]
+ *   `componentDir` is the component's source root; `fromDir` is the directory
+ *   of the file being rewritten. Omit both to treat `content` as a top-level
+ *   file of an anonymous component.
  */
-export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
+export function rewriteImports(content, ownerPackage = CORE_PACKAGE, location = {}) {
+  const componentDir = path.resolve(location.componentDir ?? VIRTUAL_COMPONENT_DIR);
+  const fromDir = path.resolve(location.fromDir ?? componentDir);
+  const srcRoot = path.dirname(componentDir);
+
   return content.replace(
     /(from\s+['"])(\.\.\/.+?)(['"])/g,
     (match, prefix, importPath, suffix) => {
-      const parts = importPath.replace(/^\.\.\//, '').split('/');
-      const topDir = parts[0];
+      const target = path.resolve(fromDir, importPath);
+      // Still inside the copied tree — the relative path survives the copy.
+      // `at` counts too: '../..' from a nested file points at the component's
+      // own entry, which must keep resolving to the eject, not the library.
+      if (isAtOrInside(componentDir, target)) return match;
+      // Reaches past the package source root; nothing sensible to point at.
+      if (!isInside(srcRoot, target)) return match;
+      const [topDir] = path.relative(srcRoot, target).split(path.sep);
       return `${prefix}${ownerPackage}/${topDir}${suffix}`;
     },
   );
@@ -129,6 +172,50 @@ function isExcludedFromCopy(file) {
   return (
     file.includes('.test.') || file.includes('.doc.') || file === 'README.md'
   );
+}
+
+/**
+ * Directories that hold test scaffolding rather than component source. Their
+ * contents aren't reliably caught by the filename filter (a `.snap` or a
+ * `.spec.tsx` carries no `.test.` marker), so they're skipped wholesale.
+ */
+const EXCLUDED_DIRS = new Set([
+  '__tests__',
+  '__snapshots__',
+  '__mocks__',
+  '__fixtures__',
+  'node_modules',
+]);
+
+/**
+ * Every source file under `componentDir`, recursively, as posix-relative paths
+ * (forward slashes on every platform so the receipt is stable).
+ *
+ * Single source of truth for the pre-flight collision check, the copy loop and
+ * the reported file list — they cannot drift apart. Symlinks are not followed:
+ * an eject copies the component's own source, not wherever a link points.
+ *
+ * @param {string} componentDir
+ * @param {string} [rel]
+ * @returns {string[]}
+ */
+function collectSourceFiles(componentDir, rel = '') {
+  const entries = fs.readdirSync(path.join(componentDir, rel), {
+    withFileTypes: true,
+  });
+  /** @type {string[]} */
+  const files = [];
+  for (const entry of entries) {
+    if (entry.isSymbolicLink()) continue;
+    const relPath = rel ? `${rel}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      if (EXCLUDED_DIRS.has(entry.name)) continue;
+      files.push(...collectSourceFiles(componentDir, relPath));
+    } else if (entry.isFile() && !isExcludedFromCopy(entry.name)) {
+      files.push(relPath);
+    }
+  }
+  return files;
 }
 
 /**
@@ -220,13 +307,11 @@ export async function swizzle(component, options = {}) {
   }
   const outputDir = path.join(outputBase, dirName);
 
-  // Pre-flight overwrite check before any mkdir/writeFile.
-  const sourceFiles = fs.readdirSync(componentDir).filter(file => {
-    if (isExcludedFromCopy(file)) return false;
-    return fs.statSync(path.join(componentDir, file)).isFile();
-  });
+  // Pre-flight overwrite check before any mkdir/writeFile. Walks the whole
+  // component tree so a nested collision can't slip through unseen.
+  const sourceFiles = collectSourceFiles(componentDir);
   const existingFiles = sourceFiles.filter(f =>
-    fs.existsSync(path.join(outputDir, f)),
+    fs.existsSync(path.join(outputDir, ...f.split('/'))),
   );
   if (existingFiles.length > 0 && !overwrite) {
     const relOutputForMsg = path.relative(cwd, outputDir) || '.';
@@ -240,33 +325,29 @@ export async function swizzle(component, options = {}) {
 
   fs.mkdirSync(outputDir, {recursive: true});
 
-  const files = fs.readdirSync(componentDir);
   let copied = 0;
   let usesStyleX = false;
-  for (const file of files) {
-    if (isExcludedFromCopy(file)) continue;
-    const srcPath = path.join(componentDir, file);
-    if (!fs.statSync(srcPath).isFile()) continue;
+  for (const file of sourceFiles) {
+    const segments = file.split('/');
+    const srcPath = path.join(componentDir, ...segments);
+    const destPath = path.join(outputDir, ...segments);
     let content = fs.readFileSync(srcPath, 'utf-8');
     if (file.endsWith('.ts') || file.endsWith('.tsx')) {
-      content = rewriteImports(content, owner.ownerPackage);
+      content = rewriteImports(content, owner.ownerPackage, {
+        componentDir,
+        fromDir: path.dirname(srcPath),
+      });
+      if (content.includes('@stylexjs/stylex')) {
+        usesStyleX = true;
+      }
     }
-    if (
-      (file.endsWith('.ts') || file.endsWith('.tsx')) &&
-      content.includes('@stylexjs/stylex')
-    ) {
-      usesStyleX = true;
-    }
-    fs.writeFileSync(path.join(outputDir, file), content);
+    fs.mkdirSync(path.dirname(destPath), {recursive: true});
+    fs.writeFileSync(destPath, content);
     copied++;
   }
 
   const relOutput = path.relative(cwd, outputDir);
-  const copiedFiles = files.filter(
-    f =>
-      !isExcludedFromCopy(f) &&
-      fs.statSync(path.join(componentDir, f)).isFile(),
-  );
+  const copiedFiles = sourceFiles;
   const feedback = buildFeedback(dirName, owner.issuesUrl);
 
   /** @type {import('../../types/swizzle').SwizzleCopyResponse['data']} */

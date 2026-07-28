@@ -33,6 +33,10 @@ export interface SwizzleCopyResponse {
     package: string;
     outputDir: string;
     filesCopied: number;
+    /**
+     * Copied files relative to `outputDir`, posix-separated so nested source
+     * reads the same on every platform (e.g. `plugins/tree/useTableTree.ts`).
+     */
     files: string[];
     /** Whether any copied file uses StyleX (requires build-time setup). */
     usesStyleX: boolean;
