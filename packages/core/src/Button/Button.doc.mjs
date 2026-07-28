@@ -163,8 +163,6 @@ export const docs = {
     ],
     vars: [
       {name: '--_button-radius', description: 'Border radius', default: 'var(--radius-element)', private: true},
-      {name: '--button-press-scale', description: 'Active press transform', default: 'scale(0.98)'},
-      {name: '--button-disabled-opacity', description: 'Opacity when disabled', default: '0.5'},
       {name: '--button-focus-offset', description: 'Focus ring outline offset', default: '3px'},
       {name: '--button-icon-only-aspect', description: 'Aspect ratio for icon-only buttons', default: '1 / 1'},
     ],
@@ -247,8 +245,6 @@ export const docsZh = {
     ],
     vars: [
       {name: '--_button-radius', description: '圆角半径', default: 'var(--radius-element)', private: true},
-      {name: '--button-press-scale', description: '按下时的变换', default: 'scale(0.98)'},
-      {name: '--button-disabled-opacity', description: '禁用时的不透明度', default: '0.5'},
       {name: '--button-focus-offset', description: '焦点环轮廓偏移', default: '3px'},
       {name: '--button-icon-only-aspect', description: '纯图标按钮的宽高比', default: '1 / 1'},
     ],

@@ -79,16 +79,14 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   pressable: {
-    '--button-press-scale': 'scale(0.98)',
     transform: {
       default: 'scale(1)',
-      ':active': 'var(--button-press-scale)',
+      ':active': 'scale(0.98)',
     },
   },
   disabled: {
     cursor: 'not-allowed',
-    '--button-disabled-opacity': '0.5',
-    opacity: 'var(--button-disabled-opacity)',
+    opacity: 0.5,
     backgroundImage: 'none',
     transform: {
       default: 'none',
