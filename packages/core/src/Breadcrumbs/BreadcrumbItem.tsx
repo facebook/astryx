@@ -35,6 +35,7 @@ import React, {
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
+  fontWeightVars,
   spacingVars,
   typeScaleVars,
   radiusVars,
@@ -177,8 +178,12 @@ const itemStyles = stylex.create({
   supportingLink: {
     color: colorVars['--color-text-secondary'],
   },
+  // The current page carries a weight step so it is tellable from the
+  // navigable crumbs without relying on colour (WCAG 2.1 A 1.4.1). Colour
+  // alone was the only signal, and in the `supporting` variant links and the
+  // current crumb share a colour token, so there was no signal at all.
   current: {
-    fontWeight: 'inherit',
+    fontWeight: fontWeightVars['--font-weight-semibold'],
   },
   defaultCurrent: {
     color: colorVars['--color-text-primary'],
@@ -620,6 +625,9 @@ function BreadcrumbMenuTrigger({
           itemStyles.link,
           itemStyles.buttonReset,
           isSupporting ? itemStyles.supportingLink : itemStyles.defaultLink,
+          // A current crumb that is also a menu trigger keeps the non-colour
+          // current cue; it is still the page you are on.
+          isCurrent && itemStyles.current,
         )}>
         {children}
         <span aria-hidden="true" {...stylex.props(itemStyles.chevron)}>

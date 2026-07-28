@@ -28,7 +28,8 @@ export const docs = {
     {
       name: 'isCurrent',
       type: 'boolean',
-      description: 'Marks this item as the current page, applying aria-current="page".',
+      description:
+        'Marks this item as the current page, applying aria-current="page" and a heavier label weight so the current page stays distinguishable without relying on colour (WCAG 2.1 A 1.4.1).',
       default: 'false',
     },
     {
@@ -90,7 +91,8 @@ export const docsZh = {
     {
       name: 'isCurrent',
       type: 'boolean',
-      description: '将此项标记为当前页面，应用 aria-current="page"。',
+      description:
+        '将此项标记为当前页面，应用 aria-current="page"，并加粗标签字重，使当前页面无需依赖颜色即可区分（WCAG 2.1 A 1.4.1）。',
       default: 'false',
     },
     {
@@ -127,7 +129,8 @@ export const docsDense = {
     children: 'label content',
     href: 'link URL; omit for non-navigable items',
     onClick: 'click handler',
-    isCurrent: 'marks current page w/ aria-current="page"',
+    isCurrent:
+      'marks current page w/ aria-current="page" + heavier label weight (non-colour cue, WCAG 1.4.1)',
     startIcon: 'icon before label',
     menu: 'DropdownMenuOption[] | children; opens a menu trigger (aria-haspopup="menu"); reuses the DropdownMenu item API',
     menuSize: "menu item size; defaults from variant (supporting→sm, else md)",
