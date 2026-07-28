@@ -24,7 +24,8 @@
  *   icon   = T30         / T80
  *   text   = T30         / T80
  *
- * All 9 saturated badge values pass WCAG AA (5.6–9.6 contrast range).
+ * All 9 saturated badge values pass WCAG AA against their label (>= 4.5:1);
+ * `scripts/check-badge-contrast.test.mjs` holds every theme to that.
  *
  * Only overrides tokens that differ from the defaults.
  */
@@ -426,10 +427,14 @@ export const neutralTheme = defineTheme({
         color: '#171717',
       },
       'variant:error': {
-        // Light: T55 #e33f4a (palette saturated stop)
+        // Light: T58 #c9303a. The T55 stop #e33f4a pairs with white at only
+        //        4.14:1 — the label is 12px/500, so AA wants 4.5, not the 3:1
+        //        large-text allowance. One tonal step down holds the hue
+        //        (OKLCH H 21.9 -> 22.8, C 0.200 -> 0.189) and reaches 5.29:1.
         // Dark : T60 stop from dark-mode tonal palette of Tailwind red-600
-        //        source #dc2626 (kept on H=27 alarm-red rather than coral)
-        backgroundColor: 'light-dark(#e33f4a, #ff705d)',
+        //        source #dc2626 (kept on H=27 alarm-red rather than coral).
+        //        Dark text on it is 6.60:1 and unchanged.
+        backgroundColor: 'light-dark(#c9303a, #ff705d)',
         color: 'light-dark(#ffffff, #171717)',
       },
 
@@ -480,6 +485,37 @@ export const neutralTheme = defineTheme({
         backgroundColor: 'var(--color-background-gray)',
         color: 'var(--color-text-gray)',
       },
+    },
+
+    // =========================================================================
+    // StatusDot — fill uses the SAME vivid stops as the filled semantic Badge
+    // (and ProgressBar), so a dot and its badge read as one status language.
+    //
+    // The default component maps each variant to a raw semantic token
+    // (--color-success / --color-error / --color-warning / --color-icon-
+    // secondary), which in light mode are the dark T30/T40 stops meant to
+    // sit as TEXT on a pastel surface — as a solid dot they read muddy
+    // (dark green / maroon / brown). Redirect them to the badge fills.
+    //
+    //   success → badge success bg  (green T45 / dark-ramp T60)
+    //   warning → badge warning bg  (yellow T85, same hex both modes)
+    //   error   → badge error bg    (red T58 / dark-ramp T60)
+    //   accent  → badge info bg     (blue T50 / dark-ramp T60) — the
+    //             StatusDot "accent" is the info/attention color, so it
+    //             pairs with the info badge rather than --color-accent
+    //             (near-black #262626, the darkest offender).
+    //
+    // `neutral` is intentionally NOT overridden: the neutral badge bg is a
+    // near-invisible light gray (--color-background-gray #e5e5e5 / 10% white
+    // wash), fine as a large pill but unreadable as an 8px dot. It keeps the
+    // component default's visible mid-gray (--color-icon-secondary), which is
+    // not among the "too dark" cases.
+    // =========================================================================
+    statusdot: {
+      'variant:success': {backgroundColor: 'light-dark(#198100, #64af4c)'},
+      'variant:warning': {backgroundColor: '#ffce2f'},
+      'variant:error': {backgroundColor: 'light-dark(#c9303a, #ff705d)'},
+      'variant:accent': {backgroundColor: 'light-dark(#0074e2, #6d9cfe)'},
     },
 
     // =========================================================================
@@ -572,8 +608,8 @@ export const neutralTheme = defineTheme({
         '--color-warning': '#ffce2f',
       },
       'variant:error': {
-        // Red T55 saturated stop (= variant:error badge bg)
-        '--color-error': '#e33f4a',
+        // Red T58 saturated stop (= variant:error badge bg)
+        '--color-error': '#c9303a',
       },
     },
 
