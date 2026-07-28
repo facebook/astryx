@@ -34,8 +34,6 @@ import {warnOnIntegrationIssues} from '../../../lib/integration-warnings.mjs';
  *
  * @typedef {(
  *   | import('../../../types/component').ComponentListResponse
- *   | import('../../../types/component').ComponentBriefResponse
- *   | import('../../../types/component').ComponentFullResponse
  *   | import('../../../types/component').ComponentDetailResponse
  *   | import('../../../types/component').ComponentDetailPropsResponse
  *   | import('../../../types/component').ComponentDetailSourceResponse
@@ -118,16 +116,48 @@ export function registerComponent(program) {
 
       switch (result.type) {
         case 'component.list': {
-          // --detail brief (default for list views). The API now returns
+          // One list type across all three detail levels; the depth is carried
+          // in result.data.detail and the grouped map in result.data.components.
+          if (result.data.detail === 'full') {
+            // --detail full — dense per-component docs (signature, props, theming, examples).
+            humanLog(await formatBriefAll(coreDir, {zh, lang, themeData}));
+            break;
+          }
+
+          if (result.data.detail === 'compact') {
+            // --detail compact — name + 1-line description per entry.
+            const groups = result.data.components;
+            humanLog('');
+            const entries = Object.entries(groups);
+            for (const [cat, items] of entries) {
+              // Skip the synthetic group header when there's only one ungrouped category
+              const isUngrouped =
+                entries.length === 1 && items.length === 1 && items[0]?.name === cat;
+              if (!isUngrouped) humanLog(`${cat} (group)`);
+              for (const item of items) {
+                const importHint = item.import ? `  ← ${item.import}` : '';
+                const desc = item.description ? ` — ${item.description}` : '';
+                humanLog(`  XDS${item.name}${importHint}${desc}`);
+              }
+              humanLog('');
+            }
+            humanLog(`Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`);
+            humanLog(`Usage: ${run} component <name>`);
+            humanLog('');
+            break;
+          }
+
+          // --detail names (default for list views). The API now returns
           // package-qualified entries ({name, package}); the human view omits
           // the core package label for readability but ALWAYS shows the package
           // for integration components (and whenever names collide).
+          const groups = result.data.components;
           const CORE_PKG = '@astryxdesign/core';
           // Names that appear under more than one package across the whole
           // listing — these must always be package-qualified to disambiguate.
           /** @type {Map<string, Set<string>>} */
           const nameCounts = new Map();
-          for (const items of Object.values(result.data)) {
+          for (const items of Object.values(groups)) {
             for (const item of items) {
               const set = nameCounts.get(item.name) ?? new Set();
               set.add(item.package);
@@ -144,7 +174,7 @@ export function registerComponent(program) {
           };
 
           if (options.category) {
-            const [cat, comps] = Object.entries(result.data)[0];
+            const [cat, comps] = Object.entries(groups)[0];
             humanLog(`\n${cat}:`);
             for (const item of comps) {
               const importPath = resolveImportPath(coreDir, item.name);
@@ -153,7 +183,7 @@ export function registerComponent(program) {
             humanLog('');
           } else {
             humanLog('');
-            for (const [key, comps] of Object.entries(result.data)) {
+            for (const [key, comps] of Object.entries(groups)) {
               const isUngrouped = comps.length === 1 && comps[0]?.name === key;
               if (isUngrouped) {
                 const item = comps[0];
@@ -172,34 +202,6 @@ export function registerComponent(program) {
             humanLog(`Usage: ${run} component <name>`);
             humanLog('');
           }
-          break;
-        }
-
-        case 'component.brief': {
-          // --detail compact — name + 1-line description per entry.
-          humanLog('');
-          const entries = Object.entries(result.data);
-          for (const [cat, items] of entries) {
-            // Skip the synthetic group header when there's only one ungrouped category
-            const isUngrouped =
-              entries.length === 1 && items.length === 1 && items[0]?.name === cat;
-            if (!isUngrouped) humanLog(`${cat} (group)`);
-            for (const item of items) {
-              const importHint = item.import ? `  ← ${item.import}` : '';
-              const desc = item.description ? ` — ${item.description}` : '';
-              humanLog(`  XDS${item.name}${importHint}${desc}`);
-            }
-            humanLog('');
-          }
-          humanLog(`Import from the path shown (e.g. import {Button} from '@astryxdesign/core/Button')`);
-          humanLog(`Usage: ${run} component <name>`);
-          humanLog('');
-          break;
-        }
-
-        case 'component.full': {
-          // --detail full — dense per-component docs (signature, props, theming, examples).
-          humanLog(await formatBriefAll(coreDir, {zh, lang, themeData}));
           break;
         }
 

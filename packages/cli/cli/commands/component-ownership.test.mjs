@@ -214,7 +214,8 @@ describe('component() — integration ownership via config', () => {
     createFixture();
     const result = await component(undefined, {cwd: tmpDir, list: true});
     expect(result.type).toBe('component.list');
-    const allEntries = Object.values(result.data).flat();
+    expect(result.data.detail).toBe('names');
+    const allEntries = Object.values(result.data.components).flat();
     for (const entry of allEntries) {
       expect(typeof entry.name).toBe('string');
       expect(typeof entry.package).toBe('string');

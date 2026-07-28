@@ -85,7 +85,7 @@ export async function hook(name, options = {}) {
             entries.push({name: hookName, description: '', import: '@astryxdesign/core/hooks'});
           }
         }
-        return {type: 'hook.brief', data: {[match[0]]: entries}};
+        return {type: 'hook.list', data: {detail: 'compact', components: {[match[0]]: entries}}};
       }
 
       if (detail === 'full') {
@@ -102,11 +102,11 @@ export async function hook(name, options = {}) {
             entries.push({name: hookName});
           }
         }
-        return {type: 'hook.full', data: {[match[0]]: entries}};
+        return {type: 'hook.list', data: {detail: 'full', components: {[match[0]]: entries}}};
       }
 
-      // Default: brief — names only
-      return {type: 'hook.list', data: {[match[0]]: match[1]}};
+      // Default: names only
+      return {type: 'hook.list', data: {detail: 'names', components: {[match[0]]: match[1]}}};
     }
 
     // All hooks
@@ -133,7 +133,7 @@ export async function hook(name, options = {}) {
           }
         }
       }
-      return {type: 'hook.brief', data: result};
+      return {type: 'hook.list', data: {detail: 'compact', components: result}};
     }
 
     if (detail === 'full') {
@@ -154,11 +154,11 @@ export async function hook(name, options = {}) {
           }
         }
       }
-      return {type: 'hook.full', data: result};
+      return {type: 'hook.list', data: {detail: 'full', components: result}};
     }
 
-    // Default: brief — names only
-    return {type: 'hook.list', data: hooks};
+    // Default: names only
+    return {type: 'hook.list', data: {detail: 'names', components: hooks}};
   }
 
   // ── Single hook ────────────────────────────────────────────────

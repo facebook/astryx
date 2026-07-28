@@ -48,8 +48,6 @@ import {API_VERSION} from './json.mjs';
 export const RESPONSE_TYPES = {
   component: [
     'component.list',
-    'component.brief',
-    'component.full',
     'component.detail',
     'component.detail.props',
     'component.detail.source',
@@ -68,7 +66,7 @@ export const RESPONSE_TYPES = {
     'template.skeleton',
     'template.copy',
   ],
-  hook: ['hook.list', 'hook.brief', 'hook.full', 'hook.detail', 'hook.detail.params'],
+  hook: ['hook.list', 'hook.detail', 'hook.detail.params'],
   'theme build': ['theme.build'],
   'theme list': ['theme.list'],
   'theme add': ['theme.list', 'theme.add'],

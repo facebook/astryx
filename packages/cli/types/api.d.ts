@@ -9,8 +9,6 @@
 
 import type {
   ComponentListResponse,
-  ComponentBriefResponse,
-  ComponentFullResponse,
   ComponentDetailResponse,
   ComponentDetailPropsResponse,
   ComponentDetailSourceResponse,
@@ -36,8 +34,6 @@ import type {
 } from './template';
 import type {
   HookListResponse,
-  HookBriefResponse,
-  HookFullResponse,
   HookDetailResponse,
   HookDetailParamsResponse,
 } from './hook';
@@ -93,8 +89,6 @@ export interface ComponentOptions {
 
 type ComponentResult =
   | ComponentListResponse
-  | ComponentBriefResponse
-  | ComponentFullResponse
   | ComponentDetailResponse
   | ComponentDetailPropsResponse
   | ComponentDetailSourceResponse
@@ -180,11 +174,7 @@ export interface HookOptions {
 }
 
 type HookResult =
-  | HookListResponse
-  | HookBriefResponse
-  | HookFullResponse
-  | HookDetailResponse
-  | HookDetailParamsResponse;
+  HookListResponse | HookDetailResponse | HookDetailParamsResponse;
 
 export declare function hook(
   name?: string,

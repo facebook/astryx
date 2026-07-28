@@ -10,11 +10,11 @@
  *
  * Invocation                                 -> type discriminator
  * ------------------------------------------------------------------
- * xds --json component                      -> component.list
- * xds --json component --list               -> component.list
+ * xds --json component                      -> component.list (data.detail='names')
+ * xds --json component --list               -> component.list (data.detail='names')
  * xds --json component --category Form      -> component.list (filtered)
- * xds --json component --list --detail compact -> component.brief
- * xds --json component --list --detail full -> component.full
+ * xds --json component --list --detail compact -> component.list (data.detail='compact')
+ * xds --json component --list --detail full -> component.list (data.detail='full')
  * xds --json component Button               -> component.detail
  * xds --json component Button --props       -> component.detail.props
  * xds --json component Button --source      -> component.detail.source
@@ -25,16 +25,31 @@
 
 import type {ComponentDoc, PropDoc} from '../../core/src/docs-types';
 
-/** xds --json component [--list] [--category X] [--detail brief] */
+/**
+ * xds --json component [--list] [--category X] [--detail names|compact|full]
+ *
+ * The list view emits ONE `component.list` type across all three detail levels;
+ * the depth is carried in `data.detail` and `data.components` holds the grouped
+ * map whose entry shape depends on that level:
+ *   - 'names'   -> ComponentListEntry[]  (name + owner package)
+ *   - 'compact' -> ComponentBriefEntry[] (name + 1-line description + import)
+ *   - 'full'    -> ComponentDoc[]        (full authored doc per entry)
+ */
 export interface ComponentListResponse {
   type: 'component.list';
-  data: Record<string, ComponentListEntry[]>;
+  data: ComponentListData;
 }
 
+/** Detail-tagged payload for `component.list` (discriminated on `detail`). */
+export type ComponentListData =
+  | {detail: 'names'; components: Record<string, ComponentListEntry[]>}
+  | {detail: 'compact'; components: Record<string, ComponentBriefEntry[]>}
+  | {detail: 'full'; components: Record<string, ComponentDoc[]>};
+
 /**
- * A single entry in a `component.list` group. Pre-1.0 the list moved from bare
- * strings to package-qualified objects so consumers can disambiguate ownership
- * (core vs. an integration package).
+ * A single entry in a `component.list` group at `detail: 'names'`. Pre-1.0 the
+ * list moved from bare strings to package-qualified objects so consumers can
+ * disambiguate ownership (core vs. an integration package).
  */
 export interface ComponentListEntry {
   name: string;
@@ -42,22 +57,11 @@ export interface ComponentListEntry {
   package: string;
 }
 
-/** xds --json component --list --detail compact */
-export interface ComponentBriefResponse {
-  type: 'component.brief';
-  data: Record<string, ComponentBriefEntry[]>;
-}
-
+/** A single entry in a `component.list` group at `detail: 'compact'`. */
 export interface ComponentBriefEntry {
   name: string;
   description: string;
   import: string;
-}
-
-/** xds --json component --list --detail full */
-export interface ComponentFullResponse {
-  type: 'component.full';
-  data: Record<string, ComponentDoc[]>;
 }
 
 /** xds --json component <name> */
