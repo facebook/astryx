@@ -56,6 +56,13 @@ overrides:
   '@changesets/parse>js-yaml': '>=4.2.0'
   fast-uri: ^3.1.4
   brace-expansion: ^2.1.2
+  # next pulls sharp as an optional dependency for image optimization and still
+  # resolves 0.34.5, which inherits the libvips advisories CVE-2026-33327,
+  # CVE-2026-33328, CVE-2026-35590 and CVE-2026-35591. They are patched in
+  # sharp 0.35.0 — a semver-major bump on the 0.x line, so next's `^0.34`
+  # range can never reach it on its own. Drop this entry once next depends on
+  # 0.35 itself.
+  sharp: ^0.35.3
 
 # pnpm 11 replaced the onlyBuiltDependencies allowlist with an allowBuilds map
 # (managed via `pnpm approve-builds`). These are the same packages previously
