@@ -81,19 +81,81 @@ function realOverrideKeys() {
   return keys;
 }
 
+/**
+ * The stable classes components ACTUALLY render: the literal first argument of
+ * every `themeProps('<class>', …)` and `stableClassName('<class>')` call across
+ * the core `.tsx` source (excluding tests). This is the truest source of truth
+ * — the doc `theming.targets` are hand-authored metadata that can drift from
+ * it, so both the registry and the targets are validated against these
+ * literals. Every call site uses a plain string literal (no dynamic/
+ * interpolated names), so this is fully static.
+ */
+function renderedClassLiterals() {
+  const classes = new Set();
+  const walk = dir => {
+    for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.name.endsWith('.tsx') && !entry.name.endsWith('.test.tsx')) {
+        const text = fs.readFileSync(full, 'utf8');
+        for (const re of [
+          /themeProps\(\s*'([^']+)'/g,
+          /stableClassName\(\s*'([^']+)'/g,
+        ]) {
+          let m;
+          while ((m = re.exec(text)) !== null) {
+            classes.add(m[1]);
+          }
+        }
+      }
+    }
+  };
+  walk(CORE_SRC);
+  return classes;
+}
+
 describe('theme-build KNOWN_COMPONENTS registry (#4109)', () => {
-  it('every registry key is a class a component actually renders', () => {
+  // `layer` is a layout/anchor concept with no rendered `astryx-layer`
+  // class or doc target; it predates and is unrelated to #4109.
+  const allowedWithoutTarget = new Set(['layer']);
+
+  it('every registry key is a class documented as a theming target', () => {
     const known = knownComponentKeys();
     const real = realOverrideKeys();
-
-    // `layer` is a layout/anchor concept with no rendered `astryx-layer`
-    // class or doc target; it predates and is unrelated to #4109.
-    const allowedWithoutTarget = new Set(['layer']);
 
     const dead = [...known].filter(
       k => !real.has(k) && !allowedWithoutTarget.has(k),
     );
     expect(dead).toEqual([]);
+  });
+
+  it('every registry key is a class a component actually renders (themeProps literal)', () => {
+    // Validate the registry against the TRUE source of truth — the literal
+    // passed to themeProps()/stableClassName() in the component source — not
+    // just the hand-authored doc targets. This catches a de-hyphenated key
+    // even if the docs were (wrongly) kept in agreement with it.
+    const known = knownComponentKeys();
+    const rendered = renderedClassLiterals();
+
+    const dead = [...known].filter(
+      k => !rendered.has(k) && !allowedWithoutTarget.has(k),
+    );
+    expect(dead).toEqual([]);
+  });
+
+  it('every documented theming target is backed by a real themeProps literal', () => {
+    // Guards the two "sources of truth" against drift: a component whose
+    // themeProps() arg and doc target className disagree would be a latent bug
+    // that the registry checks above could not catch (they'd validate against
+    // whichever side happened to match). `theming.targets[].className` is
+    // hand-authored; themeProps()/stableClassName() literals are what actually
+    // renders — they must agree.
+    const targets = realOverrideKeys();
+    const rendered = renderedClassLiterals();
+
+    const orphanTargets = [...targets].filter(k => !rendered.has(k));
+    expect(orphanTargets).toEqual([]);
   });
 });
 
