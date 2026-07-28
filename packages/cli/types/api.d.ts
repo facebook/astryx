@@ -61,6 +61,7 @@ import type {
 } from './upgrade';
 import type {BlogListResponse, BlogDetailResponse} from './blog';
 import type {InitRunResponse, InitRemoveResponse} from './init';
+import type {ThemeBuildResponse} from './theme';
 import type {Suggestion} from './base';
 
 /** Structured API error with a stable machine-readable code. */
@@ -379,3 +380,17 @@ export declare function init(
   options?: InitOptions,
   ctx?: {cwd?: string},
 ): Promise<InitRunResponse | InitRemoveResponse>;
+
+// ── Theme build ──────────────────────────────────────────────────────
+
+/**
+ * Compile a defineTheme file to CSS + JS + .d.ts (and an optional
+ * `.variants.d.ts`). Writes the outputs and returns a `theme.build` receipt,
+ * or `null` when the theme produced no CSS (nothing to build). Throws
+ * AstryxError on failure. `out` overrides the output CSS path.
+ */
+export declare function themeBuild(
+  file: string,
+  options?: {out?: string},
+  ctx?: {cwd?: string},
+): Promise<ThemeBuildResponse | null>;
