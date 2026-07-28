@@ -4,11 +4,11 @@
  * @file theme command — Commander wiring for `astryx theme` (build/list/add).
  *
  * Thin CLI wrapper. The `build` compiler lives in the programmatic API
- * (../../api/theme/build/build.mjs); `list`/`add` delegate to
- * ../../api/theme/theme-add.mjs. This file only parses options, injects a
- * logger, renders human output, and maps AstryxError → cliError. Watch mode
- * (a human-interactive, long-running loop) stays here because it re-invokes
- * `theme build` as a child process.
+ * (../../api/theme/build/build.mjs); `list`/`add` delegate to the
+ * ../../api/theme/list/list.mjs and ../../api/theme/add/add.mjs leaves. This
+ * file only parses options, injects a logger, renders human output, and maps
+ * AstryxError → cliError. Watch mode (a human-interactive, long-running loop)
+ * stays here because it re-invokes `theme build` as a child process.
  *
  * Usage:
  *   astryx theme build ./src/themes/ocean.ts
@@ -23,7 +23,8 @@ import {getCliInvocation} from '../../utils/package-manager.mjs';
 import {jsonOut, humanLog} from '../../lib/json.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
 import {ERROR_CODES} from '../../lib/error-codes.mjs';
-import {themeAdd} from '../../api/theme/theme-add.mjs';
+import {themeAdd} from '../../api/theme/add/add.mjs';
+import {themeList} from '../../api/theme/list/list.mjs';
 import {themeBuild, importSpecifier} from '../../api/theme/build/build.mjs';
 
 /**
@@ -212,9 +213,7 @@ export function registerTheme(program) {
       /** @type {import('../../types/theme').ThemeListResponse} */
       let result;
       try {
-        result = /** @type {import('../../types/theme').ThemeListResponse} */ (
-          await themeAdd(undefined, {list: true, cwd: process.cwd()})
-        );
+        result = themeList();
       } catch (e) {
         const err = /** @type {import('../../api/error.mjs').AstryxError} */ (e);
         cliError(err.message, {suggestions: err.suggestions || [], code: err.code});
@@ -248,18 +247,19 @@ export function registerTheme(program) {
 
       // The CLI is non-interactive: never prompt to confirm an overwrite.
       // Existing files require an explicit --overwrite; otherwise themeAdd's
-      // ERR_FILE_EXISTS guard rejects the write.
+      // ERR_FILE_EXISTS guard rejects the write. `--list` (or a bare `theme add`
+      // with no slug) is the list affordance — route it to the list leaf.
       /** @type {import('../../types/theme').ThemeListResponse | import('../../types/theme').ThemeAddResponse} */
       let result;
       try {
-        result = /** @type {import('../../types/theme').ThemeListResponse | import('../../types/theme').ThemeAddResponse} */ (
-          await themeAdd(slug, {
-            list: options.list,
-            targetPath,
-            overwrite: options.overwrite,
-            cwd: process.cwd(),
-          })
-        );
+        result =
+          options.list || !slug
+            ? themeList()
+            : await themeAdd(slug, {
+                targetPath,
+                overwrite: options.overwrite,
+                cwd: process.cwd(),
+              });
       } catch (e) {
         const err = /** @type {import('../../api/error.mjs').AstryxError} */ (e);
         cliError(err.message, {suggestions: err.suggestions || [], code: err.code});

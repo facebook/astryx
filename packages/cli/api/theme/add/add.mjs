@@ -1,20 +1,18 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Programmatic API for `astryx theme add` — copies a bundled theme's
- * source (`templates/themes/`, see scripts/generate-cli-themes.mjs) into the
- * consumer's project so they own it, without needing the theme package.
+ * @file `astryx theme add` leaf — copies a bundled theme's source
+ * (`templates/themes/<slug>/`) into the consumer's project so they own it,
+ * without needing the theme package. Which theme is resolved by ../_adapter.mjs;
+ * this leaf owns the copy I/O + path-safety and returns a `theme.add` receipt.
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {CLI_ROOT} from '../../utils/paths.mjs';
-import {assertWithin, PathSafetyError} from '../../utils/path-safety.mjs';
-import {AstryxError} from '../error.mjs';
-import {ERROR_CODES} from '../../lib/error-codes.mjs';
-
-const THEMES_DIR = path.join(CLI_ROOT, 'templates', 'themes');
-const MANIFEST_PATH = path.join(THEMES_DIR, 'manifest.json');
+import {assertWithin, PathSafetyError} from '../../../utils/path-safety.mjs';
+import {AstryxError} from '../../error.mjs';
+import {ERROR_CODES} from '../../../lib/error-codes.mjs';
+import {THEMES_DIR, listThemes, findTheme} from '../_adapter.mjs';
 
 // Stripped from scaffolded files so the consumer's copy doesn't carry our
 // repo boilerplate (mirrors the docsite). Preserves a leading BOM/shebang.
@@ -22,53 +20,11 @@ const META_COPYRIGHT_HEADER_RE =
   /^(\uFEFF?(?:#![^\r\n]*(?:\r?\n))?)\/\/ Copyright \(c\) Meta Platforms, Inc\. and affiliates\.\r?\n(?:\r?\n)*/;
 
 /**
- * A single bundled theme entry from `templates/themes/manifest.json`.
- * @typedef {object} BundledTheme
- * @property {string} slug
- * @property {string} displayName
- * @property {string} description
- * @property {boolean} maintained
- * @property {string} entry
- * @property {string} exportName
- * @property {string[]} files
- */
-
-/**
  * @param {string} source
  * @returns {string}
  */
 function stripCopyrightHeader(source) {
   return source.replace(META_COPYRIGHT_HEADER_RE, '$1');
-}
-
-/**
- * Parsed `themes` array from the bundle manifest (empty if not generated).
- * @returns {BundledTheme[]}
- */
-export function listThemes() {
-  if (!fs.existsSync(MANIFEST_PATH)) return [];
-  /** @type {{themes?: BundledTheme[]}} */
-  let manifest;
-  try {
-    manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf-8'));
-  } catch (err) {
-    throw new AstryxError(
-      `Theme bundle manifest is unreadable (${MANIFEST_PATH}): ${/** @type {any} */ (err).message}`,
-      undefined,
-      ERROR_CODES.ERR_NO_SOURCE,
-    );
-  }
-  return Array.isArray(manifest.themes) ? manifest.themes : [];
-}
-
-/**
- * @param {string} [slug]
- * @returns {BundledTheme | undefined}
- */
-function findTheme(slug) {
-  if (!slug) return undefined;
-  const lc = String(slug).toLowerCase();
-  return listThemes().find(t => t.slug.toLowerCase() === lc);
 }
 
 /**
@@ -80,36 +36,24 @@ function defaultTargetDir(slug) {
 }
 
 /**
- * Resolve the scaffold plan for `theme add`. Returns the theme list when no
- * slug (or `list`); otherwise copies the theme's files into the destination
- * (defaults to `src/themes/<slug>/`).
+ * Copy a bundled theme's files into the consumer's project (defaults to
+ * `src/themes/<slug>/`). Writes are staged to temp files then renamed, rolling
+ * back partials on failure so a failed write never leaves a half-written theme.
+ * Throws AstryxError for an unknown slug, a target that escapes cwd, an existing
+ * file (without `overwrite`), a missing bundled file, or a write failure.
  *
- * @param {string} [slug]
- * @param {{list?: boolean, targetPath?: string, overwrite?: boolean, cwd?: string}} [options]
- * @returns {Promise<{type: string, data: unknown}>}
+ * @param {string} slug
+ * @param {{targetPath?: string, overwrite?: boolean, cwd?: string}} [options]
+ * @returns {Promise<import('../../../types/theme').ThemeAddResponse>}
  */
 export async function themeAdd(slug, options = {}) {
-  const {list = false, targetPath, overwrite = false, cwd = process.cwd()} =
-    options;
-  const themes = listThemes();
-
-  if (list || !slug) {
-    return {
-      type: 'theme.list',
-      data: themes.map(t => ({
-        slug: t.slug,
-        displayName: t.displayName,
-        description: t.description,
-        maintained: t.maintained,
-      })),
-    };
-  }
+  const {targetPath, overwrite = false, cwd = process.cwd()} = options;
 
   const match = findTheme(slug);
   if (!match) {
     throw new AstryxError(
       `Unknown theme "${slug}"`,
-      themes.map(t => ({
+      listThemes().map(t => ({
         name: t.slug,
         reason: t.maintained ? 'maintained theme' : 'example theme',
       })),
