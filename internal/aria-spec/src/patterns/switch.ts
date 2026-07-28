@@ -133,6 +133,46 @@ export const switchContract: PatternContract = {
       },
     }),
     expectation({
+      id: 'switch-disabled-state',
+      body: 'when disabled, exposes the disabled state to assistive tech',
+      priority: ExpectationPriority.MAJOR,
+      criteria: [WCAG_412_NAME_ROLE_VALUE],
+      run: h => {
+        // Only meaningful for a disabled binding; enabled bindings list this in
+        // expectedFailures. A disabled switch must expose it via native
+        // `disabled` or `aria-disabled` (the latter keeps it focus-discoverable).
+        const el = getSwitch(h);
+        const nativeDisabled =
+          el.tagName() === 'INPUT' && el.getAttribute('disabled') !== null;
+        if (!nativeDisabled && el.getAttribute('aria-disabled') !== 'true') {
+          throw new Error(
+            'disabled switch must set native disabled or aria-disabled="true"',
+          );
+        }
+      },
+    }),
+    expectation({
+      id: 'switch-disabled-not-activatable',
+      body: 'when disabled, does not change state on activation',
+      priority: ExpectationPriority.MAJOR,
+      criteria: [APG_SWITCH_1, WCAG_412_NAME_ROLE_VALUE],
+      run: async h => {
+        // aria-disabled does NOT natively block activation, so a switch that
+        // stays focusable via aria-disabled (e.g. to surface a disabledMessage)
+        // must guard its own change handler. Only meaningful for a disabled
+        // binding; enabled bindings list this in expectedFailures.
+        const el = getSwitch(h);
+        if (!el.isDisabled()) {
+          throw new Error('binding is not disabled; activation guard N/A');
+        }
+        const start = el.isChecked();
+        await h.click(el);
+        if (getSwitch(h).isChecked() !== start) {
+          throw new Error('disabled switch changed state on activation');
+        }
+      },
+    }),
+    expectation({
       id: 'switch-1',
       body: 'Space toggles the switch on when focused',
       priority: ExpectationPriority.BLOCKER,
@@ -204,3 +244,32 @@ export const switchContract: PatternContract = {
     }),
   ],
 };
+
+/**
+ * Checklist rows deliberately NOT encoded as runtime expectations for the switch
+ * pattern, and why (the "encode or excuse" principle). Reviewed against the
+ * spec-test authoring checklist in the aria-spec README.
+ *
+ * - Announcements (row 6): the switch itself announces state via aria-checked;
+ *   it owns no async live region beyond the busy indicator, which is a Spinner
+ *   concern, not the switch pattern. N/A.
+ * - Reduced motion (row 7): the thumb transition is guarded by
+ *   `prefers-reduced-motion` in Switch.tsx. This is a CSS/visual fact, verified
+ *   in the browser tier (screenshot job), not a DOM assertion. Excused here.
+ * - Forced colors (row 8) + Contrast (row 9): CSS-engine facts — browser-tier /
+ *   axe territory, not encodable as a jsdom DOM check. Excused from this contract.
+ * - Target size (row 10): the control is 40×24px; the 24px height meets the
+ *   minimum but width-only checks need layout, so this is a browser-tier check.
+ * - i18n (row 11): NOT runtime-testable via this suite. The only AT-facing string
+ *   is the busy indicator's "Loading" text, which should route through
+ *   useTranslator(). Enforced by the @astryx/no-hardcoded-i18n-string eslint rule,
+ *   not by a contract expectation. (Tracked: Switch hardcodes "Loading".)
+ */
+export const switchExemptions = [
+  'announcements',
+  'reduced-motion',
+  'forced-colors',
+  'contrast',
+  'target-size',
+  'i18n',
+] as const;

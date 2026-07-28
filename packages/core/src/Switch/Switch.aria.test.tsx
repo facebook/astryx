@@ -37,9 +37,17 @@ function ControlledSwitch() {
   return <Switch label="Notifications" value={on} onChange={setOn} />;
 }
 
+function DisabledSwitch() {
+  return <Switch label="Notifications" value={false} isDisabled />;
+}
+
 const EXPECTED_FAILURES = [
   // This binding renders no description, so aria-describedby is absent by design.
   'switch-optionally-described',
+  // The enabled binding isn't disabled, so the disabled-state checks can't apply
+  // here; they're covered by the dedicated disabled binding below.
+  'switch-disabled-state',
+  'switch-disabled-not-activatable',
   // The real accessibility tree is only available in the browser tier (Tier 2).
   'switch-aria-snapshot',
 ];
@@ -82,14 +90,45 @@ describe('Switch — APG switch pattern conformance (Tier 1: jsdom)', () => {
     expect(space?.status).toBe('passed');
   });
 
-  it('records the two known gaps as tracked expected-failures', async () => {
+  it('records the known gaps as tracked expected-failures', async () => {
     const result = await runSwitch();
     const gaps = result.results
       .filter(r => r.status === 'expected-failure')
       .map(r => r.expectationId)
       .sort();
     expect(gaps).toEqual(
-      ['switch-aria-snapshot', 'switch-optionally-described'].sort(),
+      [
+        'switch-aria-snapshot',
+        'switch-disabled-state',
+        'switch-disabled-not-activatable',
+        'switch-optionally-described',
+      ].sort(),
     );
+  });
+
+  it('disabled switch: exposes disabled state and does not activate', async () => {
+    const result = await runContract({
+      contract: switchContract,
+      component: 'Switch (disabled)',
+      setup: () => {
+        render(<DisabledSwitch />);
+        return createJsdomHarness();
+      },
+      teardown: cleanup,
+      // A disabled, description-less switch: only these remain gaps.
+      expectedFailures: [
+        'switch-optionally-described',
+        'switch-aria-snapshot',
+        // Disabled control can't be toggled/focused the same way; those
+        // interaction checks don't apply to the disabled binding.
+        'switch-1',
+        'switch-click-toggles',
+      ],
+    });
+    const byId = (id: string) =>
+      result.results.find(r => r.expectationId === id)?.status;
+    expect(byId('switch-disabled-state')).toBe('passed');
+    expect(byId('switch-disabled-not-activatable')).toBe('passed');
+    expect(contractHasBlockingFailure(result)).toBe(false);
   });
 });

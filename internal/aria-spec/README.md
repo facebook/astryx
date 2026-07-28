@@ -137,10 +137,16 @@ These are the instructions for authoring a pattern contract. They distill the
 4. **Encode or excuse — never skip silently.** For each rubric dimension, either
    write an expectation (citing the clause) or record in the pattern file why it
    doesn't apply. The next reviewer must see it was considered, not forgotten.
-5. **Right layer for the check.** Static/DOM facts (name, role, contrast) overlap
+5. **Classify by verification method.** Not every requirement is a contract
+   expectation. Tag each as one of: **contract** (DOM/behavior assertable here),
+   **lint** (e.g. untranslated-string rule), **browser** (CSS-engine: contrast,
+   forced-colors, focus-ring), or **manual** (real AT announcement). Only
+   `contract` items become expectations; the rest are recorded so coverage is
+   honest about what this suite can and can't prove.
+6. **Right layer for the check.** Static/DOM facts (name, role, contrast) overlap
    with axe; behavior (keyboard, focus, announcements) is what this suite is for.
    Don't re-implement axe — cover what it can't.
-6. **Severity maps to priority.** The skill's Critical/Major/Minor/Best-Practice
+7. **Severity maps to priority.** The skill's Critical/Major/Minor/Best-Practice
    grades map to `blocker`/`major`/`minor`/`optional`, which drives CI gating.
 
 ### Completeness checklist
@@ -150,19 +156,19 @@ review, **encode an expectation** (citing the SC/clause) or **record why it does
 not apply**. Rows 1–3 (broad) apply to essentially every component; the rest are
 conditional on what the pattern actually does.
 
-| #   | Layer   | Dimension          | What to verify                                                                                                                                 | Typical spec              |
-| --- | ------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| 1   | broad   | **Name**           | Widget + every interactive part has an accessible name (visible label, `aria-label`, or `aria-labelledby`); no dangling label/description ids. | WCAG 4.1.2, 2.4.6, 3.3.2  |
-| 2   | broad   | **Role**           | Correct ARIA role/pattern from the APG; sub-roles present (e.g. `option`, `tab`).                                                              | WCAG 4.1.2 · APG          |
-| 3   | broad   | **State**          | Every state (checked, selected, expanded, disabled, invalid, busy…) exposed via ARIA — never color/shape alone.                                | WCAG 4.1.2, 1.4.1         |
-| 4   | pattern | **Keyboard**       | Full APG keyboard set, including RTL arrow flipping; no keyboard traps.                                                                        | WCAG 2.1.1, 2.1.2 · APG   |
-| 5   | pattern | **Focus**          | Overlays trap + restore focus; focus never dropped to `<body>`; visible ring in every theme; focus not obscured.                               | WCAG 2.4.3, 2.4.7, 2.4.11 |
-| 6   | pattern | **Announcements**  | Async changes announce via a live region; no born-with-content live regions.                                                                   | WCAG 4.1.3                |
-| 7   | pattern | **Reduced motion** | Entry/exit motion guarded by `prefers-reduced-motion`.                                                                                         | WCAG 2.3.3                |
-| 8   | pattern | **Forced colors**  | Painted state (fills, checkmarks, focus rings) survives `forced-colors: active`.                                                               | WCAG 1.4.1, 1.4.11        |
-| 9   | broad   | **Contrast**       | Text ≥ 4.5:1 (large ≥ 3:1); UI components / focus indicators ≥ 3:1.                                                                            | WCAG 1.4.3, 1.4.11        |
-| 10  | broad   | **Target size**    | Interactive targets ≥ 24×24 px.                                                                                                                | WCAG 2.5.8                |
-| 11  | broad   | **i18n**           | Every AT-facing string routes through `useTranslator()`.                                                                                       | — (repo rule)             |
+| #   | Layer   | Dimension          | What to verify                                                                                                                                       | Typical spec              | Verify by                                         |
+| --- | ------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------------------- |
+| 1   | broad   | **Name**           | Widget + every interactive part has an accessible name (visible label, `aria-label`, or `aria-labelledby`); no dangling label/description ids.       | WCAG 4.1.2, 2.4.6, 3.3.2  | contract                                          |
+| 2   | broad   | **Role**           | Correct ARIA role/pattern from the APG; sub-roles present (e.g. `option`, `tab`).                                                                    | WCAG 4.1.2 · APG          | contract                                          |
+| 3   | broad   | **State**          | Every state (checked, selected, expanded, disabled, invalid, busy…) exposed via ARIA — never color/shape alone. Disabled controls must not activate. | WCAG 4.1.2, 1.4.1         | contract                                          |
+| 4   | pattern | **Keyboard**       | Full APG keyboard set, including RTL arrow flipping; no keyboard traps.                                                                              | WCAG 2.1.1, 2.1.2 · APG   | contract                                          |
+| 5   | pattern | **Focus**          | Overlays trap + restore focus; focus never dropped to `<body>`; visible ring in every theme; focus not obscured.                                     | WCAG 2.4.3, 2.4.7, 2.4.11 | contract (trap/restore) + browser (ring)          |
+| 6   | pattern | **Announcements**  | Async changes announce via a live region; no born-with-content live regions.                                                                         | WCAG 4.1.3                | contract (region present) + manual (announcement) |
+| 7   | pattern | **Reduced motion** | Entry/exit motion guarded by `prefers-reduced-motion`.                                                                                               | WCAG 2.3.3                | browser                                           |
+| 8   | pattern | **Forced colors**  | Painted state (fills, checkmarks, focus rings) survives `forced-colors: active`.                                                                     | WCAG 1.4.1, 1.4.11        | browser                                           |
+| 9   | broad   | **Contrast**       | Text ≥ 4.5:1 (large ≥ 3:1); UI components / focus indicators ≥ 3:1.                                                                                  | WCAG 1.4.3, 1.4.11        | browser (axe)                                     |
+| 10  | broad   | **Target size**    | Interactive targets ≥ 24×24 px.                                                                                                                      | WCAG 2.5.8                | browser                                           |
+| 11  | broad   | **i18n**           | Every AT-facing string routes through `useTranslator()`.                                                                                             | — (repo rule)             | lint                                              |
 
 ### Tier awareness
 
