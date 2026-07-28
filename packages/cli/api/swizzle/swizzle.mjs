@@ -40,13 +40,23 @@ const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
  */
 const VIRTUAL_COMPONENT_DIR = path.join(path.sep, '__astryx_swizzle__', 'component');
 
-/** True when `child` resolves strictly inside `parent`. */
+/**
+ * True when `child` resolves strictly inside `parent`.
+ * @param {string} parent
+ * @param {string} child
+ * @returns {boolean}
+ */
 function isInside(parent, child) {
   const rel = path.relative(parent, child);
   return rel !== '' && !rel.startsWith('..') && !path.isAbsolute(rel);
 }
 
-/** True when `child` is `parent` itself or resolves inside it. */
+/**
+ * True when `child` is `parent` itself or resolves inside it.
+ * @param {string} parent
+ * @param {string} child
+ * @returns {boolean}
+ */
 function isAtOrInside(parent, child) {
   return parent === child || isInside(parent, child);
 }
