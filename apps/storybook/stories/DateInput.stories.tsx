@@ -5,6 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {DateInput} from '@astryxdesign/core/DateInput';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 const meta: Meta<typeof DateInput> = {
   title: 'Core/DateInput',
@@ -434,7 +435,8 @@ export const StatusVariantComparison: Story = {
       '2026-01-25' as ISODateString,
     );
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
         <DateInput
           label="Attached (default)"
           value={a}
@@ -449,6 +451,43 @@ export const StatusVariantComparison: Story = {
           statusVariant="detached"
         />
       </div>
+    );
+  },
+};
+
+/**
+ * Theme the clear button precisely via `defineTheme`.
+ *
+ * `components['date-input-clear'].base` scopes overrides to the clear control
+ * only (via the `astryx-date-input-clear` target), instead of reaching it
+ * through a fragile descendant selector. Defaults are unchanged; this story
+ * only demonstrates the override channel.
+ */
+const clearButtonTheme = defineTheme({
+  name: 'date-input-clear-demo',
+  components: {
+    'date-input-clear': {
+      base: {
+        color: 'var(--color-accent)',
+      },
+    },
+  },
+});
+
+export const ThemedClearButton: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    return (
+      <Theme theme={clearButtonTheme} mode="light">
+        <DateInput
+          label="Clear button themed (accent)"
+          value={value}
+          onChange={setValue}
+          hasClear
+        />
+      </Theme>
     );
   },
 };

@@ -22,6 +22,8 @@ import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateInput} from './DateInput';
 import {InputGroup} from '../InputGroup';
 import {InputGroupText} from '../InputGroup/InputGroupText';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSSFlat} from '../theme/generateThemeRules';
 
 describe('DateInput', () => {
   it('renders with label', () => {
@@ -944,11 +946,14 @@ describe('DateInput', () => {
   });
 });
 
-
 describe('DateInput statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <DateInput label="Date" onChange={() => {}} status={{type: 'error', message: 'Bad date'}} />,
+      <DateInput
+        label="Date"
+        onChange={() => {}}
+        status={{type: 'error', message: 'Bad date'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -958,11 +963,68 @@ describe('DateInput statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <DateInput label="Date" onChange={() => {}} status={{type: 'error', message: 'Bad date'}} statusVariant="detached" />,
+      <DateInput
+        label="Date"
+        onChange={() => {}}
+        status={{type: 'error', message: 'Bad date'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
       'detached',
     );
+  });
+});
+
+describe('DateInput clear theme target', () => {
+  it('renders the astryx-date-input-clear target on the clear button', () => {
+    render(
+      <DateInput
+        label="Date"
+        value="2026-01-15"
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    // Dedicated, stable theme target on the clear control, distinct from the
+    // root astryx-date-input target, so a theme can restyle just the clear
+    // button without a fragile structural selector.
+    expect(getButton('Clear Date')).toHaveClass('astryx-date-input-clear');
+  });
+
+  it('keeps the clear button functional alongside the new target', () => {
+    // The theme target is additive — the clear button is still a real <button>
+    // and still fires the clear handler.
+    const onChange = vi.fn();
+    render(
+      <DateInput
+        label="Date"
+        value="2026-01-15"
+        onChange={onChange}
+        hasClear
+      />,
+    );
+    const clear = getButton('Clear Date');
+    expect(clear.tagName).toBe('BUTTON');
+    fireEvent.click(clear);
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+
+  it('exposes date-input-clear as a themeable defineTheme target', () => {
+    // The generated CSS is what proves the target is reachable by a theme:
+    // jsdom cannot resolve the @layer cascade, so the DOM-class assertion above
+    // and this generation assertion together cover the seam.
+    const theme = defineTheme({
+      name: 'date-input-clear-test',
+      components: {
+        'date-input-clear': {
+          base: {color: 'var(--color-text-primary)'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('.astryx-date-input-clear {');
+    expect(css).toContain('color: var(--color-text-primary)');
   });
 });
