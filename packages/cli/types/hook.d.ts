@@ -22,6 +22,10 @@
 
 import type {HookDoc, HookParamDoc} from '../../core/src/docs-types';
 
+// Re-export the authored-doc types the hook leaves project so they stay central
+// here (the leaf @returns reference these rather than reaching into core).
+export type {HookDoc, HookParamDoc};
+
 /**
  * xds --json hook [--list] [--category X] [--detail names|compact|full]
  *
