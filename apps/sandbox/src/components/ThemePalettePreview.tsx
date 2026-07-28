@@ -755,7 +755,10 @@ function CheckboxRadioSwitchSection() {
             isDisabled
           />
         </VStack>
-        <RadioList label="Display mode" value="comfortable" onChange={() => {}}>
+        <RadioList
+          label="Display mode"
+          value="comfortable"
+          onChange={() => {}}>
           <RadioListItem value="compact" label="Compact" />
           <RadioListItem value="comfortable" label="Comfortable" />
           <RadioListItem value="spacious" label="Spacious" />
@@ -1041,6 +1044,7 @@ function TonalSection({
           margin: 0,
           marginBottom: 20,
         }}>
+        
         Full HCT tonal ramps: 21 perceptually uniform steps from black (T0) to
         white (T100).
         {isDark && (
