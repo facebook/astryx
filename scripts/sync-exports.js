@@ -63,6 +63,11 @@ const STATIC_EXPORTS = {
     types: './src/tailwind-theme.css.d.ts',
     default: './src/tailwind-theme.css',
   },
+  './BaseProps': {
+    source: './src/BaseProps.ts',
+    types: './dist/BaseProps.d.ts',
+    default: './dist/BaseProps.js',
+  },
   './naming': {
     source: './src/naming.ts',
     types: './dist/naming.d.ts',
