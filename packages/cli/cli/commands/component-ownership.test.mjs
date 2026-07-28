@@ -27,6 +27,13 @@ vi.mock('../../lib/project.mjs', () => ({
 // Import the api AFTER the mock is registered.
 const {component} = await import('../../api/component/component.mjs');
 
+// These are real-filesystem integration tests: each `component()` call scans
+// the entire core library (recursive readdir + hundreds of existsSync probes).
+// Under saturated parallel CI workers that I/O gets starved and can exceed the
+// 5s default, surfacing as a spurious timeout. Size the budget to the work, as
+// detail-levels.test.mjs already does for its discovery beforeAll.
+vi.setConfig({testTimeout: 30_000, hookTimeout: 30_000});
+
 let tmpDir;
 
 const INTEGRATION_NAME = '@test/meta';
