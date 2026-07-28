@@ -128,7 +128,7 @@ describe('BreadcrumbItem — WCAG 1.4.1 use of colour', () => {
     render(
       <Breadcrumbs>
         <BreadcrumbItem href="/projects">Projects</BreadcrumbItem>
-        <BreadcrumbItem isCurrent menu={[{id: 'a', label: 'Alpha'}]}>
+        <BreadcrumbItem isCurrent menu={[{label: 'Alpha'}]}>
           Detail
         </BreadcrumbItem>
       </Breadcrumbs>,
