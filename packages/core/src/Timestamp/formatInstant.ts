@@ -54,6 +54,12 @@ export interface FormatInstantOptions {
    * `Intl` already does with no `timeZone`, so the omitted path never
    * constructs an explicit-zone formatter and cannot drift from the host
    * default.
+   *
+   * Must already be one the platform accepts. An identifier `Intl` does not
+   * recognize throws a `RangeError` from its constructor, before any
+   * formatting happens; deciding what to do about that belongs to whoever
+   * took the identifier from a consumer, not here (tooltipEntries resolves
+   * and warns in `resolveTimezoneID`, then passes only what survived).
    */
   timeZone?: string;
   /**
@@ -109,13 +115,26 @@ function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
+/** The fields a `system_*` string is assembled from. */
+interface WallClock {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+}
+
 /**
  * Wall-clock fields for an instant: in the named zone, or — with no zone —
  * the viewer's own, read straight off the `Date`. The zone-less branch
  * deliberately stays on plain getters so the default rendering never gains a
  * dependency on `Intl` zone data it did not have before.
+ *
+ * The explicit return type is load-bearing: it is what forces the two branches
+ * to keep producing the same shape.
  */
-function getWallClock(date: Date, timeZone: string | undefined) {
+function getWallClock(date: Date, timeZone: string | undefined): WallClock {
   return timeZone === undefined
     ? {
         year: date.getFullYear(),
