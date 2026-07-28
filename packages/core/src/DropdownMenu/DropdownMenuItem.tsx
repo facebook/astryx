@@ -51,7 +51,11 @@ const menuItemStyles = stylex.create({
     backgroundColor: {
       default: 'transparent',
       ':focus': colorVars['--color-overlay-hover'],
-      ':hover': colorVars['--color-overlay-hover'],
+    },
+    ':hover': {
+      '@media (hover: hover)': {
+        backgroundColor: colorVars['--color-overlay-hover'],
+      },
     },
     border: 'none',
     cursor: 'pointer',

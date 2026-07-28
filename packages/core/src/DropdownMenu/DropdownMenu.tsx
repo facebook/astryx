@@ -200,6 +200,14 @@ export function DropdownMenu({
   const items = ('items' in props ? props.items : undefined) ?? [];
   const children = props.children;
 
+  // Extract BaseProps pass-throughs (aria-*, id, event handlers) from the
+  // discriminated-union rest bag so they can be forwarded to the menu element.
+  const {
+    items: _items,
+    children: _children,
+    ...rest
+  } = props as Record<string, unknown>;
+
   const menuId = useId();
   const menuSize = button.size ?? 'md';
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -435,6 +443,7 @@ export function DropdownMenu({
 
       {popover.render(
         <div
+          {...rest}
           ref={listRef}
           id={menuId}
           role="menu"
