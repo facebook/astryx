@@ -42,7 +42,7 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, radiusVars, spacingVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
-import {mergeRefs} from '../../../utils';
+import {mergeRefs, rtlStyles} from '../../../utils';
 import type {
   TablePlugin,
   TableColumn,
@@ -299,12 +299,14 @@ function TreeExpander({
           : t('@astryx.tableTree.expandRow')
       }
       aria-expanded={isExpanded}>
-      <span
-        {...stylex.props(
-          treeStyles.chevron,
-          isExpanded && treeStyles.chevronExpanded,
-        )}>
-        <Icon icon="chevronRight" size="xsm" />
+      <span {...stylex.props(rtlStyles.mirror)}>
+        <span
+          {...stylex.props(
+            treeStyles.chevron,
+            isExpanded && treeStyles.chevronExpanded,
+          )}>
+          <Icon icon="chevronRight" size="xsm" />
+        </span>
       </span>
     </button>
   );
@@ -346,12 +348,14 @@ function TreeExpandAllToggle({
           : t('@astryx.tableTree.expandAllRows')
       }
       aria-expanded={allExpanded}>
-      <span
-        {...stylex.props(
-          treeStyles.chevron,
-          allExpanded && treeStyles.chevronExpanded,
-        )}>
-        <Icon icon="chevronRight" size="xsm" />
+      <span {...stylex.props(rtlStyles.mirror)}>
+        <span
+          {...stylex.props(
+            treeStyles.chevron,
+            allExpanded && treeStyles.chevronExpanded,
+          )}>
+          <Icon icon="chevronRight" size="xsm" />
+        </span>
       </span>
     </button>
   );

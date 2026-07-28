@@ -16,6 +16,7 @@ import {useCallback, useMemo, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
+import {rtlStyles} from '../../../utils';
 import {resolveContextActions} from '../../tableContextMenu';
 import {useTranslator} from '../../../i18n';
 import type {
@@ -361,12 +362,14 @@ function ExpansionChevron({
       }}
       aria-label={ariaLabel}
       aria-expanded={isExpanded}>
-      <span
-        {...stylex.props(
-          expansionStyles.chevronIcon,
-          isExpanded && expansionStyles.chevronExpanded,
-        )}>
-        <Icon icon="chevronRight" size="xsm" />
+      <span {...stylex.props(rtlStyles.mirror)}>
+        <span
+          {...stylex.props(
+            expansionStyles.chevronIcon,
+            isExpanded && expansionStyles.chevronExpanded,
+          )}>
+          <Icon icon="chevronRight" size="xsm" />
+        </span>
       </span>
     </button>
   );
@@ -533,12 +536,14 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
                     ? t('@astryx.tableRowExpansion.collapseAllRows')
                     : t('@astryx.tableRowExpansion.expandAllRows')
                 }>
-                <span
-                  {...stylex.props(
-                    expansionStyles.chevronIcon,
-                    allExpanded && expansionStyles.chevronExpanded,
-                  )}>
-                  <Icon icon="chevronRight" size="xsm" />
+                <span {...stylex.props(rtlStyles.mirror)}>
+                  <span
+                    {...stylex.props(
+                      expansionStyles.chevronIcon,
+                      allExpanded && expansionStyles.chevronExpanded,
+                    )}>
+                    <Icon icon="chevronRight" size="xsm" />
+                  </span>
                 </span>
               </button>
             ),
@@ -573,11 +578,13 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
               group: 'row-expansion',
               label: isExpanded ? 'Collapse row' : 'Expand row',
               icon: (
-                <Icon
-                  icon={isExpanded ? 'chevronDown' : 'chevronRight'}
-                  size="xsm"
-                  aria-hidden
-                />
+                <span {...stylex.props(rtlStyles.mirror)}>
+                  <Icon
+                    icon={isExpanded ? 'chevronDown' : 'chevronRight'}
+                    size="xsm"
+                    aria-hidden
+                  />
+                </span>
               ),
               onSelect: () => onToggle(key),
             },

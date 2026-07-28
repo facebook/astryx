@@ -32,7 +32,7 @@ import {IconButton} from '../IconButton';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useScrollLock} from '../hooks/useScrollLock';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -532,7 +532,11 @@ export function Lightbox({
         {isGallery && (
           <div {...stylex.props(styles.navButton, styles.navPrev)}>
             <IconButton
-              icon={<Icon icon="chevronLeft" size="sm" color="inherit" />}
+              icon={
+                <span {...stylex.props(rtlStyles.mirror)}>
+                  <Icon icon="chevronLeft" size="sm" color="inherit" />
+                </span>
+              }
               label={t('@astryx.lightbox.previous')}
               variant="ghost"
               isDisabled={!canPrev}
@@ -587,7 +591,11 @@ export function Lightbox({
         {isGallery && (
           <div {...stylex.props(styles.navButton, styles.navNext)}>
             <IconButton
-              icon={<Icon icon="chevronRight" size="sm" color="inherit" />}
+              icon={
+                <span {...stylex.props(rtlStyles.mirror)}>
+                  <Icon icon="chevronRight" size="sm" color="inherit" />
+                </span>
+              }
               label={t('@astryx.lightbox.next')}
               variant="ghost"
               isDisabled={!canNext}

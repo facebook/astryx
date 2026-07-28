@@ -20,6 +20,7 @@ import {
   fontWeightVars,
 } from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
+import {rtlStyles} from '../../../utils';
 import type {TablePlugin} from '../../types';
 import {useTranslator} from '../../../i18n';
 
@@ -333,12 +334,14 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
                         })
                   }
                   aria-expanded={!collapsed}>
-                  <span
-                    {...stylex.props(
-                      styles.chevronIcon,
-                      !collapsed && styles.chevronExpanded,
-                    )}>
-                    <Icon icon="chevronRight" size="xsm" />
+                  <span {...stylex.props(rtlStyles.mirror)}>
+                    <span
+                      {...stylex.props(
+                        styles.chevronIcon,
+                        !collapsed && styles.chevronExpanded,
+                      )}>
+                      <Icon icon="chevronRight" size="xsm" />
+                    </span>
                   </span>
                 </button>
                 {content}
