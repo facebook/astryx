@@ -94,7 +94,7 @@ export const docs = {
     },
     {
       name: 'padding',
-      type: 'SpacingStep',
+      type: '0 | 0.5 | 1 | 1.5 | 2 | 3 | 4 | 5 | 6 | 8 | 10',
       description: 'Internal padding of the dialog using the spacing scale step.',
     },
     {
