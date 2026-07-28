@@ -58,6 +58,7 @@ if (
 export const JSON_SUPPORTED = new Set([
   'component',
   'docs',
+  'blog',
   'discover',
   'search',
   'build',

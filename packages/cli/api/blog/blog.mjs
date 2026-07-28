@@ -194,7 +194,7 @@ function parseFeed(xml) {
  * The feed is always the canonical site — there is no user-supplied URL.
  *
  * @param {string} [slug]
- * @returns {Promise<{type: string, data: unknown}>}
+ * @returns {Promise<import('../../types/blog').BlogListResponse | import('../../types/blog').BlogDetailResponse>}
  */
 export async function blog(slug) {
   const xml = await fetchText(FEED_URL);

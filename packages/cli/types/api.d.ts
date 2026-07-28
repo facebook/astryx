@@ -59,6 +59,7 @@ import type {
   UpgradeStatusResponse,
   UpgradeRunResponse,
 } from './upgrade';
+import type {BlogListResponse, BlogDetailResponse} from './blog';
 import type {Suggestion} from './base';
 
 /** Structured API error with a stable machine-readable code. */
@@ -339,3 +340,14 @@ export declare function upgrade(
   options?: UpgradeOptions,
   ctx?: {cwd?: string},
 ): Promise<UpgradeListResponse | UpgradeStatusResponse | UpgradeRunResponse>;
+
+// ── Blog ─────────────────────────────────────────────────────────────
+
+/**
+ * Read the Astryx blog over the canonical RSS feed. No args lists posts; a slug
+ * reads that post's plaintext. Throws AstryxError on a fetch failure or an
+ * unknown slug.
+ */
+export declare function blog(
+  slug?: string,
+): Promise<BlogListResponse | BlogDetailResponse>;
