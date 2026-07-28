@@ -702,7 +702,7 @@ export function PowerSearchEditPopover({
   // Handle Enter to save, Escape to cancel
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !isSaveDisabled) {
+      if (e.key === 'Enter' && !isSaveDisabled && !e.defaultPrevented) {
         e.preventDefault();
         handleSave();
       } else if (e.key === 'Escape' && !e.defaultPrevented) {

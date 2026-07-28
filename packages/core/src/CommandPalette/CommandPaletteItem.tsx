@@ -43,7 +43,7 @@ const styles = stylex.create({
     backgroundColor: 'transparent',
     border: 'none',
     cursor: 'pointer',
-    textAlign: 'left' as const,
+    textAlign: 'start' as const,
     outline: 'none',
     userSelect: 'none',
   },

@@ -1,10 +1,17 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect, vi} from 'vitest';
-import {render, screen, waitFor} from '@testing-library/react';
+import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Breadcrumbs} from './Breadcrumbs';
 import {BreadcrumbItem} from './BreadcrumbItem';
+import {
+  BreadcrumbMenuItem,
+  BreadcrumbMenuCheckboxItem,
+  BreadcrumbMenuRadioGroup,
+  BreadcrumbMenuRadioItem,
+} from './index';
+import type {BreadcrumbMenuOption} from './index';
 import {LinkProvider} from '../Link/LinkProvider';
 
 function CustomLink({
@@ -357,5 +364,280 @@ describe('BreadcrumbItem', () => {
     // Current item is still a span
     const current = screen.getByText('Current');
     expect(current.tagName).toBe('SPAN');
+  });
+});
+
+describe('BreadcrumbItem menu', () => {
+  // Mock the native Popover API — jsdom doesn't implement showPopover/
+  // hidePopover or the :popover-open match. Mirrors DropdownMenu's test setup.
+  beforeEach(() => {
+    HTMLElement.prototype.showPopover = vi.fn(function (this: HTMLElement) {
+      this.setAttribute('popover-open', '');
+      const event = new Event('toggle', {bubbles: false});
+      Object.defineProperty(event, 'newState', {value: 'open'});
+      this.dispatchEvent(event);
+    });
+    HTMLElement.prototype.hidePopover = vi.fn(function (this: HTMLElement) {
+      this.removeAttribute('popover-open');
+      const event = new Event('toggle', {bubbles: false});
+      Object.defineProperty(event, 'newState', {value: 'closed'});
+      this.dispatchEvent(event);
+    });
+    const originalMatches = HTMLElement.prototype.matches;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (HTMLElement.prototype as any).matches = function (
+      selector: string,
+    ): boolean {
+      if (selector === ':popover-open') {
+        return this.hasAttribute('popover-open');
+      }
+      return originalMatches.call(this, selector);
+    };
+  });
+
+  const items: BreadcrumbMenuOption[] = [
+    {label: 'Design', onClick: vi.fn()},
+    {label: 'Engineering', onClick: vi.fn()},
+    {type: 'divider'},
+    {label: 'Data', onClick: vi.fn()},
+  ];
+
+  it('renders as a menu trigger button with aria-haspopup="menu"', () => {
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem href="/">Home</BreadcrumbItem>
+        <BreadcrumbItem menu={items}>Teams</BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Teams'});
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('portability: a DropdownMenuOption[] renders its items on open', async () => {
+    const user = userEvent.setup();
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem menu={items}>Teams</BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Teams'}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    expect(menu).toHaveAttribute('aria-label', 'Teams');
+    expect(
+      screen.getByRole('menuitem', {name: 'Design', hidden: true}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('menuitem', {name: 'Engineering', hidden: true}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('menuitem', {name: 'Data', hidden: true}),
+    ).toBeInTheDocument();
+  });
+
+  it('fires the item onClick and closes the menu on select', async () => {
+    const user = userEvent.setup();
+    const onDesign = vi.fn();
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem menu={[{label: 'Design', onClick: onDesign}]}>
+          Teams
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Teams'}));
+    await user.click(
+      screen.getByRole('menuitem', {name: 'Design', hidden: true}),
+    );
+    expect(onDesign).toHaveBeenCalledTimes(1);
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+  });
+
+  it('supports the composed children form', async () => {
+    const user = userEvent.setup();
+    const onOverview = vi.fn();
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem
+          menu={
+            <>
+              <BreadcrumbMenuItem label="Overview" onClick={onOverview} />
+              <BreadcrumbMenuItem label="Settings" />
+            </>
+          }>
+          Project
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Current</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Project'}));
+    expect(
+      screen.getByRole('menuitem', {name: 'Overview', hidden: true}),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('menuitem', {name: 'Overview', hidden: true}),
+    );
+    expect(onOverview).toHaveBeenCalledTimes(1);
+  });
+
+  it('supports a selectable checkbox item', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem
+          menu={
+            <BreadcrumbMenuCheckboxItem
+              label="Show archived"
+              value={false}
+              onChange={onChange}
+            />
+          }>
+          Filters
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Current</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Filters'}));
+    const checkbox = screen.getByRole('menuitemcheckbox', {
+      name: 'Show archived',
+      hidden: true,
+    });
+    expect(checkbox).toHaveAttribute('aria-checked', 'false');
+    await user.click(checkbox);
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
+
+  it('supports a selectable radio group', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem
+          menu={
+            <BreadcrumbMenuRadioGroup
+              aria-label="Sort by"
+              value="name"
+              onChange={onChange}>
+              <BreadcrumbMenuRadioItem value="name" label="Name" />
+              <BreadcrumbMenuRadioItem value="date" label="Date" />
+            </BreadcrumbMenuRadioGroup>
+          }>
+          Sort
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Current</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Sort'}));
+    const nameOption = screen.getByRole('menuitemradio', {
+      name: 'Name',
+      hidden: true,
+    });
+    expect(nameOption).toHaveAttribute('aria-checked', 'true');
+    await user.click(
+      screen.getByRole('menuitemradio', {name: 'Date', hidden: true}),
+    );
+    expect(onChange).toHaveBeenCalledWith('date');
+  });
+
+  it('opens with ArrowDown and closes with Escape, returning focus to trigger', async () => {
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem menu={items}>Teams</BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Teams'});
+    trigger.focus();
+    fireEvent.keyDown(trigger, {key: 'ArrowDown'});
+    expect(HTMLElement.prototype.showPopover).toHaveBeenCalled();
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => {
+      expect(menu).toContainElement(
+        document.activeElement as HTMLElement | null,
+      );
+    });
+    fireEvent.keyDown(menu, {key: 'Escape'});
+    expect(HTMLElement.prototype.hidePopover).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(trigger).toHaveFocus();
+    });
+  });
+
+  it('roves focus with ArrowDown across items', async () => {
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem menu={items}>Teams</BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Teams'});
+    trigger.focus();
+    fireEvent.keyDown(trigger, {key: 'ArrowDown'});
+    const menu = screen.getByRole('menu', {hidden: true});
+    await waitFor(() => {
+      expect(
+        screen.getByRole('menuitem', {name: 'Design', hidden: true}),
+      ).toHaveFocus();
+    });
+    fireEvent.keyDown(menu, {key: 'ArrowDown'});
+    expect(
+      screen.getByRole('menuitem', {name: 'Engineering', hidden: true}),
+    ).toHaveFocus();
+  });
+
+  it('allows menu together with isCurrent (both aria-current and aria-haspopup)', () => {
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem href="/">Home</BreadcrumbItem>
+        <BreadcrumbItem isCurrent menu={items}>
+          Teams
+        </BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Teams'});
+    expect(trigger).toHaveAttribute('aria-current', 'page');
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+  });
+
+  it('warns and lets menu win when href is also provided', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem href="/teams" menu={items}>
+          Teams
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    // menu wins: it's a button trigger, not a link.
+    expect(screen.getByRole('button', {name: 'Teams'})).toHaveAttribute(
+      'aria-haspopup',
+      'menu',
+    );
+    expect(screen.queryByRole('link', {name: 'Teams'})).not.toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('`menu` and `href` are mutually exclusive'),
+    );
+    warn.mockRestore();
+  });
+
+  it('keeps mid-trail separators intact around a menu crumb', () => {
+    const {container} = render(
+      <Breadcrumbs>
+        <BreadcrumbItem href="/">Home</BreadcrumbItem>
+        <BreadcrumbItem menu={items}>Teams</BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    // One separator per item (first hidden via CSS); the menu crumb does not
+    // add or drop any.
+    const separators = container.querySelectorAll(
+      'ol > li > span[aria-hidden="true"]',
+    );
+    expect(separators).toHaveLength(3);
   });
 });

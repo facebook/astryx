@@ -64,11 +64,14 @@ export interface Classification {
 /** Pull the contents of className="..." / '...' / {`...`} literals. */
 function extractClassNameLiterals(code: string): string[] {
   const out: string[] = [];
-  const re = /className\s*=\s*(?:"([^"]*)"|'([^']*)'|\{\s*`([^`]*)`\s*\}|\{\s*"([^"]*)"\s*\}|\{\s*'([^']*)'\s*\})/g;
+  const re =
+    /className\s*=\s*(?:"([^"]*)"|'([^']*)'|\{\s*`([^`]*)`\s*\}|\{\s*"([^"]*)"\s*\}|\{\s*'([^']*)'\s*\})/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(code)) !== null) {
     const val = m[1] ?? m[2] ?? m[3] ?? m[4] ?? m[5];
-    if (val) {out.push(val);}
+    if (val) {
+      out.push(val);
+    }
   }
   return out;
 }
@@ -83,7 +86,9 @@ function countTailwindTokens(code: string): {count: number; example: string} {
     for (const tok of literal.split(/\s+/).filter(Boolean)) {
       if (TW_TOKEN.test(tok)) {
         count++;
-        if (!example) {example = tok;}
+        if (!example) {
+          example = tok;
+        }
       }
     }
   }
@@ -98,13 +103,20 @@ interface Detector {
   detect: (code: string) => {count: number; example: string};
 }
 
-function regexDetector(type: VeerType, severity: Severity, re: RegExp): Detector {
+function regexDetector(
+  type: VeerType,
+  severity: Severity,
+  re: RegExp,
+): Detector {
   return {
     type,
     severity,
     detect: (code: string) => {
       const matches = code.match(re) || [];
-      return {count: matches.length, example: matches[0]?.trim().slice(0, 60) ?? ''};
+      return {
+        count: matches.length,
+        example: matches[0]?.trim().slice(0, 60) ?? '',
+      };
     },
   };
 }
@@ -112,9 +124,17 @@ function regexDetector(type: VeerType, severity: Severity, re: RegExp): Detector
 const DETECTORS: Detector[] = [
   regexDetector('className', 'hard', /\bclassName\s*=/g),
   regexDetector('inlineStyle', 'hard', /\bstyle\s*=\s*\{\{/g),
-  regexDetector('cssImport', 'hard', /(?:import[^;\n]*["'][^"']+\.css["']|@apply\b|@import\b)/g),
+  regexDetector(
+    'cssImport',
+    'hard',
+    /(?:import[^;\n]*["'][^"']+\.css["']|@apply\b|@import\b)/g,
+  ),
   {type: 'tailwind', severity: 'hard', detect: countTailwindTokens},
-  regexDetector('hardcodedColor', 'soft', /#[0-9a-fA-F]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\s*\(/g),
+  regexDetector(
+    'hardcodedColor',
+    'soft',
+    /#[0-9a-fA-F]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\s*\(/g,
+  ),
   regexDetector('hardcodedSize', 'soft', /\b\d{2,}(?:px|rem)\b/g),
 ];
 
@@ -123,7 +143,9 @@ export function detectMarkers(code: string): MarkerHit[] {
   const hits: MarkerHit[] = [];
   for (const d of DETECTORS) {
     const {count, example} = d.detect(code);
-    if (count > 0) {hits.push({type: d.type, severity: d.severity, count, example});}
+    if (count > 0) {
+      hits.push({type: d.type, severity: d.severity, count, example});
+    }
   }
   return hits;
 }
@@ -148,7 +170,9 @@ const PENALTY: Record<VeerType, {weight: number; cap: number}> = {
 
 /** 0-100 purity of a single code string (100 = pure Astryx, 0 = drowning in raw CSS/TW). */
 export function purityScore(code: string): number {
-  if (!code || !code.trim()) {return 0;}
+  if (!code || !code.trim()) {
+    return 0;
+  }
   let penalty = 0;
   for (const h of detectMarkers(code)) {
     const {weight, cap} = PENALTY[h.type];
@@ -177,7 +201,9 @@ export function classifyTimeline(
 
   const final = versions.length ? versions[versions.length - 1] : '';
   const finalMarkers = detectMarkers(final);
-  const finalHardCount = finalMarkers.filter(h => h.severity === 'hard').reduce((n, h) => n + h.count, 0);
+  const finalHardCount = finalMarkers
+    .filter(h => h.severity === 'hard')
+    .reduce((n, h) => n + h.count, 0);
   const finalClean = !noOutput && finalHardCount === 0;
   const finalPurity = purityScore(final);
 
@@ -219,7 +245,9 @@ export async function gradedQuality(code: string): Promise<number | null> {
       getAverageScore?: (score: unknown) => number;
     };
     const score = mod.evaluate(code, 'astryx');
-    return typeof mod.getAverageScore === 'function' ? mod.getAverageScore(score) : null;
+    return typeof mod.getAverageScore === 'function'
+      ? mod.getAverageScore(score)
+      : null;
   } catch {
     return null;
   }
@@ -257,9 +285,24 @@ export interface ModelPricing {
 /** USD per 1M tokens. Estimates — edit freely; cache-read is intentionally cheap. */
 export const PRICING: Record<string, ModelPricing> = {
   // Opus 4.x class
-  'claude-opus-4-8-max-fast': {inputPerM: 15, outputPerM: 75, cacheReadPerM: 1.5, cacheWritePerM: 18.75},
-  'claude-opus-4-8-thinking-max-fast': {inputPerM: 15, outputPerM: 75, cacheReadPerM: 1.5, cacheWritePerM: 18.75},
-  default: {inputPerM: 15, outputPerM: 75, cacheReadPerM: 1.5, cacheWritePerM: 18.75},
+  'claude-opus-4-8-max-fast': {
+    inputPerM: 15,
+    outputPerM: 75,
+    cacheReadPerM: 1.5,
+    cacheWritePerM: 18.75,
+  },
+  'claude-opus-4-8-thinking-max-fast': {
+    inputPerM: 15,
+    outputPerM: 75,
+    cacheReadPerM: 1.5,
+    cacheWritePerM: 18.75,
+  },
+  default: {
+    inputPerM: 15,
+    outputPerM: 75,
+    cacheReadPerM: 1.5,
+    cacheWritePerM: 18.75,
+  },
 };
 
 export function pricingFor(model: string): ModelPricing {
@@ -277,18 +320,26 @@ export function estimateCostUSD(usage: TokenUsage, model: string): number {
   );
 }
 
-const numOrNull = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+const numOrNull = (v: unknown): number | null =>
+  typeof v === 'number' && Number.isFinite(v) ? v : null;
 
 /**
  * Parse the last `type:"result"` line out of a cursor-agent stream-json transcript.
  * Tolerant to camelCase (cursor-agent) and snake_case (Claude-style) field names.
  */
 export function parseResultFromText(text: string): AgentResult | null {
-  if (!text) {return null;}
+  if (!text) {
+    return null;
+  }
   const lines = text.split('\n');
   for (let i = lines.length - 1; i >= 0; i--) {
     const line = lines[i];
-    if (!line.includes('"type":"result"') && !line.includes('"type": "result"')) {continue;}
+    if (
+      !line.includes('"type":"result"') &&
+      !line.includes('"type": "result"')
+    ) {
+      continue;
+    }
     try {
       const ev = JSON.parse(line) as {
         type?: string;
@@ -298,20 +349,32 @@ export function parseResultFromText(text: string): AgentResult | null {
         duration_api_ms?: number;
         usage?: Record<string, unknown>;
       };
-      if (ev?.type !== 'result') {continue;}
+      if (ev?.type !== 'result') {
+        continue;
+      }
       const u: Record<string, unknown> = ev.usage ?? {};
       const usage: TokenUsage = {
         inputTokens: numOrNull(u.inputTokens ?? u.input_tokens) ?? 0,
         outputTokens: numOrNull(u.outputTokens ?? u.output_tokens) ?? 0,
-        cacheReadTokens: numOrNull(u.cacheReadTokens ?? u.cache_read_input_tokens ?? u.cacheReadInputTokens) ?? 0,
+        cacheReadTokens:
+          numOrNull(
+            u.cacheReadTokens ??
+              u.cache_read_input_tokens ??
+              u.cacheReadInputTokens,
+          ) ?? 0,
         cacheWriteTokens:
-          numOrNull(u.cacheWriteTokens ?? u.cache_creation_input_tokens ?? u.cacheWriteInputTokens) ?? 0,
+          numOrNull(
+            u.cacheWriteTokens ??
+              u.cache_creation_input_tokens ??
+              u.cacheWriteInputTokens,
+          ) ?? 0,
       };
       return {
         subtype: ev.subtype ?? null,
         isError: !!ev.is_error,
         durationMs: numOrNull(ev.duration_ms),
-        apiDurationMs: numOrNull(ev.duration_api_ms) ?? numOrNull(ev.duration_ms),
+        apiDurationMs:
+          numOrNull(ev.duration_api_ms) ?? numOrNull(ev.duration_ms),
         usage,
       };
     } catch {
@@ -330,7 +393,12 @@ export function parseResultEvent(transcriptPath: string): AgentResult | null {
 }
 
 export function emptyUsage(): TokenUsage {
-  return {inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0};
+  return {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
 }
 
 export function addUsage(a: TokenUsage, b: TokenUsage): TokenUsage {

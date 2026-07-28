@@ -45,6 +45,7 @@ import {registerIcons} from '../Icon/globalIconRegistry';
 import {generateThemeCSS, type DefinedTheme} from './defineTheme';
 import {dataAttr} from '../naming';
 import {ThemeContext} from './useTheme';
+import {warnOnce} from '../utils/devWarning';
 
 /**
  * Theme provider props
@@ -97,9 +98,6 @@ ThemeNestingContext.displayName = 'ThemeNestingContext';
 /** Track which themes have already been injected */
 const injectedThemes = new Set<string>();
 
-/** Track which themes have already logged the perf warning */
-const warnedThemes = new Set<string>();
-
 /**
  * Hook to inject theme CSS into the document.
  * Built themes (from `astryx theme build`) skip injection — their CSS
@@ -120,17 +118,16 @@ function useThemeStyleInjection(theme: DefinedTheme): void {
     }
 
     // One-time perf hint per theme
-    if (!warnedThemes.has(theme.name)) {
-      warnedThemes.add(theme.name);
-      console.warn(
-        `[Astryx] Theme "${theme.name}" is using runtime style injection. ` +
-          `For better performance, use the pre-built theme:\n\n` +
-          `  import {${theme.name}Theme} from '@astryxdesign/theme-${theme.name}/built';\n` +
-          `  import '@astryxdesign/theme-${theme.name}/theme.css';\n\n` +
-          `For custom themes, run \`npx @astryxdesign/cli theme build <file>\` to generate ` +
-          `the built artifacts.`,
-      );
-    }
+    warnOnce(
+      `theme-injection:${theme.name}`,
+      'Theme',
+      `"${theme.name}" is using runtime style injection. ` +
+        `For better performance, use the pre-built theme:\n\n` +
+        `  import {${theme.name}Theme} from '@astryxdesign/theme-${theme.name}/built';\n` +
+        `  import '@astryxdesign/theme-${theme.name}/theme.css';\n\n` +
+        `For custom themes, run \`npx @astryxdesign/cli theme build <file>\` to generate ` +
+        `the built artifacts.`,
+    );
 
     const {prose, component} = generateThemeCSS(theme);
     if (!prose && !component) {

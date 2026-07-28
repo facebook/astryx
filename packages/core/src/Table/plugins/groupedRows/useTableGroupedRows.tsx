@@ -325,8 +325,12 @@ export function useTableGroupedRows<T extends Record<string, unknown>>(
                   }}
                   aria-label={
                     collapsed
-                      ? t('@astryx.tableGroupedRows.expandGroup', {groupKey: header.groupKey})
-                      : t('@astryx.tableGroupedRows.collapseGroup', {groupKey: header.groupKey})
+                      ? t('@astryx.tableGroupedRows.expandGroup', {
+                          groupKey: header.groupKey,
+                        })
+                      : t('@astryx.tableGroupedRows.collapseGroup', {
+                          groupKey: header.groupKey,
+                        })
                   }
                   aria-expanded={!collapsed}>
                   <span

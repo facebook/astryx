@@ -13,9 +13,11 @@ import {
   CommandPalette,
   CommandPaletteInput,
   CommandPaletteFooter,
+  CommandPaletteGroup,
 } from '@astryxdesign/core/CommandPalette';
 import {Button} from '@astryxdesign/core/Button';
 import {Icon} from '@astryxdesign/core/Icon';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {createStaticSource} from '@astryxdesign/core/Typeahead';
 import type {SearchSource, SearchableItem} from '@astryxdesign/core/Typeahead';
 import type {IconName} from '@astryxdesign/core/Icon';
@@ -48,10 +50,7 @@ export const Default: Story = {
     );
     return (
       <>
-        <Button
-          label="Open Command Palette"
-          onClick={() => setIsOpen(true)}
-        />
+        <Button label="Open Command Palette" onClick={() => setIsOpen(true)} />
         <CommandPalette
           isOpen={isOpen}
           onOpenChange={setIsOpen}
@@ -374,4 +373,41 @@ export const CustomFooter: Story = {
       </>
     );
   },
+};
+
+// ─── Themed group heading ─────────────────────────────────────────────────────
+
+/**
+ * Theme the group heading precisely via `defineTheme`.
+ *
+ * `components['command-palette-group-heading'].base` scopes overrides to the
+ * heading text only (via the `astryx-command-palette-group-heading` target),
+ * instead of a fragile structural selector. The group root keeps its own
+ * `astryx-command-palette-group` target.
+ *
+ * Defaults are unchanged; this story only demonstrates the override channel.
+ */
+const groupHeadingTheme = defineTheme({
+  name: 'command-palette-group-heading-demo',
+  components: {
+    'command-palette-group-heading': {
+      base: {
+        fontWeight: 'var(--font-weight-bold)',
+        color: 'var(--color-accent)',
+        textTransform: 'uppercase',
+      },
+    },
+  },
+});
+
+export const ThemedGroupHeading: Story = {
+  render: () => (
+    <Theme theme={groupHeadingTheme} mode="light">
+      <CommandPaletteGroup heading="Suggestions">
+        <div>Home</div>
+        <div>Settings</div>
+        <div>Profile</div>
+      </CommandPaletteGroup>
+    </Theme>
+  ),
 };

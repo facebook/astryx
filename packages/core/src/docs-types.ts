@@ -669,6 +669,7 @@ export interface TranslationDoc {
  * @example
  * ```
  * { type: 'prose', text: 'Spacing tokens control gap and padding...' }
+ * { type: 'heading', level: 3, text: 'Examples' }
  * { type: 'code', lang: 'tsx', code: 'padding: spacingVars[...]' }
  * { type: 'table', headers: ['Token', 'Value'], rows: [['--spacing-4', '16px']] }
  * { type: 'list', style: 'do', items: ['Use semantic tokens'] }
@@ -677,6 +678,7 @@ export interface TranslationDoc {
  */
 export type ContentBlock =
   | {type: 'prose'; text: string}
+  | {type: 'heading'; level: 3 | 4 | 5 | 6; text: string}
   | {type: 'code'; lang: string; code: string; label?: string}
   | {type: 'table'; headers: string[]; rows: string[][]}
   | {
@@ -729,6 +731,9 @@ export type TokenPreviewType =
 export interface ReferenceSection {
   /** Section title, e.g. "Spacing Tokens", "Light/Dark Mode" */
   title: string;
+  /** Navigation category ('guide' | 'foundations'). Mirrors the parent doc's
+   *  category so sections can be grouped independently in the docsite nav. */
+  category?: string;
   /** Ordered content blocks. Mix prose, code, tables, and lists freely. */
   content: ContentBlock[];
   /** Preview type for token tables in this section. When set, the docsite

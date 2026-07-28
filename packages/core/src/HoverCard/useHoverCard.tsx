@@ -120,6 +120,15 @@ export interface HoverCardOptions {
   isEnabled?: boolean;
 
   /**
+   * Accessible name for the hover card popup.
+   *
+   * When provided, the popup is exposed to assistive technology as a named
+   * `role="dialog"`. When omitted, the popup falls back to `role="group"` —
+   * a group may validly be unnamed, an unnamed dialog may not.
+   */
+  label?: string;
+
+  /**
    * Controlled open state. When provided, overrides hover/focus triggers:
    * - `true`: force-show the hover card (hover/focus hide is suppressed)
    * - `false`: force-hide the hover card
@@ -250,6 +259,7 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
     hideDelay = 200,
     focusTrigger = 'auto',
     isEnabled = true,
+    label,
     isOpen,
     isDefaultOpen = false,
     onShow,
@@ -462,7 +472,11 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
       const renderProps = {
         placement: renderPlacement,
         alignment: props?.alignment ?? alignment,
-        role: 'dialog',
+        // A named dialog when a label is provided; otherwise a group. A group
+        // may validly be unnamed, an unnamed dialog may not — and hover cards
+        // are non-modal, so group is honest semantics without a name.
+        role: label ? 'dialog' : 'group',
+        'aria-label': label || undefined,
         xstyle: [popoverXstyle, layerAnimations[renderPlacement]],
         // Render the layer as inline-safe phrasing markup so HoverCard stays
         // valid (and hydration-stable) inside inline contexts like a `<p>`.
@@ -516,7 +530,15 @@ export function useHoverCard(options: HoverCardOptions = {}): HoverCardReturn {
         renderProps,
       );
     },
-    [layer, placement, alignment, clearTimeouts, scheduleHide, popoverXstyle],
+    [
+      layer,
+      placement,
+      alignment,
+      label,
+      clearTimeouts,
+      scheduleHide,
+      popoverXstyle,
+    ],
   );
 
   return {

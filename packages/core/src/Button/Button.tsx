@@ -20,7 +20,7 @@
 
 import {useRef, useTransition, type ReactNode} from 'react';
 import type {BaseProps} from '../BaseProps';
-import type {SizeValue} from '../utils/types';
+import type {Elevation, SizeValue} from '../utils/types';
 import * as stylex from '@stylexjs/stylex';
 import {useTooltip} from '../Tooltip/useTooltip';
 import {
@@ -33,6 +33,7 @@ import {
   easeVars,
   fontWeightVars,
   typeScaleVars,
+  shadowVars,
 } from '../theme/tokens.stylex';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -158,6 +159,18 @@ const iconSizeStyles = stylex.create({
   sm: {width: 16, height: 16, fontSize: 16},
   md: {width: 16, height: 16, fontSize: 16},
   lg: {width: 20, height: 20, fontSize: 20},
+});
+
+/**
+ * Resting elevation for floating buttons (e.g. a FAB). `none` is the default
+ * flat button; `low`/`med`/`high` map to the shadow token scale. 'none' stays
+ * a literal so it never conflicts with a variant's background layering.
+ */
+const elevationStyles = stylex.create({
+  none: {boxShadow: 'none'},
+  low: {boxShadow: shadowVars['--shadow-low']},
+  med: {boxShadow: shadowVars['--shadow-med']},
+  high: {boxShadow: shadowVars['--shadow-high']},
 });
 
 /**
@@ -308,6 +321,12 @@ export interface ButtonProps extends BaseProps<HTMLButtonElement> {
    */
   size?: ButtonSize;
   /**
+   * Resting elevation — the shadow depth the button sits at. Use for floating
+   * buttons (FABs) that hover above content. `none` is the default flat button.
+   * @default 'none'
+   */
+  elevation?: Elevation;
+  /**
    * Whether the button is disabled.
    * @default false
    */
@@ -430,8 +449,8 @@ const loadingStyles = stylex.create({
   spinnerOverlay: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    insetInlineStart: 0,
+    insetInlineEnd: 0,
     bottom: 0,
     display: 'grid',
     placeItems: 'center',
@@ -578,6 +597,7 @@ export function Button({
   icon,
   isIconOnly = false,
   width,
+  elevation = 'none',
   children,
   endContent,
   tooltip,
@@ -691,6 +711,9 @@ export function Button({
       (buttonGroup.orientation === 'horizontal'
         ? groupStyles.onSolidHorizontal
         : groupStyles.onSolidVertical),
+    // Standalone floating buttons only — a grouped button's elevation is owned
+    // by the ButtonGroup so the shared surface lifts as one unit.
+    !buttonGroup && elevationStyles[elevation],
     width != null && dynamicStyles.width(width),
     xstyle,
   );
@@ -786,6 +809,7 @@ export function Button({
         {...ariaLabelProp}
         {...describedByProp}
         {...edgeCompAttr}
+        aria-busy={isLoadingState || undefined}
         onClick={handleClick}>
         {buttonContent}
       </LinkComponent>

@@ -90,7 +90,18 @@ export function CommandPaletteGroup({
         style,
       )}
       {...props}>
-      <div aria-hidden="true" {...stylex.props(styles.heading)}>
+      <div
+        aria-hidden="true"
+        {...mergeProps(
+          // Stable theme target for the group heading text. The root carries
+          // `astryx-command-palette-group`, but the heading itself had no
+          // handle, so a theme could only reach it through a fragile structural
+          // selector. This adds an `astryx-command-palette-group-heading` class
+          // so `defineTheme` can scope overrides (e.g. heading typography) to
+          // the heading alone.
+          themeProps('command-palette-group-heading'),
+          stylex.props(styles.heading),
+        )}>
         {heading}
       </div>
       {children}

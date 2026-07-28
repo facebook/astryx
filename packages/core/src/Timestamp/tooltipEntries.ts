@@ -20,6 +20,8 @@
  * - /packages/core/src/Timestamp/index.ts
  */
 
+import {SHARED_DATE_FORMAT_OPTIONS} from '../utils/plainDate';
+import {devWarn} from '../utils/devWarning';
 import type {TimestampFormat} from './Timestamp';
 
 // =============================================================================
@@ -114,8 +116,9 @@ function resolveTimezoneID(timezoneID: string | undefined): string | undefined {
   } catch {
     if (!warnedTimezoneIDs.has(timezoneID)) {
       warnedTimezoneIDs.add(timezoneID);
-      console.warn(
-        `Timestamp: unknown time zone ${JSON.stringify(timezoneID)} in tooltipEntries. Falling back to the viewer's time zone.`,
+      devWarn(
+        'Timestamp',
+        `unknown time zone ${JSON.stringify(timezoneID)} in tooltipEntries. Falling back to the viewer's time zone.`,
       );
     }
     return undefined;
@@ -266,9 +269,19 @@ function formatLine(
 
     case 'date':
       return new Intl.DateTimeFormat(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
+        ...SHARED_DATE_FORMAT_OPTIONS.date,
+        ...zone,
+      }).format(date);
+
+    case 'date_long':
+      return new Intl.DateTimeFormat(undefined, {
+        ...SHARED_DATE_FORMAT_OPTIONS.date_long,
+        ...zone,
+      }).format(date);
+
+    case 'date_weekday':
+      return new Intl.DateTimeFormat(undefined, {
+        ...SHARED_DATE_FORMAT_OPTIONS.date_weekday,
         ...zone,
       }).format(date);
 

@@ -35,6 +35,12 @@ export interface DerivedVarEntry {
  * entries share the same property.
  */
 export const derivedVarRegistry: Record<string, DerivedVarEntry[]> = {
+  avatar: [
+    {property: 'fontSize', vars: ['--_avatar-fallback-font-size']},
+    {property: 'fontWeight', vars: ['--_avatar-fallback-font-weight']},
+    {property: 'color', vars: ['--_avatar-fallback-color']},
+    {property: 'backgroundColor', vars: ['--_avatar-fallback-background']},
+  ],
   banner: [{property: 'borderRadius', vars: ['--_banner-radius']}],
   button: [{property: 'borderRadius', vars: ['--_button-radius']}],
   card: [

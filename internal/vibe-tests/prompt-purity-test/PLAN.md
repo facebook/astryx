@@ -13,7 +13,7 @@ CSS / Tailwind / inline styles / hardcoded values instead of Astryx components +
 **self-verifies** its output and **catches itself** before finishing.
 
 > Does adding a post-generation self-check to the `astryx init` prompt make agents
-> reliably (a) *not* leave raw CSS/Tailwind in the final file, and (b) when they do
+> reliably (a) _not_ leave raw CSS/Tailwind in the final file, and (b) when they do
 > start to veer, **catch and correct it** — measured from the actual run trajectory?
 
 ## 2. What varies (independent variable)
@@ -57,8 +57,8 @@ to verify — from the logging shim), and a transcript scan for "caught-in-reaso
   `stylex` styling system (the Astryx path), a logging `astryx` shim, then real
   `astryx init` + the variant splice. Writes `tasks/<id>.json` + `purity-config-<expId>.json`.
 - `run-purity.ts` — runner. Shells out to the `cursor-agent` CLI headless (`--print
-  --output-format stream-json --model claude-opus-4-8-max-fast --force --trust
-  --workspace <sandbox project>`), snapshots the `.tsx` on every change, persists the
+--output-format stream-json --model claude-opus-4-8-max-fast --force --trust
+--workspace <sandbox project>`), snapshots the `.tsx` on every change, persists the
   streamed events to `transcript.jsonl`, records runtime facts to `run.json`. Bounded
   concurrency (`--concurrency`, default 3) + per-run timeout so it never starves
   interactive Cursor usage.

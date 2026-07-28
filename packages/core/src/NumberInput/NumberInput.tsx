@@ -44,6 +44,7 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -208,6 +209,13 @@ interface NumberInputPropsBase extends Omit<
    */
   status?: InputStatus;
   /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
+  /**
    * The size of the input.
    * - 'sm': Compact size (28px height)
    * - 'md': Default size (32px height)
@@ -311,8 +319,7 @@ type NumberInputPropsClearable = NumberInputPropsBase & {
 };
 
 export type NumberInputProps =
-  | NumberInputPropsNonClearable
-  | NumberInputPropsClearable;
+  NumberInputPropsNonClearable | NumberInputPropsClearable;
 
 /**
  * Parse and validate a string input as a number.
@@ -375,6 +382,7 @@ export function NumberInput({
   startIcon,
   labelIcon,
   status,
+  statusVariant = 'attached',
   size: sizeProp,
   onChange,
   value,
@@ -406,6 +414,7 @@ export function NumberInput({
   const inputLabelID = useId();
   const descriptionID = useId();
   const statusMessageID = useId();
+  const unitsID = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputGroup = useInputGroup();
@@ -446,7 +455,10 @@ export function NumberInput({
     inputLabelID,
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      // The status message element is rendered by Field, which is skipped
+      // inside an InputGroup — only reference it when it actually exists.
+      !inputGroup && status?.message ? statusMessageID : null,
+      units ? unitsID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ],
     inputGroup,
@@ -652,7 +664,11 @@ export function NumberInput({
           !isInputValid && styles.inputInvalid,
         )}
       />
-      {units && <span {...stylex.props(styles.units)}>{units}</span>}
+      {units && (
+        <span id={unitsID} {...stylex.props(styles.units)}>
+          {units}
+        </span>
+      )}
       {/*
         Live region announcing invalid typed input to assistive technology.
         The value silently reverts on blur, so without this a screen-reader
@@ -710,6 +726,7 @@ export function NumberInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {inputWrapper}

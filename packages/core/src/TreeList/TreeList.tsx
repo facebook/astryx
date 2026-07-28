@@ -21,7 +21,11 @@ import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {TreeListItem} from './TreeListItem';
-import type {TreeListItemData, TreeListDensity} from './TreeListTypes';
+import type {
+  TreeListItemData,
+  TreeListDensity,
+  TreeListVariant,
+} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTreeFocus} from '../hooks/useTreeFocus';
 
@@ -29,7 +33,7 @@ import {useTreeFocus} from '../hooks/useTreeFocus';
 // Types
 // =============================================================================
 
-export {type TreeListDensity} from './TreeListTypes';
+export {type TreeListDensity, type TreeListVariant} from './TreeListTypes';
 
 export interface TreeListProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -49,6 +53,16 @@ export interface TreeListProps extends BaseProps<HTMLDivElement> {
    * @default 'balanced'
    */
   density?: TreeListDensity;
+
+  /**
+   * Visual treatment of the hierarchy guide (connector) lines.
+   * - `lineGuides`: connector lines between parent and child rows
+   * - `noGuides`: no connector lines; indentation alone conveys nesting
+   *
+   * Orthogonal to `density` (which controls spacing) — the two compose.
+   * @default 'lineGuides'
+   */
+  variant?: TreeListVariant;
 
   /**
    * Header content rendered above the tree list.
@@ -156,6 +170,7 @@ function findInitialTabbableId(items: TreeListItemData[]): string | undefined {
 export function TreeList({
   items,
   density = 'balanced',
+  variant = 'lineGuides',
   header,
   xstyle,
   className,
@@ -275,6 +290,7 @@ export function TreeList({
           isExpanded={isExpanded}
           onToggle={handleToggle}
           density={density}
+          variant={variant}
           renderedChildren={renderedChildren}
           posInSet={index + 1}
           setSize={items.length}

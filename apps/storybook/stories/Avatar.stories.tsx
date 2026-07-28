@@ -4,6 +4,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import * as stylex from '@stylexjs/stylex';
 import {Avatar} from '@astryxdesign/core/Avatar';
 import {AvatarStatusDot} from '@astryxdesign/core/Avatar';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 import {
   spacingVars,
   typographyVars,
@@ -73,11 +74,16 @@ const meta: Meta<typeof Avatar> = {
       control: 'text',
       description: 'Alt text (falls back to name)',
     },
+    tooltip: {
+      control: 'text',
+      description:
+        'Hover/focus tooltip. Omitted or true shows the name; a string shows that text; false disables it. Set false when wrapping in your own Tooltip/HoverCard.',
+    },
     status: {
       control: 'boolean',
       description: 'Show status indicator dot',
       mapping: {
-        true: <AvatarStatusDot />,
+        true: <AvatarStatusDot label="Online" />,
         false: undefined,
       },
     },
@@ -248,27 +254,27 @@ export const StatusAcrossAllSizes: Story = {
         <Avatar
           name="TY"
           size="xsm"
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           name="XS"
           size="sm"
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           name="SM"
           size="md"
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           name="MD"
           size="lg"
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           name="LG"
           size="xl"
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
       </div>
 
@@ -278,37 +284,37 @@ export const StatusAcrossAllSizes: Story = {
           src="https://i.pravatar.cc/150?img=30"
           name="U1"
           size={20}
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=31"
           name="U2"
           size={32}
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=32"
           name="U3"
           size={48}
-          status={<AvatarStatusDot variant="error" />}
+          status={<AvatarStatusDot variant="error" label="Busy" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=33"
           name="U4"
           size={72}
-          status={<AvatarStatusDot variant="neutral" />}
+          status={<AvatarStatusDot variant="neutral" label="Offline" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=34"
           name="U5"
           size={96}
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
         <Avatar
           src="https://i.pravatar.cc/150?img=35"
           name="U6"
           size={128}
-          status={<AvatarStatusDot variant="success" />}
+          status={<AvatarStatusDot variant="success" label="Online" />}
         />
       </div>
 
@@ -342,10 +348,55 @@ export const StatusWithSizes: Story = {
     <div {...stylex.props(styles.storyWrapper)}>
       <h4 {...stylex.props(styles.heading)}>Status with Different Sizes</h4>
       <div {...stylex.props(styles.row)}>
-        <Avatar name="AB" size="md" status={<AvatarStatusDot />} />
-        <Avatar name="CD" size="lg" status={<AvatarStatusDot />} />
-        <Avatar name="EF" size="xl" status={<AvatarStatusDot />} />
-        <Avatar name="GH" size={72} status={<AvatarStatusDot />} />
+        <Avatar name="AB" size="md" status={<AvatarStatusDot label="Online" />} />
+        <Avatar name="CD" size="lg" status={<AvatarStatusDot label="Online" />} />
+        <Avatar name="EF" size="xl" status={<AvatarStatusDot label="Online" />} />
+        <Avatar name="GH" size={72} status={<AvatarStatusDot label="Online" />} />
+      </div>
+    </div>
+  ),
+};
+
+export const StatusShapesAtSmallSizes: Story = {
+  name: 'Status Shapes at Small Sizes',
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>
+        Each variant pairs colour with a distinct shape (filled, ring, minus) so
+        status never relies on colour alone — including the smallest sizes,
+        where icons cannot render
+      </h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar
+          name="ON"
+          size="xsm"
+          status={<AvatarStatusDot variant="success" label="Online" />}
+        />
+        <Avatar
+          name="OF"
+          size="xsm"
+          status={<AvatarStatusDot variant="neutral" label="Offline" />}
+        />
+        <Avatar
+          name="BU"
+          size="xsm"
+          status={<AvatarStatusDot variant="error" label="Busy" />}
+        />
+        <Avatar
+          name="ON"
+          size="md"
+          status={<AvatarStatusDot variant="success" label="Online" />}
+        />
+        <Avatar
+          name="OF"
+          size="md"
+          status={<AvatarStatusDot variant="neutral" label="Offline" />}
+        />
+        <Avatar
+          name="BU"
+          size="md"
+          status={<AvatarStatusDot variant="error" label="Busy" />}
+        />
       </div>
     </div>
   ),
@@ -552,6 +603,58 @@ export const NumericSizes: Story = {
         <Avatar name="96" size={96} />
         <Avatar name="128" size={128} />
       </div>
+    </div>
+  ),
+};
+
+// A theme can re-scope the fallback initials' typography per size tier via the
+// Avatar-scoped derived vars — a smaller-per-size type scale, regular weight,
+// and a muted secondary-text color on an accent wash fill — without forking the
+// component. The default row is unchanged (size × 0.4, medium weight, neutral
+// fill); only the themed row opts in.
+const fallbackScaleTheme = defineTheme({
+  name: 'avatar-fallback-scale',
+  components: {
+    avatar: {
+      base: {
+        fontWeight: 'var(--font-weight-normal)',
+        color: 'var(--color-text-secondary)',
+        backgroundColor: 'var(--color-accent-muted)',
+      },
+      'size:xsm': {fontSize: '8px'},
+      'size:sm': {fontSize: '9px'},
+      'size:md': {fontSize: '13px'},
+      'size:lg': {fontSize: '16px'},
+      'size:xl': {fontSize: '40px'},
+    },
+  },
+});
+
+export const ThemedFallbackScale: Story = {
+  name: 'Themed Fallback Type Scale',
+  render: () => (
+    <div {...stylex.props(styles.storyWrapper)}>
+      <h4 {...stylex.props(styles.heading)}>Default fallback (size × 0.4)</h4>
+      <div {...stylex.props(styles.row)}>
+        <Avatar name="TY" size="xsm" />
+        <Avatar name="XS" size="sm" />
+        <Avatar name="SM" size="md" />
+        <Avatar name="MD" size="lg" />
+        <Avatar name="LG" size="xl" />
+      </div>
+
+      <h4 {...stylex.props(styles.heading)}>
+        Themed fallback (per-size scale, regular weight, wash fill)
+      </h4>
+      <Theme theme={fallbackScaleTheme} mode="light">
+        <div {...stylex.props(styles.row)}>
+          <Avatar name="TY" size="xsm" />
+          <Avatar name="XS" size="sm" />
+          <Avatar name="SM" size="md" />
+          <Avatar name="MD" size="lg" />
+          <Avatar name="LG" size="xl" />
+        </div>
+      </Theme>
     </div>
   ),
 };

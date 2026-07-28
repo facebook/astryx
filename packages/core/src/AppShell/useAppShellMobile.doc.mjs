@@ -32,6 +32,12 @@ export const docs = {
         'Whether the AppShell-managed mobile navigation drawer is open.',
     },
     {
+      name: 'mobileNavId',
+      type: 'string | undefined',
+      description:
+        'DOM id of the mobile navigation drawer, set by AppShell. Point aria-controls of a custom toggle at this so screen-reader users know which element the toggle expands. Undefined outside an AppShell that manages the drawer.',
+    },
+    {
       name: 'toggleMobileNav',
       type: '() => void',
       description:
@@ -111,6 +117,8 @@ export const docsDense = {
     isMobile:
       'viewport below AppShell mobile nav breakpoint? Use to sync AppShell-adjacent mobile UI',
     isMobileNavOpen: 'AppShell-managed mobile nav drawer open?',
+    mobileNavId:
+      'DOM id of the drawer; point custom toggle aria-controls at it',
     toggleMobileNav: 'toggle drawer; no-op when mobile nav disabled',
     openMobileNav: 'open drawer; no-op when mobile nav disabled',
     closeMobileNav: 'close drawer',

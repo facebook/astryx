@@ -66,6 +66,7 @@ export default function ThumbnailGallery() {
             src={item.src}
             alt={item.alt}
             label={item.label}
+            showRemoveOn="always"
             onClick={() => setSelected(item.label)}
             onRemove={() =>
               setItems(prev => prev.filter(i => i.id !== item.id))

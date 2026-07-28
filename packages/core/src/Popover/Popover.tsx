@@ -26,6 +26,7 @@ import React, {
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import * as stylex from '@stylexjs/stylex';
 import {mergeProps} from '../utils';
+import {devWarn} from '../utils/devWarning';
 import type {BaseProps} from '../BaseProps';
 import {usePopover} from './usePopover';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
@@ -410,8 +411,9 @@ export function Popover({
 
     const button = findTriggerButton(el);
     if (!button) {
-      console.warn(
-        'Popover: anchorRef must reference a <button> or [role="button"] element. ' +
+      devWarn(
+        'Popover',
+        'anchorRef must reference a <button> or [role="button"] element. ' +
           'The popover trigger implements the button + dialog ARIA pattern.',
       );
     }
@@ -453,8 +455,9 @@ export function Popover({
     // Find the button inside the wrapper
     const button = findTriggerButton(wrapper);
     if (!button) {
-      console.warn(
-        'Popover: children must contain a <button> or [role="button"] element. ' +
+      devWarn(
+        'Popover',
+        'children must contain a <button> or [role="button"] element. ' +
           'The popover trigger implements the button + dialog ARIA pattern.',
       );
     }

@@ -84,3 +84,5 @@ export type {
 
 export {useLongPress} from './useLongPress';
 export type {UseLongPressOptions, UseLongPressHandlers} from './useLongPress';
+
+export {useDevWarning} from './useDevWarning';

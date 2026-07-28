@@ -84,7 +84,15 @@ export interface TopNavMegaMenuFeaturedCardProps extends BaseProps<HTMLDivElemen
   description?: string;
   /** Optional image URL displayed above the body. */
   image?: string;
-  /** Alt text for the image. */
+  /**
+   * Alt text for the image.
+   *
+   * When omitted, the image is explicitly decorative (`alt=""` +
+   * `role="presentation"` + `aria-hidden`, matching Avatar) and hidden from
+   * assistive technology. Since the card already has a visible `title`, a
+   * decorative image is usually correct; pass `imageAlt` only when the image
+   * conveys information beyond the title and description.
+   */
   imageAlt?: string;
   /** CTA link text. */
   linkLabel?: string;
@@ -149,7 +157,16 @@ export function TopNavMegaMenuFeaturedCard({
       )}
       {...rest}>
       {image && (
-        <img src={image} alt={imageAlt ?? ''} {...stylex.props(styles.image)} />
+        // Without `imageAlt`, the image is explicitly decorative rather than
+        // silently empty-alt, matching Avatar's handling of unnamed images.
+        // Usually correct here: the card already has a visible title.
+        <img
+          src={image}
+          alt={imageAlt ?? ''}
+          role={imageAlt ? undefined : 'presentation'}
+          aria-hidden={imageAlt ? undefined : true}
+          {...stylex.props(styles.image)}
+        />
       )}
       <div {...stylex.props(styles.body)}>
         <span {...stylex.props(styles.title)}>{title}</span>

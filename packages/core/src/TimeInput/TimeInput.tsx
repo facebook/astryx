@@ -4,7 +4,7 @@
 
 /**
  * @file TimeInput.tsx
- * @input Uses React, useId, useState, useCallback, useRef, Field, Icon, InputGroupContext
+ * @input Uses React, useId, useState, useCallback, useRef, Field, Icon, InputGroupContext, useAnnounce
  * @output Exports TimeInput component, TimeInputProps
  * @position Core implementation; consumed by index.ts, tested by TimeInput.test.tsx
  *
@@ -20,6 +20,7 @@ import {
   useId,
   useState,
   useCallback,
+  useEffect,
   useRef,
   useMemo,
   useOptimistic,
@@ -45,6 +46,7 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputStatusFocusWithinStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
@@ -64,6 +66,7 @@ import {
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useSize} from '../SizeContext/SizeContext';
+import {useAnnounce} from '../hooks/useAnnounce';
 import {useInputContainer} from '../hooks/useInputContainer';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
@@ -296,6 +299,13 @@ export interface TimeInputProps extends Omit<
    * If message is provided, displays below the input.
    */
   status?: InputStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
@@ -345,6 +355,7 @@ export function TimeInput({
   placeholder: placeholderFromProps,
   size: sizeProp,
   status,
+  statusVariant = 'attached',
   labelTooltip,
   width,
   xstyle,
@@ -368,6 +379,21 @@ export function TimeInput({
   const [, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
   const isBusy = isLoading || optimisticValue !== value;
+
+  // In grouped mode the status message renders as a visually-hidden node that
+  // exists only for aria-describedby. Announce it through the persistent
+  // useAnnounce live regions instead of role/aria-live on that node — a live
+  // region mounted together with its content is not reliably announced.
+  // Ungrouped mode delegates to Field -> FieldStatus, which announces itself.
+  const announce = useAnnounce();
+  useEffect(() => {
+    if (inputGroup && status?.message) {
+      announce(
+        status.message,
+        status.type === 'error' ? 'assertive' : 'polite',
+      );
+    }
+  }, [announce, inputGroup, status?.message, status?.type]);
 
   // Disabled-reason tooltip. Disabled controls swallow pointer events, so the
   // tooltip listeners attach to the input container (which already exists) and
@@ -611,11 +637,7 @@ export function TimeInput({
         </VisuallyHidden>
       )}
       {inputGroup && status?.message && (
-        <VisuallyHidden
-          as="div"
-          id={statusMessageID}
-          role={status.type === 'error' ? 'alert' : 'status'}
-          aria-live={status.type === 'error' ? 'assertive' : 'polite'}>
+        <VisuallyHidden as="div" id={statusMessageID}>
           {status.message}
         </VisuallyHidden>
       )}
@@ -707,6 +729,7 @@ export function TimeInput({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {inputWrapper}

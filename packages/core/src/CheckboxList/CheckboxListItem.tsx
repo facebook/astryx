@@ -22,6 +22,7 @@ import type {StyleXStyles} from '@stylexjs/stylex';
 import {colorVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {composeEventHandlers} from '../utils';
+import {useDevWarning} from '../hooks/useDevWarning';
 import {CheckboxInput} from '../CheckboxInput/CheckboxInput';
 import {ListItem} from '../List/ListItem';
 import {ListContext} from '../List/ListContext';
@@ -51,6 +52,25 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
    * child components control their own text behavior).
    */
   label: ReactNode;
+  /**
+   * Plain-text accessible name for the checkbox when `label` is a ReactNode.
+   *
+   * A string `label` names the checkbox automatically. A rich (ReactNode)
+   * `label` cannot, so pass a concise string equivalent via the standard
+   * `aria-label` — otherwise the checkbox falls back to the generic name
+   * "Checkbox" and every rich-label item in a list announces identically to
+   * screen readers. Applied to the checkbox control, not the row.
+   *
+   * @example
+   * ```
+   * <CheckboxListItem
+   *   label={<span>Pro plan <Badge label="Recommended" /></span>}
+   *   aria-label="Pro plan"
+   *   value="pro"
+   * />
+   * ```
+   */
+  'aria-label'?: string;
   /**
    * Identity key for collection mode (REQUIRED inside CheckboxList).
    * Throws a runtime error if missing when used inside CheckboxList.
@@ -119,6 +139,7 @@ export interface CheckboxListItemProps extends BaseProps<HTMLLIElement> {
  */
 export function CheckboxListItem({
   label,
+  'aria-label': ariaLabel,
   value,
   description,
   endContent,
@@ -141,6 +162,25 @@ export function CheckboxListItem({
       'CheckboxListItem requires a `value` prop when used inside CheckboxList with a value array.',
     );
   }
+
+  // Accessible name for the (visually hidden) checkbox label. A string
+  // `label` names it directly; a rich label needs `aria-label`.
+  const checkboxLabel =
+    ariaLabel ??
+    (typeof label === 'string'
+      ? label
+      : t('@astryx.checkboxList.item.checkbox'));
+
+  // Dev-time guardrail: a rich label without `aria-label` leaves the
+  // checkbox with the generic name "Checkbox".
+  useDevWarning(
+    'CheckboxListItem',
+    '`label` is a ReactNode, so the checkbox falls ' +
+      'back to the generic accessible name "Checkbox". Pass ' +
+      '`aria-label` with a concise string equivalent of the visible ' +
+      'label so screen readers can tell items apart.',
+    typeof label !== 'string' && ariaLabel == null,
+  );
 
   // Density from list context for checkbox sizing
   const listCtx = use(ListContext);
@@ -226,11 +266,7 @@ export function CheckboxListItem({
       style={style}
       startContent={
         <CheckboxInput
-          label={
-            typeof label === 'string'
-              ? label
-              : t('@astryx.checkboxList.item.checkbox')
-          }
+          label={checkboxLabel}
           isLabelHidden
           value={resolvedChecked}
           onChange={() => handleToggle()}

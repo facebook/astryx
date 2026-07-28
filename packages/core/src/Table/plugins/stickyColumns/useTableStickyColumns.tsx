@@ -205,7 +205,7 @@ const stickyStyles = stylex.create({
   },
 });
 
-// Soft drop shadow over the scrolling region (matches the EPS sticky treatment).
+// Soft drop shadow over the scrolling region (a standard sticky-column shadow treatment).
 // border-collapse tables don't paint box-shadow on cells in Chromium, so it's a
 // ::after gradient strip just past the pinned edge (visible thanks to the cell's
 // overflow: visible). Opacity is gated by the scroll-state variable above.

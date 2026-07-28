@@ -30,17 +30,27 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {spawn, spawnSync} from 'node:child_process';
-import {parseResultFromText, estimateCostUSD, type TokenUsage, type AgentResult} from './purity-eval.js';
+import {
+  parseResultFromText,
+  estimateCostUSD,
+  type TokenUsage,
+  type AgentResult,
+} from './purity-eval.js';
 
 const DEFAULT_MODEL = 'claude-opus-4-8-max-fast'; // Opus 4.8 1M Max Fast
 const DEFAULT_AGENT = 'cursor-agent';
 const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000;
 
 const ensureDir = (d: string) => fs.mkdirSync(d, {recursive: true});
-const writeJson = (p: string, o: unknown) => fs.writeFileSync(p, JSON.stringify(o, null, 2));
+const writeJson = (p: string, o: unknown) =>
+  fs.writeFileSync(p, JSON.stringify(o, null, 2));
 
 function sandboxBase(out?: string): string {
-  return out || process.env.ASTRYX_PURITY_OUT || path.join(os.tmpdir(), 'astryx-purity');
+  return (
+    out ||
+    process.env.ASTRYX_PURITY_OUT ||
+    path.join(os.tmpdir(), 'astryx-purity')
+  );
 }
 
 interface TaskFile {
@@ -84,9 +94,13 @@ function startSnapshotter(targetFile: string, snapDir: string) {
 
   const capture = () => {
     try {
-      if (!fs.existsSync(targetFile)) {return;}
+      if (!fs.existsSync(targetFile)) {
+        return;
+      }
       const content = fs.readFileSync(targetFile, 'utf-8');
-      if (content === last) {return;}
+      if (content === last) {
+        return;
+      }
       last = content;
       const name = `${String(seq++).padStart(4, '0')}-${Date.now()}.tsx`;
       fs.writeFileSync(path.join(snapDir, name), content);
@@ -101,8 +115,12 @@ function startSnapshotter(targetFile: string, snapDir: string) {
   let watcher: fs.FSWatcher | null = null;
   try {
     watcher = fs.watch(dir, (_event, filename) => {
-      if (filename && filename.toString() !== base) {return;}
-      if (debounce) {clearTimeout(debounce);}
+      if (filename && filename.toString() !== base) {
+        return;
+      }
+      if (debounce) {
+        clearTimeout(debounce);
+      }
       debounce = setTimeout(capture, 80);
     });
   } catch {
@@ -112,7 +130,9 @@ function startSnapshotter(targetFile: string, snapDir: string) {
 
   return {
     stop: () => {
-      if (debounce) {clearTimeout(debounce);}
+      if (debounce) {
+        clearTimeout(debounce);
+      }
       clearInterval(poll);
       try {
         watcher?.close();
@@ -126,23 +146,35 @@ function startSnapshotter(targetFile: string, snapDir: string) {
 
 // ── Bounded concurrency pool ─────────────────────────────────────────
 
-async function pool<T, R>(items: T[], limit: number, worker: (item: T, i: number) => Promise<R>): Promise<R[]> {
+async function pool<T, R>(
+  items: T[],
+  limit: number,
+  worker: (item: T, i: number) => Promise<R>,
+): Promise<R[]> {
   const results = new Array<R>(items.length);
   let cursor = 0;
-  const runners = Array.from({length: Math.min(Math.max(1, limit), items.length || 1)}, async () => {
-    while (true) {
-      const i = cursor++;
-      if (i >= items.length) {break;}
-      results[i] = await worker(items[i], i);
-    }
-  });
+  const runners = Array.from(
+    {length: Math.min(Math.max(1, limit), items.length || 1)},
+    async () => {
+      while (true) {
+        const i = cursor++;
+        if (i >= items.length) {
+          break;
+        }
+        results[i] = await worker(items[i], i);
+      }
+    },
+  );
   await Promise.all(runners);
   return results;
 }
 
 // ── One run (spawn cursor-agent headless) ────────────────────────────
 
-function runOne(cfg: {model: string; agent: string; timeoutMs: number}, task: TaskFile): Promise<RunJson> {
+function runOne(
+  cfg: {model: string; agent: string; timeoutMs: number},
+  task: TaskFile,
+): Promise<RunJson> {
   return new Promise(resolve => {
     ensureDir(task.runDir);
     const transcriptPath = path.join(task.runDir, 'transcript.jsonl');
@@ -154,11 +186,17 @@ function runOne(cfg: {model: string; agent: string; timeoutMs: number}, task: Ta
     let done = false;
     let transcriptBuf = '';
     const finalize = (status: string, error: string | null) => {
-      if (done) {return;}
+      if (done) {
+        return;
+      }
       done = true;
       snap.stop();
-      const snapshotCount = fs.existsSync(snapDir) ? fs.readdirSync(snapDir).filter(f => f.endsWith('.tsx')).length : 0;
-      const outputExists = fs.existsSync(task.outputFile) && fs.readFileSync(task.outputFile, 'utf-8').trim().length > 0;
+      const snapshotCount = fs.existsSync(snapDir)
+        ? fs.readdirSync(snapDir).filter(f => f.endsWith('.tsx')).length
+        : 0;
+      const outputExists =
+        fs.existsSync(task.outputFile) &&
+        fs.readFileSync(task.outputFile, 'utf-8').trim().length > 0;
       // Parse the CLI's terminal `result` line for exact token usage + api duration,
       // so cost data is first-class in run.json (durable even if transcripts are pruned).
       const result: AgentResult | null = parseResultFromText(transcriptBuf);
@@ -184,18 +222,25 @@ function runOne(cfg: {model: string; agent: string; timeoutMs: number}, task: Ta
         outputExists,
       };
       writeJson(path.join(task.runDir, 'run.json'), runJson);
-      const tok = usage ? ` tok(out=${usage.outputTokens} cacheR=${usage.cacheReadTokens})` : '';
-      console.log(`  [${status.padEnd(13)}] ${task.condition}/${task.taskId}  snapshots=${snapshotCount} output=${outputExists}${tok}${error ? `  (${error.slice(0, 80)})` : ''}`);
+      const tok = usage
+        ? ` tok(out=${usage.outputTokens} cacheR=${usage.cacheReadTokens})`
+        : '';
+      console.log(
+        `  [${status.padEnd(13)}] ${task.condition}/${task.taskId}  snapshots=${snapshotCount} output=${outputExists}${tok}${error ? `  (${error.slice(0, 80)})` : ''}`,
+      );
       resolve(runJson);
     };
 
     const args = [
       '--print',
-      '--output-format', 'stream-json',
-      '--model', cfg.model,
+      '--output-format',
+      'stream-json',
+      '--model',
+      cfg.model,
       '--force', // allow write/shell non-interactively
       '--trust', // trust the sandbox workspace (headless)
-      '--workspace', task.projectDir,
+      '--workspace',
+      task.projectDir,
       task.taskPrompt,
     ];
 
@@ -210,12 +255,16 @@ function runOne(cfg: {model: string; agent: string; timeoutMs: number}, task: Ta
     const out = fs.createWriteStream(transcriptPath);
     child.stdout.on('data', d => {
       const s = d.toString();
-      if (transcriptBuf.length < 8_000_000) {transcriptBuf += s;} // keep in memory to parse the result line
+      if (transcriptBuf.length < 8_000_000) {
+        transcriptBuf += s;
+      } // keep in memory to parse the result line
       out.write(s); // persist full transcript to disk
     });
     let stderr = '';
     child.stderr.on('data', d => {
-      if (stderr.length < 4000) {stderr += d.toString();}
+      if (stderr.length < 4000) {
+        stderr += d.toString();
+      }
     });
 
     let killed = false;
@@ -237,13 +286,21 @@ function runOne(cfg: {model: string; agent: string; timeoutMs: number}, task: Ta
 
     child.on('error', (e: NodeJS.ErrnoException) => {
       clearTimeout(timer);
-      finalize(e.code === 'ENOENT' ? 'startup_error' : 'exception', e.message || String(e));
+      finalize(
+        e.code === 'ENOENT' ? 'startup_error' : 'exception',
+        e.message || String(e),
+      );
     });
     child.on('close', code => {
       clearTimeout(timer);
       out.end();
       const status = killed ? 'timeout' : code === 0 ? 'finished' : 'error';
-      finalize(status, status === 'finished' ? null : stderr.trim().slice(-300) || `exit ${code}`);
+      finalize(
+        status,
+        status === 'finished'
+          ? null
+          : stderr.trim().slice(-300) || `exit ${code}`,
+      );
     });
   });
 }
@@ -267,21 +324,34 @@ function parseArgs(argv: string[]) {
     model: get('--model') ?? DEFAULT_MODEL,
     agent: get('--agent') ?? DEFAULT_AGENT,
     timeoutMs: getInt('--timeout', DEFAULT_TIMEOUT_MS),
-    conditions: conditions ? conditions.split(',').map(s => s.trim()) : undefined,
+    conditions: conditions
+      ? conditions.split(',').map(s => s.trim())
+      : undefined,
     dryRun: argv.includes('--dry-run'),
   };
 }
 
-function loadTasks(configDirs: Record<string, string>, conditions: string[]): TaskFile[] {
+function loadTasks(
+  configDirs: Record<string, string>,
+  conditions: string[],
+): TaskFile[] {
   const perCond: TaskFile[][] = [];
   for (const cond of conditions) {
     const condDir = configDirs[cond];
-    if (!condDir) {throw new Error(`Condition "${cond}" not found in config.conditionDirs`);}
+    if (!condDir) {
+      throw new Error(`Condition "${cond}" not found in config.conditionDirs`);
+    }
     const tasksDir = path.join(condDir, 'tasks');
     const arr: TaskFile[] = [];
     if (fs.existsSync(tasksDir)) {
-      for (const f of fs.readdirSync(tasksDir).filter(f => f.endsWith('.json'))) {
-        arr.push(JSON.parse(fs.readFileSync(path.join(tasksDir, f), 'utf-8')) as TaskFile);
+      for (const f of fs
+        .readdirSync(tasksDir)
+        .filter(f => f.endsWith('.json'))) {
+        arr.push(
+          JSON.parse(
+            fs.readFileSync(path.join(tasksDir, f), 'utf-8'),
+          ) as TaskFile,
+        );
       }
     }
     perCond.push(arr);
@@ -290,7 +360,13 @@ function loadTasks(configDirs: Record<string, string>, conditions: string[]): Ta
   // single condition monopolizes an early rate-limit window.
   const tasks: TaskFile[] = [];
   const max = Math.max(0, ...perCond.map(a => a.length));
-  for (let i = 0; i < max; i++) {for (const arr of perCond) {if (i < arr.length) {tasks.push(arr[i]);}}}
+  for (let i = 0; i < max; i++) {
+    for (const arr of perCond) {
+      if (i < arr.length) {
+        tasks.push(arr[i]);
+      }
+    }
+  }
   return tasks;
 }
 
@@ -298,12 +374,16 @@ function loadTasks(configDirs: Record<string, string>, conditions: string[]): Ta
 function checkAgent(agent: string): boolean {
   const r = spawnSync(agent, ['status'], {encoding: 'utf-8'});
   if (r.error) {
-    console.error(`Could not run "${agent}" (${r.error.message}). Install the Cursor CLI or pass --agent <path>.`);
+    console.error(
+      `Could not run "${agent}" (${r.error.message}). Install the Cursor CLI or pass --agent <path>.`,
+    );
     return false;
   }
   const text = `${r.stdout ?? ''}${r.stderr ?? ''}`;
   if (!/logged in|Logged in/i.test(text) && !process.env.CURSOR_API_KEY) {
-    console.warn(`[warn] "${agent} status" does not report a login. Run "${agent} login" or set CURSOR_API_KEY.`);
+    console.warn(
+      `[warn] "${agent} status" does not report a login. Run "${agent} login" or set CURSOR_API_KEY.`,
+    );
   } else {
     console.log(`  Auth: ${text.trim().split('\n')[0] ?? 'ok'}`);
   }
@@ -313,7 +393,9 @@ function checkAgent(agent: string): boolean {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.experiment) {
-    console.error('Usage: run-purity.ts --experiment <id> [--out <base>] [--concurrency N] [--model <id>] [--dry-run]');
+    console.error(
+      'Usage: run-purity.ts --experiment <id> [--out <base>] [--concurrency N] [--model <id>] [--dry-run]',
+    );
     process.exit(1);
   }
   const expDir = path.join(sandboxBase(args.out), args.experiment);
@@ -330,7 +412,9 @@ async function main() {
   console.log(`  Conditions:  ${conditions.join(', ')}`);
   console.log(`  Tasks:       ${tasks.length}`);
   console.log(`  Model:       ${args.model}`);
-  console.log(`  Concurrency: ${args.concurrency}${args.dryRun ? '   (DRY RUN — no model calls)' : ''}\n`);
+  console.log(
+    `  Concurrency: ${args.concurrency}${args.dryRun ? '   (DRY RUN — no model calls)' : ''}\n`,
+  );
 
   if (args.dryRun) {
     for (const task of tasks) {
@@ -350,15 +434,32 @@ async function main() {
     return;
   }
 
-  if (!checkAgent(args.agent)) {process.exit(1);}
+  if (!checkAgent(args.agent)) {
+    process.exit(1);
+  }
 
   const t0 = Date.now();
-  const results = await pool(tasks, args.concurrency, task => runOne({model: args.model, agent: args.agent, timeoutMs: args.timeoutMs}, task));
+  const results = await pool(tasks, args.concurrency, task =>
+    runOne(
+      {model: args.model, agent: args.agent, timeoutMs: args.timeoutMs},
+      task,
+    ),
+  );
 
   const byStatus: Record<string, number> = {};
-  for (const r of results) {byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;}
-  console.log(`\nDone in ${((Date.now() - t0) / 1000).toFixed(0)}s. Status: ${Object.entries(byStatus).map(([k, v]) => `${k}=${v}`).join(', ')}`);
-  console.log(`\nNext: npx tsx ${path.relative(process.cwd(), path.join(import.meta.dirname, 'purity-aggregate.ts'))} --experiment ${args.experiment}${args.out ? ` --out ${args.out}` : ''}\n`);
+  for (const r of results) {
+    byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
+  }
+  console.log(
+    `\nDone in ${((Date.now() - t0) / 1000).toFixed(0)}s. Status: ${Object.entries(
+      byStatus,
+    )
+      .map(([k, v]) => `${k}=${v}`)
+      .join(', ')}`,
+  );
+  console.log(
+    `\nNext: npx tsx ${path.relative(process.cwd(), path.join(import.meta.dirname, 'purity-aggregate.ts'))} --experiment ${args.experiment}${args.out ? ` --out ${args.out}` : ''}\n`,
+  );
 }
 
 main().catch(e => {

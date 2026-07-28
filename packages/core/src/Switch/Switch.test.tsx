@@ -9,10 +9,15 @@
  * SYNC: When Switch.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Switch} from './Switch';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -322,6 +327,32 @@ describe('Switch', () => {
     const switchEl = screen.getByRole('switch');
     const describedBy = switchEl.getAttribute('aria-describedby');
     expect(describedBy).toBeTruthy();
+  });
+
+  // Regression: the status is conditionally mounted, so it must be announced
+  // through the persistent useAnnounce live region — a live region born
+  // together with its content is not reliably announced.
+  it('announces a status message that appears after mount', async () => {
+    const {rerender} = render(
+      <Switch label="Enable notifications" value={false} onChange={() => {}} />,
+    );
+    expect(
+      document.querySelector('[data-astryx-live-region="assertive"]'),
+    ).toBeNull();
+
+    rerender(
+      <Switch
+        label="Enable notifications"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Failed to save setting'}}
+      />,
+    );
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="assertive"]'),
+      ).toHaveTextContent('Failed to save setting');
+    });
   });
 
   it('calls onFocus and onBlur callbacks', async () => {

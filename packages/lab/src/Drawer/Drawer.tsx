@@ -56,7 +56,7 @@ import {
 } from '@astryxdesign/core/theme/tokens.stylex';
 import {Icon} from '@astryxdesign/core/Icon';
 import {IconButton} from '@astryxdesign/core/IconButton';
-import {useScrollLock} from '@astryxdesign/core/hooks';
+import {useScrollLock, useDevWarning} from '@astryxdesign/core/hooks';
 import {mergeProps, mergeRefs, themeProps} from '@astryxdesign/core/utils';
 
 // =============================================================================
@@ -494,18 +494,14 @@ export function Drawer({
   const collapsed = canCollapse && isCollapsed === true;
   const showCloseButton = hasCloseButton ?? hasScrim;
 
-  // Dev warning for unsupported collapse combinations (repo idiom:
-  // console.error, see BaseTable plugin errors).
-  const hasInvalidCollapse = isCollapsed != null && !canCollapse;
-  useEffect(() => {
-    if (hasInvalidCollapse) {
-      console.error(
-        '[Drawer] `isCollapsed` is only supported for non-modal drawers ' +
-          '(hasScrim={false}) with side="start" or side="end". The prop is ' +
-          'ignored.',
-      );
-    }
-  }, [hasInvalidCollapse]);
+  // Dev warning for unsupported collapse combinations.
+  useDevWarning(
+    'Drawer',
+    '`isCollapsed` is only supported for non-modal drawers ' +
+      '(hasScrim={false}) with side="start" or side="end". The prop is ' +
+      'ignored.',
+    isCollapsed != null && !canCollapse,
+  );
 
   // Open/close the native dialog. close() is delayed so the slide-out
   // transition can play; focus restore happens after close() because a

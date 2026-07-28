@@ -37,7 +37,7 @@ export const docs = {
     {
       name: 'label',
       type: 'string',
-      description: 'Accessible name for a MEANINGFUL, standalone icon (a status glyph or icon-only indicator with no adjacent text). Setting it exposes the icon to screen readers as role="img" with this text as the accessible name (aria-label) and removes the default aria-hidden. Omit it (default) for decorative icons and the icon stays hidden from assistive tech (aria-hidden="true"). This is the accessible-name / alt-text prop for icons — one prop instead of manually setting aria-label + role + aria-hidden. An empty string is treated as decorative. Do not set it when an interactive parent (Button, IconButton, link) already names the control.',
+      description: 'Accessible name for a MEANINGFUL, standalone icon (a status glyph or icon-only indicator with no adjacent text). Setting it exposes the icon to screen readers as role="img" with this text as the accessible name (aria-label) and removes the default aria-hidden. Omit it (default) for decorative icons and the icon stays hidden from assistive tech (aria-hidden="true"). This is the accessible-name / alt-text prop for icons: one prop instead of manually setting aria-label + role + aria-hidden. An empty string is treated as decorative. Do not set it when an interactive parent (Button, IconButton, link) already names the control.',
     },
   ],
   theming: {
@@ -50,7 +50,7 @@ export const docs = {
     bestPractices: [
       { guidance: true, description: 'Use semantic icon names when available; they adapt to theme changes automatically.' },
       { guidance: true, description: 'Pair icons with text labels for accessibility; icon-only elements need an accessible label.' },
-      { guidance: true, description: 'For a meaningful standalone icon (no adjacent text), give it an accessible name via the `label` prop — it sets role="img" + aria-label and unhides the icon.' },
+      { guidance: true, description: 'For a meaningful standalone icon (no adjacent text), give it an accessible name via the `label` prop: it sets role="img" + aria-label and unhides the icon.' },
       { guidance: true, description: 'Use color tokens for icon colors, not hardcoded hex values.' },
       { guidance: true, description: 'Be mindful of context; decorative icons in compact components can distract rather than help.' },
       { guidance: false, description: 'Use icons as the sole means of conveying meaning; always provide a text alternative.' },
@@ -121,6 +121,7 @@ export const docsDense = {
     bestPractices: [
       { guidance: true, description: 'Use semantic icon names when available; they adapt to theme changes automatically.' },
       { guidance: true, description: 'Pair icons with text labels for accessibility; icon-only elements need an accessible label.' },
+      { guidance: true, description: 'For a meaningful standalone icon (no adjacent text), set an accessible name via `label`: sets role="img" + aria-label, unhides icon.' },
       { guidance: true, description: 'Use color tokens for icon colors, not hardcoded hex values.' },
       { guidance: true, description: 'Be mindful of context; decorative icons in compact components can distract rather than help.' },
       { guidance: false, description: 'Use icons as the sole means of conveying meaning; always provide a text alternative.' },

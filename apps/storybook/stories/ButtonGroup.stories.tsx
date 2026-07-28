@@ -25,6 +25,10 @@ const meta: Meta<typeof ButtonGroup> = {
   argTypes: {
     orientation: {control: 'select', options: ['horizontal', 'vertical']},
     size: {control: 'select', options: ['sm', 'md', 'lg']},
+    elevation: {
+      control: 'inline-radio',
+      options: ['none', 'low', 'med', 'high'],
+    },
   },
 };
 

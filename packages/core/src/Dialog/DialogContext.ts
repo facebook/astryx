@@ -5,8 +5,8 @@
 /**
  * @file DialogContext.ts
  * @input React context
- * @output Internal dialog context for child focus behavior
- * @position Dialog internals; consumed by focus-managing children
+ * @output Internal dialog context for child focus behavior and default labelling
+ * @position Dialog internals; consumed by focus-managing children and DialogHeader
  */
 
 import {createContext, use} from 'react';
@@ -14,6 +14,13 @@ import {createContext, use} from 'react';
 export interface DialogContextValue {
   /** Whether the dialog is rendered inline for docs/showcases. */
   isInline: boolean;
+  /**
+   * Id the DialogHeader title should render with so the dialog can name
+   * itself via aria-labelledby. The dialog detects the title element's
+   * presence directly (via a callback ref), so it only emits aria-labelledby
+   * when the title actually rendered — never pointing at a nonexistent id.
+   */
+  titleId?: string;
 }
 
 export const DialogContext = createContext<DialogContextValue | null>(null);

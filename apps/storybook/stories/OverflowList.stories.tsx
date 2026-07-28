@@ -22,6 +22,14 @@ const meta: Meta<typeof OverflowList> = {
       control: {type: 'number', min: 0, max: 10},
       description: 'Minimum number of items to always show',
     },
+    maxVisibleItems: {
+      control: {type: 'number', min: 0, max: 10},
+      description: 'Maximum number of items to ever show (cap)',
+    },
+    maxRows: {
+      control: {type: 'number', min: 1, max: 4},
+      description: 'Wrap items across up to N rows before collapsing',
+    },
     collapseFrom: {
       control: 'select',
       options: ['start', 'end'],
@@ -270,11 +278,7 @@ export const DynamicItems: Story = {
             size="sm"
             onClick={() => setCount(c => Math.max(1, c - 1))}
           />
-          <Button
-            label="Add"
-            size="sm"
-            onClick={() => setCount(c => c + 1)}
-          />
+          <Button label="Add" size="sm" onClick={() => setCount(c => c + 1)} />
           <span>{count} items</span>
         </div>
         <div
@@ -301,6 +305,111 @@ export const DynamicItems: Story = {
             ))}
           </OverflowList>
         </div>
+      </div>
+    );
+  },
+};
+
+// Cap the number of visible items with maxVisibleItems — even in a wide
+// container only three actions show; the rest move to the overflow dropdown.
+export const CappedItems: Story = {
+  render: () => {
+    const actions = ['Save', 'Edit', 'Duplicate', 'Share', 'Archive', 'Delete'];
+    return (
+      <div style={{maxWidth: 700, border: '1px dashed #ccc', padding: 8}}>
+        <OverflowList
+          gap={2}
+          maxVisibleItems={3}
+          overflowRenderer={overflowItems => (
+            <DropdownMenu
+              button={{
+                label: `+${overflowItems.length}`,
+                variant: 'ghost',
+                size: 'sm',
+              }}
+              items={overflowItems.map(({index}) => ({
+                label: actions[index],
+              }))}
+            />
+          )}>
+          {actions.map(action => (
+            <Button key={action} label={action} size="sm" />
+          ))}
+        </OverflowList>
+      </div>
+    );
+  },
+};
+
+// Multi-row wrapping — tags flow onto up to two rows, then collapse the rest
+// into a count badge. Resize the container to see rows fill and collapse.
+export const MultiRow: Story = {
+  render: () => {
+    const tags = [
+      'React',
+      'TypeScript',
+      'StyleX',
+      'Storybook',
+      'Vitest',
+      'Playwright',
+      'ESLint',
+      'Prettier',
+      'Vite',
+      'pnpm',
+    ];
+    return (
+      <div
+        style={{
+          resize: 'horizontal',
+          overflow: 'hidden',
+          border: '1px dashed #ccc',
+          padding: 8,
+          width: 280,
+          minWidth: 120,
+          maxWidth: '100%',
+        }}>
+        <OverflowList
+          gap={1}
+          maxRows={2}
+          overflowRenderer={overflowItems => (
+            <Badge variant="neutral" label={`+${overflowItems.length}`} />
+          )}>
+          {tags.map(tag => (
+            <Badge key={tag} variant="info" label={tag} />
+          ))}
+        </OverflowList>
+      </div>
+    );
+  },
+};
+
+// Cap + multi-row together — whichever limit is hit first wins. Here the cap
+// of five items applies even though two rows could hold more.
+export const CappedMultiRow: Story = {
+  render: () => {
+    const tags = [
+      'React',
+      'TypeScript',
+      'StyleX',
+      'Storybook',
+      'Vitest',
+      'Playwright',
+      'ESLint',
+      'Prettier',
+    ];
+    return (
+      <div style={{maxWidth: 520, border: '1px dashed #ccc', padding: 8}}>
+        <OverflowList
+          gap={1}
+          maxRows={2}
+          maxVisibleItems={5}
+          overflowRenderer={overflowItems => (
+            <Badge variant="neutral" label={`+${overflowItems.length}`} />
+          )}>
+          {tags.map(tag => (
+            <Badge key={tag} variant="info" label={tag} />
+          ))}
+        </OverflowList>
       </div>
     );
   },

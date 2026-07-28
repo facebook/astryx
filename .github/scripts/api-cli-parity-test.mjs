@@ -73,7 +73,7 @@ function typeOf(r) {
 
 console.log('Discovering...');
 
-const api = await import('../../packages/cli/src/api/index.mjs');
+const api = await import('../../packages/cli/api/index.mjs');
 
 const componentList = cliJson(['component', '--list']);
 // `component --list` data is package-qualified: each group value is an array
@@ -254,11 +254,33 @@ add('discover (list)', ['discover'],
 // checks (and their statuses) is deterministic and must match exactly.
 add('doctor', ['doctor'], () => apiCall(api.doctor, {cwd: ROOT}));
 
+// Build — playbook signal (build.help) + composition kit (build.kit).
+add('build', ['build'],
+  () => apiCall(api.build, undefined, {cwd: ROOT}));
+add('build dashboard', ['build', 'dashboard'],
+  () => apiCall(api.build, 'dashboard', {cwd: ROOT}));
+add('build (no match)', ['build', 'zzznomatch99'],
+  () => apiCall(api.build, 'zzznomatch99', {cwd: ROOT}));
+
+// Swizzle — list + not-found are read-only; the api matches the CLI envelope.
+add('swizzle --list', ['swizzle', '--list'],
+  () => apiCall(api.swizzle, undefined, {list: true, cwd: ROOT}));
+add('swizzle (not found)', ['swizzle', 'NotARealComponent99'],
+  () => apiCall(api.swizzle, 'NotARealComponent99', {cwd: ROOT}));
+
+// Upgrade — list + the two argument-validation errors are read-only: they
+// return/throw before any codemod or agent-docs side effect, so the api matches
+// the CLI envelope exactly. The full run/status pipeline is covered by the
+// upgrade unit tests (side-effecting, needs a fixtured project).
+add('upgrade --list', ['upgrade', '--list'],
+  () => apiCall(api.upgrade, {list: true}, {cwd: ROOT}));
+add('upgrade (missing --from)', ['upgrade'],
+  () => apiCall(api.upgrade, {}, {cwd: ROOT}));
+add('upgrade (invalid --from)', ['upgrade', '--from', 'not-a-version'],
+  () => apiCall(api.upgrade, {from: 'not-a-version'}, {cwd: ROOT}));
+
 // Other commands — probe with safe read-only args (no API yet)
-const otherCommands = [
-  ['swizzle', '--list'],
-  ['upgrade', '--list'],
-];
+const otherCommands = [];
 for (const args of otherCommands) {
   const probe = cliJson(args);
   if (!probe.__parse_error && !probe.error?.includes('not supported')) {

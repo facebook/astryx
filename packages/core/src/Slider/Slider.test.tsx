@@ -85,6 +85,19 @@ describe('Slider', () => {
     expect(slider).toHaveAttribute('aria-valuenow', '72');
   });
 
+  it.each([
+    {value: 150, expectedValue: 100, expectedPosition: '100%'},
+    {value: -50, expectedValue: 0, expectedPosition: '0%'},
+  ])(
+    'clamps a controlled value of $value to $expectedValue',
+    ({value, expectedValue, expectedPosition}) => {
+      render(<Slider label="Volume" value={value} min={0} max={100} />);
+      const slider = screen.getByRole('slider');
+      expect(slider).toHaveAttribute('aria-valuenow', String(expectedValue));
+      expect(slider).toHaveStyle({left: expectedPosition});
+    },
+  );
+
   it('range mode sets correct aria values on both thumbs', () => {
     render(
       <Slider
@@ -153,6 +166,60 @@ describe('Slider', () => {
     const {container} = render(<Slider label="Volume" value={50} />);
     const ariaHidden = container.querySelectorAll('[aria-hidden="true"]');
     expect(ariaHidden.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // --- Required state ---
+
+  it('conveys required state through the accessible description', () => {
+    render(<Slider label="Volume" value={50} isRequired />);
+    const slider = screen.getByRole('slider');
+    expect(slider).toHaveAccessibleDescription(/Required/);
+    // aria-required is not a supported property of role="slider" in
+    // WAI-ARIA 1.2, so it must never appear on the thumb.
+    expect(slider).not.toHaveAttribute('aria-required');
+  });
+
+  it('conveys required state on both thumbs of a range slider', () => {
+    render(
+      <Slider
+        label="Price range"
+        value={[20, 80] as [number, number]}
+        isRequired
+      />,
+    );
+    const sliders = screen.getAllByRole('slider');
+    expect(sliders).toHaveLength(2);
+    for (const thumb of sliders) {
+      expect(thumb).toHaveAccessibleDescription(/Required/);
+      expect(thumb).not.toHaveAttribute('aria-required');
+    }
+  });
+
+  it('combines required with other describedby parts in the description', () => {
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        description="Adjust the volume level"
+        isRequired
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    expect(slider).toHaveAccessibleDescription(/Adjust the volume level/);
+    expect(slider).toHaveAccessibleDescription(/Required/);
+  });
+
+  it('does not mention required without isRequired', () => {
+    render(
+      <Slider
+        label="Volume"
+        value={50}
+        description="Adjust the volume level"
+      />,
+    );
+    const slider = screen.getByRole('slider');
+    expect(slider).not.toHaveAccessibleDescription(/Required/);
+    expect(slider).not.toHaveAttribute('aria-required');
   });
 
   // --- Disabled guards ---
@@ -549,7 +616,11 @@ describe('Slider', () => {
     it('submits both range values under the same name', () => {
       const {container} = render(
         <form>
-          <Slider label="Price" htmlName="price" value={[20, 80] as [number, number]} />
+          <Slider
+            label="Price"
+            htmlName="price"
+            value={[20, 80] as [number, number]}
+          />
         </form>,
       );
       const data = new FormData(container.querySelector('form')!);
@@ -562,7 +633,9 @@ describe('Slider', () => {
           <Slider label="Volume" htmlName="volume" value={50} isDisabled />
         </form>,
       );
-      expect([...new FormData(container.querySelector('form')!).keys()]).toEqual([]);
+      expect([
+        ...new FormData(container.querySelector('form')!).keys(),
+      ]).toEqual([]);
     });
   });
 });

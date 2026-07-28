@@ -52,6 +52,13 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'elevation',
+      type: "'none' | 'low' | 'med' | 'high'",
+      description:
+        'Resting shadow depth for floating buttons (e.g. a FAB). `none` is the default flat button; `low`/`med`/`high` map to the shadow token scale. Ignored inside a ButtonGroup, where elevation is owned by the group.',
+      default: "'none'",
+    },
+    {
       name: 'type',
       type: "'button' | 'submit' | 'reset'",
       description: 'HTML button type attribute.',
@@ -199,6 +206,7 @@ export const docsZh = {
       default: "'secondary'",
     },
     {name: 'size', type: "'sm' | 'md' | 'lg'", description: '尺寸变体。', default: "'md'"},
+    {name: 'elevation', type: "'none' | 'low' | 'med' | 'high'", description: '浮动按钮（如 FAB）的静止阴影深度。`none` 为默认扁平按钮；在 ButtonGroup 内忽略。', default: "'none'"},
     {name: 'type', type: "'button' | 'submit' | 'reset'", description: 'HTML 按钮类型属性。', default: "'button'"},
     {name: 'name', type: 'string', description: '表单提交的 HTML name 属性。'},
     {name: 'value', type: 'string | number | readonly string[]', description: '表单提交的 HTML value 属性。'},
@@ -271,6 +279,7 @@ export const docsDense = {
     label: 'accessible label; visible text by default, aria-label when isIconOnly',
     variant: 'visual style variant',
     size: 'size variant',
+    elevation: 'resting shadow depth for floating buttons/FABs: none|low|med|high; ignored inside ButtonGroup',
     type: 'HTML button type; defaults to "button"',
     name: 'HTML name for form submission',
     displayName: 'HTML name for form submission',

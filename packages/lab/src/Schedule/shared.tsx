@@ -300,9 +300,7 @@ export function eventDotColorStyle(color: ScheduleEventColor | undefined) {
   }
 }
 
-export function eventSurfaceColorStyle(
-  color: ScheduleEventColor | undefined,
-) {
+export function eventSurfaceColorStyle(color: ScheduleEventColor | undefined) {
   switch (color) {
     case 'cyan':
       return styles.eventSurfaceCyan;

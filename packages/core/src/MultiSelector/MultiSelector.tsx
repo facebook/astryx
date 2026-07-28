@@ -37,6 +37,7 @@ import {
   inputStatusBorderStyles,
   inputStatusHoverShadowStyles,
   inputWrapperStyles,
+  type FieldStatusVariant,
 } from '../Field';
 import {Divider} from '../Divider';
 import {Spinner} from '../Spinner';
@@ -479,6 +480,13 @@ export interface MultiSelectorProps<
    * Status indicator for the selector.
    */
   status?: MultiSelectorStatus;
+  /**
+   * How the status message is placed relative to the input.
+   * - 'attached': message overlaps directly below the input (bordered treatment)
+   * - 'detached': message floats below as a separate element with spacing
+   * @default 'attached'
+   */
+  statusVariant?: FieldStatusVariant;
 
   /**
    * Width of the field. Numbers are treated as pixels, strings are used as-is
@@ -562,6 +570,23 @@ export interface MultiSelectorProps<
   'data-testid'?: string;
 }
 
+// Case-insensitive substring filter over the selectable options. Shared by the
+// `filteredItems` memo (rendering) and the search-change handler, which needs
+// the count for the *next* query synchronously to announce it exactly once per
+// keystroke rather than reacting to state in an effect.
+function filterOptionsByQuery(
+  items: MultiSelectorOptionData[],
+  query: string,
+): MultiSelectorOptionData[] {
+  if (!query) {
+    return items;
+  }
+  const q = query.toLowerCase();
+  return items.filter(item =>
+    (item.label ?? item.value).toLowerCase().includes(q),
+  );
+}
+
 /**
  * A multi-select dropdown component with checkboxes for choosing
  * multiple items from a list of options.
@@ -593,6 +618,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   placeholder: placeholderFromProps,
   size: sizeProp,
   status,
+  statusVariant = 'attached',
   labelTooltip,
   startIcon,
   hasClear = false,
@@ -692,15 +718,10 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   );
 
   // Filter items by search query
-  const filteredItems = useMemo(() => {
-    if (!searchQuery) {
-      return selectableItems;
-    }
-    const query = searchQuery.toLowerCase();
-    return selectableItems.filter(item =>
-      (item.label ?? item.value).toLowerCase().includes(query),
-    );
-  }, [selectableItems, searchQuery]);
+  const filteredItems = useMemo(
+    () => filterOptionsByQuery(selectableItems, searchQuery),
+    [selectableItems, searchQuery],
+  );
 
   // Single source of truth for item order. Both the hook (keyboard navigation)
   // and renderOptions (DOM rendering) consume this list — no independent sorting.
@@ -772,8 +793,11 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
   const handleLayerHide = useCallback(() => {
     setSearchQuery('');
     setSelectedAtOpen(null);
+    // Clear any lingering result count when the popover closes so stale status
+    // text does not linger in the a11y tree.
+    announce('');
     triggerRef.current?.focus();
-  }, []);
+  }, [announce]);
 
   const popover = usePopover({
     hasLightDismiss: true,
@@ -792,6 +816,30 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     }
     // eslint-disable-next-line @eslint-react/exhaustive-deps -- mount-only: isDefaultOpen is not reactive
   }, []);
+
+  // Announce the filtered result count from the query-change handler (matching
+  // BaseTypeahead) rather than a reactive effect: computing the count for the
+  // next query here fires the announcement exactly once per keystroke and does
+  // not re-speak on unrelated re-renders. Reuses the announce instance shared
+  // with the selection-count announcements above.
+  const handleSearchChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const nextQuery = event.target.value;
+      setSearchQuery(nextQuery);
+      if (nextQuery.length === 0) {
+        // Emptying the query clears the region rather than announcing a count.
+        announce('');
+        return;
+      }
+      const count = filterOptionsByQuery(selectableItems, nextQuery).length;
+      announce(
+        count === 0
+          ? 'No results found'
+          : `${count} result${count === 1 ? '' : 's'}`,
+      );
+    },
+    [announce, selectableItems],
+  );
 
   // Handle toggle
   // Clear all selected values. Shared by the clear button and the keyboard
@@ -1041,14 +1089,17 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
           aria-label={t('@astryx.multiSelector.searchOptions')}
           type="text"
           value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
           onKeyDown={e => {
             // Arrow keys navigate options; Enter toggles; Escape/Tab close.
             // Space and Home/End are left to the input (type a space / move
-            // the caret), not forwarded to option navigation.
+            // the caret) per the APG editable combobox; PageUp/PageDown are
+            // the sanctioned substitute for jumping to the first/last option.
             if (
               e.key === 'ArrowDown' ||
               e.key === 'ArrowUp' ||
+              e.key === 'PageUp' ||
+              e.key === 'PageDown' ||
               e.key === 'Enter' ||
               e.key === 'Escape' ||
               e.key === 'Tab'
@@ -1067,6 +1118,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     listboxId,
     searchQuery,
     searchPlaceholder,
+    handleSearchChange,
     onKeyDown,
     popover.isOpen,
     highlightedIndex,
@@ -1383,6 +1435,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
             }
           : undefined
       }
+      statusVariant={statusVariant}
       labelTooltip={labelTooltip}
       width={width}>
       {multiSelectorContent}

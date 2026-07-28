@@ -186,9 +186,24 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: pnpm -F @astryxdesign/core typecheck:docs
 
+      - name: Typecheck lab docs
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm -F @astryxdesign/lab typecheck:docs
+
+      - name: Typecheck charts docs
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm -F @astryxdesign/charts typecheck:docs
+
       - name: Typecheck template docs
         if: needs.check-scope.outputs.docsite_only != 'true'
         run: pnpm -F @astryxdesign/cli typecheck:template-docs
+
+      # Full-package strict checkJs over the CLI (src, bin, scripts, docs, and
+      # the emitted templates). Requires the `pnpm build` above so the template
+      # .tsx sources can resolve the built @astryxdesign/{core,charts,lab} types.
+      - name: Typecheck CLI (strict)
+        if: needs.check-scope.outputs.docsite_only != 'true'
+        run: pnpm -F @astryxdesign/cli typecheck:strict
 
       - name: Typecheck storybook
         if: needs.check-scope.outputs.docsite_only != 'true'

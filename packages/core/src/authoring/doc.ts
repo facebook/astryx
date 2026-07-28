@@ -130,9 +130,7 @@ export type AstryxGenericDocInput = AstryxBaseDocInput;
  * any code referring to the old name.
  */
 export type AstryxComponentDoc =
-  | AstryxComponentDocInput
-  | AstryxFunctionDocInput
-  | AstryxGenericDocInput;
+  AstryxComponentDocInput | AstryxFunctionDocInput | AstryxGenericDocInput;
 
 /**
  * Author a component doc. Stamp-only: returns the def with `type: 'component'`

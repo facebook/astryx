@@ -28,6 +28,7 @@ import {
 } from '../theme/tokens.stylex';
 import {Button} from '../Button';
 import {useTranslator} from '../i18n';
+import {useDevWarning} from '../hooks/useDevWarning';
 
 const styles = stylex.create({
   // Default popover surface — background, radius, shadow.
@@ -391,19 +392,14 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
     'aria-controls': layer.id,
   };
 
-  // Dev-time guardrail: a dialog popover should always be labeled. Warn once
-  // per hook instance (in an effect) rather than on every render.
-  const warnedUnnamedDialogRef = useRef(false);
-  useEffect(() => {
-    if (role === 'dialog' && !dialogLabel && !warnedUnnamedDialogRef.current) {
-      warnedUnnamedDialogRef.current = true;
-      console.warn(
-        'usePopover: role="dialog" without a `dialogLabel` renders an unnamed ' +
-          'dialog. Pass `dialogLabel`, or use `role: "none"` for listbox/menu ' +
-          'popups whose content already carries its own role.',
-      );
-    }
-  }, [role, dialogLabel]);
+  // Dev-time guardrail: a dialog popover should always be labeled.
+  useDevWarning(
+    'usePopover',
+    'role="dialog" without a `dialogLabel` renders an unnamed ' +
+      'dialog. Pass `dialogLabel`, or use `role: "none"` for listbox/menu ' +
+      'popups whose content already carries its own role.',
+    role === 'dialog' && !dialogLabel,
+  );
 
   // Wrapped render function that includes surface styles and optional hidden close button
   const render = useCallback(

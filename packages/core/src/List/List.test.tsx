@@ -436,11 +436,7 @@ describe('List', () => {
   it('sets target on anchor when provided', () => {
     const {container} = render(
       <List>
-        <ListItem
-          label="External"
-          href="https://example.com"
-          target="_blank"
-        />
+        <ListItem label="External" href="https://example.com" target="_blank" />
       </List>,
     );
     const anchor = container.querySelector('a');
@@ -500,17 +496,21 @@ describe('List', () => {
   // Selected state
   // ===========================================================================
 
-  it('applies aria-selected when isSelected', () => {
+  it('conveys selection via aria-current when isSelected', () => {
+    // aria-selected is not permitted on an li (role listitem, axe:
+    // aria-allowed-attr), so selection is exposed via aria-current — valid on
+    // any element — so screen-reader users are still told which item is chosen.
     const {container} = render(
       <List>
         <ListItem label="Selected" isSelected onClick={() => {}} />
       </List>,
     );
     const item = container.querySelector('.astryx-item');
-    expect(item).toHaveAttribute('aria-selected', 'true');
+    expect(item).not.toHaveAttribute('aria-selected');
+    expect(item).toHaveAttribute('aria-current', 'true');
   });
 
-  it('does not apply aria-selected when not selected', () => {
+  it('applies neither aria-selected nor aria-current when not selected', () => {
     const {container} = render(
       <List>
         <ListItem label="Not Selected" />
@@ -518,6 +518,7 @@ describe('List', () => {
     );
     const li = container.querySelector('li');
     expect(li).not.toHaveAttribute('aria-selected');
+    expect(li).not.toHaveAttribute('aria-current');
   });
 
   // ===========================================================================

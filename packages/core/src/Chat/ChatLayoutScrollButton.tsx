@@ -69,7 +69,10 @@ const styles = stylex.create({
     height: '32px',
     transitionProperty: 'opacity, transform, max-width',
     transitionTimingFunction: easeVars['--ease-standard'],
-    transitionDuration: durationVars['--duration-fast-max'],
+    transitionDuration: {
+      default: durationVars['--duration-fast-max'],
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
   },
   hidden: {
     opacity: 0,
@@ -135,7 +138,9 @@ export function ChatLayoutScrollButton({
         )}>
         <Button
           label={label ?? t('@astryx.chatLayoutScrollButton.scrollToBottom')}
-          aria-label={label ?? t('@astryx.chatLayoutScrollButton.scrollToBottom')}
+          aria-label={
+            label ?? t('@astryx.chatLayoutScrollButton.scrollToBottom')
+          }
           icon={<Icon icon="chevronDown" size="md" />}
           variant="ghost"
           size="md"

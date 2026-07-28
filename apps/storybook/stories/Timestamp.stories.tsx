@@ -15,6 +15,8 @@ const meta: Meta<typeof Timestamp> = {
         'relative',
         'auto',
         'date',
+        'date_long',
+        'date_weekday',
         'date_time',
         'time',
         'system_date',
@@ -119,6 +121,20 @@ export const DateFormat: Story = {
   args: {
     value: '2026-02-19T17:00:00Z',
     format: 'date',
+  },
+};
+
+export const DateLongFormat: Story = {
+  args: {
+    value: '2026-02-19T17:00:00Z',
+    format: 'date_long',
+  },
+};
+
+export const DateWeekdayFormat: Story = {
+  args: {
+    value: '2026-02-19T17:00:00Z',
+    format: 'date_weekday',
   },
 };
 
@@ -271,6 +287,18 @@ export const AllFormats: Story = {
             date:{' '}
           </Text>
           <Timestamp value={date} format="date" />
+        </div>
+        <div>
+          <Text type="label" color="secondary">
+            date_long:{' '}
+          </Text>
+          <Timestamp value={date} format="date_long" />
+        </div>
+        <div>
+          <Text type="label" color="secondary">
+            date_weekday:{' '}
+          </Text>
+          <Timestamp value={date} format="date_weekday" />
         </div>
         <div>
           <Text type="label" color="secondary">

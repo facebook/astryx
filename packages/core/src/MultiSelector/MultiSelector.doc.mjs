@@ -99,7 +99,8 @@ export const docs = {
         {
           name: 'hasSearch',
           type: 'boolean',
-          description: 'Whether to show a search input for filtering options.',
+          description:
+            'Whether to show a search input for filtering options. As the user types, the match count (or "No results found") is announced to screen readers via a polite live region.',
         },
         {
           name: 'searchPlaceholder',
@@ -153,6 +154,13 @@ export const docs = {
           name: 'status',
           type: "{type: 'error' | 'warning' | 'success', message?: string}",
           description: 'Validation status with an optional message.',
+        },
+        {
+          name: 'statusVariant',
+          type: "'attached' | 'detached'",
+          description:
+            'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+          default: "'attached'",
         },
         {
           name: 'renderOption',
@@ -239,7 +247,8 @@ export const docsZh = {
         hasSearch: '是否显示用于过滤选项的搜索输入。',
         searchPlaceholder: '搜索输入的占位文本。',
         isDisabled: '禁用选择器。',
-        htmlName: '用于表单提交的 HTML name 属性。为每个已选值渲染一个隐藏输入，类似原生多选。',
+        htmlName:
+          '用于表单提交的 HTML name 属性。为每个已选值渲染一个隐藏输入，类似原生多选。',
         disabledMessage:
           '解释选择器被禁用的原因。与 isDisabled 一起使用时，悬停/键盘聚焦时显示工具提示，并通过 aria-disabled 保持触发器可聚焦（仍无法激活）。请使用此属性，而不是用 Tooltip 包裹被禁用的选择器。',
         isLabelHidden: '视觉上隐藏标签同时保持其可访问性。',
@@ -248,6 +257,7 @@ export const docsZh = {
         isRequired: '将字段标记为必填。',
         isLoading: '在触发器中显示加载旋转器。',
         status: '带可选消息的验证状态。',
+        statusVariant: '状态消息的放置方式：attached 直接叠加在输入框下方；detached 作为独立元素浮于下方并留有间距。',
         renderOption:
           '每个可选选项的自定义渲染函数。不会用于分隔线、分组或全选行。',
         xstyle: '布局自定义的 StyleX 样式，必须是 stylex.create() 值。',
@@ -373,6 +383,7 @@ export const docsDense = {
         isRequired: 'marks required',
         isLoading: 'spinner in trigger',
         status: 'validation status w/ optional message',
+        statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
         renderOption:
           'custom render fn per selectable option; not dividers/sections/select-all',
         xstyle: 'StyleX layout styles; stylex.create() only',

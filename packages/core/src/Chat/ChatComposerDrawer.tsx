@@ -9,13 +9,15 @@
  * @position Collapsible drawer panel for ChatComposer.
  *   Supports expanded (full content) and collapsed (count + label) states
  *   with fade animation and grid-template-rows height transition.
+ *   The collapse toggle exposes aria-expanded + aria-controls linking it to
+ *   the content region (disclosure pattern).
  *
  * SYNC: When modified, update:
  * - /packages/core/src/Chat/index.ts (exports)
  * - /packages/cli/templates/blocks/components/ChatComposerDrawer/ (block examples)
  */
 
-import {useState, type ReactNode} from 'react';
+import {useId, useState, type ReactNode} from 'react';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import * as stylex from '@stylexjs/stylex';
 import {
@@ -240,6 +242,12 @@ export function ChatComposerDrawer({
 
   const canCollapse = count != null;
 
+  // Links the toggle to the region it shows/hides so assistive tech can move
+  // from the button to its controlled content (disclosure pattern). The
+  // content stays mounted while collapsed (hidden via the grid-row collapse),
+  // so the reference always resolves.
+  const contentId = useId();
+
   const toggle = () => {
     const next = !isCollapsed;
     if (!isControlled) {
@@ -271,6 +279,7 @@ export function ChatComposerDrawer({
           role="button"
           tabIndex={0}
           aria-expanded={!isCollapsed}
+          aria-controls={contentId}
           aria-label={
             isCollapsed
               ? t('@astryx.chatComposerDrawer.expand', {label})
@@ -301,6 +310,7 @@ export function ChatComposerDrawer({
       )}
 
       <div
+        id={contentId}
         {...stylex.props(
           styles.contentGrid,
           canCollapse && isCollapsed && styles.contentGridCollapsed,

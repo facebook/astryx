@@ -120,7 +120,12 @@ export function SideNavCollapseButton({
   return (
     <Button
       ref={ref}
-      label={label ?? (isCollapsed ? t('@astryx.sideNavCollapseButton.expandSidebar') : t('@astryx.sideNavCollapseButton.collapseSidebar'))}
+      label={
+        label ??
+        (isCollapsed
+          ? t('@astryx.sideNavCollapseButton.expandSidebar')
+          : t('@astryx.sideNavCollapseButton.collapseSidebar'))
+      }
       variant="ghost"
       {...props}
       onClick={composeEventHandlers(onClickProp, toggle)}

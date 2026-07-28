@@ -9,10 +9,15 @@
  * SYNC: When CheckboxInput.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {CheckboxInput} from './CheckboxInput';
+import {__resetLiveRegionsForTest} from '../hooks/useAnnounce';
+
+afterEach(() => {
+  __resetLiveRegionsForTest();
+});
 
 // Mock showPopover/hidePopover (not implemented in jsdom) so the tooltip layer
 // reflects its open state via a `popover-open` attribute the tests can assert.
@@ -331,6 +336,32 @@ describe('CheckboxInput', () => {
       'aria-invalid',
       'true',
     );
+  });
+
+  // Regression: the status is conditionally mounted, so it must be announced
+  // through the persistent useAnnounce live region — a live region born
+  // together with its content is not reliably announced.
+  it('announces a status message that appears after mount', async () => {
+    const {rerender} = render(
+      <CheckboxInput label="Accept terms" value={false} onChange={() => {}} />,
+    );
+    expect(
+      document.querySelector('[data-astryx-live-region="assertive"]'),
+    ).toBeNull();
+
+    rerender(
+      <CheckboxInput
+        label="Accept terms"
+        value={false}
+        onChange={() => {}}
+        status={{type: 'error', message: 'Required field'}}
+      />,
+    );
+    await waitFor(() => {
+      expect(
+        document.querySelector('[data-astryx-live-region="assertive"]'),
+      ).toHaveTextContent('Required field');
+    });
   });
 
   describe('disabledMessage', () => {

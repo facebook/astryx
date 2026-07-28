@@ -23,10 +23,10 @@ const REPO = resolve(ROOT, '../..');
 const OUT = resolve(ROOT, 'src/generated/xle-registry.json');
 
 const {buildRegistry, serializeRegistry} = await import(
-  resolve(REPO, 'packages/cli/src/lib/xle/registry.mjs')
+  resolve(REPO, 'packages/cli/lib/xle/registry.mjs')
 );
 const {discoverTemplates} = await import(
-  resolve(REPO, 'packages/cli/src/api/template.mjs')
+  resolve(REPO, 'packages/cli/api/template/template.mjs')
 );
 
 const registry = await buildRegistry({cwd: REPO});

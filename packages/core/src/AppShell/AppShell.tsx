@@ -24,6 +24,7 @@ import {
   isValidElement,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -600,10 +601,14 @@ export function AppShell({
   // =========================================================================
   // Mobile context — shared with MobileNavToggle and future TopNav mobile
   // =========================================================================
+  // Stable id shared by the drawer (applied as its `id`) and the toggle
+  // (referenced via `aria-controls`) so screen readers know what it controls.
+  const mobileNavId = useId();
   const mobileContextValue = useMemo<AppShellMobileContextValue>(
     () => ({
       isMobile: isBelowBreakpoint,
       isMobileNavOpen,
+      mobileNavId,
       toggleMobileNav: () =>
         mobileNavEnabled && setMobileNavOpen(!isMobileNavOpen),
       openMobileNav: () => mobileNavEnabled && setMobileNavOpen(true),
@@ -614,6 +619,7 @@ export function AppShell({
     [
       isBelowBreakpoint,
       isMobileNavOpen,
+      mobileNavId,
       setMobileNavOpen,
       mobileNavEnabled,
       mobileNavHasToggle,

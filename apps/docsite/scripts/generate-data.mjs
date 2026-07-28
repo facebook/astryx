@@ -1207,6 +1207,7 @@ export interface ContentBlock {
   code?: string;
   lang?: string;
   label?: string;
+  level?: number;
   headers?: string[];
   rows?: string[][];
   items?: string[];

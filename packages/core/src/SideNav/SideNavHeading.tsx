@@ -351,6 +351,10 @@ export function SideNavHeading({
 
   const popover = usePopover({
     dialogLabel: t('@astryx.sideNav.heading.dialogLabel'),
+    // The popup exposes its own role="menu" semantics; a role="dialog"
+    // aria-modal wrapper would announce "dialog, Navigation menu" around a
+    // menu (the anti-pattern removed in a478a3dcf).
+    role: 'none',
     hasCloseButton: false,
   });
 
@@ -428,7 +432,6 @@ export function SideNavHeading({
           {popover.render(
             <div
               ref={menuRef}
-              role="menu"
               {...stylex.props(styles.popoverContent)}
               {...contentProps}>
               <button
@@ -461,9 +464,14 @@ export function SideNavHeading({
                   )}
                 </span>
               </button>
-              <NavHeadingCloseContext value={closeMenuCtx}>
-                {menu}
-              </NavHeadingCloseContext>
+              {/* The menu role is scoped to the actual menu items so the
+                  heading button above stays a valid sibling, not an invalid
+                  child of a role="menu" element. */}
+              <div role="menu" aria-label={heading}>
+                <NavHeadingCloseContext value={closeMenuCtx}>
+                  {menu}
+                </NavHeadingCloseContext>
+              </div>
             </div>,
             {placement: 'below', alignment: 'start', xstyle: styles.popover},
           )}
@@ -620,11 +628,15 @@ export function SideNavHeading({
         {popover.render(
           <div
             ref={menuRef}
-            role="menu"
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            {menu}
+            {/* The menu role is scoped to the actual menu items so the
+                heading button above stays a valid sibling, not an invalid
+                child of a role="menu" element. */}
+            <div role="menu" aria-label={heading}>
+              {menu}
+            </div>
           </div>,
           {
             placement: 'below',
@@ -683,11 +695,15 @@ export function SideNavHeading({
         {popover.render(
           <div
             ref={menuRef}
-            role="menu"
             {...stylex.props(styles.popoverContent)}
             {...contentProps}>
             {popoverHeadingContent}
-            {menu}
+            {/* The menu role is scoped to the actual menu items so the
+                heading button above stays a valid sibling, not an invalid
+                child of a role="menu" element. */}
+            <div role="menu" aria-label={heading}>
+              {menu}
+            </div>
           </div>,
           {
             placement: 'below',
