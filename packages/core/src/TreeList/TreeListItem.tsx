@@ -14,7 +14,7 @@
  * - /packages/cli/templates/blocks/components/TreeList/ (showcase blocks)
  */
 
-import {useId, useMemo, type ReactNode} from 'react';
+import {useId, useMemo, type CSSProperties, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
@@ -31,6 +31,12 @@ import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
+
+/**
+ * `CSSProperties` has no index signature for custom properties, so the row's
+ * indent variable gets its own type rather than an assertion at the call site.
+ */
+type IndentStyle = CSSProperties & Record<'--_tree-indent', string>;
 
 // =============================================================================
 // Styles
@@ -82,6 +88,13 @@ const styles = stylex.create({
     position: 'relative',
     boxSizing: 'border-box',
     textAlign: 'start',
+    // Per-level indent. The row publishes the computed distance as
+    // `--_tree-indent` (see the render below) and the declaration lives here,
+    // in @layer astryx-base, so a theme targeting `astryx-tree-list-item` can
+    // override `margin-inline-start` through @layer astryx-theme. Setting the
+    // longhand inline instead would outrank every layer and put the indent
+    // outside the theming contract altogether (#4308).
+    marginInlineStart: 'var(--_tree-indent, 0px)',
   },
   interactive: {
     cursor: 'pointer',
@@ -270,8 +283,8 @@ export interface TreeListItemInternalProps {
   density: TreeListDensity;
   /**
    * Guide-line visual treatment. `noGuides` suppresses the connector lines;
-   * indentation is unaffected (it lives on the row's `marginLeft`, not the
-   * guide element).
+   * indentation is unaffected (it lives on the row's `margin-inline-start`,
+   * driven by `--_tree-indent`, not the guide element).
    */
   variant: TreeListVariant;
   /** Pre-rendered children subtree (rendered by the parent recursion) */
@@ -353,9 +366,12 @@ export function TreeListItem({
     return undefined;
   }, [onClick, hasChildren, onToggle, id, isDisabled]);
 
-  const computedMarginLeft = hasChildren
+  // Published as `--_tree-indent`; `styles.contentWrapper` turns it into the
+  // row's `margin-inline-start`.
+  const computedIndent = hasChildren
     ? `calc(${nestedLevel} * ${spacingVars['--spacing-4']})`
     : `calc(${nestedLevel} * ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-4']} + ${spacingVars['--spacing-2']})`;
+  const indentStyle: IndentStyle = {'--_tree-indent': computedIndent};
 
   const labelAndDescription = (
     <>
@@ -527,7 +543,9 @@ export function TreeListItem({
               isSelected && styles.selected,
             ),
           )}
-          style={{marginInlineStart: computedMarginLeft}}
+          // Carries only the value; `margin-inline-start` itself is declared in
+          // `styles.contentWrapper` so it stays layer-reachable (#4308).
+          style={indentStyle}
           onClick={handleClick}>
           {innerContent}
         </div>
