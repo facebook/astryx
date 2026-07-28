@@ -4,25 +4,26 @@
  * @file tooltipEntries.ts
  * @input A Date and the consumer's tooltip entry list
  * @output Pure formatting of one tooltip line per entry, plus the entry types
- * @position Leaf module; Timestamp renders what this returns and owns no
- *   zone/format logic of its own
+ * @position Leaf module; owns which zone each tooltip line names and whether
+ *   it needs a zone abbreviation, then defers to formatInstant to render it
  *
- * Kept out of Timestamp.tsx deliberately: the existing `formatTimestamp()`
- * switch builds `system_*` output from local `Date` getters and must stay
- * reachable, unchanged, on every path an existing render can take. The
- * zone-aware `system_*` branch here is entered only when a consumer names an
- * explicit zone, so today's rendering cannot regress.
+ * This module holds only the decisions a tooltip makes that the visible text
+ * does not: resolving `timezoneID` (including the `'local'` alias and the
+ * fallback for an unknown identifier), and deciding which lines need a zone
+ * abbreviation to be told apart. The formatting itself is formatInstant's,
+ * shared with the rendered text, so the two surfaces cannot drift.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Timestamp/Timestamp.tsx
+ * - /packages/core/src/Timestamp/formatInstant.ts
  * - /packages/core/src/Timestamp/tooltipEntries.test.ts
  * - /packages/core/src/Timestamp/Timestamp.doc.mjs
  * - /packages/core/src/Timestamp/index.ts
  */
 
-import {SHARED_DATE_FORMAT_OPTIONS} from '../utils/plainDate';
 import {devWarn} from '../utils/devWarning';
-import type {TimestampFormat} from './Timestamp';
+import {formatInstant} from './formatInstant';
+import type {InstantFormat} from './formatInstant';
 
 // =============================================================================
 // Types
@@ -39,9 +40,11 @@ import type {TimestampFormat} from './Timestamp';
  * `'full'` lives only in this vocabulary, never in `TimestampFormat` — nothing
  * asked for it as a visible display format, and keeping it out means new
  * members added to `TimestampFormat` become valid tooltip formats for free.
+ *
+ * The public spelling of {@link InstantFormat}: consumers reading Timestamp's
+ * props should not have to know the name of its internal formatter.
  */
-export type TimestampTooltipFormat =
-  Exclude<TimestampFormat, 'relative' | 'auto'> | 'full';
+export type TimestampTooltipFormat = InstantFormat;
 
 /** One line of the Timestamp tooltip. */
 export interface TimestampTooltipEntry {
@@ -142,80 +145,8 @@ function zoneKey(resolved: string | undefined): string {
 }
 
 // =============================================================================
-// Formatting
+// Zone marking
 // =============================================================================
-
-/** The long absolute style the tooltip has shown since it existed. */
-const FULL_OPTIONS: Intl.DateTimeFormatOptions = {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  second: '2-digit',
-  timeZoneName: 'short',
-};
-
-function pad(n: number): string {
-  return String(n).padStart(2, '0');
-}
-
-interface WallClock {
-  year: number;
-  month: number;
-  day: number;
-  hour: number;
-  minute: number;
-  second: number;
-}
-
-/**
- * Wall-clock fields for an instant in a given zone.
- *
- * Same technique as `getTimeZoneParts` in utils/plainDate.ts — a fixed
- * `'en-US'` locale and `hourCycle: 'h23'` so the numeric parts are stable
- * regardless of the viewer's locale, then read back off `formatToParts`.
- */
-function getWallClock(date: Date, timezoneID: string): WallClock {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezoneID,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(date);
-
-  const lookup: Record<string, number> = {};
-  for (const part of parts) {
-    if (part.type !== 'literal') {
-      lookup[part.type] = Number(part.value);
-    }
-  }
-
-  return {
-    year: lookup.year,
-    month: lookup.month,
-    day: lookup.day,
-    hour: lookup.hour,
-    minute: lookup.minute,
-    second: lookup.second,
-  };
-}
-
-/** Wall-clock fields in the viewer's own zone, straight off the Date. */
-function getLocalWallClock(date: Date): WallClock {
-  return {
-    year: date.getFullYear(),
-    month: date.getMonth() + 1,
-    day: date.getDate(),
-    hour: date.getHours(),
-    minute: date.getMinutes(),
-    second: date.getSeconds(),
-  };
-}
 
 /**
  * Whether a format should carry a zone abbreviation.
@@ -247,89 +178,6 @@ function shouldShowZoneName(
   return false;
 }
 
-function formatLine(
-  date: Date,
-  format: TimestampTooltipFormat,
-  timezoneID: string | undefined,
-  hasMultipleZones: boolean,
-): string {
-  const showZoneName = shouldShowZoneName(
-    format,
-    hasMultipleZones,
-    timezoneID !== undefined,
-  );
-  const zone = timezoneID === undefined ? {} : {timeZone: timezoneID};
-
-  switch (format) {
-    case 'full':
-      return new Intl.DateTimeFormat(undefined, {
-        ...FULL_OPTIONS,
-        ...zone,
-      }).format(date);
-
-    case 'date':
-      return new Intl.DateTimeFormat(undefined, {
-        ...SHARED_DATE_FORMAT_OPTIONS.date,
-        ...zone,
-      }).format(date);
-
-    case 'date_long':
-      return new Intl.DateTimeFormat(undefined, {
-        ...SHARED_DATE_FORMAT_OPTIONS.date_long,
-        ...zone,
-      }).format(date);
-
-    case 'date_weekday':
-      return new Intl.DateTimeFormat(undefined, {
-        ...SHARED_DATE_FORMAT_OPTIONS.date_weekday,
-        ...zone,
-      }).format(date);
-
-    case 'date_time':
-      return new Intl.DateTimeFormat(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        ...(showZoneName ? {timeZoneName: 'short' as const} : {}),
-        ...zone,
-      }).format(date);
-
-    case 'time':
-      return new Intl.DateTimeFormat(undefined, {
-        hour: 'numeric',
-        minute: '2-digit',
-        ...(showZoneName ? {timeZoneName: 'short' as const} : {}),
-        ...zone,
-      }).format(date);
-
-    case 'system_date': {
-      const w =
-        timezoneID === undefined
-          ? getLocalWallClock(date)
-          : getWallClock(date, timezoneID);
-      return `${w.year}-${pad(w.month)}-${pad(w.day)}`;
-    }
-
-    case 'system_date_time': {
-      const w =
-        timezoneID === undefined
-          ? getLocalWallClock(date)
-          : getWallClock(date, timezoneID);
-      return `${w.year}-${pad(w.month)}-${pad(w.day)} ${pad(w.hour)}:${pad(w.minute)}:${pad(w.second)}`;
-    }
-
-    case 'system_time': {
-      const w =
-        timezoneID === undefined
-          ? getLocalWallClock(date)
-          : getWallClock(date, timezoneID);
-      return `${pad(w.hour)}:${pad(w.minute)}:${pad(w.second)}`;
-    }
-  }
-}
-
 /**
  * Renders one tooltip line per entry, in the order given.
  *
@@ -343,13 +191,20 @@ export function formatTooltipLines(
   const resolved = entries.map(entry => resolveTimezoneID(entry.timezoneID));
   const hasMultipleZones = new Set(resolved.map(zoneKey)).size > 1;
 
-  return entries.map((entry, index) => ({
-    ...(entry.label === undefined ? {} : {label: entry.label}),
-    value: formatLine(
-      date,
-      entry.format ?? 'full',
-      resolved[index],
-      hasMultipleZones,
-    ),
-  }));
+  return entries.map((entry, index) => {
+    const format = entry.format ?? 'full';
+    const timeZone = resolved[index];
+
+    return {
+      ...(entry.label === undefined ? {} : {label: entry.label}),
+      value: formatInstant(date, format, {
+        timeZone,
+        isTimezoneShown: shouldShowZoneName(
+          format,
+          hasMultipleZones,
+          timeZone !== undefined,
+        ),
+      }),
+    };
+  });
 }

@@ -15,6 +15,7 @@
  */
 
 import {describe, it, expect, vi} from 'vitest';
+import {SHARED_DATE_FORMAT_OPTIONS} from '../utils/plainDate';
 import {formatTooltipLines} from './tooltipEntries';
 
 /** 2026-02-19T17:00:00Z — chosen so several zones land on different dates. */
@@ -70,6 +71,37 @@ describe('formatTooltipLines', () => {
     expect(winter[0].value).toBe('2026-01-15 12:00:00');
     expect(summer[0].value).toBe('2026-07-15 13:00:00');
   });
+
+  // --- The shared date vocabulary ---
+
+  it.each(['date', 'date_long', 'date_weekday'] as const)(
+    'renders %s from the shared option bag, in the requested zone',
+    format => {
+      // These three members are owned by SHARED_DATE_FORMAT_OPTIONS so that
+      // Timestamp's rendered text and DateInput's display path cannot drift.
+      // A tooltip line must come from the same bag: rebuilding the expected
+      // string from the shared constant here fails the moment this file
+      // inlines its own options again. Locale-agnostic — both sides format
+      // under whatever locale the machine has.
+      for (const timezoneID of ['UTC', 'Asia/Tokyo']) {
+        const [line] = formatTooltipLines(INSTANT, [{timezoneID, format}]);
+        expect(line.value).toBe(
+          new Intl.DateTimeFormat(undefined, {
+            ...SHARED_DATE_FORMAT_OPTIONS[format],
+            timeZone: timezoneID,
+          }).format(INSTANT),
+        );
+      }
+
+      // 17:00Z is already the next calendar day in Tokyo, so the two zones
+      // must disagree — proof the zone reached Intl rather than being dropped.
+      const [utc] = formatTooltipLines(INSTANT, [{timezoneID: 'UTC', format}]);
+      const [tokyo] = formatTooltipLines(INSTANT, [
+        {timezoneID: 'Asia/Tokyo', format},
+      ]);
+      expect(tokyo.value).not.toBe(utc.value);
+    },
+  );
 
   // --- Equivalence with the untouched local implementation ---
 

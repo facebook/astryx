@@ -4,6 +4,7 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {render, screen, act, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Timestamp} from './Timestamp';
+import {formatTooltipLines} from './tooltipEntries';
 
 describe('Timestamp', () => {
   beforeEach(() => {
@@ -799,6 +800,62 @@ describe('Timestamp', () => {
       } finally {
         warn.mockRestore();
       }
+    });
+  });
+
+  describe('one formatter behind both surfaces', () => {
+    // The rendered text and a tooltip line are two views of the same instant.
+    // They are meant to come from one formatter parameterized by zone, not two
+    // that happen to agree: a format added or reshaped on one surface and not
+    // the other is a silent drift, invisible until someone compares them.
+    // These assertions compare the two surfaces directly, so re-forking either
+    // one fails here. Locale- and timezone-agnostic: nothing is pinned to a
+    // literal, only the two paths to each other.
+    const VALUE = '2026-02-19T17:00:00Z';
+
+    const SHARED_FORMATS = [
+      'date',
+      'date_long',
+      'date_weekday',
+      'date_time',
+      'time',
+      'system_date',
+      'system_date_time',
+      'system_time',
+    ] as const;
+
+    it.each(SHARED_FORMATS)(
+      'renders %s identically as text and as a zone-less tooltip line',
+      format => {
+        render(
+          <Timestamp
+            value={VALUE}
+            format={format}
+            hasTooltip={false}
+            data-testid="ts"
+          />,
+        );
+        const [line] = formatTooltipLines(new Date(VALUE), [{format}]);
+        expect(line.value).toBe(screen.getByTestId('ts').textContent);
+      },
+    );
+
+    it('renders the full style identically as the aria-label and as a line', () => {
+      // 'full' is the one member with no visible-text counterpart — it backs
+      // the accessible name of a relative timestamp and the tooltip's default
+      // line. Those two must not drift apart either.
+      render(
+        <Timestamp
+          value={VALUE}
+          format="relative"
+          hasTooltip={false}
+          data-testid="ts"
+        />,
+      );
+      const [line] = formatTooltipLines(new Date(VALUE), [{format: 'full'}]);
+      expect(line.value).toBe(
+        screen.getByTestId('ts').getAttribute('aria-label'),
+      );
     });
   });
 });

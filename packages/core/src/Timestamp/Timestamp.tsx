@@ -25,7 +25,7 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
-import {SHARED_DATE_FORMAT_OPTIONS} from '../utils/plainDate';
+import {formatInstant} from './formatInstant';
 import {formatTooltipLines} from './tooltipEntries';
 import type {TimestampTooltipEntry} from './tooltipEntries';
 
@@ -298,89 +298,6 @@ function getRelativeTimeString(date: Date, now: Date): string {
   return `${years} ${years === 1 ? 'year' : 'years'} ago`;
 }
 
-function pad(n: number): string {
-  return String(n).padStart(2, '0');
-}
-
-function formatTimestamp(
-  date: Date,
-  format: Exclude<TimestampFormat, 'relative' | 'auto'>,
-  isTimezoneShown: boolean,
-): string {
-  switch (format) {
-    case 'date':
-      return new Intl.DateTimeFormat(
-        undefined,
-        SHARED_DATE_FORMAT_OPTIONS.date,
-      ).format(date);
-
-    case 'date_long':
-      return new Intl.DateTimeFormat(
-        undefined,
-        SHARED_DATE_FORMAT_OPTIONS.date_long,
-      ).format(date);
-
-    case 'date_weekday':
-      return new Intl.DateTimeFormat(
-        undefined,
-        SHARED_DATE_FORMAT_OPTIONS.date_weekday,
-      ).format(date);
-
-    case 'date_time':
-      return new Intl.DateTimeFormat(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        ...(isTimezoneShown ? {timeZoneName: 'short'} : {}),
-      }).format(date);
-
-    case 'time':
-      return new Intl.DateTimeFormat(undefined, {
-        hour: 'numeric',
-        minute: '2-digit',
-        ...(isTimezoneShown ? {timeZoneName: 'short'} : {}),
-      }).format(date);
-
-    case 'system_date': {
-      const y = date.getFullYear();
-      const m = pad(date.getMonth() + 1);
-      const d = pad(date.getDate());
-      return `${y}-${m}-${d}`;
-    }
-
-    case 'system_date_time': {
-      const y = date.getFullYear();
-      const m = pad(date.getMonth() + 1);
-      const d = pad(date.getDate());
-      const h = pad(date.getHours());
-      const min = pad(date.getMinutes());
-      const s = pad(date.getSeconds());
-      return `${y}-${m}-${d} ${h}:${min}:${s}`;
-    }
-
-    case 'system_time': {
-      const h = pad(date.getHours());
-      const min = pad(date.getMinutes());
-      const s = pad(date.getSeconds());
-      return `${h}:${min}:${s}`;
-    }
-  }
-}
-
-function getFullAbsoluteString(date: Date): string {
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    second: '2-digit',
-    timeZoneName: 'short',
-  }).format(date);
-}
-
 /** Returns the interval (in ms) at which a relative timestamp should update. */
 function getLiveInterval(diffSeconds: number): number {
   const absDiff = Math.abs(diffSeconds);
@@ -461,17 +378,18 @@ export function Timestamp({
         : 'date_time'
       : format;
 
-  // Format the display text
+  // Format the display text. No time zone is passed: the visible text always
+  // reads in the viewer's own zone, and only the tooltip names others.
   const displayText = !isValidDate
     ? ''
     : effectiveFormat === 'relative'
       ? getRelativeTimeString(date, now)
       : isAbsoluteFormat(effectiveFormat)
-        ? formatTimestamp(date, effectiveFormat, isTimezoneShown)
+        ? formatInstant(date, effectiveFormat, {isTimezoneShown})
         : '';
 
   // Full absolute text for tooltip and aria-label
-  const fullAbsoluteText = isValidDate ? getFullAbsoluteString(date) : '';
+  const fullAbsoluteText = isValidDate ? formatInstant(date, 'full') : '';
 
   // Live updates
   useEffect(() => {
