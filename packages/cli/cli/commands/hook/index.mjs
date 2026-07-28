@@ -26,8 +26,6 @@ import {findRelatedBlocks} from '../../../api/template/template.mjs';
  *
  * @typedef {(
  *   | import('../../../types/hook').HookListResponse
- *   | import('../../../types/hook').HookBriefResponse
- *   | import('../../../types/hook').HookFullResponse
  *   | import('../../../types/hook').HookDetailResponse
  *   | import('../../../types/hook').HookDetailParamsResponse
  * )} HookResult
@@ -85,51 +83,56 @@ export function registerHook(program) {
       // ── Text output ────────────────────────────────────────────
       switch (result.type) {
         case 'hook.list': {
-          // --detail brief (default for list views) — names only.
+          // One list type across all three detail levels; the depth is carried
+          // in result.data.detail and the grouped map in result.data.components.
+          if (result.data.detail === 'full') {
+            // --detail full — dense per-hook docs grouped by category
+            // (import block, best practices, full params + returns tables, related).
+            const groups = result.data.components;
+            humanLog('');
+            for (const [cat, items] of Object.entries(groups)) {
+              humanLog(`## ${cat}\n`);
+              for (const item of items) {
+                const importPath = item.importPath || '@astryxdesign/core/hooks';
+                humanLog(formatHookCompact(item, importPath));
+              }
+            }
+            break;
+          }
+
+          if (result.data.detail === 'compact') {
+            // --detail compact — name + 1-line description per entry.
+            const groups = result.data.components;
+            humanLog('');
+            for (const [cat, items] of Object.entries(groups)) {
+              humanLog(cat);
+              for (const item of items) {
+                const desc = item.description ? ` — ${item.description}` : '';
+                humanLog(`  ${item.name}${desc}`);
+              }
+              humanLog('');
+            }
+            humanLog(`Usage: ${run} hook <name>`);
+            humanLog('');
+            break;
+          }
+
+          // --detail names (default for list views) — names only.
+          const groups = result.data.components;
           if (options.category) {
-            const [cat, hookNames] = Object.entries(result.data)[0];
+            const [cat, hookNames] = Object.entries(groups)[0];
             humanLog(`\n${cat}:`);
             for (const h of hookNames) humanLog(`  ${h}`);
             humanLog('');
           } else {
             humanLog('');
-            for (const [category, hookNames] of Object.entries(result.data)) {
+            for (const [category, hookNames] of Object.entries(groups)) {
               humanLog(category);
               for (const h of hookNames) humanLog(`  ${h}`);
             }
             humanLog('');
             humanLog(`Usage: ${run} hook <name>`);
             humanLog('');
-          }
-          break;
-        }
-
-        case 'hook.brief': {
-          // --detail compact — name + 1-line description per entry.
-          humanLog('');
-          for (const [cat, items] of Object.entries(result.data)) {
-            humanLog(cat);
-            for (const item of items) {
-              const desc = item.description ? ` — ${item.description}` : '';
-              humanLog(`  ${item.name}${desc}`);
-            }
-            humanLog('');
-          }
-          humanLog(`Usage: ${run} hook <name>`);
-          humanLog('');
-          break;
-        }
-
-        case 'hook.full': {
-          // --detail full — dense per-hook docs grouped by category
-          // (import block, best practices, full params + returns tables, related).
-          humanLog('');
-          for (const [cat, items] of Object.entries(result.data)) {
-            humanLog(`## ${cat}\n`);
-            for (const item of items) {
-              const importPath = item.importPath || '@astryxdesign/core/hooks';
-              humanLog(formatHookCompact(item, importPath));
-            }
           }
           break;
         }

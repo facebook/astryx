@@ -361,41 +361,37 @@ detail.data.name; // narrowed
 
 Every response has a `type` string that uniquely identifies it:
 
-| Command                                           | Type                        | Response                          |
-| ------------------------------------------------- | --------------------------- | --------------------------------- |
-| `astryx --json component [--list]`                | `component.list`            | `ComponentListResponse`           |
-| `astryx --json component --list --detail compact` | `component.brief`           | `ComponentBriefResponse`          |
-| `astryx --json component --list --detail full`    | `component.full`            | `ComponentFullResponse`           |
-| `astryx --json component <name>`                  | `component.detail`          | `ComponentDetailResponse`         |
-| `astryx --json component <name> --props`          | `component.detail.props`    | `ComponentDetailPropsResponse`    |
-| `astryx --json component <name> --source`         | `component.detail.source`   | `ComponentDetailSourceResponse`   |
-| `astryx --json component <name> --showcase`       | `component.detail.showcase` | `ComponentDetailShowcaseResponse` |
-| `astryx --json component <name> --blocks`         | `component.detail.blocks`   | `ComponentDetailBlocksResponse`   |
-| `astryx --json discover`                          | `discover.list`             | `DiscoverListResponse`            |
-| `astryx --json discover @scope/name`              | `discover.detail`           | `DiscoverDetailResponse`          |
-| `astryx --json discover @scope/name/Comp`         | `discover.detail.doc`       | `DiscoverDetailDocResponse`       |
-| `astryx --json discover <search>`                 | `discover.search`           | `DiscoverSearchResponse`          |
-| `astryx --json docs`                              | `docs.list`                 | `DocsListResponse`                |
-| `astryx --json docs <topic>`                      | `docs.detail`               | `DocsDetailResponse`              |
-| `astryx --json docs <topic> <section>`            | `docs.detail.section`       | `DocsDetailSectionResponse`       |
-| `astryx --json template [--list]`                 | `template.list`             | `TemplateListResponse`            |
-| `astryx --json template <name>`                   | `template.show`             | `TemplateShowResponse`            |
-| `astryx --json template <name> --skeleton`        | `template.skeleton`         | `TemplateSkeletonResponse`        |
-| `astryx --json template <name> [path]`            | `template.copy`             | `TemplateCopyResponse`            |
-| `astryx --json hook [--list]`                     | `hook.list`                 | `HookListResponse`                |
-| `astryx --json hook --list --detail compact`      | `hook.brief`                | `HookBriefResponse`               |
-| `astryx --json hook --list --detail full`         | `hook.full`                 | `HookFullResponse`                |
-| `astryx --json hook <name>`                       | `hook.detail`               | `HookDetailResponse`              |
-| `astryx --json hook <name> --params`              | `hook.detail.params`        | `HookDetailParamsResponse`        |
-| `astryx --json search <query>`                    | `search`                    | `SearchResponse`                  |
-| `astryx --json swizzle [--list]`                  | `swizzle.list`              | `SwizzleListResponse`             |
-| `astryx --json swizzle <component>`               | `swizzle.copy`              | `SwizzleCopyResponse`             |
-| `astryx --json theme build <file>`                | `theme.build`               | `ThemeBuildResponse`              |
-| `astryx --json upgrade --list`                    | `upgrade.list`              | `UpgradeListResponse`             |
-| `astryx --json upgrade [--apply]`                 | `upgrade.run`               | `UpgradeRunResponse`              |
-| `astryx --json doctor`                            | `doctor`                    | `DoctorResponse`                  |
-| any error                                         | —                           | `CLIError`                        |
-| unsupported command                               | —                           | `CLIUnsupportedError`             |
+| Command                                                            | Type                                 | Response                          |
+| ------------------------------------------------------------------ | ------------------------------------ | --------------------------------- |
+| `astryx --json component [--list] [--detail names\|compact\|full]` | `component.list` (see `data.detail`) | `ComponentListResponse`           |
+| `astryx --json component <name>`                                   | `component.detail`                   | `ComponentDetailResponse`         |
+| `astryx --json component <name> --props`                           | `component.detail.props`             | `ComponentDetailPropsResponse`    |
+| `astryx --json component <name> --source`                          | `component.detail.source`            | `ComponentDetailSourceResponse`   |
+| `astryx --json component <name> --showcase`                        | `component.detail.showcase`          | `ComponentDetailShowcaseResponse` |
+| `astryx --json component <name> --blocks`                          | `component.detail.blocks`            | `ComponentDetailBlocksResponse`   |
+| `astryx --json discover`                                           | `discover.list`                      | `DiscoverListResponse`            |
+| `astryx --json discover @scope/name`                               | `discover.detail`                    | `DiscoverDetailResponse`          |
+| `astryx --json discover @scope/name/Comp`                          | `discover.detail.doc`                | `DiscoverDetailDocResponse`       |
+| `astryx --json discover <search>`                                  | `discover.search`                    | `DiscoverSearchResponse`          |
+| `astryx --json docs`                                               | `docs.list`                          | `DocsListResponse`                |
+| `astryx --json docs <topic>`                                       | `docs.detail`                        | `DocsDetailResponse`              |
+| `astryx --json docs <topic> <section>`                             | `docs.detail.section`                | `DocsDetailSectionResponse`       |
+| `astryx --json template [--list]`                                  | `template.list`                      | `TemplateListResponse`            |
+| `astryx --json template <name>`                                    | `template.show`                      | `TemplateShowResponse`            |
+| `astryx --json template <name> --skeleton`                         | `template.skeleton`                  | `TemplateSkeletonResponse`        |
+| `astryx --json template <name> [path]`                             | `template.copy`                      | `TemplateCopyResponse`            |
+| `astryx --json hook [--list] [--detail names\|compact\|full]`      | `hook.list` (see `data.detail`)      | `HookListResponse`                |
+| `astryx --json hook <name>`                                        | `hook.detail`                        | `HookDetailResponse`              |
+| `astryx --json hook <name> --params`                               | `hook.detail.params`                 | `HookDetailParamsResponse`        |
+| `astryx --json search <query>`                                     | `search`                             | `SearchResponse`                  |
+| `astryx --json swizzle [--list]`                                   | `swizzle.list`                       | `SwizzleListResponse`             |
+| `astryx --json swizzle <component>`                                | `swizzle.copy`                       | `SwizzleCopyResponse`             |
+| `astryx --json theme build <file>`                                 | `theme.build`                        | `ThemeBuildResponse`              |
+| `astryx --json upgrade --list`                                     | `upgrade.list`                       | `UpgradeListResponse`             |
+| `astryx --json upgrade [--apply]`                                  | `upgrade.run`                        | `UpgradeRunResponse`              |
+| `astryx --json doctor`                                             | `doctor`                             | `DoctorResponse`                  |
+| any error                                                          | —                                    | `CLIError`                        |
+| unsupported command                                                | —                                    | `CLIUnsupportedError`             |
 
 ## Doctor
 

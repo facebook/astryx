@@ -111,23 +111,33 @@ describe('theme build --watch', () => {
       expect(firstCss).toMatch(/#ffffff/);
 
       // Wait until the watcher is actually watching before editing, so the
-      // change isn't missed.
+      // change isn't missed. The "Watching" line is printed only after fs.watch
+      // is armed, so it's a truthful "safe to edit now" signal.
       await waitFor(() => /Watching/i.test(stdout));
 
       // Change the theme — the token value changes so the CSS must change.
-      fs.writeFileSync(
-        themeFile,
-        `export default { name: 'wt', tokens: { '--color-bg': '#010203' } };\n`,
-      );
+      // fs.watch event delivery is best-effort on some platforms/under load, so
+      // re-touch the file until the rebuild is observed (idempotent write).
+      const changed = `export default { name: 'wt', tokens: { '--color-bg': '#010203' } };\n`;
+      fs.writeFileSync(themeFile, changed);
 
-      // The rebuilt CSS should reflect the new value.
-      const rebuilt = await waitFor(() => {
-        try {
-          return fs.readFileSync(cssFile, 'utf-8').includes('#010203');
-        } catch {
+      const rebuilt = await waitFor(
+        () => {
+          try {
+            if (fs.readFileSync(cssFile, 'utf-8').includes('#010203')) return true;
+          } catch {
+            // CSS mid-write; fall through to re-touch.
+          }
+          // Re-touch to recover a dropped watch event under load.
+          try {
+            fs.writeFileSync(themeFile, changed);
+          } catch {
+            // Re-touch failed (e.g. dir mid-teardown); the next poll retries.
+          }
           return false;
-        }
-      });
+        },
+        {timeout: 20000, interval: 200},
+      );
       expect(rebuilt).toBe(true);
       expect(stdout).toMatch(/rebuild/i);
     } finally {

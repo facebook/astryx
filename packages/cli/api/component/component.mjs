@@ -164,7 +164,7 @@ export async function component(name, options = {}) {
             entries.push({name: comp, description: '', import: resolveImportPath(coreDir, comp)});
           }
         }
-        return {type: 'component.brief', data: {[match[0]]: entries}};
+        return {type: 'component.list', data: {detail: 'compact', components: {[match[0]]: entries}}};
       }
 
       if (detail === 'full') {
@@ -181,7 +181,7 @@ export async function component(name, options = {}) {
             entries.push({name: `XDS${comp}`, description: ''});
           }
         }
-        return {type: 'component.full', data: {[match[0]]: entries}};
+        return {type: 'component.list', data: {detail: 'full', components: {[match[0]]: entries}}};
       }
 
       // Default: brief — package-qualified object list for the category.
@@ -189,7 +189,7 @@ export async function component(name, options = {}) {
       // strings, so consumers can disambiguate ownership.
       return {
         type: 'component.list',
-        data: {[match[0]]: match[1].map(n => ({name: n, package: CORE_PACKAGE}))},
+        data: {detail: 'names', components: {[match[0]]: match[1].map(n => ({name: n, package: CORE_PACKAGE}))}},
       };
     }
 
@@ -213,7 +213,7 @@ export async function component(name, options = {}) {
           }
         }
       }
-      return {type: 'component.brief', data: result};
+      return {type: 'component.list', data: {detail: 'compact', components: result}};
     }
 
     if (detail === 'full') {
@@ -234,7 +234,7 @@ export async function component(name, options = {}) {
           }
         }
       }
-      return {type: 'component.full', data: result};
+      return {type: 'component.list', data: {detail: 'full', components: result}};
     }
 
     // Default: brief — package-qualified object list (core + integrations).
@@ -299,7 +299,7 @@ export async function component(name, options = {}) {
         }
       }
     }
-    return {type: 'component.list', data: listData};
+    return {type: 'component.list', data: {detail: 'names', components: listData}};
   }
 
   // ── Single component ───────────────────────────────────────────

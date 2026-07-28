@@ -35,7 +35,7 @@ import {runCli} from '../../test-utils/run-cli.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CORE_SRC = path.resolve(HERE, '../../../core/src');
-const BUILD_THEME_SRC = path.resolve(HERE, 'build-theme.mjs');
+const BUILD_THEME_SRC = path.resolve(HERE, '../../api/theme/build/build.mjs');
 
 /**
  * Extract the KNOWN_COMPONENTS registry keys from the build-theme source.

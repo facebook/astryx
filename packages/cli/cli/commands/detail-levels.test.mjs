@@ -69,13 +69,23 @@ describe('--detail level ordering: component --list', () => {
     expect(full).toMatch(/children/);
   });
 
-  it('full --json returns a valid component.full envelope', async () => {
-    const {stdout} = await runCli(['component', '--list', '--detail', 'full', '--json'], REPO_ROOT);
-    const parsed = JSON.parse(stdout);
-    expect(parsed.type).toBe('component.full');
-    expect(parsed.apiVersion).toBe(1);
-    expect(typeof parsed.data).toBe('object');
-  });
+  it('--json list emits one component.list type across all detail levels, tagged by data.detail', async () => {
+    const names = JSON.parse((await runCli(['component', '--list', '--json'], REPO_ROOT)).stdout);
+    expect(names.type).toBe('component.list');
+    expect(names.apiVersion).toBe(1);
+    expect(names.data.detail).toBe('names');
+    expect(typeof names.data.components).toBe('object');
+
+    const compact = JSON.parse((await runCli(['component', '--list', '--detail', 'compact', '--json'], REPO_ROOT)).stdout);
+    expect(compact.type).toBe('component.list');
+    expect(compact.data.detail).toBe('compact');
+    expect(typeof compact.data.components).toBe('object');
+
+    const full = JSON.parse((await runCli(['component', '--list', '--detail', 'full', '--json'], REPO_ROOT)).stdout);
+    expect(full.type).toBe('component.list');
+    expect(full.data.detail).toBe('full');
+    expect(typeof full.data.components).toBe('object');
+  }, 60_000);
 });
 
 describe('--detail level ordering: hook --list', () => {
@@ -113,11 +123,21 @@ describe('--detail level ordering: hook --list', () => {
     expect(full).toMatch(/import \{/);
   });
 
-  it('full --json returns a valid hook.full envelope', async () => {
-    const {stdout} = await runCli(['hook', '--list', '--detail', 'full', '--json'], REPO_ROOT);
-    const parsed = JSON.parse(stdout);
-    expect(parsed.type).toBe('hook.full');
-    expect(parsed.apiVersion).toBe(1);
-    expect(typeof parsed.data).toBe('object');
-  });
+  it('--json list emits one hook.list type across all detail levels, tagged by data.detail', async () => {
+    const names = JSON.parse((await runCli(['hook', '--list', '--json'], REPO_ROOT)).stdout);
+    expect(names.type).toBe('hook.list');
+    expect(names.apiVersion).toBe(1);
+    expect(names.data.detail).toBe('names');
+    expect(typeof names.data.components).toBe('object');
+
+    const compact = JSON.parse((await runCli(['hook', '--list', '--detail', 'compact', '--json'], REPO_ROOT)).stdout);
+    expect(compact.type).toBe('hook.list');
+    expect(compact.data.detail).toBe('compact');
+    expect(typeof compact.data.components).toBe('object');
+
+    const full = JSON.parse((await runCli(['hook', '--list', '--detail', 'full', '--json'], REPO_ROOT)).stdout);
+    expect(full.type).toBe('hook.list');
+    expect(full.data.detail).toBe('full');
+    expect(typeof full.data.components).toBe('object');
+  }, 60_000);
 });

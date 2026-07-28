@@ -25,6 +25,7 @@ export {blog} from './blog/blog.mjs';
 export {discover} from './discover/discover.mjs';
 export {template} from './template/template.mjs';
 export {themeAdd, listThemes} from './theme/theme-add.mjs';
+export {themeBuild} from './theme/build/build.mjs';
 export {hook} from './hook/hook.mjs';
 export {search} from './search/search.mjs';
 export {build} from './build/build.mjs';
