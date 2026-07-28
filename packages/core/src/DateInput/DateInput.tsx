@@ -665,9 +665,19 @@ export function DateInput({
             ? t('@astryx.dateInput.toggleCalendarClose')
             : t('@astryx.dateInput.openCalendar')
         }
-        {...stylex.props(
-          styles.iconButton,
-          isEffectivelyDisabled && styles.iconButtonDisabled,
+        {...mergeProps(
+          // Stable theme target for the calendar-toggle control. Distinct from
+          // the root `astryx-date-input` target, so a theme can restyle just the
+          // toggle button/icon (and each open/closed state) via `defineTheme`
+          // instead of a fragile structural selector. Reflects the popover's
+          // open/closed state as a `data-state` attribute.
+          themeProps('date-input-toggle', {
+            state: popover.isOpen ? 'expanded' : 'collapsed',
+          }),
+          stylex.props(
+            styles.iconButton,
+            isEffectivelyDisabled && styles.iconButtonDisabled,
+          ),
         )}>
         <Icon icon="calendar" size="sm" color="secondary" />
       </button>

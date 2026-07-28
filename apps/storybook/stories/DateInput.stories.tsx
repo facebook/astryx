@@ -5,6 +5,7 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {DateInput} from '@astryxdesign/core/DateInput';
 import type {ISODateString} from '@astryxdesign/core/Calendar';
 import {Layout, LayoutContent} from '@astryxdesign/core/Layout';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
 
 const meta: Meta<typeof DateInput> = {
   title: 'Core/DateInput',
@@ -434,7 +435,8 @@ export const StatusVariantComparison: Story = {
       '2026-01-25' as ISODateString,
     );
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
         <DateInput
           label="Attached (default)"
           value={a}
@@ -449,6 +451,48 @@ export const StatusVariantComparison: Story = {
           statusVariant="detached"
         />
       </div>
+    );
+  },
+};
+
+/**
+ * Theme the calendar-toggle button precisely via `defineTheme`.
+ *
+ * - `components['date-input-toggle'].base` scopes overrides to the toggle
+ *   control only (via the `astryx-date-input-toggle` target), instead of
+ *   reaching it through a fragile descendant selector.
+ * - `state:expanded` restyles the open state, which the toggle reflects as a
+ *   `data-state` attribute.
+ *
+ * Defaults are unchanged; this story only demonstrates the override channel.
+ */
+const toggleButtonTheme = defineTheme({
+  name: 'date-input-toggle-demo',
+  components: {
+    'date-input-toggle': {
+      base: {
+        color: 'var(--color-accent)',
+      },
+      'state:expanded': {
+        color: 'var(--color-success)',
+      },
+    },
+  },
+});
+
+export const ThemedCalendarToggle: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    return (
+      <Theme theme={toggleButtonTheme} mode="light">
+        <DateInput
+          label="Calendar toggle themed (accent → success when open)"
+          value={value}
+          onChange={setValue}
+        />
+      </Theme>
     );
   },
 };

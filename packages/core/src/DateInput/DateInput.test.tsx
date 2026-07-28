@@ -22,6 +22,8 @@ import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateInput} from './DateInput';
 import {InputGroup} from '../InputGroup';
 import {InputGroupText} from '../InputGroup/InputGroupText';
+import {defineTheme} from '../theme/defineTheme';
+import {generateThemeCSSFlat} from '../theme/generateThemeRules';
 
 describe('DateInput', () => {
   it('renders with label', () => {
@@ -944,11 +946,14 @@ describe('DateInput', () => {
   });
 });
 
-
 describe('DateInput statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <DateInput label="Date" onChange={() => {}} status={{type: 'error', message: 'Bad date'}} />,
+      <DateInput
+        label="Date"
+        onChange={() => {}}
+        status={{type: 'error', message: 'Bad date'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -958,11 +963,67 @@ describe('DateInput statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <DateInput label="Date" onChange={() => {}} status={{type: 'error', message: 'Bad date'}} statusVariant="detached" />,
+      <DateInput
+        label="Date"
+        onChange={() => {}}
+        status={{type: 'error', message: 'Bad date'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
       'detached',
     );
+  });
+});
+
+describe('DateInput calendar-toggle theme target', () => {
+  it('renders the astryx-date-input-toggle target on the calendar-toggle button', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const toggle = getButton('Open calendar');
+    // Dedicated, stable theme target on the calendar-toggle control, distinct
+    // from the root astryx-date-input target, so a theme can restyle just the
+    // toggle without a fragile structural selector.
+    expect(toggle).toHaveClass('astryx-date-input-toggle');
+    // Open/closed state is reflected so a theme can target each state alone.
+    expect(toggle).toHaveAttribute('data-state', 'collapsed');
+  });
+
+  it('reflects the expanded state on the toggle when the popover is open', async () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const toggle = getButton('Open calendar');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(toggle).toHaveAttribute('data-state', 'expanded');
+    });
+    expect(toggle).toHaveClass('astryx-date-input-toggle');
+  });
+
+  it('keeps the calendar-toggle button functional alongside the new target', () => {
+    // The theme target is additive — the toggle is still a real <button> and
+    // still carries its aria-label / disabled behavior.
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const toggle = getButton('Open calendar');
+    expect(toggle.tagName).toBe('BUTTON');
+  });
+
+  it('exposes date-input-toggle as a themeable defineTheme target', () => {
+    // The generated CSS is what proves the target is reachable by a theme:
+    // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
+    // above and this generation assertion together cover the seam.
+    const theme = defineTheme({
+      name: 'date-input-toggle-test',
+      components: {
+        'date-input-toggle': {
+          base: {color: 'var(--color-accent)'},
+          'state:expanded': {color: 'var(--color-text-primary)'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('.astryx-date-input-toggle {');
+    expect(css).toContain('color: var(--color-accent)');
+    expect(css).toContain('.astryx-date-input-toggle.expanded');
+    expect(css).toContain('color: var(--color-text-primary)');
   });
 });
