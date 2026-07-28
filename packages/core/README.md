@@ -314,3 +314,5 @@ bare imports to browser-resolvable URLs. An import map keeps a single React inst
 > resolve to the latest release and are cached aggressively. The raw ESM entry
 > (`dist/index.js`) uses bare `react` imports and will **not** run from a plain
 > `<script src>`; use the UMD global or esm.sh as shown above.
+
+<!-- DO NOT MERGE: Vercel build smoke test (no functional change). -->
