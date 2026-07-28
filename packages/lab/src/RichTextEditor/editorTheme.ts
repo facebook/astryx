@@ -66,13 +66,32 @@ const editorTheme = stylex.create({
     listStylePosition: 'outside',
   },
   // Nested lists: no extra vertical margin, and cycle marker styles per depth
-  // to match native browser list nesting.
+  // to match native browser list nesting. Lexical indexes ulDepth/olDepth by
+  // `depth % array.length`, so three entries give three distinct levels that
+  // then repeat — matching the browser default disc → circle → square cycle.
   ulNested: {
     marginBlock: 0,
+  },
+  ulDepth2: {
     listStyleType: 'circle',
+  },
+  ulDepth3: {
+    listStyleType: 'square',
   },
   olNested: {
     marginBlock: 0,
+  },
+  olDepth2: {
+    listStyleType: 'lower-alpha',
+  },
+  olDepth3: {
+    listStyleType: 'lower-roman',
+  },
+  // Checklists render as a <ul listtype="check">; Lexical draws checkbox
+  // affordances on the list items, so suppress the disc marker here.
+  checklist: {
+    listStyleType: 'none',
+    paddingInlineStart: spacingVars['--spacing-2'],
   },
   listItem: {
     marginBlock: spacingVars['--spacing-0-5'],
@@ -115,8 +134,18 @@ const editorTheme = stylex.create({
 export function sharedEditorTheme(): EditorThemeClasses {
   const ulClass = stylex.props(editorTheme.ul).className ?? '';
   const olClass = stylex.props(editorTheme.ol).className ?? '';
-  const ulNestedClass = stylex.props(editorTheme.ul, editorTheme.ulNested).className ?? '';
-  const olNestedClass = stylex.props(editorTheme.ol, editorTheme.olNested).className ?? '';
+  const ulDepth2Class =
+    stylex.props(editorTheme.ul, editorTheme.ulNested, editorTheme.ulDepth2)
+      .className ?? '';
+  const ulDepth3Class =
+    stylex.props(editorTheme.ul, editorTheme.ulNested, editorTheme.ulDepth3)
+      .className ?? '';
+  const olDepth2Class =
+    stylex.props(editorTheme.ol, editorTheme.olNested, editorTheme.olDepth2)
+      .className ?? '';
+  const olDepth3Class =
+    stylex.props(editorTheme.ol, editorTheme.olNested, editorTheme.olDepth3)
+      .className ?? '';
   return {
     paragraph: stylex.props(editorTheme.paragraph).className,
     heading: {
@@ -128,12 +157,15 @@ export function sharedEditorTheme(): EditorThemeClasses {
     list: {
       ul: ulClass,
       ol: olClass,
+      checklist: stylex.props(editorTheme.ul, editorTheme.checklist).className,
       listitem: stylex.props(editorTheme.listItem).className,
       nested: {
         listitem: stylex.props(editorTheme.listItem).className,
       },
-      ulDepth: [ulClass, ulNestedClass],
-      olDepth: [olClass, olNestedClass],
+      // Depth arrays cycle via `depth % length`, so three entries give three
+      // distinct nesting levels before repeating (disc→circle→square, etc.).
+      ulDepth: [ulClass, ulDepth2Class, ulDepth3Class],
+      olDepth: [olClass, olDepth2Class, olDepth3Class],
     },
     link: stylex.props(editorTheme.link).className,
     text: {

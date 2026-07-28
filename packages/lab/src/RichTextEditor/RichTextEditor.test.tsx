@@ -70,6 +70,60 @@ function makeListState(listType: 'bullet' | 'number'): string {
   });
 }
 
+// Builds a serialized Lexical state with a two-level nested bullet list:
+//   • Item one
+//     ◦ Nested item
+// Lexical models nesting as a child `list` node inside a `listitem`. Used to
+// verify that depth-2 markers differ from depth-1 (disc → circle) rather than
+// falling back to bare indentation.
+function makeNestedBulletState(): string {
+  const textNode = (text: string) => ({
+    detail: 0,
+    format: 0,
+    mode: 'normal',
+    style: '',
+    text,
+    type: 'text',
+    version: 1,
+  });
+  const listItem = (children: unknown[], value: number) => ({
+    children,
+    direction: 'ltr',
+    format: '',
+    indent: 0,
+    type: 'listitem',
+    version: 1,
+    value,
+  });
+  const bulletList = (children: unknown[]) => ({
+    children,
+    direction: 'ltr',
+    format: '',
+    indent: 0,
+    type: 'list',
+    version: 1,
+    listType: 'bullet',
+    start: 1,
+    tag: 'ul',
+  });
+  return JSON.stringify({
+    root: {
+      children: [
+        bulletList([
+          listItem([textNode('Item one')], 1),
+          // A nested list lives inside its own list item wrapper.
+          listItem([bulletList([listItem([textNode('Nested item')], 1)])], 2),
+        ]),
+      ],
+      direction: 'ltr',
+      format: '',
+      indent: 0,
+      type: 'root',
+      version: 1,
+    },
+  });
+}
+
 const HELLO_STATE = JSON.stringify({
   root: {
     children: [
@@ -285,6 +339,23 @@ describe('RichTextView', () => {
     expect(ol).not.toBeNull();
     expect(ol?.className.trim()).not.toBe('');
     expect(getComputedStyle(ol as Element).listStyleType).toBe('decimal');
+  });
+
+  it('renders nested bullet lists with a distinct depth-2 marker (circle)', async () => {
+    const {container} = render(
+      <RichTextView value={makeNestedBulletState()} />,
+    );
+    await waitFor(() =>
+      expect(screen.getByText('Nested item')).toBeInTheDocument(),
+    );
+    const lists = container.querySelectorAll('ul');
+    // Outer <ul> plus the nested <ul>.
+    expect(lists.length).toBe(2);
+    const [outer, nested] = lists;
+    expect(getComputedStyle(outer).listStyleType).toBe('disc');
+    // Depth-2 must cycle to a different marker so nesting is visually legible,
+    // matching the native browser disc → circle progression.
+    expect(getComputedStyle(nested).listStyleType).toBe('circle');
   });
 
   it('renders nothing (no crash) on malformed JSON with no fallback', () => {
