@@ -143,11 +143,6 @@ export const docs = {
       default: "'md'",
     },
     {
-      name: 'startIcon',
-      type: 'IconType | ReactNode',
-      description: 'SVG icon component displayed at the start of the input.',
-    },
-    {
       name: 'menuWidth',
       type: 'number',
       description: 'Maximum width for the operator/value dropdown menu in pixels.',
