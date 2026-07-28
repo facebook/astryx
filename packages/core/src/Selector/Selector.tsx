@@ -545,6 +545,21 @@ function DefaultOption({option}: {option: SelectorOptionData}) {
   );
 }
 
+// Case-insensitive substring match for a single option. The one predicate used
+// by both the flat filter (count + keyboard nav) and the grouped renderer, so
+// what is shown while searching stays in lockstep with the announced count.
+function optionMatchesQuery(
+  option: SelectorOptionData,
+  query: string,
+): boolean {
+  if (!query) {
+    return true;
+  }
+  return (option.label ?? option.value)
+    .toLowerCase()
+    .includes(query.toLowerCase());
+}
+
 // Case-insensitive substring filter over the selectable options. Shared by the
 // `filteredItems` memo (rendering) and the search-change handler, which needs
 // the count for the *next* query synchronously to announce it exactly once per
@@ -556,10 +571,7 @@ function filterOptionsByQuery(
   if (!query) {
     return items;
   }
-  const q = query.toLowerCase();
-  return items.filter(item =>
-    (item.label ?? item.value).toLowerCase().includes(q),
-  );
+  return items.filter(item => optionMatchesQuery(item, query));
 }
 
 /**
@@ -947,16 +959,15 @@ export function Selector<T extends SelectorOptionType>(
 
   // Render all options (handling sections/dividers)
   const renderOptions = useCallback(() => {
-    // When search is active, render filtered items flat (no sections/dividers)
-    if (hasSearch && searchQuery) {
-      if (filteredItems.length === 0) {
-        return [
-          <div key="empty" {...stylex.props(styles.emptyState)}>
-            No results found
-          </div>,
-        ];
-      }
-      return filteredItems.map((item, index) => renderItem(item, index));
+    const isSearching = hasSearch && Boolean(searchQuery);
+
+    // Nothing matched across every group/option: show the empty state.
+    if (isSearching && filteredItems.length === 0) {
+      return [
+        <div key="empty" {...stylex.props(styles.emptyState)}>
+          No results found
+        </div>,
+      ];
     }
 
     let flatIndex = 0;
@@ -966,12 +977,26 @@ export function Selector<T extends SelectorOptionType>(
       const option = options[i];
 
       if (isDivider(option)) {
+        // While searching, a standalone divider between groups would orphan
+        // itself once its neighbors are filtered out, so skip it.
+        if (isSearching) {
+          continue;
+        }
         elements.push(<Divider key={`divider-${i}`} xstyle={styles.divider} />);
       } else if (isSection(option)) {
         const sectionItems: ReactNode[] = [];
         for (const opt of option.options) {
-          sectionItems.push(renderItem(normalizeOption(opt), flatIndex));
+          const normalized = normalizeOption(opt);
+          if (isSearching && !optionMatchesQuery(normalized, searchQuery)) {
+            continue;
+          }
+          sectionItems.push(renderItem(normalized, flatIndex));
           flatIndex++;
+        }
+        // Hide a group entirely (header + wrapper) when none of its items
+        // match the query, so no header is left standing over nothing.
+        if (sectionItems.length === 0) {
+          continue;
         }
         if (option.title) {
           elements.push(
@@ -988,7 +1013,11 @@ export function Selector<T extends SelectorOptionType>(
           </div>,
         );
       } else if (isOptionData(option)) {
-        elements.push(renderItem(normalizeOption(option), flatIndex));
+        const normalized = normalizeOption(option);
+        if (isSearching && !optionMatchesQuery(normalized, searchQuery)) {
+          continue;
+        }
+        elements.push(renderItem(normalized, flatIndex));
         flatIndex++;
       }
     }

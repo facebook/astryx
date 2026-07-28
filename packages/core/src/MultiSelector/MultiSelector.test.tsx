@@ -565,6 +565,72 @@ describe('MultiSelector', () => {
     expect(options).toHaveLength(1);
   });
 
+  describe('grouped search', () => {
+    const GROUPED = [
+      {
+        type: 'section' as const,
+        title: 'Citrus',
+        options: [
+          {value: 'orange', label: 'Orange'},
+          {value: 'lemon', label: 'Lemon'},
+        ],
+      },
+      {
+        type: 'section' as const,
+        title: 'Berries',
+        options: [
+          {value: 'strawberry', label: 'Strawberry'},
+          {value: 'blueberry', label: 'Blueberry'},
+        ],
+      },
+    ];
+
+    it('keeps the group header above matching items while searching', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={GROUPED}
+          value={[]}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'orange');
+
+      expect(
+        screen.getByRole('group', {name: 'Citrus', ...h}),
+      ).toBeInTheDocument();
+      const options = screen.getAllByRole('option', h);
+      expect(options).toHaveLength(1);
+      expect(options[0]).toHaveTextContent('Orange');
+    });
+
+    it('hides a group whose items have no match', async () => {
+      const user = userEvent.setup();
+      render(
+        <MultiSelector
+          label="Fruit"
+          options={GROUPED}
+          value={[]}
+          onChange={() => {}}
+          hasSearch
+        />,
+      );
+      await user.click(screen.getByRole('button', {name: 'Fruit'}));
+      await user.type(screen.getByRole('combobox', h), 'berry');
+
+      expect(
+        screen.getByRole('group', {name: 'Berries', ...h}),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('group', {name: 'Citrus', ...h}),
+      ).not.toBeInTheDocument();
+      expect(screen.getAllByRole('option', h)).toHaveLength(2);
+    });
+  });
+
   it('PageDown/PageUp jump the highlight to the last/first filtered option', async () => {
     const user = userEvent.setup();
     render(

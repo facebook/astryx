@@ -746,6 +746,125 @@ describe('Selector', () => {
         expect(politeRegion()?.textContent ?? '').toBe('');
       });
     });
+
+    describe('grouped search', () => {
+      const GROUPED = [
+        {
+          type: 'section' as const,
+          title: 'Citrus',
+          options: [
+            {value: 'orange', label: 'Orange'},
+            {value: 'lemon', label: 'Lemon'},
+          ],
+        },
+        {
+          type: 'section' as const,
+          title: 'Berries',
+          options: [
+            {value: 'strawberry', label: 'Strawberry'},
+            {value: 'blueberry', label: 'Blueberry'},
+          ],
+        },
+      ];
+
+      it('keeps the group header above matching items while searching', async () => {
+        const user = userEvent.setup();
+        render(
+          <Selector
+            label="Fruit"
+            options={GROUPED}
+            onChange={() => {}}
+            hasSearch
+          />,
+        );
+        await user.click(screen.getByRole('button', {name: 'Fruit'}));
+        // "orange" only matches within the Citrus group.
+        await user.type(screen.getByRole('combobox', h), 'orange');
+
+        expect(
+          screen.getByRole('group', {name: 'Citrus', ...h}),
+        ).toBeInTheDocument();
+        const options = screen.getAllByRole('option', h);
+        expect(options).toHaveLength(1);
+        expect(options[0]).toHaveTextContent('Orange');
+      });
+
+      it('hides a group whose items have no match', async () => {
+        const user = userEvent.setup();
+        render(
+          <Selector
+            label="Fruit"
+            options={GROUPED}
+            onChange={() => {}}
+            hasSearch
+          />,
+        );
+        await user.click(screen.getByRole('button', {name: 'Fruit'}));
+        // "berry" only matches items inside the Berries group.
+        await user.type(screen.getByRole('combobox', h), 'berry');
+
+        expect(
+          screen.getByRole('group', {name: 'Berries', ...h}),
+        ).toBeInTheDocument();
+        expect(
+          screen.queryByRole('group', {name: 'Citrus', ...h}),
+        ).not.toBeInTheDocument();
+        expect(screen.getAllByRole('option', h)).toHaveLength(2);
+      });
+
+      it('lands keyboard focus on the correct option after filtering', async () => {
+        const user = userEvent.setup();
+        render(
+          <Selector
+            label="Fruit"
+            options={GROUPED}
+            onChange={() => {}}
+            hasSearch
+          />,
+        );
+        await user.click(screen.getByRole('button', {name: 'Fruit'}));
+        const search = screen.getByRole('combobox', h);
+        // "berry" leaves Strawberry, Blueberry (in that document order).
+        await user.type(search, 'berry');
+        const options = screen.getAllByRole('option', h);
+        expect(options.map(o => o.textContent)).toEqual([
+          'Strawberry',
+          'Blueberry',
+        ]);
+        await user.keyboard('{ArrowDown}');
+        expect(search).toHaveAttribute(
+          'aria-activedescendant',
+          options[0].id,
+        );
+        await user.keyboard('{ArrowDown}');
+        expect(search).toHaveAttribute(
+          'aria-activedescendant',
+          options[1].id,
+        );
+      });
+
+      it('shows the empty state when no group has a match', async () => {
+        const user = userEvent.setup();
+        render(
+          <Selector
+            label="Fruit"
+            options={GROUPED}
+            onChange={() => {}}
+            hasSearch
+          />,
+        );
+        await user.click(screen.getByRole('button', {name: 'Fruit'}));
+        await user.type(screen.getByRole('combobox', h), 'zzz');
+        expect(screen.queryAllByRole('option', h)).toHaveLength(0);
+        expect(
+          screen.queryByRole('group', {name: 'Citrus', ...h}),
+        ).not.toBeInTheDocument();
+        const listbox = screen.getByRole('listbox', h);
+        expect(
+          within(listbox).getByText('No results found'),
+        ).toBeInTheDocument();
+      });
+    });
   });
 
   describe('keyboard accessibility', () => {

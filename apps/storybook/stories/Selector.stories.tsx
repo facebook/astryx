@@ -274,6 +274,54 @@ export const WithSections: Story = {
   },
 };
 
+// Searchable with sections: filtering keeps group headers and drops empty groups
+export const SearchableWithSections: Story = {
+  render: args => {
+    const {
+      value: argsValue,
+      onChange: _onChange,
+      changeAction: _ca,
+      hasClear: _hc,
+      ...rest
+    } = args;
+    const [value, setValue] = useState(argsValue ?? undefined);
+    return (
+      <Selector
+        {...rest}
+        label="Fruit"
+        hasSearch
+        options={[
+          {
+            type: 'section',
+            title: 'Citrus',
+            options: [
+              {value: 'orange', label: 'Orange'},
+              {value: 'lemon', label: 'Lemon'},
+              {value: 'lime', label: 'Lime'},
+              {value: 'grapefruit', label: 'Grapefruit'},
+            ],
+          },
+          {
+            type: 'section',
+            title: 'Tropical',
+            options: [
+              {value: 'mango', label: 'Mango'},
+              {value: 'pineapple', label: 'Pineapple'},
+              {value: 'papaya', label: 'Papaya'},
+              {value: 'guava', label: 'Guava'},
+            ],
+          },
+        ]}
+        value={value}
+        onChange={v => setValue(v)}
+      />
+    );
+  },
+  args: {
+    placeholder: 'Select a fruit...',
+  },
+};
+
 // Custom render
 export const CustomRender: Story = {
   render: args => {
@@ -609,7 +657,8 @@ export const StatusVariantComparison: Story = {
     const [a, setA] = useState<string | undefined>();
     const [b, setB] = useState<string | undefined>();
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 280}}>
         <Selector
           label="Attached (default)"
           options={[

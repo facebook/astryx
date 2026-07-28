@@ -94,6 +94,42 @@ export const Sections: Story = {
   decorators: [Story => <Story />],
 };
 
+// Searchable with sections: filtering keeps group headers and drops empty groups
+export const SearchableSections: Story = {
+  render: () => {
+    const [value, setValue] = useState<string[]>([]);
+    return (
+      <MultiSelector
+        label="Permissions"
+        hasSearch
+        options={[
+          {
+            type: 'section',
+            title: 'Read',
+            options: [
+              {value: 'read_posts', label: 'Read posts'},
+              {value: 'read_comments', label: 'Read comments'},
+              {value: 'read_users', label: 'Read users'},
+            ],
+          },
+          {
+            type: 'section',
+            title: 'Write',
+            options: [
+              {value: 'write_posts', label: 'Write posts'},
+              {value: 'write_comments', label: 'Write comments'},
+            ],
+          },
+        ]}
+        value={value}
+        onChange={setValue}
+        placeholder="Select permissions..."
+      />
+    );
+  },
+  decorators: [Story => <Story />],
+};
+
 // With Select All
 export const SelectAll: Story = {
   render: () => {
@@ -411,7 +447,8 @@ export const StatusVariantComparison: Story = {
     const [a, setA] = useState<string[]>([]);
     const [b, setB] = useState<string[]>([]);
     return (
-      <div style={{display: 'flex', flexDirection: 'column', gap: 24, width: 300}}>
+      <div
+        style={{display: 'flex', flexDirection: 'column', gap: 24, width: 300}}>
         <MultiSelector
           label="Attached (default)"
           options={['Name', 'Email', 'Role']}
