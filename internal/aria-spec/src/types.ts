@@ -28,6 +28,56 @@ export enum ExpectationPriority {
 }
 
 /**
+ * A single normative requirement an expectation traces back to. Every
+ * expectation MUST cite at least one, so any test result is traceable to the
+ * exact clause of the spec it enforces.
+ *
+ * Two source specs:
+ * - `wcag` — a WCAG 2.2 Success Criterion, e.g. `{spec: 'wcag', id: '1.4.1',
+ *   name: 'Use of Color', level: 'A'}`.
+ * - `apg`  — a WAI-ARIA APG pattern clause, e.g. `{spec: 'apg', id: 'switch-1',
+ *   name: 'Space toggles the switch'}` (the id is the APG keyboard-interaction
+ *   or roles/states anchor).
+ */
+export type SpecCriterion =
+  | {
+      readonly spec: 'wcag';
+      /** SC number, e.g. `1.4.1`, `2.1.1`, `2.5.8`. */
+      readonly id: string;
+      /** SC short name, e.g. `Use of Color`. */
+      readonly name: string;
+      /** Conformance level. */
+      readonly level: 'A' | 'AA' | 'AAA';
+      /** Canonical Understanding-doc URL. */
+      readonly url?: string;
+    }
+  | {
+      readonly spec: 'apg';
+      /** APG clause/interaction id, e.g. `switch-1`, `menu-13`. */
+      readonly id: string;
+      /** Human name of the clause, e.g. `Space toggles the switch`. */
+      readonly name: string;
+      /** Canonical APG pattern URL (may include an anchor). */
+      readonly url?: string;
+    };
+
+/**
+ * The spec-traceability naming convention. Every expectation's `description`
+ * (which surfaces as the test name) should be prefixed with this, so the WCAG /
+ * APG citation is visible in test output and greppable:
+ *
+ *   "WCAG 1.4.1 Use of Color (A): status is not conveyed by color alone"
+ *   "APG switch-1: Space toggles the switch"
+ *
+ * Build it from an expectation's primary criterion with `specLabel(criterion)`.
+ */
+export function specLabel(c: SpecCriterion): string {
+  return c.spec === 'wcag'
+    ? `WCAG ${c.id} ${c.name} (${c.level})`
+    : `APG ${c.id} ${c.name}`;
+}
+
+/**
  * A single, isolated conformance check. Receives a harness (the runtime adapter)
  * already pointed at a freshly rendered component. Throws / rejects on failure.
  */
@@ -39,11 +89,20 @@ export interface Expectation {
    * it (e.g. `checkbox-42`, `switch-1`); otherwise a descriptive slug.
    */
   readonly id: string;
-  /** One-line human description of what conformance means. */
+  /**
+   * One-line description that becomes the test name. By convention it is
+   * PREFIXED with the spec citation via `specLabel()`, so the WCAG/APG number
+   * is visible in test output and greppable, e.g.
+   * "WCAG 1.4.1 Use of Color (A): state is not conveyed by color alone".
+   */
   readonly description: string;
   readonly priority: ExpectationPriority;
-  /** Link back to the APG clause this encodes. */
-  readonly apg: string;
+  /**
+   * The normative requirement(s) this expectation enforces. REQUIRED — every
+   * expectation must trace to at least one WCAG SC or APG clause. The first
+   * entry is the primary criterion used for the test-name prefix.
+   */
+  readonly criteria: readonly [SpecCriterion, ...SpecCriterion[]];
   readonly run: ExpectationRun;
 }
 
