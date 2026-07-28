@@ -456,39 +456,42 @@ export const StatusVariantComparison: Story = {
 };
 
 /**
- * Theme the calendar-toggle button precisely via `defineTheme`.
+ * Theme the calendar-toggle glyph precisely via `defineTheme`.
  *
- * - `components['date-input-toggle'].base` scopes overrides to the toggle
- *   control only (via the `astryx-date-input-toggle` target), instead of
- *   reaching it through a fragile descendant selector.
- * - `state:expanded` restyles the open state, which the toggle reflects as a
+ * - `components['date-input-toggle-icon'].base` scopes overrides to the toggle
+ *   icon itself (via the `astryx-date-input-toggle-icon` target), so a theme
+ *   can resize and recolor it — without a fragile descendant selector or raw
+ *   CSS. Same-element rules in `@layer astryx-theme` win over the icon's own
+ *   base color/size.
+ * - `state:expanded` restyles the open state, which the icon reflects as a
  *   `data-state` attribute.
- *
- * Defaults are unchanged; this story only demonstrates the override channel.
  */
-const toggleButtonTheme = defineTheme({
-  name: 'date-input-toggle-demo',
+const toggleIconTheme = defineTheme({
+  name: 'date-input-toggle-icon-demo',
   components: {
-    'date-input-toggle': {
+    'date-input-toggle-icon': {
       base: {
-        color: 'var(--color-accent)',
+        width: '14px',
+        height: '14px',
+        fontSize: '14px',
+        color: 'var(--color-icon-secondary)',
       },
       'state:expanded': {
-        color: 'var(--color-success)',
+        color: 'var(--color-accent)',
       },
     },
   },
 });
 
-export const ThemedCalendarToggle: Story = {
+export const ThemedCalendarToggleIcon: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(
       '2026-01-25' as ISODateString,
     );
     return (
-      <Theme theme={toggleButtonTheme} mode="light">
+      <Theme theme={toggleIconTheme} mode="light">
         <DateInput
-          label="Calendar toggle themed (accent → success when open)"
+          label="Calendar toggle icon themed (14px, accent when open)"
           value={value}
           onChange={setValue}
         />

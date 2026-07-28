@@ -20,6 +20,7 @@ import {
 import userEvent from '@testing-library/user-event';
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateInput} from './DateInput';
+import {Icon} from '../Icon';
 import {InputGroup} from '../InputGroup';
 import {InputGroupText} from '../InputGroup/InputGroupText';
 import {defineTheme} from '../theme/defineTheme';
@@ -977,53 +978,94 @@ describe('DateInput statusVariant forwarding', () => {
   });
 });
 
-describe('DateInput calendar-toggle theme target', () => {
-  it('renders the astryx-date-input-toggle target on the calendar-toggle button', () => {
+describe('DateInput calendar-toggle icon theme target', () => {
+  const iconIn = (button: HTMLElement): HTMLElement => {
+    const icon = button.querySelector('.astryx-icon');
+    if (icon == null) {
+      throw new Error('toggle icon not found');
+    }
+    return icon as HTMLElement;
+  };
+
+  it('renders the astryx-date-input-toggle-icon target on the toggle glyph', () => {
     render(<DateInput label="Date" onChange={() => {}} />);
-    const toggle = getButton('Open calendar');
-    // Dedicated, stable theme target on the calendar-toggle control, distinct
-    // from the root astryx-date-input target, so a theme can restyle just the
-    // toggle without a fragile structural selector.
-    expect(toggle).toHaveClass('astryx-date-input-toggle');
+    const icon = iconIn(getButton('Open calendar'));
+    // The stable theme target lands on the icon element itself (not the
+    // button), so a theme can restyle just this glyph (color, size, hover) —
+    // and each open/closed state — via `defineTheme`. A button-level target
+    // could not reach the icon's own color/size.
+    expect(icon).toHaveClass('astryx-date-input-toggle-icon');
+    expect(icon).toHaveClass('astryx-icon');
     // Open/closed state is reflected so a theme can target each state alone.
-    expect(toggle).toHaveAttribute('data-state', 'collapsed');
+    expect(icon).toHaveAttribute('data-state', 'collapsed');
   });
 
-  it('reflects the expanded state on the toggle when the popover is open', async () => {
+  it('reflects the expanded state on the toggle icon when the popover is open', async () => {
     render(<DateInput label="Date" onChange={() => {}} />);
+    // Capture the toggle before opening — its aria-label changes to the close
+    // label once open, but the element reference (and its icon) is stable.
     const toggle = getButton('Open calendar');
     fireEvent.click(toggle);
     await waitFor(() => {
-      expect(toggle).toHaveAttribute('data-state', 'expanded');
+      expect(iconIn(toggle)).toHaveAttribute('data-state', 'expanded');
     });
-    expect(toggle).toHaveClass('astryx-date-input-toggle');
   });
 
-  it('keeps the calendar-toggle button functional alongside the new target', () => {
-    // The theme target is additive — the toggle is still a real <button> and
-    // still carries its aria-label / disabled behavior.
+  it('keeps the calendar-toggle button functional alongside the target', () => {
     render(<DateInput label="Date" onChange={() => {}} />);
     const toggle = getButton('Open calendar');
     expect(toggle.tagName).toBe('BUTTON');
   });
 
-  it('exposes date-input-toggle as a themeable defineTheme target', () => {
-    // The generated CSS is what proves the target is reachable by a theme:
+  it('renders the default icon (secondary color, sm size) byte-identically', () => {
+    // Pixel-identical default guard: the toggle glyph must carry the exact same
+    // StyleX color/size classes as a standalone secondary/sm icon. The added
+    // target class + data-state are purely additive — they change nothing until
+    // a theme targets them.
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const icon = iconIn(getButton('Open calendar'));
+
+    const {container: refContainer} = render(
+      <Icon icon="calendar" size="sm" color="secondary" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+
+    // Exclude the additive theme-target classes (the stable target + its
+    // reflected state class) so only the StyleX color/size classes remain.
+    const themeTargetClasses = new Set([
+      'astryx-date-input-toggle-icon',
+      'collapsed',
+      'expanded',
+    ]);
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(c => !themeTargetClasses.has(c))
+        .sort();
+
+    expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes date-input-toggle-icon so a theme reaches the icon size and per-state color', () => {
     // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
-    // above and this generation assertion together cover the seam.
+    // above (target lands on the icon element) plus this generation assertion
+    // (the theme emits same-element icon rules in @layer astryx-theme) together
+    // prove the seam: a same-element theme rule wins over the icon's own
+    // base-layer color/size.
     const theme = defineTheme({
-      name: 'date-input-toggle-test',
+      name: 'date-input-toggle-icon-test',
       components: {
-        'date-input-toggle': {
-          base: {color: 'var(--color-accent)'},
-          'state:expanded': {color: 'var(--color-text-primary)'},
+        'date-input-toggle-icon': {
+          base: {width: '14px', height: '14px', fontSize: '14px'},
+          'state:expanded': {color: 'var(--color-icon-primary)'},
         },
       },
     });
     const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('.astryx-date-input-toggle {');
-    expect(css).toContain('color: var(--color-accent)');
-    expect(css).toContain('.astryx-date-input-toggle.expanded');
-    expect(css).toContain('color: var(--color-text-primary)');
+    expect(css).toContain('.astryx-date-input-toggle-icon {');
+    expect(css).toContain('width: 14px');
+    expect(css).toContain('height: 14px');
+    expect(css).toContain('.astryx-date-input-toggle-icon.expanded');
+    expect(css).toContain('color: var(--color-icon-primary)');
   });
 });

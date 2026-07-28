@@ -279,4 +279,29 @@ describe('Icon', () => {
       );
     });
   });
+
+  describe('className forwarding', () => {
+    it('composes a consumer className with the internal classes (string mode)', () => {
+      render(
+        <Icon icon="check" className="consumer-target" data-testid="icon" />,
+      );
+      const icon = screen.getByTestId('icon');
+      // Consumer className must survive alongside the stable astryx-icon class
+      // and the StyleX classes — previously it was clobbered by the later
+      // internal spread.
+      expect(icon).toHaveClass('consumer-target');
+      expect(icon).toHaveClass('astryx-icon');
+      // At least one StyleX-generated class is still present.
+      expect(icon.className.split(' ').length).toBeGreaterThan(2);
+    });
+
+    it('forwards a consumer className in component (SVG) mode', () => {
+      render(
+        <Icon icon={TestIcon} className="consumer-target" data-testid="icon" />,
+      );
+      const icon = screen.getByTestId('icon');
+      expect(icon).toHaveClass('consumer-target');
+      expect(icon).toHaveClass('astryx-icon');
+    });
+  });
 });
