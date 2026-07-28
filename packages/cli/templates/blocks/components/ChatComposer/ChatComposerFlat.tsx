@@ -16,7 +16,7 @@ import {
 
 export default function ChatComposerFlat() {
   return (
-    <Stack direction="vertical" gap={2} style={{width: '100%', maxWidth: 450}}>
+    <Stack direction="vertical" gap={2} width={450} maxWidth="100%">
       <Text type="supporting" color="secondary">
         elevation=&quot;none&quot; — flat, with a text-input-style border and
         focus ring

@@ -12,7 +12,7 @@ import {PaperClipIcon, AtSymbolIcon} from '@heroicons/react/24/outline';
 
 export default function ChatComposerDrawerWithProgress() {
   return (
-    <Stack direction="vertical" gap={4} width={480}>
+    <Stack direction="vertical" gap={4} width={450} maxWidth="100%">
       <ChatComposer
         onSubmit={() => {}}
         drawer={

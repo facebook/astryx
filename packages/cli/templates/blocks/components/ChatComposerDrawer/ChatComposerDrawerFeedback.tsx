@@ -19,7 +19,7 @@ export default function ChatComposerDrawerFeedback() {
   const [selected, setSelected] = useState<string | null>(null);
 
   return (
-    <Stack direction="vertical" style={{width: '100%', maxWidth: 450}}>
+    <Stack direction="vertical" width={450} maxWidth="100%">
       <ChatComposer
         onSubmit={value => {
           console.log('Submit:', value, '| Answer:', selected);
@@ -29,9 +29,7 @@ export default function ChatComposerDrawerFeedback() {
             <Stack direction="vertical" gap={1} width="100%">
               <List>
                 <ListItem
-                  label={
-                    <Text weight="bold">Do you want to proceed?</Text>
-                  }
+                  label={<Text weight="bold">Do you want to proceed?</Text>}
                 />
                 {options.map(opt => (
                   <ListItem

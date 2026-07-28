@@ -14,10 +14,7 @@ export default function ChatComposerStreaming() {
   );
 
   return (
-    <Stack
-      direction="vertical"
-      gap={4}
-      style={{width: '100%', maxWidth: 450}}>
+    <Stack direction="vertical" gap={4} width={450} maxWidth="100%">
       <Stack direction="vertical" gap={1}>
         <Text type="supporting" color="secondary">
           {isStreaming

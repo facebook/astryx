@@ -25,7 +25,7 @@ export default function ChatDictationButtonShowcase() {
   });
 
   return (
-    <VStack gap={4}>
+    <VStack gap={4} width={450} maxWidth="100%">
       <Text type="supporting" color="secondary">
         Click the microphone to start dictating. Speech is transcribed into the
         input.

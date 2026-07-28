@@ -13,11 +13,31 @@ import type {SearchableItem} from '@astryxdesign/core/Typeahead';
 import {Stack} from '@astryxdesign/core/Layout';
 
 const COMMANDS: SearchableItem<{description: string}>[] = [
-  {id: 'summarize', label: 'summarize', auxiliaryData: {description: 'Summarize the conversation'}},
-  {id: 'translate', label: 'translate', auxiliaryData: {description: 'Translate text to another language'}},
-  {id: 'search', label: 'search', auxiliaryData: {description: 'Search the web or documents'}},
-  {id: 'code', label: 'code', auxiliaryData: {description: 'Generate or explain code'}},
-  {id: 'help', label: 'help', auxiliaryData: {description: 'Show available commands'}},
+  {
+    id: 'summarize',
+    label: 'summarize',
+    auxiliaryData: {description: 'Summarize the conversation'},
+  },
+  {
+    id: 'translate',
+    label: 'translate',
+    auxiliaryData: {description: 'Translate text to another language'},
+  },
+  {
+    id: 'search',
+    label: 'search',
+    auxiliaryData: {description: 'Search the web or documents'},
+  },
+  {
+    id: 'code',
+    label: 'code',
+    auxiliaryData: {description: 'Generate or explain code'},
+  },
+  {
+    id: 'help',
+    label: 'help',
+    auxiliaryData: {description: 'Show available commands'},
+  },
 ];
 
 const commandSource = createStaticSource(COMMANDS);
@@ -40,7 +60,7 @@ export default function ChatComposerInputSlashCommands() {
   };
 
   return (
-    <Stack direction="vertical" style={{width: 450, maxWidth: '100%'}}>
+    <Stack direction="vertical" width={450} maxWidth="100%">
       <ChatComposer
         onSubmit={() => {}}
         input={
