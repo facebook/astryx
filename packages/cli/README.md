@@ -393,16 +393,6 @@ Every response has a `type` string that uniquely identifies it:
 | any error                                                          | —                                    | `CLIError`                        |
 | unsupported command                                                | —                                    | `CLIUnsupportedError`             |
 
-> **[breaking] component/hook list taxonomy collapsed.** `component --list`
-> (resp. `hook --list`) now emits a single `component.list` (resp. `hook.list`)
-> type at every detail level. The depth moved into the payload:
-> `data.detail` is `'names' | 'compact' | 'full'` and `data.components` holds the
-> grouped map. The old `component.brief` / `component.full` (and
-> `hook.brief` / `hook.full`) discriminators — and the `ComponentBriefResponse`,
-> `ComponentFullResponse`, `HookBriefResponse`, `HookFullResponse` types — are
-> removed. Migrate by switching on `data.detail`, not the `.brief` / `.full`
-> type suffix.
-
 ## Doctor
 
 `astryx doctor` runs a series of health checks against your project and

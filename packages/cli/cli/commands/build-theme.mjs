@@ -77,8 +77,6 @@ async function runThemeBuildWatch(file, filePath, options) {
   // Initial build.
   await runThemeBuildOnceChild(file, options);
 
-  humanLog(`\n👀 Watching ${rel} for changes — press Ctrl-C to stop.`);
-
   let building = false;
   let queued = false;
   /** @type {ReturnType<typeof setTimeout> | undefined} */
@@ -112,6 +110,11 @@ async function runThemeBuildWatch(file, filePath, options) {
     // Debounce: editors often emit several events per save.
     debounce = setTimeout(rebuild, 100);
   });
+
+  // Announce readiness only AFTER fs.watch is armed — the log is the "safe to
+  // edit" signal (tests and humans rely on it), so printing it before the watch
+  // is registered would race: a change in that gap is silently missed.
+  humanLog(`\n👀 Watching ${rel} for changes — press Ctrl-C to stop.`);
 
   await new Promise((/** @type {(value?: void) => void} */ resolve) => {
     const stop = () => {
