@@ -47,9 +47,9 @@ export const Showcase: Story = {
               <Heading level={3}>Filters</Heading>
               <Divider />
               <VStack gap={2}>
-                <CheckboxInput label="In stock" />
-                <CheckboxInput label="On sale" />
-                <CheckboxInput label="Free shipping" />
+                <CheckboxInput label="In stock" value={false} />
+                <CheckboxInput label="On sale" value={false} />
+                <CheckboxInput label="Free shipping" value={false} />
               </VStack>
               <Button label="Apply" onClick={() => setIsOpen(false)} />
             </VStack>
@@ -65,10 +65,7 @@ export const SnapPoints: Story = {
     const [isOpen, setIsOpen] = useState(false);
     return (
       <>
-        <Button
-          label="Open nearby places"
-          onClick={() => setIsOpen(true)}
-        />
+        <Button label="Open nearby places" onClick={() => setIsOpen(true)} />
         <BottomSheet
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
@@ -116,8 +113,8 @@ export const FormSheet: Story = {
                 fight the text fields. Use Escape or the close button.
               </Text>
               <Divider />
-              <TextInput label="Title" />
-              <TextArea label="Comment" rows={4} />
+              <TextInput label="Title" value="" />
+              <TextArea label="Comment" rows={4} value="" />
               <Button label="Post" onClick={() => setIsOpen(false)} />
             </VStack>
           </Section>
