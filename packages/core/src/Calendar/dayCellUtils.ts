@@ -123,8 +123,8 @@ function computeHighlightRounding(input: {
   const nextBreaks =
     input.nextContinues !== undefined ? !input.nextContinues : false;
   return {
-    roundLeft: input.isStart || input.isFirstColumn || prevBreaks,
-    roundRight: input.isEnd || input.isLastColumn || nextBreaks,
+    roundStart: input.isStart || input.isFirstColumn || prevBreaks,
+    roundEnd: input.isEnd || input.isLastColumn || nextBreaks,
   };
 }
 

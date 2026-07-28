@@ -394,10 +394,10 @@ describe('Calendar', () => {
 
   it('caps the range highlight next to a disabled mid-range day (#2715)', () => {
     // Disable Jan 13. With Jan 10–15 selected, day 12 (immediately before the
-    // disabled day) should get a rounded end cap on its right edge, and day 14
-    // (immediately after) a rounded cap on its left edge — so the highlight
-    // reads as terminating at the disabled gap rather than running square-edged
-    // into it.
+    // disabled day) should get a rounded end cap on its inline-end edge, and
+    // day 14 (immediately after) a rounded cap on its inline-start edge — so
+    // the highlight reads as terminating at the disabled gap rather than
+    // running square-edged into it.
     const disableJan13 = (d: Date) =>
       !(d.getFullYear() === 2026 && d.getMonth() === 0 && d.getDate() === 13);
     render(
@@ -422,10 +422,11 @@ describe('Calendar', () => {
     const day14Bg = rangeBgFor(14);
 
     // Capped edges have a border radius; the un-capped edge stays square.
-    expect(getComputedStyle(day12Bg).borderTopRightRadius).not.toBe('');
-    expect(getComputedStyle(day12Bg).borderTopRightRadius).not.toBe('0px');
-    expect(getComputedStyle(day14Bg).borderTopLeftRadius).not.toBe('');
-    expect(getComputedStyle(day14Bg).borderTopLeftRadius).not.toBe('0px');
+    // Radii are logical (inline start/end), so they follow reading direction.
+    expect(getComputedStyle(day12Bg).borderStartEndRadius).not.toBe('');
+    expect(getComputedStyle(day12Bg).borderStartEndRadius).not.toBe('0px');
+    expect(getComputedStyle(day14Bg).borderStartStartRadius).not.toBe('');
+    expect(getComputedStyle(day14Bg).borderStartStartRadius).not.toBe('0px');
   });
 
   it('does not range-highlight adjacent-month spillover days in two-month view', () => {
@@ -844,21 +845,22 @@ describe('Calendar', () => {
   // ─── RTL (#3388) ─────────────────────────────────────────────
 
   describe('RTL month navigation', () => {
-    // jsdom does not apply compiled StyleX CSS, so the scaleX(-1) mirror
-    // itself is only observable in a browser (see the dir="rtl" Storybook
-    // story). These tests pin the structure the fix depends on: both nav
-    // chevrons render inside the navIcon wrapper that carries the
-    // ':is([dir="rtl"] *)' conditional transform.
-    it('wraps both nav chevrons in the RTL-mirroring navIcon wrapper', () => {
+    // jsdom does not apply compiled StyleX CSS, so the RTL scaleX mirror is
+    // only observable in a browser (see the dir="rtl" Storybook story). These
+    // tests pin the structure the mirror relies on: both nav chevrons render
+    // inside the navIcon wrapper (which composes the shared rtlStyles.mirror
+    // transform), and navigation semantics stay identical under dir="rtl".
+    it('wraps both nav chevrons in the navIcon wrapper', () => {
       render(<Calendar focusDate="2026-01-01" />);
 
       const {className: navIconClass} = stylex.props(calendarStyles.navIcon);
       expect(navIconClass).toBeTruthy();
+      const navIconAtoms = navIconClass!.split(' ');
 
       for (const name of ['Previous month', 'Next month']) {
         const button = getButton(name);
         const wrappers = Array.from(button.querySelectorAll('span')).filter(
-          span => span.className === navIconClass,
+          span => navIconAtoms.every(atom => span.classList.contains(atom)),
         );
         expect(wrappers.length).toBe(1);
       }
@@ -884,7 +886,6 @@ describe('Calendar', () => {
       expect(screen.getByText('February 2026')).toBeInTheDocument();
     });
   });
-
 
   // ─── Day-cell marker theming (#4286) ─────────────────────────
   describe('day-cell marker theme state', () => {

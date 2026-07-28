@@ -57,7 +57,7 @@ import {
   DATE_FORMAT_WITH_WEEKDAY,
   DATE_FORMAT_MONTH_YEAR,
 } from '../utils/plainDate';
-import {mergeProps, composeEventHandlers} from '../utils';
+import {mergeProps, composeEventHandlers, rtlStyles} from '../utils';
 import {
   computeDayCellState,
   computeRangeRounding,
@@ -462,7 +462,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
             // Wrapper span (not Icon props): Icon's string mode clobbers
             // caller classNames, so the RTL mirror must live on its own
             // element.
-            <span {...stylex.props(calendarStyles.navIcon)}>
+            <span {...stylex.props(calendarStyles.navIcon, rtlStyles.mirror)}>
               <Icon icon="chevronLeft" size="sm" color="inherit" />
             </span>
           }
@@ -483,7 +483,7 @@ export function Calendar({ref, ...props}: CalendarProps) {
           label={t('@astryx.calendar.nextMonth')}
           variant="ghost"
           icon={
-            <span {...stylex.props(calendarStyles.navIcon)}>
+            <span {...stylex.props(calendarStyles.navIcon, rtlStyles.mirror)}>
               <Icon icon="chevronRight" size="sm" color="inherit" />
             </span>
           }
@@ -984,16 +984,16 @@ function DayCell({
           {...stylex.props(
             dayCellStyles.rangeBg,
             dayCellTheme.rangeBg,
-            rangeRounding.roundLeft && dayCellStyles.rangeBgRadiusLeft,
-            rangeRounding.roundRight && dayCellStyles.rangeBgRadiusRight,
-            state.isRangeStart && dayCellStyles.rangeInsetLeft,
+            rangeRounding.roundStart && dayCellStyles.rangeBgRadiusStart,
+            rangeRounding.roundEnd && dayCellStyles.rangeBgRadiusEnd,
+            state.isRangeStart && dayCellStyles.rangeInsetStart,
             state.isRangeStart &&
-              rangeRounding.roundRight &&
-              dayCellStyles.rangeInsetRight,
-            state.isRangeEnd && dayCellStyles.rangeInsetRight,
+              rangeRounding.roundEnd &&
+              dayCellStyles.rangeInsetEnd,
+            state.isRangeEnd && dayCellStyles.rangeInsetEnd,
             state.isRangeStart &&
-              rangeRounding.roundLeft &&
-              dayCellStyles.rangeInsetLeft,
+              rangeRounding.roundStart &&
+              dayCellStyles.rangeInsetStart,
           )}
         />
       )}
@@ -1004,8 +1004,8 @@ function DayCell({
           {...stylex.props(
             dayCellStyles.previewBg,
             dayCellTheme.previewBg,
-            previewRounding.roundLeft && dayCellStyles.previewBgRadiusLeft,
-            previewRounding.roundRight && dayCellStyles.previewBgRadiusRight,
+            previewRounding.roundStart && dayCellStyles.previewBgRadiusStart,
+            previewRounding.roundEnd && dayCellStyles.previewBgRadiusEnd,
             state.isPreviewStart && dayCellStyles.previewStart,
             state.isPreviewEnd && dayCellStyles.previewEnd,
           )}
