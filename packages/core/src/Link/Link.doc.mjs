@@ -96,23 +96,23 @@ export const docs = {
         },
         {
           name: 'size',
-          type: 'TextSize',
+          type: "'4xs' | '3xs' | '2xs' | 'xsm' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl'",
           description: 'Explicit font size override forwarded to Text.',
         },
         {
           name: 'weight',
-          type: 'TextWeight',
+          type: "'normal' | 'medium' | 'semibold' | 'bold'",
           description: 'Font weight override forwarded to Text.',
         },
         {
           name: 'color',
-          type: 'TextColor',
+          type: "'primary' | 'secondary' | 'disabled' | 'placeholder' | 'accent' | 'inherit'",
           description: 'Text color forwarded to Text.',
           default: "'accent'",
         },
         {
           name: 'display',
-          type: 'TextDisplay',
+          type: "'inline' | 'block'",
           description: 'Display type for Text.',
           default: "'inline'",
         },

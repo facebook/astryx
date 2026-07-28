@@ -96,7 +96,7 @@ export const docs = {
     },
     {
       name: 'placement',
-      type: 'LayerPlacement',
+      type: "'above' | 'below' | 'start' | 'end'",
       description: 'Position placement for the menu popover relative to the trigger button.',
       default: "'below'",
     },

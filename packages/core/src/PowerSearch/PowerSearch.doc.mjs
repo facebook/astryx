@@ -159,7 +159,7 @@ export const docs = {
     },
     {
       name: 'tokenOverflowBehavior',
-      type: "'wrap' | 'scroll' | 'truncate' | 'none'",
+      type: "'none' | 'unfocusedInline' | 'unfocusedLayer'",
       description: 'Controls how tokens overflow when the container is too narrow. Forwarded to Tokenizer.',
       default: "'none'",
     },
