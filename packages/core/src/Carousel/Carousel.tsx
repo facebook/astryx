@@ -41,8 +41,9 @@ import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {useLayer} from '../Layer';
 import {useScrollOverflow} from '../hooks/useScrollOverflow';
+import {isRtlElement} from '../hooks/isRtlElement';
 import type {BaseProps} from '../BaseProps';
-import {mergeProps, mergeRefs} from '../utils';
+import {mergeProps, mergeRefs, rtlStyles} from '../utils';
 import type {SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
@@ -166,10 +167,16 @@ const styles = stylex.create({
     transitionTimingFunction: easeVars['--ease-standard'],
   },
   buttonPillStart: {
-    transform: 'translateX(-50%)',
+    transform: {
+      default: 'translateX(-50%)',
+      ':is([dir="rtl"] *)': 'translateX(50%)',
+    },
   },
   buttonPillEnd: {
-    transform: 'translateX(50%)',
+    transform: {
+      default: 'translateX(50%)',
+      ':is([dir="rtl"] *)': 'translateX(-50%)',
+    },
   },
   buttonHidden: {
     opacity: 0,
@@ -347,7 +354,11 @@ export function Carousel({
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     el.scrollBy({
-      left: direction * Math.max(amount, itemWidth),
+      // `direction` is the logical intent (-1 = toward content start, +1 =
+      // toward content end). Under RTL the scroll axis is inverted (start is
+      // scrollLeft 0, the end is negative), so flip the physical delta sign.
+      left:
+        (isRtlElement(el) ? -1 : 1) * direction * Math.max(amount, itemWidth),
       behavior: prefersReducedMotion ? 'auto' : 'smooth',
     });
   }, []);
@@ -425,7 +436,11 @@ export function Carousel({
                 !overflowStart && styles.buttonHidden,
               )}>
               <Button
-                icon={<Icon icon="chevronLeft" size="xsm" />}
+                icon={
+                  <span {...stylex.props(rtlStyles.mirror)}>
+                    <Icon icon="chevronLeft" size="xsm" />
+                  </span>
+                }
                 label={t('@astryx.carousel.scrollLeft')}
                 variant="ghost"
                 size="sm"
@@ -446,7 +461,11 @@ export function Carousel({
                 !overflowEnd && styles.buttonHidden,
               )}>
               <Button
-                icon={<Icon icon="chevronRight" size="xsm" />}
+                icon={
+                  <span {...stylex.props(rtlStyles.mirror)}>
+                    <Icon icon="chevronRight" size="xsm" />
+                  </span>
+                }
                 label={t('@astryx.carousel.scrollRight')}
                 variant="ghost"
                 size="sm"
