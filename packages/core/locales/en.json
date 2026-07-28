@@ -647,6 +647,14 @@
     "defaultMessage": "Collapse {label}",
     "description": "Screen-reader-only label on the ChatComposerDrawer toggle when the drawer is expanded. Example: `Collapse Attachments`. Pairs with `expand`."
   },
+  "@astryx.chatDictationButton.startDictation": {
+    "defaultMessage": "Start dictation",
+    "description": "Accessible label for the microphone button when idle (not listening)."
+  },
+  "@astryx.chatDictationButton.stopDictation": {
+    "defaultMessage": "Stop dictation",
+    "description": "Accessible label for the microphone button when actively listening."
+  },
   "@astryx.chatLayout.newMessages": {
     "defaultMessage": "New messages",
     "description": "Text on a floating pill at the bottom of a chat viewport when unseen messages arrive below the fold; clicking scrolls to bottom. Keep short — narrow pill."
@@ -666,6 +674,14 @@
   "@astryx.chatSendButton.send": {
     "defaultMessage": "Send",
     "description": "Primary button label on the chat submit button (paperplane icon). Imperative verb; pairs with `Stop`. Very short."
+  },
+  "@astryx.chatToolCalls.error": {
+    "defaultMessage": "Error: {message}",
+    "description": "Screen-reader text for a tool call that failed. {message} is the error detail."
+  },
+  "@astryx.chatToolCalls.groupLabel": {
+    "defaultMessage": "{count} tool calls",
+    "description": "Summary label shown in the group header when multiple tool calls are expanded. {count} is the number of calls."
   },
   "@astryx.chatTriggerMenu.suggestions": {
     "defaultMessage": "Suggestions",
