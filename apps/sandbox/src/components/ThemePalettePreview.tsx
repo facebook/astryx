@@ -14,8 +14,6 @@ import {Card} from '@astryxdesign/core/Card';
 import {TextInput} from '@astryxdesign/core/TextInput';
 import {Badge} from '@astryxdesign/core/Badge';
 import {Button} from '@astryxdesign/core/Button';
-import {StatusDot} from '@astryxdesign/core/StatusDot';
-import {Avatar, AvatarStatusDot} from '@astryxdesign/core/Avatar';
 import {VStack, HStack} from '@astryxdesign/core/Layout';
 import {Text, Heading} from '@astryxdesign/core/Text';
 import {Theme} from '@astryxdesign/core/theme';
@@ -734,50 +732,6 @@ function ProgressBarSection() {
   );
 }
 
-function StatusDotSection() {
-  const dots = [
-    {variant: 'success', label: 'Online'},
-    {variant: 'warning', label: 'Away'},
-    {variant: 'error', label: 'Busy'},
-    {variant: 'accent', label: 'Active'},
-    {variant: 'neutral', label: 'Offline'},
-  ] as const;
-  return (
-    <div style={S.section}>
-      <h3 style={S.sectionTitle}>Status Dots</h3>
-      <VStack gap={4}>
-        <HStack gap={4} vAlign="center" wrap="wrap">
-          {dots.map(d => (
-            <HStack key={d.variant} gap={2} vAlign="center">
-              <StatusDot variant={d.variant} label={d.label} />
-              <Text type="supporting" color="secondary">
-                {d.variant}
-              </Text>
-            </HStack>
-          ))}
-        </HStack>
-        <HStack gap={3} vAlign="center">
-          <Avatar
-            name="Ruby Cheung"
-            size="medium"
-            status={<AvatarStatusDot variant="success" label="Online" />}
-          />
-          <Avatar
-            name="Jordan Kim"
-            size="medium"
-            status={<AvatarStatusDot variant="neutral" label="Offline" />}
-          />
-          <Avatar
-            name="Alex Lee"
-            size="medium"
-            status={<AvatarStatusDot variant="error" label="Busy" />}
-          />
-        </HStack>
-      </VStack>
-    </div>
-  );
-}
-
 function CheckboxRadioSwitchSection() {
   return (
     <div>
@@ -1257,7 +1211,6 @@ function ModeColumn({
           <ButtonSection />
           <SpinnerSection />
           <ProgressBarSection />
-          <StatusDotSection />
           <CheckboxRadioSwitchSection />
           <CardVariantsSection />
           <SurfacesSection mode={mode} />
