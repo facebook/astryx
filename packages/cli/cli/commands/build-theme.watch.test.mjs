@@ -131,7 +131,9 @@ describe('theme build --watch', () => {
           // Re-touch to recover a dropped watch event under load.
           try {
             fs.writeFileSync(themeFile, changed);
-          } catch {}
+          } catch {
+            // Re-touch failed (e.g. dir mid-teardown); the next poll retries.
+          }
           return false;
         },
         {timeout: 20000, interval: 200},
