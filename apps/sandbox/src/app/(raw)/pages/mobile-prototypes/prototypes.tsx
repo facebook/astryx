@@ -144,7 +144,9 @@ function CenterDialog({
   children: ReactNode;
   actions: ReactNode;
 }) {
-  if (!open) {return null;}
+  if (!open) {
+    return null;
+  }
   return (
     <>
       <div
@@ -1045,7 +1047,9 @@ function TypeaheadDemo() {
   // Focus the search field ourselves with preventScroll instead of native
   // autoFocus — native autofocus scrolls the input into view and jumps the page.
   useEffect(() => {
-    if (!open) {return;}
+    if (!open) {
+      return;
+    }
     const id = window.setTimeout(
       () => searchRef.current?.focus({preventScroll: true}),
       60,
@@ -1054,7 +1058,9 @@ function TypeaheadDemo() {
   }, [open]);
 
   useEffect(() => {
-    if (!open) {return;}
+    if (!open) {
+      return;
+    }
     setLoading(true);
     const id = setTimeout(() => {
       const list = q
@@ -1509,7 +1515,9 @@ function RangeCalendar({
                 rowGap: 2,
               }}>
               {cells.map((d, i) => {
-                if (d == null) {return <div key={i} />;}
+                if (d == null) {
+                  return <div key={i} />;
+                }
                 const isoD = isoOf(year, month, d);
                 const isStart = isoD === selStart;
                 const isEnd = isoD === selEnd;
@@ -2019,7 +2027,9 @@ function ContextMenuDemo() {
     timer.current = setTimeout(() => setOpen(true), 450);
   };
   const cancel = () => {
-    if (timer.current) {clearTimeout(timer.current);}
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
   };
   return (
     <>
@@ -2067,13 +2077,14 @@ function HoverCardDemo() {
   } | null>(null);
   const openCard = () => {
     const el = ref.current;
-    if (el)
-      {setRect({
+    if (el) {
+      setRect({
         top: el.offsetTop,
         left: el.offsetLeft,
         width: el.offsetWidth,
         height: el.offsetHeight,
-      });}
+      });
+    }
     setOpen(true);
   };
   return (
@@ -2109,7 +2120,7 @@ function HoverCardDemo() {
         width={260}>
         <Item
           align="start"
-          startContent={<Avatar name="Grace Hopper" size="large" />}
+          startContent={<Avatar name="Grace Hopper" size="xl" />}
           label="Grace Hopper"
           description="Staff Engineer · Compilers"
         />
@@ -2139,13 +2150,14 @@ function InfoTipDemo() {
   } | null>(null);
   const openTip = () => {
     const el = ref.current;
-    if (el)
-      {setRect({
+    if (el) {
+      setRect({
         top: el.offsetTop,
         left: el.offsetLeft,
         width: el.offsetWidth,
         height: el.offsetHeight,
-      });}
+      });
+    }
     setOpen(true);
   };
   return (
@@ -2320,13 +2332,14 @@ function TooltipDemo() {
   } | null>(null);
   const toggle = () => {
     const el = ref.current;
-    if (el)
-      {setRect({
+    if (el) {
+      setRect({
         top: el.offsetTop,
         left: el.offsetLeft,
         width: el.offsetWidth,
         height: el.offsetHeight,
-      });}
+      });
+    }
     setOpen(o => !o);
   };
   return (
