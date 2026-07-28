@@ -720,15 +720,17 @@ export function DateInput({
           type="button"
           onClick={handleClear}
           aria-label={t('@astryx.dateInput.clear', {label})}
-          {...mergeProps(
-            // Stable theme target for the clear control. Distinct from the root
-            // `astryx-date-input` target, so a theme can restyle just the clear
-            // button/icon (color, size, hover) via `defineTheme` instead of a
-            // fragile structural selector.
-            themeProps('date-input-clear'),
-            stylex.props(styles.iconButton),
-          )}>
-          <Icon icon="close" size="sm" color="secondary" />
+          {...stylex.props(styles.iconButton)}>
+          <Icon
+            icon="close"
+            size="sm"
+            color="secondary"
+            // Stable theme target on the clear glyph itself, so a theme can
+            // restyle just this icon (color, size, hover) via `defineTheme`.
+            // Same-element rules in @layer astryx-theme win over the icon's own
+            // base color/size, which a button-level target could not reach.
+            className={themeProps('date-input-clear-icon').className}
+          />
         </button>
       )}
       {isBusy && <Spinner size="sm" />}

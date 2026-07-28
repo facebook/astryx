@@ -20,6 +20,7 @@ import {
 import userEvent from '@testing-library/user-event';
 import {getButton, queryButton} from '../__tests__/fastRoleQueries';
 import {DateInput} from './DateInput';
+import {Icon} from '../Icon';
 import {InputGroup} from '../InputGroup';
 import {InputGroupText} from '../InputGroup/InputGroupText';
 import {defineTheme} from '../theme/defineTheme';
@@ -977,8 +978,19 @@ describe('DateInput statusVariant forwarding', () => {
   });
 });
 
-describe('DateInput clear theme target', () => {
-  it('renders the astryx-date-input-clear target on the clear button', () => {
+describe('DateInput clear icon theme target', () => {
+  // Resolve the clear glyph span (the astryx-icon element inside the clear
+  // button), independent of the theme target class.
+  const getClearIcon = (): HTMLElement => {
+    const button = getButton('Clear Date');
+    const icon = button.querySelector('.astryx-icon');
+    if (icon == null) {
+      throw new Error('clear icon not found');
+    }
+    return icon as HTMLElement;
+  };
+
+  it('renders the astryx-date-input-clear-icon target on the clear glyph', () => {
     render(
       <DateInput
         label="Date"
@@ -987,15 +999,16 @@ describe('DateInput clear theme target', () => {
         hasClear
       />,
     );
-    // Dedicated, stable theme target on the clear control, distinct from the
-    // root astryx-date-input target, so a theme can restyle just the clear
-    // button without a fragile structural selector.
-    expect(getButton('Clear Date')).toHaveClass('astryx-date-input-clear');
+    // The stable theme target lands on the icon element itself (not the
+    // button), so a theme can restyle just this glyph (color, size, hover)
+    // via `defineTheme` — a button-level target could not reach the icon's
+    // own color/size.
+    const icon = getClearIcon();
+    expect(icon).toHaveClass('astryx-date-input-clear-icon');
+    expect(icon).toHaveClass('astryx-icon');
   });
 
-  it('keeps the clear button functional alongside the new target', () => {
-    // The theme target is additive — the clear button is still a real <button>
-    // and still fires the clear handler.
+  it('keeps the clear button functional alongside the target', () => {
     const onChange = vi.fn();
     render(
       <DateInput
@@ -1011,20 +1024,60 @@ describe('DateInput clear theme target', () => {
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
-  it('exposes date-input-clear as a themeable defineTheme target', () => {
-    // The generated CSS is what proves the target is reachable by a theme:
+  it('renders the default icon (secondary color, sm size) byte-identically', () => {
+    // Pixel-identical default guard: the clear glyph must carry the exact same
+    // StyleX color/size classes as a standalone secondary/sm icon. The added
+    // target class is purely additive — it changes nothing until a theme
+    // targets it.
+    render(
+      <DateInput
+        label="Date"
+        value="2026-01-15"
+        onChange={() => {}}
+        hasClear
+      />,
+    );
+    const icon = getClearIcon();
+
+    const {container: refContainer} = render(
+      <Icon icon="close" size="sm" color="secondary" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(c => c !== 'astryx-date-input-clear-icon')
+        .sort();
+
+    expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes date-input-clear-icon so a theme reaches the icon color, size, and hover', () => {
     // jsdom cannot resolve the @layer cascade, so the DOM-class assertion above
-    // and this generation assertion together cover the seam.
+    // (target lands on the icon element) plus this generation assertion (the
+    // theme emits same-element icon rules in @layer astryx-theme) together
+    // prove the seam: a same-element theme rule wins over the icon's own
+    // base-layer color/size.
     const theme = defineTheme({
-      name: 'date-input-clear-test',
+      name: 'date-input-clear-icon-test',
       components: {
-        'date-input-clear': {
-          base: {color: 'var(--color-text-primary)'},
+        'date-input-clear-icon': {
+          base: {
+            width: '12px',
+            height: '12px',
+            fontSize: '12px',
+            color: 'var(--color-icon-secondary)',
+            ':hover': {color: 'var(--color-icon-primary)'},
+          },
         },
       },
     });
     const css = generateThemeCSSFlat(theme);
-    expect(css).toContain('.astryx-date-input-clear {');
-    expect(css).toContain('color: var(--color-text-primary)');
+    expect(css).toContain('.astryx-date-input-clear-icon {');
+    expect(css).toContain('width: 12px');
+    expect(css).toContain('height: 12px');
+    expect(css).toContain('.astryx-date-input-clear-icon:hover {');
+    expect(css).toContain('color: var(--color-icon-primary)');
   });
 });

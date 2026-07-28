@@ -2,6 +2,6 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] DateInput: add a dedicated `astryx-date-input-clear` theme target for the clear button, so consumers can theme it (color, size, hover) via `defineTheme` instead of a fragile descendant selector. Distinct from the root `astryx-date-input` target; default rendering is unchanged.
+[feat] DateInput: add an `astryx-date-input-clear-icon` theme target on the clear glyph, so consumers can recolor it, morph its color on hover, and resize it via `defineTheme` instead of a fragile descendant selector or raw CSS. Also fixes `Icon` to forward a consumer `className` on registry-rendered icons (it was previously dropped). Default rendering is unchanged.
 
 @freddymeta

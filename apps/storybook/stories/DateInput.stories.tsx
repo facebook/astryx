@@ -456,33 +456,38 @@ export const StatusVariantComparison: Story = {
 };
 
 /**
- * Theme the clear button precisely via `defineTheme`.
+ * Theme the clear glyph precisely via `defineTheme`.
  *
- * `components['date-input-clear'].base` scopes overrides to the clear control
- * only (via the `astryx-date-input-clear` target), instead of reaching it
- * through a fragile descendant selector. Defaults are unchanged; this story
- * only demonstrates the override channel.
+ * `components['date-input-clear-icon'].base` scopes overrides to the clear
+ * icon itself (via the `astryx-date-input-clear-icon` target), so a theme can
+ * recolor it, morph its color on hover, and resize it — without a fragile
+ * descendant selector or raw CSS. Same-element rules in `@layer astryx-theme`
+ * win over the icon's own base color/size.
  */
-const clearButtonTheme = defineTheme({
-  name: 'date-input-clear-demo',
+const clearIconTheme = defineTheme({
+  name: 'date-input-clear-icon-demo',
   components: {
-    'date-input-clear': {
+    'date-input-clear-icon': {
       base: {
-        color: 'var(--color-accent)',
+        width: '12px',
+        height: '12px',
+        fontSize: '12px',
+        color: 'var(--color-icon-secondary)',
+        ':hover': {color: 'var(--color-accent)'},
       },
     },
   },
 });
 
-export const ThemedClearButton: Story = {
+export const ThemedClearIcon: Story = {
   render: () => {
     const [value, setValue] = useState<ISODateString | undefined>(
       '2026-01-25' as ISODateString,
     );
     return (
-      <Theme theme={clearButtonTheme} mode="light">
+      <Theme theme={clearIconTheme} mode="light">
         <DateInput
-          label="Clear button themed (accent)"
+          label="Clear icon themed (12px, accent on hover)"
           value={value}
           onChange={setValue}
           hasClear
