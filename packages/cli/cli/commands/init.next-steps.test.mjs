@@ -20,7 +20,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {getNextSteps} from './init.mjs';
+import {getNextSteps} from '../../api/init/init.mjs';
 
 describe('init Next steps theme guidance', () => {
   const text = getNextSteps('npx astryx').join('\n');

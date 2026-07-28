@@ -60,6 +60,7 @@ import type {
   UpgradeRunResponse,
 } from './upgrade';
 import type {BlogListResponse, BlogDetailResponse} from './blog';
+import type {InitRunResponse, InitRemoveResponse} from './init';
 import type {Suggestion} from './base';
 
 /** Structured API error with a stable machine-readable code. */
@@ -351,3 +352,30 @@ export declare function upgrade(
 export declare function blog(
   slug?: string,
 ): Promise<BlogListResponse | BlogDetailResponse>;
+
+// ── Init ─────────────────────────────────────────────────────────────
+
+export interface InitOptions {
+  /** Comma-separated features to install (agents, theme, template). */
+  features?: string;
+  /** Install all features. */
+  all?: boolean;
+  /** Remove the managed agent-docs block instead of installing. */
+  removeAgents?: boolean;
+  /** Agent preset: claude, cursor, codex, hermes, all. */
+  agent?: string;
+  /** Explicit agent-docs file path(s). */
+  agentDocsPath?: string | string[];
+  /** Scaffold a named page template (programmatic only; the CLI never sets it). */
+  templateName?: string;
+}
+
+/**
+ * Run the non-interactive init flow (agent-docs install, template scaffold, or
+ * agent-docs removal). Performs the effect and returns a receipt; throws
+ * AstryxError on an unknown feature or template name.
+ */
+export declare function init(
+  options?: InitOptions,
+  ctx?: {cwd?: string},
+): Promise<InitRunResponse | InitRemoveResponse>;
