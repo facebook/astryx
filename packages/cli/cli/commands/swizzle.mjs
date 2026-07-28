@@ -60,12 +60,31 @@ export function registerSwizzle(program) {
         return;
       }
 
-      const {package: ownerPackage, outputDir, filesCopied, usesStyleX, feedback} =
-        result.data;
+      const {
+        package: ownerPackage,
+        outputDir,
+        filesCopied,
+        usesStyleX,
+        unresolvedImports,
+        feedback,
+      } = result.data;
 
       humanLog(`\n✓ Copied ${filesCopied} files to ${outputDir}/\n`);
       humanLog(`Relative imports have been rewritten to use ${ownerPackage}.`);
       humanLog('You can now customize the component source freely.\n');
+
+      // Imports pointing outside the owner package were copied as written —
+      // they cannot resolve from the new location, and saying nothing would
+      // leave a broken file that looks like a clean copy.
+      if (unresolvedImports && unresolvedImports.length > 0) {
+        humanLog(
+          `⚠ ${unresolvedImports.length} import(s) could not be rewritten — they point outside ${ownerPackage}:`,
+        );
+        for (const specifier of unresolvedImports) {
+          humanLog(`  ${specifier}`);
+        }
+        humanLog('  Point them at something reachable from your project.\n');
+      }
 
       // StyleX build requirement — swizzled StyleX source renders unstyled with
       // no error unless the consumer's build runs a StyleX compiler.

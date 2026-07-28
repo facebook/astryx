@@ -36,6 +36,12 @@ export interface SwizzleCopyResponse {
     files: string[];
     /** Whether any copied file uses StyleX (requires build-time setup). */
     usesStyleX: boolean;
+    /**
+     * Relative imports that pointed OUTSIDE the owner package, so no subpath of
+     * it can name them. They were copied verbatim and will not resolve from the
+     * component's new home. Absent when every import was rewritten.
+     */
+    unresolvedImports?: string[];
     feedback?: SwizzleFeedback;
   };
 }

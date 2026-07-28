@@ -5,6 +5,10 @@
  * customization, rewriting escaping relative imports to the OWNER package's
  * subpaths.
  *
+ * An owner is core, a configured integration, or an external package that opts
+ * in via its own package.json `astryx.docs` field (#2090); `--package`
+ * disambiguates when more than one provides the name.
+ *
  * Side-effecting: `swizzle(name, ...)` writes files and returns a
  * `swizzle.copy` receipt describing what it did; with no name (or `list`) it
  * returns `swizzle.list`. Errors throw AstryxError (stable code + suggestions).
@@ -13,12 +17,22 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {findCoreDir, listComponents} from '../../utils/paths.mjs';
+import {
+  findCoreDir,
+  listComponents,
+  discoverExternalPackages,
+} from '../../utils/paths.mjs';
 import {assertWithin, PathSafetyError} from '../../utils/path-safety.mjs';
 import {checkGhCli} from '../../utils/github.mjs';
 import {Project} from '../../lib/project.mjs';
 import {
+  scanAllPackages,
+  findComponentInPackages,
+  ALL_DOC_SUFFIXES,
+} from '../../lib/package-scanner.mjs';
+import {
   CORE_PACKAGE,
+  discoverIntegrationComponents,
   findIntegrationComponentDoc,
   findIntegrationComponentSource,
 } from '../../lib/component-discovery.mjs';
@@ -37,15 +51,39 @@ const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
  *      '../theme/tokens.stylex' -> '@astryxdesign/core/theme'
  *      '../utils/mergeProps'     -> '@astryxdesign/core/utils'
  *
+ * Given `componentDir` + `rootDir` the specifier is RESOLVED against the owner's
+ * root instead of being guessed from the text. That matters as soon as a
+ * component can sit more than one level below the root, which external packages
+ * can: `'../../theme/x'` from `src/components/AppShell` is `src/theme/x`, so it
+ * names `<owner>/theme` — the text-only rule strips a single `../` and emits
+ * `<owner>/..`, which is not a module specifier at all. An import that escapes
+ * the root cannot be named as a subpath of it; those are left exactly as written
+ * and reported through `onUnresolved` rather than mangled into a fake one.
+ *
+ * With no directories given, the text-only rule applies. It is exact for a flat
+ * layout (core, integrations, `docs: './src'` over `src/<Name>/`) and is kept for
+ * callers that have no paths to hand.
+ *
  * @param {string} content
  * @param {string} [ownerPackage]
+ * @param {{componentDir?: string, rootDir?: string, onUnresolved?: (specifier: string) => void}} [options]
  */
-export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
+export function rewriteImports(content, ownerPackage = CORE_PACKAGE, options = {}) {
+  const {componentDir, rootDir, onUnresolved} = options;
   return content.replace(
     /(from\s+['"])(\.\.\/.+?)(['"])/g,
     (match, prefix, importPath, suffix) => {
-      const parts = importPath.replace(/^\.\.\//, '').split('/');
-      const topDir = parts[0];
+      let topDir;
+      if (componentDir && rootDir) {
+        const rel = path.relative(rootDir, path.resolve(componentDir, importPath));
+        if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) {
+          if (onUnresolved) onUnresolved(importPath);
+          return match;
+        }
+        topDir = rel.split(path.sep)[0];
+      } else {
+        topDir = importPath.replace(/^\.\.\//, '').split('/')[0];
+      }
       return `${prefix}${ownerPackage}/${topDir}${suffix}`;
     },
   );
@@ -91,24 +129,60 @@ async function loadConfigSafely(cwd) {
 }
 
 /**
+ * Scan the consumer's node_modules for EXTERNAL Astryx packages — the ones that
+ * opt in through their own package.json (`"astryx": {"docs": "./src"}`) rather
+ * than by being listed as a configured integration (#2090). Reuses the same
+ * scanner `discover` uses.
+ *
+ * Opts into ALL_DOC_SUFFIXES: swizzle only ever LOCATES the doc file (to find
+ * the component's directory) and then excludes it from the copy, so accepting
+ * `.doc.ts` here is safe. `discover` deliberately keeps the narrower default —
+ * it `import()`s the doc, which Node cannot do for a `.ts` under node_modules.
+ *
+ * @param {string} cwd
+ * @returns {import('../../lib/package-scanner.mjs').ScannedPackage[]}
+ */
+function scanExternalPackages(cwd) {
+  const externals = discoverExternalPackages(cwd).map(ext => ({
+    name: ext.name,
+    category: ext.category,
+    docsDir: ext.docsDir,
+  }));
+  if (externals.length === 0) return [];
+  return scanAllPackages([], externals, {docSuffixes: ALL_DOC_SUFFIXES});
+}
+
+/**
  * Build the set of OWNER packages that provide a component named `name` across
- * core + every loaded integration.
- * @param {string} coreDir
+ * core, every loaded integration, and every discovered external package.
+ * @param {string|null} coreDir
  * @param {Array<{name: string, components?: string, issuesUrl?: string}>} loadedIntegrations
+ * @param {import('../../lib/package-scanner.mjs').ScannedPackage[]} externalPackages
  * @param {string} name
  * @param {string|undefined} coreIssuesUrl
- * @returns {Array<{package: string, sourceDir: string|null, ownerPackage: string, issuesUrl: string|undefined}>}
+ * @returns {Array<{package: string, sourceDir: string|null, rootDir: string|null, ownerPackage: string, issuesUrl: string|undefined, componentName?: string}>}
  */
-function resolveOwners(coreDir, loadedIntegrations, name, coreIssuesUrl) {
+function resolveOwners(
+  coreDir,
+  loadedIntegrations,
+  externalPackages,
+  name,
+  coreIssuesUrl,
+) {
   const owners = [];
-  const coreComponentDir = path.join(coreDir, 'src', name);
-  if (fs.existsSync(coreComponentDir)) {
-    owners.push({
-      package: CORE_PACKAGE,
-      sourceDir: coreComponentDir,
-      ownerPackage: CORE_PACKAGE,
-      issuesUrl: coreIssuesUrl || DEFAULT_ISSUES_URL,
-    });
+  if (coreDir) {
+    const coreSrc = path.join(coreDir, 'src');
+    const coreComponentDir = path.join(coreSrc, name);
+    if (fs.existsSync(coreComponentDir)) {
+      owners.push({
+        package: CORE_PACKAGE,
+        sourceDir: coreComponentDir,
+        // Escaping imports are named against this: `src/theme/x` -> `/theme`.
+        rootDir: coreSrc,
+        ownerPackage: CORE_PACKAGE,
+        issuesUrl: coreIssuesUrl || DEFAULT_ISSUES_URL,
+      });
+    }
   }
   for (const integration of loadedIntegrations) {
     const docPath = findIntegrationComponentDoc(integration, name);
@@ -117,8 +191,39 @@ function resolveOwners(coreDir, loadedIntegrations, name, coreIssuesUrl) {
     owners.push({
       package: integration.name,
       sourceDir: sourcePath ? path.dirname(sourcePath) : null,
+      rootDir: integration.components ?? null,
       ownerPackage: integration.name,
       issuesUrl: integration.issuesUrl,
+    });
+  }
+  // Fallthrough: external `astryx.docs` packages. A package configured as an
+  // integration is already recorded above; don't list it twice (that would
+  // read as false ambiguity).
+  const alreadyOwned = new Set(owners.map(o => o.package));
+  for (const pkg of externalPackages) {
+    if (alreadyOwned.has(pkg.name)) continue;
+    const hit = findComponentInPackages([pkg], name, {
+      docSuffixes: ALL_DOC_SUFFIXES,
+    });
+    if (!hit) continue;
+    // Source lives alongside the doc, same same-stem convention integrations
+    // use. A doc sitting directly at the docs root has no isolated component
+    // directory, so there is nothing safe to copy — recorded as source-less
+    // rather than copying the package's whole src tree.
+    const docDir = path.dirname(hit.docPath);
+    const hasOwnDir = path.resolve(docDir) !== path.resolve(pkg.docsDir);
+    const sourceFile = path.join(docDir, `${hit.componentName}.tsx`);
+    owners.push({
+      package: pkg.name,
+      sourceDir: hasOwnDir && fs.existsSync(sourceFile) ? docDir : null,
+      // The docs root is the package's subpath origin: a component nested at
+      // `src/components/AppShell` names `../../theme/x` as `<pkg>/theme`.
+      rootDir: pkg.docsDir,
+      ownerPackage: pkg.name,
+      issuesUrl: undefined,
+      // The lookup is case-insensitive, so the package's own casing is the
+      // authority for the ejected directory name — not what the user typed.
+      componentName: hit.componentName,
     });
   }
   return owners;
@@ -148,7 +253,15 @@ export async function swizzle(component, options = {}) {
   } = options;
 
   const coreDir = findCoreDir(cwd);
-  if (!coreDir) {
+  const externalPackages = scanExternalPackages(cwd);
+  const {loadedIntegrations, project} = await loadConfigSafely(cwd);
+  // Core is only *required* when nothing else is swizzleable: an integration or
+  // an external `astryx.docs` package can own the component on its own (#2090).
+  if (
+    !coreDir &&
+    externalPackages.length === 0 &&
+    loadedIntegrations.length === 0
+  ) {
     throw new AstryxError(
       'Could not find @astryxdesign/core package. Make sure you are inside the design system monorepo or have @astryxdesign/core installed.',
       [],
@@ -156,7 +269,18 @@ export async function swizzle(component, options = {}) {
     );
   }
 
-  const components = listComponents(coreDir);
+  // Every owner swizzle can resolve from, so the list and the not-found
+  // suggestions describe what the command will actually accept. Integration
+  // components were swizzleable but invisible here.
+  const components = [
+    ...new Set([
+      ...(coreDir ? listComponents(coreDir) : []),
+      ...loadedIntegrations.flatMap(integration =>
+        discoverIntegrationComponents(integration).map(c => c.name),
+      ),
+      ...externalPackages.flatMap(ext => ext.components),
+    ]),
+  ].sort();
 
   if (list || !component) {
     return {type: 'swizzle.list', data: components};
@@ -164,11 +288,16 @@ export async function swizzle(component, options = {}) {
 
   const dirName = component.replace(/^XDS/, '');
 
-  const {loadedIntegrations, project} = await loadConfigSafely(cwd);
   const coreIssuesUrl = project
     ? project.issuesUrl({package: CORE_PACKAGE})
     : undefined;
-  const allOwners = resolveOwners(coreDir, loadedIntegrations, dirName, coreIssuesUrl);
+  const allOwners = resolveOwners(
+    coreDir,
+    loadedIntegrations,
+    externalPackages,
+    dirName,
+    coreIssuesUrl,
+  );
 
   if (allOwners.length === 0) {
     throw new AstryxError(
@@ -177,6 +306,17 @@ export async function swizzle(component, options = {}) {
       ERROR_CODES.ERR_UNKNOWN_COMPONENT,
     );
   }
+
+  // An owner with no copyable source can never satisfy a swizzle, so it must not
+  // create ambiguity: a package that only DOCUMENTS a name core also owns used
+  // to turn a working `swizzle Button` into ERR_AMBIGUOUS_COMPONENT, and then
+  // offer itself as one of the two ways out. Such owners stay reachable through
+  // an explicit `--package` (which still reports ERR_NO_SOURCE, the honest
+  // answer) and still answer on their own when nobody else owns the name.
+  const swizzleable = allOwners.filter(
+    o => o.sourceDir && fs.existsSync(o.sourceDir),
+  );
+  const candidates = swizzleable.length > 0 ? swizzleable : allOwners;
 
   let owner;
   if (pkg) {
@@ -188,14 +328,14 @@ export async function swizzle(component, options = {}) {
         ERROR_CODES.ERR_UNKNOWN_COMPONENT,
       );
     }
-  } else if (allOwners.length > 1) {
+  } else if (candidates.length > 1) {
     throw new AstryxError(
       `Component "${dirName}" is provided by multiple packages. Re-run with --package <pkg> to choose one.`,
-      allOwners.map(o => ({name: o.package, reason: 'provides this component'})),
+      candidates.map(o => ({name: o.package, reason: 'provides this component'})),
       ERROR_CODES.ERR_AMBIGUOUS_COMPONENT,
     );
   } else {
-    owner = allOwners[0];
+    owner = candidates[0];
   }
 
   if (!owner.sourceDir || !fs.existsSync(owner.sourceDir)) {
@@ -208,6 +348,13 @@ export async function swizzle(component, options = {}) {
 
   const componentDir = owner.sourceDir;
 
+  // The ejected directory name is part of the output contract, so it uses the
+  // OWNER's canonical casing where the owner supplies one (external packages
+  // are matched case-insensitively). Core and integration owners resolve by
+  // exact name and carry no `componentName`, so they keep `dirName` — the
+  // argument with only the `XDS` prefix stripped.
+  const outName = owner.componentName ?? dirName;
+
   // Path-safety: --output must resolve inside cwd.
   let outputBase;
   try {
@@ -218,7 +365,7 @@ export async function swizzle(component, options = {}) {
     }
     throw err;
   }
-  const outputDir = path.join(outputBase, dirName);
+  const outputDir = path.join(outputBase, outName);
 
   // Pre-flight overwrite check before any mkdir/writeFile.
   const sourceFiles = fs.readdirSync(componentDir).filter(file => {
@@ -243,13 +390,19 @@ export async function swizzle(component, options = {}) {
   const files = fs.readdirSync(componentDir);
   let copied = 0;
   let usesStyleX = false;
+  /** Imports that escape the owner package, so no subpath can name them. */
+  const unresolved = new Set();
   for (const file of files) {
     if (isExcludedFromCopy(file)) continue;
     const srcPath = path.join(componentDir, file);
     if (!fs.statSync(srcPath).isFile()) continue;
     let content = fs.readFileSync(srcPath, 'utf-8');
     if (file.endsWith('.ts') || file.endsWith('.tsx')) {
-      content = rewriteImports(content, owner.ownerPackage);
+      content = rewriteImports(content, owner.ownerPackage, {
+        componentDir,
+        rootDir: owner.rootDir ?? undefined,
+        onUnresolved: specifier => unresolved.add(specifier),
+      });
     }
     if (
       (file.endsWith('.ts') || file.endsWith('.tsx')) &&
@@ -267,11 +420,11 @@ export async function swizzle(component, options = {}) {
       !isExcludedFromCopy(f) &&
       fs.statSync(path.join(componentDir, f)).isFile(),
   );
-  const feedback = buildFeedback(dirName, owner.issuesUrl);
+  const feedback = buildFeedback(outName, owner.issuesUrl);
 
   /** @type {import('../../types/swizzle').SwizzleCopyResponse['data']} */
   const data = {
-    component: dirName,
+    component: outName,
     package: owner.package,
     outputDir: relOutput,
     filesCopied: copied,
@@ -279,5 +432,9 @@ export async function swizzle(component, options = {}) {
     usesStyleX,
   };
   if (feedback) data.feedback = feedback;
+  // Only present when something needs the caller's attention — an import that
+  // pointed outside the owner package was copied verbatim and will not resolve
+  // from its new home.
+  if (unresolved.size > 0) data.unresolvedImports = [...unresolved];
   return {type: 'swizzle.copy', data};
 }
