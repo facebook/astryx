@@ -1050,5 +1050,17 @@
   "@astryx.token.remove": {
     "defaultMessage": "Remove {label}",
     "description": "Screen-reader-only label on the \"×\" on an individual Token/chip. Example: `Remove John Smith`, `Remove Active`. Imperative verb."
+  },
+  "@astryx.commandPalette.footer.navigate": {
+    "defaultMessage": "Navigate",
+    "description": "Keyboard hint in the CommandPalette footer, paired with up/down arrow key icons. Tells users arrow keys move between items."
+  },
+  "@astryx.commandPalette.footer.select": {
+    "defaultMessage": "Select",
+    "description": "Keyboard hint in the CommandPalette footer, paired with the Enter key icon. Tells users Enter activates the highlighted item."
+  },
+  "@astryx.commandPalette.footer.close": {
+    "defaultMessage": "Close",
+    "description": "Keyboard hint in the CommandPalette footer, paired with the Escape key icon. Tells users Escape dismisses the palette."
   }
 }
