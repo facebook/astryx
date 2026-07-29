@@ -68,11 +68,13 @@ function componentNameFromFile(fileName) {
 }
 
 // Matches the top-level `group: 'GroupName'` field in a .doc.mjs file.
-// Only matches at shallow indentation (≤ 4 spaces from line start) to avoid
-// picking up nested `group:` fields inside prop descriptions.
-const GROUP_RE = /(?:^|\n) {0,4}group:\s*['"]([^'"]+)['"]/;
-const HIDDEN_COMPONENTS_RE = /(?:^|\n) {0,4}hiddenComponents:\s*\[([^\]]*)\]/;
-const HIDDEN_RE = /(?:^|\n) {0,4}hidden:\s*true/;
+// Only matches at ≤2 spaces (top-level object fields). Deeper indentation is a
+// nested field — e.g. a `group:` entry inside a `propDescriptions:` block of a
+// docsZh/docsDense translation export — which must NOT be read as the
+// component's group (that leaked a translated prop description as a group key).
+const GROUP_RE = /(?:^|\n) {0,2}group:\s*['"]([^'"]+)['"]/;
+const HIDDEN_COMPONENTS_RE = /(?:^|\n) {0,2}hiddenComponents:\s*\[([^\]]*)\]/;
+const HIDDEN_RE = /(?:^|\n) {0,2}hidden:\s*true/;
 
 /**
  * Read the `group`, `hiddenComponents`, and `hidden` fields from a
