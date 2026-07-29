@@ -78,7 +78,7 @@ export const docs = {
       name: 'isRequired',
       type: 'boolean',
       description:
-        'Displays a "Required" indicator next to the label and adds a screen-reader-only "Required" description to the trigger (aria-required is not supported on role="button"). Mutually exclusive with isOptional.',
+        'Displays a "Required" indicator next to the label and adds a screen-reader-only "Required" description to the trigger (assistive tech does not reliably announce aria-required on the trigger). Mutually exclusive with isOptional.',
       default: 'false',
     },
     {
