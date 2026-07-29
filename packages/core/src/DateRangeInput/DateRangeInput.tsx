@@ -625,7 +625,7 @@ export function DateRangeInput({
               icon="close"
               size="sm"
               color="secondary"
-              className={themeProps('date-range-input-clear-icon').className}
+              {...themeProps('date-range-input-clear-icon')}
             />
           </button>
         )}
