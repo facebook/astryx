@@ -4,12 +4,12 @@
 export const docs = {
   name: 'useSheetGestures',
   displayName: 'useSheetGestures',
-  keywords: ['sheet', 'drag', 'swipe', 'dismiss', 'snap', 'gesture', 'pointer', 'touch', 'bottom sheet', 'detent'],
+  keywords: ['sheet', 'drag', 'swipe', 'dismiss', 'gesture', 'pointer', 'touch', 'bottom sheet'],
   params: [
     {
       name: 'options',
       type: 'UseSheetGesturesOptions',
-      description: 'isOpen, onDismiss, and optional snapPoints / snapIndex / onSnapChange / enabled / axis. Component-agnostic: any sliding sheet surface can consume it.',
+      description: 'isOpen and onDismiss. Internal to BottomSheet — not exported from the lab entry point.',
       required: true,
     },
   ],
@@ -17,17 +17,15 @@ export const docs = {
     {
       name: 'result',
       type: 'UseSheetGesturesResult',
-      description: 'contentProps (spread on the sliding surface for live translate + touch-action), handleProps (spread on the grab handle for a11y + pointer/keyboard drag), plus dragOffset, activeSnapIndex, and isDragging for callers that want to drive their own animation.',
+      description: 'contentProps (spread on the sliding surface for the live translate + touch-action guard), handleProps (spread on the grab handle for the pointer drag), plus dragOffset and isDragging for callers that want to drive their own animation.',
     },
   ],
   usage: {
     description:
-      'Component-agnostic drag machinery for edge-anchored sheets. Tracks a pointer drag along the block axis, translates the sliding surface live, and on release either dismisses (past a distance or velocity threshold) or settles to the nearest snap point. Pointer-events based (one path for mouse + touch), SSR-safe, and respects prefers-reduced-motion. The grab handle is keyboard-operable — Arrow keys move between snap points and Escape (via the owning dialog) dismisses — so the swipe gesture always has an assistive-technology equivalent.',
+      'Drag-to-dismiss machinery for the bottom sheet. Tracks a pointer drag down the block axis, translates the sliding surface live, and on release either dismisses (past a distance or velocity threshold) or springs back to fully open. Pointer-events based (one path for mouse + touch), SSR-safe, and respects prefers-reduced-motion. Escape (routed by the owning dialog) provides the keyboard equivalent of the swipe.',
     bestPractices: [
-      { guidance: true, description: 'Spread handleProps on a real focusable grab-handle element and contentProps on the sliding surface (the <dialog> or panel that carries the slide transform).' },
-      { guidance: true, description: 'Pass enabled={false} for sheets with a text form, so vertical drag does not fight input/scroll gestures.' },
-      { guidance: true, description: 'Provide snapPoints as fractions (0..1 of the height budget) or CSS lengths; pair snapIndex + onSnapChange for controlled detents.' },
-      { guidance: false, description: 'Wire onDismiss to anything other than the owning sheet close — it is called when a swipe crosses the dismiss threshold.' },
+      { guidance: true, description: 'Spread handleProps on the grab-handle element and contentProps on the sliding surface (the panel that carries the translate).' },
+      { guidance: false, description: 'Wire onDismiss to anything other than the owning sheet close — it fires when a swipe crosses the dismiss threshold.' },
     ],
   },
 };

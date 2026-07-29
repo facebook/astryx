@@ -8,17 +8,17 @@
  * @output Exports BottomSheet component and BottomSheetProps
  * @position Lab implementation; consumed by index.ts, tested by BottomSheet.test.tsx, demonstrated in Storybook
  *
- * A mobile touch surface that rises from the bottom edge: grab handle,
- * swipe-to-dismiss, and optional snap points. It is built ON TOP OF the
- * lab Drawer's native `<dialog>` engine (`side="bottom"`) rather than
- * forking it — Drawer owns showModal/show, the open/close slide animation,
- * focus trap + restore, scroll lock, the Escape/scrim contract, and the
- * LIFO overlay registry. BottomSheet layers the grab handle and the
- * reusable `useSheetGestures` drag machinery on top, inside the dialog.
+ * A mobile touch surface that rises from the bottom edge with a grab handle
+ * and swipe-to-dismiss. Built ON TOP OF the lab Drawer's native `<dialog>`
+ * engine (`side="bottom"`) rather than forking it — Drawer owns
+ * showModal/show, the open/close slide animation, focus trap + restore,
+ * scroll lock, the Escape/scrim contract, and the LIFO overlay registry.
+ * BottomSheet layers the grab handle and the drag-to-dismiss gesture on top,
+ * inside the dialog.
  *
- * The gesture logic lives in `useSheetGestures` (not here) so Drawer, a
- * future Dialog-as-sheet, or PowerSearch mobile can consume the same
- * primitive. This component only wires it to a handle + content wrapper.
+ * The gesture translate is applied to an inner sheet wrapper, not the
+ * `<dialog>` itself, so Drawer owns the open/close slide and the drag
+ * translates within it without the two transforms fighting.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/lab/src/BottomSheet/BottomSheet.doc.mjs (props table, features, usage)
@@ -35,10 +35,23 @@ import {
   radiusVars,
   spacingVars,
 } from '@astryxdesign/core/theme/tokens.stylex';
-// SYNC: focus-ring convention mirrors core Button — 2px solid --color-accent.
-import {themeProps} from '@astryxdesign/core/utils';
+import {mergeProps, themeProps} from '@astryxdesign/core/utils';
 import {Drawer} from '../Drawer';
 import {useSheetGestures} from './useSheetGestures';
+
+/**
+ * Height budget for each named size. `medium`/`tall` track the viewport so
+ * the sheet scales with the device; `short` is a fixed peek height. `auto`
+ * is handled separately (fits content, capped at the `tall` budget).
+ */
+const HEIGHT_BUDGETS = {
+  short: '240px',
+  medium: '50dvh',
+  tall: '90dvh',
+  auto: '90dvh',
+} as const;
+
+export type BottomSheetHeight = keyof typeof HEIGHT_BUDGETS;
 
 const styles = stylex.create({
   // Inner wrapper that carries the live drag translate. Drawer owns the
@@ -59,8 +72,8 @@ const styles = stylex.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingBlock: spacingVars['--spacing-2'],
-    outline: 'none',
     touchAction: 'none',
+    cursor: 'grab',
   },
   handlePill: {
     width: 36,
@@ -68,19 +81,18 @@ const styles = stylex.create({
     borderRadius: radiusVars['--radius-full'],
     backgroundColor: colorVars['--color-border'],
   },
-  handleFocusRing: {
-    outline: {
-      default: 'none',
-      ':focus-visible': `2px solid ${colorVars['--color-accent']}`,
-    },
-    outlineOffset: 2,
-    borderRadius: radiusVars['--radius-full'],
-  },
   body: {
     flexGrow: 1,
     minHeight: 0,
     overflowY: 'auto',
     overscrollBehavior: 'contain',
+  },
+  // `auto` fits content instead of filling the height budget; the budget
+  // becomes an upper bound. Applied to the <dialog> (overrides Drawer's
+  // block-size treatment, which is applied earlier in the props chain).
+  autoHeight: {
+    height: 'fit-content',
+    maxHeight: HEIGHT_BUDGETS.auto,
   },
 });
 
@@ -88,15 +100,15 @@ export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
   /** Ref forwarded to the underlying <dialog> element. */
   ref?: React.Ref<HTMLDialogElement>;
 
-  /** Whether the sheet is open. Fully controlled — pair with `onClose`. */
+  /** Whether the sheet is open. Fully controlled — pair with `onOpenChange`. */
   isOpen: boolean;
 
   /**
-   * Called when the sheet requests to be closed (Escape, scrim click,
-   * built-in close button, or a swipe past the dismiss threshold). The
-   * caller owns the open state.
+   * Called when the sheet opens or closes. The boolean is the requested
+   * next state (`false` on Escape, scrim click, or a swipe past the dismiss
+   * threshold). The caller owns the open state.
    */
-  onClose: () => void;
+  onOpenChange: (isOpen: boolean) => void;
 
   /**
    * Accessible label for the sheet (required — the sheet has no built-in
@@ -108,121 +120,80 @@ export interface BottomSheetProps extends BaseProps<HTMLDialogElement> {
   children: ReactNode;
 
   /**
-   * Detents the sheet can settle to, ordered most-collapsed to
-   * most-expanded (e.g. `[0.3, 0.6, 1]` for peek / half / full). A number
-   * in (0, 1] is a fraction of the height budget; a string is any CSS
-   * length. Omit for a single-height sheet.
+   * How tall the sheet is:
+   * - `'short'` — a fixed peek height
+   * - `'medium'` — half the viewport
+   * - `'tall'` — nearly the full viewport
+   * - `'auto'` — fits its content, capped at the `'tall'` budget
+   *
+   * On viewports shorter than the budget the sheet fills the available
+   * height.
+   * @default 'medium'
    */
-  snapPoints?: Array<number | string>;
-
-  /** Controlled active detent index. Pair with `onSnapChange`. */
-  snapIndex?: number;
-
-  /** Called when the active detent changes (drag settle or keyboard nav). */
-  onSnapChange?: (index: number) => void;
-
-  /**
-   * Height budget when `snapPoints` is not provided. A number is pixels; a
-   * string is any CSS length. On shorter viewports the sheet fills the
-   * available height.
-   * @default '50dvh'
-   */
-  size?: number | string;
-
-  /** Render the visual grab handle at the top. @default true */
-  hasDragHandle?: boolean;
-
-  /**
-   * Allow swipe / drag to dismiss and resize. When false the drag wiring is
-   * inert (use for sheets with a text form). @default true
-   */
-  hasSwipeToDismiss?: boolean;
-
-  /** Render a modal scrim behind the sheet. @default true */
-  hasScrim?: boolean;
-
-  /** Render the built-in close button. Defaults to the `hasScrim` value. */
-  hasCloseButton?: boolean;
+  height?: BottomSheetHeight;
 
   /** Test ID for the root element. */
   'data-testid'?: string;
 }
 
 /**
- * A mobile touch sheet that rises from the bottom edge, with a grab handle,
- * swipe-to-dismiss, and optional snap points. Built on the lab Drawer's
- * `<dialog>` engine (`side="bottom"`): Drawer owns the open/close slide,
- * focus trap + restore, scroll lock, and the Escape/scrim contract, while
- * the reusable `useSheetGestures` hook supplies the drag machinery.
+ * A mobile touch sheet that rises from the bottom edge, with a grab handle
+ * and swipe-to-dismiss. Built on the lab Drawer's `<dialog>` engine
+ * (`side="bottom"`): Drawer owns the open/close slide, focus trap + restore,
+ * scroll lock, and the Escape/scrim contract, while BottomSheet layers the
+ * grab handle and drag-to-dismiss on top.
  *
  * @example
  * ```
  * const [isOpen, setIsOpen] = useState(false);
  * <BottomSheet
  *   isOpen={isOpen}
- *   onClose={() => setIsOpen(false)}
- *   label="Filters"
- *   snapPoints={[0.4, 1]}>
+ *   onOpenChange={setIsOpen}
+ *   label="Filters">
  *   <FilterControls />
  * </BottomSheet>
  * ```
  */
 export function BottomSheet({
   isOpen,
-  onClose,
+  onOpenChange,
   label,
   children,
-  snapPoints,
-  snapIndex,
-  onSnapChange,
-  size = '50dvh',
-  hasDragHandle = true,
-  hasSwipeToDismiss = true,
-  hasScrim = true,
-  hasCloseButton,
+  height = 'medium',
   xstyle,
   ...props
 }: BottomSheetProps) {
+  const close = () => onOpenChange(false);
   const {contentProps, handleProps} = useSheetGestures({
     isOpen,
-    onDismiss: onClose,
-    snapPoints,
-    snapIndex,
-    onSnapChange,
-    enabled: hasSwipeToDismiss,
-    axis: 'bottom',
+    onDismiss: close,
   });
-
-  const {style: gestureStyle, ...gestureContentProps} = contentProps;
-  const sheetProps = stylex.props(styles.sheet, xstyle);
-  const handleRingProps = stylex.props(styles.handleFocusRing);
 
   return (
     <Drawer
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={close}
       side="bottom"
-      size={size}
+      size={HEIGHT_BUDGETS[height]}
       label={label}
-      hasScrim={hasScrim}
-      hasCloseButton={hasCloseButton}
+      hasScrim
+      hasCloseButton={false}
+      xstyle={height === 'auto' ? styles.autoHeight : undefined}
       {...props}>
       <div
         data-astryx-sheet=""
-        {...themeProps('bottom-sheet')}
-        {...gestureContentProps}
-        {...sheetProps}
-        style={{...sheetProps.style, ...gestureStyle}}>
-        {hasDragHandle && (
-          <div {...stylex.props(styles.handleBar)}>
-            <div
-              {...handleProps}
-              {...handleRingProps}
-              style={{...handleRingProps.style, ...handleProps.style}}>
-              <div {...stylex.props(styles.handlePill)} aria-hidden="true" />
-            </div>
-          </div>
-        )}
+        {...mergeProps(
+          themeProps('bottom-sheet'),
+          stylex.props(styles.sheet, xstyle),
+          contentProps.style,
+        )}>
+        <div
+          data-astryx-sheet-handle=""
+          {...stylex.props(styles.handleBar)}
+          {...handleProps}
+          aria-hidden="true">
+          <div {...stylex.props(styles.handlePill)} />
+        </div>
         <div {...stylex.props(styles.body)}>{children}</div>
       </div>
     </Drawer>

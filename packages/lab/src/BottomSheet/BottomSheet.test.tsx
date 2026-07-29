@@ -52,15 +52,18 @@ afterEach(() => {
 });
 
 function getHandle(): HTMLElement {
-  return screen.getByRole('separator');
+  const handle = document.querySelector<HTMLElement>(
+    '[data-astryx-sheet-handle]',
+  );
+  if (!handle) {
+    throw new Error('grab handle not found');
+  }
+  return handle;
 }
 
 // Drive a pointer drag on the grab handle. jsdom PointerEvents don't carry
 // clientY, so dispatch plain events with the coords the handlers read.
-function drag(
-  handle: HTMLElement,
-  points: Array<{y: number; t: number}>,
-) {
+function drag(handle: HTMLElement, points: Array<{y: number}>) {
   const [down, ...rest] = points;
   fireEvent.pointerDown(handle, {pointerId: 1, clientY: down.y});
   for (const p of rest) {
@@ -73,7 +76,7 @@ function drag(
 describe('BottomSheet', () => {
   it('renders children when open and applies the accessible label', () => {
     render(
-      <BottomSheet isOpen onClose={() => {}} label="Filters">
+      <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
         Sheet content
       </BottomSheet>,
     );
@@ -85,16 +88,16 @@ describe('BottomSheet', () => {
 
   it('does not show when isOpen is false', () => {
     render(
-      <BottomSheet isOpen={false} onClose={() => {}} label="Filters">
+      <BottomSheet isOpen={false} onOpenChange={() => {}} label="Filters">
         Hidden
       </BottomSheet>,
     );
     expect(HTMLDialogElement.prototype.showModal).not.toHaveBeenCalled();
   });
 
-  it('opens modally (showModal + aria-modal) by default', () => {
+  it('opens modally (showModal + aria-modal)', () => {
     render(
-      <BottomSheet isOpen onClose={() => {}} label="Filters">
+      <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
         Content
       </BottomSheet>,
     );
@@ -102,110 +105,70 @@ describe('BottomSheet', () => {
     expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
   });
 
-  it('closes on Escape', () => {
-    const onClose = vi.fn();
+  it('requests close on Escape', () => {
+    const onOpenChange = vi.fn();
     render(
-      <BottomSheet isOpen onClose={onClose} label="Filters">
+      <BottomSheet isOpen onOpenChange={onOpenChange} label="Filters">
         Content
       </BottomSheet>,
     );
     fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('closes when the scrim (dialog element itself) is clicked', () => {
-    const onClose = vi.fn();
+  it('requests close when the scrim (dialog element itself) is clicked', () => {
+    const onOpenChange = vi.fn();
     render(
-      <BottomSheet isOpen onClose={onClose} label="Filters">
+      <BottomSheet isOpen onOpenChange={onOpenChange} label="Filters">
         Content
       </BottomSheet>,
     );
     fireEvent.click(screen.getByRole('dialog'));
-    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   describe('grab handle', () => {
-    it('renders a keyboard-operable handle by default', () => {
+    it('renders a decorative handle hidden from assistive tech', () => {
       render(
-        <BottomSheet isOpen onClose={() => {}} label="Filters">
+        <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
           Content
         </BottomSheet>,
       );
       const handle = getHandle();
-      expect(handle).toHaveAttribute('tabindex', '0');
-      expect(handle).toHaveAccessibleName();
-    });
-
-    it('is hidden when hasDragHandle={false}', () => {
-      render(
-        <BottomSheet
-          isOpen
-          onClose={() => {}}
-          label="Filters"
-          hasDragHandle={false}>
-          Content
-        </BottomSheet>,
-      );
-      expect(screen.queryByRole('separator')).not.toBeInTheDocument();
+      expect(handle).toHaveAttribute('aria-hidden', 'true');
     });
   });
 
   describe('swipe to dismiss', () => {
-    it('calls onClose when dragged past the dismiss threshold', () => {
-      const onClose = vi.fn();
+    it('requests close when dragged past the dismiss threshold', () => {
+      const onOpenChange = vi.fn();
       render(
-        <BottomSheet isOpen onClose={onClose} label="Filters">
+        <BottomSheet isOpen onOpenChange={onOpenChange} label="Filters">
           Content
         </BottomSheet>,
       );
       // No measured height in jsdom (0) -> any downward drag dismisses via
-      // the distance branch (offset > 0 * ratio) once released downward.
-      drag(getHandle(), [
-        {y: 0, t: 0},
-        {y: 40, t: 100},
-        {y: 120, t: 400},
-      ]);
-      expect(onClose).toHaveBeenCalled();
-    });
-
-    it('does not wire drag handlers when hasSwipeToDismiss={false}', () => {
-      const onClose = vi.fn();
-      render(
-        <BottomSheet
-          isOpen
-          onClose={onClose}
-          label="Filters"
-          hasSwipeToDismiss={false}>
-          Content
-        </BottomSheet>,
-      );
-      const handle = getHandle();
-      // Handle stays present + labeled for a11y, but drag is inert.
-      fireEvent.pointerDown(handle, {pointerId: 1, clientY: 0});
-      fireEvent.pointerMove(handle, {pointerId: 1, clientY: 200});
-      fireEvent.pointerUp(handle, {pointerId: 1, clientY: 200});
-      expect(onClose).not.toHaveBeenCalled();
+      // the distance branch (offset > 0.25) once released downward.
+      drag(getHandle(), [{y: 0}, {y: 40}, {y: 120}]);
+      expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });
 
-  describe('snap points', () => {
-    it('moves between detents via Arrow keys on the handle', () => {
-      const onSnapChange = vi.fn();
-      render(
-        <BottomSheet
-          isOpen
-          onClose={() => {}}
-          label="Nearby"
-          snapPoints={[0.3, 0.6, 1]}
-          onSnapChange={onSnapChange}>
-          Content
-        </BottomSheet>,
-      );
-      const handle = getHandle();
-      // Fully open = index 2 (max). ArrowDown collapses toward the edge.
-      expect(handle).toHaveAttribute('aria-valuenow', '2');
-      fireEvent.keyDown(handle, {key: 'ArrowDown'});
-      expect(onSnapChange).toHaveBeenLastCalledWith(1);
+  describe('height', () => {
+    it('renders for each named height without error', () => {
+      for (const height of ['short', 'medium', 'tall', 'auto'] as const) {
+        const {unmount} = render(
+          <BottomSheet
+            isOpen
+            onOpenChange={() => {}}
+            label="Filters"
+            height={height}>
+            Content
+          </BottomSheet>,
+        );
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        unmount();
+      }
     });
   });
 
@@ -217,10 +180,7 @@ describe('BottomSheet', () => {
           <button type="button" onClick={() => setIsOpen(true)}>
             Open sheet
           </button>
-          <BottomSheet
-            isOpen={isOpen}
-            onClose={() => setIsOpen(false)}
-            label="Filters">
+          <BottomSheet isOpen={isOpen} onOpenChange={setIsOpen} label="Filters">
             <button type="button" onClick={() => setIsOpen(false)}>
               Done
             </button>
@@ -263,7 +223,7 @@ describe('BottomSheet', () => {
         }),
       );
       render(
-        <BottomSheet isOpen onClose={() => {}} label="Filters">
+        <BottomSheet isOpen onOpenChange={() => {}} label="Filters">
           Content
         </BottomSheet>,
       );

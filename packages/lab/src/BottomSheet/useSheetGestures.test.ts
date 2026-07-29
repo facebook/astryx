@@ -34,18 +34,12 @@ function pointerEvent(
   } as unknown as React.PointerEvent;
 }
 
-function keyEvent(key: string) {
-  const preventDefault = vi.fn();
-  return {key, preventDefault} as unknown as React.KeyboardEvent;
-}
-
 function makeTarget(): HTMLElement {
   const el = document.createElement('div');
   el.setAttribute('data-astryx-sheet', '');
   el.setPointerCapture = vi.fn();
   el.releasePointerCapture = vi.fn();
-  el.getBoundingClientRect = () =>
-    ({height: SHEET_HEIGHT}) as DOMRect;
+  el.getBoundingClientRect = () => ({height: SHEET_HEIGHT}) as DOMRect;
   return el;
 }
 
@@ -66,19 +60,17 @@ afterEach(() => {
 
 function setup(options: Partial<UseSheetGesturesOptions> = {}) {
   const onDismiss = vi.fn();
-  const onSnapChange = vi.fn();
   const hook = renderHook(
     (props: UseSheetGesturesOptions) => useSheetGestures(props),
     {
       initialProps: {
         isOpen: true,
         onDismiss,
-        onSnapChange,
         ...options,
       } as UseSheetGesturesOptions,
     },
   );
-  return {hook, onDismiss, onSnapChange};
+  return {hook, onDismiss};
 }
 
 describe('useSheetGestures', () => {
@@ -87,15 +79,15 @@ describe('useSheetGestures', () => {
     const target = makeTarget();
     const {handleProps} = hook.result.current;
     act(() => {
-      handleProps.onPointerDown?.(pointerEvent(0, 0, target));
+      handleProps.onPointerDown(pointerEvent(0, 0, target));
     });
     // Drag down slowly, well past 25% of 400px, low velocity.
     act(() => {
-      handleProps.onPointerMove?.(pointerEvent(60, 200, target));
-      handleProps.onPointerMove?.(pointerEvent(140, 600, target));
+      handleProps.onPointerMove(pointerEvent(60, 200, target));
+      handleProps.onPointerMove(pointerEvent(140, 600, target));
     });
     act(() => {
-      handleProps.onPointerUp?.(pointerEvent(140, 620, target));
+      handleProps.onPointerUp(pointerEvent(140, 620, target));
     });
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
@@ -105,14 +97,14 @@ describe('useSheetGestures', () => {
     const target = makeTarget();
     const {handleProps} = hook.result.current;
     act(() => {
-      handleProps.onPointerDown?.(pointerEvent(0, 0, target));
+      handleProps.onPointerDown(pointerEvent(0, 0, target));
     });
     // Small distance (30px < 100px) but very fast (30px / 10ms = 3px/ms).
     act(() => {
-      handleProps.onPointerMove?.(pointerEvent(30, 10, target));
+      handleProps.onPointerMove(pointerEvent(30, 10, target));
     });
     act(() => {
-      handleProps.onPointerUp?.(pointerEvent(30, 12, target));
+      handleProps.onPointerUp(pointerEvent(30, 12, target));
     });
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
@@ -122,70 +114,47 @@ describe('useSheetGestures', () => {
     const target = makeTarget();
     const {handleProps} = hook.result.current;
     act(() => {
-      handleProps.onPointerDown?.(pointerEvent(0, 0, target));
+      handleProps.onPointerDown(pointerEvent(0, 0, target));
     });
     act(() => {
-      handleProps.onPointerMove?.(pointerEvent(20, 300, target));
+      handleProps.onPointerMove(pointerEvent(20, 300, target));
     });
     act(() => {
-      handleProps.onPointerUp?.(pointerEvent(20, 620, target));
+      handleProps.onPointerUp(pointerEvent(20, 620, target));
     });
     expect(onDismiss).not.toHaveBeenCalled();
     expect(hook.result.current.dragOffset).toBe(0);
     expect(hook.result.current.isDragging).toBe(false);
   });
 
-  it('settles to the nearest snap point on release', () => {
-    const {hook, onSnapChange} = setup({snapPoints: [0.5, 1]});
+  it('translates the surface live during a drag', () => {
+    const {hook} = setup();
     const target = makeTarget();
-    // Starts at fully-open (index 1). Drag down ~180px -> absolute ~180,
-    // nearest to the 0.5 detent (offset 200) -> index 0.
     const {handleProps} = hook.result.current;
     act(() => {
-      handleProps.onPointerDown?.(pointerEvent(0, 0, target));
+      handleProps.onPointerDown(pointerEvent(0, 0, target));
     });
     act(() => {
-      handleProps.onPointerMove?.(pointerEvent(180, 400, target));
+      handleProps.onPointerMove(pointerEvent(50, 100, target));
     });
-    act(() => {
-      handleProps.onPointerUp?.(pointerEvent(180, 700, target));
-    });
-    expect(onSnapChange).toHaveBeenCalledWith(0);
-    expect(hook.result.current.activeSnapIndex).toBe(0);
+    expect(hook.result.current.dragOffset).toBe(50);
+    expect(hook.result.current.isDragging).toBe(true);
+    expect(hook.result.current.contentProps.style.transform).toBe(
+      'translateY(50px)',
+    );
   });
 
-  it('is inert when enabled=false (no pointer handlers)', () => {
-    const {hook, onDismiss} = setup({enabled: false});
-    const {handleProps, contentProps} = hook.result.current;
-    expect(handleProps.onPointerDown).toBeUndefined();
-    expect(handleProps.onKeyDown).toBeUndefined();
-    expect(contentProps.style.transform).toBeUndefined();
-    // Handle still exposes a11y attributes.
-    expect(handleProps.role).toBe('separator');
-    expect(onDismiss).not.toHaveBeenCalled();
-  });
-
-  it('moves between snap points via Arrow keys', () => {
-    const {hook, onSnapChange} = setup({snapPoints: [0.3, 0.6, 1]});
-    // Fully open = index 2. ArrowDown collapses -> index 1.
-    act(() => {
-      hook.result.current.handleProps.onKeyDown?.(keyEvent('ArrowDown'));
-    });
-    expect(onSnapChange).toHaveBeenLastCalledWith(1);
-    expect(hook.result.current.activeSnapIndex).toBe(1);
-    // ArrowUp expands back -> index 2.
-    act(() => {
-      hook.result.current.handleProps.onKeyDown?.(keyEvent('ArrowUp'));
-    });
-    expect(onSnapChange).toHaveBeenLastCalledWith(2);
-    expect(hook.result.current.activeSnapIndex).toBe(2);
-  });
-
-  it('exposes valuemin/max/now on the handle when snap points exist', () => {
-    const {hook} = setup({snapPoints: [0.3, 0.6, 1]});
+  it('ignores upward drag past the fully-open position', () => {
+    const {hook} = setup();
+    const target = makeTarget();
     const {handleProps} = hook.result.current;
-    expect(handleProps['aria-valuemin']).toBe(0);
-    expect(handleProps['aria-valuemax']).toBe(2);
-    expect(handleProps['aria-valuenow']).toBe(2);
+    act(() => {
+      handleProps.onPointerDown(pointerEvent(100, 0, target));
+    });
+    // Drag UP (clientY decreasing) — no rubber-band overscroll.
+    act(() => {
+      handleProps.onPointerMove(pointerEvent(20, 100, target));
+    });
+    expect(hook.result.current.dragOffset).toBe(0);
   });
 });

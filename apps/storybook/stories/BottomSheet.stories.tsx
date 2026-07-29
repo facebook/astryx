@@ -38,10 +38,7 @@ export const Showcase: Story = {
     return (
       <>
         <Button label="Open sheet" onClick={() => setIsOpen(true)} />
-        <BottomSheet
-          isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
-          label="Filters">
+        <BottomSheet isOpen={isOpen} onOpenChange={setIsOpen} label="Filters">
           <Section padding={4}>
             <VStack gap={4}>
               <Heading level={3}>Filters</Heading>
@@ -60,7 +57,7 @@ export const Showcase: Story = {
   },
 };
 
-export const SnapPoints: Story = {
+export const TallSheet: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
     return (
@@ -68,14 +65,13 @@ export const SnapPoints: Story = {
         <Button label="Open nearby places" onClick={() => setIsOpen(true)} />
         <BottomSheet
           isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
+          onOpenChange={setIsOpen}
           label="Nearby places"
-          snapPoints={[0.3, 0.6, 1]}>
+          height="tall">
           <Section padding={4}>
             <VStack gap={3}>
               <Text type="supporting" color="secondary">
-                Drag the handle or press the arrow keys to move between the
-                peek, half, and full detents.
+                Drag the handle down or press Escape to dismiss.
               </Text>
               <Divider />
               {Array.from({length: 12}, (_, i) => (
@@ -94,7 +90,7 @@ export const SnapPoints: Story = {
   },
 };
 
-export const FormSheet: Story = {
+export const AutoHeight: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(false);
     return (
@@ -102,15 +98,14 @@ export const FormSheet: Story = {
         <Button label="Add a comment" onClick={() => setIsOpen(true)} />
         <BottomSheet
           isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
+          onOpenChange={setIsOpen}
           label="Add a comment"
-          hasSwipeToDismiss={false}>
+          height="auto">
           <Section padding={4}>
             <VStack gap={4}>
               <Heading level={3}>Add a comment</Heading>
               <Text type="supporting" color="secondary">
-                Swipe-to-dismiss is disabled here so vertical drag does not
-                fight the text fields. Use Escape or the close button.
+                The sheet fits its content up to the tall budget.
               </Text>
               <Divider />
               <TextInput label="Title" value="" />
