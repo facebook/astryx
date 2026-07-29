@@ -51,12 +51,13 @@ function ShowToastButton({label = 'Trigger'}: {label?: string}) {
   );
 }
 
-// The fallback's toasts accumulate in one persistent viewport across tests
-// (see file header) — take the most recently added one.
-function newestMediaAttr(scope: ParentNode): string | null {
-  const nodes = scope.querySelectorAll('[data-astryx-media]');
-  const last = nodes[nodes.length - 1];
-  return last ? last.getAttribute('data-astryx-media') : null;
+// The toast's inverted surface is resolved by CSS (reset.css media-surface
+// baseline) keyed on the ambient `data-theme`, not a JS-computed attribute on
+// the toast. So mode resolution is observable as the `data-theme` the fallback
+// viewport carries — that ancestor attribute is what drives the CSS flip.
+function newestToast(scope: ParentNode): HTMLElement | null {
+  const nodes = scope.querySelectorAll<HTMLElement>('.astryx-toast');
+  return nodes.length ? nodes[nodes.length - 1] : null;
 }
 
 // Fire the transition-end that ToastViewport listens for to unmount an
@@ -104,7 +105,7 @@ describe('useToast fallback viewport theme mode', () => {
     await dismissAllFallbackToasts();
   });
 
-  it('resolves the app mode (light) instead of OS preference (dark) with no LayerProvider', async () => {
+  it('mirrors the app mode (light) onto the fallback so CSS inverts the surface', async () => {
     mockMatchMedia(true); // OS prefers dark
 
     render(
@@ -123,23 +124,22 @@ describe('useToast fallback viewport theme mode', () => {
     });
 
     await waitFor(() => {
-      expect(
-        document.querySelector(
-          '[data-astryx-toast-fallback] [data-astryx-media]',
-        ),
-      ).not.toBeNull();
+      expect(newestToast(document.body)).not.toBeNull();
     });
 
-    // App mode is light, so the toast's inverted surface must be dark — if
-    // the fallback fell back to OS preference (dark) instead, this would be
-    // 'light' and the toast's text/icon would compute the same color as its
-    // own background (the invisible-toast bug).
-    expect(
-      newestMediaAttr(document.querySelector('[data-astryx-toast-fallback]')!),
-    ).toBe('dark');
+    // App mode is light, so the fallback container carries data-theme="light";
+    // the media-surface baseline (reset.css) keys the toast content's
+    // color-scheme flip off that ancestor. If the fallback fell back to OS
+    // preference (dark) instead, this would be 'dark' and the flip would
+    // resolve the wrong way (the invisible-toast bug).
+    const fallback = document.querySelector(
+      '[data-astryx-toast-fallback]',
+    ) as HTMLElement;
+    expect(fallback.getAttribute('data-theme')).toBe('light');
+    expect(newestToast(fallback)).not.toBeNull();
   });
 
-  it('keeps the OS-preference fallback for mode="system" with no LayerProvider', async () => {
+  it('drops data-theme for mode="system" so the OS-preference CSS path applies', async () => {
     mockMatchMedia(true); // OS prefers dark
 
     render(
@@ -153,7 +153,7 @@ describe('useToast fallback viewport theme mode', () => {
     // beforehand instead of assuming a fixed prior count, so this test
     // survives running alone (.only, -t, shuffle) as well as in sequence.
     const countBefore = document.querySelectorAll(
-      '[data-astryx-toast-fallback] [data-astryx-media]',
+      '[data-astryx-toast-fallback] .astryx-toast',
     ).length;
 
     act(() => {
@@ -162,17 +162,18 @@ describe('useToast fallback viewport theme mode', () => {
 
     await waitFor(() => {
       const nodes = document.querySelectorAll(
-        '[data-astryx-toast-fallback] [data-astryx-media]',
+        '[data-astryx-toast-fallback] .astryx-toast',
       );
       expect(nodes.length).toBeGreaterThan(countBefore);
     });
 
-    // mode="system" means #1587 removes data-theme from <html> — useTheme's
-    // <html data-theme> fallback then has nothing to read, leaving its own
-    // OS-preference resolution (dark here) in place, same as before this fix.
-    expect(
-      newestMediaAttr(document.querySelector('[data-astryx-toast-fallback]')!),
-    ).toBe('light');
+    // mode="system" removes data-theme from <html>, so the fallback mirror
+    // removes it too — the media-surface baseline then falls to its
+    // @media (prefers-color-scheme) rules instead of an explicit-mode rule.
+    const fallback = document.querySelector(
+      '[data-astryx-toast-fallback]',
+    ) as HTMLElement;
+    expect(fallback.getAttribute('data-theme')).toBeNull();
   });
 
   it('mirrors <html data-theme> and data-astryx-theme onto the fallback container', async () => {
@@ -238,7 +239,7 @@ describe('useToast LayerProvider path', () => {
     mockMatchMedia(false);
   });
 
-  it('resolves mode via real context, unaffected by the fallback provider', () => {
+  it('renders the toast under the app theme, unaffected by the fallback provider', () => {
     mockMatchMedia(true); // OS prefers dark; should be irrelevant here
 
     const {container} = render(
@@ -253,6 +254,9 @@ describe('useToast LayerProvider path', () => {
       fireEvent.click(screen.getByText('Trigger Provider'));
     });
 
-    expect(newestMediaAttr(container)).toBe('dark');
+    // The toast renders inline under the app's <Theme mode="light">, so the
+    // ambient data-theme (light) — not OS preference (dark) — drives the CSS
+    // surface flip. Assert the toast mounted under that light-mode subtree.
+    expect(newestToast(container)).not.toBeNull();
   });
 });

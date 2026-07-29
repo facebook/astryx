@@ -4,6 +4,10 @@ import type {Meta, StoryObj} from '@storybook/react';
 import {Tooltip, useTooltip} from '@astryxdesign/core/Tooltip';
 import {Button} from '@astryxdesign/core/Button';
 import {HStack} from '@astryxdesign/core/Layout';
+import {Stack} from '@astryxdesign/core/Stack';
+import {Toast} from '@astryxdesign/core/Toast';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 const meta: Meta<typeof Tooltip> = {
   title: 'Core/Tooltip',
@@ -142,9 +146,7 @@ export const LongContent: Story = {
     placement: 'above',
     content:
       'This is a longer tooltip that contains more detailed information about the element.',
-    children: (
-      <Button label="Hover for more info">Hover for more info</Button>
-    ),
+    children: <Button label="Hover for more info">Hover for more info</Button>,
   },
 };
 
@@ -200,4 +202,109 @@ export const TextNodeInline: Story = {
       </p>
     </div>
   ),
+};
+
+// =============================================================================
+// Theme opt-out: surfaces.tooltip = 'normal'
+// =============================================================================
+
+/**
+ * A theme that opts Tooltip out of the inverted media surface, so tooltips
+ * render on the app's normal popover surface rather than the high-contrast
+ * inverted panel.
+ */
+const normalTooltipTheme = defineTheme({
+  name: 'tooltip-normal-surface',
+  extends: neutralTheme,
+  surfaces: {tooltip: 'normal'},
+});
+
+export const ThemedSurfaceOptOut: Story = {
+  render: () => (
+    <Stack gap={4}>
+      <p>
+        Tooltip renders on an inverted media surface by default. A theme can opt
+        out with{' '}
+        <code>
+          surfaces: {'{'} tooltip: 'normal' {'}'}
+        </code>
+        , so tooltips use the app&apos;s ordinary popover surface tokens
+        instead. Both tooltips below are pinned open for comparison.
+      </p>
+      <HStack gap={8} style={{padding: '80px 40px'}}>
+        <Theme theme={neutralTheme}>
+          <Stack gap={2} hAlign="center">
+            <strong>Default (inverted)</strong>
+            <Tooltip
+              content="Inverted surface tooltip"
+              isOpen
+              placement="below">
+              <Button label="Default" variant="secondary" />
+            </Tooltip>
+          </Stack>
+        </Theme>
+        <Theme theme={normalTooltipTheme}>
+          <Stack gap={2} hAlign="center">
+            <strong>surfaces.tooltip = &apos;normal&apos;</strong>
+            <Tooltip content="Normal surface tooltip" isOpen placement="below">
+              <Button label="Opted out" variant="secondary" />
+            </Tooltip>
+          </Stack>
+        </Theme>
+      </HStack>
+    </Stack>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Themes control whether Tooltip renders on the inverted media surface via `defineTheme({ surfaces: { tooltip: 'normal' } })`.",
+      },
+    },
+  },
+};
+
+// =============================================================================
+// Nested-surface fix: tooltip inside an already-inverted Toast
+// =============================================================================
+
+export const InsideInvertedToast: Story = {
+  render: () => {
+    const noop = () => {};
+    return (
+      <Stack gap={4}>
+        <p>
+          A tooltip rendered from a Toast&apos;s <code>endContent</code> now
+          re-establishes its own inverted surface, so it stays legible instead
+          of rendering dark-on-dark when nested inside the toast&apos;s already
+          inverted surface.
+        </p>
+        <div style={{padding: '60px 40px'}}>
+          <Toast
+            type="info"
+            body="Workspace restored."
+            isAutoHide={false}
+            autoHideDuration={0}
+            onDismiss={noop}
+            endContent={
+              <Tooltip
+                content="This tooltip is nested in the toast"
+                isOpen
+                placement="above">
+                <Button label="Details" variant="ghost" size="sm" />
+              </Tooltip>
+            }
+          />
+        </div>
+      </Stack>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Regression demo: because Tooltip and Toast share one media-surface mechanism, a tooltip nested inside an inverted toast re-establishes its own surface tokens and remains legible.',
+      },
+    },
+  },
 };

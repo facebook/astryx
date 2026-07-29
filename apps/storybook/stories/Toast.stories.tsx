@@ -2,13 +2,15 @@
 
 import type {Meta, StoryObj} from '@storybook/react';
 import {useState, useRef} from 'react';
-import {useToast, ToastViewport} from '@astryxdesign/core/Toast';
+import {useToast, ToastViewport, Toast} from '@astryxdesign/core/Toast';
 import type {ToastType} from '@astryxdesign/core/Toast';
 import {Button} from '@astryxdesign/core/Button';
 import {Link} from '@astryxdesign/core/Link';
 import {Card} from '@astryxdesign/core/Card';
 import {Stack} from '@astryxdesign/core/Stack';
 import {Dialog} from '@astryxdesign/core/Dialog';
+import {Theme, defineTheme} from '@astryxdesign/core/theme';
+import {neutralTheme} from '@astryxdesign/theme-neutral';
 
 const meta: Meta = {
   title: 'Core/Toast',
@@ -369,3 +371,88 @@ function DialogToastContent({onClose}: {onClose: () => void}) {
     </Stack>
   );
 }
+
+// =============================================================================
+// Theme opt-out: surfaces.toast = 'normal'
+// =============================================================================
+
+/**
+ * A theme that opts Toast out of the inverted media surface. Toasts then
+ * render on the app's normal popover surface instead of the high-contrast
+ * inverted panel — the sanctioned path for apps consolidating onto Astryx
+ * whose existing toast design isn't media-inverted.
+ */
+const normalToastTheme = defineTheme({
+  name: 'toast-normal-surface',
+  extends: neutralTheme,
+  surfaces: {toast: 'normal'},
+});
+
+export const ThemedSurfaceOptOut: StoryObj = {
+  render: function ThemedSurfaceOptOutStory() {
+    const noop = () => {};
+    return (
+      <Stack gap={4}>
+        <p>
+          Compare the default inverted surface against a theme that sets{' '}
+          <code>
+            surfaces: {'{'} toast: 'normal' {'}'}
+          </code>
+          . The opted-out toast uses the app&apos;s ordinary surface tokens (no
+          color-scheme flip), while the error variant stays on its
+          attention-grabbing dark surface in both. These are inline{' '}
+          <code>Toast</code> elements so both surfaces render side by side under
+          their own theme scope.
+        </p>
+        <Stack direction="horizontal" gap={6} wrap="wrap">
+          <Theme theme={neutralTheme}>
+            <Stack gap={2}>
+              <strong>Default (inverted surface)</strong>
+              <Toast
+                type="info"
+                body="Saved to your workspace."
+                isAutoHide={false}
+                autoHideDuration={0}
+                onDismiss={noop}
+              />
+              <Toast
+                type="error"
+                body="Could not save changes."
+                isAutoHide={false}
+                autoHideDuration={0}
+                onDismiss={noop}
+              />
+            </Stack>
+          </Theme>
+          <Theme theme={normalToastTheme}>
+            <Stack gap={2}>
+              <strong>surfaces.toast = &apos;normal&apos;</strong>
+              <Toast
+                type="info"
+                body="Saved to your workspace."
+                isAutoHide={false}
+                autoHideDuration={0}
+                onDismiss={noop}
+              />
+              <Toast
+                type="error"
+                body="Could not save changes."
+                isAutoHide={false}
+                autoHideDuration={0}
+                onDismiss={noop}
+              />
+            </Stack>
+          </Theme>
+        </Stack>
+      </Stack>
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Themes control whether Toast renders on the inverted media surface. `defineTheme({ surfaces: { toast: 'normal' } })` opts out app-wide; the error variant remains on its dark surface regardless.",
+      },
+    },
+  },
+};

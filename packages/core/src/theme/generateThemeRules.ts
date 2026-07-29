@@ -18,6 +18,7 @@
 import type {DefinedTheme} from './defineTheme';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
+import {getMediaSurface, mediaSurfaceComponents} from './mediaSurfaceRegistry';
 import {cssVar, classPrefix, dataAttrNamespace} from '../naming';
 
 /**
@@ -681,6 +682,69 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
 }
 
 /**
+ * Generate CSS for per-component media-surface opt-outs.
+ *
+ * The *default* (inverted) surface treatment is theme-independent and lives
+ * in reset.css — it flips the component content's `color-scheme` opposite to
+ * the ambient mode and re-points a small set of inherited tokens. Themes emit
+ * nothing on that path, so the default renders identically everywhere.
+ *
+ * This function emits CSS only for components a theme has opted *out* of
+ * (`surfaces: { toast: 'normal' }`): a normal-surface background on the root
+ * and an `inherit` reset of the flipped tokens on the content, so the content
+ * re-adopts the ambient surface. Because the reset-layer default uses
+ * zero-specificity `:where()`, this theme-scoped, higher-layer block wins
+ * cleanly without enumerating concrete values.
+ *
+ * <!-- SYNC: packages/core/src/reset.css (Media Surface Baseline) -->
+ * <!-- SYNC: packages/core/src/theme/mediaSurfaceRegistry.ts -->
+ */
+export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
+  const surfaces = theme.__surfaces;
+  if (!surfaces) {
+    return '';
+  }
+
+  const parts: string[] = [];
+
+  for (const component of mediaSurfaceComponents()) {
+    if (surfaces[component] !== 'normal') {
+      continue;
+    }
+    const entry = getMediaSurface(component);
+    if (!entry) {
+      continue;
+    }
+
+    // Toast keeps its always-dark error variant even when opted out — scope
+    // the opt-out to the non-error root so error toasts stay attention-grabbing.
+    const rootSelector = entry.alwaysDarkVariant
+      ? `.${classPrefix}-${component}:not([data-type="${entry.alwaysDarkVariant}"])`
+      : `.${classPrefix}-${component}`;
+
+    parts.push(
+      `  ${rootSelector} {\n    background: ${entry.normalBackground};\n  }`,
+    );
+
+    const resets = [
+      '    color-scheme: inherit;',
+      ...Object.keys(entry.invertedTokens).map(
+        token => `    ${token}: inherit;`,
+      ),
+    ].join('\n');
+    parts.push(`  ${rootSelector} > * {\n${resets}\n  }`);
+  }
+
+  if (parts.length === 0) {
+    return '';
+  }
+
+  const scopeSelector = themeScopeStart(theme.name);
+  const inner = parts.join('\n\n');
+  return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
+}
+
+/**
  * Generate layered CSS for a theme — runtime path.
  *
  * Returns two CSS blocks for injection into different layers:
@@ -715,6 +779,13 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
     componentCss = componentCss
       ? `${componentCss}\n\n${onMediaCss}`
       : onMediaCss;
+  }
+
+  const mediaSurfaceCss = generateMediaSurfaceCSS(theme);
+  if (mediaSurfaceCss) {
+    componentCss = componentCss
+      ? `${componentCss}\n\n${mediaSurfaceCss}`
+      : mediaSurfaceCss;
   }
 
   return {prose: proseCss, component: componentCss};

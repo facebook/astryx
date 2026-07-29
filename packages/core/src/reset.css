@@ -408,4 +408,70 @@
   :where([data-astryx-media="light"]) {
     color-scheme: light;
   }
+
+  /* ===========================================================================
+     Media Surface Baseline (Toast, Tooltip)
+     =========================================================================== */
+
+  /*
+   * Components registered as media-inverted (Toast, Tooltip) render their
+   * *content* on a surface whose color-scheme flips opposite to the ambient
+   * mode — a dark panel in a light app, a light panel in a dark app. The flip
+   * is scoped to the content wrapper (`.astryx-* > *`), NOT the component root,
+   * so the root's own `light-dark()` background resolves in the ambient scheme
+   * (that's what makes the panel visibly inverted).
+   *
+   * This is theme-independent: it lives here so every theme inverts identically
+   * with zero per-theme CSS. A theme opts a component out via
+   * `defineTheme({ surfaces: { toast: 'normal' } })`, which emits a higher-layer
+   * rule that resets these inherited properties to `inherit`.
+   *
+   * Zero specificity (`:where()`) so the theme-layer opt-out and any component
+   * override win cleanly.
+   *
+   * <!-- SYNC: packages/core/src/theme/mediaSurfaceRegistry.ts -->
+   * <!-- SYNC: packages/core/src/theme/generateThemeRules.ts (generateMediaSurfaceCSS) -->
+   */
+
+  /* Ambient light → invert content to dark. */
+  :where(html[data-theme="light"]) :where(.astryx-toast, .astryx-tooltip) > * {
+    color-scheme: dark;
+    --color-text-primary: var(--color-on-dark);
+    --color-icon-primary: var(--color-on-dark);
+    --color-accent: var(--color-on-dark);
+  }
+
+  /* Ambient dark → invert content to light. */
+  :where(html[data-theme="dark"]) :where(.astryx-toast, .astryx-tooltip) > * {
+    color-scheme: light;
+    --color-text-primary: var(--color-on-light);
+    --color-icon-primary: var(--color-on-light);
+    --color-accent: var(--color-on-light);
+  }
+
+  /* Ambient system (no explicit data-theme) → follow OS preference. */
+  @media (prefers-color-scheme: light) {
+    :where(html:not([data-theme])) :where(.astryx-toast, .astryx-tooltip) > * {
+      color-scheme: dark;
+      --color-text-primary: var(--color-on-dark);
+      --color-icon-primary: var(--color-on-dark);
+      --color-accent: var(--color-on-dark);
+    }
+  }
+  @media (prefers-color-scheme: dark) {
+    :where(html:not([data-theme])) :where(.astryx-toast, .astryx-tooltip) > * {
+      color-scheme: light;
+      --color-text-primary: var(--color-on-light);
+      --color-icon-primary: var(--color-on-light);
+      --color-accent: var(--color-on-light);
+    }
+  }
+
+  /* Toast error variant is always on a dark surface, regardless of ambient. */
+  :where(.astryx-toast[data-type="error"]) > * {
+    color-scheme: dark;
+    --color-text-primary: var(--color-on-dark);
+    --color-icon-primary: var(--color-on-dark);
+    --color-accent: var(--color-on-dark);
+  }
 }

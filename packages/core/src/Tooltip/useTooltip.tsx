@@ -45,11 +45,13 @@ import {
 const HOVER_BRIDGE_DELAY = 100;
 
 const styles = stylex.create({
-  // Base container styles - inverted colors for high contrast
+  // Base container styles — inverted surface for high contrast. The
+  // background resolves in the ambient color scheme (dark panel in a light
+  // app); the content wrapper's color-scheme is flipped by the media-surface
+  // baseline (reset.css), keeping this unified with Toast. A theme can opt
+  // out via `defineTheme({ surfaces: { tooltip: 'normal' } })`.
   container: {
-    // Inverted color palette: dark background, light text
-    backgroundColor: colorVars['--color-text-primary'],
-    color: colorVars['--color-background-surface'],
+    backgroundColor: colorVars['--color-background-inverted'],
     borderRadius: radiusVars['--radius-container'],
     // Typography
     fontFamily: typographyVars['--font-family-body'],
@@ -77,6 +79,9 @@ const styles = stylex.create({
     paddingInlineEnd: spacingVars['--spacing-2'],
     maxWidth: 300,
     wordBreak: 'break-word',
+    // Explicit color anchor — the media-surface baseline re-points
+    // --color-text-primary on this wrapper for the inverted surface.
+    color: colorVars['--color-text-primary'],
   },
 });
 
