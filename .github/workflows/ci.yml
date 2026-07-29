@@ -442,3 +442,107 @@ jobs:
           name: a11y-report
           path: a11y-report.json
           retention-days: 1
+
+  # RTL semantic audit. Sibling to pr-a11y: where pr-a11y runs the a11y audit
+  # over the built Storybook, pr-rtl runs the RTL audit. It grades components by
+  # comparing their LTR vs RTL render in the same run — no golden screenshots.
+  # Two layers:
+  #   (A) auto-discovery — D1 (icon-mirror) over EVERY core-* story, detecting
+  #       directional icons generically so a NEW component that ships a
+  #       directional glyph without RTL handling is caught automatically.
+  #   (B) curated precision — D2/D3/D4 (order/behavior/overlay) from targets.json.
+  #
+  # SOFT / NON-BLOCKING (continue-on-error): a finding surfaces a scorecard in
+  # the job summary but does NOT block the merge. This is intentional — on
+  # current main, auto-discovery legitimately flags the components RTL hasn't
+  # reached yet (labelled [known] via known-not-rtl.json). The suite is observed
+  # for flake over a stability window before it is promoted to a required check.
+  # To promote: drop continue-on-error here and add `pr-rtl` to required checks.
+  # See apps/storybook/rtl-audit/README.md.
+  pr-rtl:
+    needs: [build-storybook]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup
+        with:
+          install: 'false'
+
+      - name: Download Storybook artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: storybook-${{ needs.build-storybook.outputs.short_hash }}
+          path: apps/storybook/dist
+
+      - name: Install Playwright
+        run: pnpm install --frozen-lockfile && npx playwright install chromium
+
+      - name: Run RTL audit
+        id: rtl
+        run: |
+          node apps/storybook/rtl-audit/rtl-audit.mjs \
+            --storybook-dir apps/storybook/dist \
+            --output rtl-audit-report.json
+
+      - name: Write scorecard summary
+        if: always()
+        run: |
+          {
+            echo "## RTL semantic audit"
+            echo ""
+            echo "Relationship-based (LTR vs RTL in the same run) — no golden screenshots. **Soft-gated** pending a stability window."
+            echo ""
+            if [ -f rtl-audit-report.json ]; then
+              node -e '
+                const r = JSON.parse(require("fs").readFileSync("rtl-audit-report.json"));
+                const a = r.autoDiscovery;
+                const known = new Set(r.knownNotRtl || []);
+                const out = [];
+                out.push("### Auto-discovery (D1 icon-mirror, all core stories)");
+                out.push("");
+                out.push(`**${a.pass} pass · ${a.fail} not-RTL · ${a.na} N-A** (of ${a.total} core components). Surprises (not pre-labelled): **${a.surprises.length}**${a.surprises.length ? " — " + a.surprises.join(", ") : ""}.`);
+                out.push("");
+                const fails = a.results.filter(x => x.verdict === "fail" || x.verdict === "ERROR");
+                if (fails.length) {
+                  out.push("| Component | D1 | Label | Detail |");
+                  out.push("|-----------|----|-------|--------|");
+                  for (const c of fails) {
+                    const label = known.has(c.component) ? "known-not-rtl" : "⚠️ surprise";
+                    out.push(`| ${c.component} | ${c.verdict} | ${label} | ${(c.notes||[]).join("; ")} |`);
+                  }
+                } else {
+                  out.push("_No not-RTL findings._");
+                }
+                out.push("");
+                const passes = a.results.filter(x => x.verdict === "pass").map(x => x.component);
+                out.push(`RTL-ready (D1 pass): ${passes.join(", ") || "—"}.`);
+                out.push("");
+                out.push("### Curated precision (D2 order / D3 behavior / D4 overlay)");
+                out.push("");
+                out.push("| Component | Rollup | Dimensions |");
+                out.push("|-----------|--------|------------|");
+                for (const c of r.curated.results) {
+                  const dims = Object.entries(c.dims).map(([k,v]) => k+":"+v).join(", ") || "—";
+                  out.push(`| ${c.component} | ${c.rollup} | ${dims} |`);
+                }
+                console.log(out.join("\n"));
+              '
+            else
+              echo "_No report produced — audit errored before writing output._"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload RTL audit report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rtl-audit-report
+          path: rtl-audit-report.json
+          retention-days: 1
