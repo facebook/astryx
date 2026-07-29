@@ -1081,3 +1081,95 @@ describe('DateInput clear icon theme target', () => {
     expect(css).toContain('color: var(--color-icon-primary)');
   });
 });
+
+describe('DateInput calendar-toggle icon theme target', () => {
+  const iconIn = (button: HTMLElement): HTMLElement => {
+    const icon = button.querySelector('.astryx-icon');
+    if (icon == null) {
+      throw new Error('toggle icon not found');
+    }
+    return icon as HTMLElement;
+  };
+
+  it('renders the astryx-date-input-toggle-icon target on the toggle glyph', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const icon = iconIn(getButton('Open calendar'));
+    // The stable theme target lands on the icon element itself (not the
+    // button), so a theme can restyle just this glyph (color, size, hover) —
+    // and each open/closed state — via `defineTheme`. A button-level target
+    // could not reach the icon's own color/size.
+    expect(icon).toHaveClass('astryx-date-input-toggle-icon');
+    expect(icon).toHaveClass('astryx-icon');
+    // Open/closed state is reflected so a theme can target each state alone.
+    expect(icon).toHaveAttribute('data-state', 'collapsed');
+  });
+
+  it('reflects the expanded state on the toggle icon when the popover is open', async () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    // Capture the toggle before opening — its aria-label changes to the close
+    // label once open, but the element reference (and its icon) is stable.
+    const toggle = getButton('Open calendar');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(iconIn(toggle)).toHaveAttribute('data-state', 'expanded');
+    });
+  });
+
+  it('keeps the calendar-toggle button functional alongside the target', () => {
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const toggle = getButton('Open calendar');
+    expect(toggle.tagName).toBe('BUTTON');
+  });
+
+  it('renders the default icon (secondary color, sm size) byte-identically', () => {
+    // Pixel-identical default guard: the toggle glyph must carry the exact same
+    // StyleX color/size classes as a standalone secondary/sm icon. The added
+    // target class + data-state are purely additive — they change nothing until
+    // a theme targets them.
+    render(<DateInput label="Date" onChange={() => {}} />);
+    const icon = iconIn(getButton('Open calendar'));
+
+    const {container: refContainer} = render(
+      <Icon icon="calendar" size="sm" color="secondary" />,
+    );
+    const refIcon = refContainer.querySelector('.astryx-icon') as HTMLElement;
+
+    // Exclude the additive theme-target classes (the stable target + its
+    // reflected state class) so only the StyleX color/size classes remain.
+    const themeTargetClasses = new Set([
+      'astryx-date-input-toggle-icon',
+      'collapsed',
+      'expanded',
+    ]);
+    const styleClasses = (el: HTMLElement) =>
+      el.className
+        .split(' ')
+        .filter(c => !themeTargetClasses.has(c))
+        .sort();
+
+    expect(styleClasses(icon)).toEqual(styleClasses(refIcon));
+  });
+
+  it('exposes date-input-toggle-icon so a theme reaches the icon size and per-state color', () => {
+    // jsdom cannot resolve the @layer cascade, so the DOM-class assertions
+    // above (target lands on the icon element) plus this generation assertion
+    // (the theme emits same-element icon rules in @layer astryx-theme) together
+    // prove the seam: a same-element theme rule wins over the icon's own
+    // base-layer color/size.
+    const theme = defineTheme({
+      name: 'date-input-toggle-icon-test',
+      components: {
+        'date-input-toggle-icon': {
+          base: {width: '14px', height: '14px', fontSize: '14px'},
+          'state:expanded': {color: 'var(--color-icon-primary)'},
+        },
+      },
+    });
+    const css = generateThemeCSSFlat(theme);
+    expect(css).toContain('.astryx-date-input-toggle-icon {');
+    expect(css).toContain('width: 14px');
+    expect(css).toContain('height: 14px');
+    expect(css).toContain('.astryx-date-input-toggle-icon.expanded');
+    expect(css).toContain('color: var(--color-icon-primary)');
+  });
+});

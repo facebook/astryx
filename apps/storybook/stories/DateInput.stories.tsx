@@ -496,3 +496,48 @@ export const ThemedClearIcon: Story = {
     );
   },
 };
+
+/**
+ * Theme the calendar-toggle glyph precisely via `defineTheme`.
+ *
+ * - `components['date-input-toggle-icon'].base` scopes overrides to the toggle
+ *   icon itself (via the `astryx-date-input-toggle-icon` target), so a theme
+ *   can resize and recolor it — without a fragile descendant selector or raw
+ *   CSS. Same-element rules in `@layer astryx-theme` win over the icon's own
+ *   base color/size.
+ * - `state:expanded` restyles the open state, which the icon reflects as a
+ *   `data-state` attribute.
+ */
+const toggleIconTheme = defineTheme({
+  name: 'date-input-toggle-icon-demo',
+  components: {
+    'date-input-toggle-icon': {
+      base: {
+        width: '14px',
+        height: '14px',
+        fontSize: '14px',
+        color: 'var(--color-icon-secondary)',
+      },
+      'state:expanded': {
+        color: 'var(--color-accent)',
+      },
+    },
+  },
+});
+
+export const ThemedCalendarToggleIcon: Story = {
+  render: () => {
+    const [value, setValue] = useState<ISODateString | undefined>(
+      '2026-01-25' as ISODateString,
+    );
+    return (
+      <Theme theme={toggleIconTheme} mode="light">
+        <DateInput
+          label="Calendar toggle icon themed (14px, accent when open)"
+          value={value}
+          onChange={setValue}
+        />
+      </Theme>
+    );
+  },
+};

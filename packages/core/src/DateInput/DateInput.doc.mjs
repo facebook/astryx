@@ -159,6 +159,7 @@ export const docs = {
   theming: {
     targets: [
       {className: 'astryx-date-input', visualProps: ['size', 'status']},
+      {className: 'astryx-date-input-toggle-icon', states: ['state']},
       {className: 'astryx-date-input-clear-icon'},
     ],
   },
@@ -430,6 +431,7 @@ export const docsZh = {
         className: 'astryx-date-input',
         visualProps: ['size', 'status'],
       },
+      {className: 'astryx-date-input-toggle-icon', states: ['state']},
       {className: 'astryx-date-input-clear-icon'},
     ],
   },
