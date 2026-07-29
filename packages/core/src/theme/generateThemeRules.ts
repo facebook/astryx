@@ -682,66 +682,125 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
 }
 
 /**
- * Generate CSS for per-component media-surface opt-outs.
+ * Generate per-theme media-surface CSS for registered components (Toast,
+ * Tooltip).
  *
- * The *default* (inverted) surface treatment is theme-independent and lives
- * in reset.css — it flips the component content's `color-scheme` opposite to
- * the ambient mode and re-points a small set of inherited tokens. Themes emit
- * nothing on that path, so the default renders identically everywhere.
+ * The inverted surface is emitted here, per theme, from the theme's resolved
+ * `__onDark` / `__onLight` token sets — so a theme that customizes its media
+ * tokens gets a 1:1 reflection on its toast/tooltip, and the build output
+ * shows the concrete `color: var(--color-on-dark|light)` mapping.
  *
- * This function emits CSS only for components a theme has opted *out* of
- * (`surfaces: { toast: 'normal' }`): a normal-surface background on the root
- * and an `inherit` reset of the flipped tokens on the content, so the content
- * re-adopts the ambient surface. Because the reset-layer default uses
- * zero-specificity `:where()`, this theme-scoped, higher-layer block wins
- * cleanly without enumerating concrete values.
+ * The flip is scoped to the component *content* (`.astryx-* > *`), not the
+ * root, so the root's own `light-dark()` background resolves in the ambient
+ * scheme (that's what makes the panel visibly inverted). Direction is keyed on
+ * the theme scope root's `data-theme` (explicit light/dark) and on
+ * `prefers-color-scheme` (system, no explicit `data-theme`):
  *
- * <!-- SYNC: packages/core/src/reset.css (Media Surface Baseline) -->
+ *   ambient light  → content flips to dark  → onDark tokens (on-dark color)
+ *   ambient dark   → content flips to light → onLight tokens (on-light color)
+ *
+ * A theme opts a component out with `surfaces: { toast: 'normal' }`: the
+ * inverted block is simply not emitted for it, and a normal-surface background
+ * overrides the component's base inverted background. Toast's error variant
+ * always stays on a dark surface.
+ *
  * <!-- SYNC: packages/core/src/theme/mediaSurfaceRegistry.ts -->
  */
 export function generateMediaSurfaceCSS(theme: DefinedTheme): string {
   const surfaces = theme.__surfaces;
-  if (!surfaces) {
+  const onDark = theme.__onDark?.tokens;
+  const onLight = theme.__onLight?.tokens;
+  if (!surfaces || !onDark || !onLight) {
     return '';
   }
 
-  const parts: string[] = [];
+  const cls = (c: string) => `.${classPrefix}-${c}`;
+
+  const invertedContentSelectors: string[] = [];
+  const normalBgRules: string[] = [];
+  const errorAlwaysDark: string[] = [];
 
   for (const component of mediaSurfaceComponents()) {
-    if (surfaces[component] !== 'normal') {
-      continue;
-    }
     const entry = getMediaSurface(component);
     if (!entry) {
       continue;
     }
+    const errorVariant = entry.alwaysDarkVariant;
 
-    // Toast keeps its always-dark error variant even when opted out — scope
-    // the opt-out to the non-error root so error toasts stay attention-grabbing.
-    const rootSelector = entry.alwaysDarkVariant
-      ? `.${classPrefix}-${component}:not([data-type="${entry.alwaysDarkVariant}"])`
-      : `.${classPrefix}-${component}`;
+    if (surfaces[component] === 'normal') {
+      // Opt-out: a normal-surface background overrides the component's base
+      // inverted background. Nothing paints the content as inverted, so no
+      // token reset is needed.
+      const rootSelector = errorVariant
+        ? `${cls(component)}:not([data-type="${errorVariant}"])`
+        : cls(component);
+      normalBgRules.push(
+        `  ${rootSelector} {\n    background: ${entry.normalBackground};\n  }`,
+      );
+    } else {
+      // Inverted (default): the content flips opposite to ambient.
+      invertedContentSelectors.push(
+        errorVariant
+          ? `${cls(component)}:not([data-type="${errorVariant}"]) > *`
+          : `${cls(component)} > *`,
+      );
+    }
 
-    parts.push(
-      `  ${rootSelector} {\n    background: ${entry.normalBackground};\n  }`,
-    );
-
-    const resets = [
-      '    color-scheme: inherit;',
-      ...Object.keys(entry.invertedTokens).map(
-        token => `    ${token}: inherit;`,
-      ),
-    ].join('\n');
-    parts.push(`  ${rootSelector} > * {\n${resets}\n  }`);
+    // The always-dark variant (Toast error) is inverted-dark regardless of
+    // ambient mode or opt-out.
+    if (errorVariant) {
+      errorAlwaysDark.push(
+        `${cls(component)}[data-type="${errorVariant}"] > *`,
+      );
+    }
   }
 
-  if (parts.length === 0) {
-    return '';
-  }
+  const decls = (tokens: Record<string, string>) =>
+    Object.entries(tokens)
+      .map(([prop, value]) => `    ${prop}: ${value};`)
+      .join('\n');
 
   const scopeSelector = themeScopeStart(theme.name);
-  const inner = parts.join('\n\n');
-  return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
+  const scopeTo = THEME_SCOPE_TO;
+  const scoped = (inner: string) =>
+    `@scope (${scopeSelector}) to (${scopeTo}) {\n${inner}\n}`;
+
+  const blocks: string[] = [];
+
+  if (invertedContentSelectors.length > 0) {
+    const list = invertedContentSelectors.join(',\n  ');
+    blocks.push(
+      scoped(
+        `  :scope[data-theme="light"] :is(\n  ${list}\n  ) {\n${decls(onDark)}\n  }`,
+      ),
+    );
+    blocks.push(
+      scoped(
+        `  :scope[data-theme="dark"] :is(\n  ${list}\n  ) {\n${decls(onLight)}\n  }`,
+      ),
+    );
+    blocks.push(
+      `@media (prefers-color-scheme: light) {\n${scoped(
+        `  :scope:not([data-theme]) :is(\n  ${list}\n  ) {\n${decls(onDark)}\n  }`,
+      )}\n}`,
+    );
+    blocks.push(
+      `@media (prefers-color-scheme: dark) {\n${scoped(
+        `  :scope:not([data-theme]) :is(\n  ${list}\n  ) {\n${decls(onLight)}\n  }`,
+      )}\n}`,
+    );
+  }
+
+  if (errorAlwaysDark.length > 0) {
+    const list = errorAlwaysDark.join(',\n  ');
+    blocks.push(scoped(`  :is(\n  ${list}\n  ) {\n${decls(onDark)}\n  }`));
+  }
+
+  if (normalBgRules.length > 0) {
+    blocks.push(scoped(normalBgRules.join('\n\n')));
+  }
+
+  return blocks.join('\n\n');
 }
 
 /**

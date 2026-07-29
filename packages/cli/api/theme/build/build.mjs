@@ -1081,6 +1081,9 @@ export async function themeBuild(
         radius: themeDef.radius,
         tokens: themeDef.tokens,
         components: themeDef.components,
+        onDark: themeDef.onDark,
+        onLight: themeDef.onLight,
+        surfaces: themeDef.surfaces,
       });
     }
     const scopeSelector = themeScopeStart(themeDef.name);

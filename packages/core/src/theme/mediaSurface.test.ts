@@ -59,36 +59,66 @@ describe('defineTheme surfaces', () => {
 });
 
 describe('generateMediaSurfaceCSS', () => {
-  it('emits NOTHING on the default (all-inverted) path', () => {
+  it('emits explicit inverted blocks for the default (all-inverted) path', () => {
     const theme = defineTheme({name: 'default-path'});
-    expect(generateMediaSurfaceCSS(theme)).toBe('');
+    const css = generateMediaSurfaceCSS(theme);
+    // Content wrappers (not roots) flip, keyed on the scope root's data-theme.
+    expect(css).toContain('.astryx-toast:not([data-type="error"]) > *');
+    expect(css).toContain('.astryx-tooltip > *');
+    // Ambient light → on-dark tokens; ambient dark → on-light tokens.
+    expect(css).toContain(':scope[data-theme="light"]');
+    expect(css).toContain(':scope[data-theme="dark"]');
+    expect(css).toContain('--color-text-primary: var(--color-on-dark)');
+    expect(css).toContain('--color-text-primary: var(--color-on-light)');
+    // System mode via prefers-color-scheme.
+    expect(css).toContain('@media (prefers-color-scheme: light)');
+    expect(css).toContain('@media (prefers-color-scheme: dark)');
+    // Error toast is always dark.
+    expect(css).toContain('.astryx-toast[data-type="error"] > *');
+    // Scoped to the theme.
+    expect(css).toContain('@scope ([data-astryx-theme="default-path"])');
   });
 
-  it('emits a normal-surface opt-out block for toast', () => {
+  it('reflects a custom onDark/onLight token 1:1 on the toast content', () => {
+    const theme = defineTheme({
+      name: 'custom-media',
+      onDark: {tokens: {'--color-accent': '#90CAF9'}},
+      onLight: {tokens: {'--color-accent': '#01579B'}},
+    });
+    const css = generateMediaSurfaceCSS(theme);
+    expect(css).toContain('--color-accent: #90CAF9');
+    expect(css).toContain('--color-accent: #01579B');
+  });
+
+  it('opts a component out: emits a normal-surface background, no content flip', () => {
     const theme = defineTheme({name: 'optout', surfaces: {toast: 'normal'}});
     const css = generateMediaSurfaceCSS(theme);
-    // Root (non-error) gets the normal background
-    expect(css).toContain('.astryx-toast:not([data-type="error"])');
+    // Non-error root gets the normal background instead of inverting.
+    expect(css).toContain('.astryx-toast:not([data-type="error"]) {');
     expect(css).toContain(
       `background: ${mediaSurfaceRegistry.toast.normalBackground}`,
     );
-    // Content wrapper resets the inherited flip properties
-    expect(css).toContain('color-scheme: inherit;');
-    expect(css).toContain('--color-text-primary: inherit;');
-    // Scoped to the theme
+    // The opted-out toast content is NOT in an inverted flip block…
+    expect(css).not.toContain('.astryx-toast:not([data-type="error"]) > *');
+    // …but its error variant still flips to dark.
+    expect(css).toContain('.astryx-toast[data-type="error"] > *');
+    // Tooltip (still inverted) keeps its content flip.
+    expect(css).toContain('.astryx-tooltip > *');
     expect(css).toContain('@scope ([data-astryx-theme="optout"])');
   });
 
-  it('scopes tooltip opt-out to the whole component (no error variant)', () => {
+  it('opts tooltip out with a whole-component background (no error variant)', () => {
     const theme = defineTheme({name: 'ttopt', surfaces: {tooltip: 'normal'}});
     const css = generateMediaSurfaceCSS(theme);
     expect(css).toContain('.astryx-tooltip {');
-    expect(css).not.toContain('.astryx-tooltip:not(');
+    expect(css).not.toContain('.astryx-tooltip > *');
+    // Toast (still inverted) keeps its content flip.
+    expect(css).toContain('.astryx-toast:not([data-type="error"]) > *');
   });
 
-  it('the default theme CSS output contains no media-surface opt-out', () => {
-    const theme = defineTheme({name: 'clean'});
+  it('is included in the full theme CSS output', () => {
+    const theme = defineTheme({name: 'full'});
     const {component} = generateThemeCSS(theme);
-    expect(component).not.toContain('color-scheme: inherit');
+    expect(component).toContain('.astryx-toast:not([data-type="error"]) > *');
   });
 });
