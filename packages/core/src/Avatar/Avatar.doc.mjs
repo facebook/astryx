@@ -98,7 +98,7 @@ export const docs = {
       name: 'href',
       type: 'string',
       description:
-        'When set, the avatar renders as an interactive link (`<a>` or a custom link component) pointing here — the same element-swap rule as Button. Requires a meaningful accessible name via `alt` or `name`. Inside an AvatarGroup, interactive avatars share a single Tab stop and are reached with arrow keys.',
+        'When set, the avatar renders as an interactive link (`<a>` or a custom link component) pointing here. This follows the same element-swap rule as Button. Requires a meaningful accessible name via `alt` or `name`. Inside an AvatarGroup, interactive avatars share a single Tab stop and are reached with arrow keys.',
     },
     {
       name: 'as',

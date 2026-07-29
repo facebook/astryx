@@ -100,7 +100,7 @@ export const docs = {
       name: 'transformers',
       type: 'ReadonlyArray<Transformer>',
       description:
-        'Markdown transformers — the single source of truth for markdown behaviour. Defaults to the standard @lexical/markdown TRANSFORMERS. In Lexical the same array drives all three markdown operations (shortcut typing, markdown->state import, state->markdown export); this prop wires shortcut typing today and is the intended input for the serialization APIs added in later phases. Pass a custom array to support additional node types (e.g. transformers layered in via the nodes extension point) consistently across all three. Shortcut typing is only applied when hasMarkdownShortcuts is true.',
+        'Markdown transformers: the single source of truth for markdown behaviour. Defaults to the standard @lexical/markdown TRANSFORMERS. In Lexical the same array drives all three markdown operations (shortcut typing, markdown->state import, state->markdown export); this prop wires shortcut typing today and is the intended input for the serialization APIs added in later phases. Pass a custom array to support additional node types (e.g. transformers layered in via the nodes extension point) consistently across all three. Shortcut typing is only applied when hasMarkdownShortcuts is true.',
       default: 'TRANSFORMERS',
     },
     {
