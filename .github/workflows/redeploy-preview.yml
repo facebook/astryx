@@ -39,13 +39,57 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          HEAD_SHA=$(gh pr view $PR_NUMBER --repo ${{ github.repository }} --json headRefOid --jq '.headRefOid')
+          set -euo pipefail
+          HEAD_SHA=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json headRefOid --jq '.headRefOid')
+          if [ -z "$HEAD_SHA" ]; then
+            echo "::error::Could not resolve headRefOid for PR #${PR_NUMBER} — refusing to deploy an unknown commit."
+            exit 1
+          fi
+          echo "Resolved PR #${PR_NUMBER} head commit: ${HEAD_SHA}"
           echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Checkout PR head commit
         uses: actions/checkout@v7
         with:
           ref: ${{ steps.pr-info.outputs.head_sha }}
+
+      - name: Verify checked-out commit is the PR head
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EXPECTED_SHA: ${{ steps.pr-info.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          ACTUAL=$(git rev-parse HEAD)
+          echo "Expected PR head:  ${EXPECTED_SHA}"
+          echo "Checked-out HEAD:  ${ACTUAL}"
+
+          # 1. The working tree must be exactly the SHA we resolved and asked
+          #    checkout to fetch. If checkout silently landed on something else
+          #    (e.g. the base branch), bail before we build the wrong code.
+          if [ "$ACTUAL" != "$EXPECTED_SHA" ]; then
+            echo "::error::Checked-out commit ${ACTUAL} does not match resolved PR head ${EXPECTED_SHA} — refusing to deploy the wrong commit."
+            exit 1
+          fi
+
+          # 2. Re-query the PR head *now* and confirm it still equals HEAD. This
+          #    guards against a stale/raced headRefOid and against the PR head
+          #    moving mid-run: if the two disagree, we may have built the base
+          #    branch or an outdated commit, so fail loudly rather than deploy
+          #    silently-stale content to /pr/${PR_NUMBER}/.
+          CURRENT_HEAD=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json headRefOid --jq '.headRefOid')
+          echo "PR head (re-query): ${CURRENT_HEAD}"
+          if [ "$CURRENT_HEAD" != "$ACTUAL" ]; then
+            echo "::error::PR #${PR_NUMBER} head is now ${CURRENT_HEAD} but we checked out ${ACTUAL}. The head moved (or was misresolved) during the run — aborting so we don't deploy a stale/wrong commit."
+            exit 1
+          fi
+
+          # Record what we verified for the deploy step / BUILD_INFO.
+          SUBJECT=$(git log -1 --pretty=%s)
+          echo "Verified: building PR #${PR_NUMBER} at ${ACTUAL} (\"${SUBJECT}\")"
+          {
+            echo "verified_sha=${ACTUAL}"
+            echo "verified_subject=${SUBJECT}"
+          } >> "$GITHUB_ENV"
 
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup
@@ -88,9 +132,18 @@ jobs:
             mkdir -p /tmp/gh-pages/pr/${PR_NUMBER}/sandbox
             cp -r apps/sandbox/out/* /tmp/gh-pages/pr/${PR_NUMBER}/sandbox/
 
+            # Record which commit this preview was built from so anyone can
+            # verify /pr/<number>/ against the PR head without guessing.
+            {
+              echo "pr=${PR_NUMBER}"
+              echo "sha=${verified_sha}"
+              echo "subject=${verified_subject}"
+              echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            } > /tmp/gh-pages/pr/${PR_NUMBER}/BUILD_INFO.txt
+
             cd /tmp/gh-pages
             git add -A
-            git commit -m "Deploy PR #${PR_NUMBER} preview" || { echo "Nothing to commit"; echo "::endgroup::"; exit 0; }
+            git commit -m "Deploy PR #${PR_NUMBER} preview @ ${verified_sha} (${verified_subject})" || { echo "Nothing to commit"; echo "::endgroup::"; exit 0; }
 
             if git push origin gh-pages; then
               echo "Deployed successfully on attempt $attempt"
