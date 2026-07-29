@@ -76,6 +76,12 @@ export type {
 export {useInputContainer} from './useInputContainer';
 export type {UseInputContainerOptions} from './useInputContainer';
 
+export {useInputStatusIcon} from './useInputStatusIcon';
+export type {
+  UseInputStatusIconOptions,
+  UseInputStatusIconReturn,
+} from './useInputStatusIcon';
+
 export {useInteractiveRole} from './useInteractiveRole';
 export type {
   InteractiveRole,

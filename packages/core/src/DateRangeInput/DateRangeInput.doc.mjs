@@ -129,9 +129,9 @@ export const docs = {
     },
     {
       name: 'statusVariant',
-      type: "'attached' | 'detached'",
+      type: "'attached' | 'detached' | 'tooltip'",
       description:
-        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing.',
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
       default: "'attached'",
     },
     {
@@ -303,7 +303,7 @@ export const docsDense = {
     placeholder: 'placeholder when empty',
     size: 'trigger size',
     status: 'error/warning/success status',
-    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing.',
+    statusVariant: 'How status message is placed: attached overlaps below input; detached floats below w/ spacing; tooltip hides the box and shows it on the status icon.',
     labelTooltip: 'tooltip via info icon at label end',
     numberOfMonths: 'months in calendar (default 2)',
     changeAction:

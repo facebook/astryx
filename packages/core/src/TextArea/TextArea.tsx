@@ -27,7 +27,6 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import type {IconName} from '../Icon';
 import {
   colorVars,
   spacingVars,
@@ -42,13 +41,14 @@ import {
   inputStatusFocusWithinStyles,
   type FieldStatusVariant,
 } from '../Field';
-import {Icon, renderIconSlot, type IconType} from '../Icon';
+import {renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {mergeProps, mergeRefs} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import type {SizeValue} from '../utils/types';
 import {useInputContainer} from '../hooks/useInputContainer';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useSize} from '../SizeContext/SizeContext';
 import {themeProps} from '../utils/themeProps';
 import {VisuallyHidden} from '../VisuallyHidden';
@@ -222,6 +222,7 @@ export interface TextAreaProps extends Omit<
    * How the status message is placed relative to the input.
    * - 'attached': message overlaps directly below the input (bordered treatment)
    * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon shows the message in a tooltip on hover
    * @default 'attached'
    */
   statusVariant?: FieldStatusVariant;
@@ -350,25 +351,19 @@ export function TextArea({
     isEnabled: showsDisabledMessage,
   });
 
-  const statusIconMap: Record<TextAreaStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    TextAreaStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+    });
 
   const ariaDescribedBy =
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
       maxLength != null ? counterID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
@@ -488,14 +483,8 @@ export function TextArea({
           )}
         />
         {isBusy && <Spinner size="sm" />}
-        {status && (
-          <span {...stylex.props(styles.statusIcon)}>
-            <Icon
-              icon={statusIconMap[status.type]}
-              size="md"
-              color={statusIconColorMap[status.type]}
-            />
-          </span>
+        {statusIcon && (
+          <span {...stylex.props(styles.statusIcon)}>{statusIcon}</span>
         )}
       </div>
       {maxLength != null && (

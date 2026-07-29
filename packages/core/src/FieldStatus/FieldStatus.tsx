@@ -71,9 +71,12 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-1'],
   },
   detachedIcon: {
-    // Match the height of the first text line so the glyph top-aligns to it
-    // (rather than to the flex box) when the message wraps to multiple lines.
-    lineHeight: typeScaleVars['--text-supporting-leading'],
+    // Center the glyph within the first text-line box so it aligns to the
+    // first line of the message (rather than the top of the flex row) when the
+    // message wraps to multiple lines.
+    display: 'inline-flex',
+    alignItems: 'center',
+    height: `calc(${typeScaleVars['--text-supporting-size']} * ${typeScaleVars['--text-supporting-leading']})`,
     flexShrink: 0,
   },
 });
@@ -109,6 +112,7 @@ const colorStyles = stylex.create({
 export interface FieldStatusVariantMap {
   attached: true;
   detached: true;
+  tooltip: true;
 }
 
 /**
@@ -143,7 +147,9 @@ export interface FieldStatusProps extends BaseProps<HTMLDivElement> {
  * decorative for assistive tech (`aria-hidden`): the message text already names
  * the status in words and is announced through the live region. The `attached`
  * variant keeps its status affordance on the bordered input, so it renders no
- * icon here to avoid a duplicate.
+ * icon here to avoid a duplicate. The `tooltip` variant renders no message box
+ * at all — the input surfaces the status through a tooltip on its on-field
+ * icon — so callers skip rendering FieldStatus for it.
  *
  * Screen-reader announcements go through the persistent `useAnnounce` live
  * regions (assertive for errors, polite otherwise) rather than `role`/

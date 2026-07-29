@@ -681,11 +681,15 @@ describe('TextInput', () => {
   });
 });
 
-
 describe('TextInput statusVariant forwarding', () => {
   it('defaults to attached (status renders with data-variant="attached")', () => {
     const {container} = render(
-      <TextInput label="Email" value="" onChange={() => {}} status={{type: 'error', message: 'Invalid email'}} />,
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
@@ -695,11 +699,61 @@ describe('TextInput statusVariant forwarding', () => {
 
   it('forwards statusVariant="detached" to the underlying Field status', () => {
     const {container} = render(
-      <TextInput label="Email" value="" onChange={() => {}} status={{type: 'error', message: 'Invalid email'}} statusVariant="detached" />,
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="detached"
+      />,
     );
     expect(container.querySelector('.astryx-field-status')).toHaveAttribute(
       'data-variant',
       'detached',
     );
+  });
+
+  it('renders no message box for statusVariant="tooltip"', () => {
+    const {container} = render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    expect(
+      container.querySelector('.astryx-field-status'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('surfaces the status message in a tooltip for statusVariant="tooltip"', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(tooltip).toHaveTextContent('Invalid email');
+  });
+
+  it('describes the input by the status tooltip for statusVariant="tooltip"', () => {
+    render(
+      <TextInput
+        label="Email"
+        value=""
+        onChange={() => {}}
+        status={{type: 'error', message: 'Invalid email'}}
+        statusVariant="tooltip"
+      />,
+    );
+    const input = screen.getByRole('textbox');
+    const tooltip = screen.getByRole('tooltip', h);
+    expect(input.getAttribute('aria-describedby')).toContain(tooltip.id);
   });
 });

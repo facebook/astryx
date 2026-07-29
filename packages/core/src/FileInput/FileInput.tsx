@@ -40,13 +40,13 @@ import {
   Field,
   InputClearButton,
   type InputStatus,
-  type InputStatusType,
   type FieldStatusVariant,
 } from '../Field';
-import {Icon, type IconName} from '../Icon';
+import {Icon} from '../Icon';
 import {Spinner} from '../Spinner';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useAnnounce} from '../hooks/useAnnounce';
+import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
 import {useTooltip} from '../Tooltip';
 
 export type {
@@ -353,6 +353,7 @@ export interface FileInputProps extends Omit<
    * How the status message is placed relative to the input.
    * - 'attached': message overlaps directly below the input (bordered treatment)
    * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon shows the message in a tooltip on hover
    * @default 'attached'
    */
   statusVariant?: FieldStatusVariant;
@@ -459,20 +460,11 @@ export function FileInput({
       ? {type: 'error' as const, message: validationError}
       : undefined);
 
-  const statusIconMap: Record<InputStatusType, IconName> = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
-
-  const statusIconColorMap: Record<
-    InputStatusType,
-    'warning' | 'error' | 'success'
-  > = {
-    warning: 'warning',
-    error: 'error',
-    success: 'success',
-  };
+  const {statusIcon, describedBy: statusTooltipDescribedBy} =
+    useInputStatusIcon({
+      status,
+      statusVariant,
+    });
 
   // Required state. `aria-required` is not a supported property of
   // role="button" in WAI-ARIA 1.2 (AT does not announce it there), so the
@@ -484,7 +476,10 @@ export function FileInput({
   const ariaDescribedBy =
     [
       description ? descriptionID : null,
-      status?.message ? statusMessageID : null,
+      statusVariant !== 'tooltip' && status?.message ? statusMessageID : null,
+      // The tooltip variant renders no message box; describe the input by the
+      // tooltip's content instead so the status is still announced.
+      statusTooltipDescribedBy,
       conveysRequired ? requiredID : null,
       showsDisabledMessage ? disabledMessageTooltip.describedBy : null,
     ]
@@ -696,13 +691,7 @@ export function FileInput({
           )}>
           {fileNames ?? displayPlaceholder}
         </span>
-        {status && (
-          <Icon
-            icon={statusIconMap[status.type]}
-            size="md"
-            color={statusIconColorMap[status.type]}
-          />
-        )}
+        {statusIcon}
       </>
     );
   };
