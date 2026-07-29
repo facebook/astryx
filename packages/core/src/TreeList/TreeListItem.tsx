@@ -25,7 +25,7 @@ import {
   typeScaleVars,
 } from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
-import {mergeProps} from '../utils';
+import {mergeProps, rtlStyles} from '../utils';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {TreeListBranches} from './TreeListBranches';
 import type {TreeListDensity, TreeListVariant} from './TreeListTypes';
@@ -386,12 +386,14 @@ export function TreeListItem({
   );
 
   const chevronIcon = (
-    <span
-      {...stylex.props(
-        styles.chevronSvg,
-        isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
-      )}>
-      {getIcon('chevronRight')}
+    <span {...stylex.props(rtlStyles.mirror)}>
+      <span
+        {...stylex.props(
+          styles.chevronSvg,
+          isExpanded ? styles.chevronExpanded : styles.chevronCollapsed,
+        )}>
+        {getIcon('chevronRight')}
+      </span>
     </span>
   );
 

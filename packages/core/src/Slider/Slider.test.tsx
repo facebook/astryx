@@ -94,7 +94,9 @@ describe('Slider', () => {
       render(<Slider label="Volume" value={value} min={0} max={100} />);
       const slider = screen.getByRole('slider');
       expect(slider).toHaveAttribute('aria-valuenow', String(expectedValue));
-      expect(slider).toHaveStyle({left: expectedPosition});
+      // Thumb positions via the logical `inset-inline-start` so it mirrors
+      // under RTL (see RTL Phase 4). In LTR this resolves to the left edge.
+      expect(slider).toHaveStyle({insetInlineStart: expectedPosition});
     },
   );
 
@@ -414,6 +416,89 @@ describe('Slider', () => {
     });
 
     expect(document.activeElement).toBe(slider);
+  });
+
+  // --- RTL pointer value mapping (RTL Phase 4) ---
+  // Contract: the inline-start edge (value = min) is the RIGHT edge under RTL,
+  // so the same physical click maps to the mirrored value relative to LTR.
+  // `valueDisplay="none"` keeps the thumb a direct child of the track element
+  // (no Tooltip wrapper) so the mocked rect lands on trackRef.
+
+  it('maps a track click to the LTR value in the default direction', () => {
+    const handleChange = vi.fn();
+    render(
+      <Slider
+        label="Volume"
+        value={0}
+        min={0}
+        max={100}
+        valueDisplay="none"
+        onChange={handleChange}
+      />,
+    );
+    const track = screen.getByRole('slider').parentElement!;
+    track.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        right: 200,
+        bottom: 20,
+        width: 200,
+        height: 20,
+        x: 0,
+        y: 0,
+        toJSON: () => {},
+      });
+
+    // Click at 25% of the track from the left (x=50 of 200) → value 25 in LTR.
+    fireEvent.pointerDown(track, {clientX: 50, clientY: 10, pointerId: 1});
+    expect(handleChange).toHaveBeenLastCalledWith(25);
+  });
+
+  it('mirrors a track click to the RTL value when the track is rtl', () => {
+    const handleChange = vi.fn();
+    render(
+      <Slider
+        label="Volume"
+        value={0}
+        min={0}
+        max={100}
+        valueDisplay="none"
+        onChange={handleChange}
+      />,
+    );
+    const track = screen.getByRole('slider').parentElement!;
+    track.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        top: 0,
+        right: 200,
+        bottom: 20,
+        width: 200,
+        height: 20,
+        x: 0,
+        y: 0,
+        toJSON: () => {},
+      });
+
+    // Force the track's computed direction to rtl (isRtlElement reads this).
+    const realGetComputedStyle = window.getComputedStyle;
+    const gcsSpy = vi
+      .spyOn(window, 'getComputedStyle')
+      .mockImplementation((el: Element, pseudo?: string | null) => {
+        if (el === track) {
+          return {direction: 'rtl'} as CSSStyleDeclaration;
+        }
+        return realGetComputedStyle(el, pseudo ?? undefined);
+      });
+
+    // Same physical click at 25% from the left (x=50). Under RTL the inline
+    // start is the right edge, so fraction = (right - x)/width = 150/200 = 0.75
+    // → value 75 (the mirror of the LTR value 25).
+    fireEvent.pointerDown(track, {clientX: 50, clientY: 10, pointerId: 1});
+    expect(handleChange).toHaveBeenLastCalledWith(75);
+
+    gcsSpy.mockRestore();
   });
 
   // --- Mark label click snapping ---

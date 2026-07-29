@@ -23,7 +23,7 @@ import {durationVars, easeVars} from '../theme/tokens.stylex';
 import {getIcon} from '../Icon/globalIconRegistry';
 import {Button} from '../Button';
 import type {BaseProps} from '../BaseProps';
-import {composeEventHandlers} from '../utils';
+import {composeEventHandlers, rtlStyles} from '../utils';
 import {
   useSideNavCollapse,
   type SideNavCollapseState,
@@ -131,12 +131,14 @@ export function SideNavCollapseButton({
       onClick={composeEventHandlers(onClickProp, toggle)}
       icon={
         children ?? (
-          <span
-            {...stylex.props(
-              styles.chevron,
-              isCollapsed && styles.chevronCollapsed,
-            )}>
-            {getIcon('chevronLeft')}
+          <span {...stylex.props(rtlStyles.mirror)}>
+            <span
+              {...stylex.props(
+                styles.chevron,
+                isCollapsed && styles.chevronCollapsed,
+              )}>
+              {getIcon('chevronLeft')}
+            </span>
           </span>
         )
       }
