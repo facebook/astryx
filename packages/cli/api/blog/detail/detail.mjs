@@ -20,7 +20,7 @@ import {loadFeed, fetchPostText} from '../_adapter.mjs';
 /**
  * Read one post identified by slug (case-insensitive) via its .txt alternate.
  * @param {string} slug
- * @returns {Promise<import('../../../types/blog').BlogDetailResponse>}
+ * @returns {Promise<import('../blog.type.mjs').BlogDetailResponse>}
  */
 export async function detail(slug) {
   const {feedUrl, posts} = await loadFeed();
