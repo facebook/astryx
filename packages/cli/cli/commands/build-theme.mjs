@@ -210,7 +210,7 @@ export function registerTheme(program) {
     .description('List themes available to add')
     .action(async () => {
       const json = program.opts().json || false;
-      /** @type {import('../../types/theme').ThemeListResponse} */
+      /** @type {import('../../api/theme/theme.type.mjs').ThemeListResponse} */
       let result;
       try {
         result = themeList();
@@ -249,7 +249,7 @@ export function registerTheme(program) {
       // Existing files require an explicit --overwrite; otherwise themeAdd's
       // ERR_FILE_EXISTS guard rejects the write. `--list` (or a bare `theme add`
       // with no slug) is the list affordance — route it to the list leaf.
-      /** @type {import('../../types/theme').ThemeListResponse | import('../../types/theme').ThemeAddResponse} */
+      /** @type {import('../../api/theme/theme.type.mjs').ThemeListResponse | import('../../api/theme/theme.type.mjs').ThemeAddResponse} */
       let result;
       try {
         result =

@@ -779,7 +779,7 @@ const noopLogger = {log() {}, warn() {}, error() {}};
  * @param {string} file - Theme file path, resolved against `cwd`.
  * @param {{out?: string}} [options] - `out` overrides the output CSS path.
  * @param {{cwd?: string, logger?: ThemeBuildLogger}} [ctx]
- * @returns {Promise<import('../../../types/theme').ThemeBuildResponse | null>}
+ * @returns {Promise<import('../theme.type.mjs').ThemeBuildResponse | null>}
  */
 export async function themeBuild(file, options = {}, {cwd = process.cwd(), logger = noopLogger} = {}) {
   const filePath = path.resolve(cwd, file);

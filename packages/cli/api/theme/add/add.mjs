@@ -44,7 +44,7 @@ function defaultTargetDir(slug) {
  *
  * @param {string} slug
  * @param {{targetPath?: string, overwrite?: boolean, cwd?: string}} [options]
- * @returns {Promise<import('../../../types/theme').ThemeAddResponse>}
+ * @returns {Promise<import('../theme.type.mjs').ThemeAddResponse>}
  */
 export async function themeAdd(slug, options = {}) {
   const {targetPath, overwrite = false, cwd = process.cwd()} = options;
