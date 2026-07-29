@@ -200,11 +200,14 @@ if (firstTemplate) {
 add('template nonexistent', ['template', 'nonexistent99'],
   () => apiCall(api.template, 'nonexistent99'));
 
-// Theme add — list + error paths (read-only; never scaffolds files here).
+// Theme list + add error paths (read-only; never scaffolds files here). The
+// `theme list` / `theme add --list` CLI views map to the api `themeList()` leaf
+// (the CLI branches the `--list`/no-slug affordance to it); `themeAdd` is the
+// pure copy path that throws on an unknown slug.
 add('theme list', ['theme', 'list'],
-  () => apiCall(api.themeAdd, undefined, {list: true, cwd: ROOT}));
+  () => apiCall(api.themeList));
 add('theme add --list', ['theme', 'add', '--list'],
-  () => apiCall(api.themeAdd, undefined, {list: true, cwd: ROOT}));
+  () => apiCall(api.themeList));
 add('theme add nonexistent', ['theme', 'add', 'nonexistent99'],
   () => apiCall(api.themeAdd, 'nonexistent99', {cwd: ROOT}));
 
