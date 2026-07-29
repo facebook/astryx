@@ -15,11 +15,11 @@ import {pathToFileURL} from 'node:url';
 import {discoverTopics} from '../_adapter.mjs';
 
 /**
- * @returns {Promise<import('../../../types/docs').DocsListResponse>}
+ * @returns {Promise<import('../docs.type.mjs').DocsListResponse>}
  */
 export async function list() {
   const topics = discoverTopics();
-  /** @type {Array<import('../../../types/docs').DocsListEntry>} */
+  /** @type {Array<import('../docs.type.mjs').DocsListEntry>} */
   const entries = [];
   for (const [name, docPath] of Object.entries(topics)) {
     try {

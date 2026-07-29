@@ -30,9 +30,9 @@ export {list, detail, sectionLeaf as section};
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
  * @returns {Promise<
- *   import('../../types/docs').DocsListResponse |
- *   import('../../types/docs').DocsDetailResponse |
- *   import('../../types/docs').DocsDetailSectionResponse
+ *   import('./docs.type.mjs').DocsListResponse |
+ *   import('./docs.type.mjs').DocsDetailResponse |
+ *   import('./docs.type.mjs').DocsDetailSectionResponse
  * >}
  */
 export async function docs(topic, section, options = {}) {

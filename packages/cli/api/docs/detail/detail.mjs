@@ -17,9 +17,9 @@ import {resolveTopicDocs} from '../_adapter.mjs';
 /**
  * Resolve token-ref blocks by inlining the referenced section's table.
  * This allows section docs to reference token tables without duplicating data.
- * @param {import('../../../types/docs').DocsDetailResponse['data']} docsData
+ * @param {import('../docs.type.mjs').DocsDetailResponse['data']} docsData
  * @param {Record<string, string>} topics
- * @returns {Promise<import('../../../types/docs').DocsDetailResponse['data']>}
+ * @returns {Promise<import('../docs.type.mjs').DocsDetailResponse['data']>}
  */
 async function resolveTokenRefs(docsData, topics) {
   const resolved = {...docsData, sections: [...docsData.sections]};
@@ -72,7 +72,7 @@ async function resolveTokenRefs(docsData, topics) {
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
- * @returns {Promise<import('../../../types/docs').DocsDetailResponse>}
+ * @returns {Promise<import('../docs.type.mjs').DocsDetailResponse>}
  */
 export async function detail(topic, options = {}) {
   const {topics, docsData} = await resolveTopicDocs(topic, options);

@@ -37,7 +37,7 @@ export function discoverTopics() {
 /**
  * @param {string} docPath
  * @param {{lang?: string|null}} [opts]
- * @returns {Promise<import('../../types/docs').DocsDetailResponse['data']>}
+ * @returns {Promise<import('./docs.type.mjs').DocsDetailResponse['data']>}
  */
 export async function loadReferenceDocs(docPath, {lang} = {}) {
   const mod = await import(pathToFileURL(docPath).href);
@@ -108,7 +108,7 @@ export async function loadReferenceDocs(docPath, {lang} = {}) {
  * @param {boolean} [options.dense]
  * @returns {Promise<{
  *   topics: Record<string, string>,
- *   docsData: import('../../types/docs').DocsDetailResponse['data'],
+ *   docsData: import('./docs.type.mjs').DocsDetailResponse['data'],
  * }>}
  */
 export async function resolveTopicDocs(topic, options = {}) {

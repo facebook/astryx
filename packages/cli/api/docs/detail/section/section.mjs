@@ -24,7 +24,7 @@ import {resolveTopicDocs} from '../../_adapter.mjs';
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @param {boolean} [options.dense]
- * @returns {Promise<import('../../../../types/docs').DocsDetailSectionResponse>}
+ * @returns {Promise<import('../../docs.type.mjs').DocsDetailSectionResponse>}
  */
 export async function section(topic, sectionName, options = {}) {
   const {docsData} = await resolveTopicDocs(topic, options);
