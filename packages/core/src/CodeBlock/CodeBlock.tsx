@@ -88,12 +88,21 @@ const dynamicStyles = stylex.create({
   }),
 });
 
-// Light reveal so the leading chevron eases into view instead of popping in
-// and shifting the title, which would read as jank the first time a block
-// becomes collapsible.
+// Light reveal so the leading chevron eases into view instead of popping in.
+// Growing the chevron's own footprint (width + inline margin) from zero slides
+// the title into place instead of snapping it over, and clipping keeps the
+// glyph from spilling while it's mid-reveal.
 const chevronReveal = stylex.keyframes({
-  from: {opacity: 0, transform: 'scale(0.8)'},
-  to: {opacity: 1, transform: 'scale(1)'},
+  from: {
+    width: 0,
+    marginInlineEnd: 0,
+    opacity: 0,
+  },
+  to: {
+    width: '14px',
+    marginInlineEnd: spacingVars['--spacing-1'],
+    opacity: 1,
+  },
 });
 
 const styles = stylex.create({
@@ -141,7 +150,6 @@ const styles = stylex.create({
   headerTitle: {
     display: 'flex',
     alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
     fontSize: typeScaleVars['--text-supporting-size'],
     fontFamily: typographyVars['--font-family-code'],
     fontWeight: fontWeightVars['--font-weight-medium'],
@@ -181,8 +189,13 @@ const styles = stylex.create({
     flexShrink: 0,
     width: '14px',
     height: '14px',
+    marginInlineEnd: spacingVars['--spacing-1'],
+    overflow: 'hidden',
     color: 'var(--color-syntax-comment)',
-    animationName: chevronReveal,
+    animationName: {
+      default: chevronReveal,
+      '@media (prefers-reduced-motion: reduce)': 'none',
+    },
     animationDuration: durationVars['--duration-medium'],
     animationTimingFunction: easeVars['--ease-standard'],
     transitionProperty: 'transform',

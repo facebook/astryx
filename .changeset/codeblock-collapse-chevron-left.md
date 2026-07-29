@@ -2,5 +2,5 @@
 '@astryxdesign/core': patch
 ---
 
-[feat] CodeBlock: move the collapse chevron to the left of the title/language label and ease it into view with a light reveal animation so it no longer pops in and shifts the header (#4513)
+[feat] CodeBlock: move the collapse chevron to the left of the title/language label and grow it into place (width + inline margin) so it slides the title over smoothly instead of popping in and shifting the header. Respects `prefers-reduced-motion` (#4513)
 @cixzhang
