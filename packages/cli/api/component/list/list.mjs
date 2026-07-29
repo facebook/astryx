@@ -25,9 +25,9 @@ import {AstryxError} from '../../error.mjs';
 import {loadComponentDoc, loadIntegrationsSafely} from '../_adapter.mjs';
 
 /**
- * @typedef {import('../../../types/component').ComponentListResponse} ComponentListResponse
- * @typedef {import('../../../types/component').ComponentListEntry} ComponentListEntry
- * @typedef {import('../../../types/component').ComponentBriefEntry} ComponentBriefEntry
+ * @typedef {import('../component.type.mjs').ComponentListResponse} ComponentListResponse
+ * @typedef {import('../component.type.mjs').ComponentListEntry} ComponentListEntry
+ * @typedef {import('../component.type.mjs').ComponentBriefEntry} ComponentBriefEntry
  */
 
 /**

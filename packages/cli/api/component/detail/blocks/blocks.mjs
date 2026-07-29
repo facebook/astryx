@@ -16,7 +16,7 @@ import {findRelatedBlocks} from '../../../template/template.mjs';
  * envelope, splitting them into the hero showcase, component-specific examples,
  * and broader related blocks.
  * @param {string} componentName
- * @returns {Promise<import('../../../../types/component').ComponentDetailBlocksResponse>}
+ * @returns {Promise<import('../../component.type.mjs').ComponentDetailBlocksResponse>}
  */
 export async function componentDetailBlocks(componentName) {
   const allBlocks = await findRelatedBlocks(componentName);

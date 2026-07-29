@@ -33,12 +33,12 @@ import {warnOnIntegrationIssues} from '../../../lib/integration-warnings.mjs';
  * src/types/component to get narrowing + typed data.
  *
  * @typedef {(
- *   | import('../../../types/component').ComponentListResponse
- *   | import('../../../types/component').ComponentDetailResponse
- *   | import('../../../types/component').ComponentDetailPropsResponse
- *   | import('../../../types/component').ComponentDetailSourceResponse
- *   | import('../../../types/component').ComponentDetailShowcaseResponse
- *   | import('../../../types/component').ComponentDetailBlocksResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentListResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentDetailResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentDetailPropsResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentDetailSourceResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentDetailShowcaseResponse
+ *   | import('../../../api/component/component.type.mjs').ComponentDetailBlocksResponse
  * )} ComponentResult
  */
 
@@ -166,7 +166,7 @@ export function registerComponent(program) {
           }
           /** @param {string} n */
           const isCollision = n => (nameCounts.get(n)?.size ?? 0) > 1;
-          /** @param {import('../../../types/component').ComponentListEntry} item */
+          /** @param {import('../../../api/component/component.type.mjs').ComponentListEntry} item */
           const pkgSuffix = item => {
             if (item.package !== CORE_PKG) return `  [${item.package}]`;
             if (isCollision(item.name)) return `  [${item.package}]`;

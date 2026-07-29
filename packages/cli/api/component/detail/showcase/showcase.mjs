@@ -24,7 +24,7 @@ import {findShowcase} from '../../../template/template.mjs';
  * @param {string} ctx.name - the caller's original input, used in the error message
  * @param {string|null} [ctx.packageScope] - scope block discovery + the error to a package
  * @param {boolean} [ctx.resolve] - when false, skip discovery and treat as not found
- * @returns {Promise<import('../../../../types/component').ComponentDetailShowcaseResponse>}
+ * @returns {Promise<import('../../component.type.mjs').ComponentDetailShowcaseResponse>}
  */
 export async function componentDetailShowcase(componentName, {cwd, name, packageScope = null, resolve = true}) {
   const match = resolve

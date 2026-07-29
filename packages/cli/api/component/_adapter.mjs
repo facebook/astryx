@@ -357,7 +357,7 @@ export function extractProps(docs) {
  * @param {{package: string, sourcePath: string|null}} owner
  * @param {string} componentName
  * @param {string} coreDir
- * @returns {import('../../types/component').ComponentDetailResponse['data']}
+ * @returns {import('./component.type.mjs').ComponentDetailResponse['data']}
  */
 export function withOwnership(docs, owner, componentName, coreDir) {
   const importSpec =
