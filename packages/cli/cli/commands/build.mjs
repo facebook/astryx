@@ -84,10 +84,10 @@ export function registerBuild(program) {
         limit = parsed;
       }
 
-      /** @type {import('../../types/build').BuildKitResponse} */
+      /** @type {import('../../api/build/build.type.mjs').BuildKitResponse} */
       let result;
       try {
-        result = /** @type {import('../../types/build').BuildKitResponse} */ (
+        result = /** @type {import('../../api/build/build.type.mjs').BuildKitResponse} */ (
           await buildApi(query, {cwd: process.cwd(), type: options.type, limit})
         );
       } catch (e) {
