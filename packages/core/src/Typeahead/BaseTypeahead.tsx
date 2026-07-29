@@ -329,6 +329,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
   debounceMs = 150,
   size = 'md',
   ref,
+  xstyle,
 }: BaseTypeaheadProps<T>) {
   const t = useTranslator();
   const placeholder =
@@ -796,6 +797,7 @@ export const BaseTypeahead = function BaseTypeahead<T extends SearchableItem>({
           styles.input,
           isDisabled && styles.inputDisabled,
           inputXStyle,
+          xstyle,
         )}
       />
       {isLoading && (

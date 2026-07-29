@@ -104,6 +104,26 @@ Recommends adding `letterSpacing` when `fontSize` is defined (common design patt
 
 **Strict mode only.** Helps catch missing letter-spacing in compact text elements.
 
+### `@astryx/require-xstyle-passthrough`
+
+Ensures a component actually forwards the `xstyle` styling prop it accepts via `BaseProps`.
+A component's props may promise consumers an `xstyle` escape hatch, but the implementation
+can silently drop it in two ways:
+
+- **Unused** — `xstyle` is destructured but never referenced, so the override is dropped.
+- **Not forwarded** — `xstyle` is neither destructured nor threaded anywhere. Because
+  `xstyle` is a StyleX style object (not a DOM attribute), it cannot ride a `{...rest}`
+  spread onto a native element — it renders inert — and with no rest at all it is dropped.
+
+The rule also flags `className`/`style` when they are destructured but left unused (these
+*can* survive a rest spread, so their leak case is not flagged). Fix by threading `xstyle`
+into the root `stylex.props(...)` / `mergeProps(...)` call, or forwarding it to a composed
+Astryx component via `xstyle={...}` / a rest spread onto that component.
+
+Scoped to public components (those with a `.displayName`). Opt out by omitting the prop from
+the type, e.g. `Omit<BaseProps, 'xstyle'>` (as `VisuallyHidden` does), or mark an
+intentionally-unused binding with a leading underscore (`className: _className`).
+
 ## Usage
 
 ### Local Development (Human Mode)

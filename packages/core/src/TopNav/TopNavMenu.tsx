@@ -325,6 +325,7 @@ export function TopNavMenu({
   items,
   delay = 150,
   hideDelay = 200,
+  xstyle,
 }: TopNavMenuProps) {
   const renderMode = useTopNavRenderMode();
   const {closeMobileNav} = useAppShellMobile();
@@ -426,7 +427,7 @@ export function TopNavMenu({
   // Drawer mode: collapsible section
   if (renderMode === 'drawer') {
     return (
-      <div {...stylex.props(drawerStyles.section)}>
+      <div {...stylex.props(drawerStyles.section, xstyle)}>
         <button
           type="button"
           onClick={() => setDrawerExpanded(v => !v)}
@@ -494,6 +495,7 @@ export function TopNavMenu({
           focusOutlineProps.focusVisible(
             styles.trigger,
             popover.isOpen && styles.triggerOpen,
+            xstyle,
           ),
         )}>
         {label}

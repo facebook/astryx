@@ -37,6 +37,7 @@ import copyrightHeaderRule from './copyright-header.js';
 import noRawConsoleCliRule from './no-raw-console-cli.js';
 import requireBasePropsRule from './require-base-props.js';
 import requireRefPropRule from './require-ref-prop.js';
+import requireXstylePassthroughRule from './require-xstyle-passthrough.js';
 import noHardcodedI18nStringRule from './no-hardcoded-i18n-string.js';
 import i18nKeyFormatRule from './i18n-key-format.js';
 
@@ -257,6 +258,7 @@ const plugin = {
     'no-react-namespace-hooks': noReactNamespaceHooksRule,
     'require-base-props': requireBasePropsRule,
     'require-ref-prop': requireRefPropRule,
+    'require-xstyle-passthrough': requireXstylePassthroughRule,
     'copyright-header': copyrightHeaderRule,
     'no-raw-console-cli': noRawConsoleCliRule,
     'no-hardcoded-i18n-string': noHardcodedI18nStringRule,
@@ -304,6 +306,7 @@ plugin.configs.strict = {
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'error',
     '@astryx/require-ref-prop': 'error',
+    '@astryx/require-xstyle-passthrough': 'error',
     '@astryx/copyright-header': 'error',
     '@astryx/no-hardcoded-i18n-string': 'error',
     '@astryx/i18n-key-format': 'error',
@@ -340,6 +343,7 @@ plugin.configs.recommended = {
     '@astryx/no-react-namespace-hooks': 'error',
     '@astryx/require-base-props': 'warn',
     '@astryx/require-ref-prop': 'warn',
+    '@astryx/require-xstyle-passthrough': 'warn',
     '@astryx/copyright-header': 'error',
     '@astryx/no-hardcoded-i18n-string': 'warn',
     '@astryx/i18n-key-format': 'warn',
