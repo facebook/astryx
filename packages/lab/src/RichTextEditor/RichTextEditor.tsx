@@ -74,7 +74,6 @@ import {ListNode, ListItemNode} from '@lexical/list';
 import {HeadingNode, QuoteNode} from '@lexical/rich-text';
 import {LinkNode, AutoLinkNode} from '@lexical/link';
 import {CodeNode, CodeHighlightNode} from '@lexical/code';
-import {$getRoot, $createParagraphNode} from 'lexical';
 import type {
   EditorState,
   Klass,
@@ -82,6 +81,40 @@ import type {
   LexicalNode,
   EditorThemeClasses,
 } from 'lexical';
+
+/**
+ * Serialized state for an empty editor: a root containing a single empty
+ * paragraph. Used by the imperative `clear()` handle.
+ *
+ * We deliberately reset the editor via `editor.setEditorState(...)` rather than
+ * an `editor.update(() => { $getRoot()... })` callback, because `$getRoot` /
+ * `$createParagraphNode` are *runtime value* imports from the top-level
+ * `lexical` package. In the sandbox's Next build a top-level `lexical` value
+ * import forces Babel to transpile lexical's raw `src/*.ts` (which uses
+ * `declare` class fields) and fails the build. `parseEditorState` /
+ * `setEditorState` are methods on the editor instance, so no top-level
+ * `lexical` value import is needed. Setting a fresh state still notifies update
+ * listeners, so `onChange` fires.
+ */
+const EMPTY_EDITOR_STATE_JSON = JSON.stringify({
+  root: {
+    children: [
+      {
+        children: [],
+        direction: null,
+        format: '',
+        indent: 0,
+        type: 'paragraph',
+        version: 1,
+      },
+    ],
+    direction: null,
+    format: '',
+    indent: 0,
+    type: 'root',
+    version: 1,
+  },
+});
 
 const styles = stylex.create({
   wrapper: {
@@ -513,14 +546,11 @@ function EditorRefBridge({
         if (!editable) {
           return;
         }
-        editor.update(() => {
-          const root = $getRoot();
-          root.clear();
-          // Leave a single empty paragraph so the editor stays in a valid
-          // "empty" state (a bare root with zero children is not a legal
-          // editing target and breaks selection/typing).
-          root.append($createParagraphNode());
-        });
+        // Reset to a single empty paragraph via a fresh EditorState. Uses the
+        // editor instance's own parse/set methods so we avoid a top-level
+        // `lexical` value import (see EMPTY_EDITOR_STATE_JSON). This still
+        // notifies update listeners, so `onChange` fires.
+        editor.setEditorState(editor.parseEditorState(EMPTY_EDITOR_STATE_JSON));
       },
       getEditorState: () => editor.getEditorState(),
       getEditor: () => editor,
