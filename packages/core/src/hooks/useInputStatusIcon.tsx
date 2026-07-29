@@ -19,18 +19,28 @@
  *   the text.
  * - `detached`  → the detached message box renders its OWN leading icon, so the
  *   on-field icon is suppressed here to avoid a duplicate glyph.
- * - `tooltip`   → no message box renders; the on-field icon carries the meaning
- *   through a tooltip on hover, and the message is piped into the input's
- *   `aria-describedby` so assistive tech announces it (the icon itself is not
- *   focusable, so AT reads it through the input's description).
+ * - `tooltip`   → no message box renders; the status is surfaced through an
+ *   info-tip on the on-field icon. The icon is a real focusable `<button>` so
+ *   the status is reachable by every user, not just those with hover or a
+ *   screen reader:
+ *     - Keyboard (no AT): the button is in the tab order (WCAG 2.1.1) with a
+ *       visible focus ring (WCAG 2.4.7); focusing it opens the tooltip.
+ *     - Pointer: hover opens it (guarded to fine pointers).
+ *     - Touch: hover is unavailable, so a tap toggles the tooltip open/closed.
+ *     - Assistive tech: the button has an accessible name (its status type,
+ *       WCAG 4.1.2) and is described by the message via `aria-describedby`.
+ *     - Dismissible with Escape and hoverable (WCAG 1.4.13) via useTooltip.
  */
 
+import {useCallback, useEffect, useState} from 'react';
 import type {ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon, type IconName, type IconSize} from '../Icon';
 import type {FieldStatusVariant} from '../FieldStatus/FieldStatus';
 import type {InputStatus, InputStatusType} from '../Field/types';
 import {useTooltip} from '../Tooltip';
+import {useTranslator} from '../i18n';
+import {colorVars, radiusVars} from '../theme/tokens.stylex';
 
 /**
  * Maps each status type to its glyph. Shared so every input shows the same icon
@@ -42,12 +52,42 @@ const STATUS_ICON: Record<InputStatusType, IconName> = {
   success: 'success',
 };
 
+/**
+ * Accessible-name i18n keys for the focusable status button, keyed by type.
+ */
+const STATUS_BUTTON_LABEL_KEY: Record<InputStatusType, string> = {
+  warning: '@astryx.input.statusButton.warning',
+  error: '@astryx.input.statusButton.error',
+  success: '@astryx.input.statusButton.success',
+};
+
 const styles = stylex.create({
   // Contain the anchor so the tooltip positions against the icon, and keep the
   // glyph vertically centered within the input control.
   iconAnchor: {
     display: 'inline-flex',
     alignItems: 'center',
+  },
+  // The tooltip-variant status affordance is a real button so it is keyboard
+  // focusable and tappable. Strip the native chrome and show only a focus ring.
+  statusButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    margin: 0,
+    border: 'none',
+    background: 'none',
+    color: 'inherit',
+    cursor: 'pointer',
+    borderRadius: radiusVars['--radius-full'],
+    outlineWidth: {default: null, ':focus-visible': '2px'},
+    outlineStyle: {default: null, ':focus-visible': 'solid'},
+    outlineColor: {
+      default: null,
+      ':focus-visible': colorVars['--color-accent'],
+    },
+    outlineOffset: {default: null, ':focus-visible': '2px'},
   },
 });
 
@@ -65,9 +105,9 @@ export interface UseInputStatusIconOptions {
 export interface UseInputStatusIconReturn {
   /**
    * The on-field status affordance to render inside the input container —
-   * the status icon plus, for the `tooltip` variant, its tooltip layer.
-   * `null` when no icon should render (no status, `detached` variant, or
-   * inside a group).
+   * the status icon (plain, for attached) or a focusable info-tip button plus
+   * its tooltip layer (for the `tooltip` variant). `null` when no icon should
+   * render (no status, `detached` variant, or inside a group).
    */
   statusIcon: ReactNode;
   /**
@@ -88,12 +128,58 @@ export function useInputStatusIcon({
   isInGroup = false,
   size = 'md',
 }: UseInputStatusIconOptions): UseInputStatusIconReturn {
+  const t = useTranslator();
   const isTooltipVariant = statusVariant === 'tooltip';
+  const hasTooltip = isTooltipVariant && !!status?.message;
+
+  // Touch tap-to-toggle. Hover is unavailable on touch, and useTooltip
+  // suppresses simulated hover there, so on touch a tap controls visibility.
+  // `undefined` leaves the tooltip uncontrolled (pointer + keyboard drive it);
+  // a boolean takes control for the current open/close cycle.
+  const [tapOpen, setTapOpen] = useState<boolean | undefined>(undefined);
 
   const tooltip = useTooltip({
     placement: 'above',
-    isEnabled: isTooltipVariant && !!status?.message,
+    isEnabled: hasTooltip,
+    isOpen: tapOpen,
   });
+
+  // Re-hand control back to hover/focus once a tap-opened tooltip is dismissed
+  // (Escape/outside interaction), so subsequent pointer/keyboard use behaves
+  // normally.
+  const handleButtonBlur = useCallback(() => {
+    setTapOpen(undefined);
+  }, []);
+
+  const handleButtonClick = useCallback(() => {
+    // Only take control on touch/hover-less devices. On hover-capable devices
+    // pointer hover and keyboard focus already drive the tooltip (uncontrolled),
+    // so a click-toggle would fight them; leave it uncontrolled there.
+    if (
+      typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function' ||
+      !window.matchMedia('(hover: none)').matches
+    ) {
+      return;
+    }
+    setTapOpen(prev => (prev === true ? false : true));
+  }, []);
+
+  // Dismiss a tap-opened tooltip on Escape and return to the uncontrolled
+  // state (useTooltip owns Escape for the uncontrolled case, but while we hold
+  // control via isOpen it does not, so mirror it here).
+  useEffect(() => {
+    if (tapOpen !== true) {
+      return;
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setTapOpen(undefined);
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [tapOpen]);
 
   // Inside a group the group owns status rendering; the detached message box
   // renders its own leading icon, so the on-field icon would duplicate it.
@@ -108,17 +194,25 @@ export function useInputStatusIcon({
     <Icon icon={STATUS_ICON[status.type]} size={size} color={status.type} />
   );
 
-  // Attached (and tooltip-without-message) variants: plain icon, no tooltip.
-  if (!isTooltipVariant || !status.message) {
+  // Attached (and tooltip-without-message) variants: plain, non-interactive
+  // icon. The message box (attached) already carries the text.
+  if (!hasTooltip) {
     return {statusIcon: icon, describedBy: undefined};
   }
 
   return {
     statusIcon: (
       <>
-        <span ref={tooltip.ref} {...stylex.props(styles.iconAnchor)}>
+        <button
+          type="button"
+          ref={tooltip.ref}
+          aria-label={t(STATUS_BUTTON_LABEL_KEY[status.type])}
+          aria-describedby={tooltip.describedBy}
+          onClick={handleButtonClick}
+          onBlur={handleButtonBlur}
+          {...stylex.props(styles.statusButton)}>
           {icon}
-        </span>
+        </button>
         {tooltip.renderTooltip(status.message)}
       </>
     ),

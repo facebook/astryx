@@ -537,7 +537,7 @@ export const StatusVariantComparison: Story = {
           statusVariant="detached"
         />
         <TextInput
-          label="Tooltip (hover the status icon)"
+          label="Tooltip (focus, hover, or tap the status icon)"
           value={c}
           onChange={setC}
           status={{type: 'error', message: 'Enter a valid email'}}

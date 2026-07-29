@@ -727,6 +727,18 @@
     "defaultMessage": "Clear all {label}",
     "description": "Screen-reader-only label on the X that clears every selected value from a MultiSelector. Example: `Clear all Countries`. `{label}` is typically already plural in English."
   },
+  "@astryx.input.statusButton.error": {
+    "defaultMessage": "Error details",
+    "description": "Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is error. Activating or focusing the button reveals the error message in a tooltip. Keep it short — it labels an icon-only button."
+  },
+  "@astryx.input.statusButton.warning": {
+    "defaultMessage": "Warning details",
+    "description": "Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is warning. Activating or focusing the button reveals the warning message in a tooltip."
+  },
+  "@astryx.input.statusButton.success": {
+    "defaultMessage": "Success details",
+    "description": "Accessible name for the focusable status icon button inside an input when statusVariant is 'tooltip' and the status type is success. Activating or focusing the button reveals the success message in a tooltip."
+  },
   "@astryx.numberInput.clearLabel": {
     "defaultMessage": "Clear {label}",
     "description": "Screen-reader-only label on the X that clears the value from a NumberInput. Example: `Clear Age`, `Clear Quantity`."
