@@ -93,7 +93,7 @@ function buildBlockModules(doc, blocks) {
  * @param {boolean} [options.loose] - downgrade unknown {hints} to TODO warnings
  * @param {string} [options.name] - generated component name
  * @param {string} [options.cwd]
- * @returns {Promise<import('../../../types/layout').LayoutExpandResponse>}
+ * @returns {Promise<import('../layout.type.mjs').LayoutExpandResponse>}
  */
 export async function layoutExpand(expression, options = {}) {
   const {targetPath, form = 'auto', loose = false, name, cwd = process.cwd()} = options;

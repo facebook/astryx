@@ -20,11 +20,12 @@ import {layoutExpand, layoutCheck, layoutGrammar} from '../../api/layout/layout.
 /**
  * The api layer's @returns for these functions widen the `type` discriminator
  * to `string`, so annotate the command-local result with the precise response
- * shapes from src/types/layout so narrowing + jsonOut typecheck.
+ * shapes from the colocated api/layout/layout.type.mjs so narrowing + jsonOut
+ * typecheck.
  *
- * @typedef {import('../../types/layout').LayoutExpandResponse} LayoutExpandResponse
- * @typedef {import('../../types/layout').LayoutCheckResponse} LayoutCheckResponse
- * @typedef {import('../../types/layout').LayoutGrammarResponse} LayoutGrammarResponse
+ * @typedef {import('../../api/layout/layout.type.mjs').LayoutExpandResponse} LayoutExpandResponse
+ * @typedef {import('../../api/layout/layout.type.mjs').LayoutCheckResponse} LayoutCheckResponse
+ * @typedef {import('../../api/layout/layout.type.mjs').LayoutGrammarResponse} LayoutGrammarResponse
  */
 
 /**

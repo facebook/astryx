@@ -16,7 +16,7 @@ import {buildRegistry, ALIAS_TABLE} from '../../../lib/xle/registry.mjs';
  * generated from this branch's registry (never hand-maintained).
  *
  * @param {{cwd?: string}} [options]
- * @returns {Promise<import('../../../types/layout').LayoutGrammarResponse>}
+ * @returns {Promise<import('../layout.type.mjs').LayoutGrammarResponse>}
  */
 export async function layoutGrammar(options = {}) {
   const {cwd = process.cwd()} = options;

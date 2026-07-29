@@ -20,7 +20,7 @@ import {analyze, formatIssue} from '../_adapter.mjs';
  *
  * @param {string} expression
  * @param {{form?: 'compact'|'outline'|'auto', loose?: boolean, cwd?: string}} [options]
- * @returns {Promise<import('../../../types/layout').LayoutCheckResponse>}
+ * @returns {Promise<import('../layout.type.mjs').LayoutCheckResponse>}
  */
 export async function layoutCheck(expression, options = {}) {
   const {form = 'auto', loose = false, cwd = process.cwd()} = options;
