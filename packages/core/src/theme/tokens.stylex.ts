@@ -39,6 +39,10 @@ export const colorDefaults = {
   '--color-text-secondary': 'light-dark(#4E606F, #AAAFB5)',
   '--color-text-disabled': 'light-dark(#A4B0BC, #6F747C)',
   '--color-text-accent': 'light-dark(#0064E0, #3E9EFB)',
+  // Text/icon color for content on any inverted (dark) surface — pairs with
+  // every dark inverted background (--color-background-inverted and
+  // --color-background-error-inverted). --color-on-light is its counterpart
+  // for content on light inverted surfaces.
   '--color-on-dark': 'light-dark(#FFFFFF, #FFFFFF)',
   '--color-on-light': 'light-dark(#000000, #000000)',
 
