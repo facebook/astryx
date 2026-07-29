@@ -76,7 +76,6 @@ import {ListNode, ListItemNode} from '@lexical/list';
 import {HeadingNode, QuoteNode} from '@lexical/rich-text';
 import {LinkNode, AutoLinkNode} from '@lexical/link';
 import {CodeNode, CodeHighlightNode} from '@lexical/code';
-import {$getRoot} from 'lexical';
 import type {
   EditorState,
   Klass,
@@ -627,14 +626,18 @@ function CharCountPlugin({
 }): null {
   const [editor] = useLexicalComposerContext();
   useEffect(() => {
-    // Report the initial count (e.g. seeded via defaultValue), then on updates.
-    onCountChange(
-      editor.getEditorState().read(() => $getRoot().getTextContent().length),
-    );
-    return editor.registerUpdateListener(({editorState}) => {
-      onCountChange(
-        editorState.read(() => $getRoot().getTextContent().length),
-      );
+    // Report the initial count (e.g. seeded via defaultValue) from the mounted
+    // root element's text, then track changes via registerTextContentListener,
+    // which hands us the plain-text content directly.
+    //
+    // We deliberately avoid importing `$getRoot` from the top-level `lexical`
+    // package: that is a *runtime value* import, and in the sandbox's Next
+    // build it forces Babel to transpile lexical's raw `src/*.ts` (which uses
+    // `declare` class fields) and fails. Both APIs used here are methods on the
+    // editor instance, so no top-level `lexical` value import is needed.
+    onCountChange(editor.getRootElement()?.textContent?.length ?? 0);
+    return editor.registerTextContentListener((textContent) => {
+      onCountChange(textContent.length);
     });
   }, [editor, onCountChange]);
   return null;
