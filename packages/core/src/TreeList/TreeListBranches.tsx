@@ -37,10 +37,10 @@ const styles = stylex.create({
   },
   verticalLine: {
     borderRadius: 1,
-    left: 0,
+    insetInlineStart: 0,
     margin: 'auto',
     position: 'absolute',
-    right: 0,
+    insetInlineEnd: 0,
     width: LINE_WIDTH,
     backgroundColor: colorVars['--color-border-emphasized'],
   },
@@ -92,7 +92,7 @@ export function TreeListBranches({
               key={level}
               {...mergeProps(stylex.props(styles.container), {
                 style: {
-                  left: branchOffset,
+                  insetInlineStart: branchOffset,
                 },
               })}>
               <div
@@ -109,7 +109,7 @@ export function TreeListBranches({
         <div
           {...mergeProps(stylex.props(styles.container), {
             style: {
-              left: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
+              insetInlineStart: `calc(${BRANCH_MARGIN} + ${nestedLevel - 1} * ${LEVEL_INDENT})`,
             },
           })}>
           <div
