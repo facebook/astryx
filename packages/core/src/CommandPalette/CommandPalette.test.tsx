@@ -269,4 +269,33 @@ describe('CommandPalette', () => {
       expect(screen.getByText('No results')).toBeInTheDocument(),
     );
   });
+
+  it('does not move the highlight while typing in the search input', async () => {
+    // The palette's input already filters; letting the shared combobox
+    // typeahead also chase prefixes would drag the highlight — and Enter —
+    // onto a command the user never picked.
+    const gitSource = createStaticSource([
+      {id: 'git-add', label: 'git add'},
+      {id: 'git-commit', label: 'git commit'},
+      {id: 'git-push', label: 'git push'},
+    ]);
+    render(
+      <CommandPalette
+        isOpen={true}
+        onOpenChange={() => {}}
+        searchSource={gitSource}
+      />,
+    );
+
+    const input = screen.getByRole('combobox');
+    await waitFor(() =>
+      expect(screen.getByText('git add')).toBeInTheDocument(),
+    );
+
+    fireEvent.keyDown(input, {key: 'g'});
+    fireEvent.keyDown(input, {key: 'i'});
+    fireEvent.keyDown(input, {key: 't'});
+
+    expect(input).not.toHaveAttribute('aria-activedescendant');
+  });
 });

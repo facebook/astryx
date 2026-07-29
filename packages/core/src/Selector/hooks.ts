@@ -8,7 +8,7 @@
  * @position Internal hooks; used by Selector.tsx
  */
 
-import {useCallback, useRef, useState} from 'react';
+import {useCallback, useState} from 'react';
 import {useIsomorphicLayoutEffect} from '../hooks/useIsomorphicLayoutEffect';
 import type {RefObject} from 'react';
 import type {SelectorOptionData} from './types';
@@ -126,7 +126,7 @@ export function useSelectedItemOffset({
 }
 
 // =============================================================================
-// useCombobox - Keyboard navigation, typeahead, and selection
+// useCombobox - Keyboard navigation and selection
 // =============================================================================
 
 interface UseComboboxOptions {
@@ -145,6 +145,13 @@ interface UseComboboxOptions {
    * navigation owns those keys there) or when there is no value.
    */
   onClear?: () => void;
+  /**
+   * With `hasSearch`, printable characters typed on the trigger are appended to
+   * the search query (opening the popup if needed), so type-to-find works
+   * without a separate open step. Characters keep arriving here until focus
+   * lands in the search input, which then owns its own typing.
+   */
+  onSearchSeed?: (char: string) => void;
   listboxId: string;
 }
 
@@ -159,7 +166,12 @@ interface UseComboboxResult {
 }
 
 /**
- * Handles keyboard navigation, typeahead search, and selection for combobox/listbox patterns.
+ * Handles keyboard navigation and selection for combobox/listbox patterns.
+ *
+ * Type-to-select is not handled here: callers that want it compose the shared
+ * `useTypeahead` hook and run it ahead of this handler (see Selector). That
+ * keeps matching consistent with the other collections and leaves consumers
+ * whose own input already filters the items (CommandPalette) untouched.
  */
 export function useCombobox({
   selectableItems,
@@ -171,13 +183,10 @@ export function useCombobox({
   onClose,
   onSelect,
   onClear,
+  onSearchSeed,
   listboxId,
 }: UseComboboxOptions): UseComboboxResult {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
-  const [typeahead, setTypeahead] = useState('');
-  const typeaheadTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
 
   const getItemId = useCallback(
     (index: number) => `${listboxId}-item-${index}`,
@@ -274,6 +283,8 @@ export function useCombobox({
           if (hasSearch) {
             break;
           }
+        // A space mid-typeahead extends the query instead of activating; the
+        // caller's useTypeahead claims it before this handler ever runs.
         // falls through
         case 'Enter':
           e.preventDefault();
@@ -349,28 +360,20 @@ export function useCombobox({
           break;
 
         default:
-          if (!hasSearch && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
-            const newTypeahead = typeahead + e.key.toLowerCase();
-            setTypeahead(newTypeahead);
-
-            if (typeaheadTimeoutRef.current) {
-              clearTimeout(typeaheadTimeoutRef.current);
+          // Keys land here only while the trigger holds focus — once the search
+          // input takes over it handles its own typing — so they belong in the
+          // query, including the ones racing the open.
+          if (
+            hasSearch &&
+            onSearchSeed &&
+            e.key.length === 1 &&
+            !e.ctrlKey &&
+            !e.metaKey
+          ) {
+            if (!isOpen) {
+              onOpen();
             }
-            typeaheadTimeoutRef.current = setTimeout(() => {
-              setTypeahead('');
-            }, 500);
-
-            const matchIndex = selectableItems.findIndex(
-              item =>
-                !item.disabled &&
-                item.label?.toLowerCase().startsWith(newTypeahead),
-            );
-            if (matchIndex >= 0) {
-              if (!isOpen) {
-                onOpen();
-              }
-              setHighlightedIndex(matchIndex);
-            }
+            onSearchSeed(e.key);
           }
           break;
       }
@@ -385,9 +388,9 @@ export function useCombobox({
       selectItem,
       findSelectedIndex,
       getEnabledIndices,
-      typeahead,
       hasSearch,
       onClear,
+      onSearchSeed,
       value,
     ],
   );

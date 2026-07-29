@@ -178,6 +178,27 @@ describe('DropdownMenu', () => {
     ).toHaveFocus();
   });
 
+  it('typeahead advances past an item that already starts with the letter', async () => {
+    const user = userEvent.setup();
+    render(
+      <DropdownMenu
+        button={{label: 'Actions'}}
+        items={[{label: 'Copy'}, {label: 'Copy link'}, {label: 'Delete'}]}
+      />,
+    );
+    await user.click(screen.getByRole('button', {name: /Actions/}));
+    const menu = screen.getByRole('menu', {hidden: true});
+    screen.getByRole('menuitem', {name: 'Copy', hidden: true}).focus();
+
+    fireEvent.keyDown(menu, {key: 'c'});
+
+    // APG: a printable character moves focus to the NEXT item starting with
+    // it. Anchoring at the focused item instead makes the press a dead key.
+    expect(
+      screen.getByRole('menuitem', {name: 'Copy link', hidden: true}),
+    ).toHaveFocus();
+  });
+
   it('calls onClick callback when button is clicked', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
