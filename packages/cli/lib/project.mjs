@@ -316,6 +316,17 @@ export class Project {
     const pkg = this.#pkgLabel(integration);
     if (this.#visitedIssues.has(pkg)) return;
     this.#visitedIssues.add(pkg);
+    // A manifest that failed to load (throwing import / invalid shape) is
+    // recorded as a marker by loadIntegrations — surface it as an issue and
+    // skip validation (there's no manifest to validate).
+    if (integration?.__loadError) {
+      this.#pushIssue(pkg, {
+        code: 'integration_error',
+        severity: 'error',
+        message: integration.__loadError,
+      });
+      return;
+    }
     try {
       const found = await validateLoadedIntegration(integration);
       for (const issue of found ?? []) this.#pushIssue(pkg, issue);

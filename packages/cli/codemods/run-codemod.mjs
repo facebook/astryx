@@ -31,7 +31,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as p from '../lib/term-log.mjs';
 import {findConfigPath} from '../lib/project.mjs';
-import {fixDirectiveCorruption, validateOutput} from './runner.mjs';
+import {fixDirectiveCorruption, validateOutput, IGNORED_DIRS} from './runner.mjs';
 
 export const DEFAULT_CODE_EXTENSIONS = [
   '.tsx',
@@ -61,8 +61,11 @@ export function findSourceFiles(dir) {
     }
     for (const entry of entries) {
       const fullPath = path.join(currentDir, entry.name);
+      // Never follow symlinks — writing through one would rewrite its target
+      // outside the scan tree (e.g. into node_modules or anywhere on disk).
+      if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '.git') continue;
+        if (IGNORED_DIRS.has(entry.name)) continue;
         walk(fullPath);
       } else {
         results.push(fullPath);

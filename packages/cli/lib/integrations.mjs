@@ -30,6 +30,8 @@ import {loadModuleWithSchema, findPresentFiles} from './module-loader.mjs';
  * @property {string} __spec
  * @property {string} __packageDir
  * @property {string} __manifestFile
+ * @property {string} [__loadError] set when the manifest failed to load/validate;
+ *   such an integration contributes nothing and is surfaced via Project.issues()
  */
 
 /** Conventional manifest basenames, in load-precedence order. */
@@ -70,7 +72,26 @@ export async function loadManifestObject(file, label = 'integration manifest') {
  * @param {string} [cwd]
  */
 export function resolvePackageDir(packageName, cwd = process.cwd()) {
-  return path.resolve(cwd, 'node_modules', ...packageName.split('/'));
+  // An integration spec is a bare npm package name — never a path. Reject `..`,
+  // `.`, and absolute specs so a config can't point the loader (which then
+  // dynamically imports the manifest) at an arbitrary module outside
+  // node_modules.
+  if (
+    typeof packageName !== 'string' ||
+    packageName.length === 0 ||
+    path.isAbsolute(packageName) ||
+    packageName.split('/').some(seg => seg === '..' || seg === '.')
+  ) {
+    throw new Error(
+      `Invalid integration package name "${packageName}". Use a bare package name (no path segments).`,
+    );
+  }
+  const nodeModules = path.resolve(cwd, 'node_modules');
+  const dir = path.resolve(nodeModules, ...packageName.split('/'));
+  if (dir !== nodeModules && !dir.startsWith(nodeModules + path.sep)) {
+    throw new Error(`Integration "${packageName}" resolves outside node_modules.`);
+  }
+  return dir;
 }
 
 /**
@@ -125,11 +146,28 @@ export async function loadIntegrations(specs = [], {cwd = process.cwd()} = {}) {
     }
 
     const manifestFile = resolveManifestPath(packageDir, spec);
-    const manifest = await loadModuleWithSchema(
-      manifestFile,
-      AstryxIntegrationSchema,
-      {label: `Integration ${spec}`},
-    );
+    let manifest;
+    try {
+      manifest = await loadModuleWithSchema(
+        manifestFile,
+        AstryxIntegrationSchema,
+        {label: `Integration ${spec}`},
+      );
+    } catch (err) {
+      // A manifest that throws on import or fails schema validation must NOT take
+      // down every command (component/docs/theme don't need this integration).
+      // Record a load-error marker; Project surfaces it via issues() and the
+      // discovery loops naturally skip it (no components/templates/codemods).
+      integrations.push({
+        name: pkg.name ?? spec,
+        version: pkg.version,
+        __spec: spec,
+        __packageDir: packageDir,
+        __manifestFile: manifestFile,
+        __loadError: err instanceof Error ? err.message : String(err),
+      });
+      continue;
+    }
 
     /** @param {string | null | undefined} value */
     const resolveRoot = value =>

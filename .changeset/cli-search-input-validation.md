@@ -26,4 +26,10 @@ Agent-docs data integrity:
 
 Backfills api-level tests for the zero-coverage commands (`component`, `search`, `doctor`) and unit tests for `levenshteinDistance`, the error-envelope contract, path-safety symlink escapes, and the agent-docs malformed-block cases.
 
+Codemod runner + integration loading:
+
+- The codemod source scan no longer follows symlinks (a symlinked file under the scanned path could rewrite its target OUTSIDE the project) and skips generated-output dirs (dist/build/out/.next/coverage) — codemods rewrite source, not artifacts or dependencies.
+- `resolvePackageDir` rejects an integration spec that isn't a bare package name (no `..`, no absolute, must stay in node_modules) — a config spec can no longer point the loader at an arbitrary module.
+- A broken integration manifest (throws on import or fails schema validation) no longer crashes `Project.load` (and thus every command). It's recorded and surfaced via `issues()`, restoring the documented skip+warn policy; other integrations still load.
+
 @josephfarina

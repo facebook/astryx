@@ -139,3 +139,42 @@ describe('runCodemods — unified config codemod path', () => {
     );
   });
 });
+
+describe('findSourceFiles — scan boundaries (symlink + build dirs)', () => {
+  const manifests = [
+    {
+      version: '0.1.3',
+      transforms: [
+        {name: 'p', meta: {title: 'p'}, transform: f => f.source.replace(/foo/g, 'bar')},
+      ],
+    },
+  ];
+
+  it('does not follow a symlinked file out of the scan tree', async () => {
+    const outside = path.join(tmpDir, 'outside');
+    fs.mkdirSync(path.join(tmpDir, 'src'), {recursive: true});
+    fs.mkdirSync(outside, {recursive: true});
+    const secret = path.join(outside, 'secret.ts');
+    fs.writeFileSync(secret, 'const foo = 1;\n');
+    fs.writeFileSync(path.join(tmpDir, 'src', 'real.ts'), 'const foo = 2;\n');
+    fs.symlinkSync(secret, path.join(tmpDir, 'src', 'link.ts'));
+
+    const r = await runCodemods(manifests, {apply: true, path: './src', silent: true});
+    // the symlink target (outside the tree) must be untouched
+    expect(fs.readFileSync(secret, 'utf-8')).toBe('const foo = 1;\n');
+    expect(r.writtenFiles.map(f => path.basename(f))).toEqual(['real.ts']);
+  });
+
+  it('does not scan generated-output dirs (dist/build/out)', async () => {
+    fs.mkdirSync(path.join(tmpDir, 'src'), {recursive: true});
+    fs.mkdirSync(path.join(tmpDir, 'dist'), {recursive: true});
+    fs.mkdirSync(path.join(tmpDir, 'build'), {recursive: true});
+    fs.writeFileSync(path.join(tmpDir, 'src', 'a.ts'), 'const foo = 1;\n');
+    fs.writeFileSync(path.join(tmpDir, 'dist', 'b.js'), 'const foo = 2;\n');
+    fs.writeFileSync(path.join(tmpDir, 'build', 'c.js'), 'const foo = 3;\n');
+
+    const r = await runCodemods(manifests, {apply: true, path: '.', silent: true});
+    expect(r.writtenFiles.map(f => path.basename(f))).toEqual(['a.ts']);
+    expect(fs.readFileSync(path.join(tmpDir, 'dist', 'b.js'), 'utf-8')).toContain('foo');
+  });
+});

@@ -46,6 +46,21 @@ export function fixDirectiveCorruption(code) {
 }
 
 /**
+ * Directories a source scan must never descend into: dependencies, VCS, and
+ * generated build output (codemods rewrite source, not artifacts).
+ */
+const IGNORED_DIRS = new Set([
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  'out',
+  '.next',
+  'coverage',
+]);
+export {IGNORED_DIRS};
+
+/**
  * Recursively find all source files in a directory.
  * @param {string} dir
  * @returns {string[]}
@@ -76,8 +91,15 @@ function findSourceFiles(dir) {
     }
     for (const entry of entries) {
       const fullPath = path.join(currentDir, entry.name);
+      // Never follow symlinks: readFileSync/writeFileSync would traverse a
+      // symlinked file and rewrite its target OUTSIDE the scan tree (e.g. into
+      // node_modules or anywhere on disk). A codemod must only edit real files
+      // it reaches directly under the scanned path.
+      if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '.git') continue;
+        // Skip dependency, VCS, and generated-output dirs — codemods rewrite
+        // source, not build artifacts.
+        if (IGNORED_DIRS.has(entry.name)) continue;
         walk(fullPath);
       } else if (extensions.has(path.extname(entry.name))) {
         results.push(fullPath);
