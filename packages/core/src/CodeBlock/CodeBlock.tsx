@@ -88,6 +88,14 @@ const dynamicStyles = stylex.create({
   }),
 });
 
+// Light reveal so the leading chevron eases into view instead of popping in
+// and shifting the title, which would read as jank the first time a block
+// becomes collapsible.
+const chevronReveal = stylex.keyframes({
+  from: {opacity: 0, transform: 'scale(0.8)'},
+  to: {opacity: 1, transform: 'scale(1)'},
+});
+
 const styles = stylex.create({
   root: {
     position: 'relative',
@@ -174,6 +182,9 @@ const styles = stylex.create({
     width: '14px',
     height: '14px',
     color: 'var(--color-syntax-comment)',
+    animationName: chevronReveal,
+    animationDuration: durationVars['--duration-medium'],
+    animationTimingFunction: easeVars['--ease-standard'],
     transitionProperty: 'transform',
     transitionDuration: durationVars['--duration-fast'],
     transitionTimingFunction: easeVars['--ease-standard'],
@@ -845,9 +856,6 @@ export function CodeBlock({
           canCollapse && styles.headerCollapsible,
         )}>
         <span {...stylex.props(styles.headerTitle)}>
-          {title}
-          {title && languageLabel ? ' — ' : ''}
-          {languageLabel}
           {canCollapse && (
             <span
               {...stylex.props(
@@ -857,6 +865,9 @@ export function CodeBlock({
               <Icon icon="chevronDown" size="xsm" color="inherit" />
             </span>
           )}
+          {title}
+          {title && languageLabel ? ' — ' : ''}
+          {languageLabel}
         </span>
       </div>
       {copyButtonEl}
