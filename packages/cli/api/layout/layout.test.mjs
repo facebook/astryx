@@ -146,6 +146,12 @@ describe('layoutExpand', () => {
     });
   });
 
+  it('maps pathologically deep nesting to a coded parse error, not ERR_UNKNOWN', async () => {
+    await expect(layoutCheck('V > '.repeat(2000) + 'C')).rejects.toMatchObject({
+      code: 'ERR_LAYOUT_PARSE',
+    });
+  });
+
   it('emits JSX-safe TSX for text payloads containing < and >', async () => {
     const result = await layoutExpand('Text"5 < 3 and 3 > 1"');
     expectValidTsx(result.data.code);

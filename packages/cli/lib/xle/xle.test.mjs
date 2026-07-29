@@ -331,3 +331,39 @@ describe('parseEnumValues', () => {
     expect(parseEnumValues('boolean')).toBeNull();
   });
 });
+
+// ─── compact parser depth guard ─────────────────────────────────────────────
+
+describe('parseCompact depth guard', () => {
+  it('rejects pathologically deep child chains with a located parse error', () => {
+    let err;
+    try {
+      parseCompact('V > '.repeat(2000) + 'C');
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(XLEParseError);
+    expect(err.message).toMatch(/nested too deeply/);
+    expect(err.line).toBe(1);
+    expect(typeof err.col).toBe('number');
+  });
+
+  it('rejects deep nesting that crosses group boundaries', () => {
+    expect(() =>
+      parseCompact('(' + 'V > '.repeat(2000) + 'C' + ')'),
+    ).toThrow(XLEParseError);
+  });
+
+  it('still parses moderately deep, realistic layouts', () => {
+    expect(parseCompact('V > '.repeat(400) + 'C').roots).toHaveLength(1);
+  });
+
+  it('does not leave stale depth state after a thrown error', () => {
+    try {
+      parseCompact('V > '.repeat(2000) + 'C');
+    } catch {
+      /* expected */
+    }
+    expect(parse('V > C').roots[0].children.map(c => c.name)).toEqual(['C']);
+  });
+});

@@ -15,6 +15,7 @@
 import * as fs from 'node:fs';
 import {jsonOut, humanLog} from '../../lib/json.mjs';
 import {cliError} from '../../lib/cli-error.mjs';
+import {ERROR_CODES} from '../../lib/error-codes.mjs';
 import {layoutExpand, layoutCheck, layoutGrammar} from '../../api/layout/layout.mjs';
 
 /**
@@ -50,7 +51,21 @@ import {layoutExpand, layoutCheck, layoutGrammar} from '../../api/layout/layout.
  * @returns {Promise<string>}
  */
 async function readExpression(expr, options = {}) {
-  if (options.file) return fs.readFileSync(options.file, 'utf-8');
+  if (options.file) {
+    try {
+      return fs.readFileSync(options.file, 'utf-8');
+    } catch (e) {
+      const errno = /** @type {NodeJS.ErrnoException} */ (e);
+      if (errno && errno.code === 'ENOENT') {
+        // A --file pointing at a missing file is foreseeable — surface a
+        // stable code, not the raw ENOENT errno (and no stack in human mode).
+        cliError(`File not found: ${options.file}`, {
+          code: ERROR_CODES.ERR_FILE_NOT_FOUND,
+        });
+      }
+      throw e;
+    }
+  }
   if (expr === '-') {
     /** @type {Buffer[]} */
     const chunks = [];
@@ -79,7 +94,10 @@ export function registerLayout(program) {
       const json = program.opts().json || false;
       const source = await readExpression(expression, options);
       if (!source || source.trim() === '') {
-        cliError('No layout expression given — pass it as an argument, via --file, or on stdin');
+        cliError(
+          'No layout expression given — pass it as an argument, via --file, or on stdin',
+          {code: ERROR_CODES.ERR_MISSING_ARGUMENT},
+        );
         return;
       }
       /** @type {LayoutExpandResponse} */
@@ -122,7 +140,10 @@ export function registerLayout(program) {
       const json = program.opts().json || false;
       const source = await readExpression(expression, options);
       if (!source || source.trim() === '') {
-        cliError('No layout expression given — pass it as an argument, via --file, or on stdin');
+        cliError(
+          'No layout expression given — pass it as an argument, via --file, or on stdin',
+          {code: ERROR_CODES.ERR_MISSING_ARGUMENT},
+        );
         return;
       }
       /** @type {LayoutCheckResponse} */

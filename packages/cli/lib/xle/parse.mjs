@@ -285,6 +285,16 @@ function parseAttrToken(token, line) {
 
 // ─── compact (XLE) surface ─────────────────────────────────────────────────
 
+/**
+ * Guard against unbounded recursion in the compact parser. A layout tree this
+ * deep is never hand-authored; without the cap the recursive descent blows the
+ * JS call stack and surfaces a raw RangeError (→ ERR_UNKNOWN, no line/col)
+ * instead of a located ERR_LAYOUT_PARSE. The counter is module-level so it
+ * spans group / attribute sub-streams; each parse entry point resets it.
+ */
+const MAX_COMPACT_DEPTH = 512;
+let compactDepth = 0;
+
 class CompactStream {
   /**
    * @param {string} src
@@ -467,23 +477,37 @@ function structuredCloneNode(node) {
  * @returns {import('./xle-ast').XLEItem[]}
  */
 function parseCompactSiblings(s) {
-  /** @type {import('./xle-ast').XLEItem[]} */
-  const terms = [];
-  for (;;) {
-    s.skipWs();
-    if (s.eof()) break;
-    if (s.peek() === '^') {
-      s.error("'^' climb-up is not supported — group siblings with (...) instead");
-    }
-    terms.push(parseCompactTerm(s));
-    s.skipWs();
-    if (s.peek() === '^') {
-      s.error("'^' climb-up is not supported — group siblings with (...) instead");
-    }
-    if (s.peek() === '+') { s.next(); continue; }
-    break;
+  if (++compactDepth > MAX_COMPACT_DEPTH) {
+    compactDepth--;
+    s.error(
+      `Layout is nested too deeply (limit ${MAX_COMPACT_DEPTH}); ` +
+        `flatten the tree or split it into blocks`,
+    );
   }
-  return terms;
+  try {
+    /** @type {import('./xle-ast').XLEItem[]} */
+    const terms = [];
+    for (;;) {
+      s.skipWs();
+      if (s.eof()) break;
+      if (s.peek() === '^') {
+        s.error("'^' climb-up is not supported — group siblings with (...) instead");
+      }
+      terms.push(parseCompactTerm(s));
+      s.skipWs();
+      if (s.peek() === '^') {
+        s.error("'^' climb-up is not supported — group siblings with (...) instead");
+      }
+      if (s.peek() === '+') {
+        s.next();
+        continue;
+      }
+      break;
+    }
+    return terms;
+  } finally {
+    compactDepth--;
+  }
 }
 
 /**
@@ -491,6 +515,7 @@ function parseCompactSiblings(s) {
  * @returns {import('./xle-ast').XLEDoc}
  */
 export function parseCompact(source) {
+  compactDepth = 0;
   const parts = source.split(/;;/);
   const main = new CompactStream(parts[0]);
   const roots = parseCompactSiblings(main);
