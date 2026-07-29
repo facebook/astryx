@@ -36,21 +36,54 @@ const DEFAULT_ISSUES_URL = 'https://github.com/facebook/astryx/issues/new';
  * left untouched.
  *
  * e.g. with ownerPackage '@astryxdesign/core':
- *      '../theme/tokens.stylex' -> '@astryxdesign/core/theme'
+ *      '../theme/tokens.stylex' -> '@astryxdesign/core/theme/tokens.stylex'
  *      '../utils/mergeProps'     -> '@astryxdesign/core/utils'
+ *      '../../locales/en.json'   -> '@astryxdesign/core/locales/en.json'
+ *      import('../Tooltip/Tooltip') -> import('@astryxdesign/core/Tooltip')
+ *
+ * Most sibling dirs are barrels, so the top-dir collapse (`../utils/x` ->
+ * `<pkg>/utils`) resolves. Two shapes must NOT be collapsed to the top dir:
+ *   - Asset files (`.json`, `.css`): exported by full subpath (e.g.
+ *     `./locales/*.json`, `./reset.css`), and collapsing a two-levels-up
+ *     `../../locales/x.json` would emit the invalid `<pkg>/..`.
+ *   - The theme StyleX token module (`../theme/tokens.stylex`): the StyleX
+ *     compiler needs the real module, which core ships as the dedicated
+ *     `./theme/tokens.stylex` export (the in-repo charts consumer imports it
+ *     by that exact subpath). Other `.stylex` files (e.g. a component-local
+ *     `../Layer/layerAnimations.stylex`) are NOT exported by subpath, so they
+ *     keep the barrel collapse.
  *
  * @param {string} content
  * @param {string} [ownerPackage]
  */
 export function rewriteImports(content, ownerPackage = CORE_PACKAGE) {
-  return content.replace(
-    /(from\s+['"])(\.\.\/.+?)(['"])/g,
-    (match, prefix, importPath, suffix) => {
-      const parts = importPath.replace(/^\.\.\//, '').split('/');
-      const topDir = parts[0];
-      return `${prefix}${ownerPackage}/${topDir}${suffix}`;
-    },
-  );
+  /** @param {string} importPath */
+  const mapTarget = importPath => {
+    // Strip ALL leading `../` so a two-levels-up path never yields `<pkg>/..`.
+    const rest = importPath.replace(/^(?:\.\.\/)+/, '');
+    const parts = rest.split('/');
+    const last = parts[parts.length - 1];
+    // Asset files are resolved by exact export / wildcard, never a barrel.
+    if (/\.(?:json|css)$/.test(last)) {
+      return `${ownerPackage}/${rest}`;
+    }
+    // The theme token module is a dedicated deep StyleX export.
+    if (parts[0] === 'theme' && /\.stylex(?:\.[cm]?[jt]sx?)?$/.test(last)) {
+      return `${ownerPackage}/${rest}`;
+    }
+    return `${ownerPackage}/${parts[0]}`;
+  };
+  return content
+    .replace(
+      /(from\s+['"])(\.\.\/[^'"]+)(['"])/g,
+      (_m, prefix, importPath, suffix) =>
+        `${prefix}${mapTarget(importPath)}${suffix}`,
+    )
+    .replace(
+      /(import\(\s*['"])(\.\.\/[^'"]+)(['"])/g,
+      (_m, prefix, importPath, suffix) =>
+        `${prefix}${mapTarget(importPath)}${suffix}`,
+    );
 }
 
 /**

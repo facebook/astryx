@@ -39,6 +39,18 @@ function escapeAttr(value) {
 }
 
 /**
+ * JSX text nodes cannot contain raw `<`, `>`, `{`, or `}`. When a text payload
+ * contains any of them, emit it as a string-expression child so the output is
+ * valid TSX. Plain text is passed through unchanged.
+ * @param {import('./xle-ast').XLEValue} text
+ * @returns {string}
+ */
+function jsxText(text) {
+  const str = String(text);
+  return /[<>{}]/.test(str) ? `{${JSON.stringify(str)}}` : str;
+}
+
+/**
  * @param {import('./xle-ast').XLEItem} item
  * @returns {import('./xle-ast').XLEItem}
  */
@@ -419,13 +431,13 @@ class Emitter {
 
     const bodyLines = [];
     if (node.hint) bodyLines.push(...this.emitHint(node.hint, depth + 1));
-    if (textChild != null) bodyLines.push(`${INDENT.repeat(depth + 1)}${textChild}`);
+    if (textChild != null) bodyLines.push(`${INDENT.repeat(depth + 1)}${jsxText(textChild)}`);
     bodyLines.push(...this.emitItems(children, depth + 1, childContext));
 
     // Required children with nothing to render → placeholder text.
     const childrenProp = component.props.get('children');
     if (bodyLines.length === 0 && childrenProp?.required) {
-      bodyLines.push(`${INDENT.repeat(depth + 1)}${node.payload || component.name}`);
+      bodyLines.push(`${INDENT.repeat(depth + 1)}${jsxText(node.payload || component.name)}`);
     }
 
     const lines = this.renderTag(component, props, slotEntries, bodyLines, depth);
@@ -492,7 +504,7 @@ class Emitter {
     }
     if (typeof value === 'string') {
       const text = this.requireComponent('Text');
-      return [text ? `<${text.exportName}>${value}</${text.exportName}>` : `<>${value}</>`];
+      return [text ? `<${text.exportName}>${jsxText(value)}</${text.exportName}>` : `<>${jsxText(value)}</>`];
     }
     if ('hint' in value) {
       return [

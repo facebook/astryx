@@ -12,10 +12,12 @@ Per-command input validation + write safety:
 
 - `search()`: non-positive/non-integer `limit`, empty query, unknown `--type` → `ERR_INVALID_ARGUMENT` (previously `limit: 0` returned the full unclamped set).
 - `swizzle()`: the component name is sanitized so `..`/separators can't escape the `--output` base.
+- `swizzle()` import rewriting: dynamic `import('../Sibling/…')` is now rewritten (was left pointing at a non-existent sibling in the output dir); a two-levels-up asset import (`../../locales/x.json`) maps to the exported subpath instead of the invalid `<pkg>/..`; and `../theme/tokens.stylex` keeps its full subpath (the StyleX compiler needs the dedicated `./theme/tokens.stylex` export — collapsing it to `<pkg>/theme` broke StyleX resolution). Component-local `.stylex` files that aren't subpath exports keep the working barrel collapse.
 - `template()` copy: refuses to clobber without `overwrite: true` (`ERR_FILE_EXISTS`); adds an `overwrite` option.
 - `upgrade()`: the `--path` scan dir is confined to cwd (`--apply` rewrites files in place).
 - `init()`: template scaffold refuses to clobber an existing `page.tsx` (`ERR_FILE_EXISTS`); an unknown `--agent` now throws `ERR_UNKNOWN_AGENT` (was silently ignored).
 - `layout`: rejects an unknown `--form` (`ERR_INVALID_OPTION`) and empty expression (`ERR_INVALID_ARGUMENT`).
+- `layout expand`: text payloads containing `<`, `>`, `{`, or `}` (e.g. `Text"5 < 3"`) are emitted as JSX string-expression children so the generated TSX is valid — previously they produced syntactically-broken output.
 - `component --package <pkg> --showcase`/`--blocks`: route to the right leaf instead of falling back to `component.detail`.
 - `discover`/`docs` leaves: empty query/section errors instead of matching everything via `.includes('')`.
 - `blog()` detail: a non-string slug throws `ERR_INVALID_ARGUMENT` (was a raw `TypeError` the CLI downgraded to `ERR_UNKNOWN`), and fails fast before any network fetch.
@@ -34,7 +36,7 @@ Agent-docs data integrity:
 
 - `injectXdsBlock`/`removeXdsBlock` no longer drop, duplicate, or orphan user content on malformed managed blocks (END-before-START, duplicate/nested blocks, or a start marker with no end). They locate a single well-formed block (END searched after START) and refuse to touch an ambiguous/half-written file instead of corrupting it.
 
-Backfills api-level tests for the zero-coverage commands (`component`, `search`, `doctor`), the `hook`/`discover`/`docs` dispatchers (incl. `hook.list --category` unknown → `ERR_UNKNOWN_CATEGORY`), the blog adapter/leaf/CLI wrapper, doctor degradation paths, manifest determinism + subcommand ordering, `build` error-code faithfulness, `layout check` exit-code parity, config-codemod isolation, a static guard that every inline error envelope carries a `code`, `isAstryxInitialized` malformed-marker resilience, and unit tests for `levenshteinDistance`, `checkGhCli`, the error-envelope contract, path-safety symlink escapes, and the agent-docs malformed-block cases.
+Backfills api-level tests for the zero-coverage commands (`component`, `search`, `doctor`), the `hook`/`discover`/`docs` dispatchers (incl. `hook.list --category` unknown → `ERR_UNKNOWN_CATEGORY`), the blog adapter/leaf/CLI wrapper, doctor degradation paths, manifest determinism + subcommand ordering, `build` error-code faithfulness, `layout check` exit-code parity, `layout expand` JSX-safe text payloads, `swizzle` import rewriting (dynamic import, two-levels-up assets, theme StyleX subpath, barrel collapse), config-codemod isolation, a static guard that every inline error envelope carries a `code`, `isAstryxInitialized` malformed-marker resilience, and unit tests for `levenshteinDistance`, `checkGhCli`, the error-envelope contract, path-safety symlink escapes, and the agent-docs malformed-block cases.
 
 Codemod runner + integration loading:
 

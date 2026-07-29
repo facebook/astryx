@@ -145,6 +145,26 @@ describe('layoutExpand', () => {
       message: expect.stringMatching(/line 1/),
     });
   });
+
+  it('emits JSX-safe TSX for text payloads containing < and >', async () => {
+    const result = await layoutExpand('Text"5 < 3 and 3 > 1"');
+    expectValidTsx(result.data.code);
+  }, SLOW);
+
+  it('emits JSX-safe TSX for text payloads containing { and }', async () => {
+    const result = await layoutExpand('Text"cost is {price}"');
+    expectValidTsx(result.data.code);
+  }, SLOW);
+
+  it('emits JSX-safe TSX when a text payload looks like a closing tag', async () => {
+    const result = await layoutExpand('Text"end</Text><img/>"');
+    expectValidTsx(result.data.code);
+  }, SLOW);
+
+  it('emits JSX-safe TSX for JSX-special chars in outline form', async () => {
+    const result = await layoutExpand('VStack\n  Text "a < b"', {form: 'outline'});
+    expectValidTsx(result.data.code);
+  }, SLOW);
 });
 
 describe('layoutCheck', () => {

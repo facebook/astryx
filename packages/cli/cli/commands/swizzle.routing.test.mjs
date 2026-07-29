@@ -135,7 +135,7 @@ describe('swizzle — core feedback routing via config', () => {
       path.join(project, 'components', 'astryx', 'Button', 'Button.tsx'),
       'utf-8',
     );
-    expect(out).toContain(`from '@astryxdesign/core/theme'`);
+    expect(out).toContain(`from '@astryxdesign/core/theme/tokens.stylex'`);
     expect(out).toContain(`from './helper'`);
   });
 
@@ -252,7 +252,7 @@ describe('swizzle — ambiguous ownership', () => {
       path.join(project, 'components', 'astryx', 'Button', 'Button.tsx'),
       'utf-8',
     );
-    expect(out).toContain(`from '@astryxdesign/core/theme'`);
+    expect(out).toContain(`from '@astryxdesign/core/theme/tokens.stylex'`);
   });
 });
 
