@@ -18,7 +18,7 @@ import {ERROR_CODES} from '../../../lib/error-codes.mjs';
  *
  * @param {import('../../../lib/package-scanner.mjs').ScannedPackage[]} packages
  * @param {string} query scoped package name, e.g. `@scope/name`
- * @returns {import('../../../types/discover').DiscoverDetailResponse}
+ * @returns {import('../discover.type.mjs').DiscoverDetailResponse}
  */
 export function detail(packages, query) {
   const pkg = packages.find(p => p.name === query);

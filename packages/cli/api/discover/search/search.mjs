@@ -34,8 +34,8 @@ import {ERROR_CODES} from '../../../lib/error-codes.mjs';
  * @param {string} query
  * @param {{lang?: string | null, zh?: boolean}} opts
  * @returns {Promise<
- *   import('../../../types/discover').DiscoverDetailDocResponse |
- *   import('../../../types/discover').DiscoverSearchResponse
+ *   import('../discover.type.mjs').DiscoverDetailDocResponse |
+ *   import('../discover.type.mjs').DiscoverSearchResponse
  * >}
  */
 export async function search(packages, query, {lang, zh}) {

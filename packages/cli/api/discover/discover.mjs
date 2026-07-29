@@ -29,10 +29,10 @@ import {search} from './search/search.mjs';
  * @param {string} [options.lang]
  * @param {boolean} [options.zh]
  * @returns {Promise<
- *   import('../../types/discover').DiscoverListResponse |
- *   import('../../types/discover').DiscoverDetailResponse |
- *   import('../../types/discover').DiscoverDetailDocResponse |
- *   import('../../types/discover').DiscoverSearchResponse
+ *   import('./discover.type.mjs').DiscoverListResponse |
+ *   import('./discover.type.mjs').DiscoverDetailResponse |
+ *   import('./discover.type.mjs').DiscoverDetailDocResponse |
+ *   import('./discover.type.mjs').DiscoverSearchResponse
  * >}
  */
 export async function discover(query, options = {}) {

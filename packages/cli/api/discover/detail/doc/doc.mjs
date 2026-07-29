@@ -24,7 +24,7 @@ import {ERROR_CODES} from '../../../../lib/error-codes.mjs';
  *
  * @param {import('../../_adapter.mjs').ComponentResolution} result
  * @param {{lang?: string | null, zh?: boolean}} opts
- * @returns {Promise<import('../../../../types/discover').DiscoverDetailDocResponse>}
+ * @returns {Promise<import('../../discover.type.mjs').DiscoverDetailDocResponse>}
  */
 export async function docFromResult(result, opts) {
   return {type: 'discover.detail.doc', data: await loadValidatedDoc(result, opts)};
@@ -40,7 +40,7 @@ export async function docFromResult(result, opts) {
  * @param {string} pkgName
  * @param {string} compName
  * @param {{lang?: string | null, zh?: boolean}} opts
- * @returns {Promise<import('../../../../types/discover').DiscoverDetailDocResponse>}
+ * @returns {Promise<import('../../discover.type.mjs').DiscoverDetailDocResponse>}
  */
 export async function doc(packages, pkgName, compName, {lang, zh}) {
   const pkg = packages.find(p => p.name === pkgName);

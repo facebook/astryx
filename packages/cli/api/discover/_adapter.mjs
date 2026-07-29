@@ -99,7 +99,7 @@ export async function discoverPackages() {
  * by the list and detail leaves so the entry keys (and their order) stay in one
  * place.
  * @param {ScannedPackage} pkg
- * @returns {import('../../types/discover').DiscoverListEntry}
+ * @returns {import('./discover.type.mjs').DiscoverListEntry}
  */
 export function toEntry(pkg) {
   return {
@@ -129,7 +129,7 @@ export function findComponent(packages, name) {
  * `discover.detail.doc` envelope.
  * @param {ComponentResolution} result
  * @param {{lang?: string | null, zh?: boolean}} opts
- * @returns {Promise<import('../../types/discover').DiscoverDetailDocResponse['data']>}
+ * @returns {Promise<import('./discover.type.mjs').DiscoverDetailDocResponse['data']>}
  */
 export async function loadValidatedDoc(result, {lang, zh}) {
   let docs;
