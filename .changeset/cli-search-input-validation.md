@@ -19,6 +19,9 @@ Per-command input validation + write safety:
 - `component --package <pkg> --showcase`/`--blocks`: route to the right leaf instead of falling back to `component.detail`.
 - `discover`/`docs` leaves: empty query/section errors instead of matching everything via `.includes('')`.
 - `blog()` detail: a non-string slug throws `ERR_INVALID_ARGUMENT` (was a raw `TypeError` the CLI downgraded to `ERR_UNKNOWN`), and fails fast before any network fetch.
+- `hook()`/`component()` dispatchers: a non-string `name` or `category` throws a coded error (`ERR_UNKNOWN_HOOK` / `ERR_UNKNOWN_COMPONENT` / `ERR_UNKNOWN_CATEGORY`) instead of a raw `TypeError` with no `.code` from the leaf's `.toLowerCase()`/`.replace(...)`.
+- `theme add`: a write failure where an ancestor of the target dir is a file now surfaces `ERR_WRITE_FAILED` (the `mkdir` moved inside the write try/catch) instead of leaking a raw fs errno (`EEXIST`/`ENOTDIR`) + absolute path.
+- `validate-integration`: a path-unsafe `[package]` spec (`..`/absolute) is reported as an `invalid_package_spec` diagnostic instead of crashing with a raw stack (human) / generic `ERR_UNKNOWN` (`--json`).
 - `doctor`: no longer crashes (raw stack in human mode / `ERR_UNKNOWN` in `--json`) when multiple `astryx.config.*` files coexist — it reports a `config` FAIL. Version-alignment skips (info) instead of a spurious drift WARN with a `NaN.undefined.x` fix when either version isn't comparable semver (e.g. `workspace:*`).
 - `manifest`: subcommands are sorted by name (same stability guarantee the top-level command list makes), so reordering `.command()` calls can't silently change the agent-facing manifest.
 - `build`: the CLI wrapper now propagates the API's error `code` into the `--json` envelope (bogus `--type` / non-positive / non-integer `--limit` → `ERR_INVALID_ARGUMENT` instead of a generic `ERR_UNKNOWN`), and delegates `--limit` validation to the API (parity with `search`).
@@ -31,7 +34,7 @@ Agent-docs data integrity:
 
 - `injectXdsBlock`/`removeXdsBlock` no longer drop, duplicate, or orphan user content on malformed managed blocks (END-before-START, duplicate/nested blocks, or a start marker with no end). They locate a single well-formed block (END searched after START) and refuse to touch an ambiguous/half-written file instead of corrupting it.
 
-Backfills api-level tests for the zero-coverage commands (`component`, `search`, `doctor`), the `discover`/`docs` dispatchers, the blog adapter/leaf/CLI wrapper, doctor degradation paths, manifest determinism + subcommand ordering, `build` error-code faithfulness, `layout check` exit-code parity, config-codemod isolation, a static guard that every inline error envelope carries a `code`, `isAstryxInitialized` malformed-marker resilience, and unit tests for `levenshteinDistance`, `checkGhCli`, the error-envelope contract, path-safety symlink escapes, and the agent-docs malformed-block cases.
+Backfills api-level tests for the zero-coverage commands (`component`, `search`, `doctor`), the `hook`/`discover`/`docs` dispatchers (incl. `hook.list --category` unknown → `ERR_UNKNOWN_CATEGORY`), the blog adapter/leaf/CLI wrapper, doctor degradation paths, manifest determinism + subcommand ordering, `build` error-code faithfulness, `layout check` exit-code parity, config-codemod isolation, a static guard that every inline error envelope carries a `code`, `isAstryxInitialized` malformed-marker resilience, and unit tests for `levenshteinDistance`, `checkGhCli`, the error-envelope contract, path-safety symlink escapes, and the agent-docs malformed-block cases.
 
 Codemod runner + integration loading:
 

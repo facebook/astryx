@@ -219,4 +219,30 @@ describe('validate-integration API', () => {
     const result = await validateLocalIntegration(pkgDir);
     expect(byCode(result.issues, 'invalid_component')).toHaveLength(1);
   });
+
+  it('degrades a path-unsafe package spec (..) into a diagnostic instead of crashing', async () => {
+    const consumer = path.join(tmpDir, 'consumer');
+    fs.mkdirSync(consumer, {recursive: true});
+    fs.writeFileSync(
+      path.join(consumer, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+    // resolvePackageDir throws on a spec with `..`; it must be caught and
+    // surfaced as an issue, not escape as a raw stack / generic ERR_UNKNOWN.
+    const result = await validateInstalledIntegration('../evil', consumer);
+    expect(result.found).toBe(true);
+    expect(byCode(result.issues, 'invalid_package_spec')).toHaveLength(1);
+    expect(summarizeIssues(result.issues).errors).toBeGreaterThan(0);
+  });
+
+  it('degrades an absolute package spec into a diagnostic', async () => {
+    const consumer = path.join(tmpDir, 'consumer');
+    fs.mkdirSync(consumer, {recursive: true});
+    fs.writeFileSync(
+      path.join(consumer, 'package.json'),
+      JSON.stringify({name: 'consumer'}),
+    );
+    const result = await validateInstalledIntegration('/etc/passwd', consumer);
+    expect(byCode(result.issues, 'invalid_package_spec')).toHaveLength(1);
+  });
 });

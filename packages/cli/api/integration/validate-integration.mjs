@@ -324,7 +324,22 @@ export async function validateLocalIntegration(cwd = process.cwd()) {
  * @returns {Promise<ValidateResult>}
  */
 export async function validateInstalledIntegration(spec, cwd = process.cwd()) {
-  const packageDir = resolvePackageDir(spec, cwd);
+  // resolvePackageDir throws (path-safety guard) on a spec with path segments,
+  // `..`, or an absolute path. Every other malformed input to this command
+  // degrades into a diagnostic — so catch it here and return an issue instead
+  // of letting the throw escape to a raw stack (human) / generic ERR_UNKNOWN
+  // (--json).
+  let packageDir;
+  try {
+    packageDir = resolvePackageDir(spec, cwd);
+  } catch (err) {
+    return {
+      found: true,
+      name: spec,
+      version: undefined,
+      issues: [error('invalid_package_spec', /** @type {any} */ (err).message)],
+    };
+  }
   const pkgJsonPath = path.join(packageDir, 'package.json');
 
   /** @type {{name?: string, version?: string}} */

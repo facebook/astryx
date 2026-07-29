@@ -13,6 +13,7 @@ import {describe, it, expect} from 'vitest';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {component} from './component.mjs';
+import {AstryxError} from '../error.mjs';
 
 // api/component/ -> up 4 = repo root (has packages/core, which findCoreDir walks to).
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -145,5 +146,18 @@ describe('component dispatcher — scoped --package routes all projections', () 
     expect((await component('Button', {cwd, package: CORE, props: true})).type).toBe(
       'component.detail.props',
     );
+  }, SLOW);
+});
+
+describe('component dispatcher — category guard', () => {
+  it('a non-string category throws a coded error (not a raw TypeError)', async () => {
+    for (const bad of [123, {}, [1]]) {
+      const err = await component(undefined, {
+        cwd,
+        category: /** @type {any} */ (bad),
+      }).catch(e => e);
+      expect(err).toBeInstanceOf(AstryxError);
+      expect(err.code).toBe('ERR_UNKNOWN_CATEGORY');
+    }
   }, SLOW);
 });

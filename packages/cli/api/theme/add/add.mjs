@@ -110,10 +110,12 @@ export async function themeAdd(slug, options = {}) {
   }
 
   // Stage to temp files then rename, rolling back partials on failure so a
-  // failed write never leaves a half-written theme.
-  fs.mkdirSync(resolvedDir, {recursive: true});
+  // failed write never leaves a half-written theme. mkdir is inside the try so
+  // a failure (e.g. an ancestor is a file → EEXIST/ENOTDIR) surfaces as a
+  // stable ERR_WRITE_FAILED rather than leaking a raw fs errno + absolute path.
   const staged = [];
   try {
+    fs.mkdirSync(resolvedDir, {recursive: true});
     for (const w of writes) {
       const tmp = `${w.dest}.${process.pid}.tmp`;
       const contents = stripCopyrightHeader(fs.readFileSync(w.src, 'utf-8'));

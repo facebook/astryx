@@ -83,6 +83,17 @@ export async function component(name, options = {}) {
 
   const coreDir = requireCoreDir(cwd);
 
+  // A public API caller could pass a non-string category; the list leaf does
+  // `category.toLowerCase()`, so guard it up front (same class as the name
+  // guard below) instead of throwing a raw TypeError with no `.code`.
+  if (category != null && typeof category !== 'string') {
+    throw new AstryxError(
+      `Unknown category "${String(category)}"`,
+      undefined,
+      ERROR_CODES.ERR_UNKNOWN_CATEGORY,
+    );
+  }
+
   // ── List mode ──────────────────────────────────────────────────
   if (category || list || !name) {
     return componentList(coreDir, {cwd, category, detail, zh, dense, lang});
