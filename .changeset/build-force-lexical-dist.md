@@ -2,8 +2,10 @@
 '@astryxdesign/build': patch
 ---
 
-[fix] Force `lexical`/`@lexical/*` to built dist in withAstryx (fixes sandbox build)
+[fix] Pin lexical/@lexical to built dist in withAstryx (fixes sandbox build)
 
-`withAstryx` applies webpack's `source` resolve condition to `@astryxdesign/*` packages so the sandbox/docsite build straight from raw TS. But a rule's `resolve.conditionNames` also governs how the _matched_ module resolves **its own** imports — so `@astryxdesign/lab/dist/RichTextEditor.js` resolved its `import 'lexical'` with the `source` condition too. `lexical` (and `@lexical/*`) ship a `source` export pointing at raw `.ts` (`./src/index.ts`), which Next's Babel cannot compile — it hits `declare` class fields and fails the `build-sandbox` job.
+`withAstryx` sets a global `source` resolve condition so `@astryxdesign/*` packages build straight from their raw-TS `source` export with no prebuild step (they're transpiled via `transpilePackages`). But `lexical` and every `@lexical/*` package — pulled in by `@astryxdesign/lab`'s new `RichTextEditor` — ALSO ship a `source` export pointing at raw `.ts` (`./src/index.ts`). Under the global `source` condition those resolved to untranspiled TypeScript, which Next's Babel cannot compile: it dies on `declare` class fields and fails the `build-sandbox` job.
 
-Adds a higher-precedence `module.rules` entry (placed first) that matches `lexical` and `@lexical/*` resources and forces the **default** conditions (`['...']`), resolving them to their built dist output regardless of which package imports them. The `@astryxdesign` `source` rule is unchanged; Astryx source builds are unaffected. Guarded by a new `next.test.mjs` regression test.
+`withAstryx` now builds a `resolve.alias` map that pins `lexical` and every installed `@lexical/*` package — including every `exports` subpath — to its prebuilt dist file, resolved via Node's own resolver (which ignores the webpack-only `source` convention and honors each package's exports-map renames). Exact-match (`<specifier>$`) aliases win over export-condition resolution regardless of which package issued the import, so lexical always comes from dist while Astryx keeps building from source. Guarded by a `next.test.mjs` regression test.
+
+@potatowagon

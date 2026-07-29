@@ -2,86 +2,86 @@
 
 /**
  * @file next.test.mjs
- * @description Verifies withAstryx() emits webpack resolve rules that (1) build
- *   @astryxdesign/* packages from their `source` (raw TS) export, and (2) force
- *   `lexical`/`@lexical/*` to their built dist output — never the `source`
- *   raw-TS export, which Next's Babel cannot compile (`declare` class fields).
- *   Regression guard for the build-sandbox failure where the `source` condition
- *   leaked into @astryxdesign/lab's `import 'lexical'`.
+ * @description Verifies withAstryx() (1) sets the global `source` resolve
+ *   condition so @astryxdesign packages build from raw TS, and (2) pins
+ *   `lexical`/`@lexical/*` to their built dist via resolve.alias — never their
+ *   `source` raw-TS export, which Next's Babel cannot compile (`declare` class
+ *   fields). Regression guard for the build-sandbox failure where the global
+ *   `source` condition made lexical resolve to untranspiled TypeScript.
  */
 
 import {describe, it, expect} from 'vitest';
 import {createRequire} from 'node:module';
+import path from 'node:path';
 
 const require = createRequire(import.meta.url);
-const {withAstryx} = require('./next.js');
+const {withAstryx, buildLexicalDistAliases} = require('./next.js');
 
-/** Run withAstryx's webpack fn against a minimal config and return the rules. */
-function getRules() {
+// Resolve lexical relative to this monorepo (it's a devDependency of the repo).
+const REPO_ROOT = path.resolve(import.meta.dirname, '../../..');
+
+/** Run withAstryx's webpack fn and return the resulting resolve config. */
+function getResolve(context) {
   const cfg = withAstryx();
   const webpackCfg = {resolve: {}, module: {rules: []}};
-  cfg.webpack(webpackCfg, {dev: false});
-  return webpackCfg.module.rules;
+  cfg.webpack(webpackCfg, context);
+  return webpackCfg.resolve;
 }
 
-/** Find the first rule whose `test` regex matches the given path. */
-function ruleFor(rules, path) {
-  return rules.find(r => r.test instanceof RegExp && r.test.test(path));
-}
-
-describe('withAstryx webpack condition rules', () => {
-  it('resolves @astryxdesign packages from their source export', () => {
-    const rules = getRules();
-    const rule = ruleFor(rules, '/x/node_modules/@astryxdesign/core/index.js');
-    expect(rule).toBeTruthy();
-    expect(rule.resolve.conditionNames).toContain('source');
+describe('withAstryx resolve config', () => {
+  it('sets the global source condition (so @astryxdesign builds from src)', () => {
+    const resolve = getResolve({dir: REPO_ROOT, dev: false});
+    expect(resolve.conditionNames).toContain('source');
+    // Standard conditions must remain so normal packages still resolve.
+    expect(resolve.conditionNames).toContain('import');
+    expect(resolve.conditionNames).toContain('default');
   });
 
-  it('forces lexical to built dist (no `source` condition)', () => {
-    const rules = getRules();
-    const rule = ruleFor(rules, '/x/node_modules/lexical/index.js');
-    expect(rule).toBeTruthy();
-    expect(rule.resolve.conditionNames).not.toContain('source');
-    expect(rule.resolve.conditionNames).toContain('...');
+  it('keeps symlinks:false for the pnpm transpilePackages matcher', () => {
+    const resolve = getResolve({dir: REPO_ROOT, dev: false});
+    expect(resolve.symlinks).toBe(false);
   });
 
-  it('forces @lexical/* packages to built dist (no `source` condition)', () => {
-    const rules = getRules();
-    const rule = ruleFor(
-      rules,
-      '/x/node_modules/@lexical/react/index.js',
-    );
-    expect(rule).toBeTruthy();
-    expect(rule.resolve.conditionNames).not.toContain('source');
+  it('aliases lexical + @lexical/* onto their built dist output', () => {
+    const resolve = getResolve({dir: REPO_ROOT, dev: false});
+    const alias = resolve.alias || {};
+    const keys = Object.keys(alias);
+    expect(keys.length).toBeGreaterThan(0);
+    // Every alias must point at a dist file, never raw src.
+    for (const k of keys) {
+      expect(alias[k]).not.toMatch(/[\\/]src[\\/]/);
+    }
+  });
+});
+
+describe('buildLexicalDistAliases', () => {
+  const alias = buildLexicalDistAliases(REPO_ROOT);
+
+  it('pins the bare lexical entry to dist', () => {
+    expect(alias['lexical$']).toBeTruthy();
+    expect(alias['lexical$']).toMatch(/[\\/]lexical[\\/]dist[\\/]/);
+    expect(alias['lexical$']).not.toMatch(/[\\/]src[\\/]/);
   });
 
-  it('lexical rule takes precedence over the @astryxdesign source rule', () => {
-    const rules = getRules();
-    const lexicalIdx = rules.findIndex(
-      r => r.test instanceof RegExp && r.test.test('/x/node_modules/lexical/index.js'),
-    );
-    const astryxIdx = rules.findIndex(
-      r =>
-        r.test instanceof RegExp &&
-        r.test.test('/x/node_modules/@astryxdesign/core/index.js'),
-    );
-    expect(lexicalIdx).toBeGreaterThanOrEqual(0);
-    expect(astryxIdx).toBeGreaterThanOrEqual(0);
-    // Lower index = matched first by webpack.
-    expect(lexicalIdx).toBeLessThan(astryxIdx);
+  it('pins deep @lexical/react subpaths to dist (respecting export renames)', () => {
+    // `./ReactProviderExtension` is renamed to LexicalReactProviderExtension in
+    // dist — an exports-map rename a naive dir alias would miss.
+    const composer = alias['@lexical/react/LexicalComposer$'];
+    expect(composer).toBeTruthy();
+    expect(composer).toMatch(/[\\/]@lexical[\\/]react[\\/]dist[\\/]/);
+    expect(composer).not.toMatch(/[\\/]src[\\/]/);
   });
 
-  it('does not match @astryxdesign with the lexical rule', () => {
-    const rules = getRules();
-    // The lexical rule must NOT catch @astryxdesign packages.
-    const lexicalRule = rules.find(
-      r =>
-        r.test instanceof RegExp &&
-        r.test.test('/x/node_modules/lexical/index.js') &&
-        !r.resolve.conditionNames.includes('source'),
-    );
-    expect(lexicalRule.test.test('/x/node_modules/@astryxdesign/core/x.js')).toBe(
-      false,
-    );
+  it('never points any alias at a raw source file', () => {
+    for (const k of Object.keys(alias)) {
+      expect(alias[k], `${k} -> ${alias[k]}`).not.toMatch(/[\\/]src[\\/]/);
+      expect(alias[k]).not.toMatch(/\.tsx?$/);
+    }
+  });
+
+  it('returns an empty map when lexical is not resolvable', () => {
+    // A directory with no node_modules → nothing to alias, no throw.
+    const empty = buildLexicalDistAliases('/nonexistent-dir-xyz');
+    expect(empty).toEqual({});
   });
 });
