@@ -223,35 +223,58 @@ export const ThemedSurfaceOptOut: Story = {
   render: () => (
     <Stack gap={4}>
       <p>
-        Tooltip renders on an inverted media surface by default. A theme can opt
-        out with{' '}
+        Tooltip renders on an inverted media surface by default (dark panel in a
+        light app, light panel in a dark app). A theme can opt out with{' '}
         <code>
           surfaces: {'{'} tooltip: 'normal' {'}'}
         </code>
         , so tooltips use the app&apos;s ordinary popover surface tokens
-        instead. Both tooltips below are pinned open for comparison.
+        instead. Each column pins an explicit mode so the light/dark inversion
+        is visible; both tooltips are pinned open for comparison.
       </p>
-      <HStack gap={8} style={{padding: '80px 40px'}}>
-        <Theme theme={neutralTheme}>
-          <Stack gap={2} hAlign="center">
-            <strong>Default (inverted)</strong>
-            <Tooltip
-              content="Inverted surface tooltip"
-              isOpen
-              placement="below">
-              <Button label="Default" variant="secondary" />
-            </Tooltip>
-          </Stack>
-        </Theme>
-        <Theme theme={normalTooltipTheme}>
-          <Stack gap={2} hAlign="center">
-            <strong>surfaces.tooltip = &apos;normal&apos;</strong>
-            <Tooltip content="Normal surface tooltip" isOpen placement="below">
-              <Button label="Opted out" variant="secondary" />
-            </Tooltip>
-          </Stack>
-        </Theme>
-      </HStack>
+      {(['light', 'dark'] as const).map(mode => (
+        <Stack key={mode} gap={2}>
+          <strong>Mode: {mode}</strong>
+          <HStack gap={8} style={{padding: '72px 40px'}}>
+            <Theme theme={neutralTheme} mode={mode}>
+              <Stack
+                gap={2}
+                hAlign="center"
+                style={{
+                  backgroundColor: 'var(--color-background-body)',
+                  padding: 16,
+                  borderRadius: 12,
+                }}>
+                <strong>Default (inverted)</strong>
+                <Tooltip
+                  content="Inverted surface tooltip"
+                  isOpen
+                  placement="below">
+                  <Button label="Default" variant="secondary" />
+                </Tooltip>
+              </Stack>
+            </Theme>
+            <Theme theme={normalTooltipTheme} mode={mode}>
+              <Stack
+                gap={2}
+                hAlign="center"
+                style={{
+                  backgroundColor: 'var(--color-background-body)',
+                  padding: 16,
+                  borderRadius: 12,
+                }}>
+                <strong>surfaces.tooltip = &apos;normal&apos;</strong>
+                <Tooltip
+                  content="Normal surface tooltip"
+                  isOpen
+                  placement="below">
+                  <Button label="Opted out" variant="secondary" />
+                </Tooltip>
+              </Stack>
+            </Theme>
+          </HStack>
+        </Stack>
+      ))}
     </Stack>
   ),
   parameters: {
@@ -280,21 +303,23 @@ export const InsideInvertedToast: Story = {
           inverted surface.
         </p>
         <div style={{padding: '60px 40px'}}>
-          <Toast
-            type="info"
-            body="Workspace restored."
-            isAutoHide={false}
-            autoHideDuration={0}
-            onDismiss={noop}
-            endContent={
-              <Tooltip
-                content="This tooltip is nested in the toast"
-                isOpen
-                placement="above">
-                <Button label="Details" variant="ghost" size="sm" />
-              </Tooltip>
-            }
-          />
+          <Theme theme={neutralTheme} mode="light">
+            <Toast
+              type="info"
+              body="Workspace restored."
+              isAutoHide={false}
+              autoHideDuration={0}
+              onDismiss={noop}
+              endContent={
+                <Tooltip
+                  content="This tooltip is nested in the toast"
+                  isOpen
+                  placement="above">
+                  <Button label="Details" variant="ghost" size="sm" />
+                </Tooltip>
+              }
+            />
+          </Theme>
         </div>
       </Stack>
     );

@@ -54,9 +54,10 @@ const styles = stylex.create({
     alignItems: 'flex-start',
     gap: spacingVars['--spacing-3'],
     width: '100%',
-    // Explicit color anchor for the inverted surface — the media-surface
-    // baseline (reset.css) re-points --color-text-primary on this wrapper,
-    // so reading it here keeps text legible against the inverted background.
+    // Explicit color anchor for the inverted surface — the theme's generated
+    // media-surface CSS re-points --color-text-primary on this wrapper
+    // (.astryx-toast-content), so reading it here keeps text legible against
+    // the inverted background.
     color: colorVars['--color-text-primary'],
   },
   variantError: {
@@ -94,8 +95,8 @@ export interface ToastProps {
  * Individual toast notification.
  *
  * Renders on an inverted surface by default (its content's color-scheme
- * flips opposite to the ambient mode via the media-surface baseline in
- * reset.css); the error variant is always on a dark surface. A theme can
+ * flips opposite to the ambient mode via the theme's generated media-surface
+ * CSS); the error variant is always on a dark surface. A theme can
  * opt out with `defineTheme({ surfaces: { toast: 'normal' } })`. Pauses
  * auto-dismiss on hover and focus.
  *

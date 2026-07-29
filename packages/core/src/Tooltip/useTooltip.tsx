@@ -48,9 +48,9 @@ const HOVER_BRIDGE_DELAY = 100;
 const styles = stylex.create({
   // Base container styles — inverted surface for high contrast. The
   // background resolves in the ambient color scheme (dark panel in a light
-  // app); the content wrapper's color-scheme is flipped by the media-surface
-  // baseline (reset.css), keeping this unified with Toast. A theme can opt
-  // out via `defineTheme({ surfaces: { tooltip: 'normal' } })`.
+  // app); the content wrapper's color-scheme is flipped by the theme's
+  // generated media-surface CSS, keeping this unified with Toast. A theme can
+  // opt out via `defineTheme({ surfaces: { tooltip: 'normal' } })`.
   container: {
     backgroundColor: colorVars['--color-background-inverted'],
     borderRadius: radiusVars['--radius-container'],
@@ -80,8 +80,9 @@ const styles = stylex.create({
     paddingInlineEnd: spacingVars['--spacing-2'],
     maxWidth: 300,
     wordBreak: 'break-word',
-    // Explicit color anchor — the media-surface baseline re-points
-    // --color-text-primary on this wrapper for the inverted surface.
+    // Explicit color anchor — the theme's generated media-surface CSS
+    // re-points --color-text-primary on this wrapper (.astryx-tooltip-content)
+    // for the inverted surface.
     color: colorVars['--color-text-primary'],
   },
 });

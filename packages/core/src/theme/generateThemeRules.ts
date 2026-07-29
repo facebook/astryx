@@ -699,6 +699,13 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
  *   ambient light  → content flips to dark  → onDark tokens (on-dark color)
  *   ambient dark   → content flips to light → onLight tokens (on-light color)
  *
+ * `data-theme` is read on the `@scope` root (the nearest `[data-astryx-theme]`
+ * element — the root `Theme` syncs both attributes onto `<html>`, and each
+ * nested `Theme` writes both onto its own wrapper). A nested `Theme` left at
+ * the default `mode="system"` therefore has no `data-theme` and resolves via
+ * `prefers-color-scheme`; pass an explicit `mode` to a nested `Theme` to pin
+ * the inversion direction for content rendered directly under it.
+ *
  * A theme opts a component out with `surfaces: { toast: 'normal' }`: the
  * inverted block is simply not emitted for it, and a normal-surface background
  * overrides the component's base inverted background. Toast's error variant

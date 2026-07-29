@@ -388,59 +388,98 @@ const normalToastTheme = defineTheme({
   surfaces: {toast: 'normal'},
 });
 
+/**
+ * A theme that keeps the inverted surface but recolors the error variant via
+ * onDark, so the always-dark error toast picks up a custom accent.
+ */
+const customErrorToastTheme = defineTheme({
+  name: 'toast-custom-error',
+  extends: neutralTheme,
+  onDark: {tokens: {'--color-accent': '#FFD166'}},
+});
+
+const noop = () => {};
+
+function ToastPair() {
+  return (
+    <Stack gap={2}>
+      <Toast
+        type="info"
+        body="Saved to your workspace."
+        endContent={<Link href="#">Undo</Link>}
+        isAutoHide={false}
+        autoHideDuration={0}
+        onDismiss={noop}
+      />
+      <Toast
+        type="error"
+        body="Could not save changes."
+        endContent={<Link href="#">Retry</Link>}
+        isAutoHide={false}
+        autoHideDuration={0}
+        onDismiss={noop}
+      />
+    </Stack>
+  );
+}
+
 export const ThemedSurfaceOptOut: StoryObj = {
   render: function ThemedSurfaceOptOutStory() {
-    const noop = () => {};
     return (
       <Stack gap={4}>
         <p>
-          Compare the default inverted surface against a theme that sets{' '}
+          Toast renders on an inverted media surface by default (dark panel in a
+          light app, light panel in a dark app). A theme opts out with{' '}
           <code>
             surfaces: {'{'} toast: 'normal' {'}'}
           </code>
-          . The opted-out toast uses the app&apos;s ordinary surface tokens (no
-          color-scheme flip), while the error variant stays on its
-          attention-grabbing dark surface in both. These are inline{' '}
-          <code>Toast</code> elements so both surfaces render side by side under
-          their own theme scope.
+          , so the toast uses the app&apos;s ordinary surface tokens. The error
+          variant always stays on its attention-grabbing dark surface in both.
+          Each column pins an explicit mode so the light/dark inversion is
+          visible side by side.
         </p>
-        <Stack direction="horizontal" gap={6} wrap="wrap">
-          <Theme theme={neutralTheme}>
-            <Stack gap={2}>
-              <strong>Default (inverted surface)</strong>
-              <Toast
-                type="info"
-                body="Saved to your workspace."
-                isAutoHide={false}
-                autoHideDuration={0}
-                onDismiss={noop}
-              />
-              <Toast
-                type="error"
-                body="Could not save changes."
-                isAutoHide={false}
-                autoHideDuration={0}
-                onDismiss={noop}
-              />
+        {(['light', 'dark'] as const).map(mode => (
+          <Stack key={mode} gap={2}>
+            <strong>Mode: {mode}</strong>
+            <Stack direction="horizontal" gap={6} wrap="wrap">
+              <Theme theme={neutralTheme} mode={mode}>
+                <Stack
+                  gap={2}
+                  style={{
+                    backgroundColor: 'var(--color-background-body)',
+                    padding: 16,
+                    borderRadius: 12,
+                  }}>
+                  <strong>Default (inverted surface)</strong>
+                  <ToastPair />
+                </Stack>
+              </Theme>
+              <Theme theme={normalToastTheme} mode={mode}>
+                <Stack
+                  gap={2}
+                  style={{
+                    backgroundColor: 'var(--color-background-body)',
+                    padding: 16,
+                    borderRadius: 12,
+                  }}>
+                  <strong>surfaces.toast = &apos;normal&apos;</strong>
+                  <ToastPair />
+                </Stack>
+              </Theme>
             </Stack>
-          </Theme>
-          <Theme theme={normalToastTheme}>
-            <Stack gap={2}>
-              <strong>surfaces.toast = &apos;normal&apos;</strong>
-              <Toast
-                type="info"
-                body="Saved to your workspace."
-                isAutoHide={false}
-                autoHideDuration={0}
-                onDismiss={noop}
-              />
-              <Toast
-                type="error"
-                body="Could not save changes."
-                isAutoHide={false}
-                autoHideDuration={0}
-                onDismiss={noop}
-              />
+          </Stack>
+        ))}
+        <Stack gap={2}>
+          <strong>Custom error accent (onDark) — inverted surface</strong>
+          <Theme theme={customErrorToastTheme} mode="light">
+            <Stack
+              gap={2}
+              style={{
+                backgroundColor: 'var(--color-background-body)',
+                padding: 16,
+                borderRadius: 12,
+              }}>
+              <ToastPair />
             </Stack>
           </Theme>
         </Stack>
@@ -451,7 +490,7 @@ export const ThemedSurfaceOptOut: StoryObj = {
     docs: {
       description: {
         story:
-          "Themes control whether Toast renders on the inverted media surface. `defineTheme({ surfaces: { toast: 'normal' } })` opts out app-wide; the error variant remains on its dark surface regardless.",
+          "Themes control whether Toast renders on the inverted media surface. `defineTheme({ surfaces: { toast: 'normal' } })` opts out app-wide; the error variant remains on its dark surface regardless, and a theme's `onDark` tokens recolor that always-dark error content.",
       },
     },
   },
