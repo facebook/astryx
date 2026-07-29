@@ -66,7 +66,7 @@ export function getNextSteps(invocation) {
  * @param {import('../../../types/api').InitOptions} options
  * @param {string} invocation
  * @param {import('../_adapter.mjs').InitLogger} logger
- * @param {import('../../../types/init').InitRunData} data
+ * @param {import('../init.type.mjs').InitRunData} data
  */
 function applyAgents(cwd, options, invocation, logger, data) {
   try {
@@ -103,7 +103,7 @@ function applyAgents(cwd, options, invocation, logger, data) {
  * @param {{templateName?: string}} opts
  * @param {string} invocation
  * @param {import('../_adapter.mjs').InitLogger} logger
- * @param {import('../../../types/init').InitRunData} data
+ * @param {import('../init.type.mjs').InitRunData} data
  */
 function applyTemplate(cwd, {templateName}, invocation, logger, data) {
   const templates = listTemplates();
@@ -159,7 +159,7 @@ function applyTemplate(cwd, {templateName}, invocation, logger, data) {
  *
  * @param {import('../../../types/api').InitOptions} [options]
  * @param {{cwd?: string, logger?: import('../_adapter.mjs').InitLogger}} [ctx]
- * @returns {Promise<import('../../../types/init').InitRunResponse>}
+ * @returns {Promise<import('../init.type.mjs').InitRunResponse>}
  */
 export async function run(options = {}, {cwd = process.cwd(), logger = noopInitLogger} = {}) {
   const invocation = getCliInvocation();
@@ -181,7 +181,7 @@ export async function run(options = {}, {cwd = process.cwd(), logger = noopInitL
       );
     }
 
-    /** @type {import('../../../types/init').InitRunData} */
+    /** @type {import('../init.type.mjs').InitRunData} */
     const data = {
       mode: 'features',
       features,
@@ -209,7 +209,7 @@ export async function run(options = {}, {cwd = process.cwd(), logger = noopInitL
 
   // No flags: TTY-free default — install the AI agent cheat sheet with NO
   // prompts, then print the getting-started guidance.
-  /** @type {import('../../../types/init').InitRunData} */
+  /** @type {import('../init.type.mjs').InitRunData} */
   const data = {
     mode: 'default',
     features: ['agents'],

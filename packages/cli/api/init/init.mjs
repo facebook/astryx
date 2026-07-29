@@ -27,11 +27,11 @@ export {noopInitLogger} from './_adapter.mjs';
  * Re-exported types so callers can keep referencing them off the init barrel
  * (e.g. cli/commands/init.mjs uses `import('../../api/init/init.mjs').InitOptions`
  * and `.InitLogger`). The canonical shapes stay central in types/api.d.ts +
- * types/init.d.ts; these aliases just preserve the barrel's original type
+ * api/init/init.type.mjs; these aliases just preserve the barrel's original type
  * surface after the split.
  * @typedef {import('../../types/api').InitOptions} InitOptions
  * @typedef {import('./_adapter.mjs').InitLogger} InitLogger
- * @typedef {import('../../types/init').InitRunData} InitRunData
+ * @typedef {import('./init.type.mjs').InitRunData} InitRunData
  */
 
 /**
@@ -43,7 +43,7 @@ export {noopInitLogger} from './_adapter.mjs';
  *
  * @param {InitOptions} [options]
  * @param {{cwd?: string, logger?: InitLogger}} [ctx]
- * @returns {Promise<import('../../types/init').InitRunResponse | import('../../types/init').InitRemoveResponse>}
+ * @returns {Promise<import('./init.type.mjs').InitRunResponse | import('./init.type.mjs').InitRemoveResponse>}
  */
 export async function init(options = {}, {cwd = process.cwd(), logger = noopInitLogger} = {}) {
   if (options.removeAgents) {

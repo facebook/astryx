@@ -20,7 +20,7 @@ import {noopInitLogger} from '../_adapter.mjs';
  * Progress is emitted through `logger` (silent by default).
  *
  * @param {{cwd?: string, logger?: import('../_adapter.mjs').InitLogger}} [ctx]
- * @returns {Promise<import('../../../types/init').InitRemoveResponse>}
+ * @returns {Promise<import('../init.type.mjs').InitRemoveResponse>}
  */
 export async function remove({cwd = process.cwd(), logger = noopInitLogger} = {}) {
   removeAgentDocs(cwd);
